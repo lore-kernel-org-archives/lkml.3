@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757673Ab3K0UQv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 15:16:51 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:60943 "EHLO
+	id S1758414Ab3K0UZI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 15:25:08 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:60951 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754584Ab3K0UQu (ORCPT
+	with ESMTP id S1757695Ab3K0UQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 15:16:50 -0500
+	Wed, 27 Nov 2013 15:16:52 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/34] tools lib traceevent: Use helper trace-seq in print functions like kernel does
-Date: Wed, 27 Nov 2013 17:16:01 -0300
-Message-Id: <1385583394-3703-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 02/34] perf trace: Remove thread summary coloring
+Date: Wed, 27 Nov 2013 17:16:02 -0300
+Message-Id: <1385583394-3703-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1385583394-3703-1-git-send-email-acme@infradead.org>
 References: <1385583394-3703-1-git-send-email-acme@infradead.org>
@@ -25,67 +23,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Pekka Enberg <penberg@kernel.org>
 
-Jiri Olsa reported that his plugin for scsi was chopping off part of the
-output. Investigating this, I found that Jiri used the same functions as
-what is in the kernel, which adds the following:
+Thread summary line coloring looks ugly.  It doesn't add much value so
+remove coloring completely.
 
-	trace_seq_putc(p, 0);
-
-This adds a '\0' to the output string. The reason this works in the
-kernel is that the "p" that is passed to the function helper is a
-temporary trace_seq. But in the libtraceevent library, it's the pointer
-to the trace_seq used to output. By adding the '\0', it truncates the
-line and nothing added after that will be printed.
-
-We can solve this in two ways. One is to have the helper functions for
-the library not add the unnecessary '\0'. The other is to change the
-library to also use a helper trace_seq structure that gets copied to the
-main trace_seq just like the kernel does.
-
-The latter allows the helper functions in the plugins to be the same as
-the kernel, which is the better solution.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Reported-by: Jiri Olsa <jolsa@redhat.com>
-Tested-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/20131119182937.401668e3@gandalf.local.home
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Acked-by: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1384447410-1771-1-git-send-email-penberg@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/event-parse.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ tools/perf/builtin-trace.c | 13 ++-----------
+ 1 file changed, 2 insertions(+), 11 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 217c82ee3665..900fca01bdd3 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -4099,6 +4099,7 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 	unsigned long long val;
- 	struct func_map *func;
- 	const char *saveptr;
-+	struct trace_seq p;
- 	char *bprint_fmt = NULL;
- 	char format[32];
- 	int show_func;
-@@ -4306,8 +4307,12 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 				format[len] = 0;
- 				if (!len_as_arg)
- 					len_arg = -1;
--				print_str_arg(s, data, size, event,
-+				/* Use helper trace_seq */
-+				trace_seq_init(&p);
-+				print_str_arg(&p, data, size, event,
- 					      format, len_arg, arg);
-+				trace_seq_terminate(&p);
-+				trace_seq_puts(s, p.buffer);
- 				arg = arg->next;
- 				break;
- 			default:
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 8be17fc462ba..e9f345e2551a 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -2158,7 +2158,6 @@ static int trace__fprintf_one_thread(struct thread *thread, void *priv)
+ 	size_t printed = data->printed;
+ 	struct trace *trace = data->trace;
+ 	struct thread_trace *ttrace = thread->priv;
+-	const char *color;
+ 	double ratio;
+ 
+ 	if (ttrace == NULL)
+@@ -2166,17 +2165,9 @@ static int trace__fprintf_one_thread(struct thread *thread, void *priv)
+ 
+ 	ratio = (double)ttrace->nr_events / trace->nr_events * 100.0;
+ 
+-	color = PERF_COLOR_NORMAL;
+-	if (ratio > 50.0)
+-		color = PERF_COLOR_RED;
+-	else if (ratio > 25.0)
+-		color = PERF_COLOR_GREEN;
+-	else if (ratio > 5.0)
+-		color = PERF_COLOR_YELLOW;
+-
+-	printed += color_fprintf(fp, color, " %s (%d), ", thread__comm_str(thread), thread->tid);
++	printed += fprintf(fp, " %s (%d), ", thread__comm_str(thread), thread->tid);
+ 	printed += fprintf(fp, "%lu events, ", ttrace->nr_events);
+-	printed += color_fprintf(fp, color, "%.1f%%", ratio);
++	printed += fprintf(fp, "%.1f%%", ratio);
+ 	printed += fprintf(fp, ", %.3f msec\n", ttrace->runtime_ms);
+ 	printed += thread__dump_stats(ttrace, trace, fp);
+ 
 -- 
 1.8.1.4
 
