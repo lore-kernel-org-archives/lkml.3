@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932419Ab3K0A6g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:58:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39295 "EHLO
+	id S1758696Ab3K0A7C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:59:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39324 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932406Ab3K0A63 (ORCPT
+	with ESMTP id S932423Ab3K0A6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:29 -0500
+	Tue, 26 Nov 2013 19:58:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Qingshuai Tian <qingshuai.tian@intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.12 022/116] ACPI / video: Quirk initial backlight level 0
-Date: Tue, 26 Nov 2013 16:56:35 -0800
-Message-Id: <20131127005738.480750511@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 3.12 029/116] Drivers: hv: vmbus: Fix a bug in channel rescind code
+Date: Tue, 26 Nov 2013 16:56:42 -0800
+Message-Id: <20131127005738.954212945@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -28,44 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaron Lu <aaron.lu@intel.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 2c62333a408f5badd2d2ffd7177f95deeccc5ca4 upstream.
+commit 565ce6422ff92f5af71e4d5a09f78215433b2695 upstream.
 
-Some firmware doesn't initialize initial backlight level to a proper
-value and _BQC will return 0 on first time evaluation. We used to be
-able to detect such incorrect value with our code logic, as value 0
-normally isn't a valid value in _BCL. But with the introduction of Win8,
-firmware begins to fill _BCL with values from 0 to 100, now 0 becomes
-a valid value but that value will make user's screen black. This patch
-test initial _BQC for value 0, if such a value is returned, do not use
-it.
+Rescind of subchannels were not being correctly handled. Fix the bug.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=64031
-References: https://bugzilla.kernel.org/show_bug.cgi?id=61231
-References: https://bugzilla.kernel.org/show_bug.cgi?id=63111
-Reported-by: Qingshuai Tian <qingshuai.tian@intel.com>
-Tested-by: Aaron Lu <aaron.lu@intel.com> # on "Idealpad u330p"
-Reported-and-tested-by: <erno@iki.fi> # on "Acer Aspire V5-573G"
-Reported-and-tested-by: Kirill Tkhai <tkhai@yandex.ru> # on "HP 250 G1"
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/video.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hv/channel_mgmt.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -832,7 +832,7 @@ acpi_video_init_brightness(struct acpi_v
- 		for (i = 2; i < br->count; i++)
- 			if (level_old == br->levels[i])
- 				break;
--		if (i == br->count)
-+		if (i == br->count || !level)
- 			level = max_level;
- 	}
+--- a/drivers/hv/channel_mgmt.c
++++ b/drivers/hv/channel_mgmt.c
+@@ -203,7 +203,8 @@ static void vmbus_process_rescind_offer(
+ 	struct vmbus_channel *primary_channel;
+ 	struct vmbus_channel_relid_released msg;
  
+-	vmbus_device_unregister(channel->device_obj);
++	if (channel->device_obj)
++		vmbus_device_unregister(channel->device_obj);
+ 	memset(&msg, 0, sizeof(struct vmbus_channel_relid_released));
+ 	msg.child_relid = channel->offermsg.child_relid;
+ 	msg.header.msgtype = CHANNELMSG_RELID_RELEASED;
+@@ -216,7 +217,7 @@ static void vmbus_process_rescind_offer(
+ 	} else {
+ 		primary_channel = channel->primary_channel;
+ 		spin_lock_irqsave(&primary_channel->sc_lock, flags);
+-		list_del(&channel->listentry);
++		list_del(&channel->sc_list);
+ 		spin_unlock_irqrestore(&primary_channel->sc_lock, flags);
+ 	}
+ 	free_channel(channel);
 
 
