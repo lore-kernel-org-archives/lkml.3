@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758716Ab3K0A7H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:59:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39355 "EHLO
+	id S932550Ab3K0BYd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:24:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39462 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758577Ab3K0A6n (ORCPT
+	with ESMTP id S1758713Ab3K0A7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:43 -0500
+	Tue, 26 Nov 2013 19:59:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH 3.12 035/116] Revert "ima: policy for RAMFS"
-Date: Tue, 26 Nov 2013 16:56:48 -0800
-Message-Id: <20131127005739.386176039@linuxfoundation.org>
+        Weston Andros Adamson <dros@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [PATCH 3.12 063/116] NFSv4: dont reprocess cached open CLAIM_PREVIOUS
+Date: Tue, 26 Nov 2013 16:57:16 -0800
+Message-Id: <20131127005741.303195261@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -26,32 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+From: Weston Andros Adamson <dros@netapp.com>
 
-commit 08de59eb144d7c41351a467442f898d720f0f15f upstream.
+commit d2bfda2e7aa036f90ccea610a657064b1e267913 upstream.
 
-This reverts commit 4c2c392763a682354fac65b6a569adec4e4b5387.
+Cached opens have already been handled by _nfs4_opendata_reclaim_to_nfs4_state
+and can safely skip being reprocessed, but must still call update_open_stateid
+to make sure that all active fmodes are recovered.
 
-Everything in the initramfs should be measured and appraised,
-but until the initramfs has extended attribute support, at
-least measured.
-
-Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+Signed-off-by: Weston Andros Adamson <dros@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/integrity/ima/ima_policy.c |    1 -
- 1 file changed, 1 deletion(-)
+ fs/nfs/nfs4proc.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -73,7 +73,6 @@ static struct ima_rule_entry default_rul
- 	{.action = DONT_MEASURE,.fsmagic = SYSFS_MAGIC,.flags = IMA_FSMAGIC},
- 	{.action = DONT_MEASURE,.fsmagic = DEBUGFS_MAGIC,.flags = IMA_FSMAGIC},
- 	{.action = DONT_MEASURE,.fsmagic = TMPFS_MAGIC,.flags = IMA_FSMAGIC},
--	{.action = DONT_MEASURE,.fsmagic = RAMFS_MAGIC,.flags = IMA_FSMAGIC},
- 	{.action = DONT_MEASURE,.fsmagic = DEVPTS_SUPER_MAGIC,.flags = IMA_FSMAGIC},
- 	{.action = DONT_MEASURE,.fsmagic = BINFMTFS_MAGIC,.flags = IMA_FSMAGIC},
- 	{.action = DONT_MEASURE,.fsmagic = SECURITYFS_MAGIC,.flags = IMA_FSMAGIC},
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -1317,10 +1317,13 @@ _nfs4_opendata_reclaim_to_nfs4_state(str
+ 	struct nfs4_state *state = data->state;
+ 	int ret;
+ 
+-	/* allow cached opens (!rpc_done && !rpc_status) */
+-	if (!data->rpc_done && data->rpc_status) {
+-		ret = data->rpc_status;
+-		goto err;
++	if (!data->rpc_done) {
++		if (data->rpc_status) {
++			ret = data->rpc_status;
++			goto err;
++		}
++		/* cached opens have already been processed */
++		goto update;
+ 	}
+ 
+ 	ret = -ENOMEM;
+@@ -1336,6 +1339,7 @@ _nfs4_opendata_reclaim_to_nfs4_state(str
+ 
+ 	if (data->o_res.delegation_type != 0)
+ 		nfs4_opendata_check_deleg(data, state);
++update:
+ 	update_open_stateid(state, &data->o_res.stateid, NULL,
+ 			    data->o_arg.fmode);
+ 
 
 
