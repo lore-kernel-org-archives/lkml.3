@@ -1,79 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab3K0MEI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 07:04:08 -0500
-Received: from ring0.de ([91.143.88.219]:48638 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754594Ab3K0MEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 07:04:04 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Wed, 27 Nov 2013 13:03:58 +0100
-From: Sebastian Reichel <sre@debian.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: viresh.kumar@linaro.org, egtvedt@samfundet.no, jesper.nilsson@axis.com,
-        linux@arm.linux.org.uk, swarren@nvidia.com, andrew@lunn.ch,
-        nicolas.pitre@linaro.org, tianyu.lan@intel.com,
-        rafael.j.wysocki@intel.com, kernel list <linux-kernel@vger.kernel.org>,
-        tony@atomide.com, pali.rohar@gmail.com, arm@kernel.org
-Subject: Re: omap-cpufreq compilation breakage in 3.13-rc1
-Message-ID: <20131127120327.GA31130@earth.universe>
-Mail-Followup-To: Pavel Machek <pavel@ucw.cz>, viresh.kumar@linaro.org,
-	egtvedt@samfundet.no, jesper.nilsson@axis.com,
-	linux@arm.linux.org.uk, swarren@nvidia.com, andrew@lunn.ch,
-	nicolas.pitre@linaro.org, tianyu.lan@intel.com,
-	rafael.j.wysocki@intel.com,
-	kernel list <linux-kernel@vger.kernel.org>, tony@atomide.com,
-	pali.rohar@gmail.com, arm@kernel.org
-References: <20131127115407.GA6773@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="UHN/qo2QbUvPLonB"
-Content-Disposition: inline
-In-Reply-To: <20131127115407.GA6773@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753947Ab3K0MMj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 07:12:39 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:58838 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269Ab3K0MMg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 07:12:36 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] firmware/dmi_scan: generalize for use by other archs
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        "x86@kernel.org" <x86@kernel.org>, linux-ia64@vger.kernel.org,
+        "mingo@redhat.com" <mingo@redhat.com>, tony.luck@intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        akpm@linux-foundation.org
+Cc: Leif Lindholm <leif.lindholm@linaro.org>, Al Stone <al.stone@linaro.org>,
+        Yi Li <yi.li@linaro.org>
+In-Reply-To: <CAKv+Gu9VbSLDOYnuGkuajSHmp2PMKE-hLS4X0Gu-KO=uhU9skg@mail.gmail.com>
+References: <1385034003-32160-1-git-send-email-ard.biesheuvel@linaro.org> < CAKv+Gu9VbSLDOYnuGkuajSHmp2PMKE-hLS4X0Gu-KO=uhU9skg@mail.gmail.com>
+Date: Wed, 27 Nov 2013 12:12:31 +0000
+Message-Id: <20131127121231.968E6C404EC@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 25 Nov 2013 13:07:23 +0100, Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
+> Hello all,
+> 
+> Resending this patch to a slightly wider audience.
+> 
+> The point of this patch is reworking the dmi_scan code slightly so it
+> can be reused on ARM and arm64.
+> There are no functional changes for x86 or IA-64, just one open
+> question, i.e., whether the non-EFI fallback probe should be performed
+> on IA-64 in the first place.
+> 
+> If I could get acks for this patch please (if there are no
+> objections), I will propose it to be merged through the ARM and/or
+> arm64 trees as part of the complete series to enable SMBIOS.
+>
+> On 21 November 2013 12:40, Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
+> > This patch makes a couple of changes to the SMBIOS/DMI scanning
+> > code so it can be used on other archs (such as ARM and arm64):
+> > (a) wrap the calls to ioremap()/iounmap(), this allows the use of a
+> >     flavor of ioremap() more suitable for random unaligned access;
+> > (b) allow the non-EFI fallback probe into hardcoded physical address
+> >     0xF0000 to be disabled.
+> >
+> > Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 
---UHN/qo2QbUvPLonB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Looks good.
 
-On Wed, Nov 27, 2013 at 12:54:07PM +0100, Pavel Machek wrote:
-> Commit d4019f0a92ab802f385cc9c8ad3ab7b5449712cb broke compilation for
-> omap-cpufreq.c . Given impresive list of ACKs and Tested-bys, I'd not
-> expect such problem. This fixes it.
+Reviewed-by: Grant Likely <grant.likely@linaro.org>
 
-This has already been fixed in 696d0b2c786161ddc1e80dcddce7d34c2a709566:
+> > ---
+> >
+> > @Tony: does the fallback probe make any sense at all on IA-64? It was enabled
+> > before, so I added the #define for IA-64 as well, but perhaps we could remove it
+> > altogether?
+> >
+> >  arch/ia64/include/asm/dmi.h | 10 +++++++---
+> >  arch/x86/include/asm/dmi.h  |  8 ++++++--
+> >  drivers/firmware/dmi_scan.c | 20 +++++++++++---------
+> >  3 files changed, 24 insertions(+), 14 deletions(-)
+> >
+> > diff --git a/arch/ia64/include/asm/dmi.h b/arch/ia64/include/asm/dmi.h
+> > index 185d3d1..61e3b56 100644
+> > --- a/arch/ia64/include/asm/dmi.h
+> > +++ b/arch/ia64/include/asm/dmi.h
+> > @@ -5,8 +5,12 @@
+> >  #include <asm/io.h>
+> >
+> >  /* Use normal IO mappings for DMI */
+> > -#define dmi_ioremap ioremap
+> > -#define dmi_iounmap(x,l) iounmap(x)
+> > -#define dmi_alloc(l) kzalloc(l, GFP_ATOMIC)
+> > +#define dmi_early_remap                ioremap
+> > +#define dmi_early_unmap(x,l)   iounmap(x)
+> > +#define dmi_remap              ioremap
+> > +#define dmi_unmap              iounmap
+> > +#define dmi_alloc(l)           kzalloc(l, GFP_ATOMIC)
+> > +
+> > +#define DMI_SCAN_MACHINE_NON_EFI_FALLBACK      1
+> >
+> >  #endif
+> > diff --git a/arch/x86/include/asm/dmi.h b/arch/x86/include/asm/dmi.h
+> > index fd8f9e2..bb2b572 100644
+> > --- a/arch/x86/include/asm/dmi.h
+> > +++ b/arch/x86/include/asm/dmi.h
+> > @@ -13,7 +13,11 @@ static __always_inline __init void *dmi_alloc(unsigned len)
+> >  }
+> >
+> >  /* Use early IO mappings for DMI because it's initialized early */
+> > -#define dmi_ioremap early_ioremap
+> > -#define dmi_iounmap early_iounmap
+> > +#define dmi_early_remap                early_ioremap
+> > +#define dmi_early_unmap                early_iounmap
+> > +#define dmi_remap              ioremap
+> > +#define dmi_unmap              iounmap
+> > +
+> > +#define DMI_SCAN_MACHINE_NON_EFI_FALLBACK      1
+> >
+> >  #endif /* _ASM_X86_DMI_H */
+> > diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
+> > index fa0affb..2c7c793 100644
+> > --- a/drivers/firmware/dmi_scan.c
+> > +++ b/drivers/firmware/dmi_scan.c
+> > @@ -108,7 +108,7 @@ static int __init dmi_walk_early(void (*decode)(const struct dmi_header *,
+> >  {
+> >         u8 *buf;
+> >
+> > -       buf = dmi_ioremap(dmi_base, dmi_len);
+> > +       buf = dmi_early_remap(dmi_base, dmi_len);
+> >         if (buf == NULL)
+> >                 return -1;
+> >
+> > @@ -116,7 +116,7 @@ static int __init dmi_walk_early(void (*decode)(const struct dmi_header *,
+> >
+> >         add_device_randomness(buf, dmi_len);
+> >
+> > -       dmi_iounmap(buf, dmi_len);
+> > +       dmi_early_unmap(buf, dmi_len);
+> >         return 0;
+> >  }
+> >
+> > @@ -483,18 +483,19 @@ void __init dmi_scan_machine(void)
+> >                  * needed during early boot.  This also means we can
+> >                  * iounmap the space when we're done with it.
+> >                  */
+> > -               p = dmi_ioremap(efi.smbios, 32);
+> > +               p = dmi_early_remap(efi.smbios, 32);
+> >                 if (p == NULL)
+> >                         goto error;
+> >                 memcpy_fromio(buf, p, 32);
+> > -               dmi_iounmap(p, 32);
+> > +               dmi_early_unmap(p, 32);
+> >
+> >                 if (!dmi_present(buf)) {
+> >                         dmi_available = 1;
+> >                         goto out;
+> >                 }
+> >         } else {
+> > -               p = dmi_ioremap(0xF0000, 0x10000);
+> > +#ifdef DMI_SCAN_MACHINE_NON_EFI_FALLBACK
+> > +               p = dmi_early_remap(0xF0000, 0x10000);
+> >                 if (p == NULL)
+> >                         goto error;
+> >
+> > @@ -510,12 +511,13 @@ void __init dmi_scan_machine(void)
+> >                         memcpy_fromio(buf + 16, q, 16);
+> >                         if (!dmi_present(buf)) {
+> >                                 dmi_available = 1;
+> > -                               dmi_iounmap(p, 0x10000);
+> > +                               dmi_early_unmap(p, 0x10000);
+> >                                 goto out;
+> >                         }
+> >                         memcpy(buf, buf + 16, 16);
+> >                 }
+> > -               dmi_iounmap(p, 0x10000);
+> > +               dmi_early_unmap(p, 0x10000);
+> > +#endif
+> >         }
+> >   error:
+> >         pr_info("DMI not present or invalid.\n");
+> > @@ -787,13 +789,13 @@ int dmi_walk(void (*decode)(const struct dmi_header *, void *),
+> >         if (!dmi_available)
+> >                 return -1;
+> >
+> > -       buf = ioremap(dmi_base, dmi_len);
+> > +       buf = dmi_remap(dmi_base, dmi_len);
+> >         if (buf == NULL)
+> >                 return -1;
+> >
+> >         dmi_table(buf, dmi_len, dmi_num, decode, private_data);
+> >
+> > -       iounmap(buf);
+> > +       dmi_unmap(buf);
+> >         return 0;
+> >  }
+> >  EXPORT_SYMBOL_GPL(dmi_walk);
+> > --
+> > 1.8.3.2
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/drivers/cpufreq/omap-cpufreq.c?id=696d0b2c786161ddc1e80dcddce7d34c2a709566
-
--- Sebastian
-
---UHN/qo2QbUvPLonB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSld+tAAoJENju1/PIO/qaW9kQAIaHsvYw0we9TKf66o1yUhZG
-b+w3dhV37EMfLs2ASkOU5BudGudu6x6sRjdU7YlT1j5LAHB2HNm9KAj+P8/TJOTj
-VxyoL9MCLphwPsZv4yykHYS1qqJWSR7G41slp5NzGYum/o1ECT/XYuywbfKO8Hjt
-No3GVdBNLnpmgOUFmcGPqYiCSHl9BoxS6mCLb3SzLgJrwG3Yh8Ppn2Mtfkiod2uI
-w+t20/i/7nOgfGZtiyS88+Ot2R4DNbn850ke/tCfQn/ud6eO9HFFP0Isk9Wdnoxu
-6tw5jxJg5Pg66zaB+ZnSbL/7vgspb+r7Z6JTMVA+IVbSsD5P3a0VfUlwY4aXmXPY
-WEFfBWAAUVvr5++HsRcYsUeA4h+/FpVKFpKjyUOn8edvUNJIQ8M0WKQLdR7YYFFR
-WBnPnnk6Q/moT/1/OhXET5Hhw/LPvnSGd+2zimSkdEqtrGYo9zl4Xky1DTg2MWa8
-7HVtVNA9uugpy3TJAaqzMbu0LoJzXoCZOHP2Gz2hLbrlBPs1LAZB7wrnxZs9rrEr
-fN6TQpwUufOvPanV2vMUjszEJUjcYUpVObFWZwK3WyHisHZqHa6beUqzL7Qhthjf
-3YYp3BZJ0H8967oGcE1mNypS379iMp8ePCQhuOXBYzaseYOdMixdSf4CCu6ZtUCz
-DQB1GhjiiQhCjJa5Gz/2
-=8ghl
------END PGP SIGNATURE-----
-
---UHN/qo2QbUvPLonB--
