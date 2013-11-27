@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759394Ab3K0CKy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:10:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38745 "EHLO
+	id S932520Ab3K0CKv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:10:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38749 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753804Ab3K0A41 (ORCPT
+	with ESMTP id S1753860Ab3K0A42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:56:27 -0500
+	Tue, 26 Nov 2013 19:56:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>,
-        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH 3.4 04/39] aacraid: prevent invalid pointer dereference
-Date: Tue, 26 Nov 2013 16:56:28 -0800
-Message-Id: <20131127005619.355697845@linuxfoundation.org>
+        Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.4 05/39] ACPICA: Interpreter: Fix Store() when implicit conversion is not possible.
+Date: Tue, 26 Nov 2013 16:56:29 -0800
+Message-Id: <20131127005619.423254158@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005619.011763867@linuxfoundation.org>
 References: <20131127005619.011763867@linuxfoundation.org>
@@ -29,41 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
+From: Bob Moore <robert.moore@intel.com>
 
-commit b4789b8e6be3151a955ade74872822f30e8cd914 upstream.
+commit 3f654bad3257427bea7ba1c4d43a23d99a03622b upstream.
 
-It appears that driver runs into a problem here if fibsize is too small
-because we allocate user_srbcmd with fibsize size only but later we
-access it until user_srbcmd->sg.count to copy it over to srbcmd.
+For the cases such as a store of a string to an existing package
+object, implement the store as a CopyObject().
+This is a small departure from the ACPI specification which states
+that the control method should be aborted in this case. However,
+ASLTS suite depends on this behavior.
 
-It is not correct to test (fibsize < sizeof(*user_srbcmd)) because this
-structure already includes one sg element and this is not needed for
-commands without data.  So, we would recommend to add the following
-(instead of test for fibsize == 0).
-
-Signed-off-by: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kees Cook <keescook@chromium.org>
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/aacraid/commctrl.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/acpi/acpica/exstore.c |   29 ++++++++++++++++++++++++-----
+ 1 file changed, 24 insertions(+), 5 deletions(-)
 
---- a/drivers/scsi/aacraid/commctrl.c
-+++ b/drivers/scsi/aacraid/commctrl.c
-@@ -508,7 +508,8 @@ static int aac_send_raw_srb(struct aac_d
- 		goto cleanup;
+--- a/drivers/acpi/acpica/exstore.c
++++ b/drivers/acpi/acpica/exstore.c
+@@ -487,14 +487,33 @@ acpi_ex_store_object_to_node(union acpi_
+ 	default:
+ 
+ 		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
+-				  "Storing %s (%p) directly into node (%p) with no implicit conversion\n",
++				  "Storing [%s] (%p) directly into node [%s] (%p)"
++				  " with no implicit conversion\n",
+ 				  acpi_ut_get_object_type_name(source_desc),
+-				  source_desc, node));
++				  source_desc,
++				  acpi_ut_get_object_type_name(target_desc),
++				  node));
+ 
+-		/* No conversions for all other types.  Just attach the source object */
++		/*
++		 * No conversions for all other types. Directly store a copy of
++		 * the source object. NOTE: This is a departure from the ACPI
++		 * spec, which states "If conversion is impossible, abort the
++		 * running control method".
++		 *
++		 * This code implements "If conversion is impossible, treat the
++		 * Store operation as a CopyObject".
++		 */
++		status =
++		    acpi_ut_copy_iobject_to_iobject(source_desc, &new_desc,
++						    walk_state);
++		if (ACPI_FAILURE(status)) {
++			return_ACPI_STATUS(status);
++		}
+ 
+-		status = acpi_ns_attach_object(node, source_desc,
+-					       source_desc->common.type);
++		status =
++		    acpi_ns_attach_object(node, new_desc,
++					  new_desc->common.type);
++		acpi_ut_remove_reference(new_desc);
+ 		break;
  	}
  
--	if (fibsize > (dev->max_fib_size - sizeof(struct aac_fibhdr))) {
-+	if ((fibsize < (sizeof(struct user_aac_srb) - sizeof(struct user_sgentry))) ||
-+	    (fibsize > (dev->max_fib_size - sizeof(struct aac_fibhdr)))) {
- 		rcode = -EINVAL;
- 		goto cleanup;
- 	}
 
 
