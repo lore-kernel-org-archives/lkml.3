@@ -1,66 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756530Ab3K0PLh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 10:11:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35577 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756113Ab3K0PLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 10:11:35 -0500
-Date: Wed, 27 Nov 2013 10:10:56 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: hpa@linux.intel.com, ebiederm@xmission.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, bp@alien8.de, akpm@linux-foundation.org,
-        fengguang.wu@intel.com, jingbai.ma@hp.com
-Subject: Re: [PATCH v7 2/2] Documentation, x86, apic, kexec: Add
- disable_cpu_apicid kernel parameter
-Message-ID: <20131127151056.GJ18706@redhat.com>
-References: <20131127020006.1493.86091.stgit@localhost6.localdomain6>
- <20131127020053.1493.54092.stgit@localhost6.localdomain6>
+	id S1753871Ab3K0PPC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 10:15:02 -0500
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:34060 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737Ab3K0PPA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 10:15:00 -0500
+Date: Wed, 27 Nov 2013 10:15:02 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Will Deacon <will.deacon@arm.com>
+cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/2] perf: fix PERF_EVENT_IOC_PERIOD to force-reset the
+ period
+In-Reply-To: <1385560479-11014-1-git-send-email-will.deacon@arm.com>
+Message-ID: <alpine.DEB.2.10.1311271013590.4569@vincent-weaver-1.um.maine.edu>
+References: <1385560479-11014-1-git-send-email-will.deacon@arm.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131127020053.1493.54092.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 11:00:53AM +0900, HATAYAMA Daisuke wrote:
-> Add disable_cpu_apicid kernel parameter to disable the CPU with the
-> specified number of initial APIC ID, mostly used for the kdump 2nd
-> kernel to disable BSP to wake up multiple CPUs without causing system
-> reset or hang due to sending INIT from AP to BSP.
-> 
-> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+On Wed, 27 Nov 2013, Will Deacon wrote:
 
-I guess you don't require a separate patch for documentation. Just merge
-it with previous patch. So this becomes a single patch fix and not a 
-series.
+> Vince Weaver reports that, on all architectures apart from ARM,
+> PERF_EVENT_IOC_PERIOD doesn't actually update the period until the next
+> event fires. This is counter-intuitive behaviour and is better dealt
+> with in the core code.
 
-Thanks
-Vivek
-> ---
->  Documentation/kernel-parameters.txt |    9 +++++++++
->  1 file changed, 9 insertions(+)
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 50680a5..dd77bec 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -774,6 +774,15 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  	disable=	[IPV6]
->  			See Documentation/networking/ipv6.txt.
->  
-> +	disable_cpu_apicid= [X86,APIC,KEXEC,SMP]
-> +			Format: <int>
-> +			The number of initial APIC ID for the
-> +			corresponding CPU to be disabled at boot,
-> +			mostly used for the kdump 2nd kernel to
-> +			disable BSP to wake up multiple CPUs without
-> +			causing system reset or hang due to sending
-> +			INIT from AP to BSP.
-> +
->  	disable_ddw     [PPC/PSERIES]
->  			Disable Dynamic DMA Window support. Use this if
->  			to workaround buggy firmware.
+To be fair, it was Andreas Sandberg <andreas.sandberg@it.uu.se>
+who noticed this issue and reported it to me (in the context of 
+the manpage being wrong).  I just passed it on to the linux-kernel list.
+
+Vince
