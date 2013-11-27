@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759814Ab3K0Bbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:31:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39352 "EHLO
+	id S1759831Ab3K0BcJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:32:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39346 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758571Ab3K0A6m (ORCPT
+	with ESMTP id S1757236Ab3K0A6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:42 -0500
+	Tue, 26 Nov 2013 19:58:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shuah Khan <shuah.kh@samsung.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH 3.12 034/116] Bluetooth: revert: "Bluetooth: Add missing reset_resume dev_pm_ops"
-Date: Tue, 26 Nov 2013 16:56:47 -0800
-Message-Id: <20131127005739.317843009@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.12 033/116] rt2x00: fix HT TX descriptor settings regression
+Date: Tue, 26 Nov 2013 16:56:46 -0800
+Message-Id: <20131127005739.250237352@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -28,64 +28,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit b1a8014471b01dd862de9f91bbbff1296afac42d upstream.
+commit 3d8bfe141be8e5c21261fc63da8e7964d44f2645 upstream.
 
-Many btusb devices have 2 modes, a hid mode and a bluetooth hci mode. These
-devices default to hid mode for BIOS use. This means that after having been
-reset they will revert to HID mode, and are no longer usable as a HCI.
+Since:
 
-Therefor it is a very bad idea to just blindly make reset_resume point to
-the regular resume handler. Note that the btusb driver has no clue how to
-switch these devices from hid to hci mode, this is done in userspace through
-udev rules, so the proper way to deal with this is to not have a reset-resume
-handler and instead let the usb-system re-enumerate the device, and re-run
-the udev rules.
+commit 36323f817af0376c78612cfdab714b0feb05fea5
+Author: Thomas Huehn <thomas@net.t-labs.tu-berlin.de>
+Date:   Mon Jul 23 21:33:42 2012 +0200
 
-I must also note, that the commit message for the commit causing this
-problem has a very weak motivation for the change:
+    mac80211: move TX station pointer and restructure TX
 
-"Add missing reset_resume dev_pm_ops. Missing reset_resume results in the
-following message after power management device test. This change sets
-reset_resume to btusb_resume().
+we do not pass sta pointer to rt2x00queue_create_tx_descriptor_ht(),
+hence we do not correctly set station WCID and AMPDU density parameters.
 
-[ 2506.936134] btusb 1-1.5:1.0: no reset_resume for driver btusb?
-[ 2506.936137] btusb 1-1.5:1.1: no reset_resume for driver btusb?"
-
-Making a change solely to silence a warning while also changing important
-behavior (normal resume handling versus re-enumeration) requires a commit
-message with a proper explanation why it is safe to do so, which clearly lacks
-here, and unsurprisingly it turns out to not be safe to make this change.
-
-Reverting the commit in question fixes bt no longer working on my Dell
-E6430 after a suspend/resume, and I believe it likely also fixes the
-following bugs:
-https://bugzilla.redhat.com/show_bug.cgi?id=988481
-https://bugzilla.redhat.com/show_bug.cgi?id=1010649
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1213239
-
-This reverts commit 502f769662978a2fe99d0caed5e53e3006107381.
-
-Cc: Shuah Khan <shuah.kh@samsung.com>
-Cc: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/btusb.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2x00lib.h   |    2 +-
+ drivers/net/wireless/rt2x00/rt2x00mac.c   |    4 ++--
+ drivers/net/wireless/rt2x00/rt2x00queue.c |    4 ++--
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -1628,7 +1628,6 @@ static struct usb_driver btusb_driver =
- #ifdef CONFIG_PM
- 	.suspend	= btusb_suspend,
- 	.resume		= btusb_resume,
--	.reset_resume	= btusb_resume,
- #endif
- 	.id_table	= btusb_table,
- 	.supports_autosuspend = 1,
+--- a/drivers/net/wireless/rt2x00/rt2x00lib.h
++++ b/drivers/net/wireless/rt2x00/rt2x00lib.h
+@@ -146,7 +146,7 @@ void rt2x00queue_remove_l2pad(struct sk_
+  * @local: frame is not from mac80211
+  */
+ int rt2x00queue_write_tx_frame(struct data_queue *queue, struct sk_buff *skb,
+-			       bool local);
++			       struct ieee80211_sta *sta, bool local);
+ 
+ /**
+  * rt2x00queue_update_beacon - Send new beacon from mac80211
+--- a/drivers/net/wireless/rt2x00/rt2x00mac.c
++++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
+@@ -90,7 +90,7 @@ static int rt2x00mac_tx_rts_cts(struct r
+ 				  frag_skb->data, data_length, tx_info,
+ 				  (struct ieee80211_rts *)(skb->data));
+ 
+-	retval = rt2x00queue_write_tx_frame(queue, skb, true);
++	retval = rt2x00queue_write_tx_frame(queue, skb, NULL, true);
+ 	if (retval) {
+ 		dev_kfree_skb_any(skb);
+ 		rt2x00_warn(rt2x00dev, "Failed to send RTS/CTS frame\n");
+@@ -151,7 +151,7 @@ void rt2x00mac_tx(struct ieee80211_hw *h
+ 			goto exit_fail;
+ 	}
+ 
+-	if (unlikely(rt2x00queue_write_tx_frame(queue, skb, false)))
++	if (unlikely(rt2x00queue_write_tx_frame(queue, skb, control->sta, false)))
+ 		goto exit_fail;
+ 
+ 	/*
+--- a/drivers/net/wireless/rt2x00/rt2x00queue.c
++++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
+@@ -635,7 +635,7 @@ static void rt2x00queue_bar_check(struct
+ }
+ 
+ int rt2x00queue_write_tx_frame(struct data_queue *queue, struct sk_buff *skb,
+-			       bool local)
++			       struct ieee80211_sta *sta, bool local)
+ {
+ 	struct ieee80211_tx_info *tx_info;
+ 	struct queue_entry *entry;
+@@ -649,7 +649,7 @@ int rt2x00queue_write_tx_frame(struct da
+ 	 * after that we are free to use the skb->cb array
+ 	 * for our information.
+ 	 */
+-	rt2x00queue_create_tx_descriptor(queue->rt2x00dev, skb, &txdesc, NULL);
++	rt2x00queue_create_tx_descriptor(queue->rt2x00dev, skb, &txdesc, sta);
+ 
+ 	/*
+ 	 * All information is retrieved from the skb->cb array,
 
 
