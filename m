@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760798Ab3K0CDg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:03:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38832 "EHLO
+	id S1760813Ab3K0CDi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:03:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38877 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755329Ab3K0A5A (ORCPT
+	with ESMTP id S1756502Ab3K0A47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:00 -0500
+	Tue, 26 Nov 2013 19:56:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Junxiao Bi <junxiao.bi@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 38/39] configfs: fix race between dentry put and lookup
-Date: Tue, 26 Nov 2013 16:57:02 -0800
-Message-Id: <20131127005621.717875359@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.4 37/39] rt2800usb: slow down TX status polling
+Date: Tue, 26 Nov 2013 16:57:01 -0800
+Message-Id: <20131127005621.650741055@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005619.011763867@linuxfoundation.org>
 References: <20131127005619.011763867@linuxfoundation.org>
@@ -29,94 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 76ae281f6307331aa063288edb6422ae99f435f0 upstream.
+commit 36165fd5b00bf8163f89c21bb16a3e9834555b10 upstream.
 
-A race window in configfs, it starts from one dentry is UNHASHED and end
-before configfs_d_iput is called.  In this window, if a lookup happen,
-since the original dentry was UNHASHED, so a new dentry will be
-allocated, and then in configfs_attach_attr(), sd->s_dentry will be
-updated to the new dentry.  Then in configfs_d_iput(),
-BUG_ON(sd->s_dentry != dentry) will be triggered and system panic.
+Polling TX statuses too frequently has two negative effects. First is
+randomly peek CPU usage, causing overall system functioning delays.
+Second bad effect is that device is not able to fill TX statuses in
+H/W register on some workloads and we get lot of timeouts like below:
 
-sys_open:                     sys_close:
- ...                           fput
-                                dput
-                                 dentry_kill
-                                  __d_drop <--- dentry unhashed here,
-                                           but sd->dentry still point
-                                           to this dentry.
+ieee80211 phy4: rt2800usb_entry_txstatus_timeout: Warning - TX status timeout for entry 7 in queue 2
+ieee80211 phy4: rt2800usb_entry_txstatus_timeout: Warning - TX status timeout for entry 7 in queue 2
+ieee80211 phy4: rt2800usb_txdone: Warning - Got TX status for an empty queue 2, dropping
 
- lookup_real
-  configfs_lookup
-   configfs_attach_attr---> update sd->s_dentry
-                            to new allocated dentry here.
+This not only cause flood of messages in dmesg, but also bad throughput,
+since rate scaling algorithm can not work optimally.
 
-                                   d_kill
-                                     configfs_d_iput <--- BUG_ON(sd->s_dentry != dentry)
-                                                     triggered here.
+In the future, we should probably make polling interval be adjusted
+automatically, but for now just increase values, this make mentioned
+problems gone.
 
-To fix it, change configfs_d_iput to not update sd->s_dentry if
-sd->s_count > 2, that means there are another dentry is using the sd
-beside the one that is going to be put.  Use configfs_dirent_lock in
-configfs_attach_attr to sync with configfs_d_iput.
+Resolve:
+https://bugzilla.kernel.org/show_bug.cgi?id=62781
 
-With the following steps, you can reproduce the bug.
-
-1. enable ocfs2, this will mount configfs at /sys/kernel/config and
-   fill configure in it.
-
-2. run the following script.
-	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
-	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
-
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/configfs/dir.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rt2x00/rt2800usb.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/fs/configfs/dir.c
-+++ b/fs/configfs/dir.c
-@@ -56,10 +56,19 @@ static void configfs_d_iput(struct dentr
- 	struct configfs_dirent *sd = dentry->d_fsdata;
+--- a/drivers/net/wireless/rt2x00/rt2800usb.c
++++ b/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -143,6 +143,8 @@ static bool rt2800usb_txstatus_timeout(s
+ 	return false;
+ }
  
- 	if (sd) {
--		BUG_ON(sd->s_dentry != dentry);
- 		/* Coordinate with configfs_readdir */
- 		spin_lock(&configfs_dirent_lock);
--		sd->s_dentry = NULL;
-+		/* Coordinate with configfs_attach_attr where will increase
-+		 * sd->s_count and update sd->s_dentry to new allocated one.
-+		 * Only set sd->dentry to null when this dentry is the only
-+		 * sd owner.
-+		 * If not do so, configfs_d_iput may run just after
-+		 * configfs_attach_attr and set sd->s_dentry to null
-+		 * even it's still in use.
-+		 */
-+		if (atomic_read(&sd->s_count) <= 2)
-+			sd->s_dentry = NULL;
++#define TXSTATUS_READ_INTERVAL 1000000
 +
- 		spin_unlock(&configfs_dirent_lock);
- 		configfs_put(sd);
+ static bool rt2800usb_tx_sta_fifo_read_completed(struct rt2x00_dev *rt2x00dev,
+ 						 int urb_status, u32 tx_status)
+ {
+@@ -170,8 +172,9 @@ static bool rt2800usb_tx_sta_fifo_read_c
+ 		queue_work(rt2x00dev->workqueue, &rt2x00dev->txdone_work);
+ 
+ 	if (rt2800usb_txstatus_pending(rt2x00dev)) {
+-		/* Read register after 250 us */
+-		hrtimer_start(&rt2x00dev->txstatus_timer, ktime_set(0, 250000),
++		/* Read register after 1 ms */
++		hrtimer_start(&rt2x00dev->txstatus_timer,
++			      ktime_set(0, TXSTATUS_READ_INTERVAL),
+ 			      HRTIMER_MODE_REL);
+ 		return false;
  	}
-@@ -426,8 +435,11 @@ static int configfs_attach_attr(struct c
- 	struct configfs_attribute * attr = sd->s_element;
- 	int error;
+@@ -196,8 +199,9 @@ static void rt2800usb_async_read_tx_stat
+ 	if (test_and_set_bit(TX_STATUS_READING, &rt2x00dev->flags))
+ 		return;
  
-+	spin_lock(&configfs_dirent_lock);
- 	dentry->d_fsdata = configfs_get(sd);
- 	sd->s_dentry = dentry;
-+	spin_unlock(&configfs_dirent_lock);
-+
- 	error = configfs_create(dentry, (attr->ca_mode & S_IALLUGO) | S_IFREG,
- 				configfs_init_file);
- 	if (error) {
+-	/* Read TX_STA_FIFO register after 500 us */
+-	hrtimer_start(&rt2x00dev->txstatus_timer, ktime_set(0, 500000),
++	/* Read TX_STA_FIFO register after 2 ms */
++	hrtimer_start(&rt2x00dev->txstatus_timer,
++		      ktime_set(0, 2*TXSTATUS_READ_INTERVAL),
+ 		      HRTIMER_MODE_REL);
+ }
+ 
 
 
