@@ -1,132 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985Ab3K0MXT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 07:23:19 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:36421 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754715Ab3K0MXR (ORCPT
+	id S1754490Ab3K0M3x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 07:29:53 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:44790 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751894Ab3K0M3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 07:23:17 -0500
+	Wed, 27 Nov 2013 07:29:50 -0500
+Date: Wed, 27 Nov 2013 13:11:22 +0100 (CET)
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+X-X-Sender: sebott@c4eb
+To: Roberto Sassu <roberto.sassu@polito.it>
+cc: James Morris <jmorris@namei.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] ima: bug fixes for Linus
+In-Reply-To: <52939D11.70302@polito.it>
+Message-ID: <alpine.LFD.2.10.1311271301430.1885@c4eb>
+References: <1385145621.9559.5.camel@dhcp-9-2-203-236.watson.ibm.com> <1385306510.5186.7.camel@dhcp-9-2-203-236.watson.ibm.com> <alpine.LRH.2.02.1311250943500.2259@tundra.namei.org> <1385338461.5402.3.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <alpine.LRH.2.02.1311251313290.2899@tundra.namei.org> <1385380993.2398.25.camel@dhcp-9-2-203-236.watson.ibm.com> <1385387470.2488.2.camel@dhcp-9-2-203-236.watson.ibm.com> <alpine.LRH.2.02.1311260235020.9714@tundra.namei.org> <52939AEE.5070809@polito.it>
+ <52939D11.70302@polito.it>
+User-Agent: Alpine 2.10 (LFD 1266 2009-07-14)
+Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
+ =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
 MIME-Version: 1.0
-In-Reply-To: <20131127121231.968E6C404EC@trevor.secretlab.ca>
-References: <1385034003-32160-1-git-send-email-ard.biesheuvel@linaro.org>
- <CAKv+Gu9VbSLDOYnuGkuajSHmp2PMKE-hLS4X0Gu-KO=uhU9skg@mail.gmail.com> <20131127121231.968E6C404EC@trevor.secretlab.ca>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 27 Nov 2013 12:22:55 +0000
-X-Google-Sender-Auth: Cz0lYd25V1g-dRFSDyZbYZkWypo
-Message-ID: <CACxGe6upu2yAeVRRjvLnnLctNYnUSaxR0gCp9WmtWHbco9hRUA@mail.gmail.com>
-Subject: Re: [PATCH] firmware/dmi_scan: generalize for use by other archs
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Leif Lindholm <leif.lindholm@linaro.org>, Al Stone <al.stone@linaro.org>,
-        Yi Li <yi.li@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13112712-4966-0000-0000-000007A34521
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 12:12 PM, Grant Likely
-<grant.likely@secretlab.ca> wrote:
-> On Mon, 25 Nov 2013 13:07:23 +0100, Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
->> Hello all,
->>
->> Resending this patch to a slightly wider audience.
->>
->> The point of this patch is reworking the dmi_scan code slightly so it
->> can be reused on ARM and arm64.
->> There are no functional changes for x86 or IA-64, just one open
->> question, i.e., whether the non-EFI fallback probe should be performed
->> on IA-64 in the first place.
->>
->> If I could get acks for this patch please (if there are no
->> objections), I will propose it to be merged through the ARM and/or
->> arm64 trees as part of the complete series to enable SMBIOS.
->>
->> On 21 November 2013 12:40, Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
->> > This patch makes a couple of changes to the SMBIOS/DMI scanning
->> > code so it can be used on other archs (such as ARM and arm64):
->> > (a) wrap the calls to ioremap()/iounmap(), this allows the use of a
->> >     flavor of ioremap() more suitable for random unaligned access;
->> > (b) allow the non-EFI fallback probe into hardcoded physical address
->> >     0xF0000 to be disabled.
->> >
->> > Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
->
-> Looks good.
->
-> Reviewed-by: Grant Likely <grant.likely@linaro.org>
+Hello,
 
-Actually, I have one thought here...\
+On Mon, 25 Nov 2013, Roberto Sassu wrote:
 
->> >         } else {
->> > -               p = dmi_ioremap(0xF0000, 0x10000);
->> > +#ifdef DMI_SCAN_MACHINE_NON_EFI_FALLBACK
->> > +               p = dmi_early_remap(0xF0000, 0x10000);
->> >                 if (p == NULL)
->> >                         goto error;
->> >
+> On 11/25/2013 07:46 PM, Roberto Sassu wrote:
+> > On 11/25/2013 04:40 PM, James Morris wrote:
+> > > On Mon, 25 Nov 2013, Mimi Zohar wrote:
+> > > 
+> > > > Hi James,
+> > > > 
+> > > > These are the "essential fixes for regressions".
+> > > > 
+> > > > The following changes since commit
+> > > > 4c1cc40a2d49500d84038ff751bc6cd183e729b5:
+> > > > 
+> > > >    Revert "KEYS: verify a certificate is signed by a 'trusted' key"
+> > > > (2013-11-23 16:38:17 -0800)
+> > > > 
+> > > > are available in the git repository at:
+> > > > 
+> > > > 
+> > > > git://git.kernel.org/pub/scm/linux/kernel/git/zohar/linux-integrity
+> > > > for-linus
+> > > > 
+> > > > for you to fetch changes up to 72ca1bd303a5126d0ce377cff699282b6b38bd86:
+> > > > 
+> > > >    ima: make a copy of template_fmt in template_desc_init_fields()
+> > > > (2013-11-25 07:32:46 -0500)
+> > > > 
+> > > > thanks,
+> > > > 
+> > > > Mimi
+> > > > 
+> > > > ----------------------------------------------------------------
+> > > > Roberto Sassu (3):
+> > > 
+> > > >        ima: make a copy of template_fmt in template_desc_init_fields()
 
-This is just ugly. #ifdef blocks inside of code is strongly
-discouraged. Instead, you can change the } else { line to:
-        } else if IS_ENABLED(CONFIG_DMI_NON_EFI_FALLBACK) {
+commit dbc335d2dc3c437649eb6b39f4e9aee2a13eb0af
+"ima: make a copy of template_fmt in template_desc_init_fields()"
 
-and then add an empty stanza to drivers/firmware/Kconfig:
+claimed to fix a kstrdup memleak..looks like it didn't:
 
-config DMI_NON_EFI_FALLBACK
-        bool
+unreferenced object 0x56c82370 (size 8):
+  comm "swapper/0", pid 1, jiffies 4294937476 (age 916.520s)
+  hex dump (first 8 bytes):
+    64 00 6e 00 6b 6b 6b a5                          d.n.kkk.
+  backtrace:
+    [<000000000027c7ac>] __kmalloc_track_caller+0x2e0/0x450
+    [<0000000000240738>] kstrdup+0x4c/0xd0
+    [<00000000003c93c4>] ima_init_template+0x9c/0x1f4
+    [<0000000000a11a54>] ima_init+0x74/0x98
+    [<0000000000a11ba8>] init_ima+0x30/0x4c
+    [<00000000001001e2>] do_one_initcall+0xce/0x160
+    [<00000000009ebb70>] kernel_init_freeable+0x22c/0x2dc
+    [<000000000061b704>] kernel_init+0x24/0x134
+    [<0000000000633322>] kernel_thread_starter+0x6/0xc
+    [<000000000063331c>] kernel_thread_starter+0x0/0xc
+unreferenced object 0x56ccc158 (size 16):
+  comm "swapper/0", pid 1, jiffies 4294937476 (age 916.520s)
+  hex dump (first 16 bytes):
+    64 2d 6e 67 00 6e 2d 6e 67 00 73 69 67 00 6b a5  d-ng.n-ng.sig.k.
+  backtrace:
+    [<000000000027c7ac>] __kmalloc_track_caller+0x2e0/0x450
+    [<0000000000240738>] kstrdup+0x4c/0xd0
+    [<00000000003c93c4>] ima_init_template+0x9c/0x1f4
+    [<0000000000a11a54>] ima_init+0x74/0x98
+    [<0000000000a11ba8>] init_ima+0x30/0x4c
+    [<00000000001001e2>] do_one_initcall+0xce/0x160
+    [<00000000009ebb70>] kernel_init_freeable+0x22c/0x2dc
+    [<000000000061b704>] kernel_init+0x24/0x134
+    [<0000000000633322>] kernel_thread_starter+0x6/0xc
+    [<000000000063331c>] kernel_thread_starter+0x0/0xc
 
-And finally, make x86 and ia64 select it in arch/{ia64,x86}/Kconfig:
 
-config DMI
-        bool
-        select DMI_NON_EFI_FALLBACK
-        default y
+strsep will modify your template_fmt_copy pointer.
 
-Which eliminates the DMI_SCAN_MACHINE_NON_EFI_FALLBACK #define from
-the header files.
+Regards,
+Sebastian
 
->> > @@ -510,12 +511,13 @@ void __init dmi_scan_machine(void)
->> >                         memcpy_fromio(buf + 16, q, 16);
->> >                         if (!dmi_present(buf)) {
->> >                                 dmi_available = 1;
->> > -                               dmi_iounmap(p, 0x10000);
->> > +                               dmi_early_unmap(p, 0x10000);
->> >                                 goto out;
->> >                         }
->> >                         memcpy(buf, buf + 16, 16);
->> >                 }
->> > -               dmi_iounmap(p, 0x10000);
->> > +               dmi_early_unmap(p, 0x10000);
->> > +#endif
->> >         }
->> >   error:
->> >         pr_info("DMI not present or invalid.\n");
->> > @@ -787,13 +789,13 @@ int dmi_walk(void (*decode)(const struct dmi_header *, void *),
->> >         if (!dmi_available)
->> >                 return -1;
->> >
->> > -       buf = ioremap(dmi_base, dmi_len);
->> > +       buf = dmi_remap(dmi_base, dmi_len);
->> >         if (buf == NULL)
->> >                 return -1;
->> >
->> >         dmi_table(buf, dmi_len, dmi_num, decode, private_data);
->> >
->> > -       iounmap(buf);
->> > +       dmi_unmap(buf);
->> >         return 0;
->> >  }
->> >  EXPORT_SYMBOL_GPL(dmi_walk);
->> > --
->> > 1.8.3.2
->> >
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
+> > > 
+> > > 
+> > > > template_desc_init_fields(char *template_fmt,
+> > > 
+> > > That should probably be const char.
+> > > 
+> > > Also, the call to kstrdup() results in a memory leak.
+> > > 
+> > 
+> > Hi James
+> > 
+> > thanks for the comments. I'm implementing them and I will post
+> > a new version of the patch 'ima: make a copy of template_fmt in
+> > template_desc_init_fields()' shortly.
+> > 
+> 
+> Hi everyone
+> 
+> attached to this email, there is the new version of the above patch.
+> 
+> Regards
+> 
+> Roberto Sassu
+> 
+> 
+> > Roberto Sassu
+> > 
+> > 
+> > > 
+> > > 
+> > > 
+> > > 
+> > 
+> 
+> 
+
