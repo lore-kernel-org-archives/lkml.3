@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757607Ab3K0A5V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:57:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38863 "EHLO
+	id S1757672Ab3K0A50 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:57:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38860 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756482Ab3K0A44 (ORCPT
+	with ESMTP id S1756530Ab3K0A4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:56:56 -0500
+	Tue, 26 Nov 2013 19:56:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.4 34/39] powerpc/powernv: Add PE to its own PELTV
-Date: Tue, 26 Nov 2013 16:56:58 -0800
-Message-Id: <20131127005621.432072676@linuxfoundation.org>
+        Neil Horman <nhorman@tuxdriver.com>,
+        Stephan Mueller <stephan.mueller@atsec.com>,
+        Petr Matousek <pmatouse@redhat.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.4 10/39] crypto: ansi_cprng - Fix off by one error in non-block size request
+Date: Tue, 26 Nov 2013 16:56:34 -0800
+Message-Id: <20131127005619.763541227@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005619.011763867@linuxfoundation.org>
 References: <20131127005619.011763867@linuxfoundation.org>
@@ -27,50 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-commit 631ad691b5818291d89af9be607d2fe40be0886e upstream.
+commit 714b33d15130cbb5ab426456d4e3de842d6c5b8a upstream.
 
-We need add PE to its own PELTV. Otherwise, the errors originated
-from the PE might contribute to other PEs. In the result, we can't
-clear up the error successfully even we're checking and clearing
-errors during access to PCI config space.
+Stephan Mueller reported to me recently a error in random number generation in
+the ansi cprng. If several small requests are made that are less than the
+instances block size, the remainder for loop code doesn't increment
+rand_data_valid in the last iteration, meaning that the last bytes in the
+rand_data buffer gets reused on the subsequent smaller-than-a-block request for
+random data.
 
-Reported-by: kalshett@in.ibm.com
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+The fix is pretty easy, just re-code the for loop to make sure that
+rand_data_valid gets incremented appropriately
+
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: Stephan Mueller <stephan.mueller@atsec.com>
+CC: Stephan Mueller <stephan.mueller@atsec.com>
+CC: Petr Matousek <pmatouse@redhat.com>
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+CC: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/powernv/pci-ioda.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ crypto/ansi_cprng.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/platforms/powernv/pci-ioda.c
-+++ b/arch/powerpc/platforms/powernv/pci-ioda.c
-@@ -613,13 +613,23 @@ static int __devinit pnv_ioda_configure_
- 		rid_end = pe->rid + 1;
- 	}
- 
--	/* Associate PE in PELT */
-+	/*
-+	 * Associate PE in PELT. We need add the PE into the
-+	 * corresponding PELT-V as well. Otherwise, the error
-+	 * originated from the PE might contribute to other
-+	 * PEs.
-+	 */
- 	rc = opal_pci_set_pe(phb->opal_id, pe->pe_number, pe->rid,
- 			     bcomp, dcomp, fcomp, OPAL_MAP_PE);
- 	if (rc) {
- 		pe_err(pe, "OPAL error %ld trying to setup PELT table\n", rc);
- 		return -ENXIO;
- 	}
-+
-+	rc = opal_pci_set_peltv(phb->opal_id, pe->pe_number,
-+				pe->pe_number, OPAL_ADD_PE_TO_DOMAIN);
-+	if (rc)
-+		pe_warn(pe, "OPAL error %d adding self to PELTV\n", rc);
- 	opal_pci_eeh_freeze_clear(phb->opal_id, pe->pe_number,
- 				  OPAL_EEH_ACTION_CLEAR_FREEZE_ALL);
- 
+--- a/crypto/ansi_cprng.c
++++ b/crypto/ansi_cprng.c
+@@ -230,11 +230,11 @@ remainder:
+ 	 */
+ 	if (byte_count < DEFAULT_BLK_SZ) {
+ empty_rbuf:
+-		for (; ctx->rand_data_valid < DEFAULT_BLK_SZ;
+-			ctx->rand_data_valid++) {
++		while (ctx->rand_data_valid < DEFAULT_BLK_SZ) {
+ 			*ptr = ctx->rand_data[ctx->rand_data_valid];
+ 			ptr++;
+ 			byte_count--;
++			ctx->rand_data_valid++;
+ 			if (byte_count == 0)
+ 				goto done;
+ 		}
 
 
