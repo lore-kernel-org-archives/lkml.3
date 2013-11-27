@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759573Ab3K0BUW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:20:22 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:50558 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753011Ab3K0BUQ (ORCPT
+	id S1757178Ab3K0BUA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:20:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39517 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932448Ab3K0A7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 20:20:16 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <529548CD.7060906@roeck-us.net>
-Date: Tue, 26 Nov 2013 17:20:13 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Input: ads7846: Convert to hwmon_device_register_with_groups
-References: <1385440744-6607-1-git-send-email-linux@roeck-us.net> <20131126185846.GB22242@core.coreip.homeip.net>
-In-Reply-To: <20131126185846.GB22242@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Nov 2013 19:59:20 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Kevin Hao <haokexin@gmail.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.12 077/116] ftrace/x86: skip over the breakpoint for ftrace caller
+Date: Tue, 26 Nov 2013 16:57:30 -0800
+Message-Id: <20131127005742.244444991@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.rc3
+In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
+References: <20131127005736.915454872@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2013 10:58 AM, Dmitry Torokhov wrote:
-> Hi Guenter,
->
-> On Mon, Nov 25, 2013 at 08:39:04PM -0800, Guenter Roeck wrote:
->> Simplify the code and create mandatory 'name' attribute by using
->> new hwmon API.
->
-> So this moves hwmon attributes from the parent i2c device to the hwmon
-> device, right? Would not that break userspace which expects to find the
-> attributes where they were?
->
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-In addition to Jean's earlier comments ... s/i2c/spi/, I assume. spi devices
-don't create the mandatory name attribute automatically, which means
-that the created hwmon device was not recognized by standard user space
-applications (eg the sensors command or anything else using libsensors)
-in the first place. Which in turn means that only applications which don't
-support the standard hwmon ABI - if there are any - would be affected.
-What we are more concerned about is to make sure that applications
-which _do_ follow the hwmon ABI are working.
+------------------
 
-Thanks,
-Guenter
+From: Kevin Hao <haokexin@gmail.com>
+
+commit ab4ead02ec235d706d0611d8741964628291237e upstream.
+
+In commit 8a4d0a687a59 "ftrace: Use breakpoint method to update ftrace
+caller", we choose to use breakpoint method to update the ftrace
+caller. But we also need to skip over the breakpoint in function
+ftrace_int3_handler() for them. Otherwise weird things would happen.
+
+Signed-off-by: Kevin Hao <haokexin@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/x86/kernel/ftrace.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -248,6 +248,15 @@ int ftrace_update_ftrace_func(ftrace_fun
+ 	return ret;
+ }
+ 
++static int is_ftrace_caller(unsigned long ip)
++{
++	if (ip == (unsigned long)(&ftrace_call) ||
++		ip == (unsigned long)(&ftrace_regs_call))
++		return 1;
++
++	return 0;
++}
++
+ /*
+  * A breakpoint was added to the code address we are about to
+  * modify, and this is the handle that will just skip over it.
+@@ -257,10 +266,13 @@ int ftrace_update_ftrace_func(ftrace_fun
+  */
+ int ftrace_int3_handler(struct pt_regs *regs)
+ {
++	unsigned long ip;
++
+ 	if (WARN_ON_ONCE(!regs))
+ 		return 0;
+ 
+-	if (!ftrace_location(regs->ip - 1))
++	ip = regs->ip - 1;
++	if (!ftrace_location(ip) && !is_ftrace_caller(ip))
+ 		return 0;
+ 
+ 	regs->ip += MCOUNT_INSN_SIZE - 1;
+
 
