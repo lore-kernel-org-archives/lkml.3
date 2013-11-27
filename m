@@ -1,83 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278Ab3K0Giw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 01:38:52 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:9211 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989Ab3K0Giu (ORCPT
+	id S1753813Ab3K0GrA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 01:47:00 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:60947 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367Ab3K0Gq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 01:38:50 -0500
-Message-ID: <52959328.3090407@huawei.com>
-Date: Wed, 27 Nov 2013 14:37:28 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 27 Nov 2013 01:46:58 -0500
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Tejun Heo <tj@kernel.org>, John Stultz <john.stultz@linaro.org>,
-        "Mel Gorman" <mgorman@suse.de>, Juri Lelli <juri.lelli@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [PATCH] cpuset: Fix memory allocator deadlock
-References: <20131126140341.GL10022@twins.programming.kicks-ass.net>
-In-Reply-To: <20131126140341.GL10022@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <5294BD63.7020905@gmail.com>
+References: <CAEPa5ym2Xz3F19fJJqNawkRLOKk6Ao6oXrzSrHU051V7p=9otA@mail.gmail.com>
+	<CAE3RKNng9A6Bp7wa4+6iCprwEQpzGueagLc8iob+aFabJW4nnw@mail.gmail.com>
+	<CAEPa5y=tgdGpDMBGY0ijyWSgQ0m5SZW8EMP072OF=sZZUjqN1g@mail.gmail.com>
+	<CAEPa5ym0+-_Q9zUidDfE2SD7XYZxAqqEUByBkkH1ZOmh9rmFHg@mail.gmail.com>
+	<CAEPa5ym4HWK9vo_BYYZbQsGZXG9r2kfYR2rFGaYjjJqDfkf2uQ@mail.gmail.com>
+	<5294BD63.7020905@gmail.com>
+Date: Wed, 27 Nov 2013 07:46:55 +0100
+Message-ID: <CAEPa5y=PPO1PoaMqgB1ifc64GVK8NkGDtnOftTZ=n+-f-7e7xA@mail.gmail.com>
+Subject: Re: bridge not getting ip since 3.11.5 and 3.4.66
+From: Mark Trompell <mark@foresightlinux.org>
+To: Vlad Yasevich <vyasevich@gmail.com>
+Cc: Veaceslav Falico <veaceslav@falico.eu>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, herbert@gondor.apana.org.au
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/11/26 22:03, Peter Zijlstra wrote:
-> Juri hit the below lockdep report:
-> 
-> [    4.303391] ======================================================
-> [    4.303392] [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
-> [    4.303394] 3.12.0-dl-peterz+ #144 Not tainted
-> [    4.303395] ------------------------------------------------------
-> [    4.303397] kworker/u4:3/689 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
-> [    4.303399]  (&p->mems_allowed_seq){+.+...}, at: [<ffffffff8114e63c>] new_slab+0x6c/0x290
-> [    4.303417]
-> [    4.303417] and this task is already holding:
-> [    4.303418]  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff812d2dfb>] blk_execute_rq_nowait+0x5b/0x100
-> [    4.303431] which would create a new lock dependency:
-> [    4.303432]  (&(&q->__queue_lock)->rlock){..-...} -> (&p->mems_allowed_seq){+.+...}
-> [    4.303436]
-> 
-> [    4.303898] the dependencies between the lock to be acquired and SOFTIRQ-irq-unsafe lock:
-> [    4.303918] -> (&p->mems_allowed_seq){+.+...} ops: 2762 {
-> [    4.303922]    HARDIRQ-ON-W at:
-> [    4.303923]                     [<ffffffff8108ab9a>] __lock_acquire+0x65a/0x1ff0
-> [    4.303926]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
-> [    4.303929]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
-> [    4.303931]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
-> [    4.303933]    SOFTIRQ-ON-W at:
-> [    4.303933]                     [<ffffffff8108abcc>] __lock_acquire+0x68c/0x1ff0
-> [    4.303935]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
-> [    4.303940]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
-> [    4.303955]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
-> [    4.303959]    INITIAL USE at:
-> [    4.303960]                    [<ffffffff8108a884>] __lock_acquire+0x344/0x1ff0
-> [    4.303963]                    [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
-> [    4.303966]                    [<ffffffff81063dd6>] kthreadd+0x86/0x180
-> [    4.303969]                    [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
-> [    4.303972]  }
-> 
-> Which reports that we take mems_allowed_seq with interrupts enabled. A
-> little digging found that this can only be from
-> cpuset_change_task_nodemask().
-> 
+On Tue, Nov 26, 2013 at 4:25 PM, Vlad Yasevich <vyasevich@gmail.com> wrote:
+> On 11/26/2013 08:27 AM, Mark Trompell wrote:
+>> Answering my own mail again and even top posting, sorry, but makes
+>> more sense to me in that case).
+>> I reverted bridge related patches from 3.11.5 and it boils down to
+>> commit 0e308361d7ca0bf8b23fd472b90aae0fb10a1c32
+>> Author: Herbert Xu <herbert@gondor.apana.org.au>
+>> Date:   Thu Sep 12 17:12:05 2013 +1000
+>>
+>>     bridge: Clamp forward_delay when enabling STP
+>>
+>>     [ Upstream commit be4f154d5ef0ca147ab6bcd38857a774133f5450 ]
+>>
+>>     At some point limits were added to forward_delay.  However, the
+>>     limits are only enforced when STP is enabled.  This created a
+>>     scenario where you could have a value outside the allowed range
+>>     while STP is disabled, which then stuck around even after STP
+>>     is enabled.
+>>
+>>     This patch fixes this by clamping the value when we enable STP.
+>>
+>>     I had to move the locking around a bit to ensure that there is
+>>     no window where someone could insert a value outside the range
+>>     while we're in the middle of enabling STP.
+>>
+>> Causing the issue for me. Reverting that patch and br0 comes up again
+>> and gets an ip.
+>
+> yes, that patch introduced a bug where we always used the
+> max_forward delay value.
+>
+> you have 2 options:
+>  1) disable STP.  Since you are just running VMs and you have a single
+>     physical connection on the bridge, you can safely disable STP since
+>     your system is a leaf node.
 
-Yeah, the other one in set_mems_allowed() was fixed by John.
+disabling stp indeed helps here, but ...
 
-> This is an actual deadlock because an interrupt doing an allocation will
-> hit get_mems_allowed()->...->__read_seqcount_begin(), which will spin
-> forever waiting for the write side to complete.
-> 
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Reported-by: Juri Lelli <juri.lelli@gmail.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>  2) Get the latest stable kernel.  The bug has been fixed there.
 
-Acked-by: Li Zefan <lizefan@huawei.com>
+3.12.1 still doesn't work with stp enabled.
+I guess you're talking about 4b6c7879d84ad06a2ac5b964808ed599187a188d
+bridge: Correctly clamp MAX forward_delay when enabling STP
+which should fix that?
+
+> -vlad
 
 
+Mark
+
+>>
+>> On Tue, Nov 12, 2013 at 11:57 AM, Mark Trompell <mark@foresightlinux.org> wrote:
+>>> On Mon, Nov 11, 2013 at 1:52 PM, Mark Trompell <mark@foresightlinux.org> wrote:
+>>>> On Mon, Nov 11, 2013 at 12:07 PM, Veaceslav Falico <veaceslav@falico.eu> wrote:
+>>>>> On Mon, Nov 11, 2013 at 11:29 AM, Mark Trompell <mark@foresightlinux.org> wrote:
+>>>>>> my bridge br0 doesn't get an ip from dhcp anymore after 3.11.5 and 3.4.66,
+>>>>>> What information would be helpful and required to find out what's going wrong.
+>>>>>
+>>>>> CC netdev
+>>>>>
+>>>>> First thing would be to provide the network scheme. Do you use vlans?
+>>>>> Which network
+>>>>> cards/drivers are you using? Do you use some kind of virtualization?
+>>>>> Is bonding involved?
+>>>>>
+>>>> Actually this is my desktop machine using kvm for a virtual machine
+>>>> that uses eth0 which is connected to the bridge
+>>>> which is used as interface for the host.
+>>>>
+>>>> $ ip addr
+>>>> 2. eth0: <BROADCAST,MULTICAST,UP,10000> mtu 1500 qdisc pfifo_fast
+>>>> master br0 qlen 1000
+>>>> ...
+>>>> 3. br0: <BROADCAST,MULTICAST,UP,10000> mtu 1500 qdisc noqueue
+>>>> ...
+>>>>
+>>>> Anything else?
+>>>
+>>> Okay more about my hardware and configuration:
+>>> from lspci:
+>>> 00:19.0 Ethernet controller: Intel Corporation 82579V Gigabit Network
+>>> Connection (rev 04)
+>>>
+>>> /etc/sysconfig/network-scripts/ifcfg-br0
+>>> DEVICE=br0
+>>> ONBOOT=yes
+>>> MACADDR=00:19:99:ac:b3:24
+>>> TYPE=Bridge
+>>> BOOTPROTO=dhcp
+>>> STP=on
+>>> NM_CONTROLLED=no
+>>> DELAY=0
+>>>
+>>> /etc/sysconfig/network-scripts/ifcfg-eth0
+>>> DEVICE=eth0
+>>> HWADDR=00:19:99:cd:a5:e6
+>>> #BOOTPROTO=dhcp
+>>> ONBOOT=yes
+>>> BRIDGE=br0
+>>> TYPE=Ethernet
+>>> NM_CONTROLLED=no
+>>>
+>>>
+>>>> Greetings
+>>>> Mark
+>>
+>>
+>>
+>
+
+
+
+-- 
+Mark Trompell
+
+Foresight Linux Xfce Edition
+Cause your desktop should be freaking cool
+(and Xfce)
