@@ -1,57 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758317Ab3K0UXB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 15:23:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44498 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932120Ab3K0UWz (ORCPT
+	id S1758268Ab3K0UWt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 15:22:49 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:60973 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757725Ab3K0URA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 15:22:55 -0500
-Message-ID: <52965493.8060208@canonical.com>
-Date: Wed, 27 Nov 2013 15:22:43 -0500
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: yinghai@kernel.org
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>, bhelgaas@google.com,
-        linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Tim Gardner <tim.gardner@canonical.com>
-Subject: [REGRESSION][v3.4-rc1] PCI: add a PCI resource reallocation config
- option
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Nov 2013 15:17:00 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 07/34] perf completion: Introduce zsh support
+Date: Wed, 27 Nov 2013 17:16:07 -0300
+Message-Id: <1385583394-3703-8-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1385583394-3703-1-git-send-email-acme@infradead.org>
+References: <1385583394-3703-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yinghai,
+From: Ramkumar Ramachandra <artagnon@gmail.com>
 
-A kernel bug was opened against Ubuntu [0].  After a kernel bisect, it
-was found that the following commit introduced the bug:
+__perfcomp(), __perfcomp_colon(), and _perf() have to be overridden.
+Inspired by the way the git.git completion system is structured.
 
-commit b07f2ebc109b607789f648dedcff4b125f9afec6
-Author: Yinghai Lu <yinghai@kernel.org>
-Date:   Thu Feb 23 19:23:32 2012 -0800
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/1384704807-15779-5-git-send-email-artagnon@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/bash_completion | 63 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 62 insertions(+), 1 deletion(-)
 
-    PCI: add a PCI resource reallocation config option
-
-
-
-The regression was introduced as of v3.4-rc1 and also exists in current
-mainline.
-
-The bug seems platform specific since we have not had allot of other
-reports.  The bug is preventing ixgbe to probe Intel x520 NIC's.
-
-It would be easy enough to disable the PCI_REALLOC_ENABLE_AUTO config
-option, but I wanted to get your feedback since you are the author.  It
-looks like the bug reporter may also be able to work around the problem
-with the pci=realloc=.
-   
-
-Thanks,
-   
-Joe
-
-[0] pad.lv/1245938
+diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
+index 573599b42be2..49494882d9bb 100644
+--- a/tools/perf/bash_completion
++++ b/tools/perf/bash_completion
+@@ -1,4 +1,4 @@
+-# perf completion
++# perf bash and zsh completion
+ 
+ # Taken from git.git's completion script.
+ __my_reassemble_comp_words_by_ref()
+@@ -129,6 +129,67 @@ __perf_main ()
+ 	fi
+ }
+ 
++if [[ -n ${ZSH_VERSION-} ]]; then
++	autoload -U +X compinit && compinit
++
++	__perfcomp ()
++	{
++		emulate -L zsh
++
++		local c IFS=$' \t\n'
++		local -a array
++
++		for c in ${=1}; do
++			case $c in
++			--*=*|*.) ;;
++			*) c="$c " ;;
++			esac
++			array[${#array[@]}+1]="$c"
++		done
++
++		compset -P '*[=:]'
++		compadd -Q -S '' -a -- array && _ret=0
++	}
++
++	__perfcomp_colon ()
++	{
++		emulate -L zsh
++
++		local cur_="${2-$cur}"
++		local c IFS=$' \t\n'
++		local -a array
++
++		if [[ "$cur_" == *:* ]]; then
++			local colon_word=${cur_%"${cur_##*:}"}
++		fi
++
++		for c in ${=1}; do
++			case $c in
++			--*=*|*.) ;;
++			*) c="$c " ;;
++			esac
++			array[$#array+1]=${c#"$colon_word"}
++		done
++
++		compset -P '*[=:]'
++		compadd -Q -S '' -a -- array && _ret=0
++	}
++
++	_perf ()
++	{
++		local _ret=1 cur cword prev
++		cur=${words[CURRENT]}
++		prev=${words[CURRENT-1]}
++		let cword=CURRENT-1
++		emulate ksh -c __perf_main
++		let _ret && _default && _ret=0
++		return _ret
++	}
++
++	compdef _perf perf
++	return
++fi
++
+ type perf &>/dev/null &&
+ _perf()
+ {
+-- 
+1.8.1.4
 
