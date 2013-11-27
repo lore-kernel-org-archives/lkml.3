@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932653Ab3K0BYx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:24:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39459 "EHLO
+	id S932608Ab3K0BYv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:24:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39456 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758706Ab3K0A7F (ORCPT
+	with ESMTP id S1756755Ab3K0A7F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Nov 2013 19:59:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Weston Andros Adamson <dros@netapp.com>,
         Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [PATCH 3.12 062/116] NFSv4: dont fail on missing fattr in open recover
-Date: Tue, 26 Nov 2013 16:57:15 -0800
-Message-Id: <20131127005741.227123873@linuxfoundation.org>
+Subject: [PATCH 3.12 061/116] NFSv4: fix NULL dereference in open recover
+Date: Tue, 26 Nov 2013 16:57:14 -0800
+Message-Id: <20131127005741.159309103@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -29,33 +29,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Weston Andros Adamson <dros@netapp.com>
 
-commit a43ec98b72aae3e330f0673438f58316c3769b84 upstream.
+commit f494a6071d31e3294a3b51ad7a3684f983953f9f upstream.
 
-This is an unneeded check that could cause the client to fail to recover
-opens.
+_nfs4_opendata_reclaim_to_nfs4_state doesn't expect to see a cached
+open CLAIM_PREVIOUS, but this can happen. An example is when there are
+RDWR openers and RDONLY openers on a delegation stateid. The recovery
+path will first try an open CLAIM_PREVIOUS for the RDWR openers, this
+marks the delegation as not needing RECLAIM anymore, so the open
+CLAIM_PREVIOUS for the RDONLY openers will not actually send an rpc.
+
+The NULL dereference is due to _nfs4_opendata_reclaim_to_nfs4_state
+returning PTR_ERR(rpc_status) when !rpc_done. When the open is
+cached, rpc_done == 0 and rpc_status == 0, thus
+_nfs4_opendata_reclaim_to_nfs4_state returns NULL - this is unexpected
+by callers of nfs4_opendata_to_nfs4_state().
+
+This can be reproduced easily by opening the same file two times on an
+NFSv4.0 mount with delegations enabled, once as RDWR and once as RDONLY then
+sleeping for a long time.  While the files are held open, kick off state
+recovery and this NULL dereference will be hit every time.
+
+An example OOPS:
+
+[   65.003602] BUG: unable to handle kernel NULL pointer dereference at 00000000
+00000030
+[   65.005312] IP: [<ffffffffa037d6ee>] __nfs4_close+0x1e/0x160 [nfsv4]
+[   65.006820] PGD 7b0ea067 PUD 791ff067 PMD 0
+[   65.008075] Oops: 0000 [#1] SMP
+[   65.008802] Modules linked in: rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache
+snd_ens1371 gameport nfsd snd_rawmidi snd_ac97_codec ac97_bus btusb snd_seq snd
+_seq_device snd_pcm ppdev bluetooth auth_rpcgss coretemp snd_page_alloc crc32_pc
+lmul crc32c_intel ghash_clmulni_intel microcode rfkill nfs_acl vmw_balloon serio
+_raw snd_timer lockd parport_pc e1000 snd soundcore parport i2c_piix4 shpchp vmw
+_vmci sunrpc ata_generic mperf pata_acpi mptspi vmwgfx ttm scsi_transport_spi dr
+m mptscsih mptbase i2c_core
+[   65.018684] CPU: 0 PID: 473 Comm: 192.168.10.85-m Not tainted 3.11.2-201.fc19
+.x86_64 #1
+[   65.020113] Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop
+Reference Platform, BIOS 6.00 07/31/2013
+[   65.022012] task: ffff88003707e320 ti: ffff88007b906000 task.ti: ffff88007b906000
+[   65.023414] RIP: 0010:[<ffffffffa037d6ee>]  [<ffffffffa037d6ee>] __nfs4_close+0x1e/0x160 [nfsv4]
+[   65.025079] RSP: 0018:ffff88007b907d10  EFLAGS: 00010246
+[   65.026042] RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000000
+[   65.027321] RDX: 0000000000000050 RSI: 0000000000000001 RDI: 0000000000000000
+[   65.028691] RBP: ffff88007b907d38 R08: 0000000000016f60 R09: 0000000000000000
+[   65.029990] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000001
+[   65.031295] R13: 0000000000000050 R14: 0000000000000000 R15: 0000000000000001
+[   65.032527] FS:  0000000000000000(0000) GS:ffff88007f600000(0000) knlGS:0000000000000000
+[   65.033981] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   65.035177] CR2: 0000000000000030 CR3: 000000007b27f000 CR4: 00000000000407f0
+[   65.036568] Stack:
+[   65.037011]  0000000000000000 0000000000000001 ffff88007b907d90 ffff88007a880220
+[   65.038472]  ffff88007b768de8 ffff88007b907d48 ffffffffa037e4a5 ffff88007b907d80
+[   65.039935]  ffffffffa036a6c8 ffff880037020e40 ffff88007a880000 ffff880037020e40
+[   65.041468] Call Trace:
+[   65.042050]  [<ffffffffa037e4a5>] nfs4_close_state+0x15/0x20 [nfsv4]
+[   65.043209]  [<ffffffffa036a6c8>] nfs4_open_recover_helper+0x148/0x1f0 [nfsv4]
+[   65.044529]  [<ffffffffa036a886>] nfs4_open_recover+0x116/0x150 [nfsv4]
+[   65.045730]  [<ffffffffa036d98d>] nfs4_open_reclaim+0xad/0x150 [nfsv4]
+[   65.046905]  [<ffffffffa037d979>] nfs4_do_reclaim+0x149/0x5f0 [nfsv4]
+[   65.048071]  [<ffffffffa037e1dc>] nfs4_run_state_manager+0x3bc/0x670 [nfsv4]
+[   65.049436]  [<ffffffffa037de20>] ? nfs4_do_reclaim+0x5f0/0x5f0 [nfsv4]
+[   65.050686]  [<ffffffffa037de20>] ? nfs4_do_reclaim+0x5f0/0x5f0 [nfsv4]
+[   65.051943]  [<ffffffff81088640>] kthread+0xc0/0xd0
+[   65.052831]  [<ffffffff81088580>] ? insert_kthread_work+0x40/0x40
+[   65.054697]  [<ffffffff8165686c>] ret_from_fork+0x7c/0xb0
+[   65.056396]  [<ffffffff81088580>] ? insert_kthread_work+0x40/0x40
+[   65.058208] Code: 5c 41 5d 5d c3 0f 1f 84 00 00 00 00 00 66 66 66 66 90 55 48 89 e5 41 57 41 89 f7 41 56 41 89 ce 41 55 41 89 d5 41 54 53 48 89 fb <4c> 8b 67 30 f0 41 ff 44 24 44 49 8d 7c 24 40 e8 0e 0a 2d e1 44
+[   65.065225] RIP  [<ffffffffa037d6ee>] __nfs4_close+0x1e/0x160 [nfsv4]
+[   65.067175]  RSP <ffff88007b907d10>
+[   65.068570] CR2: 0000000000000030
+[   65.070098] ---[ end trace 0d1fe4f5c7dd6f8b ]---
 
 Signed-off-by: Weston Andros Adamson <dros@netapp.com>
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    6 ------
- 1 file changed, 6 deletions(-)
+ fs/nfs/nfs4proc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 --- a/fs/nfs/nfs4proc.c
 +++ b/fs/nfs/nfs4proc.c
-@@ -1323,12 +1323,6 @@ _nfs4_opendata_reclaim_to_nfs4_state(str
+@@ -1317,7 +1317,8 @@ _nfs4_opendata_reclaim_to_nfs4_state(str
+ 	struct nfs4_state *state = data->state;
+ 	int ret;
+ 
+-	if (!data->rpc_done) {
++	/* allow cached opens (!rpc_done && !rpc_status) */
++	if (!data->rpc_done && data->rpc_status) {
+ 		ret = data->rpc_status;
  		goto err;
  	}
- 
--	ret = -ESTALE;
--	if (!(data->f_attr.valid & NFS_ATTR_FATTR_TYPE) ||
--	    !(data->f_attr.valid & NFS_ATTR_FATTR_FILEID) ||
--	    !(data->f_attr.valid & NFS_ATTR_FATTR_CHANGE))
--		goto err;
--
- 	ret = -ENOMEM;
- 	state = nfs4_get_open_state(inode, data->owner);
- 	if (state == NULL)
 
 
