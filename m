@@ -1,94 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757564Ab3K0QoA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 11:44:00 -0500
-Received: from www.linutronix.de ([62.245.132.108]:53170 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753378Ab3K0Qn7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 11:43:59 -0500
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-parport@lists.infradead.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Maximilian Attems <maks@stro.at>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] parport: parport_pc: remove double PCI ID for NetMos
-Date: Wed, 27 Nov 2013 17:43:43 +0100
-Message-Id: <1385570623-20260-1-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.8.4.4
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+	id S1757397Ab3K0Qqh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 11:46:37 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:42413 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756482Ab3K0Qqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 11:46:35 -0500
+Date: Wed, 27 Nov 2013 11:45:44 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Jan Kara <jack@suse.cz>,
+        Vlastimil Babka <vbabka@suse.cz>, Tejun Heo <tj@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 6/9] mm + fs: store shadow entries in page cache
+Message-ID: <20131127164544.GC3556@cmpxchg.org>
+References: <1385336308-27121-1-git-send-email-hannes@cmpxchg.org>
+ <1385336308-27121-7-git-send-email-hannes@cmpxchg.org>
+ <20131125231716.GJ8803@dastard>
+ <20131126102053.GJ10022@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131126102053.GJ10022@twins.programming.kicks-ass.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In commit 85747f ("PATCH] parport: add NetMOS 9805 support") Max added
-the PCI ID for NetMOS 9805 based on a Debian bug report from 2k4 which
-was at the v2.4.26 time frame. The patch made into 2.6.14.
-Shortly before that patch akpm merged commit 296d3c783b ("[PATCH] Support
-NetMOS based PCI cards providing serial and parallel ports") which made
-into v2.6.9-rc1.
-Now we have two different entries for the same PCI id.
-I have here the NetMos 9805 which claims to support SPP/EPP/ECP mode.
-This patch takes Max's entry for titan_1284p1 (base != -1 specifies the
-ioport for ECP mode) and replaces akpm's entry for netmos_9805 which
-specified -1 (=none). Both share the same PCI-ID (my card has subsystem
-0x1000 / 0x0020 so it should match PCI_ANY).
+On Tue, Nov 26, 2013 at 11:20:53AM +0100, Peter Zijlstra wrote:
+> On Tue, Nov 26, 2013 at 10:17:16AM +1100, Dave Chinner wrote:
+> > void truncate_inode_pages_final(struct address_space *mapping)
+> > {
+> > 	mapping_set_exiting(mapping);
+> > 	if (inode->i_data.nrpages || inode->i_data.nrshadows) {
+> > 		/*
+> > 		 * spinlock barrier to ensure all modifications are
+> > 		 * complete before we do the final truncate
+> > 		 */
+> > 		spin_lock_irq(&mapping->tree_lock);
+> > 		spin_unlock_irq(&mapping->tree_lock);
+> 
+> 	spin_unlock_wait() ?
+> 
+> Its cheaper, but prone to starvation; its typically useful when you're
+> waiting for the last owner to go away and know there won't be any new
+> ones around.
 
-While here I also drop the entry for titan_1284p2 which is the same as
-netmos_9815.
-
-Cc: Maximilian Attems <maks@stro.at>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- drivers/parport/parport_pc.c | 10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/parport/parport_pc.c b/drivers/parport/parport_pc.c
-index 903e128..b0a0d53 100644
---- a/drivers/parport/parport_pc.c
-+++ b/drivers/parport/parport_pc.c
-@@ -2596,8 +2596,6 @@ enum parport_pc_pci_cards {
- 	syba_2p_epp,
- 	syba_1p_ecp,
- 	titan_010l,
--	titan_1284p1,
--	titan_1284p2,
- 	avlab_1p,
- 	avlab_2p,
- 	oxsemi_952,
-@@ -2656,8 +2654,6 @@ static struct parport_pc_pci {
- 	/* syba_2p_epp AP138B */	{ 2, { { 0, 0x078 }, { 0, 0x178 }, } },
- 	/* syba_1p_ecp W83787 */	{ 1, { { 0, 0x078 }, } },
- 	/* titan_010l */		{ 1, { { 3, -1 }, } },
--	/* titan_1284p1 */              { 1, { { 0, 1 }, } },
--	/* titan_1284p2 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
- 	/* avlab_1p		*/	{ 1, { { 0, 1}, } },
- 	/* avlab_2p		*/	{ 2, { { 0, 1}, { 2, 3 },} },
- 	/* The Oxford Semi cards are unusual: 954 doesn't support ECP,
-@@ -2673,8 +2669,8 @@ static struct parport_pc_pci {
- 	/* netmos_9705 */               { 1, { { 0, -1 }, } },
- 	/* netmos_9715 */               { 2, { { 0, 1 }, { 2, 3 },} },
- 	/* netmos_9755 */               { 2, { { 0, 1 }, { 2, 3 },} },
--	/* netmos_9805 */               { 1, { { 0, -1 }, } },
--	/* netmos_9815 */               { 2, { { 0, -1 }, { 2, -1 }, } },
-+	/* netmos_9805 */		{ 1, { { 0, 1 }, } },
-+	/* netmos_9815 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
- 	/* netmos_9901 */               { 1, { { 0, -1 }, } },
- 	/* netmos_9865 */               { 1, { { 0, -1 }, } },
- 	/* quatech_sppxp100 */		{ 1, { { 0, 1 }, } },
-@@ -2718,8 +2714,6 @@ static const struct pci_device_id parport_pc_pci_tbl[] = {
- 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, syba_1p_ecp },
- 	{ PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_010L,
- 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, titan_010l },
--	{ 0x9710, 0x9805, 0x1000, 0x0010, 0, 0, titan_1284p1 },
--	{ 0x9710, 0x9815, 0x1000, 0x0020, 0, 0, titan_1284p2 },
- 	/* PCI_VENDOR_ID_AVLAB/Intek21 has another bunch of cards ...*/
- 	/* AFAVLAB_TK9902 */
- 	{ 0x14db, 0x2120, PCI_ANY_ID, PCI_ANY_ID, 0, 0, avlab_1p},
--- 
-1.8.4.4
-
+The other side is reclaim plucking pages one-by-one from the address
+space in LRU order.  It'd be preferable to not starve the truncation
+side, because it is much more efficient at getting rid of those pages.
