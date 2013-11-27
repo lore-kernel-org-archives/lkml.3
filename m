@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760453Ab3K0BvT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:51:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39059 "EHLO
+	id S1757853Ab3K0A5d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:57:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39005 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757901Ab3K0A5h (ORCPT
+	with ESMTP id S1757684Ab3K0A50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:37 -0500
+	Tue, 26 Nov 2013 19:57:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Franz Hsieh <franz.hsieh@canonical.com>,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 37/80] ALSA: hda - Make sure mute LEDs stay on during runtime suspend (Realtek)
-Date: Tue, 26 Nov 2013 16:57:06 -0800
-Message-Id: <20131127005643.504406669@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 25/80] rt2x00: fix a crash bug in the HT descriptor handling fix
+Date: Tue, 26 Nov 2013 16:56:54 -0800
+Message-Id: <20131127005642.684168522@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -28,76 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit d5b6b65e75ce607c2734227524e11574317a1c1a upstream.
+commit b4089d6d8e71a7293e2192025dfa507a04f661c4 upstream.
 
-Some HP machines with Realtek codecs have mute LEDs connected to VREF pins.
-However when these go into runtime suspend, the pin powers down and its
-pin control is disabled, thus disabling the LED too.
+Commit "rt2x00: fix HT TX descriptor settings regression"
+assumes that the control parameter to rt2x00mac_tx is always non-NULL.
+There is an internal call in rt2x00lib_bc_buffer_iter where NULL is
+passed. Fix the resulting crash by adding an initialized dummy on-stack
+ieee80211_tx_control struct.
 
-This patch fixes that issue by making sure that the pin stays in D0 with
-correct pin control.
-
-BugLink: https://bugs.launchpad.net/bugs/1248465
-Tested-by: Franz Hsieh <franz.hsieh@canonical.com>
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ drivers/net/wireless/rt2x00/rt2x00dev.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -2765,6 +2765,23 @@ static void alc269_fixup_mic_mute_hook(v
- 		snd_hda_set_pin_ctl_cache(codec, spec->mute_led_nid, pinval);
- }
- 
-+/* Make sure the led works even in runtime suspend */
-+static unsigned int led_power_filter(struct hda_codec *codec,
-+						  hda_nid_t nid,
-+						  unsigned int power_state)
-+{
-+	struct alc_spec *spec = codec->spec;
-+
-+	if (power_state != AC_PWRST_D3 || nid != spec->mute_led_nid)
-+		return power_state;
-+
-+	/* Set pin ctl again, it might have just been set to 0 */
-+	snd_hda_set_pin_ctl(codec, nid,
-+			    snd_hda_codec_get_pin_target(codec, nid));
-+
-+	return AC_PWRST_D0;
-+}
-+
- static void alc269_fixup_hp_mute_led(struct hda_codec *codec,
- 				     const struct hda_fixup *fix, int action)
+--- a/drivers/net/wireless/rt2x00/rt2x00dev.c
++++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
+@@ -181,6 +181,7 @@ static void rt2x00lib_autowakeup(struct
+ static void rt2x00lib_bc_buffer_iter(void *data, u8 *mac,
+ 				     struct ieee80211_vif *vif)
  {
-@@ -2784,6 +2801,7 @@ static void alc269_fixup_hp_mute_led(str
- 		spec->mute_led_nid = pin - 0x0a + 0x18;
- 		spec->gen.vmaster_mute.hook = alc269_fixup_mic_mute_hook;
- 		spec->gen.vmaster_mute_enum = 1;
-+		codec->power_filter = led_power_filter;
- 		snd_printd("Detected mute LED for %x:%d\n", spec->mute_led_nid,
- 			   spec->mute_led_polarity);
- 		break;
-@@ -2799,6 +2817,7 @@ static void alc269_fixup_hp_mute_led_mic
- 		spec->mute_led_nid = 0x18;
- 		spec->gen.vmaster_mute.hook = alc269_fixup_mic_mute_hook;
- 		spec->gen.vmaster_mute_enum = 1;
-+		codec->power_filter = led_power_filter;
++	struct ieee80211_tx_control control = {};
+ 	struct rt2x00_dev *rt2x00dev = data;
+ 	struct sk_buff *skb;
+ 
+@@ -195,7 +196,7 @@ static void rt2x00lib_bc_buffer_iter(voi
+ 	 */
+ 	skb = ieee80211_get_buffered_bc(rt2x00dev->hw, vif);
+ 	while (skb) {
+-		rt2x00mac_tx(rt2x00dev->hw, NULL, skb);
++		rt2x00mac_tx(rt2x00dev->hw, &control, skb);
+ 		skb = ieee80211_get_buffered_bc(rt2x00dev->hw, vif);
  	}
  }
- 
-@@ -2811,6 +2830,7 @@ static void alc269_fixup_hp_mute_led_mic
- 		spec->mute_led_nid = 0x19;
- 		spec->gen.vmaster_mute.hook = alc269_fixup_mic_mute_hook;
- 		spec->gen.vmaster_mute_enum = 1;
-+		codec->power_filter = led_power_filter;
- 	}
- }
- 
 
 
