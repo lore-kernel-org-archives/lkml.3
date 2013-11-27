@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362Ab3K0HUP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 02:20:15 -0500
-Received: from mga02.intel.com ([134.134.136.20]:43962 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750842Ab3K0HUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 02:20:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,780,1378882800"; 
-   d="scan'208";a="442866238"
-Message-ID: <52959A74.70007@intel.com>
-Date: Wed, 27 Nov 2013 15:08:36 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1753971Ab3K0HjW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 02:39:22 -0500
+Received: from stargate.chelsio.com ([67.207.112.58]:24675 "EHLO
+	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003Ab3K0HjV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 02:39:21 -0500
+From: Hariprasad S <hariprasad@chelsio.com>
+To: "ben@decadent.org.uk" <ben@decadent.org.uk>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felix Marti <felix@chelsio.com>
+Subject: RE: pull request: linux-firmware: update cxgb4 firmware
+Thread-Topic: pull request: linux-firmware: update cxgb4 firmware
+Thread-Index: Ac7hF/dzZLJSa+FcRA24Y689Jws+aAKK2Q3d
+Date: Wed, 27 Nov 2013 07:38:41 +0000
+Message-ID: <26E3F92EC670BD429DB5CB319D773C13430211@nice.asicdesigners.com>
+References: <26E3F92EC670BD429DB5CB319D773C1342B1E3@nice.asicdesigners.com>
+In-Reply-To: <26E3F92EC670BD429DB5CB319D773C1342B1E3@nice.asicdesigners.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [111.93.129.158]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        Kgene Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-tegra@vger.kernel.org, jinchoi@broadcom.com,
-        Sebastian Capella <sebastian.capella@linaro.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: Re: [PATCH V3 1/6] cpufreq: suspend governors on system suspend/hibernate
-References: <cover.1385374819.git.viresh.kumar@linaro.org> <CAKohpok0E=m=63KXM22usiW7Rsu59cD7Q=+k3tRcW=8269tZnQ@mail.gmail.com> <4253729.doK7ubnxKx@vostro.rjw.lan> <4787675.sJF8mqYyxv@vostro.rjw.lan> <CAKohpo=iSJSh_x3Xj3h-GRE6S25ptsdHf34MftMuD6JVSZw=rg@mail.gmail.com>
-In-Reply-To: <CAKohpo=iSJSh_x3Xj3h-GRE6S25ptsdHf34MftMuD6JVSZw=rg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 27 Nov 2013 07:38:42.0453 (UTC) FILETIME=[B2268C50:01CEEB43]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年11月27日 11:07, Viresh Kumar wrote:
-> On 27 November 2013 07:12, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->> Anyway, if you did what I asked you to do and put the cpufreq suspend/resume
->> into dpm_suspend/resume_noirq(), I'd probably take this for 3.13.  However,
->> since you've decided to put those things somewhere else thus making the
->> change much more intrusive, I can only queue it up for 3.14.
->>
->> This means I'm going to take the Tianyu's patch as a stop gap for 3.13.
-> 
+Hi Ben,
 
-Hi Viresh:
-	First, I agree the new solution you are working on. :)
-But actually I don't totally agree my origin patch have design issue.
-Because I think governor should have the ability to check whether it has
-been EXIT when doing INIT and it should return error code at that point.
-The design is to make governor code stronger to deal with the case that
-governor is reinitialized before EXIT. Just from my view.
-Sorry for noise.
+If you have not already pulled this, I will send out a new pull request which has update for both T4 and T5 firmware.
 
-> There were design issues with that patch actually, as I pointed out earlier
-> (handling EXIT part in core and INIT in governors).. And so in case we
-> need to get something for v3.13, I will send a short version of this series
-> with callbacks from suspend_noirq.
+Thanks,
+Hariprasad
+________________________________
+From: Hariprasad S
+Sent: Thursday, November 14, 2013 2:30 PM
+To: ben@decadent.org.uk; dwmw2@infradead.org
+Cc: linux-kernel@vger.kernel.org; Felix Marti; Divy Le Ray
+Subject: pull request: linux-firmware: update cxgb4 firmware
 
 
-> 
-> Get that one instead.
-> 
-> --
-> viresh
-> 
+Hi,
 
+Can you please pull from the following URL?
+    git://git.chelsio.net/pub/git/linux-firmware.git for-upstream
 
--- 
-Best regards
-Tianyu Lan
+The following changes since commit 7d0c7a8cfd78388d90cc784a185b19dcbdbce824:
+  Ben Hutchings (1):
+        Merge branch 'wilink4' of git://git.kernel.org/pub/scm/linux/kernel/git/balbi/linux-firmware
+
+are available in the git repository at:
+
+  git://git.chelsio.net/pub/git/linux-firmware.git for-upstream
+
+Hariprasad Shenai (1):
+      cxgb4: add t5fw-1.8.28.0.bin firmware
+
+ cxgb4/t5fw-1.8.28.0.bin |  Bin 0 -> 462848 bytes
+ cxgb4/t5fw.bin          |    1 +
+ 2 files changed, 1 insertions(+), 0 deletions(-)
+ create mode 100644 cxgb4/t5fw-1.8.28.0.bin
+ create mode 120000 cxgb4/t5fw.bin
