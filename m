@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758152Ab3K0A5u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:57:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39067 "EHLO
+	id S1760250Ab3K0BrT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:47:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39113 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757690Ab3K0A5k (ORCPT
+	with ESMTP id S1751977Ab3K0A5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:40 -0500
+	Tue, 26 Nov 2013 19:57:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Weston Andros Adamson <dros@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [PATCH 3.10 50/80] NFSv4: dont fail on missing fattr in open recover
-Date: Tue, 26 Nov 2013 16:57:19 -0800
-Message-Id: <20131127005644.426351481@linuxfoundation.org>
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.10 61/80] hwmon: (lm90) Fix max6696 alarm handling
+Date: Tue, 26 Nov 2013 16:57:30 -0800
+Message-Id: <20131127005645.178200239@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -27,35 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weston Andros Adamson <dros@netapp.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit a43ec98b72aae3e330f0673438f58316c3769b84 upstream.
+commit e41fae2b1ed8c78283d73651cd65be0228c0dd1c upstream.
 
-This is an unneeded check that could cause the client to fail to recover
-opens.
+Bit 2 of status register 2 on MAX6696 (external diode 2 open)
+sets ALERT; the bit thus has to be listed in alert_alarms.
+Also display a message in the alert handler if the condition
+is encountered.
 
-Signed-off-by: Weston Andros Adamson <dros@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Even though not all overtemperature conditions cause ALERT
+to be set, we should not ignore them in the alert handler.
+Display messages for all out-of-range conditions.
+
+Reported-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    6 ------
- 1 file changed, 6 deletions(-)
+ drivers/hwmon/lm90.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -1165,12 +1165,6 @@ _nfs4_opendata_reclaim_to_nfs4_state(str
- 		goto err;
- 	}
+--- a/drivers/hwmon/lm90.c
++++ b/drivers/hwmon/lm90.c
+@@ -278,7 +278,7 @@ static const struct lm90_params lm90_par
+ 	[max6696] = {
+ 		.flags = LM90_HAVE_EMERGENCY
+ 		  | LM90_HAVE_EMERGENCY_ALARM | LM90_HAVE_TEMP3,
+-		.alert_alarms = 0x187c,
++		.alert_alarms = 0x1c7c,
+ 		.max_convrate = 6,
+ 		.reg_local_ext = MAX6657_REG_R_LOCAL_TEMPL,
+ 	},
+@@ -1500,19 +1500,22 @@ static void lm90_alert(struct i2c_client
+ 	if ((alarms & 0x7f) == 0 && (alarms2 & 0xfe) == 0) {
+ 		dev_info(&client->dev, "Everything OK\n");
+ 	} else {
+-		if (alarms & 0x61)
++		if ((alarms & 0x61) || (alarms2 & 0x80))
+ 			dev_warn(&client->dev,
+ 				 "temp%d out of range, please check!\n", 1);
+-		if (alarms & 0x1a)
++		if ((alarms & 0x1a) || (alarms2 & 0x20))
+ 			dev_warn(&client->dev,
+ 				 "temp%d out of range, please check!\n", 2);
+ 		if (alarms & 0x04)
+ 			dev_warn(&client->dev,
+ 				 "temp%d diode open, please check!\n", 2);
  
--	ret = -ESTALE;
--	if (!(data->f_attr.valid & NFS_ATTR_FATTR_TYPE) ||
--	    !(data->f_attr.valid & NFS_ATTR_FATTR_FILEID) ||
--	    !(data->f_attr.valid & NFS_ATTR_FATTR_CHANGE))
--		goto err;
--
- 	ret = -ENOMEM;
- 	state = nfs4_get_open_state(inode, data->owner);
- 	if (state == NULL)
+-		if (alarms2 & 0x18)
++		if (alarms2 & 0x5a)
+ 			dev_warn(&client->dev,
+ 				 "temp%d out of range, please check!\n", 3);
++		if (alarms2 & 0x04)
++			dev_warn(&client->dev,
++				 "temp%d diode open, please check!\n", 3);
+ 
+ 		/*
+ 		 * Disable ALERT# output, because these chips don't implement
 
 
