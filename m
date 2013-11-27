@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758274Ab3K0XNS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 18:13:18 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:47587 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757549Ab3K0XNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 18:13:13 -0500
-Date: Thu, 28 Nov 2013 00:13:05 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Andy Lutomirski <luto@amacapital.net>,
-        Andi Kleen <andi@firstfloor.org>,
+	id S1758319Ab3K0XPY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 18:15:24 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:55987 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757611Ab3K0XPW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 18:15:22 -0500
+MIME-Version: 1.0
+In-Reply-To: <529677D7.9080203@zytor.com>
+References: <1385426236-14960-1-git-send-email-andi@firstfloor.org>
+	<5294F10C.8060901@amacapital.net>
+	<CA+55aFzBXzQS90XYZKHRr0N66uBrDmS=o_U9u=e4qq2CzTg8ww@mail.gmail.com>
+	<52964EC7.9000504@zytor.com>
+	<52966C0A.7070201@zytor.com>
+	<CA+55aFzr9ZKcGfT_Q31T9_vuCcmWxGCh0wixuZqt7VhjxxYU9g@mail.gmail.com>
+	<529677D7.9080203@zytor.com>
+Date: Wed, 27 Nov 2013 15:15:21 -0800
+X-Google-Sender-Auth: CJRimdsR_mm8oOslQkUkO_KUfMU
+Message-ID: <CA+55aFx9mXy3VASfek5052GTbiUVSgBVsRwnF4cse1dc=z70HQ@mail.gmail.com>
+Subject: Re: [PATCH] Add a text_poke syscall v2
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Andi Kleen <andi@firstfloor.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] Add a text_poke syscall v2
-Message-ID: <20131127231305.GN32267@pd.tnic>
-References: <1385426236-14960-1-git-send-email-andi@firstfloor.org>
- <5294F10C.8060901@amacapital.net>
- <CA+55aFzBXzQS90XYZKHRr0N66uBrDmS=o_U9u=e4qq2CzTg8ww@mail.gmail.com>
- <52964EC7.9000504@zytor.com>
- <52966C0A.7070201@zytor.com>
- <20131127222104.GA748@pd.tnic>
- <b6331d08-d5fb-4ec5-80e2-ff32d3ce93ce@email.android.com>
- <20131127222944.GB748@pd.tnic>
- <cb0c1623-0e58-4418-b22e-cdcadbf31dea@email.android.com>
- <CA+55aFzTppZ+uhZ+mfHYmmJ9+aboEMUQ9PUfW63BTA-z+1nWqQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzTppZ+uhZ+mfHYmmJ9+aboEMUQ9PUfW63BTA-z+1nWqQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 03:04:41PM -0800, Linus Torvalds wrote:
-> So sysexit/sysret doesn't count as a serializing instruction, no.
-> But it doesn't need to, because *self*-modifying code doesn't need a
-> serializing instruction, only a branch. It's only *cross*-modifying
-> code that needs a serializing instruction.
+On Wed, Nov 27, 2013 at 2:53 PM, H. Peter Anvin <hpa@zytor.com> wrote:
 >
-> So the IPI is sufficient for the cross-modifying case, and the sysret
-> is sufficient for the self-modifying case. And we also don't need
-> to worry about "what happens if we schedule to another CPU, and
-> self-modifying becomes cross-modifying", because the scheduling will
-> then do the serializing instruction.
->
-> So IPI for other CPU's (limited to the mm-mask) and just a system call
-> for local CPU should be perfectly fine.
+> If we are going to go down that route, I would like to see a list of
+> patch sites, not just one with a "timeout" that won't get used.
 
-Cool, so basically an empty dummy syscall IPI-ed to all cores. With a
-big fat comment on top.
+Oh, I agree. The interface of the original patch was just inane/insane.
 
-:-)
+The timeout and the callback is pointless. The only thing the system
+call should get as an argument is the address and the replacement
+instruction.  So
 
--- 
-Regards/Gruss,
-    Boris.
+  int text_poke(void *addr, const void *opcode, size_t len)
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+sounds fine to me. And it would do:
+ - take some (possibly per-mm) mutex
+ - write the one-byte int3
+ - do the IPI
+ - write the other bytes
+ - do the IPI
+ - do the first byte
+ - release the (possibly per-mm) mutex
+
+and then in the BP handler we'd just take the mutex, see if the first
+byte of the exception is still int3, if it's not, just return silently
+(because that means that we hit the race).
+
+And I would seriously suggest just open-coding the above simple
+sequence instead of trying to force-reuse the text_poke_bp() function
+we already have. Because I think doing this on kernel code is
+*very*different* (for irq reasons _and_ for IPI mask reasons).
+
+Hmm? It doesn't sound too bad. And I really don't see the point of
+some timeout handling or anything like that.
+
+           Linus
