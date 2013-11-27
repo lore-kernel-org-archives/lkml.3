@@ -1,162 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756974Ab3K0QIz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 11:08:55 -0500
-Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:1853 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754252Ab3K0QIx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 11:08:53 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VS-5(zz98dI9371I936eI542I1432Id799h4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh109h2a8h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216h22d0hbe9i1155h)
-From: Bharat Bhushan <Bharat.Bhushan@freescale.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Scott Wood <scottwood@freescale.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Stuart Yoder <stuart.yoder@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
-Thread-Topic: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
-Thread-Index: AQHO5OdyKeXB/EytyUeVGr+Ok97IOJoueBeAgAENqwCAAKUSgIAAARWAgAADyQCABUQ/0IAAu7eAgAMaEYA=
-Date: Wed, 27 Nov 2013 16:08:44 +0000
-Message-ID: <6A3DF150A5B70D4F9B66A25E3F7C888D07233D0E@039-SN2MPN1-012.039d.mgd.msft.net>
-References: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
-	 <1384973243.2879.361.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D0721D9AC@039-SN2MPN1-012.039d.mgd.msft.net>
-	 <1385066603.2879.414.camel@ul30vt.home>
-	 <1385066835.1403.489.camel@snotra.buserror.net>
-	 <1385067648.2879.421.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D0722C180@039-SN2MPN1-012.039d.mgd.msft.net>
- <1385397493.2879.557.camel@ul30vt.home>
-In-Reply-To: <1385397493.2879.557.camel@ul30vt.home>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.214.249.3]
-Content-Type: text/plain; charset="utf-8"
+	id S1757322Ab3K0QJS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 11:09:18 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:42377 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753505Ab3K0QJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 11:09:16 -0500
+Date: Wed, 27 Nov 2013 11:09:10 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, vmscan: abort futile reclaim if we've been oom killed
+Message-ID: <20131127160910.GZ3556@cmpxchg.org>
+References: <20131113152412.GH707@cmpxchg.org>
+ <alpine.DEB.2.02.1311131400300.23211@chino.kir.corp.google.com>
+ <20131114000043.GK707@cmpxchg.org>
+ <alpine.DEB.2.02.1311131639010.6735@chino.kir.corp.google.com>
+ <20131118164107.GC3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311181712080.4292@chino.kir.corp.google.com>
+ <20131120160712.GF3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311201803000.30862@chino.kir.corp.google.com>
+ <20131121164019.GK3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311261634040.21003@chino.kir.corp.google.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1311261634040.21003@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rARG92wE022216
 
-
-
-> -----Original Message-----
-> From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> Sent: Monday, November 25, 2013 10:08 PM
-> To: Bhushan Bharat-R65777
-> Cc: Wood Scott-B07421; linux-pci@vger.kernel.org; agraf@suse.de; Yoder Stuart-
-> B08248; iommu@lists.linux-foundation.org; bhelgaas@google.com; linuxppc-
-> dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
+On Tue, Nov 26, 2013 at 04:47:56PM -0800, David Rientjes wrote:
+> On Thu, 21 Nov 2013, Johannes Weiner wrote:
 > 
-> On Mon, 2013-11-25 at 05:33 +0000, Bharat Bhushan wrote:
-> >
-> > > -----Original Message-----
-> > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > > Sent: Friday, November 22, 2013 2:31 AM
-> > > To: Wood Scott-B07421
-> > > Cc: Bhushan Bharat-R65777; linux-pci@vger.kernel.org; agraf@suse.de;
-> > > Yoder Stuart-B08248; iommu@lists.linux-foundation.org;
-> > > bhelgaas@google.com; linuxppc- dev@lists.ozlabs.org;
-> > > linux-kernel@vger.kernel.org
-> > > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale
-> > > IOMMU (PAMU)
-> > >
-> > > On Thu, 2013-11-21 at 14:47 -0600, Scott Wood wrote:
-> > > > On Thu, 2013-11-21 at 13:43 -0700, Alex Williamson wrote:
-> > > > > On Thu, 2013-11-21 at 11:20 +0000, Bharat Bhushan wrote:
-> > > > > >
-> > > > > > > -----Original Message-----
-> > > > > > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > > > > > > Sent: Thursday, November 21, 2013 12:17 AM
-> > > > > > > To: Bhushan Bharat-R65777
-> > > > > > > Cc: joro@8bytes.org; bhelgaas@google.com; agraf@suse.de;
-> > > > > > > Wood Scott-B07421; Yoder Stuart-B08248;
-> > > > > > > iommu@lists.linux-foundation.org; linux-
-> > > > > > > pci@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; linux-
-> > > > > > > kernel@vger.kernel.org; Bhushan Bharat-R65777
-> > > > > > > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for
-> > > > > > > Freescale IOMMU (PAMU)
-> > > > > > >
-> > > > > > > Is VFIO_IOMMU_PAMU_GET_MSI_BANK_COUNT per aperture (ie. each
-> > > > > > > vfio user has $COUNT regions at their disposal exclusively)?
-> > > > > >
-> > > > > > Number of msi-bank count is system wide and not per aperture,
-> > > > > > But will be
-> > > setting windows for banks in the device aperture.
-> > > > > > So say if we are direct assigning 2 pci device (both have
-> > > > > > different iommu
-> > > group, so 2 aperture in iommu) to VM.
-> > > > > > Now qemu can make only one call to know how many msi-banks are
-> > > > > > there but
-> > > it must set sub-windows for all banks for both pci device in its
-> > > respective aperture.
-> > > > >
-> > > > > I'm still confused.  What I want to make sure of is that the
-> > > > > banks are independent per aperture.  For instance, if we have
-> > > > > two separate userspace processes operating independently and
-> > > > > they both chose to use msi bank zero for their device, that's
-> > > > > bank zero within each aperture and doesn't interfere.  Or
-> > > > > another way to ask is can a malicious user interfere with other users by
-> using the wrong bank.
-> > > > > Thanks,
-> > > >
-> > > > They can interfere.
-> >
-> > Want to be sure of how they can interfere?
+> > All I'm trying to do is find the broader root cause for the problem
+> > you are experiencing and find a solution that will leave us with
+> > maintainable code.  It does not matter how few instructions your fix
+> > adds, it changes the outcome of the algorithm and makes every
+> > developer trying to grasp the complexity of page reclaim think about
+> > yet another special condition.
+> > 
+> > The more specific the code is, the harder it will be to understand in
+> > the future.  Yes, it's a one-liner, but we've had death by a thousand
+> > cuts before, many times.  A few cycles ago, kswapd was blowing up left
+> > and right simply because it was trying to meet too many specific
+> > objectives from facilitating order-0 allocators, maintaining zone
+> > health, enabling compaction for higher order allocation, writing back
+> > dirty pages.  Ultimately, it just got stuck in endless loops because
+> > of conflicting conditionals.  We've had similar problems in the scan
+> > count calculation etc where all the checks and special cases left us
+> > with code that was impossible to reason about.  There really is a
+> > history of "low overhead one-liner fixes" eating us alive in the VM.
+> > 
 > 
-> What happens if more than one user selects the same MSI bank?
-> Minimally, wouldn't that result in the IOMMU blocking transactions from the
-> previous user once the new user activates their mapping?
-
-Yes and no; With current implementation yes but with a minor change no. Later in this response I will explain how.
-
+> Your objection is that the added code is obscure and will require kernel 
+> hackers to think about why it's there?  I could certainly add a comment:
 > 
-> > >>  With this hardware, the only way to prevent that
-> > > > is to make sure that a bank is not shared by multiple protection contexts.
-> > > > For some of our users, though, I believe preventing this is less
-> > > > important than the performance benefit.
-> >
-> > So should we let this patch series in without protection?
+> 	/*
+> 	 * The oom killer only kills processes when reclaim has already
+> 	 * failed for its allocation context, continuously trying won't
+> 	 * help.
+> 	 */
 > 
-> No.
+> to the patch? 
 > 
-> > >
-> > > I think we need some sort of ownership model around the msi banks then.
-> > > Otherwise there's nothing preventing another userspace from
-> > > attempting an MSI based attack on other users, or perhaps even on
-> > > the host.  VFIO can't allow that.  Thanks,
-> >
-> > We have very few (3 MSI bank on most of chips), so we can not assign
-> > one to each userspace. What we can do is host and userspace does not
-> > share a MSI bank while userspace will share a MSI bank.
+> > The solution was always to take a step back and integrate all
+> > requirements properly.  Not only did this fix the problems, the code
+> > ended up being much more robust and easier to understand and modify as
+> > well.
+> > 
+> > If shortening the direct reclaim cycle is an adequate solution to your
+> > problem, it would be much preferable.  Because
+> > 
+> >   "checking at a reasonable interval if the work I'm doing is still
+> >    necessary"
+> > 
+> > is a much more approachable, generic, and intuitive concept than
+> > 
+> >   "the OOM killer has gone off, direct reclaim is futile, I should
+> >    exit quickly to release memory so that not more tasks get caught
+> >    doing direct reclaim".
+> > 
+> > and the fix would benefit a much wider audience.
+> > 
 > 
-> Then you probably need VFIO to "own" the MSI bank and program devices into it
-> rather than exposing the MSI banks to userspace to let them have direct access.
-
-Overall idea of exposing the details of msi regions to userspace are
- 1) User space can define the aperture size to fit MSI mapping in IOMMU.
- 2) setup iova for a MSI banks; which is just after guest memory. 
-
-But currently we expose the "size" and "address" of MSI banks, passing address is of no use and can be problematic.
-If we just provide the size of MSI bank to userspace then userspace cannot do anything wrong.
-
-While it is still the responsibility of host (MSI+VFIO) to compose MSI-address and MSI-data; so I think this should look fine.
-
-> Thanks,
+> I agree with your point that obscure random fixes does obfuscate the VM in 
+> many different ways and I'd like to support you in anyway that I can to 
+> make sure that my fix doesn't do that for anybody in the future, the 
+> comment being added may be one way of doing that.
 > 
-> Alex
-> 
+> I disagree with changing the "reasonable interval" to determine if reclaim 
+> is still necessary because many parallel reclaimers will indicate a higher 
+> demand for free memory and it prevents short-circuiting direct reclaim, 
+> returning to the page allocator, and finding that the memory you've 
+> reclaimed has been stolen by another allocator.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I can't reach the same conclusion as you.  There will always be
+concurrent allocators while some tasks are in direct reclaim.  But the
+longer you reclaim without checking free pages, the higher the
+opportunity for another task to steal your work.  Shortening direct
+reclaim cycles would actually mean shrinking that window where other
+tasks can steal the pages you reclaimed.
+
+> That race to allocate the reclaimed memory will always exist if checking 
+> zone watermarks from direct reclaim to determine whether we should 
+> terminate or not as part of your suggested, the alternative would be to 
+> actually do get_page_from_freelist() and actually allocate on every 
+> iteration.  For the vast majority of reclaimers, I think this would 
+> terminate prematurely when we haven't hit the SWAP_CLUSTER_MAX threshold 
+> and since the removal of lumpy reclaim and the reliance on synchronous 
+> memory compaction following one of these oom events to defragment memory, 
+> I would be tenative to implement such a solution.
+
+Yes, I really meant get_page_from_freelist() after every priority
+cycle.  What does "prematurely" mean?  If task A is currently doing
+reclaim and task B steals the pages, A will have to go back to direct
+reclaim.  If A reclaims one cycle and then allocates, there is a
+reduced chance of B stealing the pages, and so B will have to do
+direct reclaim and pull its own weight.  If A did enough for both,
+there wouldn't have been any point in continuing reclaim.
