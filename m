@@ -1,100 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322Ab3K0ONr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 09:13:47 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47662 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753212Ab3K0OJC (ORCPT
+	id S1757274Ab3K0ON7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 09:13:59 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51410 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750907Ab3K0ON4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 09:09:02 -0500
-Date: Wed, 27 Nov 2013 06:08:28 -0800
-From: tip-bot for Sasha Levin <tipbot@zytor.com>
-Message-ID: <tip-8dce7a9a6f4ca7163161a80a4603b66c88c5de8e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, sasha.levin@oracle.com, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, sasha.levin@oracle.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <1352753446-24109-1-git-send-email-sasha.levin@oracle.com>
-References: <1352753446-24109-1-git-send-email-sasha.levin@oracle.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] lockdep: Be nice about building from userspace
-Git-Commit-ID: 8dce7a9a6f4ca7163161a80a4603b66c88c5de8e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 27 Nov 2013 09:13:56 -0500
+Date: Wed, 27 Nov 2013 15:13:34 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
+        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 02/14] sched: add extended scheduling interface. (new ABI)
+Message-ID: <20131127141334.GA13532@twins.programming.kicks-ass.net>
+References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
+ <1383831828-15501-3-git-send-email-juri.lelli@gmail.com>
+ <20131127132354.GA18422@gmail.com>
+ <20131127133027.GE10022@twins.programming.kicks-ass.net>
+ <20131127140143.GB24403@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 27 Nov 2013 06:08:34 -0800 (PST)
+In-Reply-To: <20131127140143.GB24403@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8dce7a9a6f4ca7163161a80a4603b66c88c5de8e
-Gitweb:     http://git.kernel.org/tip/8dce7a9a6f4ca7163161a80a4603b66c88c5de8e
-Author:     Sasha Levin <sasha.levin@oracle.com>
-AuthorDate: Thu, 13 Jun 2013 18:41:16 -0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 27 Nov 2013 11:55:20 +0100
+On Wed, Nov 27, 2013 at 03:01:43PM +0100, Ingo Molnar wrote:
+> > So the problem I see with this one is that because you're allowed to 
+> > call sched_setparam() or whatever it will be called next on another 
+> > task; a task can very easily fail its sched_getparam() call.
+> > 
+> > Suppose the application is 'old' and only supports a subset of the 
+> > fields; but its wants to get, modify and set its params. This will 
+> > work as long nothing will set anything it doesn't know about.
+> > 
+> > As soon as some external entity -- say a sysad using schedtool -- 
+> > sets a param field it doesn't support the get, modify, set routing 
+> > completely fails.
+> 
+> There are two approaches to this that I can see:
+> 
+> 1)
+> 
+> allow partial information to be returned to user-space, for existing 
+> input parameters. The new fields won't be displayed, but the tool 
+> doesn't know about them anyway so it's OK. The tool can still display 
+> all the other existing parameters.
 
-lockdep: Be nice about building from userspace
+But suppose a task simply wants to lower/raise its static (FIFO)
+priority and does:
 
-Lockdep is an awesome piece of code which detects locking issues
-which are relevant both to userspace and kernelspace. We can
-easily make lockdep work in userspace since there is really no
-kernel spacific magic going on in the code.
+sched_getparam(&params);
+params.prio += 1;
+sched_setparam(&params);
 
-All we need is to wrap two functions which are used by lockdep
-and are very kernel specific.
+If anything outside of the known param fields was set, we just silently
+lost it, for the setparam() call will fill out 0s for the unprovided
+fields.
 
-Doing that will allow tools located in tools/ to easily utilize
-lockdep's code for their own use.
+> 2)
+> 
+> Return -ENOSYS if the 'extra' fields are nonzero. In this case the 
+> usual case of old tooling + new kernel will still work just fine, 
+> because old tooling won't set the new fields to any non-default 
+> (nonzero) values. In the 'mixed' case old tooling will not be able to 
+> change/display those fields.
+> 
+> I tend to lean towards #1. What do you think?
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: penberg@kernel.org
-Cc: torvalds@linux-foundation.org
-Link: http://lkml.kernel.org/r/1352753446-24109-1-git-send-email-sasha.levin@oracle.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/locking/lockdep.c | 4 ++++
- 1 file changed, 4 insertions(+)
+As per the above that can result in silent unexpected behavioural
+changes.
 
-diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
-index 576ba75..eb8a547 100644
---- a/kernel/locking/lockdep.c
-+++ b/kernel/locking/lockdep.c
-@@ -590,6 +590,7 @@ static int very_verbose(struct lock_class *class)
- /*
-  * Is this the address of a static object:
-  */
-+#ifdef __KERNEL__
- static int static_obj(void *obj)
- {
- 	unsigned long start = (unsigned long) &_stext,
-@@ -616,6 +617,7 @@ static int static_obj(void *obj)
- 	 */
- 	return is_module_address(addr) || is_module_percpu_address(addr);
- }
-+#endif
- 
- /*
-  * To make lock name printouts unique, we calculate a unique
-@@ -4115,6 +4117,7 @@ void debug_check_no_locks_held(void)
- }
- EXPORT_SYMBOL_GPL(debug_check_no_locks_held);
- 
-+#ifdef __KERNEL__
- void debug_show_all_locks(void)
- {
- 	struct task_struct *g, *p;
-@@ -4172,6 +4175,7 @@ retry:
- 		read_unlock(&tasklist_lock);
- }
- EXPORT_SYMBOL_GPL(debug_show_all_locks);
-+#endif
- 
- /*
-  * Careful: only use this function if you are sure that
+I'd much rather be explicit and break hard; so 2).
+
+So mixing new tools (schedtool, chrt etc) and old apps will give pain,
+but at least not silent surprises.
