@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398Ab3K0JS4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 04:18:56 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:55775 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616Ab3K0JSw (ORCPT
+	id S1752766Ab3K0JVH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 04:21:07 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:44947 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147Ab3K0JVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 04:18:52 -0500
-X-Originating-IP: 50.43.14.201
-Date: Wed, 27 Nov 2013 01:18:41 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: marek.belisko@gmail.com, kelleynnn@gmail.com, linux@rainbow-software.org,
-        peter.p.waskiewicz.jr@intel.com, rkuo <rkuo@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] drivers: staging: ft1000: ft1000-usb: initialize
- 'status' with STATUS_SUCCESS in request_code_segment()
-Message-ID: <20131127091841.GA19465@leaf>
-References: <528AEFB7.4060301@gmail.com>
- <20131125011938.GB18921@codeaurora.org>
- <5292B845.3010404@gmail.com>
- <5292B8A0.7020409@gmail.com>
- <5294255E.7040105@gmail.com>
- <5295607E.2000504@gmail.com>
+	Wed, 27 Nov 2013 04:21:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5295607E.2000504@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131126120123.GH1267@krava.brq.redhat.com>
+References: <1385274025-30282-1-git-send-email-artagnon@gmail.com>
+ <1385274025-30282-4-git-send-email-artagnon@gmail.com> <20131126120123.GH1267@krava.brq.redhat.com>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+Date: Wed, 27 Nov 2013 14:50:22 +0530
+Message-ID: <CALkWK0k2VEJiYGoE0qn9SBQH9b_+N=N4ADhs6WJQh_JF7kDK5g@mail.gmail.com>
+Subject: Re: [PATCH v2 3/5] perf diff: generalize hpp__color_delta for -c
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 11:01:18AM +0800, Chen Gang wrote:
-> If "!bool_case", it returns unexpected value instead of STATUS_SUCCESS,
-> so need fix it, the related warning (with allmodconfig under hexagon):
-> 
->     CC [M]  drivers/staging/ft1000/ft1000-usb/ft1000_download.o
->   drivers/staging/ft1000/ft1000-usb/ft1000_download.c: In function 'request_code_segment':
->   drivers/staging/ft1000/ft1000-usb/ft1000_download.c:581:6: warning: 'status' may be used uninitialized in this function [-Wuninitialized]
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+Jiri Olsa wrote:
+>>       if (!pair)
+>>               goto dummy_print;
+>>       if (pair->diff.computed)
+>> -             percent = pair->diff.period_ratio_delta;
+>> +             switch (comparison_method) {
+>> +             case COMPUTE_DELTA:
+>> +                     delta = pair->diff.period_ratio_delta;
+>> +                     break;
+>> +             default:
+>> +                     BUG_ON(1);
+>> +             }
+>>       else
+>> -             percent = compute_delta(he, pair);
+>> +             switch (comparison_method) {
+>> +             case COMPUTE_DELTA:
+>> +                     delta = compute_delta(he, pair);
+>> +                     break;
+>> +             default:
+>> +                     BUG_ON(1);
+>> +             }
+>>
+>> -     if (!he->dummy && fabs(percent) >= 0.01) {
+>> -             scnprintf(pfmt, 20, "%%%+d.2f%%%%", dfmt->header_width - 1);
+>> -             return color_snprintf(hpp->buf, hpp->size,
+>> -                             percent > 0 ? PERF_COLOR_GREEN : PERF_COLOR_RED,
+>> -                             pfmt, percent);
+>> +     if (!he->dummy) {
+>
+> isn't this check superfluous because of the above (!pair) check?
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+>From builtin-diff.c:get_pair_data(), we see that `pair' is one of the
+pairs in he->pairs. he->dummy is set in
+util/hist.c:hists__add_dummy_entry() which is called only when he
+doesn't have pairs (util/hist.c:942). Wait, couldn't
+util/hist.c:hists__add_dummy_entry() also have returned NULL in the
+case when he is NULL? But  __hpp__color_compare wouldn't have been
+called with a NULL he in the first place. So yeah, the check is
+redundant although it wasn't immediately obvious to me.
 
->  .../staging/ft1000/ft1000-usb/ft1000_download.c    |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-> index 68ded17..15f3062 100644
-> --- a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-> +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-> @@ -578,7 +578,7 @@ static int request_code_segment(struct ft1000_usb *ft1000dev, u16 **s_file,
->  		 u8 **c_file, const u8 *endpoint, bool boot_case)
->  {
->  	long word_length;
-> -	int status;
-> +	int status = STATUS_SUCCESS;
->  
->  	/*DEBUG("FT1000:REQUEST_CODE_SEGMENT\n");i*/
->  	word_length = get_request_value(ft1000dev);
-> -- 
-> 1.7.7.6
+Thanks.
