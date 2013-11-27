@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422Ab3K0LyM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 06:54:12 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50493 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab3K0LyJ (ORCPT
+	id S1754326Ab3K0Ly6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 06:54:58 -0500
+Received: from eu1sys200aog121.obsmtp.com ([207.126.144.151]:41757 "EHLO
+	eu1sys200aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751325Ab3K0Ly4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 06:54:09 -0500
-Date: Wed, 27 Nov 2013 12:54:07 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: viresh.kumar@linaro.org, egtvedt@samfundet.no, jesper.nilsson@axis.com,
-        linux@arm.linux.org.uk, swarren@nvidia.com, andrew@lunn.ch,
-        nicolas.pitre@linaro.org, tianyu.lan@intel.com,
-        rafael.j.wysocki@intel.com, kernel list <linux-kernel@vger.kernel.org>,
-        tony@atomide.com, sre@ring0.de, pali.rohar@gmail.com, arm@kernel.org
-Subject: omap-cpufreq compilation breakage in 3.13-rc1
-Message-ID: <20131127115407.GA6773@amd.pavel.ucw.cz>
+	Wed, 27 Nov 2013 06:54:56 -0500
+From: Amit Virdi <amit.virdi@st.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Cc: <marc.zyngier@arm.com>, <nico@linaro.org>, <marc.ceeeee@gmail.com>,
+        <linux@arm.linux.org.uk>, <spear--sw-devel@codex.cro.st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>, Amit Virdi <amit.virdi@st.com>
+Subject: [PATCH] ARM: asm: Configure caches as per the defconfig
+Date: Wed, 27 Nov 2013 17:24:04 +0530
+Message-ID: <1385553244-1513-1-git-send-email-amit.virdi@st.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Amit VIRDI <Amit.VIRDI@st.com>
 
-Commit d4019f0a92ab802f385cc9c8ad3ab7b5449712cb broke compilation for
-omap-cpufreq.c . Given impresive list of ACKs and Tested-bys, I'd not
-expect such problem. This fixes it.
+In the current implementation of the decompression code, the caches are enabled
+irrespective of their configuration in the deconfig. This makes setting the
+ICACHE and DCACHE disable options from the menuconfig irrelevant. Change this
+implementation to enable caches only if specified in the defconfig.
 
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
+Signed-off-by: Amit Virdi <amit.virdi@st.com>
+---
+ arch/arm/boot/compressed/head.S | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/cpufreq/omap-cpufreq.c b/drivers/cpufreq/omap-cpufreq.c
-index be6d143..96c9ee49 100644
---- a/drivers/cpufreq/omap-cpufreq.c
-+++ b/drivers/cpufreq/omap-cpufreq.c
-@@ -56,6 +56,7 @@ static int omap_target(struct cpufreq_policy *policy, unsigned int index)
- 	struct dev_pm_opp *opp;
- 	unsigned long freq, volt = 0, volt_old = 0, tol = 0;
- 	unsigned int old_freq, new_freq;
-+	long ret;
- 
- 	old_freq = omap_getspeed(policy->cpu);
- 	new_freq = freq_table[index].frequency;
-@@ -91,6 +92,7 @@ static int omap_target(struct cpufreq_policy *policy, unsigned int index)
- 
- 	/* scaling up?  scale voltage before frequency */
- 	if (mpu_reg && (new_freq > old_freq)) {
-+		long r;
- 		r = regulator_set_voltage(mpu_reg, volt - tol, volt + tol);
- 		if (r < 0) {
- 			dev_warn(mpu_dev, "%s: unable to scale voltage up.\n",
-@@ -103,6 +105,7 @@ static int omap_target(struct cpufreq_policy *policy, unsigned int index)
- 
- 	/* scaling down?  scale voltage after frequency */
- 	if (mpu_reg && (new_freq < old_freq)) {
-+		long r;
- 		r = regulator_set_voltage(mpu_reg, volt - tol, volt + tol);
- 		if (r < 0) {
- 			dev_warn(mpu_dev, "%s: unable to scale voltage down.\n",
-
+diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
+index 066b034..1ec87cf 100644
+--- a/arch/arm/boot/compressed/head.S
++++ b/arch/arm/boot/compressed/head.S
+@@ -721,8 +721,14 @@ __armv7_mmu_cache_on:
+ #endif
+ 		mrc	p15, 0, r0, c1, c0, 0	@ read control reg
+ 		bic	r0, r0, #1 << 28	@ clear SCTLR.TRE
+-		orr	r0, r0, #0x5000		@ I-cache enable, RR cache replacement
+-		orr	r0, r0, #0x003c		@ write buffer
++#ifndef CONFIG_CPU_ICACHE_DISABLE
++		orr	r0, r0, #0x1000		@ I-cache enable
++#endif
++#ifndef CONFIG_CPU_DCACHE_DISABLE
++		orr	r0, r0, #0x0004		@ D-cache enable
++#endif
++		orr	r0, r0, #0x4000		@ RR cache replacement
++		orr	r0, r0, #0x0038		@ write buffer
+ 		bic	r0, r0, #2		@ A (no unaligned access fault)
+ 		orr	r0, r0, #1 << 22	@ U (v6 unaligned access model)
+ 						@ (needed for ARM1176)
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.8.0
+
