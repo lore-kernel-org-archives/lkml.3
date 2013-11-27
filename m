@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932576Ab3K0BAR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:00:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39602 "EHLO
+	id S1758966Ab3K0BAi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:00:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39653 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754051Ab3K0A7k (ORCPT
+	with ESMTP id S1758850Ab3K0A7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:40 -0500
+	Tue, 26 Nov 2013 19:59:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [PATCH 3.12 100/116] xhci: Enable LPM support only for hardwired or BESL devices
-Date: Tue, 26 Nov 2013 16:57:53 -0800
-Message-Id: <20131127005743.813852842@linuxfoundation.org>
+        Junxiao Bi <junxiao.bi@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 113/116] configfs: fix race between dentry put and lookup
+Date: Tue, 26 Nov 2013 16:58:06 -0800
+Message-Id: <20131127005744.754688213@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -27,75 +29,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-commit 890dae88672175f1d39f6105444d9bdc71c89258 upstream.
+commit 76ae281f6307331aa063288edb6422ae99f435f0 upstream.
 
-Some usb3 devices falsely claim they support usb2 hardware Link PM
-when connected to a usb2 port. We only trust hardwired devices
-or devices with the later BESL LPM support to be LPM enabled as default.
+A race window in configfs, it starts from one dentry is UNHASHED and end
+before configfs_d_iput is called.  In this window, if a lookup happen,
+since the original dentry was UNHASHED, so a new dentry will be
+allocated, and then in configfs_attach_attr(), sd->s_dentry will be
+updated to the new dentry.  Then in configfs_d_iput(),
+BUG_ON(sd->s_dentry != dentry) will be triggered and system panic.
 
-[Note: Sarah re-worked the original patch to move the code into the USB
-core, and updated it to check whether the USB device supports BESL,
-instead of checking if the xHCI port it's connected to supports BESL
-encoding.]
+sys_open:                     sys_close:
+ ...                           fput
+                                dput
+                                 dentry_kill
+                                  __d_drop <--- dentry unhashed here,
+                                           but sd->dentry still point
+                                           to this dentry.
 
-This patch should be backported to kernels as old as 3.11, that
-contain the commit a558ccdcc71c7770c5e80c926a31cfe8a3892a09 "usb: xhci:
-add USB2 Link power management BESL support".  Without this fix, some
-USB 3.0 devices will not enumerate or work properly under USB 2.0 ports
-on Haswell-ULT systems.
+ lookup_real
+  configfs_lookup
+   configfs_attach_attr---> update sd->s_dentry
+                            to new allocated dentry here.
 
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+                                   d_kill
+                                     configfs_d_iput <--- BUG_ON(sd->s_dentry != dentry)
+                                                     triggered here.
+
+To fix it, change configfs_d_iput to not update sd->s_dentry if
+sd->s_count > 2, that means there are another dentry is using the sd
+beside the one that is going to be put.  Use configfs_dirent_lock in
+configfs_attach_attr to sync with configfs_d_iput.
+
+With the following steps, you can reproduce the bug.
+
+1. enable ocfs2, this will mount configfs at /sys/kernel/config and
+   fill configure in it.
+
+2. run the following script.
+	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
+	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
+
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ fs/configfs/dir.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -3954,6 +3954,32 @@ static int hub_set_address(struct usb_de
- 	return retval;
- }
+--- a/fs/configfs/dir.c
++++ b/fs/configfs/dir.c
+@@ -56,10 +56,19 @@ static void configfs_d_iput(struct dentr
+ 	struct configfs_dirent *sd = dentry->d_fsdata;
  
-+/*
-+ * There are reports of USB 3.0 devices that say they support USB 2.0 Link PM
-+ * when they're plugged into a USB 2.0 port, but they don't work when LPM is
-+ * enabled.
-+ *
-+ * Only enable USB 2.0 Link PM if the port is internal (hardwired), or the
-+ * device says it supports the new USB 2.0 Link PM errata by setting the BESL
-+ * support bit in the BOS descriptor.
-+ */
-+static void hub_set_initial_usb2_lpm_policy(struct usb_device *udev)
-+{
-+	int connect_type;
+ 	if (sd) {
+-		BUG_ON(sd->s_dentry != dentry);
+ 		/* Coordinate with configfs_readdir */
+ 		spin_lock(&configfs_dirent_lock);
+-		sd->s_dentry = NULL;
++		/* Coordinate with configfs_attach_attr where will increase
++		 * sd->s_count and update sd->s_dentry to new allocated one.
++		 * Only set sd->dentry to null when this dentry is the only
++		 * sd owner.
++		 * If not do so, configfs_d_iput may run just after
++		 * configfs_attach_attr and set sd->s_dentry to null
++		 * even it's still in use.
++		 */
++		if (atomic_read(&sd->s_count) <= 2)
++			sd->s_dentry = NULL;
 +
-+	if (!udev->usb2_hw_lpm_capable)
-+		return;
+ 		spin_unlock(&configfs_dirent_lock);
+ 		configfs_put(sd);
+ 	}
+@@ -426,8 +435,11 @@ static int configfs_attach_attr(struct c
+ 	struct configfs_attribute * attr = sd->s_element;
+ 	int error;
+ 
++	spin_lock(&configfs_dirent_lock);
+ 	dentry->d_fsdata = configfs_get(sd);
+ 	sd->s_dentry = dentry;
++	spin_unlock(&configfs_dirent_lock);
 +
-+	connect_type = usb_get_hub_port_connect_type(udev->parent,
-+			udev->portnum);
-+
-+	if ((udev->bos->ext_cap->bmAttributes & USB_BESL_SUPPORT) ||
-+			connect_type == USB_PORT_CONNECT_TYPE_HARD_WIRED) {
-+		udev->usb2_hw_lpm_allowed = 1;
-+		usb_set_usb2_hardware_lpm(udev, 1);
-+	}
-+}
-+
- /* Reset device, (re)assign address, get device descriptor.
-  * Device connection must be stable, no more debouncing needed.
-  * Returns device in USB_STATE_ADDRESS, except on error.
-@@ -4247,6 +4273,7 @@ hub_port_init (struct usb_hub *hub, stru
- 	/* notify HCD that we have a device connected and addressed */
- 	if (hcd->driver->update_device)
- 		hcd->driver->update_device(hcd, udev);
-+	hub_set_initial_usb2_lpm_policy(udev);
- fail:
- 	if (retval) {
- 		hub_port_disable(hub, port1, 0);
+ 	error = configfs_create(dentry, (attr->ca_mode & S_IALLUGO) | S_IFREG,
+ 				configfs_init_file);
+ 	if (error) {
 
 
