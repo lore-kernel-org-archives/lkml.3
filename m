@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab3K0BMo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:12:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39620 "EHLO
+	id S1757710Ab3K0BNC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:13:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39616 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758735Ab3K0A7q (ORCPT
+	with ESMTP id S1758817Ab3K0A7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:46 -0500
+	Tue, 26 Nov 2013 19:59:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.12 106/116] usb: musb: cancel work on removal
-Date: Tue, 26 Nov 2013 16:57:59 -0800
-Message-Id: <20131127005744.225528832@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.12 105/116] rt2800usb: slow down TX status polling
+Date: Tue, 26 Nov 2013 16:57:58 -0800
+Message-Id: <20131127005744.153604059@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -27,57 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit c5340bd14336b902604ab95212a8877de109d9ae upstream.
+commit 36165fd5b00bf8163f89c21bb16a3e9834555b10 upstream.
 
-So I captured this:
+Polling TX statuses too frequently has two negative effects. First is
+randomly peek CPU usage, causing overall system functioning delays.
+Second bad effect is that device is not able to fill TX statuses in
+H/W register on some workloads and we get lot of timeouts like below:
 
-|WARNING: CPU: 0 PID: 2078 at /home/bigeasy/work/new/TI/linux/lib/debugobjects.c:260 debug_print_object+0x94/0xc4()
-|ODEBUG: free active (active state 0) object type: work_struct hint: musb_irq_work+0x0/0x38 [musb_hdrc]
-|CPU: 0 PID: 2078 Comm: rmmod Not tainted 3.12.0-rc4+ #338
-|[<c0014d38>] (unwind_backtrace+0x0/0xf4) from [<c001249c>] (show_stack+0x14/0x1c)
-|[<c001249c>] (show_stack+0x14/0x1c) from [<c0037720>] (warn_slowpath_common+0x64/0x84)
-|[<c0037720>] (warn_slowpath_common+0x64/0x84) from [<c00377d4>] (warn_slowpath_fmt+0x30/0x40)
-|[<c00377d4>] (warn_slowpath_fmt+0x30/0x40) from [<c022ae90>] (debug_print_object+0x94/0xc4)
-|[<c022ae90>] (debug_print_object+0x94/0xc4) from [<c022b7e0>] (debug_check_no_obj_freed+0x1c0/0x228)
-|[<c022b7e0>] (debug_check_no_obj_freed+0x1c0/0x228) from [<c00f1f38>] (kfree+0xf8/0x228)
-|[<c00f1f38>] (kfree+0xf8/0x228) from [<c02921c4>] (release_nodes+0x1a8/0x248)
-|[<c02921c4>] (release_nodes+0x1a8/0x248) from [<c028f70c>] (__device_release_driver+0x98/0xf0)
-|[<c028f70c>] (__device_release_driver+0x98/0xf0) from [<c028f840>] (device_release_driver+0x24/0x34)
-|[<c028f840>] (device_release_driver+0x24/0x34) from [<c028ebe8>] (bus_remove_device+0x148/0x15c)
-|[<c028ebe8>] (bus_remove_device+0x148/0x15c) from [<c028d120>] (device_del+0x104/0x1c0)
-|[<c028d120>] (device_del+0x104/0x1c0) from [<c02911e4>] (platform_device_del+0x18/0xac)
-|[<c02911e4>] (platform_device_del+0x18/0xac) from [<c029179c>] (platform_device_unregister+0xc/0x18)
-|[<c029179c>] (platform_device_unregister+0xc/0x18) from [<bf1902fc>] (dsps_remove+0x20/0x4c [musb_dsps])
-|[<bf1902fc>] (dsps_remove+0x20/0x4c [musb_dsps]) from [<c0290d7c>] (platform_drv_remove+0x1c/0x24)
-|[<c0290d7c>] (platform_drv_remove+0x1c/0x24) from [<c028f704>] (__device_release_driver+0x90/0xf0)
-|[<c028f704>] (__device_release_driver+0x90/0xf0) from [<c028f818>] (driver_detach+0xb4/0xb8)
-|[<c028f818>] (driver_detach+0xb4/0xb8) from [<c028e6e8>] (bus_remove_driver+0x98/0xec)
-|[<c028e6e8>] (bus_remove_driver+0x98/0xec) from [<c008fc70>] (SyS_delete_module+0x1e0/0x24c)
-|[<c008fc70>] (SyS_delete_module+0x1e0/0x24c) from [<c000e680>] (ret_fast_syscall+0x0/0x48)
-|---[ end trace d79045419a3e51ec ]---
+ieee80211 phy4: rt2800usb_entry_txstatus_timeout: Warning - TX status timeout for entry 7 in queue 2
+ieee80211 phy4: rt2800usb_entry_txstatus_timeout: Warning - TX status timeout for entry 7 in queue 2
+ieee80211 phy4: rt2800usb_txdone: Warning - Got TX status for an empty queue 2, dropping
 
-The workqueue is only scheduled from the ep0 and never canceled in case
-the musb is removed before the work has a chance to run.
+This not only cause flood of messages in dmesg, but also bad throughput,
+since rate scaling algorithm can not work optimally.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+In the future, we should probably make polling interval be adjusted
+automatically, but for now just increase values, this make mentioned
+problems gone.
+
+Resolve:
+https://bugzilla.kernel.org/show_bug.cgi?id=62781
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/musb/musb_core.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/rt2x00/rt2800usb.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -1809,6 +1809,7 @@ static void musb_free(struct musb *musb)
- 			disable_irq_wake(musb->nIrq);
- 		free_irq(musb->nIrq, musb);
+--- a/drivers/net/wireless/rt2x00/rt2800usb.c
++++ b/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -148,6 +148,8 @@ static bool rt2800usb_txstatus_timeout(s
+ 	return false;
+ }
+ 
++#define TXSTATUS_READ_INTERVAL 1000000
++
+ static bool rt2800usb_tx_sta_fifo_read_completed(struct rt2x00_dev *rt2x00dev,
+ 						 int urb_status, u32 tx_status)
+ {
+@@ -176,8 +178,9 @@ static bool rt2800usb_tx_sta_fifo_read_c
+ 		queue_work(rt2x00dev->workqueue, &rt2x00dev->txdone_work);
+ 
+ 	if (rt2800usb_txstatus_pending(rt2x00dev)) {
+-		/* Read register after 250 us */
+-		hrtimer_start(&rt2x00dev->txstatus_timer, ktime_set(0, 250000),
++		/* Read register after 1 ms */
++		hrtimer_start(&rt2x00dev->txstatus_timer,
++			      ktime_set(0, TXSTATUS_READ_INTERVAL),
+ 			      HRTIMER_MODE_REL);
+ 		return false;
  	}
-+	cancel_work_sync(&musb->irq_work);
- 	if (musb->dma_controller)
- 		dma_controller_destroy(musb->dma_controller);
+@@ -202,8 +205,9 @@ static void rt2800usb_async_read_tx_stat
+ 	if (test_and_set_bit(TX_STATUS_READING, &rt2x00dev->flags))
+ 		return;
+ 
+-	/* Read TX_STA_FIFO register after 500 us */
+-	hrtimer_start(&rt2x00dev->txstatus_timer, ktime_set(0, 500000),
++	/* Read TX_STA_FIFO register after 2 ms */
++	hrtimer_start(&rt2x00dev->txstatus_timer,
++		      ktime_set(0, 2*TXSTATUS_READ_INTERVAL),
+ 		      HRTIMER_MODE_REL);
+ }
  
 
 
