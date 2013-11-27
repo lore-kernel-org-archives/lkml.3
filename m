@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760136Ab3K0Bla (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:41:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39189 "EHLO
+	id S1760123Ab3K0Bl0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:41:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39199 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754390Ab3K0A6I (ORCPT
+	with ESMTP id S1752235Ab3K0A6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:08 -0500
+	Tue, 26 Nov 2013 19:58:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rob Pearce <rob@flitspace.org.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.10 80/80] drm/i915: No LVDS hardware on Intel D410PT and D425KT
-Date: Tue, 26 Nov 2013 16:57:49 -0800
-Message-Id: <20131127005646.464129317@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Michel Lespinasse <walken@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.10 68/80] powerpc: ppc64 address space capped at 32TB, mmap randomisation disabled
+Date: Tue, 26 Nov 2013 16:57:37 -0800
+Message-Id: <20131127005645.650924141@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -27,51 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rob Pearce <rob@flitspace.org.uk>
+From: Anton Blanchard <anton@samba.org>
 
-commit 645378d85ee524e429aa4cf52806047b56cdc596 upstream.
+commit 5a049f14902982c26538250bdc8d54156d357252 upstream.
 
-The Intel D410PT(LW) and D425KT Mini-ITX desktop boards both show up as
-having LVDS but the hardware is not populated. This patch adds them to
-the list of such systems. Patch is against 3.11.4
+Commit fba2369e6ceb (mm: use vm_unmapped_area() on powerpc architecture)
+has a bug in slice_scan_available() where we compare an unsigned long
+(high_slices) against a shifted int. As a result, comparisons against
+the top 32 bits of high_slices (representing the top 32TB) always
+returns 0 and the top of our mmap region is clamped at 32TB
 
-v2: Patch revised to match the D425KT exactly as the D425KTW does have
-LVDS.  According to Intel's documentation, the D410PTL and D410PLTW
-don't.
+This also breaks mmap randomisation since the randomised address is
+always up near the top of the address space and it gets clamped down
+to 32TB.
 
-Signed-off-by: Rob Pearce <rob@flitspace.org.uk>
-[danvet: Pimp commit message to my liking and add cc: stable.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Acked-by: Michel Lespinasse <walken@google.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_lvds.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ arch/powerpc/mm/slice.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -871,6 +871,22 @@ static const struct dmi_system_id intel_
- 	},
- 	{
- 		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "Intel D410PT",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
-+			DMI_MATCH(DMI_BOARD_NAME, "D410PT"),
-+		},
-+	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "Intel D425KT",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
-+			DMI_EXACT_MATCH(DMI_BOARD_NAME, "D425KT"),
-+		},
-+	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
- 		.ident = "Intel D510MO",
- 		.matches = {
- 			DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
+--- a/arch/powerpc/mm/slice.c
++++ b/arch/powerpc/mm/slice.c
+@@ -258,7 +258,7 @@ static bool slice_scan_available(unsigne
+ 		slice = GET_HIGH_SLICE_INDEX(addr);
+ 		*boundary_addr = (slice + end) ?
+ 			((slice + end) << SLICE_HIGH_SHIFT) : SLICE_LOW_TOP;
+-		return !!(available.high_slices & (1u << slice));
++		return !!(available.high_slices & (1ul << slice));
+ 	}
+ }
+ 
 
 
