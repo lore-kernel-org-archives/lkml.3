@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758772Ab3K0A7c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:59:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39449 "EHLO
+	id S1759377Ab3K0BQe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:16:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39573 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758699Ab3K0A7D (ORCPT
+	with ESMTP id S1756856Ab3K0A7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:03 -0500
+	Tue, 26 Nov 2013 19:59:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Steve Dickson <steved@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [PATCH 3.12 059/116] NFSv4.2: Fix a mismatch between Linux labeled NFS and the NFSv4.2 spec
-Date: Tue, 26 Nov 2013 16:57:12 -0800
-Message-Id: <20131127005741.024514497@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 054/116] ALSA: hda - Dont clear the power state at snd_hda_codec_reset()
+Date: Tue, 26 Nov 2013 16:57:07 -0800
+Message-Id: <20131127005740.685525284@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -28,33 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit f3f5a0f8cc40b942f4c0ae117df82eeb65f07d4d upstream.
+commit d183b4fc463489b6bbe05c99afa0257a6fe578eb upstream.
 
-In the spec, the security label attribute id is '80', which means that
-it should be bit number 80-64 == 16 in the 3rd word of the bitmap.
+snd_hda_codec_reset() is called either in resetting the whole setup at
+error paths or hwdep clear/reconfig sysfs triggers.  But all of these
+don't assume that the power has to be off, rather they want to keep
+the power state unchanged (e.g. reconfig_codec() calls the power
+up/down by itself).  Thus, unconditionally clearing the power state in
+snd_hda_codec_reset() leads to the inconsistency, confuses the further
+operation.   This patch gets rid of the lines doing that bad thing.
 
-Fixes: 4488cc96c581: NFS: Add NFSv4.2 protocol constants
-Cc: J. Bruce Fields <bfields@fieldses.org>
-Cc: Steve Dickson <steved@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/nfs4.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/hda_codec.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
---- a/include/linux/nfs4.h
-+++ b/include/linux/nfs4.h
-@@ -395,7 +395,7 @@ enum lock_type4 {
- #define FATTR4_WORD1_FS_LAYOUT_TYPES    (1UL << 30)
- #define FATTR4_WORD2_LAYOUT_BLKSIZE     (1UL << 1)
- #define FATTR4_WORD2_MDSTHRESHOLD       (1UL << 4)
--#define FATTR4_WORD2_SECURITY_LABEL     (1UL << 17)
-+#define FATTR4_WORD2_SECURITY_LABEL     (1UL << 16)
- 
- /* MDS threshold bitmap bits */
- #define THRESHOLD_RD                    (1UL << 0)
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -2579,9 +2579,6 @@ int snd_hda_codec_reset(struct hda_codec
+ 	cancel_delayed_work_sync(&codec->jackpoll_work);
+ #ifdef CONFIG_PM
+ 	cancel_delayed_work_sync(&codec->power_work);
+-	codec->power_on = 0;
+-	codec->power_transition = 0;
+-	codec->power_jiffies = jiffies;
+ 	flush_workqueue(bus->workq);
+ #endif
+ 	snd_hda_ctls_clear(codec);
 
 
