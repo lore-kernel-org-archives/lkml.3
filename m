@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932331Ab3K0UWk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 15:22:40 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:32803 "EHLO
+	id S932307Ab3K0UWh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 15:22:37 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:32805 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757891Ab3K0URC (ORCPT
+	with ESMTP id S1757892Ab3K0URC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Nov 2013 15:17:02 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Stanislav Fomichev <stfomichev@yandex-team.ru>,
+        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 25/34] perf script: Print callchains and symbols if they exist
-Date: Wed, 27 Nov 2013 17:16:25 -0300
-Message-Id: <1385583394-3703-26-git-send-email-acme@infradead.org>
+Subject: [PATCH 14/34] perf timechart: Always try to print at least 15 tasks
+Date: Wed, 27 Nov 2013 17:16:14 -0300
+Message-Id: <1385583394-3703-15-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1385583394-3703-1-git-send-email-acme@infradead.org>
 References: <1385583394-3703-1-git-send-email-acme@infradead.org>
@@ -24,56 +27,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
 
-The intent of perf-script is to dump the events and information in the
-file. H/W, S/W and raw events all dump callchains if they are present;
-might as well make that the default for tracepoints too.
+Always try to print at least 15 tasks no matter how long they run.
 
-v2: Only add options for sym, dso and ip if callchains are present
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/r/1384920457-5986-1-git-send-email-dsahern@gmail.com
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1383323151-19810-2-git-send-email-stfomichev@yandex-team.ru
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-script.c | 24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ tools/perf/builtin-timechart.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index b392770766dd..9f3ba4404a14 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -280,6 +280,30 @@ static int perf_session__check_output_opt(struct perf_session *session)
- 		set_print_ip_opts(&evsel->attr);
- 	}
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index 41c9bde2fb67..bb21e57ff9bb 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -945,15 +945,17 @@ static void write_svg_file(const char *filename)
+ {
+ 	u64 i;
+ 	int count;
++	int thresh = TIME_THRESH;
  
-+	/*
-+	 * set default for tracepoints to print symbols only
-+	 * if callchains are present
-+	 */
-+	if (symbol_conf.use_callchain &&
-+	    !output[PERF_TYPE_TRACEPOINT].user_set) {
-+		struct perf_event_attr *attr;
-+
-+		j = PERF_TYPE_TRACEPOINT;
-+		evsel = perf_session__find_first_evtype(session, j);
-+		if (evsel == NULL)
-+			goto out;
-+
-+		attr = &evsel->attr;
-+
-+		if (attr->sample_type & PERF_SAMPLE_CALLCHAIN) {
-+			output[j].fields |= PERF_OUTPUT_IP;
-+			output[j].fields |= PERF_OUTPUT_SYM;
-+			output[j].fields |= PERF_OUTPUT_DSO;
-+			set_print_ip_opts(attr);
-+		}
-+	}
-+
-+out:
- 	return 0;
- }
+ 	numcpus++;
+ 
+ 
+-	count = determine_display_tasks(TIME_THRESH);
+-
+-	/* We'd like to show at least 15 tasks; be less picky if we have fewer */
+-	if (count < 15)
+-		count = determine_display_tasks(TIME_THRESH / 10);
++	/* We'd like to show at least proc_num tasks;
++	 * be less picky if we have fewer */
++	do {
++		count = determine_display_tasks(thresh);
++		thresh /= 10;
++	} while (!process_filter && thresh && count < 15);
+ 
+ 	open_svg(filename, numcpus, count, first_time, last_time);
  
 -- 
 1.8.1.4
