@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758021Ab3K0X57 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 18:57:59 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:33733 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754561Ab3K0X56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 18:57:58 -0500
-Date: Wed, 27 Nov 2013 17:58:16 -0600
-From: Alex Thorlton <athorlton@sgi.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: BUG: mm, numa: test segfaults, only when NUMA balancing is on
-Message-ID: <20131127235816.GG22514@sgi.com>
-References: <20131106131048.GC4877@suse.de>
- <20131107214838.GY3066@sgi.com>
- <20131108112054.GB5040@suse.de>
- <20131108221329.GD4236@sgi.com>
- <20131112212902.GA4725@sgi.com>
- <20131115000901.GB26002@suse.de>
- <20131115144504.GE26002@suse.de>
- <20131122212807.GR3062@sgi.com>
- <20131122230524.GB5285@suse.de>
- <20131123000924.GC5285@suse.de>
+	id S1758279Ab3K0X7C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 18:59:02 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:39778 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757836Ab3K0X66 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 18:58:58 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/JRwcxlREAiOLcT+TxP+F3G1xvqScEy/g=
+Date: Wed, 27 Nov 2013 18:58:51 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Olof Johansson <olof@lixom.net>
+Cc: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        dmaengine@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] dma: mv_xor: remove mv_desc_get_dest_addr()
+Message-ID: <20131127235851.GS2879@titan.lakedaemon.net>
+References: <1385408365-8072-1-git-send-email-jason@lakedaemon.net>
+ <20131125194631.GE2879@titan.lakedaemon.net>
+ <CAOesGMhRYg4L72v8XCCSwSnLhYuZ6+aBTxPGNvVn=n=xpVm71A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131123000924.GC5285@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOesGMhRYg4L72v8XCCSwSnLhYuZ6+aBTxPGNvVn=n=xpVm71A@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 23, 2013 at 12:09:24AM +0000, Mel Gorman wrote:
-> On Fri, Nov 22, 2013 at 11:05:24PM +0000, Mel Gorman wrote:
-> > On Fri, Nov 22, 2013 at 03:28:07PM -0600, Alex Thorlton wrote:
-> > > > If the warning added by that patch does *not* trigger than can you also
-> > > > test this patch? It removes the barriers which should not be necessary
-> > > > and takes a reference tot he page before waiting on the lock. The
-> > > > previous version did not take the reference because otherwise the
-> > > > WARN_ON could not distinguish between a migration waiter and a surprise
-> > > > gup.
-> > > 
-> > > Sorry for the delay; been a bit busy.  I tested both of these patches on
-> > > top of this one (separately, of course):
-> > > 
-> > > http://www.spinics.net/lists/linux-mm/msg63919.html
-> > > 
-> > > I think that's the one you were referring to, if not send me a pointer
-> > > to the correct one and I'll give it another shot.  Both patches still
-> > > segfaulted, so it doesn't appear that either of these solved the
-> > > problem. 
-> > 
-> > I see. Does THP have to be enabled or does it segfault even with THP
-> > disabled?
-
-It occurs with both THP on, and off.  I get RCU stalls with THP on
-though.  That's probably related to not having Kirill/Naoya's patches
-applied though.
-
-> > 
+On Wed, Nov 27, 2013 at 11:45:24AM -0800, Olof Johansson wrote:
+> On Mon, Nov 25, 2013 at 11:46 AM, Jason Cooper <jason@lakedaemon.net> wrote:
+> > On Mon, Nov 25, 2013 at 07:39:25PM +0000, Jason Cooper wrote:
+> >> The following commit:
+> >>
+> >>   54f8d501e842 dmaengine: remove DMA unmap from drivers
+> >>
+> >> removed the last caller to mv_desc_get_dest_addr(), creating the
+> >> warning:
+> >>
+> >>   drivers/dma/mv_xor.c:57:12: warning: 'mv_desc_get_dest_addr' defined
+> >>   but not used [-Wunused-function]
+> >>
+> >> Remove it.
+> >>
+> >> Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+> >> ---
+> >>  drivers/dma/mv_xor.c | 6 ------
+> >>  1 file changed, 6 deletions(-)
+> >
+> > Gah!  I sent too fast.  I meant to mention that I have this in my
+> > mvebu/fixes branch, which gets merged into -next each night.  (The
+> > warning was bugging me :) )
+> >
+> > Just let me know when you take it and I'll drop it from my branches.
 > 
-> On a semi-related note, is the large machine doing anything with xpmem
-> or anything that depends on MMU notifiers to work properly? I noted
-> while looking at this that THP migration is not invalidating pages which
-> might be confusing a driver depending on it.
+> Hmm. Please don't add patches for other subsystems into your -next
+> tree, since then there is no indication for those of us who follow
+> -next that the patch is not yet merged by the appropriate maintainer.
 
-I'm not using xpmem on any of the machines that I've been testing on,
-and I don't think that anything should be using MMU notifiers.
+Ack.  Dropped.  Sorry for the confusion and thanks for setting me
+straight.
 
-- Alex
+thx,
+
+Jason.
