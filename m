@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760652Ab3K0B5e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:57:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38838 "EHLO
+	id S1759791Ab3K0B5c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:57:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38900 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757418Ab3K0A5O (ORCPT
+	with ESMTP id S1753273Ab3K0A5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:14 -0500
+	Tue, 26 Nov 2013 19:57:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>,
-        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH 3.10 03/80] aacraid: prevent invalid pointer dereference
-Date: Tue, 26 Nov 2013 16:56:32 -0800
-Message-Id: <20131127005641.177042047@linuxfoundation.org>
+        Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10 04/80] ACPICA: Return error if DerefOf resolves to a null package element.
+Date: Tue, 26 Nov 2013 16:56:33 -0800
+Message-Id: <20131127005641.245533647@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -29,41 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
+From: Bob Moore <robert.moore@intel.com>
 
-commit b4789b8e6be3151a955ade74872822f30e8cd914 upstream.
+commit a50abf4842dd7d603a2ad6dcc7f1467fd2a66f03 upstream.
 
-It appears that driver runs into a problem here if fibsize is too small
-because we allocate user_srbcmd with fibsize size only but later we
-access it until user_srbcmd->sg.count to copy it over to srbcmd.
+Disallow the dereference of a reference (via index) to an uninitialized
+package element. Provides compatibility with other ACPI
+implementations. ACPICA BZ 1003.
 
-It is not correct to test (fibsize < sizeof(*user_srbcmd)) because this
-structure already includes one sg element and this is not needed for
-commands without data.  So, we would recommend to add the following
-(instead of test for fibsize == 0).
-
-Signed-off-by: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kees Cook <keescook@chromium.org>
+References: https://bugs.acpica.org/show_bug.cgi?id=431
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/aacraid/commctrl.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/acpi/acpica/exoparg1.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/drivers/scsi/aacraid/commctrl.c
-+++ b/drivers/scsi/aacraid/commctrl.c
-@@ -510,7 +510,8 @@ static int aac_send_raw_srb(struct aac_d
- 		goto cleanup;
- 	}
+--- a/drivers/acpi/acpica/exoparg1.c
++++ b/drivers/acpi/acpica/exoparg1.c
+@@ -963,10 +963,17 @@ acpi_status acpi_ex_opcode_1A_0T_1R(stru
+ 					 */
+ 					return_desc =
+ 					    *(operand[0]->reference.where);
+-					if (return_desc) {
+-						acpi_ut_add_reference
+-						    (return_desc);
++					if (!return_desc) {
++						/*
++						 * Element is NULL, do not allow the dereference.
++						 * This provides compatibility with other ACPI
++						 * implementations.
++						 */
++						return_ACPI_STATUS
++						    (AE_AML_UNINITIALIZED_ELEMENT);
+ 					}
++
++					acpi_ut_add_reference(return_desc);
+ 					break;
  
--	if (fibsize > (dev->max_fib_size - sizeof(struct aac_fibhdr))) {
-+	if ((fibsize < (sizeof(struct user_aac_srb) - sizeof(struct user_sgentry))) ||
-+	    (fibsize > (dev->max_fib_size - sizeof(struct aac_fibhdr)))) {
- 		rcode = -EINVAL;
- 		goto cleanup;
- 	}
+ 				default:
 
 
