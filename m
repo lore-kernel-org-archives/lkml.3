@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932672Ab3K0BIs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:08:48 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:34902 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754356Ab3K0A76 (ORCPT
+	id S1758835Ab3K0BJk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:09:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39663 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758866Ab3K0A74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:58 -0500
-Date: Tue, 26 Nov 2013 17:59:54 -0700
-From: Jens Axboe <axboe@kernel.dk>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, snitzer@redhat.com
-Subject: Re: [GIT PULL] Immutable biovecs
-Message-ID: <20131127005954.GH9759@kernel.dk>
-References: <20131125215216.GB21515@kmo>
- <20131126060558.GA6434@infradead.org>
- <20131127004422.GB21305@kmo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131127004422.GB21305@kmo>
+	Tue, 26 Nov 2013 19:59:56 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Anton Blanchard <anton@samba.org>,
+        Michel Lespinasse <walken@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.12 089/116] powerpc: ppc64 address space capped at 32TB, mmap randomisation disabled
+Date: Tue, 26 Nov 2013 16:57:42 -0800
+Message-Id: <20131127005743.061622437@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.rc3
+In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
+References: <20131127005736.915454872@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26 2013, Kent Overstreet wrote:
-> On Mon, Nov 25, 2013 at 10:05:58PM -0800, Christoph Hellwig wrote:
-> > On Mon, Nov 25, 2013 at 01:52:16PM -0800, Kent Overstreet wrote:
-> > > Jens - here's immutable biovecs, rebased and ready for 3.14. Changes since the
-> > > last version of the series:
-> > 
-> > Can you do a resend of the patch series to all involved lists first so
-> > we can have a detailed look at the current version?
-> 
-> Sure thing.
-> 
-> > >  * bio_clone_bioset() retains the old behaviour, as previously discussed -
-> > >    bio_clone_fast() is being used by bcache, dm and the new bio_split().
-> > 
-> > Any chance to have a more descriptive name than bio_clone_fast?  Also
-> > without having the actual patches in front of me, did you make sure to
-> > document the different in semantics in detail?
-> 
-> I haven't been able to think of anything I don't hate, I'm open to
-> suggestions.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Don't think it's super important, as it will die off pretty quickly
-anyway. _fast implies it takes certain shortcuts and you need to be more
-careful, so I don't think it's that bad.
+------------------
 
--- 
-Jens Axboe
+From: Anton Blanchard <anton@samba.org>
+
+commit 5a049f14902982c26538250bdc8d54156d357252 upstream.
+
+Commit fba2369e6ceb (mm: use vm_unmapped_area() on powerpc architecture)
+has a bug in slice_scan_available() where we compare an unsigned long
+(high_slices) against a shifted int. As a result, comparisons against
+the top 32 bits of high_slices (representing the top 32TB) always
+returns 0 and the top of our mmap region is clamped at 32TB
+
+This also breaks mmap randomisation since the randomised address is
+always up near the top of the address space and it gets clamped down
+to 32TB.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Acked-by: Michel Lespinasse <walken@google.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/powerpc/mm/slice.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/arch/powerpc/mm/slice.c
++++ b/arch/powerpc/mm/slice.c
+@@ -258,7 +258,7 @@ static bool slice_scan_available(unsigne
+ 		slice = GET_HIGH_SLICE_INDEX(addr);
+ 		*boundary_addr = (slice + end) ?
+ 			((slice + end) << SLICE_HIGH_SHIFT) : SLICE_LOW_TOP;
+-		return !!(available.high_slices & (1u << slice));
++		return !!(available.high_slices & (1ul << slice));
+ 	}
+ }
+ 
+
 
