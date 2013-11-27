@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760263Ab3K0BsL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:48:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39098 "EHLO
+	id S1760274Ab3K0Bsa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:48:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39092 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755291Ab3K0A5s (ORCPT
+	with ESMTP id S1758060Ab3K0A5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:48 -0500
+	Tue, 26 Nov 2013 19:57:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kevin Hao <haokexin@gmail.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.10 58/80] ftrace/x86: skip over the breakpoint for ftrace caller
-Date: Tue, 26 Nov 2013 16:57:27 -0800
-Message-Id: <20131127005644.971606212@linuxfoundation.org>
+        Michele Baldessari <michele@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.10 57/80] KVM: x86: fix emulation of "movzbl %bpl, %eax"
+Date: Tue, 26 Nov 2013 16:57:26 -0800
+Message-Id: <20131127005644.903651361@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -26,55 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kevin Hao <haokexin@gmail.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit ab4ead02ec235d706d0611d8741964628291237e upstream.
+commit daf727225b8abfdfe424716abac3d15a3ac5626a upstream.
 
-In commit 8a4d0a687a59 "ftrace: Use breakpoint method to update ftrace
-caller", we choose to use breakpoint method to update the ftrace
-caller. But we also need to skip over the breakpoint in function
-ftrace_int3_handler() for them. Otherwise weird things would happen.
+When I was looking at RHEL5.9's failure to start with
+unrestricted_guest=0/emulate_invalid_guest_state=1, I got it working with a
+slightly older tree than kvm.git.  I now debugged the remaining failure,
+which was introduced by commit 660696d1 (KVM: X86 emulator: fix
+source operand decoding for 8bit mov[zs]x instructions, 2013-04-24)
+introduced a similar mis-emulation to the one in commit 8acb4207 (KVM:
+fix sil/dil/bpl/spl in the mod/rm fields, 2013-05-30).  The incorrect
+decoding occurs in 8-bit movzx/movsx instructions whose 8-bit operand
+is sil/dil/bpl/spl.
 
-Signed-off-by: Kevin Hao <haokexin@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Needless to say, "movzbl %bpl, %eax" does occur in RHEL5.9's decompression
+prolog, just a handful of instructions before finally giving control to
+the decompressed vmlinux and getting out of the invalid guest state.
+
+Because OpMem8 bypasses decode_modrm, the same handling of the REX prefix
+must be applied to OpMem8.
+
+Reported-by: Michele Baldessari <michele@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/ftrace.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ arch/x86/kvm/emulate.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -248,6 +248,15 @@ int ftrace_update_ftrace_func(ftrace_fun
- 	return ret;
- }
- 
-+static int is_ftrace_caller(unsigned long ip)
-+{
-+	if (ip == (unsigned long)(&ftrace_call) ||
-+		ip == (unsigned long)(&ftrace_regs_call))
-+		return 1;
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -4207,7 +4207,10 @@ static int decode_operand(struct x86_emu
+ 	case OpMem8:
+ 		ctxt->memop.bytes = 1;
+ 		if (ctxt->memop.type == OP_REG) {
+-			ctxt->memop.addr.reg = decode_register(ctxt, ctxt->modrm_rm, 1);
++			int highbyte_regs = ctxt->rex_prefix == 0;
 +
-+	return 0;
-+}
-+
- /*
-  * A breakpoint was added to the code address we are about to
-  * modify, and this is the handle that will just skip over it.
-@@ -257,10 +266,13 @@ int ftrace_update_ftrace_func(ftrace_fun
-  */
- int ftrace_int3_handler(struct pt_regs *regs)
- {
-+	unsigned long ip;
-+
- 	if (WARN_ON_ONCE(!regs))
- 		return 0;
- 
--	if (!ftrace_location(regs->ip - 1))
-+	ip = regs->ip - 1;
-+	if (!ftrace_location(ip) && !is_ftrace_caller(ip))
- 		return 0;
- 
- 	regs->ip += MCOUNT_INSN_SIZE - 1;
++			ctxt->memop.addr.reg = decode_register(ctxt, ctxt->modrm_rm,
++					       highbyte_regs);
+ 			fetch_register_operand(&ctxt->memop);
+ 		}
+ 		goto mem_common;
 
 
