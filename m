@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760471Ab3K0Bvk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:51:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39055 "EHLO
+	id S1760519Ab3K0Bwb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:52:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39039 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757880Ab3K0A5g (ORCPT
+	with ESMTP id S1757803Ab3K0A5c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:36 -0500
+	Tue, 26 Nov 2013 19:57:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 36/80] ALSA: hda - Enable SPDIF for Acer TravelMate 6293
-Date: Tue, 26 Nov 2013 16:57:05 -0800
-Message-Id: <20131127005643.436706137@linuxfoundation.org>
+        Vinod Koul <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 32/80] ALSA: compress: fix drain calls blocking other compress functions
+Date: Tue, 26 Nov 2013 16:57:01 -0800
+Message-Id: <20131127005643.159090132@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -26,52 +26,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Vinod Koul <vinod.koul@intel.com>
 
-commit 24eff328f65c8ef352c90b6adb7c2f39eb94205d upstream.
+commit 917f4b5cba78980a527098a910d94139d3e82c8d upstream.
 
-BIOS on Acer TravelMate 6293 doesn't set up the SPDIF output pin
-correctly as default, so enable it via a fixup entry.
+The drain and drain_notify callback were blocked by low level driver untill the
+draining was complete. Due to this being invoked with big fat mutex held, others
+ops like reading timestamp, calling pause, drop were blocked.
 
-Reported-and-tested-by: Hagen Heiduck <heiduck.suse@fmail.postpro.net>
+So to fix this we add a new snd_compr_drain_notify() API. This would be required
+to be invoked by low level driver when drain or partial drain has been completed
+by the DSP. Thus we make the drain and partial_drain callback as non blocking
+and driver returns immediately after notifying DSP.
+The waiting is done while relasing the lock so that other ops can go ahead.
+
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ include/sound/compress_driver.h |   12 +++++++++++
+ sound/core/compress_offload.c   |   41 +++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 50 insertions(+), 3 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -2380,6 +2380,7 @@ static const struct hda_verb alc268_beep
- enum {
- 	ALC268_FIXUP_INV_DMIC,
- 	ALC268_FIXUP_HP_EAPD,
-+	ALC268_FIXUP_SPDIF,
+--- a/include/sound/compress_driver.h
++++ b/include/sound/compress_driver.h
+@@ -48,6 +48,8 @@ struct snd_compr_ops;
+  *	the ring buffer
+  * @total_bytes_transferred: cumulative bytes transferred by offload DSP
+  * @sleep: poll sleep
++ * @wait: drain wait queue
++ * @drain_wake: condition for drain wake
+  */
+ struct snd_compr_runtime {
+ 	snd_pcm_state_t state;
+@@ -59,6 +61,8 @@ struct snd_compr_runtime {
+ 	u64 total_bytes_available;
+ 	u64 total_bytes_transferred;
+ 	wait_queue_head_t sleep;
++	wait_queue_head_t wait;
++	unsigned int drain_wake;
+ 	void *private_data;
  };
  
- static const struct hda_fixup alc268_fixups[] = {
-@@ -2394,6 +2395,13 @@ static const struct hda_fixup alc268_fix
- 			{}
- 		}
- 	},
-+	[ALC268_FIXUP_SPDIF] = {
-+		.type = HDA_FIXUP_PINS,
-+		.v.pins = (const struct hda_pintbl[]) {
-+			{ 0x1e, 0x014b1180 }, /* enable SPDIF out */
-+			{}
-+		}
-+	},
- };
+@@ -171,4 +175,12 @@ static inline void snd_compr_fragment_el
+ 	wake_up(&stream->runtime->sleep);
+ }
  
- static const struct hda_model_fixup alc268_fixup_models[] = {
-@@ -2403,6 +2411,7 @@ static const struct hda_model_fixup alc2
- };
++static inline void snd_compr_drain_notify(struct snd_compr_stream *stream)
++{
++	snd_BUG_ON(!stream);
++
++	stream->runtime->drain_wake = 1;
++	wake_up(&stream->runtime->wait);
++}
++
+ #endif
+--- a/sound/core/compress_offload.c
++++ b/sound/core/compress_offload.c
+@@ -123,6 +123,7 @@ static int snd_compr_open(struct inode *
+ 	}
+ 	runtime->state = SNDRV_PCM_STATE_OPEN;
+ 	init_waitqueue_head(&runtime->sleep);
++	init_waitqueue_head(&runtime->wait);
+ 	data->stream.runtime = runtime;
+ 	f->private_data = (void *)data;
+ 	mutex_lock(&compr->lock);
+@@ -670,12 +671,34 @@ static int snd_compr_stop(struct snd_com
+ 	if (!retval) {
+ 		stream->runtime->state = SNDRV_PCM_STATE_SETUP;
+ 		wake_up(&stream->runtime->sleep);
++		snd_compr_drain_notify(stream);
+ 		stream->runtime->total_bytes_available = 0;
+ 		stream->runtime->total_bytes_transferred = 0;
+ 	}
+ 	return retval;
+ }
  
- static const struct snd_pci_quirk alc268_fixup_tbl[] = {
-+	SND_PCI_QUIRK(0x1025, 0x0139, "Acer TravelMate 6293", ALC268_FIXUP_SPDIF),
- 	SND_PCI_QUIRK(0x1025, 0x015b, "Acer AOA 150 (ZG5)", ALC268_FIXUP_INV_DMIC),
- 	/* below is codec SSID since multiple Toshiba laptops have the
- 	 * same PCI SSID 1179:ff00
++static int snd_compress_wait_for_drain(struct snd_compr_stream *stream)
++{
++	/*
++	 * We are called with lock held. So drop the lock while we wait for
++	 * drain complete notfication from the driver
++	 *
++	 * It is expected that driver will notify the drain completion and then
++	 * stream will be moved to SETUP state, even if draining resulted in an
++	 * error. We can trigger next track after this.
++	 */
++	stream->runtime->state = SNDRV_PCM_STATE_DRAINING;
++	mutex_unlock(&stream->device->lock);
++
++	wait_event(stream->runtime->wait, stream->runtime->drain_wake);
++
++	wake_up(&stream->runtime->sleep);
++	mutex_lock(&stream->device->lock);
++
++	return 0;
++}
++
+ static int snd_compr_drain(struct snd_compr_stream *stream)
+ {
+ 	int retval;
+@@ -683,11 +706,17 @@ static int snd_compr_drain(struct snd_co
+ 	if (stream->runtime->state == SNDRV_PCM_STATE_PREPARED ||
+ 			stream->runtime->state == SNDRV_PCM_STATE_SETUP)
+ 		return -EPERM;
++
++	stream->runtime->drain_wake = 0;
+ 	retval = stream->ops->trigger(stream, SND_COMPR_TRIGGER_DRAIN);
+-	if (!retval) {
+-		stream->runtime->state = SNDRV_PCM_STATE_DRAINING;
++	if (retval) {
++		pr_err("SND_COMPR_TRIGGER_DRAIN failed %d\n", retval);
+ 		wake_up(&stream->runtime->sleep);
++		return retval;
+ 	}
++
++	retval = snd_compress_wait_for_drain(stream);
++	stream->runtime->state = SNDRV_PCM_STATE_SETUP;
+ 	return retval;
+ }
+ 
+@@ -723,10 +752,16 @@ static int snd_compr_partial_drain(struc
+ 	if (stream->next_track == false)
+ 		return -EPERM;
+ 
++	stream->runtime->drain_wake = 0;
+ 	retval = stream->ops->trigger(stream, SND_COMPR_TRIGGER_PARTIAL_DRAIN);
++	if (retval) {
++		pr_err("Partial drain returned failure\n");
++		wake_up(&stream->runtime->sleep);
++		return retval;
++	}
+ 
+ 	stream->next_track = false;
+-	return retval;
++	return snd_compress_wait_for_drain(stream);
+ }
+ 
+ static long snd_compr_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 
 
