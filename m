@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758660Ab3K0A6z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:58:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39329 "EHLO
+	id S932729Ab3K0B1X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:27:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39408 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932425Ab3K0A6h (ORCPT
+	with ESMTP id S1758662Ab3K0A6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:37 -0500
+	Tue, 26 Nov 2013 19:58:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.12 030/116] rt2x00: fix a crash bug in the HT descriptor handling fix
-Date: Tue, 26 Nov 2013 16:56:43 -0800
-Message-Id: <20131127005739.021607962@linuxfoundation.org>
+        Chris Murphy <lists@colorremedies.com>,
+        Josef Bacik <jbacik@fusionio.com>,
+        Chris Mason <chris.mason@fusionio.com>
+Subject: [PATCH 3.12 007/116] Btrfs: relocate csums properly with prealloc extents
+Date: Tue, 26 Nov 2013 16:56:20 -0800
+Message-Id: <20131127005737.427879660@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -28,43 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Josef Bacik <jbacik@fusionio.com>
 
-commit b4089d6d8e71a7293e2192025dfa507a04f661c4 upstream.
+commit 4577b014d1bc3db386da3246f625888fc48083a9 upstream.
 
-Commit "rt2x00: fix HT TX descriptor settings regression"
-assumes that the control parameter to rt2x00mac_tx is always non-NULL.
-There is an internal call in rt2x00lib_bc_buffer_iter where NULL is
-passed. Fix the resulting crash by adding an initialized dummy on-stack
-ieee80211_tx_control struct.
+A user reported a problem where they were getting csum errors when running a
+balance and running systemd's journal.  This is because systemd is awesome and
+fallocate()'s its log space and writes into it.  Unfortunately we assume that
+when we read in all the csums for an extent that they are sequential starting at
+the bytenr we care about.  This obviously isn't the case for prealloc extents,
+where we could have written to the middle of the prealloc extent only, which
+means the csum would be for the bytenr in the middle of our range and not the
+front of our range.  Fix this by offsetting the new bytenr we are logging to
+based on the original bytenr the csum was for.  With this patch I no longer see
+the csum errors I was seeing.  Thanks,
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Chris Murphy <lists@colorremedies.com>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2x00dev.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/btrfs/relocation.c |   18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -181,6 +181,7 @@ static void rt2x00lib_autowakeup(struct
- static void rt2x00lib_bc_buffer_iter(void *data, u8 *mac,
- 				     struct ieee80211_vif *vif)
- {
-+	struct ieee80211_tx_control control = {};
- 	struct rt2x00_dev *rt2x00dev = data;
- 	struct sk_buff *skb;
+--- a/fs/btrfs/relocation.c
++++ b/fs/btrfs/relocation.c
+@@ -4481,6 +4481,7 @@ int btrfs_reloc_clone_csums(struct inode
+ 	struct btrfs_root *root = BTRFS_I(inode)->root;
+ 	int ret;
+ 	u64 disk_bytenr;
++	u64 new_bytenr;
+ 	LIST_HEAD(list);
  
-@@ -195,7 +196,7 @@ static void rt2x00lib_bc_buffer_iter(voi
- 	 */
- 	skb = ieee80211_get_buffered_bc(rt2x00dev->hw, vif);
- 	while (skb) {
--		rt2x00mac_tx(rt2x00dev->hw, NULL, skb);
-+		rt2x00mac_tx(rt2x00dev->hw, &control, skb);
- 		skb = ieee80211_get_buffered_bc(rt2x00dev->hw, vif);
+ 	ordered = btrfs_lookup_ordered_extent(inode, file_pos);
+@@ -4492,13 +4493,24 @@ int btrfs_reloc_clone_csums(struct inode
+ 	if (ret)
+ 		goto out;
+ 
+-	disk_bytenr = ordered->start;
+ 	while (!list_empty(&list)) {
+ 		sums = list_entry(list.next, struct btrfs_ordered_sum, list);
+ 		list_del_init(&sums->list);
+ 
+-		sums->bytenr = disk_bytenr;
+-		disk_bytenr += sums->len;
++		/*
++		 * We need to offset the new_bytenr based on where the csum is.
++		 * We need to do this because we will read in entire prealloc
++		 * extents but we may have written to say the middle of the
++		 * prealloc extent, so we need to make sure the csum goes with
++		 * the right disk offset.
++		 *
++		 * We can do this because the data reloc inode refers strictly
++		 * to the on disk bytes, so we don't have to worry about
++		 * disk_len vs real len like with real inodes since it's all
++		 * disk length.
++		 */
++		new_bytenr = ordered->start + (sums->bytenr - disk_bytenr);
++		sums->bytenr = new_bytenr;
+ 
+ 		btrfs_add_ordered_sum(inode, ordered, sums);
  	}
- }
 
 
