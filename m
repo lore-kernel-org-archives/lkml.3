@@ -1,98 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab3K0LqG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 06:46:06 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43530 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752433Ab3K0LqD (ORCPT
+	id S1754053Ab3K0LvB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 06:51:01 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:57841 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751894Ab3K0Lu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 06:46:03 -0500
-Date: Wed, 27 Nov 2013 11:39:39 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Patrick McHardy <kaber@trash.net>, kadlec@blackhole.kfki.hu,
-        "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>, Greg KH <greg@kroah.com>
-Subject: Re: netfilter: active obj WARN when cleaning up
-Message-ID: <20131127113939.GL16735@n2100.arm.linux.org.uk>
-References: <522B25B5.6000808@oracle.com> <5294F27D.4000108@oracle.com> <20131126230709.GA10948@localhost> <alpine.DEB.2.02.1311271106090.30673@ionos.tec.linutronix.de>
+	Wed, 27 Nov 2013 06:50:57 -0500
+Date: Wed, 27 Nov 2013 15:50:52 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: William Dauchy <wdauchy@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Andy Lutomirski <luto@amacapital.net>, Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 3.11 54/66] mm: migration: do not lose soft dirty bit if
+ page is in migration state
+Message-ID: <20131127115052.GX29824@moon>
+References: <20131101220634.605745564@linuxfoundation.org>
+ <20131101220649.696585269@linuxfoundation.org>
+ <CAJ75kXa=zh3NBRqR43nRv2s7WToDMNSmARs1PMABOE8-7hksDw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1311271106090.30673@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CAJ75kXa=zh3NBRqR43nRv2s7WToDMNSmARs1PMABOE8-7hksDw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 11:45:17AM +0100, Thomas Gleixner wrote:
-> On Wed, 27 Nov 2013, Pablo Neira Ayuso wrote:
+On Wed, Nov 27, 2013 at 12:38:10PM +0100, William Dauchy wrote:
+> Hi Greg,
 > 
-> > On Tue, Nov 26, 2013 at 02:11:57PM -0500, Sasha Levin wrote:
-> > > Ping? I still see this warning.
-> > 
-> > Did your test include patch 0c3c6c00c6?
-> 
-> And how is that patch supposed to help?
->  
-> > > >[  418.312449] WARNING: CPU: 6 PID: 4178 at lib/debugobjects.c:260 debug_print_object+0x8d/0xb0()
-> > > >[  418.313243] ODEBUG: free active (active state 0) object type: timer_list hint:
-> > > >delayed_work_timer_fn+0x0/0x20
-> 
-> > > >[  418.321101]  [<ffffffff812874d7>] kmem_cache_free+0x197/0x340
-> > > >[  418.321101]  [<ffffffff81249e76>] kmem_cache_destroy+0x86/0xe0
-> > > >[  418.321101]  [<ffffffff83d5d681>] nf_conntrack_cleanup_net_list+0x131/0x170
-> 
-> The debug code detects an active timer, which itself is part of a
-> delayed work struct. The call comes from kmem_cache_destroy().
-> 
->          kmem_cache_free(kmem_cache, s);
-> 
-> So debug object says: s contains an active timer. s is the kmem_cache
-> which is destroyed from nf_conntrack_cleanup_net_list.
-> 
-> Now struct kmem_cache has in case of SLUB:
-> 
->     struct kobject kobj;    /* For sysfs */
-> 
-> and struct kobject has:
-> 
-> #ifdef CONFIG_DEBUG_KOBJECT_RELEASE
->     struct delayed_work     release;
-> #endif
-> 
-> So this is the thing you want to look at:
-> 
-> commit c817a67ec (kobject: delayed kobject release: help find buggy
-> drivers) added that delayed work thing.
-> 
-> I fear that does not work for kobjects which are embedded into
-> something else.
+> I was wondering if v3.10.x stable branch was also concerned by this
+> patch since I did not found it in this later branch.
+> Maybe too hard to backport? (I saw that it requires new functions like
+> pte_swp_soft_dirty which is not present in v3.10.x)
+> Maybe it was planned in the future?
 
-No, kobjects embedded into something else have their lifetime determined
-by the embedded kobject.  That's rule #1 of kobjects - or rather reference
-counted objects.
-
-The point at which the kobject gets destructed is when the release function
-is called.  If it is destructed before that time, that's a violation of
-the reference counted nature of kobjects, and that's what the delay on
-releasing is designed to catch.
-
-It's designed to catch code which does this exact path:
-
-	put(obj)
-	free(obj)
-
-rather than code which does it the right way:
-
-	put(obj)
-		-> refcount becomes 0
-			-> release function gets called
-				->free(obj)
-
-The former is unsafe because obj may have other references.
+"Soft dirty bit" feature introduced in 3.11 kernel and as far as I know
+we've no plans to backport it on 3.10 series.
