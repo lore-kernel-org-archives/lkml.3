@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758828Ab3K0C45 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:56:57 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:49739 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756877Ab3K0Cxw (ORCPT
+	id S1758891Ab3K0C5G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:57:06 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:42955 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752784Ab3K0Cxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 21:53:52 -0500
+	Tue, 26 Nov 2013 21:53:44 -0500
 From: David Long <dave.long@linaro.org>
 To: linux-arm-kernel@lists.infradead.org,
         Russell King <linux@arm.linux.org.uk>
@@ -21,9 +21,9 @@ Cc: Rabin Vincent <rabin@rab.in>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
         Paul Mackerras <paulus@samba.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3 08/15] ARM: Use new opcode type in ARM kprobes/uprobes code
-Date: Tue, 26 Nov 2013 21:53:27 -0500
-Message-Id: <1385520814-10663-9-git-send-email-dave.long@linaro.org>
+Subject: [PATCH v3 03/15] ARM: Move generic arm instruction parsing code to new files for sharing between features
+Date: Tue, 26 Nov 2013 21:53:22 -0500
+Message-Id: <1385520814-10663-4-git-send-email-dave.long@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1385520814-10663-1-git-send-email-dave.long@linaro.org>
 References: <1385520814-10663-1-git-send-email-dave.long@linaro.org>
@@ -33,779 +33,2343 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David A. Long" <dave.long@linaro.org>
 
-For any ARM kprobes/uprobes code interfacing to the generic ARM probes code
-use a new probes_opcode_t type to avoid a dependency on kprobes definitions.
+Move the arm version of the kprobes instruction parsing code into more generic
+files from where it can be used by uprobes and possibly other subsystems. The
+symbol names will be made more generic in a subsequent part of this patchset.
 
 Signed-off-by: David A. Long <dave.long@linaro.org>
 ---
- arch/arm/include/asm/probes.h    |  7 ++--
- arch/arm/kernel/kprobes-arm.c    | 16 ++++-----
- arch/arm/kernel/kprobes-common.c | 14 ++++----
- arch/arm/kernel/kprobes-thumb.c  | 72 ++++++++++++++++++++--------------------
- arch/arm/kernel/kprobes.h        |  8 ++---
- arch/arm/kernel/probes-arm.c     | 14 ++++----
- arch/arm/kernel/probes-arm.h     | 10 +++---
- arch/arm/kernel/probes-thumb.c   |  8 ++---
- arch/arm/kernel/probes.c         | 20 +++++------
- arch/arm/kernel/probes.h         |  8 ++---
- 10 files changed, 89 insertions(+), 88 deletions(-)
+ arch/arm/include/asm/probes.h                   |   2 +
+ arch/arm/kernel/Makefile                        |   4 +-
+ arch/arm/kernel/kprobes-arm.c                   | 722 +-----------------------
+ arch/arm/kernel/kprobes-common.c                | 421 --------------
+ arch/arm/kernel/kprobes.h                       | 373 +-----------
+ arch/arm/kernel/{kprobes-arm.c => probes-arm.c} | 298 +---------
+ arch/arm/kernel/probes-arm.h                    |  38 ++
+ arch/arm/kernel/{kprobes-common.c => probes.c}  | 144 +----
+ arch/arm/kernel/{kprobes.h => probes.h}         |  51 +-
+ 9 files changed, 75 insertions(+), 1978 deletions(-)
+ copy arch/arm/kernel/{kprobes-arm.c => probes-arm.c} (76%)
+ create mode 100644 arch/arm/kernel/probes-arm.h
+ copy arch/arm/kernel/{kprobes-common.c => probes.c} (75%)
+ copy arch/arm/kernel/{kprobes.h => probes.h} (92%)
 
 diff --git a/arch/arm/include/asm/probes.h b/arch/arm/include/asm/probes.h
-index a7b0a79..8032591 100644
+index 21da148..edf5abe 100644
 --- a/arch/arm/include/asm/probes.h
 +++ b/arch/arm/include/asm/probes.h
-@@ -2,20 +2,21 @@
+@@ -1,6 +1,8 @@
+ #ifndef _ASM_PROBES_H
  #define _ASM_PROBES_H
  
- struct kprobe;
-+typedef u32 probes_opcode_t;
- 
- struct arch_specific_insn;
--typedef void (kprobe_insn_handler_t)(kprobe_opcode_t,
-+typedef void (kprobe_insn_handler_t)(probes_opcode_t,
- 				     struct arch_specific_insn *,
- 				     struct pt_regs *);
++struct kprobe;
++
+ typedef void (kprobe_insn_handler_t)(struct kprobe *, struct pt_regs *);
  typedef unsigned long (kprobe_check_cc)(unsigned long);
--typedef void (kprobe_insn_singlestep_t)(kprobe_opcode_t,
-+typedef void (kprobe_insn_singlestep_t)(probes_opcode_t,
- 					struct arch_specific_insn *,
- 					struct pt_regs *);
- typedef void (kprobe_insn_fn_t)(void);
- 
- /* Architecture specific copy of original instruction. */
- struct arch_specific_insn {
--	kprobe_opcode_t			*insn;
-+	probes_opcode_t			*insn;
- 	kprobe_insn_handler_t		*insn_handler;
- 	kprobe_check_cc			*insn_check_cc;
- 	kprobe_insn_singlestep_t	*insn_singlestep;
+ typedef void (kprobe_insn_singlestep_t)(struct kprobe *, struct pt_regs *);
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index a30fc9b..4c8b13e 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -50,11 +50,11 @@ obj-$(CONFIG_DYNAMIC_FTRACE)	+= ftrace.o insn.o
+ obj-$(CONFIG_FUNCTION_GRAPH_TRACER)	+= ftrace.o insn.o
+ obj-$(CONFIG_JUMP_LABEL)	+= jump_label.o insn.o patch.o
+ obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel.o
+-obj-$(CONFIG_KPROBES)		+= kprobes.o kprobes-common.o patch.o
++obj-$(CONFIG_KPROBES)		+= probes.o kprobes.o kprobes-common.o patch.o
+ ifdef CONFIG_THUMB2_KERNEL
+ obj-$(CONFIG_KPROBES)		+= kprobes-thumb.o
+ else
+-obj-$(CONFIG_KPROBES)		+= kprobes-arm.o
++obj-$(CONFIG_KPROBES)		+= kprobes-arm.o probes-arm.o
+ endif
+ obj-$(CONFIG_ARM_KPROBES_TEST)	+= test-kprobes.o
+ test-kprobes-objs		:= kprobes-test.o
 diff --git a/arch/arm/kernel/kprobes-arm.c b/arch/arm/kernel/kprobes-arm.c
-index 394b611..1fe3a44 100644
+index 8a30c89..a359475 100644
 --- a/arch/arm/kernel/kprobes-arm.c
 +++ b/arch/arm/kernel/kprobes-arm.c
-@@ -73,7 +73,7 @@
+@@ -63,10 +63,7 @@
+ #include <linux/module.h>
+ 
+ #include "kprobes.h"
+-
+-#define sign_extend(x, signbit) ((x) | (0 - ((x) & (1 << (signbit)))))
+-
+-#define branch_displacement(insn) sign_extend(((insn) & 0xffffff) << 2, 25)
++#include "probes-arm.h"
+ 
+ #if  __LINUX_ARM_ARCH__ >= 6
+ #define BLX(reg)	"blx	"reg"		\n\t"
+@@ -75,88 +72,8 @@
+ 			"mov	pc, "reg"	\n\t"
  #endif
  
- static void __kprobes
--emulate_ldrdstrd(kprobe_opcode_t insn,
-+emulate_ldrdstrd(probes_opcode_t insn,
- 	struct arch_specific_insn *asi, struct pt_regs *regs)
+-/*
+- * To avoid the complications of mimicing single-stepping on a
+- * processor without a Next-PC or a single-step mode, and to
+- * avoid having to deal with the side-effects of boosting, we
+- * simulate or emulate (almost) all ARM instructions.
+- *
+- * "Simulation" is where the instruction's behavior is duplicated in
+- * C code.  "Emulation" is where the original instruction is rewritten
+- * and executed, often by altering its registers.
+- *
+- * By having all behavior of the kprobe'd instruction completed before
+- * returning from the kprobe_handler(), all locks (scheduler and
+- * interrupt) can safely be released.  There is no need for secondary
+- * breakpoints, no race with MP or preemptable kernels, nor having to
+- * clean up resources counts at a later time impacting overall system
+- * performance.  By rewriting the instruction, only the minimum registers
+- * need to be loaded and saved back optimizing performance.
+- *
+- * Calling the insnslot_*_rwflags version of a function doesn't hurt
+- * anything even when the CPSR flags aren't updated by the
+- * instruction.  It's just a little slower in return for saving
+- * a little space by not having a duplicate function that doesn't
+- * update the flags.  (The same optimization can be said for
+- * instructions that do or don't perform register writeback)
+- * Also, instructions can either read the flags, only write the
+- * flags, or read and write the flags.  To save combinations
+- * rather than for sheer performance, flag functions just assume
+- * read and write of flags.
+- */
+-
+-static void __kprobes simulate_bbl(struct kprobe *p, struct pt_regs *regs)
+-{
+-	kprobe_opcode_t insn = p->opcode;
+-	long iaddr = (long)p->addr;
+-	int disp  = branch_displacement(insn);
+-
+-	if (insn & (1 << 24))
+-		regs->ARM_lr = iaddr + 4;
+-
+-	regs->ARM_pc = iaddr + 8 + disp;
+-}
+-
+-static void __kprobes simulate_blx1(struct kprobe *p, struct pt_regs *regs)
+-{
+-	kprobe_opcode_t insn = p->opcode;
+-	long iaddr = (long)p->addr;
+-	int disp = branch_displacement(insn);
+-
+-	regs->ARM_lr = iaddr + 4;
+-	regs->ARM_pc = iaddr + 8 + disp + ((insn >> 23) & 0x2);
+-	regs->ARM_cpsr |= PSR_T_BIT;
+-}
+ 
+-static void __kprobes simulate_blx2bx(struct kprobe *p, struct pt_regs *regs)
+-{
+-	kprobe_opcode_t insn = p->opcode;
+-	int rm = insn & 0xf;
+-	long rmv = regs->uregs[rm];
+-
+-	if (insn & (1 << 5))
+-		regs->ARM_lr = (long)p->addr + 4;
+-
+-	regs->ARM_pc = rmv & ~0x1;
+-	regs->ARM_cpsr &= ~PSR_T_BIT;
+-	if (rmv & 0x1)
+-		regs->ARM_cpsr |= PSR_T_BIT;
+-}
+-
+-static void __kprobes simulate_mrs(struct kprobe *p, struct pt_regs *regs)
+-{
+-	kprobe_opcode_t insn = p->opcode;
+-	int rd = (insn >> 12) & 0xf;
+-	unsigned long mask = 0xf8ff03df; /* Mask out execution state */
+-	regs->uregs[rd] = regs->ARM_cpsr & mask;
+-}
+-
+-static void __kprobes simulate_mov_ipsp(struct kprobe *p, struct pt_regs *regs)
+-{
+-	regs->uregs[12] = regs->uregs[13];
+-}
+-
+-static void __kprobes
++void __kprobes
+ emulate_ldrdstrd(struct kprobe *p, struct pt_regs *regs)
  {
- 	unsigned long pc = regs->ARM_pc + 4;
-@@ -102,7 +102,7 @@ emulate_ldrdstrd(kprobe_opcode_t insn,
+ 	kprobe_opcode_t insn = p->opcode;
+@@ -185,7 +102,7 @@ emulate_ldrdstrd(struct kprobe *p, struct pt_regs *regs)
+ 		regs->uregs[rn] = rnv;
  }
  
- static void __kprobes
--emulate_ldr(kprobe_opcode_t insn,
-+emulate_ldr(probes_opcode_t insn,
- 	struct arch_specific_insn *asi, struct pt_regs *regs)
+-static void __kprobes
++void __kprobes
+ emulate_ldr(struct kprobe *p, struct pt_regs *regs)
  {
- 	unsigned long pc = regs->ARM_pc + 4;
-@@ -132,7 +132,7 @@ emulate_ldr(kprobe_opcode_t insn,
+ 	kprobe_opcode_t insn = p->opcode;
+@@ -215,7 +132,7 @@ emulate_ldr(struct kprobe *p, struct pt_regs *regs)
+ 		regs->uregs[rn] = rnv;
  }
  
- static void __kprobes
--emulate_str(kprobe_opcode_t insn,
-+emulate_str(probes_opcode_t insn,
- 	struct arch_specific_insn *asi, struct pt_regs *regs)
+-static void __kprobes
++void __kprobes
+ emulate_str(struct kprobe *p, struct pt_regs *regs)
  {
- 	unsigned long rtpc = regs->ARM_pc - 4 + str_pc_offset;
-@@ -159,7 +159,7 @@ emulate_str(kprobe_opcode_t insn,
+ 	kprobe_opcode_t insn = p->opcode;
+@@ -242,7 +159,7 @@ emulate_str(struct kprobe *p, struct pt_regs *regs)
+ 		regs->uregs[rn] = rnv;
  }
  
- static void __kprobes
--emulate_rd12rn16rm0rs8_rwflags(kprobe_opcode_t insn,
-+emulate_rd12rn16rm0rs8_rwflags(probes_opcode_t insn,
- 	struct arch_specific_insn *asi, struct pt_regs *regs)
+-static void __kprobes
++void __kprobes
+ emulate_rd12rn16rm0rs8_rwflags(struct kprobe *p, struct pt_regs *regs)
  {
- 	unsigned long pc = regs->ARM_pc + 4;
-@@ -194,7 +194,7 @@ emulate_rd12rn16rm0rs8_rwflags(kprobe_opcode_t insn,
+ 	kprobe_opcode_t insn = p->opcode;
+@@ -277,7 +194,7 @@ emulate_rd12rn16rm0rs8_rwflags(struct kprobe *p, struct pt_regs *regs)
+ 	regs->ARM_cpsr = (regs->ARM_cpsr & ~APSR_MASK) | (cpsr & APSR_MASK);
  }
  
- static void __kprobes
--emulate_rd12rn16rm0_rwflags_nopc(kprobe_opcode_t insn,
-+emulate_rd12rn16rm0_rwflags_nopc(probes_opcode_t insn,
- 	struct arch_specific_insn *asi, struct pt_regs *regs)
+-static void __kprobes
++void __kprobes
+ emulate_rd12rn16rm0_rwflags_nopc(struct kprobe *p, struct pt_regs *regs)
  {
- 	int rd = (insn >> 12) & 0xf;
-@@ -221,7 +221,7 @@ emulate_rd12rn16rm0_rwflags_nopc(kprobe_opcode_t insn,
+ 	kprobe_opcode_t insn = p->opcode;
+@@ -304,7 +221,7 @@ emulate_rd12rn16rm0_rwflags_nopc(struct kprobe *p, struct pt_regs *regs)
+ 	regs->ARM_cpsr = (regs->ARM_cpsr & ~APSR_MASK) | (cpsr & APSR_MASK);
  }
  
- static void __kprobes
--emulate_rd16rn12rm0rs8_rwflags_nopc(kprobe_opcode_t insn,
-+emulate_rd16rn12rm0rs8_rwflags_nopc(probes_opcode_t insn,
- 	struct arch_specific_insn *asi,
- 	struct pt_regs *regs)
+-static void __kprobes
++void __kprobes
+ emulate_rd16rn12rm0rs8_rwflags_nopc(struct kprobe *p, struct pt_regs *regs)
  {
-@@ -251,7 +251,7 @@ emulate_rd16rn12rm0rs8_rwflags_nopc(kprobe_opcode_t insn,
+ 	kprobe_opcode_t insn = p->opcode;
+@@ -333,7 +250,7 @@ emulate_rd16rn12rm0rs8_rwflags_nopc(struct kprobe *p, struct pt_regs *regs)
+ 	regs->ARM_cpsr = (regs->ARM_cpsr & ~APSR_MASK) | (cpsr & APSR_MASK);
  }
  
- static void __kprobes
--emulate_rd12rm0_noflags_nopc(kprobe_opcode_t insn,
-+emulate_rd12rm0_noflags_nopc(probes_opcode_t insn,
- 	struct arch_specific_insn *asi, struct pt_regs *regs)
+-static void __kprobes
++void __kprobes
+ emulate_rd12rm0_noflags_nopc(struct kprobe *p, struct pt_regs *regs)
  {
- 	int rd = (insn >> 12) & 0xf;
-@@ -271,7 +271,7 @@ emulate_rd12rm0_noflags_nopc(kprobe_opcode_t insn,
+ 	kprobe_opcode_t insn = p->opcode;
+@@ -353,7 +270,7 @@ emulate_rd12rm0_noflags_nopc(struct kprobe *p, struct pt_regs *regs)
+ 	regs->uregs[rd] = rdv;
  }
  
- static void __kprobes
--emulate_rdlo12rdhi16rn0rm8_rwflags_nopc(kprobe_opcode_t insn,
-+emulate_rdlo12rdhi16rn0rm8_rwflags_nopc(probes_opcode_t insn,
- 	struct arch_specific_insn *asi,
- 	struct pt_regs *regs)
+-static void __kprobes
++void __kprobes
+ emulate_rdlo12rdhi16rn0rm8_rwflags_nopc(struct kprobe *p, struct pt_regs *regs)
  {
+ 	kprobe_opcode_t insn = p->opcode;
+@@ -382,624 +299,3 @@ emulate_rdlo12rdhi16rn0rm8_rwflags_nopc(struct kprobe *p, struct pt_regs *regs)
+ 	regs->uregs[rdhi] = rdhiv;
+ 	regs->ARM_cpsr = (regs->ARM_cpsr & ~APSR_MASK) | (cpsr & APSR_MASK);
+ }
+-
+-/*
+- * For the instruction masking and comparisons in all the "space_*"
+- * functions below, Do _not_ rearrange the order of tests unless
+- * you're very, very sure of what you are doing.  For the sake of
+- * efficiency, the masks for some tests sometimes assume other test
+- * have been done prior to them so the number of patterns to test
+- * for an instruction set can be as broad as possible to reduce the
+- * number of tests needed.
+- */
+-
+-static const union decode_item arm_1111_table[] = {
+-	/* Unconditional instructions					*/
+-
+-	/* memory hint		1111 0100 x001 xxxx xxxx xxxx xxxx xxxx */
+-	/* PLDI (immediate)	1111 0100 x101 xxxx xxxx xxxx xxxx xxxx */
+-	/* PLDW (immediate)	1111 0101 x001 xxxx xxxx xxxx xxxx xxxx */
+-	/* PLD (immediate)	1111 0101 x101 xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_SIMULATE	(0xfe300000, 0xf4100000, kprobe_simulate_nop),
+-
+-	/* memory hint		1111 0110 x001 xxxx xxxx xxxx xxx0 xxxx */
+-	/* PLDI (register)	1111 0110 x101 xxxx xxxx xxxx xxx0 xxxx */
+-	/* PLDW (register)	1111 0111 x001 xxxx xxxx xxxx xxx0 xxxx */
+-	/* PLD (register)	1111 0111 x101 xxxx xxxx xxxx xxx0 xxxx */
+-	DECODE_SIMULATE	(0xfe300010, 0xf6100000, kprobe_simulate_nop),
+-
+-	/* BLX (immediate)	1111 101x xxxx xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_SIMULATE	(0xfe000000, 0xfa000000, simulate_blx1),
+-
+-	/* CPS			1111 0001 0000 xxx0 xxxx xxxx xx0x xxxx */
+-	/* SETEND		1111 0001 0000 0001 xxxx xxxx 0000 xxxx */
+-	/* SRS			1111 100x x1x0 xxxx xxxx xxxx xxxx xxxx */
+-	/* RFE			1111 100x x0x1 xxxx xxxx xxxx xxxx xxxx */
+-
+-	/* Coprocessor instructions... */
+-	/* MCRR2		1111 1100 0100 xxxx xxxx xxxx xxxx xxxx */
+-	/* MRRC2		1111 1100 0101 xxxx xxxx xxxx xxxx xxxx */
+-	/* LDC2			1111 110x xxx1 xxxx xxxx xxxx xxxx xxxx */
+-	/* STC2			1111 110x xxx0 xxxx xxxx xxxx xxxx xxxx */
+-	/* CDP2			1111 1110 xxxx xxxx xxxx xxxx xxx0 xxxx */
+-	/* MCR2			1111 1110 xxx0 xxxx xxxx xxxx xxx1 xxxx */
+-	/* MRC2			1111 1110 xxx1 xxxx xxxx xxxx xxx1 xxxx */
+-
+-	/* Other unallocated instructions...				*/
+-	DECODE_END
+-};
+-
+-static const union decode_item arm_cccc_0001_0xx0____0xxx_table[] = {
+-	/* Miscellaneous instructions					*/
+-
+-	/* MRS cpsr		cccc 0001 0000 xxxx xxxx xxxx 0000 xxxx */
+-	DECODE_SIMULATEX(0x0ff000f0, 0x01000000, simulate_mrs,
+-						 REGS(0, NOPC, 0, 0, 0)),
+-
+-	/* BX			cccc 0001 0010 xxxx xxxx xxxx 0001 xxxx */
+-	DECODE_SIMULATE	(0x0ff000f0, 0x01200010, simulate_blx2bx),
+-
+-	/* BLX (register)	cccc 0001 0010 xxxx xxxx xxxx 0011 xxxx */
+-	DECODE_SIMULATEX(0x0ff000f0, 0x01200030, simulate_blx2bx,
+-						 REGS(0, 0, 0, 0, NOPC)),
+-
+-	/* CLZ			cccc 0001 0110 xxxx xxxx xxxx 0001 xxxx */
+-	DECODE_EMULATEX	(0x0ff000f0, 0x01600010, emulate_rd12rm0_noflags_nopc,
+-						 REGS(0, NOPC, 0, 0, NOPC)),
+-
+-	/* QADD			cccc 0001 0000 xxxx xxxx xxxx 0101 xxxx */
+-	/* QSUB			cccc 0001 0010 xxxx xxxx xxxx 0101 xxxx */
+-	/* QDADD		cccc 0001 0100 xxxx xxxx xxxx 0101 xxxx */
+-	/* QDSUB		cccc 0001 0110 xxxx xxxx xxxx 0101 xxxx */
+-	DECODE_EMULATEX	(0x0f9000f0, 0x01000050, emulate_rd12rn16rm0_rwflags_nopc,
+-						 REGS(NOPC, NOPC, 0, 0, NOPC)),
+-
+-	/* BXJ			cccc 0001 0010 xxxx xxxx xxxx 0010 xxxx */
+-	/* MSR			cccc 0001 0x10 xxxx xxxx xxxx 0000 xxxx */
+-	/* MRS spsr		cccc 0001 0100 xxxx xxxx xxxx 0000 xxxx */
+-	/* BKPT			1110 0001 0010 xxxx xxxx xxxx 0111 xxxx */
+-	/* SMC			cccc 0001 0110 xxxx xxxx xxxx 0111 xxxx */
+-	/* And unallocated instructions...				*/
+-	DECODE_END
+-};
+-
+-static const union decode_item arm_cccc_0001_0xx0____1xx0_table[] = {
+-	/* Halfword multiply and multiply-accumulate			*/
+-
+-	/* SMLALxy		cccc 0001 0100 xxxx xxxx xxxx 1xx0 xxxx */
+-	DECODE_EMULATEX	(0x0ff00090, 0x01400080, emulate_rdlo12rdhi16rn0rm8_rwflags_nopc,
+-						 REGS(NOPC, NOPC, NOPC, 0, NOPC)),
+-
+-	/* SMULWy		cccc 0001 0010 xxxx xxxx xxxx 1x10 xxxx */
+-	DECODE_OR	(0x0ff000b0, 0x012000a0),
+-	/* SMULxy		cccc 0001 0110 xxxx xxxx xxxx 1xx0 xxxx */
+-	DECODE_EMULATEX	(0x0ff00090, 0x01600080, emulate_rd16rn12rm0rs8_rwflags_nopc,
+-						 REGS(NOPC, 0, NOPC, 0, NOPC)),
+-
+-	/* SMLAxy		cccc 0001 0000 xxxx xxxx xxxx 1xx0 xxxx */
+-	DECODE_OR	(0x0ff00090, 0x01000080),
+-	/* SMLAWy		cccc 0001 0010 xxxx xxxx xxxx 1x00 xxxx */
+-	DECODE_EMULATEX	(0x0ff000b0, 0x01200080, emulate_rd16rn12rm0rs8_rwflags_nopc,
+-						 REGS(NOPC, NOPC, NOPC, 0, NOPC)),
+-
+-	DECODE_END
+-};
+-
+-static const union decode_item arm_cccc_0000_____1001_table[] = {
+-	/* Multiply and multiply-accumulate				*/
+-
+-	/* MUL			cccc 0000 0000 xxxx xxxx xxxx 1001 xxxx */
+-	/* MULS			cccc 0000 0001 xxxx xxxx xxxx 1001 xxxx */
+-	DECODE_EMULATEX	(0x0fe000f0, 0x00000090, emulate_rd16rn12rm0rs8_rwflags_nopc,
+-						 REGS(NOPC, 0, NOPC, 0, NOPC)),
+-
+-	/* MLA			cccc 0000 0010 xxxx xxxx xxxx 1001 xxxx */
+-	/* MLAS			cccc 0000 0011 xxxx xxxx xxxx 1001 xxxx */
+-	DECODE_OR	(0x0fe000f0, 0x00200090),
+-	/* MLS			cccc 0000 0110 xxxx xxxx xxxx 1001 xxxx */
+-	DECODE_EMULATEX	(0x0ff000f0, 0x00600090, emulate_rd16rn12rm0rs8_rwflags_nopc,
+-						 REGS(NOPC, NOPC, NOPC, 0, NOPC)),
+-
+-	/* UMAAL		cccc 0000 0100 xxxx xxxx xxxx 1001 xxxx */
+-	DECODE_OR	(0x0ff000f0, 0x00400090),
+-	/* UMULL		cccc 0000 1000 xxxx xxxx xxxx 1001 xxxx */
+-	/* UMULLS		cccc 0000 1001 xxxx xxxx xxxx 1001 xxxx */
+-	/* UMLAL		cccc 0000 1010 xxxx xxxx xxxx 1001 xxxx */
+-	/* UMLALS		cccc 0000 1011 xxxx xxxx xxxx 1001 xxxx */
+-	/* SMULL		cccc 0000 1100 xxxx xxxx xxxx 1001 xxxx */
+-	/* SMULLS		cccc 0000 1101 xxxx xxxx xxxx 1001 xxxx */
+-	/* SMLAL		cccc 0000 1110 xxxx xxxx xxxx 1001 xxxx */
+-	/* SMLALS		cccc 0000 1111 xxxx xxxx xxxx 1001 xxxx */
+-	DECODE_EMULATEX	(0x0f8000f0, 0x00800090, emulate_rdlo12rdhi16rn0rm8_rwflags_nopc,
+-						 REGS(NOPC, NOPC, NOPC, 0, NOPC)),
+-
+-	DECODE_END
+-};
+-
+-static const union decode_item arm_cccc_0001_____1001_table[] = {
+-	/* Synchronization primitives					*/
+-
+-#if __LINUX_ARM_ARCH__ < 6
+-	/* Deprecated on ARMv6 and may be UNDEFINED on v7		*/
+-	/* SMP/SWPB		cccc 0001 0x00 xxxx xxxx xxxx 1001 xxxx */
+-	DECODE_EMULATEX	(0x0fb000f0, 0x01000090, emulate_rd12rn16rm0_rwflags_nopc,
+-						 REGS(NOPC, NOPC, 0, 0, NOPC)),
+-#endif
+-	/* LDREX/STREX{,D,B,H}	cccc 0001 1xxx xxxx xxxx xxxx 1001 xxxx */
+-	/* And unallocated instructions...				*/
+-	DECODE_END
+-};
+-
+-static const union decode_item arm_cccc_000x_____1xx1_table[] = {
+-	/* Extra load/store instructions				*/
+-
+-	/* STRHT		cccc 0000 xx10 xxxx xxxx xxxx 1011 xxxx */
+-	/* ???			cccc 0000 xx10 xxxx xxxx xxxx 11x1 xxxx */
+-	/* LDRHT		cccc 0000 xx11 xxxx xxxx xxxx 1011 xxxx */
+-	/* LDRSBT		cccc 0000 xx11 xxxx xxxx xxxx 1101 xxxx */
+-	/* LDRSHT		cccc 0000 xx11 xxxx xxxx xxxx 1111 xxxx */
+-	DECODE_REJECT	(0x0f200090, 0x00200090),
+-
+-	/* LDRD/STRD lr,pc,{...	cccc 000x x0x0 xxxx 111x xxxx 1101 xxxx */
+-	DECODE_REJECT	(0x0e10e0d0, 0x0000e0d0),
+-
+-	/* LDRD (register)	cccc 000x x0x0 xxxx xxxx xxxx 1101 xxxx */
+-	/* STRD (register)	cccc 000x x0x0 xxxx xxxx xxxx 1111 xxxx */
+-	DECODE_EMULATEX	(0x0e5000d0, 0x000000d0, emulate_ldrdstrd,
+-						 REGS(NOPCWB, NOPCX, 0, 0, NOPC)),
+-
+-	/* LDRD (immediate)	cccc 000x x1x0 xxxx xxxx xxxx 1101 xxxx */
+-	/* STRD (immediate)	cccc 000x x1x0 xxxx xxxx xxxx 1111 xxxx */
+-	DECODE_EMULATEX	(0x0e5000d0, 0x004000d0, emulate_ldrdstrd,
+-						 REGS(NOPCWB, NOPCX, 0, 0, 0)),
+-
+-	/* STRH (register)	cccc 000x x0x0 xxxx xxxx xxxx 1011 xxxx */
+-	DECODE_EMULATEX	(0x0e5000f0, 0x000000b0, emulate_str,
+-						 REGS(NOPCWB, NOPC, 0, 0, NOPC)),
+-
+-	/* LDRH (register)	cccc 000x x0x1 xxxx xxxx xxxx 1011 xxxx */
+-	/* LDRSB (register)	cccc 000x x0x1 xxxx xxxx xxxx 1101 xxxx */
+-	/* LDRSH (register)	cccc 000x x0x1 xxxx xxxx xxxx 1111 xxxx */
+-	DECODE_EMULATEX	(0x0e500090, 0x00100090, emulate_ldr,
+-						 REGS(NOPCWB, NOPC, 0, 0, NOPC)),
+-
+-	/* STRH (immediate)	cccc 000x x1x0 xxxx xxxx xxxx 1011 xxxx */
+-	DECODE_EMULATEX	(0x0e5000f0, 0x004000b0, emulate_str,
+-						 REGS(NOPCWB, NOPC, 0, 0, 0)),
+-
+-	/* LDRH (immediate)	cccc 000x x1x1 xxxx xxxx xxxx 1011 xxxx */
+-	/* LDRSB (immediate)	cccc 000x x1x1 xxxx xxxx xxxx 1101 xxxx */
+-	/* LDRSH (immediate)	cccc 000x x1x1 xxxx xxxx xxxx 1111 xxxx */
+-	DECODE_EMULATEX	(0x0e500090, 0x00500090, emulate_ldr,
+-						 REGS(NOPCWB, NOPC, 0, 0, 0)),
+-
+-	DECODE_END
+-};
+-
+-static const union decode_item arm_cccc_000x_table[] = {
+-	/* Data-processing (register)					*/
+-
+-	/* <op>S PC, ...	cccc 000x xxx1 xxxx 1111 xxxx xxxx xxxx */
+-	DECODE_REJECT	(0x0e10f000, 0x0010f000),
+-
+-	/* MOV IP, SP		1110 0001 1010 0000 1100 0000 0000 1101 */
+-	DECODE_SIMULATE	(0xffffffff, 0xe1a0c00d, simulate_mov_ipsp),
+-
+-	/* TST (register)	cccc 0001 0001 xxxx xxxx xxxx xxx0 xxxx */
+-	/* TEQ (register)	cccc 0001 0011 xxxx xxxx xxxx xxx0 xxxx */
+-	/* CMP (register)	cccc 0001 0101 xxxx xxxx xxxx xxx0 xxxx */
+-	/* CMN (register)	cccc 0001 0111 xxxx xxxx xxxx xxx0 xxxx */
+-	DECODE_EMULATEX	(0x0f900010, 0x01100000, emulate_rd12rn16rm0rs8_rwflags,
+-						 REGS(ANY, 0, 0, 0, ANY)),
+-
+-	/* MOV (register)	cccc 0001 101x xxxx xxxx xxxx xxx0 xxxx */
+-	/* MVN (register)	cccc 0001 111x xxxx xxxx xxxx xxx0 xxxx */
+-	DECODE_EMULATEX	(0x0fa00010, 0x01a00000, emulate_rd12rn16rm0rs8_rwflags,
+-						 REGS(0, ANY, 0, 0, ANY)),
+-
+-	/* AND (register)	cccc 0000 000x xxxx xxxx xxxx xxx0 xxxx */
+-	/* EOR (register)	cccc 0000 001x xxxx xxxx xxxx xxx0 xxxx */
+-	/* SUB (register)	cccc 0000 010x xxxx xxxx xxxx xxx0 xxxx */
+-	/* RSB (register)	cccc 0000 011x xxxx xxxx xxxx xxx0 xxxx */
+-	/* ADD (register)	cccc 0000 100x xxxx xxxx xxxx xxx0 xxxx */
+-	/* ADC (register)	cccc 0000 101x xxxx xxxx xxxx xxx0 xxxx */
+-	/* SBC (register)	cccc 0000 110x xxxx xxxx xxxx xxx0 xxxx */
+-	/* RSC (register)	cccc 0000 111x xxxx xxxx xxxx xxx0 xxxx */
+-	/* ORR (register)	cccc 0001 100x xxxx xxxx xxxx xxx0 xxxx */
+-	/* BIC (register)	cccc 0001 110x xxxx xxxx xxxx xxx0 xxxx */
+-	DECODE_EMULATEX	(0x0e000010, 0x00000000, emulate_rd12rn16rm0rs8_rwflags,
+-						 REGS(ANY, ANY, 0, 0, ANY)),
+-
+-	/* TST (reg-shift reg)	cccc 0001 0001 xxxx xxxx xxxx 0xx1 xxxx */
+-	/* TEQ (reg-shift reg)	cccc 0001 0011 xxxx xxxx xxxx 0xx1 xxxx */
+-	/* CMP (reg-shift reg)	cccc 0001 0101 xxxx xxxx xxxx 0xx1 xxxx */
+-	/* CMN (reg-shift reg)	cccc 0001 0111 xxxx xxxx xxxx 0xx1 xxxx */
+-	DECODE_EMULATEX	(0x0f900090, 0x01100010, emulate_rd12rn16rm0rs8_rwflags,
+-						 REGS(ANY, 0, NOPC, 0, ANY)),
+-
+-	/* MOV (reg-shift reg)	cccc 0001 101x xxxx xxxx xxxx 0xx1 xxxx */
+-	/* MVN (reg-shift reg)	cccc 0001 111x xxxx xxxx xxxx 0xx1 xxxx */
+-	DECODE_EMULATEX	(0x0fa00090, 0x01a00010, emulate_rd12rn16rm0rs8_rwflags,
+-						 REGS(0, ANY, NOPC, 0, ANY)),
+-
+-	/* AND (reg-shift reg)	cccc 0000 000x xxxx xxxx xxxx 0xx1 xxxx */
+-	/* EOR (reg-shift reg)	cccc 0000 001x xxxx xxxx xxxx 0xx1 xxxx */
+-	/* SUB (reg-shift reg)	cccc 0000 010x xxxx xxxx xxxx 0xx1 xxxx */
+-	/* RSB (reg-shift reg)	cccc 0000 011x xxxx xxxx xxxx 0xx1 xxxx */
+-	/* ADD (reg-shift reg)	cccc 0000 100x xxxx xxxx xxxx 0xx1 xxxx */
+-	/* ADC (reg-shift reg)	cccc 0000 101x xxxx xxxx xxxx 0xx1 xxxx */
+-	/* SBC (reg-shift reg)	cccc 0000 110x xxxx xxxx xxxx 0xx1 xxxx */
+-	/* RSC (reg-shift reg)	cccc 0000 111x xxxx xxxx xxxx 0xx1 xxxx */
+-	/* ORR (reg-shift reg)	cccc 0001 100x xxxx xxxx xxxx 0xx1 xxxx */
+-	/* BIC (reg-shift reg)	cccc 0001 110x xxxx xxxx xxxx 0xx1 xxxx */
+-	DECODE_EMULATEX	(0x0e000090, 0x00000010, emulate_rd12rn16rm0rs8_rwflags,
+-						 REGS(ANY, ANY, NOPC, 0, ANY)),
+-
+-	DECODE_END
+-};
+-
+-static const union decode_item arm_cccc_001x_table[] = {
+-	/* Data-processing (immediate)					*/
+-
+-	/* MOVW			cccc 0011 0000 xxxx xxxx xxxx xxxx xxxx */
+-	/* MOVT			cccc 0011 0100 xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_EMULATEX	(0x0fb00000, 0x03000000, emulate_rd12rm0_noflags_nopc,
+-						 REGS(0, NOPC, 0, 0, 0)),
+-
+-	/* YIELD		cccc 0011 0010 0000 xxxx xxxx 0000 0001 */
+-	DECODE_OR	(0x0fff00ff, 0x03200001),
+-	/* SEV			cccc 0011 0010 0000 xxxx xxxx 0000 0100 */
+-	DECODE_EMULATE	(0x0fff00ff, 0x03200004, kprobe_emulate_none),
+-	/* NOP			cccc 0011 0010 0000 xxxx xxxx 0000 0000 */
+-	/* WFE			cccc 0011 0010 0000 xxxx xxxx 0000 0010 */
+-	/* WFI			cccc 0011 0010 0000 xxxx xxxx 0000 0011 */
+-	DECODE_SIMULATE	(0x0fff00fc, 0x03200000, kprobe_simulate_nop),
+-	/* DBG			cccc 0011 0010 0000 xxxx xxxx ffff xxxx */
+-	/* unallocated hints	cccc 0011 0010 0000 xxxx xxxx xxxx xxxx */
+-	/* MSR (immediate)	cccc 0011 0x10 xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_REJECT	(0x0fb00000, 0x03200000),
+-
+-	/* <op>S PC, ...	cccc 001x xxx1 xxxx 1111 xxxx xxxx xxxx */
+-	DECODE_REJECT	(0x0e10f000, 0x0210f000),
+-
+-	/* TST (immediate)	cccc 0011 0001 xxxx xxxx xxxx xxxx xxxx */
+-	/* TEQ (immediate)	cccc 0011 0011 xxxx xxxx xxxx xxxx xxxx */
+-	/* CMP (immediate)	cccc 0011 0101 xxxx xxxx xxxx xxxx xxxx */
+-	/* CMN (immediate)	cccc 0011 0111 xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_EMULATEX	(0x0f900000, 0x03100000, emulate_rd12rn16rm0rs8_rwflags,
+-						 REGS(ANY, 0, 0, 0, 0)),
+-
+-	/* MOV (immediate)	cccc 0011 101x xxxx xxxx xxxx xxxx xxxx */
+-	/* MVN (immediate)	cccc 0011 111x xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_EMULATEX	(0x0fa00000, 0x03a00000, emulate_rd12rn16rm0rs8_rwflags,
+-						 REGS(0, ANY, 0, 0, 0)),
+-
+-	/* AND (immediate)	cccc 0010 000x xxxx xxxx xxxx xxxx xxxx */
+-	/* EOR (immediate)	cccc 0010 001x xxxx xxxx xxxx xxxx xxxx */
+-	/* SUB (immediate)	cccc 0010 010x xxxx xxxx xxxx xxxx xxxx */
+-	/* RSB (immediate)	cccc 0010 011x xxxx xxxx xxxx xxxx xxxx */
+-	/* ADD (immediate)	cccc 0010 100x xxxx xxxx xxxx xxxx xxxx */
+-	/* ADC (immediate)	cccc 0010 101x xxxx xxxx xxxx xxxx xxxx */
+-	/* SBC (immediate)	cccc 0010 110x xxxx xxxx xxxx xxxx xxxx */
+-	/* RSC (immediate)	cccc 0010 111x xxxx xxxx xxxx xxxx xxxx */
+-	/* ORR (immediate)	cccc 0011 100x xxxx xxxx xxxx xxxx xxxx */
+-	/* BIC (immediate)	cccc 0011 110x xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_EMULATEX	(0x0e000000, 0x02000000, emulate_rd12rn16rm0rs8_rwflags,
+-						 REGS(ANY, ANY, 0, 0, 0)),
+-
+-	DECODE_END
+-};
+-
+-static const union decode_item arm_cccc_0110_____xxx1_table[] = {
+-	/* Media instructions						*/
+-
+-	/* SEL			cccc 0110 1000 xxxx xxxx xxxx 1011 xxxx */
+-	DECODE_EMULATEX	(0x0ff000f0, 0x068000b0, emulate_rd12rn16rm0_rwflags_nopc,
+-						 REGS(NOPC, NOPC, 0, 0, NOPC)),
+-
+-	/* SSAT			cccc 0110 101x xxxx xxxx xxxx xx01 xxxx */
+-	/* USAT			cccc 0110 111x xxxx xxxx xxxx xx01 xxxx */
+-	DECODE_OR(0x0fa00030, 0x06a00010),
+-	/* SSAT16		cccc 0110 1010 xxxx xxxx xxxx 0011 xxxx */
+-	/* USAT16		cccc 0110 1110 xxxx xxxx xxxx 0011 xxxx */
+-	DECODE_EMULATEX	(0x0fb000f0, 0x06a00030, emulate_rd12rn16rm0_rwflags_nopc,
+-						 REGS(0, NOPC, 0, 0, NOPC)),
+-
+-	/* REV			cccc 0110 1011 xxxx xxxx xxxx 0011 xxxx */
+-	/* REV16		cccc 0110 1011 xxxx xxxx xxxx 1011 xxxx */
+-	/* RBIT			cccc 0110 1111 xxxx xxxx xxxx 0011 xxxx */
+-	/* REVSH		cccc 0110 1111 xxxx xxxx xxxx 1011 xxxx */
+-	DECODE_EMULATEX	(0x0fb00070, 0x06b00030, emulate_rd12rm0_noflags_nopc,
+-						 REGS(0, NOPC, 0, 0, NOPC)),
+-
+-	/* ???			cccc 0110 0x00 xxxx xxxx xxxx xxx1 xxxx */
+-	DECODE_REJECT	(0x0fb00010, 0x06000010),
+-	/* ???			cccc 0110 0xxx xxxx xxxx xxxx 1011 xxxx */
+-	DECODE_REJECT	(0x0f8000f0, 0x060000b0),
+-	/* ???			cccc 0110 0xxx xxxx xxxx xxxx 1101 xxxx */
+-	DECODE_REJECT	(0x0f8000f0, 0x060000d0),
+-	/* SADD16		cccc 0110 0001 xxxx xxxx xxxx 0001 xxxx */
+-	/* SADDSUBX		cccc 0110 0001 xxxx xxxx xxxx 0011 xxxx */
+-	/* SSUBADDX		cccc 0110 0001 xxxx xxxx xxxx 0101 xxxx */
+-	/* SSUB16		cccc 0110 0001 xxxx xxxx xxxx 0111 xxxx */
+-	/* SADD8		cccc 0110 0001 xxxx xxxx xxxx 1001 xxxx */
+-	/* SSUB8		cccc 0110 0001 xxxx xxxx xxxx 1111 xxxx */
+-	/* QADD16		cccc 0110 0010 xxxx xxxx xxxx 0001 xxxx */
+-	/* QADDSUBX		cccc 0110 0010 xxxx xxxx xxxx 0011 xxxx */
+-	/* QSUBADDX		cccc 0110 0010 xxxx xxxx xxxx 0101 xxxx */
+-	/* QSUB16		cccc 0110 0010 xxxx xxxx xxxx 0111 xxxx */
+-	/* QADD8		cccc 0110 0010 xxxx xxxx xxxx 1001 xxxx */
+-	/* QSUB8		cccc 0110 0010 xxxx xxxx xxxx 1111 xxxx */
+-	/* SHADD16		cccc 0110 0011 xxxx xxxx xxxx 0001 xxxx */
+-	/* SHADDSUBX		cccc 0110 0011 xxxx xxxx xxxx 0011 xxxx */
+-	/* SHSUBADDX		cccc 0110 0011 xxxx xxxx xxxx 0101 xxxx */
+-	/* SHSUB16		cccc 0110 0011 xxxx xxxx xxxx 0111 xxxx */
+-	/* SHADD8		cccc 0110 0011 xxxx xxxx xxxx 1001 xxxx */
+-	/* SHSUB8		cccc 0110 0011 xxxx xxxx xxxx 1111 xxxx */
+-	/* UADD16		cccc 0110 0101 xxxx xxxx xxxx 0001 xxxx */
+-	/* UADDSUBX		cccc 0110 0101 xxxx xxxx xxxx 0011 xxxx */
+-	/* USUBADDX		cccc 0110 0101 xxxx xxxx xxxx 0101 xxxx */
+-	/* USUB16		cccc 0110 0101 xxxx xxxx xxxx 0111 xxxx */
+-	/* UADD8		cccc 0110 0101 xxxx xxxx xxxx 1001 xxxx */
+-	/* USUB8		cccc 0110 0101 xxxx xxxx xxxx 1111 xxxx */
+-	/* UQADD16		cccc 0110 0110 xxxx xxxx xxxx 0001 xxxx */
+-	/* UQADDSUBX		cccc 0110 0110 xxxx xxxx xxxx 0011 xxxx */
+-	/* UQSUBADDX		cccc 0110 0110 xxxx xxxx xxxx 0101 xxxx */
+-	/* UQSUB16		cccc 0110 0110 xxxx xxxx xxxx 0111 xxxx */
+-	/* UQADD8		cccc 0110 0110 xxxx xxxx xxxx 1001 xxxx */
+-	/* UQSUB8		cccc 0110 0110 xxxx xxxx xxxx 1111 xxxx */
+-	/* UHADD16		cccc 0110 0111 xxxx xxxx xxxx 0001 xxxx */
+-	/* UHADDSUBX		cccc 0110 0111 xxxx xxxx xxxx 0011 xxxx */
+-	/* UHSUBADDX		cccc 0110 0111 xxxx xxxx xxxx 0101 xxxx */
+-	/* UHSUB16		cccc 0110 0111 xxxx xxxx xxxx 0111 xxxx */
+-	/* UHADD8		cccc 0110 0111 xxxx xxxx xxxx 1001 xxxx */
+-	/* UHSUB8		cccc 0110 0111 xxxx xxxx xxxx 1111 xxxx */
+-	DECODE_EMULATEX	(0x0f800010, 0x06000010, emulate_rd12rn16rm0_rwflags_nopc,
+-						 REGS(NOPC, NOPC, 0, 0, NOPC)),
+-
+-	/* PKHBT		cccc 0110 1000 xxxx xxxx xxxx x001 xxxx */
+-	/* PKHTB		cccc 0110 1000 xxxx xxxx xxxx x101 xxxx */
+-	DECODE_EMULATEX	(0x0ff00030, 0x06800010, emulate_rd12rn16rm0_rwflags_nopc,
+-						 REGS(NOPC, NOPC, 0, 0, NOPC)),
+-
+-	/* ???			cccc 0110 1001 xxxx xxxx xxxx 0111 xxxx */
+-	/* ???			cccc 0110 1101 xxxx xxxx xxxx 0111 xxxx */
+-	DECODE_REJECT	(0x0fb000f0, 0x06900070),
+-
+-	/* SXTB16		cccc 0110 1000 1111 xxxx xxxx 0111 xxxx */
+-	/* SXTB			cccc 0110 1010 1111 xxxx xxxx 0111 xxxx */
+-	/* SXTH			cccc 0110 1011 1111 xxxx xxxx 0111 xxxx */
+-	/* UXTB16		cccc 0110 1100 1111 xxxx xxxx 0111 xxxx */
+-	/* UXTB			cccc 0110 1110 1111 xxxx xxxx 0111 xxxx */
+-	/* UXTH			cccc 0110 1111 1111 xxxx xxxx 0111 xxxx */
+-	DECODE_EMULATEX	(0x0f8f00f0, 0x068f0070, emulate_rd12rm0_noflags_nopc,
+-						 REGS(0, NOPC, 0, 0, NOPC)),
+-
+-	/* SXTAB16		cccc 0110 1000 xxxx xxxx xxxx 0111 xxxx */
+-	/* SXTAB		cccc 0110 1010 xxxx xxxx xxxx 0111 xxxx */
+-	/* SXTAH		cccc 0110 1011 xxxx xxxx xxxx 0111 xxxx */
+-	/* UXTAB16		cccc 0110 1100 xxxx xxxx xxxx 0111 xxxx */
+-	/* UXTAB		cccc 0110 1110 xxxx xxxx xxxx 0111 xxxx */
+-	/* UXTAH		cccc 0110 1111 xxxx xxxx xxxx 0111 xxxx */
+-	DECODE_EMULATEX	(0x0f8000f0, 0x06800070, emulate_rd12rn16rm0_rwflags_nopc,
+-						 REGS(NOPCX, NOPC, 0, 0, NOPC)),
+-
+-	DECODE_END
+-};
+-
+-static const union decode_item arm_cccc_0111_____xxx1_table[] = {
+-	/* Media instructions						*/
+-
+-	/* UNDEFINED		cccc 0111 1111 xxxx xxxx xxxx 1111 xxxx */
+-	DECODE_REJECT	(0x0ff000f0, 0x07f000f0),
+-
+-	/* SMLALD		cccc 0111 0100 xxxx xxxx xxxx 00x1 xxxx */
+-	/* SMLSLD		cccc 0111 0100 xxxx xxxx xxxx 01x1 xxxx */
+-	DECODE_EMULATEX	(0x0ff00090, 0x07400010, emulate_rdlo12rdhi16rn0rm8_rwflags_nopc,
+-						 REGS(NOPC, NOPC, NOPC, 0, NOPC)),
+-
+-	/* SMUAD		cccc 0111 0000 xxxx 1111 xxxx 00x1 xxxx */
+-	/* SMUSD		cccc 0111 0000 xxxx 1111 xxxx 01x1 xxxx */
+-	DECODE_OR	(0x0ff0f090, 0x0700f010),
+-	/* SMMUL		cccc 0111 0101 xxxx 1111 xxxx 00x1 xxxx */
+-	DECODE_OR	(0x0ff0f0d0, 0x0750f010),
+-	/* USAD8		cccc 0111 1000 xxxx 1111 xxxx 0001 xxxx */
+-	DECODE_EMULATEX	(0x0ff0f0f0, 0x0780f010, emulate_rd16rn12rm0rs8_rwflags_nopc,
+-						 REGS(NOPC, 0, NOPC, 0, NOPC)),
+-
+-	/* SMLAD		cccc 0111 0000 xxxx xxxx xxxx 00x1 xxxx */
+-	/* SMLSD		cccc 0111 0000 xxxx xxxx xxxx 01x1 xxxx */
+-	DECODE_OR	(0x0ff00090, 0x07000010),
+-	/* SMMLA		cccc 0111 0101 xxxx xxxx xxxx 00x1 xxxx */
+-	DECODE_OR	(0x0ff000d0, 0x07500010),
+-	/* USADA8		cccc 0111 1000 xxxx xxxx xxxx 0001 xxxx */
+-	DECODE_EMULATEX	(0x0ff000f0, 0x07800010, emulate_rd16rn12rm0rs8_rwflags_nopc,
+-						 REGS(NOPC, NOPCX, NOPC, 0, NOPC)),
+-
+-	/* SMMLS		cccc 0111 0101 xxxx xxxx xxxx 11x1 xxxx */
+-	DECODE_EMULATEX	(0x0ff000d0, 0x075000d0, emulate_rd16rn12rm0rs8_rwflags_nopc,
+-						 REGS(NOPC, NOPC, NOPC, 0, NOPC)),
+-
+-	/* SBFX			cccc 0111 101x xxxx xxxx xxxx x101 xxxx */
+-	/* UBFX			cccc 0111 111x xxxx xxxx xxxx x101 xxxx */
+-	DECODE_EMULATEX	(0x0fa00070, 0x07a00050, emulate_rd12rm0_noflags_nopc,
+-						 REGS(0, NOPC, 0, 0, NOPC)),
+-
+-	/* BFC			cccc 0111 110x xxxx xxxx xxxx x001 1111 */
+-	DECODE_EMULATEX	(0x0fe0007f, 0x07c0001f, emulate_rd12rm0_noflags_nopc,
+-						 REGS(0, NOPC, 0, 0, 0)),
+-
+-	/* BFI			cccc 0111 110x xxxx xxxx xxxx x001 xxxx */
+-	DECODE_EMULATEX	(0x0fe00070, 0x07c00010, emulate_rd12rm0_noflags_nopc,
+-						 REGS(0, NOPC, 0, 0, NOPCX)),
+-
+-	DECODE_END
+-};
+-
+-static const union decode_item arm_cccc_01xx_table[] = {
+-	/* Load/store word and unsigned byte				*/
+-
+-	/* LDRB/STRB pc,[...]	cccc 01xx x0xx xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_REJECT	(0x0c40f000, 0x0440f000),
+-
+-	/* STRT			cccc 01x0 x010 xxxx xxxx xxxx xxxx xxxx */
+-	/* LDRT			cccc 01x0 x011 xxxx xxxx xxxx xxxx xxxx */
+-	/* STRBT		cccc 01x0 x110 xxxx xxxx xxxx xxxx xxxx */
+-	/* LDRBT		cccc 01x0 x111 xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_REJECT	(0x0d200000, 0x04200000),
+-
+-	/* STR (immediate)	cccc 010x x0x0 xxxx xxxx xxxx xxxx xxxx */
+-	/* STRB (immediate)	cccc 010x x1x0 xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_EMULATEX	(0x0e100000, 0x04000000, emulate_str,
+-						 REGS(NOPCWB, ANY, 0, 0, 0)),
+-
+-	/* LDR (immediate)	cccc 010x x0x1 xxxx xxxx xxxx xxxx xxxx */
+-	/* LDRB (immediate)	cccc 010x x1x1 xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_EMULATEX	(0x0e100000, 0x04100000, emulate_ldr,
+-						 REGS(NOPCWB, ANY, 0, 0, 0)),
+-
+-	/* STR (register)	cccc 011x x0x0 xxxx xxxx xxxx xxxx xxxx */
+-	/* STRB (register)	cccc 011x x1x0 xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_EMULATEX	(0x0e100000, 0x06000000, emulate_str,
+-						 REGS(NOPCWB, ANY, 0, 0, NOPC)),
+-
+-	/* LDR (register)	cccc 011x x0x1 xxxx xxxx xxxx xxxx xxxx */
+-	/* LDRB (register)	cccc 011x x1x1 xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_EMULATEX	(0x0e100000, 0x06100000, emulate_ldr,
+-						 REGS(NOPCWB, ANY, 0, 0, NOPC)),
+-
+-	DECODE_END
+-};
+-
+-static const union decode_item arm_cccc_100x_table[] = {
+-	/* Block data transfer instructions				*/
+-
+-	/* LDM			cccc 100x x0x1 xxxx xxxx xxxx xxxx xxxx */
+-	/* STM			cccc 100x x0x0 xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_CUSTOM	(0x0e400000, 0x08000000, kprobe_decode_ldmstm),
+-
+-	/* STM (user registers)	cccc 100x x1x0 xxxx xxxx xxxx xxxx xxxx */
+-	/* LDM (user registers)	cccc 100x x1x1 xxxx 0xxx xxxx xxxx xxxx */
+-	/* LDM (exception ret)	cccc 100x x1x1 xxxx 1xxx xxxx xxxx xxxx */
+-	DECODE_END
+-};
+-
+-const union decode_item kprobe_decode_arm_table[] = {
+-	/*
+-	 * Unconditional instructions
+-	 *			1111 xxxx xxxx xxxx xxxx xxxx xxxx xxxx
+-	 */
+-	DECODE_TABLE	(0xf0000000, 0xf0000000, arm_1111_table),
+-
+-	/*
+-	 * Miscellaneous instructions
+-	 *			cccc 0001 0xx0 xxxx xxxx xxxx 0xxx xxxx
+-	 */
+-	DECODE_TABLE	(0x0f900080, 0x01000000, arm_cccc_0001_0xx0____0xxx_table),
+-
+-	/*
+-	 * Halfword multiply and multiply-accumulate
+-	 *			cccc 0001 0xx0 xxxx xxxx xxxx 1xx0 xxxx
+-	 */
+-	DECODE_TABLE	(0x0f900090, 0x01000080, arm_cccc_0001_0xx0____1xx0_table),
+-
+-	/*
+-	 * Multiply and multiply-accumulate
+-	 *			cccc 0000 xxxx xxxx xxxx xxxx 1001 xxxx
+-	 */
+-	DECODE_TABLE	(0x0f0000f0, 0x00000090, arm_cccc_0000_____1001_table),
+-
+-	/*
+-	 * Synchronization primitives
+-	 *			cccc 0001 xxxx xxxx xxxx xxxx 1001 xxxx
+-	 */
+-	DECODE_TABLE	(0x0f0000f0, 0x01000090, arm_cccc_0001_____1001_table),
+-
+-	/*
+-	 * Extra load/store instructions
+-	 *			cccc 000x xxxx xxxx xxxx xxxx 1xx1 xxxx
+-	 */
+-	DECODE_TABLE	(0x0e000090, 0x00000090, arm_cccc_000x_____1xx1_table),
+-
+-	/*
+-	 * Data-processing (register)
+-	 *			cccc 000x xxxx xxxx xxxx xxxx xxx0 xxxx
+-	 * Data-processing (register-shifted register)
+-	 *			cccc 000x xxxx xxxx xxxx xxxx 0xx1 xxxx
+-	 */
+-	DECODE_TABLE	(0x0e000000, 0x00000000, arm_cccc_000x_table),
+-
+-	/*
+-	 * Data-processing (immediate)
+-	 *			cccc 001x xxxx xxxx xxxx xxxx xxxx xxxx
+-	 */
+-	DECODE_TABLE	(0x0e000000, 0x02000000, arm_cccc_001x_table),
+-
+-	/*
+-	 * Media instructions
+-	 *			cccc 011x xxxx xxxx xxxx xxxx xxx1 xxxx
+-	 */
+-	DECODE_TABLE	(0x0f000010, 0x06000010, arm_cccc_0110_____xxx1_table),
+-	DECODE_TABLE	(0x0f000010, 0x07000010, arm_cccc_0111_____xxx1_table),
+-
+-	/*
+-	 * Load/store word and unsigned byte
+-	 *			cccc 01xx xxxx xxxx xxxx xxxx xxxx xxxx
+-	 */
+-	DECODE_TABLE	(0x0c000000, 0x04000000, arm_cccc_01xx_table),
+-
+-	/*
+-	 * Block data transfer instructions
+-	 *			cccc 100x xxxx xxxx xxxx xxxx xxxx xxxx
+-	 */
+-	DECODE_TABLE	(0x0e000000, 0x08000000, arm_cccc_100x_table),
+-
+-	/* B			cccc 1010 xxxx xxxx xxxx xxxx xxxx xxxx */
+-	/* BL			cccc 1011 xxxx xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_SIMULATE	(0x0e000000, 0x0a000000, simulate_bbl),
+-
+-	/*
+-	 * Supervisor Call, and coprocessor instructions
+-	 */
+-
+-	/* MCRR			cccc 1100 0100 xxxx xxxx xxxx xxxx xxxx */
+-	/* MRRC			cccc 1100 0101 xxxx xxxx xxxx xxxx xxxx */
+-	/* LDC			cccc 110x xxx1 xxxx xxxx xxxx xxxx xxxx */
+-	/* STC			cccc 110x xxx0 xxxx xxxx xxxx xxxx xxxx */
+-	/* CDP			cccc 1110 xxxx xxxx xxxx xxxx xxx0 xxxx */
+-	/* MCR			cccc 1110 xxx0 xxxx xxxx xxxx xxx1 xxxx */
+-	/* MRC			cccc 1110 xxx1 xxxx xxxx xxxx xxx1 xxxx */
+-	/* SVC			cccc 1111 xxxx xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_REJECT	(0x0c000000, 0x0c000000),
+-
+-	DECODE_END
+-};
+-#ifdef CONFIG_ARM_KPROBES_TEST_MODULE
+-EXPORT_SYMBOL_GPL(kprobe_decode_arm_table);
+-#endif
+-
+-static void __kprobes arm_singlestep(struct kprobe *p, struct pt_regs *regs)
+-{
+-	regs->ARM_pc += 4;
+-	p->ainsn.insn_handler(p, regs);
+-}
+-
+-/* Return:
+- *   INSN_REJECTED     If instruction is one not allowed to kprobe,
+- *   INSN_GOOD         If instruction is supported and uses instruction slot,
+- *   INSN_GOOD_NO_SLOT If instruction is supported but doesn't use its slot.
+- *
+- * For instructions we don't want to kprobe (INSN_REJECTED return result):
+- *   These are generally ones that modify the processor state making
+- *   them "hard" to simulate such as switches processor modes or
+- *   make accesses in alternate modes.  Any of these could be simulated
+- *   if the work was put into it, but low return considering they
+- *   should also be very rare.
+- */
+-enum kprobe_insn __kprobes
+-arm_kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+-{
+-	asi->insn_singlestep = arm_singlestep;
+-	asi->insn_check_cc = kprobe_condition_checks[insn>>28];
+-	return kprobe_decode_insn(insn, asi, kprobe_decode_arm_table, false);
+-}
 diff --git a/arch/arm/kernel/kprobes-common.c b/arch/arm/kernel/kprobes-common.c
-index 45590a4..bd3d8c5 100644
+index 18a7628..ed47b54 100644
 --- a/arch/arm/kernel/kprobes-common.c
 +++ b/arch/arm/kernel/kprobes-common.c
-@@ -18,7 +18,7 @@
+@@ -18,170 +18,6 @@
  #include "kprobes.h"
  
  
--static void __kprobes simulate_ldm1stm1(kprobe_opcode_t insn,
-+static void __kprobes simulate_ldm1stm1(probes_opcode_t insn,
- 		struct arch_specific_insn *asi,
- 		struct pt_regs *regs)
+-#ifndef find_str_pc_offset
+-
+-/*
+- * For STR and STM instructions, an ARM core may choose to use either
+- * a +8 or a +12 displacement from the current instruction's address.
+- * Whichever value is chosen for a given core, it must be the same for
+- * both instructions and may not change.  This function measures it.
+- */
+-
+-int str_pc_offset;
+-
+-void __init find_str_pc_offset(void)
+-{
+-	int addr, scratch, ret;
+-
+-	__asm__ (
+-		"sub	%[ret], pc, #4		\n\t"
+-		"str	pc, %[addr]		\n\t"
+-		"ldr	%[scr], %[addr]		\n\t"
+-		"sub	%[ret], %[scr], %[ret]	\n\t"
+-		: [ret] "=r" (ret), [scr] "=r" (scratch), [addr] "+m" (addr));
+-
+-	str_pc_offset = ret;
+-}
+-
+-#endif /* !find_str_pc_offset */
+-
+-
+-#ifndef test_load_write_pc_interworking
+-
+-bool load_write_pc_interworks;
+-
+-void __init test_load_write_pc_interworking(void)
+-{
+-	int arch = cpu_architecture();
+-	BUG_ON(arch == CPU_ARCH_UNKNOWN);
+-	load_write_pc_interworks = arch >= CPU_ARCH_ARMv5T;
+-}
+-
+-#endif /* !test_load_write_pc_interworking */
+-
+-
+-#ifndef test_alu_write_pc_interworking
+-
+-bool alu_write_pc_interworks;
+-
+-void __init test_alu_write_pc_interworking(void)
+-{
+-	int arch = cpu_architecture();
+-	BUG_ON(arch == CPU_ARCH_UNKNOWN);
+-	alu_write_pc_interworks = arch >= CPU_ARCH_ARMv7;
+-}
+-
+-#endif /* !test_alu_write_pc_interworking */
+-
+-
+-void __init arm_kprobe_decode_init(void)
+-{
+-	find_str_pc_offset();
+-	test_load_write_pc_interworking();
+-	test_alu_write_pc_interworking();
+-}
+-
+-
+-static unsigned long __kprobes __check_eq(unsigned long cpsr)
+-{
+-	return cpsr & PSR_Z_BIT;
+-}
+-
+-static unsigned long __kprobes __check_ne(unsigned long cpsr)
+-{
+-	return (~cpsr) & PSR_Z_BIT;
+-}
+-
+-static unsigned long __kprobes __check_cs(unsigned long cpsr)
+-{
+-	return cpsr & PSR_C_BIT;
+-}
+-
+-static unsigned long __kprobes __check_cc(unsigned long cpsr)
+-{
+-	return (~cpsr) & PSR_C_BIT;
+-}
+-
+-static unsigned long __kprobes __check_mi(unsigned long cpsr)
+-{
+-	return cpsr & PSR_N_BIT;
+-}
+-
+-static unsigned long __kprobes __check_pl(unsigned long cpsr)
+-{
+-	return (~cpsr) & PSR_N_BIT;
+-}
+-
+-static unsigned long __kprobes __check_vs(unsigned long cpsr)
+-{
+-	return cpsr & PSR_V_BIT;
+-}
+-
+-static unsigned long __kprobes __check_vc(unsigned long cpsr)
+-{
+-	return (~cpsr) & PSR_V_BIT;
+-}
+-
+-static unsigned long __kprobes __check_hi(unsigned long cpsr)
+-{
+-	cpsr &= ~(cpsr >> 1); /* PSR_C_BIT &= ~PSR_Z_BIT */
+-	return cpsr & PSR_C_BIT;
+-}
+-
+-static unsigned long __kprobes __check_ls(unsigned long cpsr)
+-{
+-	cpsr &= ~(cpsr >> 1); /* PSR_C_BIT &= ~PSR_Z_BIT */
+-	return (~cpsr) & PSR_C_BIT;
+-}
+-
+-static unsigned long __kprobes __check_ge(unsigned long cpsr)
+-{
+-	cpsr ^= (cpsr << 3); /* PSR_N_BIT ^= PSR_V_BIT */
+-	return (~cpsr) & PSR_N_BIT;
+-}
+-
+-static unsigned long __kprobes __check_lt(unsigned long cpsr)
+-{
+-	cpsr ^= (cpsr << 3); /* PSR_N_BIT ^= PSR_V_BIT */
+-	return cpsr & PSR_N_BIT;
+-}
+-
+-static unsigned long __kprobes __check_gt(unsigned long cpsr)
+-{
+-	unsigned long temp = cpsr ^ (cpsr << 3); /* PSR_N_BIT ^= PSR_V_BIT */
+-	temp |= (cpsr << 1);			 /* PSR_N_BIT |= PSR_Z_BIT */
+-	return (~temp) & PSR_N_BIT;
+-}
+-
+-static unsigned long __kprobes __check_le(unsigned long cpsr)
+-{
+-	unsigned long temp = cpsr ^ (cpsr << 3); /* PSR_N_BIT ^= PSR_V_BIT */
+-	temp |= (cpsr << 1);			 /* PSR_N_BIT |= PSR_Z_BIT */
+-	return temp & PSR_N_BIT;
+-}
+-
+-static unsigned long __kprobes __check_al(unsigned long cpsr)
+-{
+-	return true;
+-}
+-
+-kprobe_check_cc * const kprobe_condition_checks[16] = {
+-	&__check_eq, &__check_ne, &__check_cs, &__check_cc,
+-	&__check_mi, &__check_pl, &__check_vs, &__check_vc,
+-	&__check_hi, &__check_ls, &__check_ge, &__check_lt,
+-	&__check_gt, &__check_le, &__check_al, &__check_al
+-};
+-
+-
+-void __kprobes kprobe_simulate_nop(struct kprobe *p, struct pt_regs *regs)
+-{
+-}
+-
+-void __kprobes kprobe_emulate_none(struct kprobe *p, struct pt_regs *regs)
+-{
+-	p->ainsn.insn_fn();
+-}
+-
+ static void __kprobes simulate_ldm1stm1(struct kprobe *p, struct pt_regs *regs)
  {
-@@ -60,7 +60,7 @@ static void __kprobes simulate_ldm1stm1(kprobe_opcode_t insn,
- 	}
+ 	kprobe_opcode_t insn = p->opcode;
+@@ -319,260 +155,3 @@ kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+ 	return INSN_GOOD_NO_SLOT;
  }
  
--static void __kprobes simulate_stm1_pc(kprobe_opcode_t insn,
-+static void __kprobes simulate_stm1_pc(probes_opcode_t insn,
- 	struct arch_specific_insn *asi,
- 	struct pt_regs *regs)
- {
-@@ -71,7 +71,7 @@ static void __kprobes simulate_stm1_pc(kprobe_opcode_t insn,
- 	regs->ARM_pc = (long)addr + 4;
- }
- 
--static void __kprobes simulate_ldm1_pc(kprobe_opcode_t insn,
-+static void __kprobes simulate_ldm1_pc(probes_opcode_t insn,
- 	struct arch_specific_insn *asi,
- 	struct pt_regs *regs)
- {
-@@ -80,7 +80,7 @@ static void __kprobes simulate_ldm1_pc(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--emulate_generic_r0_12_noflags(kprobe_opcode_t insn,
-+emulate_generic_r0_12_noflags(probes_opcode_t insn,
- 	struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	register void *rregs asm("r1") = regs;
-@@ -108,7 +108,7 @@ emulate_generic_r0_12_noflags(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--emulate_generic_r2_14_noflags(kprobe_opcode_t insn,
-+emulate_generic_r2_14_noflags(probes_opcode_t insn,
-       struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	emulate_generic_r0_12_noflags(insn, asi,
-@@ -116,7 +116,7 @@ emulate_generic_r2_14_noflags(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--emulate_ldm_r3_15(kprobe_opcode_t insn,
-+emulate_ldm_r3_15(probes_opcode_t insn,
- 	struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	emulate_generic_r0_12_noflags(insn, asi,
-@@ -125,7 +125,7 @@ emulate_ldm_r3_15(kprobe_opcode_t insn,
- }
- 
- enum kprobe_insn __kprobes
--kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-+kprobe_decode_ldmstm(probes_opcode_t insn, struct arch_specific_insn *asi,
- 	struct decode_header *h)
- {
- 	kprobe_insn_handler_t *handler = 0;
-diff --git a/arch/arm/kernel/kprobes-thumb.c b/arch/arm/kernel/kprobes-thumb.c
-index 5501fa3..bb45870 100644
---- a/arch/arm/kernel/kprobes-thumb.c
-+++ b/arch/arm/kernel/kprobes-thumb.c
-@@ -22,7 +22,7 @@
- /* t32 thumb actions */
- 
- static void __kprobes
--t32_simulate_table_branch(kprobe_opcode_t insn,
-+t32_simulate_table_branch(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	unsigned long pc = regs->ARM_pc;
-@@ -42,7 +42,7 @@ t32_simulate_table_branch(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--t32_simulate_mrs(kprobe_opcode_t insn,
-+t32_simulate_mrs(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	int rd = (insn >> 8) & 0xf;
-@@ -51,7 +51,7 @@ t32_simulate_mrs(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--t32_simulate_cond_branch(kprobe_opcode_t insn,
-+t32_simulate_cond_branch(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	unsigned long pc = regs->ARM_pc;
-@@ -66,7 +66,7 @@ t32_simulate_cond_branch(kprobe_opcode_t insn,
- }
- 
- static enum kprobe_insn __kprobes
--t32_decode_cond_branch(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-+t32_decode_cond_branch(probes_opcode_t insn, struct arch_specific_insn *asi,
- 		struct decode_header *d)
- {
- 	int cc = (insn >> 22) & 0xf;
-@@ -76,7 +76,7 @@ t32_decode_cond_branch(kprobe_opcode_t insn, struct arch_specific_insn *asi,
- }
- 
- static void __kprobes
--t32_simulate_branch(kprobe_opcode_t insn,
-+t32_simulate_branch(probes_opcode_t insn,
- 		    struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	unsigned long pc = regs->ARM_pc;
-@@ -104,7 +104,7 @@ t32_simulate_branch(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--t32_simulate_ldr_literal(kprobe_opcode_t insn,
-+t32_simulate_ldr_literal(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	unsigned long addr = regs->ARM_pc & ~3;
-@@ -142,7 +142,7 @@ t32_simulate_ldr_literal(kprobe_opcode_t insn,
- }
- 
- enum kprobe_insn __kprobes
--t32_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-+t32_decode_ldmstm(probes_opcode_t insn, struct arch_specific_insn *asi,
- 		struct decode_header *d)
- {
- 	enum kprobe_insn ret = kprobe_decode_ldmstm(insn, asi, d);
-@@ -156,7 +156,7 @@ t32_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi,
- }
- 
- static void __kprobes
--t32_emulate_ldrdstrd(kprobe_opcode_t insn,
-+t32_emulate_ldrdstrd(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	unsigned long pc = regs->ARM_pc & ~3;
-@@ -183,7 +183,7 @@ t32_emulate_ldrdstrd(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--t32_emulate_ldrstr(kprobe_opcode_t insn,
-+t32_emulate_ldrstr(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	int rt = (insn >> 12) & 0xf;
-@@ -209,7 +209,7 @@ t32_emulate_ldrstr(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--t32_emulate_rd8rn16rm0_rwflags(kprobe_opcode_t insn,
-+t32_emulate_rd8rn16rm0_rwflags(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	int rd = (insn >> 8) & 0xf;
-@@ -236,7 +236,7 @@ t32_emulate_rd8rn16rm0_rwflags(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--t32_emulate_rd8pc16_noflags(kprobe_opcode_t insn,
-+t32_emulate_rd8pc16_noflags(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	unsigned long pc = regs->ARM_pc;
-@@ -256,7 +256,7 @@ t32_emulate_rd8pc16_noflags(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--t32_emulate_rd8rn16_noflags(kprobe_opcode_t insn,
-+t32_emulate_rd8rn16_noflags(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	int rd = (insn >> 8) & 0xf;
-@@ -276,7 +276,7 @@ t32_emulate_rd8rn16_noflags(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--t32_emulate_rdlo12rdhi8rn16rm0_noflags(kprobe_opcode_t insn,
-+t32_emulate_rdlo12rdhi8rn16rm0_noflags(probes_opcode_t insn,
- 		struct arch_specific_insn *asi,
- 		struct pt_regs *regs)
- {
-@@ -304,7 +304,7 @@ t32_emulate_rdlo12rdhi8rn16rm0_noflags(kprobe_opcode_t insn,
- /* t16 thumb actions */
- 
- static void __kprobes
--t16_simulate_bxblx(kprobe_opcode_t insn,
-+t16_simulate_bxblx(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	unsigned long pc = regs->ARM_pc + 2;
-@@ -318,7 +318,7 @@ t16_simulate_bxblx(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--t16_simulate_ldr_literal(kprobe_opcode_t insn,
-+t16_simulate_ldr_literal(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	unsigned long *base = (unsigned long *)((regs->ARM_pc + 2) & ~3);
-@@ -328,7 +328,7 @@ t16_simulate_ldr_literal(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--t16_simulate_ldrstr_sp_relative(kprobe_opcode_t insn,
-+t16_simulate_ldrstr_sp_relative(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	unsigned long* base = (unsigned long *)regs->ARM_sp;
-@@ -341,7 +341,7 @@ t16_simulate_ldrstr_sp_relative(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--t16_simulate_reladr(kprobe_opcode_t insn,
-+t16_simulate_reladr(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	unsigned long base = (insn & 0x800) ? regs->ARM_sp
-@@ -352,7 +352,7 @@ t16_simulate_reladr(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--t16_simulate_add_sp_imm(kprobe_opcode_t insn,
-+t16_simulate_add_sp_imm(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	long imm = insn & 0x7f;
-@@ -363,11 +363,11 @@ t16_simulate_add_sp_imm(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--t16_simulate_cbz(kprobe_opcode_t insn,
-+t16_simulate_cbz(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	int rn = insn & 0x7;
--	kprobe_opcode_t nonzero = regs->uregs[rn] ? insn : ~insn;
-+	probes_opcode_t nonzero = regs->uregs[rn] ? insn : ~insn;
- 	if (nonzero & 0x800) {
- 		long i = insn & 0x200;
- 		long imm5 = insn & 0xf8;
-@@ -377,7 +377,7 @@ t16_simulate_cbz(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--t16_simulate_it(kprobe_opcode_t insn,
-+t16_simulate_it(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	/*
-@@ -394,7 +394,7 @@ t16_simulate_it(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--t16_singlestep_it(kprobe_opcode_t insn,
-+t16_singlestep_it(probes_opcode_t insn,
- 		  struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	regs->ARM_pc += 2;
-@@ -402,7 +402,7 @@ t16_singlestep_it(kprobe_opcode_t insn,
- }
- 
- static enum kprobe_insn __kprobes
--t16_decode_it(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-+t16_decode_it(probes_opcode_t insn, struct arch_specific_insn *asi,
- 		struct decode_header *d)
- {
- 	asi->insn_singlestep = t16_singlestep_it;
-@@ -410,7 +410,7 @@ t16_decode_it(kprobe_opcode_t insn, struct arch_specific_insn *asi,
- }
- 
- static void __kprobes
--t16_simulate_cond_branch(kprobe_opcode_t insn,
-+t16_simulate_cond_branch(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	unsigned long pc = regs->ARM_pc + 2;
-@@ -420,7 +420,7 @@ t16_simulate_cond_branch(kprobe_opcode_t insn,
- }
- 
- static enum kprobe_insn __kprobes
--t16_decode_cond_branch(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-+t16_decode_cond_branch(probes_opcode_t insn, struct arch_specific_insn *asi,
- 		struct decode_header *d)
- {
- 	int cc = (insn >> 8) & 0xf;
-@@ -430,7 +430,7 @@ t16_decode_cond_branch(kprobe_opcode_t insn, struct arch_specific_insn *asi,
- }
- 
- static void __kprobes
--t16_simulate_branch(kprobe_opcode_t insn,
-+t16_simulate_branch(probes_opcode_t insn,
- 		   struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	unsigned long pc = regs->ARM_pc + 2;
-@@ -440,7 +440,7 @@ t16_simulate_branch(kprobe_opcode_t insn,
- }
- 
- static unsigned long __kprobes
--t16_emulate_loregs(kprobe_opcode_t insn,
-+t16_emulate_loregs(probes_opcode_t insn,
- 		   struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	unsigned long oldcpsr = regs->ARM_cpsr;
-@@ -463,14 +463,14 @@ t16_emulate_loregs(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--t16_emulate_loregs_rwflags(kprobe_opcode_t insn,
-+t16_emulate_loregs_rwflags(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	regs->ARM_cpsr = t16_emulate_loregs(insn, asi, regs);
- }
- 
- static void __kprobes
--t16_emulate_loregs_noitrwflags(kprobe_opcode_t insn,
-+t16_emulate_loregs_noitrwflags(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	unsigned long cpsr = t16_emulate_loregs(insn, asi, regs);
-@@ -479,7 +479,7 @@ t16_emulate_loregs_noitrwflags(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--t16_emulate_hiregs(kprobe_opcode_t insn,
-+t16_emulate_hiregs(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	unsigned long pc = regs->ARM_pc + 2;
-@@ -510,7 +510,7 @@ t16_emulate_hiregs(kprobe_opcode_t insn,
- }
- 
- static enum kprobe_insn __kprobes
--t16_decode_hiregs(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-+t16_decode_hiregs(probes_opcode_t insn, struct arch_specific_insn *asi,
- 		struct decode_header *d)
- {
- 	insn &= ~0x00ff;
-@@ -521,7 +521,7 @@ t16_decode_hiregs(kprobe_opcode_t insn, struct arch_specific_insn *asi,
- }
- 
- static void __kprobes
--t16_emulate_push(kprobe_opcode_t insn,
-+t16_emulate_push(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	__asm__ __volatile__ (
-@@ -538,7 +538,7 @@ t16_emulate_push(kprobe_opcode_t insn,
- }
- 
- static enum kprobe_insn __kprobes
--t16_decode_push(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-+t16_decode_push(probes_opcode_t insn, struct arch_specific_insn *asi,
- 		struct decode_header *d)
- {
- 	/*
-@@ -553,7 +553,7 @@ t16_decode_push(kprobe_opcode_t insn, struct arch_specific_insn *asi,
- }
- 
- static void __kprobes
--t16_emulate_pop_nopc(kprobe_opcode_t insn,
-+t16_emulate_pop_nopc(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	__asm__ __volatile__ (
-@@ -570,7 +570,7 @@ t16_emulate_pop_nopc(kprobe_opcode_t insn,
- }
- 
- static void __kprobes
--t16_emulate_pop_pc(kprobe_opcode_t insn,
-+t16_emulate_pop_pc(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	register unsigned long pc asm("r8");
-@@ -591,7 +591,7 @@ t16_emulate_pop_pc(kprobe_opcode_t insn,
- }
- 
- enum kprobe_insn __kprobes
--t16_decode_pop(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-+t16_decode_pop(probes_opcode_t insn, struct arch_specific_insn *asi,
- 		struct decode_header *d)
- {
- 	/*
+-
+-/*
+- * Prepare an instruction slot to receive an instruction for emulating.
+- * This is done by placing a subroutine return after the location where the
+- * instruction will be placed. We also modify ARM instructions to be
+- * unconditional as the condition code will already be checked before any
+- * emulation handler is called.
+- */
+-static kprobe_opcode_t __kprobes
+-prepare_emulated_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+-								bool thumb)
+-{
+-#ifdef CONFIG_THUMB2_KERNEL
+-	if (thumb) {
+-		u16 *thumb_insn = (u16 *)asi->insn;
+-		thumb_insn[1] = 0x4770; /* Thumb bx lr */
+-		thumb_insn[2] = 0x4770; /* Thumb bx lr */
+-		return insn;
+-	}
+-	asi->insn[1] = 0xe12fff1e; /* ARM bx lr */
+-#else
+-	asi->insn[1] = 0xe1a0f00e; /* mov pc, lr */
+-#endif
+-	/* Make an ARM instruction unconditional */
+-	if (insn < 0xe0000000)
+-		insn = (insn | 0xe0000000) & ~0x10000000;
+-	return insn;
+-}
+-
+-/*
+- * Write a (probably modified) instruction into the slot previously prepared by
+- * prepare_emulated_insn
+- */
+-static void  __kprobes
+-set_emulated_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+-								bool thumb)
+-{
+-#ifdef CONFIG_THUMB2_KERNEL
+-	if (thumb) {
+-		u16 *ip = (u16 *)asi->insn;
+-		if (is_wide_instruction(insn))
+-			*ip++ = insn >> 16;
+-		*ip++ = insn;
+-		return;
+-	}
+-#endif
+-	asi->insn[0] = insn;
+-}
+-
+-/*
+- * When we modify the register numbers encoded in an instruction to be emulated,
+- * the new values come from this define. For ARM and 32-bit Thumb instructions
+- * this gives...
+- *
+- *	bit position	  16  12   8   4   0
+- *	---------------+---+---+---+---+---+
+- *	register	 r2  r0  r1  --  r3
+- */
+-#define INSN_NEW_BITS		0x00020103
+-
+-/* Each nibble has same value as that at INSN_NEW_BITS bit 16 */
+-#define INSN_SAMEAS16_BITS	0x22222222
+-
+-/*
+- * Validate and modify each of the registers encoded in an instruction.
+- *
+- * Each nibble in regs contains a value from enum decode_reg_type. For each
+- * non-zero value, the corresponding nibble in pinsn is validated and modified
+- * according to the type.
+- */
+-static bool __kprobes decode_regs(kprobe_opcode_t* pinsn, u32 regs)
+-{
+-	kprobe_opcode_t insn = *pinsn;
+-	kprobe_opcode_t mask = 0xf; /* Start at least significant nibble */
+-
+-	for (; regs != 0; regs >>= 4, mask <<= 4) {
+-
+-		kprobe_opcode_t new_bits = INSN_NEW_BITS;
+-
+-		switch (regs & 0xf) {
+-
+-		case REG_TYPE_NONE:
+-			/* Nibble not a register, skip to next */
+-			continue;
+-
+-		case REG_TYPE_ANY:
+-			/* Any register is allowed */
+-			break;
+-
+-		case REG_TYPE_SAMEAS16:
+-			/* Replace register with same as at bit position 16 */
+-			new_bits = INSN_SAMEAS16_BITS;
+-			break;
+-
+-		case REG_TYPE_SP:
+-			/* Only allow SP (R13) */
+-			if ((insn ^ 0xdddddddd) & mask)
+-				goto reject;
+-			break;
+-
+-		case REG_TYPE_PC:
+-			/* Only allow PC (R15) */
+-			if ((insn ^ 0xffffffff) & mask)
+-				goto reject;
+-			break;
+-
+-		case REG_TYPE_NOSP:
+-			/* Reject SP (R13) */
+-			if (((insn ^ 0xdddddddd) & mask) == 0)
+-				goto reject;
+-			break;
+-
+-		case REG_TYPE_NOSPPC:
+-		case REG_TYPE_NOSPPCX:
+-			/* Reject SP and PC (R13 and R15) */
+-			if (((insn ^ 0xdddddddd) & 0xdddddddd & mask) == 0)
+-				goto reject;
+-			break;
+-
+-		case REG_TYPE_NOPCWB:
+-			if (!is_writeback(insn))
+-				break; /* No writeback, so any register is OK */
+-			/* fall through... */
+-		case REG_TYPE_NOPC:
+-		case REG_TYPE_NOPCX:
+-			/* Reject PC (R15) */
+-			if (((insn ^ 0xffffffff) & mask) == 0)
+-				goto reject;
+-			break;
+-		}
+-
+-		/* Replace value of nibble with new register number... */
+-		insn &= ~mask;
+-		insn |= new_bits & mask;
+-	}
+-
+-	*pinsn = insn;
+-	return true;
+-
+-reject:
+-	return false;
+-}
+-
+-static const int decode_struct_sizes[NUM_DECODE_TYPES] = {
+-	[DECODE_TYPE_TABLE]	= sizeof(struct decode_table),
+-	[DECODE_TYPE_CUSTOM]	= sizeof(struct decode_custom),
+-	[DECODE_TYPE_SIMULATE]	= sizeof(struct decode_simulate),
+-	[DECODE_TYPE_EMULATE]	= sizeof(struct decode_emulate),
+-	[DECODE_TYPE_OR]	= sizeof(struct decode_or),
+-	[DECODE_TYPE_REJECT]	= sizeof(struct decode_reject)
+-};
+-
+-/*
+- * kprobe_decode_insn operates on data tables in order to decode an ARM
+- * architecture instruction onto which a kprobe has been placed.
+- *
+- * These instruction decoding tables are a concatenation of entries each
+- * of which consist of one of the following structs:
+- *
+- *	decode_table
+- *	decode_custom
+- *	decode_simulate
+- *	decode_emulate
+- *	decode_or
+- *	decode_reject
+- *
+- * Each of these starts with a struct decode_header which has the following
+- * fields:
+- *
+- *	type_regs
+- *	mask
+- *	value
+- *
+- * The least significant DECODE_TYPE_BITS of type_regs contains a value
+- * from enum decode_type, this indicates which of the decode_* structs
+- * the entry contains. The value DECODE_TYPE_END indicates the end of the
+- * table.
+- *
+- * When the table is parsed, each entry is checked in turn to see if it
+- * matches the instruction to be decoded using the test:
+- *
+- *	(insn & mask) == value
+- *
+- * If no match is found before the end of the table is reached then decoding
+- * fails with INSN_REJECTED.
+- *
+- * When a match is found, decode_regs() is called to validate and modify each
+- * of the registers encoded in the instruction; the data it uses to do this
+- * is (type_regs >> DECODE_TYPE_BITS). A validation failure will cause decoding
+- * to fail with INSN_REJECTED.
+- *
+- * Once the instruction has passed the above tests, further processing
+- * depends on the type of the table entry's decode struct.
+- *
+- */
+-int __kprobes
+-kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+-				const union decode_item *table, bool thumb)
+-{
+-	const struct decode_header *h = (struct decode_header *)table;
+-	const struct decode_header *next;
+-	bool matched = false;
+-
+-	insn = prepare_emulated_insn(insn, asi, thumb);
+-
+-	for (;; h = next) {
+-		enum decode_type type = h->type_regs.bits & DECODE_TYPE_MASK;
+-		u32 regs = h->type_regs.bits >> DECODE_TYPE_BITS;
+-
+-		if (type == DECODE_TYPE_END)
+-			return INSN_REJECTED;
+-
+-		next = (struct decode_header *)
+-				((uintptr_t)h + decode_struct_sizes[type]);
+-
+-		if (!matched && (insn & h->mask.bits) != h->value.bits)
+-			continue;
+-
+-		if (!decode_regs(&insn, regs))
+-			return INSN_REJECTED;
+-
+-		switch (type) {
+-
+-		case DECODE_TYPE_TABLE: {
+-			struct decode_table *d = (struct decode_table *)h;
+-			next = (struct decode_header *)d->table.table;
+-			break;
+-		}
+-
+-		case DECODE_TYPE_CUSTOM: {
+-			struct decode_custom *d = (struct decode_custom *)h;
+-			return (*d->decoder.decoder)(insn, asi);
+-		}
+-
+-		case DECODE_TYPE_SIMULATE: {
+-			struct decode_simulate *d = (struct decode_simulate *)h;
+-			asi->insn_handler = d->handler.handler;
+-			return INSN_GOOD_NO_SLOT;
+-		}
+-
+-		case DECODE_TYPE_EMULATE: {
+-			struct decode_emulate *d = (struct decode_emulate *)h;
+-			asi->insn_handler = d->handler.handler;
+-			set_emulated_insn(insn, asi, thumb);
+-			return INSN_GOOD;
+-		}
+-
+-		case DECODE_TYPE_OR:
+-			matched = true;
+-			break;
+-
+-		case DECODE_TYPE_REJECT:
+-		default:
+-			return INSN_REJECTED;
+-		}
+-		}
+-	}
 diff --git a/arch/arm/kernel/kprobes.h b/arch/arm/kernel/kprobes.h
-index 6c1ed3c..c8a8413 100644
+index 38945f7..aa68c0e 100644
 --- a/arch/arm/kernel/kprobes.h
 +++ b/arch/arm/kernel/kprobes.h
-@@ -35,22 +35,22 @@ enum kprobe_insn {
- 	INSN_GOOD_NO_SLOT
- };
+@@ -52,377 +52,6 @@ enum kprobe_insn arm_kprobe_decode_insn(kprobe_opcode_t,
  
--typedef enum kprobe_insn (kprobe_decode_insn_t)(kprobe_opcode_t,
-+typedef enum kprobe_insn (kprobe_decode_insn_t)(probes_opcode_t,
- 		struct arch_specific_insn *,
- 		struct decode_header *);
+ void __init arm_kprobe_decode_init(void);
  
- #ifdef CONFIG_THUMB2_KERNEL
+-extern kprobe_check_cc * const kprobe_condition_checks[16];
+-
+-
+-#if __LINUX_ARM_ARCH__ >= 7
+-
+-/* str_pc_offset is architecturally defined from ARMv7 onwards */
+-#define str_pc_offset 8
+-#define find_str_pc_offset()
+-
+-#else /* __LINUX_ARM_ARCH__ < 7 */
+-
+-/* We need a run-time check to determine str_pc_offset */
+-extern int str_pc_offset;
+-void __init find_str_pc_offset(void);
+-
+-#endif
+-
+-
+-/*
+- * Update ITSTATE after normal execution of an IT block instruction.
+- *
+- * The 8 IT state bits are split into two parts in CPSR:
+- *	ITSTATE<1:0> are in CPSR<26:25>
+- *	ITSTATE<7:2> are in CPSR<15:10>
+- */
+-static inline unsigned long it_advance(unsigned long cpsr)
+-	{
+-	if ((cpsr & 0x06000400) == 0) {
+-		/* ITSTATE<2:0> == 0 means end of IT block, so clear IT state */
+-		cpsr &= ~PSR_IT_MASK;
+-	} else {
+-		/* We need to shift left ITSTATE<4:0> */
+-		const unsigned long mask = 0x06001c00;  /* Mask ITSTATE<4:0> */
+-		unsigned long it = cpsr & mask;
+-		it <<= 1;
+-		it |= it >> (27 - 10);  /* Carry ITSTATE<2> to correct place */
+-		it &= mask;
+-		cpsr &= ~mask;
+-		cpsr |= it;
+-	}
+-	return cpsr;
+-}
+-
+-static inline void __kprobes bx_write_pc(long pcv, struct pt_regs *regs)
+-{
+-	long cpsr = regs->ARM_cpsr;
+-	if (pcv & 0x1) {
+-		cpsr |= PSR_T_BIT;
+-		pcv &= ~0x1;
+-	} else {
+-		cpsr &= ~PSR_T_BIT;
+-		pcv &= ~0x2;	/* Avoid UNPREDICTABLE address allignment */
+-	}
+-	regs->ARM_cpsr = cpsr;
+-	regs->ARM_pc = pcv;
+-}
+-
+-
+-#if __LINUX_ARM_ARCH__ >= 6
+-
+-/* Kernels built for >= ARMv6 should never run on <= ARMv5 hardware, so... */
+-#define load_write_pc_interworks true
+-#define test_load_write_pc_interworking()
+-
+-#else /* __LINUX_ARM_ARCH__ < 6 */
+-
+-/* We need run-time testing to determine if load_write_pc() should interwork. */
+-extern bool load_write_pc_interworks;
+-void __init test_load_write_pc_interworking(void);
+-
+-#endif
+-
+-static inline void __kprobes load_write_pc(long pcv, struct pt_regs *regs)
+-{
+-	if (load_write_pc_interworks)
+-		bx_write_pc(pcv, regs);
+-	else
+-		regs->ARM_pc = pcv;
+-}
+-
+-
+-#if __LINUX_ARM_ARCH__ >= 7
+-
+-#define alu_write_pc_interworks true
+-#define test_alu_write_pc_interworking()
+-
+-#elif __LINUX_ARM_ARCH__ <= 5
+-
+-/* Kernels built for <= ARMv5 should never run on >= ARMv6 hardware, so... */
+-#define alu_write_pc_interworks false
+-#define test_alu_write_pc_interworking()
+-
+-#else /* __LINUX_ARM_ARCH__ == 6 */
+-
+-/* We could be an ARMv6 binary on ARMv7 hardware so we need a run-time check. */
+-extern bool alu_write_pc_interworks;
+-void __init test_alu_write_pc_interworking(void);
+-
+-#endif /* __LINUX_ARM_ARCH__ == 6 */
+-
+-static inline void __kprobes alu_write_pc(long pcv, struct pt_regs *regs)
+-{
+-	if (alu_write_pc_interworks)
+-		bx_write_pc(pcv, regs);
+-	else
+-		regs->ARM_pc = pcv;
+-}
+-
+-
+-void __kprobes kprobe_simulate_nop(struct kprobe *p, struct pt_regs *regs);
+-void __kprobes kprobe_emulate_none(struct kprobe *p, struct pt_regs *regs);
+-
+-enum kprobe_insn __kprobes
+-kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi);
+-
+-/*
+- * Test if load/store instructions writeback the address register.
+- * if P (bit 24) == 0 or W (bit 21) == 1
+- */
+-#define is_writeback(insn) ((insn ^ 0x01000000) & 0x01200000)
+-
+-/*
+- * The following definitions and macros are used to build instruction
+- * decoding tables for use by kprobe_decode_insn.
+- *
+- * These tables are a concatenation of entries each of which consist of one of
+- * the decode_* structs. All of the fields in every type of decode structure
+- * are of the union type decode_item, therefore the entire decode table can be
+- * viewed as an array of these and declared like:
+- *
+- *	static const union decode_item table_name[] = {};
+- *
+- * In order to construct each entry in the table, macros are used to
+- * initialise a number of sequential decode_item values in a layout which
+- * matches the relevant struct. E.g. DECODE_SIMULATE initialise a struct
+- * decode_simulate by initialising four decode_item objects like this...
+- *
+- *	{.bits = _type},
+- *	{.bits = _mask},
+- *	{.bits = _value},
+- *	{.handler = _handler},
+- *
+- * Initialising a specified member of the union means that the compiler
+- * will produce a warning if the argument is of an incorrect type.
+- *
+- * Below is a list of each of the macros used to initialise entries and a
+- * description of the action performed when that entry is matched to an
+- * instruction. A match is found when (instruction & mask) == value.
+- *
+- * DECODE_TABLE(mask, value, table)
+- *	Instruction decoding jumps to parsing the new sub-table 'table'.
+- *
+- * DECODE_CUSTOM(mask, value, decoder)
+- *	The custom function 'decoder' is called to the complete decoding
+- *	of an instruction.
+- *
+- * DECODE_SIMULATE(mask, value, handler)
+- *	Set the probes instruction handler to 'handler', this will be used
+- *	to simulate the instruction when the probe is hit. Decoding returns
+- *	with INSN_GOOD_NO_SLOT.
+- *
+- * DECODE_EMULATE(mask, value, handler)
+- *	Set the probes instruction handler to 'handler', this will be used
+- *	to emulate the instruction when the probe is hit. The modified
+- *	instruction (see below) is placed in the probes instruction slot so it
+- *	may be called by the emulation code. Decoding returns with INSN_GOOD.
+- *
+- * DECODE_REJECT(mask, value)
+- *	Instruction decoding fails with INSN_REJECTED
+- *
+- * DECODE_OR(mask, value)
+- *	This allows the mask/value test of multiple table entries to be
+- *	logically ORed. Once an 'or' entry is matched the decoding action to
+- *	be performed is that of the next entry which isn't an 'or'. E.g.
+- *
+- *		DECODE_OR	(mask1, value1)
+- *		DECODE_OR	(mask2, value2)
+- *		DECODE_SIMULATE	(mask3, value3, simulation_handler)
+- *
+- *	This means that if any of the three mask/value pairs match the
+- *	instruction being decoded, then 'simulation_handler' will be used
+- *	for it.
+- *
+- * Both the SIMULATE and EMULATE macros have a second form which take an
+- * additional 'regs' argument.
+- *
+- *	DECODE_SIMULATEX(mask, value, handler, regs)
+- *	DECODE_EMULATEX	(mask, value, handler, regs)
+- *
+- * These are used to specify what kind of CPU register is encoded in each of the
+- * least significant 5 nibbles of the instruction being decoded. The regs value
+- * is specified using the REGS macro, this takes any of the REG_TYPE_* values
+- * from enum decode_reg_type as arguments; only the '*' part of the name is
+- * given. E.g.
+- *
+- *	REGS(0, ANY, NOPC, 0, ANY)
+- *
+- * This indicates an instruction is encoded like:
+- *
+- *	bits 19..16	ignore
+- *	bits 15..12	any register allowed here
+- *	bits 11.. 8	any register except PC allowed here
+- *	bits  7.. 4	ignore
+- *	bits  3.. 0	any register allowed here
+- *
+- * This register specification is checked after a decode table entry is found to
+- * match an instruction (through the mask/value test). Any invalid register then
+- * found in the instruction will cause decoding to fail with INSN_REJECTED. In
+- * the above example this would happen if bits 11..8 of the instruction were
+- * 1111, indicating R15 or PC.
+- *
+- * As well as checking for legal combinations of registers, this data is also
+- * used to modify the registers encoded in the instructions so that an
+- * emulation routines can use it. (See decode_regs() and INSN_NEW_BITS.)
+- *
+- * Here is a real example which matches ARM instructions of the form
+- * "AND <Rd>,<Rn>,<Rm>,<shift> <Rs>"
+- *
+- *	DECODE_EMULATEX	(0x0e000090, 0x00000010, emulate_rd12rn16rm0rs8_rwflags,
+- *						 REGS(ANY, ANY, NOPC, 0, ANY)),
+- *						      ^    ^    ^        ^
+- *						      Rn   Rd   Rs       Rm
+- *
+- * Decoding the instruction "AND R4, R5, R6, ASL R15" will be rejected because
+- * Rs == R15
+- *
+- * Decoding the instruction "AND R4, R5, R6, ASL R7" will be accepted and the
+- * instruction will be modified to "AND R0, R2, R3, ASL R1" and then placed into
+- * the kprobes instruction slot. This can then be called later by the handler
+- * function emulate_rd12rn16rm0rs8_rwflags in order to simulate the instruction.
+- */
+-
+-enum decode_type {
+-	DECODE_TYPE_END,
+-	DECODE_TYPE_TABLE,
+-	DECODE_TYPE_CUSTOM,
+-	DECODE_TYPE_SIMULATE,
+-	DECODE_TYPE_EMULATE,
+-	DECODE_TYPE_OR,
+-	DECODE_TYPE_REJECT,
+-	NUM_DECODE_TYPES /* Must be last enum */
+-};
+-
+-#define DECODE_TYPE_BITS	4
+-#define DECODE_TYPE_MASK	((1 << DECODE_TYPE_BITS) - 1)
+-
+-enum decode_reg_type {
+-	REG_TYPE_NONE = 0, /* Not a register, ignore */
+-	REG_TYPE_ANY,	   /* Any register allowed */
+-	REG_TYPE_SAMEAS16, /* Register should be same as that at bits 19..16 */
+-	REG_TYPE_SP,	   /* Register must be SP */
+-	REG_TYPE_PC,	   /* Register must be PC */
+-	REG_TYPE_NOSP,	   /* Register must not be SP */
+-	REG_TYPE_NOSPPC,   /* Register must not be SP or PC */
+-	REG_TYPE_NOPC,	   /* Register must not be PC */
+-	REG_TYPE_NOPCWB,   /* No PC if load/store write-back flag also set */
+-
+-	/* The following types are used when the encoding for PC indicates
+-	 * another instruction form. This distiction only matters for test
+-	 * case coverage checks.
+-	 */
+-	REG_TYPE_NOPCX,	   /* Register must not be PC */
+-	REG_TYPE_NOSPPCX,  /* Register must not be SP or PC */
+-
+-	/* Alias to allow '0' arg to be used in REGS macro. */
+-	REG_TYPE_0 = REG_TYPE_NONE
+-};
+-
+-#define REGS(r16, r12, r8, r4, r0)	\
+-	((REG_TYPE_##r16) << 16) +	\
+-	((REG_TYPE_##r12) << 12) +	\
+-	((REG_TYPE_##r8) << 8) +	\
+-	((REG_TYPE_##r4) << 4) +	\
+-	(REG_TYPE_##r0)
+-
+-union decode_item {
+-	u32			bits;
+-	const union decode_item	*table;
+-	kprobe_insn_handler_t	*handler;
+-	kprobe_decode_insn_t	*decoder;
+-};
+-
+-
+-#define DECODE_END			\
+-	{.bits = DECODE_TYPE_END}
+-
+-
+-struct decode_header {
+-	union decode_item	type_regs;
+-	union decode_item	mask;
+-	union decode_item	value;
+-};
+-
+-#define DECODE_HEADER(_type, _mask, _value, _regs)		\
+-	{.bits = (_type) | ((_regs) << DECODE_TYPE_BITS)},	\
+-	{.bits = (_mask)},					\
+-	{.bits = (_value)}
+-
+-
+-struct decode_table {
+-	struct decode_header	header;
+-	union decode_item	table;
+-};
+-
+-#define DECODE_TABLE(_mask, _value, _table)			\
+-	DECODE_HEADER(DECODE_TYPE_TABLE, _mask, _value, 0),	\
+-	{.table = (_table)}
+-
+-
+-struct decode_custom {
+-	struct decode_header	header;
+-	union decode_item	decoder;
+-};
+-
+-#define DECODE_CUSTOM(_mask, _value, _decoder)			\
+-	DECODE_HEADER(DECODE_TYPE_CUSTOM, _mask, _value, 0),	\
+-	{.decoder = (_decoder)}
+-
+-
+-struct decode_simulate {
+-	struct decode_header	header;
+-	union decode_item	handler;
+-};
+-
+-#define DECODE_SIMULATEX(_mask, _value, _handler, _regs)		\
+-	DECODE_HEADER(DECODE_TYPE_SIMULATE, _mask, _value, _regs),	\
+-	{.handler = (_handler)}
+-
+-#define DECODE_SIMULATE(_mask, _value, _handler)	\
+-	DECODE_SIMULATEX(_mask, _value, _handler, 0)
+-
+-
+-struct decode_emulate {
+-	struct decode_header	header;
+-	union decode_item	handler;
+-};
+-
+-#define DECODE_EMULATEX(_mask, _value, _handler, _regs)			\
+-	DECODE_HEADER(DECODE_TYPE_EMULATE, _mask, _value, _regs),	\
+-	{.handler = (_handler)}
+-
+-#define DECODE_EMULATE(_mask, _value, _handler)		\
+-	DECODE_EMULATEX(_mask, _value, _handler, 0)
+-
+-
+-struct decode_or {
+-	struct decode_header	header;
+-};
+-
+-#define DECODE_OR(_mask, _value)				\
+-	DECODE_HEADER(DECODE_TYPE_OR, _mask, _value, 0)
+-
+-
+-struct decode_reject {
+-	struct decode_header	header;
+-};
+-
+-#define DECODE_REJECT(_mask, _value)				\
+-	DECODE_HEADER(DECODE_TYPE_REJECT, _mask, _value, 0)
+-
+-
+-#ifdef CONFIG_THUMB2_KERNEL
+-extern const union decode_item kprobe_decode_thumb16_table[];
+-extern const union decode_item kprobe_decode_thumb32_table[];
+-#else
+-extern const union decode_item kprobe_decode_arm_table[];
+-#endif
+-
+-
+-int kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+-			const union decode_item *table, bool thumb16);
+-
++#include "probes.h"
  
--enum kprobe_insn thumb16_kprobe_decode_insn(kprobe_opcode_t,
-+enum kprobe_insn thumb16_kprobe_decode_insn(probes_opcode_t,
- 						struct arch_specific_insn *,
- 						struct decode_header *);
--enum kprobe_insn thumb32_kprobe_decode_insn(kprobe_opcode_t,
-+enum kprobe_insn thumb32_kprobe_decode_insn(probes_opcode_t,
- 						struct arch_specific_insn *,
- 						struct decode_header *);
- 
- #else /* !CONFIG_THUMB2_KERNEL */
- 
--enum kprobe_insn arm_kprobe_decode_insn(kprobe_opcode_t,
-+enum kprobe_insn arm_kprobe_decode_insn(probes_opcode_t,
- 					struct arch_specific_insn *,
- 					struct decode_header *);
- 
-diff --git a/arch/arm/kernel/probes-arm.c b/arch/arm/kernel/probes-arm.c
-index 3aba9c3..e50fb03 100644
---- a/arch/arm/kernel/probes-arm.c
+ #endif /* _ARM_KERNEL_KPROBES_H */
+diff --git a/arch/arm/kernel/kprobes-arm.c b/arch/arm/kernel/probes-arm.c
+similarity index 76%
+copy from arch/arm/kernel/kprobes-arm.c
+copy to arch/arm/kernel/probes-arm.c
+index 8a30c89..3286412 100644
+--- a/arch/arm/kernel/kprobes-arm.c
 +++ b/arch/arm/kernel/probes-arm.c
-@@ -55,7 +55,7 @@
+@@ -1,5 +1,7 @@
+ /*
+- * arch/arm/kernel/kprobes-decode.c
++ * arch/arm/kernel/probes-arm.c
++ *
++ * Some code moved here from arch/arm/kernel/kprobes-arm.c
+  *
+  * Copyright (C) 2006, 2007 Motorola Inc.
+  *
+@@ -13,68 +15,17 @@
+  * General Public License for more details.
+  */
+ 
+-/*
+- * We do not have hardware single-stepping on ARM, This
+- * effort is further complicated by the ARM not having a
+- * "next PC" register.  Instructions that change the PC
+- * can't be safely single-stepped in a MP environment, so
+- * we have a lot of work to do:
+- *
+- * In the prepare phase:
+- *   *) If it is an instruction that does anything
+- *      with the CPU mode, we reject it for a kprobe.
+- *      (This is out of laziness rather than need.  The
+- *      instructions could be simulated.)
+- *
+- *   *) Otherwise, decode the instruction rewriting its
+- *      registers to take fixed, ordered registers and
+- *      setting a handler for it to run the instruction.
+- *
+- * In the execution phase by an instruction's handler:
+- *
+- *   *) If the PC is written to by the instruction, the
+- *      instruction must be fully simulated in software.
+- *
+- *   *) Otherwise, a modified form of the instruction is
+- *      directly executed.  Its handler calls the
+- *      instruction in insn[0].  In insn[1] is a
+- *      "mov pc, lr" to return.
+- *
+- *      Before calling, load up the reordered registers
+- *      from the original instruction's registers.  If one
+- *      of the original input registers is the PC, compute
+- *      and adjust the appropriate input register.
+- *
+- *	After call completes, copy the output registers to
+- *      the original instruction's original registers.
+- *
+- * We don't use a real breakpoint instruction since that
+- * would have us in the kernel go from SVC mode to SVC
+- * mode losing the link register.  Instead we use an
+- * undefined instruction.  To simplify processing, the
+- * undefined instruction used for kprobes must be reserved
+- * exclusively for kprobes use.
+- *
+- * TODO: ifdef out some instruction decoding based on architecture.
+- */
+-
++#include <linux/compiler.h>
+ #include <linux/kernel.h>
+-#include <linux/kprobes.h>
+-#include <linux/module.h>
+ 
++#include <linux/kprobes.h>
+ #include "kprobes.h"
++#include "probes-arm.h"
+ 
+ #define sign_extend(x, signbit) ((x) | (0 - ((x) & (1 << (signbit)))))
+ 
+ #define branch_displacement(insn) sign_extend(((insn) & 0xffffff) << 2, 25)
+ 
+-#if  __LINUX_ARM_ARCH__ >= 6
+-#define BLX(reg)	"blx	"reg"		\n\t"
+-#else
+-#define BLX(reg)	"mov	lr, pc		\n\t"	\
+-			"mov	pc, "reg"	\n\t"
+-#endif
+-
+ /*
+  * To avoid the complications of mimicing single-stepping on a
+  * processor without a Next-PC or a single-step mode, and to
+@@ -105,7 +56,7 @@
   * read and write of flags.
   */
  
--void __kprobes simulate_bbl(kprobe_opcode_t insn,
-+void __kprobes simulate_bbl(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
+-static void __kprobes simulate_bbl(struct kprobe *p, struct pt_regs *regs)
++void __kprobes simulate_bbl(struct kprobe *p, struct pt_regs *regs)
  {
- 	long iaddr = (long) regs->ARM_pc - 4;
-@@ -67,7 +67,7 @@ void __kprobes simulate_bbl(kprobe_opcode_t insn,
+ 	kprobe_opcode_t insn = p->opcode;
+ 	long iaddr = (long)p->addr;
+@@ -117,7 +68,7 @@ static void __kprobes simulate_bbl(struct kprobe *p, struct pt_regs *regs)
  	regs->ARM_pc = iaddr + 8 + disp;
  }
  
--void __kprobes simulate_blx1(kprobe_opcode_t insn,
-+void __kprobes simulate_blx1(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
+-static void __kprobes simulate_blx1(struct kprobe *p, struct pt_regs *regs)
++void __kprobes simulate_blx1(struct kprobe *p, struct pt_regs *regs)
  {
- 	long iaddr = (long) regs->ARM_pc - 4;
-@@ -78,7 +78,7 @@ void __kprobes simulate_blx1(kprobe_opcode_t insn,
+ 	kprobe_opcode_t insn = p->opcode;
+ 	long iaddr = (long)p->addr;
+@@ -128,7 +79,7 @@ static void __kprobes simulate_blx1(struct kprobe *p, struct pt_regs *regs)
  	regs->ARM_cpsr |= PSR_T_BIT;
  }
  
--void __kprobes simulate_blx2bx(kprobe_opcode_t insn,
-+void __kprobes simulate_blx2bx(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
+-static void __kprobes simulate_blx2bx(struct kprobe *p, struct pt_regs *regs)
++void __kprobes simulate_blx2bx(struct kprobe *p, struct pt_regs *regs)
  {
+ 	kprobe_opcode_t insn = p->opcode;
  	int rm = insn & 0xf;
-@@ -93,7 +93,7 @@ void __kprobes simulate_blx2bx(kprobe_opcode_t insn,
+@@ -143,7 +94,7 @@ static void __kprobes simulate_blx2bx(struct kprobe *p, struct pt_regs *regs)
  		regs->ARM_cpsr |= PSR_T_BIT;
  }
  
--void __kprobes simulate_mrs(kprobe_opcode_t insn,
-+void __kprobes simulate_mrs(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
+-static void __kprobes simulate_mrs(struct kprobe *p, struct pt_regs *regs)
++void __kprobes simulate_mrs(struct kprobe *p, struct pt_regs *regs)
  {
+ 	kprobe_opcode_t insn = p->opcode;
  	int rd = (insn >> 12) & 0xf;
-@@ -101,7 +101,7 @@ void __kprobes simulate_mrs(kprobe_opcode_t insn,
+@@ -151,238 +102,11 @@ static void __kprobes simulate_mrs(struct kprobe *p, struct pt_regs *regs)
  	regs->uregs[rd] = regs->ARM_cpsr & mask;
  }
  
--void __kprobes simulate_mov_ipsp(kprobe_opcode_t insn,
-+void __kprobes simulate_mov_ipsp(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
+-static void __kprobes simulate_mov_ipsp(struct kprobe *p, struct pt_regs *regs)
++void __kprobes simulate_mov_ipsp(struct kprobe *p, struct pt_regs *regs)
  {
  	regs->uregs[12] = regs->uregs[13];
-@@ -702,7 +702,7 @@ const union decode_item kprobe_decode_arm_table[] = {
- EXPORT_SYMBOL_GPL(kprobe_decode_arm_table);
- #endif
+ }
  
--static void __kprobes arm_singlestep(kprobe_opcode_t insn,
-+static void __kprobes arm_singlestep(probes_opcode_t insn,
- 		struct arch_specific_insn *asi, struct pt_regs *regs)
- {
- 	regs->ARM_pc += 4;
-@@ -722,7 +722,7 @@ static void __kprobes arm_singlestep(kprobe_opcode_t insn,
-  *   should also be very rare.
-  */
- enum kprobe_insn __kprobes
--arm_kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-+arm_kprobe_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
- 		       struct decode_header *actions)
- {
- 	asi->insn_singlestep = arm_singlestep;
+-static void __kprobes
+-emulate_ldrdstrd(struct kprobe *p, struct pt_regs *regs)
+-{
+-	kprobe_opcode_t insn = p->opcode;
+-	unsigned long pc = (unsigned long)p->addr + 8;
+-	int rt = (insn >> 12) & 0xf;
+-	int rn = (insn >> 16) & 0xf;
+-	int rm = insn & 0xf;
+-
+-	register unsigned long rtv asm("r0") = regs->uregs[rt];
+-	register unsigned long rt2v asm("r1") = regs->uregs[rt+1];
+-	register unsigned long rnv asm("r2") = (rn == 15) ? pc
+-							  : regs->uregs[rn];
+-	register unsigned long rmv asm("r3") = regs->uregs[rm];
+-
+-	__asm__ __volatile__ (
+-		BLX("%[fn]")
+-		: "=r" (rtv), "=r" (rt2v), "=r" (rnv)
+-		: "0" (rtv), "1" (rt2v), "2" (rnv), "r" (rmv),
+-		  [fn] "r" (p->ainsn.insn_fn)
+-		: "lr", "memory", "cc"
+-	);
+-
+-	regs->uregs[rt] = rtv;
+-	regs->uregs[rt+1] = rt2v;
+-	if (is_writeback(insn))
+-		regs->uregs[rn] = rnv;
+-}
+-
+-static void __kprobes
+-emulate_ldr(struct kprobe *p, struct pt_regs *regs)
+-{
+-	kprobe_opcode_t insn = p->opcode;
+-	unsigned long pc = (unsigned long)p->addr + 8;
+-	int rt = (insn >> 12) & 0xf;
+-	int rn = (insn >> 16) & 0xf;
+-	int rm = insn & 0xf;
+-
+-	register unsigned long rtv asm("r0");
+-	register unsigned long rnv asm("r2") = (rn == 15) ? pc
+-							  : regs->uregs[rn];
+-	register unsigned long rmv asm("r3") = regs->uregs[rm];
+-
+-	__asm__ __volatile__ (
+-		BLX("%[fn]")
+-		: "=r" (rtv), "=r" (rnv)
+-		: "1" (rnv), "r" (rmv), [fn] "r" (p->ainsn.insn_fn)
+-		: "lr", "memory", "cc"
+-	);
+-
+-	if (rt == 15)
+-		load_write_pc(rtv, regs);
+-	else
+-		regs->uregs[rt] = rtv;
+-
+-	if (is_writeback(insn))
+-		regs->uregs[rn] = rnv;
+-}
+-
+-static void __kprobes
+-emulate_str(struct kprobe *p, struct pt_regs *regs)
+-{
+-	kprobe_opcode_t insn = p->opcode;
+-	unsigned long rtpc = (unsigned long)p->addr + str_pc_offset;
+-	unsigned long rnpc = (unsigned long)p->addr + 8;
+-	int rt = (insn >> 12) & 0xf;
+-	int rn = (insn >> 16) & 0xf;
+-	int rm = insn & 0xf;
+-
+-	register unsigned long rtv asm("r0") = (rt == 15) ? rtpc
+-							  : regs->uregs[rt];
+-	register unsigned long rnv asm("r2") = (rn == 15) ? rnpc
+-							  : regs->uregs[rn];
+-	register unsigned long rmv asm("r3") = regs->uregs[rm];
+-
+-	__asm__ __volatile__ (
+-		BLX("%[fn]")
+-		: "=r" (rnv)
+-		: "r" (rtv), "0" (rnv), "r" (rmv), [fn] "r" (p->ainsn.insn_fn)
+-		: "lr", "memory", "cc"
+-	);
+-
+-	if (is_writeback(insn))
+-		regs->uregs[rn] = rnv;
+-}
+-
+-static void __kprobes
+-emulate_rd12rn16rm0rs8_rwflags(struct kprobe *p, struct pt_regs *regs)
+-{
+-	kprobe_opcode_t insn = p->opcode;
+-	unsigned long pc = (unsigned long)p->addr + 8;
+-	int rd = (insn >> 12) & 0xf;
+-	int rn = (insn >> 16) & 0xf;
+-	int rm = insn & 0xf;
+-	int rs = (insn >> 8) & 0xf;
+-
+-	register unsigned long rdv asm("r0") = regs->uregs[rd];
+-	register unsigned long rnv asm("r2") = (rn == 15) ? pc
+-							  : regs->uregs[rn];
+-	register unsigned long rmv asm("r3") = (rm == 15) ? pc
+-							  : regs->uregs[rm];
+-	register unsigned long rsv asm("r1") = regs->uregs[rs];
+-	unsigned long cpsr = regs->ARM_cpsr;
+-
+-	__asm__ __volatile__ (
+-		"msr	cpsr_fs, %[cpsr]	\n\t"
+-		BLX("%[fn]")
+-		"mrs	%[cpsr], cpsr		\n\t"
+-		: "=r" (rdv), [cpsr] "=r" (cpsr)
+-		: "0" (rdv), "r" (rnv), "r" (rmv), "r" (rsv),
+-		  "1" (cpsr), [fn] "r" (p->ainsn.insn_fn)
+-		: "lr", "memory", "cc"
+-	);
+-
+-	if (rd == 15)
+-		alu_write_pc(rdv, regs);
+-	else
+-		regs->uregs[rd] = rdv;
+-	regs->ARM_cpsr = (regs->ARM_cpsr & ~APSR_MASK) | (cpsr & APSR_MASK);
+-}
+-
+-static void __kprobes
+-emulate_rd12rn16rm0_rwflags_nopc(struct kprobe *p, struct pt_regs *regs)
+-{
+-	kprobe_opcode_t insn = p->opcode;
+-	int rd = (insn >> 12) & 0xf;
+-	int rn = (insn >> 16) & 0xf;
+-	int rm = insn & 0xf;
+-
+-	register unsigned long rdv asm("r0") = regs->uregs[rd];
+-	register unsigned long rnv asm("r2") = regs->uregs[rn];
+-	register unsigned long rmv asm("r3") = regs->uregs[rm];
+-	unsigned long cpsr = regs->ARM_cpsr;
+-
+-	__asm__ __volatile__ (
+-		"msr	cpsr_fs, %[cpsr]	\n\t"
+-		BLX("%[fn]")
+-		"mrs	%[cpsr], cpsr		\n\t"
+-		: "=r" (rdv), [cpsr] "=r" (cpsr)
+-		: "0" (rdv), "r" (rnv), "r" (rmv),
+-		  "1" (cpsr), [fn] "r" (p->ainsn.insn_fn)
+-		: "lr", "memory", "cc"
+-	);
+-
+-	regs->uregs[rd] = rdv;
+-	regs->ARM_cpsr = (regs->ARM_cpsr & ~APSR_MASK) | (cpsr & APSR_MASK);
+-}
+-
+-static void __kprobes
+-emulate_rd16rn12rm0rs8_rwflags_nopc(struct kprobe *p, struct pt_regs *regs)
+-{
+-	kprobe_opcode_t insn = p->opcode;
+-	int rd = (insn >> 16) & 0xf;
+-	int rn = (insn >> 12) & 0xf;
+-	int rm = insn & 0xf;
+-	int rs = (insn >> 8) & 0xf;
+-
+-	register unsigned long rdv asm("r2") = regs->uregs[rd];
+-	register unsigned long rnv asm("r0") = regs->uregs[rn];
+-	register unsigned long rmv asm("r3") = regs->uregs[rm];
+-	register unsigned long rsv asm("r1") = regs->uregs[rs];
+-	unsigned long cpsr = regs->ARM_cpsr;
+-
+-	__asm__ __volatile__ (
+-		"msr	cpsr_fs, %[cpsr]	\n\t"
+-		BLX("%[fn]")
+-		"mrs	%[cpsr], cpsr		\n\t"
+-		: "=r" (rdv), [cpsr] "=r" (cpsr)
+-		: "0" (rdv), "r" (rnv), "r" (rmv), "r" (rsv),
+-		  "1" (cpsr), [fn] "r" (p->ainsn.insn_fn)
+-		: "lr", "memory", "cc"
+-	);
+-
+-	regs->uregs[rd] = rdv;
+-	regs->ARM_cpsr = (regs->ARM_cpsr & ~APSR_MASK) | (cpsr & APSR_MASK);
+-}
+-
+-static void __kprobes
+-emulate_rd12rm0_noflags_nopc(struct kprobe *p, struct pt_regs *regs)
+-{
+-	kprobe_opcode_t insn = p->opcode;
+-	int rd = (insn >> 12) & 0xf;
+-	int rm = insn & 0xf;
+-
+-	register unsigned long rdv asm("r0") = regs->uregs[rd];
+-	register unsigned long rmv asm("r3") = regs->uregs[rm];
+-
+-	__asm__ __volatile__ (
+-		BLX("%[fn]")
+-		: "=r" (rdv)
+-		: "0" (rdv), "r" (rmv), [fn] "r" (p->ainsn.insn_fn)
+-		: "lr", "memory", "cc"
+-	);
+-
+-	regs->uregs[rd] = rdv;
+-}
+-
+-static void __kprobes
+-emulate_rdlo12rdhi16rn0rm8_rwflags_nopc(struct kprobe *p, struct pt_regs *regs)
+-{
+-	kprobe_opcode_t insn = p->opcode;
+-	int rdlo = (insn >> 12) & 0xf;
+-	int rdhi = (insn >> 16) & 0xf;
+-	int rn = insn & 0xf;
+-	int rm = (insn >> 8) & 0xf;
+-
+-	register unsigned long rdlov asm("r0") = regs->uregs[rdlo];
+-	register unsigned long rdhiv asm("r2") = regs->uregs[rdhi];
+-	register unsigned long rnv asm("r3") = regs->uregs[rn];
+-	register unsigned long rmv asm("r1") = regs->uregs[rm];
+-	unsigned long cpsr = regs->ARM_cpsr;
+-
+-	__asm__ __volatile__ (
+-		"msr	cpsr_fs, %[cpsr]	\n\t"
+-		BLX("%[fn]")
+-		"mrs	%[cpsr], cpsr		\n\t"
+-		: "=r" (rdlov), "=r" (rdhiv), [cpsr] "=r" (cpsr)
+-		: "0" (rdlov), "1" (rdhiv), "r" (rnv), "r" (rmv),
+-		  "2" (cpsr), [fn] "r" (p->ainsn.insn_fn)
+-		: "lr", "memory", "cc"
+-	);
+-
+-	regs->uregs[rdlo] = rdlov;
+-	regs->uregs[rdhi] = rdhiv;
+-	regs->ARM_cpsr = (regs->ARM_cpsr & ~APSR_MASK) | (cpsr & APSR_MASK);
+-}
+-
+ /*
+  * For the instruction masking and comparisons in all the "space_*"
+  * functions below, Do _not_ rearrange the order of tests unless
 diff --git a/arch/arm/kernel/probes-arm.h b/arch/arm/kernel/probes-arm.h
-index 2c9e841..2662ada 100644
---- a/arch/arm/kernel/probes-arm.h
+new file mode 100644
+index 0000000..8608472
+--- /dev/null
 +++ b/arch/arm/kernel/probes-arm.h
-@@ -52,15 +52,15 @@ enum probes_arm_action {
- 	PROBES_LDMSTM
- };
- 
--void __kprobes simulate_bbl(kprobe_opcode_t opcode,
-+void __kprobes simulate_bbl(probes_opcode_t opcode,
- 	struct arch_specific_insn *asi, struct pt_regs *regs);
--void __kprobes simulate_blx1(kprobe_opcode_t opcode,
-+void __kprobes simulate_blx1(probes_opcode_t opcode,
- 	struct arch_specific_insn *asi, struct pt_regs *regs);
--void __kprobes simulate_blx2bx(kprobe_opcode_t opcode,
-+void __kprobes simulate_blx2bx(probes_opcode_t opcode,
- 	struct arch_specific_insn *asi, struct pt_regs *regs);
--void __kprobes simulate_mrs(kprobe_opcode_t opcode,
-+void __kprobes simulate_mrs(probes_opcode_t opcode,
- 	struct arch_specific_insn *asi, struct pt_regs *regs);
--void __kprobes simulate_mov_ipsp(kprobe_opcode_t opcode,
-+void __kprobes simulate_mov_ipsp(probes_opcode_t opcode,
- 	struct arch_specific_insn *asi, struct pt_regs *regs);
- 
- #endif
-diff --git a/arch/arm/kernel/probes-thumb.c b/arch/arm/kernel/probes-thumb.c
-index fb79dd9..e6dbbc3 100644
---- a/arch/arm/kernel/probes-thumb.c
-+++ b/arch/arm/kernel/probes-thumb.c
-@@ -841,7 +841,7 @@ static unsigned long __kprobes thumb_check_cc(unsigned long cpsr)
- 	return true;
- }
- 
--static void __kprobes thumb16_singlestep(kprobe_opcode_t opcode,
-+static void __kprobes thumb16_singlestep(probes_opcode_t opcode,
- 		struct arch_specific_insn *asi,
- 		struct pt_regs *regs)
- {
-@@ -850,7 +850,7 @@ static void __kprobes thumb16_singlestep(kprobe_opcode_t opcode,
- 	regs->ARM_cpsr = it_advance(regs->ARM_cpsr);
- }
- 
--static void __kprobes thumb32_singlestep(kprobe_opcode_t opcode,
-+static void __kprobes thumb32_singlestep(probes_opcode_t opcode,
- 		struct arch_specific_insn *asi,
- 		struct pt_regs *regs)
- {
-@@ -860,7 +860,7 @@ static void __kprobes thumb32_singlestep(kprobe_opcode_t opcode,
- }
- 
- enum kprobe_insn __kprobes
--thumb16_kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-+thumb16_kprobe_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
- 			   struct decode_header *actions)
- {
- 	asi->insn_singlestep = thumb16_singlestep;
-@@ -870,7 +870,7 @@ thumb16_kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
- }
- 
- enum kprobe_insn __kprobes
--thumb32_kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-+thumb32_kprobe_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
- 			   struct decode_header *actions)
- {
- 	asi->insn_singlestep = thumb32_singlestep;
-diff --git a/arch/arm/kernel/probes.c b/arch/arm/kernel/probes.c
-index b2db250..7354448 100644
---- a/arch/arm/kernel/probes.c
+@@ -0,0 +1,38 @@
++/*
++ * arch/arm/kernel/probes-arm.h
++ *
++ * Copyright 2013 Linaro Ltd.
++ * Written by: David A. Long
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++
++#ifndef _ARM_KERNEL_PROBES_ARM_H
++#define  _ARM_KERNEL_PROBES_ARM_H
++
++void __kprobes simulate_bbl(struct kprobe *p, struct pt_regs *regs);
++void __kprobes simulate_blx1(struct kprobe *p, struct pt_regs *regs);
++void __kprobes simulate_blx2bx(struct kprobe *p, struct pt_regs *regs);
++void __kprobes simulate_mrs(struct kprobe *p, struct pt_regs *regs);
++void __kprobes simulate_mov_ipsp(struct kprobe *p, struct pt_regs *regs);
++
++void __kprobes emulate_ldrdstrd(struct kprobe *p, struct pt_regs *regs);
++void __kprobes emulate_ldr(struct kprobe *p, struct pt_regs *regs);
++void __kprobes emulate_str(struct kprobe *p, struct pt_regs *regs);
++void __kprobes emulate_rd12rn16rm0rs8_rwflags(struct kprobe *p,
++	struct pt_regs *regs);
++void __kprobes emulate_rd12rn16rm0_rwflags_nopc(struct kprobe *p,
++	struct pt_regs *regs);
++void __kprobes emulate_rd16rn12rm0rs8_rwflags_nopc(struct kprobe *p,
++	struct pt_regs *regs);
++void __kprobes emulate_rd12rm0_noflags_nopc(struct kprobe *p,
++	struct pt_regs *regs);
++void __kprobes emulate_rdlo12rdhi16rn0rm8_rwflags_nopc(struct kprobe *p,
++	struct pt_regs *regs);
++
++#endif
+diff --git a/arch/arm/kernel/kprobes-common.c b/arch/arm/kernel/probes.c
+similarity index 75%
+copy from arch/arm/kernel/kprobes-common.c
+copy to arch/arm/kernel/probes.c
+index 18a7628..839bf97 100644
+--- a/arch/arm/kernel/kprobes-common.c
 +++ b/arch/arm/kernel/probes.c
-@@ -171,13 +171,13 @@ kprobe_check_cc * const kprobe_condition_checks[16] = {
- };
- 
- 
--void __kprobes kprobe_simulate_nop(kprobe_opcode_t opcode,
-+void __kprobes kprobe_simulate_nop(probes_opcode_t opcode,
- 	struct arch_specific_insn *asi,
- 	struct pt_regs *regs)
- {
+@@ -1,5 +1,5 @@
+ /*
+- * arch/arm/kernel/kprobes-common.c
++ * arch/arm/kernel/probes.c
+  *
+  * Copyright (C) 2011 Jon Medhurst <tixy@yxit.co.uk>.
+  *
+@@ -182,144 +182,6 @@ void __kprobes kprobe_emulate_none(struct kprobe *p, struct pt_regs *regs)
+ 	p->ainsn.insn_fn();
  }
  
--void __kprobes kprobe_emulate_none(kprobe_opcode_t opcode,
-+void __kprobes kprobe_emulate_none(probes_opcode_t opcode,
- 	struct arch_specific_insn *asi,
- 	struct pt_regs *regs)
- {
-@@ -191,8 +191,8 @@ void __kprobes kprobe_emulate_none(kprobe_opcode_t opcode,
-  * unconditional as the condition code will already be checked before any
-  * emulation handler is called.
-  */
--static kprobe_opcode_t __kprobes
--prepare_emulated_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-+static probes_opcode_t __kprobes
-+prepare_emulated_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
- 								bool thumb)
- {
- #ifdef CONFIG_THUMB2_KERNEL
-@@ -217,7 +217,7 @@ prepare_emulated_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-  * prepare_emulated_insn
-  */
- static void  __kprobes
--set_emulated_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-+set_emulated_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
- 								bool thumb)
- {
- #ifdef CONFIG_THUMB2_KERNEL
-@@ -253,14 +253,14 @@ set_emulated_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+-static void __kprobes simulate_ldm1stm1(struct kprobe *p, struct pt_regs *regs)
+-{
+-	kprobe_opcode_t insn = p->opcode;
+-	int rn = (insn >> 16) & 0xf;
+-	int lbit = insn & (1 << 20);
+-	int wbit = insn & (1 << 21);
+-	int ubit = insn & (1 << 23);
+-	int pbit = insn & (1 << 24);
+-	long *addr = (long *)regs->uregs[rn];
+-	int reg_bit_vector;
+-	int reg_count;
+-
+-	reg_count = 0;
+-	reg_bit_vector = insn & 0xffff;
+-	while (reg_bit_vector) {
+-		reg_bit_vector &= (reg_bit_vector - 1);
+-		++reg_count;
+-	}
+-
+-	if (!ubit)
+-		addr -= reg_count;
+-	addr += (!pbit == !ubit);
+-
+-	reg_bit_vector = insn & 0xffff;
+-	while (reg_bit_vector) {
+-		int reg = __ffs(reg_bit_vector);
+-		reg_bit_vector &= (reg_bit_vector - 1);
+-		if (lbit)
+-			regs->uregs[reg] = *addr++;
+-		else
+-			*addr++ = regs->uregs[reg];
+-	}
+-
+-	if (wbit) {
+-		if (!ubit)
+-			addr -= reg_count;
+-		addr -= (!pbit == !ubit);
+-		regs->uregs[rn] = (long)addr;
+-	}
+-}
+-
+-static void __kprobes simulate_stm1_pc(struct kprobe *p, struct pt_regs *regs)
+-{
+-	regs->ARM_pc = (long)p->addr + str_pc_offset;
+-	simulate_ldm1stm1(p, regs);
+-	regs->ARM_pc = (long)p->addr + 4;
+-}
+-
+-static void __kprobes simulate_ldm1_pc(struct kprobe *p, struct pt_regs *regs)
+-{
+-	simulate_ldm1stm1(p, regs);
+-	load_write_pc(regs->ARM_pc, regs);
+-}
+-
+-static void __kprobes
+-emulate_generic_r0_12_noflags(struct kprobe *p, struct pt_regs *regs)
+-{
+-	register void *rregs asm("r1") = regs;
+-	register void *rfn asm("lr") = p->ainsn.insn_fn;
+-
+-	__asm__ __volatile__ (
+-		"stmdb	sp!, {%[regs], r11}	\n\t"
+-		"ldmia	%[regs], {r0-r12}	\n\t"
+-#if __LINUX_ARM_ARCH__ >= 6
+-		"blx	%[fn]			\n\t"
+-#else
+-		"str	%[fn], [sp, #-4]!	\n\t"
+-		"adr	lr, 1f			\n\t"
+-		"ldr	pc, [sp], #4		\n\t"
+-		"1:				\n\t"
+-#endif
+-		"ldr	lr, [sp], #4		\n\t" /* lr = regs */
+-		"stmia	lr, {r0-r12}		\n\t"
+-		"ldr	r11, [sp], #4		\n\t"
+-		: [regs] "=r" (rregs), [fn] "=r" (rfn)
+-		: "0" (rregs), "1" (rfn)
+-		: "r0", "r2", "r3", "r4", "r5", "r6", "r7",
+-		  "r8", "r9", "r10", "r12", "memory", "cc"
+-		);
+-}
+-
+-static void __kprobes
+-emulate_generic_r2_14_noflags(struct kprobe *p, struct pt_regs *regs)
+-{
+-	emulate_generic_r0_12_noflags(p, (struct pt_regs *)(regs->uregs+2));
+-}
+-
+-static void __kprobes
+-emulate_ldm_r3_15(struct kprobe *p, struct pt_regs *regs)
+-{
+-	emulate_generic_r0_12_noflags(p, (struct pt_regs *)(regs->uregs+3));
+-	load_write_pc(regs->ARM_pc, regs);
+-}
+-
+-enum kprobe_insn __kprobes
+-kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+-{
+-	kprobe_insn_handler_t *handler = 0;
+-	unsigned reglist = insn & 0xffff;
+-	int is_ldm = insn & 0x100000;
+-	int rn = (insn >> 16) & 0xf;
+-
+-	if (rn <= 12 && (reglist & 0xe000) == 0) {
+-		/* Instruction only uses registers in the range R0..R12 */
+-		handler = emulate_generic_r0_12_noflags;
+-
+-	} else if (rn >= 2 && (reglist & 0x8003) == 0) {
+-		/* Instruction only uses registers in the range R2..R14 */
+-		rn -= 2;
+-		reglist >>= 2;
+-		handler = emulate_generic_r2_14_noflags;
+-
+-	} else if (rn >= 3 && (reglist & 0x0007) == 0) {
+-		/* Instruction only uses registers in the range R3..R15 */
+-		if (is_ldm && (reglist & 0x8000)) {
+-			rn -= 3;
+-			reglist >>= 3;
+-			handler = emulate_ldm_r3_15;
+-		}
+-	}
+-
+-	if (handler) {
+-		/* We can emulate the instruction in (possibly) modified form */
+-		asi->insn[0] = (insn & 0xfff00000) | (rn << 16) | reglist;
+-		asi->insn_handler = handler;
+-		return INSN_GOOD;
+-	}
+-
+-	/* Fallback to slower simulation... */
+-	if (reglist & 0x8000)
+-		handler = is_ldm ? simulate_ldm1_pc : simulate_stm1_pc;
+-	else
+-		handler = simulate_ldm1stm1;
+-	asi->insn_handler = handler;
+-	return INSN_GOOD_NO_SLOT;
+-}
+-
+-
+ /*
+  * Prepare an instruction slot to receive an instruction for emulating.
+  * This is done by placing a subroutine return after the location where the
+@@ -389,7 +251,7 @@ set_emulated_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
   * non-zero value, the corresponding nibble in pinsn is validated and modified
   * according to the type.
   */
--static bool __kprobes decode_regs(kprobe_opcode_t *pinsn, u32 regs)
-+static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs)
+-static bool __kprobes decode_regs(kprobe_opcode_t* pinsn, u32 regs)
++static bool __kprobes decode_regs(kprobe_opcode_t *pinsn, u32 regs)
  {
--	kprobe_opcode_t insn = *pinsn;
--	kprobe_opcode_t mask = 0xf; /* Start at least significant nibble */
-+	probes_opcode_t insn = *pinsn;
-+	probes_opcode_t mask = 0xf; /* Start at least significant nibble */
- 
- 	for (; regs != 0; regs >>= 4, mask <<= 4) {
- 
--		kprobe_opcode_t new_bits = INSN_NEW_BITS;
-+		probes_opcode_t new_bits = INSN_NEW_BITS;
- 
- 		switch (regs & 0xf) {
- 
-@@ -379,7 +379,7 @@ static const int decode_struct_sizes[NUM_DECODE_TYPES] = {
-  *
-  */
- int __kprobes
--kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-+kprobe_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
- 				const union decode_item *table, bool thumb,
- 				const union decode_item *actions)
- {
-diff --git a/arch/arm/kernel/probes.h b/arch/arm/kernel/probes.h
-index 45151a1..c0536b1 100644
---- a/arch/arm/kernel/probes.h
+ 	kprobe_opcode_t insn = *pinsn;
+ 	kprobe_opcode_t mask = 0xf; /* Start at least significant nibble */
+@@ -574,5 +436,5 @@ kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+ 		default:
+ 			return INSN_REJECTED;
+ 		}
+-		}
+ 	}
++}
+diff --git a/arch/arm/kernel/kprobes.h b/arch/arm/kernel/probes.h
+similarity index 92%
+copy from arch/arm/kernel/kprobes.h
+copy to arch/arm/kernel/probes.h
+index 38945f7..d14d224 100644
+--- a/arch/arm/kernel/kprobes.h
 +++ b/arch/arm/kernel/probes.h
-@@ -129,13 +129,13 @@ static inline void __kprobes alu_write_pc(long pcv, struct pt_regs *regs)
- }
- 
- 
--void __kprobes kprobe_simulate_nop(kprobe_opcode_t, struct arch_specific_insn *,
-+void __kprobes kprobe_simulate_nop(probes_opcode_t, struct arch_specific_insn *,
- 		struct pt_regs *regs);
--void __kprobes kprobe_emulate_none(kprobe_opcode_t, struct arch_specific_insn *,
-+void __kprobes kprobe_emulate_none(probes_opcode_t, struct arch_specific_insn *,
- 		struct pt_regs *regs);
- 
- enum kprobe_insn __kprobes
--kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-+kprobe_decode_ldmstm(probes_opcode_t insn, struct arch_specific_insn *asi,
- 		struct decode_header *h);
- 
+@@ -1,5 +1,5 @@
  /*
-@@ -397,7 +397,7 @@ extern const union decode_item kprobes_arm_actions[];
- extern kprobe_check_cc * const kprobe_condition_checks[16];
+- * arch/arm/kernel/kprobes.h
++ * arch/arm/kernel/probes.h
+  *
+  * Copyright (C) 2011 Jon Medhurst <tixy@yxit.co.uk>.
+  *
+@@ -16,44 +16,10 @@
+  * General Public License for more details.
+  */
  
+-#ifndef _ARM_KERNEL_KPROBES_H
+-#define _ARM_KERNEL_KPROBES_H
+-
+-/*
+- * These undefined instructions must be unique and
+- * reserved solely for kprobes' use.
+- */
+-#define KPROBE_ARM_BREAKPOINT_INSTRUCTION	0x07f001f8
+-#define KPROBE_THUMB16_BREAKPOINT_INSTRUCTION	0xde18
+-#define KPROBE_THUMB32_BREAKPOINT_INSTRUCTION	0xf7f0a018
+-
+-
+-enum kprobe_insn {
+-	INSN_REJECTED,
+-	INSN_GOOD,
+-	INSN_GOOD_NO_SLOT
+-};
+-
+-typedef enum kprobe_insn (kprobe_decode_insn_t)(kprobe_opcode_t,
+-						struct arch_specific_insn *);
+-
+-#ifdef CONFIG_THUMB2_KERNEL
+-
+-enum kprobe_insn thumb16_kprobe_decode_insn(kprobe_opcode_t,
+-						struct arch_specific_insn *);
+-enum kprobe_insn thumb32_kprobe_decode_insn(kprobe_opcode_t,
+-						struct arch_specific_insn *);
+-
+-#else /* !CONFIG_THUMB2_KERNEL */
+-
+-enum kprobe_insn arm_kprobe_decode_insn(kprobe_opcode_t,
+-					struct arch_specific_insn *);
+-#endif
+-
+-void __init arm_kprobe_decode_init(void);
+-
+-extern kprobe_check_cc * const kprobe_condition_checks[16];
++#ifndef _ARM_KERNEL_PROBES_H
++#define  _ARM_KERNEL_PROBES_H
  
--int kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-+int kprobe_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
- 			const union decode_item *table, bool thumb16,
- 			const union decode_item *actions);
++#include <linux/kprobes.h>
  
+ #if __LINUX_ARM_ARCH__ >= 7
+ 
+@@ -321,11 +287,11 @@ enum decode_reg_type {
+ };
+ 
+ #define REGS(r16, r12, r8, r4, r0)	\
+-	((REG_TYPE_##r16) << 16) +	\
++	(((REG_TYPE_##r16) << 16) +	\
+ 	((REG_TYPE_##r12) << 12) +	\
+ 	((REG_TYPE_##r8) << 8) +	\
+ 	((REG_TYPE_##r4) << 4) +	\
+-	(REG_TYPE_##r0)
++	(REG_TYPE_##r0))
+ 
+ union decode_item {
+ 	u32			bits;
+@@ -420,9 +386,10 @@ extern const union decode_item kprobe_decode_thumb32_table[];
+ extern const union decode_item kprobe_decode_arm_table[];
+ #endif
+ 
++extern kprobe_check_cc * const kprobe_condition_checks[16];
++
+ 
+ int kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+ 			const union decode_item *table, bool thumb16);
+ 
+-
+-#endif /* _ARM_KERNEL_KPROBES_H */
++#endif
 -- 
 1.8.1.2
 
