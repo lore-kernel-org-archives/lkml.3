@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760593Ab3K0Bx2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:53:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39021 "EHLO
+	id S1760579Ab3K0Bx0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:53:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39031 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757707Ab3K0A53 (ORCPT
+	with ESMTP id S1757734Ab3K0A5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:29 -0500
+	Tue, 26 Nov 2013 19:57:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 28/80] rt2x00: fix HT TX descriptor settings regression
-Date: Tue, 26 Nov 2013 16:56:57 -0800
-Message-Id: <20131127005642.887654683@linuxfoundation.org>
+        Vasily Kulikov <segoon@openwall.com>,
+        Kees Cook <keescook@chromium.org>, "Luck, Tony" <tony.luck@intel.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 30/80] exec/ptrace: fix get_dumpable() incorrect tests
+Date: Tue, 26 Nov 2013 16:56:59 -0800
+Message-Id: <20131127005643.022834417@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -28,82 +31,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 3d8bfe141be8e5c21261fc63da8e7964d44f2645 upstream.
+commit d049f74f2dbe71354d43d393ac3a188947811348 upstream.
 
-Since:
+The get_dumpable() return value is not boolean.  Most users of the
+function actually want to be testing for non-SUID_DUMP_USER(1) rather than
+SUID_DUMP_DISABLE(0).  The SUID_DUMP_ROOT(2) is also considered a
+protected state.  Almost all places did this correctly, excepting the two
+places fixed in this patch.
 
-commit 36323f817af0376c78612cfdab714b0feb05fea5
-Author: Thomas Huehn <thomas@net.t-labs.tu-berlin.de>
-Date:   Mon Jul 23 21:33:42 2012 +0200
+Wrong logic:
+    if (dumpable == SUID_DUMP_DISABLE) { /* be protective */ }
+        or
+    if (dumpable == 0) { /* be protective */ }
+        or
+    if (!dumpable) { /* be protective */ }
 
-    mac80211: move TX station pointer and restructure TX
+Correct logic:
+    if (dumpable != SUID_DUMP_USER) { /* be protective */ }
+        or
+    if (dumpable != 1) { /* be protective */ }
 
-we do not pass sta pointer to rt2x00queue_create_tx_descriptor_ht(),
-hence we do not correctly set station WCID and AMPDU density parameters.
+Without this patch, if the system had set the sysctl fs/suid_dumpable=2, a
+user was able to ptrace attach to processes that had dropped privileges to
+that user.  (This may have been partially mitigated if Yama was enabled.)
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The macros have been moved into the file that declares get/set_dumpable(),
+which means things like the ia64 code can see them too.
+
+CVE-2013-2929
+
+Reported-by: Vasily Kulikov <segoon@openwall.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: "Luck, Tony" <tony.luck@intel.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2x00lib.h   |    2 +-
- drivers/net/wireless/rt2x00/rt2x00mac.c   |    4 ++--
- drivers/net/wireless/rt2x00/rt2x00queue.c |    4 ++--
- 3 files changed, 5 insertions(+), 5 deletions(-)
+ arch/ia64/include/asm/processor.h |    2 +-
+ fs/exec.c                         |    6 ++++++
+ include/linux/binfmts.h           |    3 ---
+ include/linux/sched.h             |    4 ++++
+ kernel/ptrace.c                   |    3 ++-
+ 5 files changed, 13 insertions(+), 5 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2x00lib.h
-+++ b/drivers/net/wireless/rt2x00/rt2x00lib.h
-@@ -146,7 +146,7 @@ void rt2x00queue_remove_l2pad(struct sk_
-  * @local: frame is not from mac80211
-  */
- int rt2x00queue_write_tx_frame(struct data_queue *queue, struct sk_buff *skb,
--			       bool local);
-+			       struct ieee80211_sta *sta, bool local);
- 
- /**
-  * rt2x00queue_update_beacon - Send new beacon from mac80211
---- a/drivers/net/wireless/rt2x00/rt2x00mac.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
-@@ -90,7 +90,7 @@ static int rt2x00mac_tx_rts_cts(struct r
- 				  frag_skb->data, data_length, tx_info,
- 				  (struct ieee80211_rts *)(skb->data));
- 
--	retval = rt2x00queue_write_tx_frame(queue, skb, true);
-+	retval = rt2x00queue_write_tx_frame(queue, skb, NULL, true);
- 	if (retval) {
- 		dev_kfree_skb_any(skb);
- 		rt2x00_warn(rt2x00dev, "Failed to send RTS/CTS frame\n");
-@@ -151,7 +151,7 @@ void rt2x00mac_tx(struct ieee80211_hw *h
- 			goto exit_fail;
- 	}
- 
--	if (unlikely(rt2x00queue_write_tx_frame(queue, skb, false)))
-+	if (unlikely(rt2x00queue_write_tx_frame(queue, skb, control->sta, false)))
- 		goto exit_fail;
- 
- 	/*
---- a/drivers/net/wireless/rt2x00/rt2x00queue.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
-@@ -635,7 +635,7 @@ static void rt2x00queue_bar_check(struct
+--- a/arch/ia64/include/asm/processor.h
++++ b/arch/ia64/include/asm/processor.h
+@@ -319,7 +319,7 @@ struct thread_struct {
+ 	regs->loadrs = 0;									\
+ 	regs->r8 = get_dumpable(current->mm);	/* set "don't zap registers" flag */		\
+ 	regs->r12 = new_sp - 16;	/* allocate 16 byte scratch area */			\
+-	if (unlikely(!get_dumpable(current->mm))) {							\
++	if (unlikely(get_dumpable(current->mm) != SUID_DUMP_USER)) {	\
+ 		/*										\
+ 		 * Zap scratch regs to avoid leaking bits between processes with different	\
+ 		 * uid/privileges.								\
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1669,6 +1669,12 @@ int __get_dumpable(unsigned long mm_flag
+ 	return (ret > SUID_DUMP_USER) ? SUID_DUMP_ROOT : ret;
  }
  
- int rt2x00queue_write_tx_frame(struct data_queue *queue, struct sk_buff *skb,
--			       bool local)
-+			       struct ieee80211_sta *sta, bool local)
++/*
++ * This returns the actual value of the suid_dumpable flag. For things
++ * that are using this for checking for privilege transitions, it must
++ * test against SUID_DUMP_USER rather than treating it as a boolean
++ * value.
++ */
+ int get_dumpable(struct mm_struct *mm)
  {
- 	struct ieee80211_tx_info *tx_info;
- 	struct queue_entry *entry;
-@@ -649,7 +649,7 @@ int rt2x00queue_write_tx_frame(struct da
- 	 * after that we are free to use the skb->cb array
- 	 * for our information.
- 	 */
--	rt2x00queue_create_tx_descriptor(queue->rt2x00dev, skb, &txdesc, NULL);
-+	rt2x00queue_create_tx_descriptor(queue->rt2x00dev, skb, &txdesc, sta);
+ 	return __get_dumpable(mm->flags);
+--- a/include/linux/binfmts.h
++++ b/include/linux/binfmts.h
+@@ -99,9 +99,6 @@ extern void setup_new_exec(struct linux_
+ extern void would_dump(struct linux_binprm *, struct file *);
  
- 	/*
- 	 * All information is retrieved from the skb->cb array,
+ extern int suid_dumpable;
+-#define SUID_DUMP_DISABLE	0	/* No setuid dumping */
+-#define SUID_DUMP_USER		1	/* Dump as user of process */
+-#define SUID_DUMP_ROOT		2	/* Dump as root */
+ 
+ /* Stack area protections */
+ #define EXSTACK_DEFAULT   0	/* Whatever the arch defaults to */
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -332,6 +332,10 @@ static inline void arch_pick_mmap_layout
+ extern void set_dumpable(struct mm_struct *mm, int value);
+ extern int get_dumpable(struct mm_struct *mm);
+ 
++#define SUID_DUMP_DISABLE	0	/* No setuid dumping */
++#define SUID_DUMP_USER		1	/* Dump as user of process */
++#define SUID_DUMP_ROOT		2	/* Dump as root */
++
+ /* mm flags */
+ /* dumpable bits */
+ #define MMF_DUMPABLE      0  /* core dump is permitted */
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -257,7 +257,8 @@ ok:
+ 	if (task->mm)
+ 		dumpable = get_dumpable(task->mm);
+ 	rcu_read_lock();
+-	if (!dumpable && !ptrace_has_cap(__task_cred(task)->user_ns, mode)) {
++	if (dumpable != SUID_DUMP_USER &&
++	    !ptrace_has_cap(__task_cred(task)->user_ns, mode)) {
+ 		rcu_read_unlock();
+ 		return -EPERM;
+ 	}
 
 
