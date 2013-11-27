@@ -1,42 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273Ab3K0AdP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:33:15 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:56165 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803Ab3K0AdL (ORCPT
+	id S1752114Ab3K0AhQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:37:16 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:59234 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab3K0AhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:33:11 -0500
+	Tue, 26 Nov 2013 19:37:12 -0500
+Date: Tue, 26 Nov 2013 16:37:07 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Sekhar Nori <nsekhar@ti.com>, Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Rob Landley <rob@landley.net>,
+        "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 07/12] memory: davinci-aemif: introduce AEMIF driver
+Message-ID: <20131127003707.GQ9468@ld-irv-0074.broadcom.com>
+References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>
+ <1384187188-5776-8-git-send-email-ivan.khoronzhuk@ti.com>
+ <4F5844B3A985794BA902E12C070812375F8D2E@DNCE04.ent.ti.com>
+ <52944BD3.90105@ti.com>
+ <5294B8C4.6040803@ti.com>
+ <5294D8AD.5030106@ti.com>
+ <5294E7E4.3060600@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo7U-sAu9XwV4KkXPXmFYov2FJSQ3oRrzUj=Y9XH3Ys=mA@mail.gmail.com>
-References: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
-	<1385429290-25397-9-git-send-email-yinghai@kernel.org>
-	<CAErSpo5bxRJpiO8QmEQBkRGGKkTOEjnQBFRsZJG8CsaJ5JJkJg@mail.gmail.com>
-	<20131126065944.GA13781@yanx>
-	<CAErSpo5JVNsYxr6ka5KwLtpv7LX74SmkHsb1jED31jXfdSsxAg@mail.gmail.com>
-	<CAE9FiQX0-gmijLmNLf3RWKcwDA-6a6TpPQNwj7tkRnF=990F2Q@mail.gmail.com>
-	<CAErSpo7U-sAu9XwV4KkXPXmFYov2FJSQ3oRrzUj=Y9XH3Ys=mA@mail.gmail.com>
-Date: Tue, 26 Nov 2013 16:33:11 -0800
-X-Google-Sender-Auth: NKG8a5JRGr3ss4fwvwGRdh5o2WE
-Message-ID: <CAE9FiQWtfNtGoxfii61OjtR38A9zQ5QgZmBFNaroAC5B8TWtzw@mail.gmail.com>
-Subject: Re: [PATCH v2 08/10] PCI: Try best to allocate pref mmio 64bit above 4g
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Guo Chao <yan@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5294E7E4.3060600@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 2:01 PM, Bjorn Helgaas <bhelgaas@google.com>
->> during size bridge resource, we try to clear bridge mmio64 pref MEM_64
->> bit in bridge resource flags.
->> if one children pref mmio does not support 64bit pref mmio.
->
-> A function name?  Please?
+On Tue, Nov 26, 2013 at 01:26:44PM -0500, Santosh Shilimkar wrote:
+> On Tuesday 26 November 2013 12:21 PM, Sekhar Nori wrote:
+> > On 11/26/2013 8:35 PM, Santosh Shilimkar wrote:
+> >> On Tuesday 26 November 2013 02:20 AM, Sekhar Nori wrote:
+> >>> On Monday 11 November 2013 10:36 PM, Khoronzhuk, Ivan wrote:
+> >>>> +static int davinci_aemif_probe(struct platform_device *pdev)
+> >>>> +{
+> >>>> +       int ret  = -ENODEV, i;
+> >>>> +       struct resource *res;
+> >>>> +       struct device *dev = &pdev->dev;
+> >>>> +       struct device_node *np = dev->of_node;
+> >>>> +
+> >>>> +       if (np == NULL)
+> >>>> +               return 0;
+> >>>> +
+> >>>> +       if (aemif) {
+> >>>> +               dev_err(dev, "davinci_aemif driver is in use currently\n");
+> >>>> +               return -EBUSY;
+> >>>> +       }
+> >>>
+> >>> Why expressly prevent multiple AEMIF devices? Its entirely conceivable
+> >>> to have two memories like NAND and NOR flash connect to two different
+> >>> AEMIF interfaces.
+> >>>
+> >> Ivan wanted me to clarify the Keystone hardware which supports
+> >> 1 instance of controller with 4 CS. That allows already four
+> >> devices to be connected. Currently NAND and NOR are connected on it
+> >> and two more slots are free.
+> >>
+> >> Since driver support what hardware is, lets not build a driver for
+> >> hardware which don't exist. And if at all such a support would be
+> >> needed in future, we can always add it.
+> > 
+> > I understand the lack of hardware part, but its common to write the
+> > driver such that it can handle multiple instances. Is there any gain on
+> > current hardware because of this check? From what I am hearing, the code
+> > in question wont be exercised at all. So why go all the way and add it
+> > in first place?
+> > 
+> Fair enough. The check can be dropped.
 
-drivers/pci/setup-bus.c::pbus_size_mem()
+Hmm, while the sentiment expressed by Sekhar is noble (to avoid
+unnecessarily constraining the driver), removing the check is not
+enough. You're still using a global static variable 'aemif', and it is
+important not to accidentally re-use this struct if a second device ever
+becomes available. So for the current implementation, the check is
+necessary IMO. If instead, you were to make 'aemif' a per-device struct
+(like with platform_set_drvdata()), then you would not have this issue.
+
+Brian
