@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757278Ab3K0REk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 12:04:40 -0500
-Received: from mga02.intel.com ([134.134.136.20]:12050 "EHLO mga02.intel.com"
+	id S1757444Ab3K0REt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 12:04:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13321 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753430Ab3K0REh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 12:04:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,783,1378882800"; 
-   d="scan'208";a="443147053"
-From: Ashutosh Dixit <ashutosh.dixit@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization\@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "Chandramouli\, Dasaratharaman" 
-	<dasaratharaman.chandramouli@intel.com>,
-        "Dutt\, Sudeep" <sudeep.dutt@intel.com>,
-        "Rao\, Nikhil" <nikhil.rao@intel.com>,
-        "Yerramreddy\, Siva Krishna Kumar Reddy" 
-	<siva.krishna.kumar.reddy.yerramreddy@intel.com>,
-        "Yokoyama\, Caz" <caz.yokoyama@intel.com>,
-        "Wu\, Fengguang" <fengguang.wu@intel.com>
-Subject: Re: [PATCH char-misc-linus 4/5] misc: mic: Fix sparse warnings and other endianness issues.
-References: <cover.1385487752.git.ashutosh.dixit@intel.com>
-	<e5bcd02bd49b111e2d4f885655461e889b8049a3.1385487752.git.ashutosh.dixit@intel.com>
-	<20131126191525.GA29279@kroah.com>
-Date: Wed, 27 Nov 2013 09:12:01 -0800
-In-Reply-To: <20131126191525.GA29279@kroah.com> (Greg Kroah-Hartman's message
-	of "Tue, 26 Nov 2013 12:15:25 -0700")
-Message-ID: <m3zjopwyzi.fsf@adixit-yct.ra.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1757283Ab3K0REq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 12:04:46 -0500
+Date: Wed, 27 Nov 2013 18:05:50 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] tracing: Add $cpu and $current probe-vars
+Message-ID: <20131127170550.GB26138@redhat.com>
+References: <20131123201543.GA22148@redhat.com> <20131125192926.GA9737@redhat.com> <20131125192952.GB9737@redhat.com> <529405AC.6090401@hitachi.com> <20131126172313.GA14028@redhat.com> <5295ABB9.7040207@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5295ABB9.7040207@hitachi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26 2013 at 11:15:25 AM, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
-> On Tue, Nov 26, 2013 at 10:14:21AM -0800, Ashutosh Dixit wrote:
->> Endianness issues are now consistent as per the documentation in
->> host/mic_virtio.h. Note that the host can be both BE or LE whereas the
->> card is always LE.
->>
->> Memory space sparse warnings are fixed for now by using __force. This is
->> sufficient for now since the driver depends on x86 but will need to be
->> revisited if we support other architectures which treat I/O memory
->> differently from system memory.
+On 11/27, Masami Hiramatsu wrote:
 >
-> Can you split the endian fixes up from the user pointer fixes to make it
-> easier to review/apply?
-
-We've just submitted v3 where we now have separate patches (5 and 6) for
-endianness and sparse memory access fixes.
-
-> There's no need for this for 3.13-final, right?  No bug fixes are here
-> that I can tell.
-
-That's correct.  I've reordered the patches so that v3 patches 1-4
-contain the real bug fixes. We'd like to apply patches 5 and 6 for
-3.13-final too but if it is not possible we can drop one or both of them
-for now for further review.
-
-> And don't use __force, really, can't you fix this some other way?
-
-As stated in the description for patch 6, because of the dependence of
-the MIC drivers on the virtio infrastructure there is no simple way to
-fix these memory space issues at present. Since the sparse warnings do
-not represent real issues the warnings are being suppressed using
-__force.
-
->> +	vq = vring_new_virtqueue(index, le16_to_cpu(config.num),
->> +				 MIC_VIRTIO_RING_ALIGN, vdev, false,
->> +				 (void __force *)va, mic_notify, callback,
->> +				 name);
+> (2013/11/27 2:23), Oleg Nesterov wrote:
+> > On 11/26, Masami Hiramatsu wrote:
+> >>
+> >> (2013/11/26 4:29), Oleg Nesterov wrote:
+> >>> +#define PSEUDO_REG_OFFSET	4096	/* arbitrary value > MAX_REG_OFFSET */
+> >>> +
+> >>> +static unsigned long probe_get_register(struct pt_regs *regs, unsigned long offset)
+> >>> +{
+> >>> +	if (offset < PSEUDO_REG_OFFSET)
+> >>> +		return regs_get_register(regs, offset);
+> >>> +
+> >>> +	return pseudo_reg_table[offset - PSEUDO_REG_OFFSET].fetch();
+> >>> +}
+> >>
+> >>
+> >> Hmm, I don't like this, since fetch_reg is the most frequently
+> >> used fetch method, and it actually uses the offset in different
+> >> way.
+> >
+> > Sure, this overloads the usage of FETCH_MTD_reg/offset.
+> >
+> > And btw, yes, the naming is ugly (I mean pseudo_*). But why this
+> > is bad? This is cheap and simple.
 >
-> Why __force a void * here?  That feels wrong.
+> I think it's not simple. The code looks short, but not well
+> self-described. It is "hidden" in the structure, and double-meaning.
 
-In all instances in patch 6 __force is used to strip the __iomem
-attribute (e.g. va is declared as 'void __iomem *va;').
+Yes, I agree. And the ugly naming doesn't make it more clear/clean.
 
-thanks,
+I'll try to cleanup this somehow and resend. Perhaps I should start
+with 2/2 which generalizes FETCH_MTD_reg and kills FETCH_MTD_retval.
+Or at least generalizes FETCH_MTD_retval.
 
-ashutosh
+> >> Why don't you make another fetch function for vars?
+> >
+> > This is what I tried to avoid ;) I do not want to add another
+> > FETCH_MTD_. To me, this looks like unnecessary complication and
+> > bloat (but see below).
+>
+> I see, perhaps, it is a time to introduce independent fetch
+> method implementation. Current one is not sophisticated
+> nor generic
+
+Yes, yes, I agree. But until then I do not want to complicate/blow
+this code to implement $current.
+
+Thanks.
+
+Oleg.
+
