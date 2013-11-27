@@ -1,74 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756649Ab3K0PfR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 10:35:17 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:42370 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756482Ab3K0PfP (ORCPT
+	id S1756762Ab3K0Pf1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 10:35:27 -0500
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:36247 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756675Ab3K0PfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 10:35:15 -0500
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, linux-pm@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 0/5] PM: Enable option of re-use runtime PM callbacks at system suspend
-Date: Wed, 27 Nov 2013 16:34:55 +0100
-Message-Id: <1385566500-7666-1-git-send-email-ulf.hansson@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 27 Nov 2013 10:35:23 -0500
+Date: Wed, 27 Nov 2013 16:35:19 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Juri Lelli <juri.lelli@gmail.com>,
+        tglx@linutronix.de, mingo@redhat.com, oleg@redhat.com,
+        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
+        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
+        claudio@evidence.eu.com, michael@amarulasolutions.com,
+        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com, harald.gustafsson@ericsson.com,
+        vincent.guittot@linaro.org, bruce.ashfield@windriver.com
+Subject: Re: [PATCH 08/14] sched: add latency tracing for -deadline tasks.
+Message-ID: <20131127153519.GA26095@gmail.com>
+References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
+ <1383831828-15501-9-git-send-email-juri.lelli@gmail.com>
+ <20131120163318.10253e43@gandalf.local.home>
+ <5295F711.5010708@gmail.com>
+ <20131127091647.4e16ce53@gandalf.local.home>
+ <20131127142649.GC13532@twins.programming.kicks-ass.net>
+ <20131127143435.GD25043@gmail.com>
+ <20131127145837.GE16796@laptop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131127145837.GE16796@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To put devices into low power state during system suspend, it may be convenient
-for runtime PM supported subsystems, power domains and drivers to have the
-option of re-using the runtime PM callbacks.
 
-At the moment, quite complex solutions exist for power domains that tries to
-handle the above, like for OMAP2. The idea here, is to make it possible for
-drivers, who should know best, how to easiest put their devices into low power
-state. The intent is thus not only to simplify drivers but also power domains.
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-Additionally, some drivers seems to have messed up things when combining
-runtime PM with system PM. While we enable the option of re-using the runtime
-PM callbacks during system PM, we also intend to clarify the way forward for
-how these scenarios could be resolved.
+> On Wed, Nov 27, 2013 at 03:34:35PM +0100, Ingo Molnar wrote:
+> > 
+> > * Peter Zijlstra <peterz@infradead.org> wrote:
+> > 
+> > > On Wed, Nov 27, 2013 at 09:16:47AM -0500, Steven Rostedt wrote:
+> > > > On Wed, 27 Nov 2013 14:43:45 +0100
+> > > > Juri Lelli <juri.lelli@gmail.com> wrote:
+> > > > diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
+> > > > > index f76f8d6..ad94604 100644
+> > > > > --- a/kernel/trace/trace_selftest.c
+> > > > > +++ b/kernel/trace/trace_selftest.c
+> > > > > @@ -1023,16 +1023,16 @@ trace_selftest_startup_nop(struct tracer *trace, struct trace_array *tr)
+> > > > >  static int trace_wakeup_test_thread(void *data)
+> > > > >  {
+> > > > >  	/* Make this a -deadline thread */
+> > > > > -	struct sched_param2 paramx = {
+> > > > > +	static const struct sched_param2 param = {
+> > > > >  		.sched_priority = 0,
+> > > > > +		.sched_flags = 0,
+> > > > >  		.sched_runtime = 100000ULL,
+> > > > >  		.sched_deadline = 10000000ULL,
+> > > > >  		.sched_period = 10000000ULL
+> > > > > -		.sched_flags = 0
+> > > > 
+> > > > Assigning structures like this, you don't need to set the zero fields.
+> > > > all fields not explicitly stated, are set to zero.
+> > > 
+> > > Only because its static. Otherwise unnamed members have indeterminate
+> > > value after initialization.
+> > 
+> > I think for 'struct' C will initialize them to zero, even if they are 
+> > not mentioned and even if they are on the stack.
+> > 
+> > It will only be indeterminate when it's not initialized at all.
+> 
+> Language spec: ISO/IEC 9899:1999 (aka C99) section 6.7.8 point 9
+> says:
+> 
+> 9. Except where explicitly stated otherwise, for the purpose of this
+> subclause unnamed members of objects of structure and union type do no
+> participate in initialization. Unnamed members of structure objects have
+> indeterminate value even after initialization.
+> 
+> Later points (notably 21) make such an exception for aggregate objects
+> of static storage.
+> 
+> Of course, its entirely possible I read the thing wrong; its 31 points
+> detailing the initialization of objects.
 
-Some new helper macros for defining PM callbacks and two new pm_generic*
-functions has been implemented in this patch set. These are provided to make it
-easier for those who wants to enable the option of re-using the runtime PM
-callbacks during system suspend.
+So why does GCC then behave like this:
 
-A minor fix was needed for the platform bus, which runtime PM callbacks are set
-to the pm_genric_runtime_suspend|resume functions. These were implemented only
-for CONFIG_PM_RUNTIME and thus the platform bus prevented driver's runtime PM
-callbacks to be invoked when only CONFIG_PM_SLEEP was used. We move them into
-CONFIG_PM to resolve the problem and then let drivers decide how to handle this
-themselves.
+triton:~> cat test.c
 
-Patch 5 is folded into this patch set, to visualize how a driver that uses both
-runtime PM and system PM, can benefit from re-using the runtime PM callbacks
-during system suspend.
+struct foo {
+        int a;
+        int b;
+};
 
-Also note that, patch 1 to 4 has been submitted to linux-pm as standalone
-patches recently. I thought it make sense to collect them into a patchset
-since those are closely related.
+int main(void)
+{
+        struct foo x = { .a = 1 };
 
-Ulf Hansson (5):
-  PM / Sleep: Add pm_generic functions to re-use runtime PM callbacks
-  PM / Runtime: Implement the pm_generic_runtime functions for
-    CONFIG_PM
-  PM / Runtime: Add second macro for definition of runtime PM callbacks
-  PM / Sleep: Add macro to define common late/early system PM callbacks
-  drm/exynos: Convert to suspend_late/resume_early callbacks for fimc
+        return x.b;
+}
 
- drivers/base/power/generic_ops.c         |   90 +++++++++++++++++++++++++++++-
- drivers/gpu/drm/exynos/exynos_drm_fimc.c |   33 ++---------
- include/linux/pm.h                       |   23 ++++++++
- include/linux/pm_runtime.h               |   12 ++--
- 4 files changed, 123 insertions(+), 35 deletions(-)
+triton:~> gcc -Wall -Wextra -O2 -o test test.c; ./test; echo $?
+0
 
--- 
-1.7.9.5
+I'd expect -Wall -Wextra to warn about as trivial as the uninitialized 
+variable use that you argue happens.
 
+I'd also expect it to not return 0 but some random value on the stack 
+(which is most likely not 0).
+
+Thanks,
+
+	Ingo
