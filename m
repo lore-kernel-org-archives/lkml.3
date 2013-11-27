@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753649Ab3K0ECw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 23:02:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41555 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085Ab3K0ECv (ORCPT
+	id S1754105Ab3K0EHb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 23:07:31 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:63484 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003Ab3K0EH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 23:02:51 -0500
-Date: Tue, 26 Nov 2013 20:03:38 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: Joe Perches <joe@perches.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        rkuo <rkuo@codeaurora.org>, hans.verkuil@cisco.com,
-        m.chehab@samsung.com, linux-media@vger.kernel.org
-Subject: Re: [PATCH v2] drivers: staging: media: go7007: go7007-usb.c use
- pr_*() instead of dev_*() before 'go' initialized in go7007_usb_probe()
-Message-ID: <20131127040338.GB23930@kroah.com>
-References: <528AEFB7.4060301@gmail.com>
- <20131125011938.GB18921@codeaurora.org>
- <5292B845.3010404@gmail.com>
- <5292B8A0.7020409@gmail.com>
- <5294255E.7040105@gmail.com>
- <52956442.50001@gmail.com>
- <1385522475.18487.34.camel@joe-AO722>
- <529569A5.1020008@gmail.com>
- <52956B78.6050107@gmail.com>
+	Tue, 26 Nov 2013 23:07:28 -0500
+Date: Tue, 26 Nov 2013 20:07:23 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dwmw2@infradead.org, linux-mtd@lists.infradead.org, angus.clark@st.com,
+        linus.walleij@linaro.org, Mark Brown <broonie@kernel.org>,
+        Huang Shijie <b32955@freescale.com>, linux-spi@vger.kernel.org
+Subject: Re: [PATCH 00/23] mtd: st_spi_fsm: Add new device
+Message-ID: <20131127040723.GZ9468@ld-irv-0074.broadcom.com>
+References: <1385137380-28968-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52956B78.6050107@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1385137380-28968-1-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 11:48:08AM +0800, Chen Gang wrote:
-> dev_*() assumes 'go' is already initialized, so need use pr_*() instead
-> of before 'go' initialized. Related warning (with allmodconfig under
-> hexagon):
-> 
->     CC [M]  drivers/staging/media/go7007/go7007-usb.o
->   drivers/staging/media/go7007/go7007-usb.c: In function 'go7007_usb_probe':
->   drivers/staging/media/go7007/go7007-usb.c:1060:2: warning: 'go' may be used uninitialized in this function [-Wuninitialized]
-> 
-> Also remove useless code after 'return' statement.
++ Huang, Mark, SPI list
 
-This should all be fixed in my staging-linus branch already, right?  No
-need for this anymore from what I can tell, sorry.
+There seem to be multiple efforts going on that are vaguely related. I'd
+like to see more of the same people appearing on the CC list, to keep
+better coordinated.
 
-greg k-h
+On that topic, is the SPI dev list relevant, or would anybody working on
+the intersection of SPI and MTD be on the MTD list?
+
+On Fri, Nov 22, 2013 at 04:22:37PM +0000, Lee Jones wrote:
+> The first bunch of these patches have been on the MLs before, but 
+> didn't receive a great deal of attention for the most part. We are
+> a little more featureful this time however. We can now successfully
+> setup and configure the N25Q256. We still can't read/write/erase
+> it though. I'll start work on that next week and will provide it in
+> the next instalment.
+
+What happened to integrating a SPI NOR framework? I see you copied some
+of the m25p80 commands, but you don't share them with m25p80. I also
+understand your argument (from the first version of this patch series)
+that much of the actual controller operation is not shared with m25p80,
+but you'd be surprised how this might evolve. There are several others
+with QSPI hardware that are trying to get patches merged, some of whom
+(Huang, at least) are actively submitting patches to help with this
+abstraction.
+
+Now, I haven't had a lot of time yet to look at both yours and Huang's
+work and see what, if anything, can be shared (will do soon). But I
+think you need to be aware.
+
+BTW, can you include version markers (i.e., [PATCH v2 X/Y]) in the
+subject from now on?
+
+Brian
