@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759889Ab3K0Bdu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:33:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39302 "EHLO
+	id S932832Ab3K0BfB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:35:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39274 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932410Ab3K0A6b (ORCPT
+	with ESMTP id S1758534Ab3K0A60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:31 -0500
+	Tue, 26 Nov 2013 19:58:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH 3.12 023/116] ACPI / hotplug: Fix handle_root_bridge_removal()
-Date: Tue, 26 Nov 2013 16:56:36 -0800
-Message-Id: <20131127005738.548845490@linuxfoundation.org>
+        Suman Anna <s-anna@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Nishanth Menon <nm@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Paul Walmsley <paul@pwsan.com>
+Subject: [PATCH 3.12 018/116] ARM: OMAP2+: hwmod: check for module address space during init
+Date: Tue, 26 Nov 2013 16:56:31 -0800
+Message-Id: <20131127005738.209469099@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -27,47 +29,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Suman Anna <s-anna@ti.com>
 
-commit 2441191a19039002b2c454a261fb45986df15184 upstream.
+commit 6423d6df1440a8acfc2f375d7cbc4cd66c2e6910 upstream.
 
-It is required to do get_device() on the struct acpi_device in
-question before passing it to acpi_bus_hot_remove_device() through
-acpi_os_hotplug_execute(), because acpi_bus_hot_remove_device()
-calls acpi_scan_hot_remove() that does put_device() on that
-object.
+The hwmod init sequence involves initializing and idling all the
+hwmods during bootup. If a module class has sysconfig, the init
+sequence utilizes the module register base for performing any
+sysc configuration.
 
-The ACPI PCI root removal routine, handle_root_bridge_removal(),
-doesn't do that, which may lead to premature freeing of the
-device object or to executing put_device() on an object that
-has been freed already.
+The module address space is being removed from hwmod database and
+retrieved from the <reg> property of the corresponding DT node.
+If a hwmod does not have its corresponding DT node defined and the
+memory address space is not defined in the corresponding
+omap_hwmod_ocp_if, then the module register target address space
+would be NULL and any sysc programming would result in a NULL
+pointer dereference and a kernel boot hang.
 
-Fix this problem by making handle_root_bridge_removal() use
-get_device() as appropriate.
+Handle this scenario by checking for a valid module address space
+during the _init of each hwmod, and leaving it in the registered
+state if no module register address base is defined in either of
+the hwmod data or the DT data.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Acked-by: Toshi Kani <toshi.kani@hp.com>
+Signed-off-by: Suman Anna <s-anna@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Tested-by: Nishanth Menon <nm@ti.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
+[paul@pwsan.com: use -ENXIO rather than -ENOMEM to indicate a missing address
+ space error; fixed checkpatch.pl problem]
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/pci_root.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/arm/mach-omap2/omap_hwmod.c |   29 +++++++++++++++++++----------
+ 1 file changed, 19 insertions(+), 10 deletions(-)
 
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -608,9 +608,12 @@ static void handle_root_bridge_removal(s
- 	ej_event->device = device;
- 	ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
+--- a/arch/arm/mach-omap2/omap_hwmod.c
++++ b/arch/arm/mach-omap2/omap_hwmod.c
+@@ -2361,21 +2361,23 @@ static struct device_node *of_dev_hwmod_
+  * Cache the virtual address used by the MPU to access this IP block's
+  * registers.  This address is needed early so the OCP registers that
+  * are part of the device's address space can be ioremapped properly.
+- * No return value.
++ *
++ * Returns 0 on success, -EINVAL if an invalid hwmod is passed, and
++ * -ENXIO on absent or invalid register target address space.
+  */
+-static void __init _init_mpu_rt_base(struct omap_hwmod *oh, void *data)
++static int __init _init_mpu_rt_base(struct omap_hwmod *oh, void *data)
+ {
+ 	struct omap_hwmod_addr_space *mem;
+ 	void __iomem *va_start = NULL;
+ 	struct device_node *np;
  
-+	get_device(&device->dev);
- 	status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device, ej_event);
--	if (ACPI_FAILURE(status))
-+	if (ACPI_FAILURE(status)) {
-+		put_device(&device->dev);
- 		kfree(ej_event);
-+	}
+ 	if (!oh)
+-		return;
++		return -EINVAL;
+ 
+ 	_save_mpu_port_index(oh);
+ 
+ 	if (oh->_int_flags & _HWMOD_NO_MPU_PORT)
+-		return;
++		return -ENXIO;
+ 
+ 	mem = _find_mpu_rt_addr_space(oh);
+ 	if (!mem) {
+@@ -2384,7 +2386,7 @@ static void __init _init_mpu_rt_base(str
+ 
+ 		/* Extract the IO space from device tree blob */
+ 		if (!of_have_populated_dt())
+-			return;
++			return -ENXIO;
+ 
+ 		np = of_dev_hwmod_lookup(of_find_node_by_name(NULL, "ocp"), oh);
+ 		if (np)
+@@ -2395,13 +2397,14 @@ static void __init _init_mpu_rt_base(str
+ 
+ 	if (!va_start) {
+ 		pr_err("omap_hwmod: %s: Could not ioremap\n", oh->name);
+-		return;
++		return -ENXIO;
+ 	}
+ 
+ 	pr_debug("omap_hwmod: %s: MPU register target at va %p\n",
+ 		 oh->name, va_start);
+ 
+ 	oh->_mpu_rt_va = va_start;
++	return 0;
  }
  
- static void _handle_hotplug_event_root(struct work_struct *work)
+ /**
+@@ -2414,8 +2417,8 @@ static void __init _init_mpu_rt_base(str
+  * registered at this point.  This is the first of two phases for
+  * hwmod initialization.  Code called here does not touch any hardware
+  * registers, it simply prepares internal data structures.  Returns 0
+- * upon success or if the hwmod isn't registered, or -EINVAL upon
+- * failure.
++ * upon success or if the hwmod isn't registered or if the hwmod's
++ * address space is not defined, or -EINVAL upon failure.
+  */
+ static int __init _init(struct omap_hwmod *oh, void *data)
+ {
+@@ -2424,8 +2427,14 @@ static int __init _init(struct omap_hwmo
+ 	if (oh->_state != _HWMOD_STATE_REGISTERED)
+ 		return 0;
+ 
+-	if (oh->class->sysc)
+-		_init_mpu_rt_base(oh, NULL);
++	if (oh->class->sysc) {
++		r = _init_mpu_rt_base(oh, NULL);
++		if (r < 0) {
++			WARN(1, "omap_hwmod: %s: doesn't have mpu register target base\n",
++			     oh->name);
++			return 0;
++		}
++	}
+ 
+ 	r = _init_clocks(oh, NULL);
+ 	if (r < 0) {
 
 
