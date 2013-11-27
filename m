@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759230Ab3K0BHy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:07:54 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:48859 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759054Ab3K0BFN (ORCPT
+	id S1759032Ab3K0BEz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:04:55 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:18907 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754045Ab3K0BEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 20:05:13 -0500
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH v2 1/9] arm: dt: zynq: Remove 'clock-ranges' from TTC nodes
-Date: Tue, 26 Nov 2013 17:04:48 -0800
-Message-Id: <1385514296-26702-2-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.4.4
-In-Reply-To: <1385514296-26702-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1385514296-26702-1-git-send-email-soren.brinkmann@xilinx.com>
+	Tue, 26 Nov 2013 20:04:52 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 26 Nov 2013 17:02:21 -0800
+Date: Tue, 26 Nov 2013 17:04:18 -0800
+From: Paul Walmsley <pwalmsley@nvidia.com>
+X-X-Sender: pwalmsley@tamien
+To: Mark Salter <msalter@redhat.com>, Aurelien Jacquiot <a-jacquiot@ti.com>
+CC: <linux-c6x-dev@linux-c6x.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] C6X: clock: return 0 upon error from clk_round_rate()
+Message-ID: <alpine.DEB.2.02.1311261702390.11450@tamien>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; format=flowed; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bindings for the TTC changed in commit 'arm: zynq: Use standard
-timer binding' (e932900a3279b5dbb6d8f43c7b369003620e137c). That change
-removed possible subnodes from this driver rendering the 'clock-ranges'
-property invalid for this node.
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Acked-by: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+clk_round_rate() should return 0 now upon an error, rather than returning 
+a negative error code.  This is because clk_round_rate() is being changed 
+to return an unsigned return type rather than a signed type, since some 
+clock sources can generate rates higher than (2^31)-1 Hz.
+
+Signed-off-by: Paul Walmsley <pwalmsley@nvidia.com>
+Cc: Mark Salter <msalter@redhat.com>
+Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
 ---
- arch/arm/boot/dts/zynq-7000.dtsi | 2 --
- 1 file changed, 2 deletions(-)
+Applies on v3.13-rc1.  See also:
 
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index e7f73b2e4550..605a2d0a39fc 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -106,7 +106,6 @@
- 			compatible = "cdns,ttc";
- 			clocks = <&clkc 6>;
- 			reg = <0xF8001000 0x1000>;
--			clock-ranges;
- 		};
- 
- 		ttc1: ttc1@f8002000 {
-@@ -115,7 +114,6 @@
- 			compatible = "cdns,ttc";
- 			clocks = <&clkc 6>;
- 			reg = <0xF8002000 0x1000>;
--			clock-ranges;
- 		};
- 		scutimer: scutimer@f8f00600 {
- 			interrupt-parent = <&intc>;
--- 
-1.8.4.4
+     http://marc.info/?l=linux-arm-kernel&m=138542591313620&w=2
 
+  arch/c6x/platforms/pll.c |    2 +-
+  1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/c6x/platforms/pll.c b/arch/c6x/platforms/pll.c
+index 3aa898f7ce4d..79d28dda660a 100644
+--- a/arch/c6x/platforms/pll.c
++++ b/arch/c6x/platforms/pll.c
+@@ -85,7 +85,7 @@ EXPORT_SYMBOL(clk_get_rate);
+  long clk_round_rate(struct clk *clk, unsigned long rate)
+  {
+  	if (clk == NULL || IS_ERR(clk))
+-		return -EINVAL;
++		return 0;
+
+  	if (clk->round_rate)
+  		return clk->round_rate(clk, rate);
