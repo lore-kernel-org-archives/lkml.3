@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760050Ab3K0Bi7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:38:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39220 "EHLO
+	id S1760061Ab3K0BjD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:39:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39216 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932294Ab3K0A6N (ORCPT
+	with ESMTP id S1751140Ab3K0A6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Nov 2013 19:58:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Julius Werner <jwerner@chromium.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.10 73/80] usb: hub: Clear Port Reset Change during init/resume
-Date: Tue, 26 Nov 2013 16:57:42 -0800
-Message-Id: <20131127005645.986827243@linuxfoundation.org>
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [PATCH 3.10 72/80] mei: nfc: fix memory leak in error path
+Date: Tue, 26 Nov 2013 16:57:41 -0800
+Message-Id: <20131127005645.918777112@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -27,40 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julius Werner <jwerner@chromium.org>
+From: Tomas Winkler <tomas.winkler@intel.com>
 
-commit e92aee330837e4911553761490a8fb843f2053a6 upstream.
+commit 4bff7208f332b2b1d7cf1338e50527441283a198 upstream.
 
-This patch adds the Port Reset Change flag to the set of bits that are
-preemptively cleared on init/resume of a hub. In theory this bit should
-never be set unexpectedly... in practice it can still happen if BIOS,
-SMM or ACPI code plays around with USB devices without cleaning up
-correctly. This is especially dangerous for XHCI root hubs, which don't
-generate any more Port Status Change Events until all change bits are
-cleared, so this is a good precaution to have (similar to how it's
-already done for the Warm Port Reset Change flag).
+The flow may reach the err label without freeing cl and cl_info
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+cl and cl_info weren't assigned to ndev->cl and cl_info
+so they weren't freed in mei_nfc_free called on error path
+
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/misc/mei/nfc.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1129,6 +1129,11 @@ static void hub_activate(struct usb_hub
- 			usb_clear_port_feature(hub->hdev, port1,
- 					USB_PORT_FEAT_C_ENABLE);
- 		}
-+		if (portchange & USB_PORT_STAT_C_RESET) {
-+			need_debounce_delay = true;
-+			usb_clear_port_feature(hub->hdev, port1,
-+					USB_PORT_FEAT_C_RESET);
-+		}
- 		if ((portchange & USB_PORT_STAT_C_BH_RESET) &&
- 				hub_is_superspeed(hub->hdev)) {
- 			need_debounce_delay = true;
+--- a/drivers/misc/mei/nfc.c
++++ b/drivers/misc/mei/nfc.c
+@@ -485,8 +485,11 @@ int mei_nfc_host_init(struct mei_device
+ 	if (ndev->cl_info)
+ 		return 0;
+ 
+-	cl_info = mei_cl_allocate(dev);
+-	cl = mei_cl_allocate(dev);
++	ndev->cl_info = mei_cl_allocate(dev);
++	ndev->cl = mei_cl_allocate(dev);
++
++	cl = ndev->cl;
++	cl_info = ndev->cl_info;
+ 
+ 	if (!cl || !cl_info) {
+ 		ret = -ENOMEM;
+@@ -527,10 +530,9 @@ int mei_nfc_host_init(struct mei_device
+ 
+ 	cl->device_uuid = mei_nfc_guid;
+ 
++
+ 	list_add_tail(&cl->device_link, &dev->device_list);
+ 
+-	ndev->cl_info = cl_info;
+-	ndev->cl = cl;
+ 	ndev->req_id = 1;
+ 
+ 	INIT_WORK(&ndev->init_work, mei_nfc_init);
 
 
