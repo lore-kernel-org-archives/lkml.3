@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942Ab3K0SbY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 13:31:24 -0500
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:47949 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930Ab3K0SbW (ORCPT
+	id S1757259Ab3K0SdT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 13:33:19 -0500
+Received: from smtpauth02.mfg.siteprotect.com ([64.26.60.136]:33242 "EHLO
+	smtpauth02.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752446Ab3K0SdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 13:31:22 -0500
-Date: Wed, 27 Nov 2013 13:31:17 -0500
-From: Tejun Heo <htejun@gmail.com>
-To: zhang.yi20@zte.com.cn
-Cc: Oleg Nesterov <oleg@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH]: exec: avoid propagating PF_NO_SETAFFINITY into
- userspace child
-Message-ID: <20131127183117.GB13098@mtj.dyndns.org>
-References: <20131114052326.GA29031@mtj.dyndns.org>
- <20131114114039.GA29277@redhat.com>
- <20131114115551.GA30824@redhat.com>
- <20131114115618.GB30824@redhat.com>
- <CAOS58YO_pZzBB+T6FEzNqfZv4_UUQ_QF1n1zxy4u+H_KhW-vJQ@mail.gmail.com>
- <OF36E72FA9.51146BE3-ON48257C2E.0008BC6D-48257C2E.0008FF9C@zte.com.cn>
- <20131125121416.GB23829@redhat.com>
- <OF4CF076F6.04AFF122-ON48257C2F.0009B6E4-48257C2F.000BF905@zte.com.cn>
- <20131126180420.GA18172@redhat.com>
- <OF99742718.77495161-ON48257C30.000A8334-48257C30.000BA983@zte.com.cn>
+	Wed, 27 Nov 2013 13:33:16 -0500
+Date: Wed, 27 Nov 2013 13:35:35 -0500 (EST)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Stephane Eranian <eranian@google.com>
+cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, acme@redhat.com, jolsa@redhat.com,
+        zheng.z.yan@intel.com, bp@alien8.de, maria.n.dimakopoulou@gmail.com
+Subject: Re: [PATCH v7 3/4] perf,x86: add Intel RAPL PMU support
+In-Reply-To: <1384275531-10892-4-git-send-email-eranian@google.com>
+Message-ID: <alpine.DEB.2.02.1311271328590.22932@pianoman.cluster.toy>
+References: <1384275531-10892-1-git-send-email-eranian@google.com> <1384275531-10892-4-git-send-email-eranian@google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <OF99742718.77495161-ON48257C30.000A8334-48257C30.000BA983@zte.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020202.52963AEC.0055,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 10:07:03AM +0800, zhang.yi20@zte.com.cn wrote:
-> Userspace process doesn't want the PF_NO_SETAFFINITY, but its parent may be
-> a kernel worker thread which has PF_NO_SETAFFINITY set, and this worker thread
-> can do kernel_thread() to create the child.
-> Clearing this flag in usersapce child to enable its migrating capability.
+On Tue, 12 Nov 2013, Stephane Eranian wrote:
+
+> This patch adds a new uncore PMU to expose the Intel
+> RAPL energy consumption counters. Up to 3 counters,
+> each counting a particular RAPL event are exposed.
 > 
-> 
-> Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
+> The RAPL counters are available on Intel SandyBridge,
+> IvyBridge, Haswell. The server skus add a 3rd counter.
 
-Acked-by: Tejun Heo <tj@kernel.org>
+So I notice PP1 (which is the GPU power on non-server chips) 
+is not supported.
 
-cc'ing Ingo and Peter.  Ingo, I think this one doesn't really suit the
-workqueue tree.  Can you please pick this one up w/ Oleg's ack added
-and stable cc'd?  The original patch is
+Is that just for simplicity?
 
-  http://article.gmane.org/gmane.linux.kernel/1602429/raw
+> The following events are available and exposed in sysfs:
+> - power/energy-cores: power consumption of all cores on socket
+> - power/energy-pkg: power consumption of all cores + LLc cache
+> - power/energy-dram: power consumption of DRAM (servers only)
 
-Thanks!
+This "power" naming seems a bit generic.  If other hardware has power
+measurements can they be put in the same directory?
+power/gpu? power/usb?
 
--- 
-tejun
+Also, can support for reading the power from other vendors be put here?
+Like AMDs (unfortunately named) APM (active power management) power
+readings?
+
+> Files are:
+> 	/sys/devices/power/events/energy-*.unit
+> 	/sys/devices/power/events/energy-*.scale
+
+Are all of these sys files having documentation added under 
+Documentation/ABI?
+
+> The RAPL PMU is uncore by nature and is implemented such
+> that it only works in system-wide mode. Measuring only
+> one CPU per socket is sufficient. The /sys/devices/power/cpumask
+> file can be used by tools to figure out which CPUs to monitor
+> by default. For instance, on a 2-socket system, 2 CPUs
+> (one on each socket) will be shown.
+
+do the measurements require CAP_SYS_ADMIN like other system-wide uncore 
+measurements?  It didn't look like it in the patch but I might have missed 
+it.
+
+I'm sure the security people will start making claims that you can make 
+guesses about password encryption algorithms based on the global power 
+consumption numbers.
+
+
+Sorry if these are annoying questions, I am glad to see this driver make 
+progress, as I've had the misfortune of maintaining various user-space-MSR 
+hacks designed to get this info because of lack of kernel support.
+
+Vince
