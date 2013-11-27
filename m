@@ -1,66 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab3K0LbU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 06:31:20 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:64289 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325Ab3K0LbS (ORCPT
+	id S1754234Ab3K0Lcx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 06:32:53 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52252 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753273Ab3K0Lcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 06:31:18 -0500
-Date: Wed, 27 Nov 2013 12:31:14 +0100
+	Wed, 27 Nov 2013 06:32:52 -0500
+Date: Wed, 27 Nov 2013 12:32:48 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCHv2] perf tools: Fix tags/TAGS targets rebuilding
-Message-ID: <20131127113114.GA10495@gmail.com>
-References: <1385464890-19876-1-git-send-email-jolsa@redhat.com>
- <20131126113108.GE2410@gmail.com>
- <20131126115043.GG1267@krava.brq.redhat.com>
- <20131126120055.GA6103@gmail.com>
- <20131126125412.GJ1267@krava.brq.redhat.com>
- <20131126161316.GA7775@gmail.com>
- <20131126231650.GA1130@krava.redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf tools: Fix not finding kcore in buildid cache
+Message-ID: <20131127113248.GB10495@gmail.com>
+References: <1385471964-4037-1-git-send-email-adrian.hunter@intel.com>
+ <20131126161553.GB7775@gmail.com>
+ <5295AACE.2080606@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131126231650.GA1130@krava.redhat.com>
+In-Reply-To: <5295AACE.2080606@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Jiri Olsa <jolsa@redhat.com> wrote:
+* Adrian Hunter <adrian.hunter@intel.com> wrote:
 
-> On Tue, Nov 26, 2013 at 05:13:16PM +0100, Ingo Molnar wrote:
-> 
-> SNIP
-> 
-> > >  
-> > >  #
-> > >  # Needed if no target specified:
-> > > +# (Except for tags and TAGS targets. The reason is that the
-> > > +# Makefile does not treat tags/TAGS as targets but as files
-> > > +# and thus won't rebuilt them once they are in place.)
+> On 26/11/13 18:15, Ingo Molnar wrote:
 > > 
-> > s/rebuilt/rebuild
+> > * Adrian Hunter <adrian.hunter@intel.com> wrote:
 > > 
-> > Btw., could we perhaps change the targets to 'ctags' and 'etags' 
-> > instead? (That will make it natural to add 'gtags' in the future, 
-> > should anyone want that.)
+> >> The logic was not looking in the buildid cache for kcore
+> >> if the host kernel buildid did not match the recorded
+> >> kernel buildid.
+> > 
+> > It would be nice to also include the specific failure mode in the 
+> > changelog: exactly how can users run into this. That will be more 
+> > useful to most people reading these changelogs than a more abstract 
+> > bug description.
 > 
-> my fingers vote against removing 'make tags' (and cscope)
-> dont care much about the rest though.. ;-)
+> The preconditions for the problem are that kcore is in the buildid
+> cache and that the running kernel has a different buildid e.g.
+> 
+> $ perf buildid-list | grep kernel.kallsyms
+> b18fbe769dea12513028a4287dae02efc1582c29 [kernel.kallsyms]
+> 
+> $ perf record -o /tmp/junk true >/dev/null 2>&1 ; perf buildid-list -i /tmp/junk | grep kernel.kallsyms
+> 504f9fd9328c40714995ce76fe1354c6e90136ce [kernel.kallsyms]
+> 
+> 
+> 
+> Before the patch:
+> 
+> 
+> $ perf script -v >out.txt
+> build id event received for [kernel.kallsyms]: b18fbe769dea12513028a4287dae02efc1582c29
+> <SNIP>
+> Using /home/ahunter/.debug/[kernel.kallsyms]/b18fbe769dea12513028a4287dae02efc1582c29 for symbols
+> 
+> perf script stopped
+> 
+> 
+> After the patch:
+> 
+> 
+> $ perf script -v >out.txt
+> build id event received for [kernel.kallsyms]: b18fbe769dea12513028a4287dae02efc1582c29
+> <SNIP>
+> Using /home/ahunter/.debug/[kernel.kcore]/b18fbe769dea12513028a4287dae02efc1582c29/2013112617084061/kcore for kernel object code
+> Using /home/ahunter/.debug/[kernel.kcore]/b18fbe769dea12513028a4287dae02efc1582c29/2013112617084061/kallsyms for symbols
+> 
+> perf script stopped
 
-Okay, fair enough, and 'tags/TAGS' targets is also what the main 
-kernel build system uses - so I concur. For your updated v2 patch:
-
-  Acked-by: Ingo Molnar <mingo@kernel.org>
+So the result of the patch is that kernel symbols get 
+resolved/annotated correctly, as expected from the live kcore feature, 
+right?
 
 Thanks,
 
