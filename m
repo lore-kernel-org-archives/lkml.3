@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759328Ab3K0BOf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:14:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39595 "EHLO
+	id S1759336Ab3K0BO4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:14:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39587 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758795Ab3K0A7i (ORCPT
+	with ESMTP id S1758779Ab3K0A7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:38 -0500
+	Tue, 26 Nov 2013 19:59:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [PATCH 3.12 098/116] mei: nfc: fix memory leak in error path
-Date: Tue, 26 Nov 2013 16:57:51 -0800
-Message-Id: <20131127005743.674803757@linuxfoundation.org>
+        Franz Hsieh <franz.hsieh@canonical.com>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 048/116] ALSA: hda - Make sure mute LEDs stay on during runtime suspend (Realtek)
+Date: Tue, 26 Nov 2013 16:57:01 -0800
+Message-Id: <20131127005740.271128261@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -27,50 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Winkler <tomas.winkler@intel.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 4bff7208f332b2b1d7cf1338e50527441283a198 upstream.
+commit d5b6b65e75ce607c2734227524e11574317a1c1a upstream.
 
-The flow may reach the err label without freeing cl and cl_info
+Some HP machines with Realtek codecs have mute LEDs connected to VREF pins.
+However when these go into runtime suspend, the pin powers down and its
+pin control is disabled, thus disabling the LED too.
 
-cl and cl_info weren't assigned to ndev->cl and cl_info
-so they weren't freed in mei_nfc_free called on error path
+This patch fixes that issue by making sure that the pin stays in D0 with
+correct pin control.
 
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+BugLink: https://bugs.launchpad.net/bugs/1248465
+Tested-by: Franz Hsieh <franz.hsieh@canonical.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/nfc.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ sound/pci/hda/patch_realtek.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
---- a/drivers/misc/mei/nfc.c
-+++ b/drivers/misc/mei/nfc.c
-@@ -485,8 +485,11 @@ int mei_nfc_host_init(struct mei_device
- 	if (ndev->cl_info)
- 		return 0;
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -2955,6 +2955,23 @@ static void alc269_fixup_mic_mute_hook(v
+ 		snd_hda_set_pin_ctl_cache(codec, spec->mute_led_nid, pinval);
+ }
  
--	cl_info = mei_cl_allocate(dev);
--	cl = mei_cl_allocate(dev);
-+	ndev->cl_info = mei_cl_allocate(dev);
-+	ndev->cl = mei_cl_allocate(dev);
++/* Make sure the led works even in runtime suspend */
++static unsigned int led_power_filter(struct hda_codec *codec,
++						  hda_nid_t nid,
++						  unsigned int power_state)
++{
++	struct alc_spec *spec = codec->spec;
 +
-+	cl = ndev->cl;
-+	cl_info = ndev->cl_info;
- 
- 	if (!cl || !cl_info) {
- 		ret = -ENOMEM;
-@@ -527,10 +530,9 @@ int mei_nfc_host_init(struct mei_device
- 
- 	cl->device_uuid = mei_nfc_guid;
- 
++	if (power_state != AC_PWRST_D3 || nid != spec->mute_led_nid)
++		return power_state;
 +
- 	list_add_tail(&cl->device_link, &dev->device_list);
++	/* Set pin ctl again, it might have just been set to 0 */
++	snd_hda_set_pin_ctl(codec, nid,
++			    snd_hda_codec_get_pin_target(codec, nid));
++
++	return AC_PWRST_D0;
++}
++
+ static void alc269_fixup_hp_mute_led(struct hda_codec *codec,
+ 				     const struct hda_fixup *fix, int action)
+ {
+@@ -2974,6 +2991,7 @@ static void alc269_fixup_hp_mute_led(str
+ 		spec->mute_led_nid = pin - 0x0a + 0x18;
+ 		spec->gen.vmaster_mute.hook = alc269_fixup_mic_mute_hook;
+ 		spec->gen.vmaster_mute_enum = 1;
++		codec->power_filter = led_power_filter;
+ 		snd_printd("Detected mute LED for %x:%d\n", spec->mute_led_nid,
+ 			   spec->mute_led_polarity);
+ 		break;
+@@ -2989,6 +3007,7 @@ static void alc269_fixup_hp_mute_led_mic
+ 		spec->mute_led_nid = 0x18;
+ 		spec->gen.vmaster_mute.hook = alc269_fixup_mic_mute_hook;
+ 		spec->gen.vmaster_mute_enum = 1;
++		codec->power_filter = led_power_filter;
+ 	}
+ }
  
--	ndev->cl_info = cl_info;
--	ndev->cl = cl;
- 	ndev->req_id = 1;
+@@ -3001,6 +3020,7 @@ static void alc269_fixup_hp_mute_led_mic
+ 		spec->mute_led_nid = 0x19;
+ 		spec->gen.vmaster_mute.hook = alc269_fixup_mic_mute_hook;
+ 		spec->gen.vmaster_mute_enum = 1;
++		codec->power_filter = led_power_filter;
+ 	}
+ }
  
- 	INIT_WORK(&ndev->init_work, mei_nfc_init);
 
 
