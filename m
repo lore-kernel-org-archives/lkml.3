@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757293Ab3K0B2i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:28:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39399 "EHLO
+	id S932763Ab3K0B31 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:29:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39391 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758643Ab3K0A6x (ORCPT
+	with ESMTP id S1758627Ab3K0A6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:53 -0500
+	Tue, 26 Nov 2013 19:58:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 045/116] ALSA: hda - Introduce the bitmask for excluding output volume
-Date: Tue, 26 Nov 2013 16:56:58 -0800
-Message-Id: <20131127005740.067975349@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 043/116] ALSA: msnd: Avoid duplicated driver name
+Date: Tue, 26 Nov 2013 16:56:56 -0800
+Message-Id: <20131127005739.930159656@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -28,69 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit a1114a8c681b0724d6ad905f53ff06aa756f5fb8 upstream.
+commit 092f9cd16aac7d054af1755c945f37c1b33399e6 upstream.
 
-Add a bitmask to hda_gen_spec indicating NIDs to exclude from the
-possible volume controls.  That is, when the bit is set, the NID
-corresponding to the bit won't be picked as an output volume control
-any longer.
+msnd_pinnacle.c is used for both snd-msnd-pinnacle and
+snd-msnd-classic drivers, and both should have different driver
+names.  Using the same driver name results in the sysfs warning for
+duplicated entries like
+ kobject: 'msnd-pinnacle.7' (cec33408): kobject_release, parent   (null) (delayed)
+ kobject: 'msnd-pinnacle' (cecd4980): kobject_release, parent cf3ad9b0 (delayed)
+ ------------[ cut here ]------------
+ WARNING: CPU: 0 PID: 1 at fs/sysfs/dir.c:486 sysfs_warn_dup+0x7d/0xa0()
+ sysfs: cannot create duplicate filename '/bus/isa/drivers/msnd-pinnacle'
+ ......
 
-Basically this is just a band-aid for working around the issue found
-with CS4208 codec, where only the headphone pin has a volume AMP with
-different dB steps.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=60811
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_generic.c  |    8 ++++++--
- sound/pci/hda/hda_generic.h  |    3 +++
- sound/pci/hda/patch_cirrus.c |    2 ++
- 3 files changed, 11 insertions(+), 2 deletions(-)
+ sound/isa/msnd/msnd_pinnacle.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/hda_generic.c
-+++ b/sound/pci/hda/hda_generic.c
-@@ -549,11 +549,15 @@ static hda_nid_t look_for_out_mute_nid(s
- static hda_nid_t look_for_out_vol_nid(struct hda_codec *codec,
- 				      struct nid_path *path)
- {
-+	struct hda_gen_spec *spec = codec->spec;
- 	int i;
+--- a/sound/isa/msnd/msnd_pinnacle.c
++++ b/sound/isa/msnd/msnd_pinnacle.c
+@@ -73,9 +73,11 @@
+ #ifdef MSND_CLASSIC
+ #  include "msnd_classic.h"
+ #  define LOGNAME			"msnd_classic"
++#  define DEV_NAME			"msnd-classic"
+ #else
+ #  include "msnd_pinnacle.h"
+ #  define LOGNAME			"snd_msnd_pinnacle"
++#  define DEV_NAME			"msnd-pinnacle"
+ #endif
  
- 	for (i = path->depth - 1; i >= 0; i--) {
--		if (nid_has_volume(codec, path->path[i], HDA_OUTPUT))
--			return path->path[i];
-+		hda_nid_t nid = path->path[i];
-+		if ((spec->out_vol_mask >> nid) & 1)
-+			continue;
-+		if (nid_has_volume(codec, nid, HDA_OUTPUT))
-+			return nid;
- 	}
+ static void set_default_audio_parameters(struct snd_msnd *chip)
+@@ -1067,8 +1069,6 @@ static int snd_msnd_isa_remove(struct de
  	return 0;
  }
---- a/sound/pci/hda/hda_generic.h
-+++ b/sound/pci/hda/hda_generic.h
-@@ -242,6 +242,9 @@ struct hda_gen_spec {
- 	/* additional mute flags (only effective with auto_mute_via_amp=1) */
- 	u64 mute_bits;
  
-+	/* bitmask for skipping volume controls */
-+	u64 out_vol_mask;
-+
- 	/* badness tables for output path evaluations */
- 	const struct badness_table *main_out_badness;
- 	const struct badness_table *extra_out_badness;
---- a/sound/pci/hda/patch_cirrus.c
-+++ b/sound/pci/hda/patch_cirrus.c
-@@ -684,6 +684,8 @@ static int patch_cs4208(struct hda_codec
- 		return -ENOMEM;
- 
- 	spec->gen.automute_hook = cs_automute;
-+	/* exclude NID 0x10 (HP) from output volumes due to different steps */
-+	spec->gen.out_vol_mask = 1ULL << 0x10;
- 
- 	snd_hda_pick_fixup(codec, cs4208_models, cs4208_fixup_tbl,
- 			   cs4208_fixups);
+-#define DEV_NAME "msnd-pinnacle"
+-
+ static struct isa_driver snd_msnd_driver = {
+ 	.match		= snd_msnd_isa_match,
+ 	.probe		= snd_msnd_isa_probe,
 
 
