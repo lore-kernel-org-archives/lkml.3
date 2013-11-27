@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760138Ab3K0Bm7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:42:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39150 "EHLO
+	id S1759744Ab3K0Bm4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:42:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39154 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758252Ab3K0A6A (ORCPT
+	with ESMTP id S1754225Ab3K0A6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:00 -0500
+	Tue, 26 Nov 2013 19:58:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        David Henningsson <david.henningsson@canonical.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 45/80] ALSA: hda - Fix the headphone jack detection on Sony VAIO TX
-Date: Tue, 26 Nov 2013 16:57:14 -0800
-Message-Id: <20131127005644.082180777@linuxfoundation.org>
+Subject: [PATCH 3.10 46/80] ALSA: hda - Add headset quirk for Dell Inspiron 3135
+Date: Tue, 26 Nov 2013 16:57:15 -0800
+Message-Id: <20131127005644.153626819@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -26,12 +27,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 0f5a5b8515472a0219768423226b58228001e3d5 upstream.
+commit b8362e70cbbb397db50939bc4c7c78dc3246c3eb upstream.
 
-BIOS sets MISC_NO_PRESENCE bit wrongly to the pin config on NID 0x0f.
-
+BugLink: https://bugs.launchpad.net/bugs/1253636
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
@@ -41,13 +42,13 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/sound/pci/hda/patch_realtek.c
 +++ b/sound/pci/hda/patch_realtek.c
-@@ -1643,6 +1643,7 @@ static const struct snd_pci_quirk alc260
- 	SND_PCI_QUIRK(0x1025, 0x008f, "Acer", ALC260_FIXUP_GPIO1),
- 	SND_PCI_QUIRK(0x103c, 0x280a, "HP dc5750", ALC260_FIXUP_HP_DC5750),
- 	SND_PCI_QUIRK(0x103c, 0x30ba, "HP Presario B1900", ALC260_FIXUP_HP_B1900),
-+	SND_PCI_QUIRK(0x104d, 0x81e2, "Sony VAIO TX", ALC260_FIXUP_HP_PIN_0F),
- 	SND_PCI_QUIRK(0x10cf, 0x1326, "FSC LifeBook S7020", ALC260_FIXUP_FSC_S7020),
- 	SND_PCI_QUIRK(0x1509, 0x4540, "Favorit 100XS", ALC260_FIXUP_GPIO1),
- 	SND_PCI_QUIRK(0x152d, 0x0729, "Quanta KN1", ALC260_FIXUP_KN1),
+@@ -3601,6 +3601,7 @@ static const struct snd_pci_quirk alc269
+ 	SND_PCI_QUIRK(0x1028, 0x0608, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0609, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0613, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
++	SND_PCI_QUIRK(0x1028, 0x0614, "Dell Inspiron 3135", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0616, "Dell Vostro 5470", ALC290_FIXUP_MONO_SPEAKERS),
+ 	SND_PCI_QUIRK(0x103c, 0x1586, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC2),
+ 	SND_PCI_QUIRK(0x103c, 0x18e6, "HP", ALC269_FIXUP_HP_GPIO_LED),
 
 
