@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756492Ab3K0AtE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:49:04 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:58400 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200Ab3K0AqJ (ORCPT
+	id S1750950Ab3K0Atc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:49:32 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:60879 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752822Ab3K0AqF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:46:09 -0500
+	Tue, 26 Nov 2013 19:46:05 -0500
 From: Kent Overstreet <kmo@daterainc.com>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         hch@infradead.org
-Cc: Kent Overstreet <kmo@daterainc.com>
-Subject: [PATCH 17/25] block: Add bio_clone_fast()
-Date: Tue, 26 Nov 2013 16:45:20 -0800
-Message-Id: <1385513128-5035-17-git-send-email-kmo@daterainc.com>
+Cc: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
+        Sage Weil <sage@inktank.com>, ceph-devel@vger.kernel.org
+Subject: [PATCH 14/25] ceph: Convert to immutable biovecs
+Date: Tue, 26 Nov 2013 16:45:17 -0800
+Message-Id: <1385513128-5035-14-git-send-email-kmo@daterainc.com>
 X-Mailer: git-send-email 1.8.4.4
 In-Reply-To: <1385513128-5035-1-git-send-email-kmo@daterainc.com>
 References: <20131127004422.GB21305@kmo>
@@ -22,135 +23,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bio_clone() just got more expensive - however, most users of bio_clone()
-don't actually need to modify the biovec. If they aren't modifying the
-biovec, and they can guarantee that the original bio isn't freed before
-the clone (also true in most cases), we can just point the clone at the
-original bio's biovec.
+Now that we've got a mechanism for immutable biovecs -
+bi_iter.bi_bvec_done - we need to convert drivers to use primitives that
+respect it instead of using the bvec array directly.
 
 Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Sage Weil <sage@inktank.com>
+Cc: ceph-devel@vger.kernel.org
 ---
- drivers/md/bcache/request.c |  8 ++----
- fs/bio.c                    | 60 +++++++++++++++++++++++++++++++++++++++++++++
- include/linux/bio.h         |  2 ++
- 3 files changed, 64 insertions(+), 6 deletions(-)
+ include/linux/ceph/messenger.h |  4 ++--
+ net/ceph/messenger.c           | 43 +++++++++++++++++-------------------------
+ 2 files changed, 19 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 4c0a422..63451c7 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -613,7 +613,6 @@ struct search {
+diff --git a/include/linux/ceph/messenger.h b/include/linux/ceph/messenger.h
+index 7c1420b..091fdb6 100644
+--- a/include/linux/ceph/messenger.h
++++ b/include/linux/ceph/messenger.h
+@@ -1,6 +1,7 @@
+ #ifndef __FS_CEPH_MESSENGER_H
+ #define __FS_CEPH_MESSENGER_H
  
- 	struct btree_op		op;
- 	struct data_insert_op	iop;
--	struct bio_vec		bv[BIO_MAX_PAGES];
- };
++#include <linux/blk_types.h>
+ #include <linux/kref.h>
+ #include <linux/mutex.h>
+ #include <linux/net.h>
+@@ -119,8 +120,7 @@ struct ceph_msg_data_cursor {
+ #ifdef CONFIG_BLOCK
+ 		struct {				/* bio */
+ 			struct bio	*bio;		/* bio from list */
+-			unsigned int	vector_index;	/* vector from bio */
+-			unsigned int	vector_offset;	/* bytes from vector */
++			struct bvec_iter bvec_iter;
+ 		};
+ #endif /* CONFIG_BLOCK */
+ 		struct {				/* pages */
+diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
+index 4a5df7b..18c039b 100644
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -777,13 +777,12 @@ static void ceph_msg_data_bio_cursor_init(struct ceph_msg_data_cursor *cursor,
  
- static void bch_cache_read_endio(struct bio *bio, int error)
-@@ -761,9 +760,7 @@ static void do_bio_hook(struct search *s)
- 	struct bio *bio = &s->bio.bio;
+ 	bio = data->bio;
+ 	BUG_ON(!bio);
+-	BUG_ON(!bio->bi_vcnt);
  
- 	bio_init(bio);
--	bio->bi_io_vec		= s->bv;
--	bio->bi_max_vecs	= BIO_MAX_PAGES;
--	__bio_clone(bio, s->orig_bio);
-+	__bio_clone_fast(bio, s->orig_bio);
- 	bio->bi_end_io		= request_endio;
- 	bio->bi_private		= &s->cl;
+ 	cursor->resid = min(length, data->bio_length);
+ 	cursor->bio = bio;
+-	cursor->vector_index = 0;
+-	cursor->vector_offset = 0;
+-	cursor->last_piece = length <= bio->bi_io_vec[0].bv_len;
++	cursor->bvec_iter = bio->bi_iter;
++	cursor->last_piece =
++		cursor->resid <= bio_iter_len(bio, cursor->bvec_iter);
+ }
  
-@@ -1065,8 +1062,7 @@ static void cached_dev_write(struct cached_dev *dc, struct search *s)
- 			closure_bio_submit(flush, cl, s->d);
- 		}
- 	} else {
--		s->iop.bio = bio_clone_bioset(bio, GFP_NOIO,
--					      dc->disk.bio_split);
-+		s->iop.bio = bio_clone_fast(bio, GFP_NOIO, dc->disk.bio_split);
+ static struct page *ceph_msg_data_bio_next(struct ceph_msg_data_cursor *cursor,
+@@ -792,71 +791,63 @@ static struct page *ceph_msg_data_bio_next(struct ceph_msg_data_cursor *cursor,
+ {
+ 	struct ceph_msg_data *data = cursor->data;
+ 	struct bio *bio;
+-	struct bio_vec *bio_vec;
+-	unsigned int index;
++	struct bio_vec bio_vec;
  
- 		closure_bio_submit(bio, cl, s->d);
+ 	BUG_ON(data->type != CEPH_MSG_DATA_BIO);
+ 
+ 	bio = cursor->bio;
+ 	BUG_ON(!bio);
+ 
+-	index = cursor->vector_index;
+-	BUG_ON(index >= (unsigned int) bio->bi_vcnt);
++	bio_vec = bio_iter_iovec(bio, cursor->bvec_iter);
+ 
+-	bio_vec = &bio->bi_io_vec[index];
+-	BUG_ON(cursor->vector_offset >= bio_vec->bv_len);
+-	*page_offset = (size_t) (bio_vec->bv_offset + cursor->vector_offset);
++	*page_offset = (size_t) bio_vec.bv_offset;
+ 	BUG_ON(*page_offset >= PAGE_SIZE);
+ 	if (cursor->last_piece) /* pagelist offset is always 0 */
+ 		*length = cursor->resid;
+ 	else
+-		*length = (size_t) (bio_vec->bv_len - cursor->vector_offset);
++		*length = (size_t) bio_vec.bv_len;
+ 	BUG_ON(*length > cursor->resid);
+ 	BUG_ON(*page_offset + *length > PAGE_SIZE);
+ 
+-	return bio_vec->bv_page;
++	return bio_vec.bv_page;
+ }
+ 
+ static bool ceph_msg_data_bio_advance(struct ceph_msg_data_cursor *cursor,
+ 					size_t bytes)
+ {
+ 	struct bio *bio;
+-	struct bio_vec *bio_vec;
+-	unsigned int index;
++	struct bio_vec bio_vec;
+ 
+ 	BUG_ON(cursor->data->type != CEPH_MSG_DATA_BIO);
+ 
+ 	bio = cursor->bio;
+ 	BUG_ON(!bio);
+ 
+-	index = cursor->vector_index;
+-	BUG_ON(index >= (unsigned int) bio->bi_vcnt);
+-	bio_vec = &bio->bi_io_vec[index];
++	bio_vec = bio_iter_iovec(bio, cursor->bvec_iter);
+ 
+ 	/* Advance the cursor offset */
+ 
+ 	BUG_ON(cursor->resid < bytes);
+ 	cursor->resid -= bytes;
+-	cursor->vector_offset += bytes;
+-	if (cursor->vector_offset < bio_vec->bv_len)
++
++	bio_advance_iter(bio, &cursor->bvec_iter, bytes);
++
++	if (bytes < bio_vec.bv_len)
+ 		return false;	/* more bytes to process in this segment */
+-	BUG_ON(cursor->vector_offset != bio_vec->bv_len);
+ 
+ 	/* Move on to the next segment, and possibly the next bio */
+ 
+-	if (++index == (unsigned int) bio->bi_vcnt) {
++	if (!cursor->bvec_iter.bi_size) {
+ 		bio = bio->bi_next;
+-		index = 0;
++		cursor->bvec_iter = bio->bi_iter;
  	}
-diff --git a/fs/bio.c b/fs/bio.c
-index 1628917..00dc189 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -549,6 +549,66 @@ void __bio_clone(struct bio *bio, struct bio *bio_src)
- EXPORT_SYMBOL(__bio_clone);
+ 	cursor->bio = bio;
+-	cursor->vector_index = index;
+-	cursor->vector_offset = 0;
  
- /**
-+ * 	__bio_clone_fast - clone a bio that shares the original bio's biovec
-+ * 	@bio: destination bio
-+ * 	@bio_src: bio to clone
-+ *
-+ *	Clone a &bio. Caller will own the returned bio, but not
-+ *	the actual data it points to. Reference count of returned
-+ * 	bio will be one.
-+ *
-+ * 	Caller must ensure that @bio_src is not freed before @bio.
-+ */
-+void __bio_clone_fast(struct bio *bio, struct bio *bio_src)
-+{
-+	BUG_ON(bio->bi_pool && BIO_POOL_IDX(bio) != BIO_POOL_NONE);
-+
-+	/*
-+	 * most users will be overriding ->bi_bdev with a new target,
-+	 * so we don't set nor calculate new physical/hw segment counts here
-+	 */
-+	bio->bi_bdev = bio_src->bi_bdev;
-+	bio->bi_flags |= 1 << BIO_CLONED;
-+	bio->bi_rw = bio_src->bi_rw;
-+	bio->bi_iter = bio_src->bi_iter;
-+	bio->bi_io_vec = bio_src->bi_io_vec;
-+}
-+EXPORT_SYMBOL(__bio_clone_fast);
-+
-+/**
-+ *	bio_clone_fast - clone a bio that shares the original bio's biovec
-+ *	@bio: bio to clone
-+ *	@gfp_mask: allocation priority
-+ *	@bs: bio_set to allocate from
-+ *
-+ * 	Like __bio_clone_fast, only also allocates the returned bio
-+ */
-+struct bio *bio_clone_fast(struct bio *bio, gfp_t gfp_mask, struct bio_set *bs)
-+{
-+	struct bio *b;
-+
-+	b = bio_alloc_bioset(gfp_mask, 0, bs);
-+	if (!b)
-+		return NULL;
-+
-+	__bio_clone_fast(b, bio);
-+
-+	if (bio_integrity(bio)) {
-+		int ret;
-+
-+		ret = bio_integrity_clone(b, bio, gfp_mask);
-+
-+		if (ret < 0) {
-+			bio_put(b);
-+			return NULL;
-+		}
-+	}
-+
-+	return b;
-+}
-+EXPORT_SYMBOL(bio_clone_fast);
-+
-+/**
-  * 	bio_clone_bioset - clone a bio
-  * 	@bio_src: bio to clone
-  *	@gfp_mask: allocation priority
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 1a31f9d..1f83f4a 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -328,6 +328,8 @@ extern mempool_t *biovec_create_pool(struct bio_set *bs, int pool_entries);
- extern struct bio *bio_alloc_bioset(gfp_t, int, struct bio_set *);
- extern void bio_put(struct bio *);
- 
-+extern void __bio_clone_fast(struct bio *, struct bio *);
-+extern struct bio *bio_clone_fast(struct bio *, gfp_t, struct bio_set *);
- extern void __bio_clone(struct bio *, struct bio *);
- extern struct bio *bio_clone_bioset(struct bio *, gfp_t, struct bio_set *bs);
+ 	if (!cursor->last_piece) {
+ 		BUG_ON(!cursor->resid);
+ 		BUG_ON(!bio);
+ 		/* A short read is OK, so use <= rather than == */
+-		if (cursor->resid <= bio->bi_io_vec[index].bv_len)
++		if (cursor->resid <= bio_iter_len(bio, cursor->bvec_iter))
+ 			cursor->last_piece = true;
+ 	}
  
 -- 
 1.8.4.4
