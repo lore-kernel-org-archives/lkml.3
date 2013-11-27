@@ -1,51 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491Ab3K0ILs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 03:11:48 -0500
-Received: from stargate.chelsio.com ([67.207.112.58]:1100 "EHLO
-	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755010Ab3K0ILm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 03:11:42 -0500
-Date: Wed, 27 Nov 2013 13:45:06 +0530
-From: Hariprasad S <hariprasad@chelsio.com>
-To: <ben@decadent.org.uk>, <dwmw2@infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <felix@chelsio.com>
-Subject: pull request: linux-firmware: update cxgb4 firmware
-Message-ID: <20131127081505.GB7998@hariprasad-pc>
-MIME-Version: 1.0
+	id S1755823Ab3K0INK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 03:13:10 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:12319
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754045Ab3K0INH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 03:13:07 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(z579ehz1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de097hz2dh109h2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216h22d0hbe9i1155h)
+From: Li Xiubo <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        Fabio Estevam <Fabio.Estevam@freescale.com>,
+        "LW@KARO-electronics.de" <LW@KARO-electronics.de>,
+        "oskar@scara.com" <oskar@scara.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCHv1] ASoC: SGTL5000: Fix kernel failed while getting
+ regulator consumers
+Thread-Topic: [PATCHv1] ASoC: SGTL5000: Fix kernel failed while getting
+ regulator consumers
+Thread-Index: AQHO6pRwzUzMP/nWTkmv/o3JfSCBM5o3hgOAgAD0umA=
+Date: Wed, 27 Nov 2013 08:13:03 +0000
+Message-ID: <1DD289F6464F0949A2FCA5AA6DC23F828CE2A8@039-SN2MPN1-012.039d.mgd.msft.net>
+References: <1385459713-6778-1-git-send-email-Li.Xiubo@freescale.com>
+ <20131126134411.GQ14725@sirena.org.uk>
+In-Reply-To: <20131126134411.GQ14725@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.208.78]
 Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [10.193.190.82]
-X-OriginalArrivalTime: 27 Nov 2013 08:10:45.0295 (UTC) FILETIME=[2C40F3F0:01CEEB48]
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> > +static int sgtl5000_external_vddd_used(struct snd_soc_codec *codec)
+> > +{
+> > +	struct regulator *consumer;
+> > +	struct sgtl5000_priv *sgtl5000 = snd_soc_codec_get_drvdata(codec);
+> > +
+> > +	consumer = regulator_get(codec->dev, sgtl5000-
+> >supplies[VDDD].supply);
+> > +	if (IS_ERR(consumer)) {
+> > +		return 0;
+> > +	}
+> > +	regulator_put(consumer);
+> > +
+> > +	return 1;
+> > +}
+> 
+> This is going to fail to do what you expect if a dummy regulator is
+> substituted which it will almost all of the time when the supply is
+> genuinely absent.  It's also going to interact poorly with probe
+> deferral.
+> 
 
-Can you please pull from the following URL?
-    git://git.chelsio.net/pub/git/linux-firmware.git for-upstream
+There is one dependency patch: "regulator: core: Provide a dummy regulator with full constraints".
 
-The following changes since commit 7d0c7a8cfd78388d90cc784a185b19dcbdbce824:
-  Ben Hutchings (1):
-    Merge branch 'wilink4' of git://git.kernel.org/pub/scm/linux/kernel/git/balbi/linux-firmware
+>From the dependency patch, we can see that using regulator_get_optional() instead can resovle the problem you descripted above.
 
-are available in the git repository at:
+When or will this dependency patch be merged into the -next tree ?
 
-    git://git.chelsio.net/pub/git/linux-firmware.git for-upstream
 
-Hariprasad Shenai (1):
-    cxgb4: Updated T4 firmware, add T5 firmware
 
- cxgb4/t4fw-1.6.2.0.bin  |  Bin 431616 -> 0 bytes
- cxgb4/t4fw-1.8.24.0.bin |  Bin 0 -> 479744 bytes
- cxgb4/t4fw.bin          |    2 +-
- cxgb4/t5fw-1.8.28.0.bin |  Bin 0 -> 462848 bytes
- cxgb4/t5fw.bin          |    1 +
- 5 files changed, 2 insertions(+), 1 deletions(-)
- delete mode 100644 cxgb4/t4fw-1.6.2.0.bin
- create mode 100644 cxgb4/t4fw-1.8.24.0.bin
- create mode 100644 cxgb4/t5fw-1.8.28.0.bin
- create mode 120000 cxgb4/t5fw.bin
+> I'd expect to see a commit description that describes how the driver
+> currently tries to handle this, why it doesn't work and how the patch
+> fixes it.  
+
+The SGTL5000 requires 2 external power supplies: VDDA and VDDIO. An optional third external power supply VDDD may be provided externally to achieve lower power.If an external supply is not used for VDDD, the SGTL5000 driver will register it's own non-DT regulator device, and then provides the VDDD supply consumer, and now there will be two register devices exist, non-DT regulator for VDDD and DT regulator for VDDIO, VDDA.   
+
+
+		
++++++++++++++++++++
++			+------------|3.3V VDDIO
++			+
++  SGTL5000	codec	+---X   VDDD
++			+
++			+------------|3.3V VDDA
++++++++++++++++++++
+		
+
+
+If an external supply is not used for VDDD, in the DT file, only "VDDA-supply" and "VDDIO-supply" properties will be presented. This caused the following kernel failed while trying to get the external VDDD regulator consumer before trying to register it's own regulator device. 
+
+sgtl5000 0-000a: Failed to get supply 'VDDD': -19
+
+While if an external supply is used for VDDD, in the DT file, all the three "VDDA-supply", "VDDIO-supply" and "VDDD-supply" properties can absent, by just using the dummy regulator. 
+
+IMO, the failed log will confuse most people(especially for those not familiar with the SGTL5000 driver) that why getting the 'VDDD' supply failed but it still works? or is there something wrong with it ? ,etc.
+
+
+Yes, this is a buggy patch, and I will revise it later.
+
+
+--
+Best Regards,
+
+
+
+
