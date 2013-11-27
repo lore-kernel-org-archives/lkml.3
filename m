@@ -1,41 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128Ab3K0JBp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 04:01:45 -0500
-Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:57722 "EHLO
-	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750831Ab3K0JBm (ORCPT
+	id S1752508Ab3K0JGs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 04:06:48 -0500
+Received: from mail-we0-f180.google.com ([74.125.82.180]:56831 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257Ab3K0JGg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 04:01:42 -0500
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Date: Wed, 27 Nov 2013 13:01:30 +0400
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Chia-I Wu <olvaffe@gmail.com>, a.p.zijlstra@chello.nl,
-        paulus@samba.org, mingo@redhat.com, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] perf timechart: dynamically determine event data offset
-Message-ID: <20131127090124.GA3309@stfomichev-desktop>
-References: <1381128514-16279-1-git-send-email-olvaffe@gmail.com>
- <20131022103223.GA29489@stfomichev-desktop>
- <20131125182139.GD20168@ghostprotocols.net>
- <20131126110536.GC3388@stfomichev-desktop>
- <20131126121026.GD27323@ghostprotocols.net>
- <20131126134755.GD3388@stfomichev-desktop>
- <20131126135709.GB14838@ghostprotocols.net>
- <20131126145437.GE3388@stfomichev-desktop>
- <87mwkqqlfl.fsf@sejong.aot.lge.com>
+	Wed, 27 Nov 2013 04:06:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87mwkqqlfl.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131124213212.226B8C402C3@trevor.secretlab.ca>
+References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
+	<CAEgOgz5BWzo-LGddjG6ZUtKt6GHxLmDUEndFOdVrn+1HTPvpGQ@mail.gmail.com>
+	<20131124213212.226B8C402C3@trevor.secretlab.ca>
+Date: Wed, 27 Nov 2013 19:06:35 +1000
+X-Google-Sender-Auth: plfpkkrpliU4Pxwcz_nT4dubu2U
+Message-ID: <CAEgOgz4yhDzy_BFiotK5Qi48sczR3PL1oPjPhNYC9O94P6AnzQ@mail.gmail.com>
+Subject: Re: [RFC 9/9] of/irq: create interrupts-extended property
+From: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Michal Simek <monstr@monstr.eu>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Nacked-by: Namhyung Kim <namhyung@kernel.org>
-Thanks for a review. I'll try to convert all binary structures
-to perf_evsel__intval() and perf_evsel__strval() and will rebase on
-Arnaldo's perf/core branch.
+On Mon, Nov 25, 2013 at 7:32 AM, Grant Likely <grant.likely@linaro.org> wrote:
+> On Sun, 24 Nov 2013 17:04:52 +1000, Peter Crosthwaite <peter.crosthwaite@xilinx.com> wrote:
+>> On Wed, Nov 13, 2013 at 4:14 PM, Grant Likely <grant.likely@linaro.org> wrote:
+>> > On Wed, 13 Nov 2013 09:17:01 +1000, Peter Crosthwaite <peter.crosthwaite@xilinx.com> wrote:
+>> >> It's going to get a little verbose once you start making multiple
+>> >> connections as you need one mux per wire. Perhaps it could be cleaned
+>> >> up by making the foo_irq_mux node(s) a child of foo?
+>> >
+>> > It could, but then you need some way of attaching a driver to that node,
+>> > and that would require building knowledge into the driver again.
+>> >
+>> > Can you boil it down to a couple of concrete examples? What is a
+>> > specific example of how the platform should decide which interrupt line
+>> > to use?
+>> >
+>>
+>> So i've spent some time playing with this. I now have a booting kernel
+>> with multiple root interrupt controllers and peripheral devices
+>> multiply-connected to both root controllers. But only one on of the
+>> controllers is used by Linux (as linux being able to use multiple
+>> intcs is a non-trivial problem). So the scheme I am using is to have
+>> one of these root intc's marked as disabled via
+>
+> Multiple intc's should be a solved problem. What issue are you seeing?
+> Or is this a microblaze specific problem?
+>
+
+It's multiple root (i.e. have no explicit parent) interrupt
+controllers. And linux
+doesnt respect status = "disabled" for interrupt controllers at all it seems.
+
+I'll send the patches tmrw.
+
+Regards,
+Peter
