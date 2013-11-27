@@ -1,76 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751937Ab3K0BUD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:20:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39514 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932442Ab3K0A7T (ORCPT
+	id S1759559Ab3K0BUM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:20:12 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:50581 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759549Ab3K0BUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:19 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michele Baldessari <michele@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.12 076/116] KVM: x86: fix emulation of "movzbl %bpl, %eax"
-Date: Tue, 26 Nov 2013 16:57:29 -0800
-Message-Id: <20131127005742.177402779@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.rc3
-In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
-References: <20131127005736.915454872@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Tue, 26 Nov 2013 20:20:05 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>
+Subject: Re: [PATCH 0/4] ACPI / bind: Simplify child devices lookup
+Date: Wed, 27 Nov 2013 02:32:53 +0100
+Message-ID: <6140633.otq91cJcVd@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1385514717.1791.197.camel@misato.fc.hp.com>
+References: <2610478.KxPMyuOMok@vostro.rjw.lan> <8065346.ZtkoVh8DW8@vostro.rjw.lan> <1385514717.1791.197.camel@misato.fc.hp.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Tuesday, November 26, 2013 06:11:57 PM Toshi Kani wrote:
+> On Wed, 2013-11-27 at 02:02 +0100, Rafael J. Wysocki wrote:
+> > On Tuesday, November 26, 2013 05:33:28 PM Toshi Kani wrote:
+> > > On Wed, 2013-11-27 at 01:27 +0100, Rafael J. Wysocki wrote:
+> > > > On Tuesday, November 26, 2013 05:00:42 PM Toshi Kani wrote:
+> > > > > On Mon, 2013-11-25 at 01:09 +0100, Rafael J. Wysocki wrote:
+> > > > > > Hi,
+> > > > > > 
+> > > > > > The following series of four patches (on top of current linux-pm.git/bleeding-edge)
+> > > > > > rework child device lookup in drivers/acpi/glue.c and related things:
+> > > > > > 
+> > > > > > [1/4] ACPI / bind: Simplify child device lookup
+> > > > > > [2/4] PCI/ ACPI: Use acpi_find_child_device() for child device lookup
+> > > > > > [3/4] ACPI / bind: Redefine acpi_get_child()
+> > > > > > [4/4] ACPI / bind: Redefine acpi_preset_companion()
+> > > > > 
+> > > > > This patchset caused the attached panic during boot on a system.
+> > > > > acpi_pci_find_device() called acpi_find_child_device() with
+> > > > > ACPI_COMPANION(dev->parent) being a NULL pointer when scanning bus 0xf.
+> > > > > 
+> > > > > This bus 0xf seems to be a chipset internal bus, which is not intended
+> > > > > for the OS to use.  Therefore, ACPI does not list its PCI bridge device.
+> > > > > 
+> > > > > # lspci -tv
+> > > > >    :
+> > > > >  +-[0000:0f]-+-08.0  Intel Corporation Ivytown QPI Link 0
+> > > > >  |           +-08.2  Intel Corporation Ivytown QPI Link 0
+> > > > >    :
+> > > > > 
+> > > > > However, pcibios_fixup_peer_bridges(), called from pci_subsys_init(),
+> > > > > finds this bus as it scans all the buses from 0 to pcibios_last_bus.
+> > > > > Hence, this dev->parent does not have an associated ACPI device object. 
+> > > > 
+> > > > Thanks for the report!
+> > > > 
+> > > > I've dropped the patches from bleeding-edge for now.
+> > > > 
+> > > > Does "[1/4] ACPI / bind: Simplify child device lookup" alone work on that
+> > > > system?
+> > > 
+> > > Yes, the system boots fine with 1/4 alone.
+> > 
+> > Thanks!
+> > 
+> > Can you please check if the following modified [2/4] also works on top of it?
+> 
+> Yes, it works fine.
+> 
+> Thanks for the quick fix!
 
-------------------
+No problem. :-)
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+[3/4] and [4/4] on top of this one should work too.
 
-commit daf727225b8abfdfe424716abac3d15a3ac5626a upstream.
-
-When I was looking at RHEL5.9's failure to start with
-unrestricted_guest=0/emulate_invalid_guest_state=1, I got it working with a
-slightly older tree than kvm.git.  I now debugged the remaining failure,
-which was introduced by commit 660696d1 (KVM: X86 emulator: fix
-source operand decoding for 8bit mov[zs]x instructions, 2013-04-24)
-introduced a similar mis-emulation to the one in commit 8acb4207 (KVM:
-fix sil/dil/bpl/spl in the mod/rm fields, 2013-05-30).  The incorrect
-decoding occurs in 8-bit movzx/movsx instructions whose 8-bit operand
-is sil/dil/bpl/spl.
-
-Needless to say, "movzbl %bpl, %eax" does occur in RHEL5.9's decompression
-prolog, just a handful of instructions before finally giving control to
-the decompressed vmlinux and getting out of the invalid guest state.
-
-Because OpMem8 bypasses decode_modrm, the same handling of the REX prefix
-must be applied to OpMem8.
-
-Reported-by: Michele Baldessari <michele@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/kvm/emulate.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -4040,7 +4040,10 @@ static int decode_operand(struct x86_emu
- 	case OpMem8:
- 		ctxt->memop.bytes = 1;
- 		if (ctxt->memop.type == OP_REG) {
--			ctxt->memop.addr.reg = decode_register(ctxt, ctxt->modrm_rm, 1);
-+			int highbyte_regs = ctxt->rex_prefix == 0;
-+
-+			ctxt->memop.addr.reg = decode_register(ctxt, ctxt->modrm_rm,
-+					       highbyte_regs);
- 			fetch_register_operand(&ctxt->memop);
- 		}
- 		goto mem_common;
-
+Thanks,
+Rafael
 
