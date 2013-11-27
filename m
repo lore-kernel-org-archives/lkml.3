@@ -1,160 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528Ab3K0Ms2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 07:48:28 -0500
-Received: from fm1nodo5.polito.it ([130.192.180.13]:60580 "EHLO
-	fm1nodo5.polito.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756449Ab3K0MsZ (ORCPT
+	id S1756648Ab3K0MuG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 07:50:06 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:33744 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754927Ab3K0MuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 07:48:25 -0500
-X-ExtScanner: Niversoft's FindAttachments (free)
-Message-ID: <5295E9B3.202@polito.it>
-Date: Wed, 27 Nov 2013 13:46:43 +0100
-From: Roberto Sassu <roberto.sassu@polito.it>
-Organization: Politecnico di Torino
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Wed, 27 Nov 2013 07:50:00 -0500
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
+        <wim@iguana.be>, <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <Pawel.Moll@arm.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
+        <grygorii.strashko@ti.com>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [PATCH v4 1/5] watchdog: davinci: change driver to use WDT core
+Date: Wed, 27 Nov 2013 14:48:24 +0200
+Message-ID: <1385556508-3935-2-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1385556508-3935-1-git-send-email-ivan.khoronzhuk@ti.com>
+References: <1385556508-3935-1-git-send-email-ivan.khoronzhuk@ti.com>
 MIME-Version: 1.0
-To: Sebastian Ott <sebott@linux.vnet.ibm.com>
-CC: James Morris <jmorris@namei.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] ima: bug fixes for Linus
-References: <1385145621.9559.5.camel@dhcp-9-2-203-236.watson.ibm.com> <1385306510.5186.7.camel@dhcp-9-2-203-236.watson.ibm.com> <alpine.LRH.2.02.1311250943500.2259@tundra.namei.org> <1385338461.5402.3.camel@dhcp-9-2-203-236.watson.ibm.com> <alpine.LRH.2.02.1311251313290.2899@tundra.namei.org> <1385380993.2398.25.camel@dhcp-9-2-203-236.watson.ibm.com> <1385387470.2488.2.camel@dhcp-9-2-203-236.watson.ibm.com> <alpine.LRH.2.02.1311260235020.9714@tundra.namei.org> <52939AEE.5070809@polito.it> <52939D11.70302@polito.it> <alpine.LFD.2.10.1311271301430.1885@c4eb>
-In-Reply-To: <alpine.LFD.2.10.1311271301430.1885@c4eb>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-FEAS-SYSTEM-WL: 130.192.180.42
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2013 01:11 PM, Sebastian Ott wrote:
-> Hello,
->
-> On Mon, 25 Nov 2013, Roberto Sassu wrote:
->
->> On 11/25/2013 07:46 PM, Roberto Sassu wrote:
->>> On 11/25/2013 04:40 PM, James Morris wrote:
->>>> On Mon, 25 Nov 2013, Mimi Zohar wrote:
->>>>
->>>>> Hi James,
->>>>>
->>>>> These are the "essential fixes for regressions".
->>>>>
->>>>> The following changes since commit
->>>>> 4c1cc40a2d49500d84038ff751bc6cd183e729b5:
->>>>>
->>>>>     Revert "KEYS: verify a certificate is signed by a 'trusted' key"
->>>>> (2013-11-23 16:38:17 -0800)
->>>>>
->>>>> are available in the git repository at:
->>>>>
->>>>>
->>>>> git://git.kernel.org/pub/scm/linux/kernel/git/zohar/linux-integrity
->>>>> for-linus
->>>>>
->>>>> for you to fetch changes up to 72ca1bd303a5126d0ce377cff699282b6b38bd86:
->>>>>
->>>>>     ima: make a copy of template_fmt in template_desc_init_fields()
->>>>> (2013-11-25 07:32:46 -0500)
->>>>>
->>>>> thanks,
->>>>>
->>>>> Mimi
->>>>>
->>>>> ----------------------------------------------------------------
->>>>> Roberto Sassu (3):
->>>>
->>>>>         ima: make a copy of template_fmt in template_desc_init_fields()
->
-> commit dbc335d2dc3c437649eb6b39f4e9aee2a13eb0af
-> "ima: make a copy of template_fmt in template_desc_init_fields()"
->
-> claimed to fix a kstrdup memleak..looks like it didn't:
->
-> unreferenced object 0x56c82370 (size 8):
->    comm "swapper/0", pid 1, jiffies 4294937476 (age 916.520s)
->    hex dump (first 8 bytes):
->      64 00 6e 00 6b 6b 6b a5                          d.n.kkk.
->    backtrace:
->      [<000000000027c7ac>] __kmalloc_track_caller+0x2e0/0x450
->      [<0000000000240738>] kstrdup+0x4c/0xd0
->      [<00000000003c93c4>] ima_init_template+0x9c/0x1f4
->      [<0000000000a11a54>] ima_init+0x74/0x98
->      [<0000000000a11ba8>] init_ima+0x30/0x4c
->      [<00000000001001e2>] do_one_initcall+0xce/0x160
->      [<00000000009ebb70>] kernel_init_freeable+0x22c/0x2dc
->      [<000000000061b704>] kernel_init+0x24/0x134
->      [<0000000000633322>] kernel_thread_starter+0x6/0xc
->      [<000000000063331c>] kernel_thread_starter+0x0/0xc
-> unreferenced object 0x56ccc158 (size 16):
->    comm "swapper/0", pid 1, jiffies 4294937476 (age 916.520s)
->    hex dump (first 16 bytes):
->      64 2d 6e 67 00 6e 2d 6e 67 00 73 69 67 00 6b a5  d-ng.n-ng.sig.k.
->    backtrace:
->      [<000000000027c7ac>] __kmalloc_track_caller+0x2e0/0x450
->      [<0000000000240738>] kstrdup+0x4c/0xd0
->      [<00000000003c93c4>] ima_init_template+0x9c/0x1f4
->      [<0000000000a11a54>] ima_init+0x74/0x98
->      [<0000000000a11ba8>] init_ima+0x30/0x4c
->      [<00000000001001e2>] do_one_initcall+0xce/0x160
->      [<00000000009ebb70>] kernel_init_freeable+0x22c/0x2dc
->      [<000000000061b704>] kernel_init+0x24/0x134
->      [<0000000000633322>] kernel_thread_starter+0x6/0xc
->      [<000000000063331c>] kernel_thread_starter+0x0/0xc
->
->
-> strsep will modify your template_fmt_copy pointer.
->
+To reduce code duplicate and increase code readability use WDT core
+code to handle WDT interface.
 
-Hi Sebastian
+Remove io_lock as the WDT core uses mutex to lock each wdt device.
+Remove wdt_state as the WDT core tracks state with its own variable.
 
-thanks for the report. I'm very sorry.
-I should have prepared the patch more carefully.
-I'll provide a fix shortly.
+The watchdog_init_timeout() can read timeout value from timeout-sec
+property if the passed value is out of bounds. The heartbeat is
+initialized in next way. If heartbeat is not set thought module
+parameter, try to read it's value from WDT node timeout-sec property.
+If node has no one, use default value.
 
-Thanks
+The heartbeat is hold in wdd->timeout by WDT core, so use it in
+order to set timeout period.
 
-Roberto Sassu
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+---
+ drivers/watchdog/Kconfig       |    2 +
+ drivers/watchdog/davinci_wdt.c |  147 ++++++++++------------------------------
+ 2 files changed, 37 insertions(+), 112 deletions(-)
 
-
-> Regards,
-> Sebastian
->
->>>>
->>>>
->>>>> template_desc_init_fields(char *template_fmt,
->>>>
->>>> That should probably be const char.
->>>>
->>>> Also, the call to kstrdup() results in a memory leak.
->>>>
->>>
->>> Hi James
->>>
->>> thanks for the comments. I'm implementing them and I will post
->>> a new version of the patch 'ima: make a copy of template_fmt in
->>> template_desc_init_fields()' shortly.
->>>
->>
->> Hi everyone
->>
->> attached to this email, there is the new version of the above patch.
->>
->> Regards
->>
->> Roberto Sassu
->>
->>
->>> Roberto Sassu
->>>
->>>
->>>>
->>>>
->>>>
->>>>
->>>
->>
->>
->
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 5be6e91..eb8c89d 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -271,6 +271,8 @@ config IOP_WATCHDOG
+ config DAVINCI_WATCHDOG
+ 	tristate "DaVinci watchdog"
+ 	depends on ARCH_DAVINCI
++	select WATCHDOG_CORE
++	select WATCHDOG_NOWAYOUT
+ 	help
+ 	  Say Y here if to include support for the watchdog timer
+ 	  in the DaVinci DM644x/DM646x processors.
+diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
+index dd625cc..9595e70 100644
+--- a/drivers/watchdog/davinci_wdt.c
++++ b/drivers/watchdog/davinci_wdt.c
+@@ -3,7 +3,7 @@
+  *
+  * Watchdog driver for DaVinci DM644x/DM646x processors
+  *
+- * Copyright (C) 2006 Texas Instruments.
++ * Copyright (C) 2006-2013 Texas Instruments.
+  *
+  * 2007 (c) MontaVista Software, Inc. This file is licensed under
+  * the terms of the GNU General Public License version 2. This program
+@@ -15,18 +15,12 @@
+ #include <linux/moduleparam.h>
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+-#include <linux/fs.h>
+-#include <linux/miscdevice.h>
+ #include <linux/watchdog.h>
+ #include <linux/init.h>
+-#include <linux/bitops.h>
+ #include <linux/platform_device.h>
+-#include <linux/spinlock.h>
+-#include <linux/uaccess.h>
+ #include <linux/io.h>
+ #include <linux/device.h>
+ #include <linux/clk.h>
+-#include <linux/slab.h>
+ #include <linux/err.h>
+ 
+ #define MODULE_NAME "DAVINCI-WDT: "
+@@ -61,31 +55,12 @@
+ #define WDKEY_SEQ0		(0xa5c6 << 16)
+ #define WDKEY_SEQ1		(0xda7e << 16)
+ 
+-static int heartbeat = DEFAULT_HEARTBEAT;
+-
+-static DEFINE_SPINLOCK(io_lock);
+-static unsigned long wdt_status;
+-#define WDT_IN_USE        0
+-#define WDT_OK_TO_CLOSE   1
+-#define WDT_REGION_INITED 2
+-#define WDT_DEVICE_INITED 3
+-
++static int heartbeat;
+ static void __iomem	*wdt_base;
+ struct clk		*wdt_clk;
++static struct watchdog_device	wdt_wdd;
+ 
+-static void wdt_service(void)
+-{
+-	spin_lock(&io_lock);
+-
+-	/* put watchdog in service state */
+-	iowrite32(WDKEY_SEQ0, wdt_base + WDTCR);
+-	/* put watchdog in active state */
+-	iowrite32(WDKEY_SEQ1, wdt_base + WDTCR);
+-
+-	spin_unlock(&io_lock);
+-}
+-
+-static void wdt_enable(void)
++static int davinci_wdt_start(struct watchdog_device *wdd)
+ {
+ 	u32 tgcr;
+ 	u32 timer_margin;
+@@ -93,8 +68,6 @@ static void wdt_enable(void)
+ 
+ 	wdt_freq = clk_get_rate(wdt_clk);
+ 
+-	spin_lock(&io_lock);
+-
+ 	/* disable, internal clock source */
+ 	iowrite32(0, wdt_base + TCR);
+ 	/* reset timer, set mode to 64-bit watchdog, and unreset */
+@@ -105,9 +78,9 @@ static void wdt_enable(void)
+ 	iowrite32(0, wdt_base + TIM12);
+ 	iowrite32(0, wdt_base + TIM34);
+ 	/* set timeout period */
+-	timer_margin = (((u64)heartbeat * wdt_freq) & 0xffffffff);
++	timer_margin = (((u64)wdd->timeout * wdt_freq) & 0xffffffff);
+ 	iowrite32(timer_margin, wdt_base + PRD12);
+-	timer_margin = (((u64)heartbeat * wdt_freq) >> 32);
++	timer_margin = (((u64)wdd->timeout * wdt_freq) >> 32);
+ 	iowrite32(timer_margin, wdt_base + PRD34);
+ 	/* enable run continuously */
+ 	iowrite32(ENAMODE12_PERIODIC, wdt_base + TCR);
+@@ -119,84 +92,28 @@ static void wdt_enable(void)
+ 	iowrite32(WDKEY_SEQ0 | WDEN, wdt_base + WDTCR);
+ 	/* put watchdog in active state */
+ 	iowrite32(WDKEY_SEQ1 | WDEN, wdt_base + WDTCR);
+-
+-	spin_unlock(&io_lock);
+-}
+-
+-static int davinci_wdt_open(struct inode *inode, struct file *file)
+-{
+-	if (test_and_set_bit(WDT_IN_USE, &wdt_status))
+-		return -EBUSY;
+-
+-	wdt_enable();
+-
+-	return nonseekable_open(inode, file);
++	return 0;
+ }
+ 
+-static ssize_t
+-davinci_wdt_write(struct file *file, const char *data, size_t len,
+-		  loff_t *ppos)
++static int davinci_wdt_ping(struct watchdog_device *wdd)
+ {
+-	if (len)
+-		wdt_service();
+-
+-	return len;
++	/* put watchdog in service state */
++	iowrite32(WDKEY_SEQ0, wdt_base + WDTCR);
++	/* put watchdog in active state */
++	iowrite32(WDKEY_SEQ1, wdt_base + WDTCR);
++	return 0;
+ }
+ 
+-static const struct watchdog_info ident = {
++static const struct watchdog_info davinci_wdt_info = {
+ 	.options = WDIOF_KEEPALIVEPING,
+ 	.identity = "DaVinci Watchdog",
+ };
+ 
+-static long davinci_wdt_ioctl(struct file *file,
+-					unsigned int cmd, unsigned long arg)
+-{
+-	int ret = -ENOTTY;
+-
+-	switch (cmd) {
+-	case WDIOC_GETSUPPORT:
+-		ret = copy_to_user((struct watchdog_info *)arg, &ident,
+-				   sizeof(ident)) ? -EFAULT : 0;
+-		break;
+-
+-	case WDIOC_GETSTATUS:
+-	case WDIOC_GETBOOTSTATUS:
+-		ret = put_user(0, (int *)arg);
+-		break;
+-
+-	case WDIOC_KEEPALIVE:
+-		wdt_service();
+-		ret = 0;
+-		break;
+-
+-	case WDIOC_GETTIMEOUT:
+-		ret = put_user(heartbeat, (int *)arg);
+-		break;
+-	}
+-	return ret;
+-}
+-
+-static int davinci_wdt_release(struct inode *inode, struct file *file)
+-{
+-	wdt_service();
+-	clear_bit(WDT_IN_USE, &wdt_status);
+-
+-	return 0;
+-}
+-
+-static const struct file_operations davinci_wdt_fops = {
+-	.owner = THIS_MODULE,
+-	.llseek = no_llseek,
+-	.write = davinci_wdt_write,
+-	.unlocked_ioctl = davinci_wdt_ioctl,
+-	.open = davinci_wdt_open,
+-	.release = davinci_wdt_release,
+-};
+-
+-static struct miscdevice davinci_wdt_miscdev = {
+-	.minor = WATCHDOG_MINOR,
+-	.name = "watchdog",
+-	.fops = &davinci_wdt_fops,
++static const struct watchdog_ops davinci_wdt_ops = {
++	.owner		= THIS_MODULE,
++	.start		= davinci_wdt_start,
++	.stop		= davinci_wdt_ping,
++	.ping		= davinci_wdt_ping,
+ };
+ 
+ static int davinci_wdt_probe(struct platform_device *pdev)
+@@ -204,6 +121,7 @@ static int davinci_wdt_probe(struct platform_device *pdev)
+ 	int ret = 0;
+ 	struct device *dev = &pdev->dev;
+ 	struct resource  *wdt_mem;
++	struct watchdog_device *wdd;
+ 
+ 	wdt_clk = devm_clk_get(dev, NULL);
+ 	if (WARN_ON(IS_ERR(wdt_clk)))
+@@ -211,29 +129,34 @@ static int davinci_wdt_probe(struct platform_device *pdev)
+ 
+ 	clk_prepare_enable(wdt_clk);
+ 
+-	if (heartbeat < 1 || heartbeat > MAX_HEARTBEAT)
+-		heartbeat = DEFAULT_HEARTBEAT;
++	wdd			= &wdt_wdd;
++	wdd->info		= &davinci_wdt_info;
++	wdd->ops		= &davinci_wdt_ops;
++	wdd->min_timeout	= 1;
++	wdd->max_timeout	= MAX_HEARTBEAT;
++	wdd->timeout		= DEFAULT_HEARTBEAT;
++
++	watchdog_init_timeout(wdd, heartbeat, dev);
++
++	dev_info(dev, "heartbeat %d sec\n", wdd->timeout);
+ 
+-	dev_info(dev, "heartbeat %d sec\n", heartbeat);
++	watchdog_set_nowayout(wdd, WATCHDOG_NOWAYOUT);
+ 
+ 	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	wdt_base = devm_ioremap_resource(dev, wdt_mem);
+ 	if (IS_ERR(wdt_base))
+ 		return PTR_ERR(wdt_base);
+ 
+-	ret = misc_register(&davinci_wdt_miscdev);
+-	if (ret < 0) {
+-		dev_err(dev, "cannot register misc device\n");
+-	} else {
+-		set_bit(WDT_DEVICE_INITED, &wdt_status);
+-	}
++	ret = watchdog_register_device(wdd);
++	if (ret < 0)
++		dev_err(dev, "cannot register watchdog device\n");
+ 
+ 	return ret;
+ }
+ 
+ static int davinci_wdt_remove(struct platform_device *pdev)
+ {
+-	misc_deregister(&davinci_wdt_miscdev);
++	watchdog_unregister_device(&wdt_wdd);
+ 	clk_disable_unprepare(wdt_clk);
+ 
+ 	return 0;
+-- 
+1.7.9.5
 
