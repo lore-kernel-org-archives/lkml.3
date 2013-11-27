@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053Ab3K0LvB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 06:51:01 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:57841 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab3K0Lu5 (ORCPT
+	id S1754352Ab3K0Lvz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 06:51:55 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:58331 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325Ab3K0Lvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 06:50:57 -0500
-Date: Wed, 27 Nov 2013 15:50:52 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: William Dauchy <wdauchy@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Andy Lutomirski <luto@amacapital.net>, Matt Mackall <mpm@selenic.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 3.11 54/66] mm: migration: do not lose soft dirty bit if
- page is in migration state
-Message-ID: <20131127115052.GX29824@moon>
-References: <20131101220634.605745564@linuxfoundation.org>
- <20131101220649.696585269@linuxfoundation.org>
- <CAJ75kXa=zh3NBRqR43nRv2s7WToDMNSmARs1PMABOE8-7hksDw@mail.gmail.com>
+	Wed, 27 Nov 2013 06:51:51 -0500
+Message-ID: <5295DCD2.9010700@hitachi.com>
+Date: Wed, 27 Nov 2013 20:51:46 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJ75kXa=zh3NBRqR43nRv2s7WToDMNSmARs1PMABOE8-7hksDw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCHSET 00/17] tracing/uprobes: Add support for more fetch
+ methods (v7)
+References: <1385533203-10014-1-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1385533203-10014-1-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 12:38:10PM +0100, William Dauchy wrote:
-> Hi Greg,
-> 
-> I was wondering if v3.10.x stable branch was also concerned by this
-> patch since I did not found it in this later branch.
-> Maybe too hard to backport? (I saw that it requires new functions like
-> pte_swp_soft_dirty which is not present in v3.10.x)
-> Maybe it was planned in the future?
+(2013/11/27 15:19), Namhyung Kim wrote:
+>   - print 0x prefix for unsigned types
 
-"Soft dirty bit" feature introduced in 3.11 kernel and as far as I know
-we've no plans to backport it on 3.10 series.
+Ah, yeah, this is good for human, but not good for sscanf :P
+glibc's sscanf doesn't support %#x ...
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
