@@ -1,49 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab3K0Atx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:49:53 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:48597 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608Ab3K0Atq (ORCPT
+	id S1756666Ab3K0Ata (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:49:30 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:44941 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754112Ab3K0AqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:49:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <201311270018.14980.s.L-H@gmx.de>
-References: <201311262303.26996.s.L-H@gmx.de>
-	<CAKb7UvinEmz4YFoes2w5JJp-sJ_tsDeAWj-Aa5Yw56m2=j3xHw@mail.gmail.com>
-	<201311270018.14980.s.L-H@gmx.de>
-Date: Tue, 26 Nov 2013 19:49:45 -0500
-X-Google-Sender-Auth: _zuXQBza7TLbSolw66wjQihrRR4
-Message-ID: <CAKb7UviWkEPnfgi3biTw6OqiSDU7Nnp9FYARMYv_S2h2zLU2LA@mail.gmail.com>
-Subject: Re: nouveau/ NV11: 3.12 freezes if X.org is started headless
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Stefan Lippers-Hollmann <s.L-H@gmx.de>
-Cc: David Airlie <airlied@linux.ie>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 26 Nov 2013 19:46:06 -0500
+From: Kent Overstreet <kmo@daterainc.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        hch@infradead.org
+Cc: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH 15/25] block: Kill bio_iovec_idx(), __bio_iovec()
+Date: Tue, 26 Nov 2013 16:45:18 -0800
+Message-Id: <1385513128-5035-15-git-send-email-kmo@daterainc.com>
+X-Mailer: git-send-email 1.8.4.4
+In-Reply-To: <1385513128-5035-1-git-send-email-kmo@daterainc.com>
+References: <20131127004422.GB21305@kmo>
+ <1385513128-5035-1-git-send-email-kmo@daterainc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 7:18 PM, Stefan Lippers-Hollmann <s.L-H@gmx.de> wrote:
-> Hi
->
-> On Tuesday 26 November 2013, Ilia Mirkin wrote:
->> On Tue, Nov 26, 2013 at 6:03 PM, Stefan Lippers-Hollmann <s.L-H@gmx.de> wrote:
->> > v3.11 is fine, with and without monitor attached.
->> > v3.12 is fine as long as X.org isn't started (but may fail to reboot
->> >       cleanly). If a monitor is connected I don't observe any problems,
->> >       it freezes without a monitor connected.
->> > v3.13-rc1-95-gb975dc3 appears not to freeze without a monitor anymore
->> >       (I didn't confirm that it's fine with a monitor attached), but I
->> >       end up with the following Oops (this is before X.org is started).
+bio_iovec_idx() and __bio_iovec() don't have any valid uses anymore -
+previous users have been converted to bio_iovec_iter() or other methods.
 
-One more idea -- try it with nouveau.runpm=0 -- I've had some odd
-results with it on my older cards (but I don't remember hangs, but I
-also didn't spend a lot of time on it, just plopped the option in and
-moved on). This is a feature that got in in 3.12, and is really the
-only major nouveau-affecting change in that kernel for your card
-revision.
+__BVEC_END() has to go too - the bvec array can't be used directly for
+the last biovec because we might only be using the first portion of it,
+we have to iterate over the bvec array with bio_for_each_segment() which
+checks against the current value of bi_iter.bi_size.
 
-  -ilia
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+---
+ block/blk-merge.c   | 13 +++++++++++--
+ include/linux/bio.h | 26 ++++++++------------------
+ 2 files changed, 19 insertions(+), 20 deletions(-)
+
+diff --git a/block/blk-merge.c b/block/blk-merge.c
+index a1ead90..05c17be 100644
+--- a/block/blk-merge.c
++++ b/block/blk-merge.c
+@@ -86,6 +86,9 @@ EXPORT_SYMBOL(blk_recount_segments);
+ static int blk_phys_contig_segment(struct request_queue *q, struct bio *bio,
+ 				   struct bio *nxt)
+ {
++	struct bio_vec end_bv, nxt_bv;
++	struct bvec_iter iter;
++
+ 	if (!blk_queue_cluster(q))
+ 		return 0;
+ 
+@@ -96,14 +99,20 @@ static int blk_phys_contig_segment(struct request_queue *q, struct bio *bio,
+ 	if (!bio_has_data(bio))
+ 		return 1;
+ 
+-	if (!BIOVEC_PHYS_MERGEABLE(__BVEC_END(bio), __BVEC_START(nxt)))
++	bio_for_each_segment(end_bv, bio, iter)
++		if (end_bv.bv_len == iter.bi_size)
++			break;
++
++	nxt_bv = bio_iovec(nxt);
++
++	if (!BIOVEC_PHYS_MERGEABLE(&end_bv, &nxt_bv))
+ 		return 0;
+ 
+ 	/*
+ 	 * bio and nxt are contiguous in memory; check if the queue allows
+ 	 * these two to be merged into one
+ 	 */
+-	if (BIO_SEG_BOUNDARY(q, bio, nxt))
++	if (BIOVEC_SEG_BOUNDARY(q, &end_bv, &nxt_bv))
+ 		return 1;
+ 
+ 	return 0;
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index aea9896..1a31f9d 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -61,9 +61,6 @@
+  * various member access, note that bio_data should of course not be used
+  * on highmem page vectors
+  */
+-#define bio_iovec_idx(bio, idx)	(&((bio)->bi_io_vec[(idx)]))
+-#define __bio_iovec(bio)	bio_iovec_idx((bio), (bio)->bi_iter.bi_idx)
+-
+ #define __bvec_iter_bvec(bvec, iter)	(&(bvec)[(iter).bi_idx])
+ 
+ #define bvec_iter_page(bvec, iter)				\
+@@ -162,19 +159,16 @@ static inline void *bio_data(struct bio *bio)
+  * permanent PIO fall back, user is probably better off disabling highmem
+  * I/O completely on that queue (see ide-dma for example)
+  */
+-#define __bio_kmap_atomic(bio, idx)				\
+-	(kmap_atomic(bio_iovec_idx((bio), (idx))->bv_page) +	\
+-		bio_iovec_idx((bio), (idx))->bv_offset)
++#define __bio_kmap_atomic(bio, iter)				\
++	(kmap_atomic(bio_iter_iovec((bio), (iter)).bv_page) +	\
++		bio_iter_iovec((bio), (iter)).bv_offset)
+ 
+-#define __bio_kunmap_atomic(addr) kunmap_atomic(addr)
++#define __bio_kunmap_atomic(addr)	kunmap_atomic(addr)
+ 
+ /*
+  * merge helpers etc
+  */
+ 
+-#define __BVEC_END(bio)		bio_iovec_idx((bio), (bio)->bi_vcnt - 1)
+-#define __BVEC_START(bio)	bio_iovec_idx((bio), (bio)->bi_iter.bi_idx)
+-
+ /* Default implementation of BIOVEC_PHYS_MERGEABLE */
+ #define __BIOVEC_PHYS_MERGEABLE(vec1, vec2)	\
+ 	((bvec_to_phys((vec1)) + (vec1)->bv_len) == bvec_to_phys((vec2)))
+@@ -191,8 +185,6 @@ static inline void *bio_data(struct bio *bio)
+ 	(((addr1) | (mask)) == (((addr2) - 1) | (mask)))
+ #define BIOVEC_SEG_BOUNDARY(q, b1, b2) \
+ 	__BIO_SEG_BOUNDARY(bvec_to_phys((b1)), bvec_to_phys((b2)) + (b2)->bv_len, queue_segment_boundary((q)))
+-#define BIO_SEG_BOUNDARY(q, b1, b2) \
+-	BIOVEC_SEG_BOUNDARY((q), __BVEC_END((b1)), __BVEC_START((b2)))
+ 
+ #define bio_io_error(bio) bio_endio((bio), -EIO)
+ 
+@@ -201,9 +193,7 @@ static inline void *bio_data(struct bio *bio)
+  * before it got to the driver and the driver won't own all of it
+  */
+ #define bio_for_each_segment_all(bvl, bio, i)				\
+-	for (i = 0;							\
+-	     bvl = bio_iovec_idx((bio), (i)), i < (bio)->bi_vcnt;	\
+-	     i++)
++	for (i = 0, bvl = (bio)->bi_io_vec; i < (bio)->bi_vcnt; i++, bvl++)
+ 
+ static inline void bvec_iter_advance(struct bio_vec *bv, struct bvec_iter *iter,
+ 				     unsigned bytes)
+@@ -468,15 +458,15 @@ static inline void bvec_kunmap_irq(char *buffer, unsigned long *flags)
+ }
+ #endif
+ 
+-static inline char *__bio_kmap_irq(struct bio *bio, unsigned short idx,
++static inline char *__bio_kmap_irq(struct bio *bio, struct bvec_iter iter,
+ 				   unsigned long *flags)
+ {
+-	return bvec_kmap_irq(bio_iovec_idx(bio, idx), flags);
++	return bvec_kmap_irq(&bio_iter_iovec(bio, iter), flags);
+ }
+ #define __bio_kunmap_irq(buf, flags)	bvec_kunmap_irq(buf, flags)
+ 
+ #define bio_kmap_irq(bio, flags) \
+-	__bio_kmap_irq((bio), (bio)->bi_iter.bi_idx, (flags))
++	__bio_kmap_irq((bio), (bio)->bi_iter, (flags))
+ #define bio_kunmap_irq(buf,flags)	__bio_kunmap_irq(buf, flags)
+ 
+ /*
+-- 
+1.8.4.4
+
