@@ -1,105 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757848Ab3K0Uqb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 15:46:31 -0500
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:32969 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757198Ab3K0Uq3 (ORCPT
+	id S1757879Ab3K0VQw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 16:16:52 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:55614 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753338Ab3K0VQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 15:46:29 -0500
-Date: Wed, 27 Nov 2013 22:46:21 +0200
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Felipe Balbi <balbi@ti.com>
-Cc: sameo@linux.intel.com, lee.jones@linaro.org,
-        Tony Lindgren <tony@atomide.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 00/13] mfd: menelaus: a few cleanups
-Message-ID: <20131127204621.GI24645@blackmetal.musicnaut.iki.fi>
-References: <1385579217-20127-1-git-send-email-balbi@ti.com>
- <20131127200247.GH24645@blackmetal.musicnaut.iki.fi>
- <20131127201149.GB20734@saruman.home>
+	Wed, 27 Nov 2013 16:16:51 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Sebastian Reichel <sre@ring0.de>
+Subject: Re: [PATCH v2 2/3] bq2415x_charger: Use power_supply notifier for automode
+Date: Wed, 27 Nov 2013 22:16:47 +0100
+User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.3; x86_64; ; )
+Cc: =?utf-8?q?=D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE?=
+	 =?utf-8?q?_=D0=94=D0=B8=D0=BC=D0=B8=D1=82=D1=80=D0=BE=D0=B2?= 
+	<freemangordon@abv.bg>,
+        pavel@ucw.cz, anton@enomsg.org, dwmw2@infradead.org, tony@atomide.com,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, aaro.koskinen@iki.fi
+References: <1434978251.31721.1385404366021.JavaMail.apache@mail83.abv.bg> <20131125214959.GA20107@earth.universe>
+In-Reply-To: <20131125214959.GA20107@earth.universe>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131127201149.GB20734@saruman.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart1505224.1dOuLHziek";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201311272216.47390@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--nextPart1505224.1dOuLHziek
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Nov 27, 2013 at 02:11:49PM -0600, Felipe Balbi wrote:
-> On Wed, Nov 27, 2013 at 10:02:47PM +0200, Aaro Koskinen wrote:
-> > On Wed, Nov 27, 2013 at 01:06:44PM -0600, Felipe Balbi wrote:
-> > > few cleanups on the old menelaus driver. I don't have
-> > > HW to test these patches, maybe Aaro can help here ?
-> > 
-> > Hmm, I got:
-> > 
-> > [    1.330000] Unable to handle kernel NULL pointer dereference at virtual address 00000000
-> > [    1.340000] pgd = c0004000
-> > [    1.340000] [00000000] *pgd=00000000
-> > [    1.350000] Internal error: Oops: 17 [#1] ARM
-> > [    1.350000] CPU: 0 PID: 1 Comm: swapper Not tainted 3.13.0-rc1-n8x0_tiny-los.git-729021f-00018-g74a0f39 #2
-> > [    1.350000] task: c782c000 ti: c782e000 task.ti: c782e000
-> > [    1.350000] PC is at mutex_lock+0x0/0x20
-> > [    1.350000] LR is at __irq_get_desc_lock+0x6c/0x88
-[...]
-> > [    1.350000] [<c016745c>] (mutex_lock+0x0/0x20) from [<c00509ac>] (__irq_get_desc_lock+0x6c/0x88)
-> > [    1.350000] [<c00509ac>] (__irq_get_desc_lock+0x6c/0x88) from [<c0053518>] (__irq_set_handler+0x24/0x128)
-> > [    1.350000] [<c0053518>] (__irq_set_handler+0x24/0x128) from [<c013ec80>] (menelaus_probe+0xbc/0x280)
-> > [    1.350000] [<c013ec80>] (menelaus_probe+0xbc/0x280) from [<c0140ab8>] (i2c_device_probe+0x98/0xc0)
+On Monday 25 November 2013 22:50:01 Sebastian Reichel wrote:
+> > 2 seems more generic to me, but as rx51-battery is missing
+> > the functionality to send events on temperature change, I
+> > guess 1 will be easier to implement.
+>=20
+> The temperature must be polled anyway, if the ADC does not
+> support interrupts.
+>=20
 
-[...]
+Yes, ADC does not support interrupts, temperature must be polled.=20
+Also bq27200 chip does not support interrupts, but=20
+bq27x00_battery driver using delayed work which every 60s poll=20
+all values (timeout can be configured via modprobe param). So=20
+similar code can be added to rx51_battery.ko too.
 
-> hmm, irq_set_chip_and_handler() will call back into the irq_chip we just
-> registered, so my ->irq_bus_lock needs to have everything setup
-> (chip_data my mutex), this should solve it:
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-Yes, that fixes it. Seems to work fine now.
+--nextPart1505224.1dOuLHziek
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-A.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
-> index 376f01d..c9bd2fb 100644
-> --- a/drivers/mfd/menelaus.c
-> +++ b/drivers/mfd/menelaus.c
-> @@ -1232,6 +1232,7 @@ static int menelaus_probe(struct i2c_client *client,
->  
->  	the_menelaus = m;
->  	m->client = client;
-> +	mutex_init(&m->lock);
->  
->  	irq_base = irq_alloc_descs(-1, 0, MENELAUS_NR_IRQS, 0);
->  	if (irq_base < 0) {
-> @@ -1245,10 +1246,10 @@ static int menelaus_probe(struct i2c_client *client,
->  	m->irq_base = irq_base;
->  
->  	for (i = irq_base; i < irq_base + MENELAUS_NR_IRQS; i++) {
-> +		irq_set_chip_data(i, m);
->  		irq_set_chip_and_handler(i, &menelaus_irq_chip,
->  				handle_simple_irq);
->  		irq_set_nested_thread(i, 1);
-> -		irq_set_chip_data(i, m);
->  		set_irq_flags(i, IRQF_VALID);
->  	}
->  
-> @@ -1280,8 +1281,6 @@ static int menelaus_probe(struct i2c_client *client,
->  		}
->  	}
->  
-> -	mutex_init(&m->lock);
-> -
->  	pr_info("Menelaus rev %d.%d\n", rev >> 4, rev & 0x0f);
->  
->  	val = menelaus_read_reg(m, MENELAUS_VCORE_CTRL1);
-> 
-> 
-> let me know when you can, and I'll meld these hunks to proper patch.
-> 
-> -- 
-> balbi
+iEYEABECAAYFAlKWYT8ACgkQi/DJPQPkQ1LrDgCZATle/AQn2Md0cNnVsMePRTQ2
+prIAn0TgIHG3nOoN2G0SDi2Yggzlaq2Y
+=K7Mw
+-----END PGP SIGNATURE-----
+
+--nextPart1505224.1dOuLHziek--
