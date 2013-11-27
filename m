@@ -1,85 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757512Ab3K0A5S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:57:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38869 "EHLO
+	id S1758821Ab3K0B4i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:56:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38968 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755227Ab3K0A45 (ORCPT
+	with ESMTP id S1757508Ab3K0A5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:56:57 -0500
+	Tue, 26 Nov 2013 19:57:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Haren Myneni <haren@linux.vnet.ibm.com>,
-        Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.4 35/39] powerpc/signals: Mark VSX not saved with small contexts
-Date: Tue, 26 Nov 2013 16:56:59 -0800
-Message-Id: <20131127005621.515610684@linuxfoundation.org>
+        Olivier Sobrie <olivier@sobrie.be>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.10 07/80] can: kvaser_usb: fix usb endpoints detection
+Date: Tue, 26 Nov 2013 16:56:36 -0800
+Message-Id: <20131127005641.449572904@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
-In-Reply-To: <20131127005619.011763867@linuxfoundation.org>
-References: <20131127005619.011763867@linuxfoundation.org>
+In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
+References: <20131127005640.934155527@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Olivier Sobrie <olivier@sobrie.be>
 
-commit c13f20ac48328b05cd3b8c19e31ed6c132b44b42 upstream.
+commit 896e23bd04ea50a146dffd342e2f96180f0812a5 upstream.
 
-The VSX MSR bit in the user context indicates if the context contains VSX
-state.  Currently we set this when the process has touched VSX at any stage.
+Some devices, like the Kvaser Memorator Professional, have several bulk in
+endpoints. Only the first one found must be used by the driver. The same holds
+for the bulk out endpoint. The official Kvaser driver (leaf) was used as
+reference for this patch.
 
-Unfortunately, if the user has not provided enough space to save the VSX state,
-we can't save it but we currently still set the MSR VSX bit.
-
-This patch changes this to clear the MSR VSX bit when the user doesn't provide
-enough space.  This indicates that there is no valid VSX state in the user
-context.
-
-This is needed to support get/set/make/swapcontext for applications that use
-VSX but only provide a small context.  For example, getcontext in glibc
-provides a smaller context since the VSX registers don't need to be saved over
-the glibc function call.  But since the program calling getcontext may have
-used VSX, the kernel currently says the VSX state is valid when it's not.  If
-the returned context is then used in setcontext (ie. a small context without
-VSX but with MSR VSX set), the kernel will refuse the context.  This situation
-has been reported by the glibc community.
-
-Based on patch from Carlos O'Donell.
-
-Tested-by: Haren Myneni <haren@linux.vnet.ibm.com>
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/signal_32.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/net/can/usb/kvaser_usb.c |   20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
 
---- a/arch/powerpc/kernel/signal_32.c
-+++ b/arch/powerpc/kernel/signal_32.c
-@@ -459,7 +459,15 @@ static int save_user_regs(struct pt_regs
- 		if (copy_vsx_to_user(&frame->mc_vsregs, current))
- 			return 1;
- 		msr |= MSR_VSX;
--	}
-+	} else if (!ctx_has_vsx_region)
-+		/*
-+		 * With a small context structure we can't hold the VSX
-+		 * registers, hence clear the MSR value to indicate the state
-+		 * was not saved.
-+		 */
-+		msr &= ~MSR_VSX;
+--- a/drivers/net/can/usb/kvaser_usb.c
++++ b/drivers/net/can/usb/kvaser_usb.c
+@@ -1544,9 +1544,9 @@ static int kvaser_usb_init_one(struct us
+ 	return 0;
+ }
+ 
+-static void kvaser_usb_get_endpoints(const struct usb_interface *intf,
+-				     struct usb_endpoint_descriptor **in,
+-				     struct usb_endpoint_descriptor **out)
++static int kvaser_usb_get_endpoints(const struct usb_interface *intf,
++				    struct usb_endpoint_descriptor **in,
++				    struct usb_endpoint_descriptor **out)
+ {
+ 	const struct usb_host_interface *iface_desc;
+ 	struct usb_endpoint_descriptor *endpoint;
+@@ -1557,12 +1557,18 @@ static void kvaser_usb_get_endpoints(con
+ 	for (i = 0; i < iface_desc->desc.bNumEndpoints; ++i) {
+ 		endpoint = &iface_desc->endpoint[i].desc;
+ 
+-		if (usb_endpoint_is_bulk_in(endpoint))
++		if (!*in && usb_endpoint_is_bulk_in(endpoint))
+ 			*in = endpoint;
+ 
+-		if (usb_endpoint_is_bulk_out(endpoint))
++		if (!*out && usb_endpoint_is_bulk_out(endpoint))
+ 			*out = endpoint;
 +
++		/* use first bulk endpoint for in and out */
++		if (*in && *out)
++			return 0;
+ 	}
 +
- #endif /* CONFIG_VSX */
- #ifdef CONFIG_SPE
- 	/* save spe registers */
++	return -ENODEV;
+ }
+ 
+ static int kvaser_usb_probe(struct usb_interface *intf,
+@@ -1576,8 +1582,8 @@ static int kvaser_usb_probe(struct usb_i
+ 	if (!dev)
+ 		return -ENOMEM;
+ 
+-	kvaser_usb_get_endpoints(intf, &dev->bulk_in, &dev->bulk_out);
+-	if (!dev->bulk_in || !dev->bulk_out) {
++	err = kvaser_usb_get_endpoints(intf, &dev->bulk_in, &dev->bulk_out);
++	if (err) {
+ 		dev_err(&intf->dev, "Cannot get usb endpoint(s)");
+ 		return err;
+ 	}
 
 
