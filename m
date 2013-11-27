@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759203Ab3K0BHB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:07:01 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:55836 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759096Ab3K0BFV (ORCPT
+	id S1759076Ab3K0BHb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:07:31 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:46435 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047Ab3K0BFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 20:05:21 -0500
+	Tue, 26 Nov 2013 20:05:16 -0500
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -19,9 +19,9 @@ To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         devicetree@vger.kernel.org,
         Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH v2 4/9] clocksource/cadence_ttc: Use enable/disable_irq
-Date: Tue, 26 Nov 2013 17:04:51 -0800
-Message-Id: <1385514296-26702-5-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH v2 2/9] arm: dt: zynq: Add 'cpus' node
+Date: Tue, 26 Nov 2013 17:04:49 -0800
+Message-Id: <1385514296-26702-3-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 1.8.4.4
 In-Reply-To: <1385514296-26702-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1385514296-26702-1-git-send-email-soren.brinkmann@xilinx.com>
@@ -29,40 +29,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To ensure that the timer interrupt is properly enabled/disabled across
-the whole CPU cluster use enable/disable_irq() instead of
-local_irq_disable().
+Add a 'cpus' node to describe the CPU cores of Zynq.
 
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Acked-by: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
 ---
- drivers/clocksource/cadence_ttc_timer.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+v2:
+ - remove cache size related properties
+---
+ arch/arm/boot/dts/zynq-7000.dtsi | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
-index a92350b55d32..246d018d1e63 100644
---- a/drivers/clocksource/cadence_ttc_timer.c
-+++ b/drivers/clocksource/cadence_ttc_timer.c
-@@ -322,18 +322,16 @@ static int ttc_rate_change_clockevent_cb(struct notifier_block *nb,
- 	switch (event) {
- 	case POST_RATE_CHANGE:
- 	{
--		unsigned long flags;
--
- 		/*
- 		 * clockevents_update_freq should be called with IRQ disabled on
- 		 * the CPU the timer provides events for. The timer we use is
- 		 * common to both CPUs, not sure if we need to run on both
- 		 * cores.
- 		 */
--		local_irq_save(flags);
-+		disable_irq(ttcce->ce.irq);
- 		clockevents_update_freq(&ttcce->ce,
- 				ndata->new_rate / PRESCALE);
--		local_irq_restore(flags);
-+		enable_irq(ttcce->ce.irq);
+diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
+index 605a2d0a39fc..23ba82c205a2 100644
+--- a/arch/arm/boot/dts/zynq-7000.dtsi
++++ b/arch/arm/boot/dts/zynq-7000.dtsi
+@@ -15,6 +15,25 @@
+ / {
+ 	compatible = "xlnx,zynq-7000";
  
- 		/* update cached frequency */
- 		ttc->freq = ndata->new_rate;
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@0 {
++			compatible = "arm,cortex-a9";
++			device_type = "cpu";
++			reg = <0>;
++			clocks = <&clkc 3>;
++		};
++
++		cpu@1 {
++			compatible = "arm,cortex-a9";
++			device_type = "cpu";
++			reg = <1>;
++			clocks = <&clkc 3>;
++		};
++	};
++
+ 	pmu {
+ 		compatible = "arm,cortex-a9-pmu";
+ 		interrupts = <0 5 4>, <0 6 4>;
 -- 
 1.8.4.4
 
