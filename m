@@ -1,148 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757947Ab3K0TLA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 14:11:00 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:58426 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756830Ab3K0TIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 14:08:14 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: <sameo@linux.intel.com>
-CC: <lee.jones@linaro.org>, Tony Lindgren <tony@atomide.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 06/13] mfd: menelaus: pass menelaus pointer as argument to enable/disable irq
-Date: Wed, 27 Nov 2013 13:06:50 -0600
-Message-ID: <1385579217-20127-7-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 1.8.4.GIT
-In-Reply-To: <1385579217-20127-1-git-send-email-balbi@ti.com>
-References: <1385579217-20127-1-git-send-email-balbi@ti.com>
+	id S1757970Ab3K0TLM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 14:11:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50467 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756830Ab3K0TLI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 14:11:08 -0500
+Date: Wed, 27 Nov 2013 11:11:07 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ashutosh Dixit <ashutosh.dixit@intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
+        Siva Krishna Kumar Reddy Yerramreddy 
+	<siva.krishna.kumar.reddy.yerramreddy@intel.com>,
+        Caz Yokoyama <Caz.Yokoyama@intel.com>
+Subject: Re: [PATCH char-misc-linus v3 0/6] misc: mic: Fixes for 3.13-final
+Message-ID: <20131127191107.GA21074@kroah.com>
+References: <cover.1385527468.git.ashutosh.dixit@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1385527468.git.ashutosh.dixit@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-we want to, eventually, get rid of the global
-the_menelaus pointer, so let's start passing
-menelaus as argument to some function calls
-and slowly phase out the_menelaus global pointer.
+On Wed, Nov 27, 2013 at 08:58:37AM -0800, Ashutosh Dixit wrote:
+> These patches fix various issues which were reported or found with the
+> MIC driver.
 
-Signed-off-by: Felipe Balbi <balbi@ti.com>
----
- drivers/mfd/menelaus.c | 48 ++++++++++++++++++++++++------------------------
- 1 file changed, 24 insertions(+), 24 deletions(-)
+All now applied, thanks.
 
-diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
-index 9ccbb79..4c51e4b 100644
---- a/drivers/mfd/menelaus.c
-+++ b/drivers/mfd/menelaus.c
-@@ -199,35 +199,35 @@ static int menelaus_read_reg(int reg)
- 	return val;
- }
- 
--static int menelaus_enable_irq(int irq)
-+static int menelaus_enable_irq(struct menelaus_chip *m, int irq)
- {
- 	if (irq > 7) {
- 		irq -= 8;
--		the_menelaus->mask2 &= ~(1 << irq);
-+		m->mask2 &= ~(1 << irq);
- 		return menelaus_write_reg(MENELAUS_INT_MASK2,
--				the_menelaus->mask2);
-+				m->mask2);
- 	} else {
--		the_menelaus->mask1 &= ~(1 << irq);
-+		m->mask1 &= ~(1 << irq);
- 		return menelaus_write_reg(MENELAUS_INT_MASK1,
--				the_menelaus->mask1);
-+				m->mask1);
- 	}
- }
- 
--static int menelaus_disable_irq(int irq)
-+static int menelaus_disable_irq(struct menelaus_chip *m, int irq)
- {
- 	if (irq > 7) {
- 		irq -= 8;
--		the_menelaus->mask2 |= (1 << irq);
-+		m->mask2 |= (1 << irq);
- 		return menelaus_write_reg(MENELAUS_INT_MASK2,
--				the_menelaus->mask2);
-+				m->mask2);
- 	} else {
--		the_menelaus->mask1 |= (1 << irq);
-+		m->mask1 |= (1 << irq);
- 		return menelaus_write_reg(MENELAUS_INT_MASK1,
--				the_menelaus->mask1);
-+				m->mask1);
- 	}
- }
- 
--static int menelaus_ack_irq(int irq)
-+static int menelaus_ack_irq(struct menelaus_chip *m, int irq)
- {
- 	if (irq > 7)
- 		return menelaus_write_reg(MENELAUS_INT_ACK2, 1 << (irq - 8));
-@@ -243,7 +243,7 @@ static int menelaus_add_irq_work(int irq,
- 
- 	mutex_lock(&the_menelaus->lock);
- 	the_menelaus->handlers[irq] = handler;
--	ret = menelaus_enable_irq(irq);
-+	ret = menelaus_enable_irq(the_menelaus, irq);
- 	mutex_unlock(&the_menelaus->lock);
- 
- 	return ret;
-@@ -255,7 +255,7 @@ static int menelaus_remove_irq_work(int irq)
- 	int ret = 0;
- 
- 	mutex_lock(&the_menelaus->lock);
--	ret = menelaus_disable_irq(irq);
-+	ret = menelaus_disable_irq(the_menelaus, irq);
- 	the_menelaus->handlers[irq] = NULL;
- 	mutex_unlock(&the_menelaus->lock);
- 
-@@ -793,25 +793,25 @@ out:
- 
- static irqreturn_t menelaus_irq(int irq, void *_menelaus)
- {
--	struct menelaus_chip *menelaus = _menelaus;
--	void (*handler)(struct menelaus_chip *menelaus);
-+	struct menelaus_chip *m = _menelaus;
-+	void (*handler)(struct menelaus_chip *m);
- 	unsigned long isr;
- 	unsigned long i;
- 
- 	isr = (menelaus_read_reg(MENELAUS_INT_STATUS2)
--			& ~menelaus->mask2) << 8;
-+			& ~m->mask2) << 8;
- 	isr |= menelaus_read_reg(MENELAUS_INT_STATUS1)
--		& ~menelaus->mask1;
-+		& ~m->mask1;
- 
- 	for_each_set_bit(i, &isr, 16) {
--		mutex_lock(&menelaus->lock);
--		menelaus_disable_irq(i);
--		menelaus_ack_irq(i);
--		handler = menelaus->handlers[i];
-+		mutex_lock(&m->lock);
-+		menelaus_disable_irq(m, i);
-+		menelaus_ack_irq(m, i);
-+		handler = m->handlers[i];
- 		if (handler)
--			handler(menelaus);
--		menelaus_enable_irq(i);
--		mutex_unlock(&menelaus->lock);
-+			handler(m);
-+		menelaus_enable_irq(m, i);
-+		mutex_unlock(&m->lock);
- 	}
- 
- 	return IRQ_HANDLED;
--- 
-1.8.4.GIT
-
+greg k-h
