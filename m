@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719Ab3K0CH4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:07:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38794 "EHLO
+	id S1760938Ab3K0CIT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:08:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38789 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756300Ab3K0A4j (ORCPT
+	with ESMTP id S1756064Ab3K0A4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:56:39 -0500
+	Tue, 26 Nov 2013 19:56:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Christoph Hellwig <hch@lst.de>, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.4 27/39] nfsd: make sure to balance get/put_write_access
-Date: Tue, 26 Nov 2013 16:56:51 -0800
-Message-Id: <20131127005620.935586660@linuxfoundation.org>
+Subject: [PATCH 3.4 26/39] nfsd: split up nfsd_setattr
+Date: Tue, 26 Nov 2013 16:56:50 -0800
+Message-Id: <20131127005620.865732083@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005619.011763867@linuxfoundation.org>
 References: <20131127005619.011763867@linuxfoundation.org>
@@ -28,68 +28,195 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Christoph Hellwig <hch@infradead.org>
 
-commit 987da4791052fa298b7cfcde4dea9f6f2bbc786b upstream.
+commit 818e5a22e907fbae75e9c1fd78233baec9fa64b6 upstream.
 
-Use a straight goto error label style in nfsd_setattr to make sure
-we always do the put_write_access call after we got it earlier.
-
-Note that the we have been failing to do that in the case
-nfsd_break_lease() returns an error, a bug introduced into 2.6.38 with
-6a76bebefe15d9a08864f824d7f8d5beaf37c997 "nfsd4: break lease on nfsd
-setattr".
+Split out two helpers to make the code more readable and easier to verify
+for correctness.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/vfs.c |   29 +++++++++++++++--------------
- 1 file changed, 15 insertions(+), 14 deletions(-)
+ fs/nfsd/vfs.c |  144 +++++++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 84 insertions(+), 60 deletions(-)
 
 --- a/fs/nfsd/vfs.c
 +++ b/fs/nfsd/vfs.c
-@@ -443,27 +443,28 @@ nfsd_setattr(struct svc_rqst *rqstp, str
+@@ -297,41 +297,12 @@ commit_metadata(struct svc_fh *fhp)
+ }
+ 
+ /*
+- * Set various file attributes.
+- * N.B. After this call fhp needs an fh_put
++ * Go over the attributes and take care of the small differences between
++ * NFS semantics and what Linux expects.
+  */
+-__be32
+-nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
+-	     int check_guard, time_t guardtime)
++static void
++nfsd_sanitize_attrs(struct inode *inode, struct iattr *iap)
+ {
+-	struct dentry	*dentry;
+-	struct inode	*inode;
+-	int		accmode = NFSD_MAY_SATTR;
+-	umode_t		ftype = 0;
+-	__be32		err;
+-	int		host_err;
+-	int		size_change = 0;
+-
+-	if (iap->ia_valid & (ATTR_ATIME | ATTR_MTIME | ATTR_SIZE))
+-		accmode |= NFSD_MAY_WRITE|NFSD_MAY_OWNER_OVERRIDE;
+-	if (iap->ia_valid & ATTR_SIZE)
+-		ftype = S_IFREG;
+-
+-	/* Get inode */
+-	err = fh_verify(rqstp, fhp, ftype, accmode);
+-	if (err)
+-		goto out;
+-
+-	dentry = fhp->fh_dentry;
+-	inode = dentry->d_inode;
+-
+-	/* Ignore any mode updates on symlinks */
+-	if (S_ISLNK(inode->i_mode))
+-		iap->ia_valid &= ~ATTR_MODE;
+-
+-	if (!iap->ia_valid)
+-		goto out;
+-
+ 	/*
+ 	 * NFSv2 does not differentiate between "set-[ac]time-to-now"
+ 	 * which only requires access, and "set-[ac]time-to-X" which
+@@ -341,8 +312,7 @@ nfsd_setattr(struct svc_rqst *rqstp, str
+ 	 * convert to "set to now" instead of "set to explicit time"
+ 	 *
+ 	 * We only call inode_change_ok as the last test as technically
+-	 * it is not an interface that we should be using.  It is only
+-	 * valid if the filesystem does not define it's own i_op->setattr.
++	 * it is not an interface that we should be using.
+ 	 */
+ #define BOTH_TIME_SET (ATTR_ATIME_SET | ATTR_MTIME_SET)
+ #define	MAX_TOUCH_TIME_ERROR (30*60)
+@@ -368,30 +338,6 @@ nfsd_setattr(struct svc_rqst *rqstp, str
+ 			iap->ia_valid &= ~BOTH_TIME_SET;
+ 		}
+ 	}
+-	    
+-	/*
+-	 * The size case is special.
+-	 * It changes the file as well as the attributes.
+-	 */
+-	if (iap->ia_valid & ATTR_SIZE) {
+-		if (iap->ia_size < inode->i_size) {
+-			err = nfsd_permission(rqstp, fhp->fh_export, dentry,
+-					NFSD_MAY_TRUNC|NFSD_MAY_OWNER_OVERRIDE);
+-			if (err)
+-				goto out;
+-		}
+-
+-		host_err = get_write_access(inode);
+-		if (host_err)
+-			goto out_nfserr;
+-
+-		size_change = 1;
+-		host_err = locks_verify_truncate(inode, NULL, iap->ia_size);
+-		if (host_err) {
+-			put_write_access(inode);
+-			goto out_nfserr;
+-		}
+-	}
+ 
+ 	/* sanitize the mode change */
+ 	if (iap->ia_valid & ATTR_MODE) {
+@@ -414,8 +360,86 @@ nfsd_setattr(struct svc_rqst *rqstp, str
+ 			iap->ia_valid |= (ATTR_KILL_SUID | ATTR_KILL_SGID);
+ 		}
+ 	}
++}
++
++static __be32
++nfsd_get_write_access(struct svc_rqst *rqstp, struct svc_fh *fhp,
++		struct iattr *iap)
++{
++	struct inode *inode = fhp->fh_dentry->d_inode;
++	int host_err;
++
++	if (iap->ia_size < inode->i_size) {
++		__be32 err;
++
++		err = nfsd_permission(rqstp, fhp->fh_export, fhp->fh_dentry,
++				NFSD_MAY_TRUNC | NFSD_MAY_OWNER_OVERRIDE);
++		if (err)
++			return err;
++	}
++
++	host_err = get_write_access(inode);
++	if (host_err)
++		goto out_nfserrno;
++
++	host_err = locks_verify_truncate(inode, NULL, iap->ia_size);
++	if (host_err)
++		goto out_put_write_access;
++	return 0;
++
++out_put_write_access:
++	put_write_access(inode);
++out_nfserrno:
++	return nfserrno(host_err);
++}
++
++/*
++ * Set various file attributes.  After this call fhp needs an fh_put.
++ */
++__be32
++nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
++	     int check_guard, time_t guardtime)
++{
++	struct dentry	*dentry;
++	struct inode	*inode;
++	int		accmode = NFSD_MAY_SATTR;
++	umode_t		ftype = 0;
++	__be32		err;
++	int		host_err;
++	int		size_change = 0;
++
++	if (iap->ia_valid & (ATTR_ATIME | ATTR_MTIME | ATTR_SIZE))
++		accmode |= NFSD_MAY_WRITE|NFSD_MAY_OWNER_OVERRIDE;
++	if (iap->ia_valid & ATTR_SIZE)
++		ftype = S_IFREG;
++
++	/* Get inode */
++	err = fh_verify(rqstp, fhp, ftype, accmode);
++	if (err)
++		goto out;
++
++	dentry = fhp->fh_dentry;
++	inode = dentry->d_inode;
++
++	/* Ignore any mode updates on symlinks */
++	if (S_ISLNK(inode->i_mode))
++		iap->ia_valid &= ~ATTR_MODE;
++
++	if (!iap->ia_valid)
++		goto out;
++
++	nfsd_sanitize_attrs(inode, iap);
+ 
+-	/* Change the attributes. */
++	/*
++	 * The size case is special, it changes the file in addition to the
++	 * attributes.
++	 */
++	if (iap->ia_valid & ATTR_SIZE) {
++		err = nfsd_get_write_access(rqstp, fhp, iap);
++		if (err)
++			goto out;
++		size_change = 1;
++	}
  
  	iap->ia_valid |= ATTR_CTIME;
  
--	err = nfserr_notsync;
--	if (!check_guard || guardtime == inode->i_ctime.tv_sec) {
--		host_err = nfsd_break_lease(inode);
--		if (host_err)
--			goto out_nfserr;
--		fh_lock(fhp);
--
--		host_err = notify_change(dentry, iap);
--		err = nfserrno(host_err);
--		fh_unlock(fhp);
-+	if (check_guard && guardtime != inode->i_ctime.tv_sec) {
-+		err = nfserr_notsync;
-+		goto out_put_write_access;
- 	}
-+
-+	host_err = nfsd_break_lease(inode);
-+	if (host_err)
-+		goto out_put_write_access_nfserror;
-+
-+	fh_lock(fhp);
-+	host_err = notify_change(dentry, iap);
-+	fh_unlock(fhp);
-+
-+out_put_write_access_nfserror:
-+	err = nfserrno(host_err);
-+out_put_write_access:
- 	if (size_change)
- 		put_write_access(inode);
- 	if (!err)
- 		commit_metadata(fhp);
- out:
- 	return err;
--
--out_nfserr:
--	err = nfserrno(host_err);
--	goto out;
- }
- 
- #if defined(CONFIG_NFSD_V2_ACL) || \
 
 
