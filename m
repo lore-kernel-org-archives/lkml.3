@@ -1,130 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab3K0Qd0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 11:33:26 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:56344 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756830Ab3K0QdZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 11:33:25 -0500
-Date: Wed, 27 Nov 2013 11:33:21 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Juri Lelli <juri.lelli@gmail.com>,
-        tglx@linutronix.de, mingo@redhat.com, oleg@redhat.com,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org, bruce.ashfield@windriver.com
-Subject: Re: [PATCH 08/14] sched: add latency tracing for -deadline tasks.
-Message-ID: <20131127113321.67f34ee6@gandalf.local.home>
-In-Reply-To: <20131127161308.GA26918@gmail.com>
-References: <20131120163318.10253e43@gandalf.local.home>
-	<5295F711.5010708@gmail.com>
-	<20131127091647.4e16ce53@gandalf.local.home>
-	<20131127142649.GC13532@twins.programming.kicks-ass.net>
-	<20131127143435.GD25043@gmail.com>
-	<20131127145837.GE16796@laptop.programming.kicks-ass.net>
-	<20131127153519.GA26095@gmail.com>
-	<20131127154015.GG789@laptop.programming.kicks-ass.net>
-	<20131127154600.GC26095@gmail.com>
-	<20131127105616.6672624c@gandalf.local.home>
-	<20131127161308.GA26918@gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	id S1757378Ab3K0Qew (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 11:34:52 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:42386 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753338Ab3K0Qeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 11:34:50 -0500
+Date: Wed, 27 Nov 2013 11:34:36 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+Message-ID: <20131127163435.GA3556@cmpxchg.org>
+References: <alpine.DEB.2.02.1311131416460.23211@chino.kir.corp.google.com>
+ <20131113233419.GJ707@cmpxchg.org>
+ <alpine.DEB.2.02.1311131649110.6735@chino.kir.corp.google.com>
+ <20131114032508.GL707@cmpxchg.org>
+ <alpine.DEB.2.02.1311141447160.21413@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1311141525440.30112@chino.kir.corp.google.com>
+ <20131118154115.GA3556@cmpxchg.org>
+ <20131118165110.GE32623@dhcp22.suse.cz>
+ <20131122165100.GN3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311261648570.21003@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1311261648570.21003@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Nov 2013 17:13:08 +0100
-Ingo Molnar <mingo@kernel.org> wrote:
-
+On Tue, Nov 26, 2013 at 04:53:47PM -0800, David Rientjes wrote:
+> On Fri, 22 Nov 2013, Johannes Weiner wrote:
 > 
-> * Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
-> > On Wed, 27 Nov 2013 16:46:00 +0100
-> > Ingo Molnar <mingo@kernel.org> wrote:
+> > But userspace in all likeliness DOES need to take action.
 > > 
-> > > 
-> > > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > > 
-> > > > On Wed, Nov 27, 2013 at 04:35:19PM +0100, Ingo Molnar wrote:
-> > > > > So why does GCC then behave like this:
-> > > > 
-> > > > I think because its a much saner behaviour; also it might still be the
-> > > > spec actually says this, its a somewhat opaque text.
-> > > > 
-> > > > Anyway, yes GCC seems to behave as we 'expect' it to; I just can't find
-> > > > the language spec actually guaranteeing this.
-> > > 
-> > > So from C99 standard §6.7.8 (Initialization)/21:
-> > > 
-> > >     "If there are fewer initializers in a brace-enclosed list than 
-> > >   there are elements or members of an aggregate, or fewer characters 
-> > >   in a string literal used to initialize an array of known size than 
-> > >   there are elements in the array, the remainder of the aggregate 
-> > >   shall be initialized implicitly the same as objects that have static 
-> > >   storage duration."
-> > > 
-> > > static initialization == zeroing in this case.
-> > > 
+> > Reclaim is a really long process.  If 5 times doing 12 priority cycles
+> > and scanning thousands of pages is not enough to reclaim a single
+> > page, what does that say about the health of the memcg?
 > > 
-> > The confusion here is that the above looks to be talking about arrays.
-> > But it really doesn't specify structures.
-> 
-> It talks about neither 'arrays' nor 'structures', it talks about 
-> 'aggregates' - which is defined as _both_: 'structures and arrays'.
-
-Yeah, I misread it. I was reading the array section for awhile, and got
-confused.
-
-
-> 
-> That's what compiler legalese brings you ;-)
-
-Yep.
-
-> 
-> > But searching the internet, it looks as though most people believe 
-> > it applies to structures, and any compiler that does otherwise will 
-> > most likely break applications.
+> > But more importantly, OOM handling is just inherently racy.  A task
+> > might receive the kill signal a split second *after* userspace was
+> > notified.  Or a task may exit voluntarily a split second after a
+> > victim was chosen and killed.
 > > 
-> > That is, this looks to be one of the gray areas that the compiler 
-> > writers just happen to do what's most sane. And they probably assume 
-> > it's talking about structures as well, hence the lack of warnings.
 > 
-> I don't think it's grey, I think it's pretty well specified.
-> 
-> > It gets confusing, as the doc also shows:
-> > 
-> > struct { int a[3], b; } w[] = { { 1 }, 2 };
-> 
-> I don't think this is valid syntax, I think this needs one more set of 
-> braces:
-> 
->  struct { int a[3], b; } w[] = { { { 1 }, 2 } };
-> 
-> > Then points out that w.a[0] is 1 and w.b[0] is 2, and all other 
-> > elements are zero.
-> 
-> If by 'w.a[0]' you mean 'w[0].a[0]', and if by 'w.b[0]' you mean 
-> 'w[0].b' then yes, this comes from the definition and it's what I'd 
-> call 'obvious' initialization behavior.
-> 
-> What makes it confusing to you?
+> That's not true even today without the userspace oom handling proposal 
+> currently being discussed if you have a memcg oom handler attached to a 
+> parent memcg with access to more memory than an oom child memcg.  The oom 
+> handler can disable the child memcg's oom killer with memory.oom_control 
+> and implement its own policy to deal with any notification of oom.
 
-Well, because it's mixing arrays and structures, and I was on the
-misconception that the paragraph was talking about just arrays.
+I was never implying the kernel handler.  All the races exist with
+userspace handling as well.
 
-Can I just have my turkey now?
+> This patch is required to ensure that in such a scenario that the oom 
+> handler sitting in the parent memcg only wakes up when it's required to 
+> intervene.
 
--- Steve
+A task could receive an unrelated kill between the OOM notification
+and going to sleep to wait for userspace OOM handling.  Or another
+task could exit voluntarily between the notification and waitqueue
+entry, which would again be short-cut by the oom_recover of the exit
+uncharges.
+
+oom:                           other tasks:
+check signal/exiting
+                               could exit or get killed here
+mem_cgroup_oom_trylock()
+                               could exit or get killed here
+mem_cgroup_oom_notify()
+                               could exit or get killed here
+if (userspace_handler)
+  sleep()                      could exit or get killed here
+else
+  oom_kill()
+                               could exit or get killed here
+
+It does not matter where your signal/exiting check is, OOM
+notification can never be race free because OOM is just an arbitrary
+line we draw.  We have no idea what all the tasks are up to and how
+close they are to releasing memory.  Even if we freeze the whole group
+to handle tasks, it does not change the fact that the userspace OOM
+handler might kill one task and after the unfreeze another task
+immediately exits voluntarily or got a kill signal a split second
+after it was frozen.
+
+You can't fix this.  We just have to draw the line somewhere and
+accept that in rare situations the OOM kill was unnecessary.  So
+again, I don't see this patch is doing anything but blur the current
+line and make notification less predictable.  And, as someone else in
+this thread already said, it's a uservisible change in behavior and
+would break known tuning usecases.
