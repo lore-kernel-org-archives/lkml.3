@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442Ab3K0Hks (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 02:40:48 -0500
-Received: from cassarossa.samfundet.no ([193.35.52.29]:59640 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755130Ab3K0Hko (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 02:40:44 -0500
-Date: Wed, 27 Nov 2013 08:40:39 +0100
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Eunbong Song <eunb.song@samsung.com>
-Cc: hskinnemoen@gmail.com,
+	id S1754501Ab3K0HtC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 02:49:02 -0500
+Received: from mail.precitec.de ([85.115.17.50]:43900 "EHLO mail.precitec.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752003Ab3K0HtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 02:49:00 -0500
+X-Greylist: delayed 309 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Nov 2013 02:49:00 EST
+X-CTCH-RefID: str=0001.0A0C0207.5295A2AC.0081,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+From: Bockholdt Arne <a.bockholdt@precitec-optronik.de>
+To: Len Brown <lenb@kernel.org>
+CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] avr32: Kill CONFIG_MTD_PARTITIONS
-Message-ID: <20131127074039.GA8295@samfundet.no>
-References: <6858332.78861385513376432.JavaMail.weblogic@epml11>
+Subject: Re: [PATCH v2] intel_idle: Fixed C6 state on Avoton/Rangeley
+ processors
+Thread-Topic: [PATCH v2] intel_idle: Fixed C6 state on Avoton/Rangeley
+ processors
+Thread-Index: AQHO6qzIhv1XjUFGzUekxvfzDKdTiJo3yKgAgADaAIA=
+Date: Wed, 27 Nov 2013 07:43:39 +0000
+Message-ID: <1385538219.4577.5.camel@po-d-abo-ubu>
+References: <1385450037.4588.10.camel@po-d-abo-ubu>
+	 <1574800.Vl6NB1rGSk@amdc1032> <1385473105.4588.14.camel@po-d-abo-ubu>
+	 <CAJvTdKm8bcUsnn_=_f_NQzJJ_FgmX6Ch3XDK3un22vwE9_Qh_Q@mail.gmail.com>
+In-Reply-To: <CAJvTdKm8bcUsnn_=_f_NQzJJ_FgmX6Ch3XDK3un22vwE9_Qh_Q@mail.gmail.com>
+Accept-Language: en-US, de-DE
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.201.50]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <63FD2D67C3C59C43AF9BC7204AEA0934@precitecgroup.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6858332.78861385513376432.JavaMail.weblogic@epml11>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAR7nFg1019490
 
-Around Wed 27 Nov 2013 00:49:37 +0000 or thereabout, Eunbong Song wrote:
+
+On Tue, 2013-11-26 at 13:43 -0500, Len Brown wrote: 
+> >                 .desc = "MWAIT 0x51",
+> > -               .flags = MWAIT2flg(0x58) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+> > +               .flags = MWAIT2flg(0x51) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+> >                 .exit_latency = 15,
+> >                 .target_residency = 45,
 > 
-> This patch removes CONFIG_MTD_PARTITIONS in config files for avr32.
->  Because CONFIG_MTD_PARTITIONS was removed by commit 6a8a98b22b10f1560d5f90aded4a54234b9b2724.
+> Thanks for noticing that .desc and .flags are inconsistent.
+> This is my fault -- apparently I e-mailed a version of this patch that
+> is older than what I have in my git tree.
+> 
+> No big issue, though, as 0x51 and 0x58 do exactly the same thing in
+> AVN hardware.
+> Indeed, changing .desc to 0x58 would be fine also.
 
-Thank you for cleaning. I'll add this to my for-linus branch.
 
-> Signed-off-by: Eunbong Song <eunb.song@samsung.com>
->
+The Rangeley on my Supermicro A1SRi-2758F board won't enter C6 with
+MWAIT flag set to 0x58 but will do that with 0x51. Maybe the missing
+turbo mode of the Rangeley ?
 
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 
-> ---
->  arch/avr32/configs/atngw100_defconfig              |    1 -
->  arch/avr32/configs/atngw100_evklcd100_defconfig    |    1 -
->  arch/avr32/configs/atngw100_evklcd101_defconfig    |    1 -
->  arch/avr32/configs/atngw100_mrmt_defconfig         |    1 -
->  arch/avr32/configs/atngw100mkii_defconfig          |    1 -
->  .../avr32/configs/atngw100mkii_evklcd100_defconfig |    1 -
->  .../avr32/configs/atngw100mkii_evklcd101_defconfig |    1 -
->  arch/avr32/configs/atstk1002_defconfig             |    1 -
->  arch/avr32/configs/atstk1003_defconfig             |    1 -
->  arch/avr32/configs/atstk1004_defconfig             |    1 -
->  arch/avr32/configs/atstk1006_defconfig             |    1 -
->  arch/avr32/configs/favr-32_defconfig               |    1 -
->  arch/avr32/configs/hammerhead_defconfig            |    1 -
->  arch/avr32/configs/merisc_defconfig                |    1 -
->  arch/avr32/configs/mimc200_defconfig               |    1 -
->  15 files changed, 0 insertions(+), 15 deletions(-)
-
-<snipp diff>
+Arne
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
