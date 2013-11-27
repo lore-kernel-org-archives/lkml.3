@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932708Ab3K0BIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:08:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39676 "EHLO
+	id S1759261Ab3K0BIp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:08:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39682 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758875Ab3K0A76 (ORCPT
+	with ESMTP id S1758750Ab3K0A76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Nov 2013 19:59:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Haren Myneni <haren@linux.vnet.ibm.com>,
+        Michael Neuling <mikey@neuling.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.12 090/116] powerpc: Fix __get_user_pages_fast() irq handling
-Date: Tue, 26 Nov 2013 16:57:43 -0800
-Message-Id: <20131127005743.129687780@linuxfoundation.org>
+Subject: [PATCH 3.12 091/116] powerpc/signals: Mark VSX not saved with small contexts
+Date: Tue, 26 Nov 2013 16:57:44 -0800
+Message-Id: <20131127005743.199255331@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -27,49 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Michael Neuling <mikey@neuling.org>
 
-commit 95f715b08fa4a953771398d20cbe35a6803ea41d upstream.
+commit c13f20ac48328b05cd3b8c19e31ed6c132b44b42 upstream.
 
-__get_user_pages_fast() may be called with interrupts disabled (see e.g.
-get_futex_key() in kernel/futex.c) and therefore should use local_irq_save()
-and local_irq_restore() instead of local_irq_disable()/enable().
+The VSX MSR bit in the user context indicates if the context contains VSX
+state.  Currently we set this when the process has touched VSX at any stage.
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Unfortunately, if the user has not provided enough space to save the VSX state,
+we can't save it but we currently still set the MSR VSX bit.
+
+This patch changes this to clear the MSR VSX bit when the user doesn't provide
+enough space.  This indicates that there is no valid VSX state in the user
+context.
+
+This is needed to support get/set/make/swapcontext for applications that use
+VSX but only provide a small context.  For example, getcontext in glibc
+provides a smaller context since the VSX registers don't need to be saved over
+the glibc function call.  But since the program calling getcontext may have
+used VSX, the kernel currently says the VSX state is valid when it's not.  If
+the returned context is then used in setcontext (ie. a small context without
+VSX but with MSR VSX set), the kernel will refuse the context.  This situation
+has been reported by the glibc community.
+
+Based on patch from Carlos O'Donell.
+
+Tested-by: Haren Myneni <haren@linux.vnet.ibm.com>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/mm/gup.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/signal_32.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/mm/gup.c
-+++ b/arch/powerpc/mm/gup.c
-@@ -123,6 +123,7 @@ int __get_user_pages_fast(unsigned long
- 	struct mm_struct *mm = current->mm;
- 	unsigned long addr, len, end;
- 	unsigned long next;
-+	unsigned long flags;
- 	pgd_t *pgdp;
- 	int nr = 0;
- 
-@@ -156,7 +157,7 @@ int __get_user_pages_fast(unsigned long
- 	 * So long as we atomically load page table pointers versus teardown,
- 	 * we can follow the address down to the the page and take a ref on it.
- 	 */
--	local_irq_disable();
-+	local_irq_save(flags);
- 
- 	pgdp = pgd_offset(mm, addr);
- 	do {
-@@ -179,7 +180,7 @@ int __get_user_pages_fast(unsigned long
- 			break;
- 	} while (pgdp++, addr = next, addr != end);
- 
--	local_irq_enable();
-+	local_irq_restore(flags);
- 
- 	return nr;
- }
+--- a/arch/powerpc/kernel/signal_32.c
++++ b/arch/powerpc/kernel/signal_32.c
+@@ -457,7 +457,15 @@ static int save_user_regs(struct pt_regs
+ 		if (copy_vsx_to_user(&frame->mc_vsregs, current))
+ 			return 1;
+ 		msr |= MSR_VSX;
+-	}
++	} else if (!ctx_has_vsx_region)
++		/*
++		 * With a small context structure we can't hold the VSX
++		 * registers, hence clear the MSR value to indicate the state
++		 * was not saved.
++		 */
++		msr &= ~MSR_VSX;
++
++
+ #endif /* CONFIG_VSX */
+ #ifdef CONFIG_SPE
+ 	/* save spe registers */
 
 
