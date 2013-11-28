@@ -1,41 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758719Ab3K1QY4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 11:24:56 -0500
-Received: from forward1m.mail.yandex.net ([37.140.138.1]:39149 "EHLO
-	forward1m.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332Ab3K1QYv (ORCPT
+	id S1758958Ab3K1Q1o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 11:27:44 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:53090 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754992Ab3K1Q1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 11:24:51 -0500
-From: =?koi8-r?B?8tXT1MHGwSDk1sHN1dLByM3F1M/X?= <drustafa@yandex.ru>
-To: Jingoo Han <jg1.han@samsung.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <005801ceebf3$f3695570$da3c0050$%han@samsung.com>
-References: <004e01ceebec$52ed0f80$f8c72e80$%han@samsung.com> <005801ceebf3$f3695570$da3c0050$%han@samsung.com>
-Subject: Re: [PATCH] w1: matrox: use DEFINE_PCI_DEVICE_TABLE macro
+	Thu, 28 Nov 2013 11:27:42 -0500
+Date: Fri, 29 Nov 2013 00:29:13 +0800
+From: Jianyu Zhan <nasa4836@gmail.com>
+To: linux-mm@kvack.org
+Cc: akpm@linux-foundation.org, iamjoonsoo.kim@lge.com,
+        zhangyanfei@cn.fujitsu.com, liwanp@linux.vnet.ibm.com,
+        rientjes@google.com, linux-kernel@vger.kernel.org
+Subject: [PATCH]mm/vmalloc: interchage the implementation of
+ vmalloc_to_{pfn,page}
+Message-ID: <20131128162913.GA4234@lcx>
 MIME-Version: 1.0
-Message-Id: <22321385655887@web21m.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Thu, 28 Nov 2013 20:24:47 +0400
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Currently we are implementing vmalloc_to_pfn() as a wrapper of 
+vmalloc_to_page(), which is implemented as follow: 
 
-28.11.2013, 08:40, "Jingoo Han" <jg1.han@samsung.com>:
+ 1. walks the page talbes to generates the corresponding pfn,
+ 2. then wraps the pfn to struct page,
+ 3. returns it.
 
-> "Yeah, and it's a horrid macro that deserves to be removed, please don't
-> use it in more places.
->
-> Actually, if you could just remove it, that would be best, sorry, I'm
-> not going to take these patches."
->
-> So, I will send the patch to remove 'DEFINE_PCI_DEVICE_TABLE' instead.
-> Sorry for annoying. :-)
+And vmalloc_to_pfn() re-wraps the vmalloc_to_page() to get the pfn.
 
-No problem :)
-Thanks for noticing this issue
+This seems too circuitous, so this patch reverses the way:
+implementing the vmalloc_to_page() as a wrapper of vmalloc_to_pfn().
+This makes vmalloc_to_pfn() and vmalloc_to_page() slightly effective.
+
+No functional change. 
+
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+---
+mm/vmalloc.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 0fdf968..a335e21 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -220,12 +220,12 @@ int is_vmalloc_or_module_addr(const void *x)
+ }
+ 
+ /*
+- * Walk a vmap address to the struct page it maps.
++ * Walk a vmap address to the physical pfn it maps to.
+  */
+-struct page *vmalloc_to_page(const void *vmalloc_addr)
++unsigned long vmalloc_to_pfn(const void *vmalloc_addr)
+ {
+ 	unsigned long addr = (unsigned long) vmalloc_addr;
+-	struct page *page = NULL;
++	unsigned long pfn;
+ 	pgd_t *pgd = pgd_offset_k(addr);
+ 
+ 	/*
+@@ -244,23 +244,23 @@ struct page *vmalloc_to_page(const void *vmalloc_addr)
+ 				ptep = pte_offset_map(pmd, addr);
+ 				pte = *ptep;
+ 				if (pte_present(pte))
+-					page = pte_page(pte);
++					pfn = pte_page(pte);
+ 				pte_unmap(ptep);
+ 			}
+ 		}
+ 	}
+-	return page;
++	return pfn;
+ }
+-EXPORT_SYMBOL(vmalloc_to_page);
++EXPORT_SYMBOL(vmalloc_to_pfn);
+ 
+ /*
+- * Map a vmalloc()-space virtual address to the physical page frame number.
++ * Map a vmalloc()-space virtual address to the struct page.
+  */
+-unsigned long vmalloc_to_pfn(const void *vmalloc_addr)
++struct page *vmalloc_to_page(const void *vmalloc_addr)
+ {
+-	return page_to_pfn(vmalloc_to_page(vmalloc_addr));
++	return pfn_to_page(vmalloc_to_pfn(vmalloc_addr));
+ }
+-EXPORT_SYMBOL(vmalloc_to_pfn);
++EXPORT_SYMBOL(vmalloc_to_page);
+ 
+ 
+ /*** Global kva allocator ***/
