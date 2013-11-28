@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab3K1ItM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 03:49:12 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:51381 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab3K1Is7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 03:48:59 -0500
-Date: Thu, 28 Nov 2013 08:48:54 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: wm5110: Give new AIF2 registers defaults and mark
- as readable
-Message-ID: <20131128084854.GY3296@lee--X1>
-References: <1385556677-5244-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <20131127132442.GJ3296@lee--X1>
- <20131127151639.GX14725@sirena.org.uk>
- <20131127152701.GQ3296@lee--X1>
- <20131127160707.GC14725@sirena.org.uk>
- <20131127164202.GX3296@lee--X1>
- <20131127182841.GF14725@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131127182841.GF14725@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755065Ab3K1ItT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 03:49:19 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:27782 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750948Ab3K1ItQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 03:49:16 -0500
+X-IronPort-AV: E=Sophos;i="4.93,789,1378828800"; 
+   d="scan'208";a="9145329"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Cc: eranian@google.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        acme@ghostprotocols.net, mingo@redhat.com, paulus@samba.org,
+        a.p.zijlstra@chello.nl, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH] perf machine: Remove condition in machine__get_kernel_start_addr.
+Date: Thu, 28 Nov 2013 16:47:25 -0500
+Message-Id: <1385675245-2224-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/28 16:49:10,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/28 16:49:16,
+	Serialize complete at 2013/11/28 16:49:16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I see. Well I'm not sure how. If we apply it to either ASoC or MFD and
-> > other patches pertaining to that file subsequently appear, then
-> > conflict is likely. As you know, the commonly used mitigation
-> 
-> It shouldn't be that likely, we're adding entries to the middle of big,
-> ordered tables - conflicts would be caused by something like changing
-> or adding adjacent entries and they're pretty trivial to resolve.  It's
-> not like a restructring of the code or anything.
-> 
-> > technique we usually employ is immutable branches, but this was not
-> > employed in this case for one reason or another. So if we apply it now
-> > to either one of the trees we will be hedging our bets.
-> 
-> Hedging our bets would be applying it to both trees!  
+In machine__get_kernel_start_addr, the code, which is
+using machine->root_dir to build filename, works for both
+host and guests initialized from guestmount. So this patch
+remove the branch for machine__is_host.
 
-Well I'm sure we'd sort out any conflicts.
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+---
+ tools/perf/util/machine.c | 16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
 
-Go ahead and apply it to your tree with my Ack then.
-
-In future, let's do the immutable branch thing, it's worked well thus
-far.
-
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 84cdb07..52d9161 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -502,15 +502,11 @@ static u64 machine__get_kernel_start_addr(struct machine *machine)
+ 	char path[PATH_MAX];
+ 	struct process_args args;
+ 
+-	if (machine__is_host(machine)) {
+-		filename = "/proc/kallsyms";
+-	} else {
+-		if (machine__is_default_guest(machine))
+-			filename = (char *)symbol_conf.default_guest_kallsyms;
+-		else {
+-			sprintf(path, "%s/proc/kallsyms", machine->root_dir);
+-			filename = path;
+-		}
++	if (machine__is_default_guest(machine))
++		filename = (char *)symbol_conf.default_guest_kallsyms;
++	else {
++		sprintf(path, "%s/proc/kallsyms", machine->root_dir);
++		filename = path;
+ 	}
+ 
+ 	if (symbol__restricted_filename(filename, "/proc/kallsyms"))
+@@ -589,7 +585,7 @@ int machines__create_guest_kernel_maps(struct machines *machines)
+ 	if (symbol_conf.default_guest_vmlinux_name ||
+ 	    symbol_conf.default_guest_modules ||
+ 	    symbol_conf.default_guest_kallsyms) {
+-		machines__create_kernel_maps(machines, DEFAULT_GUEST_KERNEL_ID);
++		machines__create_kernel_maps(machines, 20315);
+ 	}
+ 
+ 	if (symbol_conf.guestmount) {
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.2.1
+
