@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759157Ab3K1Rv3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 12:51:29 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:48483 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999Ab3K1RvY (ORCPT
+	id S1759252Ab3K1R5u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 12:57:50 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:44861 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758240Ab3K1R5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 12:51:24 -0500
-Message-ID: <1385661082.5352.34.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: [PATCH v2] inet: fix possible seqlock deadlocks
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: jongman.heo@samsung.com
-Cc: David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+	Thu, 28 Nov 2013 12:57:48 -0500
+Date: Thu, 28 Nov 2013 18:57:11 +0100
+From: Vladimir Murzin <murzin.v@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: William Dauchy <wdauchy@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Ma, Xindong" <xindong.ma@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>
-Date: Thu, 28 Nov 2013 09:51:22 -0800
-In-Reply-To: <1385659390.5352.20.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <13025162.118881385612276530.JavaMail.weblogic@epv6ml01>
-	 <1385659390.5352.20.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+        Peter Zijlstra <peterz@infradead.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>, azurIt <azurit@pobox.sk>,
+        Sameer Nanda <snanda@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
+        dserrg@gmail.com
+Subject: Re: [PATCH] Fix race between oom kill and task exit
+Message-ID: <20131128175708.GA1875@hp530>
+References: <3917C05D9F83184EAA45CE249FF1B1DD0253093A@SHSMSX103.ccr.corp.intel.com>
+ <20131128063505.GN3556@cmpxchg.org>
+ <CAJ75kXZXxCMgf8=pghUWf=W9EKf3Z4nzKKy=CAn+7keVF_DCRA@mail.gmail.com>
+ <20131128120018.GL2761@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=koi8-r
+Content-Disposition: inline
+In-Reply-To: <20131128120018.GL2761@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <edumazet@google.com>
+On Thu, Nov 28, 2013 at 01:00:18PM +0100, Michal Hocko wrote:
+> [CCing Oleg - the thread started here:
+> https://lkml.org/lkml/2013/11/28/2]
+> 
+> On Thu 28-11-13 09:41:40, William Dauchy wrote:
+> [...]
+> > However, I'm now wondering if this present patch is a replacement of
+> > Sameer Nanda's patch or if this a complementary patch.
+> 
+> They are both trying to solve the same issue. Neither of them is
+> optimal unfortunately. Oleg said he would look into this and I have seen
+> some patches but didn't geto check them.
 
-In commit c9e9042994d3 ("ipv4: fix possible seqlock deadlock") I left
-another places where IP_INC_STATS_BH() were improperly used.
+CCing Sergey - he reported and proposed the patch for the similar issue.
 
-udp_sendmsg(), ping_v4_sendmsg() and tcp_v4_connect() are called from
-process context, not from softirq context.
+Vladimir
 
-This was detected by lockdep seqlock support.
-
-Reported-by: jongman heo <jongman.heo@samsung.com>
-Fixes: 584bdf8cbdf6 ("[IPV4]: Fix "ipOutNoRoutes" counter error for TCP and UDP")
-Fixes: c319b4d76b9e ("net: ipv4: add IPPROTO_ICMP socket kind")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
----
- net/ipv4/ping.c     |    2 +-
- net/ipv4/tcp_ipv4.c |    2 +-
- net/ipv4/udp.c      |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
-index 840cf1b9e6ee..242e7f4ed6f4 100644
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -772,7 +772,7 @@ int ping_v4_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 		err = PTR_ERR(rt);
- 		rt = NULL;
- 		if (err == -ENETUNREACH)
--			IP_INC_STATS_BH(net, IPSTATS_MIB_OUTNOROUTES);
-+			IP_INC_STATS(net, IPSTATS_MIB_OUTNOROUTES);
- 		goto out;
- 	}
- 
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index 59a6f8b90cd9..067213924751 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -177,7 +177,7 @@ int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
- 	if (IS_ERR(rt)) {
- 		err = PTR_ERR(rt);
- 		if (err == -ENETUNREACH)
--			IP_INC_STATS_BH(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
-+			IP_INC_STATS(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
- 		return err;
- 	}
- 
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index 44dfaa09b584..44e3884f9e4c 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -999,7 +999,7 @@ int udp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 			err = PTR_ERR(rt);
- 			rt = NULL;
- 			if (err == -ENETUNREACH)
--				IP_INC_STATS_BH(net, IPSTATS_MIB_OUTNOROUTES);
-+				IP_INC_STATS(net, IPSTATS_MIB_OUTNOROUTES);
- 			goto out;
- 		}
- 
-
-
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
