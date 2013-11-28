@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003Ab3K1Kof (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 05:44:35 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:60234 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949Ab3K1Koc (ORCPT
+	id S1752355Ab3K1KqH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 05:46:07 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47749 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751302Ab3K1KqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 05:44:32 -0500
-Message-ID: <52971E66.9080006@hitachi.com>
-Date: Thu, 28 Nov 2013 19:43:50 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 28 Nov 2013 05:46:03 -0500
+X-Sasl-enc: WMYT/uifD/ZiQYosA1iP2ldTXQTjGwWmwP5oZRlXhJc7 1385635561
+Message-ID: <52971EE7.7070702@alexeicolin.com>
+Date: Thu, 28 Nov 2013 05:45:59 -0500
+From: Alexei Colin <alexei@alexeicolin.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-arch@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        virtualization@lists.linux-foundation.org, systemtap@sourceware.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: Re: Re: Re: [PATCH -tip v3 00/23] kprobes: introduce NOKPROBE_SYMBOL()
- and general cleaning of kprobe blacklist
-References: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal> <y0mvbznxi6k.fsf@fche.csb> <20131120153801.GA9743@gmail.com> <20131120173600.GK8993@redhat.com> <528D6C9F.8050809@hitachi.com> <20131121072938.GA16912@gmail.com> <528EC2FF.30301@hitachi.com> <528F4406.3090309@hitachi.com> <20131127133045.GC18422@gmail.com>
-In-Reply-To: <20131127133045.GC18422@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Tarek Dakhran <t.dakhran@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>
+CC: Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>, nicolas.pitre@linaro.org,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-samsung-soc@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Naour Romain <romain.naour@openwide.fr>, Dave.Martin@arm.com,
+        linux-arm-kernel@lists.infradead.org, Heiko Stuebner <heiko@sntech.de>
+Subject: Re: [PATCH v3 0/4] Exynos 5410 Dual cluster support
+References: <1383811969-32712-1-git-send-email-v.tyrtov@samsung.com> <1951315.Ol55YFu91h@flatron> <528CBF17.4020500@samsung.com>
+In-Reply-To: <528CBF17.4020500@samsung.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/27 22:30), Ingo Molnar wrote:
-> 
-> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> 
->> (2013/11/22 11:35), Masami Hiramatsu wrote:
->>> (2013/11/21 16:29), Ingo Molnar wrote:
->>>>
->>>> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
->>>>
->>>>> (2013/11/21 2:36), Frank Ch. Eigler wrote:
->>>>
->>>> [ ... ]
->>>>>> one needs to resort to something like:
->>>>>>
->>>>>> # cat /proc/kallsyms | grep ' [tT] ' | while read addr type symbol; do
->>>>>>    perf probe $symbol
->>>>>> done
->>>>>>
->>>>>> then wait for a few hours for that to finish. Then, or while the loop
->>>>>> is still running, run
->>>>>>
->>>>>> # perf record -e 'probe:*' -aR sleep 1
->>>>>>
->>>>>> to take a kernel down.
->>>>>
->>>>> Um, indeed, current blacklist is not perfect. [...]
->>>>
->>>> Then it needs to be fixed ASAP!
->>>
->>> OK, I see. At least the two patches included this series
->>> should be fixed. :)
->>>
->>> And more, I need to test all symbols and drills down.
+On 11/20/2013 08:54 AM, Tarek Dakhran wrote:
+> On 20.11.2013 03:23, Tomasz Figa wrote:
+>> I've applied the patches on top of today's linux-next and tried to boot
+>> my ODROID-XU using exynos5410-smdk5410.dts and exynos_defconfig, but all
+>> I can get is an imprecise external abort, when the kernel tries to jump
+>> to init. Full boot log below. Any ideas?
+
+>> [    5.195000] Unhandled fault: imprecise external abort (0x1406) at 0x00000000
+>> [    5.210000] Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000007
 >>
->> OK, what I've found was;
->>  - The functions which can be ftraced look good.
->>    (see tracing/available_filter_functions)
->>  - following functions should not be able to be probed.
->>    - memcpy, memset
->>    - native_load_sp0 and some other native functions (need to be clear)
->>    - restore
->>    - trace_graph_return
->>    - trace_hardirqs_off_thunk, trace_hardirqs_on_thunk
->>    - This list still be not perfect. I just enabled/disabled kprobes
->>      one by one. There might be combined bugs (combination of several
->>      kprobes).
->>  - Some of them are hard to specify by NOKPROBE_SYMBOL because they are
->>    defined in assembly file.
->>
->> Anyway, to fix all of them, I think we need file-based blacklist
->> especially for assembler symbols.
+> Tomasz, there is CCI on/off switcher on smdk5410 board, also there is 
+> XOMCCI pin on SoC.
+> Looks like switcher on board controls the XOMCCI SoC pin.
 > 
-> assembler symbols shouldn't be particular hard either, just put them 
-> into the noprobes section.
+> When I turn switcher OFF, I getting the same problem you got.
+> Please, check the cci state on Odroid-XU Board, maybe it is turned off.
 
-Would you mean .kprobes.text? Hmm, I hope not to use it anymore,
-but yeah, bugfix is more important. Agreed.
+I've soldered a wire to the XOMCCI pin on Odroid-XU+E. When pulled to
+Vdd via 100k (original configuration), the fault is "imprecise external
+abort (0x1406)" (as above). When pulled to ground, the fault is
+"imprecise external abort (0x406)". This is consistently reproducible.
 
->> For example, we can get all text symbols by below command;
->>  nm some-file.o | grep -i " t " | cut -f3 -d" "
->> so that we can make a blacklisted-symbol list for the file.
->> I need to look the Kbuild for how I can do that in Makefile.
-> 
-> I think it's generally better to add explicit annotations to the code.
+AFAICT, from ARM reference [1]: the 5 status bits in both cases are
+"Asynchronous external abort." and the difference is bit 12 "external
+abort type:" when pulled to Vdd, caused by "AXI Slave error," when
+pulled to ground, caused by "AXI Decode error".
 
-OK, thus I'll add annotations first.
+Any pointers on further differences between SMDK5410 and ODROID-XU that
+are preventing the patch from booting? Thanks in advance.
 
-Thank you!
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+[1]
+http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0344b/Bgbiaghh.html
 
