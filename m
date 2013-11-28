@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757705Ab3K1Tzv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 14:55:51 -0500
-Received: from mail-qe0-f51.google.com ([209.85.128.51]:49060 "EHLO
-	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932362Ab3K1Tza (ORCPT
+	id S1757464Ab3K1Tzs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 14:55:48 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:34109 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754455Ab3K1Tzb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 14:55:30 -0500
+	Thu, 28 Nov 2013 14:55:31 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 25/34] sysfs, kernfs: no need to kern_mount() sysfs from sysfs_init()
-Date: Thu, 28 Nov 2013 14:54:38 -0500
-Message-Id: <1385668487-10181-26-git-send-email-tj@kernel.org>
+Subject: [PATCH 26/34] sysfs, kernfs: introduce sysfs_root_sd
+Date: Thu, 28 Nov 2013 14:54:39 -0500
+Message-Id: <1385668487-10181-27-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1385668487-10181-1-git-send-email-tj@kernel.org>
 References: <20131128060518.GA5291@kroah.com>
@@ -22,73 +22,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It has been very long since sysfs depended on vfs to keep track of
-internal states and whether sysfs is mounted or not doesn't make any
-difference to sysfs's internal operation.
+Currently, it's assumed that there's a single kernfs hierarchy in the
+system anchored at sysfs_root which is defined as a global struct.  To
+allow other users of kernfs, this will be made dynamic.  Introduce a
+new global variable sysfs_root_sd which points to &sysfs_root and
+convert all &sysfs_root users.
 
-In addition to init and filesystem type registration, sysfs_init()
-invokes kern_mount() to create in-kernel mount of sysfs.  This
-internal mounting doesn't server any purpose anymore.  Remove it.
+This patch doesn't introduce any behavior difference.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/mount.c | 23 +++++++----------------
- 1 file changed, 7 insertions(+), 16 deletions(-)
+ fs/sysfs/dir.c     | 4 ++--
+ fs/sysfs/mount.c   | 8 +++++---
+ fs/sysfs/symlink.c | 6 +++---
+ fs/sysfs/sysfs.h   | 2 +-
+ 4 files changed, 11 insertions(+), 9 deletions(-)
 
+diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+index e5c4e71..2fea501 100644
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -68,7 +68,7 @@ int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
+ 	if (kobj->parent)
+ 		parent_sd = kobj->parent->sd;
+ 	else
+-		parent_sd = &sysfs_root;
++		parent_sd = sysfs_root_sd;
+ 
+ 	if (!parent_sd)
+ 		return -ENOENT;
+@@ -134,7 +134,7 @@ int sysfs_move_dir_ns(struct kobject *kobj, struct kobject *new_parent_kobj,
+ 
+ 	BUG_ON(!sd->s_parent);
+ 	new_parent_sd = new_parent_kobj && new_parent_kobj->sd ?
+-		new_parent_kobj->sd : &sysfs_root;
++		new_parent_kobj->sd : sysfs_root_sd;
+ 
+ 	return kernfs_rename_ns(sd, new_parent_sd, sd->s_name, new_ns);
+ }
 diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
-index fcbe5e8..0c80f03 100644
+index 0c80f03..7cbd1fc 100644
 --- a/fs/sysfs/mount.c
 +++ b/fs/sysfs/mount.c
-@@ -24,7 +24,6 @@
- #include "sysfs.h"
+@@ -32,7 +32,7 @@ static const struct super_operations sysfs_ops = {
+ 	.evict_inode	= sysfs_evict_inode,
+ };
  
+-struct sysfs_dirent sysfs_root = {
++static struct sysfs_dirent sysfs_root = {
+ 	.s_name		= "",
+ 	.s_count	= ATOMIC_INIT(1),
+ 	.s_flags	= SYSFS_DIR,
+@@ -40,6 +40,8 @@ struct sysfs_dirent sysfs_root = {
+ 	.s_ino		= 1,
+ };
  
--static struct vfsmount *sysfs_mnt;
- struct kmem_cache *sysfs_dir_cachep;
- 
- static const struct super_operations sysfs_ops = {
-@@ -153,34 +152,26 @@ static struct file_system_type sysfs_fs_type = {
- 
- int __init sysfs_init(void)
++struct sysfs_dirent *sysfs_root_sd = &sysfs_root;
++
+ static int sysfs_fill_super(struct super_block *sb)
  {
--	int err = -ENOMEM;
-+	int err;
+ 	struct inode *inode;
+@@ -53,7 +55,7 @@ static int sysfs_fill_super(struct super_block *sb)
  
- 	sysfs_dir_cachep = kmem_cache_create("sysfs_dir_cache",
- 					      sizeof(struct sysfs_dirent),
- 					      0, 0, NULL);
- 	if (!sysfs_dir_cachep)
--		goto out;
-+		return -ENOMEM;
+ 	/* get root inode, initialize and unlock it */
+ 	mutex_lock(&sysfs_mutex);
+-	inode = sysfs_get_inode(sb, &sysfs_root);
++	inode = sysfs_get_inode(sb, sysfs_root_sd);
+ 	mutex_unlock(&sysfs_mutex);
+ 	if (!inode) {
+ 		pr_debug("sysfs: could not get root inode\n");
+@@ -66,7 +68,7 @@ static int sysfs_fill_super(struct super_block *sb)
+ 		pr_debug("%s: could not get root dentry!\n", __func__);
+ 		return -ENOMEM;
+ 	}
+-	root->d_fsdata = &sysfs_root;
++	root->d_fsdata = sysfs_root_sd;
+ 	sb->s_root = root;
+ 	sb->s_d_op = &sysfs_dentry_ops;
+ 	return 0;
+diff --git a/fs/sysfs/symlink.c b/fs/sysfs/symlink.c
+index 6797c9c..62f0e01 100644
+--- a/fs/sysfs/symlink.c
++++ b/fs/sysfs/symlink.c
+@@ -70,7 +70,7 @@ static int sysfs_do_create_link(struct kobject *kobj, struct kobject *target,
+ 	struct sysfs_dirent *parent_sd = NULL;
  
- 	err = sysfs_inode_init();
- 	if (err)
- 		goto out_err;
+ 	if (!kobj)
+-		parent_sd = &sysfs_root;
++		parent_sd = sysfs_root_sd;
+ 	else
+ 		parent_sd = kobj->sd;
  
- 	err = register_filesystem(&sysfs_fs_type);
--	if (!err) {
--		sysfs_mnt = kern_mount(&sysfs_fs_type);
--		if (IS_ERR(sysfs_mnt)) {
--			printk(KERN_ERR "sysfs: could not mount!\n");
--			err = PTR_ERR(sysfs_mnt);
--			sysfs_mnt = NULL;
--			unregister_filesystem(&sysfs_fs_type);
--			goto out_err;
--		}
--	} else
-+	if (err)
- 		goto out_err;
--out:
--	return err;
-+
-+	return 0;
-+
- out_err:
- 	kmem_cache_destroy(sysfs_dir_cachep);
- 	sysfs_dir_cachep = NULL;
--	goto out;
-+	return err;
- }
+@@ -144,7 +144,7 @@ void sysfs_remove_link(struct kobject *kobj, const char *name)
+ 	struct sysfs_dirent *parent_sd = NULL;
+ 
+ 	if (!kobj)
+-		parent_sd = &sysfs_root;
++		parent_sd = sysfs_root_sd;
+ 	else
+ 		parent_sd = kobj->sd;
+ 
+@@ -170,7 +170,7 @@ int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *targ,
+ 	int result;
+ 
+ 	if (!kobj)
+-		parent_sd = &sysfs_root;
++		parent_sd = sysfs_root_sd;
+ 	else
+ 		parent_sd = kobj->sd;
+ 
+diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
+index ce97907..2b217ce 100644
+--- a/fs/sysfs/sysfs.h
++++ b/fs/sysfs/sysfs.h
+@@ -28,7 +28,7 @@ struct sysfs_super_info {
+ 	const void		*ns;
+ };
+ #define sysfs_info(SB) ((struct sysfs_super_info *)(SB->s_fs_info))
+-extern struct sysfs_dirent sysfs_root;
++extern struct sysfs_dirent *sysfs_root_sd;
+ extern struct kmem_cache *sysfs_dir_cachep;
+ 
+ /*
 -- 
 1.8.4.2
 
