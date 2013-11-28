@@ -1,118 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757198Ab3K1KCW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 05:02:22 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:38804 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949Ab3K1KCR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 05:02:17 -0500
-Date: Thu, 28 Nov 2013 11:02:13 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>, azurit@pobox.sk,
-        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [merged]
- mm-memcg-handle-non-error-oom-situations-more-gracefully.patch removed from
- -mm tree
-Message-ID: <20131128100213.GE2761@dhcp22.suse.cz>
-References: <526028bd.k5qPj2+MDOK1o6ii%akpm@linux-foundation.org>
- <alpine.DEB.2.02.1311271453270.13682@chino.kir.corp.google.com>
- <20131127233353.GH3556@cmpxchg.org>
- <alpine.DEB.2.02.1311271622330.10617@chino.kir.corp.google.com>
- <20131128021809.GI3556@cmpxchg.org>
- <alpine.DEB.2.02.1311271826001.5120@chino.kir.corp.google.com>
- <20131128031313.GK3556@cmpxchg.org>
- <alpine.DEB.2.02.1311271914460.5120@chino.kir.corp.google.com>
+	id S1752275Ab3K1KIZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 05:08:25 -0500
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:24372
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751295Ab3K1KIV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 05:08:21 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(z579ehz98dI9371I542I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h17326ah8275bh8275dh1de097h186068ha509lz2dh109h2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216h22d0hbe9i1155h)
+From: Bharat Bhushan <Bharat.Bhushan@freescale.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        "joro@8bytes.org" <joro@8bytes.org>, "agraf@suse.de" <agraf@suse.de>,
+        Scott Wood <scottwood@freescale.com>,
+        Stuart Yoder <stuart.yoder@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/9 v2] pci:msi: add weak function for returning msi
+ region info
+Thread-Topic: [PATCH 1/9 v2] pci:msi: add weak function for returning msi
+ region info
+Thread-Index: AQHO5Od2XSAujZ/uO0G36zhS5x15Xpo2pGUAgAPSiRA=
+Date: Thu, 28 Nov 2013 10:08:16 +0000
+Message-ID: <6A3DF150A5B70D4F9B66A25E3F7C888D072363E5@039-SN2MPN1-012.039d.mgd.msft.net>
+References: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
+ <1384838233-24847-2-git-send-email-Bharat.Bhushan@freescale.com>
+ <20131125233602.GA4066@google.com>
+In-Reply-To: <20131125233602.GA4066@google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.14.2]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1311271914460.5120@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 27-11-13 19:20:37, David Rientjes wrote:
-> On Wed, 27 Nov 2013, Johannes Weiner wrote:
+
+
+> -----Original Message-----
+> From: linux-pci-owner@vger.kernel.org [mailto:linux-pci-owner@vger.kernel.org]
+> On Behalf Of Bjorn Helgaas
+> Sent: Tuesday, November 26, 2013 5:06 AM
+> To: Bhushan Bharat-R65777
+> Cc: alex.williamson@redhat.com; joro@8bytes.org; agraf@suse.de; Wood Scott-
+> B07421; Yoder Stuart-B08248; iommu@lists.linux-foundation.org; linux-
+> pci@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; linux-
+> kernel@vger.kernel.org; Bhushan Bharat-R65777
+> Subject: Re: [PATCH 1/9 v2] pci:msi: add weak function for returning msi region
+> info
 > 
-> > > It appears as though this work is being developed in Linus's tree rather 
-> > > than -mm, so I'm asking if we should consider backing some of it out for 
-> > > 3.14 instead.
-> > 
-> > The changes fix a deadlock problem.  Are they creating problems that
-> > are worse than deadlocks, that would justify their revert?
-> > 
+> On Tue, Nov 19, 2013 at 10:47:05AM +0530, Bharat Bhushan wrote:
+> > In Aperture type of IOMMU (like FSL PAMU), VFIO-iommu system need to
+> > know the MSI region to map its window in h/w. This patch just defines
+> > the required weak functions only and will be used by followup patches.
+> >
+> > Signed-off-by: Bharat Bhushan <bharat.bhushan@freescale.com>
+> > ---
+> > v1->v2
+> >  - Added description on "struct msi_region"
+> >
+> >  drivers/pci/msi.c   |   22 ++++++++++++++++++++++
+> >  include/linux/msi.h |   14 ++++++++++++++
+> >  2 files changed, 36 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c index
+> > d5f90d6..2643a29 100644
+> > --- a/drivers/pci/msi.c
+> > +++ b/drivers/pci/msi.c
+> > @@ -67,6 +67,28 @@ int __weak arch_msi_check_device(struct pci_dev *dev, int
+> nvec, int type)
+> >  	return chip->check_device(chip, dev, nvec, type);  }
+> >
+> > +int __weak arch_msi_get_region_count(void) {
+> > +	return 0;
+> > +}
+> > +
+> > +int __weak arch_msi_get_region(int region_num, struct msi_region
+> > +*region) {
+> > +	return 0;
+> > +}
+> > +
+> > +int msi_get_region_count(void)
+> > +{
+> > +	return arch_msi_get_region_count();
+> > +}
+> > +EXPORT_SYMBOL(msi_get_region_count);
+> > +
+> > +int msi_get_region(int region_num, struct msi_region *region) {
+> > +	return arch_msi_get_region(region_num, region); }
+> > +EXPORT_SYMBOL(msi_get_region);
+> > +
+> >  int __weak arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int
+> > type)  {
+> >  	struct msi_desc *entry;
+> > diff --git a/include/linux/msi.h b/include/linux/msi.h index
+> > b17ead8..ade1480 100644
+> > --- a/include/linux/msi.h
+> > +++ b/include/linux/msi.h
+> > @@ -51,6 +51,18 @@ struct msi_desc {
+> >  };
+> >
+> >  /*
+> > + * This structure is used to get
+> > + * - physical address
+> > + * - size
+> > + * of a msi region
+> > + */
+> > +struct msi_region {
+> > +	int region_num; /* MSI region number */
+> > +	dma_addr_t addr; /* Address of MSI region */
+> > +	size_t size; /* Size of MSI region */ };
+> > +
+> > +/*
+> >   * The arch hooks to setup up msi irqs. Those functions are
+> >   * implemented as weak symbols so that they /can/ be overriden by
+> >   * architecture specific code if needed.
+> > @@ -64,6 +76,8 @@ void arch_restore_msi_irqs(struct pci_dev *dev, int
+> > irq);
+> >
+> >  void default_teardown_msi_irqs(struct pci_dev *dev);  void
+> > default_restore_msi_irqs(struct pci_dev *dev, int irq);
+> > +int arch_msi_get_region_count(void);
+> > +int arch_msi_get_region(int region_num, struct msi_region *region);
 > 
-> None that I am currently aware of,
+> It doesn't look like any of this (struct msi_region, msi_get_region(),
+> msi_get_region_count()) is actually used by drivers/pci/msi.c, so I don't think
+> it needs to be declared in generic code.  It looks like it's only used in
+> drivers/vfio/vfio_iommu_fsl_pamu.c, where you already know you have an FSL
+> IOMMU, and you can just call FSL-specific interfaces directly.
 
-Are you saing that scenarios described in 3812c8c8f395 (mm: memcg: do not
-trap chargers with full callstack on OOM) are not real or that _you_
-haven't seen an issue like that?
+Thanks Bjorn,
 
-The later doesn't seem to be so relevant as we had at least one user who
-has seen those in the real life.
+Want to be sure of what you are suggesting.
 
-> I'll continue to try them out. 
+What I understood is that we define these (struct msi_region, msi_get_region(), msi_get_region_count()) in arch/powerpc/include/fsl_msi.h (a new file). Include this header file directly in driver/vfio/vfio_iommu_fsl_pamu.c
 
-> I'd suggest just dropping the stable@kernel.org from the whole series
-> though unless there is another report of such a problem that people
-> are running into.
+Same also applies for msi_set_iova() in patch-5 ?
 
-The stable backport is another question though. Although the bug was
-there since ages and the rework by Johannes is definitely a step forward
-I would be careful to push this into stable becuase the rework brings an
-user visible behavior change which might be unexpected (especially in
-the middle of the stable life cycle). Seeing allocation failures instead
-of OOM for charges outside of page fault context is surely a big change
-in semantic.
+-Bharat
 
-Take mmap(MAP_POPULATE) as an example. Previously we would OOM if the
-limit was reached. Now the syscall returns without any error code but a
-later access might block on the OOM. While I do not see this as a
-problem in general as this is consistent with !memcg case I wouldn't
-like to see a breakage of the previous expectation in the middle stable
-life cycle.
-
-> > Since we can't physically draw a perfect line, we should strive for a
-> > reasonable and intuitive line.  After that it's rapidly diminishing
-> > returns.  Killing something after that much reclaim effort without
-> > success is a completely reasonable and intuitive line to draw.  It's
-> > also the line that has been drawn a long time ago and we're not
-> > breaking this because of a micro optmimization.
-> > 
 > 
-> You don't think something like this is helpful after scanning a memcg will 
-> a large number of processes?
+> Bjorn
+> 
+> >
+> >  struct msi_chip {
+> >  	struct module *owner;
+> > --
+> > 1.7.0.4
+> >
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in the body
+> of a message to majordomo@vger.kernel.org More majordomo info at
+> http://vger.kernel.org/majordomo-info.html
 
-It looks as a one-shot workaround for short lived processes to me.
-I agree with Johannes that it doesn't seem to be worth it. The race will
-be always there. Moreover why should memcg OOM killer should behave
-differently from the global OOM?
 
-> We've had this patch internally since we started using memcg, it has 
-> avoided some unnecessary oom killing.
-> ---
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1836,6 +1836,13 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
->  	if (!chosen)
->  		return;
->  	points = chosen_points * 1000 / totalpages;
-> +
-> +	/* One last chance to see if we really need to kill something */
-> +	if (mem_cgroup_margin(memcg) >= (1 << order)) {
-> +		put_task_struct(chosen);
-> +		return;
-> +	}
-> +
->  	oom_kill_process(chosen, gfp_mask, order, points, totalpages, memcg,
->  			 NULL, "Memory cgroup out of memory");
->  }
-
--- 
-Michal Hocko
-SUSE Labs
