@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758796Ab3K1Hwj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 02:52:39 -0500
-Received: from sauhun.de ([89.238.76.85]:49333 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750866Ab3K1Hwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 02:52:37 -0500
-Date: Thu, 28 Nov 2013 08:52:35 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Vincent =?iso-8859-15?Q?Stehl=E9?= <vincent.stehle@laposte.net>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        trivial@kernel.org
-Subject: Re: [PATCH] i2c: bcm-kona: fix module device table symbol
-Message-ID: <20131128075235.GA2626@katana>
-References: <1385591920-7714-1-git-send-email-vincent.stehle@laposte.net>
+	id S1758755Ab3K1H4r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 02:56:47 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:40225 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935Ab3K1H4m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 02:56:42 -0500
+Message-ID: <5296F71F.9070603@hitachi.com>
+Date: Thu, 28 Nov 2013 16:56:15 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="opJtzjQTFsWo+cga"
-Content-Disposition: inline
-In-Reply-To: <1385591920-7714-1-git-send-email-vincent.stehle@laposte.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-arch@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        virtualization@lists.linux-foundation.org,
+        Chris Wright <chrisw@sous-sol.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rob Landley <rob@landley.net>,
+        systemtap@sourceware.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Alok Kataria <akataria@vmware.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v3 02/23] kprobes: Introduce NOKPROBE_SYMBOL() macro
+ for blacklist
+References: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal> <20131120042153.15296.82087.stgit@kbuild-fedora.novalocal> <20131127133224.GD18422@gmail.com>
+In-Reply-To: <20131127133224.GD18422@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2013/11/27 22:32), Ingo Molnar wrote:
+> 
+> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> 
+>> +#ifdef CONFIG_KPROBES
+>> +/*
+>> + * Blacklist ganerating macro. Specify functions which is not probed
+>> + * by using this macro.
+>> + */
+>> +#define __NOKPROBE_SYMBOL(fname)				\
+>> +static struct kprobe_blackpoint __used			\
+>> +	_kprobe_bp_##fname = {				\
+>> +		.name = #fname,				\
+>> +		.start_addr = (unsigned long)fname,	\
+>> +	};						\
+>> +static struct kprobe_blackpoint __used			\
+>> +	__attribute__((section("_kprobe_blacklist")))	\
+>> +	*_p_kprobe_bp_##fname = &_kprobe_bp_##fname;
+> 
+> 'kprobe_blackpoint' sounds a bit weird - how about 
+> 'kprobe_blacklist_entry' ?
 
---opJtzjQTFsWo+cga
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+OK, I just tried to reuse existed kprobe_blacklist.
 
-On Wed, Nov 27, 2013 at 11:38:40PM +0100, Vincent Stehl=C3=A9 wrote:
-> This fixes the following compilation error when compiling in module:
->=20
->   drivers/i2c/busses/i2c-bcm-kona.c:894:1: error: =E2=80=98__mod_of_devic=
-e_table=E2=80=99 aliased to undefined symbol =E2=80=98kona_i2c_of_match=E2=
-=80=99
->=20
-> Signed-off-by: Vincent Stehl=C3=A9 <vincent.stehle@laposte.net>
-> Cc: Wolfram Sang <wsa@the-dreams.de>
-> Cc: trivial@kernel.org
+> also, _kprobe_blacklist probably wants to be _kprobes_blacklist, 
+> right?
 
-A fix is in my pull request for Linus today.
+I sse. I'll update it. :)
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
---opJtzjQTFsWo+cga
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSlvZCAAoJEBQN5MwUoCm29c4P/0ZYVOcVJYJXnfgsxw/GefM8
-5kdIHrjKnKxd1YufjO1SC29FtscaH538zBUErQgDh1k7Tv4Hyp7eTvACxvlu8Bhx
-n8anl5bvB6mV0tjBHnT5Hm5P7oClXFR3TSKRPkUox6He8WH7vXj9zoP/TD31fS6E
-hDQsXnmoLegLcKCOgFHA7iOInzDXChAyQ630ev6N51moPNIlGBOEjdYs9/G3LzON
-uJb8fAXLELxGImKcF3Pbr3+9VQ5igbwofDtWi0uJbEtwqkX9CaZuE+2ylOgvKgh+
-JLmo8gAbNht1D5LVFdB9OuzrB8QJFXK/W5XwEvr3OjWXZEeukBfGC4p9rKHTwSXF
-Ly4L2Kdk9LsPtJJYcWDAlSOn2m2uS9k8eb+MckfSCKg7YLiV5Y4OY8MMDDVcQIsD
-XdSNPF/uY7fDjMy6yKjIwEec1xxwuli/pw9QKBaClRuNoyV053hp0qBvo80He12c
-jTb33UJdrjoH/iKp+7E91FL4Z5nAGT11W9NsLYefCCEpCu3cuu3bjmM/8Z5ZgNNB
-pSaEFz5F1tQagdCxoUjbism0sY5ZCNZr5P+KUlohI6uQq7WOJ0NIPGUQMSOP+Ffk
-LjhS4aEoOdVOqRnmUy2ieeWumXB4lMNWVaB2G5rwolkFKHX4aYTjkDQFzs35+tew
-VXpUazpzz1OfxQz6PV31
-=Go97
------END PGP SIGNATURE-----
-
---opJtzjQTFsWo+cga--
