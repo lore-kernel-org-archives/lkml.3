@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758798Ab3K1M7t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 07:59:49 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:65509 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213Ab3K1M7q (ORCPT
+	id S1758861Ab3K1NAC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 08:00:02 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:48224 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213Ab3K1M77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 07:59:46 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <52973E40.4060400@roeck-us.net>
-Date: Thu, 28 Nov 2013 04:59:44 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 28 Nov 2013 07:59:59 -0500
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: open list <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: 3.12.0: sda2: WRITE SAME failed. Manually zeroing. with 3w-xxxx driver
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <CAO9zADw-k+Qghk79yzwzaiYiPSoQnKwjjTBwrhcOrJxTWc-fOQ@mail.gmail.com>
+Date: Thu, 28 Nov 2013 07:59:53 -0500
+In-Reply-To: <CAO9zADw-k+Qghk79yzwzaiYiPSoQnKwjjTBwrhcOrJxTWc-fOQ@mail.gmail.com>
+	(Justin Piszcz's message of "Mon, 25 Nov 2013 17:01:12 -0500")
+Message-ID: <yq1iovclm0m.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: linux-arm-kernel@lists.infradead.org, mark.rutland@arm.com, wim@iguana.be,
-        linux-watchdog@vger.kernel.org, devicetree@vger.kernel.org,
-        Pawel.Moll@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, galak@kernel.crashing.org,
-        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
-        grant.likely@linaro.org, grygorii.strashko@ti.com
-Subject: Re: [PATCH] watchdog: davinci: rename platform driver to davinci-wdt
-References: <1385559113-4354-1-git-send-email-ivan.khoronzhuk@ti.com> <5295FB0E.4070406@ti.com> <52961665.3060309@roeck-us.net> <5296DCD6.3030002@ti.com>
-In-Reply-To: <5296DCD6.3030002@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2013 10:04 PM, Sekhar Nori wrote:
-> On Wednesday 27 November 2013 09:27 PM, Guenter Roeck wrote:
->> On 11/27/2013 06:00 AM, Sekhar Nori wrote:
->>> On Wednesday 27 November 2013 07:01 PM, Ivan Khoronzhuk wrote:
->>>> As we switch to use the watchdog core which permits more than one
->>>> active watchdog in the system, rename platform driver to
->>>> "davinci-wdt" to be identifiable.
->>>>
->>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->>>
->>> Looks good to me. Since bulk of this patch touches mach-davinci, I would
->>> like to take this through my tree to avoid conflicts with other
->>> mach-davinci patches I accept.
->>>
->>
->> Good idea, and makes sense.
->
-> Added to v3.14/soc with your Reviewed-by
->
+>>>>> "Justin" == Justin Piszcz <jpiszcz@lucidpixels.com> writes:
 
-You should get an Ack from Wim.
+Justin> Relevant logs: [178339.353519] 3w-sas: scsi0: ERROR:
+Justin> (0x03:0x0101): Invalid command opcode:opcode=0x41.
+Justin> [178339.353565] sda2: WRITE SAME failed. Manually zeroing.
 
-Thanks,
-Guenter
+Justin> Is this something I should be worried about? 
 
+No, it just means that your 3ware controller does not handle the WRITE
+SAME command and we fall back to manually writing out zeroes.
 
+I posted a patch a while back that prevents WRITE SAME being issued for
+controllers that do not pass the commands through to disk directly:
+
+	http://marc.info/?l=linux-scsi&m=138252394614920&w=2
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
