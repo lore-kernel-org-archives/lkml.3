@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267Ab3K1JlK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 04:41:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28518 "EHLO mx1.redhat.com"
+	id S1754969Ab3K1JqC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 04:46:02 -0500
+Received: from postman.amit.cz ([188.95.124.147]:38712 "EHLO postman.amit.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750741Ab3K1JlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 04:41:05 -0500
-Message-ID: <52970FAE.8020104@redhat.com>
-Date: Thu, 28 Nov 2013 10:41:02 +0100
-From: Maurizio Lombardi <mlombard@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: gregkh@linuxfoundation.org
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH] kobject: fix memory leak in kobject_set_name_vargs
-References: <1385630354-6109-1-git-send-email-mlombard@redhat.com>
-In-Reply-To: <1385630354-6109-1-git-send-email-mlombard@redhat.com>
-X-Forwarded-Message-Id: <1385630354-6109-1-git-send-email-mlombard@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1750948Ab3K1Jp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 04:45:59 -0500
+From: Ondrej Puzman <puzman@gmail.com>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ondrej Puzman <puzman@gmail.com>
+Subject: [PATCH 1/4] pch_gbe: Fix transmit queue management
+Date: Thu, 28 Nov 2013 10:44:39 +0100
+Message-Id: <1385631882-12827-2-git-send-email-puzman@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <20131127.203929.1379316258754767343.davem@davemloft.net>
+References: <20131127.203929.1379316258754767343.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the call to kvasprintf fails then the old name of the object will be leaked,
-this patch fixes the bug by restoring the old name before returning ENOMEM.
+According to Documentation/networking/driver.txt the ndo_start_xmit method should not return NETDEV_TX_BUSY under normal circumstances.
+Stop the transmit queue when tx_ring is full.
 
-Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
+Signed-off-by: Ondrej Puzman <puzman@gmail.com>
 ---
- lib/kobject.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ .../net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c   |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/lib/kobject.c b/lib/kobject.c
-index 5b4b888..c2cb934 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -247,8 +247,10 @@ int kobject_set_name_vargs(struct kobject *kobj, const char *fmt,
- 		return 0;
-
- 	kobj->name = kvasprintf(GFP_KERNEL, fmt, vargs);
--	if (!kobj->name)
-+	if (!kobj->name) {
-+		kobj->name = old_name;
- 		return -ENOMEM;
-+	}
-
- 	/* ewww... some of these buggers have '/' in the name ... */
- 	while ((s = strchr(kobj->name, '/')))
+diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+index 27ffe0e..6764e59 100644
+--- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
++++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+@@ -2157,6 +2157,10 @@ static int pch_gbe_xmit_frame(struct sk_buff *skb, struct net_device *netdev)
+ 
+ 	/* CRC,ITAG no support */
+ 	pch_gbe_tx_queue(adapter, tx_ring, skb);
++
++	if (unlikely(!PCH_GBE_DESC_UNUSED(tx_ring)))
++		netif_stop_queue(netdev);
++
+ 	spin_unlock_irqrestore(&tx_ring->tx_lock, flags);
+ 	return NETDEV_TX_OK;
+ }
 -- 
-Maurizio Lombardi
-
-
+1.7.2.3
 
