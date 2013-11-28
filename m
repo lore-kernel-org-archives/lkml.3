@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443Ab3K1KU3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 05:20:29 -0500
-Received: from mout.gmx.net ([212.227.15.19]:54389 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751151Ab3K1KUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 05:20:24 -0500
-From: Marc Dietrich <marvin24@gmx.de>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>, Rhyland Klein <rklein@nvidia.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Alex Courbot <acourbot@nvidia.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Rob Landley <rob@landley.net>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v3 1/6] ARM: tegra: add gpiod_lookup table for paz00
-Date: Thu, 28 Nov 2013 11:20:19 +0100
-Message-ID: <1752117.77jQLaML2y@fb07-iapwap2>
-User-Agent: KMail/4.11.2 (Linux/3.12.1-1.g999c17a-desktop; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <20131128093224.GA26634@ulmo.nvidia.com>
-References: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com> <4501377.Eymj5teNBr@fb07-iapwap2> <20131128093224.GA26634@ulmo.nvidia.com>
+	id S1758030Ab3K1KUz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 05:20:55 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:60758 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab3K1KUw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 05:20:52 -0500
+Date: Thu, 28 Nov 2013 11:20:49 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcg: do not declare OOM from __GFP_NOFAIL
+ allocations
+Message-ID: <20131128102049.GF2761@dhcp22.suse.cz>
+References: <1385140676-5677-1-git-send-email-hannes@cmpxchg.org>
+ <alpine.DEB.2.02.1311261658170.21003@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1311261931210.5973@chino.kir.corp.google.com>
+ <20131127163916.GB3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311271336220.9222@chino.kir.corp.google.com>
+ <20131127225340.GE3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311271526080.22848@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Provags-ID: V03:K0:vopvVPz8REo05FfFhxEG9/ncRkYoswwxVBC8JEvl0Yv+tDnvCqa
- QuQ3lBsi1loOF+jEaAjw82C+pgQWeYkzNNJvwnFEjx+ifpg91/eUWklo75wv9dErp2iwX11
- owCRplQDAVIFTqNGjP/G/d4rsQdwj4OWjGl17RsWHk6q0i/1JfNAQfWHVcvOACv5NTgf82l
- U/ze1FbUB/JQF0gsibMTw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1311271526080.22848@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 28. November 2013, 10:32:41 schrieb Thierry Reding:
-> On Thu, Nov 28, 2013 at 10:09:14AM +0100, Marc Dietrich wrote:
-> > The real problem with the rfkill driver is that it does not support DT. A
-> > naive attempt to convert it was made some year ago, but got rejected
-> > because rfkill wasn't seen as isolated device which can be represented in
-> > the device- tree. Also it can not be added under some existing device
-> > node (e.g. the wifi driver) because those devices sit normally on an
-> > "enumeratable" bus (e.g. usb, pci), which is not listed in the device
-> > tree at all. This is why it still requires a board file and
-> > platform_data. I wish we could find a solution for this.
+On Wed 27-11-13 15:34:24, David Rientjes wrote:
+> On Wed, 27 Nov 2013, Johannes Weiner wrote:
 > 
-> There is a solution at least for PCI. You can list PCI devices within
-> the device tree, which is really handy (required even) if for instance
-> one of the PCI devices is an SPI or I2C controller, each providing a bus
-> that cannot be probed. What you usually do is describe the PCI hierarchy
-> at least up to the controller and then list slaves as child nodes.
+> > > We don't give __GFP_NOFAIL allocations access to memory reserves in the 
+> > > page allocator and we do call the oom killer for them so that a process is 
+> > > killed so that memory is freed.  Why do we have a different policy for 
+> > > memcg?
+> > 
+> > Oh boy, that's the epic story we dealt with all throughout the last
+> > merge window... ;-)
+> > 
+> > __GFP_NOFAIL allocations might come in with various filesystem locks
+> > held that could prevent an OOM victim from exiting, so a loop around
+> > the OOM killer in an allocation context is prone to loop endlessly.
+> > 
 > 
-> I'm not aware of anything similar for USB, but it should certainly be
-> possible to come up with a standard binding for the USB bus. It has a
-> topology that's similar enough to that of PCI so that the same general
-> rules could be applied.
+> Ok, so let's forget about GFP_KERNEL | __GFP_NOFAIL since anything doing 
+> __GFP_FS should not be holding such locks, we have some of those in the 
+> drivers code and that makes sense that they are doing GFP_KERNEL.
 > 
-> If that's really the only thing that keeps rfkill from gaining DT
-> support then it's something worth tackling in my opinion.
+> Focusing on the GFP_NOFS | __GFP_NOFAIL allocations in the filesystem 
+> code, the kernel oom killer independent of memcg never gets called because 
+> !__GFP_FS and they'll simply loop around the page allocator forever.
+> 
+> In the past, Andrew has expressed the desire to get rid of __GFP_NOFAIL 
+> entirely since it's flawed when combined with GFP_NOFS (and GFP_KERNEL | 
+> __GFP_NOFAIL could simply be reimplemented in the caller) because of the 
+> reason you point out in addition to making it very difficult in the page 
+> allocator to free memory independent of memcg.
+> 
+> So I'm wondering if we should just disable the oom killer in memcg for 
+> __GFP_NOFAIL as you've done here, but not bypass to the root memcg and 
+> just allow them to spin?  I think we should be focused on the fixing the 
+> callers rather than breaking memcg isolation.
 
-it's not so simple I fear. The wifi driver needs to learn about the rfkill 
-"device". As mentioned above, it's not really a device so the question is what 
-needs to be added and where? The wifi driver just polls his own gpio lines to 
-check the status of rfkill. Be we want to modify the "other side", so maybe 
-this isn't related to the wifi driver at all. It's more a "virtual rfkill 
-device". No idea if something like this exists already in device tree.
+What if the callers simply cannot deal with the allocation failure?
+84235de394d97 (fs: buffer: move allocation failure loop into the
+allocator) describes one such case when __getblk_slow tries desperately
+to grow buffers relying on the reclaim to free something. As there might
+be no reclaim going on we are screwed.
 
-Marc
-
+That being said, while I do agree with you that we should strive for
+isolation as much as possible there are certain cases when this is
+impossible to achieve without seeing much worse consequences. For now,
+we hope that __GFP_NOFAIL is used very scarcely.
+-- 
+Michal Hocko
+SUSE Labs
