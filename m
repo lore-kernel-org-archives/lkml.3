@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756936Ab3K1JNR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 04:13:17 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:54510 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755428Ab3K1JNF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 04:13:05 -0500
-Date: Thu, 28 Nov 2013 10:12:55 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org,
-        azurit@pobox.sk, mm-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [merged]
- mm-memcg-handle-non-error-oom-situations-more-gracefully.patch removed from
- -mm tree
-Message-ID: <20131128091255.GD2761@dhcp22.suse.cz>
-References: <526028bd.k5qPj2+MDOK1o6ii%akpm@linux-foundation.org>
- <alpine.DEB.2.02.1311271453270.13682@chino.kir.corp.google.com>
- <20131127233353.GH3556@cmpxchg.org>
+	id S1756446Ab3K1JNO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 04:13:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33688 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755407Ab3K1JNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 04:13:01 -0500
+Date: Thu, 28 Nov 2013 10:12:55 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andy Lutomirski <luto@amacapital.net>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Add a text_poke syscall v2
+In-Reply-To: <CA+55aFw2RANS0j5zjfKhbejYpoLe5Z9VnPudb+AouzA242LJJg@mail.gmail.com>
+Message-ID: <alpine.LRH.2.00.1311281009580.9932@twin.jikos.cz>
+References: <1385426236-14960-1-git-send-email-andi@firstfloor.org> <5294F10C.8060901@amacapital.net> <CA+55aFzBXzQS90XYZKHRr0N66uBrDmS=o_U9u=e4qq2CzTg8ww@mail.gmail.com> <52964EC7.9000504@zytor.com> <52966C0A.7070201@zytor.com>
+ <CA+55aFzr9ZKcGfT_Q31T9_vuCcmWxGCh0wixuZqt7VhjxxYU9g@mail.gmail.com> <529677D7.9080203@zytor.com> <CA+55aFx9mXy3VASfek5052GTbiUVSgBVsRwnF4cse1dc=z70HQ@mail.gmail.com> <52968018.5090907@zytor.com>
+ <CA+55aFw2RANS0j5zjfKhbejYpoLe5Z9VnPudb+AouzA242LJJg@mail.gmail.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131127233353.GH3556@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 27-11-13 18:33:53, Johannes Weiner wrote:
-[...]
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 13b9d0f..5f9e467 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2675,7 +2675,7 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
->  		goto bypass;
->  
->  	if (unlikely(task_in_memcg_oom(current)))
-> -		goto bypass;
-> +		goto nomem;
->  
->  	/*
->  	 * We always charge the cgroup the mm_struct belongs to.
+On Wed, 27 Nov 2013, Linus Torvalds wrote:
 
-Yes, I think we really want this. Plan to send a patch? The first charge
-failure due to OOM shouldn't be papered over by a later attempt if we
-didn't get through mem_cgroup_oom_synchronize yet.
+> But is such batching really even worth it? If' it's not *that* much more 
+> effort, maybe it's worth it, but do we have known users that really 
+> would have thousands and thousands of cases all at once?
+
+If you want to base tracing infrastructure on it, then you might easily 
+want to patch all the existing functions. We have in-kernel facility 
+(ftrace) doing exactly that.
 
 -- 
-Michal Hocko
+Jiri Kosina
 SUSE Labs
+
