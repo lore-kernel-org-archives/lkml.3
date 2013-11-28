@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758614Ab3K1COI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 21:14:08 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:47131 "EHLO
+	id S1758642Ab3K1COn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 21:14:43 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:47253 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757174Ab3K1COF (ORCPT
+	with ESMTP id S1756631Ab3K1COl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 21:14:05 -0500
-X-AuditID: cbfee68d-b7f1a6d0000055a7-6b-5296a6ecc841
+	Wed, 27 Nov 2013 21:14:41 -0500
+X-AuditID: cbfee68d-b7f1a6d0000055a7-24-5296a70fa430
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <001301ceebdf$628d39e0$27a7ada0$%han@samsung.com>
 In-reply-to: <001301ceebdf$628d39e0$27a7ada0$%han@samsung.com>
-Subject: [PATCH 2/4] uio: uio_cif: use DEFINE_PCI_DEVICE_TABLE macro
-Date: Thu, 28 Nov 2013 11:14:03 +0900
-Message-id: <001401ceebdf$826478a0$872d69e0$%han@samsung.com>
+Subject: [PATCH 3/4] uio: uio_netx: use DEFINE_PCI_DEVICE_TABLE macro
+Date: Thu, 28 Nov 2013 11:14:39 +0900
+Message-id: <001501ceebdf$97ce30f0$c76a92d0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7r32JnCDNFapkhQiG6wImy4nCPggAAAbzQ
+Thread-index: Ac7r32JnCDNFapkhQiG6wImy4nCPggAACEAQ
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t8zfd03y6YFGWy7xm7RvHg9m8XlhZdY
-	LS7vmsPmwOyxf+4ado++LasYPT5vkgtgjuKySUnNySxLLdK3S+DKWHtzNXNBF2tFZ99BxgbG
-	6SxdjJwcEgImEouWLWSFsMUkLtxbz9bFyMUhJLCMUeLX1Fa4oikdO1ghEtMZJY60TgDrEBL4
-	xSjxY3s2iM0moCbx5cthdhBbRMBUYuP7KYxdjBwczAIuEkeniUCU20q0djYygYQ5Bewkbqyw
-	BwkLA1UcutkI1skioCqx4noP2HReoPL5E34wQtiCEj8m3wM7h1lAS2L9zuNMELa8xOY1b5lB
-	RkoIqEs8+qsLcYCRxNqtF6HKRST2vXjHCHK9hMAudon3516wQOwSkPg2+RALRK+sxKYDzBDf
-	SkocXHGDZQKjxCwkm2ch2TwLyeZZSFYsYGRZxSiaWpBcUJyUXmSoV5yYW1yal66XnJ+7iRES
-	fb07GG8fsD7EmAy0fiKzlGhyPjB680riDY3NjCxMTUyNjcwtzUgTVhLnTXqYFCQkkJ5Ykpqd
-	mlqQWhRfVJqTWnyIkYmDU6qBMdPdumMCa/Kc+3N6T/xTXbRh7/UFYlWNyVPNZ6698iqgZ1Va
-	nm50eewas97fe3muLc+WL4z7fPnDgo/f8jjuZL17sCx3eVtnZmWXSpu1rN2/oNsztwVMWCO4
-	4zbLmx6Gx8fnHVwkaOXm1hP4ZFJN5vtte79x/yp6cDJe9d6Gki9LbvtON/bo8FRiKc5INNRi
-	LipOBAAZCsPq1AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jQd03y6YFGfzuYLFoXryezeLywkus
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t8zY12B5dOCDH4WWzQvXs9mcXnhJVaL
+	y7vmsDkwe+yfu4bdo2/LKkaPz5vkApijuGxSUnMyy1KL9O0SuDK+bNnNXtDDWrF0/hL2BsZZ
+	LF2MnBwSAiYSaw4uY4ewxSQu3FvP1sXIxSEksIxRouv2MWaYosanSxghEosYJWZNAukGcX4x
+	SjRfWM8EUsUmoCbx5cthsFEiAqYSG99PAerg4GAWcJE4Ok0EJCwkYCvR2tnIBBLmFLCTuLHC
+	HiQsLOAq8a35O9hBLAKqErcPzQGzeYHKX02ewwxhC0r8mHwPLM4soCWxfudxJghbXmLzmrfM
+	ICMlBNQlHv3VhTjASOLkkbNQJSIS+168AztfQmAfu8SF/nVMELsEJL5NPsQC0SsrsekA1LuS
+	EgdX3GCZAPQoks2zkGyehWTzLCQrFjCyrGIUTS1ILihOSi8y1CtOzC0uzUvXS87P3cQIib7e
+	HYy3D1gfYkwGWj+RWUo0OR8YvXkl8YbGZkYWpiamxkbmlmakCSuJ8yY9TAoSEkhPLEnNTk0t
+	SC2KLyrNSS0+xMjEwSnVwPhg6YYFc+r9WmblHIpmLGzYEsoV8z7TrPXJP91rmS/rHqnEXfK6
+	77F8Vr+4mfBr5U9z37X/6DU5eS4k093v6bTCNkunr84OGpvfe1oeicpIvrnWVtyg7ZCW+b/l
+	Z+d2R8kFxzE/XiJ73F7bvL/oY4LhcXuJvV4cWfEZAUslv0+Z+3h/isEWCSWW4oxEQy3mouJE
+	AGqqFD/UAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPKsWRmVeSWpSXmKPExsVy+t9jAV3+5dOCDK7csLJoXryezeLywkus
 	Fpd3zWFzYPbYP3cNu0ffllWMHp83yQUwRzUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY
 	6hpaWpgrKeQl5qbaKrn4BOi6ZeYAbVJSKEvMKQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdj
-	ZIAGEtYxZqy9uZq5oIu1orPvIGMD43SWLkZODgkBE4kpHTtYIWwxiQv31rN1MXJxCAlMZ5Q4
-	0joBLCEk8ItR4sf2bBCbTUBN4suXw+wgtoiAqcTG91MYuxg5OJgFXCSOThOBKLeVaO1sZAIJ
-	cwrYSdxYYQ8SFgaqOHSzEayTRUBVYsX1HrDpvEDl8yf8YISwBSV+TL4HdhqzgJbE+p3HmSBs
-	eYnNa94yg4yUEFCXePRXF+IAI4m1Wy9ClYtI7HvxjnECo9AsJJNmIZk0C8mkWUhaFjCyrGIU
-	TS1ILihOSs811CtOzC0uzUvXS87P3cQIju1nUjsYVzZYHGIU4GBU4uGV0JkWJMSaWFZcmXuI
-	UYKDWUmEV6EYKMSbklhZlVqUH19UmpNafIgxGejRicxSosn5wLSTVxJvaGxiZmRpZGZhZGJu
-	TpqwkjjvgVbrQCGB9MSS1OzU1ILUIpgtTBycUg2Mmg5rnh252mm5OlVG/75ekURBos2Hkj79
-	aUWSTK3Hzz1htvvsELi8dtI2ltMpAnsbEh5v0Td6zPmw/M0NPt7Pnzv9eScXqf/W9GxfvZr5
-	n2jtYttTuYlnD91eJs+lYrKz8oRpn/LkhDVdbnWO74I77tQpB9d/mZ5TrvzpS3zV29/nJ3Cf
-	4FdSYinOSDTUYi4qTgQALcnywjEDAAA=
+	ZIAGEtYxZnzZspu9oIe1Yun8JewNjLNYuhg5OSQETCQany5hhLDFJC7cW8/WxcjFISSwiFFi
+	1iSQIhDnF6NE84X1TCBVbAJqEl++HGYHsUUETCU2vp8C1M3BwSzgInF0mghIWEjAVqK1s5EJ
+	JMwpYCdxY4U9SFhYwFXiW/N3sL0sAqoStw/NAbN5gcpfTZ7DDGELSvyYfA8sziygJbF+53Em
+	CFteYvOat8wgIyUE1CUe/dWFOMBI4uSRs1AlIhL7XrxjnMAoNAvJpFlIJs1CMmkWkpYFjCyr
+	GEVTC5ILipPScw31ihNzi0vz0vWS83M3MYKj+5nUDsaVDRaHGAU4GJV4eCV0pgUJsSaWFVfm
+	HmKU4GBWEuFVKAYK8aYkVlalFuXHF5XmpBYfYkwGenQis5Rocj4w8eSVxBsam5gZWRqZWRiZ
+	mJuTJqwkznug1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA+P6r0z3r1nOjTsjUqrzk60rT+WJH4PR
+	M1knoRdVjJ/eMh8KjvgUXVtoGDy7QuzlxycHfCvC/4rl15g+5pm39m/7Wrb+AokNEZMWPnFr
+	lTTVOfrENze6IenQ3W9hpW82X0mZ8bdc4h//W+6G3EV9p74uenrq/R7T7V6Pbq3Sfrlb8d+S
+	vy85exYrsRRnJBpqMRcVJwIAbsqNAjIDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -58,22 +58,22 @@ This macro is used to create a struct pci_device_id array.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/uio/uio_cif.c |    2 +-
+ drivers/uio/uio_netx.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/uio/uio_cif.c b/drivers/uio/uio_cif.c
-index 30f533c..07dba37 100644
---- a/drivers/uio/uio_cif.c
-+++ b/drivers/uio/uio_cif.c
-@@ -111,7 +111,7 @@ static void hilscher_pci_remove(struct pci_dev *dev)
- 	kfree (info);
+diff --git a/drivers/uio/uio_netx.c b/drivers/uio/uio_netx.c
+index 4c345db..8e85bfb 100644
+--- a/drivers/uio/uio_netx.c
++++ b/drivers/uio/uio_netx.c
+@@ -132,7 +132,7 @@ static void netx_pci_remove(struct pci_dev *dev)
+ 	kfree(info);
  }
  
--static struct pci_device_id hilscher_pci_ids[] = {
-+static DEFINE_PCI_DEVICE_TABLE(hilscher_pci_ids) = {
+-static struct pci_device_id netx_pci_ids[] = {
++static DEFINE_PCI_DEVICE_TABLE(netx_pci_ids) = {
  	{
- 		.vendor =	PCI_VENDOR_ID_PLX,
- 		.device =	PCI_DEVICE_ID_PLX_9030,
+ 		.vendor =	PCI_VENDOR_ID_HILSCHER,
+ 		.device =	PCI_DEVICE_ID_HILSCHER_NETX,
 -- 
 1.7.10.4
 
