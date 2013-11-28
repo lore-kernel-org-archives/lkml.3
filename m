@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759005Ab3K1Lej (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 06:34:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18178 "EHLO mx1.redhat.com"
+	id S1759089Ab3K1Leu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 06:34:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34729 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758473Ab3K1Led (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 06:34:33 -0500
+	id S1759038Ab3K1Lep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 06:34:45 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,20 +14,40 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 17/29] tools lib traceevent: Use static functions in jbd2 plugin
-Date: Thu, 28 Nov 2013 12:33:16 +0100
-Message-Id: <1385638408-23519-18-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 23/29] tools lib traceevent: Harmonize the install messages in lib-traceevent
+Date: Thu, 28 Nov 2013 12:33:22 +0100
+Message-Id: <1385638408-23519-24-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1385638408-23519-1-git-send-email-jolsa@redhat.com>
 References: <1385638408-23519-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's no need for following functions to be global:
-  process_jbd2_dev_to_name
-  process_jiffies_to_msecs
+Removing the 'to ...' part out of the install message,
+because it does not fit to the rest of the build
+messages we use.
 
-Making them static.
+Before:
+  INSTALL  plugin_hrtimer.so    to      /home/jolsa/libexec/perf-core/traceevent/plugins
+  INSTALL  plugin_jbd2.so       to      /home/jolsa/libexec/perf-core/traceevent/plugins
+  INSTALL  plugin_kmem.so       to      /home/jolsa/libexec/perf-core/traceevent/plugins
+  INSTALL  plugin_kvm.so        to      /home/jolsa/libexec/perf-core/traceevent/plugins
+  INSTALL  plugin_mac80211.so   to      /home/jolsa/libexec/perf-core/traceevent/plugins
+  INSTALL  plugin_sched_switch.so       to      /home/jolsa/libexec/perf-core/traceevent/plugins
+  INSTALL  plugin_function.so   to      /home/jolsa/libexec/perf-core/traceevent/plugins
+  INSTALL  plugin_xen.so        to      /home/jolsa/libexec/perf-core/traceevent/plugins
+  INSTALL  plugin_scsi.so       to      /home/jolsa/libexec/perf-core/traceevent/plugins
+
+Now:
+  INSTALL  plugin_jbd2.so
+  INSTALL  plugin_hrtimer.so
+  INSTALL  plugin_kmem.so
+  INSTALL  plugin_kvm.so
+  INSTALL  plugin_mac80211.so
+  INSTALL  plugin_sched_switch.so
+  INSTALL  plugin_function.so
+  INSTALL  plugin_xen.so
+  INSTALL  plugin_scsi.so
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -40,37 +60,22 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/lib/traceevent/plugin_jbd2.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ tools/lib/traceevent/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/lib/traceevent/plugin_jbd2.c b/tools/lib/traceevent/plugin_jbd2.c
-index 5d85de7..2f93f81 100644
---- a/tools/lib/traceevent/plugin_jbd2.c
-+++ b/tools/lib/traceevent/plugin_jbd2.c
-@@ -29,8 +29,9 @@
- #define MAJOR(dev)	((unsigned int) ((dev) >> MINORBITS))
- #define MINOR(dev)	((unsigned int) ((dev) & MINORMASK))
+diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+index 19afd03..0d9cbb4 100644
+--- a/tools/lib/traceevent/Makefile
++++ b/tools/lib/traceevent/Makefile
+@@ -166,7 +166,7 @@ else
+   print_plugin_obj_compile =	echo '  CC FPIC  '$(OBJ);
+   print_plugin_build =		echo '  BUILD    PLUGIN '$(OBJ);
+   print_static_lib_build =	echo '  BUILD    STATIC LIB '$(OBJ);
+-  print_install =		echo '  INSTALL  '$1'	to	$(DESTDIR_SQ)$2';
++  print_install =		echo '  INSTALL  '$1;
+ endif
  
--unsigned long long process_jbd2_dev_to_name(struct trace_seq *s,
--					    unsigned long long *args)
-+static unsigned long long
-+process_jbd2_dev_to_name(struct trace_seq *s,
-+			 unsigned long long *args)
- {
- 	unsigned int dev = args[0];
- 
-@@ -38,8 +39,9 @@ unsigned long long process_jbd2_dev_to_name(struct trace_seq *s,
- 	return 0;
- }
- 
--unsigned long long process_jiffies_to_msecs(struct trace_seq *s,
--					    unsigned long long *args)
-+static unsigned long long
-+process_jiffies_to_msecs(struct trace_seq *s,
-+			 unsigned long long *args)
- {
- 	unsigned long long jiffies = args[0];
- 
+ do_fpic_compile =					\
 -- 
 1.8.3.1
 
