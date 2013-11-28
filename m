@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175Ab3K1PAU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 10:00:20 -0500
-Received: from 20.mo6.mail-out.ovh.net ([178.32.124.17]:46428 "EHLO
-	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758697Ab3K1PAR (ORCPT
+	id S1759096Ab3K1PCP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 10:02:15 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:53209 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753335Ab3K1PCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 10:00:17 -0500
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Mike Turquette <mturquette@linaro.org>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 5/6] ARM: at91: move sama5d3 SoC to common clk
-Date: Thu, 28 Nov 2013 15:51:52 +0100
-Message-Id: <1385650312-8978-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1385650171-8756-1-git-send-email-b.brezillon@overkiz.com>
-References: <1385650171-8756-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 6383570998903929011
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 28 Nov 2013 10:02:14 -0500
+Date: Thu, 28 Nov 2013 10:02:10 -0500
+From: Tejun Heo <htejun@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, zhang.yi20@zte.com.cn,
+        lkml <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH]: exec: avoid propagating PF_NO_SETAFFINITY into
+ userspace child
+Message-ID: <20131128150210.GI3925@htj.dyndns.org>
+References: <20131128091358.GH10022@twins.programming.kicks-ass.net>
+ <20131128114542.GA3826@redhat.com>
+ <20131128121748.GN10022@twins.programming.kicks-ass.net>
+ <20131128133152.GA821@redhat.com>
+ <20131128133947.GR10022@twins.programming.kicks-ass.net>
+ <20131128141329.GB3925@htj.dyndns.org>
+ <20131128143145.GT10022@twins.programming.kicks-ass.net>
+ <20131128144359.GL3694@twins.programming.kicks-ass.net>
+ <20131128145325.GG3925@htj.dyndns.org>
+ <20131128145755.GY10022@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131128145755.GY10022@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the selection of AT91_USE_OLD_CLK when selecting sama5d3
-SoC support. This will enable automatically enable COMMON_CLK_AT91 option
-and add support for at91 common clk implementation.
+On Thu, Nov 28, 2013 at 03:57:55PM +0100, Peter Zijlstra wrote:
+> Do you have a better definition that doesn't get in the way of people
+> wanting to do actual work?
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/mach-at91/Kconfig |    1 -
- 1 file changed, 1 deletion(-)
+As written multiple times now, workqueue does have per-workqueue
+attributes and if you really want a dedicated worker thread, use a
+dedicated kthread.
 
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index 97033f7..b4f7d6f 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -86,7 +86,6 @@ config SOC_SAMA5D3
- 	select SOC_SAMA5
- 	select HAVE_FB_ATMEL
- 	select HAVE_AT91_DBGU1
--	select AT91_USE_OLD_CLK
- 	select HAVE_AT91_UTMI
- 	select HAVE_AT91_SMD
- 	select HAVE_AT91_USB_CLK
+> So far I just see you breaking existing setups because you don't want to
+> support things that work perfectly well.
+
+It doesn't work as explained multiple times in this thread.
+
 -- 
-1.7.9.5
-
+tejun
