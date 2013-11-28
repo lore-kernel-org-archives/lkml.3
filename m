@@ -1,210 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759206Ab3K1Pyw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 10:54:52 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:49735 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756077Ab3K1Pys (ORCPT
+	id S1758920Ab3K1QBI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 11:01:08 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:61498 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754705Ab3K1QBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 10:54:48 -0500
+	Thu, 28 Nov 2013 11:01:04 -0500
+Message-ID: <529768BC.2090604@gmail.com>
+Date: Thu, 28 Nov 2013 09:01:00 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-In-Reply-To: <1385628388-23827-1-git-send-email-acourbot@nvidia.com>
-References: <1385628388-23827-1-git-send-email-acourbot@nvidia.com>
-Date: Thu, 28 Nov 2013 17:54:47 +0200
-Message-ID: <CAHp75VcHa7cxAt_utwMVp7j+YeKcqa0_N5B=7-ZmTMD_6AV1Lw@mail.gmail.com>
-Subject: Re: [PATCH] gpio: better lookup method for platform GPIOs
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Namhyung Kim <namhyung@kernel.org>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Jiri Olsa <jolsa@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH 6/8] perf sched: Introduce timehist command
+References: <1384806771-2945-1-git-send-email-dsahern@gmail.com>	<1384806771-2945-7-git-send-email-dsahern@gmail.com> <87siugq2hr.fsf@sejong.aot.lge.com>
+In-Reply-To: <87siugq2hr.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 10:46 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> Change the format of the platform GPIO lookup tables to make them less
-> confusing and improve lookup efficiency.
->
-> The previous format was a single linked-list that required to compare
-> the device name and function ID of every single GPIO defined for each
-> lookup. Switch that to a list of per-device tables, so that the lookup
-> can be done in two steps, omitting the GPIOs that are not relevant for a
-> particular device.
->
-> The matching rules are now defined as follows:
-> - The device name must match *exactly*, and can be NULL for GPIOs not
->   assigned to a particular device,
-> - If the function ID in the lookup table is NULL, the con_id argument of
->   gpiod_get() will not be used for lookup. However, if it is defined, it
->   must match exactly.
-> - The index must always match.
+On 11/28/13, 2:50 AM, Namhyung Kim wrote:
+>> +static inline void printf_nsecs(unsigned long long nsecs, int width_sec)
+>> >+{
+>> >+	unsigned long secs;
+>> >+	unsigned long usecs;
+>> >+
+>> >+	secs = nsecs / NSECS_PER_SEC;
+>> >+	nsecs -= secs * NSECS_PER_SEC;
+>> >+	usecs = nsecs / NSECS_PER_USEC;
+>> >+	printf("%*lu.%06lu ", width_sec, secs, usecs);
+>> >+}
+> It seems very similar to what timehist_time_str() does.  Better to
+> factor out?
 
-Thanks for that, since I'm also was a bit confused of those dev_id/con_id stuff.
-Few comments below (mostly about style).
+yes and no. The above is used to dump time-based stats (time between 
+sched-in events, scheduling delay, and run time).
+
+What I really want for timehist_time_str is time-of-day. And in local 
+variants of this code I have that. Until I can convince Peter, et al. 
+about the real need to pull perf_clock into userspace this is a bit of a 
+place holder so that local code and this version do not differ too much.
+
+>
+>
+> [SNIP]
+>> >+static unsigned int comm_width = 20;
+>> >+
+>> >+static char *timehist_get_commstr(struct thread *thread)
+>> >+{
+>> >+	static char str[32];
+>> >+	const char *comm = thread__comm_str(thread);
+>> >+	pid_t tid = thread->tid;
+>> >+	pid_t pid = thread->pid_;
+>> >+	unsigned int n;
+>> >+
+>> >+	if (pid == 0)
+>> >+		scnprintf(str, sizeof(str), "%s", comm);
+>> >+
+>> >+	else if (tid != pid)
+>> >+		scnprintf(str, sizeof(str), "%s[%d/%d]", comm, tid, pid);
+>> >+
+>> >+	else
+>> >+		scnprintf(str, sizeof(str), "%s[%d]", comm, tid);
+>> >+
+>> >+	n = strlen(str);
+> Why not just using return value of scnprintf()?
+
+right. will do.
+
+>
+>
+>> >+	if (n > comm_width)
+>> >+		comm_width = n;
+>> >+
+>> >+	return str;
+>> >+}
+>> >+
+>> >+static void timehist_header(struct perf_sched *sched)
+>> >+{
+>> >+	u32 max_cpus = sched->max_cpu;
+>> >+	u32 i, j;
+>> >+
+>> >+	printf("%15s %-4s", "time", "cpu");
+>> >+
+>> >+	if (sched->show_cpu_visual && max_cpus) {
+>> >+		printf(" ");
+>> >+		for (i = 0, j = 0; i < max_cpus; ++i) {
+>> >+			printf("%x", j++);
+>> >+			if (j > 15)
+>> >+				j = 0;
+>> >+		}
+>> >+		printf(" ");
+>> >+	}
+>> >+
+>> >+	printf(" %-20s %9s %9s %9s",
+>> >+		"task name[tid/pid]", "b/n time", "sch delay", "run time");
+>> >+
+>> >+	if (sched->show_wakeups)
+>> >+		printf("  %-20s", "wakeup");
+>> >+
+>> >+	printf("\n");
+>> >+
+>> >+	printf("%15s %4s", "---------------", "----");
+> You might want to use "%.15s" and graph_dotted_line.
+
+did not know about that. will update.
 
 
-> --- a/Documentation/gpio/board.txt
-> +++ b/Documentation/gpio/board.txt
+>> >+static void timehist_print_sample(struct perf_sched *sched,
+>> >+				  union perf_event *event,
+>> >+				  struct perf_evsel *evsel,
+>> >+				  struct perf_sample *sample,
+>> >+				  struct thread *thread,
+>> >+				  struct machine *machine)
+>> >+{
+>> >+	struct thread_runtime *tr = thread__priv(thread);
+>> >+	char tstr[64];
+>> >+	u32 max_cpus = sched->max_cpu;
+>> >+
+>> >+	printf("%15s ", timehist_time_str(tstr, sizeof(tstr), sample->time));
+>> >+
+>> >+	printf("[%02d] ", sample->cpu);
+>> >+
+>> >+	if (sched->show_cpu_visual && max_cpus) {
+>> >+		u32 i;
+>> >+		char c;
+>> >+		for (i = 0; i < max_cpus; ++i) {
+>> >+			if (i == sample->cpu)
+>> >+				c = (thread->tid == 0) ? 'i' : 's';
+> It'd better explaining what the 'i' and 's' mean..
 
-> @@ -88,16 +89,20 @@ Note that GPIO_LOOKUP() is just a shortcut to GPIO_LOOKUP_IDX() where idx = 0.
->
->  A lookup table can then be defined as follows:
->
-> -       struct gpiod_lookup gpios_table[] = {
-> -       GPIO_LOOKUP_IDX("gpio.0", 15, "foo.0", "led", 0, GPIO_ACTIVE_HIGH),
-> -       GPIO_LOOKUP_IDX("gpio.0", 16, "foo.0", "led", 1, GPIO_ACTIVE_HIGH),
-> -       GPIO_LOOKUP_IDX("gpio.0", 17, "foo.0", "led", 2, GPIO_ACTIVE_HIGH),
-> -       GPIO_LOOKUP("gpio.0", 1, "foo.0", "power", GPIO_ACTIVE_LOW),
-> -       };
-> +struct gpiod_lookup_table gpios_table = {
-> +       .dev_id = "foo.0",
-> +       .size = 4,
-> +       .table = {
-> +       GPIO_LOOKUP_IDX("gpio.0", 15, "led", 0, GPIO_ACTIVE_HIGH),
-> +       GPIO_LOOKUP_IDX("gpio.0", 16, "led", 1, GPIO_ACTIVE_HIGH),
-> +       GPIO_LOOKUP_IDX("gpio.0", 17, "led", 2, GPIO_ACTIVE_HIGH),
-> +       GPIO_LOOKUP("gpio.0", 1, "power", GPIO_ACTIVE_LOW),
+visual aid: i = idle, s = sched-event. will add a comment.
 
-Can you use deeper indentation for GPIO_* lines here?
+>> >+static void free_idle_threads(void)
+>> >+{
+>> >+	int i;
+>> >+
+>> >+	if (idle_threads == NULL)
+>> >+		return;
+>> >+
+>> >+	for (i = 0; i <= idle_max_cpu; ++i)
+>> >+		free(idle_threads[i]);
+> Doesn't it need to be thread__delete(idle_threads[i]) ?
 
+yes. forgot to update this to the new api.
 
-> --- a/drivers/gpio/gpiolib.c
-> +++ b/drivers/gpio/gpiolib.c
+David
 
-> @@ -2326,72 +2322,77 @@ static struct gpio_desc *acpi_find_gpio(struct device *dev, const char *con_id,
->         return desc;
->  }
->
-> -static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
-> -                                   unsigned int idx,
-> -                                   enum gpio_lookup_flags *flags)
-> +static struct gpiod_lookup_table *gpiod_find_lookup_table(struct device *dev)
->  {
->         const char *dev_id = dev ? dev_name(dev) : NULL;
-> -       struct gpio_desc *desc = ERR_PTR(-ENODEV);
-> -       unsigned int match, best = 0;
-> -       struct gpiod_lookup *p;
-> +       struct gpiod_lookup_table *table;
->
->         mutex_lock(&gpio_lookup_lock);
->
-> -       list_for_each_entry(p, &gpio_lookup_list, list) {
-> -               match = 0;
-> +       list_for_each_entry(table, &gpio_lookup_list, list) {
-> +               if (table->dev_id && dev_id && strcmp(table->dev_id, dev_id))
-
-Maybe check !dev_id outside of loop?
-
-> +                       continue;
->
-> -               if (p->dev_id) {
-> -                       if (!dev_id || strcmp(p->dev_id, dev_id))
-> -                               continue;
-> +               if (dev_id != table->dev_id)
-> +                       continue;
->
-> -                       match += 2;
-> -               }
-> +               return table;
-
-What  about
-
-if (dev_id == table->dev_id)
- return table;
-
-?
-
-> +       }
->
-> -               if (p->con_id) {
-> -                       if (!con_id || strcmp(p->con_id, con_id))
-> -                               continue;
-> +       mutex_unlock(&gpio_lookup_lock);
->
-> -                       match += 1;
-> -               }
-> +       return NULL;
-> +}
->
-> -               if (p->idx != idx)
-> -                       continue;
-> +static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
-> +                                   unsigned int idx,
-> +                                   enum gpio_lookup_flags *flags)
-> +{
-> +       struct gpio_desc *desc = ERR_PTR(-ENODEV);
-> +       struct gpiod_lookup_table *table;
-> +       int i;
->
-> -               if (match > best) {
-> -                       struct gpio_chip *chip;
->
-
-Looks like redundant empty line.
-
-> -                       chip = find_chip_by_name(p->chip_label);
-> +       table = gpiod_find_lookup_table(dev);
-> +       if (!table)
-> +               return desc;
->
-> -                       if (!chip) {
-> -                               dev_warn(dev, "cannot find GPIO chip %s\n",
-> -                                        p->chip_label);
-> -                               continue;
-> -                       }
-> +       for (i = 0; i < table->size; i++) {
-> +               struct gpio_chip *chip;
-> +               struct gpiod_lookup *p = &table->table[i];
->
-> -                       if (chip->ngpio <= p->chip_hwnum) {
-> -                               dev_warn(dev, "GPIO chip %s has %d GPIOs\n",
-> -                                        chip->label, chip->ngpio);
-> +               if (p->idx != idx)
-> +                       continue;
-> +
-> +               if (p->con_id) {
-> +                       if (!con_id || strcmp(p->con_id, con_id))
-
-Could be one 'if' and moreover !con_id check might be outside a loop.
-
->                                 continue;
-> -                       }
-> +               }
->
-> -                       desc = gpio_to_desc(chip->base + p->chip_hwnum);
-> -                       *flags = p->flags;
-> +               chip = find_chip_by_name(p->chip_label);
->
-> -                       if (match != 3)
-> -                               best = match;
-> -                       else
-> -                               break;
-> +               if (!chip) {
-> +                       dev_warn(dev, "cannot find GPIO chip %s\n",
-> +                                p->chip_label);
-> +                       continue;
->                 }
-> -       }
->
-> -       mutex_unlock(&gpio_lookup_lock);
-> +               if (chip->ngpio <= p->chip_hwnum) {
-> +                       dev_warn(dev, "GPIO chip %s has %d GPIOs\n",
-> +                                chip->label, chip->ngpio);
-> +                       continue;
-> +               }
-> +
-> +               desc = gpiochip_offset_to_desc(chip, p->chip_hwnum);
-> +               *flags = p->flags;
-> +       }
->
->         return desc;
->  }
-
--- 
-With Best Regards,
-Andy Shevchenko
