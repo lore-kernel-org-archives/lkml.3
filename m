@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759260Ab3K1Pks (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 10:40:48 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:52619 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754430Ab3K1Pkn (ORCPT
+	id S1759255Ab3K1Pmh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 10:42:37 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:52875 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756190Ab3K1Pmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 10:40:43 -0500
-Date: Thu, 28 Nov 2013 16:40:35 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Tejun Heo <htejun@gmail.com>, zhang.yi20@zte.com.cn,
-        lkml <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH]: exec: avoid propagating PF_NO_SETAFFINITY into
- userspace child
-Message-ID: <20131128154035.GE10022@twins.programming.kicks-ass.net>
-References: <OF99742718.77495161-ON48257C30.000A8334-48257C30.000BA983@zte.com.cn>
- <20131127183117.GB13098@mtj.dyndns.org>
- <20131128091358.GH10022@twins.programming.kicks-ass.net>
- <20131128114542.GA3826@redhat.com>
- <20131128121748.GN10022@twins.programming.kicks-ass.net>
- <20131128133152.GA821@redhat.com>
- <20131128133947.GR10022@twins.programming.kicks-ass.net>
- <20131128141329.GB3925@htj.dyndns.org>
- <20131128143857.GU10022@twins.programming.kicks-ass.net>
- <20131128153443.GB11956@redhat.com>
+	Thu, 28 Nov 2013 10:42:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131128153443.GB11956@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CACRpkda-TtKQr6hDx4corjxYv7r7f6_9sNp_2ocbvg9MHyOk7Q@mail.gmail.com>
+References: <1385628388-23827-1-git-send-email-acourbot@nvidia.com>
+	<CACRpkda-TtKQr6hDx4corjxYv7r7f6_9sNp_2ocbvg9MHyOk7Q@mail.gmail.com>
+Date: Thu, 28 Nov 2013 17:42:35 +0200
+Message-ID: <CAHp75Vc_NZiukvRaBUkexQXTsAij1ZcPGHDBMBeN-a5m77k=jA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: better lookup method for platform GPIOs
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 04:34:43PM +0100, Oleg Nesterov wrote:
-> But note that in the longer term we might want even more. We probably
-> want a non-daemonized thread controlled by the user-space. And even
-> more, this thread should be per-namespace (this needs a lot more
-> discussion).
+On Thu, Nov 28, 2013 at 4:45 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Thu, Nov 28, 2013 at 9:46 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
 
-Which namespace? PID namespace I presume where we can have a 'new' init
-task and everything.
+[]
 
-I'm not sure, are any of these things (workqueues, userspace helpers)
-pid namespace aware? If not it doesn't seem to make sense to expose this
-to nested PID namespaces and would be something special for the root
-namespace.
+>> Let's change this bad design before more users start using it. ;)
+>
+> OK given that Mika has based his patches on this
 
-> But whataver we do later, I believe that the patch from Zhang should
-> be applied now.
+Not only him, since I\have started to look for SFI GPIO solution :-)
 
-Probably, although with a much adjusted changelog.
+P.S. Whenever Mika ACKs I will agree with that.
+
+-- 
+With Best Regards,
+Andy Shevchenko
