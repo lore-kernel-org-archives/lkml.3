@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759312Ab3K1Rhg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 12:37:36 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:38034 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759118Ab3K1Rhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 12:37:35 -0500
-X-IronPort-AV: E=Sophos;i="4.93,792,1378857600"; 
-   d="scan'208";a="79033343"
-Message-ID: <52977F5C.7090703@citrix.com>
-Date: Thu, 28 Nov 2013 17:37:32 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1759337Ab3K1Rhw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 12:37:52 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:56761 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758916Ab3K1Rhv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 12:37:51 -0500
 MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next RFC 0/5] xen-netback: TX grant mapping instead
- of copy
-References: <1383094220-14775-1-git-send-email-zoltan.kiss@citrix.com>	 <1383303035.672.29.camel@kazak.uk.xensource.com>	 <5273FA37.6020903@citrix.com> <1383821563.26213.168.camel@kazak.uk.xensource.com>
-In-Reply-To: <1383821563.26213.168.camel@kazak.uk.xensource.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+In-Reply-To: <CAFLxGvykU+KZg9q1pq68_p+2gfg+5auABX34df88qAF9v0vzMw@mail.gmail.com>
+References: <CA+a=Yy60b7nCjsXfczpOebbG27kJNoa9hPcdMHLJrN7qT5mfdg@mail.gmail.com>
+ <CAMuHMdVS-EU0y+yLzdM=H20j7ewHKc_DAWFNL4Y1WE9_iNWVLA@mail.gmail.com>
+ <CA+a=Yy5Q=urtPfLEcu0WDJngo_COOZGnBuuVkkwUezKfcoGEwA@mail.gmail.com> <CAFLxGvykU+KZg9q1pq68_p+2gfg+5auABX34df88qAF9v0vzMw@mail.gmail.com>
+From: Peng Tao <lkml.bergwolf@gmail.com>
+Date: Fri, 29 Nov 2013 01:37:30 +0800
+X-Google-Sender-Auth: 82olwIIx0oBJc83kw_S5fmzwoPM
+Message-ID: <CA+a=Yy4mgntUo0kpOYeghTRBZV4EtVHKE1KVgSXgGfFYqPAODQ@mail.gmail.com>
+Subject: Re: How to create a config that doesn't set CONFIG_PROC_FS
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/13 10:52, Ian Campbell wrote:
-> On Fri, 2013-11-01 at 19:00 +0000, Zoltan Kiss wrote:
->> On 01/11/13 10:50, Ian Campbell wrote:
->>> Does this always avoid copying when bridging/openvswitching/forwarding
->>> (e.g. masquerading etc)? For both domU->domU and domU->physical NIC?
->> I've tested the domU->domU, domU->physical with bridge and openvswitch
->> usecase, and now I've created a new stat counter to see how often copy
->> happens (the callback's second parameter tells you whether the skb was
->> freed or copied). It doesn't do copy in all of these scenarios.
->> What do you mean by forwarding? The scenario when you use bridge and
->> iptables mangling with the packet, not just filtering?
+On Fri, Nov 29, 2013 at 1:17 AM, Richard Weinberger
+<richard.weinberger@gmail.com> wrote:
+> On Thu, Nov 28, 2013 at 4:02 PM, Peng Tao <lkml.bergwolf@gmail.com> wrote:
+>> On Thu, Nov 28, 2013 at 9:20 PM, Geert Uytterhoeven
+>> <geert@linux-m68k.org> wrote:
+>>> On Thu, Nov 28, 2013 at 11:53 AM, Peng Tao <lkml.bergwolf@gmail.com> wrote:
+>>>> Even if I use `make allnoconfig`, CONFIG_PROC_FS is still set. So I'm
+>>>> wondering how to create a config without CONFIG_PROC_FS for build
+>>>> testing?
+>>>
+>>> It can be disabled only if CONFIG_EXPERT=y.
+>> Cool. Thank you very much!
 >
-> I mean using L3 routing rather L2 bridging. Which might involve
-> NAT/MASQUERADE or might just be normal IP routing.
-I still couldn't find time to try out this scenario, but I think in this 
-case packet goes through deliver_skb, which means it will get copied. So 
-performance would be a bit worse due to the extra map/unmap. And I'm 
-afraid we can't help that too much due to this:
-https://lkml.org/lkml/2012/7/20/363
-However I think using Dom0 as a router/firewall is already a suboptimal 
-solution, so maybe a small performance regression is acceptable?
-Anyway, I will try this out, and see if it really copies everything, and 
-get some numbers as well.
+> Out of curiosity, for which use case do you need that?
+> Is is possible to run a sane userspace without procfs?
+>
+To be frank, I don't know. I just got build failure reports to fix up
+when CONFIG_PROC_FS is off...
 
->>> How does it deal with broadcast traffic?
-Now I had time to check it: broadcast packets get copied only once, when 
-cloning happens. It will swap out the frags with local ones, so any 
-subsequent cloning will have a local SKB.
-
-Zoli
+Thanks,
+Tao
