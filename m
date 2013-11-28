@@ -1,77 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758239Ab3K1AWZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 19:22:25 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:60368 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755397Ab3K1AWX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 19:22:23 -0500
-Date: Wed, 27 Nov 2013 16:22:18 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
- access to memory reserves
-In-Reply-To: <20131127231931.GG3556@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1311271613340.10617@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1311131649110.6735@chino.kir.corp.google.com> <20131114032508.GL707@cmpxchg.org> <alpine.DEB.2.02.1311141447160.21413@chino.kir.corp.google.com> <alpine.DEB.2.02.1311141525440.30112@chino.kir.corp.google.com> <20131118154115.GA3556@cmpxchg.org>
- <20131118165110.GE32623@dhcp22.suse.cz> <20131122165100.GN3556@cmpxchg.org> <alpine.DEB.2.02.1311261648570.21003@chino.kir.corp.google.com> <20131127163435.GA3556@cmpxchg.org> <alpine.DEB.2.02.1311271343250.9222@chino.kir.corp.google.com>
- <20131127231931.GG3556@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1758361Ab3K1AZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 19:25:57 -0500
+Received: from ring0.de ([91.143.88.219]:51840 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753959Ab3K1AZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 19:25:54 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Thu, 28 Nov 2013 01:25:50 +0100
+From: Sebastian Reichel <sre@debian.org>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        pavel@ucw.cz, anton@enomsg.org, dwmw2@infradead.org, tony@atomide.com,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, aaro.koskinen@iki.fi
+Subject: Re: [PATCH v2 2/3] bq2415x_charger: Use power_supply notifier for
+ automode
+Message-ID: <20131128002549.GA5548@earth.universe>
+Mail-Followup-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+	=?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= <freemangordon@abv.bg>,
+	pavel@ucw.cz, anton@enomsg.org, dwmw2@infradead.org,
+	tony@atomide.com, linux@arm.linux.org.uk,
+	linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+	aaro.koskinen@iki.fi
+References: <1434978251.31721.1385404366021.JavaMail.apache@mail83.abv.bg>
+ <20131125214959.GA20107@earth.universe>
+ <201311272216.47390@pali>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="FL5UXtIhxfXey3p5"
+Content-Disposition: inline
+In-Reply-To: <201311272216.47390@pali>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Nov 2013, Johannes Weiner wrote:
 
-> > The patch is drawing the line at "the kernel can no longer do anything to 
-> > free memory", and that's the line where userspace should be notified or a 
-> > process killed by the kernel.
-> >
-> > Giving current access to memory reserves in the oom killer is an
-> > optimization so that all reclaim is exhausted prior to declaring
-> > that they are necessary, the kernel still has the ability to allow
-> > that process to exit and free memory.
-> 
-> "they" are necessary?
-> 
+--FL5UXtIhxfXey3p5
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Memory reserves.
+On Wed, Nov 27, 2013 at 10:16:47PM +0100, Pali Roh=E1r wrote:
+> On Monday 25 November 2013 22:50:01 Sebastian Reichel wrote:
+> > > 2 seems more generic to me, but as rx51-battery is missing
+> > > the functionality to send events on temperature change, I
+> > > guess 1 will be easier to implement.
+> >=20
+> > The temperature must be polled anyway, if the ADC does not
+> > support interrupts.
+> >=20
+>=20
+> Yes, ADC does not support interrupts, temperature must be polled.=20
+> Also bq27200 chip does not support interrupts, but=20
+> bq27x00_battery driver using delayed work which every 60s poll=20
+> all values (timeout can be configured via modprobe param). So=20
+> similar code can be added to rx51_battery.ko too.
 
-> > This is the same as the oom notifiers within the kernel that free
-> > memory from s390 and powerpc archs: the kernel still has the ability
-> > to free memory.
-> 
-> They're not the same at all.  One is the kernel freeing memory, the
-> other is a random coincidence.
-> 
+I think the safest implementation would be:
 
-Current is on the way to memory freeing because it has a pending SIGKILL 
-or is already exiting, it simply needs access to memory reserves to do so.  
-This was originally introduced to prevent the oom killer from having to 
-scan the set of eligible processes and silently giving it access to memory 
-reserves; we didn't want to emit all of the messages to the kernel log 
-because scripts (and admins) were looking at the kernel log and seeing 
-that the oom killer killed something when it really came from a different 
-source or was already exiting.
+bq2415x polls the temperature from rx51-battery in the bq2415x
+watchdog handler. That way discontinuation of the charge process
+is guaranteed.
 
-We have a differing opinion on what to consider the point of oom (the 
-"notification line that has to be drawn").  My position is to notify 
-userspace when the kernel has exhausted its capability to free memory 
-without killing something.  In the case of current exiting or having a 
-pending SIGKILL, memory is going to be freed, the oom killer simply needs 
-to preempt the tasklist scan.  The situation is going to be remedied.  I 
-defined the notification with this patch to only happen when the kernel 
-can't free any memory without a kill so that userspace may do so itself.  
-Michal concurred with that position.
+To avoid useless ADC conversion the rx51-battery driver caches the
+converted temperature value for a reasonable time (e.g. 10 seconds).
+This helps if multiple users want to read the battery temperature
+(e.g. userspace).
 
-So I'll repeat: if you are interested in situations when the limit is 
-reached, use memory thresholds, if you are interested in situations where 
-reclaim is struggling to free memory, use VMPRESSURE_CRITICAL.
+This also means, that the kernel stuff can handle charging
+autonomously and the userland daemon checks the battery temperature
+only for emergency shutdown (I guess the temperatures for stopping
+the charging and emergency shutdown are different).
+
+IMHO it makes sense to move the emergency shutdown also into the
+kernel (but different driver!) in the future, but that's another
+topic :)
+
+-- Sebastian
+
+--FL5UXtIhxfXey3p5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSlo2NAAoJENju1/PIO/qaxnUP/iWttibMN/h756OOZuedNey+
+5Kd2JLv0i9pG0b63nUKjabDJ40ROcPjkHyfQKM0TapY6rZxNDRjFDSh4QS5Lqf4B
+u74FYgwFMG57AlBx3tNaGC40ajUDT0mvQEMYvXArD7XezTyKUUWRJB8tl+JqwRfn
+uTHiPfqb02k3O09NH4+NQsSGt7stzZqcQoN1OKz81JGuBGb06ypBEOBkEZa2P45S
+H4m6Zmls+l55jcGq3S0yHuzCM/EWLzcmKH/SnmAsTvvzBxUX/7YEdnTMv/I2DJYl
+aCNimlmO1t57asGdNbUQhMO10E7w3XcRDBiU9lMsLQ5GQMXfkgjqxJHDWm0hyeOX
+Xg3L0lYf3KvijG0EwUy4U1sSX6Q5pf7E5hTO2K57uOenW5pZbF6jOt4Z1uWVjkYi
+f/AVGvZ4jkECRvT7iW6wa+7+64SaXtU7V1r8h8I4urPYBJD9E0K8MF85kzpnFFni
+EJQCrCpcGE6ObuH25gdElWTFhWYQVngSLqvOqK30MqBay+5brG+EOc0uowCTRM4G
+9OIsZTuYcTye0wnOTJk2rI5sAyo4yvKUYi43mh9XvlHOw6S9AX0+EMNwyGZ+38T8
+zqkopU+oIgD0bO/qxc+XcEtWtZmQHCfCaR1DF8noBL9uRRDDg8Cnx4dxPLjVauw6
+lWC1RA9ShdgRXdN6HM7Y
+=lveK
+-----END PGP SIGNATURE-----
+
+--FL5UXtIhxfXey3p5--
