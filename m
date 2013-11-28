@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759094Ab3K1OpJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 09:45:09 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:55766 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753475Ab3K1OpG (ORCPT
+	id S1759130Ab3K1Opk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 09:45:40 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:59932 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758879Ab3K1Opi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 09:45:06 -0500
-Date: Thu, 28 Nov 2013 09:45:02 -0500
-From: Tejun Heo <htejun@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, zhang.yi20@zte.com.cn,
-        lkml <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH]: exec: avoid propagating PF_NO_SETAFFINITY into
- userspace child
-Message-ID: <20131128144502.GE3925@htj.dyndns.org>
-References: <20131126180420.GA18172@redhat.com>
- <OF99742718.77495161-ON48257C30.000A8334-48257C30.000BA983@zte.com.cn>
- <20131127183117.GB13098@mtj.dyndns.org>
- <20131128091358.GH10022@twins.programming.kicks-ass.net>
- <20131128114542.GA3826@redhat.com>
- <20131128121748.GN10022@twins.programming.kicks-ass.net>
- <20131128133152.GA821@redhat.com>
- <20131128133947.GR10022@twins.programming.kicks-ass.net>
- <20131128141329.GB3925@htj.dyndns.org>
- <20131128143857.GU10022@twins.programming.kicks-ass.net>
+	Thu, 28 Nov 2013 09:45:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131128143857.GU10022@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1385628388-23827-1-git-send-email-acourbot@nvidia.com>
+References: <1385628388-23827-1-git-send-email-acourbot@nvidia.com>
+Date: Thu, 28 Nov 2013 15:45:37 +0100
+Message-ID: <CACRpkda-TtKQr6hDx4corjxYv7r7f6_9sNp_2ocbvg9MHyOk7Q@mail.gmail.com>
+Subject: Re: [PATCH] gpio: better lookup method for platform GPIOs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <acourbot@nvidia.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Rhyland Klein <rklein@nvidia.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Nov 28, 2013 at 9:46 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
 
-On Thu, Nov 28, 2013 at 03:38:57PM +0100, Peter Zijlstra wrote:
-> It seems like a perfectly fine interface to me. And much preferable to
-> creating yet another weird interface to manage tasks.
+> Change the format of the platform GPIO lookup tables to make them less
+> confusing and improve lookup efficiency.
+>
+> The previous format was a single linked-list that required to compare
+> the device name and function ID of every single GPIO defined for each
+> lookup. Switch that to a list of per-device tables, so that the lookup
+> can be done in two steps, omitting the GPIOs that are not relevant for a
+> particular device.
+>
+> The matching rules are now defined as follows:
+> - The device name must match *exactly*, and can be NULL for GPIOs not
+>   assigned to a particular device,
+> - If the function ID in the lookup table is NULL, the con_id argument of
+>   gpiod_get() will not be used for lookup. However, if it is defined, it
+>   must match exactly.
+> - The index must always match.
+>
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> ---
+> Let's change this bad design before more users start using it. ;)
 
-The problem with that is it isn't an interface where the user
-specifies what's desired but more of just an exposed facet of
-implementation details and locks us into either keeping that single
-parent model for the eternity or doing a shitty hack like extracing
-attributes from that task if we ever need to change the implementation
-for whatever reason.  In general, it's a much better idea to have an
-interface where the feature supported is represented explicitly and
-finitely.  If this is something which is actually necessary, I'd vote
-for having an explicit interface for the desired feature, whatever
-that may be.
+OK given that Mika has based his patches on this I'll request
+that he ACK this and then I'll merge this so that he can put
+this patch at the bottom of his patch stack.
 
-Thanks.
+Mika: requesting ACK.
 
--- 
-tejun
+Yours,
+Linus Walleij
