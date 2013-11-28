@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab3K1KfS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 05:35:18 -0500
-Received: from www.linutronix.de ([62.245.132.108]:56607 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995Ab3K1KfO (ORCPT
+	id S1757829Ab3K1KgW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 05:36:22 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:51652 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302Ab3K1KgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 05:35:14 -0500
-Message-ID: <52971C5F.7040307@linutronix.de>
-Date: Thu, 28 Nov 2013 11:35:11 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Thu, 28 Nov 2013 05:36:20 -0500
+Date: Thu, 28 Nov 2013 10:35:56 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: lee.jones@linaro.org, sameo@linux.intel.com,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Message-ID: <20131128103556.GJ14725@sirena.org.uk>
+References: <1385556677-5244-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-parport@lists.infradead.org,
-        Maximilian Attems <maks@stro.at>
-Subject: Re: [PATCH] parport: parport_pc: remove double PCI ID for NetMos
-References: <1385570623-20260-1-git-send-email-bigeasy@linutronix.de> <20131127135322.49ea91c23db4879f97b524f0@linux-foundation.org>
-In-Reply-To: <20131127135322.49ea91c23db4879f97b524f0@linux-foundation.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="iIdb9Iy5ocJYgXq2"
+Content-Disposition: inline
+In-Reply-To: <1385556677-5244-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Cookie: Your supervisor is thinking about you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] mfd: wm5110: Give new AIF2 registers defaults and mark
+ as readable
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2013 10:53 PM, Andrew Morton wrote:
->> While here I also drop the entry for titan_1284p2 which is the same as
->> netmos_9815.
-> 
-> Does this change have any runtime-visible effects?
 
-Titan p2 used to specify class + subclass which is now replaced with
-PCI_ID_ANY, I doubt this makes any difference at all.
+--iIdb9Iy5ocJYgXq2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The only runtime visible change I notice is with KERN_DEBUG being
-visible. The card details are the same, it always prints
+On Wed, Nov 27, 2013 at 12:51:17PM +0000, Charles Keepax wrote:
+> The registers associated with the new channels on AIF2 were accidentally
+> missing defaults and not marked as readable this patch fixes this.
 
-|parport1: PC-style at 0xc120 (0xc128), irq 11, using FIFO
-[PCSPP,TRISTATE,COMPAT,ECP]
+Applied, thanks.
 
-However the ID that was used to detect the card is different:
+--iIdb9Iy5ocJYgXq2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-| PCI parallel port detected: 1415:c118, I/O at 0xc120(0xc128), IRQ 11
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-vs
+iQIcBAEBAgAGBQJSlxyJAAoJELSic+t+oim9vLgQAJZNDlE0G0Gc+D7KQgMw7Abp
+zYOqrkWuxLKEumFatVcSeGVfaEbWcuHZJU3lHGF8QYEuL++xVCWgm6NCZYoeqj/5
+n9zmz7IbyWQgS2TdDpoech2ORyeCOu3YjggXvKqoIXAmVGskeaDhmfrkNasDsFoR
+Jy0+wJ4Aemwm3EPVoFeSsD4FitpDbf/73saffHmcUv5bgt1KQwjnHmh2NG7EnfTZ
+ZqxO45cB6rIbsX+fPb94Sw5bB8Nz9bq0yNTyIZSv4HhYDPUuqiWC4vrDKzWHpumk
+F4MGJjWHAV2s30Lrc10e3EMUn1kbiEbjoOT+o5mj12flO2Lqc9HdJoWBhtSKEuio
+T+PJhJ/0V/S3HasGYgY4C+KenuTV4Mhhm1k0/NMJk3VXQOWmTdExRRsqu++nWtdC
+zuUYj0Zk3AenscAsotwbtlrjnrbRjfestNMmfqDwP3vbx05lf4K7UfaDGd1b14WW
+96DhjF4kDEh7KxuO4QN+Vf2sbVEMLaZpEX8l2d+vMg4UwEVKl3Z2dboX7As4nZxM
+tJMRQMtSKd1f33yRaPCxlWzkj7X0UadWxrPPyOjlAoJ2sCk87snQLNFwKFTNSZcf
+DxeLXcUtZHH2GIwPj39DLNYO4p+3LeYZDyEUDaTW+sH+ro4rnecxu3d9ITe812vm
+mQ62kzqw4ekXjUXuvk2z
+=vAGX
+-----END PGP SIGNATURE-----
 
-| PCI parallel port detected: 9710:9805, I/O at 0xc120(0xc128), IRQ 11
-
-The wrong id print is printed for all devices which come after
-PCI_DEVICE_ID_OXSEMI_PCIe840_G in the id table because the code that
-prints the ID table assumes one id per entry.
-
-So we could
-- drop printk
-- use id->vendor + id->device instead
-- do the last item + remove parport_pc_pci_cards and pass the data
-  struct as data.
-- nothing
-
-any preferences?
-
-Sebastian
+--iIdb9Iy5ocJYgXq2--
