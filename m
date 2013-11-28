@@ -1,171 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759055Ab3K1Oo1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 09:44:27 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:64241 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756577Ab3K1OoY (ORCPT
+	id S1759094Ab3K1OpJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 09:45:09 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:55766 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753475Ab3K1OpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 09:44:24 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nm@ti.com, ceh@ti.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V3] cpufreq: Make sure CPU is running on a freq from freq-table
-Date: Thu, 28 Nov 2013 20:14:11 +0530
-Message-Id: <ad0a09012f3621024deb51120c3d4ef97ffcbd0f.1385649767.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	Thu, 28 Nov 2013 09:45:06 -0500
+Date: Thu, 28 Nov 2013 09:45:02 -0500
+From: Tejun Heo <htejun@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, zhang.yi20@zte.com.cn,
+        lkml <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH]: exec: avoid propagating PF_NO_SETAFFINITY into
+ userspace child
+Message-ID: <20131128144502.GE3925@htj.dyndns.org>
+References: <20131126180420.GA18172@redhat.com>
+ <OF99742718.77495161-ON48257C30.000A8334-48257C30.000BA983@zte.com.cn>
+ <20131127183117.GB13098@mtj.dyndns.org>
+ <20131128091358.GH10022@twins.programming.kicks-ass.net>
+ <20131128114542.GA3826@redhat.com>
+ <20131128121748.GN10022@twins.programming.kicks-ass.net>
+ <20131128133152.GA821@redhat.com>
+ <20131128133947.GR10022@twins.programming.kicks-ass.net>
+ <20131128141329.GB3925@htj.dyndns.org>
+ <20131128143857.GU10022@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131128143857.GU10022@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes boot loaders set CPU frequency to a value outside of frequency table
-present with cpufreq core. In such cases CPU might be unstable if it has to run
-on that frequency for long duration of time and so its better to set it to a
-frequency which is specified in freq-table. This also makes cpufreq stats
-inconsistent as cpufreq-stats would fail to register because current frequency
-of CPU isn't found in freq-table.
+Hello,
 
-Because we don't want this change to effect boot process badly, we go for the
-next freq which is >= policy->cur ('cur' must be set by now, otherwise we will
-end up setting freq to lowest of the table as 'cur' is initialized to zero).
+On Thu, Nov 28, 2013 at 03:38:57PM +0100, Peter Zijlstra wrote:
+> It seems like a perfectly fine interface to me. And much preferable to
+> creating yet another weird interface to manage tasks.
 
-In case current frequency doesn't match any frequency from freq-table, we throw
-warnings to user, so that user can get this fixed in their bootloaders or
-freq-tables.
+The problem with that is it isn't an interface where the user
+specifies what's desired but more of just an exposed facet of
+implementation details and locks us into either keeping that single
+parent model for the eternity or doing a shitty hack like extracing
+attributes from that task if we ever need to change the implementation
+for whatever reason.  In general, it's a much better idea to have an
+interface where the feature supported is represented explicitly and
+finitely.  If this is something which is actually necessary, I'd vote
+for having an explicit interface for the desired feature, whatever
+that may be.
 
-On some systems we can't really say what frequency we're running at the moment
-and so for these we have added another flag: CPUFREQ_SKIP_INITIAL_FREQ_CHECK.
+Thanks.
 
-Reported-by: Carlos Hernandez <ceh@ti.com>
-Reported-and-tested-by: Nishanth Menon <nm@ti.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
-V2->V3:
-- Added BUG_ON()
-- Added another flag: CPUFREQ_SKIP_INITIAL_FREQ_CHECK
-
- drivers/cpufreq/cpufreq.c    | 38 ++++++++++++++++++++++++++++++++++++++
- drivers/cpufreq/freq_table.c | 24 ++++++++++++++++++++++++
- include/linux/cpufreq.h      | 11 +++++++++++
- 3 files changed, 73 insertions(+)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 02d534d..1a8bf5d 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1038,6 +1038,44 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- 		}
- 	}
- 
-+	/*
-+	 * Sometimes boot loaders set CPU frequency to a value outside of
-+	 * frequency table present with cpufreq core. In such cases CPU might be
-+	 * unstable if it has to run on that frequency for long duration of time
-+	 * and so its better to set it to a frequency which is specified in
-+	 * freq-table. This also makes cpufreq stats inconsistent as
-+	 * cpufreq-stats would fail to register because current frequency of CPU
-+	 * isn't found in freq-table.
-+	 *
-+	 * Because we don't want this change to effect boot process badly, we go
-+	 * for the next freq which is >= policy->cur ('cur' must be set by now,
-+	 * otherwise we will end up setting freq to lowest of the table as 'cur'
-+	 * is initialized to zero).
-+	 *
-+	 * We are passing target-freq as "policy->cur - 1" otherwise
-+	 * __cpufreq_driver_target() would simply fail, as policy->cur will be
-+	 * equal to target-freq.
-+	 */
-+	if (!(cpufreq_driver->flags & CPUFREQ_SKIP_INITIAL_FREQ_CHECK)
-+			&& has_target()) {
-+		/* Are we running at unknown frequency ? */
-+		ret = cpufreq_frequency_table_get_index(policy, policy->cur);
-+		if (ret == -EINVAL) {
-+			/* Warn user and fix it */
-+			pr_warn("%s: CPU%d: running at invalid freq: %u KHz\n",
-+					__func__, policy->cpu, policy->cur);
-+			/*
-+			 * Reaching here after boot in a few seconds may not
-+			 * mean that system will remain stable at "unknown"
-+			 * frequency for longer duration. Hence, a BUG_ON().
-+			 */
-+			BUG_ON(__cpufreq_driver_target(policy, policy->cur - 1,
-+					CPUFREQ_RELATION_L));
-+			pr_warn("%s: CPU%d: frequency changed to: %u KHz\n",
-+					__func__, policy->cpu, policy->cur);
-+		}
-+	}
-+
- 	/* related cpus should atleast have policy->cpus */
- 	cpumask_or(policy->related_cpus, policy->related_cpus, policy->cpus);
- 
-diff --git a/drivers/cpufreq/freq_table.c b/drivers/cpufreq/freq_table.c
-index 3458d27..0d6cc0e 100644
---- a/drivers/cpufreq/freq_table.c
-+++ b/drivers/cpufreq/freq_table.c
-@@ -178,7 +178,31 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
- }
- EXPORT_SYMBOL_GPL(cpufreq_frequency_table_target);
- 
-+int cpufreq_frequency_table_get_index(struct cpufreq_policy *policy,
-+		unsigned int freq)
-+{
-+	struct cpufreq_frequency_table *table;
-+	int index = -EINVAL, i = 0;
-+
-+	table = cpufreq_frequency_get_table(policy->cpu);
-+	if (unlikely(!table)) {
-+		pr_debug("%s: Unable to find freq_table\n", __func__);
-+		return -ENOENT;
-+	}
-+
-+	for (; table[i].frequency != CPUFREQ_TABLE_END; i++) {
-+		if (table[i].frequency == freq) {
-+			index = i;
-+			break;
-+		}
-+	}
-+
-+	return index;
-+}
-+EXPORT_SYMBOL_GPL(cpufreq_frequency_table_get_index);
-+
- static DEFINE_PER_CPU(struct cpufreq_frequency_table *, cpufreq_show_table);
-+
- /**
-  * show_available_freqs - show available frequencies for the specified CPU
-  */
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index dc196bb..7109c62 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -252,6 +252,15 @@ struct cpufreq_driver {
-  */
- #define CPUFREQ_ASYNC_NOTIFICATION  (1 << 4)
- 
-+/*
-+ * Set by drivers which don't want cpufreq core to check if CPU is running at a
-+ * frequency present in freq-table exposed by the driver. For other drivers if
-+ * CPU is found running at an out of table freq, we will try to set it to a freq
-+ * from the table. And if that fails, we will stop further boot process by
-+ * issuing a BUG_ON().
-+ */
-+#define CPUFREQ_SKIP_INITIAL_FREQ_CHECK	(1 << 5)
-+
- int cpufreq_register_driver(struct cpufreq_driver *driver_data);
- int cpufreq_unregister_driver(struct cpufreq_driver *driver_data);
- 
-@@ -439,6 +448,8 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
- 				   unsigned int target_freq,
- 				   unsigned int relation,
- 				   unsigned int *index);
-+int cpufreq_frequency_table_get_index(struct cpufreq_policy *policy,
-+		unsigned int freq);
- 
- void cpufreq_frequency_table_update_policy_cpu(struct cpufreq_policy *policy);
- ssize_t cpufreq_show_cpus(const struct cpumask *mask, char *buf);
 -- 
-1.7.12.rc2.18.g61b472e
-
+tejun
