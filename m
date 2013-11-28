@@ -1,69 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616Ab3K1V0z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 16:26:55 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44940 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab3K1V0v (ORCPT
+	id S1751966Ab3K1V1H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 16:27:07 -0500
+Received: from order.stressinduktion.org ([87.106.68.36]:45161 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718Ab3K1V1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 16:26:51 -0500
-Date: Thu, 28 Nov 2013 22:26:45 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: r65073@freescale.com, s.hauer@pengutronix.de, swarren@wwwdotorg.org,
-        t.figa@samsung.com, grant.likely@linaro.org, linux@arm.linux.org.uk,
-        rob@landley.net, ian.campbell@citrix.com, mark.rutland@arm.com,
-        pawel.moll@arm.com, rob.herring@calxeda.com,
-        linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCHv6 2/4] ARM: dts: Add Freescale FTM PWM node for VF610.
-Message-ID: <20131128212644.GD14689@mithrandir>
-References: <1384220218-12716-1-git-send-email-Li.Xiubo@freescale.com>
- <1384220218-12716-3-git-send-email-Li.Xiubo@freescale.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DiL7RhKs8rK9YGuF"
+	Thu, 28 Nov 2013 16:27:02 -0500
+Date: Thu, 28 Nov 2013 22:27:00 +0100
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: jongman.heo@samsung.com, David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] inet: further fixes of possible seqlock deadlocks
+Message-ID: <20131128212700.GF24171@order.stressinduktion.org>
+Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
+	jongman.heo@samsung.com, David Miller <davem@davemloft.net>,
+	"netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <13025162.118881385612276530.JavaMail.weblogic@epv6ml01> <1385659390.5352.20.camel@edumazet-glaptop2.roam.corp.google.com> <1385661082.5352.34.camel@edumazet-glaptop2.roam.corp.google.com> <20131128192231.GE24171@order.stressinduktion.org> <1385672502.5352.38.camel@edumazet-glaptop2.roam.corp.google.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1384220218-12716-3-git-send-email-Li.Xiubo@freescale.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1385672502.5352.38.camel@edumazet-glaptop2.roam.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 28, 2013 at 01:01:42PM -0800, Eric Dumazet wrote:
+> On Thu, 2013-11-28 at 20:22 +0100, Hannes Frederic Sowa wrote:
+> > This fixes more incorrect uses of *_STATS_BH in process context.
+> > 
+> > Cc: Eric Dumazet <edumazet@google.com>
+> > Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+> > ---
+> >  net/ipv4/udp.c        | 8 ++++----
+> >  net/ipv6/ip6_output.c | 8 ++++----
+> >  net/ipv6/ping.c       | 4 ++--
+> >  3 files changed, 10 insertions(+), 10 deletions(-)
+> > 
+> > diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+> > index 44e3884..f5cc018 100644
+> > --- a/net/ipv4/udp.c
+> > +++ b/net/ipv4/udp.c
+> > @@ -1160,10 +1160,10 @@ static unsigned int first_packet_length(struct sock *sk)
+> >  	spin_lock_bh(&rcvq->lock);
+> 
+> Here we block BH, because of spin_lock_bh()
+> 
+> >  	while ((skb = skb_peek(rcvq)) != NULL &&
+> >  		udp_lib_checksum_complete(skb)) {
+> > -		UDP_INC_STATS_BH(sock_net(sk), UDP_MIB_CSUMERRORS,
+> > -				 IS_UDPLITE(sk));
+> > -		UDP_INC_STATS_BH(sock_net(sk), UDP_MIB_INERRORS,
+> > -				 IS_UDPLITE(sk));
+> 
+> So this is the right thing, this change is not needed.
 
---DiL7RhKs8rK9YGuF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Oh yes, I was mechanically going through the a grep of _BH\( in ipv4
+and ipv6 and missed that.
 
-On Tue, Nov 12, 2013 at 09:36:56AM +0800, Xiubo Li wrote:
-> This adds devicetree node for VF610, and there are 8 channels supported
-> by default.
+> > +		UDP_INC_STATS_USER(sock_net(sk), UDP_MIB_CSUMERRORS,
+> > +				   IS_UDPLITE(sk));
+> > +		UDP_INC_STATS_USER(sock_net(sk), UDP_MIB_INERRORS,
+> > +				   IS_UDPLITE(sk));
+> >  		atomic_inc(&sk->sk_drops);
+> >  		__skb_unlink(skb, rcvq);
+> >  		__skb_queue_tail(&list_kill, skb);
+> > diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+> > index 59df872..e05cf0a 100644
+> > --- a/net/ipv6/ip6_output.c
+> > +++ b/j
+> > @@ -116,8 +116,8 @@ static int ip6_finish_output2(struct sk_buff *skb)
+> >  	}
+> >  	rcu_read_unlock_bh();
+> >  
+> > -	IP6_INC_STATS_BH(dev_net(dst->dev),
+> > -			 ip6_dst_idev(dst), IPSTATS_MIB_OUTNOROUTES);
+> > +	IP6_INC_STATS(dev_net(dst->dev),
+> > +		      ip6_dst_idev(dst), IPSTATS_MIB_OUTNOROUTES);
+> 
+> This is ipv6, not inet changes ;)
 
-By default? From looking at the driver code it seemed that the device
-always supports 8 channels.
+I always considered inet both for ipv4+ipv6, otherwise I would use ipv4
+or ipv6 as patch prefix.
 
-Thierry
+> 
+> >  	kfree_skb(skb);
+> >  	return -EINVAL;
+> >  }
+> > @@ -1524,8 +1524,8 @@ int ip6_push_pending_frames(struct sock *sk)
+> >  	if (proto == IPPROTO_ICMPV6) {
+> >  		struct inet6_dev *idev = ip6_dst_idev(skb_dst(skb));
+> >  
+> > -		ICMP6MSGOUT_INC_STATS_BH(net, idev, icmp6_hdr(skb)->icmp6_type);
+> > -		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTMSGS);
+> > +		ICMP6MSGOUT_INC_STATS(net, idev, icmp6_hdr(skb)->icmp6_type);
+> > +		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTMSGS);
+> 
+> I am not sure we use a seqlock for ICMP stats.
+> 
+> seqlocks were used for 64bit IP stats
 
---DiL7RhKs8rK9YGuF
-Content-Type: application/pgp-signature
+True, atomic longs get used here in both cases.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Will update the patch. Thanks, Eric!
 
-iQIcBAEBAgAGBQJSl7UUAAoJEN0jrNd/PrOhq6sP/2FunsepMC02RZgnhH/wtwXI
-bTHXcMprlEnqOm3aNBujnTsbpTP+1xmHZAz08V9NcPiwWm/UmlPW5ZKBk23ToSsh
-K+hU+hkkuR1sZkrxs0sWvCb1a382VghMI8rrNv6gmV6B/t2F2Kps27H4Em3Ez8Bh
-r0ym8uAgkLt5CrL4otBG++i3bgGN83T9JIDutNz9K2xlW7IPUEkKWJMi019g7Clv
-9ouXJx9uiAPXQHXK8Q6F9rScyVrU1le9qMbk4uNqnqnD6fxE5pWQQYybFkE0oC2T
-f4ePwOIZkaf6tyU2zOT63WBs+rOsddtx8581mIzuApcnErgM0UxRjeXxxfwhbynD
-IdaoWJsA0GAH+ah13xsXCLPdDGNIM/R8BIF+x8579gXs4AgRaYoN1o0a1gqjY/05
-8cqKsDfr+016fyyOCVXSMElMWViS1ri2OtJ2D63MoNc1efVa8Sq1HRajDuip4wgt
-4cTa6HRn9X21xpJFoXHSfRLXQokgr1tw4952qVLmiD80EBPZq0bH7F3wkoNYfrEq
-AX5SG0FTJWwPcq++0rJ4+h8d47gJR9oJ8OEE2MEH2nUnl7dAHHAVXBw7UA2DWDdZ
-TdDvXO+ilRX7JmlgJk+C5Qmfa30dLoyozNBltYkXpQIOdvxpQn6CCMmCu/WRDUjI
-mFGz0Zm4TaT5992QRb87
-=NDfc
------END PGP SIGNATURE-----
-
---DiL7RhKs8rK9YGuF--
