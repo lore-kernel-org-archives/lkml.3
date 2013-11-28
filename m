@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932321Ab3K1Qmr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 11:42:47 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:38969 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755124Ab3K1Qmn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 11:42:43 -0500
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk
-Cc: matt.fleming@intel.com, grant.likely@linaro.org, roy.franz@linaro.org,
-        msalter@redhat.com, patches@linaro.org, linaro-uefi@linaro.org,
-        mark.rutland@arm.com, Leif Lindholm <leif.lindholm@linaro.org>
-Subject: [PATCH v3 3/3] init: efi: arm: enable (U)EFI runtime services on arm
-Date: Thu, 28 Nov 2013 16:41:23 +0000
-Message-Id: <1385656883-4420-4-git-send-email-leif.lindholm@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1385656883-4420-1-git-send-email-leif.lindholm@linaro.org>
-References: <1385656883-4420-1-git-send-email-leif.lindholm@linaro.org>
+	id S1757618Ab3K1QtK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 11:49:10 -0500
+Received: from mga02.intel.com ([134.134.136.20]:2659 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751045Ab3K1QtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 11:49:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,791,1378882800"; 
+   d="scan'208";a="443769161"
+Message-ID: <529773FC.6020707@linux.intel.com>
+Date: Thu, 28 Nov 2013 18:49:00 +0200
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>,
+        Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, David Miller <davem@davemloft.net>,
+        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH 7/8] sched, net: Fixup busy_loop_us_clock()
+References: <20131126155743.116756708@infradead.org> <20131126160815.293633156@infradead.org>
+In-Reply-To: <20131126160815.293633156@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the efi_set_virtual_address_map call has strict init ordering
-requirements, add an explicit hook in the required place.
+On 26/11/2013 17:57, Peter Zijlstra wrote:
+> 
+> Replace sched_clock() usage with local_clock() which has a bounded
+> drift between CPUs (<2 jiffies).
+> 
 
-Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
----
- init/main.c |    4 ++++
- 1 file changed, 4 insertions(+)
+Peter,
 
-diff --git a/init/main.c b/init/main.c
-index febc511..1331829 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -905,6 +905,10 @@ static noinline void __init kernel_init_freeable(void)
- 	smp_prepare_cpus(setup_max_cpus);
- 
- 	do_pre_smp_initcalls();
-+
-+	if (IS_ENABLED(CONFIG_ARM) && efi_enabled(EFI_BOOT))
-+		efi_enter_virtual_mode();
-+
- 	lockup_detector_init();
- 
- 	smp_init();
--- 
-1.7.10.4
+I have tested this patch and I see a performance regression of about
+1.5%.
 
+Maybe it would be better, rather then testing in the fast path, to
+simply disallow busy polling altogether when sched_clock_stable is
+not true?
+
+Thanks,
+Eliezer
