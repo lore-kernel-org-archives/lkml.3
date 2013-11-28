@@ -1,170 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab3K1U0L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 15:26:11 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54125 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751045Ab3K1U0I (ORCPT
+	id S1752318Ab3K1Udm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 15:33:42 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:53444 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751652Ab3K1Udk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 15:26:08 -0500
-Date: Thu, 28 Nov 2013 20:24:53 +0000
-From: Dave Martin <Dave.Martin@arm.com>
-To: Anurag Aggarwal <a.anurag@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, naveen.sel@samsung.com,
-        linux@arm.linux.org.uk, mohammad.a2@samsung.com, nico@linaro.org,
-        catalin.marinas@arm.com, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org, ashish.kalra@samsung.com,
-        cpgs@samsung.com, anurag19aggarwal@gmail.com,
-        naveenkrishna.ch@gmail.com, rajat.suri@samsung.com,
-        poorva.s@samsung.com, narendra.m1@samsung.com
-Subject: Re: [PATCH] ARM : unwinder : Prevent data abort due to stack
- overflow in unwind_exec_insn Signed-off-by: Anurag Aggarwal
- <a.anurag@samsung.com>
-Message-ID: <20131128202453.GE4634@e103592.cambridge.arm.com>
-References: <1385634439-24554-1-git-send-email-a.anurag@samsung.com>
+	Thu, 28 Nov 2013 15:33:40 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nm@ti.com, ceh@ti.com
+Subject: Re: [PATCH V3] cpufreq: Make sure CPU is running on a freq from freq-table
+Date: Thu, 28 Nov 2013 21:46:30 +0100
+Message-ID: <1415633.hVIJGiCZ0n@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <ad0a09012f3621024deb51120c3d4ef97ffcbd0f.1385649767.git.viresh.kumar@linaro.org>
+References: <ad0a09012f3621024deb51120c3d4ef97ffcbd0f.1385649767.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385634439-24554-1-git-send-email-a.anurag@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 03:57:19PM +0530, Anurag Aggarwal wrote:
-> While executing some unwind instructions stack overflow can cause a data abort
-> when area beyond stack is not mapped to physical memory.
+On Thursday, November 28, 2013 08:14:11 PM Viresh Kumar wrote:
+> Sometimes boot loaders set CPU frequency to a value outside of frequency table
+> present with cpufreq core. In such cases CPU might be unstable if it has to run
+> on that frequency for long duration of time and so its better to set it to a
+> frequency which is specified in freq-table. This also makes cpufreq stats
+> inconsistent as cpufreq-stats would fail to register because current frequency
+> of CPU isn't found in freq-table.
 > 
-> To prevent the data abort check whether it is possible to execute
-> these instructions before unwinding the stack
+> Because we don't want this change to effect boot process badly, we go for the
+> next freq which is >= policy->cur ('cur' must be set by now, otherwise we will
+> end up setting freq to lowest of the table as 'cur' is initialized to zero).
+> 
+> In case current frequency doesn't match any frequency from freq-table, we throw
+> warnings to user, so that user can get this fixed in their bootloaders or
+> freq-tables.
+> 
+> On some systems we can't really say what frequency we're running at the moment
+> and so for these we have added another flag: CPUFREQ_SKIP_INITIAL_FREQ_CHECK.
+> 
+> Reported-by: Carlos Hernandez <ceh@ti.com>
+> Reported-and-tested-by: Nishanth Menon <nm@ti.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+
+Well, this looks more and more complicated from version to version ...
+
 > ---
->  arch/arm/kernel/unwind.c |   59 +++++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 58 insertions(+), 1 deletions(-)
+> V2->V3:
+> - Added BUG_ON()
+> - Added another flag: CPUFREQ_SKIP_INITIAL_FREQ_CHECK
 > 
-> diff --git a/arch/arm/kernel/unwind.c b/arch/arm/kernel/unwind.c
-> index 00df012..3777cd7 100644
-> --- a/arch/arm/kernel/unwind.c
-> +++ b/arch/arm/kernel/unwind.c
-> @@ -49,6 +49,8 @@
->  #include <asm/traps.h>
->  #include <asm/unwind.h>
+>  drivers/cpufreq/cpufreq.c    | 38 ++++++++++++++++++++++++++++++++++++++
+>  drivers/cpufreq/freq_table.c | 24 ++++++++++++++++++++++++
+>  include/linux/cpufreq.h      | 11 +++++++++++
+>  3 files changed, 73 insertions(+)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 02d534d..1a8bf5d 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1038,6 +1038,44 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+>  		}
+>  	}
 >  
-> +#define TOTAL_REGISTERS 16
-> +
->  /* Dummy functions to avoid linker complaints */
->  void __aeabi_unwind_cpp_pr0(void)
->  {
-> @@ -66,7 +68,7 @@ void __aeabi_unwind_cpp_pr2(void)
->  EXPORT_SYMBOL(__aeabi_unwind_cpp_pr2);
->  
->  struct unwind_ctrl_block {
-> -	unsigned long vrs[16];		/* virtual register set */
-> +	unsigned long vrs[TOTAL_REGISTERS];	/* virtual register set */
->  	const unsigned long *insn;	/* pointer to the current instructions word */
->  	int entries;			/* number of entries left to interpret */
->  	int byte;			/* current byte number in the instructions word */
-> @@ -235,6 +237,58 @@ static unsigned long unwind_get_byte(struct unwind_ctrl_block *ctrl)
->  	return ret;
->  }
->  
-> +/* check whether there is enough space on stack to execute instructions
-> +   that can cause a data abort*/
+> +	/*
+> +	 * Sometimes boot loaders set CPU frequency to a value outside of
+> +	 * frequency table present with cpufreq core. In such cases CPU might be
+> +	 * unstable if it has to run on that frequency for long duration of time
+> +	 * and so its better to set it to a frequency which is specified in
+> +	 * freq-table. This also makes cpufreq stats inconsistent as
+> +	 * cpufreq-stats would fail to register because current frequency of CPU
+> +	 * isn't found in freq-table.
+> +	 *
+> +	 * Because we don't want this change to effect boot process badly, we go
+> +	 * for the next freq which is >= policy->cur ('cur' must be set by now,
+> +	 * otherwise we will end up setting freq to lowest of the table as 'cur'
+> +	 * is initialized to zero).
+> +	 *
+> +	 * We are passing target-freq as "policy->cur - 1" otherwise
+> +	 * __cpufreq_driver_target() would simply fail, as policy->cur will be
+> +	 * equal to target-freq.
+> +	 */
+> +	if (!(cpufreq_driver->flags & CPUFREQ_SKIP_INITIAL_FREQ_CHECK)
+> +			&& has_target()) {
 
-Nit: strange comment formatting in all your multi-line comments.
+Please set that flag for all x86 cpufreq drivers to start with.
 
-/*
- * Please format multi-line comments
- * like this.
- */
+And the usual notation for if()s that span multiple lines is:
 
-> +static int unwind_check_insn(struct unwind_ctrl_block *ctrl, unsigned long insn)
-> +{
+	if (!(cpufreq_driver->flags & CPUFREQ_SKIP_INITIAL_FREQ_CHECK)
+	   && has_target()) {
 
-I really think this shouldn't be separated out in this way, because it
-means the decoder has to be implemented twice, and moving the checks far
-away from the code that the checks need to match.
+i.e. 4 extra spaces after the tab in the continuation lines.
 
-Maybe you could refactor the code so that each insn has its own function,
-including the check and the execution.
+> +		/* Are we running at unknown frequency ? */
+> +		ret = cpufreq_frequency_table_get_index(policy, policy->cur);
+> +		if (ret == -EINVAL) {
+> +			/* Warn user and fix it */
+> +			pr_warn("%s: CPU%d: running at invalid freq: %u KHz\n",
+> +					__func__, policy->cpu, policy->cur);
 
-Then
+You don't have to increment the indentation level by 2 for the continuation
+lines (here and below).  +1 is enough usually.
 
-> +	unsigned long high, low;
-> +	int required_stack = 0;
-> +
-> +	low = ctrl->vrs[SP];
-> +	high = ALIGN(low, THREAD_SIZE);
-> +
-> +	/* check whether we have enough space to extract
-> +	atleast one set of registers*/
-> +	if ((high - low) > TOTAL_REGISTERS)
-> +		return URC_OK;
+> +			/*
+> +			 * Reaching here after boot in a few seconds may not
+> +			 * mean that system will remain stable at "unknown"
+> +			 * frequency for longer duration. Hence, a BUG_ON().
+> +			 */
+> +			BUG_ON(__cpufreq_driver_target(policy, policy->cur - 1,
+> +					CPUFREQ_RELATION_L));
 
-Although this appears safe, I wonder whether it just creates additional
-ways for the code to be wrong, without providing much optimisation.
+Write this as
 
-(For example, the maximum number of registers that can be read is
-not actually TOTAL_REGISTERS.)
+			ret = __cpufreq_driver_target(policy, policy->cur - 1,
+						      CPUFREQ_RELATION_L);
+			BUG_ON(ret);
 
-Cheers
----Dave
+And move the comment right before the BUG_ON().
 
-> +
-> +	if ((insn & 0xf0) == 0x80) {
-> +		unsigned long mask;
-> +		insn = (insn << 8) | unwind_get_byte(ctrl);
-> +		mask = insn & 0x0fff;
-> +		if (mask == 0) {
-> +			pr_warning("unwind: 'Refuse to unwind' instruction %04lx\n",
-> +				insn);
-> +			return -URC_FAILURE;
-> +		}
-> +		while (mask) {
-> +			if (mask & 1)
-> +				required_stack++;
-> +			mask >>= 1;
-> +		}
-> +	} else if ((insn & 0xf0) == 0xa0) {
-> +		required_stack += insn & 7;
-> +		required_stack +=  (insn & 0x80) ? 1 : 0;
-> +	} else if (insn == 0xb1) {
-> +		unsigned long mask = unwind_get_byte(ctrl);
-> +		if (mask == 0 || mask & 0xf0) {
-> +			pr_warning("unwind: Spare encoding %04lx\n",
-> +				(insn << 8) | mask);
-> +			return -URC_FAILURE;
-> +		}
-> +		while (mask) {
-> +			if (mask & 1)
-> +				required_stack++;
-> +			mask >>= 1;
+> +			pr_warn("%s: CPU%d: frequency changed to: %u KHz\n",
+
+			pr_warn("%s: CPU%d: Unlisted initial frequency changed to: %u KHz\n",
+
+> +					__func__, policy->cpu, policy->cur);
 > +		}
 > +	}
 > +
-> +	if ((high - low) < required_stack)
-> +		return -URC_FAILURE;
+>  	/* related cpus should atleast have policy->cpus */
+>  	cpumask_or(policy->related_cpus, policy->related_cpus, policy->cpus);
+>  
+> diff --git a/drivers/cpufreq/freq_table.c b/drivers/cpufreq/freq_table.c
+> index 3458d27..0d6cc0e 100644
+> --- a/drivers/cpufreq/freq_table.c
+> +++ b/drivers/cpufreq/freq_table.c
+> @@ -178,7 +178,31 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
+>  }
+>  EXPORT_SYMBOL_GPL(cpufreq_frequency_table_target);
+>  
+> +int cpufreq_frequency_table_get_index(struct cpufreq_policy *policy,
+> +		unsigned int freq)
+> +{
+> +	struct cpufreq_frequency_table *table;
+> +	int index = -EINVAL, i = 0;
 > +
-> +	return URC_OK;
+> +	table = cpufreq_frequency_get_table(policy->cpu);
+> +	if (unlikely(!table)) {
+> +		pr_debug("%s: Unable to find freq_table\n", __func__);
+
+		pr_debug("%s: Unable to find frequency table\n", __func__);
+
+> +		return -ENOENT;
+> +	}
+> +
+> +	for (; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+
+	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+
+(and don't initialize i upfront).
+
+> +		if (table[i].frequency == freq) {
+> +			index = i;
+> +			break;
+> +		}
+
+I would do
+
+		if (table[i].frequency == freq)
+			return i;
+
+> +	}
+> +
+> +	return index;
+
+	return -EINVAL;
+
+and then the index variable wouldn't be necessary I think?
+
 > +}
+> +EXPORT_SYMBOL_GPL(cpufreq_frequency_table_get_index);
 > +
->  /*
->   * Execute the current unwind instruction.
+>  static DEFINE_PER_CPU(struct cpufreq_frequency_table *, cpufreq_show_table);
+> +
+>  /**
+>   * show_available_freqs - show available frequencies for the specified CPU
 >   */
-> @@ -244,6 +298,9 @@ static int unwind_exec_insn(struct unwind_ctrl_block *ctrl)
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+> index dc196bb..7109c62 100644
+> --- a/include/linux/cpufreq.h
+> +++ b/include/linux/cpufreq.h
+> @@ -252,6 +252,15 @@ struct cpufreq_driver {
+>   */
+>  #define CPUFREQ_ASYNC_NOTIFICATION  (1 << 4)
 >  
->  	pr_debug("%s: insn = %08lx\n", __func__, insn);
->  
-> +	if (unwind_check_insn(ctrl, insn) < 0)
-> +		return -URC_FAILURE;
+> +/*
+> + * Set by drivers which don't want cpufreq core to check if CPU is running at a
+> + * frequency present in freq-table exposed by the driver. For other drivers if
+> + * CPU is found running at an out of table freq, we will try to set it to a freq
+> + * from the table. And if that fails, we will stop further boot process by
+> + * issuing a BUG_ON().
+> + */
+> +#define CPUFREQ_SKIP_INITIAL_FREQ_CHECK	(1 << 5)
 > +
->  	if ((insn & 0xc0) == 0x00)
->  		ctrl->vrs[SP] += ((insn & 0x3f) << 2) + 4;
->  	else if ((insn & 0xc0) == 0x40)
-> -- 
-> 1.7.0.4
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>  int cpufreq_register_driver(struct cpufreq_driver *driver_data);
+>  int cpufreq_unregister_driver(struct cpufreq_driver *driver_data);
+>  
+> @@ -439,6 +448,8 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
+>  				   unsigned int target_freq,
+>  				   unsigned int relation,
+>  				   unsigned int *index);
+> +int cpufreq_frequency_table_get_index(struct cpufreq_policy *policy,
+> +		unsigned int freq);
+>  
+>  void cpufreq_frequency_table_update_policy_cpu(struct cpufreq_policy *policy);
+>  ssize_t cpufreq_show_cpus(const struct cpumask *mask, char *buf);
+
+Overall, this looks like code written in a hurry.  Please avoid doing that.
+
+Thanks!
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
