@@ -1,132 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759099Ab3K1Po2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 10:44:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62340 "EHLO mx1.redhat.com"
+	id S1759321Ab3K1Pph (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 10:45:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38793 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755611Ab3K1PoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 10:44:24 -0500
-Date: Thu, 28 Nov 2013 16:43:50 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCHv3 3/7] perf tools: Fine tune readn function
-Message-ID: <20131128154350.GB31444@krava.brq.redhat.com>
-References: <1385634619-8129-1-git-send-email-jolsa@redhat.com>
- <1385634619-8129-4-git-send-email-jolsa@redhat.com>
- <52975F17.2050402@gmail.com>
+	id S1758800Ab3K1Ppg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 10:45:36 -0500
+Date: Thu, 28 Nov 2013 16:00:55 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <htejun@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, zhang.yi20@zte.com.cn,
+        lkml <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH]: exec: avoid propagating PF_NO_SETAFFINITY into
+	userspace child
+Message-ID: <20131128150055.GA11956@redhat.com>
+References: <20131126180420.GA18172@redhat.com> <OF99742718.77495161-ON48257C30.000A8334-48257C30.000BA983@zte.com.cn> <20131127183117.GB13098@mtj.dyndns.org> <20131128091358.GH10022@twins.programming.kicks-ass.net> <20131128114542.GA3826@redhat.com> <20131128121748.GN10022@twins.programming.kicks-ass.net> <20131128133152.GA821@redhat.com> <20131128133947.GR10022@twins.programming.kicks-ass.net> <20131128142359.GA6420@redhat.com> <20131128143155.GC3925@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52975F17.2050402@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131128143155.GC3925@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 08:19:51AM -0700, David Ahern wrote:
-> On 11/28/13, 3:30 AM, Jiri Olsa wrote:
-> >@@ -151,21 +152,26 @@ unsigned long convert_unit(unsigned long value, char *unit)
-> >  	return value;
-> >  }
-> >
-> >+/*
-> >+ * Read exactly 'n' bytes or return an error.
-> >+ */
-> >  ssize_t readn(int fd, void *buf, size_t n)
-> >  {
-> >  	void *buf_start = buf;
-> >+	size_t left = n;
-> >
-> >-	while (n) {
-> >-		ssize_t ret = read(fd, buf, n);
-> >+	while (left) {
-> >+		ssize_t ret = read(fd, buf, left);
-> >
-> >  		if (ret <= 0)
-> >  			return ret;
-> 
-> handle EINTR errors? no need to fail readn if the system call is
-> interrupted.
+On 11/28, Tejun Heo wrote:
+>
+> * Is WQ_RESCUER actually necessary?  If not, WQ_RESCUER will be
+>   dropped and the task bearing the name of the workqueue will no
+>   longer exist.
 
-right, how about the v3 below?
+WQ_MEM_RECLAIM, I guess. Probably not...
 
-thanks,
-jirka
+> * Is ordered execution necessary?  If not, it can be converted to
+>   alloc_workqueue() or just to use system_wq.
 
+I think no. This is the reason for kmod_thread_locker hack.
 
----
-Added a 'left' variable to make the flow clearer, and added a debug
-check for the return value - returning 'n' is more obvious. Also do
-not fail on EINTR error.
+> khelper is special as its attributes get inherited to its children,
+> so, yeah, we probably wanna keep that one's cpumask set to all.
 
-Added small comment for readn.
+And btw. Note ____call_usermodehelper()->set_cpus_allowed_ptr(cpu_all_mask).
 
-Original-patch-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/util.c | 19 +++++++++++++------
- 1 file changed, 13 insertions(+), 6 deletions(-)
+Even if we change the affinity of the "khelper" worker threads this
+won't restrict the user-space helpers.
 
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 9440481..f12eada 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -6,6 +6,8 @@
- #endif
- #include <stdio.h>
- #include <stdlib.h>
-+#include <linux/kernel.h>
-+#include <errno.h>
- 
- /*
-  * XXX We need to find a better place for these things...
-@@ -151,21 +153,26 @@ unsigned long convert_unit(unsigned long value, char *unit)
- 	return value;
- }
- 
-+/*
-+ * Read exactly 'n' bytes or return an error.
-+ */
- ssize_t readn(int fd, void *buf, size_t n)
- {
- 	void *buf_start = buf;
-+	size_t left = n;
- 
--	while (n) {
--		ssize_t ret = read(fd, buf, n);
-+	while (left) {
-+		ssize_t ret = read(fd, buf, left);
- 
--		if (ret <= 0)
-+		if ((ret <= 0) && (errno != EINTR))
- 			return ret;
- 
--		n -= ret;
--		buf += ret;
-+		left -= ret;
-+		buf  += ret;
- 	}
- 
--	return buf - buf_start;
-+	BUG_ON((size_t)(buf - buf_start) != n);
-+	return n;
- }
- 
- size_t hex_width(u64 v)
--- 
-1.8.3.1
+I think this set_cpus_allowed_ptr() should die in any case?
+
+Oleg.
 
