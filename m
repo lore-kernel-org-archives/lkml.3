@@ -1,249 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759412Ab3K1LmB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 06:42:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62329 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758095Ab3K1Ldy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 06:33:54 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCHv2 00/27] perf tools: Add traceevent plugins support
-Date: Thu, 28 Nov 2013 12:32:59 +0100
-Message-Id: <1385638408-23519-1-git-send-email-jolsa@redhat.com>
+	id S1759419Ab3K1LmW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 06:42:22 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:35551 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810Ab3K1LmS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 06:42:18 -0500
+Date: Thu, 28 Nov 2013 12:42:14 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Luigi Semenzato <semenzato@google.com>, linux-mm@kvack.org,
+        Greg Thelen <gthelen@google.com>, Glauber Costa <glommer@gmail.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Joern Engel <joern@logfs.org>,
+        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: user defined OOM policies
+Message-ID: <20131128114214.GJ2761@dhcp22.suse.cz>
+References: <20131119131400.GC20655@dhcp22.suse.cz>
+ <20131119134007.GD20655@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1311192352070.20752@chino.kir.corp.google.com>
+ <20131120152251.GA18809@dhcp22.suse.cz>
+ <CAA25o9S5EQBvyk=HP3obdCaXKjoUVtzeb4QsNmoLMq6NnOYifA@mail.gmail.com>
+ <alpine.DEB.2.02.1311201933420.7167@chino.kir.corp.google.com>
+ <CAA25o9Q64eK5LHhrRyVn73kFz=Z7Jji=rYWS=9jWL_4y9ZGbQA@mail.gmail.com>
+ <alpine.DEB.2.02.1311251717370.27270@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1311251717370.27270@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-backporting traceevent plugin support from trace-cmd.
+On Mon 25-11-13 17:29:20, David Rientjes wrote:
+> On Wed, 20 Nov 2013, Luigi Semenzato wrote:
+> 
+> > Yes, I agree that we can't always prevent OOM situations, and in fact
+> > we tolerate OOM kills, although they have a worse impact on the users
+> > than controlled freeing does.
+> > 
+> 
+> If the controlled freeing is able to actually free memory in time before 
+> hitting an oom condition, it should work pretty well.  That ability is 
+> seems to be highly dependent on sane thresholds for indvidual applications 
+> and I'm afraid we can never positively ensure that we wakeup and are able 
+> to free memory in time to avoid the oom condition.
+> 
+> > Well OK here it goes.  I hate to be a party-pooper, but the notion of
+> > a user-level OOM-handler scares me a bit for various reasons.
+> > 
+> > 1. Our custom notifier sends low-memory warnings well ahead of memory
+> > depletion.  If we don't have enough time to free memory then, what can
+> > the last-minute OOM handler do?
+> > 
+> 
+> The userspace oom handler doesn't necessarily guarantee that you can do 
+> memory freeing, our usecase wants to do a priority-based oom killing that 
+> is different from the kernel oom killer based on rss.  To do that, you 
+> only really need to read certain proc files and you can do killing based 
+> on uptime, for example.  You can also do a hierarchical traversal of 
+> memcgs based on a priority.
+> 
+> We already have hooks in the kernel oom killer, things like 
+> /proc/sys/vm/oom_kill_allocating_task
 
-Backported from Steven Rostedt's trace-cmd repo (HEAD 0f2c2fb):
-git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
+How would you implement oom_kill_allocating_task in userspace? You do
+not have any context on who is currently allocating or would you rely on
+reading /proc/*/stack to grep for allocation functions?
 
-Initial RFC is here:
-http://marc.info/?l=linux-kernel&m=137803257921043&w=2
-
-Having plugins allow traceevent to properly parse 'print fmt'
-line of tracepoint format and display proper/additional data
-in perf script command (check examples below).
-
-Plugins backported from trace-cmd:
-  plugin_function.c
-  plugin_hrtimer.c
-  plugin_jbd2.c
-  plugin_kmem.c
-  plugin_kvm.c
-  plugin_mac80211.c
-  plugin_sched_switch.c
-
-Plugins newly added:
-  plugin_cfg80211.c
-  plugin_scsi.c
-  plugin_xen.c
-
-
-v2 changes:
-  - removing usage of malloc_or_die from event-pluginc.c
-  - using static methods in plugins where possible
-  - added Steven's Signed-off-by tags
-  - changed traceevent_host_bigendian with code suggested by Steven
-  - using pevent_print_func_field in hrtimer_start handler
-  - plugin_function.c changes:
-    * switching malloc_or_die into malloc
-    * removing index field from struct func_stack as it's not needed
-    * renaming get_index into add_and_get_index
-    * using '%*X' format string capability instead of the loop
-  - changing pevent_parse_format interface instead
-    of the pevent_parse_event as requested by Steven
-  - breakout LIBTRACEEVENT_FLAGS in Makefile.perf as suggested
-    by Namhyung
-  - added better error handling for filename__read_str
-    suggested by Nmahyung
-  - using _eprintf code in pr_stat function as suggested
-    by Namhyung
-  - removing stackprotector feature check as it's not needed
-    and is causing warnings - build failures on old gcc
-
-Changes from RFC:
-  - added comment about repo/HEAD of the backport source
-  - omitted options plugin support
-  - change plugins installation path to:
-    $(perfexecdir)/traceevent/plugins
-
-
-The code is available in here:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-  perf/core_plugins
-
-thanks,
-jirka
-
-Examples (diffs of 'perf script' output):
-
-  * data was generated by 'perf record -e 'cfg80211:*' -a'
-    --- script.cfg80211.old
-    +++ script.cfg80211.new
-    -        ifconfig  2705 [003]   662.896560: cfg80211:cfg80211_tx_mlme_mgmt: [FAILED TO PARSE] name=wlan0 ifindex=3 frame=ARRAY[c0, 00, 
-    +        ifconfig  2705 [003]   662.896560: cfg80211:cfg80211_tx_mlme_mgmt: netdev:wlan0(3), ftype:0xc0
-    -   kworker/u16:0  1697 [002]   664.808210: cfg80211:cfg80211_rx_mlme_mgmt: [FAILED TO PARSE] name=wlan0 ifindex=3 frame=ARRAY[b0, 00, 
-    +   kworker/u16:0  1697 [002]   664.808210: cfg80211:cfg80211_rx_mlme_mgmt: netdev:wlan0(3), ftype:0xb0
-
-
-  * data was generated by 'perf record -e sched:sched_switch -a'
-    --- script.sched_switch.old
-    +++ script.sched_switch.new
-    -            perf   577 [002] 30965.311852: sched:sched_switch: prev_comm=perf prev_pid=577 prev_prio=120 prev_state=S ==> next_comm=sw
-    +            perf   577 [002] 30965.311852: sched:sched_switch: perf:577 [120] S ==> swapper/2:0 [120]
-
-
-  * data was generated by 'perf record -e ftrace:function ls'
-    --- script.function.old
-    +++ script.function.new
-    -              ls 10781 [001] 32667.291379: ftrace:function:  ffffffff811adb80 <-- ffffffff811afc48
-    -              ls 10781 [001] 32667.291379: ftrace:function:  ffffffff811b35d0 <-- ffffffff811adb9b
-    -              ls 10781 [001] 32667.291380: ftrace:function:  ffffffff811b3520 <-- ffffffff811b35e8
-    -              ls 10781 [001] 32667.291380: ftrace:function:  ffffffff811b2720 <-- ffffffff811b3549
-    -              ls 10781 [001] 32667.291381: ftrace:function:  ffffffff81297e10 <-- ffffffff811b356c
-    -              ls 10781 [001] 32667.291381: ftrace:function:  ffffffff81298f40 <-- ffffffff81297e2c
-    -              ls 10781 [001] 32667.291382: ftrace:function:  ffffffff81076160 <-- ffffffff811afbf0
-    -              ls 10781 [001] 32667.291383: ftrace:function:  ffffffff811c3eb0 <-- ffffffff811afbfc
-    -              ls 10781 [001] 32667.291383: ftrace:function:  ffffffff8164e100 <-- ffffffff811c3ed8
-    -              ls 10781 [001] 32667.291384: ftrace:function:  ffffffff811a5d10 <-- ffffffff811c3f53
-    -              ls 10781 [001] 32667.291384: ftrace:function:  ffffffff811e8e70 <-- ffffffff811a5d58
-    -              ls 10781 [001] 32667.291385: ftrace:function:  ffffffff811f38e0 <-- ffffffff811a5d63
-    -              ls 10781 [001] 32667.291385: ftrace:function:  ffffffff811a9ff0 <-- ffffffff811a5d6b
-    -              ls 10781 [001] 32667.291386: ftrace:function:  ffffffff811a9fa0 <-- ffffffff811aa015
-    -              ls 10781 [001] 32667.291387: ftrace:function:  ffffffff810851c0 <-- ffffffff811aa053
-    -              ls 10781 [001] 32667.291387: ftrace:function:  ffffffff81090e00 <-- ffffffff81085211
-    +              ls 10781 [001] 32667.291379: ftrace:function: would_dump <-- setup_new_exec
-    +              ls 10781 [001] 32667.291379: ftrace:function:    inode_permission <-- would_dump
-    +              ls 10781 [001] 32667.291380: ftrace:function:       __inode_permission <-- inode_permission
-    +              ls 10781 [001] 32667.291380: ftrace:function:          generic_permission <-- __inode_permission
-    +              ls 10781 [001] 32667.291381: ftrace:function:          security_inode_permission <-- __inode_permission
-    +              ls 10781 [001] 32667.291381: ftrace:function:             cap_inode_permission <-- security_inode_permission
-    +              ls 10781 [001] 32667.291382: ftrace:function: flush_signal_handlers <-- setup_new_exec
-    +              ls 10781 [001] 32667.291383: ftrace:function: do_close_on_exec <-- setup_new_exec
-    +              ls 10781 [001] 32667.291383: ftrace:function:    _raw_spin_lock <-- do_close_on_exec
-    +              ls 10781 [001] 32667.291384: ftrace:function:    filp_close <-- do_close_on_exec
-    +              ls 10781 [001] 32667.291384: ftrace:function:       dnotify_flush <-- filp_close
-    +              ls 10781 [001] 32667.291385: ftrace:function:       locks_remove_posix <-- filp_close
-    +              ls 10781 [001] 32667.291385: ftrace:function:       fput <-- filp_close
-    +              ls 10781 [001] 32667.291386: ftrace:function:          file_sb_list_del <-- fput
-    +              ls 10781 [001] 32667.291387: ftrace:function:          task_work_add <-- fput
-    +              ls 10781 [001] 32667.291387: ftrace:function:             kick_process <-- task_work_add
-
-
-  * data was generated by 'perf record -e 'kvm:*,kvmmmu:*' -a'
-    --- script.kvm.old
-    +++ script.kvm.new
-      qemu-system-x86 17414 [000]  6868.995053: kvm:kvm_exit: reason EPT_VIOLATION rip 0xfff0 info 184 0
-      qemu-system-x86 17414 [000]  6868.995109: kvm:kvm_emulate_insn: f0000:c46b:e4 71 (real)
-    - qemu-system-x86  3006 [002] 10562.079422: kvmmmu:kvm_mmu_get_page: [FAILED TO PARSE] mmu_valid_gen=0x2 gfn=0 role=122884 root_count=0
-    + qemu-system-x86  3006 [002] 10562.079422: kvmmmu:kvm_mmu_get_page: new sp gfn 0 0/4 q0 direct --- !pge !nxe root 0 sync
-    - qemu-system-x86  3006 [002] 10562.080502: kvmmmu:kvm_mmu_prepare_zap_page: [FAILED TO PARSE] mmu_valid_gen=0x2 gfn=0 role=122884 root
-    + qemu-system-x86  3006 [002] 10562.080502: kvmmmu:kvm_mmu_prepare_zap_page: 0/4 q0 direct --- !pge !nxe root 1 sync
-      qemu-system-x86  3290 [002] 10708.755312: kvmmmu:fast_page_fault: [FAILED TO PARSE] vcpu_id=0 gva=4094486080 error_code=3 sptep=0xfff
-    -          insmod  2576 [001]   781.731666: kvmmmu:kvm_mmu_sync_page: [FAILED TO PARSE] mmu_valid_gen=0x1 gfn=2 role=24624 root_count=1
-    +          insmod  2576 [001]   781.731666: kvmmmu:kvm_mmu_sync_page: 3/0 q0 --- !pge !nxe root 10 unsync
-    -          insmod  2576 [001]   781.731668: kvmmmu:kvm_mmu_unsync_page: [FAILED TO PARSE] mmu_valid_gen=0x1 gfn=2 role=24624 root_count
-    +          insmod  2576 [001]   781.731668: kvmmmu:kvm_mmu_unsync_page: 3/0 q0 --- !pge !nxe root 10 unsync
-
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Ahern <dsahern@gmail.com>
----
-Jiri Olsa (29):
-      perf tools: Remove stackprotector feature check
-      perf tools: Include test-stackprotector-all.c in test-all
-      tools lib traceevent: Add plugin support
-      tools lib traceevent: Add plugin build support
-      tools lib traceevent: Add traceevent_host_bigendian function
-      tools lib traceevent: Add jbd2 plugin
-      tools lib traceevent: Add hrtimer plugin
-      tools lib traceevent: Add kmem plugin
-      tools lib traceevent: Add kvm plugin
-      tools lib traceevent: Add mac80211 plugin
-      tools lib traceevent: Add sched_switch plugin
-      tools lib traceevent: Add function plugin
-      tools lib traceevent: Add xen plugin
-      tools lib traceevent: Add scsi plugin
-      tools lib traceevent: Add cfg80211 plugin
-      tools lib traceevent: Remove malloc_or_die from event-plugin.c
-      tools lib traceevent: Use static functions in jbd2 plugin
-      tools lib traceevent: Use pevent_print_func_field in hrtimer_start handler
-      tools lib traceevent: Several cleanups for function plugin
-      tools lib traceevent: Remove malloc_or_die from plugin_function.c
-      tools lib traceevent: Update kvm plugin with is_writable_pte helper
-      tools lib traceevent: Change pevent_parse_format to include pevent handle
-      tools lib traceevent: Harmonize the install messages in lib-traceevent
-      perf tools: Add build and install plugins targets
-      perf tools: Add udis86 disassembler feature check
-      perf tools: Add filename__read_str util function
-      perf tools: Add trace-event object
-      perf tools: Add trace-event global object for tracepoint interface
-      perf tools: Overload pr_stat traceevent print function
-
- tools/lib/traceevent/Makefile                          |  71 +++++++++++--
- tools/lib/traceevent/event-parse.c                     |  56 ++++++----
- tools/lib/traceevent/event-parse.h                     |  19 +++-
- tools/lib/traceevent/event-plugin.c                    | 215 +++++++++++++++++++++++++++++++++++++
- tools/lib/traceevent/plugin_cfg80211.c                 |  24 +++++
- tools/lib/traceevent/plugin_function.c                 | 160 ++++++++++++++++++++++++++++
- tools/lib/traceevent/plugin_hrtimer.c                  |  78 ++++++++++++++
- tools/lib/traceevent/plugin_jbd2.c                     |  68 ++++++++++++
- tools/lib/traceevent/plugin_kmem.c                     |  72 +++++++++++++
- tools/lib/traceevent/plugin_kvm.c                      | 436 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- tools/lib/traceevent/plugin_mac80211.c                 |  95 +++++++++++++++++
- tools/lib/traceevent/plugin_sched_switch.c             | 148 ++++++++++++++++++++++++++
- tools/lib/traceevent/plugin_scsi.c                     | 423 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- tools/lib/traceevent/plugin_xen.c                      | 130 +++++++++++++++++++++++
- tools/perf/Makefile.perf                               |  18 +++-
- tools/perf/builtin-script.c                            |   2 +-
- tools/perf/builtin-trace.c                             |   5 +-
- tools/perf/config/Makefile                             |  21 +++-
- tools/perf/config/feature-checks/Makefile              |  12 +--
- tools/perf/config/feature-checks/test-all.c            |  10 ++
- tools/perf/config/feature-checks/test-stackprotector.c |   6 --
- tools/perf/config/feature-checks/test-udis86.c         |  11 ++
- tools/perf/util/debug.c                                |  30 +++++-
- tools/perf/util/debug.h                                |   2 +
- tools/perf/util/evsel.c                                |  44 +-------
- tools/perf/util/header.c                               |   8 +-
- tools/perf/util/python-ext-sources                     |   1 +
- tools/perf/util/session.h                              |   3 +-
- tools/perf/util/trace-event-parse.c                    |  13 ---
- tools/perf/util/trace-event-read.c                     |  20 ++--
- tools/perf/util/trace-event.c                          |  82 +++++++++++++++
- tools/perf/util/trace-event.h                          |  15 ++-
- tools/perf/util/util.c                                 |  50 +++++++++
- tools/perf/util/util.h                                 |   1 +
- 34 files changed, 2220 insertions(+), 129 deletions(-)
- create mode 100644 tools/lib/traceevent/event-plugin.c
- create mode 100644 tools/lib/traceevent/plugin_cfg80211.c
- create mode 100644 tools/lib/traceevent/plugin_function.c
- create mode 100644 tools/lib/traceevent/plugin_hrtimer.c
- create mode 100644 tools/lib/traceevent/plugin_jbd2.c
- create mode 100644 tools/lib/traceevent/plugin_kmem.c
- create mode 100644 tools/lib/traceevent/plugin_kvm.c
- create mode 100644 tools/lib/traceevent/plugin_mac80211.c
- create mode 100644 tools/lib/traceevent/plugin_sched_switch.c
- create mode 100644 tools/lib/traceevent/plugin_scsi.c
- create mode 100644 tools/lib/traceevent/plugin_xen.c
- delete mode 100644 tools/perf/config/feature-checks/test-stackprotector.c
- create mode 100644 tools/perf/config/feature-checks/test-udis86.c
- create mode 100644 tools/perf/util/trace-event.c
+> and /proc/sys/vm/panic_on_oom that 
+[...]
+-- 
+Michal Hocko
+SUSE Labs
