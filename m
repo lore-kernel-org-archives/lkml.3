@@ -1,43 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758693Ab3K1DC6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 22:02:58 -0500
-Received: from mail-yh0-f51.google.com ([209.85.213.51]:65479 "EHLO
-	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755239Ab3K1DCz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 22:02:55 -0500
-Date: Wed, 27 Nov 2013 19:02:53 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Yinghai Lu <yinghai@kernel.org>
-cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        srikar@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:sched/urgent] sched: Check sched_domain before computing
- group power
-In-Reply-To: <CAE9FiQUCPvzeiCSan34aV6hfrDHdV=sfHug0tMaAgpOMbum7jw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1311271902230.5120@chino.kir.corp.google.com>
-References: <20131113151718.GN21461@twins.programming.kicks-ass.net> <tip-9abf24d465180f5f2eb26a43545348262f16b771@git.kernel.org> <CAE9FiQUk2Mr+4WypL41tCp3+54Aa+CT-17ga9+RffscUxwWAAg@mail.gmail.com> <20131121150344.GG10022@twins.programming.kicks-ass.net>
- <CAE9FiQUHQ7jQfpxi+s7yeef17-+ApGjU2X1iRnm=azJ0+BFWZw@mail.gmail.com> <CAE9FiQUCPvzeiCSan34aV6hfrDHdV=sfHug0tMaAgpOMbum7jw@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1758513Ab3K1DN0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 22:13:26 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:42575 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754667Ab3K1DNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 22:13:22 -0500
+Date: Wed, 27 Nov 2013 22:13:13 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org,
+        Michal Hocko <mhocko@suse.cz>, azurit@pobox.sk,
+        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [merged]
+ mm-memcg-handle-non-error-oom-situations-more-gracefully.patch removed from
+ -mm tree
+Message-ID: <20131128031313.GK3556@cmpxchg.org>
+References: <526028bd.k5qPj2+MDOK1o6ii%akpm@linux-foundation.org>
+ <alpine.DEB.2.02.1311271453270.13682@chino.kir.corp.google.com>
+ <20131127233353.GH3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311271622330.10617@chino.kir.corp.google.com>
+ <20131128021809.GI3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311271826001.5120@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1311271826001.5120@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Nov 2013, Yinghai Lu wrote:
-
-> original one in linus's tree:
+On Wed, Nov 27, 2013 at 06:38:31PM -0800, David Rientjes wrote:
+> On Wed, 27 Nov 2013, Johannes Weiner wrote:
 > 
-> [    8.952728] NMI watchdog: enabled on all CPUs, permanently consumes
-> one hw-PMU counter.
-> [    8.965697] BUG: unable to handle kernel NULL pointer dereference
-> at 0000000000000010
-> [    8.969495] IP: [<ffffffff810d7b53>] update_group_power+0x1d3/0x250
+> > > The task that is bypassing the memcg charge to the root memcg may not be 
+> > > the process that is chosen by the oom killer, and it's possible the amount 
+> > > of memory freed by killing the victim is less than the amount of memory 
+> > > bypassed.
+> > 
+> > That's true, though unlikely.
+> > 
+> 
+> Well, the "goto bypass" allows it and it's trivial to cause by 
+> manipulating /proc/pid/oom_score_adj values to prefer processes with very 
+> little rss.  It will just continue looping and killing processes as they 
+> are forked and never cause the memcg to free memory below its limit.  At 
+> least the "goto nomem" allows us to free some memory instead of leaking to 
+> the root memcg.
 
-This should have been fixed by Srikar's patch, no?
+Yes, that's the better way of doing it, I'll send the patch.  Thanks.
+
+> > > Were you targeting these to 3.13 instead?  If so, it would have already 
+> > > appeared in 3.13-rc1 anyway.  Is it still a work in progress?
+> > 
+> > I don't know how to answer this question.
+> > 
+> 
+> It appears as though this work is being developed in Linus's tree rather 
+> than -mm, so I'm asking if we should consider backing some of it out for 
+> 3.14 instead.
+
+The changes fix a deadlock problem.  Are they creating problems that
+are worse than deadlocks, that would justify their revert?
+
+> > > Should we be checking mem_cgroup_margin() here to ensure 
+> > > task_in_memcg_oom() is still accurate and we haven't raced by freeing 
+> > > memory?
+> > 
+> > We would have invoked the OOM killer long before this point prior to
+> > my patches.  There is a line we draw and from that point on we start
+> > killing things.  I tried to explain multiple times now that there is
+> > no race-free OOM killing and I'm tired of it.  Convince me otherwise
+> > or stop repeating this non-sense.
+> > 
+> 
+> In our internal kernel we call mem_cgroup_margin() with the order of the 
+> charge immediately prior to sending the SIGKILL to see if it's still 
+> needed even after selecting the victim.  It makes the race smaller.
+> 
+> It's obvious that after the SIGKILL is sent, either from the kernel or 
+> from userspace, that memory might subsequently be freed or another process 
+> might exit before the process killed could even wake up.  There's nothing 
+> we can do about that since we don't have psychic abilities.  I think we 
+> should try to reduce the chance for unnecessary oom killing as much as 
+> possible, however.
+
+Since we can't physically draw a perfect line, we should strive for a
+reasonable and intuitive line.  After that it's rapidly diminishing
+returns.  Killing something after that much reclaim effort without
+success is a completely reasonable and intuitive line to draw.  It's
+also the line that has been drawn a long time ago and we're not
+breaking this because of a micro optmimization.
