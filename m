@@ -1,65 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758905Ab3K1HpE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 02:45:04 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:58405 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756866Ab3K1HpC (ORCPT
+	id S932361Ab3K1Hqt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 02:46:49 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59593 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab3K1Hqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 02:45:02 -0500
-X-AuditID: cbfee61b-b7f166d000007a34-47-5296f47de1cd
-From: Chao Yu <chao2.yu@samsung.com>
-To: ??? <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
-Subject: [f2fs-dev] [PATCH 4/5] f2fs: check return value of f2fs_readpage in
- find_data_page
-Date: Thu, 28 Nov 2013 15:43:43 +0800
-Message-id: <003601ceec0d$bcc30330$36490990$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=gb2312
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac7sDJ6+7T4Pprq1TsehLSudF45tug==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jQd3aL9OCDL61yllc3/WXyeLSIneL
-	PXtPslhc3jWHzaJ14XlmB1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxuXGE6wF
-	k1krvl91aGDsZeli5OSQEDCR2PLrKSuELSZx4d56ti5GLg4hgemMEr83nWAGSQgJ/GCU2LzI
-	E8RmE1CRWN7xnwnEFhFQlNjwfgM7SAOzwAxGicNz/4FNEhaIlWhvuc8IYrMIqEp8XXEdbBCv
-	gKXE1a7HTBC2oMSPyffArmAW0JDoX7SBDcKWl9i85i0zxEUKEjvOvmaEWKYnsajxNjNEjbjE
-	xiO3WCYwCsxCMmoWklGzkIyahaRlASPLKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgkH4m
-	vYNxVYPFIUYBDkYlHl4JnWlBQqyJZcWVuYcYJTiYlUR4FYqBQrwpiZVVqUX58UWlOanFhxil
-	OViUxHkPtloHCgmkJ5akZqemFqQWwWSZODilGhjrDS7mHo6XF7b0dTnDevlwE492+afwe6+7
-	JdkOvs00v+m4qrz/vPl83yDvn/w1j5p5quZuOvZQpEdV82bWL1XLucZ5XzbViCvOORjy6o2j
-	7f112af/7fybw9S83M+wr+iQy5x/yimn526QrcvOcuVhvvJG22ydwNlntkEGRy5HrJR6yXDo
-	1iolluKMREMt5qLiRABsOJSsZQIAAA==
+	Thu, 28 Nov 2013 02:46:46 -0500
+X-AuditID: 9c93016f-b7b6aae000005fae-db-5296f4e01a5b
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Joonsoo Kim <js1304@gmail.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH 9/9] mm/rmap: use rmap_walk() in page_mkclean()
+Date: Thu, 28 Nov 2013 16:48:46 +0900
+Message-Id: <1385624926-28883-10-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1385624926-28883-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1385624926-28883-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should return error if we do not get an updated page in find_date_page
-when f2fs_readpage failed.
+Now, we have an infrastructure in rmap_walk() to handle difference
+from variants of rmap traversing functions.
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/data.c |    3 +++
- 1 file changed, 3 insertions(+)
+So, just use it in page_mkclean().
 
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index 2d02cf3..85071d6 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -240,6 +240,9 @@ struct page *find_data_page(struct inode *inode, pgoff_t index, bool sync)
+In this patch, I change following things.
+
+1. remove some variants of rmap traversing functions.
+    cf> page_mkclean_file
+2. mechanical change to use rmap_walk() in page_mkclean().
+
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 5e78d5c..bbbc705 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -809,12 +809,13 @@ int page_referenced(struct page *page,
+ }
  
- 	err = f2fs_readpage(sbi, page, dn.data_blkaddr,
- 					sync ? READ_SYNC : READA);
-+	if (err)
-+		return ERR_PTR(err);
+ static int page_mkclean_one(struct page *page, struct vm_area_struct *vma,
+-			    unsigned long address)
++			    unsigned long address, void *arg)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	pte_t *pte;
+ 	spinlock_t *ptl;
+ 	int ret = 0;
++	int *cleaned = arg;
+ 
+ 	pte = page_check_address(page, mm, address, &ptl, 1);
+ 	if (!pte)
+@@ -833,44 +834,46 @@ static int page_mkclean_one(struct page *page, struct vm_area_struct *vma,
+ 
+ 	pte_unmap_unlock(pte, ptl);
+ 
+-	if (ret)
++	if (ret) {
+ 		mmu_notifier_invalidate_page(mm, address);
++		(*cleaned)++;
++	}
+ out:
+-	return ret;
++	return SWAP_AGAIN;
+ }
+ 
+-static int page_mkclean_file(struct address_space *mapping, struct page *page)
++static int skip_vma_non_shared(struct vm_area_struct *vma, void *arg)
+ {
+-	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+-	struct vm_area_struct *vma;
+-	int ret = 0;
+-
+-	BUG_ON(PageAnon(page));
++	if (vma->vm_flags & VM_SHARED)
++		return 0;
+ 
+-	mutex_lock(&mapping->i_mmap_mutex);
+-	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
+-		if (vma->vm_flags & VM_SHARED) {
+-			unsigned long address = vma_address(page, vma);
+-			ret += page_mkclean_one(page, vma, address);
+-		}
+-	}
+-	mutex_unlock(&mapping->i_mmap_mutex);
+-	return ret;
++	return 1;
+ }
+ 
+ int page_mkclean(struct page *page)
+ {
+-	int ret = 0;
++	struct address_space *mapping;
++	struct rmap_walk_control rwc;
++	int cleaned;
+ 
+ 	BUG_ON(!PageLocked(page));
+ 
+-	if (page_mapped(page)) {
+-		struct address_space *mapping = page_mapping(page);
+-		if (mapping)
+-			ret = page_mkclean_file(mapping, page);
+-	}
++	if (!page_mapped(page))
++		return 0;
+ 
+-	return ret;
++	mapping = page_mapping(page);
++	if (!mapping)
++		return 0;
 +
- 	if (sync) {
- 		wait_on_page_locked(page);
- 		if (!PageUptodate(page)) {
++	memset(&rwc, 0, sizeof(rwc));
++	cleaned = 0;
++	rwc.main = page_mkclean_one;
++	rwc.arg = (void *)&cleaned;
++	rwc.vma_skip = skip_vma_non_shared;
++
++	rmap_walk(page, &rwc);
++
++	return cleaned;
+ }
+ EXPORT_SYMBOL_GPL(page_mkclean);
+ 
 -- 
 1.7.9.5
 
