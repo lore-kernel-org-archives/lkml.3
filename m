@@ -1,103 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab3K1IyA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 03:54:00 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:36797 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309Ab3K1Ix7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 03:53:59 -0500
-Message-ID: <5297049E.3020800@linux.vnet.ibm.com>
-Date: Thu, 28 Nov 2013 16:53:50 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1753505Ab3K1I4o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 03:56:44 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:32646 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750841Ab3K1I4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 03:56:41 -0500
+X-IronPort-AV: E=Sophos;i="4.93,789,1378828800"; 
+   d="scan'208";a="9145388"
+Message-ID: <5297BBB0.8030104@cn.fujitsu.com>
+Date: Thu, 28 Nov 2013 16:54:56 -0500
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>, avi.kivity@gmail.com,
-        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Eric Dumazet <dada1@cosmosbay.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
-References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1382534973-13197-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20131122191429.GA13308@amt.cnet> <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com> <5292EE2F.5090305@linux.vnet.ibm.com> <20131125181254.GB21858@amt.cnet> <529413C1.60302@linux.vnet.ibm.com> <20131126193148.GA18071@amt.cnet>
-In-Reply-To: <20131126193148.GA18071@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13112808-3568-0000-0000-0000049E6D57
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+CC: linux-kernel@vger.kernel.org, dsahern@gmail.com, adrian.hunter@intel.com,
+        jolsa@redhat.com, namhyung@kernel.org, acme@ghostprotocols.net,
+        mingo@redhat.com, a.p.zijlstra@chello.nl
+Subject: Re: [PATCH] perf target: Move what map fucntion to call check into
+ function.
+References: <1385667174-16181-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+In-Reply-To: <1385667174-16181-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/28 16:56:41,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/28 16:56:43,
+	Serialize complete at 2013/11/28 16:56:43
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2013 03:31 AM, Marcelo Tosatti wrote:
-> On Tue, Nov 26, 2013 at 11:21:37AM +0800, Xiao Guangrong wrote:
->> On 11/26/2013 02:12 AM, Marcelo Tosatti wrote:
->>> On Mon, Nov 25, 2013 at 02:29:03PM +0800, Xiao Guangrong wrote:
->>>>>> Also, there is no guarantee of termination (as long as sptes are
->>>>>> deleted with the correct timing). BTW, can't see any guarantee of
->>>>>> termination for rculist nulls either (a writer can race with a lockless
->>>>>> reader indefinately, restarting the lockless walk every time).
->>>>>
->>>>> Hmm, that can be avoided by checking dirty-bitmap before rewalk,
->>>>> that means, if the dirty-bitmap has been set during lockless write-protection,
->>>>> it�s unnecessary to write-protect its sptes. Your idea?
->>>> This idea is based on the fact that the number of rmap is limited by
->>>> RMAP_RECYCLE_THRESHOLD. So, in the case of adding new spte into rmap,
->>>> we can break the rewalk at once, in the case of deleting, we can only
->>>> rewalk RMAP_RECYCLE_THRESHOLD times.
->>>
->>> Please explain in more detail.
->>
->> Okay.
->>
->> My proposal is like this:
->>
->> pte_list_walk_lockless()
->> {
->> restart:
->>
->> +	if (__test_bit(slot->arch.dirty_bitmap, gfn-index))
->> +		return;
->>
->> 	code-doing-lockless-walking;
->> 	......
->> }
->>
->> Before do lockless-walking, we check the dirty-bitmap first, if
->> it is set we can simply skip write-protection for the gfn, that
->> is the case that new spte is being added into rmap when we lockless
->> access the rmap.
-> 
-> The dirty bit could be set after the check.
-> 
->> For the case of deleting spte from rmap, the number of entry is limited
->> by RMAP_RECYCLE_THRESHOLD, that is not endlessly.
-> 
-> It can shrink and grow while lockless walk is performed.
+I will resend the correct one. Sorry for the bother.
 
-Yes, indeed.
-
-Hmmm, another idea in my mind to fix this is encoding the position into
-the reserved bits of desc->more pointer, for example:
-
-          +------+    +------+    +------+
-rmapp ->  |Desc 0| -> |Desc 1| -> |Desc 2|
-          +------+    +------+    +------+
-
-There are 3 descs on the rmap, and:
-rmapp = &desc0 | 1UL | 3UL << 50;
-desc0->more = desc1 | 2UL << 50;
-desc1->more = desc0 | 1UL << 50
-desc2->more = &rmapp | 1UL; (The nulls pointer)
-
-We will walk to the next desc only if the "position" of current desc
-is >= the position of next desc. That can make sure we can reach the
-last desc anyway.
-
-And in order to avoiding doing too many "rewalk", we will goto the
-slow path (do walk with holding the lock) instead when retry the walk
-more that N times.
-
-Thanks all you guys in thanksgiving day. :)
+On 11/28/2013 02:32 PM, Dongsheng Yang wrote:
+> Check for cpu_map__dummy_new() or cpu_map__new() to be called in
+> perf_evlist__create_maps() is more complicated. This patch moves
+> the checking work into target.h, combining two conditions and making
+> perf_evlist__create_maps() more readable.
+>
+> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+> ---
+>   tools/perf/util/evlist.c |  8 +-------
+>   tools/perf/util/target.h | 13 +++++++++++++
+>   2 files changed, 14 insertions(+), 7 deletions(-)
+>
+> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+> index 76fa764..7bb6ee1 100644
+> --- a/tools/perf/util/evlist.c
+> +++ b/tools/perf/util/evlist.c
+> @@ -819,13 +819,7 @@ int perf_evlist__create_maps(struct perf_evlist *evlist, struct target *target)
+>   	if (evlist->threads == NULL)
+>   		return -1;
+>   
+> -	if (target->default_per_cpu)
+> -		evlist->cpus = target->per_thread ?
+> -					cpu_map__dummy_new() :
+> -					cpu_map__new(target->cpu_list);
+> -	else if (target__has_task(target))
+> -		evlist->cpus = cpu_map__dummy_new();
+> -	else if (!target__has_cpu(target) && !target->uses_mmap)
+> +	if (target__uses_dummy_map(target))
+>   		evlist->cpus = cpu_map__dummy_new();
+>   	else
+>   		evlist->cpus = cpu_map__new(target->cpu_list);
+> diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
+> index 31dd2e9..7381b1c 100644
+> --- a/tools/perf/util/target.h
+> +++ b/tools/perf/util/target.h
+> @@ -63,4 +63,17 @@ static inline bool target__none(struct target *target)
+>   	return !target__has_task(target) && !target__has_cpu(target);
+>   }
+>   
+> +static inline bool target__uses_dummy_map(struct target *target)
+> +{
+> +	bool use_dummy = false;
+> +
+> +	if (target->default_per_cpu)
+> +		use_dummy = target->per_thread ? true : false;
+> +	else if (target__has_task(target) ||
+> +	         (!target__has_cpu(target) && !target->uses_mmap))
+> +		use_dummy = true;
+> +
+> +	return use_dummy;
+> +}
+> +
+>   #endif /* _PERF_TARGET_H */
 
