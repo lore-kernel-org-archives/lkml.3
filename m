@@ -1,127 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759286Ab3K1LhJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 06:37:09 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:51276 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757932Ab3K1Lgs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 06:36:48 -0500
-Date: Thu, 28 Nov 2013 12:36:41 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Luigi Semenzato <semenzato@google.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        Greg Thelen <gthelen@google.com>, Glauber Costa <glommer@gmail.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Joern Engel <joern@logfs.org>,
-        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: user defined OOM policies
-Message-ID: <20131128113641.GI2761@dhcp22.suse.cz>
-References: <20131119131400.GC20655@dhcp22.suse.cz>
- <20131119134007.GD20655@dhcp22.suse.cz>
- <alpine.DEB.2.02.1311192352070.20752@chino.kir.corp.google.com>
- <20131120152251.GA18809@dhcp22.suse.cz>
- <CAA25o9S5EQBvyk=HP3obdCaXKjoUVtzeb4QsNmoLMq6NnOYifA@mail.gmail.com>
- <alpine.DEB.2.02.1311201933420.7167@chino.kir.corp.google.com>
- <CAA25o9Q64eK5LHhrRyVn73kFz=Z7Jji=rYWS=9jWL_4y9ZGbQA@mail.gmail.com>
- <20131122180835.GO3556@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131122180835.GO3556@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759061Ab3K1Ler (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 06:34:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34380 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758594Ab3K1Len (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 06:34:43 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
+Subject: [PATCH 16/29] tools lib traceevent: Remove malloc_or_die from event-plugin.c
+Date: Thu, 28 Nov 2013 12:33:15 +0100
+Message-Id: <1385638408-23519-17-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1385638408-23519-1-git-send-email-jolsa@redhat.com>
+References: <1385638408-23519-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 22-11-13 13:08:35, Johannes Weiner wrote:
-> On Wed, Nov 20, 2013 at 11:03:33PM -0800, Luigi Semenzato wrote:
-> > On Wed, Nov 20, 2013 at 7:36 PM, David Rientjes <rientjes@google.com> wrote:
-> > > On Wed, 20 Nov 2013, Luigi Semenzato wrote:
-> > >
-> > >> Chrome OS uses a custom low-memory notification to minimize OOM kills.
-> > >>  When the notifier triggers, the Chrome browser tries to free memory,
-> > >> including by shutting down processes, before the full OOM occurs.  But
-> > >> OOM kills cannot always be avoided, depending on the speed of
-> > >> allocation and how much CPU the freeing tasks are able to use
-> > >> (certainly they could be given higher priority, but it get complex).
-> > >>
-> > >> We may end up using memcg so we can use the cgroup
-> > >> memory.pressure_level file instead of our own notifier, but we have no
-> > >> need for finer control over OOM kills beyond the very useful kill
-> > >> priority.  One process at a time is good enough for us.
-> > >>
-> > >
-> > > Even with your own custom low-memory notifier or memory.pressure_level,
-> > > it's still possible that all memory is depleted and you run into an oom
-> > > kill before your userspace had a chance to wakeup and prevent it.  I think
-> > > what you'll want is either your custom notifier of memory.pressure_level
-> > > to do pre-oom freeing but fallback to a userspace oom handler that
-> > > prevents kernel oom kills until it ensures userspace did everything it
-> > > could to free unneeded memory, do any necessary logging, etc, and do so
-> > > over a grace period of memory.oom_delay_millisecs before the kernel
-> > > eventually steps in and kills.
-> > 
-> > Yes, I agree that we can't always prevent OOM situations, and in fact
-> > we tolerate OOM kills, although they have a worse impact on the users
-> > than controlled freeing does.
-> > 
-> > Well OK here it goes.  I hate to be a party-pooper, but the notion of
-> > a user-level OOM-handler scares me a bit for various reasons.
-> > 
-> > 1. Our custom notifier sends low-memory warnings well ahead of memory
-> > depletion.  If we don't have enough time to free memory then, what can
-> > the last-minute OOM handler do?
-> >
-> > 2. In addition to the time factor, it's not trivial to do anything,
-> > including freeing memory, without allocating memory first, so we'll
-> > need a reserve, but how much, and who is allowed to use it?
-> > 
-> > 3. How does one select the OOM-handler timeout?  If the freeing paths
-> > in the code are swapped out, the time needed to bring them in can be
-> > highly variable.
-> > 
-> > 4. Why wouldn't the OOM-handler also do the killing itself?  (Which is
-> > essentially what we do.)  Then all we need is a low-memory notifier
-> > which can predict how quickly we'll run out of memory.
-> > 
-> > 5. The use case mentioned earlier (the fact that the killing of one
-> > process can make an entire group of processes useless) can be dealt
-> > with using OOM priorities and user-level code.
-> 
-> I would also be interested in the answers to all these questions.
-> 
-> > I confess I am surprised that the OOM killer works as well as I think
-> > it does.  Adding a user-level component would bring a whole new level
-> > of complexity to code that's already hard to fully comprehend, and
-> > might not really address the fundamental issues.
-> 
-> Agreed.
-> 
-> OOM killing is supposed to be a last resort and should be avoided as
-> much as possible.  The situation is so precarious at this point that
-> the thought of involving USERSPACE to fix it seems crazy to me.
+Removing malloc_or_die calls from event-plugin.c,
+replacing them with standard malloc and error path.
 
-Please remember that this discussion is about User/Admin defined policy
-for OOM killer. Not necessarily user space handling of global OOM.
+Suggested-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Ahern <dsahern@gmail.com>
+---
+ tools/lib/traceevent/event-plugin.c | 19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
-I am skeptical to userspace handler as well but I admit that there might
-be usecases where this is doable. But let's focus on the proper
-interface for the policies (aka what kind of action should be taken
-under OOM - kill process, group, reboot, etc...).
-
-> It would make much more sense to me to focus on early notifications
-> and deal with looming situations while we still have the resources to
-> do so.
-
-We already have those at least in the memcg world (vmpressure).
-
-> Before attempting to build a teleportation device in the kernel, maybe
-> we should just stop painting ourselves into corners?
-
+diff --git a/tools/lib/traceevent/event-plugin.c b/tools/lib/traceevent/event-plugin.c
+index d272d87..125f567 100644
+--- a/tools/lib/traceevent/event-plugin.c
++++ b/tools/lib/traceevent/event-plugin.c
+@@ -47,7 +47,11 @@ load_plugin(struct pevent *pevent, const char *path,
+ 	char *plugin;
+ 	void *handle;
+ 
+-	plugin = malloc_or_die(strlen(path) + strlen(file) + 2);
++	plugin = malloc(strlen(path) + strlen(file) + 2);
++	if (!plugin) {
++		warning("could not allocate plugin memory\n");
++		return;
++	}
+ 
+ 	strcpy(plugin, path);
+ 	strcat(plugin, "/");
+@@ -71,7 +75,12 @@ load_plugin(struct pevent *pevent, const char *path,
+ 		goto out_free;
+ 	}
+ 
+-	list = malloc_or_die(sizeof(*list));
++	list = malloc(sizeof(*list));
++	if (!list) {
++		warning("could not allocate plugin memory\n");
++		goto out_free;
++	}
++
+ 	list->next = *plugin_list;
+ 	list->handle = handle;
+ 	list->name = plugin;
+@@ -163,7 +172,11 @@ load_plugins(struct pevent *pevent, const char *suffix,
+ 	if (!home)
+ 		return;
+ 
+-	path = malloc_or_die(strlen(home) + strlen(LOCAL_PLUGIN_DIR) + 2);
++	path = malloc(strlen(home) + strlen(LOCAL_PLUGIN_DIR) + 2);
++	if (!path) {
++		warning("could not allocate plugin memory\n");
++		return;
++	}
+ 
+ 	strcpy(path, home);
+ 	strcat(path, "/");
 -- 
-Michal Hocko
-SUSE Labs
+1.8.3.1
+
