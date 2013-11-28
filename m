@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759614Ab3K1UB1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 15:01:27 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:43472 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757444Ab3K1TzN (ORCPT
+	id S1759485Ab3K1UBY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 15:01:24 -0500
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:53923 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757737Ab3K1TzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 14:55:13 -0500
+	Thu, 28 Nov 2013 14:55:15 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 13/34] sysfs, kernfs: add kernfs_ops->seq_{start|next|stop}()
-Date: Thu, 28 Nov 2013 14:54:26 -0500
-Message-Id: <1385668487-10181-14-git-send-email-tj@kernel.org>
+Subject: [PATCH 14/34] sysfs, kernfs: introduce kernfs_notify()
+Date: Thu, 28 Nov 2013 14:54:27 -0500
+Message-Id: <1385668487-10181-15-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1385668487-10181-1-git-send-email-tj@kernel.org>
 References: <20131128060518.GA5291@kroah.com>
@@ -22,114 +22,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kernfs_ops currently only supports single_open() behavior which is
-pretty restrictive.  Add optional callbacks ->seq_{start|next|stop}()
-which, when implemented, are invoked for seq_file traversal.  This
-allows full seq_file functionality for kernfs users.  This currently
-doesn't have any user and doesn't change any behavior.
+Introduce kernfs interface to wake up poll(2) which takes and returns
+sysfs_dirents.
 
-v2: Refreshed on top of the updated "sysfs, kernfs: prepare read path
-    for kernfs".
+sysfs_notify_dirent() is renamed to kernfs_notify() and sysfs_notify()
+is updated so that it doesn't directly grab sysfs_mutex but acquires
+the target sysfs_dirents using sysfs_get_dirent().
+sysfs_notify_dirent() is reimplemented as a dumb inline wrapper around
+kernfs_notify().
+
+This patch doesn't introduce any behavior changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/file.c        | 39 ++++++++++++++++++++++++++++-----------
- include/linux/kernfs.h |  9 +++++++--
- 2 files changed, 35 insertions(+), 13 deletions(-)
+ fs/sysfs/file.c        | 33 ++++++++++++++++++++++-----------
+ include/linux/kernfs.h |  3 +++
+ include/linux/sysfs.h  |  9 +++++----
+ 3 files changed, 30 insertions(+), 15 deletions(-)
 
 diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 9852450..74e3478 100644
+index 74e3478..a68cbef 100644
 --- a/fs/sysfs/file.c
 +++ b/fs/sysfs/file.c
-@@ -146,6 +146,7 @@ static ssize_t sysfs_kf_bin_read(struct sysfs_open_file *of, char *buf,
- static void *kernfs_seq_start(struct seq_file *sf, loff_t *ppos)
- {
- 	struct sysfs_open_file *of = sf->private;
-+	const struct kernfs_ops *ops;
- 
- 	/*
- 	 * @of->mutex nests outside active ref and is just to ensure that
-@@ -155,26 +156,42 @@ static void *kernfs_seq_start(struct seq_file *sf, loff_t *ppos)
- 	if (!sysfs_get_active(of->sd))
- 		return ERR_PTR(-ENODEV);
- 
--	/*
--	 * The same behavior and code as single_open().  Returns !NULL if
--	 * pos is at the beginning; otherwise, NULL.
--	 */
--	return NULL + !*ppos;
-+	ops = kernfs_ops(of->sd);
-+	if (ops->seq_start) {
-+		return ops->seq_start(sf, ppos);
-+	} else {
-+		/*
-+		 * The same behavior and code as single_open().  Returns
-+		 * !NULL if pos is at the beginning; otherwise, NULL.
-+		 */
-+		return NULL + !*ppos;
-+	}
+@@ -851,7 +851,13 @@ static unsigned int kernfs_file_poll(struct file *filp, poll_table *wait)
+ 	return DEFAULT_POLLMASK|POLLERR|POLLPRI;
  }
  
- static void *kernfs_seq_next(struct seq_file *sf, void *v, loff_t *ppos)
+-void sysfs_notify_dirent(struct sysfs_dirent *sd)
++/**
++ * kernfs_notify - notify a kernfs file
++ * @sd: file to notify
++ *
++ * Notify @sd such that poll(2) on @sd wakes up.
++ */
++void kernfs_notify(struct sysfs_dirent *sd)
  {
--	/*
--	 * The same behavior and code as single_open(), always terminate
--	 * after the initial read.
--	 */
--	++*ppos;
--	return NULL;
-+	struct sysfs_open_file *of = sf->private;
-+	const struct kernfs_ops *ops = kernfs_ops(of->sd);
+ 	struct sysfs_open_dirent *od;
+ 	unsigned long flags;
+@@ -868,22 +874,27 @@ void sysfs_notify_dirent(struct sysfs_dirent *sd)
+ 
+ 	spin_unlock_irqrestore(&sysfs_open_dirent_lock, flags);
+ }
+-EXPORT_SYMBOL_GPL(sysfs_notify_dirent);
++EXPORT_SYMBOL_GPL(kernfs_notify);
+ 
+ void sysfs_notify(struct kobject *k, const char *dir, const char *attr)
+ {
+-	struct sysfs_dirent *sd = k->sd;
+-
+-	mutex_lock(&sysfs_mutex);
++	struct sysfs_dirent *sd = k->sd, *tmp;
+ 
+ 	if (sd && dir)
+-		sd = sysfs_find_dirent(sd, dir, NULL);
+-	if (sd && attr)
+-		sd = sysfs_find_dirent(sd, attr, NULL);
+-	if (sd)
+-		sysfs_notify_dirent(sd);
++		sd = sysfs_get_dirent(sd, dir);
++	else
++		sysfs_get(sd);
+ 
+-	mutex_unlock(&sysfs_mutex);
++	if (sd && attr) {
++		tmp = sysfs_get_dirent(sd, attr);
++		sysfs_put(sd);
++		sd = tmp;
++	}
 +
-+	if (ops->seq_next) {
-+		return ops->seq_next(sf, v, ppos);
-+	} else {
-+		/*
-+		 * The same behavior and code as single_open(), always
-+		 * terminate after the initial read.
-+		 */
-+		++*ppos;
-+		return NULL;
++	if (sd) {
++		kernfs_notify(sd);
++		sysfs_put(sd);
 +	}
  }
+ EXPORT_SYMBOL_GPL(sysfs_notify);
  
- static void kernfs_seq_stop(struct seq_file *sf, void *v)
- {
- 	struct sysfs_open_file *of = sf->private;
-+	const struct kernfs_ops *ops = kernfs_ops(of->sd);
-+
-+	if (ops->seq_stop)
-+		ops->seq_stop(sf, v);
- 
- 	sysfs_put_active(of->sd);
- 	mutex_unlock(&of->mutex);
 diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index d0912cf..ba993eb 100644
+index ba993eb..f20796e 100644
 --- a/include/linux/kernfs.h
 +++ b/include/linux/kernfs.h
-@@ -37,8 +37,9 @@ struct kernfs_ops {
- 	/*
- 	 * Read is handled by either seq_file or raw_read().
- 	 *
--	 * If seq_show() is present, seq_file path is active.  The behavior
--	 * is equivalent to single_open().  @sf->private points to the
-+	 * If seq_show() is present, seq_file path is active.  Other seq
-+	 * operations are optional and if not implemented, the behavior is
-+	 * equivalent to single_open().  @sf->private points to the
- 	 * associated sysfs_open_file.
- 	 *
- 	 * read() is bounced through kernel buffer and a read larger than
-@@ -46,6 +47,10 @@ struct kernfs_ops {
- 	 */
- 	int (*seq_show)(struct seq_file *sf, void *v);
+@@ -84,6 +84,7 @@ int kernfs_rename_ns(struct sysfs_dirent *sd, struct sysfs_dirent *new_parent,
+ 		     const char *new_name, const void *new_ns);
+ void kernfs_enable_ns(struct sysfs_dirent *sd);
+ int kernfs_setattr(struct sysfs_dirent *sd, const struct iattr *iattr);
++void kernfs_notify(struct sysfs_dirent *sd);
  
-+	void *(*seq_start)(struct seq_file *sf, loff_t *ppos);
-+	void *(*seq_next)(struct seq_file *sf, void *v, loff_t *ppos);
-+	void (*seq_stop)(struct seq_file *sf, void *v);
+ #else	/* CONFIG_SYSFS */
+ 
+@@ -120,6 +121,8 @@ static inline int kernfs_setattr(struct sysfs_dirent *sd,
+ 				 const struct iattr *iattr)
+ { return -ENOSYS; }
+ 
++static inline void kernfs_notify(struct sysfs_dirent *sd) { }
 +
- 	ssize_t (*read)(struct sysfs_open_file *of, char *buf, size_t bytes,
- 			loff_t off);
+ #endif	/* CONFIG_SYSFS */
  
+ static inline struct sysfs_dirent *
+diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+index 2bc735d..0ab2b02 100644
+--- a/include/linux/sysfs.h
++++ b/include/linux/sysfs.h
+@@ -243,7 +243,6 @@ void sysfs_remove_link_from_group(struct kobject *kobj, const char *group_name,
+ 				  const char *link_name);
+ 
+ void sysfs_notify(struct kobject *kobj, const char *dir, const char *attr);
+-void sysfs_notify_dirent(struct sysfs_dirent *sd);
+ struct sysfs_dirent *sysfs_get_dirent_ns(struct sysfs_dirent *parent_sd,
+ 					 const unsigned char *name,
+ 					 const void *ns);
+@@ -418,9 +417,6 @@ static inline void sysfs_notify(struct kobject *kobj, const char *dir,
+ 				const char *attr)
+ {
+ }
+-static inline void sysfs_notify_dirent(struct sysfs_dirent *sd)
+-{
+-}
+ static inline struct sysfs_dirent *
+ sysfs_get_dirent_ns(struct sysfs_dirent *parent_sd, const unsigned char *name,
+ 		    const void *ns)
+@@ -466,4 +462,9 @@ sysfs_get_dirent(struct sysfs_dirent *parent_sd, const unsigned char *name)
+ 	return sysfs_get_dirent_ns(parent_sd, name, NULL);
+ }
+ 
++static inline void sysfs_notify_dirent(struct sysfs_dirent *sd)
++{
++	kernfs_notify(sd);
++}
++
+ #endif /* _SYSFS_H_ */
 -- 
 1.8.4.2
 
