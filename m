@@ -1,51 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751813Ab3K1WTk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 17:19:40 -0500
-Received: from order.stressinduktion.org ([87.106.68.36]:45222 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015Ab3K1WT1 (ORCPT
+	id S1751410Ab3K1Whd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 17:37:33 -0500
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:37698 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750948Ab3K1Wh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 17:19:27 -0500
-Date: Thu, 28 Nov 2013 23:19:26 +0100
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>, jongman.heo@samsung.com,
-        David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] inet: further fixes of possible seqlock deadlocks
-Message-ID: <20131128221926.GG24171@order.stressinduktion.org>
-Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
-	jongman.heo@samsung.com, David Miller <davem@davemloft.net>,
-	"netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <13025162.118881385612276530.JavaMail.weblogic@epv6ml01> <1385659390.5352.20.camel@edumazet-glaptop2.roam.corp.google.com> <1385661082.5352.34.camel@edumazet-glaptop2.roam.corp.google.com> <20131128192231.GE24171@order.stressinduktion.org> <1385672502.5352.38.camel@edumazet-glaptop2.roam.corp.google.com> <20131128212700.GF24171@order.stressinduktion.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Thu, 28 Nov 2013 17:37:28 -0500
+Date: Thu, 28 Nov 2013 23:37:19 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: r65073@freescale.com, s.hauer@pengutronix.de, swarren@wwwdotorg.org,
+        t.figa@samsung.com, grant.likely@linaro.org, linux@arm.linux.org.uk,
+        rob@landley.net, ian.campbell@citrix.com, mark.rutland@arm.com,
+        pawel.moll@arm.com, rob.herring@calxeda.com,
+        linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, Alison Wang <b18965@freescale.com>,
+        Jingchang Lu <b35083@freescale.com>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: Re: [PATCHv6 1/4] pwm: Add Freescale FTM PWM driver support
+Message-ID: <20131128223719.GG14689@mithrandir>
+References: <1384220218-12716-1-git-send-email-Li.Xiubo@freescale.com>
+ <1384220218-12716-2-git-send-email-Li.Xiubo@freescale.com>
+ <20131128212510.GC14689@mithrandir>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Wtrm9ATX0sn6fFKv"
 Content-Disposition: inline
-In-Reply-To: <20131128212700.GF24171@order.stressinduktion.org>
+In-Reply-To: <20131128212510.GC14689@mithrandir>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 10:27:00PM +0100, Hannes Frederic Sowa wrote:
-> > > @@ -1524,8 +1524,8 @@ int ip6_push_pending_frames(struct sock *sk)
-> > >  	if (proto == IPPROTO_ICMPV6) {
-> > >  		struct inet6_dev *idev = ip6_dst_idev(skb_dst(skb));
-> > >  
-> > > -		ICMP6MSGOUT_INC_STATS_BH(net, idev, icmp6_hdr(skb)->icmp6_type);
-> > > -		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTMSGS);
-> > > +		ICMP6MSGOUT_INC_STATS(net, idev, icmp6_hdr(skb)->icmp6_type);
-> > > +		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTMSGS);
-> > 
-> > I am not sure we use a seqlock for ICMP stats.
-> > 
-> > seqlocks were used for 64bit IP stats
-> 
-> True, atomic longs get used here in both cases.
 
-I don't really understand why we distinguish between _BH and plain ICMP stat
-calls then.
+--Wtrm9ATX0sn6fFKv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The non-_BH versions deactivate interrupts when updating the per-cpu counter.
+On Thu, Nov 28, 2013 at 10:25:11PM +0100, Thierry Reding wrote:
+> On Tue, Nov 12, 2013 at 09:36:55AM +0800, Xiubo Li wrote:
+[...]
+> > +static int fsl_pwm_parse_clk_ps(struct fsl_pwm_chip *fpc)
+> > +{
+> > +	int ret;
+> > +	struct of_phandle_args clkspec;
+> > +	struct device_node *np =3D fpc->chip.dev->of_node;
+> > +
+> > +	fpc->sys_clk =3D devm_clk_get(fpc->chip.dev, "ftm0");
+> > +	if (IS_ERR(fpc->sys_clk)) {
+> > +		ret =3D PTR_ERR(fpc->sys_clk);
+> > +		dev_err(fpc->chip.dev,
+> > +				"failed to get \"ftm0\" clock %d\n", ret);
+> > +		return ret;
+> > +	}
+> > +
+> > +	fpc->counter_clk =3D devm_clk_get(fpc->chip.dev, "ftm0_counter");
+> > +	if (IS_ERR(fpc->counter_clk)) {
+> > +		ret =3D PTR_ERR(fpc->counter_clk);
+> > +		dev_err(fpc->chip.dev,
+> > +				"failed to get \"ftm0_counter\" clock %d\n",
+> > +				ret);
+> > +		return ret;
+> > +	}
+> > +
+> > +	ret =3D of_parse_phandle_with_args(np, "clocks", "#clock-cells", 1,
+> > +					&clkspec);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	fpc->counter_clk_select =3D clkspec.args[0];
+>=20
+> This isn't at all pretty. But given that once you have access to a
+> struct clk there's no way to identify it, I don't know of a better
+> alternative.
 
+Hi Mike,
+
+I've seen this crop up a number of times now, to varying degrees of
+gravity. In this particular case, the driver needs to know the type of a
+clock because it needs to program this hardware differently depending on
+which clock feeds the counter. Since there is no way to obtain any kind
+of identifying information from a struct clk, drivers need to rely on
+hacks like this and manually reach into the device tree to obtain that
+information.
+
+I'm aware of similar cases which have been solved by using a mux clock
+that takes a set of parents and the .set_parent() operation is then used
+to program registers appropriately. However in all those cases, the mux
+clock (and the parents) have all been part of a single driver, so I am
+not sure if the same would be applicable here.
+
+Do you have any other suggestions on how this could possibly be solved?
+
+Thierry
+
+--Wtrm9ATX0sn6fFKv
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSl8WeAAoJEN0jrNd/PrOhHccP/1zloUswCIV3ruMzP1o0ZSak
+9ZYULNc3caVlbDGFahaJXBIyorqYBP7Ls980pcuLUaf0aPdqV70PyBcv2CtVt6n5
+XV8JW9WZ1vHpLqHOU3cVBC72tkIEdIzQBfNNoC36mX6y8yYWjzvEjAmKfmM2eXph
+/0aAoeFg6RTfsqxPpgsDKP9woCLog5V189rVWDW9/ZFt+egoKPk7gTGza9KAkNyg
+2ThQ1Dh8M2DCcgJ9iWWEz+Yyo0IA3siIbMwiEA7Y6Y0W92qf7LoaAVZ4sz/2z+ce
+ZekWeHDV/+KrwHFSTW1r91/rmO210l7dnUGle2Vu7mDB68SzLtyOEmTkS9BdI2hN
+QnvPCiqgGxYjdXwVfh/Rppa/RDDSbaITP99XftMCBPJsrutay4dh21X9Q83BYSnF
+4S640xNVy2TVo0MgzixJc3uVw07DQRX7QSIL27m67vrrE4hWGknKcsmEt3uX4qD8
+E2ksoIgHg3zwSFelyEfZ2Y6w/7KoZ9i6+kb5y7wLQ/d0VV/6gqc68ed8OT6gm/dU
++1gSpE23GTZNNaKsOaxcvc436SnuGRmPN6pcxdhRacS740pbjEM0juvKjioyMScE
+Sna51Tr9YHfk/4otjIFiNP/HAOskWsepUrqBPBQNf7CNgvaHMrZ4Yd1w6NRLQxc2
+PlztS056LdO2/WeUtAGO
+=Xjht
+-----END PGP SIGNATURE-----
+
+--Wtrm9ATX0sn6fFKv--
