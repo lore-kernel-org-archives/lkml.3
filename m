@@ -1,131 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758377Ab3K1BEK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 20:04:10 -0500
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:35282 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754213Ab3K1BEG (ORCPT
+	id S932174Ab3K1BET (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 20:04:19 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:21003 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754213Ab3K1BEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 20:04:06 -0500
-Date: Wed, 27 Nov 2013 16:56:04 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org,
-        Michal Hocko <mhocko@suse.cz>, azurit@pobox.sk,
-        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [merged] mm-memcg-handle-non-error-oom-situations-more-gracefully.patch
- removed from -mm tree
-In-Reply-To: <20131127233353.GH3556@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1311271622330.10617@chino.kir.corp.google.com>
-References: <526028bd.k5qPj2+MDOK1o6ii%akpm@linux-foundation.org> <alpine.DEB.2.02.1311271453270.13682@chino.kir.corp.google.com> <20131127233353.GH3556@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 27 Nov 2013 20:04:11 -0500
+X-AuditID: cbfee68f-b7f336d00000481b-e9-5296968aa179
+Date: Thu, 28 Nov 2013 01:04:09 +0000 (GMT)
+From: Eunbong Song <eunb.song@samsung.com>
+Subject: Re: Re: [PATCH] m68k : Kill CONFIG_MTD_PARTITIONS
+To: Greg Ungerer <gregungerer@westnet.com.au>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>
+Cc: "linux-m68k@lists.linux-m68k.org" <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-to: eunb.song@samsung.com
+MIME-version: 1.0
+X-MTR: 20131128010114738@eunb.song
+Msgkey: 20131128010114738@eunb.song
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20131128010114738@eunb.song
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <28966598.284941385600648144.JavaMail.weblogic@epv6ml06>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjleLIzCtJLcpLzFFi42I5/e+Zjm7XtGlBBo0vmCwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfG/8nfWApamCqenH/D1sD4g7GLkZNDSEBFouX/dzBbQsBEYvWs
+	ZewQtpjEhXvr2boYuYBqljFKXF3/iQ2maPHraewQifmMEhfet4AlWARUJf5sXMwCYrMJaEv8
+	OHCVGcQWFrCS+LR9C9gGEYEEiZ87HzODNDMLdDBK7Jz7ngXiDHmJyacvg63mFRCUODnzCVCc
+	A2ibksSps0oQYWWJ/b+OQh0hITFr+gVWCJtXYkb7UxYIW05i2tc1zBC2tMT5WRsYYb5Z/P0x
+	VJxf4tjtHUwQ43klntwPhhmze/MXqPECElPPHGSEKFGXWHypGCLMJ7Fm4VsWmCm7Ti1nhmm9
+	v2UuE4jNLKAoMaX7ITuErSXx5cc+NlRPgdguEh3/pjNNYFSehSQ1C0n7LCTtyGoWMLKsYhRN
+	LUguKE5KLzLWK07MLS7NS9dLzs/dxAhJC/07GO8esD7EmAyMkYnMUqLJ+cC0klcSb2hsZmRh
+	amJqbGRuaUaasJI47/2HSUFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGCdtupddyMl5qTp8
+	u8bukJBnS7inL2Sef69PyPGYkM6MJ/NDLmkr1llPFU+8wnP47O37CduXR8TdXBl5hVty+Q2e
+	S/uPbTX5sl0ibv7zKw6PHcs2Xefk6xWwv+Ov/zpH+vRhlw2ay/b7N53z3G5TqP9pd6rIlwor
+	V9/0rQZxmab5J348viWU90WJpTgj0VCLuag4EQDkQzNPIQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e/2dN2uadOCDE7pWlzeNYfNgdHj8ya5
+	AMaoDJuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoJlK
+	CmWJOaVAoYDE4mIlfTubovzSklSFjPziElulaCMDYz0jUxM9I2MDPRODWCtDAwMjU6CqhIyM
+	/5O/sRS0MFU8Of+GrYHxB2MXIyeHkICKRMv/72C2hICJxOLX09ghbDGJC/fWs3UxcgHVzGeU
+	uPC+hQ0kwSKgKvFn42IWEJtNQFvix4GrzCC2sICVxKftW8AGiQgkSPzc+ZgZpJlZoINRYufc
+	9ywQ2+QlJp++DLaBV0BQ4uTMJ0BxDqBtShKnzipBhJUl9v86ygZxhITErOkXWCFsXokZ7U9Z
+	IGw5iWlf1zBD2NIS52dtYIQ5evH3x1Bxfoljt3cwQYznlXhyPxhmzO7NX6DGC0hMPXOQEaJE
+	XWLxpWKIMJ/EmoVvWWCm7Dq1nBmm9f6WuUwgNrOAosSU7ofsELaWxJcf+9hQPQViu0h0/JvO
+	NIFRbhaS1Cwk7bOQtCOrWcDIsopRNLUguaA4Kb3CRK84Mbe4NC9dLzk/dxMjOD09W7KDseGC
+	9SFGAQ5GJR7eA5rTgoRYE8uKK3MPMUpwMCuJ8CoUA4V4UxIrq1KL8uOLSnNSiw8xJgPjbyKz
+	lGhyPjB15pXEGxobGBsaWpobmBoaWZAmrCTOu+BWUpCQQHpiSWp2ampBahHMFiYOTqkGRjnz
+	92qTHerur2cLXWP/iLPO4GpM/6bdVd4Tnjy7fbEtv05M5+hFQ/1Y2WtqaVfFNiX1dZWX3yxU
+	V1Ra8O5ojU3Z/DVqx3d9m38u4XnrxqsLy1V0TOSWHV0675x1UuYdcbkdonezHdbd5ZX1d0oq
+	i7435YWy+OEFv1IPneLaYftm2veOHN9dbkosxRmJhlrMRcWJAKKvf4WTAwAA
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAS14SV7024658
 
-On Wed, 27 Nov 2013, Johannes Weiner wrote:
 
-> > The memcg oom killer has incurred a serious regression since the 3.12-rc6 
-> > kernel where this was merged as 4942642080ea ("mm: memcg: handle non-error 
-> > OOM situations more gracefully").  It cc'd stable@kernel.org although it 
-> > doesn't appear to have been picked up yet, and I'm hoping that we can 
-> > avoid having it merged in a stable kernel until we get this fixed.
-> > 
-> > This patch, specifically the above, allows memcgs to bypass their limits 
-> > by charging the root memcg in oom conditions.
-> > 
-> > If I create a memcg, cg1, with memory.limit_in_bytes == 128MB and start a
-> > memory allocator in it to induce oom, the memcg limit is trivially broken:
-> > 
-> > membench invoked oom-killer: gfp_mask=0xd0, order=0, oom_score_adj=0
-> > membench cpuset=/ mems_allowed=0-3
-> > CPU: 9 PID: 11388 Comm: membench Not tainted 3.13-rc1
-> >  ffffc90015ec6000 ffff880671c3dc18 ffffffff8154a1e3 0000000000000007
-> >  ffff880674c215d0 ffff880671c3dc98 ffffffff81548b45 ffff880671c3dc58
-> >  ffffffff81151de7 0000000000000001 0000000000000292 ffff880800000000
-> > Call Trace:
-> >  [<ffffffff8154a1e3>] dump_stack+0x46/0x58
-> >  [<ffffffff81548b45>] dump_header+0x7a/0x1bb
-> >  [<ffffffff81151de7>] ? find_lock_task_mm+0x27/0x70
-> >  [<ffffffff812e8b76>] ? ___ratelimit+0x96/0x110
-> >  [<ffffffff811521c4>] oom_kill_process+0x1c4/0x330
-> >  [<ffffffff81099ee5>] ? has_ns_capability_noaudit+0x15/0x20
-> >  [<ffffffff811a916a>] mem_cgroup_oom_synchronize+0x50a/0x570
-> >  [<ffffffff811a8660>] ? __mem_cgroup_try_charge_swapin+0x70/0x70
-> >  [<ffffffff81152968>] pagefault_out_of_memory+0x18/0x90
-> >  [<ffffffff81547b86>] mm_fault_error+0xb7/0x15a
-> >  [<ffffffff81553efb>] __do_page_fault+0x42b/0x500
-> >  [<ffffffff810c667d>] ? set_next_entity+0xad/0xd0
-> >  [<ffffffff810c670b>] ? pick_next_task_fair+0x6b/0x170
-> >  [<ffffffff8154d08e>] ? __schedule+0x38e/0x780
-> >  [<ffffffff81553fde>] do_page_fault+0xe/0x10
-> >  [<ffffffff815509e2>] page_fault+0x22/0x30
-> > Task in /cg1 killed as a result of limit of /cg1
-> > memory: usage 131072kB, limit 131072kB, failcnt 1053
-> > memory+swap: usage 0kB, limit 18014398509481983kB, failcnt 0
-> > kmem: usage 0kB, limit 18014398509481983kB, failcnt 0
-> > Memory cgroup stats for /cg1: cache:84KB rss:130988KB rss_huge:116736KB mapped_file:72KB writeback:0KB inactive_anon:0KB active_anon:130976KB inactive_file:4KB active_file:0KB unevictable:0KB
-> > [ pid ]   uid  tgid total_vm      rss nr_ptes swapents oom_score_adj name
-> > [ 7761]     0  7761     1106      483       5        0             0 bash
-> > [11388]    99 11388   270773    33031      83        0             0 membench
-> > Memory cgroup out of memory: Kill process 11388 (membench) score 1010 or sacrifice child
-> > Killed process 11388 (membench) total-vm:1083092kB, anon-rss:130824kB, file-rss:1300kB
-> > 
-> > The score of 1010 shown for pid 11388 (membench) should never happen in 
-> > the oom killer, the maximum value should always be 1000 in any oom 
-> > context.  This indicates that the process has allocated more memory than 
-> > is available to the memcg.  The rss value, 33031 pages, shows that it has 
-> > allocated >129MB of memory in a memcg limited to 128MB.
-> > 
-> > The entire premise of memcg is to prevent processes attached to it to not 
-> > be able to allocate more memory than allowed and this trivially breaks 
-> > that premise in oom conditions.
-> 
-> We already allow a task to allocate beyond the limit if it's selected
-> by the OOM killer, so that it can exit faster.
-> 
-> My patch added that a task can bypass the limit when it decided to
-> trigger the OOM killer, so that it can get to the OOM kill faster.
-> 
 
-The task that is bypassing the memcg charge to the root memcg may not be 
-the process that is chosen by the oom killer, and it's possible the amount 
-of memory freed by killing the victim is less than the amount of memory 
-bypassed.
+> Hi Eunbong,
 
-> So I don't think my patch has broken "the entire premise of memcgs".
-> At the same time, it also does not really rely on that bypass, we
-> should be able to remove it.
-> 
-> This patch series was not supposed to go into the last merge window, I
-> already told stable to hold off on these until further notice.
-> 
+>Acked-by: Greg Ungerer 
 
-Were you targeting these to 3.13 instead?  If so, it would have already 
-appeared in 3.13-rc1 anyway.  Is it still a work in progress?
+>Did you want me to pick this up for the m68knommu git tree?
+Hello, Greg.
+I'm glad if  you pick up this patch.
 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 13b9d0f..5f9e467 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2675,7 +2675,7 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
->  		goto bypass;
->  
->  	if (unlikely(task_in_memcg_oom(current)))
-> -		goto bypass;
-> +		goto nomem;
->  
->  	/*
->  	 * We always charge the cgroup the mm_struct belongs to.
+Thanks
+EunBong
 
-Is there any benefit to doing this over just schedule_timeout_killable() 
-since we need to wait for mem_cgroup_oom_synchronize() to be able to make 
-forward progress at this point?
-
-Should we be checking mem_cgroup_margin() here to ensure 
-task_in_memcg_oom() is still accurate and we haven't raced by freeing 
-memory?
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
