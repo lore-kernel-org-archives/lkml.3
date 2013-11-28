@@ -1,78 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758755Ab3K1H4r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 02:56:47 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:40225 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750935Ab3K1H4m (ORCPT
+	id S1757976Ab3K1H5A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 02:57:00 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:56682 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753193Ab3K1H4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 02:56:42 -0500
-Message-ID: <5296F71F.9070603@hitachi.com>
-Date: Thu, 28 Nov 2013 16:56:15 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 28 Nov 2013 02:56:43 -0500
+X-AuditID: 9c93017d-b7b24ae000002834-f5-5296f739852e
+From: Namhyung Kim <namhyung@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH/RFC 17/17] tracing/uprobes: Add @+file_offset fetch method
+References: <1385533203-10014-1-git-send-email-namhyung@kernel.org>
+	<1385533203-10014-18-git-send-email-namhyung@kernel.org>
+	<20131127185546.GA30544@redhat.com>
+Date: Thu, 28 Nov 2013 16:56:40 +0900
+In-Reply-To: <20131127185546.GA30544@redhat.com> (Oleg Nesterov's message of
+	"Wed, 27 Nov 2013 19:55:46 +0100")
+Message-ID: <877gbtq7rb.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-arch@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        virtualization@lists.linux-foundation.org,
-        Chris Wright <chrisw@sous-sol.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rob Landley <rob@landley.net>,
-        systemtap@sourceware.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Alok Kataria <akataria@vmware.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip v3 02/23] kprobes: Introduce NOKPROBE_SYMBOL() macro
- for blacklist
-References: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal> <20131120042153.15296.82087.stgit@kbuild-fedora.novalocal> <20131127133224.GD18422@gmail.com>
-In-Reply-To: <20131127133224.GD18422@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/27 22:32), Ingo Molnar wrote:
-> 
-> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> 
->> +#ifdef CONFIG_KPROBES
->> +/*
->> + * Blacklist ganerating macro. Specify functions which is not probed
->> + * by using this macro.
->> + */
->> +#define __NOKPROBE_SYMBOL(fname)				\
->> +static struct kprobe_blackpoint __used			\
->> +	_kprobe_bp_##fname = {				\
->> +		.name = #fname,				\
->> +		.start_addr = (unsigned long)fname,	\
->> +	};						\
->> +static struct kprobe_blackpoint __used			\
->> +	__attribute__((section("_kprobe_blacklist")))	\
->> +	*_p_kprobe_bp_##fname = &_kprobe_bp_##fname;
-> 
-> 'kprobe_blackpoint' sounds a bit weird - how about 
-> 'kprobe_blacklist_entry' ?
+Hi Oleg,
 
-OK, I just tried to reuse existed kprobe_blacklist.
+On Wed, 27 Nov 2013 19:55:46 +0100, Oleg Nesterov wrote:
+> Hi Namhyung,
+>
+> I'll certainly try to read (and even apply ;) this series carefully.
 
-> also, _kprobe_blacklist probably wants to be _kprobes_blacklist, 
-> right?
+Thanks in advance. :)
 
-I sse. I'll update it. :)
+>
+> But let me make a couple of nits right now, even if I do not understand
+> this code yet.
 
-Thank you,
+Okay.
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+>
+> On 11/27, Namhyung Kim wrote:
+>>
+>> +		} else if (arg[1] == '+') {
+>> +			struct file_offset_fetch_param *foprm;
+>> +
+>> +			/* kprobes don't support file offsets */
+>> +			if (is_kprobe)
+>> +				return -EINVAL;
+>> +
+>> +			ret = kstrtol(arg + 2, 0, &offset);
+>> +			if (ret)
+>> +				break;
+>> +
+>> +			foprm = kzalloc(sizeof(*foprm), GFP_KERNEL);
+>> +			if (!foprm)
+>> +				return -ENOMEM;
+>> +
+>> +			foprm->tu = priv;
+>> +			foprm->offset = offset;
+>
+> Hmm. I am not sure, but can't we simplify this?
+>
+> Why do we need this foprm at all? To pass tu/offset obviously. But
+> why we need to store this info in fetch_param?
+>
+> translate_user_vaddr() needs to access utask->vaddr anyway. It seems
+> to me it would be more clean to do the following:
+>
+> 	1. Add
+> 		struct xxx {
+> 			struct trace_uprobe *tu;
+> 			unsigned long bp_addr;
+> 		};
+>
+> 	   in trace_uprobe.c.
+>
+> 	2. Add
+>
+> 		struct xxx info = {
+> 			.tu = tu,
+> 			.bp_addr = instruction_pointer(regs);
+> 		};
+>
+> 		current->utask->vaddr = (long)&info;
+>
+> 	   into uprobe_dispatcher() and uretprobe_dispatcher() (the latter
+> 	   should obviously use func instead of instruction_pointer).
+>
+> 	 3. FETCH_FUNC_NAME(file_offset, type) can do
+>
+> 	 	struct xxx *info = (void*)current->utask->vaddr;
+> 		void *addr = data + info->bp_addr - info->tu->offset;
+>
+> 	 	return FETCH_FUNC_NAME(memory, type)(regs, aaddr, dest);
+>
+> 	 4. Now, the only change we need in parse_probe_arg("@") is that
+> 	    it should use either FETCH_MTD_memory or FETCH_MTD_file_offset
+> 	    depending on arg[0] == '+'.
+>
+> 	    And we do not need to pass "void *prive" to parse_probe_arg().
+>
+> What do you think? One again, I can be easily wrong, I didn't read the
+> code yet.
 
+You are absolutely right.
 
+I thought we need a fetch_param anyway if we will add support for
+cross-fetch later.  But I won't insist it strongly, I can delay it to
+later work and make current code simpler if you want. :)
+
+>
+>>  static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs)
+>>  {
+>>  	struct trace_uprobe *tu;
+>> +	struct uprobe_task *utask;
+>>  	int ret = 0;
+>>  
+>>  	tu = container_of(con, struct trace_uprobe, consumer);
+>>  	tu->nhit++;
+>>  
+>> +	utask = current->utask;
+>> +	if (utask == NULL)
+>> +		return UPROBE_HANDLER_REMOVE;
+>
+> Hmm, why? The previous change ensures ->utask is not NULL? If we hit
+> NULL we have a bug, we should not remove this uprobe.
+
+Yes, I just want to be defensive. :)
+
+So do you suggest to add BUG_ON()?  And can I convert or remove a
+similar check in uprobes.c:pre_ssout() too?
+
+Thanks,
+Namhyung
