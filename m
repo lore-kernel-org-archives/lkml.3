@@ -1,120 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759293Ab3K1Rmc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 12:42:32 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:65500 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755124Ab3K1Rmb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 12:42:31 -0500
-Date: Thu, 28 Nov 2013 18:41:57 +0100
-From: Vladimir Murzin <murzin.v@gmail.com>
-To: Jianyu Zhan <nasa4836@gmail.com>
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org, iamjoonsoo.kim@lge.com,
-        zhangyanfei@cn.fujitsu.com, liwanp@linux.vnet.ibm.com,
-        rientjes@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]mm/vmalloc: interchage the implementation of
- vmalloc_to_{pfn,page}
-Message-ID: <20131128174152.GA2258@hp530>
-References: <20131128162913.GA4234@lcx>
+	id S1759359Ab3K1RnT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 12:43:19 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:41235 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754603Ab3K1RnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 12:43:16 -0500
+X-IronPort-AV: E=Sophos;i="4.93,792,1378857600"; 
+   d="scan'208";a="79034051"
+Message-ID: <1385660592.20209.27.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH net-next RFC 0/5] xen-netback: TX grant mapping instead
+ of copy
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Date: Thu, 28 Nov 2013 17:43:12 +0000
+In-Reply-To: <52977F5C.7090703@citrix.com>
+References: <1383094220-14775-1-git-send-email-zoltan.kiss@citrix.com>
+		 <1383303035.672.29.camel@kazak.uk.xensource.com>
+		 <5273FA37.6020903@citrix.com>
+	 <1383821563.26213.168.camel@kazak.uk.xensource.com>
+	 <52977F5C.7090703@citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
-Content-Disposition: inline
-In-Reply-To: <20131128162913.GA4234@lcx>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 29, 2013 at 12:29:13AM +0800, Jianyu Zhan wrote:
-> Currently we are implementing vmalloc_to_pfn() as a wrapper of 
-> vmalloc_to_page(), which is implemented as follow: 
-> 
->  1. walks the page talbes to generates the corresponding pfn,
->  2. then wraps the pfn to struct page,
->  3. returns it.
-> 
-> And vmalloc_to_pfn() re-wraps the vmalloc_to_page() to get the pfn.
-> 
-> This seems too circuitous, so this patch reverses the way:
-> implementing the vmalloc_to_page() as a wrapper of vmalloc_to_pfn().
-> This makes vmalloc_to_pfn() and vmalloc_to_page() slightly effective.
+On Thu, 2013-11-28 at 17:37 +0000, Zoltan Kiss wrote:
+> On 07/11/13 10:52, Ian Campbell wrote:
+> > On Fri, 2013-11-01 at 19:00 +0000, Zoltan Kiss wrote:
+> >> On 01/11/13 10:50, Ian Campbell wrote:
+> >>> Does this always avoid copying when bridging/openvswitching/forwarding
+> >>> (e.g. masquerading etc)? For both domU->domU and domU->physical NIC?
+> >> I've tested the domU->domU, domU->physical with bridge and openvswitch
+> >> usecase, and now I've created a new stat counter to see how often copy
+> >> happens (the callback's second parameter tells you whether the skb was
+> >> freed or copied). It doesn't do copy in all of these scenarios.
+> >> What do you mean by forwarding? The scenario when you use bridge and
+> >> iptables mangling with the packet, not just filtering?
+> >
+> > I mean using L3 routing rather L2 bridging. Which might involve
+> > NAT/MASQUERADE or might just be normal IP routing.
+> I still couldn't find time to try out this scenario, but I think in this 
+> case packet goes through deliver_skb, which means it will get copied. So 
+> performance would be a bit worse due to the extra map/unmap. And I'm 
+> afraid we can't help that too much due to this:
+> https://lkml.org/lkml/2012/7/20/363
+> However I think using Dom0 as a router/firewall is already a suboptimal 
+> solution, so maybe a small performance regression is acceptable?
 
-Any numbers for efficiency?
+Routing/firewalling domUs is as valid as bridging. There is nothing in
+the slightest bit suboptimal about it.
 
-> 
+If this use case regresses with this approach then I'm afraid that
+either needs to be addressed or a different approach considered.
 
-> No functional change. 
-> 
-> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
-> ---
-> mm/vmalloc.c | 20 ++++++++++----------
->  1 file changed, 10 insertions(+), 10 deletions(-)
-> 
-> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-> index 0fdf968..a335e21 100644
-> --- a/mm/vmalloc.c
-> +++ b/mm/vmalloc.c
-> @@ -220,12 +220,12 @@ int is_vmalloc_or_module_addr(const void *x)
->  }
->  
->  /*
-> - * Walk a vmap address to the struct page it maps.
-> + * Walk a vmap address to the physical pfn it maps to.
->   */
-> -struct page *vmalloc_to_page(const void *vmalloc_addr)
-> +unsigned long vmalloc_to_pfn(const void *vmalloc_addr)
->  {
->  	unsigned long addr = (unsigned long) vmalloc_addr;
-> -	struct page *page = NULL;
-> +	unsigned long pfn;
+> Anyway, I will try this out, and see if it really copies everything, and 
+> get some numbers as well.
 
-uninitialized pfn will lead to a bug.
+Thanks.
 
->  	pgd_t *pgd = pgd_offset_k(addr);
->  
->  	/*
-> @@ -244,23 +244,23 @@ struct page *vmalloc_to_page(const void *vmalloc_addr)
->  				ptep = pte_offset_map(pmd, addr);
->  				pte = *ptep;
->  				if (pte_present(pte))
-> -					page = pte_page(pte);
-> +					pfn = pte_page(pte);
+> >>> How does it deal with broadcast traffic?
+> Now I had time to check it: broadcast packets get copied only once, when 
+> cloning happens. It will swap out the frags with local ones, so any 
+> subsequent cloning will have a local SKB.
 
-page_to_pfn is missed here.
+That's good.
 
-Have you ever tested there is no functional changes?
+Ian.
 
-Vladimir
-
->  				pte_unmap(ptep);
->  			}
->  		}
->  	}
-> -	return page;
-> +	return pfn;
->  }
-> -EXPORT_SYMBOL(vmalloc_to_page);
-> +EXPORT_SYMBOL(vmalloc_to_pfn);
->  
->  /*
-> - * Map a vmalloc()-space virtual address to the physical page frame number.
-> + * Map a vmalloc()-space virtual address to the struct page.
->   */
-> -unsigned long vmalloc_to_pfn(const void *vmalloc_addr)
-> +struct page *vmalloc_to_page(const void *vmalloc_addr)
->  {
-> -	return page_to_pfn(vmalloc_to_page(vmalloc_addr));
-> +	return pfn_to_page(vmalloc_to_pfn(vmalloc_addr));
->  }
-> -EXPORT_SYMBOL(vmalloc_to_pfn);
-> +EXPORT_SYMBOL(vmalloc_to_page);
->  
->  
->  /*** Global kva allocator ***/
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
