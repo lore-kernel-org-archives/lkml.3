@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072Ab3K1KbG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 05:31:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65009 "EHLO mx1.redhat.com"
+	id S1758141Ab3K1KbJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 05:31:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28312 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757829Ab3K1Ka7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 05:30:59 -0500
+	id S1757724Ab3K1KbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 05:31:06 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
@@ -15,17 +15,22 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
         David Ahern <dsahern@gmail.com>,
         Adrian Hunter <adrian.hunter@intel.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/7] perf record: Unify data output code into perf_record__write function
-Date: Thu, 28 Nov 2013 11:30:13 +0100
-Message-Id: <1385634619-8129-2-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 4/7] perf tools: Add writen function
+Date: Thu, 28 Nov 2013 11:30:16 +0100
+Message-Id: <1385634619-8129-5-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1385634619-8129-1-git-send-email-jolsa@redhat.com>
 References: <1385634619-8129-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unifying current 2 data output functions do_write_output
-and write_output into single one perf_record__write.
+Adding 'writen' function as a synchronous wrapper
+for write syscall with following prototype:
+
+  ssize_t writen(int fd, void *buf, size_t n)
+
+Returns the number of bytes written on success
+or -1 in case of err.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -37,74 +42,69 @@ Cc: David Ahern <dsahern@gmail.com>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c | 20 ++++++--------------
- 1 file changed, 6 insertions(+), 14 deletions(-)
+ tools/perf/util/util.c | 24 +++++++++++++++++++-----
+ tools/perf/util/util.h |  1 +
+ 2 files changed, 20 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 65615a8..d93e2ee 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -76,7 +76,7 @@ struct perf_record {
- 	long			samples;
- };
- 
--static int do_write_output(struct perf_record *rec, void *buf, size_t size)
-+static int perf_record__write(struct perf_record *rec, void *buf, size_t size)
- {
- 	struct perf_data_file *file = &rec->file;
- 
-@@ -97,21 +97,13 @@ static int do_write_output(struct perf_record *rec, void *buf, size_t size)
- 	return 0;
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 6ea0b4a..b1d5376 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -152,16 +152,14 @@ unsigned long convert_unit(unsigned long value, char *unit)
+ 	return value;
  }
  
--static int write_output(struct perf_record *rec, void *buf, size_t size)
--{
--	return do_write_output(rec, buf, size);
--}
--
- static int process_synthesized_event(struct perf_tool *tool,
- 				     union perf_event *event,
- 				     struct perf_sample *sample __maybe_unused,
- 				     struct machine *machine __maybe_unused)
+-/*
+- * Read exactly 'n' bytes or return an error.
+- */
+-ssize_t readn(int fd, void *buf, size_t n)
++static ssize_t ion(bool is_read, int fd, void *buf, size_t n)
  {
- 	struct perf_record *rec = container_of(tool, struct perf_record, tool);
--	if (write_output(rec, event, event->header.size) < 0)
--		return -1;
--
--	return 0;
-+	return perf_record__write(rec, event, event->header.size);
+ 	void *buf_start = buf;
+ 	size_t left = n;
+ 
+ 	while (left) {
+-		ssize_t ret = read(fd, buf, left);
++		ssize_t ret = is_read ? read(fd, buf, left) :
++					write(fd, buf, left);
+ 
+ 		if (ret <= 0)
+ 			return ret;
+@@ -174,6 +172,22 @@ ssize_t readn(int fd, void *buf, size_t n)
+ 	return n;
  }
  
- static int perf_record__mmap_read(struct perf_record *rec,
-@@ -136,7 +128,7 @@ static int perf_record__mmap_read(struct perf_record *rec,
- 		size = md->mask + 1 - (old & md->mask);
- 		old += size;
++/*
++ * Read exactly 'n' bytes or return an error.
++ */
++ssize_t readn(int fd, void *buf, size_t n)
++{
++	return ion(true, fd, buf, n);
++}
++
++/*
++ * Write exactly 'n' bytes or return an error.
++ */
++ssize_t writen(int fd, void *buf, size_t n)
++{
++	return ion(false, fd, buf, n);
++}
++
+ size_t hex_width(u64 v)
+ {
+ 	size_t n = 1;
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 9f6b928..ce0f73d 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -254,6 +254,7 @@ int strtailcmp(const char *s1, const char *s2);
+ char *strxfrchar(char *s, char from, char to);
+ unsigned long convert_unit(unsigned long value, char *unit);
+ ssize_t readn(int fd, void *buf, size_t n);
++ssize_t writen(int fd, void *buf, size_t n);
  
--		if (write_output(rec, buf, size) < 0) {
-+		if (perf_record__write(rec, buf, size) < 0) {
- 			rc = -1;
- 			goto out;
- 		}
-@@ -146,7 +138,7 @@ static int perf_record__mmap_read(struct perf_record *rec,
- 	size = head - old;
- 	old += size;
+ struct perf_event_attr;
  
--	if (write_output(rec, buf, size) < 0) {
-+	if (perf_record__write(rec, buf, size) < 0) {
- 		rc = -1;
- 		goto out;
- 	}
-@@ -335,8 +327,8 @@ static int perf_record__mmap_read_all(struct perf_record *rec)
- 	}
- 
- 	if (perf_header__has_feat(&rec->session->header, HEADER_TRACING_DATA))
--		rc = write_output(rec, &finished_round_event,
--				  sizeof(finished_round_event));
-+		rc = perf_record__write(rec, &finished_round_event,
-+					sizeof(finished_round_event));
- 
- out:
- 	return rc;
 -- 
 1.8.3.1
 
