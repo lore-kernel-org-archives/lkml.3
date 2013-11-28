@@ -1,146 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758779Ab3K1Dlb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 22:41:31 -0500
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:40282 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756119Ab3K1Dl1 (ORCPT
+	id S1758634Ab3K1Dpv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 22:45:51 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:65153 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754471Ab3K1Dpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 22:41:27 -0500
-Date: Thu, 28 Nov 2013 11:38:45 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: l2x0: add prefetch and power ctrl registers
- configuration support
-Message-ID: <20131128113845.27d0176b@xhacker>
-In-Reply-To: <20131127174204.GD27879@e106331-lin.cambridge.arm.com>
-References: <1383800872-7982-1-git-send-email-jszhang@marvell.com>
-	<20131127174204.GD27879@e106331-lin.cambridge.arm.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.72,1.0.14,0.0.0000
- definitions=2013-11-28_02:2013-11-28,2013-11-28,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1311270231
+	Wed, 27 Nov 2013 22:45:49 -0500
+X-AuditID: cbfee68e-b7f7e6d00000477d-52-5296bc6b7a8c
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Evgeniy Polyakov'" <zbr@ioremap.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] w1: matrox: use DEFINE_PCI_DEVICE_TABLE macro
+Date: Thu, 28 Nov 2013 12:45:47 +0900
+Message-id: <004e01ceebec$52ed0f80$f8c72e80$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7r7FLGMO75lsWtQoOv/j+n0ORRdg==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zA93sPdOCDPY8MraYs34Nm8XlhZdY
+	LS7vmsNm8Wv1OTYHFo/HO7YzeZyY8ZvFo2/LKkaPz5vkAliiuGxSUnMyy1KL9O0SuDJObX7N
+	VjCDraLpxRa2BsYlrF2MnBwSAiYSK84/YISwxSQu3FvP1sXIxSEksIxR4sfBcywwRe9+HWAH
+	sYUEpgMlzstBFP1ilJi/6CxYgk1ATeLLl8NANgeHiIC+RFuLBkiYWSBH4s6qd8wgtrCAncTS
+	k2vZQGwWAVWJrh3vweK8ArYS736/ZIKwBSV+TL7HAtGrJbF+53EmCFteYvOat8wg4yUE1CUe
+	/dUFCYsI6EmsOrWUDaJERGLfi3eMIKdJCGxil2ife48VYpeAxLfJh1ggemUlNh1ghnhLUuLg
+	ihssExjFZiHZPAvJ5llINs9CsmIBI8sqRtHUguSC4qT0IiO94sTc4tK8dL3k/NxNjJAY69vB
+	ePOA9SHGZKD1E5mlRJPzgTGaVxJvaGxmZGFqYmpsZG5pRpqwkjjvoodJQUIC6YklqdmpqQWp
+	RfFFpTmpxYcYmTg4pRoYTT4dXZXxw/yV4D/L+7K9exbXptfYH+Wf2HzoyK2Wh0JaPXfmc86W
+	1s2aWMcYos+8Pz2nr/akx2u5tdUqXa/mLGKv7fhk/neNkfbNmLnRuW9MFzw4eVQi8np3k/A6
+	+WcMT5K9Xh67E9GoZMGqXfQpan1wVv+Xa3nvNhparrLpvm3db3H1H3utEktxRqKhFnNRcSIA
+	Q17pjMcCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jQd3sPdOCDOZ3G1jMWb+GzeLywkus
+	Fpd3zWGz+LX6HJsDi8fjHduZPE7M+M3i0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
+	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
+	WsA0Ruj6hgTB9RgZoIGEdYwZpza/ZiuYwVbR9GILWwPjEtYuRk4OCQETiXe/DrBD2GISF+6t
+	ZwOxhQSmM0r8OC/XxcgFZP9ilJi/6CxYEZuAmsSXL4eBbA4OEQF9ibYWDZAws0COxJ1V75hB
+	bGEBO4mlJ9eCzWERUJXo2vEeLM4rYCvx7vdLJghbUOLH5HssEL1aEut3HmeCsOUlNq95ywwy
+	XkJAXeLRX12QsIiAnsSqU0vZIEpEJPa9eMc4gVFgFpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcU
+	J6XnGukVJ+YWl+al6yXn525iBEfwM+kdjKsaLA4xCnAwKvHwSuhMCxJiTSwrrsw9xCjBwawk
+	wqtQDBTiTUmsrEotyo8vKs1JLT7EmAz06ERmKdHkfGByySuJNzQ2MTOyNDKzMDIxNydNWEmc
+	92CrdaCQQHpiSWp2ampBahHMFiYOTqkGxibHx1sEs166zjgi/Vx+WsgsY7at0q3qjLv/e4g8
+	3PxU3MDzg43c3g1/Vl8/YH165dnjJS/kmQ8J5zAuWVazyNpRgvF6eu1rjY6zpueOn9B9JcLK
+	VjElv9i76uDZ01M5PsQv+uSgsFN9b+bOwjfvYz2lom6kJzrU3N9mbXGjW8hlLt8r09gHnEos
+	xRmJhlrMRcWJAA1lCz8kAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+This macro is used to create a struct pci_device_id array.
 
-On Wed, 27 Nov 2013 09:42:04 -0800
-Mark Rutland <mark.rutland@arm.com> wrote:
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/w1/masters/matrox_w1.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> On Thu, Nov 07, 2013 at 05:07:52AM +0000, Jisheng Zhang wrote:
-> > PL310 supports Prefetch offset/control register from r2p0 and Power
-> > control register from r3p0. This patch adds the support to configure
-> > these two registers if there are. The dt binding document is also updated.
-> 
-> I'd like to see a reasoning as to _why_ these should be in the DT.
-> 
-> While we have tag and data RAM latency information, those are hardware
-> properties that we cannot probe. I'm not so clear on the filter-ranges
-> property.
-> 
-> These bits seem to be configuration rather than a hardware description.
-> If there are some portions of this that we can describe with higher
-> level properties, I'd prefer to do that.
-> 
-> But primarily, the question to answer is do we need these, and if so do
-> they belong in the DT?
+diff --git a/drivers/w1/masters/matrox_w1.c b/drivers/w1/masters/matrox_w1.c
+index d8667b0..9361cea 100644
+--- a/drivers/w1/masters/matrox_w1.c
++++ b/drivers/w1/masters/matrox_w1.c
+@@ -42,7 +42,7 @@ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Evgeniy Polyakov <zbr@ioremap.net>");
+ MODULE_DESCRIPTION("Driver for transport(Dallas 1-wire prtocol) over VGA DDC(matrox gpio).");
+ 
+-static struct pci_device_id matrox_w1_tbl[] = {
++static DEFINE_PCI_DEVICE_TABLE(matrox_w1_tbl) = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MATROX, PCI_DEVICE_ID_MATROX_G400) },
+ 	{ },
+ };
+-- 
+1.7.10.4
 
-
-After more consideration, configuring these two registers in bootloader or
-TrustZone firmware is more reasonable since the prefetch controller can only be
-written in Secure World.
-
-PS: the tag/ram latency must also be written in secure world, and IMHO, the
-latency and filter-ranges are also configurations
-
-Thanks for having look at this patch,
-Jisheng
-
-> 
-> > 
-> > Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> > ---
-> >  Documentation/devicetree/bindings/arm/l2cc.txt |  4 ++++
-> >  arch/arm/mm/cache-l2x0.c                       | 19 +++++++++++++++++++
-> >  2 files changed, 23 insertions(+)
-> > 
-> > diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt
-> > b/Documentation/devicetree/bindings/arm/l2cc.txt index c0c7626..32cd08c
-> > 100644 --- a/Documentation/devicetree/bindings/arm/l2cc.txt
-> > +++ b/Documentation/devicetree/bindings/arm/l2cc.txt
-> > @@ -39,6 +39,10 @@ Optional properties:
-> >  - arm,filter-ranges : <start length> Starting address and length of
-> > window to filter. Addresses in the filter window are directed to the M1
-> > port. Other addresses will go to the M0 port.
-> > +- arm,prefetch-ctrl : The value for Prefetch Offset/Control Register if
-> > there
-> > +  is. This is a single cell.
-> > +- arm,pwr-ctrl : The value for Power Control Register if there is. This
-> > is a
-> > +  single cell.
-> >  - interrupts : 1 combined interrupt.
-> >  - cache-id-part: cache id part number to be used if it is not present
-> >    on hardware
-> > diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-> > index 447da6f..8f536ea 100644
-> > --- a/arch/arm/mm/cache-l2x0.c
-> > +++ b/arch/arm/mm/cache-l2x0.c
-> > @@ -704,6 +704,8 @@ static void __init pl310_of_setup(const struct
-> > device_node *np, u32 data[3] = { 0, 0, 0 };
-> >  	u32 tag[3] = { 0, 0, 0 };
-> >  	u32 filter[2] = { 0, 0 };
-> > +	u32 l2x0_revision = readl_relaxed(l2x0_base + L2X0_CACHE_ID) &
-> > +		L2X0_CACHE_ID_RTL_MASK;
-> >  
-> >  	of_property_read_u32_array(np, "arm,tag-latency", tag,
-> > ARRAY_SIZE(tag)); if (tag[0] && tag[1] && tag[2])
-> > @@ -730,6 +732,23 @@ static void __init pl310_of_setup(const struct
-> > device_node *np, writel_relaxed((filter[0] & ~(SZ_1M - 1)) |
-> > L2X0_ADDR_FILTER_EN, l2x0_base + L2X0_ADDR_FILTER_START);
-> >  	}
-> > +
-> > +	if (l2x0_revision >= L2X0_CACHE_ID_RTL_R2P0) {
-> > +		u32 prefetch_ctrl = 0;
-> > +
-> > +		of_property_read_u32(np, "arm,prefetch-ctrl",
-> > +				     &prefetch_ctrl);
-> > +		if (prefetch_ctrl)
-> > +			writel_relaxed(prefetch_ctrl, l2x0_base +
-> > +					L2X0_PREFETCH_CTRL);
-> 
-> Some of the prefetch control regsiter bits are reserved, and the
-> prefetch offset may only take a subset of possible values. I wouldn't
-> want to poke the hardware without performing some sanity checking on
-> these values.
-> 
-> > +		if (l2x0_revision >= L2X0_CACHE_ID_RTL_R3P0) {
-> > +			u32 pwr_ctrl = 0;
-> > +			of_property_read_u32(np, "arm,pwr-ctrl",
-> > &pwr_ctrl);
-> > +			if (pwr_ctrl)
-> > +				writel_relaxed(pwr_ctrl, l2x0_base +
-> > +						L2X0_POWER_CTRL);
-> 
-> Similarly, all but the lower 2 bits are reserved...
-> 
-> Thanks,
-> Mark.
 
