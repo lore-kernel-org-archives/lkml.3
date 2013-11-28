@@ -1,66 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759222Ab3K1OrY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 09:47:24 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:51425 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754912Ab3K1OrV (ORCPT
+	id S1758635Ab3K1OuM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 09:50:12 -0500
+Received: from 2.mo6.mail-out.ovh.net ([46.105.76.65]:51884 "EHLO
+	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751045Ab3K1OuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 09:47:21 -0500
-Date: Thu, 28 Nov 2013 15:47:14 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <htejun@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, zhang.yi20@zte.com.cn,
-        lkml <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH]: exec: avoid propagating PF_NO_SETAFFINITY into
- userspace child
-Message-ID: <20131128144714.GV10022@twins.programming.kicks-ass.net>
-References: <OF99742718.77495161-ON48257C30.000A8334-48257C30.000BA983@zte.com.cn>
- <20131127183117.GB13098@mtj.dyndns.org>
- <20131128091358.GH10022@twins.programming.kicks-ass.net>
- <20131128114542.GA3826@redhat.com>
- <20131128121748.GN10022@twins.programming.kicks-ass.net>
- <20131128133152.GA821@redhat.com>
- <20131128133947.GR10022@twins.programming.kicks-ass.net>
- <20131128141329.GB3925@htj.dyndns.org>
- <20131128143145.GT10022@twins.programming.kicks-ass.net>
- <20131128143848.GD3925@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131128143848.GD3925@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 28 Nov 2013 09:50:08 -0500
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Mike Turquette <mturquette@linaro.org>
+Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 1/6] ARM: at91: prepare sama5 dt boards transition to common clk
+Date: Thu, 28 Nov 2013 15:50:03 +0100
+Message-Id: <1385650204-8834-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1385650171-8756-1-git-send-email-b.brezillon@overkiz.com>
+References: <1385650171-8756-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 6352890226155026611
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 09:38:48AM -0500, Tejun Heo wrote:
-> Hey, Peter.
-> 
-> On Thu, Nov 28, 2013 at 03:31:45PM +0100, Peter Zijlstra wrote:
-> > But the WQ_UNBOUND thingies should be just that and should thus not have
-> > the NO_SETAFFINITY flag set because there is no valid reason to have it
-> > set.
-> > 
-> > Regardless of whether the threads are shared between unbound workqueues
-> > or not.
-> 
-> Hah?  No, we do not want to allow userland to be able to set
-> affinities on any workqueue workers, period.  That's just inviting
-> people to do weirdest things and then reporting things like "crypt
-> jobs on some of our 500 machines end up stuck on a single cpu once in
-> a while" which will eventually be tracked down to some weird shell
-> script setting affinity on workers doing something else.
-> 
-> We really want to insulate workers and pool operation from userland.
-> e.g. unbound workqueues now default to per-NUMA affinity unless
-> explicitly told not to, which leads to better overall behavior for
-> most workloads.  We do wanna keep those details from userland so that
-> they can be improved in the future too.
+This patch prepare the transition to common clk for sama5 dt boards by
+replacing the timer init callback.
 
-Bah, windows mentality of we know better.
+Clocks registration cannot be done in early init callback (as formerly done
+by the old clk implementation) because it requires dynamic allocation
+which is not ready yet during early init.
 
-If they do stupid they get stupid; the only thing we should be concerned
-about is correctness, they shouldn't be able to crash the system.
+In the other hand, at91 clocks must be registered before
+at91sam926x_pit_init is called because PIT (Periodic Interval Timer) driver
+request the master clk (mck).
+
+A new function (at91sama5_dt_timer_init) is created to fullfil these needs.
+This function registers all at91 clks using the dt definition before
+calling the PIT init function.
+The device tree clock registration is enabled only if common clk is
+selected. Else the old clk registration is been done during
+at91_dt_initialize call.
+
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/mach-at91/board-dt-sama5.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
+index bf00d15..075ec05 100644
+--- a/arch/arm/mach-at91/board-dt-sama5.c
++++ b/arch/arm/mach-at91/board-dt-sama5.c
+@@ -16,6 +16,7 @@
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
+ #include <linux/phy.h>
++#include <linux/clk-provider.h>
+ 
+ #include <asm/setup.h>
+ #include <asm/irq.h>
+@@ -26,6 +27,13 @@
+ #include "at91_aic.h"
+ #include "generic.h"
+ 
++static void __init sama5_dt_timer_init(void)
++{
++#if defined(CONFIG_COMMON_CLK)
++	of_clk_init(NULL);
++#endif
++	at91sam926x_pit_init();
++}
+ 
+ static const struct of_device_id irq_of_match[] __initconst = {
+ 
+@@ -72,7 +80,7 @@ static const char *sama5_dt_board_compat[] __initdata = {
+ 
+ DT_MACHINE_START(sama5_dt, "Atmel SAMA5 (Device Tree)")
+ 	/* Maintainer: Atmel */
+-	.init_time	= at91sam926x_pit_init,
++	.init_time	= sama5_dt_timer_init,
+ 	.map_io		= at91_map_io,
+ 	.handle_irq	= at91_aic5_handle_irq,
+ 	.init_early	= at91_dt_initialize,
+-- 
+1.7.9.5
+
