@@ -1,127 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759134Ab3K1PWP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 10:22:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15733 "EHLO mx1.redhat.com"
+	id S1759054Ab3K1PY4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 10:24:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54176 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754631Ab3K1PWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 10:22:14 -0500
-Date: Thu, 28 Nov 2013 16:21:37 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCHv3 6/7] perf record: Use perf_data_file__write for output file
-Message-ID: <20131128152137.GG1245@krava.brq.redhat.com>
-References: <1385634619-8129-1-git-send-email-jolsa@redhat.com>
- <1385634619-8129-7-git-send-email-jolsa@redhat.com>
- <20131128140344.GB3603@infradead.org>
+	id S1754781Ab3K1PYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 10:24:52 -0500
+Message-ID: <5297603D.6040300@suse.de>
+Date: Thu, 28 Nov 2013 16:24:45 +0100
+From: Alexander Graf <agraf@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130910 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131128140344.GB3603@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH] sched: Remove PREEMPT_NEED_RESCHED from generic code
+References: <tip-7a7m5qqbn5pmwnd4wko9u6da@git.kernel.org> <20131128132641.GP10022@twins.programming.kicks-ass.net>
+In-Reply-To: <20131128132641.GP10022@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 12:03:44PM -0200, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Nov 28, 2013 at 11:30:18AM +0100, Jiri Olsa escreveu:
-> > Changing the file output code to use the newly
-> > added perf_data_file__write interface.
-> > 
-> > No functional change intended.
-> 
-> But there is one, if we fail the pr_err() will not be called, will some
-> warning be emitter later on?
+On 11/28/2013 02:26 PM, Peter Zijlstra wrote:
+> Subject: sched: Remove PREEMPT_NEED_RESCHED from generic code
+>
+> While hunting a preemption issue with Alexander, Ben noticed that the
+> currently generic PREEMPT_NEED_RESCHED stuff is horribly broken for
+> load-store architectures.
+>
+> We currently rely on the IPI to fold TIF_NEED_RESCHED into
+> PREEMPT_NEED_RESCHED, but when this IPI lands while we already have
+> a load for the preempt-count but before the store, the store will erase
+> the PREEMPT_NEED_RESCHED change.
+>
+> The current preempt-count only works on load-store archs because
+> interrupts are assumed to be completely balanced wrt their preempt_count
+> fiddling; the previous preempt_count load will match the preempt_count
+> state after the interrupt and therefore nothing gets lost.
+>
+> This patch removes the PREEMPT_NEED_RESCHED usage from generic code and
+> pushes it into x86 arch code; the generic code goes back to relying on
+> TIF_NEED_RESCHED.
+>
+> Boot tested on x86_64 and compile tested on ppc64.
+>
+> Reported-by: Alexander Graf <agraf@suse.de>
+> Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 
-ouch right, I missed that one... attached v3 ;-)
+Fixes the issue for me.
 
-> 
-> If so, we should make it clear in the changelog. Lemme check by looking
-> at that code...
-
-I think it's better we dont change the functionality,
-just factor the code..
-
-> 
-> There are several places where the return of this function is propagated
-> and handled with relevant error messages, but at least one, the most
-> important, doesn't, i.e. this would be the only message the user would
-> receive, can you verify that?
-
-AFAICS they print out high(er) level errors, like for sythesizing
-events:
-                pr_err("Couldn't record guest kernel [%d]'s reference"
-                       " relocation symbol.\n", machine->pid);
-
-I think we want that write failure message as well
-
-thanks,
-jirka
+Tested-by: Alexander Graf <agraf@suse.de>
 
 
----
-Changing the file output code to use the newly
-added perf_data_file__write interface.
-
-No functional change intended.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-record.c | 23 +++++++++--------------
- 1 file changed, 9 insertions(+), 14 deletions(-)
-
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index d93e2ee..2402eff 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -76,24 +76,19 @@ struct perf_record {
- 	long			samples;
- };
- 
--static int perf_record__write(struct perf_record *rec, void *buf, size_t size)
-+static ssize_t perf_record__write(struct perf_record *rec,
-+				  void *buf, size_t size)
- {
--	struct perf_data_file *file = &rec->file;
--
--	while (size) {
--		ssize_t ret = write(file->fd, buf, size);
--
--		if (ret < 0) {
--			pr_err("failed to write perf data, error: %m\n");
--			return -1;
--		}
--
--		size -= ret;
--		buf += ret;
-+	struct perf_session *session = rec->session;
-+	ssize_t ret;
- 
--		rec->bytes_written += ret;
-+	ret = perf_data_file__write(session->file, buf, size);
-+	if (ret < 0) {
-+		pr_err("failed to write perf data, error: %m\n");
-+		return -1;
- 	}
- 
-+	rec->bytes_written += ret;
- 	return 0;
- }
- 
--- 
-1.8.3.1
+Alex
 
