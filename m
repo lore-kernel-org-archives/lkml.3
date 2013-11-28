@@ -1,111 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751050Ab3K1FJn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 00:09:43 -0500
-Received: from mga09.intel.com ([134.134.136.24]:41037 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750948Ab3K1FJU convert rfc822-to-8bit (ORCPT
+	id S1750962Ab3K1FZd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 00:25:33 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39828 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750753Ab3K1FZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 00:09:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,788,1378882800"; 
-   d="scan'208";a="443499500"
-From: "Ma, Xindong" <xindong.ma@intel.com>
-To: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mhocko@suse.cz" <mhocko@suse.cz>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'Peter Zijlstra'" <peterz@infradead.org>,
-        "'gregkh@linuxfoundation.org'" <gregkh@linuxfoundation.org>
-CC: "Ma, Xindong" <xindong.ma@intel.com>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>
-Subject: [PATCH] Fix race between oom kill and task exit
-Thread-Topic: [PATCH] Fix race between oom kill and task exit
-Thread-Index: Ac7r9btHInGeSKilQOSCKjR0s37a+Q==
-Date: Thu, 28 Nov 2013 05:09:16 +0000
-Message-ID: <3917C05D9F83184EAA45CE249FF1B1DD0253093A@SHSMSX103.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 28 Nov 2013 00:25:31 -0500
+Message-ID: <1385616317.23855.75.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 3.12 07/19] tcp: gso: fix truesize tracking
+From: Ben Hutchings <ben@decadent.org.uk>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Eric Dumazet <edumazet@google.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Thu, 28 Nov 2013 05:25:17 +0000
+In-Reply-To: <20131118183646.248381899@linuxfoundation.org>
+References: <20131118183644.030738675@linuxfoundation.org>
+	 <20131118183646.248381899@linuxfoundation.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-Z90FvmgZRjUw68asvEwv"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.213
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Leon Ma <xindong.ma@intel.com>
-Date: Thu, 28 Nov 2013 12:46:09 +0800
-Subject: [PATCH] Fix race between oom kill and task exit
 
-There is a race between oom kill and task exit. Scenario is:
-   TASK  A                      TASK  B
-TASK B is selected to oom kill
-in oom_kill_process()
-check PF_EXITING of TASK B
-                            task call do_exit()
-                            task set PF_EXITING flag
-                            write_lock_irq(&tasklist_lock);
-                            remove TASK B from thread group in __unhash_process()
-                            write_unlock_irq(&tasklist_lock);
-read_lock(&tasklist_lock);
-traverse threads of TASK B
-read_unlock(&tasklist_lock);
+--=-Z90FvmgZRjUw68asvEwv
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-After that, the following traversal of threads in TASK B will not end because TASK B is not in the thread group:
-do {
-....
-} while_each_thread(p, t);
+On Mon, 2013-11-18 at 10:37 -0800, Greg Kroah-Hartman wrote:
+> 3.12-stable review patch.  If anyone has any objections, please let me kn=
+ow.
+>=20
+> ------------------
+>=20
+> From: Eric Dumazet <edumazet@google.com>
+>=20
+> [ Upstream commit 0d08c42cf9a71530fef5ebcfe368f38f2dd0476f ]
+>=20
+> commit 6ff50cd55545 ("tcp: gso: do not generate out of order packets")
+> had an heuristic that can trigger a warning in skb_try_coalesce(),
+> because skb->truesize of the gso segments were exactly set to mss.
+[...]
 
-Signed-off-by: Leon Ma <xindong.ma@intel.com>
-Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
----
- mm/oom_kill.c |   20 ++++++++++----------
- 1 files changed, 10 insertions(+), 10 deletions(-)
+That commit went in 3.10, but this fix hasn't been applied to 3.10.y.
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 1e4a600..32ec88d 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -412,16 +412,6 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 	static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
- 					      DEFAULT_RATELIMIT_BURST);
- 
--	/*
--	 * If the task is already exiting, don't alarm the sysadmin or kill
--	 * its children or threads, just set TIF_MEMDIE so it can die quickly
--	 */
--	if (p->flags & PF_EXITING) {
--		set_tsk_thread_flag(p, TIF_MEMDIE);
--		put_task_struct(p);
--		return;
--	}
--
- 	if (__ratelimit(&oom_rs))
- 		dump_header(p, gfp_mask, order, memcg, nodemask);
- 
-@@ -437,6 +427,16 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 	 * still freeing memory.
- 	 */
- 	read_lock(&tasklist_lock);
-+	/*
-+	 * If the task is already exiting, don't alarm the sysadmin or kill
-+	 * its children or threads, just set TIF_MEMDIE so it can die quickly
-+	 */
-+	if (p->flags & PF_EXITING) {
-+		set_tsk_thread_flag(p, TIF_MEMDIE);
-+		put_task_struct(p);
-+		read_unlock(&tasklist_lock);
-+		return;
-+	}
- 	do {
- 		list_for_each_entry(child, &t->children, sibling) {
- 			unsigned int child_points;
--- 
-1.7.4.1
+David, this code moved from net/ipv4/tcp.c to tcp_offload.c after 3.10
+and this patch applies textually after adjusting the filename.  Please
+consider including it in the next batch of stable fixes for 3.10.
 
+Ben.
+
+--=20
+Ben Hutchings
+Usenet is essentially a HUGE group of people passing notes in class.
+                      - Rachel Kadel, `A Quick Guide to Newsgroup Etiquette=
+'
+
+--=-Z90FvmgZRjUw68asvEwv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIVAwUAUpbTvee/yOyVhhEJAQrykQ//Rl7M9l6lTufkG5tVeTsB7mzLLdUDW/7A
+PLTJtYDMZy8Ampwq0DlXvFvWBm0Tz+a6EToG6Xlea7G9kd7K4AkWfe6/bUNFU0By
+2SUQ961FNYNvV5RN5lKb0wVYmXdSARvuCQmKXnYrvdpEsXr9/AJQlh8i3kwqE64+
+05XO/Vps7H1GH3+IhnLGsNxfQFePR1HbFDT+bEckfZw8ntIQdi1t2KvO+qkBQuG2
+/rAhdoJBp5oiCWylynxW1i1HronklW3iC2WBqBlf6lWlgUDwN/dNeqhxs5KMDQ7w
+v/vezOWLm/nu0642HFAXDxKqe6mSNeSWF7gUtp4mUva98svzKAqEPpF4Crpeo2qX
+K5X1/92CmwoRLXXvbb41+U+OseEGSQpIzJUNUCAF/miJDsKoiQyLjmH9PHoYnDpp
+iPczGfQU0LDg4eB+6oSsQ7iKEJGZuzVQk0GUxQmantNHZRjQxgg6Vx4t021VeB6Z
+hv923TqBJkG9s71+G/HY5zJXpayCAM0M8wm38H/4SWJvwlWINpp8wZM9o80SGyHf
+SsMf/zcbYRi5aSTWCE9V3Q5v2sm0pmgUciVtWYO2csmHutTwvBWrJ09oiMpXhYnT
+0ePNQBpdh1/xXmKsvQ+ZT79KOuix5+ag5fWmVz51MtO0m+LLIx8veAN3YNqKJ60F
+2A3WSyF69P4=
+=s49N
+-----END PGP SIGNATURE-----
+
+--=-Z90FvmgZRjUw68asvEwv--
