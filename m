@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261Ab3K1E24 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 23:28:56 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:48225 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757791Ab3K1E2k (ORCPT
+	id S932304Ab3K1E3g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 23:29:36 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:35800 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758638Ab3K1E2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 23:28:40 -0500
+	Wed, 27 Nov 2013 23:28:37 -0500
 From: Thomas Behan <thomas.behan@gmail.com>
 To: linux-spi@vger.kernel.org
 Cc: broonie@linaro.org, linux-kernel@vger.kernel.org,
         Thomas Behan <thomas.behan@gmail.com>
-Subject: [PATCH 4/4] spi: omap-100k: Fixed style of sizeof operators
-Date: Wed, 27 Nov 2013 23:27:24 -0500
-Message-Id: <1385612844-22482-5-git-send-email-thomas.behan@gmail.com>
+Subject: [PATCH 1/4] spi: omap-100k: Fixed spacing on while loops
+Date: Wed, 27 Nov 2013 23:27:21 -0500
+Message-Id: <1385612844-22482-2-git-send-email-thomas.behan@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1385612844-22482-1-git-send-email-thomas.behan@gmail.com>
 References: <1385612844-22482-1-git-send-email-thomas.behan@gmail.com>
@@ -21,36 +21,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-checkpatch.pl generated 2 warning due to "sizeof x" being used instead of
-"sizeof(x)". These warnings have been fixed.
+checkpatch.pl generated several errors from "while(" statements which should
+have read "while (" to comply with the style guide. These errors have been
+fixed.
 
 Signed-off-by: Thomas Behan <thomas.behan@gmail.com>
 ---
- drivers/spi/spi-omap-100k.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/spi/spi-omap-100k.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/spi/spi-omap-100k.c b/drivers/spi/spi-omap-100k.c
-index fcd783c..2516379 100644
+index b6ed82b..bdf6696 100644
 --- a/drivers/spi/spi-omap-100k.c
 +++ b/drivers/spi/spi-omap-100k.c
-@@ -294,7 +294,7 @@ static int omap1_spi100k_setup(struct spi_device *spi)
- 	spi100k = spi_master_get_devdata(spi->master);
+@@ -147,7 +147,7 @@ static void spi100k_write_data(struct spi_master *master, int len, int data)
+ 	       spi100k->base + SPI_CTRL);
  
- 	if (!cs) {
--		cs = kzalloc(sizeof *cs, GFP_KERNEL);
-+		cs = kzalloc(sizeof(*cs), GFP_KERNEL);
- 		if (!cs)
- 			return -ENOMEM;
- 		cs->base = spi100k->base + spi->chip_select * 0x14;
-@@ -411,7 +411,7 @@ static int omap1_spi100k_probe(struct platform_device *pdev)
- 	if (!pdev->id)
- 		return -EINVAL;
+ 	/* Wait for bit ack send change */
+-	while((readw(spi100k->base + SPI_STATUS) & SPI_STATUS_WE) != SPI_STATUS_WE);
++	while ((readw(spi100k->base + SPI_STATUS) & SPI_STATUS_WE) != SPI_STATUS_WE);
+ 	udelay(1000);
  
--	master = spi_alloc_master(&pdev->dev, sizeof *spi100k);
-+	master = spi_alloc_master(&pdev->dev, sizeof(*spi100k));
- 	if (master == NULL) {
- 		dev_dbg(&pdev->dev, "master allocation failed\n");
- 		return -ENOMEM;
+ 	spi100k_disable_clock(master);
+@@ -168,7 +168,7 @@ static int spi100k_read_data(struct spi_master *master, int len)
+ 	       SPI_CTRL_RD,
+ 	       spi100k->base + SPI_CTRL);
+ 
+-	while((readw(spi100k->base + SPI_STATUS) & SPI_STATUS_RD) != SPI_STATUS_RD);
++	while ((readw(spi100k->base + SPI_STATUS) & SPI_STATUS_RD) != SPI_STATUS_RD);
+ 	udelay(1000);
+ 
+ 	dataL = readw(spi100k->base + SPI_RX_LSB);
+@@ -226,7 +226,7 @@ omap1_spi100k_txrx_pio(struct spi_device *spi, struct spi_transfer *xfer)
+ 				spi100k_write_data(spi->master, word_len, *tx++);
+ 			if (xfer->rx_buf != NULL)
+ 				*rx++ = spi100k_read_data(spi->master, word_len);
+-		} while(c);
++		} while (c);
+ 	} else if (word_len <= 16) {
+ 		u16             *rx;
+ 		const u16       *tx;
+@@ -239,7 +239,7 @@ omap1_spi100k_txrx_pio(struct spi_device *spi, struct spi_transfer *xfer)
+ 				spi100k_write_data(spi->master,word_len, *tx++);
+ 			if (xfer->rx_buf != NULL)
+ 				*rx++ = spi100k_read_data(spi->master,word_len);
+-		} while(c);
++		} while (c);
+ 	} else if (word_len <= 32) {
+ 		u32             *rx;
+ 		const u32       *tx;
+@@ -252,7 +252,7 @@ omap1_spi100k_txrx_pio(struct spi_device *spi, struct spi_transfer *xfer)
+ 				spi100k_write_data(spi->master,word_len, *tx);
+ 			if (xfer->rx_buf != NULL)
+ 				*rx = spi100k_read_data(spi->master,word_len);
+-		} while(c);
++		} while (c);
+ 	}
+ 	return count - c;
+ }
 -- 
 1.8.1.2
 
