@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485Ab3K1Vw5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 16:52:57 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:58592 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab3K1Vwl (ORCPT
+	id S1751813Ab3K1WTk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 17:19:40 -0500
+Received: from order.stressinduktion.org ([87.106.68.36]:45222 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015Ab3K1WT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 16:52:41 -0500
-From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-To: "'Martin K. Petersen'" <martin.petersen@oracle.com>
-Cc: "'open list'" <linux-kernel@vger.kernel.org>, <linux-ext4@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, <gregkh@linuxfoundation.org>
-References: <CAO9zADw-k+Qghk79yzwzaiYiPSoQnKwjjTBwrhcOrJxTWc-fOQ@mail.gmail.com> <yq1iovclm0m.fsf@sermon.lab.mkp.net> <00c701ceec3a$c8bcfc90$5a36f5b0$@lucidpixels.com> <yq1d2lkllek.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq1d2lkllek.fsf@sermon.lab.mkp.net>
-Subject: RE: 3.12.0: sda2: WRITE SAME failed. Manually zeroing. with 3w-xxxx driver
-Date: Thu, 28 Nov 2013 16:52:36 -0500
-Message-ID: <010b01ceec84$27643580$762ca080$@lucidpixels.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-thread-index: AQIRpMQ5yoPFWdrjnTAKydtw81oUOQGvynbaASKfOScCoiRwNJmKGWoA
-Content-Language: en-us
+	Thu, 28 Nov 2013 17:19:27 -0500
+Date: Thu, 28 Nov 2013 23:19:26 +0100
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>, jongman.heo@samsung.com,
+        David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] inet: further fixes of possible seqlock deadlocks
+Message-ID: <20131128221926.GG24171@order.stressinduktion.org>
+Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
+	jongman.heo@samsung.com, David Miller <davem@davemloft.net>,
+	"netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <13025162.118881385612276530.JavaMail.weblogic@epv6ml01> <1385659390.5352.20.camel@edumazet-glaptop2.roam.corp.google.com> <1385661082.5352.34.camel@edumazet-glaptop2.roam.corp.google.com> <20131128192231.GE24171@order.stressinduktion.org> <1385672502.5352.38.camel@edumazet-glaptop2.roam.corp.google.com> <20131128212700.GF24171@order.stressinduktion.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131128212700.GF24171@order.stressinduktion.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 28, 2013 at 10:27:00PM +0100, Hannes Frederic Sowa wrote:
+> > > @@ -1524,8 +1524,8 @@ int ip6_push_pending_frames(struct sock *sk)
+> > >  	if (proto == IPPROTO_ICMPV6) {
+> > >  		struct inet6_dev *idev = ip6_dst_idev(skb_dst(skb));
+> > >  
+> > > -		ICMP6MSGOUT_INC_STATS_BH(net, idev, icmp6_hdr(skb)->icmp6_type);
+> > > -		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTMSGS);
+> > > +		ICMP6MSGOUT_INC_STATS(net, idev, icmp6_hdr(skb)->icmp6_type);
+> > > +		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTMSGS);
+> > 
+> > I am not sure we use a seqlock for ICMP stats.
+> > 
+> > seqlocks were used for 64bit IP stats
+> 
+> True, atomic longs get used here in both cases.
 
+I don't really understand why we distinguish between _BH and plain ICMP stat
+calls then.
 
------Original Message-----
-From: Martin K. Petersen [mailto:martin.petersen@oracle.com] 
-Sent: Thursday, November 28, 2013 8:13 AM
-
-[ .. ]
-
-Martin>	http://marc.info/?l=linux-scsi&m=138252394614920&w=2
-
-Justin> Awesome, thank you!  This patch is over a month old, do you know
-Justin> if is currently in mainline? 
-
-Nope. - James?
-
-[ .. ]
-
-Could it possibly get added to 3.12.x -stable as well? I've patched against
-3.12.0 for now -- I'll let you know if there are any issues-- so far so
-good, thanks again.
-
-Justin.
+The non-_BH versions deactivate interrupts when updating the per-cpu counter.
 
