@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759054Ab3K1PY4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 10:24:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54176 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754781Ab3K1PYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 10:24:52 -0500
-Message-ID: <5297603D.6040300@suse.de>
-Date: Thu, 28 Nov 2013 16:24:45 +0100
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130910 Thunderbird/17.0.9
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH] sched: Remove PREEMPT_NEED_RESCHED from generic code
-References: <tip-7a7m5qqbn5pmwnd4wko9u6da@git.kernel.org> <20131128132641.GP10022@twins.programming.kicks-ass.net>
-In-Reply-To: <20131128132641.GP10022@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1759113Ab3K1P1V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 10:27:21 -0500
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:57071 "EHLO
+	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751045Ab3K1P1T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 10:27:19 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
+Subject: >> On 11/26/2013 04:53 PM, Jason Gunthorpe wrote:
+Date: Thu, 28 Nov 2013 10:26:57 -0500
+Message-Id: <1385652419-4732-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <20131127181348.GA22723@obsidianresearch.com>
+References: <20131127181348.GA22723@obsidianresearch.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2013 02:26 PM, Peter Zijlstra wrote:
-> Subject: sched: Remove PREEMPT_NEED_RESCHED from generic code
->
-> While hunting a preemption issue with Alexander, Ben noticed that the
-> currently generic PREEMPT_NEED_RESCHED stuff is horribly broken for
-> load-store architectures.
->
-> We currently rely on the IPI to fold TIF_NEED_RESCHED into
-> PREEMPT_NEED_RESCHED, but when this IPI lands while we already have
-> a load for the preempt-count but before the store, the store will erase
-> the PREEMPT_NEED_RESCHED change.
->
-> The current preempt-count only works on load-store archs because
-> interrupts are assumed to be completely balanced wrt their preempt_count
-> fiddling; the previous preempt_count load will match the preempt_count
-> state after the interrupt and therefore nothing gets lost.
->
-> This patch removes the PREEMPT_NEED_RESCHED usage from generic code and
-> pushes it into x86 arch code; the generic code goes back to relying on
-> TIF_NEED_RESCHED.
->
-> Boot tested on x86_64 and compile tested on ppc64.
->
-> Reported-by: Alexander Graf <agraf@suse.de>
-> Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Jason,
 
-Fixes the issue for me.
+Seriously, thanks for all the diagnostic info. The strace led me right
+to the problem.
 
-Tested-by: Alexander Graf <agraf@suse.de>
+Please test out the attached patch and let me know if that solves
+the login whitespace problem.
 
+Also, please retest the 'cat enable' problem; I have doubts that this
+patch fixes that problem, though.
 
-Alex
+PS - sending this via git send-email so whitespace shouldn't be
+a problem.
+
+--- >% ---
+Subject: [PATCH] n_tty: Fix missing newline echo
+
+When L_ECHONL is on, newlines are echoed regardless of the L_ECHO
+state; if set, ensure accumulated echoes are flushed before finishing
+the current input processing and before more output.
+
+Reported-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/n_tty.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index ac8dfe6..3ab928f 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -855,7 +855,8 @@ static void process_echoes(struct tty_struct *tty)
+ 	struct n_tty_data *ldata = tty->disc_data;
+ 	size_t echoed;
+ 
+-	if (!L_ECHO(tty) || ldata->echo_commit == ldata->echo_tail)
++	if ((!L_ECHO(tty) && !L_ECHONL(tty)) ||
++	    ldata->echo_commit == ldata->echo_tail)
+ 		return;
+ 
+ 	mutex_lock(&ldata->output_lock);
+@@ -870,7 +871,8 @@ static void flush_echoes(struct tty_struct *tty)
+ {
+ 	struct n_tty_data *ldata = tty->disc_data;
+ 
+-	if (!L_ECHO(tty) || ldata->echo_commit == ldata->echo_head)
++	if ((!L_ECHO(tty) && !L_ECHONL(tty)) ||
++	    ldata->echo_commit == ldata->echo_head)
+ 		return;
+ 
+ 	mutex_lock(&ldata->output_lock);
+-- 
+1.8.1.2
 
