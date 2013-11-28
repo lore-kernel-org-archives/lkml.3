@@ -1,123 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759637Ab3K1UCR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 15:02:17 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:42484 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932342Ab3K1TzH (ORCPT
+	id S1759662Ab3K1UC2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 15:02:28 -0500
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:53060 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759639Ab3K1UCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 14:55:07 -0500
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 09/34] sysfs, kernfs: add sysfs_dirent->s_attr.size
-Date: Thu, 28 Nov 2013 14:54:22 -0500
-Message-Id: <1385668487-10181-10-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1385668487-10181-1-git-send-email-tj@kernel.org>
-References: <20131128060518.GA5291@kroah.com>
- <1385668487-10181-1-git-send-email-tj@kernel.org>
+	Thu, 28 Nov 2013 15:02:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131128134642.GB12292@ghostprotocols.net>
+References: <1385583394-3703-1-git-send-email-acme@infradead.org>
+	<1385583394-3703-35-git-send-email-acme@infradead.org>
+	<20131127224323.GB1350@krava.redhat.com>
+	<20131128095801.GA1245@krava.brq.redhat.com>
+	<20131128125619.GA12292@ghostprotocols.net>
+	<20131128134642.GB12292@ghostprotocols.net>
+Date: Thu, 28 Nov 2013 21:02:23 +0100
+Message-ID: <CAFrcx1mr0AYdNJ04jSVV+y0KfHSF13Qx1BnpdUb++1bvhH2f0g@mail.gmail.com>
+Subject: Re: [PATCH 34/34] perf tools unwinding: Use the per-feature check flags
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sysfs sets the size of regular files unconditionally at PAGE_SIZE and
-takes the size of bin files from bin_attribute.  The latter is a
-pretty bad interface which forces bin_attribute users to create a
-separate copy of bin_attribute for each instance of the file -
-e.g. pci resource files.
+On 28 November 2013 14:46, Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> Em Thu, Nov 28, 2013 at 09:56:19AM -0300, Arnaldo Carvalho de Melo escreveu:
+>> Em Thu, Nov 28, 2013 at 10:58:01AM +0100, Jiri Olsa escreveu:
+>> > On Wed, Nov 27, 2013 at 11:43:23PM +0100, Jiri Olsa wrote:
+>> > > On Wed, Nov 27, 2013 at 05:16:34PM -0300, Arnaldo Carvalho de Melo wrote:
+>> > >   LINK     perf
+>> > > /bin/ld: cannot find -lunwind
+>> > > /bin/ld: cannot find -lunwind-x86_64
+>> > > collect2: error: ld returned 1 exit status
+>> > > make[1]: *** [perf] Error 1
+>> > > make[1]: *** Waiting for unfinished jobs....
+>> > > make: *** [all] Error 2
+>>
+>> > > I haven't checked this one.. will do tomorrow
+>>
+>> > we need to plug libunwind flags/libs only if
+>> > the $(feature-libunwind) is enabled..
+>>
+>> > NO_LIBUNWIND - user's decision not to link with libunwind or
+>> >                architecture that does not support it
+>>
+>> > $(feature-libunwind) - if it's actually installed
+>>
+>> > attached change fixies that for me, feel free to use/merge it
+>>
+>> Argh, I used tests/make on one machine where those two patches by Jean
+>> were not applied, then rebased on another, the one I use to submit,
+>> those got included but not tests/make tested, which probably explains
+>> why this got thru :-\
+>>
+>> Jean, can you please check that this works for you on ARM too?
+>
+> I just noticed that this patch breaks the feature detection mechanism,
+> after it is applied it is back performing all tests at every make call,
+> this needs rethinking, so I'm dropping both.
+Oh I am sorry about that. I tested on ARM with and without the
+LIBUNWIND_DIR option set.
+Let me rethink/rework this and come back to you with a proper fix.
 
-Add sysfs_dirent->s_attr.size so that the size can be specified
-separately.  This unifies inode init paths of ATTR and BIN_ATTR
-identical and allows for generic size handling for kernfs.
+>
+> Ingo, please disregard, yet again, my latest pull request, sigh.
+>
+> Jiri, this could be something for tests/make, till then I'll try
+> to check this manually.
 
-Unfortunately, this grows the size of sysfs_dirent by sizeof(loff_t).
+One question though: are you OK with the principle of having
+per-feature check flags? This brings two things to the feature
+detection and build:
+1. the ability to specify specific flags for the feature check, which
+is not possible on the current code,
+2. a simplification in the Makefiles.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- fs/sysfs/file.c  | 6 ++++++
- fs/sysfs/inode.c | 8 +-------
- fs/sysfs/sysfs.h | 1 +
- 3 files changed, 8 insertions(+), 7 deletions(-)
+Jean
 
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index cbebc33..0b0cec8 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -923,6 +923,7 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
- 	const struct kernfs_ops *ops;
- 	struct sysfs_addrm_cxt acxt;
- 	struct sysfs_dirent *sd;
-+	loff_t size;
- 	int rc;
- 
- 	if (type == SYSFS_KOBJ_ATTR) {
-@@ -943,6 +944,8 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
- 			ops = &sysfs_file_kfops_wo;
- 		else
- 			ops = &sysfs_file_kfops_empty;
-+
-+		size = PAGE_SIZE;
- 	} else {
- 		struct bin_attribute *battr = (void *)attr;
- 
-@@ -954,6 +957,8 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
- 			ops = &sysfs_bin_kfops_wo;
- 		else
- 			ops = &sysfs_file_kfops_empty;
-+
-+		size = battr->size;
- 	}
- 
- 	sd = sysfs_new_dirent(attr->name, mode, type);
-@@ -961,6 +966,7 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
- 		return -ENOMEM;
- 
- 	sd->s_attr.ops = ops;
-+	sd->s_attr.size = size;
- 	sd->s_ns = ns;
- 	sd->priv = (void *)attr;
- 	sysfs_dirent_init_lockdep(sd);
-diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
-index 4c463da..037a892 100644
---- a/fs/sysfs/inode.c
-+++ b/fs/sysfs/inode.c
-@@ -254,8 +254,6 @@ int sysfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
- 
- static void sysfs_init_inode(struct sysfs_dirent *sd, struct inode *inode)
- {
--	struct bin_attribute *bin_attr;
--
- 	inode->i_private = sysfs_get(sd);
- 	inode->i_mapping->a_ops = &sysfs_aops;
- 	inode->i_mapping->backing_dev_info = &sysfs_backing_dev_info;
-@@ -271,12 +269,8 @@ static void sysfs_init_inode(struct sysfs_dirent *sd, struct inode *inode)
- 		inode->i_fop = &sysfs_dir_operations;
- 		break;
- 	case SYSFS_KOBJ_ATTR:
--		inode->i_size = PAGE_SIZE;
--		inode->i_fop = &kernfs_file_operations;
--		break;
- 	case SYSFS_KOBJ_BIN_ATTR:
--		bin_attr = sd->priv;
--		inode->i_size = bin_attr->size;
-+		inode->i_size = sd->s_attr.size;
- 		inode->i_fop = &kernfs_file_operations;
- 		break;
- 	case SYSFS_KOBJ_LINK:
-diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index c05e0dd..d40e85e 100644
---- a/fs/sysfs/sysfs.h
-+++ b/fs/sysfs/sysfs.h
-@@ -29,6 +29,7 @@ struct sysfs_elem_symlink {
- struct sysfs_elem_attr {
- 	const struct kernfs_ops	*ops;
- 	struct sysfs_open_dirent *open;
-+	loff_t			size;
- };
- 
- struct sysfs_inode_attrs {
--- 
-1.8.4.2
-
+>
+> - Arnaldo
