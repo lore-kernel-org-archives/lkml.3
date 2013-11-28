@@ -1,114 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757756Ab3K1H3G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 02:29:06 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:32855 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754620Ab3K1H3D convert rfc822-to-8bit (ORCPT
+	id S1752192Ab3K1He5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 02:34:57 -0500
+Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:44517
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750741Ab3K1He4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 02:29:03 -0500
+	Thu, 28 Nov 2013 02:34:56 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <lgirdwood@gmail.com>, <broonie@kernel.org>, <perex@perex.cz>,
+        <tiwai@suse.de>, <fabio.estevam@freescale.com>,
+        <LW@KARO-electronics.de>, <oskar@scara.com>
+CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] ASoC: SGTL5000: Fix kernel failed while trying to get optional VDDD supply.
+Date: Thu, 28 Nov 2013 14:46:59 +0800
+Message-ID: <1385621219-20652-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-X-Originating-IP: [218.164.103.66]
-In-Reply-To: <20131126164417.9df88075f9ad394679bb60cb@linux-foundation.org>
-References: <1385458169.6721.2.camel@phoenix>
-	<20131126164417.9df88075f9ad394679bb60cb@linux-foundation.org>
-Date: Thu, 28 Nov 2013 15:29:02 +0800
-Message-ID: <CAFRkauDpmyXzs+ryCmxTiadXVs5BppH4NZJ1fG6AmHtruiuarg@mail.gmail.com>
-Subject: Re: ARM: nommu: Unable to allocate RAM for process text/data, errno 12
-From: Axel Lin <axel.lin@ingics.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Mel Gorman <mel@csn.ul.ie>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/27 Andrew Morton <akpm@linux-foundation.org>:
-> On Tue, 26 Nov 2013 17:29:29 +0800 Axel Lin <axel.lin@ingics.com> wrote:
->
->> Hi,
->> I got below error messages while starting mdev (busybox).
->>
->> ...
->>
->> [  108.537109] chmod: page allocation failure: order:8, mode:0xd0
->
-> It wants to allocate 2^8 physically contiguous pages!
->
->> [  108.543945] CPU: 0 PID: 47 Comm: chmod Not tainted 3.13.0-rc1-00170-g1bab531-dirty #1940
->> [  108.580078] [<0000c430>] (unwind_backtrace+0x0/0xe0) from [<0000ae58>] (show_stack+0x10/0x14)
->> [  108.592773] [<0000ae58>] (show_stack+0x10/0x14) from [<00050010>] (warn_alloc_failed+0xf8/0x128)
->> [  108.605468] [<00050010>] (warn_alloc_failed+0xf8/0x128) from [<00052030>] (__alloc_pages_nodemask+0x64c/0x6c4)
->> [  108.620117] [<00052030>] (__alloc_pages_nodemask+0x64c/0x6c4) from [<0005f028>] (do_mmap_pgoff+0x5d0/0x9b0)
->> [  108.633789] [<0005f028>] (do_mmap_pgoff+0x5d0/0x9b0) from [<0005ac04>] (vm_mmap_pgoff+0x64/0x7c)
->> [  108.647460] [<0005ac04>] (vm_mmap_pgoff+0x64/0x7c) from [<0009e6e8>] (load_flat_binary+0x38c/0xa0c)
->> [  108.660156] [<0009e6e8>] (load_flat_binary+0x38c/0xa0c) from [<0006bc40>] (search_binary_handler+0x4c/0xa4)
->> [  108.676757] [<0006bc40>] (search_binary_handler+0x4c/0xa4) from [<0006bfc8>] (do_execve+0x330/0x4e8)
->> [  108.689453] [<0006bfc8>] (do_execve+0x330/0x4e8) from [<0006c3c4>] (SyS_execve+0x30/0x44)
->> [  108.701171] [<0006c3c4>] (SyS_execve+0x30/0x44) from [<00008f40>] (ret_fast_syscall+0x0/0x44)
->
-> So the binfmt_flat driver is allocating memory into which to load
-> mdev's text (I assume it's the text).
->
->> Why it got page allocation failure?
->
-> Because 256 physically contiguous free pages were not available.
->
->> Does that mean it run into OOM?
->
-> Nope.
->
->> Seem the system still has enough memory available.
->
-> Sure, but it is too fragmented.  Get an MMU ;)
->
->
-> otoh, memory reclaim *should* have at least reclaimed non-mmapped
-> pagecache.  Shooting down lots of pagecache is preferable to failing
-> exec().  But I expect the PAGE_ALLOC_COSTLY_ORDER logic prevents the kernel
-> from trying to do this.
->
-> If it's repeatable then something like this:
->
-> --- a/mm/nommu.c~a
-> +++ a/mm/nommu.c
-> @@ -1173,7 +1173,7 @@ static int do_mmap_private(struct vm_are
->         order = get_order(len);
->         kdebug("alloc order %d for %lx", order, len);
->
-> -       pages = alloc_pages(GFP_KERNEL, order);
-> +       pages = alloc_pages(GFP_KERNEL|__GFP_REPEAT, order);
->         if (!pages)
->                 goto enomem;
->
->
-> *might* help.
+The SGTL5000 requires 2 external power supplies: VDDA and VDDIO. An optional
+third external power supply VDDD may be provided externally to achieve lower
+power.If an external supply is not used for VDDD, the SGTL5000 driver will
+register it's own regulator device, and then provides the VDDD supply consumer,
+and now there will be two regulator devices exist, local regulator for VDDD
+and platform regulator for VDDIO, VDDA.
 
-Hi Andrew,
-Thanks for your reply.
+*******************
+*                 *---------|3.3V VDDIO
+*                 *
+*  SGTL5000 codec *---x   VDDD
+*                 *
+*                 *---------|3.3V VDDA
+*******************
 
-I try to boot a couple times with your patch.
-Sometimes I can still see the same (above) messages with your patch applied.
+If an external supply is not used for VDDD, in the DT or architecture-specific
+file, only "VDDA-supply" and "VDDIO-supply" properties will be presented.
+This caused the following kernel failed while trying to get the external VDDD
+supply before trying to register it's own regulator device.
 
-I'm trying to remove unnecessary features to reduce memory usage.
-(seems this does help. I got more free memory so less chance to hit
-memory allocation failure)
-Is it possible to know current memory consumption (slab) in a running system?
+sgtl5000 0-000a: Failed to get supply 'VDDD': -19
 
-BTW, I'm wondering what is the guidline to choose the SLAB allocator?
-(especially, for embedded platforms without mmu).
+Here use regulator_get_optional() trying to look at the fact that whether the
+external VDDD supply is used or not.
 
-I google for slab/slub/slob, and found some material [1] says:
-SLOB (Simple List Of Blocks) is a memory allocator optimized for
-embedded systems
-with very little memory—on the order of megabytes.
-But it also says SLOB suffer from pathological fragmentation.
-So I'm wondering if I should choose SLOB or not. ( Currently, I'm using SLUB ).
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ sound/soc/codecs/sgtl5000.c | 25 ++++++++++++++++++++++---
+ 1 file changed, 22 insertions(+), 3 deletions(-)
 
-[1] http://stackoverflow.com/questions/15470560/what-to-choose-between-slab-and-slub-allocator-in-linux-kernel
+diff --git a/sound/soc/codecs/sgtl5000.c b/sound/soc/codecs/sgtl5000.c
+index 1f4093f..90d6d1e 100644
+--- a/sound/soc/codecs/sgtl5000.c
++++ b/sound/soc/codecs/sgtl5000.c
+@@ -1298,6 +1298,21 @@ static int sgtl5000_replace_vddd_with_ldo(struct snd_soc_codec *codec)
+ 	return 0;
+ }
+ 
++static int sgtl5000_external_vddd_used(struct snd_soc_codec *codec)
++{
++	struct regulator *consumer;
++	struct sgtl5000_priv *sgtl5000 = snd_soc_codec_get_drvdata(codec);
++
++	consumer = regulator_get_optional(codec->dev,
++			sgtl5000->supplies[VDDD].supply);
++	if (IS_ERR(consumer))
++		return 0;
++
++	regulator_put(consumer);
++
++	return 1;
++}
++
+ static int sgtl5000_enable_regulators(struct snd_soc_codec *codec)
+ {
+ 	int reg;
+@@ -1310,11 +1325,15 @@ static int sgtl5000_enable_regulators(struct snd_soc_codec *codec)
+ 	for (i = 0; i < ARRAY_SIZE(sgtl5000->supplies); i++)
+ 		sgtl5000->supplies[i].supply = supply_names[i];
+ 
+-	ret = regulator_bulk_get(codec->dev, ARRAY_SIZE(sgtl5000->supplies),
++	if (sgtl5000_external_vddd_used(codec)) {
++		ret = regulator_bulk_get(codec->dev,
++				ARRAY_SIZE(sgtl5000->supplies),
+ 				sgtl5000->supplies);
+-	if (!ret)
++		if (ret)
++			return ret;
++
+ 		external_vddd = 1;
+-	else {
++	} else {
+ 		ret = sgtl5000_replace_vddd_with_ldo(codec);
+ 		if (ret)
+ 			return ret;
+-- 
+1.8.4
 
-Regards,
-Axel
+
