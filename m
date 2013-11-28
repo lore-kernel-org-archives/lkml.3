@@ -1,84 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759450Ab3K1TtN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 14:49:13 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53551 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755994Ab3K1TtJ (ORCPT
+	id S1759438Ab3K1Tx5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 14:53:57 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:39079 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751045Ab3K1Txy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 14:49:09 -0500
-Date: Thu, 28 Nov 2013 19:47:51 +0000
-From: Dave Martin <Dave.Martin@arm.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Alexandre Courbot <gnurou@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <Pawel.Moll@arm.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v11 7/7] ARM: tegra: support Trusted Foundations by
- default
-Message-ID: <20131128194751.GD4634@e103592.cambridge.arm.com>
-References: <1385274652-16415-1-git-send-email-acourbot@nvidia.com>
- <1385274652-16415-8-git-send-email-acourbot@nvidia.com>
- <20131126000608.GA21634@quad.lixom.net>
- <CAAVeFu+mMyPhFtVZ09vgYWWCYkPpF3X547ffRAfXXKOOWUUkqg@mail.gmail.com>
- <20131126164730.GE2355@e103592.cambridge.arm.com>
- <CAAVeFuJgqgRnWLD+dyvb7+2fLanHmdDT0YV5r8ETsoqqjW8p7A@mail.gmail.com>
- <52977639.4000308@wwwdotorg.org>
+	Thu, 28 Nov 2013 14:53:54 -0500
+Date: Thu, 28 Nov 2013 16:53:38 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Tim Kryger <tim.kryger@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        linux-serial@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Patch Tracking <patches@linaro.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] serial: 8250_dw: Improve unwritable LCR workaround
+Message-ID: <20131128195337.GE13182@localhost>
+References: <1380647888-32473-1-git-send-email-tim.kryger@linaro.org>
+ <20131126183559.GA18570@localhost>
+ <CAAYSxhqU9GZdaoTjoCAeyQ4h-KPVzU0BH0D1eLYJoFZ+s8tPgQ@mail.gmail.com>
+ <20131127185448.GA21422@localhost>
+ <20131128093034.5d61130a@skate>
+ <20131128194720.GD13182@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <52977639.4000308@wwwdotorg.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131128194720.GD13182@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 04:58:33PM +0000, Stephen Warren wrote:
-> On 11/27/2013 11:02 PM, Alexandre Courbot wrote:
-> > On Wed, Nov 27, 2013 at 1:47 AM, Dave Martin <Dave.Martin@arm.com> wrote:
-> >> On Tue, Nov 26, 2013 at 10:35:58AM +0900, Alexandre Courbot wrote:
-> >>> On Tue, Nov 26, 2013 at 9:06 AM, Olof Johansson <olof@lixom.net> wrote:
-> >>>> On Sun, Nov 24, 2013 at 03:30:52PM +0900, Alexandre Courbot wrote:
-> >>>>> Support for Trusted Foundations is light and allows the kernel to run on
-> >>>>> a wider range of devices, so enable it by default.
-> >>>>>
-> >>>>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> >>>>> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-> >>>>> Reviewed-by: Stephen Warren <swarren@nvidia.com>
-> >>>>> ---
-> >>>>>  arch/arm/configs/tegra_defconfig | 1 +
-> >>>>>  1 file changed, 1 insertion(+)
-> >>>>
-> >>>> I think we want this enabled on multi_v7_defconfig too? Send a separate
-> >>>> patch for that once this is merged though.
-> >>>
-> >>> Will do.
-> >>
-> >> Should it just be default y if one of the relevant
-> >> CONFIG_ARCH_TEGRA_*_SOC is selected?
-> >>
-> >> That way, it's automatically included if relevant, and automatically
-> >> excluded if not -- regardless of whether the kernel is multiplatform
-> >> or not.
-> > 
-> > So basically, that would mean setting the default to 'y' since the
-> > option is not available unless a supported platform is included?
-> > 
-> > I'm fine this way too, if Stephen also agrees.
+On Thu, Nov 28, 2013 at 04:47:20PM -0300, Ezequiel Garcia wrote:
+> Hi Thomas, Tim:
 > 
-> Fine by me.
+> On Thu, Nov 28, 2013 at 09:30:34AM +0100, Thomas Petazzoni wrote:
+> > Dear Ezequiel Garcia,
+> > 
+> > On Wed, 27 Nov 2013 15:54:49 -0300, Ezequiel Garcia wrote:
+> > 
+> > > > An external device may be keeping the UART busy and preventing LCR
+> > > > from being written.
+> > > > 
+> > > > What device is attached to ttyS1?
+> > > 
+> > > There's no device attached at ttyS1. I've just tested this in another
+> > > box and it seems the same error is obtained on each unused port:
+> > 
+> > Are you sure about this? I suppose you're testing on the Armada XP GP
+> > board, and this board has a 4 ports FTDI chip, and according to the
+> > board schematics the four UARTs are all connected to the FTDI chip. So
+> > from the SoC perspective, ttyS1 is connected to something, as far as I
+> > can understand. Or maybe you also tested Armada XP DB ?
+> > 
+> 
+> Yeah, sorry about that. I missed the FTDI chip. As Thomas says the XP GP
+> board I'm testing this on, has its four UARTs connected to a FTDI chip.
+> 
+> Changing the console port by setting "console=ttyS1,115200" gives this:
+> 
+> [..]
+> Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
+> dw-apb-uart d0012000.serial: Couldn't set LCR to 191
+> dw-apb-uart d0012000.serial: Couldn't set LCR to 191
+> dw-apb-uart d0012000.serial: Couldn't set LCR to 224
+> dw-apb-uart d0012000.serial: Couldn't set LCR to 224
+> d0012000.serial: ttyS0 at MMIO 0xd0012000 (irq = 17, base_baud = 15625000) is a 16550A
+> dw-apb-uart d0012100.serial: Couldn't set LCR to 191
+> dw-apb-uart d0012100.serial: Couldn't set LCR to 191
+> dw-apb-uart d0012100.serial: Couldn't set LCR to 224
+> dw-apb-uart d0012100.serial: Couldn't set LCR to 224
+> d0012100.serial: ttyS1 at MMIO 0xd0012100 (irq = 18, base_baud = 15625000) is a 16550A
+> console [ttyS1] enabled
+> dw-apb-uart d0012200.serial: Couldn't set LCR to 191
+> dw-apb-uart d0012200.serial: Couldn't set LCR to 191
+> dw-apb-uart d0012200.serial: Couldn't set LCR to 224
+> dw-apb-uart d0012200.serial: Couldn't set LCR to 224
+> d0012200.serial: ttyS2 at MMIO 0xd0012200 (irq = 31, base_baud = 15625000) is a 16550A
+> dw-apb-uart d0012300.serial: Couldn't set LCR to 191
+> dw-apb-uart d0012300.serial: Couldn't set LCR to 191
+> dw-apb-uart d0012300.serial: Couldn't set LCR to 224
+> dw-apb-uart d0012300.serial: Couldn't set LCR to 224
+> d0012300.serial: ttyS3 at MMIO 0xd0012300 (irq = 32, base_baud = 15625000) is a 16550A
+> 
+> So we get the "Couldn't set" message in all four ports.
+> 
+> Tim: Any ideas?
 
-Sure, as long as the result is right, that should be fine.
+And another thing: the weird output on the console looks related to the
+early boot console. If I enable 'earlyprintk' on ttyS0 but set the console
+on ttyS1, this is what I get on ttyS0:
 
-Cheers
----Dave
+bootconsole [earlycon0] enabled
+[..]
+Kernel command line: earlyprintk console=ttyS1,115200 root=/dev/nfs rw nfsroot=192.168.0.45:/opt/buildrootfs,v3, ip=192.168.0.159:192.168.0.45:192.168.0.1:255.255.255.0:develboard:eth0:on rootwait
+[..]
+Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
+�Ɋ��Ɂ����Ɇ�������������������������������������
+Welcome to Buildroot
+buildroot login: 
+
+Hope this helps you understand what's going on...
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
