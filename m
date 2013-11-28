@@ -1,275 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409Ab3K1Juc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 04:50:32 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49651 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750935Ab3K1Ju1 (ORCPT
+	id S1754103Ab3K1Jyq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 04:54:46 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38085 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295Ab3K1Jyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 04:50:27 -0500
-X-AuditID: 9c930179-b7b6eae000007f2a-ec-529711e139d3
-From: Namhyung Kim <namhyung@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH 6/8] perf sched: Introduce timehist command
-References: <1384806771-2945-1-git-send-email-dsahern@gmail.com>
-	<1384806771-2945-7-git-send-email-dsahern@gmail.com>
-Date: Thu, 28 Nov 2013 18:50:24 +0900
-In-Reply-To: <1384806771-2945-7-git-send-email-dsahern@gmail.com> (David
-	Ahern's message of "Mon, 18 Nov 2013 13:32:49 -0700")
-Message-ID: <87siugq2hr.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 28 Nov 2013 04:54:43 -0500
+Message-ID: <1385632196.5838.4.camel@weser.hi.pengutronix.de>
+Subject: Re: [PATCH 3/3] ARM: tegra: set SM2 voltage correct
+From: Lucas Stach <l.stach@pengutronix.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Stefan Agner <stefan@agner.ch>, thierry.reding@gmail.com,
+        sameo@linux.intel.com, dev@lynxeye.de, mark.rutland@arm.com,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Thu, 28 Nov 2013 10:49:56 +0100
+In-Reply-To: <5296281C.1060403@wwwdotorg.org>
+References: <cover.1385508112.git.stefan@agner.ch>
+	 <c9ceead9e3df77b5a33ad654db23c241cd624096.1385508112.git.stefan@agner.ch>
+	 <5296281C.1060403@wwwdotorg.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:fa0f:41ff:fe58:4010
+X-SA-Exim-Mail-From: l.stach@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Nov 2013 13:32:49 -0700, David Ahern wrote:
-> 'perf sched timehist' provides an analysis of scheduling events.
->
-> Example usage:
->     perf sched record -- sleep 1
->     perf sched timehist
->
-> By default it shows the individual schedule events, including the time between
-> sched-in events for the task, the task scheduling delay (time between wakeup
-> and actually running) and run time for the task:
->
->            time cpu  task name[tid/pid]    b/n time sch delay  run time
-> --------------- ---- -------------------- --------- --------- ---------
->    79371.874569 [11] gcc[31949]            0.000014  0.000000  0.001148
->    79371.874591 [10] gcc[31951]            0.000000  0.000000  0.000024
->    79371.874603 [10] migration/10[59]      0.003350  0.000004  0.000011
->    79371.874604 [11] <idle>                0.001148  0.000000  0.000035
->    79371.874723 [05] <idle>                0.000016  0.000000  0.001383
->    79371.874746 [05] gcc[31949]            0.000153  0.000078  0.000022
-> ...
->
-> If callchains were recorded they are appended to the line with a default stack depth of 5:
->
->    79371.874569 [11] gcc[31949]                  0.000014  0.000000  0.001148  wait_for_completion_killable do_fork sys_vfork stub_vfork __vfork
->    79371.874591 [10] gcc[31951]                  0.000000  0.000000  0.000024  __cond_resched _cond_resched wait_for_completion stop_one_cpu sched_exec
->    79371.874603 [10] migration/10[59]            0.003350  0.000004  0.000011  smpboot_thread_fn kthread ret_from_fork
->    79371.874604 [11] <idle>                      0.001148  0.000000  0.000035  cpu_startup_entry start_secondary
->    79371.874723 [05] <idle>                      0.000016  0.000000  0.001383  cpu_startup_entry start_secondary
->    79371.874746 [05] gcc[31949]                  0.000153  0.000078  0.000022  do_wait sys_wait4 system_call_fastpath __GI___waitpid
->
-> --no-call-graph can be used to not show the callchains. --max-stack is used
-> to control the number of frames shown (default of 5). -x/--excl options can
-> be used to collapse redundant callchains to get more relevant data on screen.
->
-> Similar to perf-trace -s and -S can be used to dump a statistical summary
-> without or with events (respectively). Statistics include min run time,
-> average run time and max run time. Stats are also shown for run time by
-> cpu.
->
-> The cpu-visual option provides a visual aid for sched switches by cpu:
-> ...
->    79371.874569 [11]            s      gcc[31949]                  0.000014  0.000000  0.001148
->    79371.874591 [10]           s       gcc[31951]                  0.000000  0.000000  0.000024
->    79371.874603 [10]           s       migration/10[59]            0.003350  0.000004  0.000011
->    79371.874604 [11]            i      <idle>                      0.001148  0.000000  0.000035
->    79371.874723 [05]      i            <idle>                      0.000016  0.000000  0.001383
->    79371.874746 [05]      s            gcc[31949]                  0.000153  0.000078  0.000022
-> ...
->
-> Additional options:
-> - -w option can be used to include a dump of wakeup events
-> - -c comm to only display events and stats for the given comm (csv list)
-> - -p/-t to only display events and stats for given pid/tid (csv list)
+Am Mittwoch, den 27.11.2013, 10:13 -0700 schrieb Stephen Warren:
+> On 11/26/2013 04:45 PM, Stefan Agner wrote:
+> > Set the requested SM2 voltage to the correct value of 1.8V. The value
+> > before used to work on TPS658623 since the driver applied a wrong
+> > voltage table too. However, the TPS658643 used on newer devices uses
+> > yet another voltage table and those broke that compatibility. The
+> > regulator driver now has the correct voltage table for both regulator
+> > versions and those the correct voltage can be used in this device
+> > tree.
+> 
+> One thing you haven't called out explicitly here is that this series is
+> an incompatible change to the DT, since the old buggy driver used to
+> allow old buggy DT content to accidentally work.
+> 
+The current (wrong and potentially dangerous) DT content only worked on
+the engineering sample models. So this change definitely does improve
+the situation, even with the risk of breaking a small fraction of
+working boards.
 
-Looks like a very nice feature.  I haven't read the whole patch yet but
-just want some comments.  More will come later. :)
+> I'm not too familiar with who's using mainline on the Colibri boards.
+> Hopefully everyone doing that is using in-kernel DTs, so this
+> incompatible change won't be any issue for anyone.
+> 
+I know of some parties using mainline, but I think everyone so far is
+able to use DTs bundled with the kernel.
 
+Regards,
+Lucas
+-- 
+Pengutronix e.K.                           | Lucas Stach                 |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-5076 |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
 
-[SNIP]
-> +static inline void printf_nsecs(unsigned long long nsecs, int width_sec)
-> +{
-> +	unsigned long secs;
-> +	unsigned long usecs;
-> +
-> +	secs = nsecs / NSECS_PER_SEC;
-> +	nsecs -= secs * NSECS_PER_SEC;
-> +	usecs = nsecs / NSECS_PER_USEC;
-> +	printf("%*lu.%06lu ", width_sec, secs, usecs);
-> +}
-
-It seems very similar to what timehist_time_str() does.  Better to
-factor out?
-
-
-[SNIP]
-> +static unsigned int comm_width = 20;
-> +
-> +static char *timehist_get_commstr(struct thread *thread)
-> +{
-> +	static char str[32];
-> +	const char *comm = thread__comm_str(thread);
-> +	pid_t tid = thread->tid;
-> +	pid_t pid = thread->pid_;
-> +	unsigned int n;
-> +
-> +	if (pid == 0)
-> +		scnprintf(str, sizeof(str), "%s", comm);
-> +
-> +	else if (tid != pid)
-> +		scnprintf(str, sizeof(str), "%s[%d/%d]", comm, tid, pid);
-> +
-> +	else
-> +		scnprintf(str, sizeof(str), "%s[%d]", comm, tid);
-> +
-> +	n = strlen(str);
-
-Why not just using return value of scnprintf()?
-
-
-> +	if (n > comm_width)
-> +		comm_width = n;
-> +
-> +	return str;
-> +}
-> +
-> +static void timehist_header(struct perf_sched *sched)
-> +{
-> +	u32 max_cpus = sched->max_cpu;
-> +	u32 i, j;
-> +
-> +	printf("%15s %-4s", "time", "cpu");
-> +
-> +	if (sched->show_cpu_visual && max_cpus) {
-> +		printf(" ");
-> +		for (i = 0, j = 0; i < max_cpus; ++i) {
-> +			printf("%x", j++);
-> +			if (j > 15)
-> +				j = 0;
-> +		}
-> +		printf(" ");
-> +	}
-> +
-> +	printf(" %-20s %9s %9s %9s",
-> +		"task name[tid/pid]", "b/n time", "sch delay", "run time");
-> +
-> +	if (sched->show_wakeups)
-> +		printf("  %-20s", "wakeup");
-> +
-> +	printf("\n");
-> +
-> +	printf("%15s %4s", "---------------", "----");
-
-You might want to use "%.15s" and graph_dotted_line.
-
-> +
-> +	if (sched->show_cpu_visual && max_cpus) {
-> +		printf(" ");
-> +		for (i = 0; i < max_cpus; ++i)
-> +			printf("-");
-> +		printf(" ");
-> +	}
-> +
-> +	printf(" %20s %9s %9s %9s",
-> +		"--------------------", "---------", "---------", "---------");
-
-Ditto.
-
-> +
-> +	if (sched->show_wakeups)
-> +		printf("  %20s", "--------------------");
-
-Ditto.
-
-> +
-> +	printf("\n");
-> +}
-> +
-> +static char *timehist_time_str(char *tstr, int len, u64 t)
-> +{
-> +	unsigned long secs, usecs;
-> +	unsigned long long nsecs;
-> +
-> +	nsecs = t;
-> +	secs = nsecs / NSECS_PER_SEC;
-> +	nsecs -= secs * NSECS_PER_SEC;
-> +	usecs = nsecs / NSECS_PER_USEC;
-> +	snprintf(tstr, len, "%5lu.%06lu", secs, usecs);
-> +
-> +	return tstr;
-> +}
-
-See above.
-
-> +
-> +static void timehist_print_sample(struct perf_sched *sched,
-> +				  union perf_event *event,
-> +				  struct perf_evsel *evsel,
-> +				  struct perf_sample *sample,
-> +				  struct thread *thread,
-> +				  struct machine *machine)
-> +{
-> +	struct thread_runtime *tr = thread__priv(thread);
-> +	char tstr[64];
-> +	u32 max_cpus = sched->max_cpu;
-> +
-> +	printf("%15s ", timehist_time_str(tstr, sizeof(tstr), sample->time));
-> +
-> +	printf("[%02d] ", sample->cpu);
-> +
-> +	if (sched->show_cpu_visual && max_cpus) {
-> +		u32 i;
-> +		char c;
-> +		for (i = 0; i < max_cpus; ++i) {
-> +			if (i == sample->cpu)
-> +				c = (thread->tid == 0) ? 'i' : 's';
-
-It'd better explaining what the 'i' and 's' mean..
-
-
-> +			else
-> +				c = ' ';
-> +			printf("%c", c);
-> +		}
-> +		printf("  ");
-> +	}
-> +
-> +	printf("%-*s ", comm_width, timehist_get_commstr(thread));
-> +
-> +	printf_nsecs(tr->dt_between, 2);
-> +	printf_nsecs(tr->dt_delay, 2);
-> +	printf_nsecs(tr->dt_run, 2);
-> +
-> +	if (sched->show_wakeups)
-> +		printf(" %-*s ", comm_width, "");
-> +
-> +	perf_evsel__print_ip(evsel, event, sample, machine,
-> +			     PRINT_IP_OPT_SYM | PRINT_IP_OPT_ONELINE,
-> +			     sched->max_stack);
-> +
-> +	printf("\n");
-> +}
-
-[SNIP]
-> +static void free_idle_threads(void)
-> +{
-> +	int i;
-> +
-> +	if (idle_threads == NULL)
-> +		return;
-> +
-> +	for (i = 0; i <= idle_max_cpu; ++i)
-> +		free(idle_threads[i]);
-
-Doesn't it need to be thread__delete(idle_threads[i]) ?
-
-Thanks,
-Namhyung
-
-> +
-> +	free(idle_threads);
-> +}
