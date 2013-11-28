@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758869Ab3K1HSK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 02:18:10 -0500
-Received: from order.stressinduktion.org ([87.106.68.36]:43671 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758468Ab3K1HSI (ORCPT
+	id S1752019Ab3K1H0u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 02:26:50 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:60059 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114Ab3K1H0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 02:18:08 -0500
-Date: Thu, 28 Nov 2013 08:18:06 +0100
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: =?utf-8?B?7ZeI7KKF66eM?= <jongman.heo@samsung.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: 3.13.0-rc1+ INFO: inconsistent lock state
-Message-ID: <20131128071806.GE20630@order.stressinduktion.org>
-Mail-Followup-To: =?utf-8?B?7ZeI7KKF66eM?= <jongman.heo@samsung.com>,
-	"netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <13025162.118881385612276530.JavaMail.weblogic@epv6ml01>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <13025162.118881385612276530.JavaMail.weblogic@epv6ml01>
+	Thu, 28 Nov 2013 02:26:46 -0500
+From: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+To: grant-likely@linaro.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: rob.herring@calxeda.com
+Subject: [PATCH v1 0/2] of: irq: Ignore disabled interrupt controllers
+Date: Wed, 27 Nov 2013 23:26:11 -0800
+Message-Id: <cover.1385623064.git.peter.crosthwaite@xilinx.com>
+X-Mailer: git-send-email 1.8.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 04:17:56AM +0000, 허종만 wrote:
-> With current linus git (HEAD 8ae516aa), I got following kernel message.
-> This is slightly different from what I had reported recently (14th Nov).
+Hi All,
 
-I guess the prolem is that the STATS _BH functions are to be used if they
-are executed in bottom half and maybe people expect it to protect against
-bottom half. We seem to have some more of this problems in udp_sendmsg
-(this trace) and ping_sendmsg, maybe in tcp, too. The non-_BH functions
-actually disable bh.
+These two patches support the case where an interrupt controller is
+marked as disabled. Patch 1 fixed the dts interrupt-map search logic to
+ignore disabled interrupt controllers. Patch 2 stops disabled interrupt
+controllers getting probed.
 
-I'll check for more prolems and will post a patch.
+Peter Crosthwaite (2):
+  of: irq: Ignore disabled intc's when searching map
+  of: irq: Ignore disabled interrupt controllers
 
-Thanks for reporting,
+ drivers/of/irq.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-  Hannes
+-- 
+1.8.4.4
 
