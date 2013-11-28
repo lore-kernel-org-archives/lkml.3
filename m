@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758459Ab3K1Kc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 05:32:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51134 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754257Ab3K1Ka4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 05:30:56 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCHv2 0/7] perf tools: Add data file write interface
-Date: Thu, 28 Nov 2013 11:30:12 +0100
-Message-Id: <1385634619-8129-1-git-send-email-jolsa@redhat.com>
+	id S1756783Ab3K1KfS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 05:35:18 -0500
+Received: from www.linutronix.de ([62.245.132.108]:56607 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995Ab3K1KfO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 05:35:14 -0500
+Message-ID: <52971C5F.7040307@linutronix.de>
+Date: Thu, 28 Nov 2013 11:35:11 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-parport@lists.infradead.org,
+        Maximilian Attems <maks@stro.at>
+Subject: Re: [PATCH] parport: parport_pc: remove double PCI ID for NetMos
+References: <1385570623-20260-1-git-send-email-bigeasy@linutronix.de> <20131127135322.49ea91c23db4879f97b524f0@linux-foundation.org>
+In-Reply-To: <20131127135322.49ea91c23db4879f97b524f0@linux-foundation.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-adding perf_data_file__write function to centralize
-output file writes. Using it in record and inject
-commands.
+On 11/27/2013 10:53 PM, Andrew Morton wrote:
+>> While here I also drop the entry for titan_1284p2 which is the same as
+>> netmos_9815.
+> 
+> Does this change have any runtime-visible effects?
 
-v2 changes:
-  - changes for readn function, suggested by Ingo
-  - added writen function, suggested by Arnaldo
-  - spliting record change into 2 separated patches
-  - omiting some unnecessary changes in the inject change
- 
-thanks,
-jirka
+Titan p2 used to specify class + subclass which is now replaced with
+PCI_ID_ANY, I doubt this makes any difference at all.
 
+The only runtime visible change I notice is with KERN_DEBUG being
+visible. The card details are the same, it always prints
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
----
-Jiri Olsa (7):
-      perf record: Unify data output code into perf_record__write function
-      perf tools: Use correct return type for readn function
-      perf tools: Fine tune readn function
-      perf tools: Add writen function
-      perf tools: Add perf_data_file__write interface
-      perf record: Use perf_data_file__write for output file
-      perf inject: Handle output file via perf_data_file object
+|parport1: PC-style at 0xc120 (0xc128), irq 11, using FIFO
+[PCSPP,TRISTATE,COMPAT,ECP]
 
- tools/perf/builtin-inject.c | 65 +++++++++++++++++++++++++++--------------------------------------
- tools/perf/builtin-record.c | 41 +++++++++++++----------------------------
- tools/perf/util/data.c      |  6 ++++++
- tools/perf/util/data.h      | 14 ++++++++------
- tools/perf/util/header.c    | 18 +++++++++---------
- tools/perf/util/session.c   |  2 +-
- tools/perf/util/util.c      | 32 ++++++++++++++++++++++++++------
- tools/perf/util/util.h      |  3 ++-
- 8 files changed, 92 insertions(+), 89 deletions(-)
+However the ID that was used to detect the card is different:
+
+| PCI parallel port detected: 1415:c118, I/O at 0xc120(0xc128), IRQ 11
+
+vs
+
+| PCI parallel port detected: 9710:9805, I/O at 0xc120(0xc128), IRQ 11
+
+The wrong id print is printed for all devices which come after
+PCI_DEVICE_ID_OXSEMI_PCIe840_G in the id table because the code that
+prints the ID table assumes one id per entry.
+
+So we could
+- drop printk
+- use id->vendor + id->device instead
+- do the last item + remove parport_pc_pci_cards and pass the data
+  struct as data.
+- nothing
+
+any preferences?
+
+Sebastian
