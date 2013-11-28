@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758705Ab3K1DUY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 22:20:24 -0500
-Received: from guitar.tcltek.co.il ([192.115.133.116]:34119 "EHLO
-	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754118Ab3K1DUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 22:20:21 -0500
-Date: Thu, 28 Nov 2013 05:20:18 +0200
-From: Baruch Siach <baruch@tkos.co.il>
-To: Eunbong Song <eunb.song@samsung.com>
-Cc: linux@arm.linux.org.uk, "tony@atomide.com" <tony@atomide.com>,
-        linux-kernel@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM : Kill CONFIG_MTD_PARTITIONS
-Message-ID: <20131128032018.GO32436@tarshish>
-References: <15408127.286411385601524346.JavaMail.weblogic@epv6ml06>
+	id S1758736Ab3K1DUj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 22:20:39 -0500
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:44389 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754667Ab3K1DUW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 22:20:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <15408127.286411385601524346.JavaMail.weblogic@epv6ml06>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5408313.YdNvR1b3g5@vostro.rjw.lan>
+References: <046513da96dfec919a1a41d270c167147d4a9c8d.1385353358.git.viresh.kumar@linaro.org>
+	<4759452.7dXrrSTGCc@vostro.rjw.lan>
+	<CAKohpomXk34aaG3bKX9AuOcn7ZEXcKrc858jCUhcB2bavcnarQ@mail.gmail.com>
+	<5408313.YdNvR1b3g5@vostro.rjw.lan>
+Date: Thu, 28 Nov 2013 08:50:20 +0530
+Message-ID: <CAKohponPOFP3pxZYngZcFneBMNozNkCyB1Yevj4801TqfAxHbw@mail.gmail.com>
+Subject: Re: [PATCH V2] cpufreq: Make sure CPU is running on a freq from freq-table
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>, Carlos Hernandez <ceh@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eunbong,
+On 28 November 2013 01:51, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> I have a concern that on some systems you can't really say what frequency
+> you're running at the moment, however.
 
-On Thu, Nov 28, 2013 at 01:18:45AM +0000, Eunbong Song wrote:
-> This patch removes CONFIG_MTD_PARTITIONS in config files for arm.
-> Because CONFIG_MTD_PARTITIONS was removed by commit 6a8a98b22b10f1560d5f90aded4a54234b9b2724.
-> ---
-> I resend this patch because i forgot signoff.
+Which ones? I know ACPI tries to play smart by handling the frequency stuff
+itself by marking CPUs not-related to each other for the kernel where they
+might actually be sharing clock line... But probably in these cases as well,
+atleast the cpufreq core should believe that it is running on a valid frequency
+even if actual hardware is running at something different..
 
-Well, it seems you forgot it again.
+Any other platforms you are aware of that implement ->target/target_index
+and where we can't say what freq are they running at?
 
-baruch
+> So there should be a flag for
+> drivers indicating whether or not frequencies (or operation points in
+> general) are directly testable and the check should only be done for
+> the drivers with the flag set.
 
--- 
-     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+Probably a flag with properties exactly opposite to what you mentioned,
+so that we don't need to modify most of the drivers..
