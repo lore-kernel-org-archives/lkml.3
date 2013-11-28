@@ -1,81 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758718Ab3K1DcD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 22:32:03 -0500
-Received: from [213.199.154.188] ([213.199.154.188]:55770 "EHLO
+	id S1758762Ab3K1Ddk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 22:33:40 -0500
+Received: from [213.199.154.189] ([213.199.154.189]:21032 "EHLO
 	db8outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1754154Ab3K1Db7 convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1754213Ab3K1Ddi convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 22:31:59 -0500
+	Wed, 27 Nov 2013 22:33:38 -0500
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zzc89bh1433M1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kzzz2dh2a8h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h1155h)
-Message-ID: <5296B9C5.3060704@freescale.com>
-Date: Thu, 28 Nov 2013 11:34:29 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Brian Norris <computersforpeace@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <dwmw2@infradead.org>, <linux-mtd@lists.infradead.org>,
-        <angus.clark@st.com>, <linus.walleij@linaro.org>,
-        Mark Brown <broonie@kernel.org>, <linux-spi@vger.kernel.org>
-Subject: Re: [PATCH 00/23] mtd: st_spi_fsm: Add new device
-References: <1385137380-28968-1-git-send-email-lee.jones@linaro.org> <20131127040723.GZ9468@ld-irv-0074.broadcom.com> <20131127115226.GC3296@lee--X1>
-In-Reply-To: <20131127115226.GC3296@lee--X1>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+X-SpamScore: -1
+X-BigFish: VS-1(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzzz2dh109h2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216h22d0hbe9i1155h)
+From: Li Xiubo <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        Fabio Estevam <Fabio.Estevam@freescale.com>,
+        "LW@KARO-electronics.de" <LW@KARO-electronics.de>,
+        "oskar@scara.com" <oskar@scara.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCHv1] ASoC: SGTL5000: Fix kernel failed while getting
+ regulator consumers
+Thread-Topic: [PATCHv1] ASoC: SGTL5000: Fix kernel failed while getting
+ regulator consumers
+Thread-Index: AQHO6pRwzUzMP/nWTkmv/o3JfSCBM5o3hgOAgAD0umCAAHdkgIABCp/w
+Date: Thu, 28 Nov 2013 03:31:03 +0000
+Message-ID: <1DD289F6464F0949A2FCA5AA6DC23F828CF777@039-SN2MPN1-012.039d.mgd.msft.net>
+References: <1385459713-6778-1-git-send-email-Li.Xiubo@freescale.com>
+ <20131126134411.GQ14725@sirena.org.uk>
+ <1DD289F6464F0949A2FCA5AA6DC23F828CE2A8@039-SN2MPN1-012.039d.mgd.msft.net>
+ <20131127112725.GT14725@sirena.org.uk>
+In-Reply-To: <20131127112725.GT14725@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.208.78]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 X-OriginatorOrg: freescale.com
 X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年11月27日 19:52, Lee Jones 写道:
-> However, as we send entire 'message sequences' to the FSM Controller
-> as opposed to merely OPCODEs we would have to extract the OPCODE from
-> flash->command[0] and call our own functions to craft the correct
-> 'message sequence' for the task. For this reason we rejected the idea
-> and went with a stand-alone driver.
->
-could you send me the datasheet of your spi nor controller?
-I can change my code if it really not good enough.
 
-we can store the opcode to a field, such as spi_nor_write_op.
-> The framework which Huang is proposing suffers from the same issues.
-> Only providing read(), write(), read_reg() and write_reg() doesn't
-> work for our use-case, as we'd have to decode the flash->command[0] and
-> invoke our own internal routines as before.
->
-> The only framework with would work for us would consist almost all
-> of the important functions such as; read(), write(), erase(),
-> wait_busy(), read_jedec(), read_status_reg(), write_status_reg(),
-> read_control_reg(), write_control_reg(), etc. However, this approach
->   
-read_jedec() can be replaced by read_reg(0x9f);
+> Subject: Re: [PATCHv1] ASoC: SGTL5000: Fix kernel failed while getting
+> regulator consumers
+> 
+> On Wed, Nov 27, 2013 at 08:13:03AM +0000, Li Xiubo wrote:
+> 
+> Please fix your mailer to word wrap within paragraphs, it makes your mail
+> much more legible.
+> 
 
-read_status() can be replaced by read_reg(0x5);
-
-....
-
-write_control_reg() can be replaced by write_reg(xx).
+Yes, I will.
 
 
-Please correct me if i am wrong.
+> > There is one dependency patch: "regulator: core: Provide a dummy
+> regulator with full constraints".
+> 
+> > From the dependency patch, we can see that using regulator_get_optional()
+> instead can resovle the problem you descripted above.
+> 
+> > When or will this dependency patch be merged into the -next tree ?
+> 
+> That patch is already in mainline.
+> 
 
-IMHO, the current four hooks for spi-nor{} can do all the things.
+Okey.
 
-      read/write/read_reg/write_reg.
+> > > I'd expect to see a commit description that describes how the driver
+> > > currently tries to handle this, why it doesn't work and how the
+> > > patch fixes it.
+> 
+> > The SGTL5000 requires 2 external power supplies: VDDA and VDDIO. An
+> > optional third external power supply VDDD may be provided externally
+> 
+> You need to put your working through of this stuff in the commit message.
 
-thanks
-Huang Shijie
+I did it already, please see the next version.
 
-
-
-
-
-
-
+--
+Best Regards,
 
 
