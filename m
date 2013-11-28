@@ -1,239 +1,394 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758561Ab3K1NxP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 08:53:15 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:19227 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757871Ab3K1NxO (ORCPT
+	id S1758649Ab3K1Nx7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 08:53:59 -0500
+Received: from 2.mo6.mail-out.ovh.net ([46.105.76.65]:46955 "EHLO
+	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751148Ab3K1Nxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 08:53:14 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 28 Nov 2013 05:50:40 -0800
-From: Vandana Salve <vsalve@nvidia.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-mm@kvack.org>,
-        <hdoyu@nvidia.com>, Vandana Salve <vsalve@nvidia.com>
-Subject: [PATCH] common: DMA-mapping: add DMA_ATTR_ALLOC_EXACT_SIZE attribute
-Date: Thu, 28 Nov 2013 19:23:16 +0530
-Message-ID: <1385646796-9396-1-git-send-email-vsalve@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 28 Nov 2013 08:53:55 -0500
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+Subject: [PATCH v6 14/16] dt: binding: add at91 clks dt bindings documentation
+Date: Thu, 28 Nov 2013 14:53:24 +0100
+Message-Id: <1385646804-8420-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1385642184-6467-1-git-send-email-b.brezillon@overkiz.com>
+References: <1385642184-6467-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 5396156779181078636
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds DMA_ATTR_ALLOC_EXACT_SIZE attribute to the DMA-mapping subsystem
+This patch adds new at91 clks dt bindings documentation.
 
-By default dma coherent alloc/free functions allocates/release memory in
-order of 2^pages. By specifying this attribute, allocation/release can
-be done for exact size of memory there by reducing internal memory
-fragmentation when allocation is in large chunks of MBs
-
-Added attr version of dma_alloc/release_from_coherent()
-
-Signed-off-by: Vandana Salve <vsalve@nvidia.com>
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- arch/arm/mm/dma-mapping.c          |  6 ++---
- drivers/base/dma-coherent.c        | 51 ++++++++++++++++++++++++++++----------
- include/asm-generic/dma-coherent.h | 15 ++++++++---
- include/linux/dma-attrs.h          |  1 +
- 4 files changed, 54 insertions(+), 19 deletions(-)
+ .../devicetree/bindings/clock/at91-clock.txt       |  339 ++++++++++++++++++++
+ 1 file changed, 339 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/at91-clock.txt
 
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 79f8b39..a39c1c1 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -710,7 +710,7 @@ void *arm_dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
- 	pgprot_t prot = __get_dma_pgprot(attrs, PAGE_KERNEL);
- 	void *memory;
- 
--	if (dma_alloc_from_coherent(dev, size, handle, &memory))
-+	if (dma_alloc_from_coherent_attr(dev, size, handle, &memory, attrs))
- 		return memory;
- 
- 	return __dma_alloc(dev, size, handle, gfp, prot, false,
-@@ -723,7 +723,7 @@ static void *arm_coherent_dma_alloc(struct device *dev, size_t size,
- 	pgprot_t prot = __get_dma_pgprot(attrs, PAGE_KERNEL);
- 	void *memory;
- 
--	if (dma_alloc_from_coherent(dev, size, handle, &memory))
-+	if (dma_alloc_from_coherent_attr(dev, size, handle, &memory, attrs))
- 		return memory;
- 
- 	return __dma_alloc(dev, size, handle, gfp, prot, true,
-@@ -769,7 +769,7 @@ static void __arm_dma_free(struct device *dev, size_t size, void *cpu_addr,
- {
- 	struct page *page = pfn_to_page(dma_to_pfn(dev, handle));
- 
--	if (dma_release_from_coherent(dev, get_order(size), cpu_addr))
-+	if (dma_release_from_coherent_attr(dev, size, cpu_addr, attrs))
- 		return;
- 
- 	size = PAGE_ALIGN(size);
-diff --git a/drivers/base/dma-coherent.c b/drivers/base/dma-coherent.c
-index bc256b6..51e8ff6 100644
---- a/drivers/base/dma-coherent.c
-+++ b/drivers/base/dma-coherent.c
-@@ -96,26 +96,31 @@ void *dma_mark_declared_memory_occupied(struct device *dev,
- EXPORT_SYMBOL(dma_mark_declared_memory_occupied);
- 
- /**
-- * dma_alloc_from_coherent() - try to allocate memory from the per-device coherent area
-+ * dma_alloc_from_coherent_attr() - try to allocate memory from the per-device
-+ * coherent area
-  *
-  * @dev:	device from which we allocate memory
-  * @size:	size of requested memory area
-  * @dma_handle:	This will be filled with the correct dma handle
-  * @ret:	This pointer will be filled with the virtual address
-  *		to allocated area.
-+ * @attrs:	DMA Attribute
-  *
-  * This function should be only called from per-arch dma_alloc_coherent()
-  * to support allocation from per-device coherent memory pools.
-  *
-- * Returns 0 if dma_alloc_coherent should continue with allocating from
-+ * Returns 0 if dma_alloc_coherent_attr should continue with allocating from
-  * generic memory areas, or !0 if dma_alloc_coherent should return @ret.
-  */
--int dma_alloc_from_coherent(struct device *dev, ssize_t size,
--				       dma_addr_t *dma_handle, void **ret)
-+int dma_alloc_from_coherent_attr(struct device *dev, ssize_t size,
-+				       dma_addr_t *dma_handle, void **ret,
-+				       struct dma_attrs *attrs)
- {
- 	struct dma_coherent_mem *mem;
- 	int order = get_order(size);
- 	int pageno;
-+	unsigned int count;
-+	unsigned long align;
- 
- 	if (!dev)
- 		return 0;
-@@ -127,11 +132,22 @@ int dma_alloc_from_coherent(struct device *dev, ssize_t size,
- 
- 	if (unlikely(size > (mem->size << PAGE_SHIFT)))
- 		goto err;
-+	if (dma_get_attr(DMA_ATTR_ALLOC_EXACT_SIZE, attrs)) {
-+		align = 0;
-+		count = PAGE_ALIGN(size) >> PAGE_SHIFT;
-+	} else {
-+		align = (1 << order) - 1;
-+		count = 1 << order;
-+	}
+diff --git a/Documentation/devicetree/bindings/clock/at91-clock.txt b/Documentation/devicetree/bindings/clock/at91-clock.txt
+new file mode 100644
+index 0000000..cd5e239
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/at91-clock.txt
+@@ -0,0 +1,339 @@
++Device Tree Clock bindings for arch-at91
 +
-+	pageno = bitmap_find_next_zero_area(mem->bitmap, mem->size,
-+			0, count, align);
- 
--	pageno = bitmap_find_free_region(mem->bitmap, mem->size, order);
--	if (unlikely(pageno < 0))
-+	if (pageno >= mem->size)
- 		goto err;
- 
-+	bitmap_set(mem->bitmap, pageno, count);
++This binding uses the common clock binding[1].
 +
- 	/*
- 	 * Memory was found in the per-device area.
- 	 */
-@@ -149,35 +165,44 @@ err:
- 	 */
- 	return mem->flags & DMA_MEMORY_EXCLUSIVE;
- }
--EXPORT_SYMBOL(dma_alloc_from_coherent);
-+EXPORT_SYMBOL(dma_alloc_from_coherent_attr);
- 
- /**
-- * dma_release_from_coherent() - try to free the memory allocated from per-device coherent memory pool
-+ * dma_release_from_coherent_attr() - try to free the memory allocated from
-+ * per-device coherent memory pool
-  * @dev:	device from which the memory was allocated
-- * @order:	the order of pages allocated
-+ * @size:	size of the memory area to free
-  * @vaddr:	virtual address of allocated pages
-+ * @attrs:	DMA Attribute
-  *
-  * This checks whether the memory was allocated from the per-device
-  * coherent memory pool and if so, releases that memory.
-  *
-  * Returns 1 if we correctly released the memory, or 0 if
-- * dma_release_coherent() should proceed with releasing memory from
-+ * dma_release_coherent_attr() should proceed with releasing memory from
-  * generic pools.
-  */
--int dma_release_from_coherent(struct device *dev, int order, void *vaddr)
-+int dma_release_from_coherent_attr(struct device *dev, size_t size, void *vaddr,
-+				struct dma_attrs *attrs)
- {
- 	struct dma_coherent_mem *mem = dev ? dev->dma_mem : NULL;
-+	unsigned int count;
- 
- 	if (mem && vaddr >= mem->virt_base && vaddr <
- 		   (mem->virt_base + (mem->size << PAGE_SHIFT))) {
- 		int page = (vaddr - mem->virt_base) >> PAGE_SHIFT;
- 
--		bitmap_release_region(mem->bitmap, page, order);
-+		if (dma_get_attr(DMA_ATTR_ALLOC_EXACT_SIZE, attrs))
-+			count = PAGE_ALIGN(size) >> PAGE_SHIFT;
-+		else
-+			count = 1 << size;
++[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
 +
-+		bitmap_clear(mem->bitmap, page, count);
- 		return 1;
- 	}
- 	return 0;
- }
--EXPORT_SYMBOL(dma_release_from_coherent);
-+EXPORT_SYMBOL(dma_release_from_coherent_attr);
- 
- /**
-  * dma_mmap_from_coherent() - try to mmap the memory allocated from
-diff --git a/include/asm-generic/dma-coherent.h b/include/asm-generic/dma-coherent.h
-index 2be8a2d..55e49bd 100644
---- a/include/asm-generic/dma-coherent.h
-+++ b/include/asm-generic/dma-coherent.h
-@@ -6,9 +6,16 @@
-  * These three functions are only for dma allocator.
-  * Don't use them in device drivers.
-  */
--int dma_alloc_from_coherent(struct device *dev, ssize_t size,
--				       dma_addr_t *dma_handle, void **ret);
--int dma_release_from_coherent(struct device *dev, int order, void *vaddr);
-+int dma_alloc_from_coherent_attr(struct device *dev, ssize_t size,
-+				       dma_addr_t *dma_handle, void **ret,
-+				       struct dma_attrs *attrs);
-+int dma_release_from_coherent_attr(struct device *dev, size_t size, void *vaddr,
-+				       struct dma_attrs *attrs);
-+#define dma_alloc_from_coherent(d, s, h, r) \
-+	dma_alloc_from_coherent_attr(d, s, h, r, NULL)
++Required properties:
++- compatible : shall be one of the following:
++	"atmel,at91rm9200-pmc" or
++	"atmel,at91sam9g45-pmc" or
++	"atmel,at91sam9n12-pmc" or
++	"atmel,at91sam9x5-pmc" or
++	"atmel,sama5d3-pmc":
++		at91 PMC (Power Management Controller)
++		All at91 specific clocks (clocks defined below) must be child
++		node of the PMC node.
 +
-+#define dma_release_from_coherent(d, s, v) \
-+	dma_release_from_coherent_attr(d, s, v, NULL)
- 
- int dma_mmap_from_coherent(struct device *dev, struct vm_area_struct *vma,
- 			    void *cpu_addr, size_t size, int *ret);
-@@ -27,6 +34,8 @@ extern void *
- dma_mark_declared_memory_occupied(struct device *dev,
- 				  dma_addr_t device_addr, size_t size);
- #else
-+#define dma_alloc_from_coherent_attr(dev, size, handle, ret, attr) (0)
-+#define dma_release_from_coherent_attr(dev, size, vaddr, attr) (0)
- #define dma_alloc_from_coherent(dev, size, handle, ret) (0)
- #define dma_release_from_coherent(dev, order, vaddr) (0)
- #define dma_mmap_from_coherent(dev, vma, vaddr, order, ret) (0)
-diff --git a/include/linux/dma-attrs.h b/include/linux/dma-attrs.h
-index c8e1831..d23f28f 100644
---- a/include/linux/dma-attrs.h
-+++ b/include/linux/dma-attrs.h
-@@ -18,6 +18,7 @@ enum dma_attr {
- 	DMA_ATTR_NO_KERNEL_MAPPING,
- 	DMA_ATTR_SKIP_CPU_SYNC,
- 	DMA_ATTR_FORCE_CONTIGUOUS,
-+	DMA_ATTR_ALLOC_EXACT_SIZE,
- 	DMA_ATTR_MAX,
- };
- 
++	"atmel,at91rm9200-clk-main":
++		at91 main oscillator
++
++	"atmel,at91rm9200-clk-master" or
++	"atmel,at91sam9x5-clk-master":
++		at91 master clock
++
++	"atmel,at91sam9x5-clk-peripheral" or
++	"atmel,at91rm9200-clk-peripheral":
++		at91 peripheral clocks
++
++	"atmel,at91rm9200-clk-pll" or
++	"atmel,at91sam9g45-clk-pll" or
++	"atmel,at91sam9g20-clk-pllb" or
++	"atmel,sama5d3-clk-pll":
++		at91 pll clocks
++
++	"atmel,at91sam9x5-clk-plldiv":
++		at91 plla divisor
++
++	"atmel,at91rm9200-clk-programmable" or
++	"atmel,at91sam9g45-clk-programmable" or
++	"atmel,at91sam9x5-clk-programmable":
++		at91 programmable clocks
++
++	"atmel,at91sam9x5-clk-smd":
++		at91 SMD (Soft Modem) clock
++
++	"atmel,at91rm9200-clk-system":
++		at91 system clocks
++
++	"atmel,at91rm9200-clk-usb" or
++	"atmel,at91sam9x5-clk-usb" or
++	"atmel,at91sam9n12-clk-usb":
++		at91 usb clock
++
++	"atmel,at91sam9x5-clk-utmi":
++		at91 utmi clock
++
++Required properties for PMC node:
++- reg : defines the IO memory reserved for the PMC.
++- #size-cells : shall be 0 (reg is used to encode clk id).
++- #address-cells : shall be 1 (reg is used to encode clk id).
++- interrupts : shall be set to PMC interrupt line.
++- interrupt-controller : tell that the PMC is an interrupt controller.
++- #interrupt-cells : must be set to 1. The first cell encodes the interrupt id,
++	and reflect the bit position in the PMC_ER/DR/SR registers.
++	You can use the dt macros defined in dt-bindings/clk/at91.h.
++	0 (AT91_PMC_MOSCS) -> main oscillator ready
++	1 (AT91_PMC_LOCKA) -> PLL A ready
++	2 (AT91_PMC_LOCKB) -> PLL B ready
++	3 (AT91_PMC_MCKRDY) -> master clock ready
++	6 (AT91_PMC_LOCKU) -> UTMI PLL clock ready
++	8 .. 15 (AT91_PMC_PCKRDY(id)) -> programmable clock ready
++	16 (AT91_PMC_MOSCSELS) -> main oscillator selected
++	17 (AT91_PMC_MOSCRCS) -> RC main oscillator stabilized
++	18 (AT91_PMC_CFDEV) -> clock failure detected
++
++For example:
++	pmc: pmc@fffffc00 {
++		compatible = "atmel,sama5d3-pmc";
++		interrupts = <1 4 7>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
++		#size-cells = <0>;
++		#address-cells = <1>;
++
++		/* put at91 clocks here */
++	};
++
++Required properties for main clock:
++- interrupt-parent : must reference the PMC node.
++- interrupts : shall be set to "<0>".
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks (optional if clock-frequency is provided) : shall be the slow clock
++	phandle. This clock is used to calculate the main clock rate if
++	"clock-frequency" is not provided.
++- clock-frequency : the main oscillator frequency.Prefer the use of
++	"clock-frequency" over automatic clock rate calculation.
++
++For example:
++	main: mainck {
++		compatible = "atmel,at91rm9200-clk-main";
++		interrupt-parent = <&pmc>;
++		interrupts = <0>;
++		#clock-cells = <0>;
++		clocks = <&ck32k>;
++		clock-frequency = <18432000>;
++	};
++
++Required properties for master clock:
++- interrupt-parent : must reference the PMC node.
++- interrupts : shall be set to "<3>".
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall be the master clock sources (see atmel datasheet) phandles.
++	e.g. "<&ck32k>, <&main>, <&plla>, <&pllb>".
++- atmel,clk-output-range : minimum and maximum clock frequency (two u32
++			   fields).
++	   e.g. output = <0 133000000>; <=> 0 to 133MHz.
++- atmel,clk-divisors : master clock divisors table (four u32 fields).
++		0 <=> reserved value.
++		e.g. divisors = <1 2 4 6>;
++- atmel,master-clk-have-div3-pres : some SoC use the reserved value 7 in the
++				    PRES field as CLOCK_DIV3 (e.g sam9x5).
++
++For example:
++	mck: mck {
++		compatible = "atmel,at91rm9200-clk-master";
++		interrupt-parent = <&pmc>;
++		interrupts = <3>;
++		#clock-cells = <0>;
++		atmel,clk-output-range = <0 133000000>;
++		atmel,clk-divisors = <1 2 4 0>;
++	};
++
++Required properties for peripheral clocks:
++- #size-cells : shall be 0 (reg is used to encode clk id).
++- #address-cells : shall be 1 (reg is used to encode clk id).
++- clocks : shall be the master clock phandle.
++	e.g. clocks = <&mck>;
++- name: device tree node describing a specific system clock.
++	* #clock-cells : from common clock binding; shall be set to 0.
++	* reg: peripheral id. See Atmel's datasheets to get a full
++	  list of peripheral ids.
++	* atmel,clk-output-range : minimum and maximum clock frequency
++	  (two u32 fields). Only valid on at91sam9x5-clk-peripheral
++	  compatible IPs.
++
++For example:
++	periph: periphck {
++		compatible = "atmel,at91sam9x5-clk-peripheral";
++		#size-cells = <0>;
++		#address-cells = <1>;
++		clocks = <&mck>;
++
++		ssc0_clk {
++			#clock-cells = <0>;
++			reg = <2>;
++			atmel,clk-output-range = <0 133000000>;
++		};
++
++		usart0_clk {
++			#clock-cells = <0>;
++			reg = <3>;
++			atmel,clk-output-range = <0 66000000>;
++		};
++	};
++
++
++Required properties for pll clocks:
++- interrupt-parent : must reference the PMC node.
++- interrupts : shall be set to "<1>".
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall be the main clock phandle.
++- reg : pll id.
++	0 -> PLL A
++	1 -> PLL B
++- atmel,clk-input-range : minimum and maximum source clock frequency (two u32
++			  fields).
++	  e.g. input = <1 32000000>; <=> 1 to 32MHz.
++- #atmel,pll-clk-output-range-cells : number of cells reserved for pll output
++				      range description. Sould be set to 2, 3
++				      or 4.
++	* 1st and 2nd cells represent the frequency range (min-max).
++	* 3rd cell is optional and represents the OUT field value for the given
++	  range.
++	* 4th cell is optional and represents the ICPLL field (PLLICPR
++	  register)
++- atmel,pll-clk-output-ranges : pll output frequency ranges + optional parameter
++				depending on #atmel,pll-output-range-cells
++				property value.
++
++For example:
++	plla: pllack {
++		compatible = "atmel,at91sam9g45-clk-pll";
++		interrupt-parent = <&pmc>;
++		interrupts = <1>;
++		#clock-cells = <0>;
++		clocks = <&main>;
++		reg = <0>;
++		atmel,clk-input-range = <2000000 32000000>;
++		#atmel,pll-clk-output-range-cells = <4>;
++		atmel,pll-clk-output-ranges = <74500000 800000000 0 0
++					       69500000 750000000 1 0
++					       64500000 700000000 2 0
++					       59500000 650000000 3 0
++					       54500000 600000000 0 1
++					       49500000 550000000 1 1
++					       44500000 500000000 2 1
++					       40000000 450000000 3 1>;
++	};
++
++Required properties for plldiv clocks (plldiv = pll / 2):
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall be the plla clock phandle.
++
++The pll divisor is equal to 2 and cannot be changed.
++
++For example:
++	plladiv: plladivck {
++		compatible = "atmel,at91sam9x5-clk-plldiv";
++		#clock-cells = <0>;
++		clocks = <&plla>;
++	};
++
++Required properties for programmable clocks:
++- interrupt-parent : must reference the PMC node.
++- #size-cells : shall be 0 (reg is used to encode clk id).
++- #address-cells : shall be 1 (reg is used to encode clk id).
++- clocks : shall be the programmable clock source phandles.
++	e.g. clocks = <&clk32k>, <&main>, <&plla>, <&pllb>;
++- name: device tree node describing a specific prog clock.
++	* #clock-cells : from common clock binding; shall be set to 0.
++	* reg : programmable clock id (register offset from  PCKx
++			 register).
++	* interrupts : shall be set to "<(8 + id)>".
++
++For example:
++	prog: progck {
++		compatible = "atmel,at91sam9g45-clk-programmable";
++		#size-cells = <0>;
++		#address-cells = <1>;
++		interrupt-parent = <&pmc>;
++		clocks = <&clk32k>, <&main>, <&plladiv>, <&utmi>, <&mck>;
++
++		prog0 {
++			#clock-cells = <0>;
++			reg = <0>;
++			interrupts = <8>;
++		};
++
++		prog1 {
++			#clock-cells = <0>;
++			reg = <1>;
++			interrupts = <9>;
++		};
++	};
++
++
++Required properties for smd clock:
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall be the smd clock source phandles.
++	e.g. clocks = <&plladiv>, <&utmi>;
++
++For example:
++	smd: smdck {
++		compatible = "atmel,at91sam9x5-clk-smd";
++		#clock-cells = <0>;
++		clocks = <&plladiv>, <&utmi>;
++	};
++
++Required properties for system clocks:
++- #size-cells : shall be 0 (reg is used to encode clk id).
++- #address-cells : shall be 1 (reg is used to encode clk id).
++- name: device tree node describing a specific system clock.
++	* #clock-cells : from common clock binding; shall be set to 0.
++	* reg: system clock id (bit position in SCER/SCDR/SCSR registers).
++	      See Atmel's datasheet to get a full list of system clock ids.
++
++For example:
++	system: systemck {
++		compatible = "atmel,at91rm9200-clk-system";
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		ddrck {
++			#clock-cells = <0>;
++			reg = <2>;
++			clocks = <&mck>;
++		};
++
++		uhpck {
++			#clock-cells = <0>;
++			reg = <6>;
++			clocks = <&usb>;
++		};
++
++		udpck {
++			#clock-cells = <0>;
++			reg = <7>;
++			clocks = <&usb>;
++		};
++	};
++
++
++Required properties for usb clock:
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall be the smd clock source phandles.
++	e.g. clocks = <&pllb>;
++- atmel,clk-divisors (only available for "atmel,at91rm9200-clk-usb"):
++	usb clock divisor table.
++	e.g. divisors = <1 2 4 0>;
++
++For example:
++	usb: usbck {
++		compatible = "atmel,at91sam9x5-clk-usb";
++		#clock-cells = <0>;
++		clocks = <&plladiv>, <&utmi>;
++	};
++
++	usb: usbck {
++		compatible = "atmel,at91rm9200-clk-usb";
++		#clock-cells = <0>;
++		clocks = <&pllb>;
++		atmel,clk-divisors = <1 2 4 0>;
++	};
++
++
++Required properties for utmi clock:
++- interrupt-parent : must reference the PMC node.
++- interrupts : shall be set to "<AT91_PMC_LOCKU IRQ_TYPE_LEVEL_HIGH>".
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall be the main clock source phandle.
++
++For example:
++	utmi: utmick {
++		compatible = "atmel,at91sam9x5-clk-utmi";
++		interrupt-parent = <&pmc>;
++		interrupts = <AT91_PMC_LOCKU IRQ_TYPE_LEVEL_HIGH>;
++		#clock-cells = <0>;
++		clocks = <&main>;
++	};
 -- 
-1.8.1.5
+1.7.9.5
 
