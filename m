@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758708Ab3K1LaO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 06:30:14 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40819 "EHLO arroyo.ext.ti.com"
+	id S1758163Ab3K1LdH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 06:33:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39857 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758544Ab3K1L32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 06:29:28 -0500
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-To: Tony Lindgren <tony@atomide.com>, <linux-kernel@vger.kernel.org>
-CC: Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 2/3] pinctrl: single: fix pcs_disable with bits_per_mux
-Date: Thu, 28 Nov 2013 13:29:19 +0200
-Message-ID: <1385638160-30125-2-git-send-email-tomi.valkeinen@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1385638160-30125-1-git-send-email-tomi.valkeinen@ti.com>
-References: <1385638160-30125-1-git-send-email-tomi.valkeinen@ti.com>
+	id S1751653Ab3K1LdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 06:33:03 -0500
+Date: Thu, 28 Nov 2013 12:33:01 +0100
+From: Jan Kara <jack@suse.cz>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-ext4@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: CONFIG_EXT4_USE_FOR_EXT23 no space left on device
+Message-ID: <20131128113301.GC31516@quack.suse.cz>
+References: <CAMuHMdWgMrNQqq84AK+CGF6VFnLs38O-vyye4MFKNUO7b8iFMw@mail.gmail.com>
+ <20131127222345.GB27330@quack.suse.cz>
+ <CAMuHMdWNvnKhJSBmR68EEMZHUuhzkAgWSLz=6eruhcfYKk2Y2A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdWNvnKhJSBmR68EEMZHUuhzkAgWSLz=6eruhcfYKk2Y2A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pcs_enable() uses vals->mask instead of pcs->fmask when bits_per_mux is
-enabled. However, pcs_disable() always uses pcs->fmask.
+On Thu 28-11-13 11:15:57, Geert Uytterhoeven wrote:
+> On Wed, Nov 27, 2013 at 11:23 PM, Jan Kara <jack@suse.cz> wrote:
+> > On Wed 27-11-13 16:50:14, Geert Uytterhoeven wrote:
+> >> To reduce kernel size, I disabled both CONFIG_EXT2_FS and
+> >> CONFIG_EXT3_FS, and enabled CONFIG_EXT4_USE_FOR_EXT23.
+> >>
+> >> Unfortunately the system behaves badly afterwards. It seems the file system
+> >> is considered full: new files can be created, but no data can be written.
+> >> Note that the file system is almost full, but root can still write more data
+> >> using the real ext3 filesystem driver.
+> >>
+> >> This is a v3.13-rc1-ish kernel.
+> >>
+> >> Diff of dmesg and output of a few operations below:
+> >   Thanks for report. Maybe the easiest would be if you gathered fs metadata
+> > using "e2image -r <fs-device>", compressed it and made it available for
+> > download. We can then debug ourselves where the accounting goes wrong.
+> 
+> Dump from the live image, so it needs journal recovery:
+> 
+> http://users.telenet.be/geertu/Download/hda1.e2i.bz2
+  Thanks. So I had a look and the difference is in ext4 block reservation
+logic. ext4 stores away some blocks as reserved so that it can use them
+as a safety pool in case it really needs to finish some metadata operations
+and there isn't enough free space (see commit
+27dd43854227bb0e6ab70129bd21b60d396db2e7 for detailed description).
 
-Fix pcs_disable() to use vals->mask with bits_per_mux.
+However this block reservation isn't really needed when fs doesn't support
+extents. So I'll send a patch in a moment which fixes the problem for me.
 
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
----
- drivers/pinctrl/pinctrl-single.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
-index 829b98c5c66f..174f4c50cd77 100644
---- a/drivers/pinctrl/pinctrl-single.c
-+++ b/drivers/pinctrl/pinctrl-single.c
-@@ -525,12 +525,18 @@ static void pcs_disable(struct pinctrl_dev *pctldev, unsigned fselector,
- 	for (i = 0; i < func->nvals; i++) {
- 		struct pcs_func_vals *vals;
- 		unsigned long flags;
--		unsigned val;
-+		unsigned val, mask;
- 
- 		vals = &func->vals[i];
- 		raw_spin_lock_irqsave(&pcs->lock, flags);
- 		val = pcs->read(vals->reg);
--		val &= ~pcs->fmask;
-+
-+		if (pcs->bits_per_mux)
-+			mask = vals->mask;
-+		else
-+			mask = pcs->fmask;
-+
-+		val &= ~mask;
- 		val |= pcs->foff << pcs->fshift;
- 		pcs->write(val, vals->reg);
- 		raw_spin_unlock_irqrestore(&pcs->lock, flags);
+								Honza
 -- 
-1.8.3.2
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
