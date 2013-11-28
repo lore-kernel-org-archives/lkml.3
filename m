@@ -1,35 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758993Ab3K1ROI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 12:14:08 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34558 "EHLO
+	id S1759264Ab3K1ROu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 12:14:50 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34587 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219Ab3K1ROE (ORCPT
+	with ESMTP id S1759180Ab3K1ROp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 12:14:04 -0500
-Date: Thu, 28 Nov 2013 17:13:38 +0000
+	Thu, 28 Nov 2013 12:14:45 -0500
+Date: Thu, 28 Nov 2013 17:14:34 +0000
 From: Mark Brown <broonie@kernel.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Florian Meier <florian.meier@koalo.de>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Wolfram Sang <wsa@the-dreams.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rpi-kernel@lists.infradead.org
-Message-ID: <20131128171338.GM27568@sirena.org.uk>
-References: <527CB3A1.7050808@koalo.de>
- <527D1870.8080302@wwwdotorg.org>
- <20131126130553.GF25130@opensource.wolfsonmicro.com>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Message-ID: <20131128171434.GN27568@sirena.org.uk>
+References: <1385626183-22990-1-git-send-email-k.kozlowski@samsung.com>
+ <1385626183-22990-6-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="n1iI6MeELQa9IOaF"
+	protocol="application/pgp-signature"; boundary="fz0LNKsoEivY4NpG"
 Content-Disposition: inline
-In-Reply-To: <20131126130553.GF25130@opensource.wolfsonmicro.com>
+In-Reply-To: <1385626183-22990-6-git-send-email-k.kozlowski@samsung.com>
 X-Cookie: Boycott meat -- suck your thumb.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] I2C: BCM2835: Linking platform nodes to adapter nodes
+Subject: Re: [PATCH v2 5/5] mfd: sec: Constify regmap configs and regmap irqs
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -37,46 +37,36 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---n1iI6MeELQa9IOaF
+--fz0LNKsoEivY4NpG
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Nov 26, 2013 at 01:05:53PM +0000, Charles Keepax wrote:
-> On Fri, Nov 08, 2013 at 09:59:28AM -0700, Stephen Warren wrote:
+On Thu, Nov 28, 2013 at 09:09:43AM +0100, Krzysztof Kozlowski wrote:
+> Add "const" to "static struct regmap_irq" and "static struct
+> regmap_config".
 
-> > That all said, I wonder if the I2C core shouldn't do something like the
-> > following inside i2c_add_adapter():
-> >=20
-> > if (!adap->dev.of_node && adap->dev.parent)
-> > 	adap->dev.of_node =3D adap->dev.parent->of_node;
+Reviewed-by: Mark Brown <broonie@linaro.org>
 
-> Should this not also have an of_node_get to increment the ref
-> count on the node?
-
-Given that it's pointing to the device that registered the I2C adaptor
-it should be able to assume that there's a reference already.
-
---n1iI6MeELQa9IOaF
+--fz0LNKsoEivY4NpG
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSl3m/AAoJELSic+t+oim9CZUP+QGJxOZTzaimUshk2vxFILju
-wcoa96eGjtNYFFQEk7/2zZBwuPy55WFbzqHos5B2Xg9KDkeKwaois2yy5MNDHEOF
-xeTRM13Nh2Mqj2Z4ZImXkJAP465dMA3EylY2zwDxJAgRS8IuQLGJj+3euihDRMZI
-gKWnXizFU3IqHxH1aUityIwaMzhoe0VPCtXlNG/0vWzUnV+jF4C+/Aa0Ov2NSlSi
-yXd2C/QM/KEfWL5QUCVjAhTdNM1L0Lr592hldD5oS+nbG/zaLuftkOklVmMBvlGf
-3wCHnpOnccKVqWNtBtE8pqo2n3beQR7DhIFRLMMkQUZPu2lWsn5zlRVrwFEvwJKo
-8XRrkBGo1x3L7qZE/kk5PboRoiOkOBxKjRoKBAWnvHmtOQJejGDEjNHk25x8J5Yh
-THx45cK4F01W2GikBDwFKSJtUfWSBZv+qClByzaU8uFBk7Xs0qRNsVuLPAT7k5fB
-HUDF4Q6ZBvF82ytc7NThS8FEsYdHdbF7gfFGGDrZlL1JpqZiNqTfUijSbttPA1/5
-z84UYOYUZ/22HhT0MeFHDqg0RrY7dZhL9NzL0tcoNt41vMqsK5dalrOe1woWjJxb
-jVL5N0rnRX68FWBpU5vDV426Wo5rniyZq1lGe99GEVqywe//NjwcxSoGlqBHkBgJ
-+tXOACe6PZR/qfA+uDFj
-=yYHN
+iQIcBAEBAgAGBQJSl3n3AAoJELSic+t+oim9k+sP/2Kr/kvO8wjI4foIqfntLU0x
+e3/5auRQEDCmuP2VykgvV0HCLAg2+mLWBDiOK6qEAkB6JXKeiyhR2VwqJlknvBEb
+vqrgutV4c+OnFuJt3kd79rsEcbV3q2gtvZAk+xitdH3QCrtjyryQEbbDwn/EX+aU
+vmOOdKU8x7yn5sbAEB1HwxTi85xi8t7ALvhu7FhFvWaiKdS1uEQ7JZNMIJmsphPl
+km4wbVOUEsrdZpVN8/pXxCemkmnOsiFYCXN4S2aqJq8HHzNm0WRKeeF5pky7h3DQ
+Hn14l6ggjBVx+v523tIMAb2Z6Liu5zbD24Qx7BXop/DQYKp2hMXzSOtxSj0v79m3
+Vpe3oEvk2sgaR54vBOprl93o8PjJWmDmnRJ0dhuz5MV4ipScMa0+iYDIgXtAYFdv
+tbyGFVMkRSRa9ihmm3Ky0Zieg+ikq9Tol4mxeL5IKo0iJuE9eavxNxuTfkb90Rsl
+vHD8QKmbRNk5QndfT9ytlCX1yLjVay3XUvLgWzG4DnhtDj2t6iWnNwQak1/2r+gY
+FkelzoZDSSjb7ZVbRYdUYfbuuW5pjSlNtGu3r3YM5/aFGYuIZUXGt3qAf6MGvdfB
+jCbG30YQQ7VGrM56gVAPS3ulGY6/tgEzohvBdsQrGs/PP+tndjoia/ZW9zfT9BgG
+AQPkR76GcFp0m3yw5/cN
+=f1ak
 -----END PGP SIGNATURE-----
 
---n1iI6MeELQa9IOaF--
+--fz0LNKsoEivY4NpG--
