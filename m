@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759080Ab3K1HsI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 02:48:08 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44430 "EHLO
+	id S1758919Ab3K1Hqm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 02:46:42 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59593 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758921Ab3K1Hqn (ORCPT
+	with ESMTP id S1751140Ab3K1Hqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 02:46:43 -0500
-X-AuditID: 9c93016f-b7b6aae000005fae-d6-5296f4df5c40
+	Thu, 28 Nov 2013 02:46:40 -0500
+X-AuditID: 9c93016f-b7b6aae000005fae-c8-5296f4de568a
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
@@ -16,156 +16,61 @@ Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, Joonsoo Kim <js1304@gmail.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 5/9] mm/rmap: extend rmap_walk_xxx() to cope with different cases
-Date: Thu, 28 Nov 2013 16:48:42 +0900
-Message-Id: <1385624926-28883-6-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH 0/9] mm/rmap: unify rmap traversing functions through rmap_walk
+Date: Thu, 28 Nov 2013 16:48:37 +0900
+Message-Id: <1385624926-28883-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1385624926-28883-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1385624926-28883-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are a lot of common parts in traversing functions, but there are
-also a little of uncommon parts in it. By assigning proper function
-pointer on each rmap_walker_control, we can handle these difference
-correctly.
+Rmap traversing is used in five different cases, try_to_unmap(),
+try_to_munlock(), page_referenced(), page_mkclean() and
+remove_migration_ptes(). Each one implements its own traversing functions
+for the cases, anon, file, ksm, respectively. These cause lots of duplications
+and cause maintenance overhead. They also make codes being hard to understand
+and error-prone. One example is hugepage handling. There is a code to compute
+hugepage offset correctly in try_to_unmap_file(), but, there isn't a code
+to compute hugepage offset in rmap_walk_file(). These are used pairwise
+in migration context, but we missed to modify pairwise.
 
-Following are differences we should handle.
+To overcome these drawbacks, we should unify these through one unified
+function. I decide rmap_walk() as main function since it has no
+unnecessity. And to control behavior of rmap_walk(), I introduce
+struct rmap_walk_control having some function pointers. These makes
+rmap_walk() working for their specific needs.
 
-1. difference of lock function in anon mapping case
-2. nonlinear handling in file mapping case
-3. prechecked condition:
-	checking memcg in page_referenced(),
-	checking VM_SHARE in page_mkclean()
-	checking temporary vma in try_to_unmap()
-4. exit condition:
-	checking page_mapped() in try_to_unmap()
+This patchset remove a lot of duplicated code as you can see in below
+short-stat and kernel text size also decrease slightly.
 
-So, in this patch, I introduce 4 function pointers to
-handle above differences.
+   text    data     bss     dec     hex filename
+  10640       1      16   10657    29a1 mm/rmap.o
+  10047       1      16   10064    2750 mm/rmap.o
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+  13823     705    8288   22816    5920 mm/ksm.o
+  13199     705    8288   22192    56b0 mm/ksm.o
 
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index 0f65686..58624b4 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -239,6 +239,12 @@ struct rmap_walk_control {
- 	int (*main)(struct page *, struct vm_area_struct *,
- 					unsigned long, void *);
- 	void *arg;	/* argument to main function */
-+	int (*main_done)(struct page *page);	/* check exit condition */
-+	int (*file_nonlinear)(struct page *, struct address_space *,
-+					struct vm_area_struct *vma);
-+	struct anon_vma *(*anon_lock)(struct page *);
-+	int (*vma_skip)(struct vm_area_struct *, void *);
-+	void *skip_arg;	/* argument to vma_skip function */
- };
- 
- /*
-diff --git a/mm/ksm.c b/mm/ksm.c
-index c42ec30..0aa6e09 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -2032,12 +2032,19 @@ again:
- 			if ((rmap_item->mm == vma->vm_mm) == search_new_forks)
- 				continue;
- 
-+			if (rwc->vma_skip && rwc->vma_skip(vma, rwc->skip_arg))
-+				continue;
-+
- 			ret = rwc->main(page, vma,
- 					rmap_item->address, rwc->arg);
- 			if (ret != SWAP_AGAIN) {
- 				anon_vma_unlock_read(anon_vma);
- 				goto out;
- 			}
-+			if (rwc->main_done && rwc->main_done(page)) {
-+				anon_vma_unlock_read(anon_vma);
-+				goto out;
-+			}
- 		}
- 		anon_vma_unlock_read(anon_vma);
- 	}
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 5933488..5dad5dd 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1683,10 +1683,14 @@ void __put_anon_vma(struct anon_vma *anon_vma)
- }
- 
- #ifdef CONFIG_MIGRATION
--static struct anon_vma *rmap_walk_anon_lock(struct page *page)
-+static struct anon_vma *rmap_walk_anon_lock(struct page *page,
-+					struct rmap_walk_control *rwc)
- {
- 	struct anon_vma *anon_vma;
- 
-+	if (rwc->anon_lock)
-+		return rwc->anon_lock(page);
-+
- 	/*
- 	 * Note: remove_migration_ptes() cannot use page_lock_anon_vma_read()
- 	 * because that depends on page_mapped(); but not all its usages
-@@ -1712,16 +1716,22 @@ static int rmap_walk_anon(struct page *page, struct rmap_walk_control *rwc)
- 	struct anon_vma_chain *avc;
- 	int ret = SWAP_AGAIN;
- 
--	anon_vma = rmap_walk_anon_lock(page);
-+	anon_vma = rmap_walk_anon_lock(page, rwc);
- 	if (!anon_vma)
- 		return ret;
- 
- 	anon_vma_interval_tree_foreach(avc, &anon_vma->rb_root, pgoff, pgoff) {
- 		struct vm_area_struct *vma = avc->vma;
- 		unsigned long address = vma_address(page, vma);
-+
-+		if (rwc->vma_skip && rwc->vma_skip(vma, rwc->skip_arg))
-+			continue;
-+
- 		ret = rwc->main(page, vma, address, rwc->arg);
- 		if (ret != SWAP_AGAIN)
- 			break;
-+		if (rwc->main_done && rwc->main_done(page))
-+			break;
- 	}
- 	anon_vma_unlock_read(anon_vma);
- 	return ret;
-@@ -1743,15 +1753,26 @@ static int rmap_walk_file(struct page *page, struct rmap_walk_control *rwc)
- 	mutex_lock(&mapping->i_mmap_mutex);
- 	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
- 		unsigned long address = vma_address(page, vma);
-+
-+		if (rwc->vma_skip && rwc->vma_skip(vma, rwc->skip_arg))
-+			continue;
-+
- 		ret = rwc->main(page, vma, address, rwc->arg);
- 		if (ret != SWAP_AGAIN)
--			break;
-+			goto done;
-+		if (rwc->main_done && rwc->main_done(page))
-+			goto done;
- 	}
--	/*
--	 * No nonlinear handling: being always shared, nonlinear vmas
--	 * never contain migration ptes.  Decide what to do about this
--	 * limitation to linear when we need rmap_walk() on nonlinear.
--	 */
-+
-+	if (!rwc->file_nonlinear)
-+		goto done;
-+
-+	if (list_empty(&mapping->i_mmap_nonlinear))
-+		goto done;
-+
-+	ret = rwc->file_nonlinear(page, mapping, vma);
-+
-+done:
- 	mutex_unlock(&mapping->i_mmap_mutex);
- 	return ret;
- }
+Thanks.
+
+Joonsoo Kim (9):
+  mm/rmap: recompute pgoff for huge page
+  mm/rmap: factor nonlinear handling out of try_to_unmap_file()
+  mm/rmap: factor lock function out of rmap_walk_anon()
+  mm/rmap: make rmap_walk to get the rmap_walk_control argument
+  mm/rmap: extend rmap_walk_xxx() to cope with different cases
+  mm/rmap: use rmap_walk() in try_to_unmap()
+  mm/rmap: use rmap_walk() in try_to_munlock()
+  mm/rmap: use rmap_walk() in page_referenced()
+  mm/rmap: use rmap_walk() in page_mkclean()
+
+ include/linux/ksm.h  |   15 +-
+ include/linux/rmap.h |   19 +-
+ mm/ksm.c             |  116 +---------
+ mm/migrate.c         |    7 +-
+ mm/rmap.c            |  570 ++++++++++++++++++++++----------------------------
+ 5 files changed, 286 insertions(+), 441 deletions(-)
+
 -- 
 1.7.9.5
 
