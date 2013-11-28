@@ -1,62 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758163Ab3K1LdH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 06:33:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39857 "EHLO mx2.suse.de"
+	id S1758398Ab3K1Ld4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 06:33:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42495 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751653Ab3K1LdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 06:33:03 -0500
-Date: Thu, 28 Nov 2013 12:33:01 +0100
-From: Jan Kara <jack@suse.cz>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-ext4@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: CONFIG_EXT4_USE_FOR_EXT23 no space left on device
-Message-ID: <20131128113301.GC31516@quack.suse.cz>
-References: <CAMuHMdWgMrNQqq84AK+CGF6VFnLs38O-vyye4MFKNUO7b8iFMw@mail.gmail.com>
- <20131127222345.GB27330@quack.suse.cz>
- <CAMuHMdWNvnKhJSBmR68EEMZHUuhzkAgWSLz=6eruhcfYKk2Y2A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdWNvnKhJSBmR68EEMZHUuhzkAgWSLz=6eruhcfYKk2Y2A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754660Ab3K1Ldy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 06:33:54 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
+Subject: [PATCH 01/29] perf tools: Remove stackprotector feature check
+Date: Thu, 28 Nov 2013 12:33:00 +0100
+Message-Id: <1385638408-23519-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1385638408-23519-1-git-send-email-jolsa@redhat.com>
+References: <1385638408-23519-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 28-11-13 11:15:57, Geert Uytterhoeven wrote:
-> On Wed, Nov 27, 2013 at 11:23 PM, Jan Kara <jack@suse.cz> wrote:
-> > On Wed 27-11-13 16:50:14, Geert Uytterhoeven wrote:
-> >> To reduce kernel size, I disabled both CONFIG_EXT2_FS and
-> >> CONFIG_EXT3_FS, and enabled CONFIG_EXT4_USE_FOR_EXT23.
-> >>
-> >> Unfortunately the system behaves badly afterwards. It seems the file system
-> >> is considered full: new files can be created, but no data can be written.
-> >> Note that the file system is almost full, but root can still write more data
-> >> using the real ext3 filesystem driver.
-> >>
-> >> This is a v3.13-rc1-ish kernel.
-> >>
-> >> Diff of dmesg and output of a few operations below:
-> >   Thanks for report. Maybe the easiest would be if you gathered fs metadata
-> > using "e2image -r <fs-device>", compressed it and made it available for
-> > download. We can then debug ourselves where the accounting goes wrong.
-> 
-> Dump from the live image, so it needs journal recovery:
-> 
-> http://users.telenet.be/geertu/Download/hda1.e2i.bz2
-  Thanks. So I had a look and the difference is in ext4 block reservation
-logic. ext4 stores away some blocks as reserved so that it can use them
-as a safety pool in case it really needs to finish some metadata operations
-and there isn't enough free space (see commit
-27dd43854227bb0e6ab70129bd21b60d396db2e7 for detailed description).
+We use -fstack-protector-all option to enable stack protecting
+for all available functions. There's no reason for enabling
+-Wstack-protector to get warning for unprotected functions.
 
-However this block reservation isn't really needed when fs doesn't support
-extents. So I'll send a patch in a moment which fixes the problem for me.
+Removing stackprotector feature check which was used to
+enable the -Wstack-protector option.
 
-								Honza
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/config/Makefile                             | 5 -----
+ tools/perf/config/feature-checks/Makefile              | 6 +-----
+ tools/perf/config/feature-checks/test-stackprotector.c | 6 ------
+ 3 files changed, 1 insertion(+), 16 deletions(-)
+ delete mode 100644 tools/perf/config/feature-checks/test-stackprotector.c
+
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 80ea6d8..38f388c2 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -161,7 +161,6 @@ CORE_FEATURE_TESTS =			\
+ 	libslang			\
+ 	libunwind			\
+ 	on-exit				\
+-	stackprotector			\
+ 	stackprotector-all		\
+ 	timerfd
+ 
+@@ -229,10 +228,6 @@ ifeq ($(feature-stackprotector-all), 1)
+   CFLAGS += -fstack-protector-all
+ endif
+ 
+-ifeq ($(feature-stackprotector), 1)
+-  CFLAGS += -Wstack-protector
+-endif
+-
+ ifeq ($(DEBUG),0)
+   ifeq ($(feature-fortify-source), 1)
+     CFLAGS += -D_FORTIFY_SOURCE=2
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 8dffb62..fc78699 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -26,7 +26,6 @@ FILES=					\
+ 	test-libunwind-debug-frame	\
+ 	test-on-exit			\
+ 	test-stackprotector-all		\
+-	test-stackprotector		\
+ 	test-timerfd
+ 
+ CC := $(CC) -MD
+@@ -38,7 +37,7 @@ BUILD = $(CC) $(CFLAGS) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
+ ###############################
+ 
+ test-all:
+-	$(BUILD) -Werror -fstack-protector -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
++	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
+ 
+ test-hello:
+ 	$(BUILD)
+@@ -46,9 +45,6 @@ test-hello:
+ test-stackprotector-all:
+ 	$(BUILD) -Werror -fstack-protector-all
+ 
+-test-stackprotector:
+-	$(BUILD) -Werror -fstack-protector -Wstack-protector
+-
+ test-fortify-source:
+ 	$(BUILD) -O2 -Werror -D_FORTIFY_SOURCE=2
+ 
+diff --git a/tools/perf/config/feature-checks/test-stackprotector.c b/tools/perf/config/feature-checks/test-stackprotector.c
+deleted file mode 100644
+index c9f398d..0000000
+--- a/tools/perf/config/feature-checks/test-stackprotector.c
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#include <stdio.h>
+-
+-int main(void)
+-{
+-	return puts("hi");
+-}
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.8.3.1
+
