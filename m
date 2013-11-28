@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758919Ab3K1Hqm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 02:46:42 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59593 "EHLO
+	id S1759127Ab3K1Hsc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 02:48:32 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44430 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab3K1Hqk (ORCPT
+	with ESMTP id S1751443Ab3K1Hql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 02:46:40 -0500
-X-AuditID: 9c93016f-b7b6aae000005fae-c8-5296f4de568a
+	Thu, 28 Nov 2013 02:46:41 -0500
+X-AuditID: 9c93016f-b7b6aae000005fae-d0-5296f4df1056
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
@@ -16,61 +16,189 @@ Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, Joonsoo Kim <js1304@gmail.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 0/9] mm/rmap: unify rmap traversing functions through rmap_walk
-Date: Thu, 28 Nov 2013 16:48:37 +0900
-Message-Id: <1385624926-28883-1-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH 2/9] mm/rmap: factor nonlinear handling out of try_to_unmap_file()
+Date: Thu, 28 Nov 2013 16:48:39 +0900
+Message-Id: <1385624926-28883-3-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1385624926-28883-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1385624926-28883-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rmap traversing is used in five different cases, try_to_unmap(),
-try_to_munlock(), page_referenced(), page_mkclean() and
-remove_migration_ptes(). Each one implements its own traversing functions
-for the cases, anon, file, ksm, respectively. These cause lots of duplications
-and cause maintenance overhead. They also make codes being hard to understand
-and error-prone. One example is hugepage handling. There is a code to compute
-hugepage offset correctly in try_to_unmap_file(), but, there isn't a code
-to compute hugepage offset in rmap_walk_file(). These are used pairwise
-in migration context, but we missed to modify pairwise.
+To merge all kinds of rmap traverse functions, try_to_unmap(),
+try_to_munlock(), page_referenced() and page_mkclean(), we need to
+extract common parts and separate out non-common parts.
 
-To overcome these drawbacks, we should unify these through one unified
-function. I decide rmap_walk() as main function since it has no
-unnecessity. And to control behavior of rmap_walk(), I introduce
-struct rmap_walk_control having some function pointers. These makes
-rmap_walk() working for their specific needs.
+Nonlinear handling is handled just in try_to_unmap_file() and other
+rmap traverse functions doesn't care of it. Therfore it is better
+to factor nonlinear handling out of try_to_unmap_file() in order to
+merge all kinds of rmap traverse functions easily.
 
-This patchset remove a lot of duplicated code as you can see in below
-short-stat and kernel text size also decrease slightly.
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-   text    data     bss     dec     hex filename
-  10640       1      16   10657    29a1 mm/rmap.o
-  10047       1      16   10064    2750 mm/rmap.o
-
-  13823     705    8288   22816    5920 mm/ksm.o
-  13199     705    8288   22192    56b0 mm/ksm.o
-
-Thanks.
-
-Joonsoo Kim (9):
-  mm/rmap: recompute pgoff for huge page
-  mm/rmap: factor nonlinear handling out of try_to_unmap_file()
-  mm/rmap: factor lock function out of rmap_walk_anon()
-  mm/rmap: make rmap_walk to get the rmap_walk_control argument
-  mm/rmap: extend rmap_walk_xxx() to cope with different cases
-  mm/rmap: use rmap_walk() in try_to_unmap()
-  mm/rmap: use rmap_walk() in try_to_munlock()
-  mm/rmap: use rmap_walk() in page_referenced()
-  mm/rmap: use rmap_walk() in page_mkclean()
-
- include/linux/ksm.h  |   15 +-
- include/linux/rmap.h |   19 +-
- mm/ksm.c             |  116 +---------
- mm/migrate.c         |    7 +-
- mm/rmap.c            |  570 ++++++++++++++++++++++----------------------------
- 5 files changed, 286 insertions(+), 441 deletions(-)
-
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 1214703..e6d532c 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1422,6 +1422,79 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
+ 	return ret;
+ }
+ 
++static int try_to_unmap_nonlinear(struct page *page,
++		struct address_space *mapping, struct vm_area_struct *vma)
++{
++	int ret = SWAP_AGAIN;
++	unsigned long cursor;
++	unsigned long max_nl_cursor = 0;
++	unsigned long max_nl_size = 0;
++	unsigned int mapcount;
++
++	list_for_each_entry(vma,
++		&mapping->i_mmap_nonlinear, shared.nonlinear) {
++
++		cursor = (unsigned long) vma->vm_private_data;
++		if (cursor > max_nl_cursor)
++			max_nl_cursor = cursor;
++		cursor = vma->vm_end - vma->vm_start;
++		if (cursor > max_nl_size)
++			max_nl_size = cursor;
++	}
++
++	if (max_nl_size == 0) {	/* all nonlinears locked or reserved ? */
++		return SWAP_FAIL;
++	}
++
++	/*
++	 * We don't try to search for this page in the nonlinear vmas,
++	 * and page_referenced wouldn't have found it anyway.  Instead
++	 * just walk the nonlinear vmas trying to age and unmap some.
++	 * The mapcount of the page we came in with is irrelevant,
++	 * but even so use it as a guide to how hard we should try?
++	 */
++	mapcount = page_mapcount(page);
++	if (!mapcount)
++		return ret;
++
++	cond_resched();
++
++	max_nl_size = (max_nl_size + CLUSTER_SIZE - 1) & CLUSTER_MASK;
++	if (max_nl_cursor == 0)
++		max_nl_cursor = CLUSTER_SIZE;
++
++	do {
++		list_for_each_entry(vma,
++			&mapping->i_mmap_nonlinear, shared.nonlinear) {
++
++			cursor = (unsigned long) vma->vm_private_data;
++			while (cursor < max_nl_cursor &&
++				cursor < vma->vm_end - vma->vm_start) {
++				if (try_to_unmap_cluster(cursor, &mapcount,
++						vma, page) == SWAP_MLOCK)
++					ret = SWAP_MLOCK;
++				cursor += CLUSTER_SIZE;
++				vma->vm_private_data = (void *) cursor;
++				if ((int)mapcount <= 0)
++					return ret;
++			}
++			vma->vm_private_data = (void *) max_nl_cursor;
++		}
++		cond_resched();
++		max_nl_cursor += CLUSTER_SIZE;
++	} while (max_nl_cursor <= max_nl_size);
++
++	/*
++	 * Don't loop forever (perhaps all the remaining pages are
++	 * in locked vmas).  Reset cursor on all unreserved nonlinear
++	 * vmas, now forgetting on which ones it had fallen behind.
++	 */
++	list_for_each_entry(vma, &mapping->i_mmap_nonlinear, shared.nonlinear)
++		vma->vm_private_data = NULL;
++
++	return ret;
++}
++
+ bool is_vma_temporary_stack(struct vm_area_struct *vma)
+ {
+ 	int maybe_stack = vma->vm_flags & (VM_GROWSDOWN | VM_GROWSUP);
+@@ -1511,10 +1584,6 @@ static int try_to_unmap_file(struct page *page, enum ttu_flags flags)
+ 	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+ 	struct vm_area_struct *vma;
+ 	int ret = SWAP_AGAIN;
+-	unsigned long cursor;
+-	unsigned long max_nl_cursor = 0;
+-	unsigned long max_nl_size = 0;
+-	unsigned int mapcount;
+ 
+ 	if (PageHuge(page))
+ 		pgoff = page->index << compound_order(page);
+@@ -1538,64 +1607,7 @@ static int try_to_unmap_file(struct page *page, enum ttu_flags flags)
+ 	if (TTU_ACTION(flags) == TTU_MUNLOCK)
+ 		goto out;
+ 
+-	list_for_each_entry(vma, &mapping->i_mmap_nonlinear,
+-							shared.nonlinear) {
+-		cursor = (unsigned long) vma->vm_private_data;
+-		if (cursor > max_nl_cursor)
+-			max_nl_cursor = cursor;
+-		cursor = vma->vm_end - vma->vm_start;
+-		if (cursor > max_nl_size)
+-			max_nl_size = cursor;
+-	}
+-
+-	if (max_nl_size == 0) {	/* all nonlinears locked or reserved ? */
+-		ret = SWAP_FAIL;
+-		goto out;
+-	}
+-
+-	/*
+-	 * We don't try to search for this page in the nonlinear vmas,
+-	 * and page_referenced wouldn't have found it anyway.  Instead
+-	 * just walk the nonlinear vmas trying to age and unmap some.
+-	 * The mapcount of the page we came in with is irrelevant,
+-	 * but even so use it as a guide to how hard we should try?
+-	 */
+-	mapcount = page_mapcount(page);
+-	if (!mapcount)
+-		goto out;
+-	cond_resched();
+-
+-	max_nl_size = (max_nl_size + CLUSTER_SIZE - 1) & CLUSTER_MASK;
+-	if (max_nl_cursor == 0)
+-		max_nl_cursor = CLUSTER_SIZE;
+-
+-	do {
+-		list_for_each_entry(vma, &mapping->i_mmap_nonlinear,
+-							shared.nonlinear) {
+-			cursor = (unsigned long) vma->vm_private_data;
+-			while ( cursor < max_nl_cursor &&
+-				cursor < vma->vm_end - vma->vm_start) {
+-				if (try_to_unmap_cluster(cursor, &mapcount,
+-						vma, page) == SWAP_MLOCK)
+-					ret = SWAP_MLOCK;
+-				cursor += CLUSTER_SIZE;
+-				vma->vm_private_data = (void *) cursor;
+-				if ((int)mapcount <= 0)
+-					goto out;
+-			}
+-			vma->vm_private_data = (void *) max_nl_cursor;
+-		}
+-		cond_resched();
+-		max_nl_cursor += CLUSTER_SIZE;
+-	} while (max_nl_cursor <= max_nl_size);
+-
+-	/*
+-	 * Don't loop forever (perhaps all the remaining pages are
+-	 * in locked vmas).  Reset cursor on all unreserved nonlinear
+-	 * vmas, now forgetting on which ones it had fallen behind.
+-	 */
+-	list_for_each_entry(vma, &mapping->i_mmap_nonlinear, shared.nonlinear)
+-		vma->vm_private_data = NULL;
++	ret = try_to_unmap_nonlinear(page, mapping, vma);
+ out:
+ 	mutex_unlock(&mapping->i_mmap_mutex);
+ 	return ret;
 -- 
 1.7.9.5
 
