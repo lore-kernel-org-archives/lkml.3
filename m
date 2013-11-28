@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540Ab3K1Ver (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 16:34:47 -0500
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:42176 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841Ab3K1Vep (ORCPT
+	id S1751485Ab3K1Vw5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 16:52:57 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:58592 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750948Ab3K1Vwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 16:34:45 -0500
-Date: Thu, 28 Nov 2013 23:34:37 +0200
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Felipe Balbi <balbi@ti.com>
-Cc: sameo@linux.intel.com, lee.jones@linaro.org,
-        Tony Lindgren <tony@atomide.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 00/13] mfd: menelaus: a few cleanups
-Message-ID: <20131128213437.GA30823@blackmetal.musicnaut.iki.fi>
-References: <1385579217-20127-1-git-send-email-balbi@ti.com>
- <20131127200247.GH24645@blackmetal.musicnaut.iki.fi>
- <20131127201149.GB20734@saruman.home>
- <20131127204621.GI24645@blackmetal.musicnaut.iki.fi>
- <20131128030033.GA15444@saruman.home>
+	Thu, 28 Nov 2013 16:52:41 -0500
+From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
+To: "'Martin K. Petersen'" <martin.petersen@oracle.com>
+Cc: "'open list'" <linux-kernel@vger.kernel.org>, <linux-ext4@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, <gregkh@linuxfoundation.org>
+References: <CAO9zADw-k+Qghk79yzwzaiYiPSoQnKwjjTBwrhcOrJxTWc-fOQ@mail.gmail.com> <yq1iovclm0m.fsf@sermon.lab.mkp.net> <00c701ceec3a$c8bcfc90$5a36f5b0$@lucidpixels.com> <yq1d2lkllek.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1d2lkllek.fsf@sermon.lab.mkp.net>
+Subject: RE: 3.12.0: sda2: WRITE SAME failed. Manually zeroing. with 3w-xxxx driver
+Date: Thu, 28 Nov 2013 16:52:36 -0500
+Message-ID: <010b01ceec84$27643580$762ca080$@lucidpixels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131128030033.GA15444@saruman.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+thread-index: AQIRpMQ5yoPFWdrjnTAKydtw81oUOQGvynbaASKfOScCoiRwNJmKGWoA
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Wed, Nov 27, 2013 at 09:00:34PM -0600, Felipe Balbi wrote:
-> Awesome, should I add your tested-by ? I also added a few extra patches
-> on top which I'll send soon.
 
-Yes, that's fine. Once you have the final set ready, I can also easily
-test it once more just in case.
+-----Original Message-----
+From: Martin K. Petersen [mailto:martin.petersen@oracle.com] 
+Sent: Thursday, November 28, 2013 8:13 AM
 
-A.
+[ .. ]
+
+Martin>	http://marc.info/?l=linux-scsi&m=138252394614920&w=2
+
+Justin> Awesome, thank you!  This patch is over a month old, do you know
+Justin> if is currently in mainline? 
+
+Nope. - James?
+
+[ .. ]
+
+Could it possibly get added to 3.12.x -stable as well? I've patched against
+3.12.0 for now -- I'll let you know if there are any issues-- so far so
+good, thanks again.
+
+Justin.
+
