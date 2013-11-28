@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758862Ab3K1OFv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 09:05:51 -0500
-Received: from mail-qe0-f51.google.com ([209.85.128.51]:37248 "EHLO
-	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757926Ab3K1OFu (ORCPT
+	id S1758944Ab3K1OGI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 09:06:08 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:62367 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751213Ab3K1OGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 09:05:50 -0500
-Date: Thu, 28 Nov 2013 09:05:46 -0500
-From: Tejun Heo <htejun@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, zhang.yi20@zte.com.cn,
-        lkml <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH]: exec: avoid propagating PF_NO_SETAFFINITY into
- userspace child
-Message-ID: <20131128140546.GA3925@htj.dyndns.org>
-References: <20131125121416.GB23829@redhat.com>
- <OF4CF076F6.04AFF122-ON48257C2F.0009B6E4-48257C2F.000BF905@zte.com.cn>
- <20131126180420.GA18172@redhat.com>
- <OF99742718.77495161-ON48257C30.000A8334-48257C30.000BA983@zte.com.cn>
- <20131127183117.GB13098@mtj.dyndns.org>
- <20131128091358.GH10022@twins.programming.kicks-ass.net>
- <20131128114542.GA3826@redhat.com>
- <20131128121748.GN10022@twins.programming.kicks-ass.net>
- <20131128133152.GA821@redhat.com>
- <20131128134124.GS10022@twins.programming.kicks-ass.net>
+	Thu, 28 Nov 2013 09:06:04 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lv Zheng <lv.zheng@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        linux-acpi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ACPI: Cleanup <acpi/acpi.h>, <acpi/acpi_bus.h> and <acpi/acpi_drivers.h> inclusions.
+Date: Thu, 28 Nov 2013 15:18:54 +0100
+Message-ID: <77005542.rPYLivMWph@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <2011704.hD86fZ2Qk5@vostro.rjw.lan>
+References: <cover.1385094640.git.lv.zheng@intel.com> <3c5e408cd7791ef746f462c79ce28f67734817d9.1385434808.git.lv.zheng@intel.com> <2011704.hD86fZ2Qk5@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131128134124.GS10022@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Peter.
-
-On Thu, Nov 28, 2013 at 02:41:24PM +0100, Peter Zijlstra wrote:
-> On Thu, Nov 28, 2013 at 02:31:52PM +0100, Oleg Nesterov wrote:
-> > I _guess_ usermodehelper_init() should use WQ_SYSFS then, and in this case
-> > the user can write to wq_cpumask_store somewhere in /sys/.
+On Tuesday, November 26, 2013 09:29:33 PM Rafael J. Wysocki wrote:
+> On Tuesday, November 26, 2013 01:21:15 PM Lv Zheng wrote:
+> > Replace direct inclusions of <acpi/acpi.h>, <acpi/acpi_bus.h> and
+> > <acpi/acpi_drivers.h>, which are incorrect, with <linux/acpi.h> inclusions.
+> > 
+> > First of all, <acpi/acpi.h>, <acpi/acpi_bus.h> and <acpi/acpi_drivers.h>
+> > should not be included directly from any files that are built for
+> > CONFIG_ACPI unset, because that generally leads to build warnings about
+> > undefined symbols in !CONFIG_ACPI builds.  For CONFIG_ACPI set,
+> > <linux/acpi.h> includes those files and for !CONFIG_ACPI it provides stub
+> > ACPI symbols to be used in that case.
+> > 
+> > Second, there are ordering dependencies between those files that always
+> > have to be met.  Namely, it is required that <acpi/acpi_bus.h> be included
+> > prior to <acpi/acpi_drivers.h> so that the acpi_pci_root declarations the
+> > latter depends on are always there.  And <acpi/acpi.h> which provides
+> > basic ACPICA type declarations should always be included prior to any other
+> > ACPI headers in CONFIG_ACPI builds.  That also is taken care of including
+> > <linux/acpi.h> as appropriate.
+> > 
+> > This patch also includes necessary cleanups in the affected files where
+> > other ACPI headers is also included but not referenced.
+> >
 > 
-> WTF is that and why are we creating alternative affinity interfaces when
-> sched_setaffinity() is a prefectly fine one?
+> This looks OK to me, but it touches several other subsystems.  It's better to
+> CC such things to linux-kernel at least.
+> 
+> Peter, Matthew, Tony, Konrad, Greg, Bjorn, do you have any objections against this?
 
-Hmmm?  Because workqueue is a shared worker pool implementation.  The
-attributes are per-workqueue and if two workqueues have a single set
-of attributes, they share the same execution resources.  There's no
-one-to-one relationship between a worker thread and a workqueue;
-otherwise, we end up with a ton of tasks sitting around doing nothing,
-so you can't individually do sched_setaffinity() on a task and expect
-it to work.
+Since no one seems to have problems with this, I've queued it up for the next ACPI
+pull request, if there are no problems with auto builds.
 
-The singlethread name just exists for compatibility and there's new
-interface named alloc_ordered_workqueue() and it creates a workqueue
-which execute work items one-by-one in issue order.  For singlethread
-/ ordered workqueues with rescuer, it could work to always execute
-that work item on the rescuer as we're reserving an execution resource
-anyway, but that'd unnecessarily increase cache footprint from
-actively using more tasks than necessary and also increase code
-complexity.
-
-Thanks.
+Thanks!
 
 -- 
-tejun
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
