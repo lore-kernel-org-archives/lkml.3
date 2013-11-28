@@ -1,39 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751758Ab3K1IpI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 03:45:08 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:51022 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846Ab3K1IpF (ORCPT
+	id S1752989Ab3K1IqI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 03:46:08 -0500
+Received: from 4.mo6.mail-out.ovh.net ([87.98.184.159]:56363 "EHLO
+	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752033Ab3K1IqF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 03:45:05 -0500
-X-AuditID: 9c93016f-b7b6aae000005fae-6c-5297028fc365
-From: Namhyung Kim <namhyung@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 5/8] perf tool: export setup_list
-References: <1384806771-2945-1-git-send-email-dsahern@gmail.com>
-	<1384806771-2945-6-git-send-email-dsahern@gmail.com>
-Date: Thu, 28 Nov 2013 17:45:03 +0900
-In-Reply-To: <1384806771-2945-6-git-send-email-dsahern@gmail.com> (David
-	Ahern's message of "Mon, 18 Nov 2013 13:32:48 -0700")
-Message-ID: <87wqjsq5io.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 28 Nov 2013 03:46:05 -0500
+Message-ID: <52970002.3020405@overkiz.com>
+Date: Thu, 28 Nov 2013 09:34:10 +0100
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Mike Turquette <mturquette@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
+CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH v5 06/17] clk: at91: add PMC pll clocks
+References: <1384289513-3068-1-git-send-email-b.brezillon@overkiz.com> <1384293439-4525-1-git-send-email-b.brezillon@overkiz.com> <20131127214843.16819.59481@quantum>
+In-Reply-To: <20131127214843.16819.59481@quantum>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 4503600737187868
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Nov 2013 13:32:48 -0700, David Ahern wrote:
-> Used in next patch (perf sched timehist command)
+Hi Mike,
 
-Why not moving it to util/strlist.c and rename to strlist__setup()?
+On 27/11/2013 22:48, Mike Turquette wrote:
+> Quoting Boris BREZILLON (2013-11-12 13:57:19)
+>> +static const struct clk_ops pll_ops = {
+>> +       .prepare = clk_pll_prepare,
+>> +       .is_prepared = clk_pll_is_ready,
+>> +       .disable = clk_pll_disable,
+>> +       .is_enabled = clk_pll_is_ready,
+>> +       .recalc_rate = clk_pll_recalc_rate,
+>> +       .round_rate = clk_pll_round_rate,
+>> +       .set_rate = clk_pll_set_rate,
+>> +};
+> Hi Boris,
+>
+> It is a bit strange to see only a .prepare and .disable callback
+> populated. What happens if a driver calls clk_disable and then
+> clk_enable? You clock will still be disabled in hardware.
 
-Thanks,
-Namhyung
+Oops, I haven't thought about that.
+I did this because the clk_pll_disable does not sleep, but this is a big 
+mistake :-(.
+
+I'll fix this.
+
+Thanks.
+
+Best Regards,
+
+Boris
+> Regards,
+> Mike
+
