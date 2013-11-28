@@ -1,96 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758619Ab3K1L3f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 06:29:35 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:47884 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756815Ab3K1L31 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 06:29:27 -0500
-Date: Thu, 28 Nov 2013 12:28:58 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, tglx@linutronix.de, mingo@redhat.com,
-        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 02/14] sched: add extended scheduling interface. (new ABI)
-Message-ID: <20131128112858.GK10022@twins.programming.kicks-ass.net>
-References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
- <1383831828-15501-3-git-send-email-juri.lelli@gmail.com>
- <20131127132354.GA18422@gmail.com>
- <20131127133027.GE10022@twins.programming.kicks-ass.net>
- <20131127140143.GB24403@gmail.com>
- <20131127141334.GA13532@twins.programming.kicks-ass.net>
- <20131127141721.GA24979@gmail.com>
- <5297257B.7090200@gmail.com>
+	id S1758658Ab3K1L3t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 06:29:49 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:41527 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758539Ab3K1L3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 06:29:30 -0500
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+To: Tony Lindgren <tony@atomide.com>, <linux-kernel@vger.kernel.org>
+CC: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH 3/3] pinctrl: single: fix infinite loop caused by bad mask
+Date: Thu, 28 Nov 2013 13:29:20 +0200
+Message-ID: <1385638160-30125-3-git-send-email-tomi.valkeinen@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1385638160-30125-1-git-send-email-tomi.valkeinen@ti.com>
+References: <1385638160-30125-1-git-send-email-tomi.valkeinen@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5297257B.7090200@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 12:14:03PM +0100, Juri Lelli wrote:
-> +SYSCALL_DEFINE2(sched_getattr, pid_t, pid, struct sched_attr __user *, attr)
->  {
-> -	struct sched_param2 lp;
-> +	struct sched_attr lp;
->  	struct task_struct *p;
->  	int retval;
->  
-> -	if (!param2 || pid < 0)
-> +	if (!attr || pid < 0)
->  		return -EINVAL;
->  
-> +	memset(&lp, 0, sizeof(struct sched_attr));
-> +
->  	rcu_read_lock();
->  	p = find_process_by_pid(pid);
->  	retval = -ESRCH;
-> @@ -3427,7 +3495,7 @@ SYSCALL_DEFINE2(sched_getparam2, pid_t, pid, struct sched_param2 __user *, param
->  	lp.sched_priority = p->rt_priority;
->  	rcu_read_unlock();
->  
-> -	retval = copy_to_user(param2, &lp, sizeof(lp)) ? -EFAULT : 0;
-> +	retval = copy_to_user(attr, &lp, sizeof(lp)) ? -EFAULT : 0;
->  	return retval;
->  
->  out_unlock:
+If the masks in DT data are not quite right,
+pcs_parse_bits_in_pinctrl_entry() can end up in an infinite loop,
+trashing memory at the same time.
 
+Add a check to verify that each loop actually removes bits from the
+'mask', so that the loop can eventually end.
 
-So this side needs a bit more care; suppose the kernel has a larger attr
-than userspace knows about.
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+---
+ drivers/pinctrl/pinctrl-single.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-What would make more sense; add another syscall argument with the
-userspace sizeof(struct sched_attr), or expect userspace to initialize
-attr->size to the right value before calling sched_getattr() ?
+diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
+index 174f4c50cd77..de6459628b4f 100644
+--- a/drivers/pinctrl/pinctrl-single.c
++++ b/drivers/pinctrl/pinctrl-single.c
+@@ -1318,6 +1318,14 @@ static int pcs_parse_bits_in_pinctrl_entry(struct pcs_device *pcs,
+ 			mask_pos = ((pcs->fmask) << (bit_pos - 1));
+ 			val_pos = val & mask_pos;
+ 			submask = mask & mask_pos;
++
++			if ((mask & mask_pos) == 0) {
++				dev_err(pcs->dev,
++					"Invalid mask for %s at 0x%x\n",
++					np->name, offset);
++				break;
++			}
++
+ 			mask &= ~mask_pos;
+ 
+ 			if (submask != mask_pos) {
+-- 
+1.8.3.2
 
-To me the extra argument makes more sense; that is:
-
-  struct sched_attr attr;
-
-  ret = sched_getattr(0, &attr, sizeof(attr));
-
-seems like a saner thing than:
-
-  struct sched_attr attr = { .size = sizeof(attr), };
-
-  ret = sched_getattr(0, &attr);
-
-Mostly because the former has a clear separation between input and
-output arguments, whereas for the second form the attr argument is both
-input and output.
-
-Ingo?
