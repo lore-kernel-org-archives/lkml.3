@@ -1,51 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758728Ab3K1Cqe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 21:46:34 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:48690 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758607Ab3K1Cq3 (ORCPT
+	id S1758742Ab3K1Cr7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 21:47:59 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:47125 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758471Ab3K1Cr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 21:46:29 -0500
+	Wed, 27 Nov 2013 21:47:56 -0500
 MIME-Version: 1.0
-In-Reply-To: <20131127185448.GA21422@localhost>
-References: <1380647888-32473-1-git-send-email-tim.kryger@linaro.org>
-	<20131126183559.GA18570@localhost>
-	<CAAYSxhqU9GZdaoTjoCAeyQ4h-KPVzU0BH0D1eLYJoFZ+s8tPgQ@mail.gmail.com>
-	<20131127185448.GA21422@localhost>
-Date: Wed, 27 Nov 2013 18:46:28 -0800
-Message-ID: <CAAYSxhquguBiqczOieDYCsgtMLLdkA-2hakJ9qZaCBpL_r8paw@mail.gmail.com>
-Subject: Re: [PATCH v2] serial: 8250_dw: Improve unwritable LCR workaround
-From: Tim Kryger <tim.kryger@linaro.org>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+In-Reply-To: <52962214.9030203@nvidia.com>
+References: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1385460350-17543-2-git-send-email-mika.westerberg@linux.intel.com> <52962214.9030203@nvidia.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 28 Nov 2013 11:47:34 +0900
+Message-ID: <CAAVeFuJiTg1j9ox6=rF00xSBiSmRSyvkGYWHSfmPAoo6JUQVfw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/6] ARM: tegra: add gpiod_lookup table for paz00
+To: Rhyland Klein <rklein@nvidia.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alex Courbot <acourbot@nvidia.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Rob Landley <rob@landley.net>,
         Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        linux-serial@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Patch Tracking <patches@linaro.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
-        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 10:54 AM, Ezequiel Garcia
-<ezequiel.garcia@free-electrons.com> wrote:
-> On Tue, Nov 26, 2013 at 03:03:03PM -0800, Tim Kryger wrote:
-
->> An external device may be keeping the UART busy and preventing LCR
->> from being written.
+On Thu, Nov 28, 2013 at 1:47 AM, Rhyland Klein <rklein@nvidia.com> wrote:
+> On 11/26/2013 5:05 AM, Mika Westerberg wrote:
+>> From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 >>
->> What device is attached to ttyS1?
+>> This makes it possible to request the gpio descriptors in
+>> rfkill_gpio driver regardless of the platform.
+>>
+>> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+>> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+>> Tested-by: Stephen Warren <swarren@nvidia.com>
+>> ---
+>>  arch/arm/mach-tegra/board-paz00.c | 7 +++++++
+>>  1 file changed, 7 insertions(+)
+>>
+>> diff --git a/arch/arm/mach-tegra/board-paz00.c b/arch/arm/mach-tegra/board-paz00.c
+>> index 06f024070dab..a309795da665 100644
+>> --- a/arch/arm/mach-tegra/board-paz00.c
+>> +++ b/arch/arm/mach-tegra/board-paz00.c
+>> @@ -18,6 +18,7 @@
+>>   */
+>>
+>>  #include <linux/platform_device.h>
+>> +#include <linux/gpio/driver.h>
+>>  #include <linux/rfkill-gpio.h>
+>>  #include "board.h"
+>>
+>> @@ -36,7 +37,13 @@ static struct platform_device wifi_rfkill_device = {
+>>       },
+>>  };
+>>
+>> +static struct gpiod_lookup wifi_gpio_lookup[] = {
+>> +     GPIO_LOOKUP_IDX("tegra-gpio", 25, "rfkill_gpio", NULL, 0, 0),
+>> +     GPIO_LOOKUP_IDX("tegra-gpio", 85, "rfkill_gpio", NULL, 1, 0),
+>> +};
 >
-> There's no device attached at ttyS1. I've just tested this in another
-> box and it seems the same error is obtained on each unused port:
+> I wouldn't think this table would match for the gpios as the driver
+> currently is. From what I see, the driver calls into gpiod_get_index,
+> which will try 1 of 3 ways of getting the gpios:
+>
+> of-enabled: of_find_gpio
+>         - which I believe wouldn't work for paz00, since rfkill
+>           doesn't support dt?
+> acpi: acpi_find_gpio
+>         - I assume this does work, but I didn't dive into it
+> gpiod lookup table: gpiod_find
+>         - I think this is the path we expect to be taken, given the addition of
+> the lookup table here, but I don't think it would actually match.
+> Looking at the code for gpiod_find, it seems like it would try to match
+> the con_id, but would fail. Patch 2/6 is passing the reset_name and
+> shutdown_name for the con_ids, which isn't what is registered in this
+> table.
+>
+> Shouldn't it look more like this?
+>
+> +static struct gpiod_lookup wifi_gpio_lookup[] = {
+> +       GPIO_LOOKUP_IDX("tegra-gpio", 25, "rfkill_gpio_reset", NULL, 0, 0),
+> +       GPIO_LOOKUP_IDX("tegra-gpio", 85, "rfkill_gpio_shutdown", NULL, 1, 0),
+> +};
 
-Do you know if your UART pins have pull up resistors?
+The original GPIO lookup table specifies the device name
+("rfkill_gpio"), no con_id, and an index. gpiod_find() will ensure
+that the device names match, skip the con_id (as it is null in the
+table), and again require that the indexes are the same. So provided
+the instanciated device's dev_name() is "rfkill_gpio" (which it seems
+to be according to the driver - not sure if it could become
+"rfkill_gpio.0"), then I'd say the GPIOs will match. The con_id passed
+to gpiod_get() will only be used as a label for debugfs. I am not sure
+where the "rfkill_gpio_reset" you mention comes from?
 
-If you can, try attaching something to an unused port.
+One could wonder why the names of the GPIO are not hardcoded in the
+driver instead of being defined as platform data, but that point could
+be improved in a future patch.
 
--Tim
+It is true however that the platform GPIO lookup mechanism is
+confusing at best, on top of being inefficient (one big linked list).
+I have a patch in the pipe that should improve both points by making
+GPIO lookup tables defined per-device - don't hesitate to merge this
+series first if it works though.
+
+Alex.
