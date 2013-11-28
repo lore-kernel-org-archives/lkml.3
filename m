@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932295Ab3K1Hqp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 02:46:45 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:62354 "EHLO
+	id S1758978Ab3K1HrR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 02:47:17 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44430 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab3K1Hqk (ORCPT
+	with ESMTP id S932290Ab3K1Hqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 02:46:40 -0500
-X-AuditID: 9c93016f-b7b6aae000005fae-cb-5296f4df9fbd
+	Thu, 28 Nov 2013 02:46:45 -0500
+X-AuditID: 9c93016f-b7b6aae000005fae-d9-5296f4e0a43d
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
@@ -16,9 +16,9 @@ Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, Joonsoo Kim <js1304@gmail.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 1/9] mm/rmap: recompute pgoff for huge page
-Date: Thu, 28 Nov 2013 16:48:38 +0900
-Message-Id: <1385624926-28883-2-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH 8/9] mm/rmap: use rmap_walk() in page_referenced()
+Date: Thu, 28 Nov 2013 16:48:45 +0900
+Message-Id: <1385624926-28883-9-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1385624926-28883-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1385624926-28883-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -27,29 +27,377 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have to recompute pgoff if the given page is huge, since result based
-on HPAGE_SIZE is not approapriate for scanning the vma interval tree, as
-shown by commit 36e4f20af833 ("hugetlb: do not use vma_hugecache_offset()
-for vma_prio_tree_foreach") and commit 369a713e ("rmap: recompute pgoff
-for unmapping huge page").
+Now, we have an infrastructure in rmap_walk() to handle difference
+from variants of rmap traversing functions.
+
+So, just use it in page_referenced().
+
+In this patch, I change following things.
+
+1. remove some variants of rmap traversing functions.
+	cf> page_referenced_ksm, page_referenced_anon,
+	page_referenced_file
+2. introduce new struct page_referenced_arg and pass it to
+page_referenced_one(), main function of rmap_walk, in order to
+count reference, to store vm_flags and to check finish condition.
+3. mechanical change to use rmap_walk() in page_referenced().
 
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
+diff --git a/include/linux/ksm.h b/include/linux/ksm.h
+index 91b9719..3be6bb1 100644
+--- a/include/linux/ksm.h
++++ b/include/linux/ksm.h
+@@ -73,8 +73,6 @@ static inline void set_page_stable_node(struct page *page,
+ struct page *ksm_might_need_to_copy(struct page *page,
+ 			struct vm_area_struct *vma, unsigned long address);
+ 
+-int page_referenced_ksm(struct page *page,
+-			struct mem_cgroup *memcg, unsigned long *vm_flags);
+ int rmap_walk_ksm(struct page *page, struct rmap_walk_control *rwc);
+ void ksm_migrate_page(struct page *newpage, struct page *oldpage);
+ 
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index d641f6d..e529ba3 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -184,7 +184,7 @@ static inline void page_dup_rmap(struct page *page)
+ int page_referenced(struct page *, int is_locked,
+ 			struct mem_cgroup *memcg, unsigned long *vm_flags);
+ int page_referenced_one(struct page *, struct vm_area_struct *,
+-	unsigned long address, unsigned int *mapcount, unsigned long *vm_flags);
++	unsigned long address, void *arg);
+ 
+ #define TTU_ACTION(x) ((x) & TTU_ACTION_MASK)
+ 
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 4f25cf7..4c4541b 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -1891,61 +1891,6 @@ struct page *ksm_might_need_to_copy(struct page *page,
+ 	return new_page;
+ }
+ 
+-int page_referenced_ksm(struct page *page, struct mem_cgroup *memcg,
+-			unsigned long *vm_flags)
+-{
+-	struct stable_node *stable_node;
+-	struct rmap_item *rmap_item;
+-	unsigned int mapcount = page_mapcount(page);
+-	int referenced = 0;
+-	int search_new_forks = 0;
+-
+-	VM_BUG_ON(!PageKsm(page));
+-	VM_BUG_ON(!PageLocked(page));
+-
+-	stable_node = page_stable_node(page);
+-	if (!stable_node)
+-		return 0;
+-again:
+-	hlist_for_each_entry(rmap_item, &stable_node->hlist, hlist) {
+-		struct anon_vma *anon_vma = rmap_item->anon_vma;
+-		struct anon_vma_chain *vmac;
+-		struct vm_area_struct *vma;
+-
+-		anon_vma_lock_read(anon_vma);
+-		anon_vma_interval_tree_foreach(vmac, &anon_vma->rb_root,
+-					       0, ULONG_MAX) {
+-			vma = vmac->vma;
+-			if (rmap_item->address < vma->vm_start ||
+-			    rmap_item->address >= vma->vm_end)
+-				continue;
+-			/*
+-			 * Initially we examine only the vma which covers this
+-			 * rmap_item; but later, if there is still work to do,
+-			 * we examine covering vmas in other mms: in case they
+-			 * were forked from the original since ksmd passed.
+-			 */
+-			if ((rmap_item->mm == vma->vm_mm) == search_new_forks)
+-				continue;
+-
+-			if (memcg && !mm_match_cgroup(vma->vm_mm, memcg))
+-				continue;
+-
+-			referenced += page_referenced_one(page, vma,
+-				rmap_item->address, &mapcount, vm_flags);
+-			if (!search_new_forks || !mapcount)
+-				break;
+-		}
+-		anon_vma_unlock_read(anon_vma);
+-		if (!mapcount)
+-			goto out;
+-	}
+-	if (!search_new_forks++)
+-		goto again;
+-out:
+-	return referenced;
+-}
+-
+ int rmap_walk_ksm(struct page *page, struct rmap_walk_control *rwc)
+ {
+ 	struct stable_node *stable_node;
 diff --git a/mm/rmap.c b/mm/rmap.c
-index 55c8b8d..1214703 100644
+index 860a393..5e78d5c 100644
 --- a/mm/rmap.c
 +++ b/mm/rmap.c
-@@ -1714,6 +1714,10 @@ static int rmap_walk_file(struct page *page, int (*rmap_one)(struct page *,
+@@ -656,17 +656,23 @@ int page_mapped_in_vma(struct page *page, struct vm_area_struct *vma)
+ 	return 1;
+ }
  
- 	if (!mapping)
- 		return ret;
++struct page_referenced_arg {
++	int mapcount;
++	int referenced;
++	unsigned long vm_flags;
++};
 +
-+	if (PageHuge(page))
-+		pgoff = page->index << compound_order(page);
+ /*
+  * Subfunctions of page_referenced: page_referenced_one called
+  * repeatedly from either page_referenced_anon or page_referenced_file.
+  */
+ int page_referenced_one(struct page *page, struct vm_area_struct *vma,
+-			unsigned long address, unsigned int *mapcount,
+-			unsigned long *vm_flags)
++			unsigned long address, void *arg)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	spinlock_t *ptl;
+ 	int referenced = 0;
++	struct page_referenced_arg *ra = arg;
+ 
+ 	if (unlikely(PageTransHuge(page))) {
+ 		pmd_t *pmd;
+@@ -678,13 +684,12 @@ int page_referenced_one(struct page *page, struct vm_area_struct *vma,
+ 		pmd = page_check_address_pmd(page, mm, address,
+ 					     PAGE_CHECK_ADDRESS_PMD_FLAG, &ptl);
+ 		if (!pmd)
+-			goto out;
++			return SWAP_AGAIN;
+ 
+ 		if (vma->vm_flags & VM_LOCKED) {
+ 			spin_unlock(ptl);
+-			*mapcount = 0;	/* break early from loop */
+-			*vm_flags |= VM_LOCKED;
+-			goto out;
++			ra->vm_flags |= VM_LOCKED;
++			return SWAP_FAIL; /* To break the loop */
+ 		}
+ 
+ 		/* go ahead even if the pmd is pmd_trans_splitting() */
+@@ -700,13 +705,12 @@ int page_referenced_one(struct page *page, struct vm_area_struct *vma,
+ 		 */
+ 		pte = page_check_address(page, mm, address, &ptl, 0);
+ 		if (!pte)
+-			goto out;
++			return SWAP_AGAIN;
+ 
+ 		if (vma->vm_flags & VM_LOCKED) {
+ 			pte_unmap_unlock(pte, ptl);
+-			*mapcount = 0;	/* break early from loop */
+-			*vm_flags |= VM_LOCKED;
+-			goto out;
++			ra->vm_flags |= VM_LOCKED;
++			return SWAP_FAIL; /* To break the loop */
+ 		}
+ 
+ 		if (ptep_clear_flush_young_notify(vma, address, pte)) {
+@@ -723,113 +727,26 @@ int page_referenced_one(struct page *page, struct vm_area_struct *vma,
+ 		pte_unmap_unlock(pte, ptl);
+ 	}
+ 
+-	(*mapcount)--;
+-
+-	if (referenced)
+-		*vm_flags |= vma->vm_flags;
+-out:
+-	return referenced;
+-}
+-
+-static int page_referenced_anon(struct page *page,
+-				struct mem_cgroup *memcg,
+-				unsigned long *vm_flags)
+-{
+-	unsigned int mapcount;
+-	struct anon_vma *anon_vma;
+-	pgoff_t pgoff;
+-	struct anon_vma_chain *avc;
+-	int referenced = 0;
+-
+-	anon_vma = page_lock_anon_vma_read(page);
+-	if (!anon_vma)
+-		return referenced;
+-
+-	mapcount = page_mapcount(page);
+-	pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+-	anon_vma_interval_tree_foreach(avc, &anon_vma->rb_root, pgoff, pgoff) {
+-		struct vm_area_struct *vma = avc->vma;
+-		unsigned long address = vma_address(page, vma);
+-		/*
+-		 * If we are reclaiming on behalf of a cgroup, skip
+-		 * counting on behalf of references from different
+-		 * cgroups
+-		 */
+-		if (memcg && !mm_match_cgroup(vma->vm_mm, memcg))
+-			continue;
+-		referenced += page_referenced_one(page, vma, address,
+-						  &mapcount, vm_flags);
+-		if (!mapcount)
+-			break;
++	if (referenced) {
++		ra->referenced++;
++		ra->vm_flags |= vma->vm_flags;
+ 	}
+ 
+-	page_unlock_anon_vma_read(anon_vma);
+-	return referenced;
++	ra->mapcount--;
++	if (!ra->mapcount)
++		return SWAP_SUCCESS; /* To break the loop */
 +
- 	mutex_lock(&mapping->i_mmap_mutex);
- 	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
- 		unsigned long address = vma_address(page, vma);
++	return SWAP_AGAIN;
+ }
+ 
+-/**
+- * page_referenced_file - referenced check for object-based rmap
+- * @page: the page we're checking references on.
+- * @memcg: target memory control group
+- * @vm_flags: collect encountered vma->vm_flags who actually referenced the page
+- *
+- * For an object-based mapped page, find all the places it is mapped and
+- * check/clear the referenced flag.  This is done by following the page->mapping
+- * pointer, then walking the chain of vmas it holds.  It returns the number
+- * of references it found.
+- *
+- * This function is only called from page_referenced for object-based pages.
+- */
+-static int page_referenced_file(struct page *page,
+-				struct mem_cgroup *memcg,
+-				unsigned long *vm_flags)
++static int skip_vma_non_matched_memcg(struct vm_area_struct *vma, void *arg)
+ {
+-	unsigned int mapcount;
+-	struct address_space *mapping = page->mapping;
+-	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+-	struct vm_area_struct *vma;
+-	int referenced = 0;
+-
+-	/*
+-	 * The caller's checks on page->mapping and !PageAnon have made
+-	 * sure that this is a file page: the check for page->mapping
+-	 * excludes the case just before it gets set on an anon page.
+-	 */
+-	BUG_ON(PageAnon(page));
++	struct mem_cgroup *memcg = arg;
+ 
+-	/*
+-	 * The page lock not only makes sure that page->mapping cannot
+-	 * suddenly be NULLified by truncation, it makes sure that the
+-	 * structure at mapping cannot be freed and reused yet,
+-	 * so we can safely take mapping->i_mmap_mutex.
+-	 */
+-	BUG_ON(!PageLocked(page));
++	if (!mm_match_cgroup(vma->vm_mm, memcg))
++		return 1;
+ 
+-	mutex_lock(&mapping->i_mmap_mutex);
+-
+-	/*
+-	 * i_mmap_mutex does not stabilize mapcount at all, but mapcount
+-	 * is more likely to be accurate if we note it after spinning.
+-	 */
+-	mapcount = page_mapcount(page);
+-
+-	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
+-		unsigned long address = vma_address(page, vma);
+-		/*
+-		 * If we are reclaiming on behalf of a cgroup, skip
+-		 * counting on behalf of references from different
+-		 * cgroups
+-		 */
+-		if (memcg && !mm_match_cgroup(vma->vm_mm, memcg))
+-			continue;
+-		referenced += page_referenced_one(page, vma, address,
+-						  &mapcount, vm_flags);
+-		if (!mapcount)
+-			break;
+-	}
+-
+-	mutex_unlock(&mapping->i_mmap_mutex);
+-	return referenced;
++	return 0;
+ }
+ 
+ /**
+@@ -847,32 +764,48 @@ int page_referenced(struct page *page,
+ 		    struct mem_cgroup *memcg,
+ 		    unsigned long *vm_flags)
+ {
+-	int referenced = 0;
++	int ret;
+ 	int we_locked = 0;
++	struct rmap_walk_control rwc;
++	struct page_referenced_arg ra;
+ 
+ 	*vm_flags = 0;
+-	if (page_mapped(page) && page_rmapping(page)) {
+-		if (!is_locked && (!PageAnon(page) || PageKsm(page))) {
+-			we_locked = trylock_page(page);
+-			if (!we_locked) {
+-				referenced++;
+-				goto out;
+-			}
+-		}
+-		if (unlikely(PageKsm(page)))
+-			referenced += page_referenced_ksm(page, memcg,
+-								vm_flags);
+-		else if (PageAnon(page))
+-			referenced += page_referenced_anon(page, memcg,
+-								vm_flags);
+-		else if (page->mapping)
+-			referenced += page_referenced_file(page, memcg,
+-								vm_flags);
+-		if (we_locked)
+-			unlock_page(page);
++	if (!page_mapped(page))
++		return 0;
++
++	if (!page_rmapping(page))
++		return 0;
++
++	if (!is_locked && (!PageAnon(page) || PageKsm(page))) {
++		we_locked = trylock_page(page);
++		if (!we_locked)
++			return 1;
+ 	}
+-out:
+-	return referenced;
++
++	memset(&rwc, 0, sizeof(rwc));
++	memset(&ra, 0, sizeof(ra));
++	rwc.main = page_referenced_one;
++	rwc.arg = (void *)&ra;
++	rwc.anon_lock = page_lock_anon_vma_read;
++	ra.mapcount = page_mapcount(page);
++
++	/*
++	 * If we are reclaiming on behalf of a cgroup, skip
++	 * counting on behalf of references from different
++	 * cgroups
++	 */
++	if (memcg) {
++		rwc.vma_skip = skip_vma_non_matched_memcg;
++		rwc.skip_arg = (void *)memcg;
++	}
++
++	ret = rmap_walk(page, &rwc);
++	*vm_flags = ra.vm_flags;
++
++	if (we_locked)
++		unlock_page(page);
++
++	return ra.referenced;
+ }
+ 
+ static int page_mkclean_one(struct page *page, struct vm_area_struct *vma,
 -- 
 1.7.9.5
 
