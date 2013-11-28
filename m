@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758706Ab3K1CwR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 21:52:17 -0500
-Received: from mail-yh0-f41.google.com ([209.85.213.41]:46992 "EHLO
-	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758254Ab3K1CwN (ORCPT
+	id S1758735Ab3K1Cz5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 21:55:57 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:58225 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754118Ab3K1Czz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 21:52:13 -0500
-Date: Wed, 27 Nov 2013 18:52:10 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
- access to memory reserves
-In-Reply-To: <20131128022804.GJ3556@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1311271839290.5120@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1311141447160.21413@chino.kir.corp.google.com> <alpine.DEB.2.02.1311141525440.30112@chino.kir.corp.google.com> <20131118154115.GA3556@cmpxchg.org> <20131118165110.GE32623@dhcp22.suse.cz> <20131122165100.GN3556@cmpxchg.org>
- <alpine.DEB.2.02.1311261648570.21003@chino.kir.corp.google.com> <20131127163435.GA3556@cmpxchg.org> <alpine.DEB.2.02.1311271343250.9222@chino.kir.corp.google.com> <20131127231931.GG3556@cmpxchg.org> <alpine.DEB.2.02.1311271613340.10617@chino.kir.corp.google.com>
- <20131128022804.GJ3556@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 27 Nov 2013 21:55:55 -0500
+Message-ID: <5296B0AA.9070207@hitachi.com>
+Date: Thu, 28 Nov 2013 11:55:38 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [RFC PATCH 0/2] tracing: Teach FETCH_MTD_symbol to handle per-cpu
+ data
+References: <20131123201543.GA22148@redhat.com> <20131125172106.GA14516@redhat.com> <20131125172206.GD14516@redhat.com> <52946B42.40603@hitachi.com> <20131126174355.GB14028@redhat.com> <5295C304.1050702@hitachi.com> <20131127174117.GC26138@redhat.com>
+In-Reply-To: <20131127174117.GC26138@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Nov 2013, Johannes Weiner wrote:
-
-> The long-standing, user-visible definition of the current line agrees
-> with me.  You can't just redefine this, period.
+(2013/11/28 2:41), Oleg Nesterov wrote:
+> On 11/27, Masami Hiramatsu wrote:
+>>
+>> (2013/11/27 2:43), Oleg Nesterov wrote:
+>>>
+>>> This doesn't allow to read the data from other CPUs, but at least
+>>> the changes are simple and this_cpu_ is better than the reading
+>>> from the obviously wrong address.
+>>
+>> Yeah, usually per_cpu variable is used in current cpu context.
+>>
+>>>> For the dynamic allocated per-cpu things, it is also good to give
+>>>> a straight operation, like +10(percpu(%rdi)).
+>>>
+>>> Probably yes, but this needs more changes and I am still not sure
+>>> this is really useful. And if we do this, we probably also need
+>>> to allow to read from other CPUs...
+>>
+>> No, it is enough to provide "percpu(FETCHARG)" which just returns
+>> current cpu's percpu variable address.
 > 
-> I tried to explain to you how insane the motivation for this patch is,
-> but it does not look like you are reading what I write.  But you don't
-> get to change user-visible behavior just like that anyway, much less
-> so without a sane reason, so this was a complete waste of time :-(
+> I don't really agree. I am not saying this is terribly useful, but:
 > 
+>> (Note that kprobes handler
+>> runs in interrupt)
+> 
+> but this doesn't matter at all, I think. The code can execute, say,
+> __percpu_counter_sum-like code.
+>
+> And even if we dump the .data..percpu memory (@percpu_symbol) the
+> user might want to know the "global" state of this per-cpu object.
 
-If you would like to leave this to Andrew's decision, that's fine.  
-Michal has already agreed with my patch and has acked it in -mm.
+I see, but it is the problem solved in the next step.
+IMHO, giving people to access just to this cpu's variable is enough
+useful. Expanding it to other cpu is another one.
 
-If userspace is going to handle oom conditions, which is possible today 
-and will be extended in the future, then it should only wakeup as a last 
-resort when there is no possibility of future memory freeing.  It would be 
-stupid to have userspace wakeup to handle the oom condition and then 
-require it determine if the kernel simply needed to give it access to 
-memory reserves for the allocating task to exit and free memory so it 
-doesn't actually need to do anything.
+> And note that sometimes DEFINE_PER_CPU doesn't really connect to
+> smp_processor_id(). Just for example, bp_cpuinfo[]. It is never
+> used as this-cpu-data. This means that @bp_cpuinfo+whatever is
+> always pointless.
 
-Section 10 of Documentation/cgroups/memory.txt defines the necessary 
-actions for processes waiting on this notification to make forward 
-progress, it doesn't expect a process is already going to exit and free 
-memory on its own.  Waking up in such a condition would be absolutely 
-ludicrous.
+Yeah, there should be some exceptions.
 
-Furthermore, if you're looking for notification simply when the memcg oom 
-limit has been reached, you can use memory thresholds.  If you're looking 
-for notification simply when reclaim is suffering severe pressure, you can 
-use VMPRESSURE_CRITICAL.
+> But anyway I agree, this is not that important, lets ignore.
 
-I've been patient in this thread, but at this point I think everything has 
-been said and it's pointless to continue going in circles.  Thanks for 
-your time.
+ :)
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
