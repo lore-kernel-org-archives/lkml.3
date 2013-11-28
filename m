@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756485Ab3K1IKn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 03:10:43 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:49495 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063Ab3K1IJ7 (ORCPT
+	id S1757864Ab3K1IKu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 03:10:50 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:21097 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977Ab3K1IJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 03:09:59 -0500
-X-AuditID: cbfec7f5-b7f706d0000017c2-ba-5296fa55fcd2
+	Thu, 28 Nov 2013 03:09:58 -0500
+X-AuditID: cbfec7f4-b7fea6d0000026ac-68-5296fa565b8a
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
         Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
@@ -18,107 +18,80 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 3/5] rtc: s5m: Limit endless loop waiting for register update
-Date: Thu, 28 Nov 2013 09:09:41 +0100
-Message-id: <1385626183-22990-4-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v2 4/5] rtc: s5m: Enable IRQ wake during suspend
+Date: Thu, 28 Nov 2013 09:09:42 +0100
+Message-id: <1385626183-22990-5-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1385626183-22990-1-git-send-email-k.kozlowski@samsung.com>
 References: <1385626183-22990-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrALMWRmVeSWpSXmKPExsVy+t/xK7qhv6YFGVx5qmSx5OJVdoupD5+w
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrALMWRmVeSWpSXmKPExsVy+t/xK7phv6YFGcxczGGx5OJVdoupD5+w
 	WTy7tZfJ4vULQ4uzTW/YLe5/Pcpo8e1KB5PF5V1z2CzWHrnLbrG/s4PR4nQ3q8XFFV+YHHg8
 	ds66y+6xZ+JJNo9NqzrZPO5c28PmcehwB6PHvJOBHn1bVjF6TJ/3k8nj8ya5AM4oLpuU1JzM
-	stQifbsEroxjvzpYCz4JVdyf+Ji1gXEVfxcjJ4eEgInEvF0fmSFsMYkL99azdTFycQgJLGWU
-	WP/lBCuE08ck8fBPNyNIFZuAscTm5UvAqkQE5jJJTH97lhHEYRbYxSjx9ucusCphgQCJm9O+
-	sIHYLAKqEnsnXgGKc3DwCrhLLHsjDGJKCChIzJlkA1LBKeAhsWf+PlYQWwio4ufnOWwTGHkX
-	MDKsYhRNLU0uKE5KzzXSK07MLS7NS9dLzs/dxAgJ1a87GJceszrEKMDBqMTDq2A8LUiINbGs
-	uDL3EKMEB7OSCK9CMVCINyWxsiq1KD++qDQntfgQIxMHp1QDI0st05bkj594S3o7vmVMuSi6
-	McZI04Xz6vFfLRfel3xrXrPlcd4qrrCaa3duHTq97Y+wmQ/7d69V0xwKsla8WyT5/RxX6/0/
-	Z9jrJ3hNrnvi8ribQ2/XEg55a8b1JTbdx1/8vLZykbmWZJ9IWXW9u7WNaEib3roY3YXPRWdd
-	5jn9t2mVdbGuiRJLcUaioRZzUXEiAKegQUYzAgAA
+	stQifbsErozT686zFvzjruhadomtgfE5ZxcjJ4eEgInEp2fT2CFsMYkL99azdTFycQgJLGWU
+	mPXxITuE08ckcWTVfTaQKjYBY4nNy5eAVYkIzGWSmP72LCOIwyywi1Hi7c9dQA4Hh7CAg8Tu
+	mXogDSwCqhJtz/sZQWxeAXeJTWdWsoGUSAgoSMyZZAMS5hTwkNgzfx8riC0EVPLz8xy2CYy8
+	CxgZVjGKppYmFxQnpeca6hUn5haX5qXrJefnbmKEhOqXHYyLj1kdYhTgYFTi4T2gOS1IiDWx
+	rLgy9xCjBAezkgivQjFQiDclsbIqtSg/vqg0J7X4ECMTB6dUA2Pk20sODzkb+pPeMN9+f3Tv
+	yQ/tt6bcOx/GsyCX539L/zKl1L3yXkK+88oqlxVd+XKkRkIt2HB3tkNj19LFZVJnFHsrZzC+
+	s8rafpNZUtDVbGHINdbQEJ6w7OlCS0WbpvQcXjH7zLJPEyXC98xmOax7SlqEe9fsBTWlxszH
+	LFtKnQ9HzJnv3KPEUpyRaKjFXFScCACYtTIRMwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After setting alarm or time the driver is waiting for UDR register to be
-cleared indicating that registers data have been transferred.
-
-Limit the endless loop to only 5 retries.
+Add PM suspend/resume ops to rtc-s5m driver and enable IRQ wake during
+suspend so the RTC would act like a wake up source. This allows waking
+up from suspend to RAM on RTC alarm interrupt.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/rtc/rtc-s5m.c |   37 +++++++++++++++++++++++++++++++------
- 1 file changed, 31 insertions(+), 6 deletions(-)
+ drivers/rtc/rtc-s5m.c |   25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
 diff --git a/drivers/rtc/rtc-s5m.c b/drivers/rtc/rtc-s5m.c
-index 66686d9..51471c1 100644
+index 51471c1..ae8119d 100644
 --- a/drivers/rtc/rtc-s5m.c
 +++ b/drivers/rtc/rtc-s5m.c
-@@ -28,6 +28,16 @@
- #include <linux/mfd/samsung/irq.h>
- #include <linux/mfd/samsung/rtc.h>
- 
-+/*
-+ * Maximum number of retries for checking changes in UDR field
-+ * of SEC_RTC_UDR_CON register (to limit possible endless loop).
-+ *
-+ * After writing to RTC registers (setting time or alarm) read the UDR field
-+ * in SEC_RTC_UDR_CON register. UDR is auto-cleared when data have
-+ * been transferred.
-+ */
-+#define UDR_READ_RETRY_CNT	5
-+
- struct s5m_rtc_info {
- 	struct device *dev;
- 	struct sec_pmic_dev *s5m87xx;
-@@ -84,6 +94,25 @@ static int s5m8767_tm_to_data(struct rtc_time *tm, u8 *data)
- 	}
+@@ -639,6 +639,30 @@ static void s5m_rtc_shutdown(struct platform_device *pdev)
+ 	s5m_rtc_enable_smpl(info, false);
  }
  
-+/*
-+ * Read RTC_UDR_CON register and wait till UDR field is cleared.
-+ * This indicates that time/alarm update ended.
-+ */
-+static inline int s5m8767_wait_for_udr_update(struct s5m_rtc_info *info)
++static int s5m_rtc_resume(struct device *dev)
 +{
-+	int ret, retry = UDR_READ_RETRY_CNT;
-+	unsigned int data;
++	struct s5m_rtc_info *info = dev_get_drvdata(dev);
++	int ret = 0;
 +
-+	do {
-+		ret = regmap_read(info->regmap, SEC_RTC_UDR_CON, &data);
-+	} while (--retry && (data & RTC_UDR_MASK) && !ret);
-+
-+	if (!retry)
-+		dev_err(info->dev, "waiting for UDR update, reached max number of retries\n");
++	if (device_may_wakeup(dev))
++		ret = disable_irq_wake(info->irq);
 +
 +	return ret;
 +}
 +
- static inline int s5m8767_rtc_set_time_reg(struct s5m_rtc_info *info)
- {
- 	int ret;
-@@ -104,9 +133,7 @@ static inline int s5m8767_rtc_set_time_reg(struct s5m_rtc_info *info)
- 		return ret;
- 	}
- 
--	do {
--		ret = regmap_read(info->regmap, SEC_RTC_UDR_CON, &data);
--	} while ((data & RTC_UDR_MASK) && !ret);
-+	ret = s5m8767_wait_for_udr_update(info);
- 
- 	return ret;
- }
-@@ -133,9 +160,7 @@ static inline int s5m8767_rtc_set_alarm_reg(struct s5m_rtc_info *info)
- 		return ret;
- 	}
- 
--	do {
--		ret = regmap_read(info->regmap, SEC_RTC_UDR_CON, &data);
--	} while ((data & RTC_UDR_MASK) && !ret);
-+	ret = s5m8767_wait_for_udr_update(info);
- 
- 	return ret;
- }
++static int s5m_rtc_suspend(struct device *dev)
++{
++	struct s5m_rtc_info *info = dev_get_drvdata(dev);
++	int ret = 0;
++
++	if (device_may_wakeup(dev))
++		ret = enable_irq_wake(info->irq);
++
++	return ret;
++}
++
++static SIMPLE_DEV_PM_OPS(s5m_rtc_pm_ops, s5m_rtc_suspend, s5m_rtc_resume);
++
+ static const struct platform_device_id s5m_rtc_id[] = {
+ 	{ "s5m-rtc", 0 },
+ };
+@@ -647,6 +671,7 @@ static struct platform_driver s5m_rtc_driver = {
+ 	.driver		= {
+ 		.name	= "s5m-rtc",
+ 		.owner	= THIS_MODULE,
++		.pm	= &s5m_rtc_pm_ops,
+ 	},
+ 	.probe		= s5m_rtc_probe,
+ 	.shutdown	= s5m_rtc_shutdown,
 -- 
 1.7.9.5
 
