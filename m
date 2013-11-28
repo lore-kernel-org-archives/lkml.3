@@ -1,55 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759351Ab3K1Rke (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 12:40:34 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:54579 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758240Ab3K1Rk3 (ORCPT
+	id S1759293Ab3K1Rmc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 12:42:32 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:65500 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755124Ab3K1Rmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 12:40:29 -0500
-Date: Thu, 28 Nov 2013 18:40:01 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, David Miller <davem@davemloft.net>,
-        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH 7/8] sched, net: Fixup busy_loop_us_clock()
-Message-ID: <20131128174001.GH10022@twins.programming.kicks-ass.net>
-References: <20131126155743.116756708@infradead.org>
- <20131126160815.293633156@infradead.org>
- <529773FC.6020707@linux.intel.com>
+	Thu, 28 Nov 2013 12:42:31 -0500
+Date: Thu, 28 Nov 2013 18:41:57 +0100
+From: Vladimir Murzin <murzin.v@gmail.com>
+To: Jianyu Zhan <nasa4836@gmail.com>
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, iamjoonsoo.kim@lge.com,
+        zhangyanfei@cn.fujitsu.com, liwanp@linux.vnet.ibm.com,
+        rientjes@google.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]mm/vmalloc: interchage the implementation of
+ vmalloc_to_{pfn,page}
+Message-ID: <20131128174152.GA2258@hp530>
+References: <20131128162913.GA4234@lcx>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=koi8-r
 Content-Disposition: inline
-In-Reply-To: <529773FC.6020707@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131128162913.GA4234@lcx>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 06:49:00PM +0200, Eliezer Tamir wrote:
-> I have tested this patch and I see a performance regression of about
-> 1.5%.
+On Fri, Nov 29, 2013 at 12:29:13AM +0800, Jianyu Zhan wrote:
+> Currently we are implementing vmalloc_to_pfn() as a wrapper of 
+> vmalloc_to_page(), which is implemented as follow: 
+> 
+>  1. walks the page talbes to generates the corresponding pfn,
+>  2. then wraps the pfn to struct page,
+>  3. returns it.
+> 
+> And vmalloc_to_pfn() re-wraps the vmalloc_to_page() to get the pfn.
+> 
+> This seems too circuitous, so this patch reverses the way:
+> implementing the vmalloc_to_page() as a wrapper of vmalloc_to_pfn().
+> This makes vmalloc_to_pfn() and vmalloc_to_page() slightly effective.
 
-Cute, can you qualify your metric? Since this is a poll loop the only
-metric that would be interesting is the response latency. Is that what's
-increased by 1.5%? Also, what's the standard deviation of your result?
+Any numbers for efficiency?
 
-Also, can you provide relevant perf results for this? Is it really the
-sti;cli pair that's degrading your latency?
+> 
 
-Better yet, can you provide us with a simple test-case that we can run
-locally (preferably single machine setup, using localnet or somesuch).
+> No functional change. 
+> 
+> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+> ---
+> mm/vmalloc.c | 20 ++++++++++----------
+>  1 file changed, 10 insertions(+), 10 deletions(-)
+> 
+> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> index 0fdf968..a335e21 100644
+> --- a/mm/vmalloc.c
+> +++ b/mm/vmalloc.c
+> @@ -220,12 +220,12 @@ int is_vmalloc_or_module_addr(const void *x)
+>  }
+>  
+>  /*
+> - * Walk a vmap address to the struct page it maps.
+> + * Walk a vmap address to the physical pfn it maps to.
+>   */
+> -struct page *vmalloc_to_page(const void *vmalloc_addr)
+> +unsigned long vmalloc_to_pfn(const void *vmalloc_addr)
+>  {
+>  	unsigned long addr = (unsigned long) vmalloc_addr;
+> -	struct page *page = NULL;
+> +	unsigned long pfn;
 
-> Maybe it would be better, rather then testing in the fast path, to
-> simply disallow busy polling altogether when sched_clock_stable is
-> not true?
+uninitialized pfn will lead to a bug.
 
-Sadly that doesn't work; sched_clock_stable can become false at any time
-after boot (and does, even on recent machines).
+>  	pgd_t *pgd = pgd_offset_k(addr);
+>  
+>  	/*
+> @@ -244,23 +244,23 @@ struct page *vmalloc_to_page(const void *vmalloc_addr)
+>  				ptep = pte_offset_map(pmd, addr);
+>  				pte = *ptep;
+>  				if (pte_present(pte))
+> -					page = pte_page(pte);
+> +					pfn = pte_page(pte);
 
-That said; let me see if I can come up with a few patches to optimize
-the entire thing; that'd be something we all benefit from.
+page_to_pfn is missed here.
+
+Have you ever tested there is no functional changes?
+
+Vladimir
+
+>  				pte_unmap(ptep);
+>  			}
+>  		}
+>  	}
+> -	return page;
+> +	return pfn;
+>  }
+> -EXPORT_SYMBOL(vmalloc_to_page);
+> +EXPORT_SYMBOL(vmalloc_to_pfn);
+>  
+>  /*
+> - * Map a vmalloc()-space virtual address to the physical page frame number.
+> + * Map a vmalloc()-space virtual address to the struct page.
+>   */
+> -unsigned long vmalloc_to_pfn(const void *vmalloc_addr)
+> +struct page *vmalloc_to_page(const void *vmalloc_addr)
+>  {
+> -	return page_to_pfn(vmalloc_to_page(vmalloc_addr));
+> +	return pfn_to_page(vmalloc_to_pfn(vmalloc_addr));
+>  }
+> -EXPORT_SYMBOL(vmalloc_to_pfn);
+> +EXPORT_SYMBOL(vmalloc_to_page);
+>  
+>  
+>  /*** Global kva allocator ***/
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
