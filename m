@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759041Ab3K1Qws (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 11:52:48 -0500
-Received: from mga02.intel.com ([134.134.136.20]:38542 "EHLO mga02.intel.com"
+	id S1758830Ab3K1Q5r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 11:57:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59765 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751551Ab3K1Qwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 11:52:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,791,1378882800"; 
-   d="scan'208";a="443770252"
-Date: Thu, 28 Nov 2013 18:59:22 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <acourbot@nvidia.com>, Rhyland Klein <rklein@nvidia.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio: better lookup method for platform GPIOs
-Message-ID: <20131128165922.GC2281@intel.com>
-References: <1385628388-23827-1-git-send-email-acourbot@nvidia.com>
- <CACRpkda-TtKQr6hDx4corjxYv7r7f6_9sNp_2ocbvg9MHyOk7Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkda-TtKQr6hDx4corjxYv7r7f6_9sNp_2ocbvg9MHyOk7Q@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751219Ab3K1Q5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 11:57:46 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf tools: Make trace command to follow -m option
+Date: Thu, 28 Nov 2013 17:57:22 +0100
+Message-Id: <1385657842-8914-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 03:45:37PM +0100, Linus Walleij wrote:
-> On Thu, Nov 28, 2013 at 9:46 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> 
-> > Change the format of the platform GPIO lookup tables to make them less
-> > confusing and improve lookup efficiency.
-> >
-> > The previous format was a single linked-list that required to compare
-> > the device name and function ID of every single GPIO defined for each
-> > lookup. Switch that to a list of per-device tables, so that the lookup
-> > can be done in two steps, omitting the GPIOs that are not relevant for a
-> > particular device.
-> >
-> > The matching rules are now defined as follows:
-> > - The device name must match *exactly*, and can be NULL for GPIOs not
-> >   assigned to a particular device,
-> > - If the function ID in the lookup table is NULL, the con_id argument of
-> >   gpiod_get() will not be used for lookup. However, if it is defined, it
-> >   must match exactly.
-> > - The index must always match.
-> >
-> > Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> > ---
-> > Let's change this bad design before more users start using it. ;)
-> 
-> OK given that Mika has based his patches on this I'll request
-> that he ACK this and then I'll merge this so that he can put
-> this patch at the bottom of his patch stack.
-> 
-> Mika: requesting ACK.
+Currently trace command supports '-m' option, but
+does not follow its value and keeps the default.
 
-Alexandre, please check Andy's comments.
+Changing the perf_evlist__mmap function call to use
+the '-m' configured value.
 
-Apart from that this looks good to me.
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/builtin-trace.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index e9f345e2..9f2a242 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -1890,7 +1890,7 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
+ 	if (err < 0)
+ 		goto out_error_open;
+ 
+-	err = perf_evlist__mmap(evlist, UINT_MAX, false);
++	err = perf_evlist__mmap(evlist, trace->opts.mmap_pages, false);
+ 	if (err < 0) {
+ 		fprintf(trace->output, "Couldn't mmap the events: %s\n", strerror(errno));
+ 		goto out_close_evlist;
+-- 
+1.8.3.1
+
