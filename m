@@ -1,36 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751706Ab3K1WyZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 17:54:25 -0500
-Received: from host.colocrossing.com ([23.94.47.225]:37683 "EHLO phpbb.com"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750875Ab3K1WyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 17:54:24 -0500
-To: linux-kernel@vger.kernel.org
-Subject: phpBB new version
-X-PHP-Script: 23.94.47.225/~admin/cc/ccmail/admin.php for 41.37.134.49
-Date: Fri, 29 Nov 2013 02:53:37 +0400
-From: phpbbaid@gmail.com
-Message-ID: <b482d6855a40cc423929b2ec700332fc@23.94.47.225>
-X-Priority: 3
-X-Mailer: CcMail 1.0 - powered by PHPMailer 1.72
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Type: text/plain; charset=US-ASCII
+	id S1751593Ab3K1XP7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 18:15:59 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:47313 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab3K1XP4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 18:15:56 -0500
+Date: Thu, 28 Nov 2013 18:15:54 -0500 (EST)
+Message-Id: <20131128.181554.1888077442034865299.davem@davemloft.net>
+To: hannes@stressinduktion.org
+Cc: eric.dumazet@gmail.com, jongman.heo@samsung.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] inet: further fixes of possible seqlock deadlocks
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20131128221926.GG24171@order.stressinduktion.org>
+References: <1385672502.5352.38.camel@edumazet-glaptop2.roam.corp.google.com>
+	<20131128212700.GF24171@order.stressinduktion.org>
+	<20131128221926.GG24171@order.stressinduktion.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 28 Nov 2013 15:15:56 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-phpBB 3.0.12 is now available , please be sure to backup your forum before
-staring in the update process .
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Date: Thu, 28 Nov 2013 23:19:26 +0100
 
-we are happy to help you in updating your forum safely, please reply to this
-email if you are interested in our paid services .
+> I don't really understand why we distinguish between _BH and plain ICMP stat
+> calls then.
+> 
+> The non-_BH versions deactivate interrupts when updating the per-cpu counter.
 
-thank you
+This level of distinction exists back in the day where we did per-cpu counters
+by hand.  We used to have a BH counter and a non-BH counter for each statistic
+and it really helped performance wise.
 
-
-
-
-
+These days most of that may not be so relevant any more.
