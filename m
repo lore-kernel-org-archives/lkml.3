@@ -1,227 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759422Ab3K1TH0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 14:07:26 -0500
-Received: from www.linutronix.de ([62.245.132.108]:58950 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759334Ab3K1THX (ORCPT
+	id S1759332Ab3K1TRE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 14:17:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60836 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757452Ab3K1TRA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 14:07:23 -0500
-Date: Thu, 28 Nov 2013 20:07:10 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: =?ISO-8859-15?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
-cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 4/9] clocksource/cadence_ttc: Use enable/disable_irq
-In-Reply-To: <b2ed3cbc-c9df-4235-8137-93514c05bffa@DB8EHSMHS031.ehs.local>
-Message-ID: <alpine.DEB.2.02.1311281939000.30673@ionos.tec.linutronix.de>
-References: <1385514296-26702-1-git-send-email-soren.brinkmann@xilinx.com> <1385514296-26702-5-git-send-email-soren.brinkmann@xilinx.com> <52972F3A.9090103@linaro.org> <alpine.DEB.2.02.1311281507280.30673@ionos.tec.linutronix.de>
- <b2ed3cbc-c9df-4235-8137-93514c05bffa@DB8EHSMHS031.ehs.local>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 28 Nov 2013 14:17:00 -0500
+Date: Thu, 28 Nov 2013 11:17:51 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Xiaotian Feng <xtfeng@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        neilb@suse.de, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: page fault deadlock
+Message-ID: <20131128191751.GA2676@kroah.com>
+References: <CAJn8CcEerEFMQTs6GQK2htgAD3SJmaS_dLgwV006jTO6ce8Hdw@mail.gmail.com>
+ <20131128041128.GA30156@kroah.com>
+ <CAJn8CcHCSQPsNf0mMgq4e7P-A-z5y0iW1EBjTTVEZfcYtfu4QQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1719244586-1385665631=:30673"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJn8CcHCSQPsNf0mMgq4e7P-A-z5y0iW1EBjTTVEZfcYtfu4QQ@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Thu, Nov 28, 2013 at 03:28:39PM +0800, Xiaotian Feng wrote:
+> On Thu, Nov 28, 2013 at 12:11 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Thu, Nov 28, 2013 at 11:25:32AM +0800, Xiaotian Feng wrote:
+> >> Hi,
+> >>
+> >>     When I upgrade to latest kernel, I found my system hang there. It
+> >> is reproducible on my virtualbox, and I found each time I mounted my
+> >> RAID6 partition and tried to vi or build kernel, my whole system
+> >> lockup very soon.
+> >>
+> >>     After turning on lockdep, I found following lockdep warning:
+> >>
+> >> [   27.848462]
+> >> [   27.848471] ======================================================
+> >> [   27.848477] [ INFO: possible circular locking dependency detected ]
+> >> [   27.848484] 3.13.0-rc1+ #1 Tainted: GF       W
+> >> [   27.848490] -------------------------------------------------------
+> >> [   27.848496] Xorg/1268 is trying to acquire lock:
+> >> [   27.848501]  (&of->mutex){+.+.+.}, at: [<ffffffff8125d58f>]
+> >> sysfs_bin_mmap+0x4f/0x120
+> >> [   27.848516]
+> >> [   27.848516] but task is already holding lock:
+> >> [   27.848521]  (&mm->mmap_sem){++++++}, at: [<ffffffff811875bf>]
+> >> vm_mmap_pgoff+0x6f/0xc0
+> >> [   27.848534]
+> >> [   27.848534] which lock already depends on the new lock.
+> >> [   27.848534]
+> >> [   27.848541]
+> >> [   27.848541] the existing dependency chain (in reverse order) is:
+> >> [   27.848547]
+> >> [   27.848547] -> #2 (&mm->mmap_sem){++++++}:
+> >> [   27.848556]        [<ffffffff810c0510>] lock_acquire+0xb0/0x160
+> >> [   27.848564]        [<ffffffff8119177c>] might_fault+0x8c/0xb0
+> >> [   27.848572]        [<ffffffff815f4c08>] md_ioctl+0xa78/0x19b0
+> >> [   27.848580]        [<ffffffff813915a4>] blkdev_ioctl+0x234/0x840
+> >> [   27.848588]        [<ffffffff8121db61>] block_ioctl+0x41/0x50
+> >> [   27.848597]        [<ffffffff811f5330>] do_vfs_ioctl+0x300/0x520
+> >> [   27.848605]        [<ffffffff811f55d1>] SyS_ioctl+0x81/0xa0
+> >> [   27.848613]        [<ffffffff81784e98>] tracesys+0xe1/0xe6
+> >> [   27.848622]
+> >> [   27.848622] -> #1 (&mddev->reconfig_mutex){+.+.+.}:
+> >> [   27.848630]        [<ffffffff810c0510>] lock_acquire+0xb0/0x160
+> >> [   27.848637]        [<ffffffff81778568>]
+> >> mutex_lock_interruptible_nested+0x78/0x610
+> >> [   27.848646]        [<ffffffff815e9750>] rdev_attr_show+0x40/0x90
+> >> [   27.848654]        [<ffffffff8125db2a>] sysfs_seq_show+0xda/0x170
+> >> [   27.848662]        [<ffffffff812076f4>] seq_read+0x164/0x3e0
+> >> [   27.848671]        [<ffffffff811e1005>] vfs_read+0x95/0x160
+> >> [   27.848680]        [<ffffffff811e1b19>] SyS_read+0x49/0xa0
+> >> [   27.848687]        [<ffffffff81784e98>] tracesys+0xe1/0xe6
+> >> [   27.848695]
+> >> [   27.848695] -> #0 (&of->mutex){+.+.+.}:
+> >> [   27.848703]        [<ffffffff810bfd47>] __lock_acquire+0x1587/0x1ca0
+> >> [   27.848711]        [<ffffffff810c0510>] lock_acquire+0xb0/0x160
+> >> [   27.848718]        [<ffffffff81778048>] mutex_lock_nested+0x68/0x510
+> >> [   27.848725]        [<ffffffff8125d58f>] sysfs_bin_mmap+0x4f/0x120
+> >> [   27.848732]        [<ffffffff8119d82d>] mmap_region+0x3ed/0x5d0
+> >> [   27.848741]        [<ffffffff8119dd5e>] do_mmap_pgoff+0x34e/0x3d0
+> >> [   27.848748]        [<ffffffff811875e0>] vm_mmap_pgoff+0x90/0xc0
+> >> [   27.848755]        [<ffffffff8119c2b5>] SyS_mmap_pgoff+0x1d5/0x270
+> >> [   27.848763]        [<ffffffff8101ae52>] SyS_mmap+0x22/0x30
+> >> [   27.848771]        [<ffffffff81784e98>] tracesys+0xe1/0xe6
+> >> [   27.848778]
+> >> [   27.848778] other info that might help us debug this:
+> >> [   27.848778]
+> >> [   27.848785] Chain exists of:
+> >> [   27.848785]   &of->mutex --> &mddev->reconfig_mutex --> &mm->mmap_sem
+> >> [   27.848785]
+> >> [   27.848795]  Possible unsafe locking scenario:
+> >> [   27.848795]
+> >> [   27.848800]        CPU0                    CPU1
+> >> [   27.848805]        ----                    ----
+> >> [   27.848810]   lock(&mm->mmap_sem);
+> >> [   27.848817]                                lock(&mddev->reconfig_mutex);
+> >> [   27.848824]                                lock(&mm->mmap_sem);
+> >> [   27.848830]   lock(&of->mutex);
+> >> [   27.848837]
+> >> [   27.848837]  *** DEADLOCK ***
+> >> [   27.848837]
+> >> [   27.848844] 1 lock held by Xorg/1268:
+> >> [   27.848849]  #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff811875bf>]
+> >> vm_mmap_pgoff+0x6f/0xc0
+> >> [   27.848861]
+> >> [   27.848861] stack backtrace:
+> >> [   27.848868] CPU: 1 PID: 1268 Comm: Xorg Tainted: GF       W    3.13.0-rc1+ #1
+> >> [   27.848873] Hardware name: innotek GmbH VirtualBox/VirtualBox, BIOS
+> >> VirtualBox 12/01/2006
+> >> [   27.848879]  ffffffff822daa00 ffff8800d0371bc8 ffffffff817725f7
+> >> ffffffff822cbdc0
+> >> [   27.848901]  ffff8800d0371c08 ffffffff8176d9eb ffff8800d0371c60
+> >> ffff880115b42a78
+> >> [   27.848909]  0000000000000000 ffff880115b42a78 ffff880115b422a0
+> >> 0000000000000001
+> >> [   27.848918] Call Trace:
+> >> [   27.848930]  [<ffffffff817725f7>] dump_stack+0x4e/0x7a
+> >> [   27.848942]  [<ffffffff8176d9eb>] print_circular_bug+0x1f9/0x208
+> >> [   27.848952]  [<ffffffff810bfd47>] __lock_acquire+0x1587/0x1ca0
+> >> [   27.848964]  [<ffffffff8101955f>] ? print_context_stack+0x8f/0x100
+> >> [   27.848975]  [<ffffffff810c0510>] lock_acquire+0xb0/0x160
+> >> [   27.848986]  [<ffffffff8125d58f>] ? sysfs_bin_mmap+0x4f/0x120
+> >> [   27.848996]  [<ffffffff8125d58f>] ? sysfs_bin_mmap+0x4f/0x120
+> >> [   27.849007]  [<ffffffff81778048>] mutex_lock_nested+0x68/0x510
+> >> [   27.849016]  [<ffffffff8125d58f>] ? sysfs_bin_mmap+0x4f/0x120
+> >> [   27.849027]  [<ffffffff8176456e>] ? kmemleak_alloc+0x4e/0xb0
+> >> [   27.849038]  [<ffffffff8125d58f>] sysfs_bin_mmap+0x4f/0x120
+> >> [   27.849048]  [<ffffffff8119d82d>] mmap_region+0x3ed/0x5d0
+> >> [   27.849058]  [<ffffffff8119dd5e>] do_mmap_pgoff+0x34e/0x3d0
+> >> [   27.849070]  [<ffffffff811875e0>] vm_mmap_pgoff+0x90/0xc0
+> >> [   27.849080]  [<ffffffff8119c2b5>] SyS_mmap_pgoff+0x1d5/0x270
+> >> [   27.849092]  [<ffffffff81023c55>] ? syscall_trace_enter+0x145/0x270
+> >> [   27.849102]  [<ffffffff8101ae52>] SyS_mmap+0x22/0x30
+> >> [   27.849112]  [<ffffffff81784e98>] tracesys+0xe1/0xe6
+> >>
+> >>
+> >>     I think it is a real deadlock, and it is caused by commit
+> >> 3124eb1679b28726 "sysfs: merge regular and bin file handling".
+> >>
+> >>     With that commit, sysfs_bin_mmap will hold of->mutex.
+> >>
+> >>     So assume cpu0 called sysfs_bin_mmap, acquired mmap_sem and trying
+> >> to get of->mutex.
+> >>
+> >>          CPU1 called sysfs_seq_show, acqured of->mutex and trying to
+> >> get mddev->reconfig_mutex.
+> >>
+> >>          CPU2 called md_ioctl, acquired mddev->reconfig_mutex, and
+> >> later call copy_from_user and page fault trying to get mmap_sem.
+> >>
+> >>      DEADLOCK now. I can't test the effort of reverting 3124eb16 as
+> >> there're a whole patchset and many commits after that. But I do
+> >> believe it's buggy and the root cause of my system hang.
+> >>
+> >>      CPU0:                                                 CPU1:
+> >>                                         CPU2:
+> >>  lock(&mm->mmap_sem)
+> >>                                                        lock(&of->mutex);
+> >>
+> >>                                lock(&mddev->reconfig_mutex)
+> >>
+> >>                                 lock(&mm->mmap_sem)
+> >>
+> >> lock(&mddev->reconfig_mutex)
+> >>  lock(&of->mutex)
+> >>
+> >>      Can we revert commit 3124eb167? or any patches to solve this page
+> >> fault deadlock? Thanks.
+> >
+> > Can you try linux-next, this should be fixed with a patch in my tree
+> > there, thanks.
+> >
+> 
+> Sorry, It's even worse. My whole system lockup when I'm trying to
+> mount /dev/md0 :(
 
---8323329-1719244586-1385665631=:30673
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Ok, that sounds like some other problem.
 
-On Thu, 28 Nov 2013, Sören Brinkmann wrote:
-> On Thu, Nov 28, 2013 at 03:18:50PM +0100, Thomas Gleixner wrote:
-> > Now the problem with this device is that it is not a per cpu
-> > device. It's a global device, so this update can conflict with a
-> > parallel access on the other CPU. Now the disable_irq() only prevents
-> > that the other CPU can handle a device interrupt from that timer. But
-> > it does not prevent any parallel access from e.g. the idle code path
-> > which will try to reprogram it.
->
-> Does that mean interrupts need to be disabled globally? Also, does the
+Can you try Linus's tree now, the sysfs patch is now in it.
 
-Globally disabling interrupts is not going to work, except you want to
-use stomp_machine(). But that would be overkill.
-
-> cpuidle path depend on interrupts or can it interfere no matter what?
-
-It can interfere no matter what. The broadcast is modified for the cpu
-which loses its per cpu timer due to the idle state via
-
-      clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, ...);
- 
-> > Soren, is that timer used as the broadcast device ?
->
-> Yes, this is the only broadcast capable timer on Zynq, AFAIK. Other than
-> the TTC we only have the arm_global_timer and smp_twd timers, which both
-> are per_cpu devices and thus not broadcast capable.
-
-There is a solution to this. We can identify the broadcast device in
-the core and serialize all callers including interrupts on a different
-cpu against the update. So no need for the disable/enable_irq() dance.
-
-See patch below.
-
-Thanks,
-
-	tglx
----
-
-Index: linux-2.6/kernel/time/clockevents.c
-===================================================================
---- linux-2.6.orig/kernel/time/clockevents.c
-+++ linux-2.6/kernel/time/clockevents.c
-@@ -439,6 +439,16 @@ void clockevents_config_and_register(str
- }
- EXPORT_SYMBOL_GPL(clockevents_config_and_register);
- 
-+int __clockevents_update_freq(struct clock_event_device *dev, u32 freq)
-+{
-+	clockevents_config(dev, freq);
-+
-+	if (dev->mode != CLOCK_EVT_MODE_ONESHOT)
-+		return 0;
-+
-+	return clockevents_program_event(dev, dev->next_event, false);
-+}
-+
- /**
-  * clockevents_update_freq - Update frequency and reprogram a clock event device.
-  * @dev:	device to modify
-@@ -446,17 +456,22 @@ EXPORT_SYMBOL_GPL(clockevents_config_and
-  *
-  * Reconfigure and reprogram a clock event device in oneshot
-  * mode. Must be called on the cpu for which the device delivers per
-- * cpu timer events with interrupts disabled!  Returns 0 on success,
-- * -ETIME when the event is in the past.
-+ * cpu timer events. If called for the broadcast device the core takes
-+ * care of serialization.
-+ *
-+ * Returns 0 on success, -ETIME when the event is in the past.
-  */
- int clockevents_update_freq(struct clock_event_device *dev, u32 freq)
- {
--	clockevents_config(dev, freq);
-+	unsigned long flags;
-+	int ret;
- 
--	if (dev->mode != CLOCK_EVT_MODE_ONESHOT)
--		return 0;
--
--	return clockevents_program_event(dev, dev->next_event, false);
-+	local_irq_save(flags);
-+	ret = tick_broadcast_update_freq(dev, freq);
-+	if (ret == -ENODEV)
-+		ret = __clockevents_update_freq(dev, freq);
-+	local_irq_restore(flags);
-+	return ret;
- }
- 
- /*
-Index: linux-2.6/kernel/time/tick-broadcast.c
-===================================================================
---- linux-2.6.orig/kernel/time/tick-broadcast.c
-+++ linux-2.6/kernel/time/tick-broadcast.c
-@@ -120,6 +120,19 @@ int tick_is_broadcast_device(struct cloc
- 	return (dev && tick_broadcast_device.evtdev == dev);
- }
- 
-+int tick_broadcast_update_freq(struct clock_event_device *dev, u32 freq)
-+{
-+	int ret = -ENODEV;
-+
-+	if (tick_is_broadcast_device(dev)) {
-+		raw_spin_lock(&tick_broadcast_lock);
-+		ret = __clockevents_update_freq(dev, freq);
-+		raw_spin_unlock(&tick_broadcast_lock);
-+	}
-+	return ret;
-+}
-+
-+
- static void err_broadcast(const struct cpumask *mask)
- {
- 	pr_crit_once("Failed to broadcast timer tick. Some CPUs may be unresponsive.\n");
-@@ -272,12 +285,8 @@ static void tick_do_broadcast(struct cpu
-  */
- static void tick_do_periodic_broadcast(void)
- {
--	raw_spin_lock(&tick_broadcast_lock);
--
- 	cpumask_and(tmpmask, cpu_online_mask, tick_broadcast_mask);
- 	tick_do_broadcast(tmpmask);
--
--	raw_spin_unlock(&tick_broadcast_lock);
- }
- 
- /*
-@@ -287,13 +296,15 @@ static void tick_handle_periodic_broadca
- {
- 	ktime_t next;
- 
-+	raw_spin_lock(&tick_broadcast_lock);
-+
- 	tick_do_periodic_broadcast();
- 
- 	/*
- 	 * The device is in periodic mode. No reprogramming necessary:
- 	 */
- 	if (dev->mode == CLOCK_EVT_MODE_PERIODIC)
--		return;
-+		goto unlock;
- 
- 	/*
- 	 * Setup the next period for devices, which do not have
-@@ -306,9 +317,11 @@ static void tick_handle_periodic_broadca
- 		next = ktime_add(next, tick_period);
- 
- 		if (!clockevents_program_event(dev, next, false))
--			return;
-+			goto unlock;
- 		tick_do_periodic_broadcast();
- 	}
-+unlock:
-+	raw_spin_unlock(&tick_broadcast_lock);
- }
- 
- /*
-Index: linux-2.6/kernel/time/tick-internal.h
-===================================================================
---- linux-2.6.orig/kernel/time/tick-internal.h
-+++ linux-2.6/kernel/time/tick-internal.h
-@@ -111,6 +111,7 @@ extern int tick_resume_broadcast(void);
- extern void tick_broadcast_init(void);
- extern void
- tick_set_periodic_handler(struct clock_event_device *dev, int broadcast);
-+int tick_broadcast_update_freq(struct clock_event_device *dev, u32 freq);
- 
- #else /* !BROADCAST */
- 
-@@ -133,6 +134,8 @@ static inline void tick_shutdown_broadca
- static inline void tick_suspend_broadcast(void) { }
- static inline int tick_resume_broadcast(void) { return 0; }
- static inline void tick_broadcast_init(void) { }
-+static inline int tick_broadcast_update_freq(struct clock_event_device *dev,
-+					     u32 freq) { return -ENODEV; }
- 
- /*
-  * Set the periodic handler in non broadcast mode
-@@ -154,4 +157,5 @@ static inline int tick_device_is_functio
- 
- #endif
- 
-+int __clockevents_update_freq(struct clock_event_device *dev, u32 freq);
- extern void do_timer(unsigned long ticks);
-
---8323329-1719244586-1385665631=:30673--
+greg k-h
