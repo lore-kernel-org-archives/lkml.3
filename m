@@ -1,155 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759234Ab3K1LgF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 06:36:05 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:42542 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759212Ab3K1LgB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 06:36:01 -0500
-X-AuditID: cbfee61b-b7f166d000007a34-5a-52972aa00102
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH v2] cpufreq: exynos: Convert exynos-cpufreq to platform driver
-Date: Thu, 28 Nov 2013 12:35:47 +0100
-Message-id: <1385638547-2974-1-git-send-email-l.majewski@samsung.com>
-X-Mailer: git-send-email 1.7.10
-In-reply-to: <1381939238-30398-1-git-send-email-t.figa@samsung.com>
-References: <1381939238-30398-1-git-send-email-t.figa@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNLMWRmVeSWpSXmKPExsVy+t9jAd0FWtODDF6ckrPYOGM9q8XTph/s
-	FpcXXmK1ONv0ht3izSNuizcPNzNaXN41h83ic+8RRoszp4GSJ//0Mlqsn/GaxWLjVw8HHo87
-	1/aweayb9pbZY8vVdhaPvi2rGD0+b5ILYI3isklJzcksSy3St0vgyrh/+yVLwQaZitZf91ka
-	GBdKdDFyckgImEjMXfyJBcIWk7hwbz1bFyMXh5DAIkaJYz3PWCCcLiaJi1eWgVWxCehJfL77
-	lAnEFhEIlTg69Ss7SBGzwG5miRXf94AlhAX8JC6tesAMYrMIqEp8uj6BHcTmFXCV2Hh+GyPE
-	OnmJp/f7gNZxcHAKOEu8WawAEhYScJKYv3k96wRG3gWMDKsYRVMLkguKk9JzjfSKE3OLS/PS
-	9ZLzczcxgoPwmfQOxlUNFocYBTgYlXh4JXSmBQmxJpYVV+YeYpTgYFYS4XVRnx4kxJuSWFmV
-	WpQfX1Sak1p8iFGag0VJnPdgq3WgkEB6YklqdmpqQWoRTJaJg1OqgTH58T/5z9xsP4V09KWu
-	BhR2vGZ4YmrC1VURlFAjE1N8ZeoeBv9foT0NiluVVGf+F+87lf8gq5AvyWDl49PFRxS+WZmv
-	Pnc0WF2I7fq74N8st1SLbbquM/xcfm1uxt1tyekLDxcs/8uUVDqDNeHtyhtcjalS0dLvq/m8
-	pr4usNfJfDk3/lWYiBJLcUaioRZzUXEiALN6JEo+AgAA
+	id S1759271Ab3K1Lgv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 06:36:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8538 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759066Ab3K1Let (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 06:34:49 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
+Subject: [PATCH 24/29] perf tools: Add build and install plugins targets
+Date: Thu, 28 Nov 2013 12:33:23 +0100
+Message-Id: <1385638408-23519-25-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1385638408-23519-1-git-send-email-jolsa@redhat.com>
+References: <1385638408-23519-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To make the driver multiplatform-friendly, unconditional initialization
-in an initcall is replaced with a platform driver probed only if
-respective platform device is registered.
+Adding 'plugins' target along with the libtraceevent.a,
+so plugins are built together with traceevent library.
 
-Tested at: Exynos4210 (TRATS) and Exynos4412 (TRATS2)
+Adding 'install-traceevent-plugins' Makefile install target,
+instructing perf to install plugins into:
+  $(HOME)/.traceevent/plugins
+    - if installed localy under $HOME
+  $(DESTDIR)/$(prefix)/$(libdir)/traceevent/plugins
+    - if installed globally
 
-Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Examples:
+  $ make install
+  ...
+  $ find ~/.traceevent/plugins/
+  /home/jolsa/.traceevent/plugins/
+  /home/jolsa/.traceevent/plugins/plugin_mac80211.so
+  /home/jolsa/.traceevent/plugins/plugin_kvm.so
+  /home/jolsa/.traceevent/plugins/plugin_scsi.so
+  /home/jolsa/.traceevent/plugins/plugin_sched_switch.so
+  /home/jolsa/.traceevent/plugins/plugin_xen.so
+  /home/jolsa/.traceevent/plugins/plugin_cfg80211.so
+  /home/jolsa/.traceevent/plugins/plugin_function.so
+  /home/jolsa/.traceevent/plugins/plugin_kmem.so
+  /home/jolsa/.traceevent/plugins/plugin_hrtimer.so
+  /home/jolsa/.traceevent/plugins/plugin_jbd2.so
 
+  $ sudo make install DESTDIR=/opt/perf/
+  ...
+  $ find /opt/perf/lib64/traceevent/plugins/
+  /opt/perf/lib64/traceevent/plugins/
+  /opt/perf/lib64/traceevent/plugins/plugin_kvm.so
+  /opt/perf/lib64/traceevent/plugins/plugin_scsi.so
+  /opt/perf/lib64/traceevent/plugins/plugin_mac80211.so
+  /opt/perf/lib64/traceevent/plugins/plugin_hrtimer.so
+  /opt/perf/lib64/traceevent/plugins/plugin_kmem.so
+  /opt/perf/lib64/traceevent/plugins/plugin_jbd2.so
+  /opt/perf/lib64/traceevent/plugins/plugin_sched_switch.so
+  /opt/perf/lib64/traceevent/plugins/plugin_function.so
+  /opt/perf/lib64/traceevent/plugins/plugin_cfg80211.so
+  /opt/perf/lib64/traceevent/plugins/plugin_xen.so
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Ahern <dsahern@gmail.com>
 ---
-Changes for v2:
-- Proper definition of exynos_cpufreq_init() function to squash warnings
+ tools/perf/Makefile.perf   | 17 ++++++++++++-----
+ tools/perf/config/Makefile |  8 ++++++++
+ 2 files changed, 20 insertions(+), 5 deletions(-)
 
- arch/arm/mach-exynos/common.c          |    5 +++++
- arch/arm/mach-exynos/common.h          |    1 +
- arch/arm/mach-exynos/mach-exynos4-dt.c |    1 +
- arch/arm/mach-exynos/mach-exynos5-dt.c |    1 +
- drivers/cpufreq/exynos-cpufreq.c       |   13 +++++++++++--
- 5 files changed, 19 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
-index 61d2906..1510436 100644
---- a/arch/arm/mach-exynos/common.c
-+++ b/arch/arm/mach-exynos/common.c
-@@ -303,6 +303,11 @@ void __init exynos_cpuidle_init(void)
- 	platform_device_register(&exynos_cpuidle);
- }
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index e416ccc..abc7ac3 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -105,7 +105,7 @@ ifeq ($(config),1)
+ include config/Makefile
+ endif
  
-+void __init exynos_cpufreq_init(void)
-+{
-+	platform_device_register_simple("exynos-cpufreq", -1, NULL, 0);
-+}
+-export prefix bindir sharedir sysconfdir
++export prefix bindir sharedir sysconfdir DESTDIR
+ 
+ # sparse is architecture-neutral, which means that we need to tell it
+ # explicitly what architecture to check for. Fix this up for yours..
+@@ -710,13 +710,20 @@ $(LIB_FILE): $(LIB_OBJS)
+ # libtraceevent.a
+ TE_SOURCES = $(wildcard $(TRACE_EVENT_DIR)*.[ch])
+ 
+-$(LIBTRACEEVENT): $(TE_SOURCES)
+-	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) CFLAGS="-g -Wall $(EXTRA_CFLAGS)" libtraceevent.a
++LIBTRACEEVENT_FLAGS  = $(QUIET_SUBDIR1) O=$(OUTPUT)
++LIBTRACEEVENT_FLAGS += CFLAGS="-g -Wall $(EXTRA_CFLAGS)"
++LIBTRACEEVENT_FLAGS += plugin_dir=$(plugindir_SQ)
 +
- void __init exynos_init_late(void)
- {
- 	if (of_machine_is_compatible("samsung,exynos5440"))
-diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
-index ff9b6a9..3f03334 100644
---- a/arch/arm/mach-exynos/common.h
-+++ b/arch/arm/mach-exynos/common.h
-@@ -22,6 +22,7 @@ void exynos_init_io(void);
- void exynos4_restart(enum reboot_mode mode, const char *cmd);
- void exynos5_restart(enum reboot_mode mode, const char *cmd);
- void exynos_cpuidle_init(void);
-+void exynos_cpufreq_init(void);
- void exynos_init_late(void);
++$(LIBTRACEEVENT): $(TE_SOURCES) $(OUTPUT)PERF-CFLAGS
++	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) libtraceevent.a plugins
  
- void exynos_firmware_init(void);
-diff --git a/arch/arm/mach-exynos/mach-exynos4-dt.c b/arch/arm/mach-exynos/mach-exynos4-dt.c
-index 4603e6b..d3e54b7 100644
---- a/arch/arm/mach-exynos/mach-exynos4-dt.c
-+++ b/arch/arm/mach-exynos/mach-exynos4-dt.c
-@@ -22,6 +22,7 @@
- static void __init exynos4_dt_machine_init(void)
- {
- 	exynos_cpuidle_init();
-+	exynos_cpufreq_init();
+ $(LIBTRACEEVENT)-clean:
+ 	$(call QUIET_CLEAN, libtraceevent)
+ 	@$(MAKE) -C $(TRACE_EVENT_DIR) O=$(OUTPUT) clean >/dev/null
  
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
- }
-diff --git a/arch/arm/mach-exynos/mach-exynos5-dt.c b/arch/arm/mach-exynos/mach-exynos5-dt.c
-index 1fe075a..602c5d7 100644
---- a/arch/arm/mach-exynos/mach-exynos5-dt.c
-+++ b/arch/arm/mach-exynos/mach-exynos5-dt.c
-@@ -44,6 +44,7 @@ static void __init exynos5_dt_machine_init(void)
- 	}
- 
- 	exynos_cpuidle_init();
-+	exynos_cpufreq_init();
- 
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
- }
-diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
-index f3c2287..e238c46 100644
---- a/drivers/cpufreq/exynos-cpufreq.c
-+++ b/drivers/cpufreq/exynos-cpufreq.c
-@@ -17,6 +17,7 @@
- #include <linux/regulator/consumer.h>
- #include <linux/cpufreq.h>
- #include <linux/suspend.h>
-+#include <linux/platform_device.h>
- 
- #include <plat/cpu.h>
- 
-@@ -232,7 +233,7 @@ static struct cpufreq_driver exynos_driver = {
- #endif
- };
- 
--static int __init exynos_cpufreq_init(void)
-+static int exynos_cpufreq_init(struct platform_device *pdev)
- {
- 	int ret = -EINVAL;
- 
-@@ -281,4 +282,12 @@ err_vdd_arm:
- 	kfree(exynos_info);
- 	return -EINVAL;
- }
--late_initcall(exynos_cpufreq_init);
++install-traceevent-plugins:
++	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) install_plugins
 +
-+static struct platform_driver exynos_cpufreq_platdrv = {
-+	.driver = {
-+		.name	= "exynos-cpufreq",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe = exynos_cpufreq_init,
-+};
-+module_platform_driver(exynos_cpufreq_platdrv);
+ LIBLK_SOURCES = $(wildcard $(LK_PATH)*.[ch])
+ 
+ # if subdir is set, we've been called from above so target has been built
+@@ -785,7 +792,7 @@ cscope:
+ 
+ ### Detect prefix changes
+ TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):\
+-             $(bindir_SQ):$(perfexecdir_SQ):$(template_dir_SQ):$(prefix_SQ)
++             $(bindir_SQ):$(perfexecdir_SQ):$(template_dir_SQ):$(prefix_SQ):$(plugindir_SQ)
+ 
+ $(OUTPUT)PERF-CFLAGS: .FORCE-PERF-CFLAGS
+ 	@FLAGS='$(TRACK_CFLAGS)'; \
+@@ -849,7 +856,7 @@ endif
+ 		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests/attr'; \
+ 		$(INSTALL) tests/attr/* '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests/attr'
+ 
+-install: install-bin try-install-man
++install: install-bin try-install-man install-traceevent-plugins
+ 
+ install-python_ext:
+ 	$(PYTHON_WORD) util/setup.py --quiet install --root='/$(DESTDIR_SQ)'
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 38f388c2..b7756f0 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -597,3 +597,11 @@ else
+ perfexec_instdir = $(prefix)/$(perfexecdir)
+ endif
+ perfexec_instdir_SQ = $(subst ','\'',$(perfexec_instdir))
++
++# If we install to $(HOME) we keep the traceevent default:
++# $(HOME)/.traceevent/plugins
++# Otherwise we install plugins into the global $(libdir).
++ifdef DESTDIR
++plugindir=$(libdir)/traceevent/plugins
++plugindir_SQ= $(subst ','\'',$(prefix)/$(plugindir))
++endif
 -- 
-1.7.10.4
+1.8.3.1
 
