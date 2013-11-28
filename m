@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758950Ab3K1QTl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 11:19:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12448 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754705Ab3K1QTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 11:19:38 -0500
-Date: Thu, 28 Nov 2013 17:20:25 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Tejun Heo <htejun@gmail.com>, zhang.yi20@zte.com.cn,
-        lkml <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH]: exec: avoid propagating PF_NO_SETAFFINITY into
-	userspace child
-Message-ID: <20131128162025.GA14937@redhat.com>
-References: <20131127183117.GB13098@mtj.dyndns.org> <20131128091358.GH10022@twins.programming.kicks-ass.net> <20131128114542.GA3826@redhat.com> <20131128121748.GN10022@twins.programming.kicks-ass.net> <20131128133152.GA821@redhat.com> <20131128133947.GR10022@twins.programming.kicks-ass.net> <20131128141329.GB3925@htj.dyndns.org> <20131128143857.GU10022@twins.programming.kicks-ass.net> <20131128153443.GB11956@redhat.com> <20131128154035.GE10022@twins.programming.kicks-ass.net>
+	id S1758719Ab3K1QY4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 11:24:56 -0500
+Received: from forward1m.mail.yandex.net ([37.140.138.1]:39149 "EHLO
+	forward1m.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332Ab3K1QYv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 11:24:51 -0500
+From: =?koi8-r?B?8tXT1MHGwSDk1sHN1dLByM3F1M/X?= <drustafa@yandex.ru>
+To: Jingoo Han <jg1.han@samsung.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <005801ceebf3$f3695570$da3c0050$%han@samsung.com>
+References: <004e01ceebec$52ed0f80$f8c72e80$%han@samsung.com> <005801ceebf3$f3695570$da3c0050$%han@samsung.com>
+Subject: Re: [PATCH] w1: matrox: use DEFINE_PCI_DEVICE_TABLE macro
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131128154035.GE10022@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Message-Id: <22321385655887@web21m.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Thu, 28 Nov 2013 20:24:47 +0400
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28, Peter Zijlstra wrote:
+Hi
+
+28.11.2013, 08:40, "Jingoo Han" <jg1.han@samsung.com>:
+
+> "Yeah, and it's a horrid macro that deserves to be removed, please don't
+> use it in more places.
 >
-> On Thu, Nov 28, 2013 at 04:34:43PM +0100, Oleg Nesterov wrote:
-> > But note that in the longer term we might want even more. We probably
-> > want a non-daemonized thread controlled by the user-space. And even
-> > more, this thread should be per-namespace (this needs a lot more
-> > discussion).
+> Actually, if you could just remove it, that would be best, sorry, I'm
+> not going to take these patches."
 >
-> Which namespace? PID namespace I presume where we can have a 'new' init
-> task and everything.
->
-> I'm not sure, are any of these things (workqueues, userspace helpers)
-> pid namespace aware? If not it doesn't seem to make sense to expose this
-> to nested PID namespaces and would be something special for the root
-> namespace.
+> So, I will send the patch to remove 'DEFINE_PCI_DEVICE_TABLE' instead.
+> Sorry for annoying. :-)
 
-Not sure I understand correctly. But yes, of course, it is not that
-call_usermodehelper() should be namespace-friendly "unconditionally".
-
-We need another API (although perhaps we can simply add UMH_NAMESPACE
-flag, this doesn't matter).
-
-Just for example, the piped core handler. Currently it is hardly useful
-in containers.
-
-> > But whataver we do later, I believe that the patch from Zhang should
-> > be applied now.
->
-> Probably, although with a much adjusted changelog.
-
-Zhang, please make v3 ;)
-
-Oleg.
-
+No problem :)
+Thanks for noticing this issue
