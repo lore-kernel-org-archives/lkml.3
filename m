@@ -1,109 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966Ab3K1V1H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 16:27:07 -0500
-Received: from order.stressinduktion.org ([87.106.68.36]:45161 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718Ab3K1V1C (ORCPT
+	id S1751443Ab3K1VcL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 16:32:11 -0500
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:36672 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab3K1VcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 16:27:02 -0500
-Date: Thu, 28 Nov 2013 22:27:00 +0100
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: jongman.heo@samsung.com, David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] inet: further fixes of possible seqlock deadlocks
-Message-ID: <20131128212700.GF24171@order.stressinduktion.org>
-Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
-	jongman.heo@samsung.com, David Miller <davem@davemloft.net>,
-	"netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <13025162.118881385612276530.JavaMail.weblogic@epv6ml01> <1385659390.5352.20.camel@edumazet-glaptop2.roam.corp.google.com> <1385661082.5352.34.camel@edumazet-glaptop2.roam.corp.google.com> <20131128192231.GE24171@order.stressinduktion.org> <1385672502.5352.38.camel@edumazet-glaptop2.roam.corp.google.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Thu, 28 Nov 2013 16:32:07 -0500
+Date: Thu, 28 Nov 2013 22:32:00 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: r65073@freescale.com, s.hauer@pengutronix.de, swarren@wwwdotorg.org,
+        t.figa@samsung.com, grant.likely@linaro.org, linux@arm.linux.org.uk,
+        rob@landley.net, ian.campbell@citrix.com, mark.rutland@arm.com,
+        pawel.moll@arm.com, rob.herring@calxeda.com,
+        linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCHv6 4/4] Documentation: Add device tree bindings for
+ Freescale FTM PWM.
+Message-ID: <20131128213159.GE14689@mithrandir>
+References: <1384220218-12716-1-git-send-email-Li.Xiubo@freescale.com>
+ <1384220218-12716-5-git-send-email-Li.Xiubo@freescale.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SNIs70sCzqvszXB4"
 Content-Disposition: inline
-In-Reply-To: <1385672502.5352.38.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1384220218-12716-5-git-send-email-Li.Xiubo@freescale.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 01:01:42PM -0800, Eric Dumazet wrote:
-> On Thu, 2013-11-28 at 20:22 +0100, Hannes Frederic Sowa wrote:
-> > This fixes more incorrect uses of *_STATS_BH in process context.
-> > 
-> > Cc: Eric Dumazet <edumazet@google.com>
-> > Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-> > ---
-> >  net/ipv4/udp.c        | 8 ++++----
-> >  net/ipv6/ip6_output.c | 8 ++++----
-> >  net/ipv6/ping.c       | 4 ++--
-> >  3 files changed, 10 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-> > index 44e3884..f5cc018 100644
-> > --- a/net/ipv4/udp.c
-> > +++ b/net/ipv4/udp.c
-> > @@ -1160,10 +1160,10 @@ static unsigned int first_packet_length(struct sock *sk)
-> >  	spin_lock_bh(&rcvq->lock);
-> 
-> Here we block BH, because of spin_lock_bh()
-> 
-> >  	while ((skb = skb_peek(rcvq)) != NULL &&
-> >  		udp_lib_checksum_complete(skb)) {
-> > -		UDP_INC_STATS_BH(sock_net(sk), UDP_MIB_CSUMERRORS,
-> > -				 IS_UDPLITE(sk));
-> > -		UDP_INC_STATS_BH(sock_net(sk), UDP_MIB_INERRORS,
-> > -				 IS_UDPLITE(sk));
-> 
-> So this is the right thing, this change is not needed.
 
-Oh yes, I was mechanically going through the a grep of _BH\( in ipv4
-and ipv6 and missed that.
+--SNIs70sCzqvszXB4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > +		UDP_INC_STATS_USER(sock_net(sk), UDP_MIB_CSUMERRORS,
-> > +				   IS_UDPLITE(sk));
-> > +		UDP_INC_STATS_USER(sock_net(sk), UDP_MIB_INERRORS,
-> > +				   IS_UDPLITE(sk));
-> >  		atomic_inc(&sk->sk_drops);
-> >  		__skb_unlink(skb, rcvq);
-> >  		__skb_queue_tail(&list_kill, skb);
-> > diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-> > index 59df872..e05cf0a 100644
-> > --- a/net/ipv6/ip6_output.c
-> > +++ b/j
-> > @@ -116,8 +116,8 @@ static int ip6_finish_output2(struct sk_buff *skb)
-> >  	}
-> >  	rcu_read_unlock_bh();
-> >  
-> > -	IP6_INC_STATS_BH(dev_net(dst->dev),
-> > -			 ip6_dst_idev(dst), IPSTATS_MIB_OUTNOROUTES);
-> > +	IP6_INC_STATS(dev_net(dst->dev),
-> > +		      ip6_dst_idev(dst), IPSTATS_MIB_OUTNOROUTES);
-> 
-> This is ipv6, not inet changes ;)
+On Tue, Nov 12, 2013 at 09:36:58AM +0800, Xiubo Li wrote:
+> This adds the Document for Freescale FTM PWM driver under
 
-I always considered inet both for ipv4+ipv6, otherwise I would use ipv4
-or ipv6 as patch prefix.
+s/Document/binding documentation/?
 
-> 
-> >  	kfree_skb(skb);
-> >  	return -EINVAL;
-> >  }
-> > @@ -1524,8 +1524,8 @@ int ip6_push_pending_frames(struct sock *sk)
-> >  	if (proto == IPPROTO_ICMPV6) {
-> >  		struct inet6_dev *idev = ip6_dst_idev(skb_dst(skb));
-> >  
-> > -		ICMP6MSGOUT_INC_STATS_BH(net, idev, icmp6_hdr(skb)->icmp6_type);
-> > -		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTMSGS);
-> > +		ICMP6MSGOUT_INC_STATS(net, idev, icmp6_hdr(skb)->icmp6_type);
-> > +		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTMSGS);
-> 
-> I am not sure we use a seqlock for ICMP stats.
-> 
-> seqlocks were used for 64bit IP stats
+> Documentation/devicetree/bindings/pwm/.
+>=20
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> Reviewed-by: Sascha Hauer <s.hauer@pengutronix.de>
+> Acked-by: Kumar Gala <galak@codeaurora.org>
+> ---
+>  .../devicetree/bindings/pwm/pwm-fsl-ftm.txt        | 29 ++++++++++++++++=
+++++++
+>  1 file changed, 29 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
+>=20
+> diff --git a/Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt b/Docu=
+mentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
+> new file mode 100644
+> index 0000000..5c1cd2b
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
+> @@ -0,0 +1,29 @@
+> +Freescale FlexTimer Module(FTM) PWM controller
 
-True, atomic longs get used here in both cases.
+I think it's customary to have a space before the opening parenthesis.
 
-Will update the patch. Thanks, Eric!
+> +Required properties:
+> +- compatible: Should be "fsl,vf610-ftm-pwm"
+> +- reg: Physical base address and length of the controller's registers
+> +- #pwm-cells: Should be 3. See pwm.txt in this directory for a descripti=
+on of
+> +  the cells format.
+> +- clock-names : Should includes the following module clock source entrie=
+s:
 
+s/includes/include/
+
+> +    "ftm0" (module clock),
+> +    "ftm0_counter" (counter clock),
+> +- clocks : Must contain a clock specifier for each entry in clock-names,
+> +  See clock/clock-bindings.txt for details of the property values.
+
+Note that the order is significant here, at least from the way the
+driver currently implements this. You can probably make this more
+generic in the driver by using of_property_match_string() on the
+clock-names property to find the index of "ftm0_counter" and pass that
+index to the of_parse_phandle_with_args() function to cope with the
+situation where the device tree has the clocks in a different order.
+
+> +Example:
+> +
+> +pwm0: pwm@40038000 {
+> +		compatible =3D "fsl,vf610-ftm-pwm";
+> +		reg =3D <0x40038000 0x1000>;
+> +		#pwm-cells =3D <3>;
+> +		clock-names =3D "ftm0", "ftm0_counter;
+
+There's a missing " at the end here.
+
+Thierry
+
+--SNIs70sCzqvszXB4
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSl7ZPAAoJEN0jrNd/PrOhOc8P/0ka8dZRYnomZdxLpWZzvAm/
+7DpCsaaWm9vs+RO9KPrlpUW59I4gFHZwGQFHoxN3LQn08M/0wUzzQW2Xfd+BjeM1
+3PxpxIQNsrVtHUF8XRvHCXUH1xjN8+8LBL51UzQ5qWhc4auf0QKljL7aagYEuAin
+qS4oXBOfBhMYZlxknY28CpBo5kk/VuCG5yuafoNNl8VOfPJtyGBWGL6HMlC2eTKY
+S/EJRM7j5pnWoUw9Fo+LkooVHJlbGZMG84uTGG9H5SOWyoLDwC0Ndxk2QoiBqQqt
+4dCu4E8k309ftStxd6U4ttcmltkwu0ozqASdfRj/ULBo42kkyzl+o0fb04yTx6vJ
+gPInfHpeR0Yg6EIPLZ3hAuwGC+VCXd3LngAX3hi/E7zR6IrU0524Sr7ULyZzVbFg
+pG9LHzEjFL5Eg7uaUjvpp8JVg5sMqj7IyoQcx80nifQMbIcGPhrnphYKyKmbaYrP
+VVaoRjSwYBXg/VbwVyhklY5YkBSMAkg9DgDuTzvb5UKn/v5YwYEcmI7oSa9fs/UQ
+yN++1pAcGy13fuqBMx/PonYxNbUMVt0xeL3YQ4LRBUD21oBO+1ZIgjsXPuNocVtM
+LAk9AsnvwxkaPQIc57a8mnS48dLV5Gx+wFoUXmX1jgiprvQp2WCA8vcD44IMkVBU
+R+tpD+A3T62Exxl67Je9
+=mPzy
+-----END PGP SIGNATURE-----
+
+--SNIs70sCzqvszXB4--
