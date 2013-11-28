@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758707Ab3K1MpV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 07:45:21 -0500
-Received: from 13.mo6.mail-out.ovh.net ([188.165.56.124]:50715 "EHLO
+	id S1758823Ab3K1MqB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 07:46:01 -0500
+Received: from 3.mo6.mail-out.ovh.net ([178.33.253.26]:40615 "EHLO
 	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751332Ab3K1MpP (ORCPT
+	with ESMTP id S1751200Ab3K1Mp6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 07:45:15 -0500
+	Thu, 28 Nov 2013 07:45:58 -0500
 From: Boris BREZILLON <b.brezillon@overkiz.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Russell King <linux@arm.linux.org.uk>,
@@ -15,11 +15,13 @@ To: Nicolas Ferre <nicolas.ferre@atmel.com>,
 Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
-Subject: [PATCH v6 00/16] ARM: at91: move to common clk framework
-Date: Thu, 28 Nov 2013 13:36:24 +0100
-Message-Id: <1385642184-6467-1-git-send-email-b.brezillon@overkiz.com>
+Subject: [PATCH v6 08/16] clk: at91: add PMC system clocks
+Date: Thu, 28 Nov 2013 13:45:33 +0100
+Message-Id: <1385642733-6941-1-git-send-email-b.brezillon@overkiz.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 4096023862454024300
+In-Reply-To: <1385642184-6467-1-git-send-email-b.brezillon@overkiz.com>
+References: <1385642184-6467-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 4250272148901296236
 X-Ovh-Remote: 80.245.18.66 ()
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
@@ -33,158 +35,201 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch adds new at91 system clock implementation using common clk
+framework.
 
-This patch series is the 5th version of the at91 clk implementations
-using the Common Clk Framework.
+Some peripherals need to enable a "system" clock in order to work properly.
+Each system clock is given an id based on the bit position in SCER/SCDR
+registers.
 
-Most of the clock provided by the PMC (Power Management Controller) are
-implemented :
-- main clock (main oscillator)
-- pll clocks
-- master clock
-- programmable clocks
-- utmi clock
-- peripheral clocks
-- system clocks
-
-Actually some clk drivers are missing (slow clk, main clk and processor
-clk), and some drivers only implement a subset of the hardware capabilities
-(master clk rate change is missing).
-But this series implements all the already available clks, and I will hopefully
-add missing features in a near future.
-
-This implementation is only compatible with device tree definition.
-The goal is to define the whole clock tree using the device tree.
-
-Just a note to let you know these bindings are currently unstable and might
-change in the future.
-
-
-Best Regards,
-Boris
-
-Changes since v5:
- - remove peripheral divisors macros from dt binding include file
- - remove file path from comment blocks
- - replace pll and utmi disable function by unprepare function to
-   avoid issue when disabling and reenabling a clk
- - fix programmable clk interrupt retrieval
- - fix OF_CLK_DECLARE names (xxx_clk_main -> xxx_clk_pmc)
- - add missing comma in at91rm9200 main clk dt declaration
- - fix num_parents check in smd clk driver
-
-Changes since v4:
- - rework dt bindings:
-   * replace "atmel,clk-id" property by the standard "reg" property
-   * reference system, peripheral and programmable clks using the direct
-     clk node instead of the parent node plus a clk id
- - provide a new helper function (of_at91_get_clk_range) to retrieve a clk
-   range from the device tree
-
-Changes since v3:
- - simplify master clk implementation (drop set_rate/parent support)
- - fix bug in set_rate function of pll driver
- - fix coding style issues
- - define macros and constants where needed
- - remove peripheral id macro references
- - remove sam9g35 specific handling (sam9g35 = sam9x5)
- - rework main clk prepare function to handle automatic rate calculation
-
-Changes since v2:
- - fix several bugs in clk implementations
- - drop non-dt boards support
- - split the series to ease review and tests:
-   * 1 patch series for new clk implementations (this series)
-   * 1 patch series to move each at91 SoC to common clk framework (coming soon)
- - modify dt-bindings (add atmel,clk- prefix to atmel specific properties)
- - add clk macros for dt-bindings
- - add pmc framework (helper function to access pmc registers)
- - add interrupt support to enable passive wait in clk_prepare functions
-
-Changes since v1:
- - fix bugs in pll, programmable and system clock implementations
-   (wrong bit position).
- - add usb clock configuration support (ohci and udc drivers +
-   clk_lookup for non dt boards)
- - rework of the system clock interfaces (no need to define a parent clock,
-   system clock is a gate with no rate info)
- - change system, peripheral and programmable clk dt bindings (1 master node
-   and multiple child nodes each defining a system/peripheral or prog clock)
- - fix bugs in sama5 dt definition
-
-Boris BREZILLON (16):
-  ARM: at91: move at91_pmc.h to include/linux/clk/at91_pmc.h
-  ARM: at91: add Kconfig options for common clk support
-  clk: at91: add PMC base support
-  clk: at91: add PMC macro file for dt definitions
-  clk: at91: add PMC main clock
-  clk: at91: add PMC pll clocks
-  clk: at91: add PMC master clock
-  clk: at91: add PMC system clocks
-  clk: at91: add PMC peripheral clocks
-  clk: at91: add PMC programmable clocks
-  clk: at91: add PMC utmi clock
-  clk: at91: add PMC usb clock
-  clk: at91: add PMC smd clock
-  dt: binding: add at91 clks dt bindings documentation
-  ARM: at91: move pit timer to common clk framework
-  ARM: at91: add new compatible strings for pmc driver
-
- .../devicetree/bindings/clock/at91-clock.txt       |  339 +++++++++++++
- arch/arm/mach-at91/Kconfig                         |   44 ++
- arch/arm/mach-at91/Kconfig.non_dt                  |    6 +
- arch/arm/mach-at91/Makefile                        |    2 +-
- arch/arm/mach-at91/at91rm9200.c                    |    2 +-
- arch/arm/mach-at91/at91sam9260.c                   |    2 +-
- arch/arm/mach-at91/at91sam9261.c                   |    2 +-
- arch/arm/mach-at91/at91sam9263.c                   |    2 +-
- arch/arm/mach-at91/at91sam926x_time.c              |   14 +-
- arch/arm/mach-at91/at91sam9g45.c                   |    2 +-
- arch/arm/mach-at91/at91sam9n12.c                   |    2 +-
- arch/arm/mach-at91/at91sam9rl.c                    |    2 +-
- arch/arm/mach-at91/at91sam9x5.c                    |    2 +-
- arch/arm/mach-at91/clock.c                         |    7 +-
- arch/arm/mach-at91/generic.h                       |    3 +-
- arch/arm/mach-at91/pm.c                            |    2 +-
- arch/arm/mach-at91/pm_slowclock.S                  |    2 +-
- arch/arm/mach-at91/sama5d3.c                       |    2 +-
- arch/arm/mach-at91/setup.c                         |    8 +-
- drivers/clk/Makefile                               |    1 +
- drivers/clk/at91/Makefile                          |   12 +
- drivers/clk/at91/clk-main.c                        |  187 +++++++
- drivers/clk/at91/clk-master.c                      |  270 ++++++++++
- drivers/clk/at91/clk-peripheral.c                  |  410 +++++++++++++++
- drivers/clk/at91/clk-pll.c                         |  531 ++++++++++++++++++++
- drivers/clk/at91/clk-plldiv.c                      |  135 +++++
- drivers/clk/at91/clk-programmable.c                |  366 ++++++++++++++
- drivers/clk/at91/clk-smd.c                         |  171 +++++++
- drivers/clk/at91/clk-system.c                      |  135 +++++
- drivers/clk/at91/clk-usb.c                         |  398 +++++++++++++++
- drivers/clk/at91/clk-utmi.c                        |  159 ++++++
- drivers/clk/at91/pmc.c                             |  397 +++++++++++++++
- drivers/clk/at91/pmc.h                             |  116 +++++
- drivers/usb/gadget/atmel_usba_udc.c                |    2 +-
- include/dt-bindings/clk/at91.h                     |   22 +
- .../include/mach => include/linux/clk}/at91_pmc.h  |    4 +-
- 36 files changed, 3741 insertions(+), 20 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/at91-clock.txt
- create mode 100644 drivers/clk/at91/Makefile
- create mode 100644 drivers/clk/at91/clk-main.c
- create mode 100644 drivers/clk/at91/clk-master.c
- create mode 100644 drivers/clk/at91/clk-peripheral.c
- create mode 100644 drivers/clk/at91/clk-pll.c
- create mode 100644 drivers/clk/at91/clk-plldiv.c
- create mode 100644 drivers/clk/at91/clk-programmable.c
- create mode 100644 drivers/clk/at91/clk-smd.c
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/clk/at91/Makefile     |    1 +
+ drivers/clk/at91/clk-system.c |  135 +++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/at91/pmc.c        |    5 ++
+ drivers/clk/at91/pmc.h        |    3 +
+ 4 files changed, 144 insertions(+)
  create mode 100644 drivers/clk/at91/clk-system.c
- create mode 100644 drivers/clk/at91/clk-usb.c
- create mode 100644 drivers/clk/at91/clk-utmi.c
- create mode 100644 drivers/clk/at91/pmc.c
- create mode 100644 drivers/clk/at91/pmc.h
- create mode 100644 include/dt-bindings/clk/at91.h
- rename {arch/arm/mach-at91/include/mach => include/linux/clk}/at91_pmc.h (98%)
 
+diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
+index e28fb2b..c2b7068 100644
+--- a/drivers/clk/at91/Makefile
++++ b/drivers/clk/at91/Makefile
+@@ -4,3 +4,4 @@
+ 
+ obj-y += pmc.o
+ obj-y += clk-main.o clk-pll.o clk-plldiv.o clk-master.o
++obj-y += clk-system.o
+diff --git a/drivers/clk/at91/clk-system.c b/drivers/clk/at91/clk-system.c
+new file mode 100644
+index 0000000..8f7c043
+--- /dev/null
++++ b/drivers/clk/at91/clk-system.c
+@@ -0,0 +1,135 @@
++/*
++ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ */
++
++#include <linux/clk-provider.h>
++#include <linux/clkdev.h>
++#include <linux/clk/at91_pmc.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/io.h>
++
++#include "pmc.h"
++
++#define SYSTEM_MAX_ID		31
++
++#define SYSTEM_MAX_NAME_SZ	32
++
++#define to_clk_system(hw) container_of(hw, struct clk_system, hw)
++struct clk_system {
++	struct clk_hw hw;
++	struct at91_pmc *pmc;
++	u8 id;
++};
++
++static int clk_system_enable(struct clk_hw *hw)
++{
++	struct clk_system *sys = to_clk_system(hw);
++	struct at91_pmc *pmc = sys->pmc;
++
++	pmc_write(pmc, AT91_PMC_SCER, 1 << sys->id);
++	return 0;
++}
++
++static void clk_system_disable(struct clk_hw *hw)
++{
++	struct clk_system *sys = to_clk_system(hw);
++	struct at91_pmc *pmc = sys->pmc;
++
++	pmc_write(pmc, AT91_PMC_SCDR, 1 << sys->id);
++}
++
++static int clk_system_is_enabled(struct clk_hw *hw)
++{
++	struct clk_system *sys = to_clk_system(hw);
++	struct at91_pmc *pmc = sys->pmc;
++
++	return !!(pmc_read(pmc, AT91_PMC_SCSR) & (1 << sys->id));
++}
++
++static const struct clk_ops system_ops = {
++	.enable = clk_system_enable,
++	.disable = clk_system_disable,
++	.is_enabled = clk_system_is_enabled,
++};
++
++static struct clk * __init
++at91_clk_register_system(struct at91_pmc *pmc, const char *name,
++			 const char *parent_name, u8 id)
++{
++	struct clk_system *sys;
++	struct clk *clk = NULL;
++	struct clk_init_data init;
++
++	if (!parent_name || id > SYSTEM_MAX_ID)
++		return ERR_PTR(-EINVAL);
++
++	sys = kzalloc(sizeof(*sys), GFP_KERNEL);
++	if (!sys)
++		return ERR_PTR(-ENOMEM);
++
++	init.name = name;
++	init.ops = &system_ops;
++	init.parent_names = &parent_name;
++	init.num_parents = 1;
++	/*
++	 * CLK_IGNORE_UNUSED is used to avoid ddrck switch off.
++	 * TODO : we should implement a driver supporting at91 ddr controller
++	 * (see drivers/memory) which would request and enable the ddrck clock.
++	 * When this is done we will be able to remove CLK_IGNORE_UNUSED flag.
++	 */
++	init.flags = CLK_IGNORE_UNUSED;
++
++	sys->id = id;
++	sys->hw.init = &init;
++	sys->pmc = pmc;
++
++	clk = clk_register(NULL, &sys->hw);
++	if (IS_ERR(clk))
++		kfree(sys);
++
++	return clk;
++}
++
++static void __init
++of_at91_clk_sys_setup(struct device_node *np, struct at91_pmc *pmc)
++{
++	int num;
++	u32 id;
++	struct clk *clk;
++	const char *name;
++	struct device_node *sysclknp;
++	const char *parent_name;
++
++	num = of_get_child_count(np);
++	if (num > (SYSTEM_MAX_ID + 1))
++		return;
++
++	for_each_child_of_node(np, sysclknp) {
++		if (of_property_read_u32(sysclknp, "reg", &id))
++			continue;
++
++		if (of_property_read_string(np, "clock-output-names", &name))
++			name = sysclknp->name;
++
++		parent_name = of_clk_get_parent_name(sysclknp, 0);
++
++		clk = at91_clk_register_system(pmc, name, parent_name, id);
++		if (IS_ERR(clk))
++			continue;
++
++		of_clk_add_provider(sysclknp, of_clk_src_simple_get, clk);
++	}
++}
++
++void __init of_at91rm9200_clk_sys_setup(struct device_node *np,
++					struct at91_pmc *pmc)
++{
++	of_at91_clk_sys_setup(np, pmc);
++}
+diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
+index a311cf3..a97554f 100644
+--- a/drivers/clk/at91/pmc.c
++++ b/drivers/clk/at91/pmc.c
+@@ -264,6 +264,11 @@ static const struct of_device_id pmc_clk_ids[] __initdata = {
+ 		.compatible = "atmel,at91sam9x5-clk-master",
+ 		.data = of_at91sam9x5_clk_master_setup,
+ 	},
++	/* System clocks */
++	{
++		.compatible = "atmel,at91rm9200-clk-system",
++		.data = of_at91rm9200_clk_sys_setup,
++	},
+ 	{ /*sentinel*/ }
+ };
+ 
+diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
+index be5c964..9c8a397 100644
+--- a/drivers/clk/at91/pmc.h
++++ b/drivers/clk/at91/pmc.h
+@@ -77,4 +77,7 @@ extern void __init of_at91rm9200_clk_master_setup(struct device_node *np,
+ extern void __init of_at91sam9x5_clk_master_setup(struct device_node *np,
+ 						  struct at91_pmc *pmc);
+ 
++extern void __init of_at91rm9200_clk_sys_setup(struct device_node *np,
++					       struct at91_pmc *pmc);
++
+ #endif /* __PMC_H_ */
 -- 
 1.7.9.5
 
