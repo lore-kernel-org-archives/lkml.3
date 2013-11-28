@@ -1,94 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751196Ab3K1FkW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 00:40:22 -0500
-Received: from smtprelay0209.hostedemail.com ([216.40.44.209]:59229 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751074Ab3K1FkR (ORCPT
+	id S1751317Ab3K1Fm0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 00:42:26 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:61159 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228Ab3K1FmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 00:40:17 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:45:355:379:541:599:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2194:2198:2199:2200:2393:2551:2553:2559:2562:2731:2828:3138:3139:3140:3141:3142:3353:3622:3653:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:5007:7652:7903:8604:8784:9108:9393:10004:10400:10848:11026:11232:11473:11658:11914:12043:12050:12114:12295:12296:12438:12517:12519:12663:12740:13161:13200:13229:13548,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: stamp60_1f446427a364a
-X-Filterd-Recvd-Size: 3035
-Message-ID: <1385617213.12210.5.camel@joe-AO722>
-Subject: Re: [PATCH 1/5] serial: 8250_pci: use DEFINE_PCI_DEVICE_TABLE macro
-From: Joe Perches <joe@perches.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: linux-kernel@vger.kernel.org,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Andy Whitcroft'" <apw@canonical.com>, linux-serial@vger.kernel.org,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
-Date: Wed, 27 Nov 2013 21:40:13 -0800
-In-Reply-To: <006001ceebfa$c85a1020$590e3060$%han@samsung.com>
-References: <000601ceebdc$ee148de0$ca3da9a0$%han@samsung.com>
-	 <20131128040750.GA29917@kroah.com>
-	 <006001ceebfa$c85a1020$590e3060$%han@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 28 Nov 2013 00:42:25 -0500
+MIME-Version: 1.0
+In-Reply-To: <CALAqxLVZdAs0V9ghA43VdP02+Rn=t4COZw_PRkZnWC=Q=OWLWA@mail.gmail.com>
+References: <20131106110508.6806.48070.sendpatchset@w520>
+	<20131106110518.6806.79333.sendpatchset@w520>
+	<527B790B.4040200@linaro.org>
+	<CANqRtoSn7=NeY2bSpacCXn6tKatn1S+CP3r-+mka91b0neJ4kw@mail.gmail.com>
+	<527D2EA0.7060605@linaro.org>
+	<CANqRtoQJYqBmDh1e-kA9_3ea-pp0J1Cx9Pr87HieYYfr7y435A@mail.gmail.com>
+	<CALAqxLVZdAs0V9ghA43VdP02+Rn=t4COZw_PRkZnWC=Q=OWLWA@mail.gmail.com>
+Date: Thu, 28 Nov 2013 14:42:24 +0900
+Message-ID: <CANqRtoSC7EcJqjL9ockoHUS+vwVrurSD-EhnK1tV8SSr_baJSg@mail.gmail.com>
+Subject: Re: [PATCH v2 01/03] clocksource: Add Kconfig entries for CMT, MTU2,
+ TMU and STI
+From: Magnus Damm <magnus.damm@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        "Simon Horman [Horms]" <horms@verge.net.au>,
+        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-11-28 at 14:29 +0900, Jingoo Han wrote:
-> On Thursday, November 28, 2013 1:08 PM, Greg Kroah-Hartman wrote:
-> > On Thu, Nov 28, 2013 at 10:55:35AM +0900, Jingoo Han wrote:
-> > > This macro is used to create a struct pci_device_id array.
-> > 
-> > Yeah, and it's a horrid macro that deserves to be removed, please don't
-> > use it in more places.
-> > 
-> > Actually, if you could just remove it, that would be best, sorry, I'm
-> > not going to take these patches.
-> 
-> (+cc Joe Perches, Andrew Morton, Andy Whitcroft)
-> 
-> Hi Joe Perches,
-> 
-> Would you fix checkpatch.pl about DEFINE_PCI_DEVICE_TABLE?
-> Currently, checkpatch.pl guides to use DEFINE_PCI_DEVICE_TABLE
-> as below.
-> 
->   WARNING: Use DEFINE_PCI_DEVICE_TABLE for struct pci_device_id
->   #331: FILE: drivers/usb/host/ehci-pci.c:331:
->   +static const struct pci_device_id pci_ids [] = { {
-> 
-> However, Greg Kroah-Hartman mentioned that DEFINE_PCI_DEVICE_TABLE
-> shouldn't be used anymore.
-> 
-> So, would you change checkpatch.pl in order to guide to use
-> struct pci_device_id instead of DEFINE_PCI_DEVICE_TABLE?
-> 
-> For example,
->   WARNING: Use struct pci_device_id instead of DEFINE_PCI_DEVICE_TABLE
+Hi John, everyone,
 
-The documentation doesn't agree with Greg.
+Let me get back to you all in a little while together with some code,
+but before that let me just clarify this:
 
-Documentation/PCI/pci.txt:
+On Wed, Nov 13, 2013 at 5:47 AM, John Stultz <john.stultz@linaro.org> wrote:
+> On Tue, Nov 12, 2013 at 4:26 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
+>> On Sat, Nov 9, 2013 at 3:34 AM, John Stultz <john.stultz@linaro.org> wrote:
 
-The ID table is an array of struct pci_device_id entries ending with an
-all-zero entry; use of the macro DEFINE_PCI_DEVICE_TABLE is the preferred
-method of declaring the table.
+>> Let me get back to the kernel configuration. Of course, it would be
+>> really nice if the kernel configuration was 100% fool proof, but what
+>> happens if the user doesn't compile-in certain parts? That hardware
+>> won't be used. What happens if wrong console device is passed on the
+>> kernel command line? The friendly answer is usually "don't do that".
+>>
+>> So in case of the serial console, no driver - no output. You can still
+>> use the network. If you have no timer then there won't be any timer
+>> ticks. You can still get to user space though, but don't try to rely
+>> on the timer. This CONFIG_TIMER=y/n case is pretty clear, but isn't
+>> there a grey zone too?
+>
+> And on every new board, I have to fumble around with exactly those
+> sorts of no-serial output issues. Its never something I consider a
+> great use of my time :)
+>
+> And your example is a little flawed have no timer ticks, you're not
+> getting to userspace. The system won't boot.
 
-Neither does the kernel tree:
+Correct me if I'm wrong here but I don't think so!
 
-$ git grep -w DEFINE_PCI_DEVICE_TABLE | wc -l
-410
+On some platforms that may very well be the case, but on mach-shmobile
+we get to user space without any timers. If the timers are enabled
+then they are regular platform devices these days. From my experience
+the main blocker for going to user space without timer is on ARM
+usually the udelay() calculation and/or the TWD delay, but those can
+be handled with preset worst-case values for udelay() and getting the
+rate via CCF for the TWD.
 
-$ git grep -E "\bstruct\s+pci_device_id\s+\w+\s*\[\s*\]\s*=" | wc -l
-376
+Also it of course depends on if some compiled-in driver needs to use
+the timer. If we just enable the serial console then all our platforms
+make it to initramfs-based user space without any clock source or
+clock event.
 
-Most of the 376 should be const and are not.
+I'd be happy to give you remote access to a board if you'd like to play. =)
 
-$ git grep -E "\bconst\s+struct\s+pci_device_id\s+\w+\s*\[\s*\]\s*=" | wc -l
-155
+Cheers,
 
-Everything that uses DEFINE_PCI_DEVICE_TABLE is const.
-
-$ git grep -A1 -E "define\s+DEFINE_PCI_DEVICE_TABLE"
-include/linux/pci.h:#define DEFINE_PCI_DEVICE_TABLE(_table) \
-include/linux/pci.h-    const struct pci_device_id _table[]
-
-
+/ magnus
