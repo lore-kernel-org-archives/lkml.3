@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758758Ab3K1Nqy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 08:46:54 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50165 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756518Ab3K1Nqu (ORCPT
+	id S1758844Ab3K1NrR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 08:47:17 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:44959 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758765Ab3K1NrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 08:46:50 -0500
-Date: Thu, 28 Nov 2013 10:46:42 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Jean Pihet <jean.pihet@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        linaro-kernel@lists.linaro.org, patches@linaro.org
-Subject: Re: [PATCH 34/34] perf tools unwinding: Use the per-feature check
- flags
-Message-ID: <20131128134642.GB12292@ghostprotocols.net>
-References: <1385583394-3703-1-git-send-email-acme@infradead.org>
- <1385583394-3703-35-git-send-email-acme@infradead.org>
- <20131127224323.GB1350@krava.redhat.com>
- <20131128095801.GA1245@krava.brq.redhat.com>
- <20131128125619.GA12292@ghostprotocols.net>
+	Thu, 28 Nov 2013 08:47:13 -0500
+Date: Thu, 28 Nov 2013 13:46:41 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Message-ID: <20131128134641.GI27568@sirena.org.uk>
+References: <1385626183-22990-1-git-send-email-k.kozlowski@samsung.com>
+ <1385626183-22990-3-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BWWlCdgt6QLN7tv3"
 Content-Disposition: inline
-In-Reply-To: <20131128125619.GA12292@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <1385626183-22990-3-git-send-email-k.kozlowski@samsung.com>
+X-Cookie: Boycott meat -- suck your thumb.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 2/5] rtc: s5m: Fix unsuccesful IRQ request during probe
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Nov 28, 2013 at 09:56:19AM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Thu, Nov 28, 2013 at 10:58:01AM +0100, Jiri Olsa escreveu:
-> > On Wed, Nov 27, 2013 at 11:43:23PM +0100, Jiri Olsa wrote:
-> > > On Wed, Nov 27, 2013 at 05:16:34PM -0300, Arnaldo Carvalho de Melo wrote:
-> > >   LINK     perf
-> > > /bin/ld: cannot find -lunwind
-> > > /bin/ld: cannot find -lunwind-x86_64
-> > > collect2: error: ld returned 1 exit status
-> > > make[1]: *** [perf] Error 1
-> > > make[1]: *** Waiting for unfinished jobs....
-> > > make: *** [all] Error 2
-> 
-> > > I haven't checked this one.. will do tomorrow
->  
-> > we need to plug libunwind flags/libs only if
-> > the $(feature-libunwind) is enabled..
->  
-> > NO_LIBUNWIND - user's decision not to link with libunwind or
-> >                architecture that does not support it
->  
-> > $(feature-libunwind) - if it's actually installed
->  
-> > attached change fixies that for me, feel free to use/merge it
-> 
-> Argh, I used tests/make on one machine where those two patches by Jean
-> were not applied, then rebased on another, the one I use to submit,
-> those got included but not tests/make tested, which probably explains
-> why this got thru :-\
-> 
-> Jean, can you please check that this works for you on ARM too?
 
-I just noticed that this patch breaks the feature detection mechanism,
-after it is applied it is back performing all tests at every make call,
-this needs rethinking, so I'm dropping both.
+--BWWlCdgt6QLN7tv3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ingo, please disregard, yet again, my latest pull request, sigh.
+On Thu, Nov 28, 2013 at 09:09:40AM +0100, Krzysztof Kozlowski wrote:
+> Probe failed for rtc-s5m:
+> 	s5m-rtc s5m-rtc: Failed to request alarm IRQ: 12: -22
+> 	s5m-rtc: probe of s5m-rtc failed with error -22
+>=20
+> Fix rtc-s5m interrupt request by using regmap_irq_get_virq() for mapping
+> the IRQ.
 
-Jiri, this could be something for tests/make, till then I'll try
-to check this manually.
+Reviwed-by: Mark Brown <broonie@linaro.org>
 
-- Arnaldo
+Presumably should CC stable.
+
+--BWWlCdgt6QLN7tv3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSl0k+AAoJELSic+t+oim999cP/3l02goJ1g1uUcP+bxKkWvLY
+v/oSJs89nwIVOTP+uufAewvI4QfuWZ/VKkzFXqgXTyHpFfP9rEaoziYVrqvWhE6Q
+zQB/uNobBKS1NjzZxDo3Qi8XYJIaUeXmWbjxYMff2Taj04F4b5jJ8FxFr+hQw3Pq
+hJjJjmIfojOkFAz9Dys4Go4ogEAB5qT5b5owSk9aMnY5afRrm4MfShfOZlfE476Y
+PMjjwGTvxPVIDNIm2PhrannHIGOL8uGULsUK8XzKClVD5507DMbN+ZMUImuFBm/h
+ivpXi7bKCDHXoQv/KJOScAKWnWptz071umBiaY69X2Yj1+SUDUNq+78YjyqxZHH+
+1Vnss5vje7dkTUK2o+fCitcnQLy0j8sHVhuBOeP642341Z4ZglQT5XnCa9HplshS
+5avtmW0CBIBgIb0c8dLbp7GMF7lNIr+Vo20dQpgxVJcgfN/AMFKyNm2x1Dj/6/Xn
+Xeydx9GXRvceQxCaEtrYwynqRGsVtcMsooOxq8+Lv0W8PuGhvSY4opbtrc0TM5jX
+hqBt1kYd6s8N8ZIWvocSoJBYpv1QeegfrWc2+kfs8+jTsSl31vvtBcn6X0pILNlu
+z+59O2M3ggRibbzFzKnuuTLfuwVEz9MrnrE1m8DQqhMjIhb/MiqNTesDUj8oCHXf
+3CEYfPu3akaPWfq8H9K6
+=fqxS
+-----END PGP SIGNATURE-----
+
+--BWWlCdgt6QLN7tv3--
