@@ -1,69 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758938Ab3K1OC7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 09:02:59 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:62064 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754912Ab3K1OCz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 09:02:55 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: bhelgaas@google.com, linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / PCI / hotplug: Avoid warning when _ADR not present
-Date: Thu, 28 Nov 2013 15:15:45 +0100
-Message-ID: <2967007.tqmdbM4ZBo@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1385584389-22461-1-git-send-email-toshi.kani@hp.com>
-References: <1385584389-22461-1-git-send-email-toshi.kani@hp.com>
+	id S1758605Ab3K1OEL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 09:04:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55177 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753151Ab3K1OEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 09:04:07 -0500
+Date: Thu, 28 Nov 2013 12:03:44 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH 6/7] perf record: Use perf_data_file__write for output
+ file
+Message-ID: <20131128140344.GB3603@infradead.org>
+References: <1385634619-8129-1-git-send-email-jolsa@redhat.com>
+ <1385634619-8129-7-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385634619-8129-7-git-send-email-jolsa@redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 27, 2013 01:33:09 PM Toshi Kani wrote:
-> acpiphp_enumerate_slots() walks ACPI namenamespace under
-> a PCI host bridge with callback register_slot().
-> register_slot() evaluates _ADR for all the device objects
-> and emits a warning message for any error.  Some platforms
-> have _HID device objects (such as HPET and IPMI), which
-> trigger unnecessary warning messages.
+Em Thu, Nov 28, 2013 at 11:30:18AM +0100, Jiri Olsa escreveu:
+> Changing the file output code to use the newly
+> added perf_data_file__write interface.
 > 
-> This patch avoids emitting a warning message when a target
-> device object does not have _ADR.
-> 
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> ---
-> Patch is based on Linus's tree (3.13-rc1).
+> No functional change intended.
 
-Queued up as a fix for 3.13, thanks!
+But there is one, if we fail the pr_err() will not be called, will some
+warning be emitter later on?
 
+If so, we should make it clear in the changelog. Lemme check by looking
+at that code...
+
+There are several places where the return of this function is propagated
+and handled with relevant error messages, but at least one, the most
+important, doesn't, i.e. this would be the only message the user would
+receive, can you verify that?
+
+- Arnaldo
+ 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Adrian Hunter <adrian.hunter@intel.com>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 > ---
->  drivers/pci/hotplug/acpiphp_glue.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+>  tools/perf/builtin-record.c | 23 ++++++++---------------
+>  1 file changed, 8 insertions(+), 15 deletions(-)
 > 
-> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-> index 1cf605f..438a4d0 100644
-> --- a/drivers/pci/hotplug/acpiphp_glue.c
-> +++ b/drivers/pci/hotplug/acpiphp_glue.c
-> @@ -279,7 +279,9 @@ static acpi_status register_slot(acpi_handle handle, u32 lvl, void *data,
+> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> index d93e2ee..1be39e2 100644
+> --- a/tools/perf/builtin-record.c
+> +++ b/tools/perf/builtin-record.c
+> @@ -76,24 +76,17 @@ struct perf_record {
+>  	long			samples;
+>  };
 >  
->  	status = acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
->  	if (ACPI_FAILURE(status)) {
-> -		acpi_handle_warn(handle, "can't evaluate _ADR (%#x)\n", status);
-> +		if (status != AE_NOT_FOUND)
-> +			acpi_handle_warn(handle,
-> +				"can't evaluate _ADR (%#x)\n", status);
->  		return AE_OK;
->  	}
+> -static int perf_record__write(struct perf_record *rec, void *buf, size_t size)
+> +static ssize_t perf_record__write(struct perf_record *rec,
+> +				  void *buf, size_t size)
+>  {
+> -	struct perf_data_file *file = &rec->file;
+> -
+> -	while (size) {
+> -		ssize_t ret = write(file->fd, buf, size);
+> -
+> -		if (ret < 0) {
+> -			pr_err("failed to write perf data, error: %m\n");
+> -			return -1;
+> -		}
+> -
+> -		size -= ret;
+> -		buf += ret;
+> +	struct perf_session *session = rec->session;
+> +	ssize_t ret;
 >  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> -		rec->bytes_written += ret;
+> -	}
+> +	ret = perf_data_file__write(session->file, buf, size);
+> +	if (ret < 0)
+> +		return -1;
+>  
+> +	rec->bytes_written += ret;
+>  	return 0;
+>  }
+>  
+> -- 
+> 1.8.3.1
