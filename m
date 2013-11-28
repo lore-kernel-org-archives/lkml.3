@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757283Ab3K1IKq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 03:10:46 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:49495 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752224Ab3K1IKB (ORCPT
+	id S1757930Ab3K1IKz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 03:10:55 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:18940 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122Ab3K1IJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 03:10:01 -0500
-X-AuditID: cbfec7f4-b7fea6d0000026ac-6a-5296fa5669f5
+	Thu, 28 Nov 2013 03:09:58 -0500
+X-AuditID: cbfec7f5-b7f706d0000017c2-b0-5296fa54b1db
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
         Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
@@ -18,131 +18,197 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 5/5] mfd: sec: Constify regmap configs and regmap irqs
-Date: Thu, 28 Nov 2013 09:09:43 +0100
-Message-id: <1385626183-22990-6-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v2 1/5] mfd/rtc: s5m: Fix register updating by adding regmap
+ for RTC
+Date: Thu, 28 Nov 2013 09:09:39 +0100
+Message-id: <1385626183-22990-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1385626183-22990-1-git-send-email-k.kozlowski@samsung.com>
 References: <1385626183-22990-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrILMWRmVeSWpSXmKPExsVy+t/xK7phv6YFGVx6o2mx5OJVdoupD5+w
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrALMWRmVeSWpSXmKPExsVy+t/xK7ohv6YFGex6Jm2x5OJVdoupD5+w
 	WTy7tZfJ4vULQ4uzTW/YLe5/Pcpo8e1KB5PF5V1z2CzWHrnLbrG/s4PR4nQ3q8XFFV+YHHg8
 	ds66y+6xZ+JJNo9NqzrZPO5c28PmcehwB6PHvJOBHn1bVjF6TJ/3k8nj8ya5AM4oLpuU1JzM
-	stQifbsEroyfv0+wFJyQrOjYeJitgfGlSBcjJ4eEgInEv963bBC2mMSFe+uBbC4OIYGljBIP
-	/31jhnD6mCSOrLoPVsUmYCyxefkSsCoRgblMEtPfnmUEcZgFdjFKvP25ixGkSljAU2LS239M
-	IDaLgKrEk0O9YHFeAXeJ9ddbWLoYOYD2KUjMmWQDEuYU8JDYM38fK4gtBFTy8/MctgmMvAsY
-	GVYxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihATrlx2Mi49ZHWIU4GBU4uE9oDktSIg1say4
-	MvcQowQHs5IIr0IxUIg3JbGyKrUoP76oNCe1+BAjEwenVANjbaIOw8RXB5YvevVl1UNj1ROn
-	ljSv3/zvuPzsUwbzhRkNO//uCDIN2H2jJNu0pn1q05N3u59UvZ6/28Txs9kK3YfOnsdT3wfG
-	i+0tl3ybezH+4N6Qq1s0XfltjvItWtD21jWt4MmWV2enqK6Vl4qbZ/nB4u/k9TJWYaGp39ZN
-	mf/oUMMM5v+MgUosxRmJhlrMRcWJACFXKcg0AgAA
+	stQifbsEroz/R7cxFcw1qDi2r7yBsU+ji5GTQ0LAROLRw5ssELaYxIV769m6GLk4hASWMkps
+	n76QFcLpY5Jo/fSCFaSKTcBYYvPyJWBVIgJzmSSmvz3LCOIwC+xilHj7cxcjSJWwQJjE7o+L
+	mEBsFgFViQe3m8C6eQXcJQ4cmg9kcwDtU5CYM8kGJMwp4CGxZ/4+sBIhoJKfn+ewTWDkXcDI
+	sIpRNLU0uaA4KT3XSK84Mbe4NC9dLzk/dxMjJFS/7mBceszqEKMAB6MSD6+C8bQgIdbEsuLK
+	3EOMEhzMSiK8CsVAId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYwpXl+aNY5p/9AKds1kSwrbWM14
+	0WRplHdYVO7UbTGzlmfcEN+vcqd6xrHfk0JsZPQ3/jjp8nuzi4kp27RTPp4/xRb84TV0uFiV
+	xs15XiicfZGryCzmeR7b9pbH827b07XRl8VTZu67Za8d/ZvOX1uy7JzRjNW/xWatEIpymv96
+	9svNPhVbBUOVWIozEg21mIuKEwHJqu2IMwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add "const" to "static struct regmap_irq" and "static struct
-regmap_config".
+Rename old regmap field of "struct sec_pmic_dev" to "regmap_pmic" and
+add new regmap for RTC.
+
+On S5M8767A registers were not properly updated and read due to usage of
+the same regmap as the PMIC. This could be observed in various hangs,
+e.g. in infinite loop during waiting for UDR field change.
+
+On this chip family the RTC has different I2C address than PMIC so
+additional regmap is needed.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/mfd/sec-core.c |    8 ++++----
- drivers/mfd/sec-irq.c  |   12 ++++++------
- 2 files changed, 10 insertions(+), 10 deletions(-)
+ drivers/mfd/sec-core.c           |   30 ++++++++++++++++++++++--------
+ drivers/mfd/sec-irq.c            |    6 +++---
+ drivers/regulator/s5m8767.c      |    2 +-
+ drivers/rtc/rtc-s5m.c            |    2 +-
+ include/linux/mfd/samsung/core.h |    3 ++-
+ 5 files changed, 29 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-index 54cc255..207a9dc 100644
+index 34c18fb..54cc255 100644
 --- a/drivers/mfd/sec-core.c
 +++ b/drivers/mfd/sec-core.c
-@@ -134,12 +134,12 @@ static bool s5m8763_volatile(struct device *dev, unsigned int reg)
- 	}
+@@ -81,31 +81,31 @@ static struct of_device_id sec_dt_match[] = {
+ 
+ int sec_reg_read(struct sec_pmic_dev *sec_pmic, u8 reg, void *dest)
+ {
+-	return regmap_read(sec_pmic->regmap, reg, dest);
++	return regmap_read(sec_pmic->regmap_pmic, reg, dest);
  }
+ EXPORT_SYMBOL_GPL(sec_reg_read);
  
--static struct regmap_config sec_regmap_config = {
-+static const struct regmap_config sec_regmap_config = {
- 	.reg_bits = 8,
- 	.val_bits = 8,
- };
+ int sec_bulk_read(struct sec_pmic_dev *sec_pmic, u8 reg, int count, u8 *buf)
+ {
+-	return regmap_bulk_read(sec_pmic->regmap, reg, buf, count);
++	return regmap_bulk_read(sec_pmic->regmap_pmic, reg, buf, count);
+ }
+ EXPORT_SYMBOL_GPL(sec_bulk_read);
  
--static struct regmap_config s2mps11_regmap_config = {
-+static const struct regmap_config s2mps11_regmap_config = {
- 	.reg_bits = 8,
- 	.val_bits = 8,
+ int sec_reg_write(struct sec_pmic_dev *sec_pmic, u8 reg, u8 value)
+ {
+-	return regmap_write(sec_pmic->regmap, reg, value);
++	return regmap_write(sec_pmic->regmap_pmic, reg, value);
+ }
+ EXPORT_SYMBOL_GPL(sec_reg_write);
  
-@@ -148,7 +148,7 @@ static struct regmap_config s2mps11_regmap_config = {
+ int sec_bulk_write(struct sec_pmic_dev *sec_pmic, u8 reg, int count, u8 *buf)
+ {
+-	return regmap_raw_write(sec_pmic->regmap, reg, buf, count);
++	return regmap_raw_write(sec_pmic->regmap_pmic, reg, buf, count);
+ }
+ EXPORT_SYMBOL_GPL(sec_bulk_write);
+ 
+ int sec_reg_update(struct sec_pmic_dev *sec_pmic, u8 reg, u8 val, u8 mask)
+ {
+-	return regmap_update_bits(sec_pmic->regmap, reg, mask, val);
++	return regmap_update_bits(sec_pmic->regmap_pmic, reg, mask, val);
+ }
+ EXPORT_SYMBOL_GPL(sec_reg_update);
+ 
+@@ -166,6 +166,11 @@ static struct regmap_config s5m8767_regmap_config = {
  	.cache_type = REGCACHE_FLAT,
  };
  
--static struct regmap_config s5m8763_regmap_config = {
-+static const struct regmap_config s5m8763_regmap_config = {
- 	.reg_bits = 8,
- 	.val_bits = 8,
++static const struct regmap_config sec_rtc_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++};
++
+ #ifdef CONFIG_OF
+ /*
+  * Only the common platform data elements for s5m8767 are parsed here from the
+@@ -266,9 +271,9 @@ static int sec_pmic_probe(struct i2c_client *i2c,
+ 		break;
+ 	}
  
-@@ -157,7 +157,7 @@ static struct regmap_config s5m8763_regmap_config = {
- 	.cache_type = REGCACHE_FLAT,
- };
+-	sec_pmic->regmap = devm_regmap_init_i2c(i2c, regmap);
+-	if (IS_ERR(sec_pmic->regmap)) {
+-		ret = PTR_ERR(sec_pmic->regmap);
++	sec_pmic->regmap_pmic = devm_regmap_init_i2c(i2c, regmap);
++	if (IS_ERR(sec_pmic->regmap_pmic)) {
++		ret = PTR_ERR(sec_pmic->regmap_pmic);
+ 		dev_err(&i2c->dev, "Failed to allocate register map: %d\n",
+ 			ret);
+ 		return ret;
+@@ -277,6 +282,15 @@ static int sec_pmic_probe(struct i2c_client *i2c,
+ 	sec_pmic->rtc = i2c_new_dummy(i2c->adapter, RTC_I2C_ADDR);
+ 	i2c_set_clientdata(sec_pmic->rtc, sec_pmic);
  
--static struct regmap_config s5m8767_regmap_config = {
-+static const struct regmap_config s5m8767_regmap_config = {
- 	.reg_bits = 8,
- 	.val_bits = 8,
++	sec_pmic->regmap_rtc = devm_regmap_init_i2c(sec_pmic->rtc,
++			&sec_rtc_regmap_config);
++	if (IS_ERR(sec_pmic->regmap_rtc)) {
++		ret = PTR_ERR(sec_pmic->regmap_rtc);
++		dev_err(&i2c->dev, "Failed to allocate RTC register map: %d\n",
++			ret);
++		return ret;
++	}
++
+ 	if (pdata && pdata->cfg_pmic_irq)
+ 		pdata->cfg_pmic_irq();
  
 diff --git a/drivers/mfd/sec-irq.c b/drivers/mfd/sec-irq.c
-index b441b1b..4de494f 100644
+index 0dd84e9..b441b1b 100644
 --- a/drivers/mfd/sec-irq.c
 +++ b/drivers/mfd/sec-irq.c
-@@ -22,7 +22,7 @@
- #include <linux/mfd/samsung/s5m8763.h>
- #include <linux/mfd/samsung/s5m8767.h>
+@@ -280,19 +280,19 @@ int sec_irq_init(struct sec_pmic_dev *sec_pmic)
  
--static struct regmap_irq s2mps11_irqs[] = {
-+static const struct regmap_irq s2mps11_irqs[] = {
- 	[S2MPS11_IRQ_PWRONF] = {
- 		.reg_offset = 0,
- 		.mask = S2MPS11_IRQ_PWRONF_MASK,
-@@ -90,7 +90,7 @@ static struct regmap_irq s2mps11_irqs[] = {
- };
+ 	switch (type) {
+ 	case S5M8763X:
+-		ret = regmap_add_irq_chip(sec_pmic->regmap, sec_pmic->irq,
++		ret = regmap_add_irq_chip(sec_pmic->regmap_pmic, sec_pmic->irq,
+ 				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+ 				  sec_pmic->irq_base, &s5m8763_irq_chip,
+ 				  &sec_pmic->irq_data);
+ 		break;
+ 	case S5M8767X:
+-		ret = regmap_add_irq_chip(sec_pmic->regmap, sec_pmic->irq,
++		ret = regmap_add_irq_chip(sec_pmic->regmap_pmic, sec_pmic->irq,
+ 				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+ 				  sec_pmic->irq_base, &s5m8767_irq_chip,
+ 				  &sec_pmic->irq_data);
+ 		break;
+ 	case S2MPS11X:
+-		ret = regmap_add_irq_chip(sec_pmic->regmap, sec_pmic->irq,
++		ret = regmap_add_irq_chip(sec_pmic->regmap_pmic, sec_pmic->irq,
+ 				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+ 				  sec_pmic->irq_base, &s2mps11_irq_chip,
+ 				  &sec_pmic->irq_data);
+diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
+index cbf91e2..aeb40aa 100644
+--- a/drivers/regulator/s5m8767.c
++++ b/drivers/regulator/s5m8767.c
+@@ -925,7 +925,7 @@ static int s5m8767_pmic_probe(struct platform_device *pdev)
+ 		config.dev = s5m8767->dev;
+ 		config.init_data = pdata->regulators[i].initdata;
+ 		config.driver_data = s5m8767;
+-		config.regmap = iodev->regmap;
++		config.regmap = iodev->regmap_pmic;
+ 		config.of_node = pdata->regulators[i].reg_node;
  
+ 		rdev[i] = devm_regulator_register(&pdev->dev, &regulators[id],
+diff --git a/drivers/rtc/rtc-s5m.c b/drivers/rtc/rtc-s5m.c
+index 1dfa488..088cf3a 100644
+--- a/drivers/rtc/rtc-s5m.c
++++ b/drivers/rtc/rtc-s5m.c
+@@ -542,7 +542,7 @@ static int s5m_rtc_probe(struct platform_device *pdev)
  
--static struct regmap_irq s5m8767_irqs[] = {
-+static const struct regmap_irq s5m8767_irqs[] = {
- 	[S5M8767_IRQ_PWRR] = {
- 		.reg_offset = 0,
- 		.mask = S5M8767_IRQ_PWRR_MASK,
-@@ -161,7 +161,7 @@ static struct regmap_irq s5m8767_irqs[] = {
- 	},
- };
+ 	info->dev = &pdev->dev;
+ 	info->s5m87xx = s5m87xx;
+-	info->regmap = s5m87xx->regmap;
++	info->regmap = s5m87xx->regmap_rtc;
+ 	info->device_type = s5m87xx->device_type;
+ 	info->wtsr_smpl = s5m87xx->wtsr_smpl;
  
--static struct regmap_irq s5m8763_irqs[] = {
-+static const struct regmap_irq s5m8763_irqs[] = {
- 	[S5M8763_IRQ_DCINF] = {
- 		.reg_offset = 0,
- 		.mask = S5M8763_IRQ_DCINF_MASK,
-@@ -236,7 +236,7 @@ static struct regmap_irq s5m8763_irqs[] = {
- 	},
- };
+diff --git a/include/linux/mfd/samsung/core.h b/include/linux/mfd/samsung/core.h
+index 2d0c907..cab2dd2 100644
+--- a/include/linux/mfd/samsung/core.h
++++ b/include/linux/mfd/samsung/core.h
+@@ -39,7 +39,8 @@ enum sec_device_type {
+ struct sec_pmic_dev {
+ 	struct device *dev;
+ 	struct sec_platform_data *pdata;
+-	struct regmap *regmap;
++	struct regmap *regmap_pmic;
++	struct regmap *regmap_rtc;
+ 	struct i2c_client *i2c;
+ 	struct i2c_client *rtc;
  
--static struct regmap_irq_chip s2mps11_irq_chip = {
-+static const struct regmap_irq_chip s2mps11_irq_chip = {
- 	.name = "s2mps11",
- 	.irqs = s2mps11_irqs,
- 	.num_irqs = ARRAY_SIZE(s2mps11_irqs),
-@@ -246,7 +246,7 @@ static struct regmap_irq_chip s2mps11_irq_chip = {
- 	.ack_base = S2MPS11_REG_INT1,
- };
- 
--static struct regmap_irq_chip s5m8767_irq_chip = {
-+static const struct regmap_irq_chip s5m8767_irq_chip = {
- 	.name = "s5m8767",
- 	.irqs = s5m8767_irqs,
- 	.num_irqs = ARRAY_SIZE(s5m8767_irqs),
-@@ -256,7 +256,7 @@ static struct regmap_irq_chip s5m8767_irq_chip = {
- 	.ack_base = S5M8767_REG_INT1,
- };
- 
--static struct regmap_irq_chip s5m8763_irq_chip = {
-+static const struct regmap_irq_chip s5m8763_irq_chip = {
- 	.name = "s5m8763",
- 	.irqs = s5m8763_irqs,
- 	.num_irqs = ARRAY_SIZE(s5m8763_irqs),
 -- 
 1.7.9.5
 
