@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758830Ab3K1Q5r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 11:57:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59765 "EHLO mx1.redhat.com"
+	id S1759175Ab3K1Q6X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 11:58:23 -0500
+Received: from mga01.intel.com ([192.55.52.88]:17338 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751219Ab3K1Q5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 11:57:46 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH] perf tools: Make trace command to follow -m option
-Date: Thu, 28 Nov 2013 17:57:22 +0100
-Message-Id: <1385657842-8914-1-git-send-email-jolsa@redhat.com>
+	id S1758720Ab3K1Q6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 11:58:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,792,1378882800"; 
+   d="scan'208";a="441676880"
+Date: Thu, 28 Nov 2013 19:04:57 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Rob Landley <rob@landley.net>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 0/6] gpio / ACPI: convert users to gpiod_* and drop
+ acpi_gpio.h
+Message-ID: <20131128170457.GD2281@intel.com>
+References: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com>
+ <CACRpkdbJsQOjJ5QLVL9WutN9c04-AfRKe-hCYZ0fxDKsfCZS6Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbJsQOjJ5QLVL9WutN9c04-AfRKe-hCYZ0fxDKsfCZS6Q@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently trace command supports '-m' option, but
-does not follow its value and keeps the default.
+On Thu, Nov 28, 2013 at 03:36:40PM +0100, Linus Walleij wrote:
+> On Tue, Nov 26, 2013 at 11:05 AM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> 
+> > Since the patches in the series depend on each other I would propose this
+> > to be merged via GPIO tree.
+> 
+> Sure! Can you hunt the net/mmc/Tegra subsystem maintainers
+> for ACKs please?
 
-Changing the perf_evlist__mmap function call to use
-the '-m' configured value.
+I think Stephen already tested the tegra parts and his Tested-by is added
+to the patches.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
----
- tools/perf/builtin-trace.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Chris,
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index e9f345e2..9f2a242 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1890,7 +1890,7 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
- 	if (err < 0)
- 		goto out_error_open;
- 
--	err = perf_evlist__mmap(evlist, UINT_MAX, false);
-+	err = perf_evlist__mmap(evlist, trace->opts.mmap_pages, false);
- 	if (err < 0) {
- 		fprintf(trace->output, "Couldn't mmap the events: %s\n", strerror(errno));
- 		goto out_close_evlist;
--- 
-1.8.3.1
+Do you have any comments on the series? Could you give your ACK for the mmc
+part if you are OK with that?
 
+Thanks.
