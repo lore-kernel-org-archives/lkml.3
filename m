@@ -1,59 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758783Ab3K1RXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 12:23:15 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:58388 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219Ab3K1RXN (ORCPT
+	id S1759244Ab3K1RZI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 12:25:08 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:48309 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135Ab3K1RZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 12:23:13 -0500
-Message-ID: <1385659390.5352.20.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: [PATCH] udp: fix possible seqlock deadlock
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: jongman.heo@samsung.com, David Miller <davem@davemloft.net>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>
-Date: Thu, 28 Nov 2013 09:23:10 -0800
-In-Reply-To: <13025162.118881385612276530.JavaMail.weblogic@epv6ml01>
-References: <13025162.118881385612276530.JavaMail.weblogic@epv6ml01>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 28 Nov 2013 12:25:05 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131128150710.GE1245@krava.brq.redhat.com>
+References: <1385550154-11385-1-git-send-email-artagnon@gmail.com>
+ <1385550154-11385-2-git-send-email-artagnon@gmail.com> <20131128150710.GE1245@krava.brq.redhat.com>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+Date: Thu, 28 Nov 2013 22:54:25 +0530
+Message-ID: <CALkWK0nr9v5P5sO6UDCMr73i5r+PYaS1Da8vST9aUcHZnqv8JQ@mail.gmail.com>
+Subject: Re: [PATCH v3 1/4] perf diff: color the Delta column
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <edumazet@google.com>
+Jiri Olsa wrote:
+> these colors are not consistent with colors in baseline,
+> moreover all negative values are shown as red
+>
+> - please check get_percent_color function (used for baseline),
+>   it checks the percentage against following values:
+>
+>   #define MIN_GREEN       0.5
+>   #define MIN_RED         5.0
 
-In commit c9e9042994d3 ("ipv4: fix possible seqlock deadlock") I left
-another spot where IP_INC_STATS_BH() was improperly used.
-
-udp_sendmsg() is called from process context, not from softirq context.
-
-This was detected by lockdep seqlock support.
-
-Reported-by: jongman heo <jongman.heo@samsung.com>
-Fixes: 584bdf8cbdf6 ("[IPV4]: Fix "ipOutNoRoutes" counter error for TCP and UDP")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
----
- net/ipv4/udp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index 44dfaa09b584..44e3884f9e4c 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -999,7 +999,7 @@ int udp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 			err = PTR_ERR(rt);
- 			rt = NULL;
- 			if (err == -ENETUNREACH)
--				IP_INC_STATS_BH(net, IPSTATS_MIB_OUTNOROUTES);
-+				IP_INC_STATS(net, IPSTATS_MIB_OUTNOROUTES);
- 			goto out;
- 		}
- 
-
-
+That was intentional. If you want colors that are consistent with the
+baseline, what do we do about [4/4], where wdiff numbers can be huge?
+(currently I use [green, red] for [positive, negative] there too)
