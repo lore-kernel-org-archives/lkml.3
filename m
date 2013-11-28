@@ -1,96 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751206Ab3K1F3V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 00:29:21 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:19403 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab3K1F3T (ORCPT
+	id S1751196Ab3K1FkW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 00:40:22 -0500
+Received: from smtprelay0209.hostedemail.com ([216.40.44.209]:59229 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751074Ab3K1FkR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 00:29:19 -0500
-X-AuditID: cbfee68e-b7f7e6d00000477d-09-5296d4adf463
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Joe Perches'" <joe@perches.com>
+	Thu, 28 Nov 2013 00:40:17 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:45:355:379:541:599:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2194:2198:2199:2200:2393:2551:2553:2559:2562:2731:2828:3138:3139:3140:3141:3142:3353:3622:3653:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:5007:7652:7903:8604:8784:9108:9393:10004:10400:10848:11026:11232:11473:11658:11914:12043:12050:12114:12295:12296:12438:12517:12519:12663:12740:13161:13200:13229:13548,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: stamp60_1f446427a364a
+X-Filterd-Recvd-Size: 3035
+Message-ID: <1385617213.12210.5.camel@joe-AO722>
+Subject: Re: [PATCH 1/5] serial: 8250_pci: use DEFINE_PCI_DEVICE_TABLE macro
+From: Joe Perches <joe@perches.com>
+To: Jingoo Han <jg1.han@samsung.com>
 Cc: linux-kernel@vger.kernel.org,
         "'Andrew Morton'" <akpm@linux-foundation.org>,
         "'Andy Whitcroft'" <apw@canonical.com>, linux-serial@vger.kernel.org,
         "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
+Date: Wed, 27 Nov 2013 21:40:13 -0800
+In-Reply-To: <006001ceebfa$c85a1020$590e3060$%han@samsung.com>
 References: <000601ceebdc$ee148de0$ca3da9a0$%han@samsung.com>
- <20131128040750.GA29917@kroah.com>
-In-reply-to: <20131128040750.GA29917@kroah.com>
-Subject: Re: [PATCH 1/5] serial: 8250_pci: use DEFINE_PCI_DEVICE_TABLE macro
-Date: Thu, 28 Nov 2013 14:29:17 +0900
-Message-id: <006001ceebfa$c85a1020$590e3060$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7r70qA1twBffhdRoW+oAhOCVi6rAACl03w
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t8zA921V6YFGXTNN7WYs34Nm8WHtRoW
-	zYvXs1nMvv+YxeLyrjlsFmcW97I7sHnMauhl8zgx4zeLx/65a9g9vqy6xuzxeZNcAGsUl01K
-	ak5mWWqRvl0CV8aKRV9ZCr5xVDxZuZq1gXEeexcjJ4eEgInE3Q/rWCFsMYkL99azdTFycQgJ
-	LGOUuDD/MSNM0Yu/GxkhEosYJRbfWMcC4fwCcg48ABvFJqAm8eXLYTBbREBZYsGizywgNrPA
-	CUaJ1W0iILaQQJLEto+zmUBsTgF9iQVvroDVCAv4SCzePhUsziKgKtG35CnYSbwCthJn7ryE
-	sgUlfky+BzVTS2L9zuNMELa8xOY1b5m7GDmALlWXePRXF+IEI4lZnx4yQ5SISOx78Q7qmXvs
-	EltOeEKsEpD4NvkQC0SrrMSmA8wQJZISB1fcYJnAKDELyeJZSBbPQrJ4FpINCxhZVjGKphYk
-	FxQnpRcZ6RUn5haX5qXrJefnbmKERGzfDsabB6wPMSYDrZ/ILCWanA+M+LySeENjMyMLUxNT
-	YyNzSzPShJXEeRc9TAoSEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwJi8vOT+NYvj7tvKxHl6
-	EladE3GVW5kds97UYP35apdNBUE3wjwrXNg2Z91carD8QXqTUeeze1zvP+0oLT+jqLO9p1xz
-	xSuh9tueed0hvho/Lm5WblLya7s783tE7J02D6OEz2W9Ny5tYK5K/zdP909S2T2OXQccft9d
-	q9minRZry8N2UiL4ghJLcUaioRZzUXEiALlCv4fuAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJKsWRmVeSWpSXmKPExsVy+t9jAd21V6YFGVxcZWgxZ/0aNosPazUs
-	mhevZ7OYff8xi8XlXXPYLM4s7mV3YPOY1dDL5nFixm8Wj/1z17B7fFl1jdnj8ya5ANaoBkab
-	jNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKALlBTKEnNK
-	gUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZKxZ9ZSn4xlHxZOVq1gbGeexdjJwc
-	EgImEi/+bmSEsMUkLtxbz9bFyMUhJLCIUWLxjXUsEM4vIOfAA7AONgE1iS9fDoPZIgLKEgsW
-	fWYBsZkFTjBKrG4TAbGFBJIktn2czQRicwroSyx4cwWsRljAR2Lx9qlgcRYBVYm+JU9ZQWxe
-	AVuJM3deQtmCEj8m34OaqSWxfudxJghbXmLzmrfMXYwcQJeqSzz6qwtxgpHErE8PmSFKRCT2
-	vXjHOIFRaBaSSbOQTJqFZNIsJC0LGFlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgQnhGfS
-	OxhXNVgcYhTgYFTi4ZXQmRYkxJpYVlyZe4hRgoNZSYRXoRgoxJuSWFmVWpQfX1Sak1p8iDEZ
-	6NGJzFKiyfnAZJVXEm9obGJmZGlkZmFkYm5OmrCSOO/BVutAIYH0xJLU7NTUgtQimC1MHJxS
-	DYyibIurLYJXbNz9+aTVmU8brHs/85/+KFT/a07Q1PYFzQJa0wy0+wytL/5/kL3t/td+zrXz
-	eC7Fa385IOV6pc599/qKVbMOWi8yO9zhLNa3c+opS5akya59f6VcZkzJN7jjelj6k/7qimSJ
-	L24LjrjNtBYM7sjz58i8OMFy3TR/jieRv1/uLmhUYinOSDTUYi4qTgQAIbd8D0wDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	 <20131128040750.GA29917@kroah.com>
+	 <006001ceebfa$c85a1020$590e3060$%han@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 28, 2013 1:08 PM, Greg Kroah-Hartman wrote:
-> On Thu, Nov 28, 2013 at 10:55:35AM +0900, Jingoo Han wrote:
-> > This macro is used to create a struct pci_device_id array.
+On Thu, 2013-11-28 at 14:29 +0900, Jingoo Han wrote:
+> On Thursday, November 28, 2013 1:08 PM, Greg Kroah-Hartman wrote:
+> > On Thu, Nov 28, 2013 at 10:55:35AM +0900, Jingoo Han wrote:
+> > > This macro is used to create a struct pci_device_id array.
+> > 
+> > Yeah, and it's a horrid macro that deserves to be removed, please don't
+> > use it in more places.
+> > 
+> > Actually, if you could just remove it, that would be best, sorry, I'm
+> > not going to take these patches.
 > 
-> Yeah, and it's a horrid macro that deserves to be removed, please don't
-> use it in more places.
+> (+cc Joe Perches, Andrew Morton, Andy Whitcroft)
 > 
-> Actually, if you could just remove it, that would be best, sorry, I'm
-> not going to take these patches.
+> Hi Joe Perches,
+> 
+> Would you fix checkpatch.pl about DEFINE_PCI_DEVICE_TABLE?
+> Currently, checkpatch.pl guides to use DEFINE_PCI_DEVICE_TABLE
+> as below.
+> 
+>   WARNING: Use DEFINE_PCI_DEVICE_TABLE for struct pci_device_id
+>   #331: FILE: drivers/usb/host/ehci-pci.c:331:
+>   +static const struct pci_device_id pci_ids [] = { {
+> 
+> However, Greg Kroah-Hartman mentioned that DEFINE_PCI_DEVICE_TABLE
+> shouldn't be used anymore.
+> 
+> So, would you change checkpatch.pl in order to guide to use
+> struct pci_device_id instead of DEFINE_PCI_DEVICE_TABLE?
+> 
+> For example,
+>   WARNING: Use struct pci_device_id instead of DEFINE_PCI_DEVICE_TABLE
 
-(+cc Joe Perches, Andrew Morton, Andy Whitcroft)
+The documentation doesn't agree with Greg.
 
-Hi Joe Perches,
+Documentation/PCI/pci.txt:
 
-Would you fix checkpatch.pl about DEFINE_PCI_DEVICE_TABLE?
-Currently, checkpatch.pl guides to use DEFINE_PCI_DEVICE_TABLE
-as below.
+The ID table is an array of struct pci_device_id entries ending with an
+all-zero entry; use of the macro DEFINE_PCI_DEVICE_TABLE is the preferred
+method of declaring the table.
 
-  WARNING: Use DEFINE_PCI_DEVICE_TABLE for struct pci_device_id
-  #331: FILE: drivers/usb/host/ehci-pci.c:331:
-  +static const struct pci_device_id pci_ids [] = { {
+Neither does the kernel tree:
 
-However, Greg Kroah-Hartman mentioned that DEFINE_PCI_DEVICE_TABLE
-shouldn't be used anymore.
+$ git grep -w DEFINE_PCI_DEVICE_TABLE | wc -l
+410
 
-So, would you change checkpatch.pl in order to guide to use
-struct pci_device_id instead of DEFINE_PCI_DEVICE_TABLE?
+$ git grep -E "\bstruct\s+pci_device_id\s+\w+\s*\[\s*\]\s*=" | wc -l
+376
 
-For example,
-  WARNING: Use struct pci_device_id instead of DEFINE_PCI_DEVICE_TABLE
+Most of the 376 should be const and are not.
 
-Thank you.
+$ git grep -E "\bconst\s+struct\s+pci_device_id\s+\w+\s*\[\s*\]\s*=" | wc -l
+155
 
-Best regards,
-Jingoo Han
+Everything that uses DEFINE_PCI_DEVICE_TABLE is const.
+
+$ git grep -A1 -E "define\s+DEFINE_PCI_DEVICE_TABLE"
+include/linux/pci.h:#define DEFINE_PCI_DEVICE_TABLE(_table) \
+include/linux/pci.h-    const struct pci_device_id _table[]
+
 
