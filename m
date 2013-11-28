@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758435Ab3K1PbJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 10:31:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52439 "EHLO mx1.redhat.com"
+	id S1758976Ab3K1Pd6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 10:33:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18160 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751045Ab3K1PbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 10:31:03 -0500
-Date: Thu, 28 Nov 2013 16:30:31 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 7/7] perf inject: Handle output file via perf_data_file
- object
-Message-ID: <20131128153031.GA31444@krava.brq.redhat.com>
-References: <1385634619-8129-1-git-send-email-jolsa@redhat.com>
- <1385634619-8129-8-git-send-email-jolsa@redhat.com>
- <20131128141435.GC3603@infradead.org>
+	id S1754555Ab3K1Pd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 10:33:57 -0500
+Date: Thu, 28 Nov 2013 16:34:43 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Tejun Heo <htejun@gmail.com>, zhang.yi20@zte.com.cn,
+        lkml <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH]: exec: avoid propagating PF_NO_SETAFFINITY into
+	userspace child
+Message-ID: <20131128153443.GB11956@redhat.com>
+References: <20131126180420.GA18172@redhat.com> <OF99742718.77495161-ON48257C30.000A8334-48257C30.000BA983@zte.com.cn> <20131127183117.GB13098@mtj.dyndns.org> <20131128091358.GH10022@twins.programming.kicks-ass.net> <20131128114542.GA3826@redhat.com> <20131128121748.GN10022@twins.programming.kicks-ass.net> <20131128133152.GA821@redhat.com> <20131128133947.GR10022@twins.programming.kicks-ass.net> <20131128141329.GB3925@htj.dyndns.org> <20131128143857.GU10022@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131128141435.GC3603@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131128143857.GU10022@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 12:14:35PM -0200, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Nov 28, 2013 at 11:30:19AM +0100, Jiri Olsa escreveu:
-> > Using the perf_data_file object to handle output
-> > file processing.
-> > 
-> > No functional change intended.
-> 
-> There is one, before we were using:
-> 
-> -		inject.output = open(output_name, O_CREAT | O_WRONLY | O_TRUNC,
-> -						  S_IRUSR | S_IWUSR);
-> 
-> And 
-> 
-> +	if (perf_data_file__open(&inject.output)) {
-> 
-> Does:
-> 
->           return open(file->path, O_CREAT|O_RDWR|O_TRUNC, S_IRUSR|S_IWUSR);
-> 
-> Why do we need to do O_RDWR there? Can we live with plain O_WRONLY as
-> before?
+On 11/28, Peter Zijlstra wrote:
+>
+> On Thu, Nov 28, 2013 at 09:13:29AM -0500, Tejun Heo wrote:
+> > > A single parent process for all usermode helpers makes so much sense;
+> > > not doing it is just weird.
+> >
+> > If we're gonna allow userland to play with the parent attributes,
+> > yeah, that'd make sense.  I'm not sure whether that's an interface
+> > that we'd want to commit to tho?  Do we really want to tell userland
+> > "there will always be a kernel task khelper and if you change that
+> > one's attributes all processes forked from it will inherit those
+> > attributes no matter what they are."  I think we'd want something more
+> > specific cause that's a lot of commitment to things that we haven't
+> > carefully thought about.
+>
+> It seems like a perfectly fine interface to me. And much preferable to
+> creating yet another weird interface to manage tasks.
 
-I think the reason is the record's buildid's hunt
-during the exit.. we read the file we just stored
-without reopening it for reading
+OK. I am not sure, but perhaps this makes sense.
 
-hum, how about the output file mmapping David is working on,
-that might need file to be readable as well..
+(Although this means that we will always have the problem with the
+ recursive UMH_WAIT_* requests).
 
-> 
-> Also, while reviewing this I got something that I missed in previous
-> patches, I think we could reuse:
-> 
->   O_WRONLY to replace the long constant PERF_DATA_MODE_WRITE
->   O_RDONLY ditto -> PERF_DATA_MODE_READ
-> 
-> Shorter, and matches what we need here: a open flag value to specify
-> which access mode the perf.data file is operating, no?
+In this case khelper should be turned into kthread_worker, this looks
+simple.
 
-I guess that would work.. but I planned for future more
-perf specific flags like PERF_DATA_MODE_DIR or something
-like that.. I haven't this fully thought through yet..
+But note that in the longer term we might want even more. We probably
+want a non-daemonized thread controlled by the user-space. And even
+more, this thread should be per-namespace (this needs a lot more
+discussion).
 
-jirka
+But whataver we do later, I believe that the patch from Zhang should
+be applied now.
+
+Oleg.
+
