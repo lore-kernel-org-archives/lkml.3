@@ -1,130 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab3K1JZJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 04:25:09 -0500
-Received: from gmmr7.centrum.cz ([46.255.225.249]:49470 "EHLO gmmr7.centrum.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751083Ab3K1JZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 04:25:03 -0500
-X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Nov 2013 04:25:02 EST
-To: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>,
-        =?utf-8?q?Ma=2C_Xindong?= <xindong.ma@intel.com>
-Subject: =?utf-8?q?Re=3A_=5BPATCH=5D_Fix_race_between_oom_kill_and_task_exit?=
-Date: Thu, 28 Nov 2013 10:18:50 +0100
-From: "azurIt" <azurit@pobox.sk>
-Cc: =?utf-8?q?akpm=40linux=2Dfoundation=2Eorg?= 
-	<akpm@linux-foundation.org>,
-        =?utf-8?q?mhocko=40suse=2Ecz?= <mhocko@suse.cz>,
-        =?utf-8?q?rientjes=40google=2Ecom?= <rientjes@google.com>,
-        =?utf-8?q?rusty=40rustcorp=2Ecom=2Eau?= <rusty@rustcorp.com.au>,
-        =?utf-8?q?linux=2Dmm=40kvack=2Eorg?= <linux-mm@kvack.org>,
-        =?utf-8?q?linux=2Dkernel=40vger=2Ekernel=2Eorg?= 
-	<linux-kernel@vger.kernel.org>,
-        =?utf-8?q?=27Peter_Zijlstra=27?= <peterz@infradead.org>,
-        =?utf-8?q?=27gregkh=40linuxfoundation=2Eorg=27?= 
-	<gregkh@linuxfoundation.org>,
-        =?utf-8?q?Tu=2C_Xiaobing?= <xiaobing.tu@intel.com>,
-        =?utf-8?q?William_Dauchy?= <wdauchy@gmail.com>
-References: <3917C05D9F83184EAA45CE249FF1B1DD0253093A@shsmsx103.ccr.corp.intel.com> <20131128063505.GN3556@cmpxchg.org>
-In-Reply-To: <20131128063505.GN3556@cmpxchg.org>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
+	id S1750859Ab3K1J3P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 04:29:15 -0500
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:48081 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab3K1J3J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 04:29:09 -0500
+Date: Thu, 28 Nov 2013 09:29:04 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Huang Shijie <b32955@freescale.com>
+Cc: Brian Norris <computersforpeace@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dwmw2@infradead.org, linux-mtd@lists.infradead.org, angus.clark@st.com,
+        linus.walleij@linaro.org, Mark Brown <broonie@kernel.org>,
+        linux-spi@vger.kernel.org
+Subject: Re: [PATCH 00/23] mtd: st_spi_fsm: Add new device
+Message-ID: <20131128092904.GZ3296@lee--X1>
+References: <1385137380-28968-1-git-send-email-lee.jones@linaro.org>
+ <20131127040723.GZ9468@ld-irv-0074.broadcom.com>
+ <20131127115226.GC3296@lee--X1>
+ <5296B9C5.3060704@freescale.com>
 MIME-Version: 1.0
-Message-Id: <20131128101850.9F8A4575@pobox.sk>
-X-Maser: oho
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <5296B9C5.3060704@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Od: Johannes Weiner <hannes@cmpxchg.org>
-> Komu: "Ma, Xindong" <xindong.ma@intel.com>
-> Dátum: 28.11.2013 07:54
-> Predmet: Re: [PATCH] Fix race between oom kill and task exit
+> >However, as we send entire 'message sequences' to the FSM Controller
+> >as opposed to merely OPCODEs we would have to extract the OPCODE from
+> >flash->command[0] and call our own functions to craft the correct
+> >'message sequence' for the task. For this reason we rejected the idea
+> >and went with a stand-alone driver.
+> >
+> could you send me the datasheet of your spi nor controller?
+> I can change my code if it really not good enough.
+
+Unfortunately not, it's ST company confidential.
+
+> we can store the opcode to a field, such as spi_nor_write_op.
+
+The OPCODE isn't the issue here.
+
+> >The framework which Huang is proposing suffers from the same issues.
+> >Only providing read(), write(), read_reg() and write_reg() doesn't
+> >work for our use-case, as we'd have to decode the flash->command[0] and
+> >invoke our own internal routines as before.
+> >
+> >The only framework with would work for us would consist almost all
+> >of the important functions such as; read(), write(), erase(),
+> >wait_busy(), read_jedec(), read_status_reg(), write_status_reg(),
+> >read_control_reg(), write_control_reg(), etc. However, this approach
+> read_jedec() can be replaced by read_reg(0x9f);
+> 
+> read_status() can be replaced by read_reg(0x5);
+> 
+> ....
+> 
+> write_control_reg() can be replaced by write_reg(xx).
+> 
+> Please correct me if i am wrong.
 >
-> CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>, "mhocko@suse.cz" <mhocko@suse.cz>, "rientjes@google.com" <rientjes@google.com>, "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>, "linux-mm@kvack.org" <linux-mm@kvack.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "'Peter Zijlstra'" <peterz@infradead.org>, "'gregkh@linuxfoundation.org'" <gregkh@linuxfoundation.org>, "Tu, Xiaobing" <xiaobing.tu@intel.com>, "William Dauchy" <wdauchy@gmail.com>
->Cc William and azur who might have encountered this problem.
->
->On Thu, Nov 28, 2013 at 05:09:16AM +0000, Ma, Xindong wrote:
->> From: Leon Ma <xindong.ma@intel.com>
->> Date: Thu, 28 Nov 2013 12:46:09 +0800
->> Subject: [PATCH] Fix race between oom kill and task exit
->> 
->> There is a race between oom kill and task exit. Scenario is:
->>    TASK  A                      TASK  B
->> TASK B is selected to oom kill
->> in oom_kill_process()
->> check PF_EXITING of TASK B
->>                             task call do_exit()
->>                             task set PF_EXITING flag
->>                             write_lock_irq(&tasklist_lock);
->>                             remove TASK B from thread group in __unhash_process()
->>                             write_unlock_irq(&tasklist_lock);
->> read_lock(&tasklist_lock);
->> traverse threads of TASK B
->> read_unlock(&tasklist_lock);
->> 
->> After that, the following traversal of threads in TASK B will not end because TASK B is not in the thread group:
->> do {
->> ....
->> } while_each_thread(p, t);
->> 
->> Signed-off-by: Leon Ma <xindong.ma@intel.com>
->> Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
->> ---
->>  mm/oom_kill.c |   20 ++++++++++----------
->>  1 files changed, 10 insertions(+), 10 deletions(-)
->> 
->> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
->> index 1e4a600..32ec88d 100644
->> --- a/mm/oom_kill.c
->> +++ b/mm/oom_kill.c
->> @@ -412,16 +412,6 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
->>  	static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
->>  					      DEFAULT_RATELIMIT_BURST);
->>  
->> -	/*
->> -	 * If the task is already exiting, don't alarm the sysadmin or kill
->> -	 * its children or threads, just set TIF_MEMDIE so it can die quickly
->> -	 */
->> -	if (p->flags & PF_EXITING) {
->> -		set_tsk_thread_flag(p, TIF_MEMDIE);
->> -		put_task_struct(p);
->> -		return;
->> -	}
->> -
->>  	if (__ratelimit(&oom_rs))
->>  		dump_header(p, gfp_mask, order, memcg, nodemask);
->>  
->> @@ -437,6 +427,16 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
->>  	 * still freeing memory.
->>  	 */
->>  	read_lock(&tasklist_lock);
->> +	/*
->> +	 * If the task is already exiting, don't alarm the sysadmin or kill
->> +	 * its children or threads, just set TIF_MEMDIE so it can die quickly
->> +	 */
->> +	if (p->flags & PF_EXITING) {
->> +		set_tsk_thread_flag(p, TIF_MEMDIE);
->> +		put_task_struct(p);
->> +		read_unlock(&tasklist_lock);
->> +		return;
->> +	}
->>  	do {
->>  		list_for_each_entry(child, &t->children, sibling) {
->>  			unsigned int child_points;
->> -- 
->> 1.7.4.1
->> 
->
+> IMHO, the current four hooks for spi-nor{} can do all the things.
+> 
+>      read/write/read_reg/write_reg.
 
+I _fully_ understand your implementation, but it just won't work for
+our controller. Or it would, but it would mean writing _more_ code to
+bend it into your framework, not less. Let me try to explain in
+another way by implementing what you're suggesting. For your JEDEC
+example above, we would have to implement [1] which to my mind
+completely defeats the purpose.
 
+Most controllers just take an OPCODE and pass it on to the controller
+and have done with it. The issue that you're attempting to rectify is
+that the m25p80 expects every controller to be an SPI controller
+registered to the SPI framework, but as we both know that's not always
+practical as the SPI framework doesn't allow all configuration
+information to be passed back to the controller driver. Our issue is
+not the same. We are required to send entire 'message sequences', to
+the controller rather than just opcodes. The JEDEC message sequence
+can be seen below. Bear in mind that this is also one of the more
+simple message sequences. Some of them even vary depending on which
+chip is present.
 
+[1]:
 
-Hi Johannes,
+static struct stfsm_seq stfsm_seq_read_jedec = {
+	.data_size = TRANSFER_SIZE(8),
+	.seq_opc[0] = (SEQ_OPC_PADS_1 |
+		       SEQ_OPC_CYCLES(8) |
+		       SEQ_OPC_OPCODE(FLASH_CMD_RDID)),
+	.seq = {
+		STFSM_INST_CMD1,
+		STFSM_INST_DATA_READ,
+		STFSM_INST_STOP,
+	},
+	.seq_cfg = (SEQ_CFG_PADS_1 |
+		    SEQ_CFG_READNOTWRITE |
+		    SEQ_CFG_CSDEASSERT |
+		    SEQ_CFG_STARTSEQ),
+};
 
-thank you very much! Fortunately, i didn't notice anything like this yet.
+static inline int stfsm_is_idle(struct stfsm *fsm)
+{
+	return readl(fsm->base + SPI_FAST_SEQ_STA) & 0x10;
+}
 
-azur
+static inline uint32_t stfsm_fifo_available(struct stfsm *fsm)
+{
+	return (readl(fsm->base + SPI_FAST_SEQ_STA) >> 5) & 0x7f;
+}
+
+static inline void stfsm_load_seq(struct stfsm *fsm,
+				  const struct stfsm_seq *seq)
+{
+	void __iomem *dst = fsm->base + SPI_FAST_SEQ_TRANSFER_SIZE;
+	const uint32_t *src = (const uint32_t *)seq;
+	int words = STFSM_SEQ_SIZE / sizeof(uint32_t);
+
+	while (words--) {
+		writel(*src, dst);
+		src++;
+		dst += 4;
+	}
+}
+
+static void stfsm_wait_seq(struct stfsm *fsm)
+{
+	unsigned long timeo = jiffies + HZ;
+
+	while (time_before(jiffies, timeo)) {
+		if (stfsm_is_idle(fsm))
+			return;
+
+		cond_resched();
+	}
+}
+
+static void stfsm_read_fifo(struct stfsm *fsm, uint32_t *buf,
+			    const uint32_t size)
+{
+	uint32_t remaining = size >> 2;
+	uint32_t avail;
+	uint32_t words;
+
+	while (remaining) {
+		for (;;) {
+			avail = stfsm_fifo_available(fsm);
+			if (avail)
+				break;
+			udelay(1);
+		}
+		words = min(avail, remaining);
+		remaining -= words;
+
+		readsl(fsm->base + SPI_FAST_SEQ_DATA_REG, buf, words);
+		buf += words;
+	}
+}
+
+static void stfsm_read_jedec(struct stfsm *fsm, u8 *jedec)
+{
+	const struct stfsm_seq *seq = &stfsm_seq_read_jedec;
+	uint32_t tmp[2];
+
+	stfsm_load_seq(fsm, seq);
+
+	stfsm_read_fifo(fsm, tmp, 8);
+
+	memcpy(jedec, tmp, 5);
+
+	stfsm_wait_seq(fsm);
+}
+
+static int stfsm_read_reg(struct spi_nor *flash, u8 opcode, u8 *buf, int len)
+{
+	struct stfsm *fsm = dev_get_drvdata(flash->mtd->dev.parent);
+	
+	switch (opcode) {
+	case OPCODE_RDID :
+		stfsm_read_jedec(fsm, buf);
+		break;
+
+	case OPCODE_A :
+		stfsm_do_a();
+		break;
+
+	/******** SNIP ********/
+
+	case OPCODE_Z :
+		stfsm_do_z();
+		break;
+
+	case default :
+		return -EINVAL;
+	}
+}
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
