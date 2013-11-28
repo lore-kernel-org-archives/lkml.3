@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758323Ab3K1Lzl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 06:55:41 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:49029 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758097Ab3K1Lze (ORCPT
+	id S1758505Ab3K1L6f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 06:58:35 -0500
+Received: from www.linutronix.de ([62.245.132.108]:57070 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810Ab3K1L6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 06:55:34 -0500
-Message-ID: <52972F3A.9090103@linaro.org>
-Date: Thu, 28 Nov 2013 12:55:38 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 28 Nov 2013 06:58:33 -0500
+Date: Thu, 28 Nov 2013 12:58:22 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Davidlohr Bueso <davidlohr@hp.com>
+cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jason Low <jason.low2@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Darren Hart <dvhart@linux.intel.com>, Mike Galbraith <efault@gmx.de>,
+        Jeff Mahoney <jeffm@suse.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Scott Norton <scott.norton@hp.com>, Tom Vaden <tom.vaden@hp.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Waiman Long <Waiman.Long@hp.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC patch 0/5] futex: Allow lockless empty check of hashbucket
+ plist in futex_wake()
+In-Reply-To: <1385624678.22210.25.camel@buesod1.americas.hpqcorp.net>
+Message-ID: <alpine.DEB.2.02.1311281211530.30673@ionos.tec.linutronix.de>
+References: <20131125203358.156292370@linutronix.de>  <1385453551.12603.16.camel@buesod1.americas.hpqcorp.net>  <20131126085256.GD789@laptop.programming.kicks-ass.net>  <1385493911.25945.3.camel@buesod1.americas.hpqcorp.net>  <1385499085.23083.7.camel@buesod1.americas.hpqcorp.net>
+  <alpine.DEB.2.02.1311262206150.30673@ionos.tec.linutronix.de> <1385624678.22210.25.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 4/9] clocksource/cadence_ttc: Use enable/disable_irq
-References: <1385514296-26702-1-git-send-email-soren.brinkmann@xilinx.com> <1385514296-26702-5-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1385514296-26702-5-git-send-email-soren.brinkmann@xilinx.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2013 02:04 AM, Soren Brinkmann wrote:
-> To ensure that the timer interrupt is properly enabled/disabled across
-> the whole CPU cluster use enable/disable_irq() instead of
-> local_irq_disable().
->
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
->   drivers/clocksource/cadence_ttc_timer.c | 6 ++----
->   1 file changed, 2 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
-> index a92350b55d32..246d018d1e63 100644
-> --- a/drivers/clocksource/cadence_ttc_timer.c
-> +++ b/drivers/clocksource/cadence_ttc_timer.c
-> @@ -322,18 +322,16 @@ static int ttc_rate_change_clockevent_cb(struct notifier_block *nb,
->   	switch (event) {
->   	case POST_RATE_CHANGE:
->   	{
-> -		unsigned long flags;
-> -
->   		/*
->   		 * clockevents_update_freq should be called with IRQ disabled on
->   		 * the CPU the timer provides events for. The timer we use is
->   		 * common to both CPUs, not sure if we need to run on both
->   		 * cores.
->   		 */
-> -		local_irq_save(flags);
-> +		disable_irq(ttcce->ce.irq);
->   		clockevents_update_freq(&ttcce->ce,
->   				ndata->new_rate / PRESCALE);
-> -		local_irq_restore(flags);
-> +		enable_irq(ttcce->ce.irq);
->
->   		/* update cached frequency */
->   		ttc->freq = ndata->new_rate;
->
+On Wed, 27 Nov 2013, Davidlohr Bueso wrote:
+> On Wed, 2013-11-27 at 00:56 +0100, Thomas Gleixner wrote:
+> > As a side note, it might be worthwhile to epxlore whether forcing the
+> > hash buckets to be cache line aligned gives us an advantage over
+> > blindly increasing the hash size:
+> > 
+> >  We could avoid access across cacheline boundaries and also avoid
+> >  massive cache line bouncing if multiple cpus are hammering away at
+> >  different hash buckets which happen to reside in the same cache line.
+> 
+> How about both enlarging the table _and_ aligning the buckets? As you
+> know, increasing the size of the table also benefits (particularly in
+> larger systems) in having more spinlocks. So we reduce the amount of
+> collisions and alleviate contention on the hb->lock. Btw, do you have
+> any particular concerns about the larger hash table patch? 
 
-I am worried about the 'disable_irq' function calling 'synchronize_irq'. 
-Isn't possible to deadlock with the ondemand cpufreq governor ? I added 
-Viresh in Cc, he knows better than me the code path.
+I'm not against increasing the hash table size, but I'm very
+interested in investigating the alignment effect as a separate issue.
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+> > But back to the problem at hand.
+> > 
+> > I'm leaning towards your initial atomic_inc() approach for the
+> > following reasons:
+> > 
+> > 1) It avoids the queue/unqueue dance in the error and (*uaddr != uval)
+> >    case. The latter is the one you are optimizing for.
+> > 
+> >    We dirty the cache line in any case on the waiter side.
+> > 
+> >    With the optimized check, we avoid dirtying the cache line on the
+> >    waker side in the case that there is no waiter in flight or
+> >    enqueued.
+> > 
+> > 2) It's very simple to make it OPT-IN. That allows architectures to
+> >    trade the mb/memory overhead with the spinlock contention overhead.
+> > 
+> >    A lot of [embedded] architectures do not care at all about the
+> >    futex performance simply because they do not run futex sensitive
+> >    workloads. And others might want to avoid the heavy smp_mb() for
+> >    obvious reasons.
+> > 
+> >    Make that a CONFIG switch which can be selected by the user or by a
+> >    select statement in the arch. That also allows archs to determine
+> >    the costs of that optimization just by recompiling with a different
+> >    .config.
+> 
+> Would it be useful to consider NR_CPUS? Sure, you get the problem of
+> when it's too little or too big, but it would deal quite well for
+> smaller systems - perhaps it could at least be mentioned in the option
+> description/help. I don't think users should have a direct say in the
+> option, though.
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Right, it does not need to be user selectable. And thinking more about
+it, it shouldn't be an issue for any architecture. It's pointless for
+UP though. 
+
+What might be interesting in terms of NR_CPUS is the hash table
+size. That might want to scale with the system size.
+
+Thanks,
+
+	tglx
 
