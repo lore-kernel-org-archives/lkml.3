@@ -1,144 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759326Ab3K1SJs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 13:09:48 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:57482 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759301Ab3K1SJg (ORCPT
+	id S1759153Ab3K1SJS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 13:09:18 -0500
+Received: from order.stressinduktion.org ([87.106.68.36]:44724 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755575Ab3K1SJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 13:09:36 -0500
-Date: Fri, 29 Nov 2013 02:11:14 +0800
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: murzin.v@gmail.com
-Cc: akpm@linux-foundation.org, iamjoonsoo.kim@lge.com,
-        zhangyanfei@cn.fujitsu.com, rientjes@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]mm/vmalloc: interchage the implementation of
- vmalloc_to_{pfn,page}
-Message-ID: <20131128181114.GA5154@lcx>
-MIME-Version: 1.0
+	Thu, 28 Nov 2013 13:09:16 -0500
+Date: Thu, 28 Nov 2013 19:09:14 +0100
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: jongman.heo@samsung.com, David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] inet: fix possible seqlock deadlocks
+Message-ID: <20131128180914.GA24171@order.stressinduktion.org>
+Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
+	jongman.heo@samsung.com, David Miller <davem@davemloft.net>,
+	"netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <13025162.118881385612276530.JavaMail.weblogic@epv6ml01> <1385659390.5352.20.camel@edumazet-glaptop2.roam.corp.google.com> <1385661082.5352.34.camel@edumazet-glaptop2.roam.corp.google.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1385661082.5352.34.camel@edumazet-glaptop2.roam.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 28, 2013 at 09:51:22AM -0800, Eric Dumazet wrote:
+> From: Eric Dumazet <edumazet@google.com>
+> 
+> In commit c9e9042994d3 ("ipv4: fix possible seqlock deadlock") I left
+> another places where IP_INC_STATS_BH() were improperly used.
+> 
+> udp_sendmsg(), ping_v4_sendmsg() and tcp_v4_connect() are called from
+> process context, not from softirq context.
+> 
+> This was detected by lockdep seqlock support.
+> 
+> Reported-by: jongman heo <jongman.heo@samsung.com>
+> Fixes: 584bdf8cbdf6 ("[IPV4]: Fix "ipOutNoRoutes" counter error for TCP and UDP")
+> Fixes: c319b4d76b9e ("net: ipv4: add IPPROTO_ICMP socket kind")
+> Signed-off-by: Eric Dumazet <edumazet@google.com>
+> Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-Hi, Vladimir,
+Just got home after getting distracted with other things today and the work is
+already done. Thanks, Eric! ;)
 
-On Fri, Nov 29, 2013 at 1:41 AM, Vladimir Murzin <murzin.v@gmail.com> wrote:
->
-> Any numbers for efficiency?
->
+Exactly the spots I noticed this morning, so
 
-For the original implementation, vmalloc_to_pfn() wraps the vmalloc_to_page(),
-which means
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-     pfn   ------>         struct page      ------>    pfn
-      |                                                          |
-  vmalloc_to_page()                             vmalloc_to_pfn()
+Should we do something about the naming? I find it rather dangerous because
+they look like the _bh lock postfixes but act exactly in the opposite?
 
-So this patch interchange the implementation, do the dirty page table
-walking code in vmalloc_to_pfn(), and then vmalloc_to_page() uses it, the graph
-now becomes
+Greetings,
 
-     pfn            ------>         struct page        
-       |                                     |
-  vmalloc_to_pfn()         vmalloc_to_page()
+  Hannes
 
-
->>  /*
->> - * Walk a vmap address to the struct page it maps.
->> + * Walk a vmap address to the physical pfn it maps to.
->>   */
->> -struct page *vmalloc_to_page(const void *vmalloc_addr)
->> +unsigned long vmalloc_to_pfn(const void *vmalloc_addr)
->>  {
->>       unsigned long addr = (unsigned long) vmalloc_addr;
->> -     struct page *page = NULL;
->> +     unsigned long pfn;
->
-> uninitialized pfn will lead to a bug.
->
-
-Why? The coding pratice has mandates we use it after we initialize it,
-And if we initialize it , to what value will it promise no bug?
-It is unlikely a rubbish initial value will creep in.
-
-
->>       /*
->> @@ -244,23 +244,23 @@ struct page *vmalloc_to_page(const void *vmalloc_addr)
->>                               ptep = pte_offset_map(pmd, addr);
->>                               pte = *ptep;
->>                               if (pte_present(pte))
->> -                                     page = pte_page(pte);
->> +                                     pfn = pte_page(pte);
->
-> page_to_pfn is missed here.
->
-> Have you ever tested there is no functional changes?
-
-Oh, gods. My fault. It did has no functional changes.
-
-I just sent the incorrect patch...
-
-it should be  
- -   page = pte_page(pte);
- +  pfn = pte_pfn(pte);;
-
-Here is the resent patch:
-
-
----
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 0fdf968..e4f0db2 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -220,12 +220,12 @@ int is_vmalloc_or_module_addr(const void *x)
- }
- 
- /*
-- * Walk a vmap address to the struct page it maps.
-+ * Walk a vmap address to the physical pfn it maps to.
-  */
--struct page *vmalloc_to_page(const void *vmalloc_addr)
-+unsigned long vmalloc_to_pfn(const void *vmalloc_addr)
- {
- 	unsigned long addr = (unsigned long) vmalloc_addr;
--	struct page *page = NULL;
-+	unsigned long pfn = 0;
- 	pgd_t *pgd = pgd_offset_k(addr);
- 
- 	/*
-@@ -244,23 +244,23 @@ struct page *vmalloc_to_page(const void *vmalloc_addr)
- 				ptep = pte_offset_map(pmd, addr);
- 				pte = *ptep;
- 				if (pte_present(pte))
--					page = pte_page(pte);
-+					pfn = pte_pfn(pte);
- 				pte_unmap(ptep);
- 			}
- 		}
- 	}
--	return page;
-+	return pfn;
- }
--EXPORT_SYMBOL(vmalloc_to_page);
-+EXPORT_SYMBOL(vmalloc_to_pfn);
- 
- /*
-- * Map a vmalloc()-space virtual address to the physical page frame number.
-+ * Map a vmalloc()-space virtual address to the struct page.
-  */
--unsigned long vmalloc_to_pfn(const void *vmalloc_addr)
-+struct page *vmalloc_to_page(const void *vmalloc_addr)
- {
--	return page_to_pfn(vmalloc_to_page(vmalloc_addr));
-+	return pfn_to_page(vmalloc_to_pfn(vmalloc_addr));
- }
--EXPORT_SYMBOL(vmalloc_to_pfn);
-+EXPORT_SYMBOL(vmalloc_to_page);
- 
- 
- /*** Global kva allocator ***/
