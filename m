@@ -1,89 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750962Ab3K1FZd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 00:25:33 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39828 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750753Ab3K1FZb (ORCPT
+	id S1751206Ab3K1F3V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 00:29:21 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:19403 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab3K1F3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 00:25:31 -0500
-Message-ID: <1385616317.23855.75.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 3.12 07/19] tcp: gso: fix truesize tracking
-From: Ben Hutchings <ben@decadent.org.uk>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Thu, 28 Nov 2013 05:25:17 +0000
-In-Reply-To: <20131118183646.248381899@linuxfoundation.org>
-References: <20131118183644.030738675@linuxfoundation.org>
-	 <20131118183646.248381899@linuxfoundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Z90FvmgZRjUw68asvEwv"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.213
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 28 Nov 2013 00:29:19 -0500
+X-AuditID: cbfee68e-b7f7e6d00000477d-09-5296d4adf463
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Joe Perches'" <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Andy Whitcroft'" <apw@canonical.com>, linux-serial@vger.kernel.org,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
+References: <000601ceebdc$ee148de0$ca3da9a0$%han@samsung.com>
+ <20131128040750.GA29917@kroah.com>
+In-reply-to: <20131128040750.GA29917@kroah.com>
+Subject: Re: [PATCH 1/5] serial: 8250_pci: use DEFINE_PCI_DEVICE_TABLE macro
+Date: Thu, 28 Nov 2013 14:29:17 +0900
+Message-id: <006001ceebfa$c85a1020$590e3060$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7r70qA1twBffhdRoW+oAhOCVi6rAACl03w
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t8zA921V6YFGXTNN7WYs34Nm8WHtRoW
+	zYvXs1nMvv+YxeLyrjlsFmcW97I7sHnMauhl8zgx4zeLx/65a9g9vqy6xuzxeZNcAGsUl01K
+	ak5mWWqRvl0CV8aKRV9ZCr5xVDxZuZq1gXEeexcjJ4eEgInE3Q/rWCFsMYkL99azdTFycQgJ
+	LGOUuDD/MSNM0Yu/GxkhEosYJRbfWMcC4fwCcg48ABvFJqAm8eXLYTBbREBZYsGizywgNrPA
+	CUaJ1W0iILaQQJLEto+zmUBsTgF9iQVvroDVCAv4SCzePhUsziKgKtG35CnYSbwCthJn7ryE
+	sgUlfky+BzVTS2L9zuNMELa8xOY1b5m7GDmALlWXePRXF+IEI4lZnx4yQ5SISOx78Q7qmXvs
+	EltOeEKsEpD4NvkQC0SrrMSmA8wQJZISB1fcYJnAKDELyeJZSBbPQrJ4FpINCxhZVjGKphYk
+	FxQnpRcZ6RUn5haX5qXrJefnbmKERGzfDsabB6wPMSYDrZ/ILCWanA+M+LySeENjMyMLUxNT
+	YyNzSzPShJXEeRc9TAoSEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwJi8vOT+NYvj7tvKxHl6
+	EladE3GVW5kds97UYP35apdNBUE3wjwrXNg2Z91carD8QXqTUeeze1zvP+0oLT+jqLO9p1xz
+	xSuh9tueed0hvho/Lm5WblLya7s783tE7J02D6OEz2W9Ny5tYK5K/zdP909S2T2OXQccft9d
+	q9minRZry8N2UiL4ghJLcUaioRZzUXEiALlCv4fuAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJKsWRmVeSWpSXmKPExsVy+t9jAd21V6YFGVxcZWgxZ/0aNosPazUs
+	mhevZ7OYff8xi8XlXXPYLM4s7mV3YPOY1dDL5nFixm8Wj/1z17B7fFl1jdnj8ya5ANaoBkab
+	jNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKALlBTKEnNK
+	gUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZKxZ9ZSn4xlHxZOVq1gbGeexdjJwc
+	EgImEi/+bmSEsMUkLtxbz9bFyMUhJLCIUWLxjXUsEM4vIOfAA7AONgE1iS9fDoPZIgLKEgsW
+	fWYBsZkFTjBKrG4TAbGFBJIktn2czQRicwroSyx4cwWsRljAR2Lx9qlgcRYBVYm+JU9ZQWxe
+	AVuJM3deQtmCEj8m34OaqSWxfudxJghbXmLzmrfMXYwcQJeqSzz6qwtxgpHErE8PmSFKRCT2
+	vXjHOIFRaBaSSbOQTJqFZNIsJC0LGFlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgQnhGfS
+	OxhXNVgcYhTgYFTi4ZXQmRYkxJpYVlyZe4hRgoNZSYRXoRgoxJuSWFmVWpQfX1Sak1p8iDEZ
+	6NGJzFKiyfnAZJVXEm9obGJmZGlkZmFkYm5OmrCSOO/BVutAIYH0xJLU7NTUgtQimC1MHJxS
+	DYyibIurLYJXbNz9+aTVmU8brHs/85/+KFT/a07Q1PYFzQJa0wy0+wytL/5/kL3t/td+zrXz
+	eC7Fa385IOV6pc599/qKVbMOWi8yO9zhLNa3c+opS5akya59f6VcZkzJN7jjelj6k/7qimSJ
+	L24LjrjNtBYM7sjz58i8OMFy3TR/jieRv1/uLmhUYinOSDTUYi4qTgQAIbd8D0wDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday, November 28, 2013 1:08 PM, Greg Kroah-Hartman wrote:
+> On Thu, Nov 28, 2013 at 10:55:35AM +0900, Jingoo Han wrote:
+> > This macro is used to create a struct pci_device_id array.
+> 
+> Yeah, and it's a horrid macro that deserves to be removed, please don't
+> use it in more places.
+> 
+> Actually, if you could just remove it, that would be best, sorry, I'm
+> not going to take these patches.
 
---=-Z90FvmgZRjUw68asvEwv
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+(+cc Joe Perches, Andrew Morton, Andy Whitcroft)
 
-On Mon, 2013-11-18 at 10:37 -0800, Greg Kroah-Hartman wrote:
-> 3.12-stable review patch.  If anyone has any objections, please let me kn=
-ow.
->=20
-> ------------------
->=20
-> From: Eric Dumazet <edumazet@google.com>
->=20
-> [ Upstream commit 0d08c42cf9a71530fef5ebcfe368f38f2dd0476f ]
->=20
-> commit 6ff50cd55545 ("tcp: gso: do not generate out of order packets")
-> had an heuristic that can trigger a warning in skb_try_coalesce(),
-> because skb->truesize of the gso segments were exactly set to mss.
-[...]
+Hi Joe Perches,
 
-That commit went in 3.10, but this fix hasn't been applied to 3.10.y.
+Would you fix checkpatch.pl about DEFINE_PCI_DEVICE_TABLE?
+Currently, checkpatch.pl guides to use DEFINE_PCI_DEVICE_TABLE
+as below.
 
-David, this code moved from net/ipv4/tcp.c to tcp_offload.c after 3.10
-and this patch applies textually after adjusting the filename.  Please
-consider including it in the next batch of stable fixes for 3.10.
+  WARNING: Use DEFINE_PCI_DEVICE_TABLE for struct pci_device_id
+  #331: FILE: drivers/usb/host/ehci-pci.c:331:
+  +static const struct pci_device_id pci_ids [] = { {
 
-Ben.
+However, Greg Kroah-Hartman mentioned that DEFINE_PCI_DEVICE_TABLE
+shouldn't be used anymore.
 
---=20
-Ben Hutchings
-Usenet is essentially a HUGE group of people passing notes in class.
-                      - Rachel Kadel, `A Quick Guide to Newsgroup Etiquette=
-'
+So, would you change checkpatch.pl in order to guide to use
+struct pci_device_id instead of DEFINE_PCI_DEVICE_TABLE?
 
---=-Z90FvmgZRjUw68asvEwv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+For example,
+  WARNING: Use struct pci_device_id instead of DEFINE_PCI_DEVICE_TABLE
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+Thank you.
 
-iQIVAwUAUpbTvee/yOyVhhEJAQrykQ//Rl7M9l6lTufkG5tVeTsB7mzLLdUDW/7A
-PLTJtYDMZy8Ampwq0DlXvFvWBm0Tz+a6EToG6Xlea7G9kd7K4AkWfe6/bUNFU0By
-2SUQ961FNYNvV5RN5lKb0wVYmXdSARvuCQmKXnYrvdpEsXr9/AJQlh8i3kwqE64+
-05XO/Vps7H1GH3+IhnLGsNxfQFePR1HbFDT+bEckfZw8ntIQdi1t2KvO+qkBQuG2
-/rAhdoJBp5oiCWylynxW1i1HronklW3iC2WBqBlf6lWlgUDwN/dNeqhxs5KMDQ7w
-v/vezOWLm/nu0642HFAXDxKqe6mSNeSWF7gUtp4mUva98svzKAqEPpF4Crpeo2qX
-K5X1/92CmwoRLXXvbb41+U+OseEGSQpIzJUNUCAF/miJDsKoiQyLjmH9PHoYnDpp
-iPczGfQU0LDg4eB+6oSsQ7iKEJGZuzVQk0GUxQmantNHZRjQxgg6Vx4t021VeB6Z
-hv923TqBJkG9s71+G/HY5zJXpayCAM0M8wm38H/4SWJvwlWINpp8wZM9o80SGyHf
-SsMf/zcbYRi5aSTWCE9V3Q5v2sm0pmgUciVtWYO2csmHutTwvBWrJ09oiMpXhYnT
-0ePNQBpdh1/xXmKsvQ+ZT79KOuix5+ag5fWmVz51MtO0m+LLIx8veAN3YNqKJ60F
-2A3WSyF69P4=
-=s49N
------END PGP SIGNATURE-----
+Best regards,
+Jingoo Han
 
---=-Z90FvmgZRjUw68asvEwv--
