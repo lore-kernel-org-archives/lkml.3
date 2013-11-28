@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759348Ab3K1LiZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 06:38:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3452 "EHLO mx1.redhat.com"
+	id S1759375Ab3K1Lit (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 06:38:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52518 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758957Ab3K1Lel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 06:34:41 -0500
+	id S1758979Ab3K1Leg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 06:34:36 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,19 +14,23 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 20/29] tools lib traceevent: Remove malloc_or_die from plugin_function.c
-Date: Thu, 28 Nov 2013 12:33:19 +0100
-Message-Id: <1385638408-23519-21-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 18/29] tools lib traceevent: Use pevent_print_func_field in hrtimer_start handler
+Date: Thu, 28 Nov 2013 12:33:17 +0100
+Message-Id: <1385638408-23519-19-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1385638408-23519-1-git-send-email-jolsa@redhat.com>
 References: <1385638408-23519-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing malloc_or_die calls from plugin_function.c,
-replacing them with standard malloc and error path.
+The pevent_print_func_field function encompasses all the
+functionality used in the hrtimer_start handler. Changing
+the handler to use this function.
 
-Suggested-by: Namhyung Kim <namhyung@kernel.org>
+This also unifies the function field output with the
+hrtimer_expire_entry handler.
+
+Suggested-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -38,45 +42,46 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/lib/traceevent/plugin_function.c | 15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ tools/lib/traceevent/plugin_hrtimer.c | 19 ++-----------------
+ 1 file changed, 2 insertions(+), 17 deletions(-)
 
-diff --git a/tools/lib/traceevent/plugin_function.c b/tools/lib/traceevent/plugin_function.c
-index 87acf9c..328d17d 100644
---- a/tools/lib/traceevent/plugin_function.c
-+++ b/tools/lib/traceevent/plugin_function.c
-@@ -44,10 +44,16 @@ static void add_child(struct func_stack *stack, const char *child, int pos)
- 		free(stack->stack[pos]);
- 	else {
- 		if (!stack->stack)
--			stack->stack = malloc_or_die(sizeof(char *) * STK_BLK);
-+			stack->stack = malloc(sizeof(char *) * STK_BLK);
- 		else
- 			stack->stack = realloc(stack->stack, sizeof(char *) *
- 					       (stack->size + STK_BLK));
-+
-+		if (!stack->stack) {
-+			warning("could not allocate plugin memory\n");
-+			return;
-+		}
-+
- 		for (i = stack->size; i < stack->size + STK_BLK; i++)
- 			stack->stack[i] = NULL;
- 		stack->size += STK_BLK;
-@@ -67,7 +73,12 @@ static int add_and_get_index(const char *parent, const char *child, int cpu)
- 		if (fstack)
- 			fstack = realloc(fstack, sizeof(*fstack) * (cpu + 1));
- 		else
--			fstack = malloc_or_die(sizeof(*fstack) * (cpu + 1));
-+			fstack = malloc(sizeof(*fstack) * (cpu + 1));
-+
-+		if (!fstack) {
-+			warning("could not allocate plugin memory\n");
-+			return 0;
-+		}
+diff --git a/tools/lib/traceevent/plugin_hrtimer.c b/tools/lib/traceevent/plugin_hrtimer.c
+index e41d4cf..0b0ebf3 100644
+--- a/tools/lib/traceevent/plugin_hrtimer.c
++++ b/tools/lib/traceevent/plugin_hrtimer.c
+@@ -48,10 +48,6 @@ static int timer_start_handler(struct trace_seq *s,
+ 			       struct pevent_record *record,
+ 			       struct event_format *event, void *context)
+ {
+-	struct pevent *pevent = event->pevent;
+-	struct format_field *fn = pevent_find_field(event, "function");
+-	void *data = record->data;
+-
+ 	trace_seq_printf(s, "hrtimer=");
  
- 		/* Account for holes in the cpu count */
- 		for (i = cpus + 1; i <= cpu; i++)
+ 	if (pevent_print_num_field(s, "0x%llx", event, "timer",
+@@ -59,19 +55,8 @@ static int timer_start_handler(struct trace_seq *s,
+ 		pevent_print_num_field(s, "0x%llx", event, "hrtimer",
+ 				       record, 1);
+ 
+-	if (!fn) {
+-		trace_seq_printf(s, " function=MISSING");
+-	} else {
+-		unsigned long long function;
+-		const char *func;
+-
+-		if (pevent_read_number_field(fn, data, &function))
+-			trace_seq_printf(s, " function=INVALID");
+-
+-		func = pevent_find_function(pevent, function);
+-
+-		trace_seq_printf(s, " function=%s", func);
+-	}
++	pevent_print_func_field(s, " function=%s", event, "function",
++				record, 0);
+ 
+ 	trace_seq_printf(s, " expires=");
+ 	pevent_print_num_field(s, "%llu", event, "expires", record, 1);
 -- 
 1.8.3.1
 
