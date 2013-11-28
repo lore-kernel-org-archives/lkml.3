@@ -1,157 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050Ab3K1JYm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 04:24:42 -0500
-Received: from merkurneu.hrz.uni-giessen.de ([134.176.2.3]:43697 "EHLO
-	merkurneu.hrz.uni-giessen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750741Ab3K1JYg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 04:24:36 -0500
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Nov 2013 04:24:36 EST
-From: Marc Dietrich <Marc.Dietrich@ap.physik.uni-giessen.de>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Rhyland Klein <rklein@nvidia.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Alex Courbot <acourbot@nvidia.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Rob Landley <rob@landley.net>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/6] ARM: tegra: add gpiod_lookup table for paz00
-Date: Thu, 28 Nov 2013 10:09:14 +0100
-Message-Id: <4501377.Eymj5teNBr@fb07-iapwap2>
-Organization: Institut =?UTF-8?B?ZsO8cg==?= Angewandte Physik, Justus-Liebig-Universtaet Giessen
-User-Agent: KMail/4.11.2 (Linux/3.12.1-1.g999c17a-desktop; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <CAAVeFuJiTg1j9ox6=rF00xSBiSmRSyvkGYWHSfmPAoo6JUQVfw@mail.gmail.com>
-References: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com> <52962214.9030203@nvidia.com> <CAAVeFuJiTg1j9ox6=rF00xSBiSmRSyvkGYWHSfmPAoo6JUQVfw@mail.gmail.com>
+	id S1753218Ab3K1JZJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 04:25:09 -0500
+Received: from gmmr7.centrum.cz ([46.255.225.249]:49470 "EHLO gmmr7.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751083Ab3K1JZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 04:25:03 -0500
+X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Nov 2013 04:25:02 EST
+To: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>,
+        =?utf-8?q?Ma=2C_Xindong?= <xindong.ma@intel.com>
+Subject: =?utf-8?q?Re=3A_=5BPATCH=5D_Fix_race_between_oom_kill_and_task_exit?=
+Date: Thu, 28 Nov 2013 10:18:50 +0100
+From: "azurIt" <azurit@pobox.sk>
+Cc: =?utf-8?q?akpm=40linux=2Dfoundation=2Eorg?= 
+	<akpm@linux-foundation.org>,
+        =?utf-8?q?mhocko=40suse=2Ecz?= <mhocko@suse.cz>,
+        =?utf-8?q?rientjes=40google=2Ecom?= <rientjes@google.com>,
+        =?utf-8?q?rusty=40rustcorp=2Ecom=2Eau?= <rusty@rustcorp.com.au>,
+        =?utf-8?q?linux=2Dmm=40kvack=2Eorg?= <linux-mm@kvack.org>,
+        =?utf-8?q?linux=2Dkernel=40vger=2Ekernel=2Eorg?= 
+	<linux-kernel@vger.kernel.org>,
+        =?utf-8?q?=27Peter_Zijlstra=27?= <peterz@infradead.org>,
+        =?utf-8?q?=27gregkh=40linuxfoundation=2Eorg=27?= 
+	<gregkh@linuxfoundation.org>,
+        =?utf-8?q?Tu=2C_Xiaobing?= <xiaobing.tu@intel.com>,
+        =?utf-8?q?William_Dauchy?= <wdauchy@gmail.com>
+References: <3917C05D9F83184EAA45CE249FF1B1DD0253093A@shsmsx103.ccr.corp.intel.com> <20131128063505.GN3556@cmpxchg.org>
+In-Reply-To: <20131128063505.GN3556@cmpxchg.org>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="UTF-8"
-X-HRZ-JLUG-MailScanner-Information: Passed JLUG virus check
-X-HRZ-JLUG-MailScanner: No virus found
-X-Envelope-From: marc.dietrich@ap.physik.uni-giessen.de
+Message-Id: <20131128101850.9F8A4575@pobox.sk>
+X-Maser: oho
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> Od: Johannes Weiner <hannes@cmpxchg.org>
+> Komu: "Ma, Xindong" <xindong.ma@intel.com>
+> Dátum: 28.11.2013 07:54
+> Predmet: Re: [PATCH] Fix race between oom kill and task exit
+>
+> CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>, "mhocko@suse.cz" <mhocko@suse.cz>, "rientjes@google.com" <rientjes@google.com>, "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>, "linux-mm@kvack.org" <linux-mm@kvack.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "'Peter Zijlstra'" <peterz@infradead.org>, "'gregkh@linuxfoundation.org'" <gregkh@linuxfoundation.org>, "Tu, Xiaobing" <xiaobing.tu@intel.com>, "William Dauchy" <wdauchy@gmail.com>
+>Cc William and azur who might have encountered this problem.
+>
+>On Thu, Nov 28, 2013 at 05:09:16AM +0000, Ma, Xindong wrote:
+>> From: Leon Ma <xindong.ma@intel.com>
+>> Date: Thu, 28 Nov 2013 12:46:09 +0800
+>> Subject: [PATCH] Fix race between oom kill and task exit
+>> 
+>> There is a race between oom kill and task exit. Scenario is:
+>>    TASK  A                      TASK  B
+>> TASK B is selected to oom kill
+>> in oom_kill_process()
+>> check PF_EXITING of TASK B
+>>                             task call do_exit()
+>>                             task set PF_EXITING flag
+>>                             write_lock_irq(&tasklist_lock);
+>>                             remove TASK B from thread group in __unhash_process()
+>>                             write_unlock_irq(&tasklist_lock);
+>> read_lock(&tasklist_lock);
+>> traverse threads of TASK B
+>> read_unlock(&tasklist_lock);
+>> 
+>> After that, the following traversal of threads in TASK B will not end because TASK B is not in the thread group:
+>> do {
+>> ....
+>> } while_each_thread(p, t);
+>> 
+>> Signed-off-by: Leon Ma <xindong.ma@intel.com>
+>> Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
+>> ---
+>>  mm/oom_kill.c |   20 ++++++++++----------
+>>  1 files changed, 10 insertions(+), 10 deletions(-)
+>> 
+>> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+>> index 1e4a600..32ec88d 100644
+>> --- a/mm/oom_kill.c
+>> +++ b/mm/oom_kill.c
+>> @@ -412,16 +412,6 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+>>  	static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
+>>  					      DEFAULT_RATELIMIT_BURST);
+>>  
+>> -	/*
+>> -	 * If the task is already exiting, don't alarm the sysadmin or kill
+>> -	 * its children or threads, just set TIF_MEMDIE so it can die quickly
+>> -	 */
+>> -	if (p->flags & PF_EXITING) {
+>> -		set_tsk_thread_flag(p, TIF_MEMDIE);
+>> -		put_task_struct(p);
+>> -		return;
+>> -	}
+>> -
+>>  	if (__ratelimit(&oom_rs))
+>>  		dump_header(p, gfp_mask, order, memcg, nodemask);
+>>  
+>> @@ -437,6 +427,16 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+>>  	 * still freeing memory.
+>>  	 */
+>>  	read_lock(&tasklist_lock);
+>> +	/*
+>> +	 * If the task is already exiting, don't alarm the sysadmin or kill
+>> +	 * its children or threads, just set TIF_MEMDIE so it can die quickly
+>> +	 */
+>> +	if (p->flags & PF_EXITING) {
+>> +		set_tsk_thread_flag(p, TIF_MEMDIE);
+>> +		put_task_struct(p);
+>> +		read_unlock(&tasklist_lock);
+>> +		return;
+>> +	}
+>>  	do {
+>>  		list_for_each_entry(child, &t->children, sibling) {
+>>  			unsigned int child_points;
+>> -- 
+>> 1.7.4.1
+>> 
+>
 
-Am Donnerstag, 28. November 2013, 11:47:34 schrieb Alexandre Courbot:
-> On Thu, Nov 28, 2013 at 1:47 AM, Rhyland Klein <rklein@nvidia.com> wrote:
-> > On 11/26/2013 5:05 AM, Mika Westerberg wrote:
-> >> From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> >> 
-> >> This makes it possible to request the gpio descriptors in
-> >> rfkill_gpio driver regardless of the platform.
-> >> 
-> >> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> >> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> >> Tested-by: Stephen Warren <swarren@nvidia.com>
-> >> ---
-> >> 
-> >>  arch/arm/mach-tegra/board-paz00.c | 7 +++++++
-> >>  1 file changed, 7 insertions(+)
-> >> 
-> >> diff --git a/arch/arm/mach-tegra/board-paz00.c
-> >> b/arch/arm/mach-tegra/board-paz00.c index 06f024070dab..a309795da665
-> >> 100644
-> >> --- a/arch/arm/mach-tegra/board-paz00.c
-> >> +++ b/arch/arm/mach-tegra/board-paz00.c
-> >> @@ -18,6 +18,7 @@
-> >> 
-> >>   */
-> >>  
-> >>  #include <linux/platform_device.h>
-> >> 
-> >> +#include <linux/gpio/driver.h>
-> >> 
-> >>  #include <linux/rfkill-gpio.h>
-> >>  #include "board.h"
-> >> 
-> >> @@ -36,7 +37,13 @@ static struct platform_device wifi_rfkill_device = {
-> >> 
-> >>       },
-> >>  
-> >>  };
-> >> 
-> >> +static struct gpiod_lookup wifi_gpio_lookup[] = {
-> >> +     GPIO_LOOKUP_IDX("tegra-gpio", 25, "rfkill_gpio", NULL, 0, 0),
-> >> +     GPIO_LOOKUP_IDX("tegra-gpio", 85, "rfkill_gpio", NULL, 1, 0),
-> >> +};
-> > 
-> > I wouldn't think this table would match for the gpios as the driver
-> > currently is. From what I see, the driver calls into gpiod_get_index,
-> > which will try 1 of 3 ways of getting the gpios:
-> > 
-> > of-enabled: of_find_gpio
-> > 
-> >         - which I believe wouldn't work for paz00, since rfkill
-> >         
-> >           doesn't support dt?
-> > 
-> > acpi: acpi_find_gpio
-> > 
-> >         - I assume this does work, but I didn't dive into it
-> > 
-> > gpiod lookup table: gpiod_find
-> > 
-> >         - I think this is the path we expect to be taken, given the
-> >         addition of
-> > 
-> > the lookup table here, but I don't think it would actually match.
-> > Looking at the code for gpiod_find, it seems like it would try to match
-> > the con_id, but would fail. Patch 2/6 is passing the reset_name and
-> > shutdown_name for the con_ids, which isn't what is registered in this
-> > table.
-> > 
-> > Shouldn't it look more like this?
-> > 
-> > +static struct gpiod_lookup wifi_gpio_lookup[] = {
-> > +       GPIO_LOOKUP_IDX("tegra-gpio", 25, "rfkill_gpio_reset", NULL, 0,
-> > 0),
-> > +       GPIO_LOOKUP_IDX("tegra-gpio", 85, "rfkill_gpio_shutdown", NULL, 1,
-> > 0), +};
-> 
-> The original GPIO lookup table specifies the device name
-> ("rfkill_gpio"), no con_id, and an index. gpiod_find() will ensure
-> that the device names match, skip the con_id (as it is null in the
-> table), and again require that the indexes are the same. So provided
-> the instanciated device's dev_name() is "rfkill_gpio" (which it seems
-> to be according to the driver - not sure if it could become
-> "rfkill_gpio.0"), then I'd say the GPIOs will match. The con_id passed
-> to gpiod_get() will only be used as a label for debugfs. I am not sure
-> where the "rfkill_gpio_reset" you mention comes from?
-> 
-> One could wonder why the names of the GPIO are not hardcoded in the
-> driver instead of being defined as platform data, but that point could
-> be improved in a future patch.
-> 
-> It is true however that the platform GPIO lookup mechanism is
-> confusing at best, on top of being inefficient (one big linked list).
-> I have a patch in the pipe that should improve both points by making
-> GPIO lookup tables defined per-device - don't hesitate to merge this
-> series first if it works though.
 
-I'll try to apply the patches and check on the actual hw. rfkill userspace 
-command should be able to enable/disable the gpio. No idea how it finds the 
-required gpio names.
 
-The real problem with the rfkill driver is that it does not support DT. A 
-naive attempt to convert it was made some year ago, but got rejected because 
-rfkill wasn't seen as isolated device which can be represented in the device-
-tree. Also it can not be added under some existing device node (e.g. the wifi 
-driver) because those devices sit normally on an "enumeratable" bus (e.g. usb, 
-pci), which is not listed in the device tree at all. This is why it still 
-requires a board file and platform_data. I wish we could find a solution for 
-this.
 
-Marc
+Hi Johannes,
 
+thank you very much! Fortunately, i didn't notice anything like this yet.
+
+azur
