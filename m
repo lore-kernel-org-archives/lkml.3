@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759419Ab3K1LmW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 06:42:22 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:35551 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810Ab3K1LmS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 06:42:18 -0500
-Date: Thu, 28 Nov 2013 12:42:14 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Luigi Semenzato <semenzato@google.com>, linux-mm@kvack.org,
-        Greg Thelen <gthelen@google.com>, Glauber Costa <glommer@gmail.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Joern Engel <joern@logfs.org>,
-        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: user defined OOM policies
-Message-ID: <20131128114214.GJ2761@dhcp22.suse.cz>
-References: <20131119131400.GC20655@dhcp22.suse.cz>
- <20131119134007.GD20655@dhcp22.suse.cz>
- <alpine.DEB.2.02.1311192352070.20752@chino.kir.corp.google.com>
- <20131120152251.GA18809@dhcp22.suse.cz>
- <CAA25o9S5EQBvyk=HP3obdCaXKjoUVtzeb4QsNmoLMq6NnOYifA@mail.gmail.com>
- <alpine.DEB.2.02.1311201933420.7167@chino.kir.corp.google.com>
- <CAA25o9Q64eK5LHhrRyVn73kFz=Z7Jji=rYWS=9jWL_4y9ZGbQA@mail.gmail.com>
- <alpine.DEB.2.02.1311251717370.27270@chino.kir.corp.google.com>
+	id S1758554Ab3K1Lo6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 06:44:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19796 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750995Ab3K1Lo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 06:44:56 -0500
+Date: Thu, 28 Nov 2013 12:45:42 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Tejun Heo <htejun@gmail.com>, zhang.yi20@zte.com.cn,
+        lkml <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH]: exec: avoid propagating PF_NO_SETAFFINITY into
+	userspace child
+Message-ID: <20131128114542.GA3826@redhat.com>
+References: <20131114115551.GA30824@redhat.com> <20131114115618.GB30824@redhat.com> <CAOS58YO_pZzBB+T6FEzNqfZv4_UUQ_QF1n1zxy4u+H_KhW-vJQ@mail.gmail.com> <OF36E72FA9.51146BE3-ON48257C2E.0008BC6D-48257C2E.0008FF9C@zte.com.cn> <20131125121416.GB23829@redhat.com> <OF4CF076F6.04AFF122-ON48257C2F.0009B6E4-48257C2F.000BF905@zte.com.cn> <20131126180420.GA18172@redhat.com> <OF99742718.77495161-ON48257C30.000A8334-48257C30.000BA983@zte.com.cn> <20131127183117.GB13098@mtj.dyndns.org> <20131128091358.GH10022@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1311251717370.27270@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131128091358.GH10022@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 25-11-13 17:29:20, David Rientjes wrote:
-> On Wed, 20 Nov 2013, Luigi Semenzato wrote:
-> 
-> > Yes, I agree that we can't always prevent OOM situations, and in fact
-> > we tolerate OOM kills, although they have a worse impact on the users
-> > than controlled freeing does.
-> > 
-> 
-> If the controlled freeing is able to actually free memory in time before 
-> hitting an oom condition, it should work pretty well.  That ability is 
-> seems to be highly dependent on sane thresholds for indvidual applications 
-> and I'm afraid we can never positively ensure that we wakeup and are able 
-> to free memory in time to avoid the oom condition.
-> 
-> > Well OK here it goes.  I hate to be a party-pooper, but the notion of
-> > a user-level OOM-handler scares me a bit for various reasons.
-> > 
-> > 1. Our custom notifier sends low-memory warnings well ahead of memory
-> > depletion.  If we don't have enough time to free memory then, what can
-> > the last-minute OOM handler do?
-> > 
-> 
-> The userspace oom handler doesn't necessarily guarantee that you can do 
-> memory freeing, our usecase wants to do a priority-based oom killing that 
-> is different from the kernel oom killer based on rss.  To do that, you 
-> only really need to read certain proc files and you can do killing based 
-> on uptime, for example.  You can also do a hierarchical traversal of 
-> memcgs based on a priority.
-> 
-> We already have hooks in the kernel oom killer, things like 
-> /proc/sys/vm/oom_kill_allocating_task
+On 11/28, Peter Zijlstra wrote:
+>
+> On Wed, Nov 27, 2013 at 01:31:17PM -0500, Tejun Heo wrote:
+> > On Wed, Nov 27, 2013 at 10:07:03AM +0800, zhang.yi20@zte.com.cn wrote:
+> > > Userspace process doesn't want the PF_NO_SETAFFINITY, but its parent may be
+> > > a kernel worker thread which has PF_NO_SETAFFINITY set, and this worker thread
+> > > can do kernel_thread() to create the child.
+> > > Clearing this flag in usersapce child to enable its migrating capability.
+> > >
+> > >
+> > > Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
+> >
+> > Acked-by: Tejun Heo <tj@kernel.org>
+> >
+> > cc'ing Ingo and Peter.  Ingo, I think this one doesn't really suit the
+> > workqueue tree.  Can you please pick this one up w/ Oleg's ack added
+> > and stable cc'd?  The original patch is
+> >
+> >   http://article.gmane.org/gmane.linux.kernel/1602429/raw
+>
+> So I don't get the problem; aren't all usermode helper thingies spawned
+> by the khelper task, which doesn't have PG_NO_SETAFFINITY set?
 
-How would you implement oom_kill_allocating_task in userspace? You do
-not have any context on who is currently allocating or would you rely on
-reading /proc/*/stack to grep for allocation functions?
+It has? khelper is a workqueue thread, this flag is set by create_worker().
 
-> and /proc/sys/vm/panic_on_oom that 
-[...]
--- 
-Michal Hocko
-SUSE Labs
+And it does kernel_thread() (not kthread_create()) so the child gets this
+flag too.
+
+> The Changelog is not explaining anything much -- so no I will not take
+> this patch.
+
+Well, perhaps the changelog can be more verbose and clear...
+
+Zhang, I'm afraid you have to send v3 ;)
+
+Oleg.
+
