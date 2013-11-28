@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758095Ab3K1MHz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 07:07:55 -0500
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:51063 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751271Ab3K1MHy (ORCPT
+	id S1758035Ab3K1MSA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 07:18:00 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48681 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754225Ab3K1MR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 07:07:54 -0500
-Message-ID: <52972CE5.6060103@st.com>
-Date: Thu, 28 Nov 2013 17:15:41 +0530
-From: Amit Virdi <amit.virdi@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Thu, 28 Nov 2013 07:17:58 -0500
+Date: Thu, 28 Nov 2013 13:17:48 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Tejun Heo <htejun@gmail.com>, zhang.yi20@zte.com.cn,
+        lkml <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH]: exec: avoid propagating PF_NO_SETAFFINITY into
+ userspace child
+Message-ID: <20131128121748.GN10022@twins.programming.kicks-ass.net>
+References: <20131114115618.GB30824@redhat.com>
+ <CAOS58YO_pZzBB+T6FEzNqfZv4_UUQ_QF1n1zxy4u+H_KhW-vJQ@mail.gmail.com>
+ <OF36E72FA9.51146BE3-ON48257C2E.0008BC6D-48257C2E.0008FF9C@zte.com.cn>
+ <20131125121416.GB23829@redhat.com>
+ <OF4CF076F6.04AFF122-ON48257C2F.0009B6E4-48257C2F.000BF905@zte.com.cn>
+ <20131126180420.GA18172@redhat.com>
+ <OF99742718.77495161-ON48257C30.000A8334-48257C30.000BA983@zte.com.cn>
+ <20131127183117.GB13098@mtj.dyndns.org>
+ <20131128091358.GH10022@twins.programming.kicks-ass.net>
+ <20131128114542.GA3826@redhat.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "marc.ceeeee@gmail.com" <marc.ceeeee@gmail.com>,
-        "spear--sw-devel@codex.cro.st.com" <spear--sw-devel@codex.cro.st.com>
-Subject: Re: [PATCH] ARM: asm: Configure caches as per the defconfig
-References: <1385553244-1513-1-git-send-email-amit.virdi@st.com> <20131127121425.GN16735@n2100.arm.linux.org.uk> <5296D7DF.202@st.com> <20131128101154.GT16735@n2100.arm.linux.org.uk>
-In-Reply-To: <20131128101154.GT16735@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131128114542.GA3826@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2013 3:41 PM, Russell King - ARM Linux wrote:
-> On Thu, Nov 28, 2013 at 11:12:55AM +0530, Amit Virdi wrote:
->> On 11/27/2013 5:44 PM, Russell King - ARM Linux wrote:
->>> On Wed, Nov 27, 2013 at 05:24:04PM +0530, Amit Virdi wrote:
->>>> From: Amit VIRDI <Amit.VIRDI@st.com>
->>>>
->>>> In the current implementation of the decompression code, the caches are enabled
->>>> irrespective of their configuration in the deconfig. This makes setting the
->>>> ICACHE and DCACHE disable options from the menuconfig irrelevant. Change this
->>>> implementation to enable caches only if specified in the defconfig.
->>>
->>> NAK.  These options are provided more for ARM Ltd's validation of CPUs
->>> rather than for users, and it's not supposed to be used with the
->>> decompressor.
->>>
->>
->> It is perfectly true that these options are used only during CPU
->> validations and not in the end product. Still, it doesn't justify why
->> these options are not to be used with decompressor. Or alternately, why
->> would a user intend to disable a cache when it has been implemented
->> correctly and is stable? Without this change, the effect of disabling
->> cache is not reflected in entirety.
->
-> When doing CPU validations, the compressed image isn't used.
->
+On Thu, Nov 28, 2013 at 12:45:42PM +0100, Oleg Nesterov wrote:
+> It has? khelper is a workqueue thread, this flag is set by create_worker().
+> 
+> And it does kernel_thread() (not kthread_create()) so the child gets this
+> flag too.
 
-Well, I have been using compressed images many a times on the FPGA 
-platforms during initial hw design phases when the bitstream isn't 
-stable with caches. I do not see any harm incorporating this patch. It 
-only adds more logic to the existing implementation.
+Urgh, but that's still completely wrong. khelper is a singlethread
+workqueue, those should be unbound and therefore should not have this
+flag set at all.
 
-Regards
-Amit Virdi
+In fact, I know people want to set affinity on khelper to ensure all the
+usermode helper tasks get spawned on the specific system-cpus and leave
+the rest of the system unperturbed.
+
