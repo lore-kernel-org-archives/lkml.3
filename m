@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab3K1UTF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 15:19:05 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:57017 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753855Ab3K1UTC (ORCPT
+	id S1757481Ab3K1UX7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 15:23:59 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:47044 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754529Ab3K1UX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 15:19:02 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Carlos Hernandez <ceh@ti.com>
-Subject: Re: [PATCH V2] cpufreq: Make sure CPU is running on a freq from freq-table
-Date: Thu, 28 Nov 2013 21:31:53 +0100
-Message-ID: <1591147.c0NqbMglPZ@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAKohpomDu0Xh8Q1PEo3n+JwE26GkJTxhdezGPs7aJwJXjaTvLQ@mail.gmail.com>
-References: <046513da96dfec919a1a41d270c167147d4a9c8d.1385353358.git.viresh.kumar@linaro.org> <2065797.S0ijuuXCoe@vostro.rjw.lan> <CAKohpomDu0Xh8Q1PEo3n+JwE26GkJTxhdezGPs7aJwJXjaTvLQ@mail.gmail.com>
+	Thu, 28 Nov 2013 15:23:56 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20131128093858.GI10022@twins.programming.kicks-ass.net>
+References: <20131113151718.GN21461@twins.programming.kicks-ass.net>
+	<tip-9abf24d465180f5f2eb26a43545348262f16b771@git.kernel.org>
+	<CAE9FiQUk2Mr+4WypL41tCp3+54Aa+CT-17ga9+RffscUxwWAAg@mail.gmail.com>
+	<20131121150344.GG10022@twins.programming.kicks-ass.net>
+	<CAE9FiQUHQ7jQfpxi+s7yeef17-+ApGjU2X1iRnm=azJ0+BFWZw@mail.gmail.com>
+	<CAE9FiQUCPvzeiCSan34aV6hfrDHdV=sfHug0tMaAgpOMbum7jw@mail.gmail.com>
+	<alpine.DEB.2.02.1311271902230.5120@chino.kir.corp.google.com>
+	<CAE9FiQUVLT3PL3ON_VRrNB6p9TxFU_-X_dkcb6dLvzonmmW7ag@mail.gmail.com>
+	<20131128093858.GI10022@twins.programming.kicks-ass.net>
+Date: Thu, 28 Nov 2013 12:23:55 -0800
+X-Google-Sender-Auth: r_DsPbuTQ0DwjrrZpRXPqqxS5wM
+Message-ID: <CAE9FiQUFGLEBSbW124X8Ja7uJG4KcTtQeD+X0nFrWR2ATdK=qg@mail.gmail.com>
+Subject: Re: [tip:sched/urgent] sched: Check sched_domain before computing
+ group power
+From: Yinghai Lu <yinghai@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        srikar@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 28, 2013 07:44:02 PM Viresh Kumar wrote:
-> On 28 November 2013 19:42, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Thursday, November 28, 2013 07:11:17 PM Viresh Kumar wrote:
-> >> Okay.. So wouldn't it be better that we add this special flag only when we
-> >> face a real problem? Otherwise this flag might stay unused for long time
-> >> and then we might end up removing it..
-> 
-> What about this one?
+On Thu, Nov 28, 2013 at 1:38 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, Nov 27, 2013 at 11:07:04PM -0800, Yinghai Lu wrote:
+>> On Wed, Nov 27, 2013 at 7:02 PM, David Rientjes <rientjes@google.com> wrote:
+>> > On Thu, 21 Nov 2013, Yinghai Lu wrote:
+>> >
+>> >> original one in linus's tree:
+>> >>
+>> >> [    8.952728] NMI watchdog: enabled on all CPUs, permanently consumes
+>> >> one hw-PMU counter.
+>> >> [    8.965697] BUG: unable to handle kernel NULL pointer dereference
+>> >> at 0000000000000010
+>> >> [    8.969495] IP: [<ffffffff810d7b53>] update_group_power+0x1d3/0x250
+>> >
+>> > This should have been fixed by Srikar's patch, no?
+>>
+>> maybe not related, now in another system, linus's tree + Srikar's patch.
+>
+> And this another such -EX system? And from what I can tell its during
+> boot, right?
 
-Well, so are you saying that the problem is only theoretical now?
-
-> > SKIP_INITIAL_FREQUENCY_CHECK ?
-> 
-> Looks fine.. In case this is required, you want this to be set initially for any
-> driver?
-
-That depends on what is less work and code churn.  How many platforms/drivers
-have this problem today?  Which ones are they?
-
-Rafael
-
+Ivybridge EX, yes.
