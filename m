@@ -1,210 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758810Ab3K1OOx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 09:14:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64494 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755228Ab3K1OOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 09:14:52 -0500
-Date: Thu, 28 Nov 2013 12:14:35 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 7/7] perf inject: Handle output file via perf_data_file
- object
-Message-ID: <20131128141435.GC3603@infradead.org>
-References: <1385634619-8129-1-git-send-email-jolsa@redhat.com>
- <1385634619-8129-8-git-send-email-jolsa@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385634619-8129-8-git-send-email-jolsa@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1758585Ab3K1OSH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 09:18:07 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:47255 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213Ab3K1OSF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 09:18:05 -0500
+Date: Thu, 28 Nov 2013 14:15:13 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Khalid Aziz <khalid.aziz@oracle.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, bhelgaas@google.com,
+        cl91tp@gmail.com, tianyu.lan@intel.com, khlebnikov@openvz.org,
+        indou.takao@jp.fujitsu.com, jility09@gmail.com, f.otti@gmx.at,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org, stable@vger.kernel.org
+Subject: Re: [PATCH] PCI: Clear Bus Master bit only on kexec reboot
+Message-ID: <20131128141513.3de95d04@alan.etchedpixels.co.uk>
+In-Reply-To: <20131127220106.GA21887@kroah.com>
+References: <1385579908-24608-1-git-send-email-khalid.aziz@oracle.com>
+	<87ob55my8z.fsf@xmission.com>
+	<52964F2C.1020803@oracle.com>
+	<20131127212227.GA31237@kroah.com>
+	<20131127215309.GA15320@srcf.ucam.org>
+	<20131127220106.GA21887@kroah.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Nov 28, 2013 at 11:30:19AM +0100, Jiri Olsa escreveu:
-> Using the perf_data_file object to handle output
-> file processing.
-> 
-> No functional change intended.
+> Anyway, I really don't care either way, but this seems like something
+> that the drivers should be doing.  What suddenly changed that caused
+> this problem to occur that hasn't happened in the years prior to now
+> that drives this to be a stable-kernel issue?
 
-There is one, before we were using:
+When this first went in I pointed out it was an utterly stupid idea.
+Since it went in lots of machines haven't rebooted properly or powered
+off right.
 
--		inject.output = open(output_name, O_CREAT | O_WRONLY | O_TRUNC,
--						  S_IRUSR | S_IWUSR);
+There are two problems
 
-And 
+1. Clearing the busmaster bit is not well defined behaviour. It even
+freezes some hardware.
 
-+	if (perf_data_file__open(&inject.output)) {
+2. Lots of PC class hardware has firmware which believes that it can
+access the hardware as it goes to reboot or poweroff and that someone
+won't have shut it down.
 
-Does:
+Like it or not the firmware expected behaviour for such things is "what
+Windows did". The expected PC behaviour is subtle and magic - eg the fact
+D3 on some IDE disk controllers is terminal until power cycled because
+Windows didn't do that or that the BIOS goes off and chats to the disks
+in reboot without assuming the disk controller is completely
+uninitialized.
 
-          return open(file->path, O_CREAT|O_RDWR|O_TRUNC, S_IRUSR|S_IWUSR);
+kexec is a special cornercase and handling is as such (knowing it will
+bother to re-init appropriate devices) is very different to the current
+broken behaviour for PC systems.
 
-Why do we need to do O_RDWR there? Can we live with plain O_WRONLY as
-before?
-
-Also, while reviewing this I got something that I missed in previous
-patches, I think we could reuse:
-
-  O_WRONLY to replace the long constant PERF_DATA_MODE_WRITE
-  O_RDONLY ditto -> PERF_DATA_MODE_READ
-
-Shorter, and matches what we need here: a open flag value to specify
-which access mode the perf.data file is operating, no?
-
-- Arnaldo
- 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Adrian Hunter <adrian.hunter@intel.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> ---
->  tools/perf/builtin-inject.c | 65 +++++++++++++++++++--------------------------
->  1 file changed, 27 insertions(+), 38 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-> index 6a25085..939999c 100644
-> --- a/tools/perf/builtin-inject.c
-> +++ b/tools/perf/builtin-inject.c
-> @@ -22,14 +22,13 @@
->  #include <linux/list.h>
->  
->  struct perf_inject {
-> -	struct perf_tool tool;
-> -	bool		 build_ids;
-> -	bool		 sched_stat;
-> -	const char	 *input_name;
-> -	int		 pipe_output,
-> -			 output;
-> -	u64		 bytes_written;
-> -	struct list_head samples;
-> +	struct perf_tool	 tool;
-> +	bool			 build_ids;
-> +	bool			 sched_stat;
-> +	const char		*input_name;
-> +	struct perf_data_file	 output;
-> +	u64			 bytes_written;
-> +	struct list_head	 samples;
->  };
->  
->  struct event_entry {
-> @@ -42,21 +41,14 @@ static int perf_event__repipe_synth(struct perf_tool *tool,
->  				    union perf_event *event)
->  {
->  	struct perf_inject *inject = container_of(tool, struct perf_inject, tool);
-> -	uint32_t size;
-> -	void *buf = event;
-> +	ssize_t size;
->  
-> -	size = event->header.size;
-> -
-> -	while (size) {
-> -		int ret = write(inject->output, buf, size);
-> -		if (ret < 0)
-> -			return -errno;
-> -
-> -		size -= ret;
-> -		buf += ret;
-> -		inject->bytes_written += ret;
-> -	}
-> +	size = perf_data_file__write(&inject->output, event,
-> +				     event->header.size);
-> +	if (size < 0)
-> +		return -errno;
->  
-> +	inject->bytes_written += size;
->  	return 0;
->  }
->  
-> @@ -80,7 +72,7 @@ static int perf_event__repipe_attr(struct perf_tool *tool,
->  	if (ret)
->  		return ret;
->  
-> -	if (!inject->pipe_output)
-> +	if (&inject->output.is_pipe)
->  		return 0;
->  
->  	return perf_event__repipe_synth(tool, event);
-> @@ -355,6 +347,7 @@ static int __cmd_inject(struct perf_inject *inject)
->  		.path = inject->input_name,
->  		.mode = PERF_DATA_MODE_READ,
->  	};
-> +	struct perf_data_file *file_out = &inject->output;
->  
->  	signal(SIGINT, sig_handler);
->  
-> @@ -391,14 +384,14 @@ static int __cmd_inject(struct perf_inject *inject)
->  		}
->  	}
->  
-> -	if (!inject->pipe_output)
-> -		lseek(inject->output, session->header.data_offset, SEEK_SET);
-> +	if (!file_out->is_pipe)
-> +		lseek(file_out->fd, session->header.data_offset, SEEK_SET);
->  
->  	ret = perf_session__process_events(session, &inject->tool);
->  
-> -	if (!inject->pipe_output) {
-> +	if (!file_out->is_pipe) {
->  		session->header.data_size = inject->bytes_written;
-> -		perf_session__write_header(session, session->evlist, inject->output, true);
-> +		perf_session__write_header(session, session->evlist, file_out->fd, true);
->  	}
->  
->  	perf_session__delete(session);
-> @@ -427,14 +420,17 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
->  		},
->  		.input_name  = "-",
->  		.samples = LIST_HEAD_INIT(inject.samples),
-> +		.output = {
-> +			.path = "-",
-> +			.mode = PERF_DATA_MODE_WRITE,
-> +		},
->  	};
-> -	const char *output_name = "-";
->  	const struct option options[] = {
->  		OPT_BOOLEAN('b', "build-ids", &inject.build_ids,
->  			    "Inject build-ids into the output stream"),
->  		OPT_STRING('i', "input", &inject.input_name, "file",
->  			   "input file name"),
-> -		OPT_STRING('o', "output", &output_name, "file",
-> +		OPT_STRING('o', "output", &inject.output.path, "file",
->  			   "output file name"),
->  		OPT_BOOLEAN('s', "sched-stat", &inject.sched_stat,
->  			    "Merge sched-stat and sched-switch for getting events "
-> @@ -456,16 +452,9 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
->  	if (argc)
->  		usage_with_options(inject_usage, options);
->  
-> -	if (!strcmp(output_name, "-")) {
-> -		inject.pipe_output = 1;
-> -		inject.output = STDOUT_FILENO;
-> -	} else {
-> -		inject.output = open(output_name, O_CREAT | O_WRONLY | O_TRUNC,
-> -						  S_IRUSR | S_IWUSR);
-> -		if (inject.output < 0) {
-> -			perror("failed to create output file");
-> -			return -1;
-> -		}
-> +	if (perf_data_file__open(&inject.output)) {
-> +		perror("failed to create output file");
-> +		return -1;
->  	}
->  
->  	if (symbol__init() < 0)
-> -- 
-> 1.8.3.1
+Alan
