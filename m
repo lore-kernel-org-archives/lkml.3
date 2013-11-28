@@ -1,277 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757239Ab3K1Mjd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 07:39:33 -0500
-Received: from 7.mo6.mail-out.ovh.net ([46.105.59.196]:54354 "EHLO
-	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751712Ab3K1Mja (ORCPT
+	id S1757934Ab3K1Mm5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 07:42:57 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:42184 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977Ab3K1Mmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 07:39:30 -0500
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
-Subject: [PATCH v6 02/16] ARM: at91: add Kconfig options for common clk support
-Date: Thu, 28 Nov 2013 13:39:02 +0100
-Message-Id: <1385642342-6646-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1385642184-6467-1-git-send-email-b.brezillon@overkiz.com>
-References: <1385642184-6467-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 4141341334066657388
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 28 Nov 2013 07:42:54 -0500
+X-AuditID: cbfee61b-b7f166d000007a34-47-52973a4c790c
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH v3] cpufreq: exynos: Convert exynos-cpufreq to platform driver
+Date: Thu, 28 Nov 2013 13:42:42 +0100
+Message-id: <1385642562-9339-1-git-send-email-l.majewski@samsung.com>
+X-Mailer: git-send-email 1.7.10
+In-reply-to: <1381939238-30398-1-git-send-email-t.figa@samsung.com>
+References: <1381939238-30398-1-git-send-email-t.figa@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFLMWRmVeSWpSXmKPExsVy+t9jAV0fq+lBBttO6FlsnLGe1eJp0w92
+	i8sLL7FanG16w27x5hG3xZuHmxktLu+aw2bxufcIo8WZ00DJk396GS3Wz3jNYrHxq4cDj8ed
+	a3vYPNZNe8vsseVqO4tH35ZVjB6fN8kFsEZx2aSk5mSWpRbp2yVwZdxbtIS14L9MRWfXDcYG
+	xicSXYycHBICJhLHD55khrDFJC7cW8/WxcjFISSwiFFi4cGJLBBOF5PE9ftHGEGq2AT0JD7f
+	fcoEYosIhEocnfqVHaSIWWA3s8SK73vAEsICfhLLezeygtgsAqoS8w5cAYpzcPAKuEq8XcgB
+	sU1e4un9PjaQMKeAs8SbxQogYSEBJ4n5m9ezTmDkXcDIsIpRNLUguaA4KT3XSK84Mbe4NC9d
+	Lzk/dxMjOASfSe9gXNVgcYhRgINRiYdXQmdakBBrYllxZe4hRgkOZiURXhf16UFCvCmJlVWp
+	RfnxRaU5qcWHGKU5WJTEeQ+2WgcKCaQnlqRmp6YWpBbBZJk4OKUaGCvn6xhPCn5m53PSYRlz
+	wsU1VzZt+vCDU+Z3flgop61OnBxj6f/94kfvsCz2+D0nZ0Hez/8Za3o3fmT3d2kItu1kfuQl
+	s7FgYSDDI2nPh56xBoYRvtOfc8Y+YJKxOrhH4o2T8LeoyayXJq/a8+PNTl7nHSz1PBz811XP
+	nl6ua/F/7n2Dvv6NWkosxRmJhlrMRcWJAMrlhn89AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the following Kconfig options to prepare the transition to
-common clk framework:
+To make the driver multiplatform-friendly, unconditional initialization
+in an initcall is replaced with a platform driver probed only if
+respective platform device is registered.
 
-- AT91_USE_OLD_CLK: this option is selected by every SoC which does not
-  support new at91 clks based on common clk framework (SoC which does not
-  define the clock tree in its device tree).
-  This options is also selected when the user choose non dt boards support
-  (new at91 clks can only be registered from a device tree definition).
+Tested at: Exynos4210 (TRATS) and Exynos4412 (TRATS2)
 
-- COMMON_CLK_AT91: this option cannot be selected directly. Instead it is
-  enabled if these 3 conditions are met:
-   * at least one of the selected SoCs have a PMC (Power Management
-     Controller) Unit
-   * device tree support is enabled
-   * the old at91 clk implementation is disabled (every selected SoC define
-     its clks in its device tree and non dt boards support is disabled)
+Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-- OLD_CLK_AT91: this option cannot be selected directly. Instead it is
-  enabled if these 2 conditions are met:
-   * at least one of the selected SoCs have a PMC (Power Management
-     Controller) Unit
-   * at least one of the selected SoCs does not define its clks in its
-     device tree or non dt-boards support is enabled
-
-This patch selects AT91_USE_OLD_CLK in all currently supported SoCs. These
-selects will be removed after clk definitions are properly added in each
-soc's device tree.
-It also selects AT91_USE_OLD_CLK in all non-dt boards support.
-
-AT91_PMC_UNIT references are replaced by OLD_CLK_AT91, because PMC Unit is
-enabled for both old and common clk implementations, and old clk
-implementation should not be compiled if COMMON_CLK is enabled.
-
-To avoid future link errors, a new stub is created for at91_dt_clock_init
-function if OLD_CLK_AT91 is disabled.
-
-A new check is added in dt init functions (setup.c) to prepare for SoCs
-supporting new clk implementation. These SoCs won't setup the
-register_clocks callback (clk registration is done using of_clk_init).
-
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- arch/arm/mach-at91/Kconfig        |   21 +++++++++++++++++++++
- arch/arm/mach-at91/Kconfig.non_dt |    6 ++++++
- arch/arm/mach-at91/Makefile       |    2 +-
- arch/arm/mach-at91/generic.h      |    3 ++-
- arch/arm/mach-at91/setup.c        |    6 ++++--
- 5 files changed, 34 insertions(+), 4 deletions(-)
+Changes for v3:
+- Rename exynos_cpufreq_init() to exynos_cpufreq_probe()
 
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index 699b71e..85b53a4 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -6,10 +6,22 @@ config HAVE_AT91_DBGU0
- config HAVE_AT91_DBGU1
- 	bool
- 
-+config AT91_USE_OLD_CLK
-+	bool
-+
- config AT91_PMC_UNIT
- 	bool
- 	default !ARCH_AT91X40
- 
-+config COMMON_CLK_AT91
-+	bool
-+	default AT91_PMC_UNIT && USE_OF && !AT91_USE_OLD_CLK
-+	select COMMON_CLK
-+
-+config OLD_CLK_AT91
-+	bool
-+	default AT91_PMC_UNIT && AT91_USE_OLD_CLK
-+
- config AT91_SAM9_ALT_RESET
- 	bool
- 	default !ARCH_AT91X40
-@@ -65,6 +77,7 @@ config SOC_SAMA5D3
- 	select SOC_SAMA5
- 	select HAVE_FB_ATMEL
- 	select HAVE_AT91_DBGU1
-+	select AT91_USE_OLD_CLK
- 	help
- 	  Select this if you are using one of Atmel's SAMA5D3 family SoC.
- 	  This support covers SAMA5D31, SAMA5D33, SAMA5D34, SAMA5D35.
-@@ -78,11 +91,13 @@ config SOC_AT91RM9200
- 	select HAVE_AT91_DBGU0
- 	select MULTI_IRQ_HANDLER
- 	select SPARSE_IRQ
-+	select AT91_USE_OLD_CLK
- 
- config SOC_AT91SAM9260
- 	bool "AT91SAM9260, AT91SAM9XE or AT91SAM9G20"
- 	select HAVE_AT91_DBGU0
- 	select SOC_AT91SAM9
-+	select AT91_USE_OLD_CLK
- 	help
- 	  Select this if you are using one of Atmel's AT91SAM9260, AT91SAM9XE
- 	  or AT91SAM9G20 SoC.
-@@ -92,6 +107,7 @@ config SOC_AT91SAM9261
- 	select HAVE_AT91_DBGU0
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
-+	select AT91_USE_OLD_CLK
- 	help
- 	  Select this if you are using one of Atmel's AT91SAM9261 or AT91SAM9G10 SoC.
- 
-@@ -100,18 +116,21 @@ config SOC_AT91SAM9263
- 	select HAVE_AT91_DBGU1
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
-+	select AT91_USE_OLD_CLK
- 
- config SOC_AT91SAM9RL
- 	bool "AT91SAM9RL"
- 	select HAVE_AT91_DBGU0
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
-+	select AT91_USE_OLD_CLK
- 
- config SOC_AT91SAM9G45
- 	bool "AT91SAM9G45 or AT91SAM9M10 families"
- 	select HAVE_AT91_DBGU1
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
-+	select AT91_USE_OLD_CLK
- 	help
- 	  Select this if you are using one of Atmel's AT91SAM9G45 family SoC.
- 	  This support covers AT91SAM9G45, AT91SAM9G46, AT91SAM9M10 and AT91SAM9M11.
-@@ -121,6 +140,7 @@ config SOC_AT91SAM9X5
- 	select HAVE_AT91_DBGU0
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
-+	select AT91_USE_OLD_CLK
- 	help
- 	  Select this if you are using one of Atmel's AT91SAM9x5 family SoC.
- 	  This means that your SAM9 name finishes with a '5' (except if it is
-@@ -133,6 +153,7 @@ config SOC_AT91SAM9N12
- 	select HAVE_AT91_DBGU0
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
-+	select AT91_USE_OLD_CLK
- 	help
- 	  Select this if you are using Atmel's AT91SAM9N12 SoC.
- 
-diff --git a/arch/arm/mach-at91/Kconfig.non_dt b/arch/arm/mach-at91/Kconfig.non_dt
-index ca900be..b736b57 100644
---- a/arch/arm/mach-at91/Kconfig.non_dt
-+++ b/arch/arm/mach-at91/Kconfig.non_dt
-@@ -12,26 +12,32 @@ config ARCH_AT91_NONE
- config ARCH_AT91RM9200
- 	bool "AT91RM9200"
- 	select SOC_AT91RM9200
-+	select AT91_USE_OLD_CLK
- 
- config ARCH_AT91SAM9260
- 	bool "AT91SAM9260 or AT91SAM9XE or AT91SAM9G20"
- 	select SOC_AT91SAM9260
-+	select AT91_USE_OLD_CLK
- 
- config ARCH_AT91SAM9261
- 	bool "AT91SAM9261 or AT91SAM9G10"
- 	select SOC_AT91SAM9261
-+	select AT91_USE_OLD_CLK
- 
- config ARCH_AT91SAM9263
- 	bool "AT91SAM9263"
- 	select SOC_AT91SAM9263
-+	select AT91_USE_OLD_CLK
- 
- config ARCH_AT91SAM9RL
- 	bool "AT91SAM9RL"
- 	select SOC_AT91SAM9RL
-+	select AT91_USE_OLD_CLK
- 
- config ARCH_AT91SAM9G45
- 	bool "AT91SAM9G45"
- 	select SOC_AT91SAM9G45
-+	select AT91_USE_OLD_CLK
- 
- config ARCH_AT91X40
- 	bool "AT91x40"
-diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
-index 3b0a953..8539411 100644
---- a/arch/arm/mach-at91/Makefile
-+++ b/arch/arm/mach-at91/Makefile
-@@ -7,7 +7,7 @@ obj-m		:=
- obj-n		:=
- obj-		:=
- 
--obj-$(CONFIG_AT91_PMC_UNIT)	+= clock.o
-+obj-$(CONFIG_OLD_CLK_AT91)	+= clock.o
- obj-$(CONFIG_AT91_SAM9_ALT_RESET) += at91sam9_alt_reset.o
- obj-$(CONFIG_AT91_SAM9G45_RESET) += at91sam9g45_reset.o
- obj-$(CONFIG_AT91_SAM9_TIME)	+= at91sam926x_time.o
-diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
-index dc6e2f5..375c42e 100644
---- a/arch/arm/mach-at91/generic.h
-+++ b/arch/arm/mach-at91/generic.h
-@@ -44,11 +44,12 @@ extern void at91sam926x_pit_init(void);
- extern void at91x40_timer_init(void);
- 
-  /* Clocks */
--#ifdef CONFIG_AT91_PMC_UNIT
-+#ifdef CONFIG_OLD_CLK_AT91
- extern int __init at91_clock_init(unsigned long main_clock);
- extern int __init at91_dt_clock_init(void);
- #else
- static int inline at91_clock_init(unsigned long main_clock) { return 0; }
-+static int inline at91_dt_clock_init(void) { return 0; }
- #endif
- struct device;
- 
-diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-index 41aa68b..06052fc 100644
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@ -483,7 +483,8 @@ void __init at91rm9200_dt_initialize(void)
- 	at91_dt_clock_init();
- 
- 	/* Register the processor-specific clocks */
--	at91_boot_soc.register_clocks();
-+	if (at91_boot_soc.register_clocks)
-+		at91_boot_soc.register_clocks();
- 
- 	at91_boot_soc.init();
+Changes for v2:
+- Proper definition of exynos_cpufreq_init() function to squash warnings
+
+ arch/arm/mach-exynos/common.c          |    5 +++++
+ arch/arm/mach-exynos/common.h          |    1 +
+ arch/arm/mach-exynos/mach-exynos4-dt.c |    1 +
+ arch/arm/mach-exynos/mach-exynos5-dt.c |    1 +
+ drivers/cpufreq/exynos-cpufreq.c       |   13 +++++++++++--
+ 5 files changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
+index 61d2906..1510436 100644
+--- a/arch/arm/mach-exynos/common.c
++++ b/arch/arm/mach-exynos/common.c
+@@ -303,6 +303,11 @@ void __init exynos_cpuidle_init(void)
+ 	platform_device_register(&exynos_cpuidle);
  }
-@@ -498,7 +499,8 @@ void __init at91_dt_initialize(void)
- 	at91_dt_clock_init();
  
- 	/* Register the processor-specific clocks */
--	at91_boot_soc.register_clocks();
-+	if (at91_boot_soc.register_clocks)
-+		at91_boot_soc.register_clocks();
++void __init exynos_cpufreq_init(void)
++{
++	platform_device_register_simple("exynos-cpufreq", -1, NULL, 0);
++}
++
+ void __init exynos_init_late(void)
+ {
+ 	if (of_machine_is_compatible("samsung,exynos5440"))
+diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
+index ff9b6a9..3f03334 100644
+--- a/arch/arm/mach-exynos/common.h
++++ b/arch/arm/mach-exynos/common.h
+@@ -22,6 +22,7 @@ void exynos_init_io(void);
+ void exynos4_restart(enum reboot_mode mode, const char *cmd);
+ void exynos5_restart(enum reboot_mode mode, const char *cmd);
+ void exynos_cpuidle_init(void);
++void exynos_cpufreq_init(void);
+ void exynos_init_late(void);
  
- 	if (at91_boot_soc.init)
- 		at91_boot_soc.init();
+ void exynos_firmware_init(void);
+diff --git a/arch/arm/mach-exynos/mach-exynos4-dt.c b/arch/arm/mach-exynos/mach-exynos4-dt.c
+index 4603e6b..d3e54b7 100644
+--- a/arch/arm/mach-exynos/mach-exynos4-dt.c
++++ b/arch/arm/mach-exynos/mach-exynos4-dt.c
+@@ -22,6 +22,7 @@
+ static void __init exynos4_dt_machine_init(void)
+ {
+ 	exynos_cpuidle_init();
++	exynos_cpufreq_init();
+ 
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+ }
+diff --git a/arch/arm/mach-exynos/mach-exynos5-dt.c b/arch/arm/mach-exynos/mach-exynos5-dt.c
+index 1fe075a..602c5d7 100644
+--- a/arch/arm/mach-exynos/mach-exynos5-dt.c
++++ b/arch/arm/mach-exynos/mach-exynos5-dt.c
+@@ -44,6 +44,7 @@ static void __init exynos5_dt_machine_init(void)
+ 	}
+ 
+ 	exynos_cpuidle_init();
++	exynos_cpufreq_init();
+ 
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+ }
+diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
+index f3c2287..81b863c 100644
+--- a/drivers/cpufreq/exynos-cpufreq.c
++++ b/drivers/cpufreq/exynos-cpufreq.c
+@@ -17,6 +17,7 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/cpufreq.h>
+ #include <linux/suspend.h>
++#include <linux/platform_device.h>
+ 
+ #include <plat/cpu.h>
+ 
+@@ -232,7 +233,7 @@ static struct cpufreq_driver exynos_driver = {
+ #endif
+ };
+ 
+-static int __init exynos_cpufreq_init(void)
++static int exynos_cpufreq_probe(struct platform_device *pdev)
+ {
+ 	int ret = -EINVAL;
+ 
+@@ -281,4 +282,12 @@ err_vdd_arm:
+ 	kfree(exynos_info);
+ 	return -EINVAL;
+ }
+-late_initcall(exynos_cpufreq_init);
++
++static struct platform_driver exynos_cpufreq_platdrv = {
++	.driver = {
++		.name	= "exynos-cpufreq",
++		.owner	= THIS_MODULE,
++	},
++	.probe = exynos_cpufreq_probe,
++};
++module_platform_driver(exynos_cpufreq_platdrv);
 -- 
-1.7.9.5
+1.7.10.4
 
