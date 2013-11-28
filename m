@@ -1,66 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759252Ab3K1R5u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 12:57:50 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:44861 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758240Ab3K1R5s (ORCPT
+	id S1759326Ab3K1SJs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 13:09:48 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:57482 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759301Ab3K1SJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 12:57:48 -0500
-Date: Thu, 28 Nov 2013 18:57:11 +0100
-From: Vladimir Murzin <murzin.v@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: William Dauchy <wdauchy@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        "Ma, Xindong" <xindong.ma@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>, azurIt <azurit@pobox.sk>,
-        Sameer Nanda <snanda@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
-        dserrg@gmail.com
-Subject: Re: [PATCH] Fix race between oom kill and task exit
-Message-ID: <20131128175708.GA1875@hp530>
-References: <3917C05D9F83184EAA45CE249FF1B1DD0253093A@SHSMSX103.ccr.corp.intel.com>
- <20131128063505.GN3556@cmpxchg.org>
- <CAJ75kXZXxCMgf8=pghUWf=W9EKf3Z4nzKKy=CAn+7keVF_DCRA@mail.gmail.com>
- <20131128120018.GL2761@dhcp22.suse.cz>
+	Thu, 28 Nov 2013 13:09:36 -0500
+Date: Fri, 29 Nov 2013 02:11:14 +0800
+From: Jianyu Zhan <nasa4836@gmail.com>
+To: murzin.v@gmail.com
+Cc: akpm@linux-foundation.org, iamjoonsoo.kim@lge.com,
+        zhangyanfei@cn.fujitsu.com, rientjes@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]mm/vmalloc: interchage the implementation of
+ vmalloc_to_{pfn,page}
+Message-ID: <20131128181114.GA5154@lcx>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131128120018.GL2761@dhcp22.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 01:00:18PM +0100, Michal Hocko wrote:
-> [CCing Oleg - the thread started here:
-> https://lkml.org/lkml/2013/11/28/2]
-> 
-> On Thu 28-11-13 09:41:40, William Dauchy wrote:
-> [...]
-> > However, I'm now wondering if this present patch is a replacement of
-> > Sameer Nanda's patch or if this a complementary patch.
-> 
-> They are both trying to solve the same issue. Neither of them is
-> optimal unfortunately. Oleg said he would look into this and I have seen
-> some patches but didn't geto check them.
 
-CCing Sergey - he reported and proposed the patch for the similar issue.
+Hi, Vladimir,
 
-Vladimir
+On Fri, Nov 29, 2013 at 1:41 AM, Vladimir Murzin <murzin.v@gmail.com> wrote:
+>
+> Any numbers for efficiency?
+>
 
-> 
-> -- 
-> Michal Hocko
-> SUSE Labs
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+For the original implementation, vmalloc_to_pfn() wraps the vmalloc_to_page(),
+which means
+
+     pfn   ------>         struct page      ------>    pfn
+      |                                                          |
+  vmalloc_to_page()                             vmalloc_to_pfn()
+
+So this patch interchange the implementation, do the dirty page table
+walking code in vmalloc_to_pfn(), and then vmalloc_to_page() uses it, the graph
+now becomes
+
+     pfn            ------>         struct page        
+       |                                     |
+  vmalloc_to_pfn()         vmalloc_to_page()
+
+
+>>  /*
+>> - * Walk a vmap address to the struct page it maps.
+>> + * Walk a vmap address to the physical pfn it maps to.
+>>   */
+>> -struct page *vmalloc_to_page(const void *vmalloc_addr)
+>> +unsigned long vmalloc_to_pfn(const void *vmalloc_addr)
+>>  {
+>>       unsigned long addr = (unsigned long) vmalloc_addr;
+>> -     struct page *page = NULL;
+>> +     unsigned long pfn;
+>
+> uninitialized pfn will lead to a bug.
+>
+
+Why? The coding pratice has mandates we use it after we initialize it,
+And if we initialize it , to what value will it promise no bug?
+It is unlikely a rubbish initial value will creep in.
+
+
+>>       /*
+>> @@ -244,23 +244,23 @@ struct page *vmalloc_to_page(const void *vmalloc_addr)
+>>                               ptep = pte_offset_map(pmd, addr);
+>>                               pte = *ptep;
+>>                               if (pte_present(pte))
+>> -                                     page = pte_page(pte);
+>> +                                     pfn = pte_page(pte);
+>
+> page_to_pfn is missed here.
+>
+> Have you ever tested there is no functional changes?
+
+Oh, gods. My fault. It did has no functional changes.
+
+I just sent the incorrect patch...
+
+it should be  
+ -   page = pte_page(pte);
+ +  pfn = pte_pfn(pte);;
+
+Here is the resent patch:
+
+
+---
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 0fdf968..e4f0db2 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -220,12 +220,12 @@ int is_vmalloc_or_module_addr(const void *x)
+ }
+ 
+ /*
+- * Walk a vmap address to the struct page it maps.
++ * Walk a vmap address to the physical pfn it maps to.
+  */
+-struct page *vmalloc_to_page(const void *vmalloc_addr)
++unsigned long vmalloc_to_pfn(const void *vmalloc_addr)
+ {
+ 	unsigned long addr = (unsigned long) vmalloc_addr;
+-	struct page *page = NULL;
++	unsigned long pfn = 0;
+ 	pgd_t *pgd = pgd_offset_k(addr);
+ 
+ 	/*
+@@ -244,23 +244,23 @@ struct page *vmalloc_to_page(const void *vmalloc_addr)
+ 				ptep = pte_offset_map(pmd, addr);
+ 				pte = *ptep;
+ 				if (pte_present(pte))
+-					page = pte_page(pte);
++					pfn = pte_pfn(pte);
+ 				pte_unmap(ptep);
+ 			}
+ 		}
+ 	}
+-	return page;
++	return pfn;
+ }
+-EXPORT_SYMBOL(vmalloc_to_page);
++EXPORT_SYMBOL(vmalloc_to_pfn);
+ 
+ /*
+- * Map a vmalloc()-space virtual address to the physical page frame number.
++ * Map a vmalloc()-space virtual address to the struct page.
+  */
+-unsigned long vmalloc_to_pfn(const void *vmalloc_addr)
++struct page *vmalloc_to_page(const void *vmalloc_addr)
+ {
+-	return page_to_pfn(vmalloc_to_page(vmalloc_addr));
++	return pfn_to_page(vmalloc_to_pfn(vmalloc_addr));
+ }
+-EXPORT_SYMBOL(vmalloc_to_pfn);
++EXPORT_SYMBOL(vmalloc_to_page);
+ 
+ 
+ /*** Global kva allocator ***/
