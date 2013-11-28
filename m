@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224Ab3K1IY1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 03:24:27 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:54485 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab3K1IYL (ORCPT
+	id S1752235Ab3K1I3b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 03:29:31 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:32479 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab3K1I33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 03:24:11 -0500
-Message-ID: <5296FDB1.70501@linaro.org>
-Date: Thu, 28 Nov 2013 09:24:17 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 28 Nov 2013 03:29:29 -0500
+From: Yijing Wang <wangyijing@huawei.com>
+To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
+CC: <linux-kernel@vger.kernel.org>, Yijing Wang <wangyijing@huawei.com>,
+        Hanjun Guo <guohanjun@huawei.com>
+Subject: [PATCH] timekeeper: fix comment typo for tk_setup_internals()
+Date: Thu, 28 Nov 2013 16:28:55 +0800
+Message-ID: <1385627335-20896-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>, Thomas Gleixner <tglx@linutronix.de>
-CC: Christian Daudt <bcm@fixthebug.org>, bcm-kernel-feedback-list@broadcom.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clocksource: bcm_kona_timer: Remove unused bcm_timer_ids
-References: <1385344485.2241.2.camel@phoenix>
-In-Reply-To: <1385344485.2241.2.camel@phoenix>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2013 02:54 AM, Axel Lin wrote:
-> bcm_timer_ids is no longer used after converting to CLOCKSOURCE_OF_DECLARE.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->   drivers/clocksource/bcm_kona_timer.c | 6 ------
->   1 file changed, 6 deletions(-)
->
-> diff --git a/drivers/clocksource/bcm_kona_timer.c b/drivers/clocksource/bcm_kona_timer.c
-> index 0d7d8c3..5176e76 100644
-> --- a/drivers/clocksource/bcm_kona_timer.c
-> +++ b/drivers/clocksource/bcm_kona_timer.c
-> @@ -98,12 +98,6 @@ kona_timer_get_counter(void *timer_base, uint32_t *msw, uint32_t *lsw)
->   	return;
->   }
->
-> -static const struct of_device_id bcm_timer_ids[] __initconst = {
-> -	{.compatible = "brcm,kona-timer"},
-> -	{.compatible = "bcm,kona-timer"}, /* deprecated name */
-> -	{},
-> -};
-> -
->   static void __init kona_timers_init(struct device_node *node)
->   {
->   	u32 freq;
->
+Fix trivial comment typo for tk_setup_internals().
 
-Applied to my tree for 3.13 fixes.
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+---
+ kernel/time/timekeeping.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Thanks !
-   -- Daniel
-
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 3abf534..5c02cf9 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -90,8 +90,9 @@ static void tk_set_sleep_time(struct timekeeper *tk, struct timespec t)
+ }
+ 
+ /**
+- * timekeeper_setup_internals - Set up internals to use clocksource clock.
++ * tk_setup_internals - Set up internals to use clocksource clock.
+  *
++ * @tk:		The target timekeeper to setup.
+  * @clock:		Pointer to clocksource.
+  *
+  * Calculates a fixed cycle/nsec interval for a given clocksource/adjustment
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+1.7.1
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
 
