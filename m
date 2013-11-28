@@ -1,186 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759442Ab3K1Tlh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 14:41:37 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56562 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754912Ab3K1Tle (ORCPT
+	id S1758967Ab3K1Tr4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 14:47:56 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:39040 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751045Ab3K1Try (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 14:41:34 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>, Chia-I Wu <olvaffe@gmail.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
-        linaro-kernel@lists.linaro.org, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@kernel.org>, patches@linaro.org,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 00/32 v3] perf/core improvements and fixes
-Date: Thu, 28 Nov 2013 16:41:00 -0300
-Message-Id: <1385667660-14159-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 28 Nov 2013 14:47:54 -0500
+Date: Thu, 28 Nov 2013 16:47:21 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Tim Kryger <tim.kryger@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        linux-serial@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Patch Tracking <patches@linaro.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] serial: 8250_dw: Improve unwritable LCR workaround
+Message-ID: <20131128194720.GD13182@localhost>
+References: <1380647888-32473-1-git-send-email-tim.kryger@linaro.org>
+ <20131126183559.GA18570@localhost>
+ <CAAYSxhqU9GZdaoTjoCAeyQ4h-KPVzU0BH0D1eLYJoFZ+s8tPgQ@mail.gmail.com>
+ <20131127185448.GA21422@localhost>
+ <20131128093034.5d61130a@skate>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131128093034.5d61130a@skate>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Hi Thomas, Tim:
 
-Hi Ingo,
+On Thu, Nov 28, 2013 at 09:30:34AM +0100, Thomas Petazzoni wrote:
+> Dear Ezequiel Garcia,
+> 
+> On Wed, 27 Nov 2013 15:54:49 -0300, Ezequiel Garcia wrote:
+> 
+> > > An external device may be keeping the UART busy and preventing LCR
+> > > from being written.
+> > > 
+> > > What device is attached to ttyS1?
+> > 
+> > There's no device attached at ttyS1. I've just tested this in another
+> > box and it seems the same error is obtained on each unused port:
+> 
+> Are you sure about this? I suppose you're testing on the Armada XP GP
+> board, and this board has a 4 ports FTDI chip, and according to the
+> board schematics the four UARTs are all connected to the FTDI chip. So
+> from the SoC perspective, ttyS1 is connected to something, as far as I
+> can understand. Or maybe you also tested Armada XP DB ?
+> 
 
-	Ingo, this is the 3rd try, this time removing the last two patches in
-the series, from Jean, till we get the problems I found and the one reported by
-Jiri sorted out.
+Yeah, sorry about that. I missed the FTDI chip. As Thomas says the XP GP
+board I'm testing this on, has its four UARTs connected to a FTDI chip.
 
-	Jiri told me the problem exhibits when one doesn't have libunwind devel
-files installed.
+Changing the console port by setting "console=ttyS1,115200" gives this:
 
-	At some point we're considering using things like the 'mock' tool to
-do the tools/perf/tests/ builds tests with all possible development packages
-combos to detect these kinds of problems earlier.
+[..]
+Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
+dw-apb-uart d0012000.serial: Couldn't set LCR to 191
+dw-apb-uart d0012000.serial: Couldn't set LCR to 191
+dw-apb-uart d0012000.serial: Couldn't set LCR to 224
+dw-apb-uart d0012000.serial: Couldn't set LCR to 224
+d0012000.serial: ttyS0 at MMIO 0xd0012000 (irq = 17, base_baud = 15625000) is a 16550A
+dw-apb-uart d0012100.serial: Couldn't set LCR to 191
+dw-apb-uart d0012100.serial: Couldn't set LCR to 191
+dw-apb-uart d0012100.serial: Couldn't set LCR to 224
+dw-apb-uart d0012100.serial: Couldn't set LCR to 224
+d0012100.serial: ttyS1 at MMIO 0xd0012100 (irq = 18, base_baud = 15625000) is a 16550A
+console [ttyS1] enabled
+dw-apb-uart d0012200.serial: Couldn't set LCR to 191
+dw-apb-uart d0012200.serial: Couldn't set LCR to 191
+dw-apb-uart d0012200.serial: Couldn't set LCR to 224
+dw-apb-uart d0012200.serial: Couldn't set LCR to 224
+d0012200.serial: ttyS2 at MMIO 0xd0012200 (irq = 31, base_baud = 15625000) is a 16550A
+dw-apb-uart d0012300.serial: Couldn't set LCR to 191
+dw-apb-uart d0012300.serial: Couldn't set LCR to 191
+dw-apb-uart d0012300.serial: Couldn't set LCR to 224
+dw-apb-uart d0012300.serial: Couldn't set LCR to 224
+d0012300.serial: ttyS3 at MMIO 0xd0012300 (irq = 32, base_baud = 15625000) is a 16550A
 
-	Please consider applying,
+So we get the "Couldn't set" message in all four ports.
 
-Best Regards,
-
-- Arnaldo
-
-The following changes since commit 65661f96d3b32f4b28fef26d21be81d7e173b965:
-
-  perf/x86: Add RAPL hrtimer support (2013-11-27 15:31:23 +0100)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-
-for you to fetch changes up to 26286141a43251bed548349efbf60b61f1c433e8:
-
-  perf tools: Fix tags/TAGS targets rebuilding (2013-11-27 16:47:14 -0300)
-
-----------------------------------------------------------------
-perf/core improvements and fixes:
-
-. Make per-cpu mmaps the default in 'perf record', from Adrian Hunter.
-
-. Default -t/--thread 'perf record' option to no inheritance,
-  from Adrian Hunter.
-
-. Make 'perf top -g' refer to callchains, for consistency with other tools,
-  from David Ahern.
-
-. Skip ignored symbols while printing callchain, from David Ahern.
-
-. Print callchains and symbols if they exist in 'perf script',
-  from David Ahern.
-
-. Remove thread summary coloring in 'perf trace', from Pekka Enberg.
-
-. zsh completion support, from Ramkumar Ramachandra.
-
-. 'perf timechart' improvements, including backtrace support,
-  from Stanislav Fomichev.
-
-. Fix using kcore files stored in the buildid cache when doing report/annotate
-  in non-live sessions, from Adrian Hunter
-
-. Minor 'timechart' cleanups.
-
-. Fix tags/TAGS targets rebuilding, from Jiri Olsa.
-
-. Add options to show comm, fork, exit and mmap PERF_RECORD_ events in
-  'perf script', from Namhyung Kim.
-
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
-----------------------------------------------------------------
-Adrian Hunter (5):
-      perf record: Make per-cpu mmaps the default.
-      perf tools: Allow '--inherit' as the negation of '--no-inherit'
-      perf tools: Add option macro OPT_BOOLEAN_SET
-      perf record: Default -t option to no inheritance
-      perf symbols: Fix not finding kcore in buildid cache
-
-Arnaldo Carvalho de Melo (2):
-      perf timechart: Remove some needless struct forward declarations
-      perf timechart: Remove misplaced __maybe_unused
-
-David Ahern (6):
-      perf top: Make -g refer to callchains
-      perf evsel: Skip ignored symbols while printing callchain
-      perf symbols: Move idle syms check from top to generic function
-      perf thread: Move comm_list check into function
-      perf tools: Export setup_list
-      perf script: Print callchains and symbols if they exist
-
-Jiri Olsa (1):
-      perf tools: Fix tags/TAGS targets rebuilding
-
-Namhyung Kim (3):
-      perf script: Move evname print code to process_event()
-      perf script: Print comm, fork and exit events also
-      perf script: Print mmap[2] events also
-
-Pekka Enberg (1):
-      perf trace: Remove thread summary coloring
-
-Ramkumar Ramachandra (5):
-      perf completion: Introduce a layer of indirection
-      perf completion: Factor out compgen stuff
-      perf completion: Factor out call to __ltrim_colon_completions
-      perf completion: Introduce zsh support
-      perf completion: Rename file to reflect zsh support
-
-Stanislav Fomichev (8):
-      perf timechart: Always try to print at least 15 tasks
-      perf timechart: Add option to limit number of tasks
-      perf timechart: Use proc_num to implement --power-only
-      perf timechart: Add support for displaying only tasks related data
-      perf timechart: Group figures and add title with details
-      perf timechart: Add support for -P and -T in timechart recording
-      perf timechart: Add backtrace support
-      perf timechart: dynamically determine event fields offset
-
-Steven Rostedt (1):
-      tools lib traceevent: Use helper trace-seq in print functions like kernel does
-
- tools/lib/traceevent/event-parse.c                 |   7 +-
- tools/perf/Documentation/perf-record.txt           |  12 +-
- tools/perf/Documentation/perf-script.txt           |   6 +
- tools/perf/Documentation/perf-timechart.txt        |  26 +-
- tools/perf/Documentation/perf-top.txt              |   5 +-
- tools/perf/Makefile                                |   7 +-
- tools/perf/Makefile.perf                           |   4 +-
- tools/perf/builtin-record.c                        |  13 +-
- tools/perf/builtin-script.c                        | 209 ++++++++++-
- tools/perf/builtin-timechart.c                     | 418 ++++++++++++++-------
- tools/perf/builtin-top.c                           |  29 +-
- tools/perf/builtin-trace.c                         |  13 +-
- tools/perf/{bash_completion => perf-completion.sh} | 100 ++++-
- tools/perf/perf.h                                  |   1 +
- tools/perf/tests/attr/test-record-no-inherit       |   2 +-
- tools/perf/util/event.c                            |   3 +-
- tools/perf/util/evlist.c                           |   6 +-
- tools/perf/util/evsel.c                            |   5 +-
- tools/perf/util/parse-options.c                    |  21 ++
- tools/perf/util/parse-options.h                    |   8 +
- tools/perf/util/session.c                          |  10 +-
- tools/perf/util/svghelper.c                        |  77 +++-
- tools/perf/util/svghelper.h                        |  11 +-
- tools/perf/util/symbol.c                           |  41 +-
- tools/perf/util/symbol.h                           |   4 +
- tools/perf/util/target.c                           |  11 +-
- tools/perf/util/target.h                           |   4 +-
- tools/perf/util/thread.h                           |  12 +
- 28 files changed, 831 insertions(+), 234 deletions(-)
- rename tools/perf/{bash_completion => perf-completion.sh} (65%)
+Tim: Any ideas?
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
