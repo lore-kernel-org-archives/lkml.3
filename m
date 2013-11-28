@@ -1,85 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932174Ab3K1BET (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 20:04:19 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:21003 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754213Ab3K1BEL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 20:04:11 -0500
-X-AuditID: cbfee68f-b7f336d00000481b-e9-5296968aa179
-Date: Thu, 28 Nov 2013 01:04:09 +0000 (GMT)
-From: Eunbong Song <eunb.song@samsung.com>
-Subject: Re: Re: [PATCH] m68k : Kill CONFIG_MTD_PARTITIONS
-To: Greg Ungerer <gregungerer@westnet.com.au>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>
-Cc: "linux-m68k@lists.linux-m68k.org" <linux-m68k@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: eunb.song@samsung.com
-MIME-version: 1.0
-X-MTR: 20131128010114738@eunb.song
-Msgkey: 20131128010114738@eunb.song
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20131128010114738@eunb.song
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <28966598.284941385600648144.JavaMail.weblogic@epv6ml06>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjleLIzCtJLcpLzFFi42I5/e+Zjm7XtGlBBo0vmCwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfG/8nfWApamCqenH/D1sD4g7GLkZNDSEBFouX/dzBbQsBEYvWs
-	ZewQtpjEhXvr2boYuYBqljFKXF3/iQ2maPHraewQifmMEhfet4AlWARUJf5sXMwCYrMJaEv8
-	OHCVGcQWFrCS+LR9C9gGEYEEiZ87HzODNDMLdDBK7Jz7ngXiDHmJyacvg63mFRCUODnzCVCc
-	A2ibksSps0oQYWWJ/b+OQh0hITFr+gVWCJtXYkb7UxYIW05i2tc1zBC2tMT5WRsYYb5Z/P0x
-	VJxf4tjtHUwQ43klntwPhhmze/MXqPECElPPHGSEKFGXWHypGCLMJ7Fm4VsWmCm7Ti1nhmm9
-	v2UuE4jNLKAoMaX7ITuErSXx5cc+NlRPgdguEh3/pjNNYFSehSQ1C0n7LCTtyGoWMLKsYhRN
-	LUguKE5KLzLWK07MLS7NS9dLzs/dxAhJC/07GO8esD7EmAyMkYnMUqLJ+cC0klcSb2hsZmRh
-	amJqbGRuaUaasJI47/2HSUFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGCdtupddyMl5qTp8
-	u8bukJBnS7inL2Sef69PyPGYkM6MJ/NDLmkr1llPFU+8wnP47O37CduXR8TdXBl5hVty+Q2e
-	S/uPbTX5sl0ibv7zKw6PHcs2Xefk6xWwv+Ov/zpH+vRhlw2ay/b7N53z3G5TqP9pd6rIlwor
-	V9/0rQZxmab5J348viWU90WJpTgj0VCLuag4EQDkQzNPIQMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e/2dN2uadOCDE7pWlzeNYfNgdHj8ya5
-	AMaoDJuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoJlK
-	CmWJOaVAoYDE4mIlfTubovzSklSFjPziElulaCMDYz0jUxM9I2MDPRODWCtDAwMjU6CqhIyM
-	/5O/sRS0MFU8Of+GrYHxB2MXIyeHkICKRMv/72C2hICJxOLX09ghbDGJC/fWs3UxcgHVzGeU
-	uPC+hQ0kwSKgKvFn42IWEJtNQFvix4GrzCC2sICVxKftW8AGiQgkSPzc+ZgZpJlZoINRYufc
-	9ywQ2+QlJp++DLaBV0BQ4uTMJ0BxDqBtShKnzipBhJUl9v86ygZxhITErOkXWCFsXokZ7U9Z
-	IGw5iWlf1zBD2NIS52dtYIQ5evH3x1Bxfoljt3cwQYznlXhyPxhmzO7NX6DGC0hMPXOQEaJE
-	XWLxpWKIMJ/EmoVvWWCm7Dq1nBmm9f6WuUwgNrOAosSU7ofsELaWxJcf+9hQPQViu0h0/JvO
-	NIFRbhaS1Cwk7bOQtCOrWcDIsopRNLUguaA4Kb3CRK84Mbe4NC9dLzk/dxMjOD09W7KDseGC
-	9SFGAQ5GJR7eA5rTgoRYE8uKK3MPMUpwMCuJ8CoUA4V4UxIrq1KL8uOLSnNSiw8xJgPjbyKz
-	lGhyPjB15pXEGxobGBsaWpobmBoaWZAmrCTOu+BWUpCQQHpiSWp2ampBahHMFiYOTqkGRjnz
-	92qTHerur2cLXWP/iLPO4GpM/6bdVd4Tnjy7fbEtv05M5+hFQ/1Y2WtqaVfFNiX1dZWX3yxU
-	V1Ra8O5ojU3Z/DVqx3d9m38u4XnrxqsLy1V0TOSWHV0675x1UuYdcbkdonezHdbd5ZX1d0oq
-	i7435YWy+OEFv1IPneLaYftm2veOHN9dbkosxRmJhlrMRcWJAKKvf4WTAwAA
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	id S1757878Ab3K1BNB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 20:13:01 -0500
+Received: from mga11.intel.com ([192.55.52.93]:41221 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754122Ab3K1BM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 20:12:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,786,1378882800"; 
+   d="scan'208";a="435402238"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "boris.ostrovsky@oracle.com" <boris.ostrovsky@oracle.com>,
+        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2] ACPI: Cleanup <acpi/acpi.h>, <acpi/acpi_bus.h> and
+ <acpi/acpi_drivers.h> inclusions.
+Thread-Topic: [PATCH v2] ACPI: Cleanup <acpi/acpi.h>, <acpi/acpi_bus.h> and
+ <acpi/acpi_drivers.h> inclusions.
+Thread-Index: AQHO6mdltsdUzD/SH0inO/nl6LJY6Zo3cYOA////3oCAAEMgAIACIVMQ
+Date: Thu, 28 Nov 2013 01:12:47 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E880248E0CB@SHSMSX101.ccr.corp.intel.com>
+References: <cover.1385094640.git.lv.zheng@intel.com>
+ <2011704.hD86fZ2Qk5@vostro.rjw.lan>
+ <20131126202905.GA12889@phenom.dumpdata.com>
+ <3542568.jpR4FU4Yha@vostro.rjw.lan>
+In-Reply-To: <3542568.jpR4FU4Yha@vostro.rjw.lan>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAS14SV7024658
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAS1DaiF024675
 
+> From: linux-acpi-owner@vger.kernel.org [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Rafael J. Wysocki
+> Sent: Wednesday, November 27, 2013 8:29 AM
+> 
+> On Tuesday, November 26, 2013 03:29:05 PM Konrad Rzeszutek Wilk wrote:
+> > On Tue, Nov 26, 2013 at 09:29:33PM +0100, Rafael J. Wysocki wrote:
+> > > On Tuesday, November 26, 2013 01:21:15 PM Lv Zheng wrote:
+> > > > Replace direct inclusions of <acpi/acpi.h>, <acpi/acpi_bus.h> and
+> > > > <acpi/acpi_drivers.h>, which are incorrect, with <linux/acpi.h> inclusions.
+> > > >
+> > > > First of all, <acpi/acpi.h>, <acpi/acpi_bus.h> and <acpi/acpi_drivers.h>
+> > > > should not be included directly from any files that are built for
+> > > > CONFIG_ACPI unset, because that generally leads to build warnings about
+> > > > undefined symbols in !CONFIG_ACPI builds.  For CONFIG_ACPI set,
+> > > > <linux/acpi.h> includes those files and for !CONFIG_ACPI it provides stub
+> > > > ACPI symbols to be used in that case.
+> > > >
+> > > > Second, there are ordering dependencies between those files that always
+> > > > have to be met.  Namely, it is required that <acpi/acpi_bus.h> be included
+> > > > prior to <acpi/acpi_drivers.h> so that the acpi_pci_root declarations the
+> > > > latter depends on are always there.  And <acpi/acpi.h> which provides
+> > > > basic ACPICA type declarations should always be included prior to any other
+> > > > ACPI headers in CONFIG_ACPI builds.  That also is taken care of including
+> > > > <linux/acpi.h> as appropriate.
+> > > >
+> > > > This patch also includes necessary cleanups in the affected files where
+> > > > other ACPI headers is also included but not referenced.
+> > > >
+> > >
+> > > This looks OK to me, but it touches several other subsystems.  It's better to
+> > > CC such things to linux-kernel at least.
+> > >
+> > > Peter, Matthew, Tony, Konrad, Greg, Bjorn, do you have any objections against this?
+> >
+> > CC-ing Boris and David here.
+> >
+> > I presume the proper compilation tests to make sure they do compile properly
+> > has been done.
+> 
+> Yes and we're going to run it through the auto build machinery anyway.
 
+Hi, Rafael
 
-> Hi Eunbong,
+The revision 1 is written in the style that it wouldn't introduce regressions as:
+<acpi/acpi.h> <acpi/acpi_bus.h> <acpi/acpi_drivers.h> is replaced by <linux/acpi.h>.  If there are 2 or more linux/acpi.h inclusions in the same files, then the latter ones are deleted.
+And it gets building/booting tested by enabling the affected modules for testing on x86 and x86_64.
+The checker enabled tests only showed line number differences.
+For special IA64 only modules, they are tested using "make <dirname of file>/<basename of file>.o" with necessary -D passed through command line.
 
->Acked-by: Greg Ungerer 
+I the revision 2, there are <asm/xxx.h> order changes, it thus may introduce regressions if there are tricks we don't know better than the original authors.
+My build tests still showed no issues, but we could feed them a coverage test.
+Rafael, hope you can help me do this in your bleeding-edge branch and feel free to modify the commit to fix the issues caused by such tricks.
 
->Did you want me to pick this up for the m68knommu git tree?
-Hello, Greg.
-I'm glad if  you pick up this patch.
+Thanks and best regards
+-Lv
 
-Thanks
-EunBong
-
+> 
+> Thanks,
+> Rafael
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
