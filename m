@@ -1,52 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758959Ab3K1OX6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 09:23:58 -0500
-Received: from www.linutronix.de ([62.245.132.108]:57715 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754567Ab3K1OX4 (ORCPT
+	id S1758689Ab3K1O0n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 09:26:43 -0500
+Received: from emea01-db3-ndr.ptr.protection.outlook.com ([157.56.120.104]:54390
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751271Ab3K1O0k convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 09:23:56 -0500
-Date: Thu, 28 Nov 2013 15:23:47 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Davidlohr Bueso <davidlohr@hp.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jason Low <jason.low2@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Darren Hart <dvhart@linux.intel.com>, Mike Galbraith <efault@gmx.de>,
-        Jeff Mahoney <jeffm@suse.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Scott Norton <scott.norton@hp.com>, Tom Vaden <tom.vaden@hp.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Waiman Long <Waiman.Long@hp.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC patch 0/5] futex: Allow lockless empty check of hashbucket
- plist in futex_wake()
-In-Reply-To: <20131128115946.GD13532@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.02.1311281523250.30673@ionos.tec.linutronix.de>
-References: <20131125203358.156292370@linutronix.de> <1385453551.12603.16.camel@buesod1.americas.hpqcorp.net> <20131126085256.GD789@laptop.programming.kicks-ass.net> <1385493911.25945.3.camel@buesod1.americas.hpqcorp.net> <1385499085.23083.7.camel@buesod1.americas.hpqcorp.net>
- <alpine.DEB.2.02.1311262206150.30673@ionos.tec.linutronix.de> <1385624678.22210.25.camel@buesod1.americas.hpqcorp.net> <20131128115946.GD13532@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 28 Nov 2013 09:26:40 -0500
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: YOUR OPPORTUNITY
+To: Recipients <loanalertm@loanalertm.onmicrosoft.com>
+From: <loanalertm@loanalertm.onmicrosoft.com>
+Date: Thu, 28 Nov 2013 19:56:29 +0530
+Reply-To: <concordfinance01@hotmail.com>
+Message-ID: <52b01758-3090-4300-9211-ad734fde2926@SINPR02MB250.apcprd02.prod.outlook.com>
+X-Originating-IP: [101.59.102.87]
+X-ClientProxiedBy: SIXPR06CA010.apcprd06.prod.outlook.com (10.242.58.50) To
+ SINPR02MB250.apcprd02.prod.outlook.com (10.141.112.144)
+X-Forefront-PRVS: 0044C17179
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(189002)(199002)(12864004)(31686002)(76576001)(87266001)(42186004)(81686001)(80976001)(56816003)(23756003)(76786001)(76796001)(47446002)(74502001)(43066001)(85306002)(50986001)(64872005)(47736001)(51856001)(83072001)(69226001)(81816001)(47976001)(81342001)(561924002)(46102001)(87976001)(4396001)(77096001)(76482001)(76176001)(54356001)(83322001)(81542001)(49866001)(221733001)(80022001)(50466002)(79102001)(59766001)(77982001)(66066001)(74662001)(74876001)(53256004)(74366001)(63696002)(65816001)(47776003)(56776001)(54316002)(74706001)(33646001)(89136003)(74316001)(62346009)(522484006);DIR:OUT;SFP:1501;SCL:5;SRVR:SINPR02MB250;H:[101.59.102.87];CLIP:101.59.102.87;FPR:;RD:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: loanalertm.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Nov 2013, Peter Zijlstra wrote:
-
-> On Wed, Nov 27, 2013 at 11:44:38PM -0800, Davidlohr Bueso wrote:
-> > How about both enlarging the table _and_ aligning the buckets? As you
-> > know, increasing the size of the table also benefits (particularly in
-> > larger systems) in having more spinlocks. So we reduce the amount of
-> > collisions and alleviate contention on the hb->lock. Btw, do you have
-> > any particular concerns about the larger hash table patch? 
-> 
-> My only concern was the amount of #ifdef.
-> 
-> Wouldn't something like the below also work?
-
-Definitely.
-
+Hello, We are individual business sponsors. We sponsor business oriented individuals by providing them with financial sponsorship to setup new business, carry out their business projects or strengthen the old business that is facing financial difficulties. We can sponsor you with any amount ranging from $100,000.00usd to $80,000,000.00usd for a start provided we can rely on your ability to pay back our money within the stipulated period of 10years. For more details and to apply for our sponsorship click your reply button now to reply us.
