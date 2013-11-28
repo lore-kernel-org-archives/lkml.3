@@ -1,78 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758228Ab3K1NvY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 08:51:24 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34456 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712Ab3K1NvX (ORCPT
+	id S1758561Ab3K1NxP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 08:53:15 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:19227 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757871Ab3K1NxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 08:51:23 -0500
-Date: Thu, 28 Nov 2013 13:50:54 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Message-ID: <20131128135054.GK27568@sirena.org.uk>
-References: <1385626183-22990-1-git-send-email-k.kozlowski@samsung.com>
- <1385626183-22990-2-git-send-email-k.kozlowski@samsung.com>
+	Thu, 28 Nov 2013 08:53:14 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 28 Nov 2013 05:50:40 -0800
+From: Vandana Salve <vsalve@nvidia.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-mm@kvack.org>,
+        <hdoyu@nvidia.com>, Vandana Salve <vsalve@nvidia.com>
+Subject: [PATCH] common: DMA-mapping: add DMA_ATTR_ALLOC_EXACT_SIZE attribute
+Date: Thu, 28 Nov 2013 19:23:16 +0530
+Message-ID: <1385646796-9396-1-git-send-email-vsalve@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LHvWgpbS7VDUdu2f"
-Content-Disposition: inline
-In-Reply-To: <1385626183-22990-2-git-send-email-k.kozlowski@samsung.com>
-X-Cookie: Boycott meat -- suck your thumb.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 1/5] mfd/rtc: s5m: Fix register updating by adding
- regmap for RTC
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds DMA_ATTR_ALLOC_EXACT_SIZE attribute to the DMA-mapping subsystem
 
---LHvWgpbS7VDUdu2f
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+By default dma coherent alloc/free functions allocates/release memory in
+order of 2^pages. By specifying this attribute, allocation/release can
+be done for exact size of memory there by reducing internal memory
+fragmentation when allocation is in large chunks of MBs
 
-On Thu, Nov 28, 2013 at 09:09:39AM +0100, Krzysztof Kozlowski wrote:
-> Rename old regmap field of "struct sec_pmic_dev" to "regmap_pmic" and
-> add new regmap for RTC.
->=20
-> On S5M8767A registers were not properly updated and read due to usage of
-> the same regmap as the PMIC. This could be observed in various hangs,
-> e.g. in infinite loop during waiting for UDR field change.
+Added attr version of dma_alloc/release_from_coherent()
 
-Reviwed-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Vandana Salve <vsalve@nvidia.com>
+---
+ arch/arm/mm/dma-mapping.c          |  6 ++---
+ drivers/base/dma-coherent.c        | 51 ++++++++++++++++++++++++++++----------
+ include/asm-generic/dma-coherent.h | 15 ++++++++---
+ include/linux/dma-attrs.h          |  1 +
+ 4 files changed, 54 insertions(+), 19 deletions(-)
 
---LHvWgpbS7VDUdu2f
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index 79f8b39..a39c1c1 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -710,7 +710,7 @@ void *arm_dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
+ 	pgprot_t prot = __get_dma_pgprot(attrs, PAGE_KERNEL);
+ 	void *memory;
+ 
+-	if (dma_alloc_from_coherent(dev, size, handle, &memory))
++	if (dma_alloc_from_coherent_attr(dev, size, handle, &memory, attrs))
+ 		return memory;
+ 
+ 	return __dma_alloc(dev, size, handle, gfp, prot, false,
+@@ -723,7 +723,7 @@ static void *arm_coherent_dma_alloc(struct device *dev, size_t size,
+ 	pgprot_t prot = __get_dma_pgprot(attrs, PAGE_KERNEL);
+ 	void *memory;
+ 
+-	if (dma_alloc_from_coherent(dev, size, handle, &memory))
++	if (dma_alloc_from_coherent_attr(dev, size, handle, &memory, attrs))
+ 		return memory;
+ 
+ 	return __dma_alloc(dev, size, handle, gfp, prot, true,
+@@ -769,7 +769,7 @@ static void __arm_dma_free(struct device *dev, size_t size, void *cpu_addr,
+ {
+ 	struct page *page = pfn_to_page(dma_to_pfn(dev, handle));
+ 
+-	if (dma_release_from_coherent(dev, get_order(size), cpu_addr))
++	if (dma_release_from_coherent_attr(dev, size, cpu_addr, attrs))
+ 		return;
+ 
+ 	size = PAGE_ALIGN(size);
+diff --git a/drivers/base/dma-coherent.c b/drivers/base/dma-coherent.c
+index bc256b6..51e8ff6 100644
+--- a/drivers/base/dma-coherent.c
++++ b/drivers/base/dma-coherent.c
+@@ -96,26 +96,31 @@ void *dma_mark_declared_memory_occupied(struct device *dev,
+ EXPORT_SYMBOL(dma_mark_declared_memory_occupied);
+ 
+ /**
+- * dma_alloc_from_coherent() - try to allocate memory from the per-device coherent area
++ * dma_alloc_from_coherent_attr() - try to allocate memory from the per-device
++ * coherent area
+  *
+  * @dev:	device from which we allocate memory
+  * @size:	size of requested memory area
+  * @dma_handle:	This will be filled with the correct dma handle
+  * @ret:	This pointer will be filled with the virtual address
+  *		to allocated area.
++ * @attrs:	DMA Attribute
+  *
+  * This function should be only called from per-arch dma_alloc_coherent()
+  * to support allocation from per-device coherent memory pools.
+  *
+- * Returns 0 if dma_alloc_coherent should continue with allocating from
++ * Returns 0 if dma_alloc_coherent_attr should continue with allocating from
+  * generic memory areas, or !0 if dma_alloc_coherent should return @ret.
+  */
+-int dma_alloc_from_coherent(struct device *dev, ssize_t size,
+-				       dma_addr_t *dma_handle, void **ret)
++int dma_alloc_from_coherent_attr(struct device *dev, ssize_t size,
++				       dma_addr_t *dma_handle, void **ret,
++				       struct dma_attrs *attrs)
+ {
+ 	struct dma_coherent_mem *mem;
+ 	int order = get_order(size);
+ 	int pageno;
++	unsigned int count;
++	unsigned long align;
+ 
+ 	if (!dev)
+ 		return 0;
+@@ -127,11 +132,22 @@ int dma_alloc_from_coherent(struct device *dev, ssize_t size,
+ 
+ 	if (unlikely(size > (mem->size << PAGE_SHIFT)))
+ 		goto err;
++	if (dma_get_attr(DMA_ATTR_ALLOC_EXACT_SIZE, attrs)) {
++		align = 0;
++		count = PAGE_ALIGN(size) >> PAGE_SHIFT;
++	} else {
++		align = (1 << order) - 1;
++		count = 1 << order;
++	}
++
++	pageno = bitmap_find_next_zero_area(mem->bitmap, mem->size,
++			0, count, align);
+ 
+-	pageno = bitmap_find_free_region(mem->bitmap, mem->size, order);
+-	if (unlikely(pageno < 0))
++	if (pageno >= mem->size)
+ 		goto err;
+ 
++	bitmap_set(mem->bitmap, pageno, count);
++
+ 	/*
+ 	 * Memory was found in the per-device area.
+ 	 */
+@@ -149,35 +165,44 @@ err:
+ 	 */
+ 	return mem->flags & DMA_MEMORY_EXCLUSIVE;
+ }
+-EXPORT_SYMBOL(dma_alloc_from_coherent);
++EXPORT_SYMBOL(dma_alloc_from_coherent_attr);
+ 
+ /**
+- * dma_release_from_coherent() - try to free the memory allocated from per-device coherent memory pool
++ * dma_release_from_coherent_attr() - try to free the memory allocated from
++ * per-device coherent memory pool
+  * @dev:	device from which the memory was allocated
+- * @order:	the order of pages allocated
++ * @size:	size of the memory area to free
+  * @vaddr:	virtual address of allocated pages
++ * @attrs:	DMA Attribute
+  *
+  * This checks whether the memory was allocated from the per-device
+  * coherent memory pool and if so, releases that memory.
+  *
+  * Returns 1 if we correctly released the memory, or 0 if
+- * dma_release_coherent() should proceed with releasing memory from
++ * dma_release_coherent_attr() should proceed with releasing memory from
+  * generic pools.
+  */
+-int dma_release_from_coherent(struct device *dev, int order, void *vaddr)
++int dma_release_from_coherent_attr(struct device *dev, size_t size, void *vaddr,
++				struct dma_attrs *attrs)
+ {
+ 	struct dma_coherent_mem *mem = dev ? dev->dma_mem : NULL;
++	unsigned int count;
+ 
+ 	if (mem && vaddr >= mem->virt_base && vaddr <
+ 		   (mem->virt_base + (mem->size << PAGE_SHIFT))) {
+ 		int page = (vaddr - mem->virt_base) >> PAGE_SHIFT;
+ 
+-		bitmap_release_region(mem->bitmap, page, order);
++		if (dma_get_attr(DMA_ATTR_ALLOC_EXACT_SIZE, attrs))
++			count = PAGE_ALIGN(size) >> PAGE_SHIFT;
++		else
++			count = 1 << size;
++
++		bitmap_clear(mem->bitmap, page, count);
+ 		return 1;
+ 	}
+ 	return 0;
+ }
+-EXPORT_SYMBOL(dma_release_from_coherent);
++EXPORT_SYMBOL(dma_release_from_coherent_attr);
+ 
+ /**
+  * dma_mmap_from_coherent() - try to mmap the memory allocated from
+diff --git a/include/asm-generic/dma-coherent.h b/include/asm-generic/dma-coherent.h
+index 2be8a2d..55e49bd 100644
+--- a/include/asm-generic/dma-coherent.h
++++ b/include/asm-generic/dma-coherent.h
+@@ -6,9 +6,16 @@
+  * These three functions are only for dma allocator.
+  * Don't use them in device drivers.
+  */
+-int dma_alloc_from_coherent(struct device *dev, ssize_t size,
+-				       dma_addr_t *dma_handle, void **ret);
+-int dma_release_from_coherent(struct device *dev, int order, void *vaddr);
++int dma_alloc_from_coherent_attr(struct device *dev, ssize_t size,
++				       dma_addr_t *dma_handle, void **ret,
++				       struct dma_attrs *attrs);
++int dma_release_from_coherent_attr(struct device *dev, size_t size, void *vaddr,
++				       struct dma_attrs *attrs);
++#define dma_alloc_from_coherent(d, s, h, r) \
++	dma_alloc_from_coherent_attr(d, s, h, r, NULL)
++
++#define dma_release_from_coherent(d, s, v) \
++	dma_release_from_coherent_attr(d, s, v, NULL)
+ 
+ int dma_mmap_from_coherent(struct device *dev, struct vm_area_struct *vma,
+ 			    void *cpu_addr, size_t size, int *ret);
+@@ -27,6 +34,8 @@ extern void *
+ dma_mark_declared_memory_occupied(struct device *dev,
+ 				  dma_addr_t device_addr, size_t size);
+ #else
++#define dma_alloc_from_coherent_attr(dev, size, handle, ret, attr) (0)
++#define dma_release_from_coherent_attr(dev, size, vaddr, attr) (0)
+ #define dma_alloc_from_coherent(dev, size, handle, ret) (0)
+ #define dma_release_from_coherent(dev, order, vaddr) (0)
+ #define dma_mmap_from_coherent(dev, vma, vaddr, order, ret) (0)
+diff --git a/include/linux/dma-attrs.h b/include/linux/dma-attrs.h
+index c8e1831..d23f28f 100644
+--- a/include/linux/dma-attrs.h
++++ b/include/linux/dma-attrs.h
+@@ -18,6 +18,7 @@ enum dma_attr {
+ 	DMA_ATTR_NO_KERNEL_MAPPING,
+ 	DMA_ATTR_SKIP_CPU_SYNC,
+ 	DMA_ATTR_FORCE_CONTIGUOUS,
++	DMA_ATTR_ALLOC_EXACT_SIZE,
+ 	DMA_ATTR_MAX,
+ };
+ 
+-- 
+1.8.1.5
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSl0o7AAoJELSic+t+oim964YP/28tCdi78OGJMbguJcXPQ4sQ
-uxanENcAbzRLiAwClmRSmi1jMHdJmNZkEC16uAnLS5qjnlDUuypr1pssijaZSagX
-Not5U7KPSGdw3reSWh+JRU1o8Qp54OQN2gieQEjZlMs4rXS5YgftFRWtX7HjxG2O
-TtsO9LK52q+cUXRiOO9XBU0yfEAAk07tF7hv5TzYaKHWquGXLI0+Klc3l+Ce4Kg4
-E40MHbMhE9d7CIjMItloLjFPS37TEWrRQGh0RQt/HcQRTg9WLRC6n90w1EVBVFoT
-AtKUfRwVJKoxiBbj5LQywGsu2TAUh3G7Pv1I0HSE2nLSXsD7NzpfJJyDUBfxbylO
-FrabeAAlHXHkxxfe5m8FDA0BkyzI1dU50P8iyYbAVZAbK4dq0jRrk6Mi9qD+mE1f
-klRhEtIP4IV8jN/IXUhzRbtVryUA/uSa60yJKY4oa+pgIzcWPR5TU9sPiNQEqMV8
-sD135lcElbkoNEERtXMyx7p30e6FPQlTNcoy7H9vvu8YqNHYj1ZvSqSV7b/4aWmU
-EpragRrl+5BVA1wk1NdmpTT0QgRp2AzkR797fbS+xwD/nyqzIWpgVUjsxH+Xc9H6
-6i4WZn/MzGdssCu4nAGasoPeviif1WwGerXAGSzyqJBM/XF6k8AWZOs3ZdqdS9Ht
-7ymNtwdjxVwRiLp2nHik
-=6b4f
------END PGP SIGNATURE-----
-
---LHvWgpbS7VDUdu2f--
