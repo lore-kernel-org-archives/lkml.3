@@ -1,94 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691Ab3K2MXA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 07:23:00 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:25636 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756107Ab3K2MW5 (ORCPT
+	id S1756091Ab3K2MUZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 07:20:25 -0500
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:47006 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755926Ab3K2MUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 07:22:57 -0500
-X-IronPort-AV: E=Sophos;i="4.93,797,1378857600"; 
-   d="scan'208";a="76795586"
-Date: Fri, 29 Nov 2013 12:22:40 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Matt Wilson <msw@linux.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xenproject.org>, Matt Wilson <msw@amazon.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Anthony Liguori <aliguori@amazon.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xen/gnttab: leave lazy MMU mode in the case of a m2p
- override failure
-In-Reply-To: <20131122152110.GA3124@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1311291222150.3198@kaball.uk.xensource.com>
-References: <1384978295-18292-1-git-send-email-msw@linux.com> <20131122152110.GA3124@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+	Fri, 29 Nov 2013 07:20:20 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dwmw2@infradead.org
+Cc: linus.walleij@linaro.org, linux-mtd@lists.infradead.org,
+        angus.clark@st.com, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH v3 23/36] mtd: st_spi_fsm: Supply the N25Qxxx specific read configurations
+Date: Fri, 29 Nov 2013 12:19:12 +0000
+Message-Id: <1385727565-25794-24-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1385727565-25794-1-git-send-email-lee.jones@linaro.org>
+References: <1385727565-25794-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Nov 2013, Konrad Rzeszutek Wilk wrote:
-> On Wed, Nov 20, 2013 at 12:11:35PM -0800, Matt Wilson wrote:
-> > From: Matt Wilson <msw@amazon.com>
-> > 
-> > Commit f62805f1 introduced a bug where lazy MMU mode isn't exited if a
-> > m2p_add/remove_override call fails.
-> 
-> Stefano?
-> 
+The N25Qxxx Serial Flash devices required different sequence
+configurations depending on whether they're running in 24bit (3Byte)
+or 32bit (4Byte) mode. We provide those here.
 
-Already acked here:
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mtd/devices/st_spi_fsm.c | 43 ++++++++++++++++++++++++++++++++++++++++
+ drivers/mtd/devices/st_spi_fsm.h | 10 ++++++++++
+ 2 files changed, 53 insertions(+)
 
-http://marc.info/?l=linux-kernel&m=138505917602905&w=2
+diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
+index 0ecf248..3a6b233 100644
+--- a/drivers/mtd/devices/st_spi_fsm.c
++++ b/drivers/mtd/devices/st_spi_fsm.c
+@@ -55,6 +55,49 @@ static struct seq_rw_config default_write_configs[] = {
+ 	{0x00,			 0,			 0, 0, 0, 0x00, 0, 0},
+ };
+ 
++/*
++ * [N25Qxxx] Configuration
++ */
++#define N25Q_VCR_DUMMY_CYCLES(x)	(((x) & 0xf) << 4)
++#define N25Q_VCR_XIP_DISABLED		((uint8_t)0x1 << 3)
++#define N25Q_VCR_WRAP_CONT		0x3
++
++/* N25Q 3-byte Address READ configurations
++ *	- 'FAST' variants configured for 8 dummy cycles.
++ *
++ * Note, the number of dummy cycles used for 'FAST' READ operations is
++ * configurable and would normally be tuned according to the READ command and
++ * operating frequency.  However, this applies universally to all 'FAST' READ
++ * commands, including those used by the SPIBoot controller, and remains in
++ * force until the device is power-cycled.  Since the SPIBoot controller is
++ * hard-wired to use 8 dummy cycles, we must configure the device to also use 8
++ * cycles.
++ */
++static struct seq_rw_config n25q_read3_configs[] = {
++	{FLASH_FLAG_READ_1_4_4, FLASH_CMD_READ_1_4_4,	0, 4, 4, 0x00, 0, 8},
++	{FLASH_FLAG_READ_1_1_4, FLASH_CMD_READ_1_1_4,	0, 1, 4, 0x00, 0, 8},
++	{FLASH_FLAG_READ_1_2_2, FLASH_CMD_READ_1_2_2,	0, 2, 2, 0x00, 0, 8},
++	{FLASH_FLAG_READ_1_1_2, FLASH_CMD_READ_1_1_2,	0, 1, 2, 0x00, 0, 8},
++	{FLASH_FLAG_READ_FAST,	FLASH_CMD_READ_FAST,	0, 1, 1, 0x00, 0, 8},
++	{FLASH_FLAG_READ_WRITE, FLASH_CMD_READ,	        0, 1, 1, 0x00, 0, 0},
++	{0x00,			0,			0, 0, 0, 0x00, 0, 0},
++};
++
++/* N25Q 4-byte Address READ configurations
++ *	- use special 4-byte address READ commands (reduces overheads, and
++ *        reduces risk of hitting watchdog reset issues).
++ *	- 'FAST' variants configured for 8 dummy cycles (see note above.)
++ */
++static struct seq_rw_config n25q_read4_configs[] = {
++	{FLASH_FLAG_READ_1_4_4, FLASH_CMD_READ4_1_4_4,	0, 4, 4, 0x00, 0, 8},
++	{FLASH_FLAG_READ_1_1_4, FLASH_CMD_READ4_1_1_4,	0, 1, 4, 0x00, 0, 8},
++	{FLASH_FLAG_READ_1_2_2, FLASH_CMD_READ4_1_2_2,	0, 2, 2, 0x00, 0, 8},
++	{FLASH_FLAG_READ_1_1_2, FLASH_CMD_READ4_1_1_2,	0, 1, 2, 0x00, 0, 8},
++	{FLASH_FLAG_READ_FAST,	FLASH_CMD_READ4_FAST,	0, 1, 1, 0x00, 0, 8},
++	{FLASH_FLAG_READ_WRITE, FLASH_CMD_READ4,	0, 1, 1, 0x00, 0, 0},
++	{0x00,			0,			0, 0, 0, 0x00, 0, 0},
++};
++
+ static struct stfsm_seq stfsm_seq_en_32bit_addr;/* Dynamically populated */
+ 
+ static struct stfsm_seq stfsm_seq_read_jedec = {
+diff --git a/drivers/mtd/devices/st_spi_fsm.h b/drivers/mtd/devices/st_spi_fsm.h
+index 0548511..6699174 100644
+--- a/drivers/mtd/devices/st_spi_fsm.h
++++ b/drivers/mtd/devices/st_spi_fsm.h
+@@ -229,6 +229,15 @@
+ #define FLASH_CMD_READ4_1_1_4	0x6c
+ #define FLASH_CMD_READ4_1_4_4	0xec
+ 
++/*
++ * Flags to tweak operation of default read/write/erase routines
++ */
++#define CFG_READ_TOGGLE_32BIT_ADDR	0x00000001
++#define CFG_WRITE_TOGGLE_32BIT_ADDR	0x00000002
++#define CFG_WRITE_EX_32BIT_ADDR_DELAY	0x00000004
++#define CFG_ERASESEC_TOGGLE_32BIT_ADDR	0x00000008
++#define CFG_S25FL_CHECK_ERROR_FLAGS	0x00000010
++
+ struct stfsm {
+ 	struct device		*dev;
+ 	void __iomem		*base;
+@@ -237,6 +246,7 @@ struct stfsm {
+ 	struct mutex		lock;
+ 	struct flash_info 	*info;
+ 
++	uint32_t		configuration;
+ 	uint32_t		fifo_dir_delay;
+ 	bool			booted_from_spi;
+ 	bool			reset_signal;
+-- 
+1.8.3.2
 
-
-
-> > Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> > Cc: David Vrabel <david.vrabel@citrix.com>
-> > Cc: Anthony Liguori <aliguori@amazon.com>
-> > Cc: xen-devel@lists.xenproject.org
-> > Cc: linux-kernel@vger.kernel.org
-> > Signed-off-by: Matt Wilson <msw@amazon.com>
-> > ---
-> >  drivers/xen/grant-table.c |    6 ++++--
-> >  1 file changed, 4 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> > index 62ccf54..0283871 100644
-> > --- a/drivers/xen/grant-table.c
-> > +++ b/drivers/xen/grant-table.c
-> > @@ -930,9 +930,10 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
-> >  		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
-> >  				       &kmap_ops[i] : NULL);
-> >  		if (ret)
-> > -			return ret;
-> > +			goto out;
-> >  	}
-> >  
-> > + out:
-> >  	if (lazy)
-> >  		arch_leave_lazy_mmu_mode();
-> >  
-> > @@ -969,9 +970,10 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
-> >  		ret = m2p_remove_override(pages[i], kmap_ops ?
-> >  				       &kmap_ops[i] : NULL);
-> >  		if (ret)
-> > -			return ret;
-> > +			goto out;
-> >  	}
-> >  
-> > + out:
-> >  	if (lazy)
-> >  		arch_leave_lazy_mmu_mode();
-> >  
-> > -- 
-> > 1.7.9.5
-> > 
-> 
