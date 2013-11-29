@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab3K2M1Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 07:27:24 -0500
-Received: from mail-yh0-f48.google.com ([209.85.213.48]:39334 "EHLO
-	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755714Ab3K2M1T (ORCPT
+	id S1757372Ab3K2M1w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 07:27:52 -0500
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:32991 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755008Ab3K2MTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 07:27:19 -0500
+	Fri, 29 Nov 2013 07:19:52 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         dwmw2@infradead.org
 Cc: linus.walleij@linaro.org, linux-mtd@lists.infradead.org,
         angus.clark@st.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v3 33/36] mtd: st_spi_fsm: Supply the MX25xxx chip specific configuration call-back
-Date: Fri, 29 Nov 2013 12:19:22 +0000
-Message-Id: <1385727565-25794-34-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH v3 08/36] mtd: devices: Provide header for shared OPCODEs and SFDP commands
+Date: Fri, 29 Nov 2013 12:18:57 +0000
+Message-Id: <1385727565-25794-9-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1385727565-25794-1-git-send-email-lee.jones@linaro.org>
 References: <1385727565-25794-1-git-send-email-lee.jones@linaro.org>
@@ -22,136 +22,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+JEDEC have helped to standardise a great deal of the commands which
+can be issued to a Serial Flash devices. Many of the OPCODEs and all
+of the Serial Flash Discoverable Parameters (SFDP) commands are
+generic across devices. This patch provides a shared point where
+these commands can be defined.
+
+Suggested-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/st_spi_fsm.c | 84 ++++++++++++++++++++++++++++++++++++++++
- drivers/mtd/devices/st_spi_fsm.h |  4 +-
- 2 files changed, 87 insertions(+), 1 deletion(-)
+ drivers/mtd/devices/serial_flash_cmds.h | 91 +++++++++++++++++++++++++++++++++
+ drivers/mtd/devices/st_spi_fsm.c        |  1 +
+ drivers/mtd/devices/st_spi_fsm.h        |  2 +
+ 3 files changed, 94 insertions(+)
+ create mode 100644 drivers/mtd/devices/serial_flash_cmds.h
 
+diff --git a/drivers/mtd/devices/serial_flash_cmds.h b/drivers/mtd/devices/serial_flash_cmds.h
+new file mode 100644
+index 0000000..62aa420
+--- /dev/null
++++ b/drivers/mtd/devices/serial_flash_cmds.h
+@@ -0,0 +1,91 @@
++/*
++ * Generic/SFDP Flash Commands and Device Capabilities
++ *
++ * Copyright (C) 2013 Lee Jones <lee.jones@lianro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ */
++
++#ifndef _MTD_SERIAL_FLASH_CMDS_H
++#define _MTD_SERIAL_FLASH_CMDS_H
++
++/* Generic Flash Commands/OPCODEs */
++#define FLASH_CMD_WREN		0x06
++#define FLASH_CMD_WRDI		0x04
++#define FLASH_CMD_RDID		0x9f
++#define FLASH_CMD_RDSR		0x05
++#define FLASH_CMD_RDSR2		0x35
++#define FLASH_CMD_WRSR		0x01
++#define FLASH_CMD_SE_4K		0x20
++#define FLASH_CMD_SE_32K	0x52
++#define FLASH_CMD_SE		0xd8
++#define FLASH_CMD_CHIPERASE	0xc7
++#define FLASH_CMD_WRVCR		0x81
++#define FLASH_CMD_RDVCR		0x85
++
++/* JEDEC Standard - Serial Flash Discoverable Parmeters (SFDP) Commands */
++#define FLASH_CMD_READ		0x03	/* READ */
++#define FLASH_CMD_READ_FAST	0x0b	/* FAST READ */
++#define FLASH_CMD_READ_1_1_2	0x3b	/* DUAL OUTPUT READ */
++#define FLASH_CMD_READ_1_2_2	0xbb	/* DUAL I/O READ */
++#define FLASH_CMD_READ_1_1_4	0x6b	/* QUAD OUTPUT READ */
++#define FLASH_CMD_READ_1_4_4	0xeb	/* QUAD I/O READ */
++
++#define FLASH_CMD_WRITE		0x02	/* PAGE PROGRAM */
++#define FLASH_CMD_WRITE_1_1_2	0xa2	/* DUAL INPUT PROGRAM */
++#define FLASH_CMD_WRITE_1_2_2	0xd2	/* DUAL INPUT EXT PROGRAM */
++#define FLASH_CMD_WRITE_1_1_4	0x32	/* QUAD INPUT PROGRAM */
++#define FLASH_CMD_WRITE_1_4_4	0x12	/* QUAD INPUT EXT PROGRAM */
++
++#define FLASH_CMD_EN4B_ADDR	0xb7	/* Enter 4-byte address mode */
++#define FLASH_CMD_EX4B_ADDR	0xe9	/* Exit 4-byte address mode */
++
++/* READ commands with 32-bit addressing */
++#define FLASH_CMD_READ4		0x13
++#define FLASH_CMD_READ4_FAST	0x0c
++#define FLASH_CMD_READ4_1_1_2	0x3c
++#define FLASH_CMD_READ4_1_2_2	0xbc
++#define FLASH_CMD_READ4_1_1_4	0x6c
++#define FLASH_CMD_READ4_1_4_4	0xec
++
++/* Configuration flags */
++#define FLASH_FLAG_SINGLE	0x000000ff
++#define FLASH_FLAG_READ_WRITE	0x00000001
++#define FLASH_FLAG_READ_FAST	0x00000002
++#define FLASH_FLAG_SE_4K	0x00000004
++#define FLASH_FLAG_SE_32K	0x00000008
++#define FLASH_FLAG_CE		0x00000010
++#define FLASH_FLAG_32BIT_ADDR	0x00000020
++#define FLASH_FLAG_RESET	0x00000040
++#define FLASH_FLAG_DYB_LOCKING	0x00000080
++
++#define FLASH_FLAG_DUAL		0x0000ff00
++#define FLASH_FLAG_READ_1_1_2	0x00000100
++#define FLASH_FLAG_READ_1_2_2	0x00000200
++#define FLASH_FLAG_READ_2_2_2	0x00000400
++#define FLASH_FLAG_WRITE_1_1_2	0x00001000
++#define FLASH_FLAG_WRITE_1_2_2	0x00002000
++#define FLASH_FLAG_WRITE_2_2_2	0x00004000
++
++#define FLASH_FLAG_QUAD		0x00ff0000
++#define FLASH_FLAG_READ_1_1_4	0x00010000
++#define FLASH_FLAG_READ_1_4_4	0x00020000
++#define FLASH_FLAG_READ_4_4_4	0x00040000
++#define FLASH_FLAG_WRITE_1_1_4	0x00100000
++#define FLASH_FLAG_WRITE_1_4_4	0x00200000
++#define FLASH_FLAG_WRITE_4_4_4	0x00400000
++
++#endif /* _MTD_SERIAL_FLASH_CMDS_H */
 diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index f1276e5..be66a49 100644
+index fe19ec3..71b6188 100644
 --- a/drivers/mtd/devices/st_spi_fsm.c
 +++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -98,6 +98,31 @@ static struct seq_rw_config n25q_read4_configs[] = {
- 	{0x00,			0,			0, 0, 0, 0x00, 0, 0},
- };
+@@ -24,6 +24,7 @@
+ #include <asm/io.h>
  
-+/*
-+ * [MX25xxx] Configuration
-+ */
-+#define MX25_STATUS_QE			(0x1 << 6)
-+
-+static int stfsm_mx25_en_32bit_addr_seq(struct stfsm_seq *seq)
-+{
-+	seq->seq_opc[0] = (SEQ_OPC_PADS_1 |
-+			   SEQ_OPC_CYCLES(8) |
-+			   SEQ_OPC_OPCODE(FLASH_CMD_EN4B_ADDR) |
-+			   SEQ_OPC_CSDEASSERT);
-+
-+	seq->seq[0] = STFSM_INST_CMD1;
-+	seq->seq[1] = STFSM_INST_WAIT;
-+	seq->seq[2] = STFSM_INST_STOP;
-+
-+	seq->seq_cfg = (SEQ_CFG_PADS_1 |
-+			SEQ_CFG_ERASE |
-+			SEQ_CFG_READNOTWRITE |
-+			SEQ_CFG_CSDEASSERT |
-+			SEQ_CFG_STARTSEQ);
-+
-+	return 0;
-+}
-+
- static struct stfsm_seq stfsm_seq_read; 	/* Dynamically populated */
- static struct stfsm_seq stfsm_seq_write;	/* Dynamically populated */
- static struct stfsm_seq stfsm_seq_en_32bit_addr;/* Dynamically populated */
-@@ -620,6 +645,65 @@ static int stfsm_prepare_rwe_seqs_default(struct stfsm *fsm)
- 	return 0;
- }
+ #include "st_spi_fsm.h"
++#include "serial_flash_cmds.h"
  
-+static int stfsm_mx25_config(struct stfsm *fsm)
-+{
-+	uint32_t flags = fsm->info->flags;
-+	uint32_t data_pads;
-+	uint8_t sta;
-+	int ret;
-+	bool soc_reset;
-+
-+	/* Disable support for 'WRITE_1_4_4' (limited to 20MHz which is of
-+	 * marginal benefit on our hardware and doesn't justify implementing
-+	 * different READ/WRITE frequencies).
-+	 */
-+	flags &= ~FLASH_FLAG_WRITE_1_4_4;
-+
-+	/*
-+	 * Use default READ/WRITE sequences
-+	 */
-+	ret = stfsm_prepare_rwe_seqs_default(fsm);
-+	if (ret)
-+		return ret;
-+
-+	/*
-+	 * Configure 32-bit Address Support
-+	 */
-+	if (flags & FLASH_FLAG_32BIT_ADDR) {
-+		/* Configure 'enter_32bitaddr' FSM sequence */
-+		stfsm_mx25_en_32bit_addr_seq(&stfsm_seq_en_32bit_addr);
-+
-+		soc_reset = stfsm_can_handle_soc_reset(fsm);
-+		if (soc_reset || !fsm->booted_from_spi) {
-+			/* If we can handle SoC resets, we enable 32-bit address
-+			 * mode pervasively */
-+			stfsm_enter_32bit_addr(fsm, 1);
-+
-+		} else {
-+			/* Else, enable/disable 32-bit addressing before/after
-+			 * each operation */
-+			fsm->configuration = (CFG_READ_TOGGLE_32BIT_ADDR |
-+					      CFG_WRITE_TOGGLE_32BIT_ADDR |
-+					      CFG_ERASESEC_TOGGLE_32BIT_ADDR);
-+			/* It seems a small delay is required after exiting
-+			 * 32-bit mode following a write operation.  The issue
-+			 * is under investigation.
-+			 */
-+			fsm->configuration |= CFG_WRITE_EX_32BIT_ADDR_DELAY;
-+		}
-+	}
-+
-+	/* For QUAD mode, set 'QE' STATUS bit */
-+	data_pads = ((stfsm_seq_read.seq_cfg >> 16) & 0x3) + 1;
-+	if (data_pads == 4) {
-+		stfsm_read_status(fsm, FLASH_CMD_RDSR, &sta);
-+		sta |= MX25_STATUS_QE;
-+		stfsm_write_status(fsm, sta, 1);
-+	}
-+
-+	return 0;
-+}
-+
- static int stfsm_n25q_config(struct stfsm *fsm)
- {
- 	uint32_t flags = fsm->info->flags;
+ static struct stfsm_seq stfsm_seq_read_jedec = {
+ 	.data_size = TRANSFER_SIZE(8),
 diff --git a/drivers/mtd/devices/st_spi_fsm.h b/drivers/mtd/devices/st_spi_fsm.h
-index 5143843..10c12ba 100644
+index 97b4868..5c6c55e 100644
 --- a/drivers/mtd/devices/st_spi_fsm.h
 +++ b/drivers/mtd/devices/st_spi_fsm.h
-@@ -318,6 +318,7 @@ struct flash_info {
- };
+@@ -16,6 +16,8 @@
+ #ifndef ST_SPI_FSM_H
+ #define ST_SPI_FSM_H
  
- static int stfsm_n25q_config(struct stfsm *fsm);
-+static int stfsm_mx25_config(struct stfsm *fsm);
- 
- static struct flash_info flash_types[] = {
- 	/*
-@@ -350,7 +351,8 @@ static struct flash_info flash_types[] = {
- 		   FLASH_FLAG_SE_4K		| \
- 		   FLASH_FLAG_SE_32K)
- 	{ "mx25l25635e", 0xc22019, 0, 64*1024, 512,
--	  (MX25_FLAG | FLASH_FLAG_32BIT_ADDR | FLASH_FLAG_RESET), 70, NULL },
-+	  (MX25_FLAG | FLASH_FLAG_32BIT_ADDR | FLASH_FLAG_RESET), 70,
-+	  stfsm_mx25_config },
- 
- #define N25Q_FLAG (FLASH_FLAG_READ_WRITE	| \
- 		   FLASH_FLAG_READ_FAST		| \
++#include "serial_flash_cmds.h"
++
+ /*
+  * FSM SPI Controller Registers
+  */
 -- 
 1.8.3.2
 
