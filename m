@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756421Ab3K2PiZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 10:38:25 -0500
-Received: from s3.sipsolutions.net ([144.76.43.152]:55363 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545Ab3K2PiY (ORCPT
+	id S1756908Ab3K2Pib (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 10:38:31 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:37468 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756632Ab3K2Pi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 10:38:24 -0500
-Message-ID: <1385739487.8656.1.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH] net: mac80211: tx.c: be sure of 'sdata->vif.type' must
- be NL80211_IFTYPE_AP when be in NL80211_IFTYPE_AP case
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>, rkuo <rkuo@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, linux-wireless@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Date: Fri, 29 Nov 2013 16:38:07 +0100
-In-Reply-To: <52957ADA.2080704@gmail.com> (sfid-20131127_055211_558798_A7DF5684)
-References: <528AEFB7.4060301@gmail.com>
-	 <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com>
-	 <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com>
-	 <52957ADA.2080704@gmail.com> (sfid-20131127_055211_558798_A7DF5684)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2 
-Mime-Version: 1.0
+	Fri, 29 Nov 2013 10:38:29 -0500
+Message-ID: <5298B49C.1050104@ti.com>
+Date: Fri, 29 Nov 2013 10:37:00 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+CC: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>
+Subject: Re: [PATCH 0/7] Davinci nand driver fixes and updates
+References: <1384960945-14528-1-git-send-email-ivan.khoronzhuk@ti.com>
+In-Reply-To: <1384960945-14528-1-git-send-email-ivan.khoronzhuk@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ivan,
 
-> +++ b/net/mac80211/tx.c
-> @@ -1814,8 +1814,9 @@ netdev_tx_t ieee80211_subif_start_xmit(struct sk_buff *skb,
->  			break;
->  		/* fall through */
->  	case NL80211_IFTYPE_AP:
-> -		if (sdata->vif.type == NL80211_IFTYPE_AP)
-> -			chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
-> +		if (sdata->vif.type != NL80211_IFTYPE_AP)
-> +			goto fail_rcu;
-> +		chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
+On Wednesday 20 November 2013 10:22 AM, Ivan Khoronzhuk wrote:
+> This series contains fixes and updates of Davinci nand driver, in
+> order to prepare it to be reused for Keystone platform.
+> 
+> V1:
+> https://lkml.org/lkml/2013/11/11/352
+> 
+> Ivan Khoronzhuk (7):
+>   mtd: nand: davinci: fix driver registration
+>   mtd: nand: davinci: return ENOMEM if memory allocation is failed
+>   mtd: nand: davinci: check required ti,davinci-chipselect property
+>   mtd: nand: davinci: simplify error handling
+>   mtd: nand: davinci: move bindings under mtd
+>   mtd: nand: davinci: extend description of bindings
+>   mtd: nand: davinci: adjust DT properties to MTD generic
+> 
+>  .../devicetree/bindings/arm/davinci/nand.txt       |   46 ----------
+>  .../devicetree/bindings/mtd/davinci-nand.txt       |   92 ++++++++++++++++++++
+>  drivers/mtd/nand/davinci_nand.c                    |   68 +++++++--------
+>  3 files changed, 126 insertions(+), 80 deletions(-)
+>  delete mode 100644 Documentation/devicetree/bindings/arm/davinci/nand.txt
+>  create mode 100644 Documentation/devicetree/bindings/mtd/davinci-nand.txt
+> 
+Can you please update the series with pending comments and
+send a refreshed version. 
 
-This change is completely wrong.
-
-johannes
-
+Regards,
+Santosh
