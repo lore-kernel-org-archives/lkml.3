@@ -1,64 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757299Ab3K2QvW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 11:51:22 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:51376 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755352Ab3K2QvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 11:51:21 -0500
-Message-ID: <5298C5C2.60008@ti.com>
-Date: Fri, 29 Nov 2013 11:50:10 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1757484Ab3K2Qvy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 11:51:54 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:58830 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756367Ab3K2Qvu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 11:51:50 -0500
+From: Michal Nazarewicz <mpn@google.com>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND] drivers: video: metronomefb: avoid out-of-bounds array access
+Date: Fri, 29 Nov 2013 17:51:43 +0100
+Message-Id: <1385743903-9079-1-git-send-email-mpn@google.com>
+X-Mailer: git-send-email 1.8.4.1
 MIME-Version: 1.0
-To: <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 00/24] mm: Use memblock interface instead of bootmem
-References: <1383954120-24368-1-git-send-email-santosh.shilimkar@ti.com>
-In-Reply-To: <1383954120-24368-1-git-send-email-santosh.shilimkar@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun, Andrew,
+From: Michal Nazarewicz <mina86@mina86.com>
 
-On Friday 08 November 2013 06:41 PM, Santosh Shilimkar wrote:
-> Tejun and others,
-> 
-> Following up with the earlier RFC [1] comments, here is the updated
-> patch series based on the discussion. This series is the last bottleneck
-> now for me to enable the coherency on keystone ARM LPAE architecture on which
-> the physical memory starts after 4BG. I would like to get these patches
-> in next merge window(3.14), so any help in terms of testing/comments is
-> appreciated.
-> 
-Now since the 3.13-rc1 is out, it will be best to apply these patches 
-on memblock tree so that they start appearing in next to catch any
-regressions, issues etc. It will give us some time to fix any issues
-arises from next.
+load_waveform function checks whether padding bytes in stuff2a
+and stuff2b are all zero, but does so by treating those arrays
+as a single longer array.  Since the structure is packed, and
+the size sum matches, it all works, but creates some confusion
+in the code.
 
-For convenience, I have re-based the series on top of 3.13-rc1 and
-pushed it on below tree.
+This commit changes the stuff2a and stuff2b arrays into pad1 and
+pad2 fields such that they cover the same bytes as the arrays
+covered, and changes the check in the load_waveform function so
+that the fields are read instead of iterating over an arary.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/ssantosh/linux-keystone.git
-for_3.14/memblock
+It also renames the other “stuff” fields to “ignore*” fields to
+give them more semantic meaning.
 
-web-url:
-https://git.kernel.org/cgit/linux/kernel/git/ssantosh/linux-keystone.git/log/?h=for_3.14/memblock
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+---
+ drivers/video/metronomefb.c | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
-Can you please pull these in you tree and apply against your
-next branch ?
-
-Regards,
-Santosh		 
-
-
+diff --git a/drivers/video/metronomefb.c b/drivers/video/metronomefb.c
+index 195cc2d..4f36a2b 100644
+--- a/drivers/video/metronomefb.c
++++ b/drivers/video/metronomefb.c
+@@ -126,7 +126,7 @@ static struct fb_var_screeninfo metronomefb_var = {
+ 
+ /* the waveform structure that is coming from userspace firmware */
+ struct waveform_hdr {
+-	u8 stuff[32];
++	u8 ignore1[32];
+ 
+ 	u8 wmta[3];
+ 	u8 fvsn;
+@@ -134,13 +134,14 @@ struct waveform_hdr {
+ 	u8 luts;
+ 	u8 mc;
+ 	u8 trc;
+-	u8 stuff3;
++	u8 ignore2;
+ 
+ 	u8 endb;
+ 	u8 swtb;
+-	u8 stuff2a[2];
++	u32 pad1; /* u16 halfof(pad1) */
+ 
+-	u8 stuff2b[3];
++	/* u16 halfof(pad1) */
++	u8 pad2;
+ 	u8 wfm_cs;
+ } __attribute__ ((packed));
+ 
+@@ -210,11 +211,9 @@ static int load_waveform(u8 *mem, size_t size, int m, int t,
+ 	}
+ 	wfm_hdr->mc += 1;
+ 	wfm_hdr->trc += 1;
+-	for (i = 0; i < 5; i++) {
+-		if (*(wfm_hdr->stuff2a + i) != 0) {
+-			dev_err(dev, "Error: unexpected value in padding\n");
+-			return -EINVAL;
+-		}
++	if (wfm_hdr->pad1 || wfm_hdr->pad2) {
++		dev_err(dev, "Error: unexpected value in padding\n");
++		return -EINVAL;
+ 	}
+ 
+ 	/* calculating trn. trn is something used to index into
+-- 
+1.8.4.1
 
