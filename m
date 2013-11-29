@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005Ab3K2V4V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 16:56:21 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:54108 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754525Ab3K2V4S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 16:56:18 -0500
-Date: Fri, 29 Nov 2013 22:56:16 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: venkata koppula <vmrkoppula@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Copying large files eats all of the RAM
-Message-ID: <20131129215616.GA32242@rhlx01.hs-esslingen.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKK=TUJ=ebu3+hBQmm+5=uooCFo9y3oAS_JfSn_KOtfxCLBvQQ@mail.gmail.com>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755131Ab3K2WF4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 17:05:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51801 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752606Ab3K2WFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 17:05:53 -0500
+From: Mark Salter <msalter@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: patches@linaro.org, Mark Salter <msalter@redhat.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org, matt.fleming@intel.com,
+        linux-efi@vger.kernel.org, Leif Lindholm <leif.lindholm@linaro.org>,
+        roy.franz@linaro.org, Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        linux-doc@vger.kernel.org, Rob Landley <rob@landley.net>
+Subject: [PATCH 0/3] arm64: Add EFI stub and runtime services support
+Date: Fri, 29 Nov 2013 17:05:09 -0500
+Message-Id: <1385762712-17043-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch series adds EFI support to the arm64 kernel. This support has
+two main parts: an EFI stub and runtime support. The EFI stub support
+has the kernel masquerade as a PE/COFF application which can be directly
+booted by EFI firmware (or by secondary loaders with EFI support). The
+runtime services support provides access to various EFI firmware services
+such as reboot, real-time clock, boot variables, and others.
 
-> My laptop has 4GB of ram, before I issue the command around 1.5GB of
-> memory
-> is used, when I issue the cp command around 3.7GB of memory is used.
-> And the cp command takes a lot of time to copy.
-> 
-> I am not able to launch other applications(take a lot of time) and
-> even compiz freezes frequently. my laptop has Ubuntu installed on it.
-> 
-> Is this the problem with only my system or it is a common problem with
-> Linux?.
-> 
-> Is there any way to stop any copy command to use all of my memory.
+These patches have dependencies on other patches which are not yet in
+the kernel but have been posted and are currently under review. In
+particular:
 
-The purpose of a good operating system is *exactly* to optimize the
-*all* RAM is used, *all* the time optimum to the highest degree.
-Or would you want to have your power supply used to power useless
-memory that's sitting idle?
+  - Generic fixmap support being discussed here:
+      http://lkml.org/lkml/2013/11/25/474
 
-It's probably a good idea to read up on the many sites which explain
-important OS caching mechanisms.
+  - early_ioremap support being discussed here:
+      https://lkml.org/lkml/2013/11/27/621
 
-That said, there may of course be situations where too much
-competition/contention for resources occurs, or where calculation of the
-kept-free-for-reuse memory amount is sub-optimal, leaving overly scarce
-amounts of memory available for immediate use.
-But that should be a matter of optimizing core kernel algorithms
-even more than they already are.
+  - shared EFI update_fdt() function being discussed here:
+      https://lkml.org/lkml/2013/11/27/565
 
-And it's also known that for certain situations (e.g. trying to push very large
-amounts of data over a lowly USB 1.1 USB stick connection),
-Linux does (or did?) tend to have issues with that cached data piling up
-in somewhat negative ways prior to getting flushed over the connection,
-thereby causing system performance to degrade (I'm not in the know of
-how much that still applies to very new Linux kernel versions).
+A repo with this patch series and the prerequisite patches is at:
 
-But in your case that might simply be a problem of your particular
-hardware (IRQ issues, improperly implemented drivers, ...).
-Some benchmarking activities might be able to provide more details
-(e.g. hdparm -tT, bonnie++ results, memory performance tests, etc.).
+  git://github.com/mosalter/linux.git (arm64-efi-patches branch)
 
-cat /proc/slabinfo
-ought to provide an initial overview of which cache elements
-manage to keep the largest memory areas in service.
+Mark Salter (3):
+  arm64: add EFI stub
+  doc: arm64: add description of EFI stub support
+  arm64: add EFI runtime services
 
-HTH,
+ Documentation/arm64/booting.txt |   4 +
+ Documentation/efi-stub.txt      |  10 +-
+ arch/arm64/Kconfig              |  25 ++
+ arch/arm64/include/asm/efi.h    |  18 ++
+ arch/arm64/kernel/Makefile      |   4 +
+ arch/arm64/kernel/efi-entry.S   |  81 +++++++
+ arch/arm64/kernel/efi-stub.c    | 280 ++++++++++++++++++++++
+ arch/arm64/kernel/efi.c         | 507 ++++++++++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/head.S        | 112 +++++++++
+ arch/arm64/kernel/setup.c       |   6 +
+ include/linux/efi.h             |   2 +-
+ 11 files changed, 1046 insertions(+), 3 deletions(-)
+ create mode 100644 arch/arm64/include/asm/efi.h
+ create mode 100644 arch/arm64/kernel/efi-entry.S
+ create mode 100644 arch/arm64/kernel/efi-stub.c
+ create mode 100644 arch/arm64/kernel/efi.c
 
-Andreas Mohr
+-- 
+1.8.3.1
+
