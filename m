@@ -1,209 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753967Ab3K2JgH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 04:36:07 -0500
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:62114 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888Ab3K2Jf6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 04:35:58 -0500
+	id S1753222Ab3K2Jhp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 04:37:45 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:47560 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751210Ab3K2Jhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 04:37:40 -0500
+Date: Fri, 29 Nov 2013 15:07:31 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 01/17] tracing/uprobes: Fix documentation of uprobe
+ registration syntax
+Message-ID: <20131129093731.GB9585@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <1385533203-10014-1-git-send-email-namhyung@kernel.org>
+ <1385533203-10014-2-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFrRjB7gPpQ4c1U5e-BTHEt6k=kDqo7q1Grc04v-SDrsDw@mail.gmail.com>
-References: <1385566500-7666-1-git-send-email-ulf.hansson@linaro.org>
-	<1619468.NHTb5ylADI@vostro.rjw.lan>
-	<CAPDyKFq0OW+uhBF1pMvY01peC1dRERtSdSNY15O=vvdY_XvQUA@mail.gmail.com>
-	<81539588.EsdqydM2iX@vostro.rjw.lan>
-	<CAPDyKFrRjB7gPpQ4c1U5e-BTHEt6k=kDqo7q1Grc04v-SDrsDw@mail.gmail.com>
-Date: Fri, 29 Nov 2013 10:35:57 +0100
-Message-ID: <CAPDyKFp-J4DCBGUgMJ+oW_GugFthfYjSXajdye2Dv0TKLXcE-w@mail.gmail.com>
-Subject: Re: [PATCH 0/5] PM: Enable option of re-use runtime PM callbacks at
- system suspend
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kevin Hilman <khilman@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1385533203-10014-2-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13112909-7182-0000-0000-0000093B5B48
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 November 2013 10:32, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->>
->> The lack of specificity here doesn't make the discussion any easier.
->>
->> It usually is better to talk about specific problems to address than
->> using general terms which may mean slightly different things for different
->> people.
->
-> During these discussions, I have tried to point at existing code for
-> drivers and existing code for power domains. Those which at the moment
-> either have got things wrong or are unnecessary complicated, in
-> regards to their PM implementation.
->
-> I suppose I could provide some more patches for proof of concept, will
-> that be a way forward?
->
->>
->>> >> Additionally, some drivers seems to have messed up things when combining
->>> >> runtime PM with system PM. While we enable the option of re-using the runtime
->>> >> PM callbacks during system PM, we also intend to clarify the way forward for
->>> >> how these scenarios could be resolved.
->>> >>
->>> >> Some new helper macros for defining PM callbacks and two new pm_generic*
->>> >> functions has been implemented in this patch set. These are provided to make it
->>> >> easier for those who wants to enable the option of re-using the runtime PM
->>> >> callbacks during system suspend.
->>> >
->>> > I'm generally opposed to re-using callbacks like this, because it adds confusion
->>> > to the picture.  It may seem to be clever, but in fact it leads to bad design
->>> > choices in the drivers in my opinion.
->>>
->>> In my world of the kernel, it will clearly resolve confusions and
->>> simplify a significant amount of code in power domains, buses and
->>> drivers. So I guess it depends on from what point you look at this.
->>
->> This is so vague that I don't even know how to respond. :-)
->>
->> So let me say instead that what you did in patch [5/5] is a layering violation
->> which always is a bug, even if it doesn't break things outright.
->>
->> After that patch the driver would call into a layer that is supposed to call
->> into it under normal conditions.  Moreover, it would expect that layer to
->> call back into it again in a specific way, which may or may not happen depending
->> on how exactly that layer is implemented.  So even if it works today, it will
->> add constraints on how that other layer may be implmented which *is* confusing
->> and wrong in my not so humble opinion.
->>
->> I'll never apply any patches that lead to situations like that, don't even
->> bother to send them to me.  Pretty please.
->>
->
-> After all these good discussions which clearly pointed the solution
-> into this direction, you decide to bring up this argument now? It
-> makes me wonder.
->
-> Indirectly what you are saying is that, the PM core should at
-> device_prepare, do pm_runtime_disable() instead of
-> pm_runtime_get_noresume(), to prevent drivers/subsystems from
-> triggering "layering violations" by invoking pm_runtime_get_sync().
->
-> Because, this is exactly the same kind of layering violation you refer
-> to while neglecting my approach, which at the moment
-> drivers/subsystems not only are allowed to, but also encouraged to do
-> during system suspend.
->
-> Now, obviously I don't think we shall change the behaviour of PM core,
-> that would just not be convenient for subsystems and drivers, right?
->
-> So, the PM core allows layering violations for the .runtime_resume
-> callbacks to be invoked during system suspend. It can do so, because
-> it trust drivers/subsystems to act responsibly and to what suites them
-> best.
->
-> For the same reasons, I believe we should trust drivers/subsystems, to
-> understand when it makes sense for them to re-use all of the runtime
-> PM callbacks during system suspend and not just the .runtime_suspend
-> callback.
+* Namhyung Kim <namhyung@kernel.org> [2013-11-27 15:19:47]:
 
-Sorry, another typo:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> The uprobe syntax requires an offset after a file path not a symbol.
+> 
+> Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Acked-by: Oleg Nesterov <oleg@redhat.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
 
-"not just the .runtime_suspend" -> "not just the .runtime_resume".
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
->
-> That is in principle what I and Alan, who came up with this idea, are
-> suggesting.
->
->>> And, as you stated previously during these discussions, we have the
->>> opportunity to update the documentation around this topic, I will
->>> happily do it, if needed.
->>
->> That's always welcome. :-)
->>
->>> >
->>> > Let's talk about specific examples, though.
->>> >
->>> > Why exactly do you need what patch [5/5] does in the exynos_drm_fimc driver?
->>>
->>> This was a simple example, I wanted to visualize how the new building
->>> blocks were going to be used. Anyway, this we achieve with the patch:
->>>
->>> 1.
->>> The PM part in the driver becomes simplified, we don't need the
->>> wrapper functions for the runtime PM callbacks any more.
->>
->> No, it is not simplified.  It becomes *far* more complicated conceptually
->> instead, although that is hidden by moving the complexity into the functions
->> added by patch [1/5].  So whoever doesn't look into those functions will
->> not actually realize how complicated the code really is.
->>
->>> 2.
->>> Previously the driver did not make sure runtime PM was disabled,
->>> before it put the device into low power state at .suspend. From a
->>> runtime PM point of view, this is not a "nice" behaviour and opens up
->>> for confusions, even if it likely would work in most cases.
->>
->> So the proper fix, in my opinion, would be to point .suspend_late and
->> .resume_early in that driver to fimc_suspend() and fimc_resume(),
->> respectively, and leave the .suspend and .resume pointers unpopulated.
->>
->> Wouldn't that actually work?
->
-> If we decide to ignore the power domain issue below, yes.
->
->>
->>> 3.
->>> The power domain runtime PM callbacks were by-passed during system
->>> suspend, my patch fixes this.
->>
->> I don't exactly understand this.  Why would they be bypassed?
->>
->>> Why do I want this? Because the power
->>> domain can have runtime PM resources it need to handle at this phase.
->>> Potentially, it could handle that from it's .suspend_late callback
->>> instead, but then it gets unnecessary complicated, which is what
->>> clearly happened to the power domain for OMAP2, for example.
->>
->> I'd like to understand this.  What exactly do you mean by "unnecessary
->> complicated"?
->
-> Please, have a deeper look into the OMAP power domain implementation.
->
-> If each SoC (for those that have power domain regulators) needs their
-> own version of such a power domain, then I certainly think it is more
-> complicated that in needs to be.
->
->>
->>>
->>> If you want additional proof of concepts, we can have a look at more
->>> complex example.
->>>
->>> Typically I am thinking of cases were a cross SoC driver is attached
->>> to a bus and for some SoCs a power domain as well. Then, the bus, the
->>> power domain and the driver - all have runtime PM resources to handle.
->>
->> Sure.
->
-> OK, I consider resending the patch set, including some additional
-> proof of concept patches.
->
->>
->>> In these cases using the new building blocks will not only
->>> significantly simplify code, but also fix immediate bugs. One example
->>> are drivers attached to the AMBA bus, at drivers/amba/bus.c.
->>
->> Again, what drivers and what's the bug you're talking about?
->
-> I will use some of these as examples, it will be more visible to you then.
->
-> Kind regards
-> Uffe
->
->>
->> Rafael
->>
