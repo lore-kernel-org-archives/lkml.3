@@ -1,182 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab3K2KNp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 05:13:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29390 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754241Ab3K2KNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 05:13:22 -0500
-Message-ID: <529868B3.9090905@redhat.com>
-Date: Fri, 29 Nov 2013 18:13:07 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
-CC: Rusty Russell <rusty@rustcorp.com.au>,
-        Michael Dalton <mwdalton@google.com>,
-        Eric Dumazet <edumazet@google.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] virtio_net: fix error handling for mergeable buffers
-References: <1385638044-27467-1-git-send-email-mst@redhat.com>
-In-Reply-To: <1385638044-27467-1-git-send-email-mst@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754610Ab3K2KPV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 05:15:21 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:45454 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752224Ab3K2KPP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 05:15:15 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee691-b7f666d0000048b0-37-52986931f4ae
+Content-transfer-encoding: 8BIT
+Message-id: <1385720057.2417.46.camel@kjgkr>
+Subject: Re: [f2fs-dev] [PATCH 2/5] f2fs: add unlikely macro for compiler
+ optimization
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?UTF-8?Q?=E8=B0=AD=E5=A7=9D?= <shu.tan@samsung.com>
+Date: Fri, 29 Nov 2013 19:14:17 +0900
+In-reply-to: <003301ceec0d$77ddaef0$67990cd0$@samsung.com>
+References: <003301ceec0d$77ddaef0$67990cd0$@samsung.com>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zQ13DzBlBBr1/VC3+N31ks7i0yN1i
+	z96TLBaXd81hs2hdeJ7ZgdVj94LPTB59W1YxenzeJBfAHMVlk5Kak1mWWqRvl8CVcfH5MaaC
+	f+wVhx9sZGlgnMHWxcjJISFgInHt3jV2CFtM4sK99WBxIYFljBLnZ6jD1Hw4vYCxi5ELKD6d
+	UWL6zZ9gDbwCghI/Jt9j6WLk4GAWkJc4cikbJMwsoC4xad4iZoj6V4wSMz7OZoWo15F49xJi
+	sbBAhMTaO9+YQXrZBLQlNu83gNirKPF2/12wchEBJYlf8xexgsxhFljIKHFwwU2wXhYBVYkf
+	H18ygticAlYSvdceMYLMERKwlJj3HGwOv4CoxOGF25kh7leS2N3eyQ4yR0LgHLvEs2uvoOYI
+	SHybfAjsfgkBWYlNB6DqJSUOrrjBMoFRYhaSL2chfDkLyZcLGJlXMYqmFiQXFCelF5nqFSfm
+	Fpfmpesl5+duYoTE3cQdjPcPWB9iTAbaOJFZSjQ5Hxi3eSXxhsZmRhamJqbGRuaWZqQJK4nz
+	pj9KChISSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAWNO40CuQfeXkcw/XXp++6rnonJ8iKfuv
+	x+q+mcmpfWHWdy7vuUvLTK+cW1D++sAq2a9ssfnvdY4smH4pd72JZuDelCsPyitvJ33KXDwv
+	0UnwwppVW+YazrFu1P/Aem+D4yL9W+pqHh9Mnld+q31T83zrqgceHtVLV3VeYjf0/nvvoWOt
+	qP6JIhElluKMREMt5qLiRAD97OP70QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDKsWRmVeSWpSXmKPExsVy+t9jQV3DzBlBBrc+Klr8b/rIZnFpkbvF
+	nr0nWSwu75rDZtG68DyzA6vH7gWfmTz6tqxi9Pi8SS6AOaqB0SYjNTEltUghNS85PyUzL91W
+	yTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaKWSQlliTilQKCCxuFhJ3w7ThNAQN10L
+	mMYIXd+QILgeIwM0kLCOMePi82NMBf/YKw4/2MjSwDiDrYuRk0NCwETiw+kFjBC2mMSFe+uB
+	4lwcQgLTGSWm3/zJDpLgFRCU+DH5HksXIwcHs4C8xJFL2SBhZgF1iUnzFjFD1L9ilJjxcTYr
+	RL2OxLuXEAuEBSIk1t75xgzSyyagLbF5vwFIWEhAUeLt/rtg5SICShK/5i9iBZnDLLCQUeLg
+	gptgvSwCqhI/Pr4EO45TwEqi99ojRpA5QgKWEvOeg83hFxCVOLxwOzPE/UoSu9s72ScwCs1C
+	cvUshKtnIbl6ASPzKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzguH4mtYNxZYPFIUYBDkYl
+	Ht4V3dODhFgTy4orcw8xSnAwK4nw/ioCCvGmJFZWpRblxxeV5qQWH2JMBrp7IrOUaHI+MOXk
+	lcQbGpuYGVkamVkYmZibkyasJM57oNU6UEggPbEkNTs1tSC1CGYLEwenVAPjpgc2pS+yVISn
+	Bt+Srfe+98s1lHMlK/OUgi8ca1/FFf7v/f2VicW8aLJF5bJrl9TnLNzUUvsq0aRwN0vw+WUb
+	3iw1ijx5aH7E/RdbDvmsPLfmdtKRE+IRzap1W0x5RG/qcyvVTX35wFz8eWn72/DwlDobiX+C
+	N0+c+/r87q0pF1uufDdab7xjthJLcUaioRZzUXEiAB4IzJUvAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2013 07:30 PM, Michael S. Tsirkin wrote:
-> Eric Dumazet noticed that if we encounter an error
-> when processing a mergeable buffer, we don't
-> dequeue all of the buffers from this packet,
-> the result is almost sure to be loss of networking.
->
-> Jason Wang noticed that we also leak a page and that we don't decrement
-> the rq buf count, so we won't repost buffers (a resource leak).
->
-> Fix both issues.
->
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Michael Dalton <mwdalton@google.com>
-> Reported-by: Eric Dumazet <edumazet@google.com>
-> Reported-by: Jason Wang <jasowang@redhat.com>
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->
-> Stable patch will be sent later.
->
->  drivers/net/virtio_net.c | 82 ++++++++++++++++++++++++++++++------------------
->  1 file changed, 51 insertions(+), 31 deletions(-)
->
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index 7bab4de..5408de6 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -299,35 +299,47 @@ static struct sk_buff *page_to_skb(struct receive_queue *rq,
->  	return skb;
->  }
->  
-> -static int receive_mergeable(struct receive_queue *rq, struct sk_buff *head_skb)
-> +static struct sk_buff *receive_mergeable(struct net_device *dev,
-> +					 struct receive_queue *rq,
-> +					 void *buf,
-> +					 unsigned int len)
->  {
-> -	struct skb_vnet_hdr *hdr = skb_vnet_hdr(head_skb);
-> +	struct skb_vnet_hdr *hdr = buf;
-> +	int num_buf = hdr->mhdr.num_buffers;
-> +	struct page *page = virt_to_head_page(buf);
-> +	int offset = buf - page_address(page);
-> +	struct sk_buff *head_skb = page_to_skb(rq, page, offset, len,
-> +					       MERGE_BUFFER_LEN);
->  	struct sk_buff *curr_skb = head_skb;
-> -	char *buf;
-> -	struct page *page;
-> -	int num_buf, len, offset;
->  
-> -	num_buf = hdr->mhdr.num_buffers;
-> +	if (unlikely(!curr_skb))
-> +		goto err_skb;
-> +
->  	while (--num_buf) {
-> -		int num_skb_frags = skb_shinfo(curr_skb)->nr_frags;
-> +		int num_skb_frags;
-> +
->  		buf = virtqueue_get_buf(rq->vq, &len);
->  		if (unlikely(!buf)) {
-> -			pr_debug("%s: rx error: %d buffers missing\n",
-> -				 head_skb->dev->name, hdr->mhdr.num_buffers);
-> -			head_skb->dev->stats.rx_length_errors++;
-> -			return -EINVAL;
-> +			pr_debug("%s: rx error: %d buffers out of %d missing\n",
-> +				 dev->name, num_buf, hdr->mhdr.num_buffers);
-> +			dev->stats.rx_length_errors++;
-> +			goto err_buf;
->  		}
->  		if (unlikely(len > MERGE_BUFFER_LEN)) {
->  			pr_debug("%s: rx error: merge buffer too long\n",
-> -				 head_skb->dev->name);
-> +				 dev->name);
->  			len = MERGE_BUFFER_LEN;
->  		}
-> +
-> +		page = virt_to_head_page(buf);
-> +		--rq->num;
-> +
-> +		num_skb_frags = skb_shinfo(curr_skb)->nr_frags;
->  		if (unlikely(num_skb_frags == MAX_SKB_FRAGS)) {
->  			struct sk_buff *nskb = alloc_skb(0, GFP_ATOMIC);
-> -			if (unlikely(!nskb)) {
-> -				head_skb->dev->stats.rx_dropped++;
-> -				return -ENOMEM;
-> -			}
-> +
-> +			if (unlikely(!nskb))
-> +				goto err_skb;
->  			if (curr_skb == head_skb)
->  				skb_shinfo(curr_skb)->frag_list = nskb;
->  			else
-> @@ -341,8 +353,7 @@ static int receive_mergeable(struct receive_queue *rq, struct sk_buff *head_skb)
->  			head_skb->len += len;
->  			head_skb->truesize += MERGE_BUFFER_LEN;
->  		}
-> -		page = virt_to_head_page(buf);
-> -		offset = buf - (char *)page_address(page);
-> +		offset = buf - page_address(page);
->  		if (skb_can_coalesce(curr_skb, num_skb_frags, page, offset)) {
->  			put_page(page);
->  			skb_coalesce_rx_frag(curr_skb, num_skb_frags - 1,
-> @@ -351,9 +362,28 @@ static int receive_mergeable(struct receive_queue *rq, struct sk_buff *head_skb)
->  			skb_add_rx_frag(curr_skb, num_skb_frags, page,
->  					offset, len, MERGE_BUFFER_LEN);
->  		}
-> +	}
-> +
-> +	return head_skb;
-> +
-> +err_skb:
-> +	put_page(page);
-> +	while (--num_buf) {
-> +		buf = virtqueue_get_buf(rq->vq, &len);
-> +		if (unlikely(!buf)) {
-> +			pr_debug("%s: rx error: %d buffers missing\n",
-> +				 dev->name, num_buf);
-> +			dev->stats.rx_length_errors++;
-> +			break;
-> +		}
-> +		page = virt_to_head_page(buf);
-> +		put_page(page);
->  		--rq->num;
->  	}
-> -	return 0;
-> +err_buf:
-> +	dev->stats.rx_dropped++;
-> +	dev_kfree_skb(head_skb);
-> +	return NULL;
->  }
->  
->  static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
-> @@ -382,19 +412,9 @@ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
->  		len -= sizeof(struct virtio_net_hdr);
->  		skb_trim(skb, len);
->  	} else if (vi->mergeable_rx_bufs) {
-> -		struct page *page = virt_to_head_page(buf);
-> -		skb = page_to_skb(rq, page,
-> -				  (char *)buf - (char *)page_address(page),
-> -				  len, MERGE_BUFFER_LEN);
-> -		if (unlikely(!skb)) {
-> -			dev->stats.rx_dropped++;
-> -			put_page(page);
-> +		skb = receive_mergeable(dev, rq, buf, len);
-> +		if (unlikely(!skb))
->  			return;
-> -		}
-> -		if (receive_mergeable(rq, skb)) {
-> -			dev_kfree_skb(skb);
-> -			return;
-> -		}
->  	} else {
->  		page = buf;
->  		skb = page_to_skb(rq, page, 0, len, PAGE_SIZE);
+Hi,
 
-Acked-by: Jason Wang <jasowang@redhat.com>
+Could you make a patch to add *unlikely* as many as possible across the
+whole source files at once?
+It is wasteful to add it with a bunch of patches at multiple times.
+
+And please write descriptions for all the patches even if nothing is
+special.
+In this case, why should we set *unlikely* for checking this condition?
+
+Thanks,
+
+2013-11-28 (목), 15:42 +0800, Chao Yu:
+> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> ---
+>  fs/f2fs/node.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> index 0fe9a97..954155b 100644
+> --- a/fs/f2fs/node.c
+> +++ b/fs/f2fs/node.c
+> @@ -1160,7 +1160,7 @@ int wait_on_node_pages_writeback(struct f2fs_sb_info *sbi, nid_t ino)
+>  			struct page *page = pvec.pages[i];
+>  
+>  			/* until radix tree lookup accepts end_index */
+> -			if (page->index > end)
+> +			if (unlikely(page->index > end))
+>  				continue;
+>  
+>  			if (ino && ino_of_node(page) == ino) {
+
+-- 
+Jaegeuk Kim
+Samsung
+
