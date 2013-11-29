@@ -1,53 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524Ab3K2StM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 13:49:12 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54165 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752634Ab3K2StI (ORCPT
+	id S1754529Ab3K2S46 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 13:56:58 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:41935 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753191Ab3K2S45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 13:49:08 -0500
-Date: Fri, 29 Nov 2013 18:48:25 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Vinayak Kale <vkale@apm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "patches@apm.com" <patches@apm.com>, "jcm@redhat.com" <jcm@redhat.com>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Tuan Phan <tphan@apm.com>
-Subject: Re: [PATCH V5 2/2] arm64: perf: add support for percpu pmu interrupt
-Message-ID: <20131129184824.GA6730@mudshark.cambridge.arm.com>
-References: <1385372753-7396-1-git-send-email-vkale@apm.com>
- <1385372753-7396-3-git-send-email-vkale@apm.com>
- <20131125184159.GE28201@mudshark.cambridge.arm.com>
- <CAPrCYkfThbf4GoPrWB=CrnY6SfnaksxiDwqgqevYXdnrH-ynjg@mail.gmail.com>
+	Fri, 29 Nov 2013 13:56:57 -0500
+X-IronPort-AV: E=Sophos;i="4.93,798,1378857600"; 
+   d="scan'208";a="76877871"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>,
+        <paul.durrant@citrix.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>
+Subject: [PATCH net-next] xen-netback: Fix pull size in checksum_setup_ip*
+Date: Fri, 29 Nov 2013 18:56:47 +0000
+Message-ID: <1385751407-9365-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPrCYkfThbf4GoPrWB=CrnY6SfnaksxiDwqgqevYXdnrH-ynjg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 08:44:24AM +0000, Vinayak Kale wrote:
-> On Tue, Nov 26, 2013 at 12:11 AM, Will Deacon <will.deacon@arm.com> wrote:
-> > On Mon, Nov 25, 2013 at 09:45:53AM +0000, Vinayak Kale wrote:
-> >> +static void
-> >> +armpmu_enable_percpu_irq(void *data)
-> >> +{
-> >> +     struct arm_pmu *armpmu = data;
-> >> +     struct platform_device *pmu_device = armpmu->plat_device;
-> >> +     int irq = platform_get_irq(pmu_device, 0);
-> >> +
-> >> +     enable_percpu_irq(irq, 0);
-> >
-> > IRQ_TYPE_NONE?
-> 
-> Did you mean to use macro instead or 0? If yes, I will modify.
+Before checksum setup we need to make sure we have enough data in linear
+buffer, so we do a pull if not. The calculation of the required data counts
+with skb->network_header, which is the headroom size actually. This is not
+necessary, and can cause unreasonable pulling. I've also removed
+MAX_IPOPTLEN, as we only need the base header at that point.
 
-Yes.
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 
-Will
+---
+ drivers/net/xen-netback/netback.c |   24 ++++++++----------------
+ 1 file changed, 8 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index 919b650..adadf76 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -1169,8 +1169,7 @@ static int checksum_setup_ip(struct xenvif *vif, struct sk_buff *skb,
+ 
+ 	off = sizeof(struct iphdr);
+ 
+-	header_size = skb->network_header + off + MAX_IPOPTLEN;
+-	maybe_pull_tail(skb, header_size);
++	maybe_pull_tail(skb, off);
+ 
+ 	off = iph->ihl * 4;
+ 
+@@ -1183,8 +1182,7 @@ static int checksum_setup_ip(struct xenvif *vif, struct sk_buff *skb,
+ 		if (recalculate_partial_csum) {
+ 			struct tcphdr *tcph = tcp_hdr(skb);
+ 
+-			header_size = skb->network_header +
+-				off +
++			header_size = off +
+ 				sizeof(struct tcphdr);
+ 			maybe_pull_tail(skb, header_size);
+ 
+@@ -1201,8 +1199,7 @@ static int checksum_setup_ip(struct xenvif *vif, struct sk_buff *skb,
+ 		if (recalculate_partial_csum) {
+ 			struct udphdr *udph = udp_hdr(skb);
+ 
+-			header_size = skb->network_header +
+-				off +
++			header_size = off +
+ 				sizeof(struct udphdr);
+ 			maybe_pull_tail(skb, header_size);
+ 
+@@ -1241,8 +1238,7 @@ static int checksum_setup_ipv6(struct xenvif *vif, struct sk_buff *skb,
+ 
+ 	off = sizeof(struct ipv6hdr);
+ 
+-	header_size = skb->network_header + off;
+-	maybe_pull_tail(skb, header_size);
++	maybe_pull_tail(skb, off);
+ 
+ 	nexthdr = ipv6h->nexthdr;
+ 
+@@ -1254,8 +1250,7 @@ static int checksum_setup_ipv6(struct xenvif *vif, struct sk_buff *skb,
+ 		case IPPROTO_ROUTING: {
+ 			struct ipv6_opt_hdr *hp = (void *)(skb->data + off);
+ 
+-			header_size = skb->network_header +
+-				off +
++			header_size = off +
+ 				sizeof(struct ipv6_opt_hdr);
+ 			maybe_pull_tail(skb, header_size);
+ 
+@@ -1266,8 +1261,7 @@ static int checksum_setup_ipv6(struct xenvif *vif, struct sk_buff *skb,
+ 		case IPPROTO_AH: {
+ 			struct ip_auth_hdr *hp = (void *)(skb->data + off);
+ 
+-			header_size = skb->network_header +
+-				off +
++			header_size = off +
+ 				sizeof(struct ip_auth_hdr);
+ 			maybe_pull_tail(skb, header_size);
+ 
+@@ -1305,8 +1299,7 @@ static int checksum_setup_ipv6(struct xenvif *vif, struct sk_buff *skb,
+ 		if (recalculate_partial_csum) {
+ 			struct tcphdr *tcph = tcp_hdr(skb);
+ 
+-			header_size = skb->network_header +
+-				off +
++			header_size = off +
+ 				sizeof(struct tcphdr);
+ 			maybe_pull_tail(skb, header_size);
+ 
+@@ -1324,8 +1317,7 @@ static int checksum_setup_ipv6(struct xenvif *vif, struct sk_buff *skb,
+ 		if (recalculate_partial_csum) {
+ 			struct udphdr *udph = udp_hdr(skb);
+ 
+-			header_size = skb->network_header +
+-				off +
++			header_size = off +
+ 				sizeof(struct udphdr);
+ 			maybe_pull_tail(skb, header_size);
+ 
