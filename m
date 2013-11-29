@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab3K2UJd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 15:09:33 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:37886 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754193Ab3K2UJa (ORCPT
+	id S1754723Ab3K2UJs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 15:09:48 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:56857 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754575Ab3K2UJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 15:09:30 -0500
+	Fri, 29 Nov 2013 15:09:46 -0500
 MIME-Version: 1.0
-In-Reply-To: <5298F3A1.7070503@metafoo.de>
-References: <1384520071-16463-1-git-send-email-valentine.barshak@cogentembedded.com>
-	<5295E231.9030200@cisco.com>
-	<5295E641.6060603@cogentembedded.com>
-	<2150651.hQNra4Rlob@avalon>
-	<CACRpkdZQa626hNRFcGvk4t7Z8scTCoEcf7AqO-FsL=BGk6UfeA@mail.gmail.com>
-	<52987058.80700@metafoo.de>
-	<CACRpkdYuiwH5MzdY3HO7oBSGLqRr5t4HMvGscjsf4QL2G1wiNw@mail.gmail.com>
-	<52989B13.8010207@metafoo.de>
-	<CACRpkda89fqGd6+ShvFXz-7i56KfG43EggBtjbdKyOCGnJu5Cg@mail.gmail.com>
-	<5298F3A1.7070503@metafoo.de>
-Date: Fri, 29 Nov 2013 21:09:29 +0100
-Message-ID: <CACRpkdbgbb_dcxyaGpdpwiHxd9p1bEc2JB5bzK5dDBHFcHwjzA@mail.gmail.com>
-Subject: Re: [PATCH V2] media: i2c: Add ADV761X support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lars-Peter Clausen <lars@metafoo.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Valentine <valentine.barshak@cogentembedded.com>,
-        Hans Verkuil <hansverk@cisco.com>, Hans Verkuil <hverkuil@xs4all.nl>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Simon Horman <horms@verge.net.au>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Wolfram Sang <wsa@the-dreams.de>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <alpine.DEB.2.02.1311291413430.13064@pianoman.cluster.toy>
+References: <1384275531-10892-1-git-send-email-eranian@google.com>
+	<1384275531-10892-4-git-send-email-eranian@google.com>
+	<alpine.DEB.2.02.1311271328590.22932@pianoman.cluster.toy>
+	<CABPqkBScotKO03hTA6YNcD4sDVj_Gx1fjicmWOJh_MBYTF+rfQ@mail.gmail.com>
+	<alpine.DEB.2.02.1311271653280.24499@pianoman.cluster.toy>
+	<20131128122619.GA6561@gmail.com>
+	<CABPqkBSiLkDCcLFz5oxs2KS02LbiMNoAucrcx36aYqodiVpCpg@mail.gmail.com>
+	<alpine.DEB.2.02.1311291413430.13064@pianoman.cluster.toy>
+Date: Fri, 29 Nov 2013 21:09:46 +0100
+Message-ID: <CABPqkBTvhgXm_UNWDEgjP4aVf=G2MxfgBpnJBsiAZpcg7x-r=w@mail.gmail.com>
+Subject: Re: [PATCH v7 3/4] perf,x86: add Intel RAPL PMU support
+From: Stephane Eranian <eranian@google.com>
+To: Vince Weaver <vince@deater.net>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 29, 2013 at 9:05 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
-> On 11/29/2013 08:52 PM, Linus Walleij wrote:
-
->> I guess you may be referring to the problem of instatiating
->> a dynamic IRQ chip in *board code* and then passing the
->> obtained dynamic IRQ numbers as resources to the
->> devices also created in a board file?
->>
+On Fri, Nov 29, 2013 at 8:16 PM, Vince Weaver <vince@deater.net> wrote:
+> On Thu, 28 Nov 2013, Stephane Eranian wrote:
 >
-> Yes.
+>> On Thu, Nov 28, 2013 at 1:26 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>> >
+>> > * Vince Weaver <vince@deater.net> wrote:
+>> >
+>> >> On Wed, 27 Nov 2013, Stephane Eranian wrote:
+>> >>
+>> >> > On Wed, Nov 27, 2013 at 7:35 PM, Vince Weaver <vince@deater.net> wrote:
+>> >>
+>> >> > > So I notice PP1 (which is the GPU power on non-server chips)
+>> >> > > is not supported.
+>> >> > >
+>> >> > > Is that just for simplicity?
+>> >> > >
+>> >> > Does it work on specific models only? I bet so. How to detect those?
+>> >>
+>> >> In general it is on the machines that don't support the DRAM measurements
+>> >> (so the non-EP machines) but I don't know if there's a nice list anywhere.
+>> >>
+>> >> Intel manuals say:
+>> >>    For a client platform, PP1 domain refers to the power plane of a
+>> >>    specific device in the uncore. For server platforms, PP1 domain is not
+>> >>    supported,
+>> >>
+>> >> usually PP1 I think maps to the embedded GPU.
+>> >
+>> > It would indeed be nice to expose PP1 too via the same facility -
+>> > Haswell and later spends some 40% of the CPU die on the integrated GPU
+>> > and people end up using it.
+>> >
+>> My worry is to determine if the GPU is actually enabled or even present.
+>> Using the x86_model may not be enough for that.
 >
->> That would be like you're asking for a function that would
->> return the base of an irq_chip, that needs to be discussed
->> with the irq maintainers, so not much I can say, but maybe
->> I misunderstood this?
+> In my experience if the device is not there you just get 0s as results
+> from RAPL (I've also seen this on some Sandybridge-EP machines we have
+> that for whatever reason don't support the DRAM RAPL results).
 >
-> I my opinion the best solution for this problem is to have the same lookup
-> mechanism we've had for clocks, regulators, etc and now also GPIOs.
+> So in theory it would be harmless to export the values even if not
+> supported.  What is the worst failure mode?  That somehow a recent CPU
+> doesn't support the MSR and we get a GPF when trying to access it?
+>
+Yes. I think that's what you get with DRAM on client for instance.
 
-Hm this needs to be discussed with some irq people...
-
-Yours,
-Linus Walleij
+> Vince
