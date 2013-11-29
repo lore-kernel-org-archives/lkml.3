@@ -1,68 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab3K2Ivs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 03:51:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64071 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752972Ab3K2Ivq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 03:51:46 -0500
-Date: Fri, 29 Nov 2013 16:50:50 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
-        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.infradead.org, greg@kroah.com, toshi.kani@hp.com
-Subject: Re: [PATCH v4 08/12] efi: only print saved efi runtime maps instead
- of all memmap ranges for kexec
-Message-ID: <20131129085050.GF4186@dhcp-16-126.nay.redhat.com>
-References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
- <1385445477-9665-9-git-send-email-dyoung@redhat.com>
- <20131127102701.GD18170@console-pimps.org>
- <20131127142726.GE32267@pd.tnic>
+	id S1753675Ab3K2Iwu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 03:52:50 -0500
+Received: from fep12.mx.upcmail.net ([62.179.121.32]:40697 "EHLO
+	fep12.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab3K2Iwq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 03:52:46 -0500
+X-SourceIP: 192.168.13.91
+X-Authenticated-Sender: f.kreeft1
+Date: Fri, 29 Nov 2013 09:52:37 +0100 (CET)
+From: FreeLotto Services <f.kreeft1@upcmail.nl>
+Reply-To: autoresponse.flsuk@gmail.com
+Message-ID: <34030599.912747.1385715157359.open-xchange@upcmail.upc.nl>
+Subject: TSN#:3579220329 E-mail ID Won! Congratulations
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131127142726.GE32267@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+Importance: Medium
+X-Mailer: Open-Xchange Mailer v-
+X-Originating-IP: 82.80.245.83
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/13 at 03:27pm, Borislav Petkov wrote:
-> On Wed, Nov 27, 2013 at 10:27:01AM +0000, Matt Fleming wrote:
-> > Heh, you can probably already guess what I'm going to say here...
-> 
-> I guessed :-)
-> 
-> > How about using a single function to dump the memory ranges irrespective
-> > of whether the memory map comes from 'memmap' or 'esdata'? e.g.
-> > something along the lines of,
-> > 
-> > 	if (esdata)
-> > 		print_efi_memmap(esdata->map, nr_efi_runtime_map,
-> > 				 sizeof(esdata->map[0]));
-> > 	else
-> > 		print_efi_memmap(memmap.map, memmap.nr_map,
-> > 				 memmap.desc_size);
-> 
-> And while you're at it:
-> 
-> WARNING: quoted string split across lines
-> #19: FILE: arch/x86/platform/efi/efi.c:443:
-> +               pr_info("mem%02u: type=%u, attr=0x%llx, "
-> +                       "range=[0x%016llx-0x%016llx) (%lluMB)\n",
+Congratulations - TSN#:3579220329
 
-I see the warnings, because it's originally in print_efi_memmap so I just keep
-new function same. Anyway after switching to use one function there will be
-no such warning.
+Your e-Mail has won $1,500,000.00 USD in our ongoing FREELOTTO online
+International program. To begin your claims therefore, Email us your FULL NAME,
+ADDRESS/COUNTRY & MOBILE No to our e-mail below: FreeLotto® Services (Government
+Accredited Licensed Office) E-mal:  fls.licenseduk@gmail.com
+Office Tel on: 07011127802 (intl. +447011127802)
 
-> 
-> 
-> Btw, do we really want to dump the same map again in the second kernel?
+Sincerely Yours,
+Vera Kepla Mrs.,
+(Coordinator/Online Publicity).
 
-It's for debugging purpose, I think it's helpful.
-
-Thanks for review
-Dave
+SEND YOUR RESPONSE TO fls.licenseduk@gmail.com TO CLAIM YOUR PRIZE.
