@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159Ab3K2Bkl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 20:40:41 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:61777 "EHLO
+	id S1754362Ab3K2BlT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 20:41:19 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:64978 "EHLO
 	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405Ab3K2Bj1 (ORCPT
+	with ESMTP id S1753116Ab3K2Bj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 20:39:27 -0500
+	Thu, 28 Nov 2013 20:39:26 -0500
 From: Andreas Noever <andreas.noever@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH 09/12] thunderbolt: Handle hotplug events
-Date: Fri, 29 Nov 2013 02:35:46 +0100
-Message-Id: <1385688949-7101-10-git-send-email-andreas.noever@gmail.com>
+Subject: [PATCH 07/12] thunderbolt: Enable plug events
+Date: Fri, 29 Nov 2013 02:35:44 +0100
+Message-Id: <1385688949-7101-8-git-send-email-andreas.noever@gmail.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1385688949-7101-1-git-send-email-andreas.noever@gmail.com>
 References: <1385688949-7101-1-git-send-email-andreas.noever@gmail.com>
@@ -20,126 +20,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We reveive a plug event callback whenever a thunderbolt device is added
-or removed. This patch fills in the tb_handle_hotplug method and starts
-reacting to these events by adding/removing switches from the hierarchy.
+Thunderbolt switches have a plug events capability. This patch adds the
+tb_plug_events_active method and uses it to activate plug events on
+switch allocation.
 
 Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
 ---
- drivers/thunderbolt/tb.c | 83 +++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 82 insertions(+), 1 deletion(-)
+ drivers/thunderbolt/tb.c | 49 +++++++++++++++++++++++++++++++++++++++++++++++-
+ drivers/thunderbolt/tb.h |  1 +
+ 2 files changed, 49 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
-index 9daff7b..d9bce38 100644
+index 943842b..3837f1a 100644
 --- a/drivers/thunderbolt/tb.c
 +++ b/drivers/thunderbolt/tb.c
-@@ -108,6 +108,22 @@ static int tb_route_length(u64 route)
- 	return (fls64(route) + TB_ROUTE_SHIFT - 1) / TB_ROUTE_SHIFT;
+@@ -192,6 +192,41 @@ int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, enum tb_cap cap)
+ 	return -EIO;
  }
  
-+static struct tb_switch *get_switch_at_route(struct tb_switch *sw, u64 route)
-+{
-+	u8 next_port = route & TB_PORT_MASK;
-+	if (route == 0)
-+		return sw;
-+	if (next_port > sw->config.max_port_number)
-+		return 0;
-+	if (tb_is_upstream_port(&sw->ports[next_port]))
-+		return 0;
-+	if (!sw->ports[next_port].remote)
-+		return 0;
-+	return get_switch_at_route(sw->ports[next_port].remote->sw,
-+				   route >> TB_ROUTE_SHIFT);
-+}
 +
++/* thunderbolt switch utility functions */
 +
- 
- /* thunderbolt capability lookup */
- 
-@@ -527,6 +543,27 @@ static void tb_scan_port(struct tb_port *port)
- 	tb_scan_ports(sw);
- }
- 
 +/**
-+ * tb_invalidate_below() - recursively invalidate all ports below a given port
++ * tb_plug_events_active() - enable/disable plug events on a switch
++ *
++ * Also configures a sane plug_events_delay of 255ms.
++ *
++ * Return: Returns 0 on success or an error code on failure.
 + */
-+static void tb_invalidate_below(struct tb_port *port)
++static int tb_plug_events_active(struct tb_switch *sw, bool active)
 +{
-+	struct tb_switch *sw;
-+	int i;
-+	if (tb_is_upstream_port(port)) {
-+		tb_port_WARN(port, "trying to invalidate an upstream port.\n");
-+		return;
++	u32 data;
++	int res;
++
++	sw->config.plug_events_delay = 0xff;
++	res = tb_sw_write(sw, ((u32 *) &sw->config) + 4, TB_CFG_SWITCH, 4, 1);
++	if (res)
++		return res;
++
++	res = tb_sw_read(sw, &data, TB_CFG_SWITCH, sw->cap_plug_events + 1, 1);
++	if (res)
++		return res;
++
++	if (active) {
++		data = data & 0xFFFFFF83;
++		if (sw->config.device_id == 0x1547)
++			data |= 4;
++	} else {
++		data = data | 0x7c;
 +	}
-+	if (!port->remote)
-+		return;
-+	sw = port->remote->sw;
-+	for (i = 0; i <= sw->config.max_port_number; i++) {
-+		sw->ports[i].invalid = true;
-+		if (!tb_is_upstream_port(&sw->ports[i]))
-+			tb_invalidate_below(&sw->ports[i]);
-+	}
++	return tb_sw_write(sw, &data, TB_CFG_SWITCH,
++			   sw->cap_plug_events + 1, 1);
 +}
 +
- struct tb_hotplug_event {
- 	struct work_struct work;
- 	struct tb *tb;
-@@ -544,10 +581,54 @@ static void tb_handle_hotplug(struct work_struct *work)
+ /* switch/port allocation & initialization */
+ 
+ /**
+@@ -236,6 +271,7 @@ static void tb_switch_free(struct tb_switch *sw)
+ static struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route)
  {
- 	struct tb_hotplug_event *ev = container_of(work, typeof(*ev), work);
- 	struct tb *tb = ev->tb;
-+	struct tb_switch *sw;
-+	struct tb_port *port;
- 	mutex_lock(&tb->lock);
- 	if (tb->shutdown)
- 		goto out;
--	/* do nothing for now */
+ 	int i;
++	int cap;
+ 	struct tb_switch *sw;
+ 	int upstream_port = tb_cfg_get_upstream_port(tb->cfg, route);
+ 	if (upstream_port < 0)
+@@ -296,6 +332,16 @@ static struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route)
+ 
+ 	/* TODO: I2C, IECS, EEPROM, link controller */
+ 
++	cap = tb_find_cap(&sw->ports[0], TB_CFG_SWITCH, TB_CAP_PLUG_EVENTS);
++	if (cap < 0) {
++		tb_sw_WARN(sw, "cannot find TB_CAP_PLUG_EVENTS aborting\n");
++		goto err;
++	}
++	sw->cap_plug_events = cap;
 +
-+	sw = get_switch_at_route(tb->root_switch, ev->route);
-+	if (!sw) {
-+		tb_WARN(tb,
-+			"hotplug event for non existent switch %llx:%x (unplug: %d)\n",
-+			ev->route,
-+			ev->port,
-+			ev->unplug)
-+		goto out;
-+	}
-+	if (sw->config.max_port_number < ev->port) {
-+		tb_WARN(tb,
-+			"hotplug event for non existent port %llx:%x (unplug: %d)\n",
-+			ev->route,
-+			ev->port,
-+			ev->unplug)
-+		goto out;
-+	}
-+	port = &sw->ports[ev->port];
-+	if (tb_is_upstream_port(port)) {
-+		tb_WARN(tb,
-+			"hotplug event for upstream port %llx:%x (unplug: %d)\n",
-+			ev->route,
-+			ev->port,
-+			ev->unplug)
-+		goto out;
-+	}
-+	if (ev->unplug) {
-+		if (port->remote) {
-+			tb_port_info(port, "unplugged\n");
-+			tb_invalidate_below(port);
-+			tb_switch_free(port->remote->sw);
-+			port->remote = NULL;
-+		} else {
-+			tb_port_info(port,
-+				     "got unplug event for disconnected port\n");
-+		}
-+	} else {
-+		tb_port_info(port, "hotplug: scanning\n");
-+		tb_scan_port(port);
-+		if (!port->remote)
-+			tb_port_info(port, "hotplug: no switch found\n");
-+	}
- out:
- 	mutex_unlock(&tb->lock);
- 	kfree(ev);
++	if (tb_plug_events_active(sw, true))
++		goto err;
++
+ 	return sw;
+ err:
+ 	kfree(sw->ports);
+@@ -401,7 +447,8 @@ void thunderbolt_shutdown_and_free(struct tb *tb)
+ /**
+  * thunderbolt_alloc_and_start() - setup the thunderbolt bus
+  *
+- * Allocates a tb_cfg control channel and initializes the root switch.
++ * Allocates a tb_cfg control channel, initializes the root switch and enables
++ * plug events.
+  *
+  * Return: Returns NULL on error.
+  */
+diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
+index e81c63a..2ada42a 100644
+--- a/drivers/thunderbolt/tb.h
++++ b/drivers/thunderbolt/tb.h
+@@ -22,6 +22,7 @@ struct tb_switch {
+ 	struct tb_regs_switch_header config;
+ 	struct tb_port *ports;
+ 	struct tb *tb;
++	int cap_plug_events; /* offset, zero if not found */
+ 	bool invalid; /* unplugged, will go away */
+ };
+ 
 -- 
 1.8.4.2
 
