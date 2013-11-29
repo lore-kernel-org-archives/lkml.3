@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab3K2PJj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 10:09:39 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:36571 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718Ab3K2PJh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 10:09:37 -0500
-Message-ID: <5298ADD1.7050203@ti.com>
-Date: Fri, 29 Nov 2013 10:08:01 -0500
+	id S1756665Ab3K2PMI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 10:12:08 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35360 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753191Ab3K2PMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 10:12:06 -0500
+Message-ID: <5298AE74.7020804@ti.com>
+Date: Fri, 29 Nov 2013 10:10:44 -0500
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
 To: Grygorii Strashko <grygorii.strashko@ti.com>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+CC: Kumar Gala <galak@kernel.crashing.org>,
         "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
         Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        devicetree <devicetree@vger.kernel.org>,
         Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@kernel.crashing.org>,
         Rob Herring <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
         <linux-mtd@lists.infradead.org>,
         <linux-arm-kernel@lists.infradead.org>
 Subject: Re: [PATCH 2/2] memory: ti-aemif: add bindings for AEMIF driver
-References: <1384962416-14862-1-git-send-email-ivan.khoronzhuk@ti.com> <1384962416-14862-3-git-send-email-ivan.khoronzhuk@ti.com> <20131120182102.GK14627@ns203013.ovh.net> <528D076A.8070806@ti.com> <20131122184247.GO14627@ns203013.ovh.net> <5298AB08.3090108@ti.com>
-In-Reply-To: <5298AB08.3090108@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+References: <1384962416-14862-1-git-send-email-ivan.khoronzhuk@ti.com> <1384962416-14862-3-git-send-email-ivan.khoronzhuk@ti.com> <20131120182102.GK14627@ns203013.ovh.net> <528D076A.8070806@ti.com> <C0B815B0-E394-494C-88A2-78A0DBFA23DA@kernel.crashing.org> <5298ABFA.8070804@ti.com>
+In-Reply-To: <5298ABFA.8070804@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 29 November 2013 09:56 AM, Grygorii Strashko wrote:
-> Hi Jean-Christophe,
+On Friday 29 November 2013 10:00 AM, Grygorii Strashko wrote:
+> Hi Kumar Gala,
 > 
-> On 11/22/2013 08:42 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->> On 21:03 Wed 20 Nov     , ivan.khoronzhuk wrote:
+> On 11/22/2013 11:06 PM, Kumar Gala wrote:
+>>
+>> On Nov 20, 2013, at 1:03 PM, ivan.khoronzhuk <ivan.khoronzhuk@ti.com> wrote:
+>>
 >>> On 11/20/2013 08:21 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
 >>>>> +				the chip select signal.
 >>>>> +				Minimum value is 1 (0 treated as 1).
@@ -83,25 +85,69 @@ On Friday 29 November 2013 09:56 AM, Grygorii Strashko wrote:
 >>>
 >>> Is it OK?
 >>
->> yes
+>> Why do you need this? As it was mentioned just use reg:
 >>
->> I just have one issue the whole memory concept
+>> So you’d have something like:
 >>
->> for me we should do as done on pinctrl have a phandle on the device that
->> require it and handle it at device core level
+>> memory-controller@21000A00 {
+>> 	…
+>> 	nand:cs2@2 {
+>> 		reg = <2 0 0>;
+>> 		ranges;
+>> 		...
 >>
->> as the memory controller is not necessarely on the same bus as the memory
->> device them selves
+>> 	}:
+>> };
 > 
-> Could you clarify your point a bit, pls?
-> Are you talking about external ASRAM, NOR and NAND chips wired to CS interface?
+> I'd prefer to continue with "ti,cs-chipselect" (this is more human friendly definition, as for me),
+> but if you insist - it can be changed as:
+> memory-controller@21000A00 {
+> 	compatible = "ti,keystone-aemif";
+> ...
 > 
-Thats probably what he means.
-The mtd devices can be interface with different memory controllers having different
-layouts to set-up timing registers. If these layouts were standard, then it would
-have been possible to manage the information at the core layers.
+> 	cs2 {
+> 		compatible = "ti,aemif-cs";
+> 		reg = <2>;
+> ...
+> 	}
+> 
+> 	cs0 {
+> 		compatible = "ti,aemif-cs";
+> 		reg = <0>;
+> ...
+> 	}
+> 
+>>
+>> However, I’m confused by the example in which you have:
+>>
+>> +		nand@0,0x8000000 {
+>> +			compatible = "ti,davinci-nand";
+>> +			reg = <0 0x8000000 0x4000000
+>> +			       1 0x0000000 0x0000100>;
+>> +
+>> +			.. see davinci-nand.txt
+>> +		};
+>>
+>> What chipselects is this on 0 & 1?
+> 
+> As I described in https://lkml.org/lkml/2013/11/26/282 we are not encoding CS number in reg
+>  - it's memory partition number.
+> 
+> Also, I'd like to note that we *DO NOT introduce* NAND device bindings here.
+> The Davinci NAND bindings was introduced and accepted more then one year ago, and
+> we've just updated its a bit (keeping full compatibility) and reused
+> (see https://lkml.org/lkml/2013/11/21/182). 
+> And the CS number is encoded for Davinci NAND node using standalone property
+> "ti,davinci-chipselect" and we need to provide (2) two memory ranges to it,
+> as result we can't encode CS number in "reg" for AEMIF child devices (NAND/NOR/etc),
+> as it will break bindings compatibility.
+> 
+> In this document, NAND node is used just as an example of child node.
+> 
+The above should have been really captured in the commit log to get a better
+picture. No way on earth, a reviewer can figure out whether this is new bindings
+or copy of bindings already used.
 
 Regards,
 Santosh
-
 
