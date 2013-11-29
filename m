@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808Ab3K2JEi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 04:04:38 -0500
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:50037 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122Ab3K2JEf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 04:04:35 -0500
-Date: Fri, 29 Nov 2013 09:04:29 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH v2 1/5] mfd/rtc: s5m: Fix register updating by adding
- regmap for RTC
-Message-ID: <20131129090429.GA26086@lee--X1>
-References: <1385626183-22990-1-git-send-email-k.kozlowski@samsung.com>
- <1385626183-22990-2-git-send-email-k.kozlowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1385626183-22990-2-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753048Ab3K2JFK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 04:05:10 -0500
+Received: from plane.gmane.org ([80.91.229.3]:55011 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751122Ab3K2JFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 04:05:05 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Kai Poggensee <kai.poggensee@avionic-design.de>
+Subject: Re: [PATCH 0/3] regulator: tps6586x: add version detection and voltage
+ tables
+Date: Fri, 29 Nov 2013 09:20:37 +0100
+Message-ID: <52984E55.10804@avionic-design.de>
+References: <cover.1385508112.git.stefan@agner.ch> <20131128081351.GA26502@ulmo.nvidia.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+Cc: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+X-Gmane-NNTP-Posting-Host: p5b3c0a5d.dip0.t-ipconnect.de
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+In-Reply-To: <20131128081351.GA26502@ulmo.nvidia.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Nov 2013, Krzysztof Kozlowski wrote:
-
-> Rename old regmap field of "struct sec_pmic_dev" to "regmap_pmic" and
-> add new regmap for RTC.
+On 28.11.2013 09:13, Thierry Reding wrote:
+> On Wed, Nov 27, 2013 at 12:45:42AM +0100, Stefan Agner wrote:
+>> This patchset adds version detection for the tps6586x mfd family. This is
+>> required because some regulator versions use different voltage tables. The
+>> regulator driver now uses the right voltage table according to the
+>> version.
+>> 
+>> The required voltage for the SM2 converter on the Colibri T20 is 1.8V,
+>> however, the device tree states 3.7V right now. Newer versions (>=V1.2) of
+>> the Colibri T20 module use the TPS658643, whereas old ones (<V1.2) use the
+>> TPS658623. Both of them have a different voltage table for SM2. The
+>> current device tree contains a voltage which results in 1.8V for the older
+>> TPS658623. Since the regulator driver has correct voltage tables for both
+>> regulator versions now, we can request the correct 1.8V from the device
+>> tree.
+>> 
+>> Tested on Colibri T20 V1.1 and V1.2.
+>> 
+>> Stefan Agner (3):
+>>   mfd: tps6586x: add version detection
+>>   regulator: tps6586x: add voltage table for tps658643
+>>   ARM: tegra: set SM2 voltage correct
+>> 
+>>  arch/arm/boot/dts/tegra20-colibri-512.dtsi |  4 +-
+>>  drivers/mfd/tps6586x.c                     | 41 +++++++++++--
+>>  drivers/regulator/tps6586x-regulator.c     | 97 ++++++++++++++++++++----------
+>>  include/linux/mfd/tps6586x.h               |  9 +++
+>>  4 files changed, 110 insertions(+), 41 deletions(-)
 > 
-> On S5M8767A registers were not properly updated and read due to usage of
-> the same regmap as the PMIC. This could be observed in various hangs,
-> e.g. in infinite loop during waiting for UDR field change.
-> 
-> On this chip family the RTC has different I2C address than PMIC so
-> additional regmap is needed.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/mfd/sec-core.c           |   30 ++++++++++++++++++++++--------
->  drivers/mfd/sec-irq.c            |    6 +++---
->  drivers/regulator/s5m8767.c      |    2 +-
->  drivers/rtc/rtc-s5m.c            |    2 +-
->  include/linux/mfd/samsung/core.h |    3 ++-
->  5 files changed, 29 insertions(+), 14 deletions(-)
+> Adding Kai Poggensee on Cc. There was a variant of the Tamonten board
+> with one of these versions of the chip (or maybe it was even yet another
+> one).
 
-The MFD parts look fine to me. I just need the Acks from the other
-maintainers before I can apply it:
+Thanks Thierry,
 
-Acked-by: Lee Jones <lee.jones@lianro.org>
+we'll be more than happy to support testing once the
+re-spun patch is posted. However, we will probably
+do so by back-porting to L4T 16.3.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+For the records:
+We are using TPS658621C on first variant of Tamonten
+Tegra 2 COM (internally called 1373-111), we are using
+TPS658640 on variant two (1373-121).
+
+This second variant was created to be 100% compatible
+with our TamontenNG Tegra 3 COM (basically omitting some
+previously unused interfaces), using TPS658640 was an
+opportunistic optimization.
+
+Regards,
+Kai
+
