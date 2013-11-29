@@ -1,117 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757031Ab3K2Owi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 09:52:38 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:34367 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756946Ab3K2Owa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 09:52:30 -0500
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        iommu@lists.linux-foundation.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Subject: [PATCH 2/2] intel-iommu: integrate DMA CMA
-Date: Fri, 29 Nov 2013 23:51:46 +0900
-Message-Id: <1385736706-3147-3-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1385736706-3147-1-git-send-email-akinobu.mita@gmail.com>
-References: <1385736706-3147-1-git-send-email-akinobu.mita@gmail.com>
+	id S1756810Ab3K2O5L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 09:57:11 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34961 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756073Ab3K2O5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 09:57:09 -0500
+Message-ID: <5298AA82.1090309@ti.com>
+Date: Fri, 29 Nov 2013 09:53:54 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Sekhar Nori <nsekhar@ti.com>
+CC: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, <mark.rutland@arm.com>,
+        <devicetree@vger.kernel.org>, <grygorii.strashko@ti.com>,
+        <linux@arm.linux.org.uk>, <pawel.moll@arm.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>,
+        <rob@landley.net>, <computersforpeace@gmail.com>,
+        <dwmw2@infradead.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] ARM: davinci: aemif: get rid of davinci-nand driver
+ dependency on aemif
+References: <1385562694-24618-1-git-send-email-ivan.khoronzhuk@ti.com> <52981A4B.70703@ti.com>
+In-Reply-To: <52981A4B.70703@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support for the DMA Contiguous Memory Allocator for intel-iommu.
-This change enables dma_alloc_coherent() to allocate big contiguous
-memory.
+On Thursday 28 November 2013 11:38 PM, Sekhar Nori wrote:
+> On Wednesday 27 November 2013 08:01 PM, Ivan Khoronzhuk wrote:
+>> The problem that the set timings code contains the call of Davinci
+>> platform function davinci_aemif_setup_timing() which is not
+>> accessible if kernel is built for another platform like Keystone.
+>>
+>> The Keysone platform is going to use TI AEMIF driver.
+>> If TI AEMIF is used we don't need to set timings and bus width.
+>> It is done by AEMIF driver.
+>>
+>> To get rid of davinci-nand driver dependency on aemif platform code
+>> we moved aemif code to davinci platform.
+>>
+>> The platform AEMIF code (aemif.c) has to be removed once Davinci
+>> will be converted to DT and use ti-aemif.c driver.
+>>
+>> The long device name "davinci_ntosd2_nandflash_device" was renamed
+>> to "ntosd2_nandflash" as requested by Sekhar Nori, because after
+>> adding changes the line is so broken that its almost unreadable.
+>>
+>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> 
+> This patch can be simplified in some places.
+> 
+>> ---
+>> v2..v1:
+>> - enabled AEMIF clock
+>> - removed EXPORT_SYMBOL(davinci_aemif_setup)
+>> - renamed ugly name davinci_ntosd2_nandflash_device
+>>
+>> CC:
+>> Sekhar Nori <nsekhar@ti.com>
+>>
+>>  arch/arm/mach-davinci/aemif.c                   |   89 ++++++++++++++++++++++-
+>>  arch/arm/mach-davinci/board-da830-evm.c         |    3 +
+>>  arch/arm/mach-davinci/board-da850-evm.c         |    3 +
+>>  arch/arm/mach-davinci/board-dm355-evm.c         |    5 ++
+>>  arch/arm/mach-davinci/board-dm355-leopard.c     |    5 ++
+>>  arch/arm/mach-davinci/board-dm365-evm.c         |    4 +
+>>  arch/arm/mach-davinci/board-dm644x-evm.c        |    5 ++
+>>  arch/arm/mach-davinci/board-dm646x-evm.c        |    3 +
+>>  arch/arm/mach-davinci/board-mityomapl138.c      |    3 +
+>>  arch/arm/mach-davinci/board-neuros-osd2.c       |   13 +++-
+>>  arch/arm/mach-davinci/devices-tnetv107x.c       |    3 +
+>>  drivers/mtd/nand/davinci_nand.c                 |   23 ------
+>>  include/linux/platform_data/mtd-davinci-aemif.h |    5 +-
+> 
+> Most of these boards dont really have a timing structure defined.
+> Instead of blindly calling AEMIF setup on all boards, it can be
+> done only on boards that actually need it.
+>
+Make sense to me.
 
-It is achieved in the same way as nommu_dma_ops currently does, i.e.
-trying to allocate memory by dma_alloc_from_contiguous() and alloc_pages()
-is used as a fallback.
+ 
+>>  /*
+>>   * aemif_calc_rate - calculate timing data.
+>>   * @wanted: The cycle time needed in nanoseconds.
+>> @@ -86,7 +98,7 @@ static int aemif_calc_rate(int wanted, unsigned long clk, int max)
+>>   *
+>>   * Returns 0 on success, else negative errno.
+>>   */
+>> -int davinci_aemif_setup_timing(struct davinci_aemif_timing *t,
+>> +static int davinci_aemif_setup_timing(struct davinci_aemif_timing *t,
+> 
+> passing the clkrate to this function helps avoid a repeated clk_get().
+> I made these changes locally and here is the updated patch:
+>
+probably a good idea.
+ 
+> ---8<---
+> From cdea7d6f753db09447fe2232959864ab999fe565 Mon Sep 17 00:00:00 2001
+> From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> Date: Wed, 27 Nov 2013 16:31:34 +0200
+> Subject: [PATCH 1/1] ARM: davinci: aemif: get rid of davinci-nand driver
+>  dependency on aemif
+> 
+> The problem that the set timings code contains the call of Davinci
+> platform function davinci_aemif_setup_timing() which is not
+> accessible if kernel is built for another platform like Keystone.
+> 
+> The Keysone platform is going to use TI AEMIF driver.
+> If TI AEMIF is used we don't need to set timings and bus width.
+> It is done by AEMIF driver. The TI AEMIF driver cannot
+> be used on all current DaVinci platforms since it is DT-only.
+> 
+> To get rid of davinci-nand driver dependency on aemif platform code
+> we moved aemif code to davinci platform.
+> 
+> The platform AEMIF code (aemif.c) has to be removed once Davinci
+> will be converted to DT and use ti-aemif.c driver.
+> 
+> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+> ---
+>  arch/arm/mach-davinci/aemif.c                   |  106 ++++++++++++++++++++---
+>  arch/arm/mach-davinci/board-da830-evm.c         |    3 +
+>  arch/arm/mach-davinci/board-da850-evm.c         |    3 +
+>  arch/arm/mach-davinci/board-dm644x-evm.c        |    5 ++
+>  arch/arm/mach-davinci/board-dm646x-evm.c        |    3 +
+Ivan commented same need for board-mityomapl138.c as well.
 
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: iommu@lists.linux-foundation.org
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
----
- drivers/iommu/intel-iommu.c | 32 ++++++++++++++++++++++++--------
- 1 file changed, 24 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index fd426ca..172c2b0 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -3004,7 +3004,7 @@ static void *intel_alloc_coherent(struct device *hwdev, size_t size,
- 				  dma_addr_t *dma_handle, gfp_t flags,
- 				  struct dma_attrs *attrs)
- {
--	void *vaddr;
-+	struct page *page = NULL;
- 	int order;
- 
- 	size = PAGE_ALIGN(size);
-@@ -3019,17 +3019,31 @@ static void *intel_alloc_coherent(struct device *hwdev, size_t size,
- 			flags |= GFP_DMA32;
- 	}
- 
--	vaddr = (void *)__get_free_pages(flags, order);
--	if (!vaddr)
-+	if (!(flags & GFP_ATOMIC)) {
-+		unsigned int count = size >> PAGE_SHIFT;
-+
-+		page = dma_alloc_from_contiguous(hwdev, count, order);
-+		if (page && iommu_no_mapping(hwdev) &&
-+		    page_to_phys(page) + size > hwdev->coherent_dma_mask) {
-+			dma_release_from_contiguous(hwdev, page, count);
-+			page = NULL;
-+		}
-+	}
-+
-+	if (!page)
-+		page = alloc_pages(flags, order);
-+	if (!page)
- 		return NULL;
--	memset(vaddr, 0, size);
-+	memset(page_address(page), 0, size);
- 
--	*dma_handle = __intel_map_single(hwdev, virt_to_bus(vaddr), size,
-+	*dma_handle = __intel_map_single(hwdev, page_to_phys(page), size,
- 					 DMA_BIDIRECTIONAL,
- 					 hwdev->coherent_dma_mask);
- 	if (*dma_handle)
--		return vaddr;
--	free_pages((unsigned long)vaddr, order);
-+		return page_address(page);
-+	if (!dma_release_from_contiguous(hwdev, page, size >> PAGE_SHIFT))
-+		__free_pages(page, order);
-+
- 	return NULL;
- }
- 
-@@ -3037,12 +3051,14 @@ static void intel_free_coherent(struct device *hwdev, size_t size, void *vaddr,
- 				dma_addr_t dma_handle, struct dma_attrs *attrs)
- {
- 	int order;
-+	struct page *page = virt_to_page(vaddr);
- 
- 	size = PAGE_ALIGN(size);
- 	order = get_order(size);
- 
- 	intel_unmap_page(hwdev, dma_handle, size, DMA_BIDIRECTIONAL, NULL);
--	free_pages((unsigned long)vaddr, order);
-+	if (!dma_release_from_contiguous(hwdev, page, size >> PAGE_SHIFT))
-+		__free_pages(page, order);
- }
- 
- static void intel_unmap_sg(struct device *hwdev, struct scatterlist *sglist,
--- 
-1.8.3.2
+>  drivers/mtd/nand/davinci_nand.c                 |   23 -----
+>  include/linux/platform_data/mtd-davinci-aemif.h |    5 +-
+>  7 files changed, 112 insertions(+), 36 deletions(-)
+> 
+Apart from that one board question, I think the patch is nicely
+breaking the hard dependency with nand driver and machine code
+making easier for re-use.
+
+FWIW,
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+
+Regards,
+Santosh
+
 
