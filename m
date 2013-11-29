@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263Ab3K2AKl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 19:10:41 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:28253 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072Ab3K2AKk (ORCPT
+	id S1752498Ab3K2AN2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 19:13:28 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:43572 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410Ab3K2ANY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 19:10:40 -0500
-X-AuditID: cbfee691-b7f666d0000048b0-2e-5297db799f89
+	Thu, 28 Nov 2013 19:13:24 -0500
+X-AuditID: cbfee691-b7f666d0000048b0-c3-5297dc22490e
 From: Sangbeom Kim <sbkim73@samsung.com>
 To: "'Mark Brown'" <broonie@kernel.org>,
         "'Krzysztof Kozlowski'" <k.kozlowski@samsung.com>
@@ -20,45 +20,46 @@ Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>,
         "'Geert Uytterhoeven'" <geert@linux-m68k.org>,
         "'Kyungmin Park'" <kyungmin.park@samsung.com>
 References: <1385626183-22990-1-git-send-email-k.kozlowski@samsung.com>
- <1385626183-22990-3-git-send-email-k.kozlowski@samsung.com>
- <20131128134641.GI27568@sirena.org.uk>
-In-reply-to: <20131128134641.GI27568@sirena.org.uk>
-Subject: RE: [PATCH v2 2/5] rtc: s5m: Fix unsuccesful IRQ request during probe
-Date: Fri, 29 Nov 2013 09:10:36 +0900
-Message-id: <05c501ceec97$6d8ae8c0$48a0ba40$@samsung.com>
+ <1385626183-22990-4-git-send-email-k.kozlowski@samsung.com>
+ <20131128134757.GJ27568@sirena.org.uk>
+In-reply-to: <20131128134757.GJ27568@sirena.org.uk>
+Subject: RE: [PATCH v2 3/5] rtc: s5m: Limit endless loop waiting for register
+ update
+Date: Fri, 29 Nov 2013 09:13:24 +0900
+Message-id: <05c901ceec97$d1ca3570$755ea050$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQIn7cDk689h23sBcLg83vR3zAVxUwGV9uTkANXNQtKZdfSZkA==
+Thread-index: AQIn7cDk689h23sBcLg83vR3zAVxUwGDjWymAWe/5l2Zcfl80A==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnleLIzCtJLcpLzFFi42I5/e+ZkW7V7elBBrc0LZZcvMpuMfXhEzaL
-	Z7f2Mlm8fmFocbbpDbvF/a9HGS2+Xelgsri8aw6bxdojd9kt9nd2MFqc7mZ14PbYOesuu8ee
-	iSfZPDat6mTzuHNtD5vHocMdjB7zTgZ69G1Zxegxfd5PJo/Pm+QCOKO4bFJSczLLUov07RK4
-	MmYeUCiYzFTRNmU1ewPjfcYuRg4OCQETidZ7Bl2MnECmmMSFe+vZuhi5OIQEljFKLPh9hhUi
-	YSLRcX0BI0RiEaPEjrkLWCCcP4wSz7pmsYNUsQloSKzc/ZYNxBYRiJCYfPQgO0gRs8BbJomF
-	zROYITrWMUps2HiXEaSKU8BYonvRFjBbWMBP4sarG2A2i4CqxIafa1hAbF4BS4nJmy4xQtiC
-	Ej8m3wOLMwtoSazfeZwJwpaX2LzmLTPErQoSO86+ZoS4wkni2LtfrBA1IhL7XrwD+0FCYC6H
-	xMZzv5kglglIfJt8iAUSGLISmw5AzZGUOLjiBssERolZSFbPQrJ6FpLVs5CsWMDIsopRNLUg
-	uaA4Kb3IVK84Mbe4NC9dLzk/dxMjJBFM3MF4/4D1IcZkoPUTmaVEk/OBiSSvJN7Q2MzIwtTE
-	1NjI3NKMNGElcd70R0lBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhizZp47tKJeIy8scNEz
-	GaOQu/O9XxqGaKV4P3Iq7Kj5mcc865Tkjqwjh3XevF3jYZk2XSjK+ujRCDkdpnDZH0rccidU
-	ZJ8edbUIuq74rVM3gvmTIregj5fepzXNczKf5FyrP6Kw4/PGX2lTM/YtLzzOk7vo+tyMY/nM
-	ytvUIiW1Xs1gXZ6r2qnEUpyRaKjFXFScCACzcOVXGgMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGKsWRmVeSWpSXmKPExsVy+t9jAd3K29ODDCa8s7BYcvEqu8XUh0/Y
-	LJ7d2stk8fqFocXZpjfsFve/HmW0+Halg8ni8q45bBZrj9xlt9jf2cFocbqb1YHbY+esu+we
-	eyaeZPPYtKqTzePOtT1sHocOdzB6zDsZ6NG3ZRWjx/R5P5k8Pm+SC+CMamC0yUhNTEktUkjN
-	S85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAE6VkmhLDGnFCgUkFhcrKRv
-	h2lCaIibrgVMY4Sub0gQXI+RARpIWMeYMfOAQsFkpoq2KavZGxjvM3YxcnJICJhIdFxfAGWL
-	SVy4t56ti5GLQ0hgEaPEjrkLWCCcP4wSz7pmsYNUsQloSKzc/ZYNxBYRiJCYfPQgO0gRs8Bb
-	JomFzROYITrWMUps2HgXbC6ngLFE96ItYLawgJ/EjVc3wGwWAVWJDT/XsIDYvAKWEpM3XWKE
-	sAUlfky+BxZnFtCSWL/zOBOELS+xec1bZohbFSR2nH3NCHGFk8Sxd79YIWpEJPa9eMc4gVFo
-	FpJRs5CMmoVk1CwkLQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBKeaZ9I7GFc1WBxi
-	FOBgVOLhXdE9PUiINbGsuDL3EKMEB7OSCO+vIqAQb0piZVVqUX58UWlOavEhxmSgTycyS4km
-	5wPTYF5JvKGxiZmRpZGZhZGJuTlpwkrivAdbrQOFBNITS1KzU1MLUotgtjBxcEo1MOrUnZds
-	W7SMJ+9fUGvF/1y5U5tbzv0pF0iMn5f4N1C76Zml0NHPnl+S61s1/T95GR7bkfLuvNOpKY9e
-	l7Hdz4jrufBk8dJw28ym77K+hifiA5Mff4gJ/uR9N2Ll1JqqkHuBh5ZxftN+xeT08XbEzc7c
-	+28MX35Xt1Z+etFKXYNLSWlz/SGJHUosxRmJhlrMRcWJAGRM9Fp5AwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkleLIzCtJLcpLzFFi42I5/e+Zga7SnelBBk331SyWXLzKbjH14RM2
+	i2e39jJZvH5haHG26Q27xf2vRxktvl3pYLK4vGsOm8XaI3fZLfZ3djBanO5mdeD22DnrLrvH
+	nokn2Tw2repk87hzbQ+bx6HDHYwe804GevRtWcXoMX3eTyaPz5vkAjijuGxSUnMyy1KL9O0S
+	uDIa1t1mLvjDVLH62zTWBsb1TF2MnBwSAiYSWyZ/Z4OwxSQu3FsPZHNxCAksY5S41rucEabo
+	zMqTLBCJRYwSs6ctYodw/jBKzFh5HWwUm4CGxMrdb8FGiQhESEw+ehCsiFngLZPEwuYJzBAd
+	6xglHr+5BjSXg4NTwFhiQ4crSIOwQJhE67ZvrCA2i4CqxPbjR8FW8wpYSvzuO80GYQtK/Jh8
+	jwXEZhbQkli/8zgThC0vsXnNW2aIUxUkdpx9zQhxhJPEnOZ1rBA1IhL7XrxjBLlBQmAph0Tj
+	lIksEMsEJL5NPsQCco+EgKzEpgNQcyQlDq64wTKBUWIWktWzkKyehWT1LCQrFjCyrGIUTS1I
+	LihOSi8y1StOzC0uzUvXS87P3cQISQYTdzDeP2B9iDEZaP1EZinR5HxgMskriTc0NjOyMDUx
+	NTYytzQjTVhJnDf9UVKQkEB6YklqdmpqQWpRfFFpTmrxIUYmDk4pYHzr7Y+ds8x0hd4r5cMa
+	Gw9IH1ltsyp75nutPV/eOcR9sc2ZPVNu1WlpvacMZuUv9mvWz+Od1yrQetM+QSqtSbD3+It3
+	77Tu5IdZsq5xOXLPb2LbyoqWqOtPFxSfs4/MYOL5wSsgUGD+4/LViL+L3E5t8de0ey8oYWNj
+	7s361LFc6IB54PWe50osxRmJhlrMRcWJAAsFipYcAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGKsWRmVeSWpSXmKPExsVy+t9jAV2lO9ODDBovKFosuXiV3WLqwyds
+	Fs9u7WWyeP3C0OJs0xt2i/tfjzJafLvSwWRxedccNou1R+6yW+zv7GC0ON3N6sDtsXPWXXaP
+	PRNPsnlsWtXJ5nHn2h42j0OHOxg95p0M9OjbsorRY/q8n0wenzfJBXBGNTDaZKQmpqQWKaTm
+	JeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gAdq6RQlphTChQKSCwuVtK3
+	wzQhNMRN1wKmMULXNyQIrsfIAA0krGPMaFh3m7ngD1PF6m/TWBsY1zN1MXJySAiYSJxZeZIF
+	whaTuHBvPVsXIxeHkMAiRonZ0xaxQzh/GCVmrLwO1sEmoCGxcvdbNhBbRCBCYvLRg2BFzAJv
+	mSQWNk9ghuhYxyjx+M01xi5GDg5OAWOJDR2uIA3CAmESrdu+sYLYLAKqEtuPH2UEsXkFLCV+
+	951mg7AFJX5Mvgd2ErOAlsT6nceZIGx5ic1r3jJDnKogsePsa0aII5wk5jSvY4WoEZHY9+Id
+	4wRGoVlIRs1CMmoWklGzkLQsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iRGcap5J7WBc
+	2WBxiFGAg1GJh3dF9/QgIdbEsuLK3EOMEhzMSiK8v4qAQrwpiZVVqUX58UWlOanFhxiTgT6d
+	yCwlmpwPTIN5JfGGxiZmRpZGZhZGJubmpAkrifMeaLUOFBJITyxJzU5NLUgtgtnCxMEp1cDo
+	aGast00/PdztgJaxgahgw/77u8zSY30KQidsfbTe7w17AcvUc++7d949Laf5/qxMSEzgPp3w
+	0m3N30LXi65ad/Wr94pH/cKp59t16w8HvpnVmnm1/2v0i72sKyUiZWyf8Qqsen0jZ0f2DK9W
+	Ie+Fny7dfHxEiceLf8r/LWn6lXbFvx6JnLurxFKckWioxVxUnAgAuUK2GXkDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -66,9 +67,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 28, 2013 10:47 PM, Mark Brown wrote:
-> > Fix rtc-s5m interrupt request by using regmap_irq_get_virq() for mapping
-> > the IRQ.
+On Thursday, November 28, 2013 10:48 PM, Mark Brown wrote:
+> > After setting alarm or time the driver is waiting for UDR register to be
+> > cleared indicating that registers data have been transferred.
+> >
+> > Limit the endless loop to only 5 retries.
 > 
 > Reviwed-by: Mark Brown <broonie@linaro.org>
 
