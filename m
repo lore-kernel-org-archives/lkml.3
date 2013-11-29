@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757382Ab3K2QuW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 11:50:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4832 "EHLO mx1.redhat.com"
+	id S1757299Ab3K2QvW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 11:51:22 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:51376 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755352Ab3K2QuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 11:50:20 -0500
-Date: Fri, 29 Nov 2013 17:51:06 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH/RFC 17/17] tracing/uprobes: Add @+file_offset fetch
-	method
-Message-ID: <20131129165106.GA5224@redhat.com>
-References: <1385533203-10014-1-git-send-email-namhyung@kernel.org> <1385533203-10014-18-git-send-email-namhyung@kernel.org> <20131127185546.GA30544@redhat.com> <877gbtq7rb.fsf@sejong.aot.lge.com> <20131128163148.GA15985@redhat.com> <87ob54oxzt.fsf@sejong.aot.lge.com>
+	id S1755352Ab3K2QvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 11:51:21 -0500
+Message-ID: <5298C5C2.60008@ti.com>
+Date: Fri, 29 Nov 2013 11:50:10 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ob54oxzt.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH 00/24] mm: Use memblock interface instead of bootmem
+References: <1383954120-24368-1-git-send-email-santosh.shilimkar@ti.com>
+In-Reply-To: <1383954120-24368-1-git-send-email-santosh.shilimkar@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Namhyung,
+Tejun, Andrew,
 
-On 11/29, Namhyung Kim wrote:
->
-> Hi Oleg,
->
-> On Thu, 28 Nov 2013 17:31:48 +0100, Oleg Nesterov wrote:
-> > On 11/28, Namhyung Kim wrote:
-> >>
-> >> I thought we need a fetch_param anyway if we will add support for
-> >> cross-fetch later.  But I won't insist it strongly, I can delay it to
-> >> later work and make current code simpler if you want. :)
-> >
-> > OK, great,
->
-> So do you want me to change to make it simpler without a fetch_param?
+On Friday 08 November 2013 06:41 PM, Santosh Shilimkar wrote:
+> Tejun and others,
+> 
+> Following up with the earlier RFC [1] comments, here is the updated
+> patch series based on the discussion. This series is the last bottleneck
+> now for me to enable the coherency on keystone ARM LPAE architecture on which
+> the physical memory starts after 4BG. I would like to get these patches
+> in next merge window(3.14), so any help in terms of testing/comments is
+> appreciated.
+> 
+Now since the 3.13-rc1 is out, it will be best to apply these patches 
+on memblock tree so that they start appearing in next to catch any
+regressions, issues etc. It will give us some time to fix any issues
+arises from next.
 
-Yes, yes. Assuming that you agree, of course.
+For convenience, I have re-based the series on top of 3.13-rc1 and
+pushed it on below tree.
 
-Oleg.
+git://git.kernel.org/pub/scm/linux/kernel/git/ssantosh/linux-keystone.git
+for_3.14/memblock
+
+web-url:
+https://git.kernel.org/cgit/linux/kernel/git/ssantosh/linux-keystone.git/log/?h=for_3.14/memblock
+
+Can you please pull these in you tree and apply against your
+next branch ?
+
+Regards,
+Santosh		 
+
+
 
