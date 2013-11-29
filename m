@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932295Ab3K2QsX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 11:48:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46151 "EHLO mx1.redhat.com"
+	id S1757382Ab3K2QuW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 11:50:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4832 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757299Ab3K2QsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 11:48:19 -0500
-Date: Fri, 29 Nov 2013 17:49:04 +0100
+	id S1755352Ab3K2QuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 11:50:20 -0500
+Date: Fri, 29 Nov 2013 17:51:06 +0100
 From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <htejun@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, zhang.yi20@zte.com.cn,
-        lkml <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 1/1] usermodehelper: kill
-	____call_usermodehelper()->set_cpus_allowed_ptr()
-Message-ID: <20131129164904.GA5124@redhat.com>
-References: <20131128121748.GN10022@twins.programming.kicks-ass.net> <20131128133152.GA821@redhat.com> <20131128133947.GR10022@twins.programming.kicks-ass.net> <20131128142359.GA6420@redhat.com> <20131128143155.GC3925@htj.dyndns.org> <20131128150055.GA11956@redhat.com> <20131128150233.GA10022@twins.programming.kicks-ass.net> <20131128193330.GA24767@redhat.com> <20131128193349.GB24767@redhat.com> <20131129134406.GA3717@htj.dyndns.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH/RFC 17/17] tracing/uprobes: Add @+file_offset fetch
+	method
+Message-ID: <20131129165106.GA5224@redhat.com>
+References: <1385533203-10014-1-git-send-email-namhyung@kernel.org> <1385533203-10014-18-git-send-email-namhyung@kernel.org> <20131127185546.GA30544@redhat.com> <877gbtq7rb.fsf@sejong.aot.lge.com> <20131128163148.GA15985@redhat.com> <87ob54oxzt.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131129134406.GA3717@htj.dyndns.org>
+In-Reply-To: <87ob54oxzt.fsf@sejong.aot.lge.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+Hi Namhyung,
 
-On 11/29, Tejun Heo wrote:
+On 11/29, Namhyung Kim wrote:
 >
-> Hey, Oleg.
+> Hi Oleg,
 >
-> On Thu, Nov 28, 2013 at 08:33:49PM +0100, Oleg Nesterov wrote:
-> > @@ -208,13 +208,9 @@ static int ____call_usermodehelper(void *data)
-> >  	spin_lock_irq(&current->sighand->siglock);
-> >  	flush_signal_handlers(current, 1);
-> >  	spin_unlock_irq(&current->sighand->siglock);
-> > -
-> > -	/* We can run anywhere, unlike our parent keventd(). */
-> > -	set_cpus_allowed_ptr(current, cpu_all_mask);
+> On Thu, 28 Nov 2013 17:31:48 +0100, Oleg Nesterov wrote:
+> > On 11/28, Namhyung Kim wrote:
+> >>
+> >> I thought we need a fetch_param anyway if we will add support for
+> >> cross-fetch later.  But I won't insist it strongly, I can delay it to
+> >> later work and make current code simpler if you want. :)
+> >
+> > OK, great,
 >
-> I don't think this is correct on numa machines where unbound workers
-> are NUMA-node affine by default.
+> So do you want me to change to make it simpler without a fetch_param?
 
-Aaah, I see. And you even mentioned this before, but I didn't pay
-attention.
-
-Thank!
+Yes, yes. Assuming that you agree, of course.
 
 Oleg.
 
