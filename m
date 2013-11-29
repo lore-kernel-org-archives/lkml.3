@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675Ab3K2APx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 19:15:53 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:14516 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab3K2APu (ORCPT
+	id S1752766Ab3K2ASL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 19:18:11 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:35768 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329Ab3K2ASH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 19:15:50 -0500
-X-AuditID: cbfee68d-b7f1a6d0000055a7-d0-5297dcb56891
+	Thu, 28 Nov 2013 19:18:07 -0500
+X-AuditID: cbfee68e-b7f7e6d00000477d-98-5297dd3e9bc3
 From: Sangbeom Kim <sbkim73@samsung.com>
-To: "'Krzysztof Kozlowski'" <k.kozlowski@samsung.com>,
-        "'Samuel Ortiz'" <sameo@linux.intel.com>,
+To: "'Mark Brown'" <broonie@kernel.org>,
+        "'Krzysztof Kozlowski'" <k.kozlowski@samsung.com>
+Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>,
         "'Lee Jones'" <lee.jones@linaro.org>,
         "'Liam Girdwood'" <lgirdwood@gmail.com>,
-        "'Mark Brown'" <broonie@kernel.org>,
         "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com
-Cc: "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
         "'Geert Uytterhoeven'" <geert@linux-m68k.org>,
         "'Kyungmin Park'" <kyungmin.park@samsung.com>
 References: <1385626183-22990-1-git-send-email-k.kozlowski@samsung.com>
- <1385626183-22990-5-git-send-email-k.kozlowski@samsung.com>
-In-reply-to: <1385626183-22990-5-git-send-email-k.kozlowski@samsung.com>
-Subject: RE: [PATCH v2 4/5] rtc: s5m: Enable IRQ wake during suspend
-Date: Fri, 29 Nov 2013 09:15:51 +0900
-Message-id: <05ca01ceec98$295a9730$7c0fc590$@samsung.com>
+ <1385626183-22990-6-git-send-email-k.kozlowski@samsung.com>
+ <20131128171434.GN27568@sirena.org.uk>
+In-reply-to: <20131128171434.GN27568@sirena.org.uk>
+Subject: RE: [PATCH v2 5/5] mfd: sec: Constify regmap configs and regmap irqs
+Date: Fri, 29 Nov 2013 09:18:08 +0900
+Message-id: <05ce01ceec98$7b4e3470$71ea9d50$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQIn7cDk689h23sBcLg83vR3zAVxUwIzcObEmXe4zuA=
+Thread-index: AQIn7cDk689h23sBcLg83vR3zAVxUwJkxD4VApxplN6ZYUtwkA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgleLIzCtJLcpLzFFi42I5/e+Zoe7WO9ODDLbvYrFYcvEqu8XUh0/Y
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnleLIzCtJLcpLzFFi42I5/e+Zoa7d3elBBqdXKFksuXiV3WLqwyds
+	Fs9u7WWyeP3C0OJs0xt2i/tfjzJafLvSwWRxedccNou1R+6yW+zv7GC0ON3N6sDtsXPWXXaP
+	PRNPsnlsWtXJ5nHn2h42j0OHOxg95p0M9OjbsorRY/q8n0wenzfJBXBGcdmkpOZklqUW6dsl
+	cGV09e1kLehhqlh/bD9bA+NNxi5GTg4JAROJlz+ns0LYYhIX7q1nA7GFBJYxSkxcIQJTM7vl
+	AVANF1B8EaPE5NuLWSCcP4wS81buBpvEJqAhsXL3W7BuEYEIiclHD7KDFDELvGWSWNg8gRmi
+	Yx2jxKK9zUxdjBwcnALGEnd32oE0CAv4SlzvuAR2BouAqkTvwyNgQ3kFLCUmT+xhhbAFJX5M
+	vscCYjMLaEms33mcCcKWl9i85i0zxKkKEjvOvmYEGS8i4CTxZLk6RImIxL4X7xhBTpAQWMoh
+	8Wz/Q6hdAhLfJh9iAamXEJCV2HQAaoykxMEVN1gmMErMQrJ5FpLNs5BsnoVkxQJGllWMoqkF
+	yQXFSelFRnrFibnFpXnpesn5uZsYIYmgbwfjzQPWhxiTgdZPZJYSTc4HJpK8knhDYzMjC1MT
+	U2Mjc0sz0oSVxHkXPUwKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cDI7fDxrGxxXehJg6o7
+	mtIOubYFB8vinRmfq33fd/IV2xILi9trUqd98bpitN73zqFd37SPruo7vaLlw7JZdUxzbxmc
+	7XTYIGkffoTj7jqb75tdJV4vvZaow16nL1Q4Vy9S3SonNiY3XeC+7ffpDbxfX2w0alW63Bju
+	yqyetzr8bkbOp2c6CYxKLMUZiYZazEXFiQAZL2JwGgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKKsWRmVeSWpSXmKPExsVy+t9jAV27u9ODDI7+lbVYcvEqu8XUh0/Y
 	LJ7d2stk8fqFocXZpjfsFve/HmW0+Halg8ni8q45bBZrj9xlt9jf2cFocbqb1YHbY+esu+we
-	eyaeZPPYtKqTzePOtT1sHocOdzB6zDsZ6NG3ZRWjx/R5P5k8Pm+SC+CM4rJJSc3JLEst0rdL
-	4MrY8XU2U8El5orL51cxNTA2MHcxcnBICJhI7LpS28XICWSKSVy4t56ti5GLQ0hgGaPErDnP
-	GSESJhLT7mwBs4UEFjFKLO7Og7D/MEq0LweLswloSKzc/RasWURgG5PE3C1nwRxmgX5GiUd7
-	VjJBjG1llJgzo5EdpIVTwEPi+qM9rCC2sICLxIcpX5lBbBYBVYn/x/eDjeUVsJR4tvA2E4Qt
-	KPFj8j0WEJtZQEti/c7jTBC2vMTmNW+ZIU5VkNhx9jVYr4iAlcSez3uZIWpEJPa9eMcIcoSE
-	wFwOiedfpkAtE5D4NvkQCyQsZCU2HYCaIylxcMUNlgnAUECyehaS1bOQrJ6FZMUCRpZVjKKp
-	BckFxUnpRYZ6xYm5xaV56XrJ+bmbGCGpoHcH4+0D1ocYk4HWT2SWEk3OB6aSvJJ4Q2MzIwtT
-	E1NjI3NLM9KElcR5kx4mBQkJpCeWpGanphakFsUXleakFh9iZOLglGpgXPck5v4PHZczcnes
-	r/xmfsTh4ld5Ust/D8/b9bcsrOaLyH4p4zUTmMnAz3WvUeWJsv2GudxRmUuD1IxFRMX33xHY
-	fqbwxbYp9Vn71beE5CYmqd+54hC06PiukyqHvj3XZ+G5tjWQ0TlTzb5Y52XqKkeBzztuf7V8
-	Oc9Wuy+13+BoV9YuWeMVSizFGYmGWsxFxYkA+AoVuRsDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKKsWRmVeSWpSXmKPExsVy+t9jAd2td6YHGUzgtFhy8Sq7xdSHT9gs
-	nt3ay2Tx+oWhxdmmN+wW978eZbT4dqWDyeLyrjlsFmuP3GW32N/ZwWhxupvVgdtj56y77B57
-	Jp5k89i0qpPN4861PWwehw53MHrMOxno0bdlFaPH9Hk/mTw+b5IL4IxqYLTJSE1MSS1SSM1L
-	zk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAbpVSaEsMacUKBSQWFyspG+H
-	aUJoiJuuBUxjhK5vSBBcj5EBGkhYx5ix4+tspoJLzBWXz69iamBsYO5i5OSQEDCRmHZnCyOE
-	LSZx4d56NhBbSGARo8Ti7jwI+w+jRPtysBo2AQ2JlbvfAtVwcYgIbGOSmLvlLJjDLNDPKPFo
-	z0omEEdIoJVRYs6MRnaQFk4BD4nrj/awgtjCAi4SH6Z8BVvNIqAq8f/4frCxvAKWEs8W3maC
-	sAUlfky+xwJiMwtoSazfeZwJwpaX2LzmLdTZChI7zr4G6xURsJLY83kvM0SNiMS+F+8YJzAK
-	zUIyahaSUbOQjJqFpGUBI8sqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOBE80xqB+PKBotD
-	jAIcjEo8vCu6pwcJsSaWFVfmHmKU4GBWEuH9VQQU4k1JrKxKLcqPLyrNSS0+xJgM9OlEZinR
-	5HxgEswriTc0NjEzsjQyszAyMTcnTVhJnPdAq3WgkEB6YklqdmpqQWoRzBYmDk6pBkbrOjYV
-	cwddD8dYVaZWEZ8v/zQ2ZHP/3DZ/uezSGb09L0TMLkc5WrzbueRbuKlFyNfvOh/nLe4Tmtqc
-	sOd51HGemtMHmZVNle9sFJqeOYGhJDqazX5GZn6PYt517b25S2UfPleYuSP9/m/BnT1awlM/
-	hoWY7D2nNE8sln1ncKpF/HLVJEHlq0osxRmJhlrMRcWJAHxDaZZ4AwAA
+	eyaeZPPYtKqTzePOtT1sHocOdzB6zDsZ6NG3ZRWjx/R5P5k8Pm+SC+CMamC0yUhNTEktUkjN
+	S85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAE6VkmhLDGnFCgUkFhcrKRv
+	h2lCaIibrgVMY4Sub0gQXI+RARpIWMeY0dW3k7Wgh6li/bH9bA2MNxm7GDk5JARMJGa3PGCF
+	sMUkLtxbz9bFyMUhJLCIUWLy7cUsEM4fRol5K3eDdbAJaEis3P2WDcQWEYiQmHz0IDtIEbPA
+	WyaJhc0TmCE61jFKLNrbzNTFyMHBKWAscXenHUiDsICvxPWOS2DrWARUJXofHgEbyitgKTF5
+	Yg8rhC0o8WPyPRYQm1lAS2L9zuNMELa8xOY1b5khTlWQ2HH2NSPIeBEBJ4kny9UhSkQk9r14
+	xziBUWgWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEJ5pnUjsY
+	VzZYHGIU4GBU4uFd0T09SIg1say4MvcQowQHs5II768ioBBvSmJlVWpRfnxRaU5q8SHGZKBH
+	JzJLiSbnA5NgXkm8obGJmZGlkZmFkYm5OWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFwSjUw
+	dtuHLXywdYPj6xsPS50Yp+h/+8af/2qD+ooNzfVOHsb9Qfy8qu0GjcIh/FXN7TN3PH62yUbt
+	ArdL4mGRTXmZzBLlzM9EREtl/U0/Kv6a+2ZK15a4xbPbpjpzKoU9mBam+K3t3N9r01sOLTax
+	e2r0uIX9yhS/Y3N7QnL8E4zue9y62S+lfSFIiaU4I9FQi7moOBEAQgh3GngDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -65,13 +66,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 28, 2013 5:10 PM, Krzysztof Kozlowski wrote:
-> Add PM suspend/resume ops to rtc-s5m driver and enable IRQ wake during
-> suspend so the RTC would act like a wake up source. This allows waking
-> up from suspend to RAM on RTC alarm interrupt.
+On Friday, November 29, 2013 2:15 AM, Mark Brown wrote:
+> > Add "const" to "static struct regmap_irq" and "static struct
+> > regmap_config".
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Reviewed-by: Mark Brown <broonie@linaro.org>
 
 Acked-by: Sangbeom Kim <sbkim73@samsung.com>
 
