@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab3K2UVr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 15:21:47 -0500
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:46087 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753608Ab3K2UVp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 15:21:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <201311281737.32696.arnd@arndb.de>
-References: <1381503190-5733-1-git-send-email-jonas.jensen@gmail.com>
-	<1385651945-22355-1-git-send-email-jonas.jensen@gmail.com>
-	<201311281737.32696.arnd@arndb.de>
-Date: Fri, 29 Nov 2013 21:21:44 +0100
-Message-ID: <CACRpkda3bEmL+WRX1ct9SoUQOPXOT2mru0uz3-04nZB8G3DsvA@mail.gmail.com>
-Subject: Re: [PATCH v6] gpio: Add MOXA ART GPIO driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jonas Jensen <jonas.jensen@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754797Ab3K2UWE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 15:22:04 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754647Ab3K2UWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 15:22:02 -0500
+From: Richard Weinberger <richard@nod.at>
+To: viro@zeniv.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Richard Weinberger <richard@nod.at>
+Subject: [PATCH] Call arch_pick_mmap_layout() only once
+Date: Fri, 29 Nov 2013 21:21:50 +0100
+Message-Id: <1385756510-2556-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 5:37 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Thursday 28 November 2013, Jonas Jensen wrote:
->> +static void __iomem *moxart_gpio_base;
->
-> Just one comment: the usual way to do such a driver is to have
-> a derived data structure like
->
-> struct moxart_gpio_chip {
->         struct gpio_chip chip;
->         void __iomem *moxart_gpio_base;
-> };
->
-> and dynamically allocate that from probe(), using container_of() to
-> get from the gpio_chip pointer to your own structure.
+Currently both setup_new_exec() and flush_old_exec() issue
+a call to arch_pick_mmap_layout().
+As setup_new_exec() and flush_old_exec() are always called
+pairwise arch_pick_mmap_layout() is called twice.
 
-I see we make this comment a lot.
+This patch removes one call from setup_new_exec() to have
+it only called once.
 
-On my TODO there is an item to create
-Documentation/driver-model/design-patterns.txt
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ fs/exec.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-And document things like this. And other fun stuff like
-container_of().
+diff --git a/fs/exec.c b/fs/exec.c
+index 7ea097f..13226bb 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1109,8 +1109,6 @@ EXPORT_SYMBOL(would_dump);
+ 
+ void setup_new_exec(struct linux_binprm * bprm)
+ {
+-	arch_pick_mmap_layout(current->mm);
+-
+ 	/* This is the point of no return */
+ 	current->sas_ss_sp = current->sas_ss_size = 0;
+ 
+-- 
+1.8.1.4
 
-What do you think about this idea?
-
-Yours,
-Linus Walleij
