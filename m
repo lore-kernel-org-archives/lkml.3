@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab3K2KFZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 05:05:25 -0500
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:55274 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192Ab3K2KFU convert rfc822-to-8bit (ORCPT
+	id S1754312Ab3K2KHr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 05:07:47 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:57214 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752931Ab3K2KHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 05:05:20 -0500
+	Fri, 29 Nov 2013 05:07:45 -0500
 MIME-Version: 1.0
-In-Reply-To: <1385506004-14943-1-git-send-email-caesarxuchao@gmail.com>
-References: <1385506004-14943-1-git-send-email-caesarxuchao@gmail.com>
-Date: Fri, 29 Nov 2013 11:05:20 +0100
-Message-ID: <CACRpkdZBobnSZMLcW6YWc08ew1sb+UY3np+iS4=nqx5wpSNixw@mail.gmail.com>
-Subject: Re: [PATCH V2] gpio: omap: refresh patch "be more aggressive with
- pm_runtime" against v3.12-rc5
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Chao Xu <caesarxuchao@gmail.com>, ext Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@linaro.org>
-Cc: Linux-OMAP <linux-omap@vger.kernel.org>,
-        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Paul Walmsley <paul@pwsan.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+In-Reply-To: <1415633.hVIJGiCZ0n@vostro.rjw.lan>
+References: <ad0a09012f3621024deb51120c3d4ef97ffcbd0f.1385649767.git.viresh.kumar@linaro.org>
+	<1415633.hVIJGiCZ0n@vostro.rjw.lan>
+Date: Fri, 29 Nov 2013 15:37:45 +0530
+Message-ID: <CAKohpok1Y6kwtkaPSABcX6x4J6d-jCcxS0kE6zojNH7pDT710w@mail.gmail.com>
+Subject: Re: [PATCH V3] cpufreq: Make sure CPU is running on a freq from freq-table
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>, Carlos Hernandez <ceh@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 11:46 PM, Chao Xu <caesarxuchao@gmail.com> wrote:
+On 29 November 2013 02:16, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> Well, this looks more and more complicated from version to version ...
 
-> From: Felipe Balbi <balbi@ti.com>
->
-> try to keep gpio block suspended as much as possible.
->
-> Tested with pandaboard and a sysfs exported gpio.
->
-> Signed-off-by: Felipe Balbi <balbi at ti.com>
->
-> [caesarxuchao@gmail.com : Refreshed against v3.12-rc5, and added revision check to enable aggressive pm_runtime on OMAP4-only. Because am33xx_gpio_sysc.idlemodes seems to be wrongly marked as SIDLE_SMART_WKUP, which might cause missed interrupts with this patch. Tested on Pandaboard rev A2.]
->
-> Signed-off-by: Chao Xu <caesarxuchao@gmail.com>
+:)
 
-I'd like Tony and/or Kevin to have a look at this from a PM point
-of view so I get some confirmation from the core maintainers
-that this is the way forward.
+> Overall, this looks like code written in a hurry.  Please avoid doing that.
 
-Yours,
-Linus Walleij
+Thanks for all the tips, I will take care of this stuff in future.
