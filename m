@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab3K2K4w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 05:56:52 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:56314 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088Ab3K2K4u (ORCPT
+	id S1754759Ab3K2K5t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 05:57:49 -0500
+Received: from fep17.mx.upcmail.net ([62.179.121.37]:41217 "EHLO
+	fep17.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751780Ab3K2K5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 05:56:50 -0500
-Date: Fri, 29 Nov 2013 11:56:01 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Fabio Estevam <festevam@gmail.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Mark Brown <broonie@linaro.org>
-Subject: Re: [PATCH 1/2] regulator: core: Replace checks of
- have_full_constraints with a function
-Message-ID: <20131129105600.GJ22771@ulmo.nvidia.com>
-References: <1385569457-8650-1-git-send-email-broonie@kernel.org>
+	Fri, 29 Nov 2013 05:57:47 -0500
+X-Greylist: delayed 7944 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Nov 2013 05:57:45 EST
+X-SourceIP: 192.168.13.91
+X-Authenticated-Sender: f.kreeft1
+Date: Fri, 29 Nov 2013 11:57:32 +0100 (CET)
+From: WESTERN UNOIN <f.kreeft1@upcmail.nl>
+Reply-To: wtransfermoney90@qdwxs.com
+Message-ID: <119090658.885164.1385722652011.open-xchange@upcmail.upc.nl>
+Subject: PICK UP YOUR$5,000.00USD NOW
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BOmey7/79ja+7F5w"
-Content-Disposition: inline
-In-Reply-To: <1385569457-8650-1-git-send-email-broonie@kernel.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+Importance: Medium
+X-Mailer: Open-Xchange Mailer v-
+X-Originating-IP: 41.203.69.2
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Good Day Beneficiary:
 
---BOmey7/79ja+7F5w
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I write to inform you that we have been given the mandate to transfer your
+full compensation payment of $1,800,000.00 USD via western union by this
+government.
 
-On Wed, Nov 27, 2013 at 04:24:16PM +0000, Mark Brown wrote:
-> From: Mark Brown <broonie@linaro.org>
->=20
-> Simple code reorganisation so we can change the logic for deciding what
-> full constraints are more easily.
->=20
-> Signed-off-by: Mark Brown <broonie@linaro.org>
-> ---
->  drivers/regulator/core.c | 11 ++++++++---
->  1 file changed, 8 insertions(+), 3 deletions(-)
+We tried to give you the Western Union Instructions through phone, but we
+could not locate your numbers in our database to reach you last week even
+this morning.
 
-I see that you've already applied them, but for what it's worth:
+So, I decided to email you the MTCN and Sender Names so that you can pick
+up the USD5,000.00 to enable us send another USD5,000.00 by tomorrow as
+you knows we will be sending you only USD5,000.00 per day.
 
-Reviewed-by: Thierry Reding <treding@nvidia.com>
+Please pick up this information and run to any western union in your country
+to pick up the USD5,000.00 and send us email back to send you another payment
+tomorrow.
 
---BOmey7/79ja+7F5w
-Content-Type: application/pgp-signature
+Manager Mrs.Anita Daniel
+Email: wtransfermoney333@qdwxs.com
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+email us once you picked up this USD5,000.00 today.
 
-iQIcBAEBAgAGBQJSmHLAAAoJEN0jrNd/PrOhdqIP/iWRS+2v4noJGouO1i5ZDaVx
-4sUGWVhm162GVDiG+TDqfOkgAJu8i6etcCeTmy0Bpkc9gCOUhqZufVnUR3/CJebo
-b9ujRol2FE8nPksZHV0YNrYF3g/NPRtkfJl+vXKXqB7xthzWwsr65k/VK4qT8mFP
-jAhwnC93m22WjrDV2jcXQq5xJfnTmGGEGbYh//ZdjQmLh6pNINARRlj3tWsbaQp2
-oMa7t7oXmLGc97m7535jx+f7xzDQIPciyfABVrh56VmYyHqqBSR2Ai1yyGNywXRi
-KL5V0J8tAEMp9tqOVP5ilLx2Z8Q4IJpxhLGITxH/kObLKZqWVLPiC2T6P/dNBx8f
-98lQY43zQYzkpqn4VJHtq6ZcOO4iIUYIqoW0MbtaUR6zzr0Mg9c+FRA7O3aVIdvB
-aeng1OqGxFLnAGBEDSY3VJyNzo8FGEqL2R2mKXJBQXuOQ9T5ot8aJLrVlBG1oZlU
-BmPrfuDJZL6SkBoF9Thr8sSN32VNcBv5lmFSFbSWTs5v9n9K9fGhpB3bEFMT/eE4
-YJIC9skxePXyINZ3ORbxMGIPrZA7JgMGS0SvrjDk/Nv0gVIyUsua7wt+16jl0B54
-ryPuJidXxd9L0sTHnld/PYMLsv6mjfVcC4JGbBAWrp4oCuQBooQYTS/DNQkj4rtu
-f0kPRIhVHz86T2F3ChWU
-=2wqP
------END PGP SIGNATURE-----
+Here is the western union information to pick up the USD5,000.00,
 
---BOmey7/79ja+7F5w--
+https://wumt.westernunion.com/asp/orderstatus.asp?country=global
+
+Sender Name: Jason   Callahan
+MTCN: 074-137-0142
+Question= What Color
+Answer= White
+Amount Sent: $5000.00
+City:Abuja
+Country:Nigeria
+
+I am waiting for your email once you pick up USD5,000.00,
+
+Thanks!
+Mrs.Anita Daniel
+Western Union Online Coordinator
