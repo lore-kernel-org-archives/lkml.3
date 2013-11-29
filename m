@@ -1,107 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756991Ab3K2PbO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 10:31:14 -0500
-Received: from 2.mo6.mail-out.ovh.net ([46.105.76.65]:35068 "EHLO
-	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755062Ab3K2PbI (ORCPT
+	id S1757236Ab3K2Pc3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 10:32:29 -0500
+Received: from mail-we0-f178.google.com ([74.125.82.178]:48062 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755725Ab3K2Pc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 10:31:08 -0500
-Message-ID: <5298B30F.3060905@overkiz.com>
-Date: Fri, 29 Nov 2013 16:30:23 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Fri, 29 Nov 2013 10:32:26 -0500
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Joachim Eastwood <manabian@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 5/9] ARM: at91/dt: add mmc0 slot0 support to at91rm9200ek
- board
-References: <1377687640-10529-1-git-send-email-b.brezillon@overkiz.com>	<1377687995-10758-1-git-send-email-b.brezillon@overkiz.com>	<20131120145926.GE14627@ns203013.ovh.net>	<528CDFFB.1020601@overkiz.com>	<CACRpkdboBg4YOnMNiar0DDBVnoky=zNky+Pzyp1=P_POtH15qQ@mail.gmail.com>	<528DE1C4.6060900@overkiz.com>	<CACRpkdZdweyWJefttiuiYAJ9qhahLbnj7eHUiLV_83UA41X_uQ@mail.gmail.com>	<5294D64D.7000100@overkiz.com>	<CACRpkdZoAjuWVpWZfvPgOAd7qB1ZBtC+45nD3SYay3SrMhqwVA@mail.gmail.com>	<52986CA8.3010601@overkiz.com> <CACRpkdag5=QYsWe81ocpkMp2APaoBAOOn2r0iAVdf9DHTKrSXA@mail.gmail.com>
-In-Reply-To: <CACRpkdag5=QYsWe81ocpkMp2APaoBAOOn2r0iAVdf9DHTKrSXA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 12906472108229097693
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+In-Reply-To: <1385730118-26402-2-git-send-email-rogerq@ti.com>
+References: <1385730118-26402-1-git-send-email-rogerq@ti.com>
+	<1385730118-26402-2-git-send-email-rogerq@ti.com>
+Date: Fri, 29 Nov 2013 16:32:22 +0100
+Message-ID: <CAOf5uwmEkzFd=e3j8m8=qdTCAMkk_-DPw0fTm=7Vzy0PbE2oDQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] mfd: omap-usb-host: Fix USB device detection problems
+ on OMAP4 Panda
+From: Michael Trimarchi <michael@amarulasolutions.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: lee.jones@linaro.org, sameo@linux.intel.com, tomi.valkeinen@ti.com,
+        Felipe Balbi <balbi@ti.com>, Stefan Roese <sr@denx.de>,
+        ljkenny.mailinglists@gmail.com,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/11/2013 14:31, Linus Walleij wrote:
-> On Fri, Nov 29, 2013 at 11:30 AM, boris brezillon
-> <b.brezillon@overkiz.com> wrote:
->> On 29/11/2013 11:03, Linus Walleij wrote:
->>> I guess one way is to obtain this GPIO in board code and just
->>> flick it depending on which device you register.
-> (...)
->> The whole goal of moving from board files to dt is to drop all board
->> specific processing or initialization and only keep a common description
->> with generic drivers capable of handling common use cases.
->>
->> I'm not sure providing new board specific drivers is a good solution
->> (even if it is the simplest way to achieve our goal).
->>
->> Could we have something similar to pinctrl but with gpios :
->> when the device is probed the device/driver core code request the gpio
->> configure it appropriately and set it to the requested value (if configured
->> as output).
-> This has been suggested under the name "GPIO hogs" in the past.
+Hi Roger
+
+On Fri, Nov 29, 2013 at 2:01 PM, Roger Quadros <rogerq@ti.com> wrote:
+> With u-boot 2013.10, USB devices are sometimes not detected
+> on OMAP4 Panda. To make us independent of what bootloader does
+> with the USB Host module, we must RESET it to get it to a known
+> good state. This patch Soft RESETs the USB Host module.
 >
-> It would work similar to how pinctrl hogs work by associating the
-> GPIO line the controller itself, using some specific string
-> like gpio-input-hogs = <...> / gpio-output-hogs = <...>;
+
+Do you think that we need something similar of usb musb?
+I have seen the OTG_SYSCONFIG is touched in uboot and
+only readed in omap2430.c.
+
+Michael
+
+> Reported-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+> Cc: <stable@vger.kernel.org> # 3.10+
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>  drivers/mfd/omap-usb-host.c | 115 +++++++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 109 insertions(+), 6 deletions(-)
 >
-> The gpiolib core will then grab and set up these before
-> returning from the registration call so noone ever gets a chance
-> to use them.
-
-Ok, I'll take a look.
-
-Could you point me out a thread (or other documents) talking about gpio 
-hogs.
-I found this one 
-http://lists.infradead.org/pipermail/linux-arm-kernel/2013-April/162254.html.
-
->> These are just thoughts, and I guess introducing new code in the
->> device/driver core
->> code is not that easy, especially when this code is here to handle specific
->> case
->> like ours.
-> It is very easy, just write the patch, iterate it (these patches get
-> a lot of scrutiny as it is core code, so expect some work and time
-> to get it done), and then unless there is a blocker, I would merge it.
-> The concept is entirely sound, just that someone needs to step
-> up and do the work...
-
-Sure, I'll propose something (I guess your talking about GPIO hogs 
-concept not gpio-switch driver).
-If you already thought a bit about GPIO hogs, I'd be interested to get 
-some inputs (suggestions, ideas, code, ...).
-
-Anyway, thanks for taking time to answer my questions.
-
-Best Reagrds,
-
-Boris
-
-> Yours,
-> Linus Walleij
-
+> diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+> index 142650f..d4bd464 100644
+> --- a/drivers/mfd/omap-usb-host.c
+> +++ b/drivers/mfd/omap-usb-host.c
+> @@ -43,14 +43,18 @@
+>  /* UHH Register Set */
+>  #define        OMAP_UHH_REVISION                               (0x00)
+>  #define        OMAP_UHH_SYSCONFIG                              (0x10)
+> -#define        OMAP_UHH_SYSCONFIG_MIDLEMODE                    (1 << 12)
+> +#define        OMAP_UHH_SYSCONFIG_MIDLEMASK                    (3 << 12)
+> +#define OMAP_UHH_SYSCONFIG_MIDLESHIFT                  (12)
+>  #define        OMAP_UHH_SYSCONFIG_CACTIVITY                    (1 << 8)
+> -#define        OMAP_UHH_SYSCONFIG_SIDLEMODE                    (1 << 3)
+> +#define        OMAP_UHH_SYSCONFIG_SIDLEMASK                    (3 << 3)
+> +#define        OMAP_UHH_SYSCONFIG_SIDLESHIFT                   (3)
+>  #define        OMAP_UHH_SYSCONFIG_ENAWAKEUP                    (1 << 2)
+>  #define        OMAP_UHH_SYSCONFIG_SOFTRESET                    (1 << 1)
+>  #define        OMAP_UHH_SYSCONFIG_AUTOIDLE                     (1 << 0)
+>
+>  #define        OMAP_UHH_SYSSTATUS                              (0x14)
+> +#define OMAP_UHH_SYSSTATUS_RESETDONE                   (1 << 0)
+> +
+>  #define        OMAP_UHH_HOSTCONFIG                             (0x40)
+>  #define        OMAP_UHH_HOSTCONFIG_ULPI_BYPASS                 (1 << 0)
+>  #define        OMAP_UHH_HOSTCONFIG_ULPI_P1_BYPASS              (1 << 0)
+> @@ -66,10 +70,10 @@
+>  #define OMAP4_UHH_HOSTCONFIG_APP_START_CLK             (1 << 31)
+>
+>  /* OMAP4-specific defines */
+> -#define OMAP4_UHH_SYSCONFIG_IDLEMODE_CLEAR             (3 << 2)
+> -#define OMAP4_UHH_SYSCONFIG_NOIDLE                     (1 << 2)
+> -#define OMAP4_UHH_SYSCONFIG_STDBYMODE_CLEAR            (3 << 4)
+> -#define OMAP4_UHH_SYSCONFIG_NOSTDBY                    (1 << 4)
+> +#define OMAP4_UHH_SYSCONFIG_MIDLEMASK                  (3 << 2)
+> +#define OMAP4_UHH_SYSCONFIG_MIDLESHIFT                 (2)
+> +#define OMAP4_UHH_SYSCONFIG_SIDLEMASK                  (3 << 4)
+> +#define OMAP4_UHH_SYSCONFIG_SIDLESHIFT                 (4)
+>  #define OMAP4_UHH_SYSCONFIG_SOFTRESET                  (1 << 0)
+>
+>  #define OMAP4_P1_MODE_CLEAR                            (3 << 16)
+> @@ -81,6 +85,12 @@
+>
+>  #define        OMAP_UHH_DEBUG_CSR                              (0x44)
+>
+> +/* MIDLE modes */
+> +#define OMAP_UHH_SYSCONFIG_MIDLE_NOSTANDBY             (1)
+> +
+> +/* SIDLE modes */
+> +#define OMAP_UHH_SYSCONFIG_SIDLE_NOIDLE                        (1)
+> +
+>  /* Values of UHH_REVISION - Note: these are not given in the TRM */
+>  #define OMAP_USBHS_REV1                0x00000010      /* OMAP3 */
+>  #define OMAP_USBHS_REV2                0x50700100      /* OMAP4 */
+> @@ -474,6 +484,97 @@ static unsigned omap_usbhs_rev2_hostconfig(struct usbhs_hcd_omap *omap,
+>         return reg;
+>  }
+>
+> +static void omap_usbhs_rev1_reset(struct device *dev)
+> +{
+> +       struct usbhs_hcd_omap *omap = dev_get_drvdata(dev);
+> +       u32 reg;
+> +       unsigned long timeout;
+> +
+> +       reg = usbhs_read(omap->uhh_base, OMAP_UHH_SYSCONFIG);
+> +
+> +       /* Soft Reset */
+> +       usbhs_write(omap->uhh_base, OMAP_UHH_SYSCONFIG,
+> +                   reg | OMAP_UHH_SYSCONFIG_SOFTRESET);
+> +
+> +       timeout = jiffies + msecs_to_jiffies(100);
+> +       while (!(usbhs_read(omap->uhh_base, OMAP_UHH_SYSSTATUS)
+> +                       & OMAP_UHH_SYSSTATUS_RESETDONE)) {
+> +               cpu_relax();
+> +
+> +               if (time_after(jiffies, timeout)) {
+> +                       dev_err(dev, "Soft RESET operation timed out\n");
+> +                       break;
+> +               }
+> +       }
+> +
+> +       /* Set No-Standby */
+> +       reg &= ~OMAP_UHH_SYSCONFIG_MIDLEMASK;
+> +       reg |= OMAP_UHH_SYSCONFIG_MIDLE_NOSTANDBY
+> +               << OMAP_UHH_SYSCONFIG_MIDLESHIFT;
+> +
+> +       /* Set No-Idle */
+> +       reg &= ~OMAP_UHH_SYSCONFIG_SIDLEMASK;
+> +       reg |= OMAP_UHH_SYSCONFIG_SIDLE_NOIDLE
+> +               << OMAP_UHH_SYSCONFIG_SIDLESHIFT;
+> +
+> +       usbhs_write(omap->uhh_base, OMAP_UHH_SYSCONFIG, reg);
+> +}
+> +
+> +static void omap_usbhs_rev2_reset(struct device *dev)
+> +{
+> +       struct usbhs_hcd_omap *omap = dev_get_drvdata(dev);
+> +       u32 reg;
+> +       unsigned long timeout;
+> +
+> +       reg = usbhs_read(omap->uhh_base, OMAP_UHH_SYSCONFIG);
+> +
+> +       /* Soft Reset */
+> +       usbhs_write(omap->uhh_base, OMAP_UHH_SYSCONFIG,
+> +                   reg | OMAP4_UHH_SYSCONFIG_SOFTRESET);
+> +
+> +       /* OMAP4: Need to wait before SYSCONFIG can be accessed */
+> +       udelay(2);
+> +       timeout = jiffies + msecs_to_jiffies(100);
+> +
+> +       /* SOFTRESET bit clears when RESET completes */
+> +       while (usbhs_read(omap->uhh_base, OMAP_UHH_SYSCONFIG)
+> +                       & OMAP4_UHH_SYSCONFIG_SOFTRESET) {
+> +               cpu_relax();
+> +
+> +               if (time_after(jiffies, timeout)) {
+> +                       dev_err(dev, "Soft RESET operation timed out\n");
+> +                       break;
+> +               }
+> +       }
+> +
+> +       /* Set No-Standby */
+> +       reg &= ~OMAP4_UHH_SYSCONFIG_MIDLEMASK;
+> +       reg |= OMAP_UHH_SYSCONFIG_MIDLE_NOSTANDBY
+> +               << OMAP4_UHH_SYSCONFIG_MIDLESHIFT;
+> +
+> +       /* Set No-Idle */
+> +       reg &= ~OMAP4_UHH_SYSCONFIG_SIDLEMASK;
+> +       reg |= OMAP_UHH_SYSCONFIG_SIDLE_NOIDLE
+> +               << OMAP4_UHH_SYSCONFIG_SIDLESHIFT;
+> +
+> +       usbhs_write(omap->uhh_base, OMAP_UHH_SYSCONFIG, reg);
+> +}
+> +
+> +static void omap_usbhs_softreset(struct device *dev)
+> +{
+> +       struct usbhs_hcd_omap *omap = dev_get_drvdata(dev);
+> +
+> +       switch (omap->usbhs_rev) {
+> +       case OMAP_USBHS_REV1:
+> +               omap_usbhs_rev1_reset(dev);
+> +               break;
+> +
+> +       default:        /* Rev 2 onwards */
+> +               omap_usbhs_rev2_reset(dev);
+> +               break;
+> +       }
+> +}
+> +
+>  static void omap_usbhs_init(struct device *dev)
+>  {
+>         struct usbhs_hcd_omap           *omap = dev_get_drvdata(dev);
+> @@ -483,6 +584,8 @@ static void omap_usbhs_init(struct device *dev)
+>
+>         pm_runtime_get_sync(dev);
+>
+> +       omap_usbhs_softreset(dev);
+> +
+>         reg = usbhs_read(omap->uhh_base, OMAP_UHH_HOSTCONFIG);
+>         /* setup ULPI bypass and burst configurations */
+>         reg |= (OMAP_UHH_HOSTCONFIG_INCR4_BURST_EN
+> --
+> 1.8.3.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
