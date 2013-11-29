@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113Ab3K2Vdp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 16:33:45 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:54889 "EHLO
+	id S1755362Ab3K2ViR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 16:38:17 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:54928 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545Ab3K2Vdm (ORCPT
+	with ESMTP id S1754451Ab3K2ViO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 16:33:42 -0500
-Date: Fri, 29 Nov 2013 16:33:39 -0500 (EST)
-Message-Id: <20131129.163339.2047522433275114284.davem@davemloft.net>
-To: shawn@churchofgit.com
-Cc: hannes@stressinduktion.org, eric.dumazet@gmail.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, linux-crypto@vger.kernel.org,
-        netdev@vger.kernel.org, herbert@gondor.apana.org.au,
-        therbert@google.com, stable@vger.kernel.org
-Subject: Re: [PATCH] update consumers of MSG_MORE to recognize
- MSG_SENDPAGE_NOTLAST
+	Fri, 29 Nov 2013 16:38:14 -0500
+Date: Fri, 29 Nov 2013 16:38:13 -0500 (EST)
+Message-Id: <20131129.163813.2060324714200934714.davem@davemloft.net>
+To: hannes@stressinduktion.org
+Cc: eric.dumazet@gmail.com, jongman.heo@samsung.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] inet: fix possible seqlock deadlocks
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1385361388-2175-1-git-send-email-shawn@churchofgit.com>
-References: <20131125042633.GA4156@order.stressinduktion.org>
-	<1385361388-2175-1-git-send-email-shawn@churchofgit.com>
+In-Reply-To: <20131128180914.GA24171@order.stressinduktion.org>
+References: <1385659390.5352.20.camel@edumazet-glaptop2.roam.corp.google.com>
+	<1385661082.5352.34.camel@edumazet-glaptop2.roam.corp.google.com>
+	<20131128180914.GA24171@order.stressinduktion.org>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 29 Nov 2013 13:33:42 -0800 (PST)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 29 Nov 2013 13:38:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shawn Landden <shawn@churchofgit.com>
-Date: Sun, 24 Nov 2013 22:36:28 -0800
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Date: Thu, 28 Nov 2013 19:09:14 +0100
 
-> Commit 35f9c09fe (tcp: tcp_sendpages() should call tcp_push() once)
-> added an internal flag MSG_SENDPAGE_NOTLAST, similar to
-> MSG_MORE.
+> On Thu, Nov 28, 2013 at 09:51:22AM -0800, Eric Dumazet wrote:
+>> From: Eric Dumazet <edumazet@google.com>
+>> 
+>> In commit c9e9042994d3 ("ipv4: fix possible seqlock deadlock") I left
+>> another places where IP_INC_STATS_BH() were improperly used.
+>> 
+>> udp_sendmsg(), ping_v4_sendmsg() and tcp_v4_connect() are called from
+>> process context, not from softirq context.
+>> 
+>> This was detected by lockdep seqlock support.
+>> 
+>> Reported-by: jongman heo <jongman.heo@samsung.com>
+>> Fixes: 584bdf8cbdf6 ("[IPV4]: Fix "ipOutNoRoutes" counter error for TCP and UDP")
+>> Fixes: c319b4d76b9e ("net: ipv4: add IPPROTO_ICMP socket kind")
+>> Signed-off-by: Eric Dumazet <edumazet@google.com>
+>> Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
 > 
-> algif_hash, algif_skcipher, and udp used MSG_MORE from tcp_sendpages()
-> and need to see the new flag as identical to MSG_MORE.
+> Just got home after getting distracted with other things today and the work is
+> already done. Thanks, Eric! ;)
 > 
-> This fixes sendfile() on AF_ALG.
+> Exactly the spots I noticed this morning, so
 > 
-> v3: also fix udp
-> 
-> Cc: Tom Herbert <therbert@google.com>
-> Cc: Eric Dumazet <eric.dumazet@gmail.com>
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: <stable@vger.kernel.org> # 3.4.x + 3.2.x
-> Reported-and-tested-by: Shawn Landden <shawnlandden@gmail.com>
-> Original-patch: Richard Weinberger <richard@nod.at>
-> Signed-off-by: Shawn Landden <shawn@churchofgit.com>
+> Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-Applied and queued up for -stable, thanks everyone.
+Applied and queued up for -stable.
