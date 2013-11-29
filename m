@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab3K2BjY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 20:39:24 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:45227 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752974Ab3K2BjT (ORCPT
+	id S1753514Ab3K2Bj3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 20:39:29 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:36023 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753314Ab3K2BjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 20:39:19 -0500
+	Thu, 28 Nov 2013 20:39:25 -0500
 From: Andreas Noever <andreas.noever@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH 02/12] thunderbolt: Add configuration channel interface
-Date: Fri, 29 Nov 2013 02:35:39 +0100
-Message-Id: <1385688949-7101-3-git-send-email-andreas.noever@gmail.com>
+Subject: [PATCH 05/12] thunderbolt: Initialize root switch and ports
+Date: Fri, 29 Nov 2013 02:35:42 +0100
+Message-Id: <1385688949-7101-6-git-send-email-andreas.noever@gmail.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1385688949-7101-1-git-send-email-andreas.noever@gmail.com>
 References: <1385688949-7101-1-git-send-email-andreas.noever@gmail.com>
@@ -20,759 +20,429 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thunderbolt devices are configured by reading/writing into their
-configuration space (similar to pci). This is done by sending packets
-through the NHI (native host interface) onto the configuration channel.
-
-This patch handles the low level packet based protocol and exposes
-higher level operations like tb_cfg_read/tb_cfg_write.
+This patch adds the structures tb_switch and tb_port as well as code to
+reset and configure the root switch.
 
 Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
 ---
- drivers/thunderbolt/Makefile |   2 +-
- drivers/thunderbolt/tb_cfg.c | 649 +++++++++++++++++++++++++++++++++++++++++++
- drivers/thunderbolt/tb_cfg.h |  67 +++++
- 3 files changed, 717 insertions(+), 1 deletion(-)
- create mode 100644 drivers/thunderbolt/tb_cfg.c
- create mode 100644 drivers/thunderbolt/tb_cfg.h
+ drivers/thunderbolt/tb.c | 229 ++++++++++++++++++++++++++++++++++++++++++++++-
+ drivers/thunderbolt/tb.h | 113 +++++++++++++++++++++++
+ 2 files changed, 340 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
-index 32b0504..f486295 100644
---- a/drivers/thunderbolt/Makefile
-+++ b/drivers/thunderbolt/Makefile
-@@ -1,3 +1,3 @@
- obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
--thunderbolt-objs := dsl3510.o
-+thunderbolt-objs := dsl3510.o tb_cfg.o
+diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
+index 64deb7b..d2df3be 100644
+--- a/drivers/thunderbolt/tb.c
++++ b/drivers/thunderbolt/tb.c
+@@ -8,7 +8,217 @@
+ #include <linux/errno.h>
+ #include <linux/delay.h>
  
-diff --git a/drivers/thunderbolt/tb_cfg.c b/drivers/thunderbolt/tb_cfg.c
-new file mode 100644
-index 0000000..bb958d5
---- /dev/null
-+++ b/drivers/thunderbolt/tb_cfg.c
-@@ -0,0 +1,649 @@
-+/*
-+ * Thunderbolt configuration channel
-+ *
-+ * Copyright (c) 2013 Andreas Noever <andreas.noever@gmail.com>
-+ */
-+
-+#include <linux/crc32.h>
-+#include <linux/slab.h>
-+#include <linux/pci.h>
-+#include <linux/dmapool.h>
-+#include <linux/workqueue.h>
-+
-+#include "tb_cfg.h"
 +#include "dsl3510.h"
+ #include "tb.h"
++#include "tb_regs.h"
 +
++/* utility functions */
 +
-+/* config packet definitions */
-+
-+enum tb_cfg_pkg_type {
-+	TB_CFG_PKG_READ = 1,
-+	TB_CFG_PKG_WRITE = 2,
-+	TB_CFG_PKG_ERROR = 3,
-+	TB_CFG_PKG_NOTIFY_ACK = 4,
-+	TB_CFG_PKG_EVENT = 5,
-+	TB_CFG_PKG_XDOMAIN_REQ = 6,
-+	TB_CFG_PKG_XDOMAIN_RESP = 7,
-+	TB_CFG_PKG_OVERRIDE = 8,
-+	TB_CFG_PKG_RESET = 9,
-+	TB_CFG_PKG_PREPARE_TO_SLEEP = 0xd,
-+};
-+
-+enum tb_cfg_error {
-+	TB_CFG_ERROR_PORT_NOT_CONNECTED = 0,
-+	TB_CFG_ERROR_INVALID_CONFIG_SPACE = 2,
-+	TB_CFG_ERROR_NO_SUCH_PORT = 4,
-+	TB_CFG_ERROR_ACK_PLUG_EVENT = 7,
-+	TB_CFG_ERROR_LOOP = 8,
-+};
-+
-+struct tb_cfg_header {
-+	u32 route_hi:18;
-+	u32 unknown:14; /* highest order bit is set on replies */
-+	u32 route_lo;
-+} __packed;
-+
-+struct tb_cfg_address {
-+	u32 offset:13; /* in dwords */
-+	u32 length:6; /* in dwords */
-+	u32 port:6;
-+	enum tb_cfg_space space:2;
-+	u32 zero:5;
-+} __packed;
-+
-+struct cfg_reset_pkg {
-+	struct tb_cfg_header header;
-+} __packed;
-+
-+struct cfg_error_pkg {
-+	struct tb_cfg_header header;
-+	enum tb_cfg_error error:4;
-+	u32 zero1:4;
-+	u32 port:6;
-+	u32 zero2:2; /* Both should be zero, still they are different fields. */
-+	u32 zero3:16;
-+} __packed;
-+
-+struct cfg_plug_pkg {
-+	struct tb_cfg_header header;
-+	u32 port:6;
-+	u32 zero:25;
-+	bool unplug:1;
-+} __packed;
-+
-+struct cfg_read_pkg {
-+	struct tb_cfg_header header;
-+	struct tb_cfg_address addr;
-+} __packed;
-+
-+struct cfg_write_pkg {
-+	struct tb_cfg_header header;
-+	struct tb_cfg_address addr;
-+	u32 data[64]; /* tb_cfg_address.length has 6 bits */
-+} __packed;
-+
-+/* helper methods */
-+
-+static u64 get_route(struct tb_cfg_header header)
++static void tb_dump_switch(struct tb *tb, struct tb_regs_switch_header *sw)
 +{
-+	return (u64) header.route_hi << 32 | header.route_lo;
++	tb_info(tb,
++		" Switch: %x:%x (Revision: %d, TB Version: %d)\n",
++		sw->vendor_id,
++		sw->device_id,
++		sw->revision,
++		sw->thunderbolt_version);
++	tb_info(tb, "  Max Port Number: %d\n", sw->max_port_number);
++	tb_info(tb, "  Config:\n");
++	tb_info(tb,
++		"   Upstream Port Number: %d Depth: %d Route String: %#llx Enabled: %d, PlugEventsDelay: %dms\n",
++		sw->upstream_port_number,
++		sw->depth,
++		(((u64) sw->route_hi) << 32) | sw->route_lo,
++		sw->enabled,
++		sw->plug_events_delay);
++	tb_info(tb,
++		"   unknown1: %#x unknown4: %#x\n",
++		sw->__unknown1,
++		sw->__unknown4);
 +}
 +
-+static struct tb_cfg_header make_header(u64 route)
++static char *tb_port_type(struct tb_regs_port_header *port)
 +{
-+	struct tb_cfg_header header = {
-+		.route_hi = route >> 32,
-+		.route_lo = route,
-+	};
-+	/* check for overflow */
-+	WARN_ON(get_route(header) != route);
-+	return header;
-+}
-+
-+static int decode_error(struct ring_packet *response)
-+{
-+	struct cfg_error_pkg *pkg = response->buffer;
-+	u32 raw;
-+	WARN_ON(response->eof != TB_CFG_PKG_ERROR);
-+	if (WARN_ON(response->size != sizeof(*pkg)))
-+		return -EIO;
-+	raw = *(u32 *) (response->buffer + 8);
-+	WARN_ON(pkg->zero1);
-+	WARN_ON(pkg->zero2);
-+	WARN_ON(pkg->zero3);
-+	WARN_ON(pkg->header.unknown != 1 << 13);
-+	switch (pkg->error) {
-+	case TB_CFG_ERROR_PORT_NOT_CONNECTED:
-+		/* Port is not connected. This can happen during surprise
-+		 * removal. Do not warn. */
-+		return -ENODEV;
-+	case TB_CFG_ERROR_INVALID_CONFIG_SPACE:
-+		/*
-+		 * Invalid cfg_space/offset/length combination in
-+		 * cfg_read/cfg_write.
-+		 */
-+		WARN(1,
-+		     "CFG_ERROR(raw: %#x route: %#llx port: %d): Invalid config space of offset\n",
-+		     raw,
-+		     get_route(pkg->header),
-+		     pkg->port);
-+		return -ENXIO;
-+	case TB_CFG_ERROR_NO_SUCH_PORT:
-+		/*
-+		 * - The route contains a non-existent port.
-+		 * - The route contains a non-PHY port (e.g. PCIe).
-+		 * - The port in cfg_read/cfg_write does not exist.
-+		 */
-+		WARN(1,
-+		     "CFG_ERROR(raw: %#x route: %#llx port: %d): Invalid port\n",
-+		     raw,
-+		     get_route(pkg->header),
-+		     pkg->port);
-+		return -ENXIO;
-+	case TB_CFG_ERROR_LOOP:
-+		WARN(1,
-+		     "CFG_ERROR(raw: %#x route: %#llx port: %d): Route contains a loop\n",
-+		     raw,
-+		     get_route(pkg->header),
-+		     pkg->port);
-+		return -EIO;
++	switch (port->type >> 16) {
++	case 0:
++		switch ((u8) port->type) {
++		case 0:
++			return "Inactive";
++		case 1:
++			return "Port";
++		case 2:
++			return "NHI";
++		default:
++			return "unknown";
++		}
++	case 0x2:
++		return "Ethernet";
++	case 0x8:
++		return "SATA";
++	case 0xe:
++		return "DP/HDMI";
++	case 0x10:
++		return "PCIe";
++	case 0x20:
++		return "USB";
 +	default:
-+		/* 5,6,7,9 and 11 are also valid error codes */
-+		WARN(1,
-+		     "CFG_ERROR(raw: %#x route: %#llx port: %d): Unknown error\n",
-+		     raw,
-+		     get_route(pkg->header),
-+		     pkg->port);
-+		return -EIO;
++		return "unknown";
 +	}
 +}
 +
-+static int check_header(struct ring_packet *pkg, size_t expected_len,
-+			u64 expected_route, enum tb_cfg_pkg_type expected_type)
++static void tb_dump_port(struct tb *tb, struct tb_regs_port_header *port)
 +{
-+	struct tb_cfg_header *header = pkg->buffer;
-+	if (pkg->eof == TB_CFG_PKG_ERROR)
-+		return decode_error(pkg);
-+	if (WARN_ON(pkg->size != expected_len))
-+		return -EIO;
-+	if (WARN_ON(header->unknown != 1 << 13))
-+		return -EIO;
-+	if (WARN_ON(get_route(*header) != expected_route))
-+		return -EIO;
-+	if (WARN_ON(pkg->eof != expected_type))
-+		return -EIO;
-+	if (WARN_ON(pkg->sof != 0))
-+		return -EIO;
-+	return 0;
++	tb_info(tb,
++		" Port %d: %x:%x (Revision: %d, TB Version: %d, Type: %s (%#x))\n",
++		port->port_number,
++		port->vendor_id,
++		port->device_id,
++		port->revision,
++		port->thunderbolt_version,
++		tb_port_type(port),
++		port->type);
++	tb_info(tb,
++		"  Max hop id (in/out): %d/%d, NFC Credits: %#x\n",
++		port->max_in_hop_id,
++		port->max_out_hop_id,
++		port->nfc_credits);
 +}
 +
-+static bool check_config_address(const struct tb_cfg_address *addr,
-+				 enum tb_cfg_space space, uint32_t offset,
-+				 uint32_t length)
++static int tb_route_length(u64 route)
 +{
-+	if (WARN_ON(addr->zero))
-+		return -EIO;
-+	if (WARN_ON(addr->space != space))
-+		return -EIO;
-+	if (WARN_ON(addr->offset != offset))
-+		return -EIO;
-+	if (WARN_ON(addr->length != length))
-+		return -EIO;
-+	/*
-+	 * We cannot check addr->port as it is set to the upstream port of the
-+	 * sender.
-+	 */
-+	return 0;
++	return (fls64(route) + TB_ROUTE_SHIFT - 1) / TB_ROUTE_SHIFT;
 +}
 +
-+static void cpu_to_be32_array(__be32 *dst, u32 *src, size_t len)
-+{
-+	int i;
-+	for (i = 0; i < len; i++)
-+		dst[i] = cpu_to_be32(src[i]);
-+}
-+
-+static void be32_to_cpu_array(u32 *dst, __be32 *src, size_t len)
-+{
-+	int i;
-+	for (i = 0; i < len; i++)
-+		dst[i] = be32_to_cpu(src[i]);
-+}
-+
-+static __be32 tb_crc(void *data, size_t len)
-+{
-+	return cpu_to_be32(~__crc32c_le(~0, data, len));
-+}
-+
-+/* RX/TX handling */
++/* switch/port allocation & initialization */
 +
 +/**
-+ * tb_ctl_handle_plug_event() - acknowledge a plug event and invoke cfg->callback
-+ */
-+static void tb_ctl_handle_plug_event(struct tb_cfg *cfg,
-+				     struct ring_packet *resp)
-+{
-+	struct cfg_plug_pkg *pkg = resp->buffer;
-+	u64 route = get_route(pkg->header);
-+	if (check_header(resp, sizeof(*pkg), route, TB_CFG_PKG_EVENT))
-+		return;
-+	if (tb_cfg_error(cfg, route, pkg->port))
-+		tb_cfg_warn(cfg,
-+			    "could not reset plug event on %llx:%x\n",
-+			    route,
-+			    pkg->port);
-+	WARN_ON(pkg->zero);
-+	cfg->callback(cfg->callback_data, route, pkg->port, pkg->unplug);
-+}
-+
-+static void tb_ctl_free_packet(struct tb_cfg *cfg, struct ring_packet *pkg)
-+{
-+	dma_pool_free(cfg->packet_pool, pkg->buffer, pkg->buffer_phy);
-+	kfree(pkg);
-+}
-+
-+/**
-+ * tb_ctl_alloc_packets() - allocate multiple packets safely
++ * tb_init_port() - initialize a port
++ *
++ * This is a helper method for tb_switch_alloc. Does not check or initialize
++ * any downstream switches.
 + *
 + * Return: Returns 0 on success or an error code on failure.
 + */
-+static int tb_ctl_alloc_packets(struct tb_cfg *cfg,
-+				struct ring_packet **packets, int num)
++static int tb_init_port(struct tb_switch *sw, u8 port_nr)
++{
++	int res;
++	struct tb_port *port = &sw->ports[port_nr];
++	port->sw = sw;
++	port->port = port_nr;
++	res = tb_port_read(port, &port->config, TB_CFG_PORT, 0, 8);
++	if (res)
++		return res;
++
++	tb_dump_port(sw->tb, &port->config);
++
++	/* TODO: Read dual link port, DP port and more from EEPROM. */
++	return 0;
++
++}
++
++/**
++ * tb_switch_free() - free a tb_switch and all downstream switches
++ */
++static void tb_switch_free(struct tb_switch *sw)
++{
++	kfree(sw->ports);
++	kfree(sw);
++}
++
++/**
++ * tb_switch_alloc() - allocate and initialize a switch
++ *
++ * Return: Returns a NULL on failure.
++ */
++static struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route)
 +{
 +	int i;
-+	for (i = 0; i < num; i++) {
-+		packets[i] = kzalloc(sizeof(*packets[i]), GFP_KERNEL);
-+		if (!packets[i])
++	struct tb_switch *sw;
++	int upstream_port = tb_cfg_get_upstream_port(tb->cfg, route);
++	if (upstream_port < 0)
++		return NULL;
++
++	sw = kzalloc(sizeof(*sw), GFP_KERNEL);
++	if (!sw)
++		return NULL;
++
++	sw->tb = tb;
++	if (tb_cfg_read(tb->cfg, &sw->config, route, 0, 2, 0, 5))
++		goto err;
++	tb_info(tb,
++		"initializing Switch at %#llx (depth: %d, up port: %d)\n",
++		route,
++		tb_route_length(route),
++		upstream_port);
++	tb_info(tb, "old switch config:\n");
++	tb_dump_switch(tb, &sw->config);
++
++	/* configure switch */
++	sw->config.upstream_port_number = upstream_port;
++	sw->config.depth = tb_route_length(route);
++	sw->config.route_lo = route;
++	sw->config.route_hi = route >> 32;
++	sw->config.enabled = 1;
++	/* from here on we may use the tb_sw_* functions & macros */
++
++	if (sw->config.vendor_id != 0x8086) {
++		tb_sw_WARN(sw,
++			   "unsupported switch vendor id %#x, aborting\n",
++			   sw->config.vendor_id);
++		goto err;
++	}
++	if (sw->config.device_id != 0x1547 && sw->config.device_id != 0x1549) {
++
++		tb_sw_WARN(sw,
++			   "unsupported switch device id %#x, aborting\n",
++			   sw->config.device_id);
++		goto err;
++	}
++
++	/* upload configuration */
++	if (tb_sw_write(sw, 1 + (u32 *) &sw->config, TB_CFG_SWITCH, 1, 3))
++		goto err;
++
++	/* initialize ports */
++	sw->ports = kcalloc(sw->config.max_port_number + 1, sizeof(*sw->ports),
++	GFP_KERNEL);
++	if (!sw->ports)
++		goto err;
++
++	for (i = 0; i <= sw->config.max_port_number; i++) {
++		if (tb_init_port(sw, i))
 +			goto err;
-+		packets[i]->buffer = dma_pool_alloc(cfg->packet_pool,
-+		GFP_KERNEL,
-+						    &packets[i]->buffer_phy);
-+		if (!packets[i]->buffer)
-+			goto err;
++		/* TODO: check if port is disabled (EEPROM) */
 +	}
-+	return 0;
++
++	/* TODO: I2C, IECS, EEPROM, link controller */
++
++	return sw;
 +err:
-+	if (!packets[i])
-+		i--;
-+	while (--i > 0) {
-+		if (packets[i]->buffer)
-+			dma_pool_free(cfg->packet_pool,
-+				      packets[i]->buffer,
-+				      packets[i]->buffer_phy);
-+
-+		kfree(packets[i]);
-+	}
-+	return -ENOMEM;
-+}
-+
-+/**
-+ * tb_cfg_tx() - transmit a packet on the config channel
-+ *
-+ * len must be a multiple of four.
-+ *
-+ * Return: Returns 0 on success or an error code on failure.
-+ */
-+static int tb_cfg_tx(struct tb_cfg *cfg, void *data, size_t len,
-+		     enum tb_cfg_pkg_type type)
-+{
-+	struct ring_packet *pkg;
-+	if (len % 4 != 0) { /* required for le->be conversion */
-+		tb_cfg_WARN(cfg, "TX: invalid size: %zu\n", len);
-+		return -EINVAL;
-+	}
-+	if (len > TB_FRAME_SIZE - 4) { /* checksum is 4 bytes */
-+		tb_cfg_WARN(cfg,
-+			    "TX: packet too large: %zu/%d\n",
-+			    len,
-+			    TB_FRAME_SIZE - 4);
-+		return -EINVAL;
-+	}
-+	if (tb_ctl_alloc_packets(cfg, &pkg, 1))
-+		return -ENOMEM;
-+	cpu_to_be32_array(pkg->buffer, data, len / 4);
-+	*(u32 *) (pkg->buffer + len) = tb_crc(pkg->buffer, len);
-+	pkg->size = len + 4;
-+	pkg->sof = type;
-+	pkg->eof = type;
-+	ring_tx(cfg->tx, pkg);
-+	return 0;
-+}
-+
-+static void tb_cfg_tx_callback(struct tb_ring *ring, void *priv)
-+{
-+	struct tb_cfg *cfg = priv;
-+	struct ring_packet *pkg;
-+	while ((pkg = ring_poll(ring)))
-+		tb_ctl_free_packet(cfg, pkg);
-+}
-+
-+/**
-+ * tb_cfg_rx() - receive a packet from the config channel
-+ *
-+ * Will timeout after a few seconds. The caller should requeue the packet as
-+ * soon as possible.
-+ *
-+ * Return: Returns a a received ring_packet or NULL.
-+ */
-+static struct ring_packet *tb_cfg_rx(struct tb_cfg *cfg)
-+{
-+	struct ring_packet *pkg;
-+	/**
-+	 * Most operations finish within a few milliseconds. But pci up/down
-+	 * ports will block during activation/deactivation. In the future we might
-+	 * have to implement variable timeouts or find a way to handle received
-+	 * packets out of order. Until then we just use a high timeout.
-+	 */
-+	if (!wait_for_completion_timeout(&cfg->response_ready,
-+					 msecs_to_jiffies(30000))) {
-+		tb_cfg_WARN(cfg, "RX: timeout\n");
-+		return NULL;
-+	}
-+
-+	if (!kfifo_get(&cfg->response_fifo, &pkg)) {
-+		tb_cfg_err(cfg,
-+			   "RX: completion was signaled, but fifo was empty\n");
-+		return NULL;
-+	}
-+	return pkg;
-+}
-+
-+static void tb_cfg_rx_callback(struct tb_ring *ring, void *priv)
-+{
-+	struct tb_cfg *cfg = priv;
-+	struct ring_packet *pkg;
-+	while ((pkg = ring_poll(ring))) {
-+		if (pkg->canceled) {
-+			tb_ctl_free_packet(cfg, pkg);
-+			continue;
-+		}
-+		if (pkg->size < 4 || pkg->size % 4 != 0) {
-+			tb_cfg_err(cfg,
-+				   "RX: invalid size %d, dropping packet\n",
-+				   pkg->size);
-+			goto rx;
-+		}
-+
-+		pkg->size -= 4; /* remove checksum */
-+		if (*(u32 *) (pkg->buffer + pkg->size)
-+		    != tb_crc(pkg->buffer, pkg->size)) {
-+			tb_cfg_err(cfg,
-+				   "RX: checksum mismatch, dropping packet\n");
-+			goto rx;
-+		}
-+		be32_to_cpu_array(pkg->buffer, pkg->buffer, pkg->size / 4);
-+
-+		if (pkg->eof == TB_CFG_PKG_EVENT) {
-+			tb_ctl_handle_plug_event(cfg, pkg);
-+			goto rx;
-+		}
-+		if (!kfifo_put(&cfg->response_fifo, pkg)) {
-+			tb_cfg_err(cfg, "RX: fifo is full\n");
-+			goto rx;
-+		}
-+		complete(&cfg->response_ready);
-+		continue;
-+rx:
-+		ring_rx(cfg->rx, pkg);
-+	}
-+}
-+
-+
-+/* public interface */
-+
-+/**
-+ * tb_cfg_alloc() - allocate a config channel
-+ *
-+ * cb will be invoked once for every hot plug event.
-+ *
-+ * Return: Returns a pointer on success or NULL on failure.
-+ */
-+struct tb_cfg *tb_cfg_alloc(struct tb_nhi *nhi, hotplug_cb cb, void *cb_data)
-+{
-+	int i;
-+	struct tb_cfg *cfg = kzalloc(sizeof(*cfg), GFP_KERNEL);
-+	struct ring_packet *rx_packets[10] = { };
-+	if (!cfg)
-+		return NULL;
-+	cfg->nhi = nhi;
-+	cfg->callback = cb;
-+	cfg->callback_data = cb_data;
-+
-+	init_completion(&cfg->response_ready);
-+	INIT_KFIFO(cfg->response_fifo);
-+	cfg->packet_pool = dma_pool_create("dls3510 cfg", &nhi->pdev->dev,
-+					   TB_FRAME_SIZE, 4, 0);
-+	if (!cfg->packet_pool)
-+		goto err;
-+
-+	/* tb_ctl_handle_plug_event uses cfg->tx. Allocate cfg->tx first. */
-+	cfg->tx = ring_alloc_tx(nhi, 0, 10, tb_cfg_tx_callback, cfg);
-+	if (!cfg->tx)
-+		goto err;
-+
-+	cfg->rx = ring_alloc_rx(nhi, 0, 10, tb_cfg_rx_callback, cfg);
-+	if (!cfg->rx)
-+		goto err;
-+
-+	/*
-+	 * After the first call to ring_rx we will start to receive plug
-+	 * notifications and call cfg->callback. After this we can no longer
-+	 * bail out cleanly. To avoid this situation we allocate all packets
-+	 * BEFORE calling ring_rx.
-+	 */
-+	if (tb_ctl_alloc_packets(cfg, rx_packets, 10))
-+		goto err;
-+	for (i = 0; i < 10; i++)
-+		ring_rx(cfg->rx, rx_packets[i]);
-+
-+	tb_cfg_info(cfg, "config channel created\n");
-+	return cfg;
-+err:
-+	tb_cfg_free(cfg);
++	kfree(sw->ports);
++	kfree(sw);
 +	return NULL;
 +}
 +
 +/**
-+ * tb_cfg_free() - shutdown and free a config channel
-+ *
-+ * All calls to cfg->callback will have finished on return.
-+ *
-+ * Must NOT be called from cfg->callback.
-+ */
-+void tb_cfg_free(struct tb_cfg *cfg)
-+{
-+	struct ring_packet *pkg;
-+	/*
-+	 * cfg->tx is used in tb_ctl_handle_plug_event. Free cfg->tx
-+	 * after cfg->rx.
-+	 */
-+	if (cfg->rx)
-+		ring_drain_and_free(cfg->rx);
-+	if (cfg->tx)
-+		ring_drain_and_free(cfg->tx);
-+	while (kfifo_get(&cfg->response_fifo, &pkg))
-+		tb_ctl_free_packet(cfg, pkg);
-+	if (cfg->packet_pool)
-+		dma_pool_destroy(cfg->packet_pool);
-+	kfree(cfg);
-+}
-+
-+/**
-+ * tb_cfg_error() - send error packet
-+ *
-+ * Currently the error code is hardcoded to TB_CFG_ERROR_ACK_PLUG_EVENT.
++ * reset_switch() - send TB_CFG_PKG_RESET and enable switch
 + *
 + * Return: Returns 0 on success or an error code on failure.
 + */
-+int tb_cfg_error(struct tb_cfg *cfg, u64 route, u32 port)
++static int tb_switch_reset(struct tb *tb, u64 route)
 +{
-+	struct cfg_error_pkg pkg = {
-+		.header = make_header(route),
-+		.port = port,
-+		.error = TB_CFG_ERROR_ACK_PLUG_EVENT,
-+	};
-+	tb_cfg_info(cfg, "resetting error on %llx:%x.\n", route, port);
-+	return tb_cfg_tx(cfg, &pkg, sizeof(pkg), TB_CFG_PKG_ERROR);
-+}
-+
-+/**
-+ * tb_cfg_reset() - send an reset packet
-+ *
-+ * Return: Returns 0 on success or an error code on failure.
-+ */
-+int tb_cfg_reset(struct tb_cfg *cfg, u64 route)
-+{
-+	struct cfg_reset_pkg pkg = { .header = make_header(route) };
-+	struct ring_packet *response;
-+	int res = tb_cfg_tx(cfg, &pkg, sizeof(pkg), TB_CFG_PKG_RESET);
-+	if (res)
-+		return res;
-+
-+	response = tb_cfg_rx(cfg);
-+	if (!response)
-+		return -EIO;
-+
-+	res = check_header(response, 8, route, TB_CFG_PKG_RESET);
-+	ring_rx(cfg->rx, response);
-+	return res;
-+}
-+
-+/**
-+ * tb_cfg_read() - read from config space into buffer
-+ *
-+ * offset and length are in dwords.
-+ *
-+ * Return: Returns 0 on success or an error code on failure.
-+ */
-+int tb_cfg_read(struct tb_cfg *cfg, void *buffer, uint64_t route, uint32_t port,
-+		enum tb_cfg_space space, uint32_t offset, uint32_t length)
-+{
-+	struct cfg_read_pkg pkg = {
-+		.header = make_header(route),
-+		.addr = {
-+			.port = port,
-+			.space = space,
-+			.offset = offset,
-+			.length = length,
-+		},
-+	};
-+	struct ring_packet *response;
-+	struct cfg_write_pkg *reply;
 +	int res;
-+
-+	res = tb_cfg_tx(cfg, &pkg, sizeof(pkg), TB_CFG_PKG_READ);
-+	if (res)
-+		return res;
-+
-+	response = tb_cfg_rx(cfg);
-+	if (!response)
-+		return -EIO;
-+
-+	res = check_header(response, 12 + 4 * length, route, TB_CFG_PKG_READ);
-+	if (res)
-+		goto out;
-+
-+	reply = response->buffer;
-+	res = check_config_address(&reply->addr, space, offset, length);
-+	if (res)
-+		goto out;
-+
-+	memcpy(buffer, &reply->data, 4 * length);
-+out:
-+	ring_rx(cfg->rx, response);
-+	return res;
-+}
-+
-+/**
-+ * tb_cfg_write() - write from buffer into config space
-+ *
-+ * offset and length are in dwords.
-+ *
-+ * Return: Returns 0 on success or an error code on failure.
-+ */
-+int tb_cfg_write(struct tb_cfg *cfg, void *buffer, uint64_t route,
-+		 uint32_t port, enum tb_cfg_space space, uint32_t offset,
-+		 uint32_t length)
-+{
-+	struct cfg_write_pkg pkg = {
-+		.header = make_header(route),
-+		.addr = {
-+			.port = port,
-+			.space = space,
-+			.offset = offset,
-+			.length = length,
-+		},
++	struct tb_regs_switch_header header = {
++		header.route_hi = route >> 32,
++		header.route_lo = route,
++		header.enabled = true,
 +	};
-+	struct ring_packet *response;
-+	struct cfg_read_pkg *reply;
-+	int res;
-+
-+	memcpy(&pkg.data, buffer, length * 4);
-+
-+	res = tb_cfg_tx(cfg, &pkg, 12 + 4 * length, TB_CFG_PKG_WRITE);
++	tb_info(tb, "resetting switch at %llx\n", route);
++	res = tb_cfg_reset(tb->cfg, route);
 +	if (res)
 +		return res;
-+
-+	response = tb_cfg_rx(cfg);
-+	if (!response)
-+		return -EIO;
-+
-+	res = check_header(response, sizeof(*reply), route, TB_CFG_PKG_WRITE);
-+	if (res)
-+		goto out;
-+
-+	reply = response->buffer;
-+	res = check_config_address(&reply->addr, space, offset, length);
-+out:
-+	ring_rx(cfg->rx, response);
-+	return res;
++	return tb_cfg_write(tb->cfg, ((u32 *) &header) + 2, route, 0, 2, 2, 2);
 +}
+ 
+ struct tb_hotplug_event {
+ 	struct work_struct work;
+@@ -59,13 +269,17 @@ static void tb_schedule_hotplug_handler(void *data, u64 route, u8 port,
+ /**
+  * thunderbolt_shutdown_and_free() - shutdown everything
+  *
+- * Free the config channel.
++ * Free all switches and the config channel.
+  */
+ void thunderbolt_shutdown_and_free(struct tb *tb)
+ {
+ 	mutex_lock(&tb->lock);
+ 	tb->shutdown = true; /* signal tb_handle_hotplug to quit */
+ 
++	if (tb->root_switch)
++		tb_switch_free(tb->root_switch);
++	tb->root_switch = NULL;
++
+ 	if (tb->cfg)
+ 		tb_cfg_free(tb->cfg);
+ 	tb->cfg = NULL;
+@@ -84,7 +298,7 @@ void thunderbolt_shutdown_and_free(struct tb *tb)
+ /**
+  * thunderbolt_alloc_and_start() - setup the thunderbolt bus
+  *
+- * Allocates a tb_cfg control channel.
++ * Allocates a tb_cfg control channel and initializes the root switch.
+  *
+  * Return: Returns NULL on error.
+  */
+@@ -92,6 +306,10 @@ struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi)
+ {
+ 	struct tb *tb;
+ 
++	BUILD_BUG_ON(sizeof(struct tb_regs_switch_header) != 5 * 4);
++	BUILD_BUG_ON(sizeof(struct tb_regs_port_header) != 8 * 4);
++	BUILD_BUG_ON(sizeof(struct tb_regs_hop) != 2 * 4);
++
+ 	tb = kzalloc(sizeof(*tb), GFP_KERNEL);
+ 	if (!tb)
+ 		return NULL;
+@@ -112,6 +330,13 @@ struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi)
+ 	if (!tb->cfg)
+ 		goto err_locked;
+ 
++	if (tb_switch_reset(tb, 0))
++		goto err_locked;
++
++	tb->root_switch = tb_switch_alloc(tb, 0);
++	if (!tb->root_switch)
++		goto err_locked;
++
+ 	mutex_unlock(&tb->lock);
+ 	return tb;
+ 
+diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
+index a3378dc..4000f2b 100644
+--- a/drivers/thunderbolt/tb.h
++++ b/drivers/thunderbolt/tb.h
+@@ -9,8 +9,32 @@
+ 
+ #include <linux/pci.h>
+ 
++#include "tb_regs.h"
+ #include "tb_cfg.h"
+ 
++#define TB_PORT_MASK 0x3f
++#define TB_ROUTE_SHIFT 8
 +
 +/**
-+ * tb_cfg_get_upstream_port() - get upstream port number of switch at route
-+ *
-+ * Reads the first dword from the switches TB_CFG_SWITCH config area and
-+ * returns the port number from which the reply originated.
-+ *
-+ * This information is in principle present in every read/write response. We
-+ * expose it only here in order to keep the normal API streamlined.
-+ *
-+ * Return: Returns the upstream port number on success or an error code on
-+ * failure.
++ * struct tb_switch - a thunderbolt switch
 + */
-+int tb_cfg_get_upstream_port(struct tb_cfg *cfg, u64 route)
-+{
-+	struct cfg_read_pkg pkg = {
-+		.header = make_header(route),
-+		.addr = {
-+			.port = 0,
-+			.space = TB_CFG_SWITCH,
-+			.offset = 0,
-+			.length = 1,
-+		},
-+	};
-+	struct ring_packet *response;
-+	struct cfg_write_pkg *reply;
-+	int res;
-+
-+	res = tb_cfg_tx(cfg, &pkg, sizeof(pkg), TB_CFG_PKG_READ);
-+	if (res)
-+		return res;
-+
-+	response = tb_cfg_rx(cfg);
-+	if (!response)
-+		return -EIO;
-+
-+	res = check_header(response, 12 + 4, route, TB_CFG_PKG_READ);
-+	if (res)
-+		goto out;
-+
-+	reply = response->buffer;
-+	res = check_config_address(&reply->addr, TB_CFG_SWITCH, 0, 1);
-+	if (res)
-+		goto out;
-+	res = reply->addr.port;
-+out:
-+	ring_rx(cfg->rx, response);
-+	return res;
-+}
-diff --git a/drivers/thunderbolt/tb_cfg.h b/drivers/thunderbolt/tb_cfg.h
-new file mode 100644
-index 0000000..fa3a950
---- /dev/null
-+++ b/drivers/thunderbolt/tb_cfg.h
-@@ -0,0 +1,67 @@
-+/*
-+ * Thunderbolt configuration channel
-+ *
-+ * Copyright (c) 2013 Andreas Noever <andreas.noever@gmail.com>
-+ */
-+
-+#ifndef _TB_CFG
-+#define _TB_CFG
-+
-+#include <linux/types.h>
-+#include <linux/kfifo.h>
-+#include <linux/dmapool.h>
-+
-+#include "dsl3510.h"
-+
-+typedef void (*hotplug_cb)(void *data, u64 route, u8 port, bool unplug);
-+
-+/**
-+ * struct tb_cfg - thunderbolt configuration channel
-+ */
-+struct tb_cfg {
-+	struct tb_nhi *nhi;
-+	struct tb_ring *tx;
-+	struct tb_ring *rx;
-+
-+	struct dma_pool *packet_pool;
-+
-+	DECLARE_KFIFO(response_fifo, struct ring_packet*, 16);
-+
-+	struct completion response_ready;
-+
-+	hotplug_cb callback;
-+	void *callback_data;
++struct tb_switch {
++	struct tb_regs_switch_header config;
++	struct tb_port *ports;
++	struct tb *tb;
++	bool invalid; /* unplugged, will go away */
 +};
 +
-+#define tb_cfg_WARN(cfg, format, arg...) \
-+	dev_WARN(&(cfg)->nhi->pdev->dev, format, ## arg)
-+
-+#define tb_cfg_err(cfg, format, arg...) \
-+	dev_err(&(cfg)->nhi->pdev->dev, format, ## arg)
-+
-+#define tb_cfg_warn(cfg, format, arg...) \
-+	dev_warn(&(cfg)->nhi->pdev->dev, format, ## arg)
-+
-+#define tb_cfg_info(cfg, format, arg...) \
-+	dev_info(&(cfg)->nhi->pdev->dev, format, ## arg)
-+
-+struct tb_cfg *tb_cfg_alloc(struct tb_nhi *nhi, hotplug_cb cb, void *cb_data);
-+void tb_cfg_free(struct tb_cfg *cfg);
-+
-+enum tb_cfg_space {
-+	TB_CFG_HOPS = 0,
-+	TB_CFG_PORT = 1,
-+	TB_CFG_SWITCH = 2,
-+	TB_CFG_COUNTERS = 3,
++/**
++ * struct tb_port - a thunderbolt port, part of a tb_switch
++ */
++struct tb_port {
++	struct tb_regs_port_header config;
++	struct tb_switch *sw;
++	u8 port; /* port number on switch */
++	bool invalid; /* unplugged, will go away */
 +};
 +
-+int tb_cfg_error(struct tb_cfg *cfg, u64 route, u32 port);
-+int tb_cfg_reset(struct tb_cfg *cfg, u64 route);
-+int tb_cfg_read(struct tb_cfg *cfg, void *buffer, uint64_t route, uint32_t port,
-+		enum tb_cfg_space space, uint32_t offset, uint32_t length);
-+int tb_cfg_write(struct tb_cfg *cfg, void *buffer, uint64_t route,
-+		 uint32_t port, enum tb_cfg_space space, uint32_t offset,
-+		 uint32_t length);
-+int tb_cfg_get_upstream_port(struct tb_cfg *cfg, u64 route);
+ /**
+  * struct tb - main thunderbolt bus structure
+  */
+@@ -22,12 +46,101 @@ struct tb {
+ 	struct tb_nhi *nhi;
+ 	struct tb_cfg *cfg;
+ 	struct workqueue_struct *wq; /* ordered workqueue for plug events */
++	struct tb_switch *root_switch;
+ 	bool shutdown;	/*
+ 			 * Once this is set tb_handle_hotplug will exit (once it
+ 			 * can aquire lock at least once). Used to drain wq.
+ 			 */
+ };
+ 
++static inline u64 tb_route(struct tb_switch *sw)
++{
++	return ((u64) sw->config.route_hi) << 32 | sw->config.route_lo;
++}
 +
-+#endif
++/* helper functions & macros */
++
++static inline int tb_sw_read(struct tb_switch *sw, void *buffer,
++			     enum tb_cfg_space space, uint32_t offset,
++			     uint32_t length)
++{
++	return tb_cfg_read(sw->tb->cfg,
++			   buffer,
++			   tb_route(sw),
++			   0,
++			   space,
++			   offset,
++			   length);
++}
++
++static inline int tb_sw_write(struct tb_switch *sw, void *buffer,
++			      enum tb_cfg_space space, uint32_t offset,
++			      uint32_t length)
++{
++	return tb_cfg_write(sw->tb->cfg,
++			    buffer,
++			    tb_route(sw),
++			    0,
++			    space,
++			    offset,
++			    length);
++}
++
++static inline int tb_port_read(struct tb_port *port, void *buffer,
++			       enum tb_cfg_space space, uint32_t offset,
++			       uint32_t length)
++{
++	return tb_cfg_read(port->sw->tb->cfg,
++			   buffer,
++			   tb_route(port->sw),
++			   port->port,
++			   space,
++			   offset,
++			   length);
++}
++
++static inline int tb_port_write(struct tb_port *port, void *buffer,
++				enum tb_cfg_space space, uint32_t offset,
++				uint32_t length)
++{
++	return tb_cfg_write(port->sw->tb->cfg,
++			    buffer,
++			    tb_route(port->sw),
++			    port->port,
++			    space,
++			    offset,
++			    length);
++}
++
++#define tb_WARN(tb, fmt, arg...) dev_WARN(&(tb)->nhi->pdev->dev, fmt, ## arg)
++#define tb_warn(tb, fmt, arg...) dev_warn(&(tb)->nhi->pdev->dev, fmt, ## arg)
++#define tb_info(tb, fmt, arg...) dev_info(&(tb)->nhi->pdev->dev, fmt, ## arg)
++
++
++#define __TB_SW_PRINT(level, sw, fmt, arg...)           \
++	do {                                            \
++		struct tb_switch *__sw = (sw);          \
++		level(__sw->tb, "%llx: " fmt,           \
++		      tb_route(__sw), ## arg);          \
++	} while (0)
++#define tb_sw_WARN(sw, fmt, arg...) __TB_SW_PRINT(tb_WARN, sw, fmt, ##arg)
++#define tb_sw_warn(sw, fmt, arg...) __TB_SW_PRINT(tb_warn, sw, fmt, ##arg)
++#define tb_sw_info(sw, fmt, arg...) __TB_SW_PRINT(tb_info, sw, fmt, ##arg)
++
++
++#define __TB_PORT_PRINT(level, _port, fmt, arg...)                      \
++	do {                                                            \
++		struct tb_port *__port = (_port);                       \
++		level(__port->sw->tb, "%llx:%x: " fmt,                  \
++		      tb_route(__port->sw), __port->port, ## arg);      \
++	} while (0)
++#define tb_port_WARN(port, fmt, arg...) \
++	__TB_PORT_PRINT(tb_WARN, port, fmt, ##arg)
++#define tb_port_warn(port, fmt, arg...) \
++	__TB_PORT_PRINT(tb_warn, port, fmt, ##arg)
++#define tb_port_info(port, fmt, arg...) \
++	__TB_PORT_PRINT(tb_info, port, fmt, ##arg)
++
+ struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi);
+ void thunderbolt_shutdown_and_free(struct tb *tb);
+ 
 -- 
 1.8.4.2
 
