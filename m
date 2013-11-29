@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab3K2Ble (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 20:41:34 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:44929 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168Ab3K2BjX (ORCPT
+	id S1754568Ab3K2Blv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 20:41:51 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:63744 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117Ab3K2BjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 20:39:23 -0500
+	Thu, 28 Nov 2013 20:39:21 -0500
 From: Andreas Noever <andreas.noever@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH 04/12] thunderbolt: Add tb_regs.h
-Date: Fri, 29 Nov 2013 02:35:41 +0100
-Message-Id: <1385688949-7101-5-git-send-email-andreas.noever@gmail.com>
+Subject: [PATCH 03/12] thunderbolt: Setup configuration channel
+Date: Fri, 29 Nov 2013 02:35:40 +0100
+Message-Id: <1385688949-7101-4-git-send-email-andreas.noever@gmail.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1385688949-7101-1-git-send-email-andreas.noever@gmail.com>
 References: <1385688949-7101-1-git-send-email-andreas.noever@gmail.com>
@@ -20,210 +20,249 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Every thunderbolt device consists (logically) of a switch with multiple
-ports. Every port contains multiple config regions (HOPS, PORT, SWITCH,
-COUNTERS) which are used to configure the device.
+Add struct tb which will contain our view of the thunderbolt bus. For
+now it just contains a pointer to the configuration channel and a
+workqueue for hotplug events.
 
-The tb_regs.h file contains all known registers and capabilities from these
-config regions.
+Add thunderbolt_alloc_and_start() and thunderbolt_shutdown_and_free()
+which are responsible for setup and teardown of struct tb.
 
 Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
 ---
- drivers/thunderbolt/tb_regs.h | 187 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 187 insertions(+)
- create mode 100644 drivers/thunderbolt/tb_regs.h
+ drivers/thunderbolt/Makefile  |   2 +-
+ drivers/thunderbolt/dsl3510.c |  18 +++++-
+ drivers/thunderbolt/tb.c      | 124 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/thunderbolt/tb.h      |  34 ++++++++++++
+ 4 files changed, 175 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/thunderbolt/tb.c
+ create mode 100644 drivers/thunderbolt/tb.h
 
-diff --git a/drivers/thunderbolt/tb_regs.h b/drivers/thunderbolt/tb_regs.h
+diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
+index f486295..7c5b811 100644
+--- a/drivers/thunderbolt/Makefile
++++ b/drivers/thunderbolt/Makefile
+@@ -1,3 +1,3 @@
+ obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
+-thunderbolt-objs := dsl3510.o tb_cfg.o
++thunderbolt-objs := dsl3510.o tb_cfg.o tb.o
+ 
+diff --git a/drivers/thunderbolt/dsl3510.c b/drivers/thunderbolt/dsl3510.c
+index 2a326f6..434812b 100644
+--- a/drivers/thunderbolt/dsl3510.c
++++ b/drivers/thunderbolt/dsl3510.c
+@@ -12,6 +12,7 @@
+ 
+ #include "dsl3510.h"
+ #include "dsl3510_regs.h"
++#include "tb.h"
+ 
+ #define RING_TYPE(ring) ((ring)->is_tx ? "TX ring" : "RX ring")
+ 
+@@ -481,6 +482,7 @@ static void dsl3510_shutdown(struct tb_nhi *nhi)
+ static int dsl3510_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ {
+ 	struct tb_nhi *nhi;
++	struct tb *tb;
+ 	int res;
+ 
+ 	res = pcim_enable_device(pdev);
+@@ -543,14 +545,26 @@ static int dsl3510_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	/* magic value - clock related? */
+ 	iowrite32(3906250 / 10000, nhi->iobase + 0x38c00);
+ 
+-	pci_set_drvdata(pdev, nhi); /* for dsl3510_remove only */
++	dev_info(&nhi->pdev->dev, "NHI initialized, starting thunderbolt\n");
++	tb = thunderbolt_alloc_and_start(nhi);
++	if (!tb) {
++		/*
++		 * At this point the RX/TX rings might already have been
++		 * activated. Do a proper shutdown.
++		 */
++		dsl3510_shutdown(nhi);
++		return -EIO;
++	}
++	pci_set_drvdata(pdev, tb); /* for dsl3510_remove only */
+ 
+ 	return 0;
+ }
+ 
+ static void dsl3510_remove(struct pci_dev *pdev)
+ {
+-	struct tb_nhi *nhi = pci_get_drvdata(pdev);
++	struct tb *tb = pci_get_drvdata(pdev);
++	struct tb_nhi *nhi = tb->nhi;
++	thunderbolt_shutdown_and_free(tb);
+ 	dsl3510_shutdown(nhi);
+ }
+ 
+diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
 new file mode 100644
-index 0000000..bd3ad67
+index 0000000..64deb7b
 --- /dev/null
-+++ b/drivers/thunderbolt/tb_regs.h
-@@ -0,0 +1,187 @@
++++ b/drivers/thunderbolt/tb.c
+@@ -0,0 +1,124 @@
 +/*
-+ * Thunderbolt Port/Switch config area registers
++ * Device independent Thunderbolt bus logic
 + *
 + * Copyright (c) 2013 Andreas Noever <andreas.noever@gmail.com>
 + */
 +
-+#ifndef _TB_REGS
-+#define _TB_REGS
++#include <linux/slab.h>
++#include <linux/errno.h>
++#include <linux/delay.h>
 +
-+#include <linux/types.h>
++#include "tb.h"
 +
-+/*
-+ * TODO: should be 63? But we do not know how to receive frames larger than 256
-+ * bytes. (header + checksum = 16, 60*4 = 240)
++struct tb_hotplug_event {
++	struct work_struct work;
++	struct tb *tb;
++	u64 route;
++	u8 port;
++	bool unplug;
++};
++
++/**
++ * tb_handle_hotplug() - handle hotplug event
++ *
++ * Executes on the tb->wq.
 + */
-+#define TB_MAX_CONFIG_RW_LENGTH 60
++static void tb_handle_hotplug(struct work_struct *work)
++{
++	struct tb_hotplug_event *ev = container_of(work, typeof(*ev), work);
++	struct tb *tb = ev->tb;
++	mutex_lock(&tb->lock);
++	if (tb->shutdown)
++		goto out;
++	/* do nothing for now */
++out:
++	mutex_unlock(&tb->lock);
++	kfree(ev);
++}
 +
-+enum tb_cap {
-+	TB_CAP_PHY		= 0x0001,
-+	TB_CAP_TIME1		= 0x0003,
-+	TB_CAP_PCIE		= 0x0004,
-+	TB_CAP_I2C		= 0x0005,
-+	TB_CAP_PLUG_EVENTS	= 0x0105, /* also EEPROM */
-+	TB_CAP_TIME2		= 0x0305,
-+	TB_CAL_IECS		= 0x0405,
-+	TB_CAP_LINK_CONTROLLER	= 0x0605, /* also IECS */
++/**
++ * tb_schedule_hotplug_handler() - callback function for the config channel
++ *
++ * Delegates to tb_handle_hotplug.
++ */
++static void tb_schedule_hotplug_handler(void *data, u64 route, u8 port,
++					bool unplug)
++{
++	struct tb *tb = data;
++	struct tb_hotplug_event *ev = kmalloc(sizeof(*ev), GFP_KERNEL);
++	if (!ev)
++		return;
++	INIT_WORK(&ev->work, tb_handle_hotplug);
++	ev->tb = tb;
++	ev->route = route;
++	ev->port = port;
++	ev->unplug = unplug;
++	queue_work(tb->wq, &ev->work);
++}
++
++/**
++ * thunderbolt_shutdown_and_free() - shutdown everything
++ *
++ * Free the config channel.
++ */
++void thunderbolt_shutdown_and_free(struct tb *tb)
++{
++	mutex_lock(&tb->lock);
++	tb->shutdown = true; /* signal tb_handle_hotplug to quit */
++
++	if (tb->cfg)
++		tb_cfg_free(tb->cfg);
++	tb->cfg = NULL;
++
++	/* allow tb_handle_hotplug to acquire the lock */
++	mutex_unlock(&tb->lock);
++	if (tb->wq) {
++		flush_workqueue(tb->wq);
++		destroy_workqueue(tb->wq);
++		tb->wq = NULL;
++	}
++	mutex_destroy(&tb->lock);
++	kfree(tb);
++}
++
++/**
++ * thunderbolt_alloc_and_start() - setup the thunderbolt bus
++ *
++ * Allocates a tb_cfg control channel.
++ *
++ * Return: Returns NULL on error.
++ */
++struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi)
++{
++	struct tb *tb;
++
++	tb = kzalloc(sizeof(*tb), GFP_KERNEL);
++	if (!tb)
++		return NULL;
++
++	tb->nhi = nhi;
++	mutex_init(&tb->lock);
++	mutex_lock(&tb->lock);
++
++	tb->wq = alloc_ordered_workqueue("thunderbolt", 0);
++	if (!tb->wq)
++		goto err_locked;
++
++	/*
++	 * tb_schedule_hotplug_handler may be called as soon as the config
++	 * channel is allocated. Thats why we have to hold the lock here.
++	 */
++	tb->cfg = tb_cfg_alloc(tb->nhi, tb_schedule_hotplug_handler, tb);
++	if (!tb->cfg)
++		goto err_locked;
++
++	mutex_unlock(&tb->lock);
++	return tb;
++
++err_locked:
++	/* In case tb_handle_hotplug is already executing. */
++	tb->shutdown = true;
++	mutex_unlock(&tb->lock);
++	thunderbolt_shutdown_and_free(tb);
++	return NULL;
++}
+diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
+new file mode 100644
+index 0000000..a3378dc
+--- /dev/null
++++ b/drivers/thunderbolt/tb.h
+@@ -0,0 +1,34 @@
++/*
++ * Device independent Thunderbolt bus logic
++ *
++ * Copyright (c) 2013 Andreas Noever <andreas.noever@gmail.com>
++ */
++
++#ifndef TB_H_
++#define TB_H_
++
++#include <linux/pci.h>
++
++#include "tb_cfg.h"
++
++/**
++ * struct tb - main thunderbolt bus structure
++ */
++struct tb {
++	struct mutex lock;	/*
++				 * Big lock. Must be held when accessing cfg or
++				 * any struct tb_switch / struct tb_port.
++				 */
++	struct tb_nhi *nhi;
++	struct tb_cfg *cfg;
++	struct workqueue_struct *wq; /* ordered workqueue for plug events */
++	bool shutdown;	/*
++			 * Once this is set tb_handle_hotplug will exit (once it
++			 * can aquire lock at least once). Used to drain wq.
++			 */
 +};
 +
-+enum tb_port_state {
-+	TB_PORT_DISABLED	= 0, /* tb_cap_phy.disable == 1 */
-+	TB_PORT_CONNECTING	= 1, /* retry */
-+	TB_PORT_UP		= 2,
-+	TB_PORT_UNPLUGGED	= 7,
-+};
-+
-+/* capability headers */
-+
-+struct tb_cap_basic {
-+	u8 next;
-+	/* enum tb_cap cap:8; prevent "narrower than values of its type" */
-+	u8 cap; /* if cap == 0x05 then we have a extended capability */
-+} __packed;
-+
-+struct tb_cap_extended_short {
-+	u8 next; /* if next and length are zero then we have a long cap */
-+	enum tb_cap cap:16;
-+	u8 length;
-+} __packed;
-+
-+struct tb_cap_extended_long {
-+	u8 zero1;
-+	enum tb_cap cap:16;
-+	u8 zero2;
-+	u16 next;
-+	u16 length;
-+} __packed;
-+
-+/* capabilities */
-+
-+struct tb_cap_link_controller {
-+	struct tb_cap_extended_long cap_header;
-+	u32 count:4; /* number of link controllers */
-+	u32 unknown1:4;
-+	u32 base_offset:8; /*
-+			    * offset (into this capability) of the configuration
-+			    * area of the first link controller
-+			    */
-+	u32 length:12; /* link controller configuration area length */
-+	u32 unknown2:4; /* TODO check that length is correct */
-+} __packed;
-+
-+struct tb_cap_phy {
-+	struct tb_cap_basic cap_header;
-+	u32 unknown1:16;
-+	u32 unknown2:14;
-+	bool disable:1;
-+	u32 unknown3:11;
-+	enum tb_port_state state:4;
-+	u32 unknown4:2;
-+} __packed;
-+
-+struct tb_cap_plug_events {
-+	struct tb_cap_extended_short cap_header;
-+	u32 __unknown1:2;
-+	u32 plug_events:5;
-+	u32 __unknown2:25;
-+} __packed;
-+
-+/* device headers */
-+
-+/* Present on port 0 in TB_CFG_SWITCH at address zero. */
-+struct tb_regs_switch_header {
-+	/* DWORD 0 */
-+	u16 vendor_id;
-+	u16 device_id;
-+	/* DWORD 1 */
-+	u32 first_cap_offset:8;
-+	u32 upstream_port_number:6;
-+	u32 max_port_number:6;
-+	u32 depth:3;
-+	u32 __unknown1:1;
-+	u32 revision:8;
-+	/* DWORD 2 */
-+	u32 route_lo;
-+	/* DWORD 3 */
-+	u32 route_hi:31;
-+	bool enabled:1;
-+	/* DWORD 4 */
-+	u32 plug_events_delay:8; /*
-+				  * RW, pause between plug events in
-+				  * milliseconds. Writing 0x00 is interpreted
-+				  * as 255ms.
-+				  */
-+	u32 __unknown4:16;
-+	u32 thunderbolt_version:8;
-+} __packed;
-+
-+enum tb_port_type {
-+	TB_TYPE_INACTIVE	= 0x000000,
-+	TB_TYPE_PORT		= 0x000001,
-+	TB_TYPE_NHI		= 0x000002,
-+	/* TB_TYPE_ETHERNET	= 0x020000, lower order bits are not known */
-+	/* TB_TYPE_SATA		= 0x080000, lower order bits are not known */
-+	TB_TYPE_DP_HDMI_IN	= 0x0e0101,
-+	TB_TYPE_DP_HDMI_OUT	= 0x0e0102,
-+	TB_TYPE_PCIE_DOWN	= 0x100101,
-+	TB_TYPE_PCIE_UP		= 0x100102,
-+	/* TB_TYPE_USB		= 0x200000, lower order bits are not known */
-+};
-+
-+/* Present on every port in TB_CF_PORT at address zero. */
-+struct tb_regs_port_header {
-+	/* DWORD 0 */
-+	u16 vendor_id;
-+	u16 device_id;
-+	/* DWORD 1 */
-+	u32 first_cap_offset:8;
-+	u32 __unknown1:16;
-+	u32 revision:8;
-+	/* DWORD 2 */
-+	enum tb_port_type type:24;
-+	u32 thunderbolt_version:8;
-+	/* DWORD 3 */
-+	u32 __unknown2:20;
-+	u32 port_number:6;
-+	u32 __unknown3:6;
-+	/* DWORD 4 */
-+	u32 nfc_credits;
-+	/* DWORD 5 */
-+	u32 max_in_hop_id:11;
-+	u32 max_out_hop_id:11;
-+	u32 __unkown4:10;
-+	/* DWORD 6 */
-+	u32 __unknown5;
-+	/* DWORD 7 */
-+	u32 __unknown6;
-+
-+} __packed;
-+
-+/* Hop register from TB_CFG_HOPS. 8 byte per entry. */
-+struct tb_regs_hop {
-+	/* DWORD 0 */
-+	u32 next_hop:11; /*
-+			  * hop to take after sending the packet through
-+			  * out_port (on the incoming port of the next switch)
-+			  */
-+	u32 out_port:6; /* next port of the path (on the same switch) */
-+	u32 initial_credits:8;
-+	u32 unknown1:6; /* set to zero */
-+	bool enable:1;
-+
-+	/* DWORD 1 */
-+	u32 weight:4;
-+	u32 unknown2:4; /* set to zero */
-+	u32 priority:3;
-+	bool drop_packages:1;
-+	u32 counter:11; /* index into TB_CFG_COUNTERS on this port */
-+	bool counter_enable:1;
-+	bool ingress_fc:1;
-+	bool egress_fc:1;
-+	bool ingress_shared_buffer:1;
-+	bool egress_shared_buffer:1;
-+	u32 unknown3:4; /* set to zero */
-+} __packed;
-+
++struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi);
++void thunderbolt_shutdown_and_free(struct tb *tb);
 +
 +#endif
 -- 
