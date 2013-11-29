@@ -1,45 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757484Ab3K2Ptj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 10:49:39 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:48323 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757392Ab3K2Ptc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 10:49:32 -0500
-Message-ID: <5298B789.70100@ti.com>
-Date: Fri, 29 Nov 2013 10:49:29 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1757003Ab3K2P4p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 10:56:45 -0500
+Received: from mail-qe0-f42.google.com ([209.85.128.42]:61168 "EHLO
+	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756032Ab3K2P4n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 10:56:43 -0500
+Date: Fri, 29 Nov 2013 10:56:39 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: [GIT PULL] cgroup fixes for v3.13-rc1
+Message-ID: <20131129155639.GG3717@htj.dyndns.org>
 MIME-Version: 1.0
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-CC: Linus Walleij <linus.walleij@linaro.org>, <linux-gpio@vger.kernel.org>,
-        <nsekhar@ti.com>, <prabhakar.csengg@gmail.com>,
-        <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>
-Subject: Re: [RFC v1 3/9] gpio: davinci: use chained_irq_enter/chained_irq_exit
- API
-References: <1385494815-15740-1-git-send-email-grygorii.strashko@ti.com> <1385494815-15740-4-git-send-email-grygorii.strashko@ti.com>
-In-Reply-To: <1385494815-15740-4-git-send-email-grygorii.strashko@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 26 November 2013 02:40 PM, Grygorii Strashko wrote:
-> It's unsafe to call IRQ chip callbacks (.irq_mask/irq_unmask/irq_ack)
-> from chained IRQ handler directly. Because, Davinci GPIO block is used
-> by different SoCs, which, in turn, have different Main IRQ controllers
-> (Davinci - aintc, cp-intc; Keystone - arm-gic) which may introduce
-> diffrent set of IRQ chip callbacks. As result, call of
-> gpio_irq_handler() on Keysone will simply cause crash the system,
-> because ARM-GIC implements .irq_eoi() instead of .irq_ack().
-> 
-> Hence, fix it by using Kernel chained_irq_enter/chained_irq_exit APIs as
-> they are intended to handle exact such cases.
-> 
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> ---
->
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Hello, Linus.
 
+Fixes for three issues.
+
+* cgroup destruction path could swamp system_wq possibly leading to
+  deadlock.  This actually seems to happen in the wild with memcg
+  because memcg destruction path adds nested dependency on system_wq.
+  Resolved by isolating cgroup destruction work items on its dedicated
+  workqueue.
+
+* Possible locking context deadlock through seqcount reported by
+  lockdep.
+
+* Memory leak under certain conditions.
+
+The fixes are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.13-fixes
+
+for you to fetch changes up to e605b36575e896edd8161534550c9ea021b03bc0:
+
+  cgroup: fix cgroup_subsys_state leak for seq_files (2013-11-27 18:16:21 -0500)
+
+Thanks.
+
+----------------------------------------------------------------
+Peter Zijlstra (1):
+      cpuset: Fix memory allocator deadlock
+
+Tejun Heo (2):
+      cgroup: use a dedicated workqueue for cgroup destruction
+      cgroup: fix cgroup_subsys_state leak for seq_files
+
+ kernel/cgroup.c | 35 +++++++++++++++++++++++++++++++----
+ kernel/cpuset.c |  8 ++++++--
+ 2 files changed, 37 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 4c62513..8b729c2 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -90,6 +90,14 @@ static DEFINE_MUTEX(cgroup_mutex);
+ static DEFINE_MUTEX(cgroup_root_mutex);
+ 
+ /*
++ * cgroup destruction makes heavy use of work items and there can be a lot
++ * of concurrent destructions.  Use a separate workqueue so that cgroup
++ * destruction work items don't end up filling up max_active of system_wq
++ * which may lead to deadlock.
++ */
++static struct workqueue_struct *cgroup_destroy_wq;
++
++/*
+  * Generate an array of cgroup subsystem pointers. At boot time, this is
+  * populated with the built in subsystems, and modular subsystems are
+  * registered after that. The mutable section of this array is protected by
+@@ -191,6 +199,7 @@ static void cgroup_destroy_css_killed(struct cgroup *cgrp);
+ static int cgroup_destroy_locked(struct cgroup *cgrp);
+ static int cgroup_addrm_files(struct cgroup *cgrp, struct cftype cfts[],
+ 			      bool is_add);
++static int cgroup_file_release(struct inode *inode, struct file *file);
+ 
+ /**
+  * cgroup_css - obtain a cgroup's css for the specified subsystem
+@@ -871,7 +880,7 @@ static void cgroup_free_rcu(struct rcu_head *head)
+ 	struct cgroup *cgrp = container_of(head, struct cgroup, rcu_head);
+ 
+ 	INIT_WORK(&cgrp->destroy_work, cgroup_free_fn);
+-	schedule_work(&cgrp->destroy_work);
++	queue_work(cgroup_destroy_wq, &cgrp->destroy_work);
+ }
+ 
+ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
+@@ -2421,7 +2430,7 @@ static const struct file_operations cgroup_seqfile_operations = {
+ 	.read = seq_read,
+ 	.write = cgroup_file_write,
+ 	.llseek = seq_lseek,
+-	.release = single_release,
++	.release = cgroup_file_release,
+ };
+ 
+ static int cgroup_file_open(struct inode *inode, struct file *file)
+@@ -2482,6 +2491,8 @@ static int cgroup_file_release(struct inode *inode, struct file *file)
+ 		ret = cft->release(inode, file);
+ 	if (css->ss)
+ 		css_put(css);
++	if (file->f_op == &cgroup_seqfile_operations)
++		single_release(inode, file);
+ 	return ret;
+ }
+ 
+@@ -4249,7 +4260,7 @@ static void css_free_rcu_fn(struct rcu_head *rcu_head)
+ 	 * css_put().  dput() requires process context which we don't have.
+ 	 */
+ 	INIT_WORK(&css->destroy_work, css_free_work_fn);
+-	schedule_work(&css->destroy_work);
++	queue_work(cgroup_destroy_wq, &css->destroy_work);
+ }
+ 
+ static void css_release(struct percpu_ref *ref)
+@@ -4539,7 +4550,7 @@ static void css_killed_ref_fn(struct percpu_ref *ref)
+ 		container_of(ref, struct cgroup_subsys_state, refcnt);
+ 
+ 	INIT_WORK(&css->destroy_work, css_killed_work_fn);
+-	schedule_work(&css->destroy_work);
++	queue_work(cgroup_destroy_wq, &css->destroy_work);
+ }
+ 
+ /**
+@@ -5063,6 +5074,22 @@ out:
+ 	return err;
+ }
+ 
++static int __init cgroup_wq_init(void)
++{
++	/*
++	 * There isn't much point in executing destruction path in
++	 * parallel.  Good chunk is serialized with cgroup_mutex anyway.
++	 * Use 1 for @max_active.
++	 *
++	 * We would prefer to do this in cgroup_init() above, but that
++	 * is called before init_workqueues(): so leave this until after.
++	 */
++	cgroup_destroy_wq = alloc_workqueue("cgroup_destroy", 0, 1);
++	BUG_ON(!cgroup_destroy_wq);
++	return 0;
++}
++core_initcall(cgroup_wq_init);
++
+ /*
+  * proc_cgroup_show()
+  *  - Print task's cgroup paths into seq_file, one line for each hierarchy
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 6bf981e..4772034 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1033,8 +1033,10 @@ static void cpuset_change_task_nodemask(struct task_struct *tsk,
+ 	need_loop = task_has_mempolicy(tsk) ||
+ 			!nodes_intersects(*newmems, tsk->mems_allowed);
+ 
+-	if (need_loop)
++	if (need_loop) {
++		local_irq_disable();
+ 		write_seqcount_begin(&tsk->mems_allowed_seq);
++	}
+ 
+ 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
+ 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
+@@ -1042,8 +1044,10 @@ static void cpuset_change_task_nodemask(struct task_struct *tsk,
+ 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP2);
+ 	tsk->mems_allowed = *newmems;
+ 
+-	if (need_loop)
++	if (need_loop) {
+ 		write_seqcount_end(&tsk->mems_allowed_seq);
++		local_irq_enable();
++	}
+ 
+ 	task_unlock(tsk);
+ }
