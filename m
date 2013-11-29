@@ -1,119 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab3K2MzU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 07:55:20 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:60636 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753069Ab3K2MzR (ORCPT
+	id S1755060Ab3K2Mzw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 07:55:52 -0500
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:59083 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753069Ab3K2Mzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 07:55:17 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        "Moore, Robert" <robert.moore@intel.com>,
-        Toshi Kani <toshi.kani@hp.com>, Yinghai Lu <yinghai@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>, Lv Zheng <lv.zheng@intel.com>
-Subject: Re: [PATCH 7/10] ACPI / hotplug: Move container-specific code out of the core
-Date: Fri, 29 Nov 2013 14:08:08 +0100
-Message-ID: <1554480.uCR6qUxJk9@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <5297FDC7.6000007@jp.fujitsu.com>
-References: <1421028.Rsfpmhnym3@vostro.rjw.lan> <2547688.l8Q1XKb3Ol@vostro.rjw.lan> <5297FDC7.6000007@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Fri, 29 Nov 2013 07:55:51 -0500
+X-Originating-IP: 109.242.151.66
+From: Aldo Iljazi <mail@aldo.io>
+To: lidza.louina@gmail.com
+Cc: gregkh@linuxfoundation.org, driverdev-devel@linuxdriverproject.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: dgnc: dgnc_trace.c: fixed coding style issues
+Date: Fri, 29 Nov 2013 14:55:37 +0200
+Message-Id: <1385729737-6052-1-git-send-email-mail@aldo.io>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 29, 2013 11:36:55 AM Yasuaki Ishimatsu wrote:
-> Hi Rafael,
+Fixed the following coding style issues:
 
-Hi,
+Lines 66-70: Replaced spaced with tabs.
+Lines 75, 98, 182: Inserted space before the open parenthesis.
+Line 89: Inserted spaces around that '='
 
-> Replying to this mail may be wrong.
+Signed-off-by: Aldo Iljazi <mail@aldo.io>
+---
+ drivers/staging/dgnc/dgnc_trace.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-OK, so this particular patch doesn't break things any more?
-
-> Do you remember following your patch?
-> http://lkml.org/lkml/2013/2/23/97
-> 
-> I want to add autoeject variable in acpi_hotplug_profile structure and
-> set autoecjet of container device "false".
-
-Then after the series the $subject patch belongs to it will work almost the
-same way as /sys/firmware/acpi/container/enabled (hot add will still work after
-patch [4/10] if "enabled" is 0), but only for containers.
-
-> Currently, I have a problem on ejecting container device. Since linux-3.12,
-> container device is removed by acpi_scan_hot_remove.
-> 
-> I think this has two problems.
-> 
->    1. easily fail
->       My container device has CPU device and Memory device, and maximum size of
->       memory is 3Tbyte. In my environment, hot removing container device fails
->       on offlining memory if memory is used by application.
->       I think if offlininig memory, we must retly to offline memory several
->       times.
-
-Yes, that's correct.  But then you can try to offline the memory upfront
-and only remove the container after that has been successful.
-
->    2. cannot work with userland's application
->       Hot removing CPU and memory on container device, we need take care of
->       userland application. Before linux-3.12, container device just notifies
->       KOBJ_OFFLINE to udev. So by using udev, if application binds to removed
->       CPU or node, applications can change them before hot removing container
->       device.
->       Currently, KOBJ_OFFLINE is notified to udev. But acpi_scan_hot_remove
->       also runs simultaneously for hot removing container device. So when
->       applications runs for corresponding to the deletion of the devices,
->       the devices may have been deleted.
-
-So the expectation is that the container will refuse to offline, but instead
-it will emit KOBJ_OFFLINE so that user space can do some cleanup and offline
-it through the "eject" attribute, right?
-
-> I don't know what devices are on hotpluggable conatainer device of other
-> vendors. At least, my container device cannot be hot removed correctly.
-> Then I want to add autoeject variable in acpi_hotplug_profile so that user
-> can change the parameter to "true" or "false".
-
-I have a different idea.
-
-Why don't we create a bus type for containers in analogy with CPUs and memory
-and make it support offline.  Then, the container scan handler will create a
-"physical" container device under that bus type and the new bus type code will
-implement the logic you need (that is, it will have a sysfs flag that will
-cause the offline to fail emitting a uevent of some sort if set and will allow
-the offline to happen when unset).  That "physical" container device will go
-away (again, via the container scan handler) during container removal.
-
-The eject work flow can be:
-  (1) an eject event occurs,
-  (2) the container "physical" device fails offline in acpi_scan_hot_remove()
-      emmitting, say, KOBJ_CHANGE for the "physical" device,
-  (3) user space notices the KOBJ_CHANGE and does the cleanup as needed,
-  (4) user space changes the "physical" container device flag controlling
-      offline to 0,
-  (5) user space uses the sysfs "eject" attribute of the ACPI container object
-      to finally eject the container,
-  (6) the offline in acpi_scan_hot_remove() is now successful, because the
-      flag controlling it has been set to 0 in step (4),
-  (7) the "physical" container device goes away before executing _EJ0,
-  (8) the container is ejected.
-
-Of course, if the flag controlling container offline is 0 to start with, step
-(6) will now occur directly after (1), so whoever wants containers to be
-hot-removed automatically may just clear that flag for all of them on boot.
-
-How does that sound?
-
-Rafael
+diff --git a/drivers/staging/dgnc/dgnc_trace.c b/drivers/staging/dgnc/dgnc_trace.c
+index a98b7d4..e59b781 100644
+--- a/drivers/staging/dgnc/dgnc_trace.c
++++ b/drivers/staging/dgnc/dgnc_trace.c
+@@ -63,16 +63,16 @@ void dgnc_tracef(const char *fmt, ...)
+ 
+ void dgnc_tracef(const char *fmt, ...)
+ {
+-	va_list	         ap;
+-	char  	         buf[TRC_MAXMSG+1];
+-	size_t		 lenbuf;
+-	int		 i;
+-	static int	 failed = FALSE;
++	va_list		ap;
++	char		buf[TRC_MAXMSG+1];
++	size_t		lenbuf;
++	int		i;
++	static int	failed = FALSE;
+ # if defined(TRC_TO_KMEM)
+ 	unsigned long	 flags;
+ #endif
+ 
+-	if(failed)
++	if (failed)
+ 		return;
+ # if defined(TRC_TO_KMEM)
+ 	DGNC_LOCK(dgnc_tracef_lock, flags);
+@@ -86,7 +86,7 @@ void dgnc_tracef(const char *fmt, ...)
+ 
+ # if defined(TRC_TO_KMEM)
+ 	{
+-		static int	 initd=0;
++		static int	 initd = 0;
+ 
+ 		/*
+ 		 * Now, in addition to (or instead of) printing this stuff out
+@@ -95,7 +95,7 @@ void dgnc_tracef(const char *fmt, ...)
+ 		 */
+ 		if (!initd) {
+ 			dgnc_trcbuf = (char *) vmalloc(dgnc_trcbuf_size);
+-			if(!dgnc_trcbuf) {
++			if (!dgnc_trcbuf) {
+ 				failed = TRUE;
+ 				printk("dgnc: tracing init failed!\n");
+ 				return;
+@@ -179,6 +179,6 @@ void dgnc_tracef(const char *fmt, ...)
+  */
+ void dgnc_tracer_free(void)
+ {
+-	if(dgnc_trcbuf)
++	if (dgnc_trcbuf)
+ 		vfree(dgnc_trcbuf);
+ }
+-- 
+1.7.9.5
 
