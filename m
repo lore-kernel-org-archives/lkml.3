@@ -1,102 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab3K2NXs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 08:23:48 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:36155 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754858Ab3K2NXp convert rfc822-to-8bit (ORCPT
+	id S1755660Ab3K2N04 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 08:26:56 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36935 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752545Ab3K2N0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 08:23:45 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Fri, 29 Nov 2013 08:26:55 -0500
+Date: Fri, 29 Nov 2013 14:26:53 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Peter Korsgaard <jacmet@sunsite.dk>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Richard Genoud <richard.genoud@gmail.com>, zhouguangming@innofidei.com,
+        Hans Zhang <zhanghonghui@innofidei.com>,
+        linux-mtd <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Make the mtdblock read/write skip the bad nand sector
+Message-ID: <20131129132653.GA14204@amd.pavel.ucw.cz>
+References: <20131122114509.GB2414@localhost>
+ <5292A7E7.5060003@innofidei.com>
+ <20131125101147.GA2408@localhost>
+ <CACQ1gAi26WeiopptcZmBp6h0a5TacLo5mvVCOm6-H_1HtnwvXg@mail.gmail.com>
+ <529334D9.2030204@innofidei.com>
+ <20131125115238.GC2408@localhost>
+ <1385381770.24518.18.camel@shinybook.infradead.org>
+ <20131125123012.GE2408@localhost>
+ <87fvqkldmh.fsf@dell.be.48ers.dk>
+ <1385394419.24518.40.camel@shinybook.infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 1/1] mfd: omap-usb-host: Fix USB device detection problems on OMAP4 Panda
-Date: Fri, 29 Nov 2013 13:17:48 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B744D@saturn3.aculab.com>
-In-Reply-To: <1385730118-26402-2-git-send-email-rogerq@ti.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 1/1] mfd: omap-usb-host: Fix USB device detection problems on OMAP4 Panda
-Thread-Index: Ac7tAzPCcn9gJOAJTzGeTYHCtwbJ0wAATCGw
-References: <1385730118-26402-1-git-send-email-rogerq@ti.com> <1385730118-26402-2-git-send-email-rogerq@ti.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Roger Quadros" <rogerq@ti.com>, <lee.jones@linaro.org>,
-        <sameo@linux.intel.com>
-Cc: <tomi.valkeinen@ti.com>, <balbi@ti.com>, <sr@denx.de>,
-        <ljkenny.mailinglists@gmail.com>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385394419.24518.40.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Of Roger Quadros
-> With u-boot 2013.10, USB devices are sometimes not detected
-> on OMAP4 Panda. To make us independent of what bootloader does
-> with the USB Host module, we must RESET it to get it to a known
-> good state. This patch Soft RESETs the USB Host module.
-...
-> +++ b/drivers/mfd/omap-usb-host.c
-> @@ -43,14 +43,18 @@
->  /* UHH Register Set */
->  #define	OMAP_UHH_REVISION				(0x00)
->  #define	OMAP_UHH_SYSCONFIG				(0x10)
-> -#define	OMAP_UHH_SYSCONFIG_MIDLEMODE			(1 << 12)
-> +#define	OMAP_UHH_SYSCONFIG_MIDLEMASK			(3 << 12)
-> +#define OMAP_UHH_SYSCONFIG_MIDLESHIFT			(12)
+Hi!
 
-(tab/space issue)
+> > Hi,
+> > 
+> >  > Thanks a lot for the insight. After reading this, I'm wondering what's
+> >  > preventing us from killing MTD block support altogether. Artem, already
+> >  > suggested it a while back...
+> > 
+> > People using squashfs/cramfs/readonly ext2/.. on a NOR flash?
+> 
+> And people who *still*, after all these years, don't realise that they
+> don't actually need it to mount JFFS2. Even as the root file system
+> (although they *do* need rootfstype=jffs2).
 
-Wouldn't it be clearer to define these in the opposite order with:
-+#define	OMAP_UHH_SYSCONFIG_MIDLEMASK			(3 << OMAP_UHH_SYSCONFIG_MIDLESHIFT)
+I must admit I'm such person...
 
-... 
-> +static void omap_usbhs_rev1_reset(struct device *dev)
-> +{
-> +	struct usbhs_hcd_omap *omap = dev_get_drvdata(dev);
-> +	u32 reg;
-> +	unsigned long timeout;
-> +
-> +	reg = usbhs_read(omap->uhh_base, OMAP_UHH_SYSCONFIG);
-> +
-> +	/* Soft Reset */
-> +	usbhs_write(omap->uhh_base, OMAP_UHH_SYSCONFIG,
-> +		    reg | OMAP_UHH_SYSCONFIG_SOFTRESET);
-> +
-> +	timeout = jiffies + msecs_to_jiffies(100);
-> +	while (!(usbhs_read(omap->uhh_base, OMAP_UHH_SYSSTATUS)
-> +			& OMAP_UHH_SYSSTATUS_RESETDONE)) {
-> +		cpu_relax();
-> +
-> +		if (time_after(jiffies, timeout)) {
-> +			dev_err(dev, "Soft RESET operation timed out\n");
-> +			break;
-> +		}
-> +	}
-> +
-> +	/* Set No-Standby */
-> +	reg &= ~OMAP_UHH_SYSCONFIG_MIDLEMASK;
-> +	reg |= OMAP_UHH_SYSCONFIG_MIDLE_NOSTANDBY
-> +		<< OMAP_UHH_SYSCONFIG_MIDLESHIFT;
-> +
-> +	/* Set No-Idle */
-> +	reg &= ~OMAP_UHH_SYSCONFIG_SIDLEMASK;
-> +	reg |= OMAP_UHH_SYSCONFIG_SIDLE_NOIDLE
-> +		<< OMAP_UHH_SYSCONFIG_SIDLESHIFT;
+I guess printk("...you don't really need mtdblock...") in jffs2's
+mount code would probably improve that realisation...
 
-Why not pass in the mask and value and avoid replicating the
-entire function. I can't see any other significant differences,
-the udelay(2) won't be significant.
+This certainly does not help:
 
-I'm not sure of the context this code runs in, but if the reset
-is likely to take a significant portion of the 100ms timeout
-period, why not just sleep for a few ms between status polls.
+pavel@amd:/data/l/linux-n900$ grep -ri mtdblock  Documentation
+Documentation/frv/booting.txt:	   exec -c "console=ttySM0,115200
+ip=:::::dhcp root=/dev/mtdblock2 rw"
+Documentation/frv/booting.txt:	 /dev/mtdblock3	Fourth RedBoot
+partition on the System Flash
+Documentation/arm/SA1100/Assabet:which is the third one.  Within
+Linux, this correspond to /dev/mtdblock2.
+Documentation/arm/SA1100/Assabet:	exec -b 0x100000 -l 0xc0000 -c
+"root=/dev/mtdblock2"
 
-	David
+(Should not mtdblock be at least in devices.txt file?)
 
+BTW... is there documentation of mtdblock "translation layer"
+somewhere? I realize it is very simple, but it does need to keep some
+data?
 
-
-
+I guess running jffs on regular block device (USB stick, SD card) is
+not feasible?
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
