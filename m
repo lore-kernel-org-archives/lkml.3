@@ -1,74 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890Ab3K2Lmc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 06:42:32 -0500
-Received: from fallback5.mail.ru ([94.100.176.59]:49791 "EHLO
-	fallback5.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752871Ab3K2LmW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 06:42:22 -0500
-From: Alexander Shiyan <shc_work@mail.ru>
+	id S1754421Ab3K2LqA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 06:46:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19686 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752545Ab3K2Lp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 06:45:57 -0500
+From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Evgeniy Polyakov <zbr@ioremap.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
-        Alexander Shiyan <shc_work@mail.ru>
-Subject: [PATCH 1/3] w1: mxc_w1: Remove unused field "clkdiv" from private structure
-Date: Fri, 29 Nov 2013 15:39:28 +0400
-Message-Id: <1385725170-31515-1-git-send-email-shc_work@mail.ru>
-X-Mailer: git-send-email 1.8.3.2
-X-Spam: Not detected
-X-Mras: Ok
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH 1/6] perf tools: Add perf_evlist error string interface
+Date: Fri, 29 Nov 2013 12:45:05 +0100
+Message-Id: <1385725510-20118-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1385725510-20118-1-git-send-email-jolsa@redhat.com>
+References: <1385725510-20118-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Private field "clkdiv" is not used outside "probe", so there are
-no reason to keep it in driver.
+Adding perf_evlist__strerror function that returns
+static string of the last error occured during
+'struct perf_evlist' handling:
 
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+  char *perf_evlist__strerror(struct perf_evlist *evlist);
+
+After each 'struct perf_evlist' operation that supports
+internal error handling, this function returns proper
+error string for output.
+
+The point is to have internal error handling so we could
+print our propper error message, eg. when 'perf_evlist__mmap'
+fails, we have no idea if it was for the mmap failure or ioctl
+(event ID retrieval).
+
+NOTE We can add thread safe '_r' variant in the
+future, currently it's not needed.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>
 ---
- drivers/w1/masters/mxc_w1.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ tools/perf/util/evlist.c | 34 ++++++++++++++++++++++++++++++++++
+ tools/perf/util/evlist.h | 13 +++++++++++++
+ 2 files changed, 47 insertions(+)
 
-diff --git a/drivers/w1/masters/mxc_w1.c b/drivers/w1/masters/mxc_w1.c
-index 15c7251..5de3ca9 100644
---- a/drivers/w1/masters/mxc_w1.c
-+++ b/drivers/w1/masters/mxc_w1.c
-@@ -46,7 +46,6 @@
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 76fa764..dfb72d4 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -28,6 +28,11 @@
+ #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+ #define SID(e, x, y) xyarray__entry(e->sample_id, x, y)
  
- struct mxc_w1_device {
- 	void __iomem *regs;
--	unsigned int clkdiv;
- 	struct clk *clk;
- 	struct w1_bus_master bus_master;
- };
-@@ -107,6 +106,7 @@ static int mxc_w1_probe(struct platform_device *pdev)
++#define SET_ERR(_err) ({				\
++	evlist->err      = PERF_EVLIST__ERRNO_##_err;	\
++	evlist->err_libc = errno;			\
++})
++
+ void perf_evlist__init(struct perf_evlist *evlist, struct cpu_map *cpus,
+ 		       struct thread_map *threads)
  {
- 	struct mxc_w1_device *mdev;
- 	struct resource *res;
-+	unsigned int clkdiv;
- 	int err = 0;
+@@ -600,6 +605,34 @@ static int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
+ 	return evlist->mmap != NULL ? 0 : -ENOMEM;
+ }
  
- 	mdev = devm_kzalloc(&pdev->dev, sizeof(struct mxc_w1_device),
-@@ -118,7 +118,7 @@ static int mxc_w1_probe(struct platform_device *pdev)
- 	if (IS_ERR(mdev->clk))
- 		return PTR_ERR(mdev->clk);
++static void __perf_evlist__strerror(struct perf_evlist *evlist,
++				    char *buf, size_t size)
++{
++	int err_libc = evlist->err_libc;
++	int err      = evlist->err;
++
++	switch (err) {
++	case PERF_EVLIST__ERRNO_SUCCESS:
++		break;
++	default:
++		scnprintf(buf, size, "Unknown error\n");
++		return;
++	}
++
++	if (!err_libc)
++		scnprintf(buf, size, "Success.");
++	else
++		scnprintf(buf, size, "Failed with %d (%s)\n",
++			  err_libc, strerror(err_libc));
++}
++
++char *perf_evlist__strerror(struct perf_evlist *evlist)
++{
++	static char str[BUFSIZ];
++	__perf_evlist__strerror(evlist, str, BUFSIZ);
++	return str;
++}
++
+ static int __perf_evlist__mmap(struct perf_evlist *evlist,
+ 			       int idx, int prot, int mask, int fd)
+ {
+@@ -607,6 +640,7 @@ static int __perf_evlist__mmap(struct perf_evlist *evlist,
+ 	evlist->mmap[idx].mask = mask;
+ 	evlist->mmap[idx].base = mmap(NULL, evlist->mmap_len, prot,
+ 				      MAP_SHARED, fd, 0);
++
+ 	if (evlist->mmap[idx].base == MAP_FAILED) {
+ 		pr_debug2("failed to mmap perf event ring buffer, error %d\n",
+ 			  errno);
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 649d6ea..9832fbd 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -17,6 +17,10 @@ struct perf_record_opts;
+ #define PERF_EVLIST__HLIST_BITS 8
+ #define PERF_EVLIST__HLIST_SIZE (1 << PERF_EVLIST__HLIST_BITS)
  
--	mdev->clkdiv = (clk_get_rate(mdev->clk) / 1000000) - 1;
-+	clkdiv = (clk_get_rate(mdev->clk) / 1000000) - 1;
++enum {
++	PERF_EVLIST__ERRNO_SUCCESS		= 0,
++};
++
+ struct perf_mmap {
+ 	void		 *base;
+ 	int		 mask;
+@@ -45,6 +49,14 @@ struct perf_evlist {
+ 	struct thread_map *threads;
+ 	struct cpu_map	  *cpus;
+ 	struct perf_evsel *selected;
++
++	/*
++	 * Internal error handling:
++	 *   err      - internal error value of last operation (
++	 *   err_libc - adjacent libc errno value
++	 */
++	int		 err;
++	int		 err_libc;
+ };
  
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	mdev->regs = devm_ioremap_resource(&pdev->dev, res);
-@@ -126,7 +126,7 @@ static int mxc_w1_probe(struct platform_device *pdev)
- 		return PTR_ERR(mdev->regs);
+ struct perf_evsel_str_handler {
+@@ -172,6 +184,7 @@ size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp);
  
- 	clk_prepare_enable(mdev->clk);
--	__raw_writeb(mdev->clkdiv, mdev->regs + MXC_W1_TIME_DIVIDER);
-+	__raw_writeb(clkdiv, mdev->regs + MXC_W1_TIME_DIVIDER);
+ int perf_evlist__strerror_tp(struct perf_evlist *evlist, int err, char *buf, size_t size);
+ int perf_evlist__strerror_open(struct perf_evlist *evlist, int err, char *buf, size_t size);
++char *perf_evlist__strerror(struct perf_evlist *evlist);
  
- 	mdev->bus_master.data = mdev;
- 	mdev->bus_master.reset_bus = mxc_w1_ds2_reset_bus;
+ static inline unsigned int perf_mmap__read_head(struct perf_mmap *mm)
+ {
 -- 
-1.8.3.2
+1.8.3.1
 
