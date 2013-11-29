@@ -1,429 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab3K2Rm7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 12:42:59 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:42984 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257Ab3K2Rmz (ORCPT
+	id S1753813Ab3K2Rsn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 12:48:43 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50498 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235Ab3K2Rsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 12:42:55 -0500
-Date: Fri, 29 Nov 2013 18:43:04 +0100
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linaro-uefi@linaro.org" <linaro-uefi@lists.linaro.org>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "roy.franz@linaro.org" <roy.franz@linaro.org>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH v3 2/3] arm: Add [U]EFI runtime services support
-Message-ID: <20131129174303.GV24997@rocoto.smurfnet.nu>
-References: <1385656883-4420-1-git-send-email-leif.lindholm@linaro.org>
- <1385656883-4420-3-git-send-email-leif.lindholm@linaro.org>
- <20131129161015.GE31000@mudshark.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131129161015.GE31000@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 29 Nov 2013 12:48:38 -0500
+Message-Id: <20131129174430.222164799@infradead.org>
+User-Agent: quilt/0.60-1
+Date: Fri, 29 Nov 2013 18:37:04 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        Tony Luck <tony.luck@gmail.com>, hpa@zytor.com,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [RFC][PATCH 7/7] sched: Use a static_key for sched_clock_stable
+References: <20131129173657.252094369@infradead.org>
+Content-Disposition: inline; filename=peterz-sched_clock_static_key.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+In order to avoid the runtime condition check turn sched_clock_stable
+into a static_key.
 
-Thanks for having a look.
+Also provide a shorter implementation of local_clock() and
+cpu_clock(int) when sched_clock_stable==1.
 
-On Fri, Nov 29, 2013 at 04:10:16PM +0000, Will Deacon wrote:
-> > This patch implements basic support for UEFI runtime services in the
-> > ARM architecture - a requirement for using efibootmgr to read and update
-> > the system boot configuration.
-> > 
-> > It uses the generic configuration table scanning to populate ACPI and
-> > SMBIOS pointers.
-> 
-> I've got a bunch of implementation questions, so hopefully you can help me
-> to understand what this is doing!
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ arch/x86/kernel/cpu/amd.c        |    2 -
+ arch/x86/kernel/cpu/intel.c      |    2 -
+ arch/x86/kernel/cpu/perf_event.c |    2 -
+ arch/x86/kernel/tsc.c            |    6 ++---
+ include/linux/sched.h            |    4 ++-
+ kernel/sched/clock.c             |   41 ++++++++++++++++++++++++++++++++-------
+ kernel/sched/debug.c             |    2 -
+ kernel/time/tick-sched.c         |    2 -
+ kernel/trace/ring_buffer.c       |    2 -
+ 9 files changed, 46 insertions(+), 17 deletions(-)
 
-I can try :)
-
-> > diff --git a/arch/arm/kernel/uefi.c b/arch/arm/kernel/uefi.c
-> > new file mode 100644
-> > index 0000000..f771026
-> > --- /dev/null
-> > +++ b/arch/arm/kernel/uefi.c
-
-> > +/*
-> > + * Returns 1 if 'facility' is enabled, 0 otherwise.
-> > + */
-> > +int efi_enabled(int facility)
-> > +{
-> > +       return test_bit(facility, &arm_uefi_facility) != 0;
-> 
-> !test_bit(...) ?
-
-Could do. Cloned from the x86 implementation. Matt Fleming has
-indicated some rework coming in this area.
-
-> > +static int __init uefi_init(void)
-> > +{
-> > +       efi_char16_t *c16;
-> > +       char vendor[100] = "unknown";
-> > +       int i, retval;
-> > +
-> > +       efi.systab = early_memremap(uefi_system_table,
-> > +                                   sizeof(efi_system_table_t));
-> > +
-> > +       /*
-> > +        * Verify the UEFI System Table
-> > +        */
-> > +       if (efi.systab == NULL)
-> > +               panic("Whoa! Can't find UEFI system table.\n");
-> > +       if (efi.systab->hdr.signature != EFI_SYSTEM_TABLE_SIGNATURE)
-> > +               panic("Whoa! UEFI system table signature incorrect\n");
-> > +       if ((efi.systab->hdr.revision >> 16) == 0)
-> > +               pr_warn("Warning: UEFI system table version %d.%02d, expected 1.00 or greater\n",
-> > +                       efi.systab->hdr.revision >> 16,
-> > +                       efi.systab->hdr.revision & 0xffff);
-> > +
-> > +       /* Show what we know for posterity */
-> > +       c16 = (efi_char16_t *)early_memremap(efi.systab->fw_vendor,
-> > +                                           sizeof(vendor));
-> > +       if (c16) {
-> > +               for (i = 0; i < (int) sizeof(vendor) - 1 && *c16; ++i)
-> > +                       vendor[i] = c16[i];
-> > +               vendor[i] = '\0';
-> > +       }
-> > +
-> > +       pr_info("UEFI v%u.%.02u by %s\n",
-> > +               efi.systab->hdr.revision >> 16,
-> > +               efi.systab->hdr.revision & 0xffff, vendor);
-> > +
-> > +       retval = efi_config_init(NULL);
-> > +       if (retval == 0)
-> > +               set_bit(EFI_CONFIG_TABLES, &arm_uefi_facility);
-> 
-> Does this actually need to be atomic?
-
-Not necessarily, but it's neater than masking, and only called once.
-
-> > +
-> > +       early_iounmap(c16, sizeof(vendor));
-> > +       early_iounmap(efi.systab,  sizeof(efi_system_table_t));
-> > +
-> > +       return retval;
-> > +}
-> > +
-> > +static __init int is_discardable_region(efi_memory_desc_t *md)
-> > +{
-> > +#ifdef KEEP_ALL_REGIONS
-> > +       return 0;
-> > +#endif
-> 
-> Maybe just have a dummy is_discardable_region in this case, like we usually
-> do instead of inlining the #ifdef?
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -487,7 +487,7 @@ static void early_init_amd(struct cpuinf
+ 		set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
+ 		set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC);
+ 		if (!check_tsc_unstable())
+-			sched_clock_stable = 1;
++			set_sched_clock_stable();
+ 	}
  
-OK.
-
-> > +       if (md->attribute & EFI_MEMORY_RUNTIME)
-> > +               return 0;
-> > +
-> > +       switch (md->type) {
-> > +#ifdef KEEP_BOOT_SERVICES_REGIONS
-> > +       case EFI_BOOT_SERVICES_CODE:
-> > +       case EFI_BOOT_SERVICES_DATA:
-> > +#endif
-> > +       /* Keep tables around for any future kexec operations */
-> > +       case EFI_ACPI_RECLAIM_MEMORY:
-> > +               return 0;
-> > +       /* Preserve */
-> > +       case EFI_RESERVED_TYPE:
-> > +               return 0;
-> > +       }
-> > +
-> > +       return 1;
-> > +}
-> 
-> [...]
-> 
-> > +int __init uefi_memblock_arm_reserve_range(void)
-> > +{
-> > +       if (!of_scan_flat_dt(fdt_find_uefi_params, NULL))
-> > +               return 0;
-> > +
-> > +       set_bit(EFI_BOOT, &arm_uefi_facility);
-> 
-> Similar comment wrt atomicity here (and in the rest of this patch).
-
-Similar response.
-
-> > +       uefi_init();
-> > +
-> > +       remove_regions();
-> > +
-> > +       return 0;
-> > +}
-> > +
-> > +/*
-> > + * Disable instrrupts, enable idmap and disable caches.
-> 
-> interrupts
-
-Yeah.
-
-> > + */
-> > +static void __init phys_call_prologue(void)
-> > +{
-> > +       local_irq_disable();
-> > +
-> > +       /* Take out a flat memory mapping. */
-> > +       setup_mm_for_reboot();
-> > +
-> > +       /* Clean and invalidate caches */
-> > +       flush_cache_all();
-> > +
-> > +       /* Turn off caching */
-> > +       cpu_proc_fin();
-> > +
-> > +       /* Push out any further dirty data, and ensure cache is empty */
-> > +       flush_cache_all();
-> 
-> Do we care about outer caches here?
-
-I think we do. We jump into UEFI and make it relocate itself to the
-new virtual addresses, with MMU disabled (so all accesses NC).
-
-> This all looks suspiciously like
-> copy-paste from __soft_restart;
-
-Yeah, 'cause you told me to :)
-
-> perhaps some refactoring/reuse is in order?
+ #ifdef CONFIG_X86_64
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -93,7 +93,7 @@ static void early_init_intel(struct cpui
+ 		set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
+ 		set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC);
+ 		if (!check_tsc_unstable())
+-			sched_clock_stable = 1;
++			set_sched_clock_stable();
+ 	}
  
-Could do. Turn this into a process.c:idcall_prepare(), or something less
-daftly named?
+ 	/* Penwell and Cloverview have the TSC which doesn't sleep on S3 */
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1898,7 +1898,7 @@ void arch_perf_update_userpage(struct pe
+ 	userpg->cap_user_rdpmc = x86_pmu.attr_rdpmc;
+ 	userpg->pmc_width = x86_pmu.cntval_bits;
+ 
+-	if (!sched_clock_stable)
++	if (!sched_clock_stable())
+ 		return;
+ 
+ 	do {
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -786,7 +786,7 @@ static unsigned long long cyc2ns_suspend
+ 
+ void tsc_save_sched_clock_state(void)
+ {
+-	if (!sched_clock_stable)
++	if (!sched_clock_stable())
+ 		return;
+ 
+ 	cyc2ns_suspend = sched_clock();
+@@ -806,7 +806,7 @@ void tsc_restore_sched_clock_state(void)
+ 	unsigned long flags;
+ 	int cpu;
+ 
+-	if (!sched_clock_stable)
++	if (!sched_clock_stable())
+ 		return;
+ 
+ 	local_irq_save(flags);
+@@ -948,7 +948,7 @@ void mark_tsc_unstable(char *reason)
+ {
+ 	if (!tsc_unstable) {
+ 		tsc_unstable = 1;
+-		sched_clock_stable = 0;
++		clear_sched_clock_stable();
+ 		disable_sched_clock_irqtime();
+ 		pr_info("Marking TSC unstable due to %s\n", reason);
+ 		/* Change only the rating, when not registered */
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1880,7 +1880,9 @@ static inline void sched_clock_idle_wake
+  * but then during bootup it turns out that sched_clock()
+  * is reliable after all:
+  */
+-extern int sched_clock_stable;
++extern int sched_clock_stable(void);
++extern void set_sched_clock_stable(void);
++extern void clear_sched_clock_stable(void);
+ 
+ extern void sched_clock_tick(void);
+ extern void sched_clock_idle_sleep_event(void);
+--- a/kernel/sched/clock.c
++++ b/kernel/sched/clock.c
+@@ -58,6 +58,7 @@
+ #include <linux/percpu.h>
+ #include <linux/ktime.h>
+ #include <linux/sched.h>
++#include <linux/static_key.h>
+ 
+ /*
+  * Scheduler clock - returns current time in nanosec units.
+@@ -74,7 +75,27 @@ EXPORT_SYMBOL_GPL(sched_clock);
+ __read_mostly int sched_clock_running;
+ 
+ #ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
+-__read_mostly int sched_clock_stable;
++static struct static_key __sched_clock_stable = STATIC_KEY_INIT;
++
++int sched_clock_stable(void)
++{
++	if (static_key_false(&__sched_clock_stable))
++		return false;
++	return true;
++}
++
++void set_sched_clock_stable(void)
++{
++	if (!sched_clock_stable())
++		static_key_slow_inc(&__sched_clock_stable);
++}
++
++void clear_sched_clock_stable(void)
++{
++	/* XXX worry about clock continuity */
++	if (sched_clock_stable())
++		static_key_slow_dec(&__sched_clock_stable);
++}
+ 
+ struct sched_clock_data {
+ 	u64			tick_raw;
+@@ -236,7 +257,7 @@ u64 sched_clock_cpu(int cpu)
+ 
+ 	WARN_ON_ONCE(!irqs_disabled());
+ 
+-	if (sched_clock_stable)
++	if (sched_clock_stable())
+ 		return sched_clock();
+ 
+ 	if (unlikely(!sched_clock_running))
+@@ -257,7 +278,7 @@ void sched_clock_tick(void)
+ 	struct sched_clock_data *scd;
+ 	u64 now, now_gtod;
+ 
+-	if (sched_clock_stable)
++	if (sched_clock_stable())
+ 		return;
+ 
+ 	if (unlikely(!sched_clock_running))
+@@ -308,7 +329,10 @@ EXPORT_SYMBOL_GPL(sched_clock_idle_wakeu
+  */
+ u64 cpu_clock(int cpu)
+ {
+-	return sched_clock_cpu(cpu);
++	if (static_key_false(&__sched_clock_stable))
++		return sched_clock_cpu(cpu);
++
++	return sched_clock();
+ }
+ 
+ /*
+@@ -320,7 +344,10 @@ u64 cpu_clock(int cpu)
+  */
+ u64 local_clock(void)
+ {
+-	return sched_clock_cpu(smp_processor_id());
++	if (static_key_false(&__sched_clock_stable))
++		return sched_clock_cpu(smp_processor_id());
++
++	return sched_clock();
+ }
+ 
+ #else /* CONFIG_HAVE_UNSTABLE_SCHED_CLOCK */
+@@ -340,12 +367,12 @@ u64 sched_clock_cpu(int cpu)
+ 
+ u64 cpu_clock(int cpu)
+ {
+-	return sched_clock_cpu(cpu);
++	return sched_clock();
+ }
+ 
+ u64 local_clock(void)
+ {
+-	return sched_clock_cpu(0);
++	return sched_clock();
+ }
+ 
+ #endif /* CONFIG_HAVE_UNSTABLE_SCHED_CLOCK */
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -371,7 +371,7 @@ static void sched_debug_header(struct se
+ 	PN(cpu_clk);
+ 	P(jiffies);
+ #ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
+-	P(sched_clock_stable);
++	P(sched_clock_stable());
+ #endif
+ #undef PN
+ #undef P
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -177,7 +177,7 @@ static bool can_stop_full_tick(void)
+ 	 * TODO: kick full dynticks CPUs when
+ 	 * sched_clock_stable is set.
+ 	 */
+-	if (!sched_clock_stable) {
++	if (!sched_clock_stable()) {
+ 		trace_tick_stop(0, "unstable sched clock\n");
+ 		/*
+ 		 * Don't allow the user to think they can get
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -2558,7 +2558,7 @@ rb_reserve_next_event(struct ring_buffer
+ 		if (unlikely(test_time_stamp(delta))) {
+ 			int local_clock_stable = 1;
+ #ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
+-			local_clock_stable = sched_clock_stable;
++			local_clock_stable = sched_clock_stable();
+ #endif
+ 			WARN_ONCE(delta > (1ULL << 59),
+ 				  KERN_WARNING "Delta way too big! %llu ts=%llu write stamp = %llu\n%s",
 
-> > +}
-> > +
-> > +/*
-> > + * Restore original memory map and re-enable interrupts.
-> > + */
-> > +static void __init phys_call_epilogue(void)
-> > +{
-> > +       static struct mm_struct *mm = &init_mm;
-> > +
-> > +       /* Restore original memory mapping */
-> > +       cpu_switch_mm(mm->pgd, mm);
-> > +
-> > +       /* Flush branch predictor and TLBs */
-> > +       local_flush_bp_all();
-> > +#ifdef CONFIG_CPU_HAS_ASID
-> > +       local_flush_tlb_all();
-> > +#endif
-> 
-> ... and this looks like copy-paste from setup_mm_for_reboot.
 
-You told me that too!
-Only this goes the other way.
-
-Is the refactoring worth the extra code?
-
-> > +       local_irq_enable();
-> > +}
-> > +
-> > +static int __init remap_region(efi_memory_desc_t *md, efi_memory_desc_t *entry)
-> > +{
-> > +       u64 va;
-> > +       u64 paddr;
-> > +       u64 size;
-> > +
-> > +       *entry = *md;
-> > +       paddr = entry->phys_addr;
-> > +       size = entry->num_pages << EFI_PAGE_SHIFT;
-> > +
-> > +       /*
-> > +        * Map everything writeback-capable as coherent memory,
-> > +        * anything else as device.
-> > +        */
-> > +       if (md->attribute & EFI_MEMORY_WB)
-> > +               va = (u64)((u32)uefi_remap(paddr, size) & 0xffffffffUL);
-> > +       else
-> > +               va = (u64)((u32)uefi_ioremap(paddr, size) & 0xffffffffUL);
-> 
-> Do you really need all those casts/masking?
-
-I didn't find a better way to avoid warnings when building this code
-for both LPAE/non-LPAE.
-
-We are guaranteed by the UEFI spec that all addresses will be <4GB,
-but the descriptor format is still 64-bit physical/virtual addresses,
-and we need to pass them back as such.
-
-> > +       if (!va)
-> > +               return 0;
-> > +       entry->virt_addr = va;
-> > +
-> > +       if (uefi_debug)
-> > +               pr_info("  %016llx-%016llx => 0x%08x : (%s)\n",
-> > +                       paddr, paddr + size - 1, (u32)va,
-> > +                       md->attribute &  EFI_MEMORY_WB ? "WB" : "I/O");
-> > +
-> > +       return 1;
-> > +}
-> > +
-> > +static int __init remap_regions(void)
-> > +{
-> > +       void *p, *next;
-> > +       efi_memory_desc_t *md;
-> > +
-> > +       memmap.phys_map = uefi_remap(uefi_boot_mmap, uefi_boot_mmap_size);
-> > +       if (!memmap.phys_map)
-> > +               return 0;
-> > +       memmap.map_end = (void *)memmap.phys_map + uefi_boot_mmap_size;
-> > +       memmap.desc_size = uefi_mmap_desc_size;
-> > +       memmap.desc_version = uefi_mmap_desc_ver;
-> > +
-> > +       /* Allocate space for the physical region map */
-> > +       memmap.map = kzalloc(memmap.nr_map * memmap.desc_size, GFP_KERNEL);
-> > +       if (!memmap.map)
-> > +               return 0;
-> > +
-> > +       next = memmap.map;
-> > +       for (p = memmap.phys_map; p < memmap.map_end; p += memmap.desc_size) {
-> > +               md = p;
-> > +               if (is_discardable_region(md) || md->type == EFI_RESERVED_TYPE)
-> > +                       continue;
-> > +
-> > +               if (!remap_region(p, next))
-> > +                       return 0;
-> 
-> What about the kzalloc above, does that need freeing?
-
-In case of failure? Yes, good point.
-
-> > +/*
-> > + * This function switches the UEFI runtime services to virtual mode.
-> > + * This operation must be performed only once in the system's lifetime,
-> > + * including any kecec calls.
-> > + *
-> > + * This must be done with a 1:1 mapping. The current implementation
-> > + * resolves this by disabling the MMU.
-> > + */
-> > +efi_status_t  __init phys_set_virtual_address_map(u32 memory_map_size,
-> > +                                                 u32 descriptor_size,
-> > +                                                 u32 descriptor_version,
-> > +                                                 efi_memory_desc_t *dsc)
-> > +{
-> > +       uefi_phys_call_t *phys_set_map;
-> > +       efi_status_t status;
-> > +
-> > +       phys_call_prologue();
-> > +
-> > +       phys_set_map = (void *)(unsigned long)virt_to_phys(uefi_phys_call);
-> > +
-> > +       /* Called with caches disabled, returns with caches enabled */
-> > +       status = phys_set_map(memory_map_size, descriptor_size,
-> > +                             descriptor_version, dsc,
-> > +                             efi.set_virtual_address_map)
-> > +;
-> 
-> Guessing this relies on a physically-tagged cache? Wouldn't hurt to put
-> something in the epilogue code to deal with vivt caches if they're not
-> prohibited by construction (e.g. due to some build dependency magic).
-
-Sorry, I don't quite follow?
-How would it depend on a physically-tagged cache?
-
-> > +       phys_call_epilogue();
-> > +
-> > +       return status;
-> > +}
-
-
-> > diff --git a/arch/arm/kernel/uefi_phys.S b/arch/arm/kernel/uefi_phys.S
-> > new file mode 100644
-> > index 0000000..e9a1542
-> > --- /dev/null
-> > +++ b/arch/arm/kernel/uefi_phys.S
-> > @@ -0,0 +1,59 @@
-> > +/*
-> > + * arch/arm/kernel/uefi_phys.S
-> > + *
-> > + * Copyright (C) 2013  Linaro Ltd.
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + */
-> > +
-> > +#include <linux/linkage.h>
-> > +#define PAR_MASK 0xfff
-> > +
-> > +       .text
-> > +@ uefi_phys_call(a, b, c, d, *f)
-> > +       .align  5
-> > +        .pushsection    .idmap.text, "ax"
-> > +ENTRY(uefi_phys_call)
-> > +       @ Save physical context
-> > +       mov     r12, sp
-> > +       push    {r4-r5, r12, lr}
-> > +
-> > +       @ Extract function pointer (don't write r12 beyond this)
-> > +       ldr     r12, [sp, #16]
-> > +
-> > +       @ Convert sp to 32-bit physical
-> > +       mov     lr, sp
-> > +       ldr     r4, =PAR_MASK
-> > +       and     r5, lr, r4                      @ Extract lower 12 bits of sp
-> > +       mcr     p15, 0, lr, c7, c8, 1           @ Write VA -> ATS1CPW
-> 
-> This is broken without an isb but, more to the point, why can't we just do
-> the standard lowmem virt_to_phys conversion here instead?
-
-I can't use that from within asm (right?). Are you suggesting that I
-should duplicate the mechanism of virt_to_phys here?
-
-> > +       mrc     p15, 0, lr, c7, c4, 0           @ Physical Address Register
-> > +       mvn     r4, r4
-> > +       and     lr, lr, r4                      @ Clear lower 12 bits of PA
-> > +       add     lr, lr, r5                      @ Calculate phys sp
-> > +       mov     sp, lr                          @ Update
-> > +
-> > +       @ Disable MMU
-> > +        mrc     p15, 0, lr, c1, c0, 0           @ ctrl register
-> > +        bic     lr, lr, #0x1                    @ ...............m
-> > +        mcr     p15, 0, lr, c1, c0, 0           @ disable MMU
-> > +       isb
-> > +
-> > +       @ Make call
-> > +       blx     r12
-> 
-> This is basically a copy-paste of cpu_v7_reset. Perhaps using some assembler
-> macros would help here?
-
-Well, I explicitly don't want to touch SCTLR.TE.
-We could macro-ize it, but I think that would increase the amount of
-code.
-
-> > +
-> > +       pop     {r4-r5, r12, lr}
-> > +
-> > +       @ Enable MMU + Caches
-> > +        mrc     p15, 0, r1, c1, c0, 0          @ ctrl register
-> > +        orr     r1, r1, #0x1000                        @ ...i............
-> > +        orr     r1, r1, #0x0005                        @ .............c.m
-> > +        mcr     p15, 0, r1, c1, c0, 0          @ enable MMU
-> > +       isb
-> 
-> Why do we have to enable the caches so early?
-
-You'd prefer it being done back in phys_call_epilogue()?
-
-/
-    Leif
