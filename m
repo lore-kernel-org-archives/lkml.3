@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab3K2UJP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 15:09:15 -0500
-Received: from imap.thunk.org ([74.207.234.97]:34862 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752498Ab3K2UJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 15:09:11 -0500
-Date: Fri, 29 Nov 2013 15:09:05 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Greg Price <price@mit.edu>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/9] random: simplify loop in random_read
-Message-ID: <20131129200905.GD3778@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Greg Price <price@MIT.EDU>,
-	linux-kernel@vger.kernel.org
-References: <cover.1384329436.git.price@mit.edu>
- <20131113080740.GR16018@ringworld.MIT.EDU>
+	id S1754497Ab3K2UJd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 15:09:33 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:37886 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754193Ab3K2UJa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 15:09:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131113080740.GR16018@ringworld.MIT.EDU>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <5298F3A1.7070503@metafoo.de>
+References: <1384520071-16463-1-git-send-email-valentine.barshak@cogentembedded.com>
+	<5295E231.9030200@cisco.com>
+	<5295E641.6060603@cogentembedded.com>
+	<2150651.hQNra4Rlob@avalon>
+	<CACRpkdZQa626hNRFcGvk4t7Z8scTCoEcf7AqO-FsL=BGk6UfeA@mail.gmail.com>
+	<52987058.80700@metafoo.de>
+	<CACRpkdYuiwH5MzdY3HO7oBSGLqRr5t4HMvGscjsf4QL2G1wiNw@mail.gmail.com>
+	<52989B13.8010207@metafoo.de>
+	<CACRpkda89fqGd6+ShvFXz-7i56KfG43EggBtjbdKyOCGnJu5Cg@mail.gmail.com>
+	<5298F3A1.7070503@metafoo.de>
+Date: Fri, 29 Nov 2013 21:09:29 +0100
+Message-ID: <CACRpkdbgbb_dcxyaGpdpwiHxd9p1bEc2JB5bzK5dDBHFcHwjzA@mail.gmail.com>
+Subject: Re: [PATCH V2] media: i2c: Add ADV761X support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lars-Peter Clausen <lars@metafoo.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Valentine <valentine.barshak@cogentembedded.com>,
+        Hans Verkuil <hansverk@cisco.com>, Hans Verkuil <hverkuil@xs4all.nl>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Simon Horman <horms@verge.net.au>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Wolfram Sang <wsa@the-dreams.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 03:07:40AM -0500, Greg Price wrote:
-> The loop condition never changes until just before a break, so we
-> might as well write it as a constant.  Also since v2.6.33-rc7~40^2~2
-> ("random: drop weird m_time/a_time manipulation") we don't do
-> anything after the loop finishes, so the 'break's might as well
-> return directly.  Some other simplifications.
-> 
-> The behavior should be identical except that I've changed a debug
-> message.
-> 
-> Cc: "Theodore Ts'o" <tytso@mit.edu>
-> Signed-off-by: Greg Price <price@mit.edu>
+On Fri, Nov 29, 2013 at 9:05 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+> On 11/29/2013 08:52 PM, Linus Walleij wrote:
 
-Applied, although I slightly edited the commit description the the
-debug message mentioned in the description was removed since the first
-version of your patch series, and it wasn't updated as part of the
-rebase.
+>> I guess you may be referring to the problem of instatiating
+>> a dynamic IRQ chip in *board code* and then passing the
+>> obtained dynamic IRQ numbers as resources to the
+>> devices also created in a board file?
+>>
+>
+> Yes.
+>
+>> That would be like you're asking for a function that would
+>> return the base of an irq_chip, that needs to be discussed
+>> with the irq maintainers, so not much I can say, but maybe
+>> I misunderstood this?
+>
+> I my opinion the best solution for this problem is to have the same lookup
+> mechanism we've had for clocks, regulators, etc and now also GPIOs.
 
-						- Ted
+Hm this needs to be discussed with some irq people...
+
+Yours,
+Linus Walleij
