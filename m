@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111Ab3K2IQE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 03:16:04 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:52183 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751015Ab3K2IQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 03:16:01 -0500
-Message-ID: <52984CE8.50803@ti.com>
-Date: Fri, 29 Nov 2013 13:44:32 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1752398Ab3K2IRU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 03:17:20 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:28303 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab3K2IRS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 03:17:18 -0500
+Date: Fri, 29 Nov 2013 11:16:47 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Akhil Bhansali <bhansaliakhil@gmail.com>,
+        rchinthekindi <rchinthekindi@stec-inc.com>,
+        Mike Snitzer <snitzer@redhat.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] skd: wrong limiter in skd_acquire_msix()
+Message-ID: <20131129081646.GB3490@elgon.mountain>
 MIME-Version: 1.0
-To: <wim@iguana.be>
-CC: Guenter Roeck <linux@roeck-us.net>,
-        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
-        <linux-watchdog@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <Pawel.Moll@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <galak@kernel.crashing.org>,
-        <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
-        <grant.likely@linaro.org>, <grygorii.strashko@ti.com>
-Subject: Re: [PATCH] watchdog: davinci: rename platform driver to davinci-wdt
-References: <1385559113-4354-1-git-send-email-ivan.khoronzhuk@ti.com> <5295FB0E.4070406@ti.com> <52961665.3060309@roeck-us.net> <5296DCD6.3030002@ti.com> <52973E40.4060400@roeck-us.net>
-In-Reply-To: <52973E40.4060400@roeck-us.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wim,
+On some paths, there can be fewer than SKD_MAX_MSIX_COUNT (13) elements
+in the skdev->msix_entries[] array so we would be going past the end of
+the array.
 
-On Thursday 28 November 2013 06:29 PM, Guenter Roeck wrote:
-> On 11/27/2013 10:04 PM, Sekhar Nori wrote:
->> On Wednesday 27 November 2013 09:27 PM, Guenter Roeck wrote:
->>> On 11/27/2013 06:00 AM, Sekhar Nori wrote:
->>>> On Wednesday 27 November 2013 07:01 PM, Ivan Khoronzhuk wrote:
->>>>> As we switch to use the watchdog core which permits more than one
->>>>> active watchdog in the system, rename platform driver to
->>>>> "davinci-wdt" to be identifiable.
->>>>>
->>>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->>>>
->>>> Looks good to me. Since bulk of this patch touches mach-davinci, I
->>>> would
->>>> like to take this through my tree to avoid conflicts with other
->>>> mach-davinci patches I accept.
->>>>
->>>
->>> Good idea, and makes sense.
->>
->> Added to v3.14/soc with your Reviewed-by
->>
-> 
-> You should get an Ack from Wim.
+Fixes: e67f86b31ae5 ('Add support for sTec's pci-e flash card Kronos')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
+Static checker stuff.  Compile tested only.
 
-Can you please provide your ack? I will add it to the existing commit.
-
-Thanks,
-Sekhar
+diff --git a/drivers/block/skd_main.c b/drivers/block/skd_main.c
+index 9199c93be926..d0f3e4e81cc5 100644
+--- a/drivers/block/skd_main.c
++++ b/drivers/block/skd_main.c
+@@ -3989,7 +3989,7 @@ static int skd_acquire_msix(struct skd_device *skdev)
+ 	}
+ 
+ 	/* Enable MSI-X vectors for the base queue */
+-	for (i = 0; i < SKD_MAX_MSIX_COUNT; i++) {
++	for (i = 0; i < skdev->msix_count; i++) {
+ 		qentry = &skdev->msix_entries[i];
+ 		snprintf(qentry->isr_name, sizeof(qentry->isr_name),
+ 			 "%s%d-msix %s", DRV_NAME, skdev->devno,
