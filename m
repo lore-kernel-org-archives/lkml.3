@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107Ab3K2NoO (ORCPT <rfc822;w@1wt.eu>);
+	id S1756385Ab3K2NoR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 08:44:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40801 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754452Ab3K2NoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 29 Nov 2013 08:44:14 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:58802 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754452Ab3K2NoK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 08:44:10 -0500
-Date: Fri, 29 Nov 2013 08:44:06 -0500
-From: Tejun Heo <htejun@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, zhang.yi20@zte.com.cn,
-        lkml <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 1/1] usermodehelper: kill
- ____call_usermodehelper()->set_cpus_allowed_ptr()
-Message-ID: <20131129134406.GA3717@htj.dyndns.org>
-References: <20131128114542.GA3826@redhat.com>
- <20131128121748.GN10022@twins.programming.kicks-ass.net>
- <20131128133152.GA821@redhat.com>
- <20131128133947.GR10022@twins.programming.kicks-ass.net>
- <20131128142359.GA6420@redhat.com>
- <20131128143155.GC3925@htj.dyndns.org>
- <20131128150055.GA11956@redhat.com>
- <20131128150233.GA10022@twins.programming.kicks-ass.net>
- <20131128193330.GA24767@redhat.com>
- <20131128193349.GB24767@redhat.com>
+Date: Fri, 29 Nov 2013 14:44:10 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH v3 1/4] perf diff: color the Delta column
+Message-ID: <20131129134410.GB25751@krava.brq.redhat.com>
+References: <1385550154-11385-1-git-send-email-artagnon@gmail.com>
+ <1385550154-11385-2-git-send-email-artagnon@gmail.com>
+ <20131128150710.GE1245@krava.brq.redhat.com>
+ <CALkWK0nr9v5P5sO6UDCMr73i5r+PYaS1Da8vST9aUcHZnqv8JQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131128193349.GB24767@redhat.com>
+In-Reply-To: <CALkWK0nr9v5P5sO6UDCMr73i5r+PYaS1Da8vST9aUcHZnqv8JQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Oleg.
+On Thu, Nov 28, 2013 at 10:54:25PM +0530, Ramkumar Ramachandra wrote:
+> Jiri Olsa wrote:
+> > these colors are not consistent with colors in baseline,
+> > moreover all negative values are shown as red
+> >
+> > - please check get_percent_color function (used for baseline),
+> >   it checks the percentage against following values:
+> >
+> >   #define MIN_GREEN       0.5
+> >   #define MIN_RED         5.0
+> 
+> That was intentional. If you want colors that are consistent with the
+> baseline, what do we do about [4/4], where wdiff numbers can be huge?
+> (currently I use [green, red] for [positive, negative] there too)
 
-On Thu, Nov 28, 2013 at 08:33:49PM +0100, Oleg Nesterov wrote:
-> @@ -208,13 +208,9 @@ static int ____call_usermodehelper(void *data)
->  	spin_lock_irq(&current->sighand->siglock);
->  	flush_signal_handlers(current, 1);
->  	spin_unlock_irq(&current->sighand->siglock);
-> -
-> -	/* We can run anywhere, unlike our parent keventd(). */
-> -	set_cpus_allowed_ptr(current, cpu_all_mask);
+you're, ratio and wdiff need special treatment..
 
-I don't think this is correct on numa machines where unbound workers
-are NUMA-node affine by default.
+but I expect delta to be have same colors as baseline
+(regardless of the +-)
 
-Thanks.
-
--- 
-tejun
+thanks,
+jirka
