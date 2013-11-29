@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab3K2VY5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 16:24:57 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53548 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752606Ab3K2VYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 16:24:54 -0500
-Message-ID: <529905F9.30703@zytor.com>
-Date: Fri, 29 Nov 2013 13:24:09 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH] Add a text_poke syscall v2
-References: <1385426236-14960-1-git-send-email-andi@firstfloor.org> <20131129183558.GA9803@redhat.com> <20131129195419.GB17656@two.firstfloor.org> <20131129200532.GA13561@redhat.com> <5298F66A.2010600@zytor.com> <20131129203550.GA14723@redhat.com>
-In-Reply-To: <20131129203550.GA14723@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755113Ab3K2Vdp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 16:33:45 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:54889 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752545Ab3K2Vdm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 16:33:42 -0500
+Date: Fri, 29 Nov 2013 16:33:39 -0500 (EST)
+Message-Id: <20131129.163339.2047522433275114284.davem@davemloft.net>
+To: shawn@churchofgit.com
+Cc: hannes@stressinduktion.org, eric.dumazet@gmail.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, linux-crypto@vger.kernel.org,
+        netdev@vger.kernel.org, herbert@gondor.apana.org.au,
+        therbert@google.com, stable@vger.kernel.org
+Subject: Re: [PATCH] update consumers of MSG_MORE to recognize
+ MSG_SENDPAGE_NOTLAST
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1385361388-2175-1-git-send-email-shawn@churchofgit.com>
+References: <20131125042633.GA4156@order.stressinduktion.org>
+	<1385361388-2175-1-git-send-email-shawn@churchofgit.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 29 Nov 2013 13:33:42 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2013 12:35 PM, Oleg Nesterov wrote:
-> On 11/29, H. Peter Anvin wrote:
->>
->> On 11/29/2013 12:05 PM, Oleg Nesterov wrote:
->>>
->>> Can't we invalidate pte (so that any user will stuck in page fault),
->>> update the page(s), restore the pte and drop the locks?
->>
->> That would require a global TLB shootdown
-> 
-> Well, it is not really global, it is for mm_cpumask() and for good
-> reason?
-> 
-> And is it really worse than on_each_cpu(do_sync_core) and the usage
-> of text_mutex?
-> 
+From: Shawn Landden <shawn@churchofgit.com>
+Date: Sun, 24 Nov 2013 22:36:28 -0800
 
-Probably not, but one would have to consider the total amount of
-synchronization needed.
-
->> (and wouldn't help
->> shared-memory code segments, if we care about that at all.)
+> Commit 35f9c09fe (tcp: tcp_sendpages() should call tcp_push() once)
+> added an internal flag MSG_SENDPAGE_NOTLAST, similar to
+> MSG_MORE.
 > 
-> Well, I think this should only support the private mappings.
+> algif_hash, algif_skcipher, and udp used MSG_MORE from tcp_sendpages()
+> and need to see the new flag as identical to MSG_MORE.
 > 
+> This fixes sendfile() on AF_ALG.
+> 
+> v3: also fix udp
+> 
+> Cc: Tom Herbert <therbert@google.com>
+> Cc: Eric Dumazet <eric.dumazet@gmail.com>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: <stable@vger.kernel.org> # 3.4.x + 3.2.x
+> Reported-and-tested-by: Shawn Landden <shawnlandden@gmail.com>
+> Original-patch: Richard Weinberger <richard@nod.at>
+> Signed-off-by: Shawn Landden <shawn@churchofgit.com>
 
-Well, what do you do if someone tries this on a MAP_SHARED mapping?
-Error out?
-
-	-hpa
-
+Applied and queued up for -stable, thanks everyone.
