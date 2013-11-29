@@ -1,41 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874Ab3K2UAV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 15:00:21 -0500
-Received: from imap.thunk.org ([74.207.234.97]:34858 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754647Ab3K2UAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 15:00:16 -0500
-Date: Fri, 29 Nov 2013 15:00:09 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Greg Price <price@mit.edu>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/9] random: fix description of get_random_bytes
-Message-ID: <20131129200009.GC3778@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Greg Price <price@MIT.EDU>,
-	linux-kernel@vger.kernel.org
-References: <cover.1384329436.git.price@mit.edu>
- <20131113080732.GQ16018@ringworld.MIT.EDU>
+	id S1755036Ab3K2UAt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 15:00:49 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:53278 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754031Ab3K2UAn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 15:00:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131113080732.GQ16018@ringworld.MIT.EDU>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Reply-To: fdmanana@gmail.com
+In-Reply-To: <1385744475-9614-1-git-send-email-mpn@google.com>
+References: <1385744475-9614-1-git-send-email-mpn@google.com>
+Date: Fri, 29 Nov 2013 20:00:42 +0000
+Message-ID: <CAL3q7H7-g9YVr9cCmH3qeLTn+U5hv_Dz5EhkJXGh7rp-RScn6g@mail.gmail.com>
+Subject: Re: [PATCH] btrfs: remove dead code
+From: Filipe David Manana <fdmanana@gmail.com>
+To: Michal Nazarewicz <mpn@google.com>
+Cc: Chris Mason <chris.mason@fusionio.com>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 03:07:32AM -0500, Greg Price wrote:
-> After this remark was written, commit d2e7c96af added a use of
-> arch_get_random_long() inside the get_random_bytes codepath.
-> The main point stands, but it needs to be reworded.
-> 
-> Cc: "Theodore Ts'o" <tytso@mit.edu>
-> Signed-off-by: Greg Price <price@mit.edu>
+On Fri, Nov 29, 2013 at 5:01 PM, Michal Nazarewicz <mpn@google.com> wrote:
+> From: Michal Nazarewicz <mina86@mina86.com>
+>
+> [commit 8185554d: fix incorrect inode acl reset] introduced a dead
+> code by adding a condition which can never be true to an else
+> branch.  The condition can never be true because it is already
+> checked by a previous if statement which causes function to return.
+>
+> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 
-Thanks, applied.
+Reviewed-By: Filipe David Borba Manana <fdmanana@gmail.com>
 
-						- Ted
+> ---
+>  fs/btrfs/acl.c | 7 +------
+>  1 file changed, 1 insertion(+), 6 deletions(-)
+>
+> diff --git a/fs/btrfs/acl.c b/fs/btrfs/acl.c
+> index 0890c83..460f36b 100644
+> --- a/fs/btrfs/acl.c
+> +++ b/fs/btrfs/acl.c
+> @@ -225,13 +225,8 @@ int btrfs_init_acl(struct btrfs_trans_handle *trans,
+>                 ret = posix_acl_create(&acl, GFP_NOFS, &inode->i_mode);
+>                 if (ret < 0)
+>                         return ret;
+> -
+> -               if (ret > 0) {
+> -                       /* we need an acl */
+> +               if (ret > 0) /* we need an acl */
+>                         ret = btrfs_set_acl(trans, inode, acl, ACL_TYPE_ACCESS);
+> -               } else if (ret < 0) {
+> -                       cache_no_acl(inode);
+> -               }
+>         } else {
+>                 cache_no_acl(inode);
+>         }
+> --
+> 1.8.4.1
+>
+
+
+
+-- 
+Filipe David Manana,
+
+"Reasonable men adapt themselves to the world.
+ Unreasonable men adapt the world to themselves.
+ That's why all progress depends on unreasonable men."
