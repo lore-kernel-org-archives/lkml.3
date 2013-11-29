@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394Ab3K2XdH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 18:33:07 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:65365 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751073Ab3K2XdD (ORCPT
+	id S1751528Ab3K2XmZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 18:42:25 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:62468 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794Ab3K2XmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 18:33:03 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: [PATCH v2 04/10] PCI: Destroy pci dev only once
-Date: Sat, 30 Nov 2013 00:45:55 +0100
-Message-ID: <4276127.HzbOlVUbc2@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <461934992.nFRx8soJrp@vostro.rjw.lan>
-References: <1385429290-25397-1-git-send-email-yinghai@kernel.org> <CAE9FiQXevSPmPEvxzXjC-CFhpYHic0v+vN5+JV3j5kmX-wv_GQ@mail.gmail.com> <461934992.nFRx8soJrp@vostro.rjw.lan>
+	Fri, 29 Nov 2013 18:42:20 -0500
+Message-ID: <52992659.5040503@gmail.com>
+Date: Fri, 29 Nov 2013 18:42:17 -0500
+From: Austin S Hemmelgarn <ahferroin7@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Andreas Mohr <andi@lisas.de>, venkata koppula <vmrkoppula@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Copying large files eats all of the RAM
+References: <20131129215616.GA32242@rhlx01.hs-esslingen.de>
+In-Reply-To: <20131129215616.GA32242@rhlx01.hs-esslingen.de>
+X-Enigmail-Version: 1.6
+OpenPGP: id=85D2EC0F
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, November 30, 2013 12:38:26 AM Rafael J. Wysocki wrote:
-> On Tuesday, November 26, 2013 06:26:54 PM Yinghai Lu wrote:
-> > On Tue, Nov 26, 2013 at 5:24 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > >
-> > > So assume pci_destroy_dev() is called twice in parallel for the same dev
-> > > by two different threads.  Thread 1 does the atomic_inc_and_test() and
-> > > finds that it is OK to do the device_del() and put_device() which causes
-> > > the device object to be freed.  Then thread 2 does the atomic_inc_and_test()
-> > > on the already freed device object and crashes the kernel.
-> > >
-> > thread2 should still hold one extra reference.
-> > that is in
-> >   device_schedule_callback
-> >      ==> sysfs_schedule_callback
-> >          ==> kobject_get(kobj)
-> > 
-> > pci_destroy_dev for thread2 is called at this point.
-> > 
-> > and that reference will be released from
-> >         sysfs_schedule_callback
-> >         ==> kobject_put()...
+On 11/29/2013 04:56 PM, Andreas Mohr wrote:
+> Hi,
 > 
-> Well, that would be the case if thread 2 was started by device_schedule_callback(),
-> but again, for example, it may be trim_stale_devices() started by acpiphp_check_bridge()
-> that doesn't hold extra references to the pci_dev.  [Well, that piece of code
-> is racy anyway, because it walks bus->devices without locking.  Which is my
-> fault too, because I overlooked that.  Shame, shame.]
+>> My laptop has 4GB of ram, before I issue the command around 1.5GB of
+>> memory
+>> is used, when I issue the cp command around 3.7GB of memory is used.
+>> And the cp command takes a lot of time to copy.
+>>
+>> I am not able to launch other applications(take a lot of time) and
+>> even compiz freezes frequently. my laptop has Ubuntu installed on it.
+>>
+>> Is this the problem with only my system or it is a common problem with
+>> Linux?.
+>>
+>> Is there any way to stop any copy command to use all of my memory.
 > 
-> Perhaps we can do something like the (untested) patch below (in addition to the
-> $subject patch).  Do you see any immediate problems with it?
+> The purpose of a good operating system is *exactly* to optimize the
+> *all* RAM is used, *all* the time optimum to the highest degree.
+> Or would you want to have your power supply used to power useless
+> memory that's sitting idle?
+> 
+> It's probably a good idea to read up on the many sites which explain
+> important OS caching mechanisms.
+> 
+> That said, there may of course be situations where too much
+> competition/contention for resources occurs, or where calculation of the
+> kept-free-for-reuse memory amount is sub-optimal, leaving overly scarce
+> amounts of memory available for immediate use.
+> But that should be a matter of optimizing core kernel algorithms
+> even more than they already are.
+> 
+> And it's also known that for certain situations (e.g. trying to push very large
+> amounts of data over a lowly USB 1.1 USB stick connection),
+> Linux does (or did?) tend to have issues with that cached data piling up
+> in somewhat negative ways prior to getting flushed over the connection,
+> thereby causing system performance to degrade (I'm not in the know of
+> how much that still applies to very new Linux kernel versions).
+> 
+> But in your case that might simply be a problem of your particular
+> hardware (IRQ issues, improperly implemented drivers, ...).
+> Some benchmarking activities might be able to provide more details
+> (e.g. hdparm -tT, bonnie++ results, memory performance tests, etc.).
+> 
+> cat /proc/slabinfo
+> ought to provide an initial overview of which cache elements
+> manage to keep the largest memory areas in service.
+> 
 
-Ah, I see one.  It will break pci_stop_bus_device() and pci_remove_bus_device().
-So much for being clever.
+I think it is more likely hardware related, the USB storage (and other
+slow device) caching issues are related to the actual amount of memory
+in the system (and how slow the device is).  Linux by default caches
+writes up to 10% of system memory prior to starting write-back on a 4G
+system this is only 400M,  the easy way to check though is to try the
+same operation after running:
+	echo $((16*1024*1024)) > /proc/sys/vm/dirty_background_bytes
+this will configure things to start write-back of the data much earlier.
 
-Moreover, it looks like those two routines above are racy too for the same
-reason?
-
-Rafael
-
+On the other hand, if you are doing this between locations on an SSD,
+that might also be part of the issue, write operations on SSD's take
+much longer than reads, and most of them can't do a read operation while
+the write operation is running (USB flash drives have similar issues,
+which is part of why the caching issues are so evident with them).
