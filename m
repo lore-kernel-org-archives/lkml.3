@@ -1,49 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab3K2UWE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 15:22:04 -0500
-Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754647Ab3K2UWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 15:22:02 -0500
-From: Richard Weinberger <richard@nod.at>
-To: viro@zeniv.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH] Call arch_pick_mmap_layout() only once
-Date: Fri, 29 Nov 2013 21:21:50 +0100
-Message-Id: <1385756510-2556-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.1.4
+	id S1754271Ab3K2U0T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 15:26:19 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:15319 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752192Ab3K2U0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 15:26:18 -0500
+X-IronPort-AV: E=Sophos;i="4.93,798,1378857600"; 
+   d="scan'208";a="79283836"
+Message-ID: <5298F867.3030200@citrix.com>
+Date: Fri, 29 Nov 2013 20:26:15 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>,
+        <paul.durrant@citrix.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>
+Subject: Re: [PATCH net-next] xen-netback: Fix pull size in checksum_setup_ip*
+References: <1385751407-9365-1-git-send-email-zoltan.kiss@citrix.com>
+In-Reply-To: <1385751407-9365-1-git-send-email-zoltan.kiss@citrix.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently both setup_new_exec() and flush_old_exec() issue
-a call to arch_pick_mmap_layout().
-As setup_new_exec() and flush_old_exec() are always called
-pairwise arch_pick_mmap_layout() is called twice.
+Or would it make sense to drop header_size and use off + something as 
+function parameters?
 
-This patch removes one call from setup_new_exec() to have
-it only called once.
+Zoli
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- fs/exec.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/fs/exec.c b/fs/exec.c
-index 7ea097f..13226bb 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1109,8 +1109,6 @@ EXPORT_SYMBOL(would_dump);
- 
- void setup_new_exec(struct linux_binprm * bprm)
- {
--	arch_pick_mmap_layout(current->mm);
--
- 	/* This is the point of no return */
- 	current->sas_ss_sp = current->sas_ss_size = 0;
- 
--- 
-1.8.1.4
+On 29/11/13 18:56, Zoltan Kiss wrote:
+> Before checksum setup we need to make sure we have enough data in linear
+> buffer, so we do a pull if not. The calculation of the required data counts
+> with skb->network_header, which is the headroom size actually. This is not
+> necessary, and can cause unreasonable pulling. I've also removed
+> MAX_IPOPTLEN, as we only need the base header at that point.
+>
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>
+> ---
+>   drivers/net/xen-netback/netback.c |   24 ++++++++----------------
+>   1 file changed, 8 insertions(+), 16 deletions(-)
+>
+> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+> index 919b650..adadf76 100644
+> --- a/drivers/net/xen-netback/netback.c
+> +++ b/drivers/net/xen-netback/netback.c
+> @@ -1169,8 +1169,7 @@ static int checksum_setup_ip(struct xenvif *vif, struct sk_buff *skb,
+>
+>   	off = sizeof(struct iphdr);
+>
+> -	header_size = skb->network_header + off + MAX_IPOPTLEN;
+> -	maybe_pull_tail(skb, header_size);
+> +	maybe_pull_tail(skb, off);
+>
+>   	off = iph->ihl * 4;
+>
+> @@ -1183,8 +1182,7 @@ static int checksum_setup_ip(struct xenvif *vif, struct sk_buff *skb,
+>   		if (recalculate_partial_csum) {
+>   			struct tcphdr *tcph = tcp_hdr(skb);
+>
+> -			header_size = skb->network_header +
+> -				off +
+> +			header_size = off +
+>   				sizeof(struct tcphdr);
+>   			maybe_pull_tail(skb, header_size);
+>
+> @@ -1201,8 +1199,7 @@ static int checksum_setup_ip(struct xenvif *vif, struct sk_buff *skb,
+>   		if (recalculate_partial_csum) {
+>   			struct udphdr *udph = udp_hdr(skb);
+>
+> -			header_size = skb->network_header +
+> -				off +
+> +			header_size = off +
+>   				sizeof(struct udphdr);
+>   			maybe_pull_tail(skb, header_size);
+>
+> @@ -1241,8 +1238,7 @@ static int checksum_setup_ipv6(struct xenvif *vif, struct sk_buff *skb,
+>
+>   	off = sizeof(struct ipv6hdr);
+>
+> -	header_size = skb->network_header + off;
+> -	maybe_pull_tail(skb, header_size);
+> +	maybe_pull_tail(skb, off);
+>
+>   	nexthdr = ipv6h->nexthdr;
+>
+> @@ -1254,8 +1250,7 @@ static int checksum_setup_ipv6(struct xenvif *vif, struct sk_buff *skb,
+>   		case IPPROTO_ROUTING: {
+>   			struct ipv6_opt_hdr *hp = (void *)(skb->data + off);
+>
+> -			header_size = skb->network_header +
+> -				off +
+> +			header_size = off +
+>   				sizeof(struct ipv6_opt_hdr);
+>   			maybe_pull_tail(skb, header_size);
+>
+> @@ -1266,8 +1261,7 @@ static int checksum_setup_ipv6(struct xenvif *vif, struct sk_buff *skb,
+>   		case IPPROTO_AH: {
+>   			struct ip_auth_hdr *hp = (void *)(skb->data + off);
+>
+> -			header_size = skb->network_header +
+> -				off +
+> +			header_size = off +
+>   				sizeof(struct ip_auth_hdr);
+>   			maybe_pull_tail(skb, header_size);
+>
+> @@ -1305,8 +1299,7 @@ static int checksum_setup_ipv6(struct xenvif *vif, struct sk_buff *skb,
+>   		if (recalculate_partial_csum) {
+>   			struct tcphdr *tcph = tcp_hdr(skb);
+>
+> -			header_size = skb->network_header +
+> -				off +
+> +			header_size = off +
+>   				sizeof(struct tcphdr);
+>   			maybe_pull_tail(skb, header_size);
+>
+> @@ -1324,8 +1317,7 @@ static int checksum_setup_ipv6(struct xenvif *vif, struct sk_buff *skb,
+>   		if (recalculate_partial_csum) {
+>   			struct udphdr *udph = udp_hdr(skb);
+>
+> -			header_size = skb->network_header +
+> -				off +
+> +			header_size = off +
+>   				sizeof(struct udphdr);
+>   			maybe_pull_tail(skb, header_size);
+>
+>
 
