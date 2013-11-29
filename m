@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757137Ab3K2Rb7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 12:31:59 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53202 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752692Ab3K2Rb4 (ORCPT
+	id S1752634Ab3K2Rhe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 12:37:34 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:59679 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410Ab3K2Rhc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 12:31:56 -0500
-Date: Fri, 29 Nov 2013 17:31:17 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] arm64 fixes for 3.13-rc
-Message-ID: <20131129173112.GA16546@arm.com>
+	Fri, 29 Nov 2013 12:37:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131129164229.GG27568@sirena.org.uk>
+References: <1384859269-19801-1-git-send-email-lee.jones@linaro.org>
+	<20131129160358.GD26982@lee--X1>
+	<20131129164229.GG27568@sirena.org.uk>
+Date: Fri, 29 Nov 2013 17:37:30 +0000
+Message-ID: <CAF2Aj3gj0eAanrW__Bz1SJokKZ9cUuOi6jhaAtQucgh6pLbPbw@mail.gmail.com>
+Subject: Re: [PATCH 00/10] ASoC: dma: ARM: ux500: Obtain DMA data from Device Tree
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+>> Are you/did you already tak(e)ing this set?
+>
+> Don't send contentless nags, they're just noise.
 
-Please pull the arm64 fixes below. Thanks.
+Countless. Errr... 1 after 10 days!
 
-The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
+> Looking at my sent mail folder I see:
+>
+> | I'm happy to merge the first few patches if that's easiest for everyone
+> | else, let me know and send them to me if that's what works for people.
+>
+> which doesn't seem to have happened.
 
-  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+I'm confused. Why do you want them to be resent?
 
-are available in the git repository at:
+What about the patches which are not in the 'first few'?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git tags/arm64-stable
-
-for you to fetch changes up to 3676f9ef5481d614f8c5c857f5319755be248268:
-
-  arm64: Move PTE_PROT_NONE higher up (2013-11-29 15:22:59 +0000)
-
-----------------------------------------------------------------
-Fixes:
-- Remove preempt_count modifications in the arm64 IRQ handling code
-  since that's already dealt with in generic irq_enter/irq_exit
-- PTE_PROT_NONE bit moved higher up to avoid overlapping with the
-  hardware bits (for PROT_NONE mappings which are pte_present)
-- Big-endian fixes for ptrace support
-- Asynchronous aborts unmasking while in the kernel
-- pgprot_writecombine() change to create Normal NonCacheable memory
-  rather than Device GRE
-
-----------------------------------------------------------------
-Catalin Marinas (4):
-      arm64: dts: Reserve the memory used for secondary CPU release address
-      arm64: Unmask asynchronous aborts when in kernel mode
-      arm64: Use Normal NonCacheable memory for writecombine
-      arm64: Move PTE_PROT_NONE higher up
-
-Marc Zyngier (1):
-      arm64: let the core code deal with preempt_count
-
-Matthew Leach (2):
-      arm64: ptrace: fix compat registes get/set to be endian clean
-      arm64: debug: make aarch32 bkpt checking endian clean
-
- arch/arm64/boot/dts/foundation-v8.dts |  2 ++
- arch/arm64/include/asm/irqflags.h     |  3 +++
- arch/arm64/include/asm/pgtable.h      | 33 ++++++++++++++++-------------
- arch/arm64/kernel/debug-monitors.c    | 20 +++++++++++-------
- arch/arm64/kernel/entry.S             | 29 ++++++-------------------
- arch/arm64/kernel/ptrace.c            | 40 +++++++++++++++++------------------
- arch/arm64/kernel/setup.c             |  5 +++++
- arch/arm64/kernel/smp.c               |  1 +
- 8 files changed, 67 insertions(+), 66 deletions(-)
+I took a look at asoc/topic/ux500, which was mentioned in the same
+reply, but they don't appear to be there? Am I looking at a different tree?
 
 -- 
-Catalin
+Lee Jones
+Linaro ST Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
