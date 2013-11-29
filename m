@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755660Ab3K2N04 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 08:26:56 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36935 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545Ab3K2N0z (ORCPT
+	id S1754900Ab3K2NbY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 08:31:24 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:41426 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752574Ab3K2NbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 08:26:55 -0500
-Date: Fri, 29 Nov 2013 14:26:53 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Peter Korsgaard <jacmet@sunsite.dk>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Richard Genoud <richard.genoud@gmail.com>, zhouguangming@innofidei.com,
-        Hans Zhang <zhanghonghui@innofidei.com>,
-        linux-mtd <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Make the mtdblock read/write skip the bad nand sector
-Message-ID: <20131129132653.GA14204@amd.pavel.ucw.cz>
-References: <20131122114509.GB2414@localhost>
- <5292A7E7.5060003@innofidei.com>
- <20131125101147.GA2408@localhost>
- <CACQ1gAi26WeiopptcZmBp6h0a5TacLo5mvVCOm6-H_1HtnwvXg@mail.gmail.com>
- <529334D9.2030204@innofidei.com>
- <20131125115238.GC2408@localhost>
- <1385381770.24518.18.camel@shinybook.infradead.org>
- <20131125123012.GE2408@localhost>
- <87fvqkldmh.fsf@dell.be.48ers.dk>
- <1385394419.24518.40.camel@shinybook.infradead.org>
+	Fri, 29 Nov 2013 08:31:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385394419.24518.40.camel@shinybook.infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <52986CA8.3010601@overkiz.com>
+References: <1377687640-10529-1-git-send-email-b.brezillon@overkiz.com>
+	<1377687995-10758-1-git-send-email-b.brezillon@overkiz.com>
+	<20131120145926.GE14627@ns203013.ovh.net>
+	<528CDFFB.1020601@overkiz.com>
+	<CACRpkdboBg4YOnMNiar0DDBVnoky=zNky+Pzyp1=P_POtH15qQ@mail.gmail.com>
+	<528DE1C4.6060900@overkiz.com>
+	<CACRpkdZdweyWJefttiuiYAJ9qhahLbnj7eHUiLV_83UA41X_uQ@mail.gmail.com>
+	<5294D64D.7000100@overkiz.com>
+	<CACRpkdZoAjuWVpWZfvPgOAd7qB1ZBtC+45nD3SYay3SrMhqwVA@mail.gmail.com>
+	<52986CA8.3010601@overkiz.com>
+Date: Fri, 29 Nov 2013 14:31:21 +0100
+Message-ID: <CACRpkdag5=QYsWe81ocpkMp2APaoBAOOn2r0iAVdf9DHTKrSXA@mail.gmail.com>
+Subject: Re: [PATCH 5/9] ARM: at91/dt: add mmc0 slot0 support to at91rm9200ek board
+From: Linus Walleij <linus.walleij@linaro.org>
+To: boris brezillon <b.brezillon@overkiz.com>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Joachim Eastwood <manabian@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Fri, Nov 29, 2013 at 11:30 AM, boris brezillon
+<b.brezillon@overkiz.com> wrote:
+> On 29/11/2013 11:03, Linus Walleij wrote:
 
-> > Hi,
-> > 
-> >  > Thanks a lot for the insight. After reading this, I'm wondering what's
-> >  > preventing us from killing MTD block support altogether. Artem, already
-> >  > suggested it a while back...
-> > 
-> > People using squashfs/cramfs/readonly ext2/.. on a NOR flash?
-> 
-> And people who *still*, after all these years, don't realise that they
-> don't actually need it to mount JFFS2. Even as the root file system
-> (although they *do* need rootfstype=jffs2).
+>> I guess one way is to obtain this GPIO in board code and just
+>> flick it depending on which device you register.
+(...)
+> The whole goal of moving from board files to dt is to drop all board
+> specific processing or initialization and only keep a common description
+> with generic drivers capable of handling common use cases.
+>
+> I'm not sure providing new board specific drivers is a good solution
+> (even if it is the simplest way to achieve our goal).
+>
+> Could we have something similar to pinctrl but with gpios :
+> when the device is probed the device/driver core code request the gpio
+> configure it appropriately and set it to the requested value (if configured
+> as output).
 
-I must admit I'm such person...
+This has been suggested under the name "GPIO hogs" in the past.
 
-I guess printk("...you don't really need mtdblock...") in jffs2's
-mount code would probably improve that realisation...
+It would work similar to how pinctrl hogs work by associating the
+GPIO line the controller itself, using some specific string
+like gpio-input-hogs = <...> / gpio-output-hogs = <...>;
 
-This certainly does not help:
+The gpiolib core will then grab and set up these before
+returning from the registration call so noone ever gets a chance
+to use them.
 
-pavel@amd:/data/l/linux-n900$ grep -ri mtdblock  Documentation
-Documentation/frv/booting.txt:	   exec -c "console=ttySM0,115200
-ip=:::::dhcp root=/dev/mtdblock2 rw"
-Documentation/frv/booting.txt:	 /dev/mtdblock3	Fourth RedBoot
-partition on the System Flash
-Documentation/arm/SA1100/Assabet:which is the third one.  Within
-Linux, this correspond to /dev/mtdblock2.
-Documentation/arm/SA1100/Assabet:	exec -b 0x100000 -l 0xc0000 -c
-"root=/dev/mtdblock2"
+> These are just thoughts, and I guess introducing new code in the
+> device/driver core
+> code is not that easy, especially when this code is here to handle specific
+> case
+> like ours.
 
-(Should not mtdblock be at least in devices.txt file?)
+It is very easy, just write the patch, iterate it (these patches get
+a lot of scrutiny as it is core code, so expect some work and time
+to get it done), and then unless there is a blocker, I would merge it.
+The concept is entirely sound, just that someone needs to step
+up and do the work...
 
-BTW... is there documentation of mtdblock "translation layer"
-somewhere? I realize it is very simple, but it does need to keep some
-data?
-
-I guess running jffs on regular block device (USB stick, SD card) is
-not feasible?
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Yours,
+Linus Walleij
