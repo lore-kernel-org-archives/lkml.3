@@ -1,85 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932174Ab3K2Qqs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 11:46:48 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:40744 "EHLO mail.skyhub.de"
+	id S1757167Ab3K2Qrt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 11:47:49 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:40774 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751718Ab3K2Qqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 11:46:43 -0500
-Date: Fri, 29 Nov 2013 17:46:32 +0100
+	id S1754121Ab3K2Qrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 11:47:46 -0500
+Date: Fri, 29 Nov 2013 17:47:36 +0100
 From: Borislav Petkov <bp@alien8.de>
 To: Dave Young <dyoung@redhat.com>
-Cc: toshi.kani@hp.com, linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        x86@kernel.org, mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        greg@kroah.com, matt@console-pimps.org
-Subject: Re: [PATCH v4 07/12] efi: passing kexec necessary efi data via
- setup_data
-Message-ID: <20131129164632.GD4266@pd.tnic>
+Cc: Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.infradead.org, greg@kroah.com, toshi.kani@hp.com
+Subject: Re: [PATCH v4 08/12] efi: only print saved efi runtime maps instead
+ of all memmap ranges for kexec
+Message-ID: <20131129164736.GE4266@pd.tnic>
 References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
- <1385445477-9665-8-git-send-email-dyoung@redhat.com>
- <20131127140732.GD32267@pd.tnic>
- <20131129091415.GH4186@dhcp-16-126.nay.redhat.com>
+ <1385445477-9665-9-git-send-email-dyoung@redhat.com>
+ <20131127102701.GD18170@console-pimps.org>
+ <20131127142726.GE32267@pd.tnic>
+ <20131129085050.GF4186@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131129091415.GH4186@dhcp-16-126.nay.redhat.com>
+In-Reply-To: <20131129085050.GF4186@dhcp-16-126.nay.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 29, 2013 at 05:14:16PM +0800, Dave Young wrote:
-> That's reserved for future extension use, who knows if we will need to
-> pass other fields in the future.
+On Fri, Nov 29, 2013 at 04:50:50PM +0800, Dave Young wrote:
+> It's for debugging purpose, I think it's helpful.
 
-Hrrmmm, 8*64 = 64 Bytes?? And you can't change it later because of the
-situation where machines might be using older kexec-tools?
-
-> > Static function - no need for "efi_" prefix.
-> 
-> Ok. I'm not very satisfied with the function name, any better
-> suggestion?
-> 
-> reuse_config
-> use_old_config_phys_addr
-> update_config_entry_with_phys_addr
-
-Looks like we're applying quirks so apply_quirks()?
-
-And those kexec-specific quirks need to be behind CONFIG_KEXEC too, btw.
-
-> Since Matt suggest to extend the function for other possible field
-> other than smbios, so I would like to move comment to the front
-> of the function like below:
-> /*
->  * For kexec kernel there's some special config table entries which will be
->  * converted to virtual addresses after entering virtual mode. In kexec kernel
->  * we need the physical addresses instead, thus passing them via setup_data
->  * and update the entries to physical addresses in this function.
->  *
->  * Currently only handles smbios which is necessary for HP z420.
->  */
-
-That's better.
-
-> Is there any idea in your mind how to add the code for HP only?
-
-DMI?
-
-> Yes, __map_region return an error code will be better. Will you send
-> a patch for __map_region? or I can add one more patch along with next
-> version.
-
-I was going to wait for your patches to settle down first so that I
-don't disturb your work.
-
-But if you want to fix this, I certainly wouldn't want to stop you :)
-but please do so in a prepatch before your series which addresses only
-this issue.
-
-Thanks.
+Why? The first kernel did dump it already.
 
 -- 
 Regards/Gruss,
