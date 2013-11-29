@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594Ab3K2HTr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 02:19:47 -0500
-Received: from mail.fpasia.hk ([202.130.89.98]:50135 "EHLO fpa01n0.fpasia.hk"
+	id S1753362Ab3K2HUX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 02:20:23 -0500
+Received: from mail.fpasia.hk ([202.130.89.98]:50138 "EHLO fpa01n0.fpasia.hk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751136Ab3K2HTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 02:19:45 -0500
+	id S1751136Ab3K2HTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 02:19:51 -0500
 From: Chris Ruehl <chris.ruehl@gtsys.com.hk>
 To: alexander.shishkin@linux.intel.com, gregkh@linuxfoundation.org
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         Chris Ruehl <chris.ruehl@gtsys.com.hk>
-Subject: [PATCH 1/3 v2] usb: chipidea: Reallocate regmap only if lpm is detected
-Date: Fri, 29 Nov 2013 15:19:33 +0800
-Message-Id: <1385709573-10419-1-git-send-email-chris.ruehl@gtsys.com.hk>
+Subject: [PATCH 2/3 v2] usb: chipidea: Fix Internal error: : 808 [#1] ARM related to STS flag
+Date: Fri, 29 Nov 2013 15:19:45 +0800
+Message-Id: <1385709585-10459-1-git-send-email-chris.ruehl@gtsys.com.hk>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-usb: chipidea: Reallocate regmap only if lpm is detected
+usb: chipidea: Fix Internal error: : 808 [#1] ARM related to STS flag
 
-The regmap only needs to reallocate if the hw_read on the CAP register shows
-lpm is used. Therefore the if() statement check the change.
+* init the sts flag to 0 (missed)
+* set the sts flag only if not 0
 
 Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
 ---
- drivers/usb/chipidea/core.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/chipidea/core.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
-index 5d8981c..5075407 100644
+index 5075407..1a6010e 100644
 --- a/drivers/usb/chipidea/core.c
 +++ b/drivers/usb/chipidea/core.c
-@@ -208,7 +208,8 @@ static int hw_device_init(struct ci_hdrc *ci, void __iomem *base)
- 	reg = hw_read(ci, CAP_HCCPARAMS, HCCPARAMS_LEN) >>
- 		__ffs(HCCPARAMS_LEN);
- 	ci->hw_bank.lpm  = reg;
--	hw_alloc_regmap(ci, !!reg);
-+	if (reg)
-+		hw_alloc_regmap(ci, !!reg);
- 	ci->hw_bank.size = ci->hw_bank.op - ci->hw_bank.abs;
- 	ci->hw_bank.size += OP_LAST;
- 	ci->hw_bank.size /= sizeof(u32);
+@@ -245,6 +245,8 @@ static void hw_phymode_configure(struct ci_hdrc *ci)
+ {
+ 	u32 portsc, lpm, sts = 0;
+ 
+ 	switch (ci->platdata->phy_mode) {
+ 	case USBPHY_INTERFACE_MODE_UTMI:
+ 		portsc = PORTSC_PTS(PTS_UTMI);
+@@ -273,10 +275,12 @@ static void hw_phymode_configure(struct ci_hdrc *ci)
+ 
+ 	if (ci->hw_bank.lpm) {
+ 		hw_write(ci, OP_DEVLC, DEVLC_PTS(7) | DEVLC_PTW, lpm);
+-		hw_write(ci, OP_DEVLC, DEVLC_STS, sts);
++		if (sts)
++			hw_write(ci, OP_DEVLC, DEVLC_STS, sts);
+ 	} else {
+ 		hw_write(ci, OP_PORTSC, PORTSC_PTS(7) | PORTSC_PTW, portsc);
+-		hw_write(ci, OP_PORTSC, PORTSC_STS, sts);
++		if ( sts )
++			hw_write(ci, OP_PORTSC, PORTSC_STS, sts);
+ 	}
+ }
+ 
 -- 
 1.7.10.4
 
