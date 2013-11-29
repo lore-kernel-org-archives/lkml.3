@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab3K2UbQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 15:31:16 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:44432 "EHLO mail.skyhub.de"
+	id S1754683Ab3K2UfK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 15:35:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22944 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754802Ab3K2UbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 15:31:14 -0500
-Date: Fri, 29 Nov 2013 21:31:03 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Stephane Eranian <eranian@google.com>
-Cc: Vince Weaver <vince@deater.net>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Subject: Re: [PATCH v7 3/4] perf,x86: add Intel RAPL PMU support
-Message-ID: <20131129203103.GJ4266@pd.tnic>
-References: <1384275531-10892-1-git-send-email-eranian@google.com>
- <1384275531-10892-4-git-send-email-eranian@google.com>
- <alpine.DEB.2.02.1311271328590.22932@pianoman.cluster.toy>
- <CABPqkBScotKO03hTA6YNcD4sDVj_Gx1fjicmWOJh_MBYTF+rfQ@mail.gmail.com>
- <alpine.DEB.2.02.1311271653280.24499@pianoman.cluster.toy>
- <20131128122619.GA6561@gmail.com>
- <CABPqkBSiLkDCcLFz5oxs2KS02LbiMNoAucrcx36aYqodiVpCpg@mail.gmail.com>
- <alpine.DEB.2.02.1311291413430.13064@pianoman.cluster.toy>
- <CABPqkBTvhgXm_UNWDEgjP4aVf=G2MxfgBpnJBsiAZpcg7x-r=w@mail.gmail.com>
+	id S1752606Ab3K2UfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 15:35:07 -0500
+Date: Fri, 29 Nov 2013 21:35:50 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH] Add a text_poke syscall v2
+Message-ID: <20131129203550.GA14723@redhat.com>
+References: <1385426236-14960-1-git-send-email-andi@firstfloor.org> <20131129183558.GA9803@redhat.com> <20131129195419.GB17656@two.firstfloor.org> <20131129200532.GA13561@redhat.com> <5298F66A.2010600@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBTvhgXm_UNWDEgjP4aVf=G2MxfgBpnJBsiAZpcg7x-r=w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5298F66A.2010600@zytor.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 29, 2013 at 09:09:46PM +0100, Stephane Eranian wrote:
-> > So in theory it would be harmless to export the values even if not
-> > supported.  What is the worst failure mode?  That somehow a recent CPU
-> > doesn't support the MSR and we get a GPF when trying to access it?
+On 11/29, H. Peter Anvin wrote:
+>
+> On 11/29/2013 12:05 PM, Oleg Nesterov wrote:
 > >
-> Yes. I think that's what you get with DRAM on client for instance.
+> > Can't we invalidate pte (so that any user will stuck in page fault),
+> > update the page(s), restore the pte and drop the locks?
+> >
+>
+> That would require a global TLB shootdown
 
-We have rdmsr_safe for non-existent MSRs, in case touching such is the
-issue.
+Well, it is not really global, it is for mm_cpumask() and for good
+reason?
 
--- 
-Regards/Gruss,
-    Boris.
+And is it really worse than on_each_cpu(do_sync_core) and the usage
+of text_mutex?
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+> (and wouldn't help
+> shared-memory code segments, if we care about that at all.)
+
+Well, I think this should only support the private mappings.
+
+> It also
+> means much bigger code ranges would be affected.
+
+Yes, this is true.
+
+Oleg.
+
