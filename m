@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757601Ab3K2RIA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 12:08:00 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:44826 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756874Ab3K2RH7 (ORCPT
+	id S1757620Ab3K2RJX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 12:09:23 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:47234 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757178Ab3K2RJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 12:07:59 -0500
+	Fri, 29 Nov 2013 12:09:21 -0500
 From: Michal Nazarewicz <mpn@google.com>
-To: "John W. Linville" <linville@tuxdriver.com>,
-        Eugene Krasnikov <k.eugene.e@gmail.com>
-Cc: linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] net: wireless: wcn36xx: fix potential NULL pointer dereference
-Date: Fri, 29 Nov 2013 18:07:50 +0100
-Message-Id: <1385744870-10164-1-git-send-email-mpn@google.com>
+To: Mark Brown <broonie@kernel.org>, Jingoo Han <jg1.han@samsung.com>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] spi: omap-100k: remove pointless _remove function
+Date: Fri, 29 Nov 2013 18:09:07 +0100
+Message-Id: <1385744947-10283-1-git-send-email-mpn@google.com>
 X-Mailer: git-send-email 1.8.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,50 +20,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michal Nazarewicz <mina86@mina86.com>
 
-If kmalloc fails wcn36xx_smd_rsp_process will attempt to dereference
-a NULL pointer.  There might be a better error recovery then just
-printing an error, but printing an error message is better then the
-current behaviour.
+Commit [8074cf06: use devm_spi_register_master()] removed the last
+bit of omap1_spi100k_remove function that had side effects.  After
+call to spi_unregister_master was removed, the function consisted
+of:
+
+2. call to platform_get_drvdata whose return value was only used in:
+2. call to spi_master_get_devdata whose return value was not used,
+3. an if statement checking if zero was not zero, and
+4. call to platform_get_resource whose return value was not used.
+
+Ah, yes, and of course, final return 0. ;)
+
+Since omap1_spi100k_remove no longer does anything, it can be
+safely removed.
 
 Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 ---
- drivers/net/wireless/ath/wcn36xx/smd.c | 22 ++++++++++++++++------
- 1 file changed, 16 insertions(+), 6 deletions(-)
+ drivers/spi/spi-omap-100k.c | 20 --------------------
+ 1 file changed, 20 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/wcn36xx/smd.c b/drivers/net/wireless/ath/wcn36xx/smd.c
-index de9eb2c..10d6ae9 100644
---- a/drivers/net/wireless/ath/wcn36xx/smd.c
-+++ b/drivers/net/wireless/ath/wcn36xx/smd.c
-@@ -2041,13 +2041,23 @@ static void wcn36xx_smd_rsp_process(struct wcn36xx *wcn, void *buf, size_t len)
- 	case WCN36XX_HAL_DELETE_STA_CONTEXT_IND:
- 		mutex_lock(&wcn->hal_ind_mutex);
- 		msg_ind = kmalloc(sizeof(*msg_ind), GFP_KERNEL);
--		msg_ind->msg_len = len;
--		msg_ind->msg = kmalloc(len, GFP_KERNEL);
--		memcpy(msg_ind->msg, buf, len);
--		list_add_tail(&msg_ind->list, &wcn->hal_ind_queue);
--		queue_work(wcn->hal_ind_wq, &wcn->hal_ind_work);
--		wcn36xx_dbg(WCN36XX_DBG_HAL, "indication arrived\n");
-+		if (msg_ind) {
-+			msg_ind->msg_len = len;
-+			msg_ind->msg = kmalloc(len, GFP_KERNEL);
-+			memcpy(msg_ind->msg, buf, len);
-+			list_add_tail(&msg_ind->list, &wcn->hal_ind_queue);
-+			queue_work(wcn->hal_ind_wq, &wcn->hal_ind_work);
-+			wcn36xx_dbg(WCN36XX_DBG_HAL, "indication arrived\n");
-+		}
- 		mutex_unlock(&wcn->hal_ind_mutex);
-+		if (!msg_ind) {
-+			/*
-+			 * FIXME: Do something smarter then just
-+			 * printing an error when allocation fails.
-+			 */
-+			wcn36xx_err("Run out of memory while hnadling SMD_EVENT (%d)\n",
-+				    msg_header->msg_type);
-+		}
- 		break;
- 	default:
- 		wcn36xx_err("SMD_EVENT (%d) not supported\n",
+diff --git a/drivers/spi/spi-omap-100k.c b/drivers/spi/spi-omap-100k.c
+index b6ed82b..0d32054 100644
+--- a/drivers/spi/spi-omap-100k.c
++++ b/drivers/spi/spi-omap-100k.c
+@@ -470,31 +470,12 @@ err:
+ 	return status;
+ }
+ 
+-static int omap1_spi100k_remove(struct platform_device *pdev)
+-{
+-	struct spi_master       *master;
+-	struct omap1_spi100k    *spi100k;
+-	struct resource         *r;
+-	int			status = 0;
+-
+-	master = platform_get_drvdata(pdev);
+-	spi100k = spi_master_get_devdata(master);
+-
+-	if (status != 0)
+-		return status;
+-
+-	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-
+-	return 0;
+-}
+-
+ static struct platform_driver omap1_spi100k_driver = {
+ 	.driver = {
+ 		.name		= "omap1_spi100k",
+ 		.owner		= THIS_MODULE,
+ 	},
+ 	.probe		= omap1_spi100k_probe,
+-	.remove		= omap1_spi100k_remove,
+ };
+ 
+ module_platform_driver(omap1_spi100k_driver);
+@@ -502,4 +483,3 @@ module_platform_driver(omap1_spi100k_driver);
+ MODULE_DESCRIPTION("OMAP7xx SPI 100k controller driver");
+ MODULE_AUTHOR("Fabrice Crohas <fcrohas@gmail.com>");
+ MODULE_LICENSE("GPL");
+-
 -- 
 1.8.4.1
 
