@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757121Ab3K2Qmf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 11:42:35 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:42468 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755839Ab3K2Qmc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 11:42:32 -0500
-Date: Fri, 29 Nov 2013 16:42:29 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org
-Message-ID: <20131129164229.GG27568@sirena.org.uk>
-References: <1384859269-19801-1-git-send-email-lee.jones@linaro.org>
- <20131129160358.GD26982@lee--X1>
+	id S932174Ab3K2Qqs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 11:46:48 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:40744 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751718Ab3K2Qqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 11:46:43 -0500
+Date: Fri, 29 Nov 2013 17:46:32 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: toshi.kani@hp.com, linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        x86@kernel.org, mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        greg@kroah.com, matt@console-pimps.org
+Subject: Re: [PATCH v4 07/12] efi: passing kexec necessary efi data via
+ setup_data
+Message-ID: <20131129164632.GD4266@pd.tnic>
+References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
+ <1385445477-9665-8-git-send-email-dyoung@redhat.com>
+ <20131127140732.GD32267@pd.tnic>
+ <20131129091415.GH4186@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WHG05yakhlzm8Hk1"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131129160358.GD26982@lee--X1>
-X-Cookie: Boycott meat -- suck your thumb.
+In-Reply-To: <20131129091415.GH4186@dhcp-16-126.nay.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 00/10] ASoC: dma: ARM: ux500: Obtain DMA data from Device
- Tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 29, 2013 at 05:14:16PM +0800, Dave Young wrote:
+> That's reserved for future extension use, who knows if we will need to
+> pass other fields in the future.
 
---WHG05yakhlzm8Hk1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hrrmmm, 8*64 = 64 Bytes?? And you can't change it later because of the
+situation where machines might be using older kexec-tools?
 
-On Fri, Nov 29, 2013 at 04:03:58PM +0000, Lee Jones wrote:
+> > Static function - no need for "efi_" prefix.
+> 
+> Ok. I'm not very satisfied with the function name, any better
+> suggestion?
+> 
+> reuse_config
+> use_old_config_phys_addr
+> update_config_entry_with_phys_addr
 
-> Are you/did you already tak(e)ing this set?
+Looks like we're applying quirks so apply_quirks()?
 
-Don't send contentless nags, they're just noise.  Looking at my sent
-mail folder I see:
+And those kexec-specific quirks need to be behind CONFIG_KEXEC too, btw.
 
-| I'm happy to merge the first few patches if that's easiest for everyone
-| else, let me know and send them to me if that's what works for people.
+> Since Matt suggest to extend the function for other possible field
+> other than smbios, so I would like to move comment to the front
+> of the function like below:
+> /*
+>  * For kexec kernel there's some special config table entries which will be
+>  * converted to virtual addresses after entering virtual mode. In kexec kernel
+>  * we need the physical addresses instead, thus passing them via setup_data
+>  * and update the entries to physical addresses in this function.
+>  *
+>  * Currently only handles smbios which is necessary for HP z420.
+>  */
 
-which doesn't seem to have happened.
+That's better.
 
---WHG05yakhlzm8Hk1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> Is there any idea in your mind how to add the code for HP only?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+DMI?
 
-iQIcBAEBAgAGBQJSmMPyAAoJELSic+t+oim9h9IP/1183VIuoczxWPuOJwuIoMU0
-iqrR/aO4wmOXfzmZyh3ECLiyNoHBnUk12M35aS+kv4zNgXd6D+0w2sGIgTZfOfCz
-Nmqq9sK3s0Wfm464Ir0DVu06zGjjBO7WeWJTbKy68n7gE7dPRsf7nnLNeIFTM7tq
-MEzLWLpJqBH389nGB2FsBvHfjUWGfgVVPhTrUrQaBpqQb9Hmb9VQYLB/mwsMRpb3
-ypFC5pHvDhBw3xsb6yamuKCqhLGDBIcKmo+bvQH67dXecl316MwB/L1meRTN05eG
-lXU98mCAMjlehgc9U0qPMlkdGqLTgDrABtDuQYQVZYXlFBgKv+EIPN3ZxCk0tart
-eF7nthJELiMn8PmZ5vpLFgObkD78RvqRdXrDwjmSs0V3NTNobH4MUNyCKzAgvhO4
-SUQrFCopcpiJPBrzywBXxYfytGPe5F/s3ruegROlXPRP3tdsl2YX1BnIB7LGdlDh
-+tVPu0FsC7vOObtblJbNdju1jfTFqDvBBFkMU1Pz5LMd+m+cCt2HNB4kyuBvr1fq
-b+ZNsnHk3/teMgqlO3BiulSfLtms5eysEpDCXDCnt7lgHmtE6k6FN5kbuZgD09qn
-2L4AE9jaM7K8JaE0P5BPhN+z7MjhxkCFzSaxFJpg5MJUeRqtrnAFXvXgZnQNThR3
-8qs0f5M0uztIPPy6nx10
-=+p51
------END PGP SIGNATURE-----
+> Yes, __map_region return an error code will be better. Will you send
+> a patch for __map_region? or I can add one more patch along with next
+> version.
 
---WHG05yakhlzm8Hk1--
+I was going to wait for your patches to settle down first so that I
+don't disturb your work.
+
+But if you want to fix this, I certainly wouldn't want to stop you :)
+but please do so in a prepatch before your series which addresses only
+this issue.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
