@@ -1,118 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab3K2Shp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 13:37:45 -0500
-Received: from ttcsn157-7.ttc.cz ([212.158.157.7]:58008 "EHLO ixit.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752741Ab3K2Sho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 13:37:44 -0500
-X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Nov 2013 13:37:44 EST
+	id S1754743Ab3K2SjJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 13:39:09 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49304 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752634Ab3K2SjG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 13:39:06 -0500
+Date: Fri, 29 Nov 2013 18:38:55 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
+        fabio.estevam@freescale.com, LW@KARO-electronics.de, oskar@scara.com,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Message-ID: <20131129183855.GI27568@sirena.org.uk>
+References: <1385621219-20652-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Fri, 29 Nov 2013 19:26:02 +0100
-From: David Heidelberger <david.heidelberger@ixit.cz>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        eric.y.miao@gmail.com, haojian.zhuang@gmail.com,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v2] ARM: pxa: Move iotable mapping inside vmalloc region
-In-Reply-To: <1385683243-6688-1-git-send-email-ezequiel.garcia@free-electrons.com>
-References: <1385683243-6688-1-git-send-email-ezequiel.garcia@free-electrons.com>
-Message-ID: <3851da8e73651372353201e697c0f55f@ixit.cz>
-User-Agent: Roundcube Webmail/0.9.5
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Vo48LVc30GAQuLuW"
+Content-Disposition: inline
+In-Reply-To: <1385621219-20652-1-git-send-email-Li.Xiubo@freescale.com>
+X-Cookie: Boycott meat -- suck your thumb.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2] ASoC: SGTL5000: Fix kernel failed while trying to get
+ optional VDDD supply.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Build fails with this patch with:
-arch/arm/mach-pxa/standby.S:25: Error: missing ')'
-arch/arm/mach-pxa/standby.S:25: Error: garbage following instruction -- 
-`mov r3,#(0xff000000UL-0x00100000)'
 
-After replace VMALLOC_END to 0xff000000 (without UL) it fails with:
+--Vo48LVc30GAQuLuW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-arch/arm/mach-pxa/sleep.S:52: Error: invalid constant (fffffffffef00000) 
-after fixup
+On Thu, Nov 28, 2013 at 02:46:59PM +0800, Xiubo Li wrote:
 
-it will probably fail everywhere in asm code, where is declared 
-UNCACHED_PHYS_0
+> +static int sgtl5000_external_vddd_used(struct snd_soc_codec *codec)
+> +{
+> +	struct regulator *consumer;
+> +	struct sgtl5000_priv *sgtl5000 = snd_soc_codec_get_drvdata(codec);
+> +
+> +	consumer = regulator_get_optional(codec->dev,
+> +			sgtl5000->supplies[VDDD].supply);
+> +	if (IS_ERR(consumer))
+> +		return 0;
+> +
+> +	regulator_put(consumer);
+> +
+> +	return 1;
+> +}
 
-Thank you,
-David
+This is broken with respect to deferred probe, deferred probe returns
+an error when an external regulator is in use but not yet registered.
+The driver needs to at least handle -EPROBE_DEFER specially here.
 
-Dne 2013-11-29 01:00, Ezequiel Garcia napsal:
-> In order to remove the following ugly message:
-> 
->   BUG: mapping for 0x00000000 at 0xff000000 out of vmalloc space
-> 
-> the iotable mappings should be re-located inside the vmalloc
-> region. Such move was introduced at commit:
-> 
-> commit 0536bdf33faff4d940ac094c77998cfac368cfff
-> Author: Nicolas Pitre <nicolas.pitre@linaro.org>
-> Date:   Thu Aug 25 00:35:59 2011 -0400
-> 
->     ARM: move iotable mappings within the vmalloc region
-> 
-> While at it, condition the mapping to PXA25x and PXA27x, which
-> are the only platforms where it's used.
-> 
-> Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
-> Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-> Cc: David Heidelberger <david.heidelberger@ixit.cz>
-> Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-> ---
-> David,
-> 
-> Is it possible for you to give this a try on your board?
-> 
->  arch/arm/mach-pxa/generic.c               | 6 ++++--
->  arch/arm/mach-pxa/include/mach/hardware.h | 5 +++--
->  2 files changed, 7 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/arm/mach-pxa/generic.c b/arch/arm/mach-pxa/generic.c
-> index 4225417..3c1b4fa 100644
-> --- a/arch/arm/mach-pxa/generic.c
-> +++ b/arch/arm/mach-pxa/generic.c
-> @@ -83,11 +83,13 @@ static struct map_desc common_io_desc[] __initdata 
-> = {
->  		.pfn		= __phys_to_pfn(0x40000000),
->  		.length		= 0x02000000,
->  		.type		= MT_DEVICE
-> +#if defined(CONFIG_PXA25x) || defined(CONFIG_PXA27x)
->  	}, {	/* UNCACHED_PHYS_0 */
-> -		.virtual	= 0xff000000,
-> +		.virtual	= UNCACHED_PHYS_0,
->  		.pfn		= __phys_to_pfn(0x00000000),
-> -		.length		= 0x00100000,
-> +		.length		= UNCACHED_SIZE,
->  		.type		= MT_DEVICE
-> +#endif
->  	}
->  };
-> 
-> diff --git a/arch/arm/mach-pxa/include/mach/hardware.h
-> b/arch/arm/mach-pxa/include/mach/hardware.h
-> index ccb06e4..b365a72 100644
-> --- a/arch/arm/mach-pxa/include/mach/hardware.h
-> +++ b/arch/arm/mach-pxa/include/mach/hardware.h
-> @@ -14,13 +14,14 @@
->  #define __ASM_ARCH_HARDWARE_H
-> 
->  #include <mach/addr-map.h>
-> +#include <asm/pgtable.h>
-> 
->  /*
->   * Workarounds for at least 2 errata so far require this.
->   * The mapping is set in mach-pxa/generic.c.
->   */
-> -#define UNCACHED_PHYS_0		0xff000000
-> -#define UNCACHED_ADDR		UNCACHED_PHYS_0
-> +#define UNCACHED_PHYS_0		(VMALLOC_END - UNCACHED_SIZE)
-> +#define UNCACHED_SIZE		SZ_1M
-> 
->  /*
->   * Intel PXA2xx internal register mapping:
+It's also not nice to get the regulator, release it and get it again
+which you end up needing to do because...
+
+> -	ret = regulator_bulk_get(codec->dev, ARRAY_SIZE(sgtl5000->supplies),
+> +	if (sgtl5000_external_vddd_used(codec)) {
+> +		ret = regulator_bulk_get(codec->dev,
+> +				ARRAY_SIZE(sgtl5000->supplies),
+>  				sgtl5000->supplies);
+
+...I think my previous comments about this code being poorly structured
+in the existing driver stand.  The bulk get should be used for the
+supplies that are always needed and a separate optional get should be
+used for this one.
+
+--Vo48LVc30GAQuLuW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSmN87AAoJELSic+t+oim9A4wP/iMAtV26UeHAzFwiBIrDyv3F
+rjnMxzqBbGUlwtsAzj+W6Lq9QNYw9PYbjQpK1jUaV3yi+X48deGxMtsitD3o+INA
+aebVjrCvoyxRS6WZmeQLGHQxLOgqL4/mBQRHoywKkLvC1EamGWiscPK3pMpLl9ZH
+JEvaKBl/0cLuYdXHjmBJUuBVtVKrBFJ1Hp5rxU0m0kaq7cnj8zqxac3AW2QSdKXU
+joetOIFevBCYwEi88KRyM13ywAirqRhZJxZSywUibP9HaNtStmWCW8wgNXvRlfW6
+Nfa/JzNH5jkJaekLMoFZeJpM25FNQvcvpWsjCj8wlY96W5LNvncaMKpD4ZpL/Ujx
+bxpXKFoQrdtVwKEibkyRY6uGI9YH87coGFD6MbSd3vZdkFobqyIVHNsw1Pq40aYd
+sCCKh45oY4YXZ3MFBP4AG1gHYRBwlGuGgr3X5kDjQfQ2iOcWLDFAVRswtMHGtMy0
+aW/MmOAbIluRECA4JhcS3ajzop9AL2UAe6k5O7MKAWYjdPmTipDZnLKq9KHyQp1L
+QUrBs/PQKAzEwR1Eid5xyzFPhmYkb14S8nodoB2/nSqrHLH6GP+gN6up0ja7/uxp
+RphXSAGh/rGlYszajxi/nA+pmAcdeoOz/7wnLU7mlldhK8vZFI5pfHi+z+VYBZb4
+0bQ0w3bThK3qmUrbTjwA
+=K+bz
+-----END PGP SIGNATURE-----
+
+--Vo48LVc30GAQuLuW--
