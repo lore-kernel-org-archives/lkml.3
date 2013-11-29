@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751593Ab3K2Hzk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 02:55:40 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:34929 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985Ab3K2Hzh (ORCPT
+	id S1751835Ab3K2IHr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 03:07:47 -0500
+Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:34123
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750985Ab3K2IHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 02:55:37 -0500
-Date: Fri, 29 Nov 2013 08:56:17 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Jan Engelhardt <jengelh@inai.de>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, daniel.vetter@ffwll.ch,
-        dri-devel@lists.freedesktop.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: i915: pipe state still does not match
-Message-ID: <20131129075616.GS27344@phenom.ffwll.local>
-Mail-Followup-To: Jan Engelhardt <jengelh@inai.de>,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	dri-devel@lists.freedesktop.org,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <alpine.LSU.2.11.1311271156060.20996@nerf07.vanv.qr>
- <20131127110836.GA6087@nuc-i3427.alporthouse.com>
- <alpine.LSU.2.11.1311282017400.4098@nerf07.vanv.qr>
+	Fri, 29 Nov 2013 03:07:46 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+From: <hongbo.zhang@freescale.com>
+To: <scottwood@freescale.com>, <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+CC: <linux-kernel@vger.kernel.org>, Hongbo Zhang <hongbo.zhang@freescale.com>
+Subject: [PATCH] DTS: DMA: Fix DMA3 interrupts
+Date: Fri, 29 Nov 2013 16:07:26 +0800
+Message-ID: <1385712446-28221-1-git-send-email-hongbo.zhang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1311282017400.4098@nerf07.vanv.qr>
-X-Operating-System: Linux phenom 3.12.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 09:08:45PM +0100, Jan Engelhardt wrote:
-> On Wednesday 2013-11-27 12:08, Chris Wilson wrote:
-> >On Wed, Nov 27, 2013 at 11:59:56AM +0100, Jan Engelhardt wrote:
-> >> 
-> >> Despite the i915/drm fixes added in v3.11.8, the X server still 
-> >> terminates due to some pipe state bug in 3.11.9.
-> >
-> >X terminating is entirely unconnected with that *ERROR*.
-> 
-> Are you sure? Whenever X crashed, that inteldrv kernel message
-> was showing up in dmesg.
-> Affected versions:
-> 	xorg-x11-server-1.14.3.901
-> 	xf86-video-intel-2.99.906-4.1.x86_64
-> Working versions:
-> 	xorg-x11-server-1.13.2
-> 	xf86-video-intel-2.20.19
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
 
-For the ERROR the kernel is the important part. I can be that it's
-triggered by userspace doing something funny (and likely, sinc there's a
-good chance you're hitting a less well tested path when crashing). But
-it's a kernel issue.
+MPIC registers for internal interrupts is non-continous in address, any
+internal interrupt number greater than 159 should be added (16+208) to work.
+16 is due to external interrupts as usual, 208 is due to the non-continous MPIC
+register space.
+Tested on T4240 rev2 with SRIO2 disabled.
 
-To track the kernel issue down can you please boot with drm.debug=0xe
-added to your bootline, reproduce the issue and then attach the complete
-dmesg?
+Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+---
+ arch/powerpc/boot/dts/fsl/elo3-dma-2.dtsi |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-Thanks, Daniel
+diff --git a/arch/powerpc/boot/dts/fsl/elo3-dma-2.dtsi b/arch/powerpc/boot/dts/fsl/elo3-dma-2.dtsi
+index b89d816..d3cc8d0 100644
+--- a/arch/powerpc/boot/dts/fsl/elo3-dma-2.dtsi
++++ b/arch/powerpc/boot/dts/fsl/elo3-dma-2.dtsi
+@@ -42,41 +42,41 @@ dma2: dma@102300 {
+ 	dma-channel@0 {
+ 		compatible = "fsl,eloplus-dma-channel";
+ 		reg = <0x0 0x80>;
+-		interrupts = <256 2 0 0>;
++		interrupts = <464 2 0 0>;
+ 	};
+ 	dma-channel@80 {
+ 		compatible = "fsl,eloplus-dma-channel";
+ 		reg = <0x80 0x80>;
+-		interrupts = <257 2 0 0>;
++		interrupts = <465 2 0 0>;
+ 	};
+ 	dma-channel@100 {
+ 		compatible = "fsl,eloplus-dma-channel";
+ 		reg = <0x100 0x80>;
+-		interrupts = <258 2 0 0>;
++		interrupts = <466 2 0 0>;
+ 	};
+ 	dma-channel@180 {
+ 		compatible = "fsl,eloplus-dma-channel";
+ 		reg = <0x180 0x80>;
+-		interrupts = <259 2 0 0>;
++		interrupts = <467 2 0 0>;
+ 	};
+ 	dma-channel@300 {
+ 		compatible = "fsl,eloplus-dma-channel";
+ 		reg = <0x300 0x80>;
+-		interrupts = <260 2 0 0>;
++		interrupts = <468 2 0 0>;
+ 	};
+ 	dma-channel@380 {
+ 		compatible = "fsl,eloplus-dma-channel";
+ 		reg = <0x380 0x80>;
+-		interrupts = <261 2 0 0>;
++		interrupts = <469 2 0 0>;
+ 	};
+ 	dma-channel@400 {
+ 		compatible = "fsl,eloplus-dma-channel";
+ 		reg = <0x400 0x80>;
+-		interrupts = <262 2 0 0>;
++		interrupts = <470 2 0 0>;
+ 	};
+ 	dma-channel@480 {
+ 		compatible = "fsl,eloplus-dma-channel";
+ 		reg = <0x480 0x80>;
+-		interrupts = <263 2 0 0>;
++		interrupts = <471 2 0 0>;
+ 	};
+ };
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.7.9.5
+
+
+
