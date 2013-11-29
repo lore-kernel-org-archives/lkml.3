@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069Ab3K2BjS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 20:39:18 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:57993 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872Ab3K2BjQ (ORCPT
+	id S1753273Ab3K2BjY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 20:39:24 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:45227 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752974Ab3K2BjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 20:39:16 -0500
+	Thu, 28 Nov 2013 20:39:19 -0500
 From: Andreas Noever <andreas.noever@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH 01/12] thunderbolt: Add initial cactus ridge NHI support
-Date: Fri, 29 Nov 2013 02:35:38 +0100
-Message-Id: <1385688949-7101-2-git-send-email-andreas.noever@gmail.com>
+Subject: [PATCH 02/12] thunderbolt: Add configuration channel interface
+Date: Fri, 29 Nov 2013 02:35:39 +0100
+Message-Id: <1385688949-7101-3-git-send-email-andreas.noever@gmail.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1385688949-7101-1-git-send-email-andreas.noever@gmail.com>
 References: <1385688949-7101-1-git-send-email-andreas.noever@gmail.com>
@@ -20,904 +20,757 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thunderbolt hotplug is supposed to be handled by the firmware. But Apple
-decided to implement thunderbolt at the operating system level. The
-firmare only initializes thunderbolt devices that are present at boot
-time. This driver enables hotplug of thunderbolt of non-chained thunderbolt
-devices on Apple systems.
+Thunderbolt devices are configured by reading/writing into their
+configuration space (similar to pci). This is done by sending packets
+through the NHI (native host interface) onto the configuration channel.
 
-This first patch adds the Kconfig file as well the parts of the driver
-which talk directly to the hardware (that is pci device setup, interrupt
-handling and RX/TX ring management).
+This patch handles the low level packet based protocol and exposes
+higher level operations like tb_cfg_read/tb_cfg_write.
 
 Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
 ---
- drivers/Kconfig                    |   2 +
- drivers/Makefile                   |   1 +
- drivers/thunderbolt/Kconfig        |  12 +
- drivers/thunderbolt/Makefile       |   3 +
- drivers/thunderbolt/dsl3510.c      | 591 +++++++++++++++++++++++++++++++++++++
- drivers/thunderbolt/dsl3510.h      | 116 ++++++++
- drivers/thunderbolt/dsl3510_regs.h | 102 +++++++
- 7 files changed, 827 insertions(+)
- create mode 100644 drivers/thunderbolt/Kconfig
- create mode 100644 drivers/thunderbolt/Makefile
- create mode 100644 drivers/thunderbolt/dsl3510.c
- create mode 100644 drivers/thunderbolt/dsl3510.h
- create mode 100644 drivers/thunderbolt/dsl3510_regs.h
+ drivers/thunderbolt/Makefile |   2 +-
+ drivers/thunderbolt/tb_cfg.c | 649 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/thunderbolt/tb_cfg.h |  67 +++++
+ 3 files changed, 717 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/thunderbolt/tb_cfg.c
+ create mode 100644 drivers/thunderbolt/tb_cfg.h
 
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index b3138fb..c242b6c 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -170,4 +170,6 @@ source "drivers/phy/Kconfig"
- 
- source "drivers/powercap/Kconfig"
- 
-+source "drivers/thunderbolt/Kconfig"
-+
- endmenu
-diff --git a/drivers/Makefile b/drivers/Makefile
-index 3cc8214..0062353 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -155,3 +155,4 @@ obj-$(CONFIG_IPACK_BUS)		+= ipack/
- obj-$(CONFIG_NTB)		+= ntb/
- obj-$(CONFIG_FMC)		+= fmc/
- obj-$(CONFIG_POWERCAP)		+= powercap/
-+obj-$(CONFIG_THUNDERBOLT)	+= thunderbolt/
-diff --git a/drivers/thunderbolt/Kconfig b/drivers/thunderbolt/Kconfig
-new file mode 100644
-index 0000000..281787a
---- /dev/null
-+++ b/drivers/thunderbolt/Kconfig
-@@ -0,0 +1,12 @@
-+menuconfig THUNDERBOLT
-+	tristate "Apple Thunderbolt hotplug support"
-+	default no
-+	help
-+	  Cactus Ridge Thunderbolt Controller driver
-+	  This driver is required if you want to hotplug Thunderbolt devices on
-+	  Apple hardware.
-+
-+	  Device chaining is currently not supported.
-+
-+	  To compile this driver a module, choose M here. The module will be
-+	  called thunderbolt.
 diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
-new file mode 100644
-index 0000000..32b0504
---- /dev/null
+index 32b0504..f486295 100644
+--- a/drivers/thunderbolt/Makefile
 +++ b/drivers/thunderbolt/Makefile
-@@ -0,0 +1,3 @@
-+obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
-+thunderbolt-objs := dsl3510.o
-+
-diff --git a/drivers/thunderbolt/dsl3510.c b/drivers/thunderbolt/dsl3510.c
+@@ -1,3 +1,3 @@
+ obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
+-thunderbolt-objs := dsl3510.o
++thunderbolt-objs := dsl3510.o tb_cfg.o
+ 
+diff --git a/drivers/thunderbolt/tb_cfg.c b/drivers/thunderbolt/tb_cfg.c
 new file mode 100644
-index 0000000..2a326f6
+index 0000000..bb958d5
 --- /dev/null
-+++ b/drivers/thunderbolt/dsl3510.c
-@@ -0,0 +1,591 @@
++++ b/drivers/thunderbolt/tb_cfg.c
+@@ -0,0 +1,649 @@
 +/*
-+ * Cactus Ridge NHI driver
++ * Thunderbolt configuration channel
 + *
 + * Copyright (c) 2013 Andreas Noever <andreas.noever@gmail.com>
 + */
 +
++#include <linux/crc32.h>
 +#include <linux/slab.h>
-+#include <linux/errno.h>
 +#include <linux/pci.h>
-+#include <linux/interrupt.h>
-+#include <linux/module.h>
++#include <linux/dmapool.h>
++#include <linux/workqueue.h>
 +
++#include "tb_cfg.h"
 +#include "dsl3510.h"
-+#include "dsl3510_regs.h"
 +
-+#define RING_TYPE(ring) ((ring)->is_tx ? "TX ring" : "RX ring")
 +
-+static int get_interrupt_index(struct tb_ring *ring)
++/* config packet definitions */
++
++enum tb_cfg_pkg_type {
++	TB_CFG_PKG_READ = 1,
++	TB_CFG_PKG_WRITE = 2,
++	TB_CFG_PKG_ERROR = 3,
++	TB_CFG_PKG_NOTIFY_ACK = 4,
++	TB_CFG_PKG_EVENT = 5,
++	TB_CFG_PKG_XDOMAIN_REQ = 6,
++	TB_CFG_PKG_XDOMAIN_RESP = 7,
++	TB_CFG_PKG_OVERRIDE = 8,
++	TB_CFG_PKG_RESET = 9,
++	TB_CFG_PKG_PREPARE_TO_SLEEP = 0xd,
++};
++
++enum tb_cfg_error {
++	TB_CFG_ERROR_PORT_NOT_CONNECTED = 0,
++	TB_CFG_ERROR_INVALID_CONFIG_SPACE = 2,
++	TB_CFG_ERROR_NO_SUCH_PORT = 4,
++	TB_CFG_ERROR_ACK_PLUG_EVENT = 7,
++	TB_CFG_ERROR_LOOP = 8,
++};
++
++struct tb_cfg_header {
++	u32 route_hi:18;
++	u32 unknown:14; /* highest order bit is set on replies */
++	u32 route_lo;
++} __packed;
++
++struct tb_cfg_address {
++	u32 offset:13; /* in dwords */
++	u32 length:6; /* in dwords */
++	u32 port:6;
++	enum tb_cfg_space space:2;
++	u32 zero:5;
++} __packed;
++
++struct cfg_reset_pkg {
++	struct tb_cfg_header header;
++} __packed;
++
++struct cfg_error_pkg {
++	struct tb_cfg_header header;
++	enum tb_cfg_error error:4;
++	u32 zero1:4;
++	u32 port:6;
++	u32 zero2:2; /* Both should be zero, still they are different fields. */
++	u32 zero3:16;
++} __packed;
++
++struct cfg_plug_pkg {
++	struct tb_cfg_header header;
++	u32 port:6;
++	u32 zero:25;
++	bool unplug:1;
++} __packed;
++
++struct cfg_read_pkg {
++	struct tb_cfg_header header;
++	struct tb_cfg_address addr;
++} __packed;
++
++struct cfg_write_pkg {
++	struct tb_cfg_header header;
++	struct tb_cfg_address addr;
++	u32 data[64]; /* tb_cfg_address.length has 6 bits */
++} __packed;
++
++/* helper methods */
++
++static u64 get_route(struct tb_cfg_header header)
 +{
-+	int bit = ring->hop;
-+	if (!ring->is_tx)
-+		bit += ring->nhi->hop_count;
-+	return bit;
++	return (u64) header.route_hi << 32 | header.route_lo;
 +}
 +
-+/**
-+ * interrupt_active() - activate/deactivate interrupts for a single ring
-+ *
-+ * ring->nhi->lock must be held.
-+ */
-+static void interrupt_active(struct tb_ring *ring, bool active)
++static struct tb_cfg_header make_header(u64 route)
 +{
-+	int reg = get_interrupt_index(ring) / 32 + REG_RING_INTERRUPT_BASE;
-+	int bit = get_interrupt_index(ring) & 31;
-+	u32 value;
-+	value = ioread32(ring->nhi->iobase + reg);
-+	if (active) {
-+		if (value & (1 << bit)) {
-+			dev_WARN(&ring->nhi->pdev->dev,
-+				 "interrupt for %s %d is already enabled\n",
-+				 RING_TYPE(ring),
-+				 ring->hop);
-+		}
-+		value |= 1 << bit;
-+	} else {
-+		if (!(value & (1 << bit))) {
-+			dev_WARN(&ring->nhi->pdev->dev,
-+				 "interrupt for %s %d is already disabled\n",
-+				 RING_TYPE(ring),
-+				 ring->hop);
-+		}
-+		value &= ~(1 << bit);
++	struct tb_cfg_header header = {
++		.route_hi = route >> 32,
++		.route_lo = route,
++	};
++	/* check for overflow */
++	WARN_ON(get_route(header) != route);
++	return header;
++}
++
++static int decode_error(struct ring_packet *response)
++{
++	struct cfg_error_pkg *pkg = response->buffer;
++	u32 raw;
++	WARN_ON(response->eof != TB_CFG_PKG_ERROR);
++	if (WARN_ON(response->size != sizeof(*pkg)))
++		return -EIO;
++	raw = *(u32 *) (response->buffer + 8);
++	WARN_ON(pkg->zero1);
++	WARN_ON(pkg->zero2);
++	WARN_ON(pkg->zero3);
++	WARN_ON(pkg->header.unknown != 1 << 13);
++	switch (pkg->error) {
++	case TB_CFG_ERROR_PORT_NOT_CONNECTED:
++		/* Port is not connected. This can happen during surprise
++		 * removal. Do not warn. */
++		return -ENODEV;
++	case TB_CFG_ERROR_INVALID_CONFIG_SPACE:
++		/*
++		 * Invalid cfg_space/offset/length combination in
++		 * cfg_read/cfg_write.
++		 */
++		WARN(1,
++		     "CFG_ERROR(raw: %#x route: %#llx port: %d): Invalid config space of offset\n",
++		     raw,
++		     get_route(pkg->header),
++		     pkg->port);
++		return -ENXIO;
++	case TB_CFG_ERROR_NO_SUCH_PORT:
++		/*
++		 * - The route contains a non-existent port.
++		 * - The route contains a non-PHY port (e.g. PCIe).
++		 * - The port in cfg_read/cfg_write does not exist.
++		 */
++		WARN(1,
++		     "CFG_ERROR(raw: %#x route: %#llx port: %d): Invalid port\n",
++		     raw,
++		     get_route(pkg->header),
++		     pkg->port);
++		return -ENXIO;
++	case TB_CFG_ERROR_LOOP:
++		WARN(1,
++		     "CFG_ERROR(raw: %#x route: %#llx port: %d): Route contains a loop\n",
++		     raw,
++		     get_route(pkg->header),
++		     pkg->port);
++		return -EIO;
++	default:
++		/* 5,6,7,9 and 11 are also valid error codes */
++		WARN(1,
++		     "CFG_ERROR(raw: %#x route: %#llx port: %d): Unknown error\n",
++		     raw,
++		     get_route(pkg->header),
++		     pkg->port);
++		return -EIO;
 +	}
-+	dev_info(&ring->nhi->pdev->dev,
-+		 "%s interrupt at register %#x bit %d (new value: %#x)\n",
-+		 active ? "enabling" : "disabling",
-+		 reg,
-+		 bit,
-+		 value);
-+	iowrite32(value, ring->nhi->iobase + reg);
 +}
 +
-+/**
-+ * dsl3510_disable_interrupts() - disable interrupts for all rings
-+ */
-+static void dsl3510_disable_interrupts(struct tb_nhi *nhi)
++static int check_header(struct ring_packet *pkg, size_t expected_len,
++			u64 expected_route, enum tb_cfg_pkg_type expected_type)
 +{
-+	int i = 0;
-+	/* disable interrupts */
-+	for (i = 0; i < RING_INTERRUPT_REG_COUNT(nhi); i++)
-+		iowrite32(0, nhi->iobase + REG_RING_INTERRUPT_BASE + 4 * i);
-+
-+	/* clear interrupt status bits */
-+	for (i = 0; i < RING_NOTIFY_REG_COUNT(nhi); i++)
-+		ioread32(nhi->iobase + REG_RING_NOTIFY_BASE + 4 * i);
-+}
-+
-+static void __iomem *ring_desc_base(struct tb_ring *ring)
-+{
-+	void __iomem *io = ring->nhi->iobase;
-+	io += ring->is_tx ? REG_TX_RING_BASE : REG_RX_RING_BASE;
-+	io += ring->hop * 16;
-+	return io;
-+}
-+
-+static void __iomem *ring_options_base(struct tb_ring *ring)
-+{
-+	void __iomem *io = ring->nhi->iobase;
-+	io += ring->is_tx ? REG_TX_OPTIONS_BASE : REG_RX_OPTIONS_BASE;
-+	io += ring->hop * 32;
-+	return io;
-+}
-+
-+static void ring_iowrite16desc(struct tb_ring *ring, u32 value, u32 offset)
-+{
-+	iowrite16(value, ring_desc_base(ring) + offset);
-+}
-+
-+static void ring_iowrite32desc(struct tb_ring *ring, u32 value, u32 offset)
-+{
-+	iowrite32(value, ring_desc_base(ring) + offset);
-+}
-+
-+static void ring_iowrite64desc(struct tb_ring *ring, u64 value, u32 offset)
-+{
-+	iowrite32(value, ring_desc_base(ring) + offset);
-+	iowrite32(value >> 32, ring_desc_base(ring) + offset + 4);
-+}
-+
-+static void ring_iowrite32options(struct tb_ring *ring, u32 value, u32 offset)
-+{
-+	iowrite32(value, ring_options_base(ring) + offset);
-+}
-+
-+static bool ring_full(struct tb_ring *ring)
-+{
-+	return ((ring->head + 1) % ring->size) == ring->tail;
-+}
-+
-+static bool ring_empty(struct tb_ring *ring)
-+{
-+	return ring->head == ring->tail;
-+}
-+
-+/* ring->lock is held. */
-+static void ring_write_descriptors(struct tb_ring *ring)
-+{
-+	struct ring_packet *pkg, *n;
-+	struct ring_desc *descriptor;
-+	list_for_each_entry_safe(pkg, n, &ring->queue, list) {
-+		if (ring_full(ring))
-+			break;
-+		list_move_tail(&pkg->list, &ring->in_flight);
-+		descriptor = &ring->descriptors[ring->head];
-+		descriptor->phys = pkg->buffer_phy;
-+		descriptor->time = 0;
-+		descriptor->flags = RING_DESC_POSTED | RING_DESC_INTERRUPT;
-+		if (ring->is_tx) {
-+			descriptor->length = pkg->size;
-+			descriptor->eof = pkg->eof;
-+			descriptor->sof = pkg->sof;
-+		}
-+		ring->head = (ring->head + 1) % ring->size;
-+		ring_iowrite16desc(ring, ring->head, ring->is_tx ? 10 : 8);
-+	}
-+}
-+
-+static void ring_handle_interrupt(struct work_struct *work)
-+{
-+	struct tb_ring *ring = container_of(work, typeof(*ring), work);
-+	struct ring_packet *pkg, *n;
-+	bool invoke_callback = false;
-+	mutex_lock(&ring->lock);
-+	if (ring->in_shutdown)
-+		goto out;
-+	list_for_each_entry_safe(pkg, n, &ring->in_flight, list) {
-+		if (ring_empty(ring))
-+			break;
-+		if (!(ring->descriptors[ring->tail].flags & RING_DESC_COMPLETED))
-+			break;
-+		list_move_tail(&pkg->list, &ring->done);
-+		invoke_callback = true;
-+		if (!ring->is_tx) {
-+			pkg->size = ring->descriptors[ring->tail].length;
-+			pkg->eof = ring->descriptors[ring->tail].eof;
-+			pkg->sof = ring->descriptors[ring->tail].sof;
-+			pkg->flags = ring->descriptors[ring->tail].flags;
-+			if (pkg->sof != 0)
-+				dev_WARN(&ring->nhi->pdev->dev,
-+					 "%s %d got unexpected SOF: %#x\n",
-+					 RING_TYPE(ring),
-+					 ring->hop,
-+					 pkg->sof);
-+
-+			/*
-+			 * known flags:
-+			 * raw enabled: 0xa
-+			 * raw not enabled: 0xb
-+			 * partial packet (>MAX_FRAME_SIZE): 0xe
-+			 */
-+			if (pkg->flags != 0xa && pkg->flags != 0xb)
-+				dev_WARN(&ring->nhi->pdev->dev,
-+					 "%s %d got unexpected flags: %#x\n",
-+					 RING_TYPE(ring),
-+					 ring->hop,
-+					 pkg->flags);
-+		}
-+		ring->tail = (ring->tail + 1) % ring->size;
-+	}
-+
-+	ring_write_descriptors(ring);
-+out:
-+	mutex_unlock(&ring->lock); /* allow the callback to queue new work */
-+	if (invoke_callback)
-+		ring->callback(ring, ring->callback_data);
-+}
-+
-+void __ring_enqueue(struct tb_ring *ring, struct ring_packet *pkg)
-+{
-+	mutex_lock(&ring->lock);
-+	if (ring->in_shutdown) {
-+		pkg->canceled = true;
-+		list_add_tail(&pkg->list, &ring->done);
-+	} else {
-+		pkg->canceled = false;
-+		list_add_tail(&pkg->list, &ring->queue);
-+		ring_write_descriptors(ring);
-+	}
-+	mutex_unlock(&ring->lock);
-+}
-+
-+/**
-+ * ring_poll() - return completed packet if any
-+ *
-+ * Return: Returns the first completed packet from the done queue. Returns NULL
-+ * if the queue is empty.
-+ */
-+struct ring_packet *ring_poll(struct tb_ring *ring)
-+{
-+	struct ring_packet *pkg = NULL;
-+	mutex_lock(&ring->lock);
-+	if (!list_empty(&ring->done)) {
-+		pkg = list_entry(ring->done.next, typeof(*pkg), list);
-+		list_del(&pkg->list);
-+	}
-+	mutex_unlock(&ring->lock);
-+	return pkg;
-+}
-+
-+static struct tb_ring *ring_alloc(struct tb_nhi *nhi, u32 hop, int size,
-+				  ring_cb callback, void *callback_data,
-+				  bool transmit)
-+{
-+	struct tb_ring *ring = NULL;
-+	dev_info(&nhi->pdev->dev,
-+		 "allocating %s ring %d\n",
-+		 transmit ? "TX" : "RX",
-+		 hop);
-+	mutex_lock(&nhi->lock);
-+	if (hop >= nhi->hop_count) {
-+		dev_WARN(&nhi->pdev->dev, "invalid hop: %d\n", hop);
-+		goto err;
-+	}
-+	if (transmit && nhi->tx_rings[hop]) {
-+		dev_WARN(&nhi->pdev->dev, "TX hop %d already allocated\n", hop);
-+		goto err;
-+	} else if (!transmit && nhi->rx_rings[hop]) {
-+		dev_WARN(&nhi->pdev->dev, "RX hop %d already allocated\n", hop);
-+		goto err;
-+	}
-+	ring = kzalloc(sizeof(*ring), GFP_KERNEL);
-+	if (!ring)
-+		goto err;
-+
-+	mutex_init(&ring->lock);
-+	ring->nhi = nhi;
-+	ring->size = size;
-+	ring->hop = hop;
-+	ring->head = 0;
-+	ring->tail = 0;
-+	ring->descriptors = dma_alloc_coherent(&ring->nhi->pdev->dev,
-+					       size * sizeof(*ring->descriptors),
-+					       &ring->descriptors_dma,
-+					       GFP_KERNEL | __GFP_ZERO);
-+	if (!ring->descriptors)
-+		goto err;
-+
-+	ring->callback = callback;
-+	ring->callback_data = callback_data;
-+	ring->is_tx = transmit;
-+	ring->in_shutdown = false;
-+	INIT_LIST_HEAD(&ring->queue);
-+	INIT_LIST_HEAD(&ring->in_flight);
-+	INIT_LIST_HEAD(&ring->done);
-+	INIT_WORK(&ring->work, ring_handle_interrupt);
-+
-+	if (transmit)
-+		nhi->tx_rings[hop] = ring;
-+	else
-+		nhi->rx_rings[hop] = ring;
-+
-+	ring_iowrite64desc(ring, ring->descriptors_dma, 0);
-+	if (ring->is_tx) {
-+		ring_iowrite32desc(ring, size, 12);
-+		ring_iowrite32options(ring, 0, 4); /* time releated ? */
-+		ring_iowrite32options(ring,
-+				      RING_FLAG_ENABLE | RING_FLAG_RAW,
-+				      0);
-+	} else {
-+		ring_iowrite32desc(ring, (TB_FRAME_SIZE << 16) | size, 12);
-+		ring_iowrite32options(ring, 0xffffffff, 4); /* SOF EOF mask */
-+		ring_iowrite32options(ring,
-+				      RING_FLAG_ENABLE | RING_FLAG_RAW,
-+				      0);
-+	}
-+	interrupt_active(ring, true);
-+	mutex_unlock(&nhi->lock);
-+	return ring;
-+err:
-+	mutex_unlock(&nhi->lock);
-+	if (ring)
-+		mutex_destroy(&ring->lock);
-+	kfree(ring);
-+	return NULL;
-+}
-+
-+struct tb_ring *ring_alloc_tx(struct tb_nhi *nhi, int hop, int size,
-+			      ring_cb callback, void *callback_data)
-+{
-+	return ring_alloc(nhi, hop, size, callback, callback_data, true);
-+}
-+
-+struct tb_ring *ring_alloc_rx(struct tb_nhi *nhi, int hop, int size,
-+			      ring_cb callback, void *callback_data)
-+{
-+	return ring_alloc(nhi, hop, size, callback, callback_data, false);
-+}
-+
-+/**
-+ * ring_drain_and_free() - shutdown a ring
-+ *
-+ * This method will disable the ring, cancel all packets and repeatedly
-+ * call the callback function until all packets have been drained through
-+ * ring_poll.
-+ *
-+ * When this method returns all invocations of ring->callback will have
-+ * finished.
-+ *
-+ * Must NOT be called from ring->callback!
-+ */
-+void ring_drain_and_free(struct tb_ring *ring)
-+{
-+	struct ring_packet *pkg;
-+	dev_info(&ring->nhi->pdev->dev,
-+		 "stopping %s %d\n",
-+		 RING_TYPE(ring),
-+		 ring->hop);
-+
-+	mutex_lock(&ring->nhi->lock);
-+	mutex_lock(&ring->lock);
-+	if (ring->in_shutdown) {
-+		dev_WARN(&ring->nhi->pdev->dev,
-+			 "%s %d already in_shutdown!\n",
-+			 RING_TYPE(ring),
-+			 ring->is_tx);
-+		mutex_unlock(&ring->nhi->lock);
-+		mutex_unlock(&ring->lock);
-+		return;
-+	}
-+	ring->in_shutdown = true;
-+
-+	interrupt_active(ring, false);
-+	if (ring->is_tx)
-+		ring->nhi->tx_rings[ring->hop] = NULL;
-+	else
-+		ring->nhi->rx_rings[ring->hop] = NULL;
-+
-+	ring_iowrite32options(ring, 0, 0);
-+	ring_iowrite64desc(ring, 0, 0);
-+	ring_iowrite16desc(ring, 0, ring->is_tx ? 10 : 8);
-+	ring_iowrite32desc(ring, 0, 12);
-+	dma_free_coherent(&ring->nhi->pdev->dev,
-+			  ring->size * sizeof(*ring->descriptors),
-+			  ring->descriptors,
-+			  ring->descriptors_dma);
-+	ring->descriptors = 0;
-+	ring->descriptors_dma = 0;
-+	ring->head = 0;
-+	ring->tail = 0;
-+	ring->size = 0;
-+
-+	/* Move all packets to the done queue and mark them as canceled. */
-+	list_for_each_entry(pkg, &ring->in_flight, list)
-+		pkg->canceled = true;
-+	list_for_each_entry(pkg, &ring->queue, list)
-+		pkg->canceled = true;
-+	list_splice_tail(&ring->in_flight, &ring->done);
-+	list_splice_tail(&ring->queue, &ring->done);
-+
-+	mutex_unlock(&ring->lock);
-+	mutex_unlock(&ring->nhi->lock);
-+	/*
-+	 * From this point on ring->work will not get scheduled again. Any new
-+	 * packets added to the ring will be directly canceled and moved to the
-+	 * done queue. The in_flight and queue lists will remain empty.
-+	 */
-+	cancel_work_sync(&ring->work);
-+
-+	mutex_lock(&ring->lock);
-+	while (!list_empty(&ring->done)) {
-+		mutex_unlock(&ring->lock);
-+		ring->callback(ring, ring->callback_data);
-+		mutex_lock(&ring->lock);
-+	}
-+	mutex_unlock(&ring->lock);
-+	mutex_destroy(&ring->lock);
-+	kfree(ring);
-+}
-+
-+static void dsl3510_handle_interrupt(struct work_struct *work)
-+{
-+	struct tb_nhi *nhi = container_of(work, typeof(*nhi), interrupt_task);
-+	int value = 0; /* Suppress uninitialized usage warning. */
-+	int bit;
-+	int hop = -1;
-+	int type = 0; /* current interrupt type 0: TX, 1: RX, 2: RX overflow */
-+	struct tb_ring *ring;
-+
-+	mutex_lock(&nhi->lock);
-+
-+	/*
-+	 * Starting at REG_RING_NOTIFY_BASE there are three status bitfields
-+	 * (TX, RX, RX overflow). We iterate over the bits and read a new
-+	 * dwords as required. The registers are cleared on read.
-+	 */
-+	for (bit = 0; bit < 3 * nhi->hop_count; bit++) {
-+		if (bit % 32 == 0)
-+			value = ioread32(nhi->iobase
-+					 + REG_RING_NOTIFY_BASE
-+					 + 4 * (bit / 32));
-+		if (++hop == nhi->hop_count) {
-+			hop = 0;
-+			type++;
-+		}
-+		if ((value & (1 << (bit % 32))) == 0)
-+			continue;
-+		if (type == 2) {
-+			dev_warn(&nhi->pdev->dev,
-+				 "RX overflow for ring %d\n",
-+				 hop);
-+			continue;
-+		}
-+		if (type == 0)
-+			ring = nhi->tx_rings[hop];
-+		else
-+			ring = nhi->rx_rings[hop];
-+		if (ring == NULL) {
-+			dev_warn(&nhi->pdev->dev,
-+				 "got interrupt for inactive %s ring %d\n",
-+				 type ? "RX" : "TX",
-+				 hop);
-+			continue;
-+		}
-+		schedule_work(&ring->work);
-+	}
-+	mutex_unlock(&nhi->lock);
-+}
-+
-+static irqreturn_t dsl3510_msi(int irq, void *data)
-+{
-+	struct tb_nhi *nhi = data;
-+	schedule_work(&nhi->interrupt_task);
-+	return IRQ_HANDLED;
-+}
-+
-+static void dsl3510_shutdown(struct tb_nhi *nhi)
-+{
-+	int i;
-+	dev_info(&nhi->pdev->dev, "shutdown\n");
-+
-+	for (i = 0; i < nhi->hop_count; i++) {
-+		if (nhi->tx_rings[i])
-+			dev_WARN(&nhi->pdev->dev,
-+				 "TX ring %d is still active\n",
-+				 i);
-+		if (nhi->rx_rings[i])
-+			dev_WARN(&nhi->pdev->dev,
-+				 "RX ring %d is still active\n",
-+				 i);
-+	}
-+	dsl3510_disable_interrupts(nhi);
-+	/*
-+	 * We have to release the irq before calling flush_work. Otherwise an
-+	 * already executing IRQ handler could call schedule_work again.
-+	 */
-+	devm_free_irq(&nhi->pdev->dev, nhi->pdev->irq, nhi);
-+	flush_work(&nhi->interrupt_task);
-+	mutex_destroy(&nhi->lock);
-+}
-+
-+static int dsl3510_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-+{
-+	struct tb_nhi *nhi;
-+	int res;
-+
-+	res = pcim_enable_device(pdev);
-+	if (res) {
-+		dev_err(&pdev->dev, "cannot enable PCI device, aborting\n");
-+		return res;
-+	}
-+
-+	res = pci_enable_msi(pdev);
-+	if (res) {
-+		dev_err(&pdev->dev, "cannot enable MSI, aborting\n");
-+		return res;
-+	}
-+
-+	res = pcim_iomap_regions(pdev, 1 << 0, "DSL3510");
-+	if (res) {
-+		dev_err(&pdev->dev, "cannot obtain PCI resources, aborting\n");
-+		return res;
-+	}
-+
-+	nhi = devm_kzalloc(&pdev->dev, sizeof(*nhi), GFP_KERNEL);
-+	if (!nhi)
-+		return -ENOMEM;
-+
-+	nhi->pdev = pdev;
-+	/* cannot fail - table is allocated bin pcim_iomap_regions */
-+	nhi->iobase = pcim_iomap_table(pdev)[0];
-+	nhi->hop_count = ioread32(nhi->iobase + REG_HOP_COUNT) & 0x3ff;
-+	if (nhi->hop_count != 12)
-+		dev_warn(&pdev->dev,
-+			 "unexpected hop count: %d\n",
-+			 nhi->hop_count);
-+	INIT_WORK(&nhi->interrupt_task, dsl3510_handle_interrupt);
-+
-+	nhi->tx_rings = devm_kzalloc(&pdev->dev,
-+				     nhi->hop_count * sizeof(struct tb_ring),
-+				     GFP_KERNEL);
-+	nhi->rx_rings = devm_kzalloc(&pdev->dev,
-+				     nhi->hop_count * sizeof(struct tb_ring),
-+				     GFP_KERNEL);
-+	if (!nhi->tx_rings || !nhi->rx_rings)
-+		return -ENOMEM;
-+
-+	dsl3510_disable_interrupts(nhi); /* In case someone left them on. */
-+	res = devm_request_irq(&pdev->dev,
-+			       pdev->irq,
-+			       dsl3510_msi,
-+			       0,
-+			       "dsl3510",
-+			       nhi);
-+	if (res) {
-+		dev_err(&pdev->dev, "request_irq failed, aborting\n");
-+		return res;
-+	}
-+
-+	mutex_init(&nhi->lock);
-+
-+	pci_set_master(pdev);
-+
-+	/* magic value - clock related? */
-+	iowrite32(3906250 / 10000, nhi->iobase + 0x38c00);
-+
-+	pci_set_drvdata(pdev, nhi); /* for dsl3510_remove only */
-+
++	struct tb_cfg_header *header = pkg->buffer;
++	if (pkg->eof == TB_CFG_PKG_ERROR)
++		return decode_error(pkg);
++	if (WARN_ON(pkg->size != expected_len))
++		return -EIO;
++	if (WARN_ON(header->unknown != 1 << 13))
++		return -EIO;
++	if (WARN_ON(get_route(*header) != expected_route))
++		return -EIO;
++	if (WARN_ON(pkg->eof != expected_type))
++		return -EIO;
++	if (WARN_ON(pkg->sof != 0))
++		return -EIO;
 +	return 0;
 +}
 +
-+static void dsl3510_remove(struct pci_dev *pdev)
++static bool check_config_address(const struct tb_cfg_address *addr,
++				 enum tb_cfg_space space, uint32_t offset,
++				 uint32_t length)
 +{
-+	struct tb_nhi *nhi = pci_get_drvdata(pdev);
-+	dsl3510_shutdown(nhi);
++	if (WARN_ON(addr->zero))
++		return -EIO;
++	if (WARN_ON(addr->space != space))
++		return -EIO;
++	if (WARN_ON(addr->offset != offset))
++		return -EIO;
++	if (WARN_ON(addr->length != length))
++		return -EIO;
++	/*
++	 * We cannot check addr->port as it is set to the upstream port of the
++	 * sender.
++	 */
++	return 0;
 +}
 +
-+static DEFINE_PCI_DEVICE_TABLE(dsl3510_ids) = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x1547)},
-+	{ 0,}
-+};
-+
-+MODULE_DEVICE_TABLE(pci, dsl3510_ids);
-+
-+static struct pci_driver dsl3510_driver = {
-+	.name = "dsl3510",
-+	.id_table = dsl3510_ids,
-+	.probe = dsl3510_probe,
-+	.remove = dsl3510_remove,
-+};
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Andreas Noever <andreas.noever@gmail.com>");
-+
-+static int __init dsl3510_init(void)
++static void cpu_to_be32_array(__be32 *dst, u32 *src, size_t len)
 +{
-+	struct pci_dev *dev = pci_get_device(PCI_VENDOR_ID_INTEL, 0x1547, NULL);
-+	if (dev)
-+		pci_dev_put(dev);
-+	else
-+		printk(KERN_INFO "thunderbolt controller not found, try booting with acpi_osi=Darwin");
-+
-+	return pci_register_driver(&dsl3510_driver);
++	int i;
++	for (i = 0; i < len; i++)
++		dst[i] = cpu_to_be32(src[i]);
 +}
 +
-+static void __exit dsl3510_unload(void)
++static void be32_to_cpu_array(u32 *dst, __be32 *src, size_t len)
 +{
-+	pci_unregister_driver(&dsl3510_driver);
++	int i;
++	for (i = 0; i < len; i++)
++		dst[i] = be32_to_cpu(src[i]);
 +}
 +
-+module_init(dsl3510_init);
-+module_exit(dsl3510_unload);
-diff --git a/drivers/thunderbolt/dsl3510.h b/drivers/thunderbolt/dsl3510.h
++static __be32 tb_crc(void *data, size_t len)
++{
++	return cpu_to_be32(~__crc32c_le(~0, data, len));
++}
++
++/* RX/TX handling */
++
++/**
++ * tb_ctl_handle_plug_event() - acknowledge a plug event and invoke cfg->callback
++ */
++static void tb_ctl_handle_plug_event(struct tb_cfg *cfg,
++				     struct ring_packet *resp)
++{
++	struct cfg_plug_pkg *pkg = resp->buffer;
++	u64 route = get_route(pkg->header);
++	if (check_header(resp, sizeof(*pkg), route, TB_CFG_PKG_EVENT))
++		return;
++	if (tb_cfg_error(cfg, route, pkg->port))
++		tb_cfg_warn(cfg,
++			    "could not reset plug event on %llx:%x\n",
++			    route,
++			    pkg->port);
++	WARN_ON(pkg->zero);
++	cfg->callback(cfg->callback_data, route, pkg->port, pkg->unplug);
++}
++
++static void tb_ctl_free_packet(struct tb_cfg *cfg, struct ring_packet *pkg)
++{
++	dma_pool_free(cfg->packet_pool, pkg->buffer, pkg->buffer_phy);
++	kfree(pkg);
++}
++
++/**
++ * tb_ctl_alloc_packets() - allocate multiple packets safely
++ *
++ * Return: Returns 0 on success or an error code on failure.
++ */
++static int tb_ctl_alloc_packets(struct tb_cfg *cfg,
++				struct ring_packet **packets, int num)
++{
++	int i;
++	for (i = 0; i < num; i++) {
++		packets[i] = kzalloc(sizeof(*packets[i]), GFP_KERNEL);
++		if (!packets[i])
++			goto err;
++		packets[i]->buffer = dma_pool_alloc(cfg->packet_pool,
++		GFP_KERNEL,
++						    &packets[i]->buffer_phy);
++		if (!packets[i]->buffer)
++			goto err;
++	}
++	return 0;
++err:
++	if (!packets[i])
++		i--;
++	while (--i > 0) {
++		if (packets[i]->buffer)
++			dma_pool_free(cfg->packet_pool,
++				      packets[i]->buffer,
++				      packets[i]->buffer_phy);
++
++		kfree(packets[i]);
++	}
++	return -ENOMEM;
++}
++
++/**
++ * tb_cfg_tx() - transmit a packet on the config channel
++ *
++ * len must be a multiple of four.
++ *
++ * Return: Returns 0 on success or an error code on failure.
++ */
++static int tb_cfg_tx(struct tb_cfg *cfg, void *data, size_t len,
++		     enum tb_cfg_pkg_type type)
++{
++	struct ring_packet *pkg;
++	if (len % 4 != 0) { /* required for le->be conversion */
++		tb_cfg_WARN(cfg, "TX: invalid size: %zu\n", len);
++		return -EINVAL;
++	}
++	if (len > TB_FRAME_SIZE - 4) { /* checksum is 4 bytes */
++		tb_cfg_WARN(cfg,
++			    "TX: packet too large: %zu/%d\n",
++			    len,
++			    TB_FRAME_SIZE - 4);
++		return -EINVAL;
++	}
++	if (tb_ctl_alloc_packets(cfg, &pkg, 1))
++		return -ENOMEM;
++	cpu_to_be32_array(pkg->buffer, data, len / 4);
++	*(u32 *) (pkg->buffer + len) = tb_crc(pkg->buffer, len);
++	pkg->size = len + 4;
++	pkg->sof = type;
++	pkg->eof = type;
++	ring_tx(cfg->tx, pkg);
++	return 0;
++}
++
++static void tb_cfg_tx_callback(struct tb_ring *ring, void *priv)
++{
++	struct tb_cfg *cfg = priv;
++	struct ring_packet *pkg;
++	while ((pkg = ring_poll(ring)))
++		tb_ctl_free_packet(cfg, pkg);
++}
++
++/**
++ * tb_cfg_rx() - receive a packet from the config channel
++ *
++ * Will timeout after a few seconds. The caller should requeue the packet as
++ * soon as possible.
++ *
++ * Return: Returns a a received ring_packet or NULL.
++ */
++static struct ring_packet *tb_cfg_rx(struct tb_cfg *cfg)
++{
++	struct ring_packet *pkg;
++	/**
++	 * Most operations finish within a few milliseconds. But pci up/down
++	 * ports will block during activation/deactivation. In the future we might
++	 * have to implement variable timeouts or find a way to handle received
++	 * packets out of order. Until then we just use a high timeout.
++	 */
++	if (!wait_for_completion_timeout(&cfg->response_ready,
++					 msecs_to_jiffies(30000))) {
++		tb_cfg_WARN(cfg, "RX: timeout\n");
++		return NULL;
++	}
++
++	if (!kfifo_get(&cfg->response_fifo, &pkg)) {
++		tb_cfg_err(cfg,
++			   "RX: completion was signaled, but fifo was empty\n");
++		return NULL;
++	}
++	return pkg;
++}
++
++static void tb_cfg_rx_callback(struct tb_ring *ring, void *priv)
++{
++	struct tb_cfg *cfg = priv;
++	struct ring_packet *pkg;
++	while ((pkg = ring_poll(ring))) {
++		if (pkg->canceled) {
++			tb_ctl_free_packet(cfg, pkg);
++			continue;
++		}
++		if (pkg->size < 4 || pkg->size % 4 != 0) {
++			tb_cfg_err(cfg,
++				   "RX: invalid size %d, dropping packet\n",
++				   pkg->size);
++			goto rx;
++		}
++
++		pkg->size -= 4; /* remove checksum */
++		if (*(u32 *) (pkg->buffer + pkg->size)
++		    != tb_crc(pkg->buffer, pkg->size)) {
++			tb_cfg_err(cfg,
++				   "RX: checksum mismatch, dropping packet\n");
++			goto rx;
++		}
++		be32_to_cpu_array(pkg->buffer, pkg->buffer, pkg->size / 4);
++
++		if (pkg->eof == TB_CFG_PKG_EVENT) {
++			tb_ctl_handle_plug_event(cfg, pkg);
++			goto rx;
++		}
++		if (!kfifo_put(&cfg->response_fifo, pkg)) {
++			tb_cfg_err(cfg, "RX: fifo is full\n");
++			goto rx;
++		}
++		complete(&cfg->response_ready);
++		continue;
++rx:
++		ring_rx(cfg->rx, pkg);
++	}
++}
++
++
++/* public interface */
++
++/**
++ * tb_cfg_alloc() - allocate a config channel
++ *
++ * cb will be invoked once for every hot plug event.
++ *
++ * Return: Returns a pointer on success or NULL on failure.
++ */
++struct tb_cfg *tb_cfg_alloc(struct tb_nhi *nhi, hotplug_cb cb, void *cb_data)
++{
++	int i;
++	struct tb_cfg *cfg = kzalloc(sizeof(*cfg), GFP_KERNEL);
++	struct ring_packet *rx_packets[10] = { };
++	if (!cfg)
++		return NULL;
++	cfg->nhi = nhi;
++	cfg->callback = cb;
++	cfg->callback_data = cb_data;
++
++	init_completion(&cfg->response_ready);
++	INIT_KFIFO(cfg->response_fifo);
++	cfg->packet_pool = dma_pool_create("dls3510 cfg", &nhi->pdev->dev,
++					   TB_FRAME_SIZE, 4, 0);
++	if (!cfg->packet_pool)
++		goto err;
++
++	/* tb_ctl_handle_plug_event uses cfg->tx. Allocate cfg->tx first. */
++	cfg->tx = ring_alloc_tx(nhi, 0, 10, tb_cfg_tx_callback, cfg);
++	if (!cfg->tx)
++		goto err;
++
++	cfg->rx = ring_alloc_rx(nhi, 0, 10, tb_cfg_rx_callback, cfg);
++	if (!cfg->rx)
++		goto err;
++
++	/*
++	 * After the first call to ring_rx we will start to receive plug
++	 * notifications and call cfg->callback. After this we can no longer
++	 * bail out cleanly. To avoid this situation we allocate all packets
++	 * BEFORE calling ring_rx.
++	 */
++	if (tb_ctl_alloc_packets(cfg, rx_packets, 10))
++		goto err;
++	for (i = 0; i < 10; i++)
++		ring_rx(cfg->rx, rx_packets[i]);
++
++	tb_cfg_info(cfg, "config channel created\n");
++	return cfg;
++err:
++	tb_cfg_free(cfg);
++	return NULL;
++}
++
++/**
++ * tb_cfg_free() - shutdown and free a config channel
++ *
++ * All calls to cfg->callback will have finished on return.
++ *
++ * Must NOT be called from cfg->callback.
++ */
++void tb_cfg_free(struct tb_cfg *cfg)
++{
++	struct ring_packet *pkg;
++	/*
++	 * cfg->tx is used in tb_ctl_handle_plug_event. Free cfg->tx
++	 * after cfg->rx.
++	 */
++	if (cfg->rx)
++		ring_drain_and_free(cfg->rx);
++	if (cfg->tx)
++		ring_drain_and_free(cfg->tx);
++	while (kfifo_get(&cfg->response_fifo, &pkg))
++		tb_ctl_free_packet(cfg, pkg);
++	if (cfg->packet_pool)
++		dma_pool_destroy(cfg->packet_pool);
++	kfree(cfg);
++}
++
++/**
++ * tb_cfg_error() - send error packet
++ *
++ * Currently the error code is hardcoded to TB_CFG_ERROR_ACK_PLUG_EVENT.
++ *
++ * Return: Returns 0 on success or an error code on failure.
++ */
++int tb_cfg_error(struct tb_cfg *cfg, u64 route, u32 port)
++{
++	struct cfg_error_pkg pkg = {
++		.header = make_header(route),
++		.port = port,
++		.error = TB_CFG_ERROR_ACK_PLUG_EVENT,
++	};
++	tb_cfg_info(cfg, "resetting error on %llx:%x.\n", route, port);
++	return tb_cfg_tx(cfg, &pkg, sizeof(pkg), TB_CFG_PKG_ERROR);
++}
++
++/**
++ * tb_cfg_reset() - send an reset packet
++ *
++ * Return: Returns 0 on success or an error code on failure.
++ */
++int tb_cfg_reset(struct tb_cfg *cfg, u64 route)
++{
++	struct cfg_reset_pkg pkg = { .header = make_header(route) };
++	struct ring_packet *response;
++	int res = tb_cfg_tx(cfg, &pkg, sizeof(pkg), TB_CFG_PKG_RESET);
++	if (res)
++		return res;
++
++	response = tb_cfg_rx(cfg);
++	if (!response)
++		return -EIO;
++
++	res = check_header(response, 8, route, TB_CFG_PKG_RESET);
++	ring_rx(cfg->rx, response);
++	return res;
++}
++
++/**
++ * tb_cfg_read() - read from config space into buffer
++ *
++ * offset and length are in dwords.
++ *
++ * Return: Returns 0 on success or an error code on failure.
++ */
++int tb_cfg_read(struct tb_cfg *cfg, void *buffer, uint64_t route, uint32_t port,
++		enum tb_cfg_space space, uint32_t offset, uint32_t length)
++{
++	struct cfg_read_pkg pkg = {
++		.header = make_header(route),
++		.addr = {
++			.port = port,
++			.space = space,
++			.offset = offset,
++			.length = length,
++		},
++	};
++	struct ring_packet *response;
++	struct cfg_write_pkg *reply;
++	int res;
++
++	res = tb_cfg_tx(cfg, &pkg, sizeof(pkg), TB_CFG_PKG_READ);
++	if (res)
++		return res;
++
++	response = tb_cfg_rx(cfg);
++	if (!response)
++		return -EIO;
++
++	res = check_header(response, 12 + 4 * length, route, TB_CFG_PKG_READ);
++	if (res)
++		goto out;
++
++	reply = response->buffer;
++	res = check_config_address(&reply->addr, space, offset, length);
++	if (res)
++		goto out;
++
++	memcpy(buffer, &reply->data, 4 * length);
++out:
++	ring_rx(cfg->rx, response);
++	return res;
++}
++
++/**
++ * tb_cfg_write() - write from buffer into config space
++ *
++ * offset and length are in dwords.
++ *
++ * Return: Returns 0 on success or an error code on failure.
++ */
++int tb_cfg_write(struct tb_cfg *cfg, void *buffer, uint64_t route,
++		 uint32_t port, enum tb_cfg_space space, uint32_t offset,
++		 uint32_t length)
++{
++	struct cfg_write_pkg pkg = {
++		.header = make_header(route),
++		.addr = {
++			.port = port,
++			.space = space,
++			.offset = offset,
++			.length = length,
++		},
++	};
++	struct ring_packet *response;
++	struct cfg_read_pkg *reply;
++	int res;
++
++	memcpy(&pkg.data, buffer, length * 4);
++
++	res = tb_cfg_tx(cfg, &pkg, 12 + 4 * length, TB_CFG_PKG_WRITE);
++	if (res)
++		return res;
++
++	response = tb_cfg_rx(cfg);
++	if (!response)
++		return -EIO;
++
++	res = check_header(response, sizeof(*reply), route, TB_CFG_PKG_WRITE);
++	if (res)
++		goto out;
++
++	reply = response->buffer;
++	res = check_config_address(&reply->addr, space, offset, length);
++out:
++	ring_rx(cfg->rx, response);
++	return res;
++}
++
++/**
++ * tb_cfg_get_upstream_port() - get upstream port number of switch at route
++ *
++ * Reads the first dword from the switches TB_CFG_SWITCH config area and
++ * returns the port number from which the reply originated.
++ *
++ * This information is in principle present in every read/write response. We
++ * expose it only here in order to keep the normal API streamlined.
++ *
++ * Return: Returns the upstream port number on success or an error code on
++ * failure.
++ */
++int tb_cfg_get_upstream_port(struct tb_cfg *cfg, u64 route)
++{
++	struct cfg_read_pkg pkg = {
++		.header = make_header(route),
++		.addr = {
++			.port = 0,
++			.space = TB_CFG_SWITCH,
++			.offset = 0,
++			.length = 1,
++		},
++	};
++	struct ring_packet *response;
++	struct cfg_write_pkg *reply;
++	int res;
++
++	res = tb_cfg_tx(cfg, &pkg, sizeof(pkg), TB_CFG_PKG_READ);
++	if (res)
++		return res;
++
++	response = tb_cfg_rx(cfg);
++	if (!response)
++		return -EIO;
++
++	res = check_header(response, 12 + 4, route, TB_CFG_PKG_READ);
++	if (res)
++		goto out;
++
++	reply = response->buffer;
++	res = check_config_address(&reply->addr, TB_CFG_SWITCH, 0, 1);
++	if (res)
++		goto out;
++	res = reply->addr.port;
++out:
++	ring_rx(cfg->rx, response);
++	return res;
++}
+diff --git a/drivers/thunderbolt/tb_cfg.h b/drivers/thunderbolt/tb_cfg.h
 new file mode 100644
-index 0000000..b4b946d
+index 0000000..fa3a950
 --- /dev/null
-+++ b/drivers/thunderbolt/dsl3510.h
-@@ -0,0 +1,116 @@
++++ b/drivers/thunderbolt/tb_cfg.h
+@@ -0,0 +1,67 @@
 +/*
-+ * Cactus Ridge NHI driver
++ * Thunderbolt configuration channel
 + *
 + * Copyright (c) 2013 Andreas Noever <andreas.noever@gmail.com>
 + */
 +
-+#ifndef DSL3510_H_
-+#define DSL3510_H_
-+
-+#include <linux/mutex.h>
-+#include <linux/workqueue.h>
-+
-+/**
-+ * struct tb_nhi - thunderbolt native host interface
-+ */
-+struct tb_nhi {
-+	struct mutex lock; /*
-+			    * Must be held during ring creation/destruction.
-+			    * Is acquired by interrupt_task to when dispatching
-+			    * interrupts to individual rings.
-+			    **/
-+	struct pci_dev *pdev;
-+	void __iomem *iobase;
-+	struct tb_ring **tx_rings;
-+	struct tb_ring **rx_rings;
-+	struct work_struct interrupt_task;
-+	u32 hop_count; /* Number of rings (end point hops) supported by NHI. */
-+};
-+
-+typedef void (*ring_cb)(struct tb_ring*, void*);
-+
-+/**
-+ * struct tb_ring - thunderbolt TX or RX ring associated with a NHI
-+ *
-+ * Will invoke callback once data is available. You should then call ring_poll
-+ * repeatedly to retrieve all completed (or canceled) packets.
-+ */
-+struct tb_ring {
-+	struct mutex lock; /* must be acquired after nhi->lock */
-+	struct tb_nhi *nhi;
-+	int size;
-+	int hop;
-+	int head; /* write next descriptor here */
-+	int tail; /* complete next descriptor here */
-+	struct ring_desc *descriptors;
-+	dma_addr_t descriptors_dma;
-+	ring_cb callback;
-+	void *callback_data;
-+	struct list_head queue;
-+	struct list_head in_flight;
-+	struct list_head done;
-+	struct work_struct work;
-+	bool is_tx;
-+	bool in_shutdown;
-+};
-+
-+/**
-+ * struct ring_packet - packet for use with ring_rx/ring_tx
-+ */
-+struct ring_packet {
-+	void *buffer;
-+	dma_addr_t buffer_phy;
-+	struct list_head list;
-+	u32 size:12;
-+	u16 flags:12;
-+	u32 eof:4;
-+	u32 sof:4;
-+	u8 canceled:1;
-+};
-+
-+#define TB_FRAME_SIZE 0x100    /* minimum size for ring_rx */
-+
-+struct tb_ring *ring_alloc_tx(struct tb_nhi *nhi, int hop, int size,
-+			      ring_cb callback, void *callback_data);
-+struct tb_ring *ring_alloc_rx(struct tb_nhi *nhi, int hop, int size,
-+			      ring_cb callback, void *callback_data);
-+void ring_drain_and_free(struct tb_ring *ring);
-+
-+void __ring_enqueue(struct tb_ring *ring, struct ring_packet *pkg);
-+
-+/**
-+ * ring_rx() - enqueue a packet on an RX ring
-+ *
-+ * If the ring is about to shut down the packet will be marked as canceled and
-+ * put on the done queue.
-+ *
-+ * pkg->buffer and pkg->buffer_phy have to be set. The buffer must contain at
-+ * least TB_FRAME_SIZE bytes. After pkg has been handled and retrieved through
-+ * ring_poll pkg->canceled, pkg->size, pkg->eof, pkg->sof and pkg->flags will
-+ * be set.
-+ */
-+static inline void ring_rx(struct tb_ring *ring, struct ring_packet *pkg)
-+{
-+	WARN_ON(ring->is_tx);
-+	__ring_enqueue(ring, pkg);
-+}
-+
-+/**
-+ * ring_tx() - enqueue a packet on an TX ring
-+ *
-+ * If the ring is about to shut down the packet will be marked as canceled and
-+ * put on the done queue.
-+ *
-+ * pkg->buffer, pkg->buffer_phy, pkg->size, pkg->eof, pkg->sof have to be set.
-+ * After pkg has been handled and retrieved through ring_poll pkg->canceled
-+ * will be set.
-+ */
-+static inline void ring_tx(struct tb_ring *ring, struct ring_packet *pkg)
-+{
-+	WARN_ON(!ring->is_tx);
-+	__ring_enqueue(ring, pkg);
-+}
-+
-+struct ring_packet *ring_poll(struct tb_ring *ring);
-+
-+#endif
-diff --git a/drivers/thunderbolt/dsl3510_regs.h b/drivers/thunderbolt/dsl3510_regs.h
-new file mode 100644
-index 0000000..fdfc758
---- /dev/null
-+++ b/drivers/thunderbolt/dsl3510_regs.h
-@@ -0,0 +1,102 @@
-+/*
-+ * Cactus Ridge registers
-+ *
-+ * Copyright (c) 2013 Andreas Noever <andreas.noever@gmail.com>
-+ */
-+
-+#ifndef DSL3510_REGS_H_
-+#define DSL3510_REGS_H_
++#ifndef _TB_CFG
++#define _TB_CFG
 +
 +#include <linux/types.h>
++#include <linux/kfifo.h>
++#include <linux/dmapool.h>
 +
-+enum ring_flags {
-+	RING_FLAG_ISOCH_ENABLE = 1 << 27, /* TX only ? */
-+	RING_FLAG_E2E_FLOW_CONTROL = 1 << 28,
-+	RING_FLAG_PCI_NO_SNOOP = 1 << 29,
-+	RING_FLAG_RAW = 1 << 30, /* ignore EOF/SOF mask, include checksum */
-+	RING_FLAG_ENABLE = 1 << 31,
-+};
++#include "dsl3510.h"
 +
-+enum ring_desc_flags {
-+	RING_DESC_ISOCH = 0x1, /* TX only ? */
-+	RING_DESC_COMPLETED = 0x2, /* set by NHI */
-+	RING_DESC_POSTED = 0x4, /* always set this */
-+	RING_DESC_INTERRUPT = 0x8, /* request an interrupt on completion */
-+};
++typedef void (*hotplug_cb)(void *data, u64 route, u8 port, bool unplug);
 +
 +/**
-+ * struct ring_desc - TX/RX ring entry
-+ *
-+ * For TX set length/eof/sof.
-+ * For RX length/eof/sof are set by the NHI.
++ * struct tb_cfg - thunderbolt configuration channel
 + */
-+struct ring_desc {
-+	u64 phys;
-+	u32 length:12;
-+	u32 eof:4;
-+	u32 sof:4;
-+	enum ring_desc_flags flags:12;
-+	u32 time; /* write zero */
-+} __packed;
++struct tb_cfg {
++	struct tb_nhi *nhi;
++	struct tb_ring *tx;
++	struct tb_ring *rx;
 +
-+/* NHI registers in bar 0 */
++	struct dma_pool *packet_pool;
 +
-+/*
-+ * 16 bytes per entry, one entry for every hop (REG_HOP_COUNT)
-+ * 00: physical pointer to an array of struct ring_desc
-+ * 08: unknown
-+ * 10: ring head (index of first non posted descriptor)
-+ * 12: descriptor count
-+ */
-+#define REG_TX_RING_BASE	0x00000
++	DECLARE_KFIFO(response_fifo, struct ring_packet*, 16);
 +
-+/*
-+ * 16 bytes per entry, one entry for every hop (REG_HOP_COUNT)
-+ * 00: physical pointer to an array of struct ring_desc
-+ * 08: ring head (index of first not posted descriptor)
-+ * 10: unknown
-+ * 12: descriptor count
-+ * 14: max frame sizes (anything larger than 0x100 has no effect)
-+ */
-+#define REG_RX_RING_BASE	0x08000
++	struct completion response_ready;
 +
-+/*
-+ * 32 bytes per entry, one entry for every hop (REG_HOP_COUNT)
-+ * 00: enum_ring_flags
-+ * 04: isoch time stamp ?? (write 0)
-+ * ..: unknown
-+ */
-+#define REG_TX_OPTIONS_BASE	0x19800
++	hotplug_cb callback;
++	void *callback_data;
++};
 +
-+/*
-+ * 32 bytes per entry, one entry for every hop (REG_HOP_COUNT)
-+ * 00: enum ring_flags
-+ *     If RING_FLAG_E2E_FLOW_CONTROL is set then bits 13-23 must be set to
-+ *     the corresponding TX hop id.
-+ * 04: EOF/SOF mask (ignored for RING_FLAG_RAW rings)
-+ * 08: EOF/SOF mask (ignored for RING_FLAG_RAW rings)
-+ * ..: unknown
-+ */
-+#define REG_RX_OPTIONS_BASE	0x29800
++#define tb_cfg_WARN(cfg, format, arg...) \
++	dev_WARN(&(cfg)->nhi->pdev->dev, format, ## arg)
 +
-+/*
-+ * three bitfields: tx, rx, rx overflow
-+ * Every bitfield contains one bit for every hop (REG_HOP_COUNT). Registers are
-+ * cleared on read. New interrupts are fired only after ALL registers have been
-+ * read (even those containing only disabled rings).
-+ */
-+#define REG_RING_NOTIFY_BASE	0x37800
-+#define RING_NOTIFY_REG_COUNT(nhi) ((31 + 3 * nhi->hop_count) / 32)
++#define tb_cfg_err(cfg, format, arg...) \
++	dev_err(&(cfg)->nhi->pdev->dev, format, ## arg)
 +
-+/*
-+ * two bitfields: rx, tx
-+ * Both bitfields contains one bit for every hop (REG_HOP_COUNT). To
-+ * enable/disable interrupts set/clear the corresponding bits.
-+ */
-+#define REG_RING_INTERRUPT_BASE	0x38200
-+#define RING_INTERRUPT_REG_COUNT(nhi) ((31 + 2 * nhi->hop_count) / 32)
++#define tb_cfg_warn(cfg, format, arg...) \
++	dev_warn(&(cfg)->nhi->pdev->dev, format, ## arg)
 +
-+/* The last 11 bits contain the number of hops supported by the NHI port. */
-+#define REG_HOP_COUNT		0x39640
++#define tb_cfg_info(cfg, format, arg...) \
++	dev_info(&(cfg)->nhi->pdev->dev, format, ## arg)
++
++struct tb_cfg *tb_cfg_alloc(struct tb_nhi *nhi, hotplug_cb cb, void *cb_data);
++void tb_cfg_free(struct tb_cfg *cfg);
++
++enum tb_cfg_space {
++	TB_CFG_HOPS = 0,
++	TB_CFG_PORT = 1,
++	TB_CFG_SWITCH = 2,
++	TB_CFG_COUNTERS = 3,
++};
++
++int tb_cfg_error(struct tb_cfg *cfg, u64 route, u32 port);
++int tb_cfg_reset(struct tb_cfg *cfg, u64 route);
++int tb_cfg_read(struct tb_cfg *cfg, void *buffer, uint64_t route, uint32_t port,
++		enum tb_cfg_space space, uint32_t offset, uint32_t length);
++int tb_cfg_write(struct tb_cfg *cfg, void *buffer, uint64_t route,
++		 uint32_t port, enum tb_cfg_space space, uint32_t offset,
++		 uint32_t length);
++int tb_cfg_get_upstream_port(struct tb_cfg *cfg, u64 route);
 +
 +#endif
 -- 
