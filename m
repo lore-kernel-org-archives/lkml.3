@@ -1,89 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528Ab3K2XmZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 18:42:25 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:62468 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750794Ab3K2XmU (ORCPT
+	id S1751845Ab3K2Xo4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 18:44:56 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:43328 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794Ab3K2Xoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 18:42:20 -0500
-Message-ID: <52992659.5040503@gmail.com>
-Date: Fri, 29 Nov 2013 18:42:17 -0500
-From: Austin S Hemmelgarn <ahferroin7@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Fri, 29 Nov 2013 18:44:54 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Joe Perches <joe@perches.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        dmaengine@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH] lib/vsprintf.c: add %paD format specifier for dma_addr_t types
+Date: Sat, 30 Nov 2013 00:44:53 +0100
+Message-ID: <2554479.4o3B19tG25@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.10.17-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1385763040.12210.34.camel@joe-AO722>
+References: <1385638084-10719-1-git-send-email-andriy.shevchenko@linux.intel.com> <1385729760.1871.23.camel@smile> <1385763040.12210.34.camel@joe-AO722>
 MIME-Version: 1.0
-To: Andreas Mohr <andi@lisas.de>, venkata koppula <vmrkoppula@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Copying large files eats all of the RAM
-References: <20131129215616.GA32242@rhlx01.hs-esslingen.de>
-In-Reply-To: <20131129215616.GA32242@rhlx01.hs-esslingen.de>
-X-Enigmail-Version: 1.6
-OpenPGP: id=85D2EC0F
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2013 04:56 PM, Andreas Mohr wrote:
-> Hi,
-> 
->> My laptop has 4GB of ram, before I issue the command around 1.5GB of
->> memory
->> is used, when I issue the cp command around 3.7GB of memory is used.
->> And the cp command takes a lot of time to copy.
->>
->> I am not able to launch other applications(take a lot of time) and
->> even compiz freezes frequently. my laptop has Ubuntu installed on it.
->>
->> Is this the problem with only my system or it is a common problem with
->> Linux?.
->>
->> Is there any way to stop any copy command to use all of my memory.
-> 
-> The purpose of a good operating system is *exactly* to optimize the
-> *all* RAM is used, *all* the time optimum to the highest degree.
-> Or would you want to have your power supply used to power useless
-> memory that's sitting idle?
-> 
-> It's probably a good idea to read up on the many sites which explain
-> important OS caching mechanisms.
-> 
-> That said, there may of course be situations where too much
-> competition/contention for resources occurs, or where calculation of the
-> kept-free-for-reuse memory amount is sub-optimal, leaving overly scarce
-> amounts of memory available for immediate use.
-> But that should be a matter of optimizing core kernel algorithms
-> even more than they already are.
-> 
-> And it's also known that for certain situations (e.g. trying to push very large
-> amounts of data over a lowly USB 1.1 USB stick connection),
-> Linux does (or did?) tend to have issues with that cached data piling up
-> in somewhat negative ways prior to getting flushed over the connection,
-> thereby causing system performance to degrade (I'm not in the know of
-> how much that still applies to very new Linux kernel versions).
-> 
-> But in your case that might simply be a problem of your particular
-> hardware (IRQ issues, improperly implemented drivers, ...).
-> Some benchmarking activities might be able to provide more details
-> (e.g. hdparm -tT, bonnie++ results, memory performance tests, etc.).
-> 
-> cat /proc/slabinfo
-> ought to provide an initial overview of which cache elements
-> manage to keep the largest memory areas in service.
-> 
+Hi Joe,
 
-I think it is more likely hardware related, the USB storage (and other
-slow device) caching issues are related to the actual amount of memory
-in the system (and how slow the device is).  Linux by default caches
-writes up to 10% of system memory prior to starting write-back on a 4G
-system this is only 400M,  the easy way to check though is to try the
-same operation after running:
-	echo $((16*1024*1024)) > /proc/sys/vm/dirty_background_bytes
-this will configure things to start write-back of the data much earlier.
+On Friday 29 November 2013 14:10:40 Joe Perches wrote:
+> On Fri, 2013-11-29 at 14:56 +0200, Andy Shevchenko wrote:
+> > On Thu, 2013-11-28 at 10:32 -0800, Joe Perches wrote:
+> > > On Thu, 2013-11-28 at 13:28 +0200, user.email wrote:
+> > > > From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> > > > 
+> > > > Add the %paD format specifier for printing a dma_addr_t type, since
+> > > > the
+> > > > DMA address size on some platforms can vary based on build options,
+> > > > regardless of the native integer type.
+> > > 
+> > > OK, but I prefer this one because upper case is
+> > > sometimes used to specify upper case only output.
+> > > ala %x %X and %pUl %pUL.
+> > 
+> > No objections.
+> > 
+> > > https://lkml.org/lkml/2013/9/12/483
+> > 
+> > Hmm... Still not in kernel. Do you know reason why it so?
+> 
+> It was just for discussion and I didn't sign or push it
+> to anyone else.
+> 
+> What's slightly funny is how far back dma_addr_t printk
+> discussions go.
+> 
+> http://lkml.indiana.edu/hypermail/linux/kernel/0202.1/1221.html
+> 
+> Anyway, if you think you're going to do a lot of
+> transforms of printk("%x", dma_addr_t) with or without
+> (unsigned long long) or (u64) casts, I'll submit a signed
+> patch to Andrew.
+> 
+> Let me know.
 
-On the other hand, if you are doing this between locations on an SSD,
-that might also be part of the issue, write operations on SSD's take
-much longer than reads, and most of them can't do a read operation while
-the write operation is running (USB flash drives have similar issues,
-which is part of why the caching issues are so evident with them).
+Just FYI, I've recently submitted a couple of patches that cast dma_addr_t for 
+printk purpose, which resulted in Andy proposing a printk format extension 
+instead.
+
+> In an aside for Julia Lawall (added to cc's), I tried to
+> do a spatch grep for dma_addr_t (and phys_addr_t) types
+> that were cast to (unsigned long) or (u64) but I was
+> unsuccessful.  Is there something else I need to do?
+> 
+> $ cat dma_addr_t.cocci
+> @@
+> dma_addr_t foo;
+> @@
+> 
+> * (unsigned long long)foo;
+> 
+> $ cat t.c
+> #include <linux/types.h>
+> #include <linux/printk.h>
+> 
+> int foo(dma_addr_t a)
+> {
+> 	printk("test: %llx\n", (unsigned long long)a);
+> }
+> 
+> $ spatch --all-includes --local-includes  -I include/ --sp-file
+> dma_addr_t.cocci t.c init_defs_builtins:
+> /usr/local/share/coccinelle/standard.h
+> HANDLING: t.c
+> $
+-- 
+Regards,
+
+Laurent Pinchart
+
