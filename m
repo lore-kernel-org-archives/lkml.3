@@ -1,110 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab3K2LyB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 06:54:01 -0500
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:35291 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754479Ab3K2Lx4 (ORCPT
+	id S1754123Ab3K2L5O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 06:57:14 -0500
+Received: from fallback1.mail.ru ([94.100.176.18]:52204 "EHLO
+	fallback1.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636Ab3K2L5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 06:53:56 -0500
-Date: Fri, 29 Nov 2013 11:53:49 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Huang Shijie <b32955@freescale.com>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org, linux-mtd@lists.infradead.org, angus.clark@st.com,
-        linus.walleij@linaro.org, Mark Brown <broonie@kernel.org>,
-        linux-spi@vger.kernel.org
-Subject: Re: [PATCH 00/23] mtd: st_spi_fsm: Add new device
-Message-ID: <20131129115349.GB26982@lee--X1>
-References: <1385137380-28968-1-git-send-email-lee.jones@linaro.org>
- <20131127040723.GZ9468@ld-irv-0074.broadcom.com>
- <20131127115226.GC3296@lee--X1>
- <5296B9C5.3060704@freescale.com>
- <20131128092904.GZ3296@lee--X1>
- <529874EE.402@freescale.com>
-MIME-Version: 1.0
+	Fri, 29 Nov 2013 06:57:13 -0500
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?TWFyYyBLbGVpbmUtQnVkZGU=?= <mkl@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?B?RXZnZW5peSBQb2x5YWtvdg==?= <zbr@ioremap.net>,
+        =?UTF-8?B?R3JlZyBLcm9haC1IYXJ0bWFu?= <gregkh@linuxfoundation.org>,
+        =?UTF-8?B?U2hhd24gR3Vv?= <shawn.guo@linaro.org>,
+        =?UTF-8?B?U2FzY2hhIEhhdWVy?= <kernel@pengutronix.de>
+Subject: =?UTF-8?B?UmU6IFtQQVRDSCAxLzNdIHcxOiBteGNfdzE6IFJlbW92ZSB1bnVzZWQgZmll?=
+ =?UTF-8?B?bGQgImNsa2RpdiIgZnJvbSBwcml2YXRlIHN0cnVjdHVyZQ==?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [217.119.30.118]
+Date: Fri, 29 Nov 2013 15:56:57 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1385726217.626946686@f256.i.mail.ru>
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <529874EE.402@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mras: Ok
+X-Spam: undefined
+In-Reply-To: <52987EB1.4010503@pengutronix.de>
+References: <1385725170-31515-1-git-send-email-shc_work@mail.ru>
+ <52987EB1.4010503@pengutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rATBvJ0l032616
 
-> thanks for your explanations.
-> >Most controllers just take an OPCODE and pass it on to the controller
-> >and have done with it. The issue that you're attempting to rectify is
-> >that the m25p80 expects every controller to be an SPI controller
-> >registered to the SPI framework, but as we both know that's not always
-> >practical as the SPI framework doesn't allow all configuration
-> >information to be passed back to the controller driver. Our issue is
-> >not the same. We are required to send entire 'message sequences', to
-> >the controller rather than just opcodes. The JEDEC message sequence
-> >can be seen below. Bear in mind that this is also one of the more
-> >simple message sequences. Some of them even vary depending on which
-> >chip is present.
-> Frankly speaking, my quadspi driver's code is just like Jones's code.
-> Yes, a big "switch".
-
-That sounds awful.
-
-It begs the question, what are you saving/improving by using this
-framework then?
-
-> The opcode is just like an index to trigger the proper operation.
-> That's why i add this hook @->read_reg(). (the hook acts as the ioctl)
-
-As I've said before, the framework you're suggesting is likely to aid
-a Controller which shares a great deal of functionality with the
-m25p80 where the back-end controller driver doesn't use the SPI
-Subsystem. That won't apply to some Serial Flash Controller drivers,
-ours included.
-
-The idea of providing a framework like this is to reduce unnecessary
-duplication of code by consolidating shared routines into a central
-point. mp25p80 is a good place for that, as a great many Controllers
-share the majority of its code. As the only commonality we have with
-the m25p80 is a small piece of the JEDEC extraction and a sub-section
-of the supported device table (which A. our Controller doesn't support
-all of the devices and C. we've extended the table to make it more
-useful for our use-case); what you're suggesting would not only
-create a larger code-base, but execution would also take more cycles,
-which to me sounds completely counter-intuitive. It's lose-lose!
-
-Using the m25p80 as a pass-through, then creating an OPCODE based
-switch statement to then go and do the _real_ work sound absurd.
-
-> If we do not use this hooks, we should add more hooks such as
-> @->read_id, @->read_sr, @->read_cr...
+> On 11/29/2013 12:39 PM, Alexander Shiyan wrote:
+> > Private field "clkdiv" is not used outside "probe", so there are
+> > no reason to keep it in driver.
 > 
-> That's make the interface not graceful enough.
+> Where's the corresponding clk_disable_unprepare()?
 
-I agree.
+I do not see any relation "clk_disable_unprepare" with this patch.
 
-> I read the your patch implementing the read_id:
-> 
-> http://lists.infradead.org/pipermail/linux-mtd/2013-November/050221.html
-> 
-> it's more readable. But i think Jones's stfsm_read_reg() is workable too.
-
-It's 'workable', but not efficient. I wrote that example to show you
-how bad it would look and to show that is was not a good idea, not
-as a good example to be followed.
-
-> If you do not like the read_reg() hook, do you have any better idea?
-
-I don't have a better idea. I think your framework will work just fine
-for some controllers. I just don't think bending ours to use it (by
-basically adding _extra_ code, and subsequently extra cycles) is the
-best way to go.
-
-Kind regards,
-Lee
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+---
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
