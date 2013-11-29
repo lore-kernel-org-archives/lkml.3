@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757314Ab3K2RB1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 12:01:27 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:38523 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756367Ab3K2RBX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 12:01:23 -0500
-From: Michal Nazarewicz <mpn@google.com>
-To: Chris Mason <chris.mason@fusionio.com>,
-        Filipe David Borba Manana <fdmanana@gmail.com>
-Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] btrfs: remove dead code
-Date: Fri, 29 Nov 2013 18:01:15 +0100
-Message-Id: <1385744475-9614-1-git-send-email-mpn@google.com>
-X-Mailer: git-send-email 1.8.4.1
+	id S1757395Ab3K2RCs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 12:02:48 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:45191 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754218Ab3K2RCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 12:02:45 -0500
+Date: Fri, 29 Nov 2013 18:02:35 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.infradead.org, greg@kroah.com, toshi.kani@hp.com
+Subject: Re: [PATCH v4 00/12] kexec kernel efi runtime support
+Message-ID: <20131129170235.GG4266@pd.tnic>
+References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
+ <20131127125003.GG18170@console-pimps.org>
+ <20131128020840.GB4282@dhcp-16-126.nay.redhat.com>
+ <20131129082822.GA4186@dhcp-16-126.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131129082822.GA4186@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+On Fri, Nov 29, 2013 at 04:28:22PM +0800, Dave Young wrote:
+> I think for anyone who are using early_memremap should know this is a
+> normal kernel memory instead of real __iomem
 
-[commit 8185554d: fix incorrect inode acl reset] introduced a dead
-code by adding a condition which can never be true to an else
-branch.  The condition can never be true because it is already
-checked by a previous if statement which causes function to return.
+You can never ever assume that people are using kernel interfaces
+correctly.
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
----
- fs/btrfs/acl.c | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
-
-diff --git a/fs/btrfs/acl.c b/fs/btrfs/acl.c
-index 0890c83..460f36b 100644
---- a/fs/btrfs/acl.c
-+++ b/fs/btrfs/acl.c
-@@ -225,13 +225,8 @@ int btrfs_init_acl(struct btrfs_trans_handle *trans,
- 		ret = posix_acl_create(&acl, GFP_NOFS, &inode->i_mode);
- 		if (ret < 0)
- 			return ret;
--
--		if (ret > 0) {
--			/* we need an acl */
-+		if (ret > 0) /* we need an acl */
- 			ret = btrfs_set_acl(trans, inode, acl, ACL_TYPE_ACCESS);
--		} else if (ret < 0) {
--			cache_no_acl(inode);
--		}
- 	} else {
- 		cache_no_acl(inode);
- 	}
 -- 
-1.8.4.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
