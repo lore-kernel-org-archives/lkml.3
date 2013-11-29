@@ -1,94 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757484Ab3K2Qvy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 11:51:54 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:58830 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756367Ab3K2Qvu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 11:51:50 -0500
-From: Michal Nazarewicz <mpn@google.com>
-To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND] drivers: video: metronomefb: avoid out-of-bounds array access
-Date: Fri, 29 Nov 2013 17:51:43 +0100
-Message-Id: <1385743903-9079-1-git-send-email-mpn@google.com>
-X-Mailer: git-send-email 1.8.4.1
+	id S932257Ab3K2Q5K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 11:57:10 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:37493 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932208Ab3K2Q5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 11:57:06 -0500
+Date: Fri, 29 Nov 2013 17:56:56 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
+Subject: Re: [PATCH v4 11/12] x86: reserve setup_data ranges late after
+ parsing memmap cmdline
+Message-ID: <20131129165656.GF4266@pd.tnic>
+References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
+ <1385445477-9665-12-git-send-email-dyoung@redhat.com>
+ <20131127150710.GH32267@pd.tnic>
+ <20131129083551.GB4186@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131129083551.GB4186@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+On Fri, Nov 29, 2013 at 04:35:52PM +0800, Dave Young wrote:
+> Is below changes ok to you?
 
-load_waveform function checks whether padding bytes in stuff2a
-and stuff2b are all zero, but does so by treating those arrays
-as a single longer array.  Since the structure is packed, and
-the size sum matches, it all works, but creates some confusion
-in the code.
+Almost perfect! Just a micro-nitpick below:
 
-This commit changes the stuff2a and stuff2b arrays into pad1 and
-pad2 fields such that they cover the same bytes as the arrays
-covered, and changes the check in the load_waveform function so
-that the fields are read instead of iterating over an arary.
+> Currently e820_reserve_setup_data is called before parsing early params,
+> it works in normal case. But for memmap=exactmap, the final memory ranges
+> are created after parsing memmap= cmdline params, so the previous
+> e820_reserve_setup_data has no effect. For example for setup_data ranges
 
-It also renames the other “stuff” fields to “ignore*” fields to
-give them more semantic meaning.
+s/ for/,/
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
----
- drivers/video/metronomefb.c | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+> will still be marked as normal system ram, thus when later sysfs driver
+> ioremap them kernel will warn about mapping normal ram.
+> 
+> This patch fix it by moving the e820_reserve_setup_data callback after
+> parsing early params so they can be set as reserved ranges and later
+> ioremap will be fine with it.
 
-diff --git a/drivers/video/metronomefb.c b/drivers/video/metronomefb.c
-index 195cc2d..4f36a2b 100644
---- a/drivers/video/metronomefb.c
-+++ b/drivers/video/metronomefb.c
-@@ -126,7 +126,7 @@ static struct fb_var_screeninfo metronomefb_var = {
- 
- /* the waveform structure that is coming from userspace firmware */
- struct waveform_hdr {
--	u8 stuff[32];
-+	u8 ignore1[32];
- 
- 	u8 wmta[3];
- 	u8 fvsn;
-@@ -134,13 +134,14 @@ struct waveform_hdr {
- 	u8 luts;
- 	u8 mc;
- 	u8 trc;
--	u8 stuff3;
-+	u8 ignore2;
- 
- 	u8 endb;
- 	u8 swtb;
--	u8 stuff2a[2];
-+	u32 pad1; /* u16 halfof(pad1) */
- 
--	u8 stuff2b[3];
-+	/* u16 halfof(pad1) */
-+	u8 pad2;
- 	u8 wfm_cs;
- } __attribute__ ((packed));
- 
-@@ -210,11 +211,9 @@ static int load_waveform(u8 *mem, size_t size, int m, int t,
- 	}
- 	wfm_hdr->mc += 1;
- 	wfm_hdr->trc += 1;
--	for (i = 0; i < 5; i++) {
--		if (*(wfm_hdr->stuff2a + i) != 0) {
--			dev_err(dev, "Error: unexpected value in padding\n");
--			return -EINVAL;
--		}
-+	if (wfm_hdr->pad1 || wfm_hdr->pad2) {
-+		dev_err(dev, "Error: unexpected value in padding\n");
-+		return -EINVAL;
- 	}
- 
- 	/* calculating trn. trn is something used to index into
+Thanks.
+
 -- 
-1.8.4.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
