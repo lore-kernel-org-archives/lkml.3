@@ -1,101 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751835Ab3K2IHr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 03:07:47 -0500
-Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:34123
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750985Ab3K2IHq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 03:07:46 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
-From: <hongbo.zhang@freescale.com>
-To: <scottwood@freescale.com>, <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-CC: <linux-kernel@vger.kernel.org>, Hongbo Zhang <hongbo.zhang@freescale.com>
-Subject: [PATCH] DTS: DMA: Fix DMA3 interrupts
-Date: Fri, 29 Nov 2013 16:07:26 +0800
-Message-ID: <1385712446-28221-1-git-send-email-hongbo.zhang@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752228Ab3K2IKu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 03:10:50 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:51807 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751128Ab3K2IKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 03:10:46 -0500
+Message-ID: <52984BAF.4060306@ti.com>
+Date: Fri, 29 Nov 2013 13:39:19 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v6 4/6] gpio: davinci: add OF support
+References: <1385057731-4348-1-git-send-email-prabhakar.csengg@gmail.com>	<1385057731-4348-5-git-send-email-prabhakar.csengg@gmail.com>	<52932DB9.4090805@ti.com>	<5294950A.9070007@ti.com>	<5294D692.3080100@ti.com> <CACRpkdZtfsvgYNMUnuwiYL=0dVe6KDPV92Ri0TpTHL8gRJeqkQ@mail.gmail.com>
+In-Reply-To: <CACRpkdZtfsvgYNMUnuwiYL=0dVe6KDPV92Ri0TpTHL8gRJeqkQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
+On Friday 29 November 2013 01:16 PM, Linus Walleij wrote:
+> On Tue, Nov 26, 2013 at 6:12 PM, Sekhar Nori <nsekhar@ti.com> wrote:
+>> On Tuesday 26 November 2013 06:03 PM, Grygorii Strashko wrote:
+> 
+>>> Actually, the same was proposed by Linus, but we've tried avoid such huge rework -
+>>> by switching to one irq_domain per all banks for example.
+>>
+>> I didn't really read that proposal from Linus so if two people
+>> independently suggested the same thing, there must be something worth
+>> considering there :)
+> 
+> From a GPIO POV it's not such a big deal really, this approach is fine
+> and the important thing is that we progress toward a more standard
+> driver... it's more a question for the DT people IMO. I really like the
+> current patch set.
 
-MPIC registers for internal interrupts is non-continous in address, any
-internal interrupt number greater than 159 should be added (16+208) to work.
-16 is due to external interrupts as usual, 208 is due to the non-continous MPIC
-register space.
-Tested on T4240 rev2 with SRIO2 disabled.
+Rob has acked v5 of this patch. So no objection from DT people too. My
+concern was a bit futuristic. Since everyone is happy I think we can go
+with the current patch itself.
 
-Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
----
- arch/powerpc/boot/dts/fsl/elo3-dma-2.dtsi |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/arch/powerpc/boot/dts/fsl/elo3-dma-2.dtsi b/arch/powerpc/boot/dts/fsl/elo3-dma-2.dtsi
-index b89d816..d3cc8d0 100644
---- a/arch/powerpc/boot/dts/fsl/elo3-dma-2.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/elo3-dma-2.dtsi
-@@ -42,41 +42,41 @@ dma2: dma@102300 {
- 	dma-channel@0 {
- 		compatible = "fsl,eloplus-dma-channel";
- 		reg = <0x0 0x80>;
--		interrupts = <256 2 0 0>;
-+		interrupts = <464 2 0 0>;
- 	};
- 	dma-channel@80 {
- 		compatible = "fsl,eloplus-dma-channel";
- 		reg = <0x80 0x80>;
--		interrupts = <257 2 0 0>;
-+		interrupts = <465 2 0 0>;
- 	};
- 	dma-channel@100 {
- 		compatible = "fsl,eloplus-dma-channel";
- 		reg = <0x100 0x80>;
--		interrupts = <258 2 0 0>;
-+		interrupts = <466 2 0 0>;
- 	};
- 	dma-channel@180 {
- 		compatible = "fsl,eloplus-dma-channel";
- 		reg = <0x180 0x80>;
--		interrupts = <259 2 0 0>;
-+		interrupts = <467 2 0 0>;
- 	};
- 	dma-channel@300 {
- 		compatible = "fsl,eloplus-dma-channel";
- 		reg = <0x300 0x80>;
--		interrupts = <260 2 0 0>;
-+		interrupts = <468 2 0 0>;
- 	};
- 	dma-channel@380 {
- 		compatible = "fsl,eloplus-dma-channel";
- 		reg = <0x380 0x80>;
--		interrupts = <261 2 0 0>;
-+		interrupts = <469 2 0 0>;
- 	};
- 	dma-channel@400 {
- 		compatible = "fsl,eloplus-dma-channel";
- 		reg = <0x400 0x80>;
--		interrupts = <262 2 0 0>;
-+		interrupts = <470 2 0 0>;
- 	};
- 	dma-channel@480 {
- 		compatible = "fsl,eloplus-dma-channel";
- 		reg = <0x480 0x80>;
--		interrupts = <263 2 0 0>;
-+		interrupts = <471 2 0 0>;
- 	};
- };
--- 
-1.7.9.5
-
-
-
+Thanks,
+Sekhar
