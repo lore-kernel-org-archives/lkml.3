@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683Ab3K2MKV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 07:10:21 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:58801 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751835Ab3K2MKT (ORCPT
+	id S1754617Ab3K2MQe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 07:16:34 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:34353 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752543Ab3K2MQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 07:10:19 -0500
-Date: Fri, 29 Nov 2013 12:09:51 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] EFI urgent fixes
-Message-ID: <20131129120951.GF11775@console-pimps.org>
+	Fri, 29 Nov 2013 07:16:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1595199.2xkkMsZdTD@vostro.rjw.lan>
+References: <1385417755-21776-1-git-send-email-paul.drews@intel.com>
+	<1595199.2xkkMsZdTD@vostro.rjw.lan>
+Date: Fri, 29 Nov 2013 13:16:31 +0100
+Message-ID: <CACRpkdZJTpUDO6ZxrUS+02docY8wDyz0eZP3AM3qA_WwoaKAbw@mail.gmail.com>
+Subject: Re: [PATCH] acpi: Add BayTrail SoC GPIO and LPSS ACPI IDs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Paul Drews <paul.drews@intel.com>, Len Brown <lenb@kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On Thu, Nov 28, 2013 at 2:29 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Monday, November 25, 2013 02:15:55 PM Paul Drews wrote:
+>> This adds the new ACPI ID (INT33FC) for the BayTrail GPIO
+>> banks as seen on a BayTrail M System-On-Chip platform.  This
+>> ACPI ID is used by the BayTrail GPIO (pinctrl) driver to
+>> manage the Low Power Subsystem (LPSS).
+>>
+>> Signed-off-by: Paul Drews <paul.drews@intel.com>
+>
+> Linus, any objections to this?  If not, I'll take it for 3.14.
 
-The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
+Go ahead,
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
-
-for you to fetch changes up to fdeadb43fdf1e7d5698c027b555c389174548e5a:
-
-  efi-pstore: Make efi-pstore return a unique id (2013-11-29 10:11:06 +0000)
-
-----------------------------------------------------------------
- * Avoid triggering a lockdep warning caused by calling kmemdup() while
-   holding a spinlock - Seiji Aguchi
-
- * EFI framebuffer earlyprintk fix for off-by-one error that caused
-   console output to be split over two lines on some machines.
-
- * Avoid pstore filename collisions by using a timestamp to calculate
-   the entry ID, thereby making them unique - Madper Xie
-
-----------------------------------------------------------------
-Madper Xie (1):
-      efi-pstore: Make efi-pstore return a unique id
-
-Matt Fleming (1):
-      x86/efi: Fix earlyprintk off-by-one bug
-
-Seiji Aguchi (1):
-      efivars, efi-pstore: Hold off deletion of sysfs entry until the scan is completed
-
- arch/x86/platform/efi/early_printk.c |   2 +-
- drivers/firmware/efi/efi-pstore.c    | 163 +++++++++++++++++++++++++++++++----
- drivers/firmware/efi/efivars.c       |  12 ++-
- drivers/firmware/efi/vars.c          |  12 ++-
- include/linux/efi.h                  |   4 +
- 5 files changed, 170 insertions(+), 23 deletions(-)
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+Yours,
+Linus Walleij
