@@ -1,123 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892Ab3K2I2T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 03:28:19 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:46754 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985Ab3K2I2R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 03:28:17 -0500
-Message-ID: <52985041.5050000@gmail.com>
-Date: Fri, 29 Nov 2013 09:28:49 +0100
-From: Francis Moreau <francis.moro@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1752404Ab3K2I33 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 03:29:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12613 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751135Ab3K2I30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 03:29:26 -0500
+Date: Fri, 29 Nov 2013 16:28:22 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        bp@alien8.de, greg@kroah.com, toshi.kani@hp.com
+Subject: Re: [PATCH v4 00/12] kexec kernel efi runtime support
+Message-ID: <20131129082822.GA4186@dhcp-16-126.nay.redhat.com>
+References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
+ <20131127125003.GG18170@console-pimps.org>
+ <20131128020840.GB4282@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>, "'Wei WANG'" <wei_wang@realsil.com.cn>,
-        "'Samuel Ortiz'" <sameo@linux.intel.com>,
-        "'Chris Ball'" <cjb@laptop.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "'Borislav Petkov'" <bp@alien8.de>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-References: <20131117195358.GO27323@pd.tnic> <4523614.I5MBhorHFt@vostro.rjw.lan> <5292FF5D.1050304@gmail.com> <1821758.2MoNI3h1Mv@vostro.rjw.lan>
-In-Reply-To: <1821758.2MoNI3h1Mv@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131128020840.GB4282@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 11/25/2013 11:47 AM, Rafael J. Wysocki wrote:
-> On Monday, November 25, 2013 08:42:21 AM Francis Moreau wrote:
->> On 11/24/2013 10:06 PM, Rafael J. Wysocki wrote:
->>> On Sunday, November 24, 2013 10:39:20 AM Francis Moreau wrote:
->>>> Hello Thomas
->>>>
->>>> On 11/22/2013 11:27 PM, Thomas Gleixner wrote:
->>>>> On Fri, 22 Nov 2013, Rafael J. Wysocki wrote:
->>>>>> On Friday, November 22, 2013 10:36:23 PM Francis Moreau wrote:
->>>>>>> Ok, I've finally managed to find out the bad commit:
->>>>>>> ad07277e82dedabacc52c82746633680a3187d25: ACPI / PM: Hold acpi_scan_lock
->>>>>>> over system PM transitions
->>>>>>>
->>>>>>> I verified that the parent commit doesn't have the problem.
->>>>>>
->>>>>> Interesting.
->>>>>>
->>>>>>> Rafael, you're the man now ;)
->>>>>>
->>>>>> I kind of don't see how that commit may result in behavior that you
->>>>>> described earlier in the thread.
->>>>>>
->>>>>> You get a memory corruption that seems to have started to happen because
->>>>>> we're holding an additional lock over suspend resume now.  Something's fishy
->>>>>> on that machine and we need to figure out what it is.
->>>>>
->>>>> The hickup happens in the timer softirq.
->>>>>
->>>>> @Francis: Did you try to enable DEBUG_OBJECTS.*. If not please give it
->>>>> 	  a try.
->>>>
->>>> This looks like it was a good idea.
->>>>
->>>> The kernel now outputs the following traces after resuming.
->>>>
->>>> [   26.973928] WARNING: CPU: 0 PID: 4 at lib/debugobjects.c:260
->>>> debug_print_object+0x83/0xa0()
->>>> [   26.973932] ODEBUG: free active (active state 0) object type:
->>>> timer_list hint: delayed_work_timer_fn+0x0/0x20
->>>> [   26.973972] Modules linked in: x86_pkg_temp_thermal intel_powerclamp
->>>> rtsx_pci_ms coretemp memstick kvm_intel i2c_i801 iTCO_wdt
->>>> iTCO_vendor_support i915 i2c_algo_bit intel_agp intel_gtt drm_kms_helper
->>>> r8169 drm kvm mii agpgart i2c_core lpc_ich ac shpchp crc32c_intel
->>>> battery thermal wmi evdev mei_me video mei button mperf processor
->>>> serio_raw microcode ext4 crc16 mbcache jbd2 sr_mod cdrom sd_mod
->>>> usb_storage rtsx_pci_sdmmc mmc_core ahci libahci libata ehci_pci
->>>> ehci_hcd xhci_hcd scsi_mod rtsx_pci usbcore usb_common
->>>> [   26.974013] CPU: 0 PID: 4 Comm: kworker/0:0 Not tainted
->>>> 3.11.0-rc2-ARCH #64
->>>> [   26.974014] Hardware name: CLEVO CO.                        W55xEU
->>>>                        /W55xEU                          , BIOS 4.6.5
->>>> 03/05/2013
->>>> [   26.974019] Workqueue: kacpi_hotplug hotplug_event_work
->>>> [   26.974020]  0000000000000009 ffff880407d0da18 ffffffff81459fe9
->>>> ffff880407d0da60
->>>> [   26.974023]  ffff880407d0da50 ffffffff8104dc7d ffff880407fad488
->>>> ffffffff81836fc0
->>>> [   26.974025]  ffffffff81701358 ffffffff81afef70 0000000000000003
->>>> ffff880407d0dab0
->>>> [   26.974027] Call Trace:
->>>> [   26.974031]  [<ffffffff81459fe9>] dump_stack+0x54/0x8d
->>>> [   26.974043]  [<ffffffff8104dc7d>] warn_slowpath_common+0x7d/0xa0
->>>> [   26.974044]  [<ffffffff8104dcec>] warn_slowpath_fmt+0x4c/0x50
->>>> [   26.974047]  [<ffffffff81261433>] debug_print_object+0x83/0xa0
->>>> [   26.974050]  [<ffffffff8106b820>] ? queue_work_on+0x50/0x50
->>>> [   26.974053]  [<ffffffff81261c2b>] __debug_check_no_obj_freed+0x1fb/0x240
->>>> [   26.974059]  [<ffffffffa008e959>] ? rtsx_pci_remove+0x119/0x1d0
->>>> [rtsx_pci]
->>>
->>> So a device driven by rtsx_pcr.c is removed after resume.  Without the commit
->>> you've bisected it is removed as well, but that happens during resume, so
->>> rtsx_pci_resume() is likely not called in that case.
->>
->> I'm not sure to understand your point.
+On 11/28/13 at 10:08am, Dave Young wrote:
+> On 11/27/13 at 12:50pm, Matt Fleming wrote:
+> > On Tue, 26 Nov, at 01:57:45PM, Dave Young wrote:
+> > > Hi,
+> > > 
+> > > Here is the V4 resend for supporting kexec kernel efi runtime.
+> > > Per pervious discussion I pass the 1st kernel efi runtime mapping
+> > > via setup_data to 2nd kernel. Besides of the runtime mapping
+> > > info I also pass the fw_vendor, runtime, config table, smbios
+> > > physical address in setup_data. EFI spec mentioned fw_vendor,
+> > > runtime, config table addresses will be converted to virt address
+> > > after entering virtual mode, but we will use it as physical address
+> > > in efi_init. For smbios EFI spec did not mention about the address
+> > > updating, but during my test on a HP workstation, the bios will
+> > > convert it to Virt addr, thus pass it in setup_data as well.
+> >  
+> > Dave, your commits introduce a bunch of new sparse warnings,
 > 
-> The problem is that with the commit you've bisected, the whole removal of
-> rtsx_pcr is likely done *before* the PM core calls resume callbacks of
-> device drivers (although only incidentally, because it very well may be
-> done in parallel with that).  However, after that commit the removal is only
-> done after the resume callbacks have been called, which means that the device
-> is not physically present when rtsx_pci_resume() is called.  Of course,
-> it may not be physically present at that point anyway, so rtsx_pci_resume()
-> should have taken that into consideration already, but it doesn't from what
-> I can say.
+> Hi, Matt
 > 
+> Will fix them, thanks.
+> 
+> > 
+> > /home/build/git/efi/arch/x86/platform/efi/efi.c:130:15: warning: incorrect type in assignment (different address spaces)
+> > /home/build/git/efi/arch/x86/platform/efi/efi.c:130:15:    expected struct setup_data *sdata
+> > /home/build/git/efi/arch/x86/platform/efi/efi.c:130:15:    got void [noderef] <asn:2>*
+> > /home/build/git/efi/arch/x86/platform/efi/efi.c:140:23: warning: incorrect type in argument 1 (different address spaces)
+> > /home/build/git/efi/arch/x86/platform/efi/efi.c:140:23:    expected void [noderef] <asn:2>*addr
+> > /home/build/git/efi/arch/x86/platform/efi/efi.c:140:23:    got struct setup_data *sdata
+> > /home/build/git/efi/arch/x86/platform/efi/efi.c:143:16: warning: incorrect type in assignment (different address spaces)
+> > /home/build/git/efi/arch/x86/platform/efi/efi.c:143:16:    expected struct efi_setup_data *[addressable] [toplevel] esdata
+> > /home/build/git/efi/arch/x86/platform/efi/efi.c:143:16:    got void [noderef] <asn:2>*
+> > 
+> > /home/build/git/efi/arch/x86/platform/efi/efi.c:701:20: warning: incorrect type in assignment (different address spaces)
+> > /home/build/git/efi/arch/x86/platform/efi/efi.c:701:20:    expected void *tablep
+> > /home/build/git/efi/arch/x86/platform/efi/efi.c:701:20:    got void [noderef] <asn:2>*
+> > /home/build/git/efi/arch/x86/platform/efi/efi.c:722:23: warning: incorrect type in argument 1 (different address spaces)
+> > /home/build/git/efi/arch/x86/platform/efi/efi.c:722:23:    expected void [noderef] <asn:2>*addr
+> > /home/build/git/efi/arch/x86/platform/efi/efi.c:722:23:    got void *tablep
+> > 
+> > /home/build/git/efi/arch/x86/platform/efi/efi.c:1079:31: warning: incorrect type in argument 1 (different address spaces)
+> > /home/build/git/efi/arch/x86/platform/efi/efi.c:1079:31:    expected void [noderef] <asn:2>*addr
+> > /home/build/git/efi/arch/x86/platform/efi/efi.c:1079:31:    got struct efi_setup_data *[addressable] [toplevel] esdata
 
-Since it seems to be related to rtsx driver or its upper layer, could
-the folks involved in this area have a look to this issue please ?
+For the early_memremap, these warnings are safe, but it create a lot of
+warnings and looks anoise.
 
-Thank you
+I think for anyone who are using early_memremap should know this is a normal
+kernel memory instead of real __iomem, so I'd prefer below fix, it will suppress
+most of original and new warnings:
+
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index 34f69cb..1db414f 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -325,9 +325,10 @@ extern void early_ioremap_init(void);
+ extern void early_ioremap_reset(void);
+ extern void __iomem *early_ioremap(resource_size_t phys_addr,
+ 				   unsigned long size);
+-extern void __iomem *early_memremap(resource_size_t phys_addr,
++extern void *early_memremap(resource_size_t phys_addr,
+ 				    unsigned long size);
+ extern void early_iounmap(void __iomem *addr, unsigned long size);
++extern void early_memunmap(void *addr, unsigned long size);
+ extern void fixup_early_ioremap(void);
+ extern bool is_early_ioremap_ptep(pte_t *ptep);
+ 
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 799580c..92a896652 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -562,10 +562,10 @@ early_ioremap(resource_size_t phys_addr, unsigned long size)
+ }
+ 
+ /* Remap memory */
+-void __init __iomem *
++void __init *
+ early_memremap(resource_size_t phys_addr, unsigned long size)
+ {
+-	return __early_ioremap(phys_addr, size, PAGE_KERNEL);
++	return (__force void __kernel *) __early_ioremap(phys_addr, size, PAGE_KERNEL);
+ }
+ 
+ void __init early_iounmap(void __iomem *addr, unsigned long size)
+@@ -620,3 +620,8 @@ void __init early_iounmap(void __iomem *addr, unsigned long size)
+ 	}
+ 	prev_map[slot] = NULL;
+ }
++
++void __init early_memunmap(void *addr, unsigned long size)
++{
++	early_iounmap((__force void __iomem *)addr, size);
++}
 
