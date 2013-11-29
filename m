@@ -1,250 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663Ab3K2AO2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 19:14:28 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63718 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752362Ab3K2AO1 (ORCPT
+	id S1752675Ab3K2APx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 19:15:53 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:14516 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab3K2APu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 19:14:27 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>
-Subject: Re: [PATCH 0/4] ACPI / bind: Simplify child devices lookup
-Date: Fri, 29 Nov 2013 01:27:17 +0100
-Message-ID: <1428241.LXfdTjYkng@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <2569408.tI2CNPgMRh@vostro.rjw.lan>
-References: <2610478.KxPMyuOMok@vostro.rjw.lan> <1385516428.1791.198.camel@misato.fc.hp.com> <2569408.tI2CNPgMRh@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Thu, 28 Nov 2013 19:15:50 -0500
+X-AuditID: cbfee68d-b7f1a6d0000055a7-d0-5297dcb56891
+From: Sangbeom Kim <sbkim73@samsung.com>
+To: "'Krzysztof Kozlowski'" <k.kozlowski@samsung.com>,
+        "'Samuel Ortiz'" <sameo@linux.intel.com>,
+        "'Lee Jones'" <lee.jones@linaro.org>,
+        "'Liam Girdwood'" <lgirdwood@gmail.com>,
+        "'Mark Brown'" <broonie@kernel.org>,
+        "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com
+Cc: "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
+        "'Geert Uytterhoeven'" <geert@linux-m68k.org>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>
+References: <1385626183-22990-1-git-send-email-k.kozlowski@samsung.com>
+ <1385626183-22990-5-git-send-email-k.kozlowski@samsung.com>
+In-reply-to: <1385626183-22990-5-git-send-email-k.kozlowski@samsung.com>
+Subject: RE: [PATCH v2 4/5] rtc: s5m: Enable IRQ wake during suspend
+Date: Fri, 29 Nov 2013 09:15:51 +0900
+Message-id: <05ca01ceec98$295a9730$7c0fc590$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIn7cDk689h23sBcLg83vR3zAVxUwIzcObEmXe4zuA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgleLIzCtJLcpLzFFi42I5/e+Zoe7WO9ODDLbvYrFYcvEqu8XUh0/Y
+	LJ7d2stk8fqFocXZpjfsFve/HmW0+Halg8ni8q45bBZrj9xlt9jf2cFocbqb1YHbY+esu+we
+	eyaeZPPYtKqTzePOtT1sHocOdzB6zDsZ6NG3ZRWjx/R5P5k8Pm+SC+CM4rJJSc3JLEst0rdL
+	4MrY8XU2U8El5orL51cxNTA2MHcxcnBICJhI7LpS28XICWSKSVy4t56ti5GLQ0hgGaPErDnP
+	GSESJhLT7mwBs4UEFjFKLO7Og7D/MEq0LweLswloSKzc/RasWURgG5PE3C1nwRxmgX5GiUd7
+	VjJBjG1llJgzo5EdpIVTwEPi+qM9rCC2sICLxIcpX5lBbBYBVYn/x/eDjeUVsJR4tvA2E4Qt
+	KPFj8j0WEJtZQEti/c7jTBC2vMTmNW+ZIU5VkNhx9jVYr4iAlcSez3uZIWpEJPa9eMcIcoSE
+	wFwOiedfpkAtE5D4NvkQCyQsZCU2HYCaIylxcMUNlgnAUECyehaS1bOQrJ6FZMUCRpZVjKKp
+	BckFxUnpRYZ6xYm5xaV56XrJ+bmbGCGpoHcH4+0D1ocYk4HWT2SWEk3OB6aSvJJ4Q2MzIwtT
+	E1NjI3NLM9KElcR5kx4mBQkJpCeWpGanphakFsUXleakFh9iZOLglGpgXPck5v4PHZczcnes
+	r/xmfsTh4ld5Ust/D8/b9bcsrOaLyH4p4zUTmMnAz3WvUeWJsv2GudxRmUuD1IxFRMX33xHY
+	fqbwxbYp9Vn71beE5CYmqd+54hC06PiukyqHvj3XZ+G5tjWQ0TlTzb5Y52XqKkeBzztuf7V8
+	Oc9Wuy+13+BoV9YuWeMVSizFGYmGWsxFxYkA+AoVuRsDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKKsWRmVeSWpSXmKPExsVy+t9jAd2td6YHGUzgtFhy8Sq7xdSHT9gs
+	nt3ay2Tx+oWhxdmmN+wW978eZbT4dqWDyeLyrjlsFmuP3GW32N/ZwWhxupvVgdtj56y77B57
+	Jp5k89i0qpPN4861PWwehw53MHrMOxno0bdlFaPH9Hk/mTw+b5IL4IxqYLTJSE1MSS1SSM1L
+	zk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAbpVSaEsMacUKBSQWFyspG+H
+	aUJoiJuuBUxjhK5vSBBcj5EBGkhYx5ix4+tspoJLzBWXz69iamBsYO5i5OSQEDCRmHZnCyOE
+	LSZx4d56NhBbSGARo8Ti7jwI+w+jRPtysBo2AQ2JlbvfAtVwcYgIbGOSmLvlLJjDLNDPKPFo
+	z0omEEdIoJVRYs6MRnaQFk4BD4nrj/awgtjCAi4SH6Z8BVvNIqAq8f/4frCxvAKWEs8W3maC
+	sAUlfky+xwJiMwtoSazfeZwJwpaX2LzmLdTZChI7zr4G6xURsJLY83kvM0SNiMS+F+8YJzAK
+	zUIyahaSUbOQjJqFpGUBI8sqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOBE80xqB+PKBotD
+	jAIcjEo8vCu6pwcJsSaWFVfmHmKU4GBWEuH9VQQU4k1JrKxKLcqPLyrNSS0+xJgM9OlEZinR
+	5HxgEswriTc0NjEzsjQyszAyMTcnTVhJnPdAq3WgkEB6YklqdmpqQWoRzBYmDk6pBkbrOjYV
+	cwddD8dYVaZWEZ8v/zQ2ZHP/3DZ/uezSGb09L0TMLkc5WrzbueRbuKlFyNfvOh/nLe4Tmtqc
+	sOd51HGemtMHmZVNle9sFJqeOYGhJDqazX5GZn6PYt517b25S2UfPleYuSP9/m/BnT1awlM/
+	hoWY7D2nNE8sln1ncKpF/HLVJEHlq0osxRmJhlrMRcWJAHxDaZZ4AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 27, 2013 02:58:54 AM Rafael J. Wysocki wrote:
-> On Tuesday, November 26, 2013 06:40:28 PM Toshi Kani wrote:
-
-[...]
-
-> > 
-> > Yes, the system booted fine with 3/4 & 4/4. :-)
+On Thursday, November 28, 2013 5:10 PM, Krzysztof Kozlowski wrote:
+> Add PM suspend/resume ops to rtc-s5m driver and enable IRQ wake during
+> suspend so the RTC would act like a wake up source. This allows waking
+> up from suspend to RAM on RTC alarm interrupt.
 > 
-> Thanks for the verification!
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-In fact, I've made one more mistake in that patch.  Namely, acpi_find_child()
-has to return an ACPI handle and it returned a pointer to struct acpi_device
-after it.
-
-That has been fixed in my tree already, but the updated patch follows for
-completness (it requires patch [3/4] to be changed, but that is just a trivial
-rebase, so I don't think it is necessary to resend it too).
+Acked-by: Sangbeom Kim <sbkim73@samsung.com>
 
 Thanks,
-Rafael
-
----
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: ACPI / bind: Simplify child device lookups
-
-Now that we create a struct acpi_device object for every ACPI
-namespace node representing a device, it is not necessary to
-use acpi_walk_namespace() for child device lookup in
-acpi_find_child() any more.  Instead, we can simply walk the
-list of children of the given struct acpi_device object and
-return the matching one (or the one which is the best match if
-there are more of them).  The checks done during the matching
-loop can be simplified too so that the secondary namespace walks
-in find_child_checks() are not necessary any more.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/glue.c     |  135 +++++++++++++++++++-----------------------------
- include/acpi/acpi_bus.h |    3 +
- 2 files changed, 57 insertions(+), 81 deletions(-)
-
-Index: linux-pm/drivers/acpi/glue.c
-===================================================================
---- linux-pm.orig/drivers/acpi/glue.c
-+++ linux-pm/drivers/acpi/glue.c
-@@ -82,107 +82,80 @@ static struct acpi_bus_type *acpi_get_bu
- #define FIND_CHILD_MIN_SCORE	1
- #define FIND_CHILD_MAX_SCORE	2
- 
--static acpi_status acpi_dev_present(acpi_handle handle, u32 lvl_not_used,
--				  void *not_used, void **ret_p)
--{
--	struct acpi_device *adev = NULL;
--
--	acpi_bus_get_device(handle, &adev);
--	if (adev) {
--		*ret_p = handle;
--		return AE_CTRL_TERMINATE;
--	}
--	return AE_OK;
--}
--
--static int do_find_child_checks(acpi_handle handle, bool is_bridge)
-+static int find_child_checks(struct acpi_device *adev, bool check_children)
- {
- 	bool sta_present = true;
- 	unsigned long long sta;
- 	acpi_status status;
- 
--	status = acpi_evaluate_integer(handle, "_STA", NULL, &sta);
-+	status = acpi_evaluate_integer(adev->handle, "_STA", NULL, &sta);
- 	if (status == AE_NOT_FOUND)
- 		sta_present = false;
- 	else if (ACPI_FAILURE(status) || !(sta & ACPI_STA_DEVICE_ENABLED))
- 		return -ENODEV;
- 
--	if (is_bridge) {
--		void *test = NULL;
-+	if (check_children && list_empty(&adev->children))
-+		return -ENODEV;
- 
--		/* Check if this object has at least one child device. */
--		acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
--				    acpi_dev_present, NULL, NULL, &test);
--		if (!test)
--			return -ENODEV;
--	}
- 	return sta_present ? FIND_CHILD_MAX_SCORE : FIND_CHILD_MIN_SCORE;
- }
- 
--struct find_child_context {
--	u64 addr;
--	bool is_bridge;
--	acpi_handle ret;
--	int ret_score;
--};
--
--static acpi_status do_find_child(acpi_handle handle, u32 lvl_not_used,
--				 void *data, void **not_used)
-+struct acpi_device *acpi_find_child_device(struct acpi_device *parent,
-+					   u64 address, bool check_children)
- {
--	struct find_child_context *context = data;
--	unsigned long long addr;
--	acpi_status status;
--	int score;
-+	struct acpi_device *adev, *ret = NULL;
-+	int ret_score = 0;
- 
--	status = acpi_evaluate_integer(handle, METHOD_NAME__ADR, NULL, &addr);
--	if (ACPI_FAILURE(status) || addr != context->addr)
--		return AE_OK;
--
--	if (!context->ret) {
--		/* This is the first matching object.  Save its handle. */
--		context->ret = handle;
--		return AE_OK;
--	}
--	/*
--	 * There is more than one matching object with the same _ADR value.
--	 * That really is unexpected, so we are kind of beyond the scope of the
--	 * spec here.  We have to choose which one to return, though.
--	 *
--	 * First, check if the previously found object is good enough and return
--	 * its handle if so.  Second, check the same for the object that we've
--	 * just found.
--	 */
--	if (!context->ret_score) {
--		score = do_find_child_checks(context->ret, context->is_bridge);
--		if (score == FIND_CHILD_MAX_SCORE)
--			return AE_CTRL_TERMINATE;
--		else
--			context->ret_score = score;
--	}
--	score = do_find_child_checks(handle, context->is_bridge);
--	if (score == FIND_CHILD_MAX_SCORE) {
--		context->ret = handle;
--		return AE_CTRL_TERMINATE;
--	} else if (score > context->ret_score) {
--		context->ret = handle;
--		context->ret_score = score;
-+	list_for_each_entry(adev, &parent->children, node) {
-+		unsigned long long addr;
-+		acpi_status status;
-+		int score;
-+
-+		status = acpi_evaluate_integer(adev->handle, METHOD_NAME__ADR,
-+					       NULL, &addr);
-+		if (ACPI_FAILURE(status) || addr != address)
-+			continue;
-+
-+		if (!ret) {
-+			/* This is the first matching object.  Save it. */
-+			ret = adev;
-+			continue;
-+		}
-+		/*
-+		 * There is more than one matching device object with the same
-+		 * _ADR value.  That really is unexpected, so we are kind of
-+		 * beyond the scope of the spec here.  We have to choose which
-+		 * one to return, though.
-+		 *
-+		 * First, check if the previously found object is good enough
-+		 * and return it if so.  Second, do the same for the object that
-+		 * we've just found.
-+		 */
-+		if (!ret_score) {
-+			ret_score = find_child_checks(ret, check_children);
-+			if (ret_score == FIND_CHILD_MAX_SCORE)
-+				return ret;
-+		}
-+		score = find_child_checks(adev, check_children);
-+		if (score == FIND_CHILD_MAX_SCORE) {
-+			return adev;
-+		} else if (score > ret_score) {
-+			ret = adev;
-+			ret_score = score;
-+		}
- 	}
--	return AE_OK;
-+	return ret;
- }
- 
--acpi_handle acpi_find_child(acpi_handle parent, u64 addr, bool is_bridge)
-+acpi_handle acpi_find_child(acpi_handle handle, u64 addr, bool is_bridge)
- {
--	if (parent) {
--		struct find_child_context context = {
--			.addr = addr,
--			.is_bridge = is_bridge,
--		};
--
--		acpi_walk_namespace(ACPI_TYPE_DEVICE, parent, 1, do_find_child,
--				    NULL, &context, NULL);
--		return context.ret;
--	}
--	return NULL;
-+	struct acpi_device *adev;
-+
-+	if (!handle || acpi_bus_get_device(handle, &adev))
-+		return NULL;
-+
-+	adev = acpi_find_child_device(adev, addr, is_bridge);
-+	return adev ? adev->handle : NULL;
- }
- EXPORT_SYMBOL_GPL(acpi_find_child);
- 
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -433,6 +433,9 @@ struct acpi_pci_root {
- };
- 
- /* helper */
-+
-+struct acpi_device *acpi_find_child_device(struct acpi_device *parent,
-+					   u64 address, bool check_children);
- acpi_handle acpi_find_child(acpi_handle, u64, bool);
- static inline acpi_handle acpi_get_child(acpi_handle handle, u64 addr)
- {
+Sangbeom.
 
