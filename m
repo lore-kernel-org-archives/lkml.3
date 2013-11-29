@@ -1,48 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144Ab3K2RbV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 12:31:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40745 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239Ab3K2RbT (ORCPT
+	id S1757137Ab3K2Rb7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 12:31:59 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53202 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752692Ab3K2Rb4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 12:31:19 -0500
-Date: Fri, 29 Nov 2013 09:32:12 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: tty/serial eating \n regression in 3.13-rc1
-Message-ID: <20131129173212.GA5510@kroah.com>
-References: <20131127181348.GA22723@obsidianresearch.com>
- <1385652419-4732-1-git-send-email-peter@hurleysoftware.com>
- <20131128174614.GB28055@obsidianresearch.com>
- <52988B11.3090300@hurleysoftware.com>
+	Fri, 29 Nov 2013 12:31:56 -0500
+Date: Fri, 29 Nov 2013 17:31:17 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] arm64 fixes for 3.13-rc
+Message-ID: <20131129173112.GA16546@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52988B11.3090300@hurleysoftware.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 29, 2013 at 07:39:45AM -0500, Peter Hurley wrote:
-> On 11/28/2013 12:46 PM, Jason Gunthorpe wrote:
-> > On Thu, Nov 28, 2013 at 10:26:57AM -0500, Peter Hurley wrote:
-> >
-> >> Please test out the attached patch and let me know if that solves
-> >> the login whitespace problem.
-> >
-> > Yes, it certainly does:
-> > Tested-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> >
-> > My bisection search showed this should go into 3.12 stable and 3.13..
-> 
-> Greg,
-> 
-> Please let me know if you need me to resend the earlier patch with
-> Jason's Tested-by and a proper Cc to stable.
+Hi Linus,
 
-That would be nice to have, thanks :)
+Please pull the arm64 fixes below. Thanks.
+
+The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
+
+  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git tags/arm64-stable
+
+for you to fetch changes up to 3676f9ef5481d614f8c5c857f5319755be248268:
+
+  arm64: Move PTE_PROT_NONE higher up (2013-11-29 15:22:59 +0000)
+
+----------------------------------------------------------------
+Fixes:
+- Remove preempt_count modifications in the arm64 IRQ handling code
+  since that's already dealt with in generic irq_enter/irq_exit
+- PTE_PROT_NONE bit moved higher up to avoid overlapping with the
+  hardware bits (for PROT_NONE mappings which are pte_present)
+- Big-endian fixes for ptrace support
+- Asynchronous aborts unmasking while in the kernel
+- pgprot_writecombine() change to create Normal NonCacheable memory
+  rather than Device GRE
+
+----------------------------------------------------------------
+Catalin Marinas (4):
+      arm64: dts: Reserve the memory used for secondary CPU release address
+      arm64: Unmask asynchronous aborts when in kernel mode
+      arm64: Use Normal NonCacheable memory for writecombine
+      arm64: Move PTE_PROT_NONE higher up
+
+Marc Zyngier (1):
+      arm64: let the core code deal with preempt_count
+
+Matthew Leach (2):
+      arm64: ptrace: fix compat registes get/set to be endian clean
+      arm64: debug: make aarch32 bkpt checking endian clean
+
+ arch/arm64/boot/dts/foundation-v8.dts |  2 ++
+ arch/arm64/include/asm/irqflags.h     |  3 +++
+ arch/arm64/include/asm/pgtable.h      | 33 ++++++++++++++++-------------
+ arch/arm64/kernel/debug-monitors.c    | 20 +++++++++++-------
+ arch/arm64/kernel/entry.S             | 29 ++++++-------------------
+ arch/arm64/kernel/ptrace.c            | 40 +++++++++++++++++------------------
+ arch/arm64/kernel/setup.c             |  5 +++++
+ arch/arm64/kernel/smp.c               |  1 +
+ 8 files changed, 67 insertions(+), 66 deletions(-)
+
+-- 
+Catalin
