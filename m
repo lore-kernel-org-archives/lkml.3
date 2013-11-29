@@ -1,184 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757003Ab3K2P4p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 10:56:45 -0500
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:61168 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756032Ab3K2P4n (ORCPT
+	id S1756632Ab3K2QAm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 11:00:42 -0500
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:45773 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754218Ab3K2QAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 10:56:43 -0500
-Date: Fri, 29 Nov 2013 10:56:39 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: [GIT PULL] cgroup fixes for v3.13-rc1
-Message-ID: <20131129155639.GG3717@htj.dyndns.org>
+	Fri, 29 Nov 2013 11:00:41 -0500
+Date: Fri, 29 Nov 2013 16:00:32 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>
+Subject: Re: [PATCH 3/5] MFD: twl6040: reg_defaults support for regmap
+Message-ID: <20131129160032.GC26982@lee--X1>
+References: <1385733827-19831-1-git-send-email-peter.ujfalusi@ti.com>
+ <1385733827-19831-4-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1385733827-19831-4-git-send-email-peter.ujfalusi@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On Fri, 29 Nov 2013, Peter Ujfalusi wrote:
 
-Fixes for three issues.
+> Add reg_defaults to regmap and at the same time implement proper power state
+> handling with using regcache_cache_only(), regcache_sync() and
+> regcache_mark_dirty().
+> This will make sure that we do not need to do restore operations in child
+> drivers anymore.
+> 
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> ---
+>  drivers/mfd/twl6040.c | 92 +++++++++++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 89 insertions(+), 3 deletions(-)
 
-* cgroup destruction path could swamp system_wq possibly leading to
-  deadlock.  This actually seems to happen in the wild with memcg
-  because memcg destruction path adds nested dependency on system_wq.
-  Resolved by isolating cgroup destruction work items on its dedicated
-  workqueue.
+The code looks fine to me (me = !regmap expert), so with Mark's Ack I
+will apply.
 
-* Possible locking context deadlock through seqcount reported by
-  lockdep.
+Mark, is an immutable branch required for this patch?
 
-* Memory leak under certain conditions.
-
-The fixes are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.13-fixes
-
-for you to fetch changes up to e605b36575e896edd8161534550c9ea021b03bc0:
-
-  cgroup: fix cgroup_subsys_state leak for seq_files (2013-11-27 18:16:21 -0500)
-
-Thanks.
-
-----------------------------------------------------------------
-Peter Zijlstra (1):
-      cpuset: Fix memory allocator deadlock
-
-Tejun Heo (2):
-      cgroup: use a dedicated workqueue for cgroup destruction
-      cgroup: fix cgroup_subsys_state leak for seq_files
-
- kernel/cgroup.c | 35 +++++++++++++++++++++++++++++++----
- kernel/cpuset.c |  8 ++++++--
- 2 files changed, 37 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 4c62513..8b729c2 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -90,6 +90,14 @@ static DEFINE_MUTEX(cgroup_mutex);
- static DEFINE_MUTEX(cgroup_root_mutex);
- 
- /*
-+ * cgroup destruction makes heavy use of work items and there can be a lot
-+ * of concurrent destructions.  Use a separate workqueue so that cgroup
-+ * destruction work items don't end up filling up max_active of system_wq
-+ * which may lead to deadlock.
-+ */
-+static struct workqueue_struct *cgroup_destroy_wq;
-+
-+/*
-  * Generate an array of cgroup subsystem pointers. At boot time, this is
-  * populated with the built in subsystems, and modular subsystems are
-  * registered after that. The mutable section of this array is protected by
-@@ -191,6 +199,7 @@ static void cgroup_destroy_css_killed(struct cgroup *cgrp);
- static int cgroup_destroy_locked(struct cgroup *cgrp);
- static int cgroup_addrm_files(struct cgroup *cgrp, struct cftype cfts[],
- 			      bool is_add);
-+static int cgroup_file_release(struct inode *inode, struct file *file);
- 
- /**
-  * cgroup_css - obtain a cgroup's css for the specified subsystem
-@@ -871,7 +880,7 @@ static void cgroup_free_rcu(struct rcu_head *head)
- 	struct cgroup *cgrp = container_of(head, struct cgroup, rcu_head);
- 
- 	INIT_WORK(&cgrp->destroy_work, cgroup_free_fn);
--	schedule_work(&cgrp->destroy_work);
-+	queue_work(cgroup_destroy_wq, &cgrp->destroy_work);
- }
- 
- static void cgroup_diput(struct dentry *dentry, struct inode *inode)
-@@ -2421,7 +2430,7 @@ static const struct file_operations cgroup_seqfile_operations = {
- 	.read = seq_read,
- 	.write = cgroup_file_write,
- 	.llseek = seq_lseek,
--	.release = single_release,
-+	.release = cgroup_file_release,
- };
- 
- static int cgroup_file_open(struct inode *inode, struct file *file)
-@@ -2482,6 +2491,8 @@ static int cgroup_file_release(struct inode *inode, struct file *file)
- 		ret = cft->release(inode, file);
- 	if (css->ss)
- 		css_put(css);
-+	if (file->f_op == &cgroup_seqfile_operations)
-+		single_release(inode, file);
- 	return ret;
- }
- 
-@@ -4249,7 +4260,7 @@ static void css_free_rcu_fn(struct rcu_head *rcu_head)
- 	 * css_put().  dput() requires process context which we don't have.
- 	 */
- 	INIT_WORK(&css->destroy_work, css_free_work_fn);
--	schedule_work(&css->destroy_work);
-+	queue_work(cgroup_destroy_wq, &css->destroy_work);
- }
- 
- static void css_release(struct percpu_ref *ref)
-@@ -4539,7 +4550,7 @@ static void css_killed_ref_fn(struct percpu_ref *ref)
- 		container_of(ref, struct cgroup_subsys_state, refcnt);
- 
- 	INIT_WORK(&css->destroy_work, css_killed_work_fn);
--	schedule_work(&css->destroy_work);
-+	queue_work(cgroup_destroy_wq, &css->destroy_work);
- }
- 
- /**
-@@ -5063,6 +5074,22 @@ out:
- 	return err;
- }
- 
-+static int __init cgroup_wq_init(void)
-+{
-+	/*
-+	 * There isn't much point in executing destruction path in
-+	 * parallel.  Good chunk is serialized with cgroup_mutex anyway.
-+	 * Use 1 for @max_active.
-+	 *
-+	 * We would prefer to do this in cgroup_init() above, but that
-+	 * is called before init_workqueues(): so leave this until after.
-+	 */
-+	cgroup_destroy_wq = alloc_workqueue("cgroup_destroy", 0, 1);
-+	BUG_ON(!cgroup_destroy_wq);
-+	return 0;
-+}
-+core_initcall(cgroup_wq_init);
-+
- /*
-  * proc_cgroup_show()
-  *  - Print task's cgroup paths into seq_file, one line for each hierarchy
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 6bf981e..4772034 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1033,8 +1033,10 @@ static void cpuset_change_task_nodemask(struct task_struct *tsk,
- 	need_loop = task_has_mempolicy(tsk) ||
- 			!nodes_intersects(*newmems, tsk->mems_allowed);
- 
--	if (need_loop)
-+	if (need_loop) {
-+		local_irq_disable();
- 		write_seqcount_begin(&tsk->mems_allowed_seq);
-+	}
- 
- 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
- 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
-@@ -1042,8 +1044,10 @@ static void cpuset_change_task_nodemask(struct task_struct *tsk,
- 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP2);
- 	tsk->mems_allowed = *newmems;
- 
--	if (need_loop)
-+	if (need_loop) {
- 		write_seqcount_end(&tsk->mems_allowed_seq);
-+		local_irq_enable();
-+	}
- 
- 	task_unlock(tsk);
- }
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
