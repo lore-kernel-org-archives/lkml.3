@@ -1,69 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841Ab3K2Pov (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 10:44:51 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:37714 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231Ab3K2Pot (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 10:44:49 -0500
-Message-ID: <5298B627.5000409@ti.com>
-Date: Fri, 29 Nov 2013 10:43:35 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1757065Ab3K2Pqn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 10:46:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31526 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754627Ab3K2Pql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 10:46:41 -0500
+Date: Fri, 29 Nov 2013 16:45:49 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>
+Subject: Re: [PATCH 34/34] perf tools unwinding: Use the per-feature check
+ flags
+Message-ID: <20131129154549.GA28562@krava.brq.redhat.com>
+References: <1385583394-3703-1-git-send-email-acme@infradead.org>
+ <1385583394-3703-35-git-send-email-acme@infradead.org>
+ <20131127224323.GB1350@krava.redhat.com>
+ <20131128095801.GA1245@krava.brq.redhat.com>
+ <20131128125619.GA12292@ghostprotocols.net>
+ <20131128134642.GB12292@ghostprotocols.net>
+ <CAFrcx1mr0AYdNJ04jSVV+y0KfHSF13Qx1BnpdUb++1bvhH2f0g@mail.gmail.com>
 MIME-Version: 1.0
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-CC: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mtd@lists.infradead.org>, <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 1/2] memory: ti-aemif: introduce AEMIF driver
-References: <1384962416-14862-1-git-send-email-ivan.khoronzhuk@ti.com> <1384962416-14862-2-git-send-email-ivan.khoronzhuk@ti.com> <5298B370.3090405@ti.com> <5298B440.1020905@ti.com>
-In-Reply-To: <5298B440.1020905@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFrcx1mr0AYdNJ04jSVV+y0KfHSF13Qx1BnpdUb++1bvhH2f0g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 29 November 2013 10:35 AM, Grygorii Strashko wrote:
-> On 11/29/2013 05:32 PM, Santosh Shilimkar wrote:
->> On Wednesday 20 November 2013 10:46 AM, Ivan Khoronzhuk wrote:
->>> Add new AEMIF driver for EMIF16 Texas Instruments controller.
->>> The EMIF16 module is intended to provide a glue-less interface to
->>> a variety of asynchronous memory devices like ASRA M, NOR and NAND
->>> memory. A total of 256M bytes of any of these memories can be
->>> accessed at any given time via four chip selects with 64M byte access
+On Thu, Nov 28, 2013 at 09:02:23PM +0100, Jean Pihet wrote:
+> On 28 November 2013 14:46, Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> > Em Thu, Nov 28, 2013 at 09:56:19AM -0300, Arnaldo Carvalho de Melo escreveu:
+> >> Em Thu, Nov 28, 2013 at 10:58:01AM +0100, Jiri Olsa escreveu:
+> >> > On Wed, Nov 27, 2013 at 11:43:23PM +0100, Jiri Olsa wrote:
+> >> > > On Wed, Nov 27, 2013 at 05:16:34PM -0300, Arnaldo Carvalho de Melo wrote:
+> >> > >   LINK     perf
+> >> > > /bin/ld: cannot find -lunwind
+> >> > > /bin/ld: cannot find -lunwind-x86_64
+> >> > > collect2: error: ld returned 1 exit status
+> >> > > make[1]: *** [perf] Error 1
+> >> > > make[1]: *** Waiting for unfinished jobs....
+> >> > > make: *** [all] Error 2
+> >>
+> >> > > I haven't checked this one.. will do tomorrow
+> >>
+> >> > we need to plug libunwind flags/libs only if
+> >> > the $(feature-libunwind) is enabled..
+> >>
+> >> > NO_LIBUNWIND - user's decision not to link with libunwind or
+> >> >                architecture that does not support it
+> >>
+> >> > $(feature-libunwind) - if it's actually installed
+> >>
+> >> > attached change fixies that for me, feel free to use/merge it
+> >>
+> >> Argh, I used tests/make on one machine where those two patches by Jean
+> >> were not applied, then rebased on another, the one I use to submit,
+> >> those got included but not tests/make tested, which probably explains
+> >> why this got thru :-\
+> >>
+> >> Jean, can you please check that this works for you on ARM too?
+> >
+> > I just noticed that this patch breaks the feature detection mechanism,
+> > after it is applied it is back performing all tests at every make call,
+> > this needs rethinking, so I'm dropping both.
+> Oh I am sorry about that. I tested on ARM with and without the
+> LIBUNWIND_DIR option set.
+> Let me rethink/rework this and come back to you with a proper fix.
 > 
-> [...]
+> >
+> > Ingo, please disregard, yet again, my latest pull request, sigh.
+> >
+> > Jiri, this could be something for tests/make, till then I'll try
+> > to check this manually.
 > 
->>> +    return 0;
->>> +}
->>> +
->>> +static const struct of_device_id aemif_of_match[] = {
->>> +    { .compatible = "ti,davinci-aemif", },
->>> +    { .compatible = "ti,keystone-aemif", },
->>> +    { .compatible = "ti,omap-L138-aemif", },
->>> +    {},
->>> +};
->>> +
->> Looks like you are yet to update the patches from
->> previous comments. Did I miss v2 or you haven't posted
->> that yet ?
-> 
-> No. This is v2, actually :( (the mess was already noticed) it was posted after v1 (https://lkml.org/lkml/2013/11/11/352), but people continue commenting v1, for some reasons.
->
-OK.
- 
-> Next version will be posted when bindings will be clarified finally.
-> 
-Yeah. lets get the binding sorted out first and send the update
-with all the comments included.
+> One question though: are you OK with the principle of having
+> per-feature check flags? This brings two things to the feature
+> detection and build:
+> 1. the ability to specify specific flags for the feature check, which
+> is not possible on the current code,
+> 2. a simplification in the Makefiles.
 
-Regards,
-Santosh
+looks good to me
+
+jirka
