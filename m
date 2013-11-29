@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479Ab3K2JFm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 04:05:42 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:43695 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276Ab3K2JFd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 04:05:33 -0500
+	id S1753780Ab3K2JGD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 04:06:03 -0500
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:49054 "EHLO smtp2.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753276Ab3K2JFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 04:05:49 -0500
+Date: Fri, 29 Nov 2013 11:05:47 +0200 (EET)
+From: Meelis Roos <mroos@linux.ee>
+To: Michael Reed <mdr@sgi.com>
+cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: [PATCH] qla1280: Annotate timer on stack so object debug does not
+ complain
+Message-ID: <alpine.SOC.1.00.1311291058320.5464@math.ut.ee>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
 MIME-Version: 1.0
-X-Originating-IP: [121.6.203.106]
-Date: Fri, 29 Nov 2013 17:05:31 +0800
-Message-ID: <CAMVG2svSYPDEhs2vUMDi0jZ8vR9P9O5MmSnsd_ziDGcCe8aURg@mail.gmail.com>
-Subject: Re: [PATCH 00/12] Thunderbolt hotplug support for Apple hardware
- (testers needed)
-From: Daniel J Blueman <daniel@quora.org>
-To: Andreas Noever <andreas.noever@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, 29 November 2013 09:40:02 UTC+8, Andreas Noever  wrote:
-> Thunderbolt hotplug is supposed to be implemented by the firmware. But Apple's
-> firmeware only initializes devices during boot and ignores hotplugged devices.
-> This patch series adds a driver for the Intel Cactus Ridge Thunderbolt
-> controller. The driver supports hotplug operations of simple (one PCI device,
-> no chaining) thunderbolt devices.
-[...]
-> (1) and (2) should be solveable given some time. I also have a pretty good idea
-> on how chaining should work. The main problem is that I have yet to see any
-> Thunderbolt device besides the Apple ethernet adapter. If someone with a
-> MacBook and access to more complicated TB hardware is willing to run some
-> tests: Please contact me.
->
-> I will try to debug (4) further and write a seperate bug report for the issue.
+Object Debug option in 3.13-rc1 resultsin  the following warning, cure 
+it by annotating the timer to be on stack. The timer is deleted in the 
+same function so stack seems OK.
 
-Superb work! I have a Buffalo MiniStation Thunderbolt [1] and the
-Apple ethernet adapter, so will give this a spin over the weekend on
-my mid-2012 MacBook Pro retina with the noted constraints.
+ODEBUG: object is on stack, but not annotated
+------------[ cut here ]------------
+WARNING: CPU: 6 PID: 18 at lib/debugobjects.c:300 __debug_object_init+0x184/0x240()
+Modules linked in:
+CPU: 6 PID: 18 Comm: kworker/u4:1 Tainted: G        W    3.13.0-rc1 #16
+Workqueue: events_unbound async_run_entry_fn
+Call Trace:
+[00000000004585cc] warn_slowpath_common+0x4c/0x80
+[0000000000458614] warn_slowpath_null+0x14/0x40
+[000000000063d524] __debug_object_init+0x184/0x240
+[000000000063d5fc] debug_object_init+0x1c/0x40
+[00000000004645ec] init_timer_key+0xc/0x60
+[00000000006cca60] qla1280_mailbox_command+0xc0/0x2a0
+[00000000006ccdd4] qla1280_set_target_parameters+0x194/0x220
+[00000000006cd324] qla1280_slave_configure+0x384/0x3c0
+[00000000006a5d48] scsi_add_lun+0x5c8/0x640
+[00000000006a62b8] scsi_probe_and_add_lun+0x1b8/0x2e0
+[00000000006a6c2c] __scsi_scan_target+0x8c/0x100
+[00000000006a6cf4] scsi_scan_channel+0x54/0xa0
+[00000000006a7008] scsi_scan_host_selected+0xc8/0x120
+[00000000006a70e0] do_scsi_scan_host+0x80/0xa0
+[00000000006a7164] do_scan_async+0x4/0x20
+[00000000004817b8] async_run_entry_fn+0x58/0x120
+---[ end trace 9a1420108ebfd590 ]---
 
-Thanks,
-  Daniel
+Signed-off-by: Meelis Roos <mroos@linux.ee>
 
-[1] http://www.buffalo-technology.com/en/products/storage-devices/portable-storage/ministationtm/hd-patu3s-ministation-thunderbolt-portable-ssd/
+diff --git a/drivers/scsi/qla1280.c b/drivers/scsi/qla1280.c
+index 5a522c5..97dabd3 100644
+--- a/drivers/scsi/qla1280.c
++++ b/drivers/scsi/qla1280.c
+@@ -2502,7 +2502,7 @@ qla1280_mailbox_command(struct scsi_qla_host *ha, uint8_t mr, uint16_t *mb)
+ 	/* Issue set host interrupt command. */
+ 
+ 	/* set up a timer just in case we're really jammed */
+-	init_timer(&timer);
++	init_timer_on_stack(&timer);
+ 	timer.expires = jiffies + 20*HZ;
+ 	timer.data = (unsigned long)ha;
+ 	timer.function = qla1280_mailbox_timeout;
+
 -- 
-Daniel J Blueman
+Meelis Roos (mroos@linux.ee)
