@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756316Ab3K2Q2y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 11:28:54 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:50205 "EHLO comal.ext.ti.com"
+	id S1757059Ab3K2QaQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 11:30:16 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:50301 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752749Ab3K2Q2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 11:28:52 -0500
-Message-ID: <5298C0C2.10209@ti.com>
-Date: Fri, 29 Nov 2013 11:28:50 -0500
+	id S1752749Ab3K2QaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 11:30:14 -0500
+Message-ID: <5298C0B0.4030404@ti.com>
+Date: Fri, 29 Nov 2013 11:28:32 -0500
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Grygorii Strashko <grygorii.strashko@ti.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>
-Subject: Re: [RFC v1 5/9] gpio: davinci: reuse for Keystone SoC
-References: <1385494815-15740-1-git-send-email-grygorii.strashko@ti.com> <1385494815-15740-6-git-send-email-grygorii.strashko@ti.com> <CACRpkda=5KyvRpN=O5UHhX8S-jYB-0g3272Xg61_jvpCEb7Nzg@mail.gmail.com>
-In-Reply-To: <CACRpkda=5KyvRpN=O5UHhX8S-jYB-0g3272Xg61_jvpCEb7Nzg@mail.gmail.com>
+To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+CC: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
+        <david.woodhouse@intel.com>
+Subject: Re: [PATCH v2 00/10] Reuse davinci-nand driver for Keystone arch
+References: <1385033305-13179-1-git-send-email-ivan.khoronzhuk@ti.com>
+In-Reply-To: <1385033305-13179-1-git-send-email-ivan.khoronzhuk@ti.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 29 November 2013 04:25 AM, Linus Walleij wrote:
-> On Tue, Nov 26, 2013 at 8:40 PM, Grygorii Strashko
-> <grygorii.strashko@ti.com> wrote:
+Ivan,
+On Thursday 21 November 2013 06:28 AM, Ivan Khoronzhuk wrote:
+> This series contains fixes and updates of Davinci nand driver in
+> order to reuse it for Keystone platform.
 > 
->> The similar GPIO HW block is used by keystone SoCs as
->> in Davinci SoCs.
->> Hence, reuse Davinci GPIO driver for Keystone.
->>
->> Documentation:
->>  http://www.ti.com/lit/ug/sprugv1/sprugv1.pdf
->>
->> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> The series is combination of two following series:
+> - Davinci nand driver fixes and updates:
+>   https://lkml.org/lkml/2013/11/20/271
+> - Reuse davinci-nand driver for Keystone arch
+>   https://lkml.org/lkml/2013/11/20/315
 > 
-> This is really nice, and we want to reuse stuff.
+> Ivan Khoronzhuk (10):
+>   mtd: nand: davinci: fix driver registration
+>   mtd: nand: davinci: return ENOMEM if memory allocation is failed
+>   mtd: nand: davinci: check required ti,davinci-chipselect property
+>   mtd: nand: davinci: simplify error handling
+>   mtd: nand: davinci: move bindings under mtd
+>   mtd: nand: davinci: extend description of bindings
+>   mtd: nand: davinci: adjust DT properties to MTD generic
+>   mtd: nand: davinci: reuse driver for Keystone arch
+>   mtd: nand: davinci: don't set timings if AEMIF is used
+>   mtd: nand: davinci: don't request AEMIF address range
 > 
-Ofcourse we want to re-use as much as possible.
-
-> Just waiting for some comments on the previous patch...
+>  .../devicetree/bindings/arm/davinci/nand.txt       |   46 --------
+>  .../devicetree/bindings/mtd/davinci-nand.txt       |   94 ++++++++++++++++
+>  drivers/mtd/nand/Kconfig                           |    6 +-
+>  drivers/mtd/nand/davinci_nand.c                    |  117 +++++++++++---------
+>  4 files changed, 164 insertions(+), 99 deletions(-)
+>  delete mode 100644 Documentation/devicetree/bindings/arm/davinci/nand.txt
+>  create mode 100644 Documentation/devicetree/bindings/mtd/davinci-nand.txt
 > 
-Previous patch can be completely dropped as commented.
+Please drop patch 9 from the series considering we are handling it
+differently and repost the entire series with David in cc. David
+has been lining up the patches.
 
 Regards,
 Santosh
-
