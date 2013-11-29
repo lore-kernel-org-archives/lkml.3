@@ -1,296 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab3K2Jo1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 04:44:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46684 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752042Ab3K2JoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 04:44:22 -0500
-Date: Fri, 29 Nov 2013 10:41:37 +0100
-From: Veaceslav Falico <vfalico@redhat.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Neil Horman <nhorman@tuxdriver.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] PCI: export MSI mode using attributes, not kobjects
-Message-ID: <20131129094137.GC3028@redhat.com>
-References: <20131127184652.GA1856@kroah.com>
+	id S1754123Ab3K2JpN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 04:45:13 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:57017 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210Ab3K2JpH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 04:45:07 -0500
+Date: Fri, 29 Nov 2013 10:45:02 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] memcg: fix kmem_account_flags check in
+ memcg_can_account_kmem()
+Message-ID: <20131129094502.GD25893@dhcp22.suse.cz>
+References: <1385567162-14973-1-git-send-email-vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131127184652.GA1856@kroah.com>
+In-Reply-To: <1385567162-14973-1-git-send-email-vdavydov@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 10:46:52AM -0800, Greg Kroah-Hartman wrote:
->From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->
->The PCI MSI sysfs code is a mess with kobjects for things that don't
->really need to be kobjects.  This patch creates attributes dynamically
->for the MSI interrupts instead of using kobjects.
->
->Note, this removes a directory from the current MSI interrupt sysfs
->code:
->
->old MSI kobjects:
->pci_device
->   └── msi_irqs
->       └── 40
->           └── mode
->
->new MSI attributes:
->pci_device
->   └── msi_irqs
->       └── 40
->
->As there was only one file "mode" with the kobject model, the interrupt
->number is now a file that returns the "mode" of the interrupt (msi vs.
->msix).
->
->Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Wed 27-11-13 19:46:01, Vladimir Davydov wrote:
+> We should start kmem accounting for a memory cgroup only after both its
+> kmem limit is set (KMEM_ACCOUNTED_ACTIVE) and related call sites are
+> patched (KMEM_ACCOUNTED_ACTIVATED).
 
-Works like a charm for me.
+This should be vice-versa, no? ACTIVE is set after
+static_key_slow_inc(&memcg_kmem_enabled_key) AFAICS.
 
-FWIW,
+> Currently memcg_can_account_kmem() allows kmem accounting even if only
+> one of the conditions is true.
+> Fix it.
 
-Reviewed-by: Veaceslav Falico <vfalico@redhat.com>
+It would be nice to describe, what is the actual problem here. I assume
+this is a charge vs. enable race. Let me try
 
->
->---
->
->Neil, can you test this patch to see if irqbalance works as-is or not?
->
->thanks,
->
->greg k-h
->
-> drivers/pci/msi.c   |  152 +++++++++++++++++++++++++---------------------------
-> include/linux/pci.h |    2
-> 2 files changed, 76 insertions(+), 78 deletions(-)
->
->--- a/drivers/pci/msi.c
->+++ b/drivers/pci/msi.c
->@@ -363,6 +363,9 @@ void write_msi_msg(unsigned int irq, str
-> static void free_msi_irqs(struct pci_dev *dev)
-> {
-> 	struct msi_desc *entry, *tmp;
->+	struct attribute **msi_attrs;
->+	struct device_attribute *dev_attr;
->+	int count = 0;
->
-> 	list_for_each_entry(entry, &dev->msi_list, list) {
-> 		int i, nvec;
->@@ -398,6 +401,22 @@ static void free_msi_irqs(struct pci_dev
-> 		list_del(&entry->list);
-> 		kfree(entry);
-> 	}
->+
->+	if (dev->msi_irq_groups) {
->+		sysfs_remove_groups(&dev->dev.kobj, dev->msi_irq_groups);
->+		msi_attrs = dev->msi_irq_groups[0]->attrs;
->+		list_for_each_entry(entry, &dev->msi_list, list) {
->+			dev_attr = container_of(msi_attrs[count],
->+						struct device_attribute, attr);
->+			kfree(dev_attr->attr.name);
->+			kfree(dev_attr);
->+			++count;
->+		}
->+		kfree(msi_attrs);
->+		kfree(dev->msi_irq_groups[0]);
->+		kfree(dev->msi_irq_groups);
->+		dev->msi_irq_groups = NULL;
->+	}
-> }
->
-> static struct msi_desc *alloc_msi_entry(struct pci_dev *dev)
->@@ -471,96 +490,79 @@ void pci_restore_msi_state(struct pci_de
-> }
-> EXPORT_SYMBOL_GPL(pci_restore_msi_state);
->
->-
->-#define to_msi_attr(obj) container_of(obj, struct msi_attribute, attr)
->-#define to_msi_desc(obj) container_of(obj, struct msi_desc, kobj)
->-
->-struct msi_attribute {
->-	struct attribute        attr;
->-	ssize_t (*show)(struct msi_desc *entry, struct msi_attribute *attr,
->-			char *buf);
->-	ssize_t (*store)(struct msi_desc *entry, struct msi_attribute *attr,
->-			 const char *buf, size_t count);
->-};
->-
->-static ssize_t show_msi_mode(struct msi_desc *entry, struct msi_attribute *atr,
->+static ssize_t msi_mode_show(struct device *dev, struct device_attribute *attr,
-> 			     char *buf)
-> {
->-	return sprintf(buf, "%s\n", entry->msi_attrib.is_msix ? "msix" : "msi");
->-}
->-
->-static ssize_t msi_irq_attr_show(struct kobject *kobj,
->-				 struct attribute *attr, char *buf)
->-{
->-	struct msi_attribute *attribute = to_msi_attr(attr);
->-	struct msi_desc *entry = to_msi_desc(kobj);
->-
->-	if (!attribute->show)
->-		return -EIO;
->-
->-	return attribute->show(entry, attribute, buf);
->-}
->-
->-static const struct sysfs_ops msi_irq_sysfs_ops = {
->-	.show = msi_irq_attr_show,
->-};
->-
->-static struct msi_attribute mode_attribute =
->-	__ATTR(mode, S_IRUGO, show_msi_mode, NULL);
->-
->+	struct pci_dev *pdev = to_pci_dev(dev);
->+	struct msi_desc *entry;
->+	unsigned long irq;
->+	int retval;
->
->-static struct attribute *msi_irq_default_attrs[] = {
->-	&mode_attribute.attr,
->-	NULL
->-};
->+	retval = kstrtoul(attr->attr.name, 10, &irq);
->+	if (retval)
->+		return retval;
->
->-static void msi_kobj_release(struct kobject *kobj)
->-{
->-	struct msi_desc *entry = to_msi_desc(kobj);
->-
->-	pci_dev_put(entry->dev);
->+	list_for_each_entry(entry, &pdev->msi_list, list) {
->+		if (entry->irq == irq) {
->+			return sprintf(buf, "%s\n",
->+				       entry->msi_attrib.is_msix ? "msix" : "msi");
->+		}
->+	}
->+	return -ENODEV;
-> }
->
->-static struct kobj_type msi_irq_ktype = {
->-	.release = msi_kobj_release,
->-	.sysfs_ops = &msi_irq_sysfs_ops,
->-	.default_attrs = msi_irq_default_attrs,
->-};
->-
-> static int populate_msi_sysfs(struct pci_dev *pdev)
-> {
->+	struct attribute **msi_attrs;
->+	struct device_attribute *msi_dev_attr;
->+	struct attribute_group *msi_irq_group;
->+	const struct attribute_group **msi_irq_groups;
-> 	struct msi_desc *entry;
->-	struct kobject *kobj;
-> 	int ret;
->+	int num_msi = 0;
-> 	int count = 0;
->
->-	pdev->msi_kset = kset_create_and_add("msi_irqs", NULL, &pdev->dev.kobj);
->-	if (!pdev->msi_kset)
->-		return -ENOMEM;
->-
->+	/* Determine how many msi entries we have */
-> 	list_for_each_entry(entry, &pdev->msi_list, list) {
->-		kobj = &entry->kobj;
->-		kobj->kset = pdev->msi_kset;
->-		pci_dev_get(pdev);
->-		ret = kobject_init_and_add(kobj, &msi_irq_ktype, NULL,
->-				     "%u", entry->irq);
->-		if (ret)
->-			goto out_unroll;
->-
->-		count++;
->+		++num_msi;
-> 	}
->+	if (!num_msi)
->+		return 0;
->
->-	return 0;
->-
->-out_unroll:
->+	/* Dynamically create the MSI attributes for the PCI device */
->+	msi_attrs = kzalloc(sizeof(void *) * (num_msi + 1), GFP_KERNEL);
->+	if (!msi_attrs)
->+		return -ENOMEM;
-> 	list_for_each_entry(entry, &pdev->msi_list, list) {
->-		if (!count)
->-			break;
->-		kobject_del(&entry->kobj);
->-		kobject_put(&entry->kobj);
->-		count--;
->+		char *name = kmalloc(20, GFP_KERNEL);
->+		msi_dev_attr = kzalloc(sizeof(*msi_dev_attr), GFP_KERNEL);
->+		if (!msi_dev_attr)
->+			return -ENOMEM;
->+		sprintf(name, "%d", entry->irq);
->+		msi_dev_attr->attr.name = name;
->+		msi_dev_attr->attr.mode = S_IRUGO;
->+		msi_dev_attr->show = msi_mode_show;
->+		msi_attrs[count] = &msi_dev_attr->attr;
->+		++count;
-> 	}
->-	return ret;
->+
->+	msi_irq_group = kzalloc(sizeof(*msi_irq_group), GFP_KERNEL);
->+	if (!msi_irq_group)
->+		return -ENOMEM;
->+	msi_irq_group->name = "msi_irqs";
->+	msi_irq_group->attrs = msi_attrs;
->+
->+	msi_irq_groups = kzalloc(sizeof(void *) * 2, GFP_KERNEL);
->+	if (!msi_irq_groups)
->+		return -ENOMEM;
->+	msi_irq_groups[0] = msi_irq_group;
->+
->+	ret = sysfs_create_groups(&pdev->dev.kobj, msi_irq_groups);
->+	if (ret)
->+		return ret;
->+	pdev->msi_irq_groups = msi_irq_groups;
->+
->+	return 0;
-> }
->
-> /**
->@@ -925,8 +927,6 @@ void pci_disable_msi(struct pci_dev *dev
->
-> 	pci_msi_shutdown(dev);
-> 	free_msi_irqs(dev);
->-	kset_unregister(dev->msi_kset);
->-	dev->msi_kset = NULL;
-> }
-> EXPORT_SYMBOL(pci_disable_msi);
->
->@@ -1023,8 +1023,6 @@ void pci_disable_msix(struct pci_dev *de
->
-> 	pci_msix_shutdown(dev);
-> 	free_msi_irqs(dev);
->-	kset_unregister(dev->msi_kset);
->-	dev->msi_kset = NULL;
-> }
-> EXPORT_SYMBOL(pci_disable_msix);
->
->--- a/include/linux/pci.h
->+++ b/include/linux/pci.h
->@@ -351,7 +351,7 @@ struct pci_dev {
-> 	struct bin_attribute *res_attr_wc[DEVICE_COUNT_RESOURCE]; /* sysfs file for WC mapping of resources */
-> #ifdef CONFIG_PCI_MSI
-> 	struct list_head msi_list;
->-	struct kset *msi_kset;
->+	const struct attribute_group **msi_irq_groups;
-> #endif
-> 	struct pci_vpd *vpd;
-> #ifdef CONFIG_PCI_ATS
+So we have KMEM_ACCOUNTED_ACTIVATED (set by memcg_update_cache_sizes)
+but the static key is not enabled yet (so KMEM_ACCOUNTED_ACTIVE is not
+set yet). memcg_can_account_kmem is called from 2 contexts during charge
+	- memcg_kmem_get_cache via __memcg_kmem_get_cache
+	- memcg_kmem_newpage_charge via __memcg_kmem_newpage_charge
+
+both of them start by checking memcg_kmem_enabled which is our
+static key before memcg_can_account_kmem. This would suggest that
+static_key+ACTIVE check memcg_can_account_kmem is sufficient. No?
+
+That being said the proposed change is not incorrect it just doesn't
+seem to _fix_ anything. I would much rather see a comprehensive
+documentation of the whole enabling workflow. E.g. why do we need
+ACTIVATED at all? Nobody seem to care in the code...
+ 
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Balbir Singh <bsingharora@gmail.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/memcontrol.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index f1a0ae6..40efb9d 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2956,7 +2956,8 @@ static DEFINE_MUTEX(set_limit_mutex);
+>  static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
+>  {
+>  	return !mem_cgroup_disabled() && !mem_cgroup_is_root(memcg) &&
+> -		(memcg->kmem_account_flags & KMEM_ACCOUNTED_MASK);
+> +		(memcg->kmem_account_flags & KMEM_ACCOUNTED_MASK) ==
+> +							KMEM_ACCOUNTED_MASK;
+>  }
+>  
+>  /*
+> -- 
+> 1.7.10.4
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
