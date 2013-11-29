@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895Ab3K2Kq3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 05:46:29 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:52980 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752723Ab3K2KqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 05:46:25 -0500
-Subject: [PATCH V4 6/9] cpuidle/ppc: Add basic infrastructure to enable the
- broadcast framework on ppc
+	id S1755008Ab3K2Kqo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 05:46:44 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:45823 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754906Ab3K2Kql (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 05:46:41 -0500
+Subject: [PATCH V4 7/9] cpuidle/powernv: Add "Fast-Sleep" CPU idle state
 To: fweisbec@gmail.com, paul.gortmaker@windriver.com, paulus@samba.org,
         shangw@linux.vnet.ibm.com, rjw@sisk.pl, galak@kernel.crashing.org,
         benh@kernel.crashing.org, paulmck@linux.vnet.ibm.com, arnd@arndb.de,
@@ -18,8 +18,8 @@ To: fweisbec@gmail.com, paul.gortmaker@windriver.com, paulus@samba.org,
         schwidefsky@de.ibm.com, svaidy@linux.vnet.ibm.com,
         linuxppc-dev@lists.ozlabs.org
 From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Date: Fri, 29 Nov 2013 16:13:03 +0530
-Message-ID: <20131129104303.651.40279.stgit@preeti.in.ibm.com>
+Date: Fri, 29 Nov 2013 16:13:19 +0530
+Message-ID: <20131129104319.651.29563.stgit@preeti.in.ibm.com>
 In-Reply-To: <20131129104010.651.23117.stgit@preeti.in.ibm.com>
 References: <20131129104010.651.23117.stgit@preeti.in.ibm.com>
 User-Agent: StGit/0.16-38-g167d
@@ -28,178 +28,266 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13112910-0320-0000-0000-000001DA6226
+x-cbid: 13112910-0928-0000-0000-000003E708A3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On ppc there are certain deep CPU idle states in which the local timers stop. One such
-idle state on Power8 is "Fast-Sleep". However we do not have an external timer
-to wake up these CPUs. Hence we prevent one of the CPUs from entering
-Fast-Sleep so that it can wakeup the remaining CPUs in this state.
+Fast sleep is one of the deep idle states on Power8 in which local timers of
+CPUs stop. Now that the basic support for fast sleep has been added,
+enable it in the cpuidle framework on PowerNV.
 
-However we would still rely on the broadcast framework[1] in the kernel to keep
-track of the CPUs in deep idle and the time at which to wake them up. To enable
-this framework, we need to register a clock device that does not stop in deep idle
-states. Without such a device, the broadcast framework does not take any
-action when CPUs enter and exit deep idle states since it believes that there
-is no clock device to wakeup the CPUs in deep idle states.
+On ppc, since we do not have an external device that can wakeup cpus in deep
+idle, the local timer of one of the CPUs needs to be nominated to do this job.
+This cpu is called the broadcast cpu/bc_cpu. Only if the bc_cpu is nominated
+will the remaining cpus be allowed to enter deep idle state after notifying
+the broadcast framework. The bc_cpu is not allowed to enter deep idle state.
 
-A local timer does not satisfy this condition and hence we introduce a
-pseudo clock device, called the broadcast_clockevent and get this registered
-in the broadcast framework. This is done to trick the broadcast framework
-into believing that we have an external timer to wakeup the CPUs. But this
-device is not programmable; it just enables us to make use of the broadcast framework.
+The bc_cpu queues a hrtimer onto itself to handle the wakeup of CPUs in deep
+idle state. The hrtimer handler calls into the broadcast framework which takes
+care of sending IPIs to all those CPUs in deep idle whose wakeup times has expired.
+	On each expiry of the hrtimer, it is programmed to the earlier of the
+next wakeup time of  cpus in deep idle and and a safety period so as to not miss
+any wakeups. This safety period is currently maintained at a jiffy.
 
-[1]http://lwn.net/Articles/574591/
+But having a dedicated bc_cpu would mean overloading just one cpu with the
+broadcast work which could hinder its performance apart from leading to thermal
+imbalance on the chip. Therefore the first CPU that enters deep idle state is
+the bc_cpu. It gets unassigned when there are no more CPUs in deep idle to be
+woken up. This state remains until such a time that a CPU enters the
+deep idle state again to be nominated as the bc_cpu and the cycle repeats.
+
+Protect the region of nomination,de-nomination and check for existence of broadcast
+CPU with a lock to ensure synchronization between them.
 
 Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 ---
 
- arch/powerpc/Kconfig            |    2 +
- arch/powerpc/include/asm/time.h |    1 +
- arch/powerpc/kernel/time.c      |   58 ++++++++++++++++++++++++++++++++++++++-
- 3 files changed, 60 insertions(+), 1 deletion(-)
+ arch/powerpc/include/asm/time.h          |    1 
+ arch/powerpc/kernel/time.c               |    2 
+ drivers/cpuidle/cpuidle-powerpc-book3s.c |  152 ++++++++++++++++++++++++++++++
+ 3 files changed, 154 insertions(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index b44b52c..cafa788 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -129,6 +129,8 @@ config PPC
- 	select GENERIC_CMOS_UPDATE
- 	select GENERIC_TIME_VSYSCALL_OLD
- 	select GENERIC_CLOCKEVENTS
-+	select GENERIC_CLOCKEVENTS_BROADCAST
-+	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
- 	select HAVE_MOD_ARCH_SPECIFIC
 diff --git a/arch/powerpc/include/asm/time.h b/arch/powerpc/include/asm/time.h
-index 1d428e6..4057425 100644
+index 4057425..a6604b7 100644
 --- a/arch/powerpc/include/asm/time.h
 +++ b/arch/powerpc/include/asm/time.h
-@@ -24,6 +24,7 @@ extern unsigned long tb_ticks_per_jiffy;
- extern unsigned long tb_ticks_per_usec;
+@@ -25,6 +25,7 @@ extern unsigned long tb_ticks_per_usec;
  extern unsigned long tb_ticks_per_sec;
  extern struct clock_event_device decrementer_clockevent;
-+extern struct clock_event_device broadcast_clockevent;
+ extern struct clock_event_device broadcast_clockevent;
++extern struct clock_event_device bc_timer;
  
  struct rtc_time;
  extern void to_tm(int tim, struct rtc_time * tm);
 diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
-index 42cb603..d2e582b 100644
+index d2e582b..f0603a0 100644
 --- a/arch/powerpc/kernel/time.c
 +++ b/arch/powerpc/kernel/time.c
-@@ -42,6 +42,7 @@
- #include <linux/timex.h>
- #include <linux/kernel_stat.h>
- #include <linux/time.h>
-+#include <linux/timer.h>
- #include <linux/init.h>
- #include <linux/profile.h>
- #include <linux/cpu.h>
-@@ -97,6 +98,10 @@ static struct clocksource clocksource_timebase = {
+@@ -127,7 +127,7 @@ EXPORT_SYMBOL(broadcast_clockevent);
  
- static int decrementer_set_next_event(unsigned long evt,
- 				      struct clock_event_device *dev);
-+static int broadcast_set_next_event(unsigned long evt,
-+				      struct clock_event_device *dev);
-+static void broadcast_set_mode(enum clock_event_mode mode,
-+				 struct clock_event_device *dev);
- static void decrementer_set_mode(enum clock_event_mode mode,
- 				 struct clock_event_device *dev);
- 
-@@ -106,12 +111,23 @@ struct clock_event_device decrementer_clockevent = {
- 	.irq            = 0,
- 	.set_next_event = decrementer_set_next_event,
- 	.set_mode       = decrementer_set_mode,
--	.features       = CLOCK_EVT_FEAT_ONESHOT,
-+	.features       = CLOCK_EVT_FEAT_C3STOP | CLOCK_EVT_FEAT_ONESHOT,
- };
- EXPORT_SYMBOL(decrementer_clockevent);
- 
-+struct clock_event_device broadcast_clockevent = {
-+	.name           = "broadcast",
-+	.rating         = 200,
-+	.irq            = 0,
-+	.set_next_event = broadcast_set_next_event,
-+	.set_mode       = broadcast_set_mode,
-+	.features       = CLOCK_EVT_FEAT_ONESHOT,
-+};
-+EXPORT_SYMBOL(broadcast_clockevent);
-+
  DEFINE_PER_CPU(u64, decrementers_next_tb);
  static DEFINE_PER_CPU(struct clock_event_device, decrementers);
-+static struct clock_event_device bc_timer;
+-static struct clock_event_device bc_timer;
++struct clock_event_device bc_timer;
  
  #define XSEC_PER_SEC (1024*1024)
  
-@@ -811,6 +827,19 @@ static int decrementer_set_next_event(unsigned long evt,
- 	return 0;
- }
+diff --git a/drivers/cpuidle/cpuidle-powerpc-book3s.c b/drivers/cpuidle/cpuidle-powerpc-book3s.c
+index 25e8a99..649c330 100644
+--- a/drivers/cpuidle/cpuidle-powerpc-book3s.c
++++ b/drivers/cpuidle/cpuidle-powerpc-book3s.c
+@@ -12,12 +12,19 @@
+ #include <linux/cpuidle.h>
+ #include <linux/cpu.h>
+ #include <linux/notifier.h>
++#include <linux/clockchips.h>
++#include <linux/tick.h>
++#include <linux/hrtimer.h>
++#include <linux/ktime.h>
++#include <linux/spinlock.h>
++#include <linux/slab.h>
  
-+static int broadcast_set_next_event(unsigned long evt,
-+					struct clock_event_device *dev)
-+{
-+	return 0;
-+}
+ #include <asm/paca.h>
+ #include <asm/reg.h>
+ #include <asm/machdep.h>
+ #include <asm/firmware.h>
+ #include <asm/runlatch.h>
++#include <asm/time.h>
+ #include <asm/plpar_wrappers.h>
+ 
+ struct cpuidle_driver powerpc_book3s_idle_driver = {
+@@ -28,6 +35,26 @@ struct cpuidle_driver powerpc_book3s_idle_driver = {
+ static int max_idle_state;
+ static struct cpuidle_state *cpuidle_state_table;
+ 
++static int bc_cpu = -1;
++static struct hrtimer *bc_hrtimer;
++static int bc_hrtimer_initialized = 0;
 +
-+static void broadcast_set_mode(enum clock_event_mode mode,
-+				 struct clock_event_device *dev)
-+{
-+	if (mode != CLOCK_EVT_MODE_ONESHOT)
-+		broadcast_set_next_event(DECREMENTER_MAX, dev);
-+}
++/*
++ * Bits to indicate if a cpu can enter deep idle where local timer gets
++ * switched off.
++ * BROADCAST_CPU_PRESENT : Enter deep idle since bc_cpu is assigned
++ * BROADCAST_CPU_SELF	 : Do not enter deep idle since you are bc_cpu
++ * BROADCAST_CPU_ABSENT	 : Do not enter deep idle since there is no bc_cpu,
++ * 			   hence nominate yourself as bc_cpu
++ * BROADCAST_CPU_ERROR	:  Do not enter deep idle since there is no bc_cpu
++ *			   and the broadcast hrtimer could not be initialized.
++ */
++enum broadcast_cpu_status {
++	BROADCAST_CPU_PRESENT,
++	BROADCAST_CPU_SELF,
++	BROADCAST_CPU_ERROR,
++};
 +
- static void decrementer_set_mode(enum clock_event_mode mode,
- 				 struct clock_event_device *dev)
+ static inline void idle_loop_prolog(unsigned long *in_purr)
  {
-@@ -840,6 +869,19 @@ static void register_decrementer_clockevent(int cpu)
- 	clockevents_register_device(dec);
+ 	*in_purr = mfspr(SPRN_PURR);
+@@ -48,6 +75,8 @@ static inline void idle_loop_epilog(unsigned long in_purr)
+ 	get_lppaca()->idle = 0;
  }
  
-+static void register_broadcast_clockevent(int cpu)
++static DEFINE_SPINLOCK(fastsleep_idle_lock);
++
+ static int snooze_loop(struct cpuidle_device *dev,
+ 			struct cpuidle_driver *drv,
+ 			int index)
+@@ -143,6 +172,122 @@ static int nap_loop(struct cpuidle_device *dev,
+ 	return index;
+ }
+ 
++/* Functions supporting broadcasting in fastsleep */
++static ktime_t get_next_bc_tick(void)
++{
++	u64 next_bc_ns;
++
++	next_bc_ns = (tb_ticks_per_jiffy / tb_ticks_per_usec) * 1000;
++	return ns_to_ktime(next_bc_ns);
++}
++
++static int restart_broadcast(struct clock_event_device *bc_evt)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&fastsleep_idle_lock, flags);
++	bc_evt->event_handler(bc_evt);
++
++	if (bc_evt->next_event.tv64 == KTIME_MAX)
++		bc_cpu = -1;
++
++	spin_unlock_irqrestore(&fastsleep_idle_lock, flags);
++	return (bc_cpu != -1);
++}
++
++static enum hrtimer_restart handle_broadcast(struct hrtimer *hrtimer)
 +{
 +	struct clock_event_device *bc_evt = &bc_timer;
++	ktime_t interval, next_bc_tick, now;
 +
-+	*bc_evt = broadcast_clockevent;
-+	bc_evt->cpumask = cpu_possible_mask;
++	now = ktime_get();
 +
-+	printk_once(KERN_DEBUG "clockevent: %s mult[%x] shift[%d] cpu[%d]\n",
-+		    bc_evt->name, bc_evt->mult, bc_evt->shift, cpu);
++	if (!restart_broadcast(bc_evt))
++		return HRTIMER_NORESTART;
 +
-+	clockevents_register_device(bc_evt);
++	interval = ktime_sub(bc_evt->next_event, now);
++	next_bc_tick = get_next_bc_tick();
++
++	if (interval.tv64 < next_bc_tick.tv64)
++		hrtimer_forward_now(hrtimer, interval);
++	else
++		hrtimer_forward_now(hrtimer, next_bc_tick);
++
++	return HRTIMER_RESTART;
 +}
 +
- static void __init init_decrementer_clockevent(void)
- {
- 	int cpu = smp_processor_id();
-@@ -854,6 +896,19 @@ static void __init init_decrementer_clockevent(void)
- 	register_decrementer_clockevent(cpu);
- }
- 
-+static void __init init_broadcast_clockevent(void)
++static enum broadcast_cpu_status can_enter_deep_idle(int cpu)
 +{
-+	int cpu = smp_processor_id();
++	if (bc_cpu != -1 && cpu != bc_cpu) {
++		return BROADCAST_CPU_PRESENT;
++	} else if (bc_cpu != -1 && cpu == bc_cpu) {
++		return BROADCAST_CPU_SELF;
++	} else {
++		if (!bc_hrtimer_initialized) {
++			bc_hrtimer = kmalloc(sizeof(*bc_hrtimer), GFP_NOWAIT);
++			if (!bc_hrtimer)
++				return BROADCAST_CPU_ERROR;
++			hrtimer_init(bc_hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL_PINNED);
++			bc_hrtimer->function = handle_broadcast;
++			hrtimer_start(bc_hrtimer, get_next_bc_tick(),
++				HRTIMER_MODE_REL_PINNED);
++			bc_hrtimer_initialized = 1;
++		} else {
++			hrtimer_start(bc_hrtimer, get_next_bc_tick(), HRTIMER_MODE_REL_PINNED);
++		}
 +
-+	clockevents_calc_mult_shift(&broadcast_clockevent, ppc_tb_freq, 4);
-+
-+	broadcast_clockevent.max_delta_ns =
-+		clockevent_delta2ns(DECREMENTER_MAX, &broadcast_clockevent);
-+	broadcast_clockevent.min_delta_ns =
-+		clockevent_delta2ns(2, &broadcast_clockevent);
-+	register_broadcast_clockevent(cpu);
++		bc_cpu = cpu;
++		return BROADCAST_CPU_SELF;
++	}
 +}
 +
- void secondary_cpu_time_init(void)
- {
- 	/* Start the decrementer on CPUs that have manual control
-@@ -930,6 +985,7 @@ void __init time_init(void)
- 	clocksource_init();
++/* Emulate sleep, with long nap.
++ * During sleep, the core does not receive decrementer interrupts.
++ * Emulate sleep using long nap with decrementers interrupts disabled.
++ * This is an initial prototype to test the broadcast framework for ppc.
++ */
++static int fastsleep_loop(struct cpuidle_device *dev,
++				struct cpuidle_driver *drv,
++				int index)
++{
++	int cpu = dev->cpu;
++	unsigned long old_lpcr = mfspr(SPRN_LPCR);
++	unsigned long new_lpcr;
++	unsigned long flags;
++	int bc_cpu_status;
++
++	new_lpcr = old_lpcr;
++	new_lpcr &= ~(LPCR_MER | LPCR_PECE); /* lpcr[mer] must be 0 */
++
++	/* exit powersave upon external interrupt, but not decrementer
++	 * interrupt, Emulate sleep.
++	 */
++	new_lpcr |= LPCR_PECE0;
++
++	spin_lock_irqsave(&fastsleep_idle_lock, flags);
++	bc_cpu_status = can_enter_deep_idle(cpu);
++
++	if (bc_cpu_status == BROADCAST_CPU_PRESENT) {
++		mtspr(SPRN_LPCR, new_lpcr);
++		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
++		spin_unlock_irqrestore(&fastsleep_idle_lock, flags);
++		power7_sleep();
++		spin_lock_irqsave(&fastsleep_idle_lock, flags);
++		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
++		spin_unlock_irqrestore(&fastsleep_idle_lock, flags);
++	} else if (bc_cpu_status == BROADCAST_CPU_SELF) {
++		new_lpcr |= LPCR_PECE1;
++		mtspr(SPRN_LPCR, new_lpcr);
++		spin_unlock_irqrestore(&fastsleep_idle_lock, flags);
++		power7_nap();
++	} else {
++		spin_unlock_irqrestore(&fastsleep_idle_lock, flags);
++	}
++
++	mtspr(SPRN_LPCR, old_lpcr);
++	return index;
++}
++
+ /*
+  * States for dedicated partition case.
+  */
+@@ -191,6 +336,13 @@ static struct cpuidle_state powernv_states[] = {
+ 		.exit_latency = 10,
+ 		.target_residency = 100,
+ 		.enter = &nap_loop },
++	 { /* Fastsleep */
++		.name = "fastsleep",
++		.desc = "fastsleep",
++		.flags = CPUIDLE_FLAG_TIME_VALID,
++		.exit_latency = 10,
++		.target_residency = 100,
++		.enter = &fastsleep_loop },
+ };
  
- 	init_decrementer_clockevent();
-+	init_broadcast_clockevent();
- }
- 
- 
+ void update_smt_snooze_delay(int cpu, int residency)
 
