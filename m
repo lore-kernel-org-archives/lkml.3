@@ -1,40 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822Ab3K2Ux7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 15:53:59 -0500
-Received: from imap.thunk.org ([74.207.234.97]:34869 "EHLO imap.thunk.org"
+	id S1755036Ab3K2U4k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 15:56:40 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:33159 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753608Ab3K2Ux5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 15:53:57 -0500
-Date: Fri, 29 Nov 2013 15:53:52 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Greg Price <price@mit.edu>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/9] random: fix comment on "account"
-Message-ID: <20131129205352.GE3778@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Greg Price <price@MIT.EDU>,
-	linux-kernel@vger.kernel.org
-References: <cover.1384329436.git.price@mit.edu>
- <20131113080814.GS16018@ringworld.MIT.EDU>
+	id S1753608Ab3K2U4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 15:56:38 -0500
+Date: Fri, 29 Nov 2013 21:56:28 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Levente Kurusa <levex@linux.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Tony Luck <tony.luck@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, EDAC <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: mcheck: call put_device on device_register failure
+Message-ID: <20131129205628.GA20144@pd.tnic>
+References: <5298F900.9000208@linux.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131113080814.GS16018@ringworld.MIT.EDU>
+In-Reply-To: <5298F900.9000208@linux.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 03:08:14AM -0500, Greg Price wrote:
-> This comment didn't quite keep up as extract_entropy() was split into
-> four functions.  Put each bit by the function it describes.
+On Fri, Nov 29, 2013 at 09:28:48PM +0100, Levente Kurusa wrote:
+> This patch adds a call to put_device() when the device_register()
+> call has failed. This is required so that the last reference to the
+> device is given up.
+
+I'd assume this is not something you're actually hitting but have caught
+this by code staring...?
+
+> Signed-off-by: Levente Kurusa <levex@linux.com>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 > 
-> Cc: "Theodore Ts'o" <tytso@mit.edu>
-> Signed-off-by: Greg Price <price@mit.edu>
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index b3218cd..a389c1d 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -2272,8 +2272,10 @@ static int mce_device_create(unsigned int cpu)
+>  	dev->release = &mce_device_release;
+> 
+>  	err = device_register(dev);
+> -	if (err)
+> +	if (err) {
+> +		put_device(dev);
+>  		return err;
+> +	}
 
-Thanks, applied.
+If we're going to do this, I'd also like to see you add another label
+after device_unregister(dev) which also kfrees dev because apparently
+we're not doing that either.
 
-							- Ted
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
