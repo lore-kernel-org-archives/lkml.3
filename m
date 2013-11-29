@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037Ab3K2HnG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 02:43:06 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:57448 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab3K2HnB (ORCPT
+	id S1751210Ab3K2Hqi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 02:46:38 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:38322 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177Ab3K2Hqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 02:43:01 -0500
+	Fri, 29 Nov 2013 02:46:33 -0500
 MIME-Version: 1.0
-In-Reply-To: <1385057731-4348-4-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <5294D692.3080100@ti.com>
 References: <1385057731-4348-1-git-send-email-prabhakar.csengg@gmail.com>
-	<1385057731-4348-4-git-send-email-prabhakar.csengg@gmail.com>
-Date: Fri, 29 Nov 2013 08:43:00 +0100
-Message-ID: <CACRpkdZaSgEMTPPSYJyENc+zhTTLhzchi2F=CzdZs=DskMvVwg@mail.gmail.com>
-Subject: Re: [PATCH v6 3/6] gpio: davinci: remove unused variable intc_irq_num
+	<1385057731-4348-5-git-send-email-prabhakar.csengg@gmail.com>
+	<52932DB9.4090805@ti.com>
+	<5294950A.9070007@ti.com>
+	<5294D692.3080100@ti.com>
+Date: Fri, 29 Nov 2013 08:46:32 +0100
+Message-ID: <CACRpkdZtfsvgYNMUnuwiYL=0dVe6KDPV92Ri0TpTHL8gRJeqkQ@mail.gmail.com>
+Subject: Re: [PATCH v6 4/6] gpio: davinci: add OF support
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: Sekhar Nori <nsekhar@ti.com>, Grygorii Strashko <grygorii.strashko@ti.com>,
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>,
         DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         LAK <linux-arm-kernel@lists.infradead.org>,
@@ -33,21 +37,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 7:15 PM, Prabhakar Lad
-<prabhakar.csengg@gmail.com> wrote:
+On Tue, Nov 26, 2013 at 6:12 PM, Sekhar Nori <nsekhar@ti.com> wrote:
+> On Tuesday 26 November 2013 06:03 PM, Grygorii Strashko wrote:
 
-> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+>> Actually, the same was proposed by Linus, but we've tried avoid such huge rework -
+>> by switching to one irq_domain per all banks for example.
 >
-> As the davinci-gpio driver is migrated to use irqdomain
-> there is no need to pass the irq base for the gpio driver.
-> This patch removes this variable from davinci_gpio_platform_data
-> and also the refrences from the machine file.
->
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> I didn't really read that proposal from Linus so if two people
+> independently suggested the same thing, there must be something worth
+> considering there :)
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-*Very* nice patch!
+>From a GPIO POV it's not such a big deal really, this approach is fine
+and the important thing is that we progress toward a more standard
+driver... it's more a question for the DT people IMO. I really like the
+current patch set.
 
 Yours,
 Linus Walleij
