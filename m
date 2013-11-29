@@ -1,48 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754367Ab3K2Mtv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 07:49:51 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:38238 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752767Ab3K2Mto (ORCPT
+	id S1754743Ab3K2MzU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 07:55:20 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60636 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753069Ab3K2MzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 07:49:44 -0500
-Date: Fri, 29 Nov 2013 12:49:41 +0000
-From: Andy Whitcroft <apw@canonical.com>
-To: Roland <devzero@web.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, kernel-team@lists.ubuntu.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] - add "fixpae" bootparam to fix/workaround #930447
-Message-ID: <20131129124941.GA18950@bark>
-References: <trinity-1045dd8c-e43f-4f8c-94e4-c0f0f15f611d-1385507362267@3capp-webde-bs36>
- <52952FD9.1060906@zytor.com>
- <4EE8EA759E2646FFB2FC72F10ED743AC@samsungnetbook>
+	Fri, 29 Nov 2013 07:55:17 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        "Moore, Robert" <robert.moore@intel.com>,
+        Toshi Kani <toshi.kani@hp.com>, Yinghai Lu <yinghai@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Lv Zheng <lv.zheng@intel.com>
+Subject: Re: [PATCH 7/10] ACPI / hotplug: Move container-specific code out of the core
+Date: Fri, 29 Nov 2013 14:08:08 +0100
+Message-ID: <1554480.uCR6qUxJk9@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <5297FDC7.6000007@jp.fujitsu.com>
+References: <1421028.Rsfpmhnym3@vostro.rjw.lan> <2547688.l8Q1XKb3Ol@vostro.rjw.lan> <5297FDC7.6000007@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EE8EA759E2646FFB2FC72F10ED743AC@samsungnetbook>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 09:41:03PM +0100, Roland wrote:
-> This patch is meant primarly for ubuntu, as they only ship PAE
-> enabled kernels and don`t ship non-PAE kernels anymore.  So this
-> resolves an ubuntu specific problem (as the installer disc also has
-> PAE enabled kernel).
+On Friday, November 29, 2013 11:36:55 AM Yasuaki Ishimatsu wrote:
+> Hi Rafael,
+
+Hi,
+
+> Replying to this mail may be wrong.
+
+OK, so this particular patch doesn't break things any more?
+
+> Do you remember following your patch?
+> http://lkml.org/lkml/2013/2/23/97
 > 
-> I know it`s not perfect, but poking cpu bits in arrays is above my
-> skills and i have already spent really much time with this trying to
-> resolve a problem for the end-user intruduced by nothing but the
-> decision to discontinue Non-PAE kernels.
+> I want to add autoeject variable in acpi_hotplug_profile structure and
+> set autoecjet of container device "false".
 
-I think the complaints are more about how it works that the intent.
-Kernel engineers are by their very nature very risk averse, so it would
-indeed be good to set the bit correctly in the cpu capability flags, and
-to do that based on the machine type.
+Then after the series the $subject patch belongs to it will work almost the
+same way as /sys/firmware/acpi/container/enabled (hot add will still work after
+patch [4/10] if "enabled" is 0), but only for containers.
 
-I might just have a machine which exhibits this behaviour, I will try
-and look it out and see if we can morph this into something appropriate.
+> Currently, I have a problem on ejecting container device. Since linux-3.12,
+> container device is removed by acpi_scan_hot_remove.
+> 
+> I think this has two problems.
+> 
+>    1. easily fail
+>       My container device has CPU device and Memory device, and maximum size of
+>       memory is 3Tbyte. In my environment, hot removing container device fails
+>       on offlining memory if memory is used by application.
+>       I think if offlininig memory, we must retly to offline memory several
+>       times.
 
--apw
+Yes, that's correct.  But then you can try to offline the memory upfront
+and only remove the container after that has been successful.
+
+>    2. cannot work with userland's application
+>       Hot removing CPU and memory on container device, we need take care of
+>       userland application. Before linux-3.12, container device just notifies
+>       KOBJ_OFFLINE to udev. So by using udev, if application binds to removed
+>       CPU or node, applications can change them before hot removing container
+>       device.
+>       Currently, KOBJ_OFFLINE is notified to udev. But acpi_scan_hot_remove
+>       also runs simultaneously for hot removing container device. So when
+>       applications runs for corresponding to the deletion of the devices,
+>       the devices may have been deleted.
+
+So the expectation is that the container will refuse to offline, but instead
+it will emit KOBJ_OFFLINE so that user space can do some cleanup and offline
+it through the "eject" attribute, right?
+
+> I don't know what devices are on hotpluggable conatainer device of other
+> vendors. At least, my container device cannot be hot removed correctly.
+> Then I want to add autoeject variable in acpi_hotplug_profile so that user
+> can change the parameter to "true" or "false".
+
+I have a different idea.
+
+Why don't we create a bus type for containers in analogy with CPUs and memory
+and make it support offline.  Then, the container scan handler will create a
+"physical" container device under that bus type and the new bus type code will
+implement the logic you need (that is, it will have a sysfs flag that will
+cause the offline to fail emitting a uevent of some sort if set and will allow
+the offline to happen when unset).  That "physical" container device will go
+away (again, via the container scan handler) during container removal.
+
+The eject work flow can be:
+  (1) an eject event occurs,
+  (2) the container "physical" device fails offline in acpi_scan_hot_remove()
+      emmitting, say, KOBJ_CHANGE for the "physical" device,
+  (3) user space notices the KOBJ_CHANGE and does the cleanup as needed,
+  (4) user space changes the "physical" container device flag controlling
+      offline to 0,
+  (5) user space uses the sysfs "eject" attribute of the ACPI container object
+      to finally eject the container,
+  (6) the offline in acpi_scan_hot_remove() is now successful, because the
+      flag controlling it has been set to 0 in step (4),
+  (7) the "physical" container device goes away before executing _EJ0,
+  (8) the container is ejected.
+
+Of course, if the flag controlling container offline is 0 to start with, step
+(6) will now occur directly after (1), so whoever wants containers to be
+hot-removed automatically may just clear that flag for all of them on boot.
+
+How does that sound?
+
+Rafael
+
