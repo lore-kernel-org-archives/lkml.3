@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757167Ab3K2Qrt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 11:47:49 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:40774 "EHLO mail.skyhub.de"
+	id S932295Ab3K2QsX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 11:48:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46151 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754121Ab3K2Qrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 11:47:46 -0500
-Date: Fri, 29 Nov 2013 17:47:36 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Young <dyoung@redhat.com>
-Cc: Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
-        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.infradead.org, greg@kroah.com, toshi.kani@hp.com
-Subject: Re: [PATCH v4 08/12] efi: only print saved efi runtime maps instead
- of all memmap ranges for kexec
-Message-ID: <20131129164736.GE4266@pd.tnic>
-References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
- <1385445477-9665-9-git-send-email-dyoung@redhat.com>
- <20131127102701.GD18170@console-pimps.org>
- <20131127142726.GE32267@pd.tnic>
- <20131129085050.GF4186@dhcp-16-126.nay.redhat.com>
+	id S1757299Ab3K2QsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 11:48:19 -0500
+Date: Fri, 29 Nov 2013 17:49:04 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <htejun@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, zhang.yi20@zte.com.cn,
+        lkml <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 1/1] usermodehelper: kill
+	____call_usermodehelper()->set_cpus_allowed_ptr()
+Message-ID: <20131129164904.GA5124@redhat.com>
+References: <20131128121748.GN10022@twins.programming.kicks-ass.net> <20131128133152.GA821@redhat.com> <20131128133947.GR10022@twins.programming.kicks-ass.net> <20131128142359.GA6420@redhat.com> <20131128143155.GC3925@htj.dyndns.org> <20131128150055.GA11956@redhat.com> <20131128150233.GA10022@twins.programming.kicks-ass.net> <20131128193330.GA24767@redhat.com> <20131128193349.GB24767@redhat.com> <20131129134406.GA3717@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131129085050.GF4186@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131129134406.GA3717@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 29, 2013 at 04:50:50PM +0800, Dave Young wrote:
-> It's for debugging purpose, I think it's helpful.
+Hi Tejun,
 
-Why? The first kernel did dump it already.
+On 11/29, Tejun Heo wrote:
+>
+> Hey, Oleg.
+>
+> On Thu, Nov 28, 2013 at 08:33:49PM +0100, Oleg Nesterov wrote:
+> > @@ -208,13 +208,9 @@ static int ____call_usermodehelper(void *data)
+> >  	spin_lock_irq(&current->sighand->siglock);
+> >  	flush_signal_handlers(current, 1);
+> >  	spin_unlock_irq(&current->sighand->siglock);
+> > -
+> > -	/* We can run anywhere, unlike our parent keventd(). */
+> > -	set_cpus_allowed_ptr(current, cpu_all_mask);
+>
+> I don't think this is correct on numa machines where unbound workers
+> are NUMA-node affine by default.
 
--- 
-Regards/Gruss,
-    Boris.
+Aaah, I see. And you even mentioned this before, but I didn't pay
+attention.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thank!
+
+Oleg.
+
