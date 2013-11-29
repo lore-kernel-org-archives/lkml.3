@@ -1,78 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab3K2LBl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 06:01:41 -0500
-Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:35398
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751718Ab3K2LBi (ORCPT
+	id S1754193Ab3K2LEg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 06:04:36 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:56394 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235Ab3K2LE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 06:01:38 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kzz17326ah8275dh1de097h186068hz2dh2a8h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19c3h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1155h)
-Message-ID: <529874EE.402@freescale.com>
-Date: Fri, 29 Nov 2013 19:05:18 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	Fri, 29 Nov 2013 06:04:29 -0500
+Date: Fri, 29 Nov 2013 12:03:40 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Marc Dietrich <marvin24@gmx.de>
+Cc: Alexandre Courbot <gnurou@gmail.com>, Rhyland Klein <rklein@nvidia.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alex Courbot <acourbot@nvidia.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Rob Landley <rob@landley.net>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3 1/6] ARM: tegra: add gpiod_lookup table for paz00
+Message-ID: <20131129110339.GK22771@ulmo.nvidia.com>
+References: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1752117.77jQLaML2y@fb07-iapwap2>
+ <20131128110636.GA22818@ulmo.nvidia.com>
+ <1441981.OvF23sGttd@fb07-iapwap2>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Brian Norris <computersforpeace@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <dwmw2@infradead.org>, <linux-mtd@lists.infradead.org>,
-        <angus.clark@st.com>, <linus.walleij@linaro.org>,
-        Mark Brown <broonie@kernel.org>, <linux-spi@vger.kernel.org>
-Subject: Re: [PATCH 00/23] mtd: st_spi_fsm: Add new device
-References: <1385137380-28968-1-git-send-email-lee.jones@linaro.org> <20131127040723.GZ9468@ld-irv-0074.broadcom.com> <20131127115226.GC3296@lee--X1> <5296B9C5.3060704@freescale.com> <20131128092904.GZ3296@lee--X1>
-In-Reply-To: <20131128092904.GZ3296@lee--X1>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Qo8f1a4rgWw9S/zY"
+Content-Disposition: inline
+In-Reply-To: <1441981.OvF23sGttd@fb07-iapwap2>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jones & Augus:
 
-thanks for your explanations.
-> Most controllers just take an OPCODE and pass it on to the controller
-> and have done with it. The issue that you're attempting to rectify is
-> that the m25p80 expects every controller to be an SPI controller
-> registered to the SPI framework, but as we both know that's not always
-> practical as the SPI framework doesn't allow all configuration
-> information to be passed back to the controller driver. Our issue is
-> not the same. We are required to send entire 'message sequences', to
-> the controller rather than just opcodes. The JEDEC message sequence
-> can be seen below. Bear in mind that this is also one of the more
-> simple message sequences. Some of them even vary depending on which
-> chip is present.
-Frankly speaking, my quadspi driver's code is just like Jones's code.
-Yes, a big "switch".
+--Qo8f1a4rgWw9S/zY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The opcode is just like an index to trigger the proper operation.
-That's why i add this hook @->read_reg(). (the hook acts as the ioctl)
+On Thu, Nov 28, 2013 at 01:54:10PM +0100, Marc Dietrich wrote:
+[...]
+> Yes, rfkill is just an interface for userspace to able to control the gpi=
+o.=20
+> E.g. backlight of medcom-wide seems to be related to the pwm controller, =
+but=20
+> is not a subnode of it. Instead it is a device of its own without parent.=
+=20
+> Hence, we may include rfkill in a similar, "free-standing" node. But this=
+=20
+> approch was rejected in the past. Maybe this changed now.
 
-If we do not use this hooks, we should add more hooks such as
-@->read_id, @->read_sr, @->read_cr...
+Indeed. I think we really do need ways to represent this kind of device.
+If we can't then how are we supposed to get rid of board files?
 
-That's make the interface not graceful enough.
+> Thinking a bit more about it, rfkill is neither a hw block nor a function=
+ of=20
+> the wifi driver, so I guess it cannot be added to the usb controller (or =
+a usb=20
+> device).
 
+I guess it depends a bit. Some rfkill-type devices may control more than
+just WiFi (bluetooth, NFC, ...). If it really only controls WiFi, I
+think it would still be reasonable to represent it as a child of the
+WiFi device. It is, after all, a mechanism to control the WiFi hardware.
 
-I read the your patch implementing the read_id:
+Alternatively I suppose we wouldn't really need to have an explicit
+node. The WiFi driver could simply instantiate an rfkill device based on
+its own properties.
 
-http://lists.infradead.org/pipermail/linux-mtd/2013-November/050221.html
+Thierry
 
+--Qo8f1a4rgWw9S/zY
+Content-Type: application/pgp-signature
 
-it's more readable. But i think Jones's stfsm_read_reg() is workable too.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJSmHSLAAoJEN0jrNd/PrOhLYkP/iKC6LI2LuPV2l8HKpb66GZX
+6Z1jL3BdUR+cDxHLIzUEEbdEtpYxj3bkL8pyYxBKI8UCs2xnIowjjU/YAf+I/pt2
+ZgdrG5z9gDM1TRTVSfIgYAa57KZG31TIVdZSZbrJ/r38UbohkdIrxAYkBbqmAkIZ
+W4FDvgkaUm6+SMfZVlIiRDmMx5lM9VqOTfJMs34cqRUZm9QN3yk77mIFqDc1F2Yb
+u7ac634AmvxmUabZsZ91FyOQB+ne5NLwV1hjIwHUr0qwBd/ZIqy9fLgOYMNtCUN6
+p0uVddGuVJf8ViBZgY5M796rOaxHTRJRZFACvS5kU+wvW1dglB6baCfa+4dPclkX
+N1/qEJM7LA9RHTkMOF07vYVSiC0BBYWhzRl1jXhlmDv0pmzxMv+we6iPBbGUNv1M
+kUFbrVK6ubsiaaA3nfQB//N/2DW8QO2cj3ZzRZ+B0hQtHdQZY6RmiioZX/hy5zF5
+apRjLFnfw+jUglD2qrzgAqdRadk/xYFRQW/J/ZVZ89nbau5FkrRtEJZ//ELOlhDX
+XfRBqMBXy0JEFHFTlKmw+SfNnK4EuAYwnBIlkUG1jjNAbTIj74KJz59fq21QvA14
+JVD1Bnp43cF+zqxfw9c0dkyPZYMT7WCKEfl+butSo16LUz3wlRtTgNVrO1Ey4cGG
+RbxiybMrNI3YFCNjli2n
+=cEez
+-----END PGP SIGNATURE-----
 
-If you do not like the read_reg() hook, do you have any better idea?
-
-
-
-thanks
-Huang Shijie
-
-
-
-
+--Qo8f1a4rgWw9S/zY--
