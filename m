@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756856Ab3K2OuK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 09:50:10 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51282 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755363Ab3K2OuI (ORCPT
+	id S1756936Ab3K2Ow1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 09:52:27 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:52858 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756387Ab3K2Ow0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 09:50:08 -0500
-Date: Fri, 29 Nov 2013 14:49:43 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>
-Message-ID: <20131129144943.GC27568@sirena.org.uk>
-References: <1385733827-19831-1-git-send-email-peter.ujfalusi@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JAtnJwvplI04zgov"
-Content-Disposition: inline
-In-Reply-To: <1385733827-19831-1-git-send-email-peter.ujfalusi@ti.com>
-X-Cookie: Boycott meat -- suck your thumb.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 0/5] ASoC/MFD: twl6040: Remove codec driver local reg
- cache
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Fri, 29 Nov 2013 09:52:26 -0500
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        iommu@lists.linux-foundation.org
+Subject: [PATCH 0/2] extend support for CMA CMA on x86
+Date: Fri, 29 Nov 2013 23:51:44 +0900
+Message-Id: <1385736706-3147-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch set extends support for the DMA Contiguous Memory Allocator
+on x86.  Currently it is only supported on pci-nommu.  So this aims at
+enabling it on swiotlb and intel-iommu, too.
 
---JAtnJwvplI04zgov
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Regardless of which dma mapping implementation is actually used in the
+system, I would like to allocate big contiguous memory with
+dma_alloc_coherent() and tell the base address to the device that
+requires it.  This is why I need this change.
 
-On Fri, Nov 29, 2013 at 04:03:42PM +0200, Peter Ujfalusi wrote:
+Akinobu Mita (2):
+  x86: enable DMA CMA with swiotlb
+  intel-iommu: integrate DMA CMA
 
-> Is this close enough of what you had in mind when asked me to look at this?
+ arch/x86/Kconfig               |  2 +-
+ arch/x86/include/asm/swiotlb.h |  7 +++++++
+ arch/x86/kernel/amd_gart_64.c  |  2 +-
+ arch/x86/kernel/pci-swiotlb.c  |  9 ++++++---
+ arch/x86/pci/sta2x11-fixup.c   |  6 ++----
+ drivers/iommu/intel-iommu.c    | 32 ++++++++++++++++++++++++--------
+ include/linux/swiotlb.h        |  2 ++
+ lib/swiotlb.c                  |  2 +-
+ 8 files changed, 44 insertions(+), 18 deletions(-)
 
-Yes, this is exactly the sort of thing I was looking for - thanks!
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: iommu@lists.linux-foundation.org
+-- 
+1.8.3.2
 
-> twl4030 codec is going to be a bit more complicated AFAIK but it will come
-> eventually.
-
-Yup, they're both more complicated than most of these devices otherwise
-I'd have thrown some changes out myself - all the fiddling around inside
-the cache data makes them more difficult to work with.
-
---JAtnJwvplI04zgov
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSmKmDAAoJELSic+t+oim9AvkP/R1oa4xSjeTzguylhziNPmi6
-PwJj+cxioIB7BkOkuSliLKBeoLqy3OraJsT3p673LJGfuCwJlDYNYhX7HHoWJ57Y
-ct+Qcw6SMGIpAhDOdT8AggSTW36FBg2LJ+Jej4KIdT+FWnBAG+6mmcVoX8mQEo3S
-xztLmZSy7qO8t3wE9uMLnIr70rbgsxdsR5uBDsp5cUODdeoxaQZXTp00tVOpY3VZ
-nPn0t7OGVwzPIOm6SJUrktnST4yHQg/z4gHns6G+1t+4AfunjUj+O9VlGKIR84S1
-/8wi1AWfWGc8o74J9L5FI9Ki175gtMkNm7zwGH2hWkLNXG+Ry6WXkarNxLpi3TqT
-ZixPqIlXbaFZAFcP0mslBBm9UsVRDDSVeh8B9mViAel159ifNQ3Bn5LMUH3ZVMZQ
-oVE6+YIoANtuG2L+1665LXKX5dpQknEZfEhkwiCZ7LxFkmSZbMFozdFdUYUcUhHt
-8H/5Jioajv8NA28K4l3aNJP5EiCwqMFs4gWCpzRASiEvAx21d2wro7hx7QZU1nVc
-uP87usJsMo+q6YGb2EzdkBBmrORNzif7vIhpXioDGdgAprTpabYsYeir8z3oxtpx
-W2q4wGAlWL/yVXltrPaABzPjUxmWUNIbq9FBd8NIoL/FSBPoLlYsW3oVnRgziCO+
-yvrKpunUQayC0mWNHVb0
-=UAgv
------END PGP SIGNATURE-----
-
---JAtnJwvplI04zgov--
