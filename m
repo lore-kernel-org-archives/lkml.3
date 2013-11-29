@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932257Ab3K2Q5K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 11:57:10 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:37493 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932208Ab3K2Q5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 11:57:06 -0500
-Date: Fri, 29 Nov 2013 17:56:56 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Young <dyoung@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
-Subject: Re: [PATCH v4 11/12] x86: reserve setup_data ranges late after
- parsing memmap cmdline
-Message-ID: <20131129165656.GF4266@pd.tnic>
-References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
- <1385445477-9665-12-git-send-email-dyoung@redhat.com>
- <20131127150710.GH32267@pd.tnic>
- <20131129083551.GB4186@dhcp-16-126.nay.redhat.com>
+	id S932299Ab3K2RA2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 12:00:28 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:63368 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932200Ab3K2RA0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 12:00:26 -0500
+From: Michal Nazarewicz <mpn@google.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Peter Huewe <peterhuewe@gmx.de>
+Cc: Dan Morav <dmorav@nuvoton.com>, tpmdd-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] char: tpm: nuvoton: remove unused variable
+Date: Fri, 29 Nov 2013 18:00:18 +0100
+Message-Id: <1385744418-9516-1-git-send-email-mpn@google.com>
+X-Mailer: git-send-email 1.8.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131129083551.GB4186@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 29, 2013 at 04:35:52PM +0800, Dave Young wrote:
-> Is below changes ok to you?
+From: Michal Nazarewicz <mina86@mina86.com>
 
-Almost perfect! Just a micro-nitpick below:
+“wait” wait queue is defined but never used in the function, thus
+it can be removed.
 
-> Currently e820_reserve_setup_data is called before parsing early params,
-> it works in normal case. But for memmap=exactmap, the final memory ranges
-> are created after parsing memmap= cmdline params, so the previous
-> e820_reserve_setup_data has no effect. For example for setup_data ranges
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+---
+ drivers/char/tpm/tpm_i2c_nuvoton.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-s/ for/,/
-
-> will still be marked as normal system ram, thus when later sysfs driver
-> ioremap them kernel will warn about mapping normal ram.
-> 
-> This patch fix it by moving the e820_reserve_setup_data callback after
-> parsing early params so they can be set as reserved ranges and later
-> ioremap will be fine with it.
-
-Thanks.
-
+diff --git a/drivers/char/tpm/tpm_i2c_nuvoton.c b/drivers/char/tpm/tpm_i2c_nuvoton.c
+index 6276fea..4f5ac25 100644
+--- a/drivers/char/tpm/tpm_i2c_nuvoton.c
++++ b/drivers/char/tpm/tpm_i2c_nuvoton.c
+@@ -178,7 +178,6 @@ static int i2c_nuvoton_wait_for_stat(struct tpm_chip *chip, u8 mask, u8 value,
+ {
+ 	if (chip->vendor.irq && queue) {
+ 		s32 rc;
+-		DEFINE_WAIT(wait);
+ 		struct priv_data *priv = chip->vendor.priv;
+ 		unsigned int cur_intrs = priv->intrs;
+ 
 -- 
-Regards/Gruss,
-    Boris.
+1.8.4.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
