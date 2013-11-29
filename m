@@ -1,79 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab3K2ASL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 19:18:11 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:35768 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329Ab3K2ASH (ORCPT
+	id S1752219Ab3K2AZP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 19:25:15 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:55674 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab3K2AZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 19:18:07 -0500
-X-AuditID: cbfee68e-b7f7e6d00000477d-98-5297dd3e9bc3
-From: Sangbeom Kim <sbkim73@samsung.com>
-To: "'Mark Brown'" <broonie@kernel.org>,
-        "'Krzysztof Kozlowski'" <k.kozlowski@samsung.com>
-Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>,
-        "'Lee Jones'" <lee.jones@linaro.org>,
-        "'Liam Girdwood'" <lgirdwood@gmail.com>,
-        "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
-        "'Geert Uytterhoeven'" <geert@linux-m68k.org>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>
-References: <1385626183-22990-1-git-send-email-k.kozlowski@samsung.com>
- <1385626183-22990-6-git-send-email-k.kozlowski@samsung.com>
- <20131128171434.GN27568@sirena.org.uk>
-In-reply-to: <20131128171434.GN27568@sirena.org.uk>
-Subject: RE: [PATCH v2 5/5] mfd: sec: Constify regmap configs and regmap irqs
-Date: Fri, 29 Nov 2013 09:18:08 +0900
-Message-id: <05ce01ceec98$7b4e3470$71ea9d50$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQIn7cDk689h23sBcLg83vR3zAVxUwJkxD4VApxplN6ZYUtwkA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnleLIzCtJLcpLzFFi42I5/e+Zoa7d3elBBqdXKFksuXiV3WLqwyds
-	Fs9u7WWyeP3C0OJs0xt2i/tfjzJafLvSwWRxedccNou1R+6yW+zv7GC0ON3N6sDtsXPWXXaP
-	PRNPsnlsWtXJ5nHn2h42j0OHOxg95p0M9OjbsorRY/q8n0wenzfJBXBGcdmkpOZklqUW6dsl
-	cGV09e1kLehhqlh/bD9bA+NNxi5GTg4JAROJlz+ns0LYYhIX7q1nA7GFBJYxSkxcIQJTM7vl
-	AVANF1B8EaPE5NuLWSCcP4wS81buBpvEJqAhsXL3W7BuEYEIiclHD7KDFDELvGWSWNg8gRmi
-	Yx2jxKK9zUxdjBwcnALGEnd32oE0CAv4SlzvuAR2BouAqkTvwyNgQ3kFLCUmT+xhhbAFJX5M
-	vscCYjMLaEms33mcCcKWl9i85i0zxKkKEjvOvmYEGS8i4CTxZLk6RImIxL4X7xhBTpAQWMoh
-	8Wz/Q6hdAhLfJh9iAamXEJCV2HQAaoykxMEVN1gmMErMQrJ5FpLNs5BsnoVkxQJGllWMoqkF
-	yQXFSelFRnrFibnFpXnpesn5uZsYIYmgbwfjzQPWhxiTgdZPZJYSTc4HJpK8knhDYzMjC1MT
-	U2Mjc0sz0oSVxHkXPUwKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cDI7fDxrGxxXehJg6o7
-	mtIOubYFB8vinRmfq33fd/IV2xILi9trUqd98bpitN73zqFd37SPruo7vaLlw7JZdUxzbxmc
-	7XTYIGkffoTj7jqb75tdJV4vvZaow16nL1Q4Vy9S3SonNiY3XeC+7ffpDbxfX2w0alW63Bju
-	yqyetzr8bkbOp2c6CYxKLMUZiYZazEXFiQAZL2JwGgMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKKsWRmVeSWpSXmKPExsVy+t9jAV27u9ODDI7+lbVYcvEqu8XUh0/Y
-	LJ7d2stk8fqFocXZpjfsFve/HmW0+Halg8ni8q45bBZrj9xlt9jf2cFocbqb1YHbY+esu+we
-	eyaeZPPYtKqTzePOtT1sHocOdzB6zDsZ6NG3ZRWjx/R5P5k8Pm+SC+CMamC0yUhNTEktUkjN
-	S85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAE6VkmhLDGnFCgUkFhcrKRv
-	h2lCaIibrgVMY4Sub0gQXI+RARpIWMeY0dW3k7Wgh6li/bH9bA2MNxm7GDk5JARMJGa3PGCF
-	sMUkLtxbz9bFyMUhJLCIUWLy7cUsEM4fRol5K3eDdbAJaEis3P2WDcQWEYiQmHz0IDtIEbPA
-	WyaJhc0TmCE61jFKLNrbzNTFyMHBKWAscXenHUiDsICvxPWOS2DrWARUJXofHgEbyitgKTF5
-	Yg8rhC0o8WPyPRYQm1lAS2L9zuNMELa8xOY1b5khTlWQ2HH2NSPIeBEBJ4kny9UhSkQk9r14
-	xziBUWgWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEJ5pnUjsY
-	VzZYHGIU4GBU4uFd0T09SIg1say4MvcQowQHs5II768ioBBvSmJlVWpRfnxRaU5q8SHGZKBH
-	JzJLiSbnA5NgXkm8obGJmZGlkZmFkYm5OWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFwSjUw
-	dtuHLXywdYPj6xsPS50Yp+h/+8af/2qD+ooNzfVOHsb9Qfy8qu0GjcIh/FXN7TN3PH62yUbt
-	ArdL4mGRTXmZzBLlzM9EREtl/U0/Kv6a+2ZK15a4xbPbpjpzKoU9mBam+K3t3N9r01sOLTax
-	e2r0uIX9yhS/Y3N7QnL8E4zue9y62S+lfSFIiaU4I9FQi7moOBEAQgh3GngDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 28 Nov 2013 19:25:12 -0500
+X-AuditID: 9c93017d-b7b24ae000002834-6c-5297dee601e9
+From: Namhyung Kim <namhyung@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH/RFC 17/17] tracing/uprobes: Add @+file_offset fetch method
+References: <1385533203-10014-1-git-send-email-namhyung@kernel.org>
+	<1385533203-10014-18-git-send-email-namhyung@kernel.org>
+	<20131127185546.GA30544@redhat.com>
+	<877gbtq7rb.fsf@sejong.aot.lge.com>
+	<20131128163148.GA15985@redhat.com>
+Date: Fri, 29 Nov 2013 09:25:10 +0900
+In-Reply-To: <20131128163148.GA15985@redhat.com> (Oleg Nesterov's message of
+	"Thu, 28 Nov 2013 17:31:48 +0100")
+Message-ID: <87ob54oxzt.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 29, 2013 2:15 AM, Mark Brown wrote:
-> > Add "const" to "static struct regmap_irq" and "static struct
-> > regmap_config".
-> 
-> Reviewed-by: Mark Brown <broonie@linaro.org>
+Hi Oleg,
 
-Acked-by: Sangbeom Kim <sbkim73@samsung.com>
+On Thu, 28 Nov 2013 17:31:48 +0100, Oleg Nesterov wrote:
+> On 11/28, Namhyung Kim wrote:
+>>
+>> I thought we need a fetch_param anyway if we will add support for
+>> cross-fetch later.  But I won't insist it strongly, I can delay it to
+>> later work and make current code simpler if you want. :)
+>
+> OK, great,
+
+So do you want me to change to make it simpler without a fetch_param?
+
+>
+>> >>  static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs)
+>> >>  {
+>> >>  	struct trace_uprobe *tu;
+>> >> +	struct uprobe_task *utask;
+>> >>  	int ret = 0;
+>> >>
+>> >>  	tu = container_of(con, struct trace_uprobe, consumer);
+>> >>  	tu->nhit++;
+>> >>
+>> >> +	utask = current->utask;
+>> >> +	if (utask == NULL)
+>> >> +		return UPROBE_HANDLER_REMOVE;
+>> >
+>> > Hmm, why? The previous change ensures ->utask is not NULL? If we hit
+>> > NULL we have a bug, we should not remove this uprobe.
+>>
+>> Yes, I just want to be defensive. :)
+>>
+>> So do you suggest to add BUG_ON()?
+>
+> We are going to crash with the same effect if it is NULL ;)
+
+I see.  I'll just get rid of the if (...) part.
+
+>
+>> And can I convert or remove a
+>> similar check in uprobes.c:pre_ssout() too?
+>
+> Well, yes, we _can_ do this. But unless you have the strong opinion
+> I'd suggest to not do this. At least right now.
+>
+> To remind, perhaps we can revert the previous patch later if we find
+> a better solution (placeholder).
+
+OK, I'll just leave it as is.
+
+>
+> And. Note that we will change this code in any case. I suggested to
+> use ->vaddr to avoid the other (potentially conflicting) changes in
+> uprobes.h. Even if we use current->utask, we should add another member
+> into the union. But again, it would be better to do this later, and
+> the change will be trivial.
+
+Got it.  Thank you for the explanation.
 
 Thanks,
-Sangbeom.
-
+Namhyung
