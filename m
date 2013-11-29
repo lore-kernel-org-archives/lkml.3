@@ -1,39 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab3K2UAT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 15:00:19 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:38100 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754628Ab3K2UAP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 15:00:15 -0500
-Date: Fri, 29 Nov 2013 21:00:14 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 1/2] x86: enable DMA CMA with swiotlb
-Message-ID: <20131129200014.GD17656@two.firstfloor.org>
-References: <1385736706-3147-1-git-send-email-akinobu.mita@gmail.com>
- <1385736706-3147-2-git-send-email-akinobu.mita@gmail.com>
+	id S1754874Ab3K2UAV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 15:00:21 -0500
+Received: from imap.thunk.org ([74.207.234.97]:34858 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754647Ab3K2UAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 15:00:16 -0500
+Date: Fri, 29 Nov 2013 15:00:09 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Greg Price <price@mit.edu>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/9] random: fix description of get_random_bytes
+Message-ID: <20131129200009.GC3778@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Greg Price <price@MIT.EDU>,
+	linux-kernel@vger.kernel.org
+References: <cover.1384329436.git.price@mit.edu>
+ <20131113080732.GQ16018@ringworld.MIT.EDU>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1385736706-3147-2-git-send-email-akinobu.mita@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131113080732.GQ16018@ringworld.MIT.EDU>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This also needs to change .free callback in the dma_map_ops for amd_gart
-> and sta2x11, because these dma_ops are also using
-> dma_generic_alloc_coherent().
+On Wed, Nov 13, 2013 at 03:07:32AM -0500, Greg Price wrote:
+> After this remark was written, commit d2e7c96af added a use of
+> arch_get_random_long() inside the get_random_bytes codepath.
+> The main point stands, but it needs to be reworded.
+> 
+> Cc: "Theodore Ts'o" <tytso@mit.edu>
+> Signed-off-by: Greg Price <price@mit.edu>
 
-Looks good to me from a quick read.
+Thanks, applied.
 
--Andi
-
+						- Ted
