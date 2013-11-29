@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946Ab3K2IpZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 03:45:25 -0500
-Received: from fep13.mx.upcmail.net ([62.179.121.33]:63411 "EHLO
-	fep13.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752273Ab3K2IpW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 03:45:22 -0500
-X-SourceIP: 192.168.13.91
-X-Authenticated-Sender: f.kreeft1
-Date: Fri, 29 Nov 2013 09:45:12 +0100 (CET)
-From: WESTERN UNOIN <f.kreeft1@upcmail.nl>
-Reply-To: wtransferrmoney90@qdwxs.com
-Message-ID: <693130098.877406.1385714712640.open-xchange@upcmail.upc.nl>
-Subject: PICK UP YOUR$5,000.00USDNOW
+	id S1753700Ab3K2Ipg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 03:45:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50091 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753528Ab3K2Ipc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 03:45:32 -0500
+Date: Fri, 29 Nov 2013 16:44:14 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
+Subject: Re: [PATCH v4 09/12] x86: add xloadflags bit for efi runtime support
+ on kexec
+Message-ID: <20131129084414.GD4186@dhcp-16-126.nay.redhat.com>
+References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
+ <1385445477-9665-10-git-send-email-dyoung@redhat.com>
+ <20131127142732.GF32267@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-Importance: Medium
-X-Mailer: Open-Xchange Mailer v-
-X-Originating-IP: 41.203.69.2
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131127142732.GF32267@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good Day Beneficiary:
+On 11/27/13 at 03:27pm, Borislav Petkov wrote:
+> On Tue, Nov 26, 2013 at 01:57:54PM +0800, Dave Young wrote:
+> > Old kexec-tools can not load new kernel. The reason is previously kexec-tools
+> 
+> The reason is, kexec-tools ... previously, thus efi failed to initialize ...
 
-I write to inform you that we have been given the mandate to transfer your
-full compensation payment of $1,800,000.00 USD via western union by this
-government.
+Good suggestion
 
-We tried to give you the Western Union Instructions through phone, but we
-could not locate your numbers in our database to reach you last week even
-this morning.
+> 
+> > do not fill efi_info in x86 setup header thus efi init fail and switch
+> > to noefi boot. In new kexec-tools it will by default fill efi_info and
+> > pass other efi required infomation to 2nd kernel so kexec kernel efi
+> > initialization will success finally.
+> 
+> 		      succeed
 
-So, I decided to email you the MTCN and Sender Names so that you can pick
-up the USD5,000.00 to enable us send another USD5,000.00 by tomorrow as
-you knows we will be sending you only USD5,000.00 per day.
+Will fix
 
-Please pick up this information and run to any western union in your country
-to pick up the USD5,000.00 and send us email back to send you another payment
-tomorrow.
+> 
+> > 
+> > To prevent from breaking userspace, add a new xloadflags bit so kexec-tools
+> > will check the flag and switch to old logic.
+> > 
+> > changelog:
+> > Matt: +&& defined(CONFIG_KEXEC)
+> > HPA: document the flag.
+> > 
+> > Signed-off-by: Dave Young <dyoung@redhat.com>
+> 
+> Other than that:
+> 
+> Acked-by: Borislav Petkov <bp@suse.de>
+> 
 
-Manager Mrs.Anita Daniel
-Email: wtransferrmoney90@qdwxs.com
-
-email us once you picked up this USD5,000.00 today.
-
-Here is the western union information to pick up the USD5,000.00,
-
-https://wumt.westernunion.com/asp/orderstatus.asp?country=global
-
-Sender Name: Jason   Callahan
-MTCN: 074-137-0142
-Question= What Color
-Answer= White
-Amount Sent: $5000.00
-City:Abuja
-Country:Nigeria
-
-I am waiting for your email once you pick up USD5,000.00,
-
-Thanks!
-Mrs.Anita Daniel
-Western Union Online Coordinator
+Thanks
+Dave
