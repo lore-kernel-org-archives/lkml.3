@@ -1,49 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab3K2TyX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 14:54:23 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:38061 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab3K2TyW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 14:54:22 -0500
-Date: Fri, 29 Nov 2013 20:54:19 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH] Add a text_poke syscall v2
-Message-ID: <20131129195419.GB17656@two.firstfloor.org>
-References: <1385426236-14960-1-git-send-email-andi@firstfloor.org>
- <20131129183558.GA9803@redhat.com>
+	id S1754047Ab3K2T4z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 14:56:55 -0500
+Received: from imap.thunk.org ([74.207.234.97]:34853 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750994Ab3K2T4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 14:56:52 -0500
+Date: Fri, 29 Nov 2013 14:56:46 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Greg Price <price@mit.edu>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/9] random: fix typos / spelling errors in comments
+Message-ID: <20131129195646.GA3778@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Greg Price <price@MIT.EDU>,
+	linux-kernel@vger.kernel.org
+References: <cover.1384329436.git.price@mit.edu>
+ <20131113080714.GO16018@ringworld.MIT.EDU>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131129183558.GA9803@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131113080714.GO16018@ringworld.MIT.EDU>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oleg,
+On Wed, Nov 13, 2013 at 03:07:14AM -0500, Greg Price wrote:
+> Cc: "Theodore Ts'o" <tytso@mit.edu>
+> Signed-off-by: Greg Price <price@mit.edu>
 
-Thanks for finding all these problems.
+Applied, thanks.
 
-> We are going to change this user page, it seems that we need
-> set_page_dirty() ?
-
-That's true. Will add it next rev.
-
-> 
-> Andi, et al. I am going to discuss the things I do not really
-> understand, probably this can't make any sense, but...
-
-I think it's enough to set the dirty bit in the underlying
-struct page, no need to play games with the PTE.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+						- Ted
