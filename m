@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201Ab3K2HFg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 02:05:36 -0500
-Received: from mail-db9lp0248.outbound.messaging.microsoft.com ([213.199.154.248]:54455
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750871Ab3K2HFe (ORCPT
+	id S1753046Ab3K2HG1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 02:06:27 -0500
+Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:29503
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750966Ab3K2HG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 02:05:34 -0500
+	Fri, 29 Nov 2013 02:06:26 -0500
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 1
 X-BigFish: VS1(zzzz1f42h1ee6h1ce5h1fdah201ch2073h2146h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hzz1de098h8275bh1de097hz31h87h2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1ad9h1b0ah1b2fh224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h129fi1151h1155h)
@@ -16,9 +16,9 @@ To: <davem@davemloft.net>, <jg1.han@samsung.com>, <mugunthanvnm@ti.com>,
         <f.fainelli@gmail.com>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
 CC: <Shaohui.Xie@freescale.com>
-Subject: [PATCH 1/6][v3] phylib: Add Clause 45 read/write functions
-Date: Fri, 29 Nov 2013 13:45:12 +0800
-Message-ID: <1385703912-12800-1-git-send-email-shh.xie@gmail.com>
+Subject: [PATCH 2/6][v3] phylib: introduce PHY_INTERFACE_MODE_XGMII for 10G PHY
+Date: Fri, 29 Nov 2013 13:46:06 +0800
+Message-ID: <1385703966-12839-1-git-send-email-shh.xie@gmail.com>
 X-Mailer: git-send-email 1.8.4.1
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -28,76 +28,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Fleming <afleming@freescale.com>
-
-Need an extra parameter to read or write Clause 45 PHYs, so
-need a different API with the extra parameter.
+From: Shaohui Xie <Shaohui.Xie@freescale.com>
 
 Signed-off-by: Andy Fleming <afleming@freescale.com>
 Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
+Acked-by: Florian Fainelli <f.fainelli@gmail.com>
 ---
-v3 changes: add C45 check.
+v3: no changes.
 
- include/linux/phy.h | 39 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
+ drivers/of/of_net.c | 1 +
+ include/linux/phy.h | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/include/linux/phy.h b/include/linux/phy.h
-index 48a4dc3..0ff2476 100644
---- a/include/linux/phy.h
-+++ b/include/linux/phy.h
-@@ -498,6 +498,24 @@ static inline int phy_read(struct phy_device *phydev, u32 regnum)
- }
+diff --git a/drivers/of/of_net.c b/drivers/of/of_net.c
+index 8f9be2e..a208a45 100644
+--- a/drivers/of/of_net.c
++++ b/drivers/of/of_net.c
+@@ -30,6 +30,7 @@ static const char *phy_modes[] = {
+ 	[PHY_INTERFACE_MODE_RGMII_TXID] = "rgmii-txid",
+ 	[PHY_INTERFACE_MODE_RTBI]	= "rtbi",
+ 	[PHY_INTERFACE_MODE_SMII]	= "smii",
++	[PHY_INTERFACE_MODE_XGMII]	= "xgmii",
+ };
  
  /**
-+ * phy_read_mmd - Convenience function for reading a register
-+ * from an MMD on a given PHY.
-+ * @phydev: The phy_device struct
-+ * @devad: The MMD to read from
-+ * @regnum: The register on the MMD to read
-+ *
-+ * Same rules as for phy_read();
-+ */
-+static inline int phy_read_mmd(struct phy_device *phydev, int devad, u32 regnum)
-+{
-+	if (!phydev->is_c45)
-+		return -EOPNOTSUPP;
-+
-+	return mdiobus_read(phydev->bus, phydev->addr,
-+		MII_ADDR_C45 | (devad << 16) | (regnum & 0xffff));
-+}
-+
-+/**
-  * phy_write - Convenience function for writing a given PHY register
-  * @phydev: the phy_device struct
-  * @regnum: register number to write
-@@ -533,6 +551,27 @@ static inline bool phy_is_internal(struct phy_device *phydev)
- 	return phydev->is_internal;
- }
+diff --git a/include/linux/phy.h b/include/linux/phy.h
+index fbe334d..9144061 100644
+--- a/include/linux/phy.h
++++ b/include/linux/phy.h
+@@ -66,6 +66,7 @@ typedef enum {
+ 	PHY_INTERFACE_MODE_RGMII_TXID,
+ 	PHY_INTERFACE_MODE_RTBI,
+ 	PHY_INTERFACE_MODE_SMII,
++	PHY_INTERFACE_MODE_XGMII,
+ } phy_interface_t;
  
-+/**
-+ * phy_write_mmd - Convenience function for writing a register
-+ * on an MMD on a given PHY.
-+ * @phydev: The phy_device struct
-+ * @devad: The MMD to read from
-+ * @regnum: The register on the MMD to read
-+ * @val: value to write to @regnum
-+ *
-+ * Same rules as for phy_write();
-+ */
-+static inline int phy_write_mmd(struct phy_device *phydev, int devad,
-+		u32 regnum, u16 val)
-+{
-+	if (!phydev->is_c45)
-+		return -EOPNOTSUPP;
-+
-+	regnum = MII_ADDR_C45 | ((devad & 0x1f) << 16) | (regnum & 0xffff);
-+
-+	return mdiobus_write(phydev->bus, phydev->addr, regnum, val);
-+}
-+
- struct phy_device *phy_device_create(struct mii_bus *bus, int addr, int phy_id,
- 		bool is_c45, struct phy_c45_device_ids *c45_ids);
- struct phy_device *get_phy_device(struct mii_bus *bus, int addr, bool is_c45);
+ 
 -- 
 1.8.4.1
 
