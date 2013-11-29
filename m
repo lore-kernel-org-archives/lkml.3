@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932195Ab3K2PYL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 10:24:11 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37146 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756902Ab3K2PYJ (ORCPT
+	id S1756750Ab3K2PbA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 10:31:00 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:52952 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754692Ab3K2Pa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 10:24:09 -0500
-Date: Fri, 29 Nov 2013 16:24:04 +0100
-From: Michael Grzeschik <mgr@pengutronix.de>
-To: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com,
-        s.nawrocki@samsung.com, shc_work@mail.ru, kernel@pengutronix.de
-Subject: Re: [PATCH] mfd: syscon: add inline nop functions to compile without
- option
-Message-ID: <20131129152404.GE3516@pengutronix.de>
-References: <1385738156-31852-1-git-send-email-m.grzeschik@pengutronix.de>
+	Fri, 29 Nov 2013 10:30:58 -0500
+Date: Fri, 29 Nov 2013 10:30:57 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Ulf Hansson <ulf.hansson@linaro.org>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH 0/5] PM: Enable option of re-use runtime PM callbacks at
+ system suspend
+In-Reply-To: <4064706.R9zKA4hcfi@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1311291014020.27250-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385738156-31852-1-git-send-email-m.grzeschik@pengutronix.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 16:20:46 up 70 days,  3:08, 48 users,  load average: 12,56, 12,76,
- 12,88
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: mgr@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 29 Nov 2013, Rafael J. Wysocki wrote:
 
-On Fri, Nov 29, 2013 at 04:15:56PM +0100, Michael Grzeschik wrote:
-> The syscon interface can be used in different drivers to reach registers
-> of other register range via phandle. The exported functions can only be
-> used if the syscon interface is enabled. This patch fixes this by
-> adding nop functions if the syscon is not selected in the config.
+> That should have been
 > 
-> Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-> ---
+>  	driver->runtime_suspend(dev)
+>  	do_X(dev)
+> 
+> because do_Y(dev) is for runtime suspend.  Sorry.
+> 
+> And of course, the subsystem-level code you're developing the driver for may not
+> do the do_X(dev) thing at all, in which case all will work.  But what if someone
+> tries to use the driver with a different subsystem-level code (like a new PM
+> domain)?
 
-forget this patch. It is already mainlined by Peter Chen.
+It sounds like the problem is one of division of responsibilities.  
+What part of the work is done by the subsystem, and what part is done 
+by the driver?  Obviously the answer will vary from one subsystem to 
+another.
 
+As I understand it, in Ulf's situation the subsystem knows that the
+operations needed for the suspend_late phase of system suspend are the
+same as those carried out by the driver's runtime_suspend callback (if
+the device isn't already in a runtime-PM low-power state).  Or perhaps
+it knows they are the same as those carried out by the subsystem's
+runtime_suspend callback.  Or perhaps the _driver_ knows that the
+operations it needs for suspend_late are the same as those carried out
+by its own runtime_suspend callback (if the device isn't already in a
+low-power state).
 
-Thanks,
-Michael
+Regardless, under those conditions the suspend_late routine merely has
+to invoke the appropriate runtime_suspend routine, after checking the
+device's runtime PM status.  We can't do this by calling
+pm_runtime_suspend, because runtime PM is disabled during suspend_late.  
+Instead, we have to call the proper runtime-suspend routine directly.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+The amount of code needed is quite small; basically nothing more than:
+
+	if (!pm_runtime_status_suspended(dev))
+		dev->driver->pm->runtime_suspend(dev);
+
+The problems are:
+
+     1. Which callback does this code belong in?
+
+     2. Which runtime_suspend callback should be invoked?  The example 
+	above uses dev->driver->pm->runtime_suspend, but this may not 
+	always be the right one.
+
+Alan Stern
+
