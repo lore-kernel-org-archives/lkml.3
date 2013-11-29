@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192Ab3K2JDP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 04:03:15 -0500
-Received: from www.linutronix.de ([62.245.132.108]:60506 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab3K2JDK (ORCPT
+	id S1752808Ab3K2JEi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 04:04:38 -0500
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:50037 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122Ab3K2JEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 04:03:10 -0500
-Date: Fri, 29 Nov 2013 10:02:41 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Francis Moreau <francis.moro@gmail.com>
-cc: Jingoo Han <jg1.han@samsung.com>, "'Wei WANG'" <wei_wang@realsil.com.cn>,
-        "'Samuel Ortiz'" <sameo@linux.intel.com>,
-        "'Chris Ball'" <cjb@laptop.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "'Borislav Petkov'" <bp@alien8.de>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-In-Reply-To: <52985041.5050000@gmail.com>
-Message-ID: <alpine.DEB.2.02.1311290958560.30673@ionos.tec.linutronix.de>
-References: <20131117195358.GO27323@pd.tnic> <4523614.I5MBhorHFt@vostro.rjw.lan> <5292FF5D.1050304@gmail.com> <1821758.2MoNI3h1Mv@vostro.rjw.lan> <52985041.5050000@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 29 Nov 2013 04:04:35 -0500
+Date: Fri, 29 Nov 2013 09:04:29 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH v2 1/5] mfd/rtc: s5m: Fix register updating by adding
+ regmap for RTC
+Message-ID: <20131129090429.GA26086@lee--X1>
+References: <1385626183-22990-1-git-send-email-k.kozlowski@samsung.com>
+ <1385626183-22990-2-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1385626183-22990-2-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Nov 2013, Francis Moreau wrote:
-> Since it seems to be related to rtsx driver or its upper layer, could
-> the folks involved in this area have a look to this issue please ?
+On Thu, 28 Nov 2013, Krzysztof Kozlowski wrote:
 
-I'm not involved, but looking at the debug objects backtrace it's
-related to the delayed work in rtsx.
+> Rename old regmap field of "struct sec_pmic_dev" to "regmap_pmic" and
+> add new regmap for RTC.
+> 
+> On S5M8767A registers were not properly updated and read due to usage of
+> the same regmap as the PMIC. This could be observed in various hangs,
+> e.g. in infinite loop during waiting for UDR field change.
+> 
+> On this chip family the RTC has different I2C address than PMIC so
+> additional regmap is needed.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  drivers/mfd/sec-core.c           |   30 ++++++++++++++++++++++--------
+>  drivers/mfd/sec-irq.c            |    6 +++---
+>  drivers/regulator/s5m8767.c      |    2 +-
+>  drivers/rtc/rtc-s5m.c            |    2 +-
+>  include/linux/mfd/samsung/core.h |    3 ++-
+>  5 files changed, 29 insertions(+), 14 deletions(-)
 
-Does the untested patch below cure the issue?
+The MFD parts look fine to me. I just need the Acks from the other
+maintainers before I can apply it:
 
-Thanks,
+Acked-by: Lee Jones <lee.jones@lianro.org>
 
-	tglx
-
-Index: linux-2.6/drivers/mfd/rtsx_pcr.c
-===================================================================
---- linux-2.6.orig/drivers/mfd/rtsx_pcr.c
-+++ linux-2.6/drivers/mfd/rtsx_pcr.c
-@@ -1227,15 +1227,15 @@ static void rtsx_pci_remove(struct pci_d
- 	struct rtsx_pcr *pcr = handle->pcr;
- 
- 	pcr->remove_pci = true;
-+	free_irq(pcr->irq, (void *)pcr);
- 
--	cancel_delayed_work(&pcr->carddet_work);
--	cancel_delayed_work(&pcr->idle_work);
-+	cancel_delayed_work_sync(&pcr->carddet_work);
-+	cancel_delayed_work_sync(&pcr->idle_work);
- 
- 	mfd_remove_devices(&pcidev->dev);
- 
- 	dma_free_coherent(&(pcr->pci->dev), RTSX_RESV_BUF_LEN,
- 			pcr->rtsx_resv_buf, pcr->rtsx_resv_buf_addr);
--	free_irq(pcr->irq, (void *)pcr);
- 	if (pcr->msi_en)
- 		pci_disable_msi(pcr->pci);
- 	iounmap(pcr->remap_addr);
- 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
