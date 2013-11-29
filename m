@@ -1,101 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111Ab3K2IsQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 03:48:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29862 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750985Ab3K2IsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 03:48:12 -0500
-Date: Fri, 29 Nov 2013 16:47:17 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        bp@alien8.de, greg@kroah.com, toshi.kani@hp.com
-Subject: Re: [PATCH v4 08/12] efi: only print saved efi runtime maps instead
- of all memmap ranges for kexec
-Message-ID: <20131129084717.GE4186@dhcp-16-126.nay.redhat.com>
-References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
- <1385445477-9665-9-git-send-email-dyoung@redhat.com>
- <20131127102701.GD18170@console-pimps.org>
+	id S1752235Ab3K2Its (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 03:49:48 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:19090
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751016Ab3K2Itq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 03:49:46 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zz1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h17326ah1de097h186068hz2dh109h2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216h22d0h2336hbe9i1155h)
+From: Cristian Stoica <cristian.stoica@freescale.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+CC: "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] crypto: remove unnecessary includes
+Thread-Topic: [PATCH] crypto: remove unnecessary includes
+Thread-Index: AQHO7F2WLzAy+Wj4w0mRxS12fEJIVJo7dqIAgABwEFA=
+Date: Fri, 29 Nov 2013 08:49:42 +0000
+Message-ID: <1628287275CAA9409F1E349DEF3C6CCE77CB99@039-SN2MPN1-012.039d.mgd.msft.net>
+References: <1385658987-16012-1-git-send-email-cristian.stoica@freescale.com>
+ <20131129020657.GA5650@gondor.apana.org.au>
+In-Reply-To: <20131129020657.GA5650@gondor.apana.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.171.73.198]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131127102701.GD18170@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/13 at 10:27am, Matt Fleming wrote:
-> On Tue, 26 Nov, at 01:57:53PM, Dave Young wrote:
-> > For kexec/kdump kernel efi runtime mappings are saved, printing original whole
-> > memmap ranges does not make sense anymore. So introduce a new function to only
-> > print runtime maps in case kexec/kdump kernel is used.
-> > 
-> > Signed-off-by: Dave Young <dyoung@redhat.com>
-> > ---
-> >  arch/x86/platform/efi/efi.c | 23 ++++++++++++++++++++++-
-> >  1 file changed, 22 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-> > index fafeb40..c65b0b8 100644
-> > --- a/arch/x86/platform/efi/efi.c
-> > +++ b/arch/x86/platform/efi/efi.c
-> > @@ -430,6 +430,24 @@ int __init efi_memblock_x86_reserve_range(void)
-> >  	return 0;
-> >  }
-> >  
-> > +/* for kexec kernel runtime maps are passed in setup_data */
-> > +static void __init print_saved_runtime_map(void)
-> > +{
-> > +#ifdef EFI_DEBUG
-> > +	int i;
-> > +	efi_memory_desc_t *md;
-> > +
-> > +	for (i = 0; i < nr_efi_runtime_map; i++) {
-> > +		md = esdata->map + i;
-> > +		pr_info("mem%02u: type=%u, attr=0x%llx, "
-> > +			"range=[0x%016llx-0x%016llx) (%lluMB)\n",
-> > +			i, md->type, md->attribute, md->phys_addr,
-> > +			md->phys_addr + (md->num_pages << EFI_PAGE_SHIFT),
-> > +			(md->num_pages >> (20 - EFI_PAGE_SHIFT)));
-> > +	}
-> > +#endif  /*  EFI_DEBUG  */
-> > +}
-> > +
-> >  static void __init print_efi_memmap(void)
-> >  {
-> >  #ifdef EFI_DEBUG
-> > @@ -782,7 +800,10 @@ void __init efi_init(void)
-> >  		x86_platform.set_wallclock = efi_set_rtc_mmss;
-> >  	}
-> >  #endif
-> > -	print_efi_memmap();
-> > +	if (esdata)
-> > +		print_saved_runtime_map();
-> > +	else
-> > +		print_efi_memmap();
-> >  }
-> 
-> Heh, you can probably already guess what I'm going to say here...
-> 
-> How about using a single function to dump the memory ranges irrespective
-> of whether the memory map comes from 'memmap' or 'esdata'? e.g.
-> something along the lines of,
-> 
-> 	if (esdata)
-> 		print_efi_memmap(esdata->map, nr_efi_runtime_map,
-> 				 sizeof(esdata->map[0]));
-> 	else
-> 		print_efi_memmap(memmap.map, memmap.nr_map,
-> 				 memmap.desc_size);
-> 
-> ?
+>From what I could see there is nothing from those includes that is used inside authenc.c.
+The build passes without them.
 
-Yes, looks better, will do
+Cristian S.
 
-Thanks for review
-Dave
+> > diff --git a/crypto/authenc.c b/crypto/authenc.c
+> > index 1875e70..7d4bfaa 100644
+> > --- a/crypto/authenc.c
+> > +++ b/crypto/authenc.c
+> > @@ -17,11 +17,8 @@
+> >  #include <crypto/scatterwalk.h>
+> >  #include <linux/err.h>
+> >  #include <linux/init.h>
+> > -#include <linux/kernel.h>
+> >  #include <linux/module.h>
+> >  #include <linux/rtnetlink.h>
+> > -#include <linux/slab.h>
+> > -#include <linux/spinlock.h>
+> >
+> >  typedef u8 *(*authenc_ahash_t)(struct aead_request *req, unsigned int
+> flags);
+> 
+> Why are these includes unnecessary?
+> --
+> Email: Herbert Xu <herbert@gondor.apana.org.au>
+> Home Page: http://gondor.apana.org.au/~herbert/
+> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+
+
