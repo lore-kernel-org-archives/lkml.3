@@ -1,81 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab3K2GRR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 01:17:17 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:64357 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296Ab3K2GRP (ORCPT
+	id S1751769Ab3K2Gkj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 01:40:39 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:28203 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898Ab3K2Gkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 01:17:15 -0500
+	Fri, 29 Nov 2013 01:40:37 -0500
+Message-ID: <529836CD.1080900@huawei.com>
+Date: Fri, 29 Nov 2013 14:40:13 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAHp75VcHa7cxAt_utwMVp7j+YeKcqa0_N5B=7-ZmTMD_6AV1Lw@mail.gmail.com>
-References: <1385628388-23827-1-git-send-email-acourbot@nvidia.com>
-	<CAHp75VcHa7cxAt_utwMVp7j+YeKcqa0_N5B=7-ZmTMD_6AV1Lw@mail.gmail.com>
-Date: Fri, 29 Nov 2013 08:17:15 +0200
-Message-ID: <CAHp75VcsYjj0_QKSeHFiFjrA92uZWdJPs5pLrzFK_HGM1ehUDw@mail.gmail.com>
-Subject: Re: [PATCH] gpio: better lookup method for platform GPIOs
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+CC: <containers@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, <gaofeng@cn.fujitsu.com>,
+        David Miller <davem@davemloft.net>, Li Zefan <lizefan@huawei.com>,
+        Huang Qiang <h.huangqiang@huawei.com>,
+        Wengmeiling <wengmeiling.weng@huawei.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Subject: Re: Q: use vlan in container
+References: <5296E003.80804@huawei.com> <20131129050549.GB8830@sergelap>
+In-Reply-To: <20131129050549.GB8830@sergelap>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Nov 28, 2013 at 10:46 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-
-One missed, but not least, thing.
-
->> +static struct gpiod_lookup_table *gpiod_find_lookup_table(struct device *dev)
->>  {
->>         const char *dev_id = dev ? dev_name(dev) : NULL;
->> -       struct gpio_desc *desc = ERR_PTR(-ENODEV);
->> -       unsigned int match, best = 0;
->> -       struct gpiod_lookup *p;
->> +       struct gpiod_lookup_table *table;
+On 2013/11/29 13:05, Serge Hallyn wrote:
+> Quoting Libo Chen (clbchenlibo.chen@huawei.com):
+>> Hello LXC experts,
 >>
->>         mutex_lock(&gpio_lookup_lock);
+>> 	I meet a problem. When using vlan as network device in suse11 system container,
+>> I can not use halt to stop this container. It hung on "eth0 is still used from interfaces eth0" in cycle.
 >>
->> -       list_for_each_entry(p, &gpio_lookup_list, list) {
->> -               match = 0;
->> +       list_for_each_entry(table, &gpio_lookup_list, list) {
-
-[]
-
->> +               if (dev_id != table->dev_id)
->> +                       continue;
+>> The config file:
 >>
->> -                       match += 2;
->> -               }
->> +               return table;
->
-> What  about
->
-> if (dev_id == table->dev_id)
->  return table;
->
-> ?
-
-And unlock mutex, of course! It seems you missed this in the first place.
-
->
->> +       }
+>> lxc.network.type = vlan
+>> lxc.network.flags = up
+>> lxc.network.link = eth0
+>> lxc.network.name = eth0
+>> lxc.network.vlan.id = 1301
+>> lxc.network.ipv4 = 128.5.131.100/24
 >>
->> -               if (p->con_id) {
->> -                       if (!con_id || strcmp(p->con_id, con_id))
->> -                               continue;
->> +       mutex_unlock(&gpio_lookup_lock);
 >>
->> -                       match += 1;
->> -               }
->> +       return NULL;
->> +}
+>> The reason is in the shell command /sbin/ifdown, see below:
+>>
+>> ######################################################################
+>> # Shut down depending interfaces
+>> #
+>> # Check if there are interfaces which depend on this interface. If yes these
+>> # have to be shut down first.
+>> # For example these might be bonding or vlan interfaces. Note that we don't
+>> # catch all types of depending interfaces currently. See function
+>> # 'get_depending_ifaces' in file 'functions' for details.
+>> #
+>> test "$SCRIPTNAME" = ifdown && DEP_IFACES=`get_depending_ifaces $INTERFACE`
+>> if [ "$?" = 0 -a "$NODEPS" != yes ] ; then
+>>         message "`printf "    %-9s is still used from interfaces %s" \
+>>                          $INTERFACE "$DEP_IFACES"`"
+>>         for DI in $DEP_IFACES; do
+> 
+> Should the proper fix be to fix this script so that it doesn't call
+> ifdown recursively if $DI = $INTERFACE ?
 
--- 
-With Best Regards,
-Andy Shevchenko
+Hi Serge,
+
+yes, I had try this way before as below:
+
+        for DI in $DEP_IFACES; do
+	         if [ "$DI" != "$INTERFACE" ] ; then
+                       ifdown $DI -o $OPTIONS
+	         fi
+        done
+
+It works well, but I have no idea it is safe enough and no side effects?
+
+Thanks,
+Libo
+
+> 
+>>                 ifdown $DI -o $OPTIONS
+>>         done
+>>
+>>         message "`printf "    %-9s now going down itself" $INTERFACE`"
+>>         # check if iface is (still) avaliable
+>>         # [bonding master may go down itself
+>>         #  while the last slave gets removed]
+>>         if ! is_iface_available $INTERFACE; then
+>>                 exit $R_SUCCESS
+>>         fi
+>> fi
+>>
+>>
+>> $DEP_IFACES is also eth0 in this scene, so ifdown will call ifdown again and again.
+>>
+>> if we set lxc.network.name = eth1, it will be ok, so can we add a judgment to make
+>> lxc.network.link and lxc.network.name are not equal in lxc-start command.
+>>
+>> simple implement like:
+>>
+>> 	if [ lxc.network.type == vlan ] ; then
+>> 		if [ lxc.network.link == lxc.network.name ] ; then
+>> 			return false
+>> 		fi
+>> 	fi
+>>
+>>
+>> Is it reasonable?  or any other way to achieve this?
+>>
+>>
+>>
+> 
+> .
+> 
+
+
