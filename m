@@ -1,116 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318Ab3K2AtA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 19:49:00 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:58599 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410Ab3K2As4 (ORCPT
+	id S1752552Ab3K2AyS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 19:54:18 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:36502 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329Ab3K2AyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 19:48:56 -0500
-X-AuditID: 9c93017d-b7b24ae000002834-8c-5297e4713eba
-From: Namhyung Kim <namhyung@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Melo <acme@ghostprotocols.net>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH 6/8] perf sched: Introduce timehist command
-References: <1384806771-2945-1-git-send-email-dsahern@gmail.com>
-	<1384806771-2945-7-git-send-email-dsahern@gmail.com>
-	<CAM9d7cg4t_HD-225GawXnUHXG1D-f91ZDS_xsfy19baHSM624w@mail.gmail.com>
-	<529768D3.1000507@gmail.com>
-Date: Fri, 29 Nov 2013 09:48:49 +0900
-In-Reply-To: <529768D3.1000507@gmail.com> (David Ahern's message of "Thu, 28
-	Nov 2013 09:01:23 -0700")
-Message-ID: <87k3fsowwe.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 28 Nov 2013 19:54:15 -0500
+Date: Fri, 29 Nov 2013 11:54:07 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Brian Austin <brian.austin@cirrus.com>
+Subject: linux-next: build failure after merge of the sound-asoc tree
+Message-Id: <20131129115407.53b288138930db24718cac49@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__29_Nov_2013_11_54_07_+1100_MsFQr_7cZ8m8EKB8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+--Signature=_Fri__29_Nov_2013_11_54_07_+1100_MsFQr_7cZ8m8EKB8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, 28 Nov 2013 09:01:23 -0700, David Ahern wrote:
-> On 11/28/13, 8:38 AM, Namhyung Kim wrote:
->> On Tue, Nov 19, 2013 at 5:32 AM, David Ahern <dsahern@gmail.com> wrote:
->>
->> [SNIP]
->>> +static bool is_idle_sample(struct perf_sample *sample,
->>> +                          struct perf_evsel *evsel,
->>> +                          struct machine *machine)
->>> +{
->>> +       struct thread *thread;
->>> +       struct callchain_cursor *cursor = &callchain_cursor;
->>> +       struct callchain_cursor_node *node;
->>> +       struct addr_location al;
->>> +       int iter = 5;
->>
->> Shouldn't it be sched->max_stack somehow?
->
-> max_stack is used to dump callstack to the user. In this case we are
-> walking the stack looking for an idle symbol.
+Hi all,
 
-Do we really need to look up the callchain to find out an idle thread?
+After merging the sound-asoc tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-  $ perf sched script | grep swapper | head
-         swapper     0 [001] 4294177.326996: sched:sched_switch: prev_comm=swapper/1 prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=Xorg next_pid=1094 next_prio=120
-         swapper     0 [010] 4294177.327019: sched:sched_switch: prev_comm=swapper/10 prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=perf next_pid=13902 next_prio=120
-            perf 13901 [002] 4294177.327074: sched:sched_switch: prev_comm=perf prev_pid=13901 prev_prio=120 prev_state=S ==> next_comm=swapper/2 next_pid=0 next_prio=120
-         swapper     0 [004] 4294177.327096: sched:sched_switch: prev_comm=swapper/4 prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=synergys next_pid=1521 next_prio=120
-         swapper     0 [000] 4294177.327102: sched:sched_switch: prev_comm=swapper/0 prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=gnome-terminal next_pid=2392 next_prio=120
-            Xorg  1094 [001] 4294177.327112: sched:sched_switch: prev_comm=Xorg prev_pid=1094 prev_prio=120 prev_state=S ==> next_comm=swapper/1 next_pid=0 next_prio=120
-         swapper     0 [007] 4294177.327122: sched:sched_switch: prev_comm=swapper/7 prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=perf next_pid=13902 next_prio=120
-    migration/10    58 [010] 4294177.327124: sched:sched_switch: prev_comm=migration/10 prev_pid=58 prev_prio=0 prev_state=S ==> next_comm=swapper/10 next_pid=0 next_prio=120
-        synergys  1521 [004] 4294177.327144: sched:sched_switch: prev_comm=synergys prev_pid=1521 prev_prio=120 prev_state=S ==> next_comm=swapper/4 next_pid=0 next_prio=120
-  gnome-terminal  2392 [000] 4294177.327286: sched:sched_switch: prev_comm=gnome-terminal prev_pid=2392 prev_prio=120 prev_state=S ==> next_comm=swapper/0 next_pid=0 next_prio=120
+sound/soc/codecs/cs42l52.c: In function 'cs42l52_i2c_probe':
+sound/soc/codecs/cs42l52.c:1235:10: error: 'struct cs42l52_platform_data' h=
+as no member named 'chgfreq_divisor'
+     pdata->chgfreq_divisor =3D val32;
+          ^
 
-It seems every idle/swapper thread for each cpu has a pid of 0.
+Caused by commit 391fc59db876 ("ASoC: cs42l52: Add devicetree support for
+CS42L52").
 
->
->>
->>> +
->>> +       /* pid 0 == swapper == idle task */
->>> +       if (sample->pid == 0)
->>> +               return true;
->>> +
->>> +       /* want main thread for process - has maps */
->>> +       thread = machine__findnew_thread(machine, sample->pid, sample->pid);
->>> +       if (thread == NULL) {
->>> +               pr_debug("Failed to get thread for pid %d.\n", sample->pid);
->>> +               return false;
->>> +       }
->>> +
->>> +       if (!symbol_conf.use_callchain || sample->callchain == NULL)
->>> +               return false;
->>> +
->>> +       if (machine__resolve_callchain(machine, evsel, thread,
->>> +                                       sample, NULL, &al, PERF_MAX_STACK_DEPTH) != 0) {
->>> +               if (verbose)
->>> +                       error("Failed to resolve callchain. Skipping\n");
->>> +
->>> +               return false;
->>> +       }
->>
->> I think this callchain resolving logic should be moved to the
->> beginning of perf_hist__process_sample() like other commands do.  It's
->> not for idle threads only.
->
-> I'll see what can be done.
->
->>
->> And it also needs to pass sched->max_stack.
->
-> Per above, max_stack has a different purpose
+I have used the sound-asoc tree from next-20131128 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Hmm.. anyway I don't think we need to pass PERF_MAX_STACK_DEPTH for
-machine__resolve_callchain() as we'll only look up to max_stack entries.
+--Signature=_Fri__29_Nov_2013_11_54_07_+1100_MsFQr_7cZ8m8EKB8
+Content-Type: application/pgp-signature
 
-Thanks,
-Namhyung
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSl+WzAAoJEMDTa8Ir7ZwV9KcP/i/VZIqkOYYv3+jn0Sd6fH1A
+qnsyZwv7Hiwty20ZijKo14jH8yvl95egcY+Su3lhcxW4c+MMs+6/C5bOQ6jINDhQ
+16pg0vaoNr4tfyP5L9h6pWuRZJB9/nRJ3Q9QJWIqIRSn7ztn+lF4rp7lCZRS1Mzq
+BlQDiXghMp2K3R/f3YvQy5S0QOXrsXU8senAUp1pVp3ZY8/AB9ZoFSNAjUMdcgb/
+lsB9K0I8xj4QBW9hapTlCtILn5+y1Vh+x6R3OtheptXsecBhcplalqB+JXuF9Ctu
+92smfGVH4eccbA6s8EvoeM6PQHoj4bXWafIUroSIcTZFaZAjxjJvo14PjmLRPy/f
+i2yKAlzVpg3Y3K9wmc9SHcwU7jjDsfqX9FAXzBSfYk3vRL0QL2X6hw8sYmAj1pO8
+UP8er6DqQRzTy4ntU9YmCCNn4cM5hTRyXxz2Q7CsGOQFJ/hRheuLsxGx8yuOle6D
+NmMpw7z7qGYJKokKvkkaBOGdOKrt9ToC/8vL9Vx3TJ/xNGh5DgH6QlNeRY2KZDGm
+H40z2jzQDUEiSKgIopHrwzHcMj7vfIRtlx06Ji5KVtYM28kuF8wbzZFz6IsNz3OA
+BpWsDNwv/42WpJv8/IhmAiT9TpF3FRLdyRcHfD1NnbIQ1OXBtCWkRYN/m4z+Yjge
+UYLq5N3MuOe1QQ+2Dos2
+=xSSo
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__29_Nov_2013_11_54_07_+1100_MsFQr_7cZ8m8EKB8--
