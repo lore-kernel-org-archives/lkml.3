@@ -1,72 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025Ab3K2CGc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 21:06:32 -0500
-Received: from mga03.intel.com ([143.182.124.21]:9977 "EHLO mga03.intel.com"
+	id S1753435Ab3K2CGt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 21:06:49 -0500
+Received: from mga01.intel.com ([192.55.52.88]:46032 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752003Ab3K2CG3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 21:06:29 -0500
+	id S1753117Ab3K2CGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 21:06:46 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,795,1378882800"; 
-   d="scan'208";a="435851101"
-From: "Ma, Xindong" <xindong.ma@intel.com>
-To: Oleg Nesterov <oleg@redhat.com>, Michal Hocko <mhocko@suse.cz>
-CC: William Dauchy <wdauchy@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>, azurIt <azurit@pobox.sk>,
-        Sameer Nanda <snanda@chromium.org>
-Subject: RE: [PATCH] Fix race between oom kill and task exit
-Thread-Topic: [PATCH] Fix race between oom kill and task exit
-Thread-Index: AQHO7GkIAtgpkv7roka7vtUbU5xUepo7dWXA
-Date: Fri, 29 Nov 2013 02:06:25 +0000
-Message-ID: <3917C05D9F83184EAA45CE249FF1B1DD025310D2@SHSMSX103.ccr.corp.intel.com>
-References: <3917C05D9F83184EAA45CE249FF1B1DD0253093A@SHSMSX103.ccr.corp.intel.com>
- <20131128063505.GN3556@cmpxchg.org>
- <CAJ75kXZXxCMgf8=pghUWf=W9EKf3Z4nzKKy=CAn+7keVF_DCRA@mail.gmail.com>
- <20131128120018.GL2761@dhcp22.suse.cz> <20131128183830.GD20740@redhat.com>
-In-Reply-To: <20131128183830.GD20740@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+   d="scan'208";a="441808296"
+Message-ID: <5297F3FB.6030808@intel.com>
+Date: Fri, 29 Nov 2013 09:55:07 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Aaron Lu <aaron.lu@intel.com>, Toshi Kani <toshi.kani@hp.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-ide@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 1/3] ACPI / bind: Rework struct acpi_bus_type
+References: <4501334.ovACrGogrl@vostro.rjw.lan> <2273591.1tQV675JFy@vostro.rjw.lan>
+In-Reply-To: <2273591.1tQV675JFy@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Oleg Nesterov [mailto:oleg@redhat.com]
-> Sent: Friday, November 29, 2013 2:39 AM
-> To: Michal Hocko
-> Cc: William Dauchy; Johannes Weiner; Ma, Xindong;
-> akpm@linux-foundation.org; rientjes@google.com; rusty@rustcorp.com.au;
-> linux-mm@kvack.org; linux-kernel@vger.kernel.org; Peter Zijlstra;
-> gregkh@linuxfoundation.org; Tu, Xiaobing; azurIt; Sameer Nanda
-> Subject: Re: [PATCH] Fix race between oom kill and task exit
+On 2013年11月29日 08:37, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> On 11/28, Michal Hocko wrote:
-> >
-> > They are both trying to solve the same issue. Neither of them is
-> > optimal unfortunately.
-> 
-> yes, but this one doesn't look right.
-> 
-> > Oleg said he would look into this and I have seen some patches but
-> > didn't geto check them.
-> 
-> Only preparations so far.
-> 
-> Oleg.
+> Replace the .find_device function pointer in struct acpi_bus_type
+> with a new one, .find_copmanion, that is supposed to point to a
+-------------------------^
+A typo
 
-I was not aware there's a long story for this issue. I hit this issue a lot of times during stress test and root caused it. After applying my patch, I did extensive test on 5 machines for a long time, it does not reproduced anymore so I submitted the patch.
+> function returning struct acpi_device pointer (instead of an int)
+> and takes one argument (instead of two).  This way the role of
+> this callback is more clear and the implementation of it can
+> be more straightforward.
+> 
+> Update all of the users of struct acpi_bus_type (PCI, PNP/ACPI and
+> USB) to reflect the structure change.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/acpi/glue.c         |   12 +++++++-----
+>  drivers/pci/pci-acpi.c      |   12 +++---------
+>  drivers/pnp/pnpacpi/core.c  |   19 +++++--------------
+>  drivers/usb/core/usb-acpi.c |   40 ++++++++++++++++++++--------------------
+>  include/acpi/acpi_bus.h     |    2 +-
+>  5 files changed, 36 insertions(+), 49 deletions(-)
+> 
+> Index: linux-pm/include/acpi/acpi_bus.h
+> ===================================================================
+> --- linux-pm.orig/include/acpi/acpi_bus.h
+> +++ linux-pm/include/acpi/acpi_bus.h
+> @@ -414,7 +414,7 @@ struct acpi_bus_type {
+>  	struct list_head list;
+>  	const char *name;
+>  	bool (*match)(struct device *dev);
+> -	int (*find_device) (struct device *, acpi_handle *);
+> +	struct acpi_device * (*find_companion)(struct device *);
+>  	void (*setup)(struct device *);
+>  	void (*cleanup)(struct device *);
+>  };
+> Index: linux-pm/drivers/acpi/glue.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/glue.c
+> +++ linux-pm/drivers/acpi/glue.c
+> @@ -37,7 +37,7 @@ int register_acpi_bus_type(struct acpi_b
+>  {
+>  	if (acpi_disabled)
+>  		return -ENODEV;
+> -	if (type && type->match && type->find_device) {
+> +	if (type && type->match && type->find_companion) {
+>  		down_write(&bus_type_sem);
+>  		list_add_tail(&type->list, &bus_type_list);
+>  		up_write(&bus_type_sem);
+> @@ -302,17 +302,19 @@ EXPORT_SYMBOL_GPL(acpi_unbind_one);
+>  static int acpi_platform_notify(struct device *dev)
+>  {
+>  	struct acpi_bus_type *type = acpi_get_bus_type(dev);
+> -	acpi_handle handle;
+>  	int ret;
+>  
+>  	ret = acpi_bind_one(dev, NULL);
+>  	if (ret && type) {
+> -		ret = type->find_device(dev, &handle);
+> -		if (ret) {
+> +		struct acpi_device *adev;
+> +
+> +		adev = type->find_companion(dev);
+> +		if (!adev) {
+>  			DBG("Unable to get handle for %s\n", dev_name(dev));
+> +			ret = -ENODEV;
+>  			goto out;
+>  		}
+> -		ret = acpi_bind_one(dev, handle);
+> +		ret = acpi_bind_one(dev, adev->handle);
+>  		if (ret)
+>  			goto out;
+>  	}
+> Index: linux-pm/drivers/pci/pci-acpi.c
+> ===================================================================
+> --- linux-pm.orig/drivers/pci/pci-acpi.c
+> +++ linux-pm/drivers/pci/pci-acpi.c
+> @@ -306,10 +306,9 @@ void acpi_pci_remove_bus(struct pci_bus
+>  }
+>  
+>  /* ACPI bus type */
+> -static int acpi_pci_find_device(struct device *dev, acpi_handle *handle)
+> +static struct acpi_device *acpi_pci_find_companion(struct device *dev)
+>  {
+>  	struct pci_dev *pci_dev = to_pci_dev(dev);
+> -	struct acpi_device *adev;
+>  	bool check_children;
+>  	u64 addr;
+>  
+> @@ -322,13 +321,8 @@ static int acpi_pci_find_device(struct d
+>  			|| pci_dev->hdr_type == PCI_HEADER_TYPE_CARDBUS;
+>  	/* Please ref to ACPI spec for the syntax of _ADR */
+>  	addr = (PCI_SLOT(pci_dev->devfn) << 16) | PCI_FUNC(pci_dev->devfn);
+> -	adev = acpi_find_child_device(ACPI_COMPANION(dev->parent), addr,
+> +	return acpi_find_child_device(ACPI_COMPANION(dev->parent), addr,
+>  				      check_children);
+> -	if (adev) {
+> -		*handle = adev->handle;
+> -		return 0;
+> -	}
+> -	return -ENODEV;
+>  }
+>  
+>  static void pci_acpi_setup(struct device *dev)
+> @@ -368,7 +362,7 @@ static bool pci_acpi_bus_match(struct de
+>  static struct acpi_bus_type acpi_pci_bus = {
+>  	.name = "PCI",
+>  	.match = pci_acpi_bus_match,
+> -	.find_device = acpi_pci_find_device,
+> +	.find_companion = acpi_pci_find_companion,
+>  	.setup = pci_acpi_setup,
+>  	.cleanup = pci_acpi_cleanup,
+>  };
+> Index: linux-pm/drivers/pnp/pnpacpi/core.c
+> ===================================================================
+> --- linux-pm.orig/drivers/pnp/pnpacpi/core.c
+> +++ linux-pm/drivers/pnp/pnpacpi/core.c
+> @@ -329,20 +329,11 @@ static int __init acpi_pnp_match(struct
+>  	    && compare_pnp_id(pnp->id, acpi_device_hid(acpi));
+>  }
+>  
+> -static int __init acpi_pnp_find_device(struct device *dev, acpi_handle * handle)
+> +static struct acpi_device * __init acpi_pnp_find_companion(struct device *dev)
+>  {
+> -	struct device *adev;
+> -	struct acpi_device *acpi;
+> -
+> -	adev = bus_find_device(&acpi_bus_type, NULL,
+> -			       to_pnp_dev(dev), acpi_pnp_match);
+> -	if (!adev)
+> -		return -ENODEV;
+> -
+> -	acpi = to_acpi_device(adev);
+> -	*handle = acpi->handle;
+> -	put_device(adev);
+> -	return 0;
+> +	dev = bus_find_device(&acpi_bus_type, NULL, to_pnp_dev(dev),
+> +			      acpi_pnp_match);
 
-I will do more research on this issue.
+Why remove put_device here?
+bus_find_device() increase dev's reference count when a dev is matched.
+
+> +	return dev ? to_acpi_device(dev) : NULL;
+>  }
+>  
+>  /* complete initialization of a PNPACPI device includes having
+> @@ -356,7 +347,7 @@ static bool acpi_pnp_bus_match(struct de
+>  static struct acpi_bus_type __initdata acpi_pnp_bus = {
+>  	.name	     = "PNP",
+>  	.match	     = acpi_pnp_bus_match,
+> -	.find_device = acpi_pnp_find_device,
+> +	.find_companion = acpi_pnp_find_companion,
+>  };
+>  
+>  int pnpacpi_disabled __initdata;
+> Index: linux-pm/drivers/usb/core/usb-acpi.c
+> ===================================================================
+> --- linux-pm.orig/drivers/usb/core/usb-acpi.c
+> +++ linux-pm/drivers/usb/core/usb-acpi.c
+> @@ -127,7 +127,7 @@ out:
+>  	return ret;
+>  }
+>  
+> -static int usb_acpi_find_device(struct device *dev, acpi_handle *handle)
+> +static struct acpi_device *usb_acpi_find_companion(struct device *dev)
+>  {
+>  	struct usb_device *udev;
+>  	acpi_handle *parent_handle;
+> @@ -169,16 +169,15 @@ static int usb_acpi_find_device(struct d
+>  				break;
+>  			}
+>  
+> -			return -ENODEV;
+> +			return NULL;
+>  		}
+>  
+>  		/* root hub's parent is the usb hcd. */
+> -		parent_handle = ACPI_HANDLE(dev->parent);
+> -		*handle = acpi_get_child(parent_handle, udev->portnum);
+> -		if (!*handle)
+> -			return -ENODEV;
+> -		return 0;
+> +		return acpi_find_child_device(ACPI_COMPANION(dev->parent),
+> +					      udev->portnum, false);
+>  	} else if (is_usb_port(dev)) {
+> +		struct acpi_device *adev = NULL;
+> +
+>  		sscanf(dev_name(dev), "port%d", &port_num);
+>  		/* Get the struct usb_device point of port's hub */
+>  		udev = to_usb_device(dev->parent->parent);
+> @@ -194,26 +193,27 @@ static int usb_acpi_find_device(struct d
+>  
+>  			raw_port_num = usb_hcd_find_raw_port_number(hcd,
+>  				port_num);
+> -			*handle = acpi_get_child(ACPI_HANDLE(&udev->dev),
+> -				raw_port_num);
+> -			if (!*handle)
+> -				return -ENODEV;
+> +			adev = acpi_find_child_device(ACPI_COMPANION(&udev->dev),
+> +						      raw_port_num, false);
+> +			if (!adev)
+> +				return NULL;
+>  		} else {
+>  			parent_handle =
+>  				usb_get_hub_port_acpi_handle(udev->parent,
+>  				udev->portnum);
+>  			if (!parent_handle)
+> -				return -ENODEV;
+> +				return NULL;
+>  
+> -			*handle = acpi_get_child(parent_handle,	port_num);
+> -			if (!*handle)
+> -				return -ENODEV;
+> +			acpi_bus_get_device(parent_handle, &adev);
+> +			adev = acpi_find_child_device(adev, port_num, false);
+> +			if (!adev)
+> +				return NULL;
+>  		}
+> -		usb_acpi_check_port_connect_type(udev, *handle, port_num);
+> -	} else
+> -		return -ENODEV;
+> +		usb_acpi_check_port_connect_type(udev, adev->handle, port_num);
+> +		return adev;
+> +	}
+>  
+> -	return 0;
+> +	return NULL;
+>  }
+>  
+>  static bool usb_acpi_bus_match(struct device *dev)
+> @@ -224,7 +224,7 @@ static bool usb_acpi_bus_match(struct de
+>  static struct acpi_bus_type usb_acpi_bus = {
+>  	.name = "USB",
+>  	.match = usb_acpi_bus_match,
+> -	.find_device = usb_acpi_find_device,
+> +	.find_companion = usb_acpi_find_companion,
+>  };
+>  
+>  int usb_acpi_register(void)
+> 
+
+
+-- 
+Best regards
+Tianyu Lan
