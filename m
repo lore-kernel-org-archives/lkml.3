@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab3K2Sew (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 13:34:52 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:50006 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543Ab3K2Ser (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 13:34:47 -0500
-Date: Fri, 29 Nov 2013 15:34:39 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 01/29] perf tools: Remove stackprotector feature check
-Message-ID: <20131129183439.GB9876@ghostprotocols.net>
-References: <1385638408-23519-1-git-send-email-jolsa@redhat.com>
- <1385638408-23519-2-git-send-email-jolsa@redhat.com>
+	id S1754446Ab3K2Sfa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 13:35:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59694 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754217Ab3K2SfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 13:35:24 -0500
+Date: Fri, 29 Nov 2013 19:35:58 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH] Add a text_poke syscall v2
+Message-ID: <20131129183558.GA9803@redhat.com>
+References: <1385426236-14960-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1385638408-23519-2-git-send-email-jolsa@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1385426236-14960-1-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Nov 28, 2013 at 12:33:00PM +0100, Jiri Olsa escreveu:
-> We use -fstack-protector-all option to enable stack protecting
-> for all available functions. There's no reason for enabling
-> -Wstack-protector to get warning for unprotected functions.
-> 
-> Removing stackprotector feature check which was used to
-> enable the -Wstack-protector option.
+On 11/25, Andi Kleen wrote:
+>
+> +	err = get_user_pages_fast((unsigned long)addr, npages, 1, pages);
+> +	if (err < 0)
+> +		return err;
+> +	if (err != npages) {
+> +		err = -EFAULT;
+> +		goto out;
+> +	}
+> +	err = 0;
+> +	mutex_lock(&text_mutex);
+> +	bp_target_mm = current->mm;
+> +	bp_int3_addr = (u8 *)addr + 1;
+> +	__text_poke_bp(pages,
+> +		       (unsigned long)addr & ~PAGE_MASK,
+> +		       insn, len, handler);
 
-Doesn't applies to my perf/core branch.
+We are going to change this user page, it seems that we need
+set_page_dirty() ?
 
-- Arnaldo
+Andi, et al. I am going to discuss the things I do not really
+understand, probably this can't make any sense, but...
+
+I am wondering if sys_text_poke() can do something like
+
+	down_write(mmap_sem);
+
+	get_user_pages(write, page, vma);
+
+	ptep = page_check_address(...);
+
+	pte = ptep_clear_flush(ptep);
+
+	copy-opcode-to-page;
+
+	pte = pte_mkdirty(pte);
+	set_pte_at(ptep, pte);
+
+	pte_unmap_unlock(...);
+	up_write(mmap_sem);
+
+?
+
+Oleg.
+
