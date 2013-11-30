@@ -1,192 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744Ab3K3XGB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 18:06:01 -0500
-Received: from mail-yh0-f43.google.com ([209.85.213.43]:58789 "EHLO
-	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580Ab3K3XF4 convert rfc822-to-8bit (ORCPT
+	id S1751426Ab3K3XPf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 18:15:35 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47132 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196Ab3K3XPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 18:05:56 -0500
-Content-Type: text/plain; charset="utf-8"
+	Sat, 30 Nov 2013 18:15:33 -0500
+Date: Sun, 1 Dec 2013 00:15:32 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: sre@debian.org, sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>
+Subject: device-tree based boot on linux-n900 branch
+Message-ID: <20131130231532.GA6688@amd.pavel.ucw.cz>
+References: <20131127125149.GA9389@amd.pavel.ucw.cz>
+ <20131127191320.GA21350@amd.pavel.ucw.cz>
+ <201311272044.51906@pali>
+ <201311300058.23463@pali>
+ <20131130172938.GA5194@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Boris BREZILLON <b.brezillon@overkiz.com>,
-        "Nicolas Ferre" <nicolas.ferre@atmel.com>,
-        "Russell King" <linux@arm.linux.org.uk>, "Felipe Balbi" <balbi@ti.com>,
-        "Jason Cooper" <jason@lakedaemon.net>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1385642184-6467-1-git-send-email-b.brezillon@overkiz.com>
-Cc: "Boris BREZILLON" <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
-References: <1385642184-6467-1-git-send-email-b.brezillon@overkiz.com>
-Message-ID: <20131130230549.16819.84161@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v6 00/16] ARM: at91: move to common clk framework
-Date: Sat, 30 Nov 2013 15:05:49 -0800
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131130172938.GA5194@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Boris BREZILLON (2013-11-28 04:36:24)
-> Hello,
+On Sat 2013-11-30 18:29:38, Pavel Machek wrote:
+> Hi!
 > 
-> This patch series is the 5th version of the at91 clk implementations
-> using the Common Clk Framework.
+> > > > > Hi, I already have this patch prepared for 3.13.
+> > > > 
+> > > > Cool :-). Do you plan to publish / is there 3.13 based tree
+> > > > I could pull somewhere?
+> > > > 
+> > > > Thanks,
+> > > > 
+> > > > 								Pavel
+> > > 
+> > > Yes, I will rebase n900 patches on top of next 3.13 rc release
+> > > which will have some patches already included. I have not
+> > > created full n900 3.13 branch yet.
+> > 
+> > New branch 3.13-rc2 is now on gitorious linux-n900 tree:
+> > git://gitorious.org/linux-n900/linux-n900.git
+> 
+> Branch seems to be named "v3.13-rc2-n900". Thanks!
 
-Oops, I just replied to v5 of this series. Thanks for the fixes. Which
-tree do you want this to go through?
+Is this one expected to boot in devicetree-based setup? If so, does
+someone have .config?
 
-Regards,
-Mike
+Thanks,
+								Pavel
 
-> 
-> Most of the clock provided by the PMC (Power Management Controller) are
-> implemented :
-> - main clock (main oscillator)
-> - pll clocks
-> - master clock
-> - programmable clocks
-> - utmi clock
-> - peripheral clocks
-> - system clocks
-> 
-> Actually some clk drivers are missing (slow clk, main clk and processor
-> clk), and some drivers only implement a subset of the hardware capabilities
-> (master clk rate change is missing).
-> But this series implements all the already available clks, and I will hopefully
-> add missing features in a near future.
-> 
-> This implementation is only compatible with device tree definition.
-> The goal is to define the whole clock tree using the device tree.
-> 
-> Just a note to let you know these bindings are currently unstable and might
-> change in the future.
-> 
-> 
-> Best Regards,
-> Boris
-> 
-> Changes since v5:
->  - remove peripheral divisors macros from dt binding include file
->  - remove file path from comment blocks
->  - replace pll and utmi disable function by unprepare function to
->    avoid issue when disabling and reenabling a clk
->  - fix programmable clk interrupt retrieval
->  - fix OF_CLK_DECLARE names (xxx_clk_main -> xxx_clk_pmc)
->  - add missing comma in at91rm9200 main clk dt declaration
->  - fix num_parents check in smd clk driver
-> 
-> Changes since v4:
->  - rework dt bindings:
->    * replace "atmel,clk-id" property by the standard "reg" property
->    * reference system, peripheral and programmable clks using the direct
->      clk node instead of the parent node plus a clk id
->  - provide a new helper function (of_at91_get_clk_range) to retrieve a clk
->    range from the device tree
-> 
-> Changes since v3:
->  - simplify master clk implementation (drop set_rate/parent support)
->  - fix bug in set_rate function of pll driver
->  - fix coding style issues
->  - define macros and constants where needed
->  - remove peripheral id macro references
->  - remove sam9g35 specific handling (sam9g35 = sam9x5)
->  - rework main clk prepare function to handle automatic rate calculation
-> 
-> Changes since v2:
->  - fix several bugs in clk implementations
->  - drop non-dt boards support
->  - split the series to ease review and tests:
->    * 1 patch series for new clk implementations (this series)
->    * 1 patch series to move each at91 SoC to common clk framework (coming soon)
->  - modify dt-bindings (add atmel,clk- prefix to atmel specific properties)
->  - add clk macros for dt-bindings
->  - add pmc framework (helper function to access pmc registers)
->  - add interrupt support to enable passive wait in clk_prepare functions
-> 
-> Changes since v1:
->  - fix bugs in pll, programmable and system clock implementations
->    (wrong bit position).
->  - add usb clock configuration support (ohci and udc drivers +
->    clk_lookup for non dt boards)
->  - rework of the system clock interfaces (no need to define a parent clock,
->    system clock is a gate with no rate info)
->  - change system, peripheral and programmable clk dt bindings (1 master node
->    and multiple child nodes each defining a system/peripheral or prog clock)
->  - fix bugs in sama5 dt definition
-> 
-> Boris BREZILLON (16):
->   ARM: at91: move at91_pmc.h to include/linux/clk/at91_pmc.h
->   ARM: at91: add Kconfig options for common clk support
->   clk: at91: add PMC base support
->   clk: at91: add PMC macro file for dt definitions
->   clk: at91: add PMC main clock
->   clk: at91: add PMC pll clocks
->   clk: at91: add PMC master clock
->   clk: at91: add PMC system clocks
->   clk: at91: add PMC peripheral clocks
->   clk: at91: add PMC programmable clocks
->   clk: at91: add PMC utmi clock
->   clk: at91: add PMC usb clock
->   clk: at91: add PMC smd clock
->   dt: binding: add at91 clks dt bindings documentation
->   ARM: at91: move pit timer to common clk framework
->   ARM: at91: add new compatible strings for pmc driver
-> 
->  .../devicetree/bindings/clock/at91-clock.txt       |  339 +++++++++++++
->  arch/arm/mach-at91/Kconfig                         |   44 ++
->  arch/arm/mach-at91/Kconfig.non_dt                  |    6 +
->  arch/arm/mach-at91/Makefile                        |    2 +-
->  arch/arm/mach-at91/at91rm9200.c                    |    2 +-
->  arch/arm/mach-at91/at91sam9260.c                   |    2 +-
->  arch/arm/mach-at91/at91sam9261.c                   |    2 +-
->  arch/arm/mach-at91/at91sam9263.c                   |    2 +-
->  arch/arm/mach-at91/at91sam926x_time.c              |   14 +-
->  arch/arm/mach-at91/at91sam9g45.c                   |    2 +-
->  arch/arm/mach-at91/at91sam9n12.c                   |    2 +-
->  arch/arm/mach-at91/at91sam9rl.c                    |    2 +-
->  arch/arm/mach-at91/at91sam9x5.c                    |    2 +-
->  arch/arm/mach-at91/clock.c                         |    7 +-
->  arch/arm/mach-at91/generic.h                       |    3 +-
->  arch/arm/mach-at91/pm.c                            |    2 +-
->  arch/arm/mach-at91/pm_slowclock.S                  |    2 +-
->  arch/arm/mach-at91/sama5d3.c                       |    2 +-
->  arch/arm/mach-at91/setup.c                         |    8 +-
->  drivers/clk/Makefile                               |    1 +
->  drivers/clk/at91/Makefile                          |   12 +
->  drivers/clk/at91/clk-main.c                        |  187 +++++++
->  drivers/clk/at91/clk-master.c                      |  270 ++++++++++
->  drivers/clk/at91/clk-peripheral.c                  |  410 +++++++++++++++
->  drivers/clk/at91/clk-pll.c                         |  531 ++++++++++++++++++++
->  drivers/clk/at91/clk-plldiv.c                      |  135 +++++
->  drivers/clk/at91/clk-programmable.c                |  366 ++++++++++++++
->  drivers/clk/at91/clk-smd.c                         |  171 +++++++
->  drivers/clk/at91/clk-system.c                      |  135 +++++
->  drivers/clk/at91/clk-usb.c                         |  398 +++++++++++++++
->  drivers/clk/at91/clk-utmi.c                        |  159 ++++++
->  drivers/clk/at91/pmc.c                             |  397 +++++++++++++++
->  drivers/clk/at91/pmc.h                             |  116 +++++
->  drivers/usb/gadget/atmel_usba_udc.c                |    2 +-
->  include/dt-bindings/clk/at91.h                     |   22 +
->  .../include/mach => include/linux/clk}/at91_pmc.h  |    4 +-
->  36 files changed, 3741 insertions(+), 20 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/clock/at91-clock.txt
->  create mode 100644 drivers/clk/at91/Makefile
->  create mode 100644 drivers/clk/at91/clk-main.c
->  create mode 100644 drivers/clk/at91/clk-master.c
->  create mode 100644 drivers/clk/at91/clk-peripheral.c
->  create mode 100644 drivers/clk/at91/clk-pll.c
->  create mode 100644 drivers/clk/at91/clk-plldiv.c
->  create mode 100644 drivers/clk/at91/clk-programmable.c
->  create mode 100644 drivers/clk/at91/clk-smd.c
->  create mode 100644 drivers/clk/at91/clk-system.c
->  create mode 100644 drivers/clk/at91/clk-usb.c
->  create mode 100644 drivers/clk/at91/clk-utmi.c
->  create mode 100644 drivers/clk/at91/pmc.c
->  create mode 100644 drivers/clk/at91/pmc.h
->  create mode 100644 include/dt-bindings/clk/at91.h
->  rename {arch/arm/mach-at91/include/mach => include/linux/clk}/at91_pmc.h (98%)
-> 
-> -- 
-> 1.7.9.5
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
