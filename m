@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab3K3MwX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 07:52:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59673 "EHLO
+	id S1753257Ab3K3Mwd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 07:52:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59684 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753025Ab3K3MwR (ORCPT
+	with ESMTP id S1751894Ab3K3Mw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 07:52:17 -0500
-Date: Sat, 30 Nov 2013 04:52:01 -0800
+	Sat, 30 Nov 2013 07:52:29 -0500
+Date: Sat, 30 Nov 2013 04:52:11 -0800
 From: tip-bot for Stanislav Fomichev <tipbot@zytor.com>
-Message-ID: <tip-367b3152d72c20d789b07650bd1189ce0fe266b8@git.kernel.org>
+Message-ID: <tip-6f8d67fa0c6bdca535ecab137c44b095023cc1b4@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
         a.p.zijlstra@chello.nl, namhyung@kernel.org, stfomichev@yandex-team.ru,
@@ -17,12 +17,11 @@ Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
 Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
         namhyung@kernel.org, stfomichev@yandex-team.ru, tglx@linutronix.de
-In-Reply-To: <1383323151-19810-7-git-send-email-stfomichev@yandex-team.ru>
-References: <1383323151-19810-7-git-send-email-stfomichev@yandex-team.ru>
+In-Reply-To: <1383323151-19810-8-git-send-email-stfomichev@yandex-team.ru>
+References: <1383323151-19810-8-git-send-email-stfomichev@yandex-team.ru>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf timechart:
-  Add support for -P and -T in timechart recording
-Git-Commit-ID: 367b3152d72c20d789b07650bd1189ce0fe266b8
+Subject: [tip:perf/core] perf timechart: Add backtrace support
+Git-Commit-ID: 6f8d67fa0c6bdca535ecab137c44b095023cc1b4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,23 +30,26 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 30 Nov 2013 04:52:08 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 30 Nov 2013 04:52:18 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  367b3152d72c20d789b07650bd1189ce0fe266b8
-Gitweb:     http://git.kernel.org/tip/367b3152d72c20d789b07650bd1189ce0fe266b8
+Commit-ID:  6f8d67fa0c6bdca535ecab137c44b095023cc1b4
+Gitweb:     http://git.kernel.org/tip/6f8d67fa0c6bdca535ecab137c44b095023cc1b4
 Author:     Stanislav Fomichev <stfomichev@yandex-team.ru>
-AuthorDate: Fri, 1 Nov 2013 20:25:50 +0400
+AuthorDate: Fri, 1 Nov 2013 20:25:51 +0400
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Wed, 27 Nov 2013 14:58:37 -0300
 
-perf timechart: Add support for -P and -T in timechart recording
+perf timechart: Add backtrace support
 
-If we don't want either power or task events we may use -T or -P with
-the `perf timechart record` command to filter out events while recording
-to keep perf.data small.
+Add -g flag to `perf timechart record` which saves callchain info in the
+perf.data.
+
+When generating SVG, add backtrace information to the figure details, so
+now it's possible to see which code path woke up the task and why some
+task went to sleep.
 
 Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
 Acked-by: Namhyung Kim <namhyung@kernel.org>
@@ -55,208 +57,525 @@ Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1383323151-19810-7-git-send-email-stfomichev@yandex-team.ru
+Link: http://lkml.kernel.org/r/1383323151-19810-8-git-send-email-stfomichev@yandex-team.ru
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-timechart.txt |  16 +++--
- tools/perf/builtin-timechart.c              | 101 +++++++++++++++++++++-------
- 2 files changed, 87 insertions(+), 30 deletions(-)
+ tools/perf/Documentation/perf-timechart.txt |   3 +
+ tools/perf/builtin-timechart.c              | 169 ++++++++++++++++++++++++----
+ tools/perf/util/svghelper.c                 |  27 ++++-
+ tools/perf/util/svghelper.h                 |  12 +-
+ 4 files changed, 175 insertions(+), 36 deletions(-)
 
 diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
-index d844189..8359cfa 100644
+index 8359cfa..271dd4e 100644
 --- a/tools/perf/Documentation/perf-timechart.txt
 +++ b/tools/perf/Documentation/perf-timechart.txt
-@@ -8,8 +8,7 @@ perf-timechart - Tool to visualize total system behavior during a workload
- SYNOPSIS
- --------
- [verse]
--'perf timechart' record <command>
--'perf timechart' [<options>]
-+'perf timechart' [<timechart options>] {record} [<record options>]
+@@ -68,6 +68,9 @@ RECORD OPTIONS
+ -T::
+ --tasks-only::
+         Record only tasks-related events
++-g::
++--callchain::
++        Do call-graph (stack chain/backtrace) recording
  
- DESCRIPTION
- -----------
-@@ -21,8 +20,8 @@ There are two variants of perf timechart:
-   'perf timechart' to turn a trace into a Scalable Vector Graphics file,
-   that can be viewed with popular SVG viewers such as 'Inkscape'.
- 
--OPTIONS
---------
-+TIMECHART OPTIONS
-+-----------------
- -o::
- --output=::
-         Select the output file (default: output.svg)
-@@ -61,6 +60,15 @@ $ perf timechart
- --proc-num::
-         Print task info for at least given number of tasks.
- 
-+RECORD OPTIONS
-+--------------
-+-P::
-+--power-only::
-+        Record only power-related events
-+-T::
-+--tasks-only::
-+        Record only tasks-related events
-+
  SEE ALSO
  --------
- linkperf:perf-record[1]
 diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 6a848b8..1c60ed3 100644
+index 1c60ed3..491662b 100644
 --- a/tools/perf/builtin-timechart.c
 +++ b/tools/perf/builtin-timechart.c
-@@ -1040,50 +1040,81 @@ out_delete:
+@@ -52,6 +52,7 @@ static u64		first_time, last_time;
  
- static int __cmd_record(int argc, const char **argv)
+ static bool		power_only;
+ static bool		tasks_only;
++static bool		with_backtrace;
+ 
+ 
+ struct per_pid;
+@@ -126,6 +127,7 @@ struct cpu_sample {
+ 	u64 end_time;
+ 	int type;
+ 	int cpu;
++	const char *backtrace;
+ };
+ 
+ static struct per_pid *all_data;
+@@ -147,6 +149,7 @@ struct wake_event {
+ 	int waker;
+ 	int wakee;
+ 	u64 time;
++	const char *backtrace;
+ };
+ 
+ static struct power_event    *power_events;
+@@ -231,7 +234,8 @@ static void pid_exit(int pid, u64 timestamp)
+ }
+ 
+ static void
+-pid_put_sample(int pid, int type, unsigned int cpu, u64 start, u64 end)
++pid_put_sample(int pid, int type, unsigned int cpu, u64 start, u64 end,
++	       const char *backtrace)
  {
--#ifdef SUPPORT_OLD_POWER_EVENTS
--	const char * const record_old_args[] = {
-+	unsigned int rec_argc, i, j;
-+	const char **rec_argv;
-+	const char **p;
-+	unsigned int record_elems;
-+
-+	const char * const common_args[] = {
- 		"record", "-a", "-R", "-c", "1",
-+	};
-+	unsigned int common_args_nr = ARRAY_SIZE(common_args);
-+
-+	const char * const power_args[] = {
-+		"-e", "power:cpu_frequency",
-+		"-e", "power:cpu_idle",
-+	};
-+	unsigned int power_args_nr = ARRAY_SIZE(power_args);
-+
-+	const char * const old_power_args[] = {
-+#ifdef SUPPORT_OLD_POWER_EVENTS
- 		"-e", "power:power_start",
- 		"-e", "power:power_end",
- 		"-e", "power:power_frequency",
--		"-e", "sched:sched_wakeup",
--		"-e", "sched:sched_switch",
--	};
- #endif
--	const char * const record_new_args[] = {
--		"record", "-a", "-R", "-c", "1",
--		"-e", "power:cpu_frequency",
--		"-e", "power:cpu_idle",
-+	};
-+	unsigned int old_power_args_nr = ARRAY_SIZE(old_power_args);
-+
-+	const char * const tasks_args[] = {
- 		"-e", "sched:sched_wakeup",
- 		"-e", "sched:sched_switch",
- 	};
--	unsigned int rec_argc, i, j;
--	const char **rec_argv;
--	const char * const *record_args = record_new_args;
--	unsigned int record_elems = ARRAY_SIZE(record_new_args);
-+	unsigned int tasks_args_nr = ARRAY_SIZE(tasks_args);
+ 	struct per_pid *p;
+ 	struct per_pidcomm *c;
+@@ -254,6 +258,7 @@ pid_put_sample(int pid, int type, unsigned int cpu, u64 start, u64 end)
+ 	sample->type = type;
+ 	sample->next = c->samples;
+ 	sample->cpu = cpu;
++	sample->backtrace = backtrace;
+ 	c->samples = sample;
  
- #ifdef SUPPORT_OLD_POWER_EVENTS
- 	if (!is_valid_tracepoint("power:cpu_idle") &&
- 	    is_valid_tracepoint("power:power_start")) {
- 		use_old_power_events = 1;
--		record_args = record_old_args;
--		record_elems = ARRAY_SIZE(record_old_args);
-+		power_args_nr = 0;
-+	} else {
-+		old_power_args_nr = 0;
+ 	if (sample->type == TYPE_RUNNING && end > start && start > 0) {
+@@ -405,7 +410,8 @@ static void p_state_change(int cpu, u64 timestamp, u64 new_freq)
+ }
+ 
+ static void
+-sched_wakeup(int cpu, u64 timestamp, int pid, struct trace_entry *te)
++sched_wakeup(int cpu, u64 timestamp, int pid, struct trace_entry *te,
++	     const char *backtrace)
+ {
+ 	struct per_pid *p;
+ 	struct wakeup_entry *wake = (void *)te;
+@@ -416,6 +422,7 @@ sched_wakeup(int cpu, u64 timestamp, int pid, struct trace_entry *te)
+ 
+ 	we->time = timestamp;
+ 	we->waker = pid;
++	we->backtrace = backtrace;
+ 
+ 	if ((te->flags & TRACE_FLAG_HARDIRQ) || (te->flags & TRACE_FLAG_SOFTIRQ))
+ 		we->waker = -1;
+@@ -430,13 +437,15 @@ sched_wakeup(int cpu, u64 timestamp, int pid, struct trace_entry *te)
+ 		p->current->state = TYPE_WAITING;
  	}
- #endif
+ 	if (p && p->current && p->current->state == TYPE_BLOCKED) {
+-		pid_put_sample(p->pid, p->current->state, cpu, p->current->state_since, timestamp);
++		pid_put_sample(p->pid, p->current->state, cpu,
++			       p->current->state_since, timestamp, NULL);
+ 		p->current->state_since = timestamp;
+ 		p->current->state = TYPE_WAITING;
+ 	}
+ }
  
--	rec_argc = record_elems + argc - 1;
-+	if (power_only)
-+		tasks_args_nr = 0;
+-static void sched_switch(int cpu, u64 timestamp, struct trace_entry *te)
++static void sched_switch(int cpu, u64 timestamp, struct trace_entry *te,
++			 const char *backtrace)
+ {
+ 	struct per_pid *p = NULL, *prev_p;
+ 	struct sched_switch *sw = (void *)te;
+@@ -447,10 +456,14 @@ static void sched_switch(int cpu, u64 timestamp, struct trace_entry *te)
+ 	p = find_create_pid(sw->next_pid);
+ 
+ 	if (prev_p->current && prev_p->current->state != TYPE_NONE)
+-		pid_put_sample(sw->prev_pid, TYPE_RUNNING, cpu, prev_p->current->state_since, timestamp);
++		pid_put_sample(sw->prev_pid, TYPE_RUNNING, cpu,
++			       prev_p->current->state_since, timestamp,
++			       backtrace);
+ 	if (p && p->current) {
+ 		if (p->current->state != TYPE_NONE)
+-			pid_put_sample(sw->next_pid, p->current->state, cpu, p->current->state_since, timestamp);
++			pid_put_sample(sw->next_pid, p->current->state, cpu,
++				       p->current->state_since, timestamp,
++				       backtrace);
+ 
+ 		p->current->state_since = timestamp;
+ 		p->current->state = TYPE_RUNNING;
+@@ -466,8 +479,87 @@ static void sched_switch(int cpu, u64 timestamp, struct trace_entry *te)
+ 	}
+ }
+ 
++static const char *cat_backtrace(union perf_event *event,
++				 struct perf_sample *sample,
++				 struct machine *machine)
++{
++	struct addr_location al;
++	unsigned int i;
++	char *p = NULL;
++	size_t p_len;
++	u8 cpumode = PERF_RECORD_MISC_USER;
++	struct addr_location tal;
++	struct ip_callchain *chain = sample->callchain;
++	FILE *f = open_memstream(&p, &p_len);
 +
-+	if (tasks_only) {
-+		power_args_nr = 0;
-+		old_power_args_nr = 0;
++	if (!f) {
++		perror("open_memstream error");
++		return NULL;
 +	}
 +
-+	record_elems = common_args_nr + tasks_args_nr +
-+		power_args_nr + old_power_args_nr;
++	if (!chain)
++		goto exit;
 +
-+	rec_argc = record_elems + argc;
- 	rec_argv = calloc(rec_argc + 1, sizeof(char *));
- 
- 	if (rec_argv == NULL)
- 		return -ENOMEM;
- 
--	for (i = 0; i < record_elems; i++)
--		rec_argv[i] = strdup(record_args[i]);
-+	p = rec_argv;
-+	for (i = 0; i < common_args_nr; i++)
-+		*p++ = strdup(common_args[i]);
++	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
++		fprintf(stderr, "problem processing %d event, skipping it.\n",
++			event->header.type);
++		goto exit;
++	}
 +
-+	for (i = 0; i < tasks_args_nr; i++)
-+		*p++ = strdup(tasks_args[i]);
++	for (i = 0; i < chain->nr; i++) {
++		u64 ip;
 +
-+	for (i = 0; i < power_args_nr; i++)
-+		*p++ = strdup(power_args[i]);
- 
--	for (j = 1; j < (unsigned int)argc; j++, i++)
--		rec_argv[i] = argv[j];
-+	for (i = 0; i < old_power_args_nr; i++)
-+		*p++ = strdup(old_power_args[i]);
- 
--	return cmd_record(i, rec_argv, NULL);
-+	for (j = 1; j < (unsigned int)argc; j++)
-+		*p++ = argv[j];
++		if (callchain_param.order == ORDER_CALLEE)
++			ip = chain->ips[i];
++		else
++			ip = chain->ips[chain->nr - i - 1];
 +
-+	return cmd_record(rec_argc, rec_argv, NULL);
++		if (ip >= PERF_CONTEXT_MAX) {
++			switch (ip) {
++			case PERF_CONTEXT_HV:
++				cpumode = PERF_RECORD_MISC_HYPERVISOR;
++				break;
++			case PERF_CONTEXT_KERNEL:
++				cpumode = PERF_RECORD_MISC_KERNEL;
++				break;
++			case PERF_CONTEXT_USER:
++				cpumode = PERF_RECORD_MISC_USER;
++				break;
++			default:
++				pr_debug("invalid callchain context: "
++					 "%"PRId64"\n", (s64) ip);
++
++				/*
++				 * It seems the callchain is corrupted.
++				 * Discard all.
++				 */
++				free(p);
++				p = NULL;
++				goto exit;
++			}
++			continue;
++		}
++
++		tal.filtered = false;
++		thread__find_addr_location(al.thread, machine, cpumode,
++					   MAP__FUNCTION, ip, &tal);
++
++		if (tal.sym)
++			fprintf(f, "..... %016" PRIx64 " %s\n", ip,
++				tal.sym->name);
++		else
++			fprintf(f, "..... %016" PRIx64 "\n", ip);
++	}
++
++exit:
++	fclose(f);
++
++	return p;
++}
++
+ typedef int (*tracepoint_handler)(struct perf_evsel *evsel,
+-				  struct perf_sample *sample);
++				  struct perf_sample *sample,
++				  const char *backtrace);
+ 
+ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 				union perf_event *event __maybe_unused,
+@@ -487,7 +579,7 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 
+ 	if (evsel->handler != NULL) {
+ 		tracepoint_handler f = evsel->handler;
+-		return f(evsel, sample);
++		return f(evsel, sample, cat_backtrace(event, sample, machine));
+ 	}
+ 
+ 	return 0;
+@@ -495,7 +587,8 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 
+ static int
+ process_sample_cpu_idle(struct perf_evsel *evsel __maybe_unused,
+-			struct perf_sample *sample)
++			struct perf_sample *sample,
++			const char *backtrace __maybe_unused)
+ {
+ 	struct power_processor_entry *ppe = sample->raw_data;
+ 
+@@ -508,7 +601,8 @@ process_sample_cpu_idle(struct perf_evsel *evsel __maybe_unused,
+ 
+ static int
+ process_sample_cpu_frequency(struct perf_evsel *evsel __maybe_unused,
+-			     struct perf_sample *sample)
++			     struct perf_sample *sample,
++			     const char *backtrace __maybe_unused)
+ {
+ 	struct power_processor_entry *ppe = sample->raw_data;
+ 
+@@ -518,28 +612,31 @@ process_sample_cpu_frequency(struct perf_evsel *evsel __maybe_unused,
+ 
+ static int
+ process_sample_sched_wakeup(struct perf_evsel *evsel __maybe_unused,
+-			    struct perf_sample *sample)
++			    struct perf_sample *sample,
++			    const char *backtrace)
+ {
+ 	struct trace_entry *te = sample->raw_data;
+ 
+-	sched_wakeup(sample->cpu, sample->time, sample->pid, te);
++	sched_wakeup(sample->cpu, sample->time, sample->pid, te, backtrace);
+ 	return 0;
  }
  
  static int
-@@ -1099,7 +1130,7 @@ int cmd_timechart(int argc, const char **argv,
- 		  const char *prefix __maybe_unused)
+ process_sample_sched_switch(struct perf_evsel *evsel __maybe_unused,
+-			    struct perf_sample *sample)
++			    struct perf_sample *sample,
++			    const char *backtrace)
  {
- 	const char *output_name = "output.svg";
--	const struct option options[] = {
-+	const struct option timechart_options[] = {
- 	OPT_STRING('i', "input", &input_name, "file", "input file name"),
- 	OPT_STRING('o', "output", &output_name, "file", "output file name"),
- 	OPT_INTEGER('w', "width", &svg_page_width, "page width"),
-@@ -1120,7 +1151,17 @@ int cmd_timechart(int argc, const char **argv,
- 		NULL
+ 	struct trace_entry *te = sample->raw_data;
+ 
+-	sched_switch(sample->cpu, sample->time, te);
++	sched_switch(sample->cpu, sample->time, te, backtrace);
+ 	return 0;
+ }
+ 
+ #ifdef SUPPORT_OLD_POWER_EVENTS
+ static int
+ process_sample_power_start(struct perf_evsel *evsel __maybe_unused,
+-			   struct perf_sample *sample)
++			   struct perf_sample *sample,
++			   const char *backtrace __maybe_unused)
+ {
+ 	struct power_entry_old *peo = sample->raw_data;
+ 
+@@ -549,7 +646,8 @@ process_sample_power_start(struct perf_evsel *evsel __maybe_unused,
+ 
+ static int
+ process_sample_power_end(struct perf_evsel *evsel __maybe_unused,
+-			 struct perf_sample *sample)
++			 struct perf_sample *sample,
++			 const char *backtrace __maybe_unused)
+ {
+ 	c_state_end(sample->cpu, sample->time);
+ 	return 0;
+@@ -557,7 +655,8 @@ process_sample_power_end(struct perf_evsel *evsel __maybe_unused,
+ 
+ static int
+ process_sample_power_frequency(struct perf_evsel *evsel __maybe_unused,
+-			       struct perf_sample *sample)
++			       struct perf_sample *sample,
++			       const char *backtrace __maybe_unused)
+ {
+ 	struct power_entry_old *peo = sample->raw_data;
+ 
+@@ -741,11 +840,12 @@ static void draw_wakeups(void)
+ 		}
+ 
+ 		if (we->waker == -1)
+-			svg_interrupt(we->time, to);
++			svg_interrupt(we->time, to, we->backtrace);
+ 		else if (from && to && abs(from - to) == 1)
+-			svg_wakeline(we->time, from, to);
++			svg_wakeline(we->time, from, to, we->backtrace);
+ 		else
+-			svg_partial_wakeline(we->time, from, task_from, to, task_to);
++			svg_partial_wakeline(we->time, from, task_from, to,
++					     task_to, we->backtrace);
+ 		we = we->next;
+ 
+ 		free(task_from);
+@@ -798,11 +898,20 @@ static void draw_process_bars(void)
+ 			sample = c->samples;
+ 			while (sample) {
+ 				if (sample->type == TYPE_RUNNING)
+-					svg_running(Y, sample->cpu, sample->start_time, sample->end_time);
++					svg_running(Y, sample->cpu,
++						    sample->start_time,
++						    sample->end_time,
++						    sample->backtrace);
+ 				if (sample->type == TYPE_BLOCKED)
+-					svg_blocked(Y, sample->cpu, sample->start_time, sample->end_time);
++					svg_blocked(Y, sample->cpu,
++						    sample->start_time,
++						    sample->end_time,
++						    sample->backtrace);
+ 				if (sample->type == TYPE_WAITING)
+-					svg_waiting(Y, sample->cpu, sample->start_time, sample->end_time);
++					svg_waiting(Y, sample->cpu,
++						    sample->start_time,
++						    sample->end_time,
++						    sample->backtrace);
+ 				sample = sample->next;
+ 			}
+ 
+@@ -1050,6 +1159,11 @@ static int __cmd_record(int argc, const char **argv)
  	};
+ 	unsigned int common_args_nr = ARRAY_SIZE(common_args);
  
--	argc = parse_options(argc, argv, options, timechart_usage,
-+	const struct option record_options[] = {
-+	OPT_BOOLEAN('P', "power-only", &power_only, "output power data only"),
-+	OPT_BOOLEAN('T', "tasks-only", &tasks_only,
-+		    "output processes data only"),
-+	OPT_END()
++	const char * const backtrace_args[] = {
++		"-g",
 +	};
-+	const char * const record_usage[] = {
-+		"perf timechart record [<options>]",
-+		NULL
-+	};
-+	argc = parse_options(argc, argv, timechart_options, timechart_usage,
- 			PARSE_OPT_STOP_AT_NON_OPTION);
- 
- 	if (power_only && tasks_only) {
-@@ -1130,10 +1171,18 @@ int cmd_timechart(int argc, const char **argv,
- 
- 	symbol__init();
- 
--	if (argc && !strncmp(argv[0], "rec", 3))
-+	if (argc && !strncmp(argv[0], "rec", 3)) {
-+		argc = parse_options(argc, argv, record_options, record_usage,
-+				     PARSE_OPT_STOP_AT_NON_OPTION);
++	unsigned int backtrace_args_no = ARRAY_SIZE(backtrace_args);
 +
-+		if (power_only && tasks_only) {
-+			pr_err("-P and -T options cannot be used at the same time.\n");
-+			return -1;
-+		}
-+
- 		return __cmd_record(argc, argv);
--	else if (argc)
--		usage_with_options(timechart_usage, options);
-+	} else if (argc)
-+		usage_with_options(timechart_usage, timechart_options);
+ 	const char * const power_args[] = {
+ 		"-e", "power:cpu_frequency",
+ 		"-e", "power:cpu_idle",
+@@ -1089,8 +1203,11 @@ static int __cmd_record(int argc, const char **argv)
+ 		old_power_args_nr = 0;
+ 	}
  
- 	setup_pager();
++	if (!with_backtrace)
++		backtrace_args_no = 0;
++
+ 	record_elems = common_args_nr + tasks_args_nr +
+-		power_args_nr + old_power_args_nr;
++		power_args_nr + old_power_args_nr + backtrace_args_no;
+ 
+ 	rec_argc = record_elems + argc;
+ 	rec_argv = calloc(rec_argc + 1, sizeof(char *));
+@@ -1102,6 +1219,9 @@ static int __cmd_record(int argc, const char **argv)
+ 	for (i = 0; i < common_args_nr; i++)
+ 		*p++ = strdup(common_args[i]);
+ 
++	for (i = 0; i < backtrace_args_no; i++)
++		*p++ = strdup(backtrace_args[i]);
++
+ 	for (i = 0; i < tasks_args_nr; i++)
+ 		*p++ = strdup(tasks_args[i]);
+ 
+@@ -1155,6 +1275,7 @@ int cmd_timechart(int argc, const char **argv,
+ 	OPT_BOOLEAN('P', "power-only", &power_only, "output power data only"),
+ 	OPT_BOOLEAN('T', "tasks-only", &tasks_only,
+ 		    "output processes data only"),
++	OPT_BOOLEAN('g', "callchain", &with_backtrace, "record callchain"),
+ 	OPT_END()
+ 	};
+ 	const char * const record_usage[] = {
+diff --git a/tools/perf/util/svghelper.c b/tools/perf/util/svghelper.c
+index 9a5b413..8b79d3a 100644
+--- a/tools/perf/util/svghelper.c
++++ b/tools/perf/util/svghelper.c
+@@ -130,7 +130,7 @@ void svg_box(int Yslot, u64 start, u64 end, const char *type)
+ }
+ 
+ static char *time_to_string(u64 duration);
+-void svg_blocked(int Yslot, int cpu, u64 start, u64 end)
++void svg_blocked(int Yslot, int cpu, u64 start, u64 end, const char *backtrace)
+ {
+ 	if (!svgfile)
+ 		return;
+@@ -138,11 +138,13 @@ void svg_blocked(int Yslot, int cpu, u64 start, u64 end)
+ 	fprintf(svgfile, "<g>\n");
+ 	fprintf(svgfile, "<title>#%d blocked %s</title>\n", cpu,
+ 		time_to_string(end - start));
++	if (backtrace)
++		fprintf(svgfile, "<desc>Blocked on:\n%s</desc>\n", backtrace);
+ 	svg_box(Yslot, start, end, "blocked");
+ 	fprintf(svgfile, "</g>\n");
+ }
+ 
+-void svg_running(int Yslot, int cpu, u64 start, u64 end)
++void svg_running(int Yslot, int cpu, u64 start, u64 end, const char *backtrace)
+ {
+ 	double text_size;
+ 	if (!svgfile)
+@@ -152,6 +154,8 @@ void svg_running(int Yslot, int cpu, u64 start, u64 end)
+ 
+ 	fprintf(svgfile, "<title>#%d running %s</title>\n",
+ 		cpu, time_to_string(end - start));
++	if (backtrace)
++		fprintf(svgfile, "<desc>Switched because:\n%s</desc>\n", backtrace);
+ 	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"sample\"/>\n",
+ 		time2pixels(start), time2pixels(end)-time2pixels(start), Yslot * SLOT_MULT, SLOT_HEIGHT);
+ 
+@@ -187,7 +191,7 @@ static char *time_to_string(u64 duration)
+ 	return text;
+ }
+ 
+-void svg_waiting(int Yslot, int cpu, u64 start, u64 end)
++void svg_waiting(int Yslot, int cpu, u64 start, u64 end, const char *backtrace)
+ {
+ 	char *text;
+ 	const char *style;
+@@ -212,6 +216,8 @@ void svg_waiting(int Yslot, int cpu, u64 start, u64 end)
+ 
+ 	fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\">\n", time2pixels(start), Yslot * SLOT_MULT);
+ 	fprintf(svgfile, "<title>#%d waiting %s</title>\n", cpu, time_to_string(end - start));
++	if (backtrace)
++		fprintf(svgfile, "<desc>Waiting on:\n%s</desc>\n", backtrace);
+ 	fprintf(svgfile, "<rect x=\"0\" width=\"%4.8f\" y=\"0\" height=\"%4.1f\" class=\"%s\"/>\n",
+ 		time2pixels(end)-time2pixels(start), SLOT_HEIGHT, style);
+ 	if (font_size > MIN_TEXT_SIZE)
+@@ -382,7 +388,7 @@ void svg_pstate(int cpu, u64 start, u64 end, u64 freq)
+ }
+ 
+ 
+-void svg_partial_wakeline(u64 start, int row1, char *desc1, int row2, char *desc2)
++void svg_partial_wakeline(u64 start, int row1, char *desc1, int row2, char *desc2, const char *backtrace)
+ {
+ 	double height;
+ 
+@@ -396,6 +402,9 @@ void svg_partial_wakeline(u64 start, int row1, char *desc1, int row2, char *desc
+ 		desc1 ? desc1 : "?",
+ 		desc2 ? desc2 : "?");
+ 
++	if (backtrace)
++		fprintf(svgfile, "<desc>%s</desc>\n", backtrace);
++
+ 	if (row1 < row2) {
+ 		if (row1) {
+ 			fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%4.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
+@@ -437,7 +446,7 @@ void svg_partial_wakeline(u64 start, int row1, char *desc1, int row2, char *desc
+ 	fprintf(svgfile, "</g>\n");
+ }
+ 
+-void svg_wakeline(u64 start, int row1, int row2)
++void svg_wakeline(u64 start, int row1, int row2, const char *backtrace)
+ {
+ 	double height;
+ 
+@@ -447,6 +456,9 @@ void svg_wakeline(u64 start, int row1, int row2)
+ 
+ 	fprintf(svgfile, "<g>\n");
+ 
++	if (backtrace)
++		fprintf(svgfile, "<desc>%s</desc>\n", backtrace);
++
+ 	if (row1 < row2)
+ 		fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%4.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
+ 			time2pixels(start), row1 * SLOT_MULT + SLOT_HEIGHT,  time2pixels(start), row2 * SLOT_MULT);
+@@ -463,7 +475,7 @@ void svg_wakeline(u64 start, int row1, int row2)
+ 	fprintf(svgfile, "</g>\n");
+ }
+ 
+-void svg_interrupt(u64 start, int row)
++void svg_interrupt(u64 start, int row, const char *backtrace)
+ {
+ 	if (!svgfile)
+ 		return;
+@@ -472,6 +484,9 @@ void svg_interrupt(u64 start, int row)
+ 
+ 	fprintf(svgfile, "<title>Wakeup from interrupt</title>\n");
+ 
++	if (backtrace)
++		fprintf(svgfile, "<desc>%s</desc>\n", backtrace);
++
+ 	fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(255,128,128)\"/>\n",
+ 			time2pixels(start), row * SLOT_MULT);
+ 	fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(255,128,128)\"/>\n",
+diff --git a/tools/perf/util/svghelper.h b/tools/perf/util/svghelper.h
+index aa53345..fad79ce 100644
+--- a/tools/perf/util/svghelper.h
++++ b/tools/perf/util/svghelper.h
+@@ -5,9 +5,9 @@
+ 
+ extern void open_svg(const char *filename, int cpus, int rows, u64 start, u64 end);
+ extern void svg_box(int Yslot, u64 start, u64 end, const char *type);
+-extern void svg_blocked(int Yslot, int cpu, u64 start, u64 end);
+-extern void svg_running(int Yslot, int cpu, u64 start, u64 end);
+-extern void svg_waiting(int Yslot, int cpu, u64 start, u64 end);
++extern void svg_blocked(int Yslot, int cpu, u64 start, u64 end, const char *backtrace);
++extern void svg_running(int Yslot, int cpu, u64 start, u64 end, const char *backtrace);
++extern void svg_waiting(int Yslot, int cpu, u64 start, u64 end, const char *backtrace);
+ extern void svg_cpu_box(int cpu, u64 max_frequency, u64 turbo_frequency);
+ 
+ 
+@@ -18,9 +18,9 @@ extern void svg_pstate(int cpu, u64 start, u64 end, u64 freq);
+ 
+ extern void svg_time_grid(void);
+ extern void svg_legenda(void);
+-extern void svg_wakeline(u64 start, int row1, int row2);
+-extern void svg_partial_wakeline(u64 start, int row1, char *desc1, int row2, char *desc2);
+-extern void svg_interrupt(u64 start, int row);
++extern void svg_wakeline(u64 start, int row1, int row2, const char *backtrace);
++extern void svg_partial_wakeline(u64 start, int row1, char *desc1, int row2, char *desc2, const char *backtrace);
++extern void svg_interrupt(u64 start, int row, const char *backtrace);
+ extern void svg_text(int Yslot, u64 start, const char *text);
+ extern void svg_close(void);
  
