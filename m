@@ -1,159 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751327Ab3K3JfM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 04:35:12 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56023 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab3K3JfD (ORCPT
+	id S1751386Ab3K3Jn5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 04:43:57 -0500
+Received: from peace.netnation.com ([204.174.223.2]:60857 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994Ab3K3Jnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 04:35:03 -0500
-Date: Sat, 30 Nov 2013 10:34:56 +0100
-From: Michael Grzeschik <mgr@pengutronix.de>
-To: Alexander Shiyan <shc_work@mail.ru>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>
-Subject: Re: [PATCH RESEND] mfd: mc13xxx: Fix null pointer dereference in
- mc13xxx_common_init
-Message-ID: <20131130093456.GD28906@pengutronix.de>
-References: <1385787337-5296-1-git-send-email-shc_work@mail.ru>
+	Sat, 30 Nov 2013 04:43:50 -0500
+Date: Sat, 30 Nov 2013 01:43:43 -0800
+From: Simon Kirby <sim@hostway.ca>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ian Applegate <ia@cloudflare.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Lameter <cl@gentwo.org>, Pekka Enberg <penberg@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@fusionio.com>
+Subject: Re: [3.10] Oopses in kmem_cache_allocate() via prepare_creds()
+Message-ID: <20131130094343.GA12573@hostway.ca>
+References: <CAOJsxLGA+Aha8JcPsWyNd3BLQ6L0g7iznN0o2fG5yL5Xw0s8Lg@mail.gmail.com>
+ <20130819201717.GA23608@hostway.ca>
+ <0000014098447577-0d3e3f6b-f97b-4c73-946d-d70b697ce194-000000@email.amazonses.com>
+ <CA+55aFxiYzxLDUnr+9BGQ+fsfmb1T8_zW4fOOC=SQ4rVzwbv4A@mail.gmail.com>
+ <20130820040648.GG27005@ZenIV.linux.org.uk>
+ <CAEcaRjip29P8TdMHF8zJ3zzsQj7o_B9chEz7Q6xH0Bqtw3A-jg@mail.gmail.com>
+ <20130820072143.GJ27005@ZenIV.linux.org.uk>
+ <CAEcaRjg7GJhEbQoduup6xQKea4Pn4+SOgv8GbbJUeU=xR74dVQ@mail.gmail.com>
+ <20131126004456.GF19648@hostway.ca>
+ <CA+55aFxmVteJApiC5e=d9NmYO6PSbNertq5ipLpunmVreCTYUQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1385787337-5296-1-git-send-email-shc_work@mail.ru>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:34:23 up 97 days, 19:05, 33 users,  load average: 0,83, 0,61,
- 0,35
+In-Reply-To: <CA+55aFxmVteJApiC5e=d9NmYO6PSbNertq5ipLpunmVreCTYUQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: mgr@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 30, 2013 at 08:55:37AM +0400, Alexander Shiyan wrote:
-> If this driver being loaded from devicetree, the pdata is NULL.
-> This cause kernel Oops when "fsl,mc13xxx-uses-codec" and/or
-> "fsl,mc13xxx-uses-touch" properties is specified.
-> 
-> mc13xxx spi0.0: mc13783: rev: 3.3, fin: 0, fab: 0, icid: 2/0
-> Unable to handle kernel NULL pointer dereference at virtual address 00000018
-> pgd = c0004000
-> [00000018] *pgd=00000000
-> Internal error: Oops: 5 [#1] PREEMPT ARM
-> CPU: 0 PID: 1 Comm: swapper Not tainted 3.12.0-next-20131105-00004-g201dd34-dirty #5
-> task: c7833bc0 ti: c7834000 task.ti: c7834000
-> PC is at mc13xxx_common_init+0x1fc/0x280
-> LR is at mfd_add_device+0x2a8/0x308
-> pc : [<c024875c>]    lr : [<c0248d74>]    psr: 20000013
-> sp : c7835d38  ip : 00000002  fp : c786a160
-> r10: 00000000  r9 : c786a170  r8 : 00000000
-> r7 : c06eab74  r6 : 00000000  r5 : 00000000  r4 : c79ffa10
-> r3 : 00000008  r2 : 20000013  r1 : c05079c8  r0 : c79ffa10
-> Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-> Control: 0005317f  Table: a0004000  DAC: 00000017
-> Process swapper (pid: 1, stack limit = 0xc78341c0)
-> Stack: (0xc7835d38 to 0xc7836000)
-> 5d20:                                                       c0507958 c79ffa10
-> 5d40: c791ab80 0000009b 00000000 c791ab80 c05de138 c023a998 c05a9854 c0293cf8
-> 5d60: c0293ce0 c023a774 c023a998 00000000 c791ab80 c023a998 c79ffc00 c02393ac
-> 5d80: c785a25c c7940e54 c791ab80 c791abb4 c791ab80 c023a4cc c791ab80 c05b2704
-> 5da0: c791ab80 c02395e8 c791ab80 00000000 c791ab88 c0237938 00000000 c01d5ed8
-> 5dc0: 60000013 c791ab80 c791ab80 c791ab80 00000000 c786a170 00000000 c06eaa04
-> 5de0: c786a170 c0294d08 00000001 c79ffc00 c06eab74 c791ab80 00000000 c02953a8
-> 5e00: c79f56a0 00000000 00000063 01312d00 00000000 c79ffc00 c79ffd78 c79ffc00
-> 5e20: c06eaa04 00000000 c79ffd70 c0296cbc c780a840 c02978c0 00000000 c051054c
-> 5e40: c79ffd70 c787c1f0 00000000 c0462b1c 00000000 00000002 c787c1f0 c786a170
-> 5e60: c05b2864 c786a1a4 c05b2864 00000000 c05c5800 c0579430 00000000 c023b614
-> 5e80: c023b5fc c786a170 c05de138 c023a774 00000000 c786a170 c05b2864 c786a1a4
-> 5ea0: 00000000 c023a994 00000000 c05b2864 c023a908 c0239034 c7825d6c c785e610
-> 5ec0: c05b2864 c7a0bae0 c05a9138 c02397dc c051054c c01bd2f8 c05b2864 c05b2864
-> 5ee0: c0585094 579da752 00000000 c023ad38 00000000 00000006 c0585094 c0564a24
-> 5f00: 0000047a 00000000 579da752 00000000 00000000 a0000053 c059b070 00000001
-> 5f20: c06eefc9 c044c6a0 000000a7 c002cd48 c7835f5c c0036f44 c051aae4 c053d7f4
-> 5f40: 00000006 00000006 c059b064 00000006 00000006 c0585094 c058db68 c0564480
-> 5f60: c05850a0 c05c5800 000000a7 c0564c18 00000006 00000006 c0564480 c7833bc0
-> 5f80: c7835f9c c0036da4 00000000 c043013c 00000000 00000000 00000000 00000000
-> 5fa0: 00000000 c0430144 00000000 c0009490 00000000 00000000 00000000 00000000
-> 5fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> 5fe0: 00000000 00000000 00000000 00000000 00000013 00000000 df7f9b78 3b477df6
-> [<c024875c>] (mc13xxx_common_init+0x1fc/0x280) from [<c0293cf8>] (spi_drv_probe+0x18/0x1c)
-> [<c0293cf8>] (spi_drv_probe+0x18/0x1c) from [<c023a774>] (driver_probe_device+0x78/0x20c)
-> [<c023a774>] (driver_probe_device+0x78/0x20c) from [<c02393ac>] (bus_for_each_drv+0x48/0x90)
-> [<c02393ac>] (bus_for_each_drv+0x48/0x90) from [<c023a4cc>] (device_attach+0x74/0x80)
-> [<c023a4cc>] (device_attach+0x74/0x80) from [<c02395e8>] (bus_probe_device+0x88/0xb0)
-> [<c02395e8>] (bus_probe_device+0x88/0xb0) from [<c0237938>] (device_add+0x31c/0x4c4)
-> [<c0237938>] (device_add+0x31c/0x4c4) from [<c0294d08>] (spi_add_device+0xa4/0x118)
-> [<c0294d08>] (spi_add_device+0xa4/0x118) from [<c02953a8>] (spi_register_master+0x53c/0x6a0)
-> [<c02953a8>] (spi_register_master+0x53c/0x6a0) from [<c0296cbc>] (spi_bitbang_start+0x88/0x100)
-> [<c0296cbc>] (spi_bitbang_start+0x88/0x100) from [<c02978c0>] (spi_imx_probe+0x3a8/0x478)
-> [<c02978c0>] (spi_imx_probe+0x3a8/0x478) from [<c023b614>] (platform_drv_probe+0x18/0x48)
-> [<c023b614>] (platform_drv_probe+0x18/0x48) from [<c023a774>] (driver_probe_device+0x78/0x20c)
-> [<c023a774>] (driver_probe_device+0x78/0x20c) from [<c023a994>] (__driver_attach+0x8c/0x90)
-> [<c023a994>] (__driver_attach+0x8c/0x90) from [<c0239034>] (bus_for_each_dev+0x5c/0x8c)
-> [<c0239034>] (bus_for_each_dev+0x5c/0x8c) from [<c02397dc>] (bus_add_driver+0xd4/0x1c8)
-> [<c02397dc>] (bus_add_driver+0xd4/0x1c8) from [<c023ad38>] (driver_register+0x78/0xf4)
-> [<c023ad38>] (driver_register+0x78/0xf4) from [<c0564a24>] (do_one_initcall+0x5c/0x168)
-> [<c0564a24>] (do_one_initcall+0x5c/0x168) from [<c0564c18>] (kernel_init_freeable+0xe8/0x1a8)
-> [<c0564c18>] (kernel_init_freeable+0xe8/0x1a8) from [<c0430144>] (kernel_init+0x8/0x110)
-> [<c0430144>] (kernel_init+0x8/0x110) from [<c0009490>] (ret_from_fork+0x14/0x24)
-> Code: eaffffdb e3a03008 e1a00004 e59f107c (e5962018)
-> ---[ end trace 71265dd116f3967e ]---
-> Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
-> 
-> Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
-> ---
->  drivers/mfd/mc13xxx-core.c | 8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-> index dbbf8ee..625633a 100644
-> --- a/drivers/mfd/mc13xxx-core.c
-> +++ b/drivers/mfd/mc13xxx-core.c
-> @@ -682,14 +682,14 @@ err_revision:
->  	if (mc13xxx->flags & MC13XXX_USE_ADC)
->  		mc13xxx_add_subdevice(mc13xxx, "%s-adc");
->  
-> -	if (mc13xxx->flags & MC13XXX_USE_CODEC)
-> +	if ((mc13xxx->flags & MC13XXX_USE_CODEC) && pdata)
->  		mc13xxx_add_subdevice_pdata(mc13xxx, "%s-codec",
->  					pdata->codec, sizeof(*pdata->codec));
->  
->  	if (mc13xxx->flags & MC13XXX_USE_RTC)
->  		mc13xxx_add_subdevice(mc13xxx, "%s-rtc");
->  
-> -	if (mc13xxx->flags & MC13XXX_USE_TOUCHSCREEN)
-> +	if ((mc13xxx->flags & MC13XXX_USE_CODEC) && pdata)
+On Tue, Nov 26, 2013 at 03:16:09PM -0800, Linus Torvalds wrote:
 
-Why do we check for CODEC if the Touchscreen should be used?
-
->  		mc13xxx_add_subdevice_pdata(mc13xxx, "%s-ts",
->  				&pdata->touch, sizeof(pdata->touch));
->  
-> @@ -701,6 +701,10 @@ err_revision:
->  		mc13xxx_add_subdevice_pdata(mc13xxx, "%s-pwrbutton",
->  				pdata->buttons, sizeof(*pdata->buttons));
->  	} else {
-> +		if (mc13xxx->flags & MC13XXX_USE_CODEC)
-> +			mc13xxx_add_subdevice(mc13xxx, "%s-codec");
-> +		if (mc13xxx->flags & MC13XXX_USE_TOUCHSCREEN)
-> +			mc13xxx_add_subdevice(mc13xxx, "%s-ts");
->  		mc13xxx_add_subdevice(mc13xxx, "%s-regulator");
->  		mc13xxx_add_subdevice(mc13xxx, "%s-led");
->  		mc13xxx_add_subdevice(mc13xxx, "%s-pwrbutton");
-> -- 
-> 1.8.3.2
+> On Mon, Nov 25, 2013 at 4:44 PM, Simon Kirby <sim@hostway.ca> wrote:
+> >
+> > I was hoping this or something else by 3.12 would have fixed it, so after
+> > testing we deployed this everywhere and turned off the rest of the debug
+> > options. I missed slub_debug on one server, though...and it just hit
+> > another case of overwritten poison.
 > 
+> Your thing is *very* consistent, it's once more four bytes into that
+> pipe-info. And it's once more that exact same "increment second word
+> in the allocation" pattern.
 > 
+> > Is it true that with slub_debug, aliasing of equal-sized objects is
+> > turned off, and so they shouldn't be immediately side-by-side? In other
+> > words, would there be similar scrawling victim chances as allocating
+> > pipe_inode_info with pages instead of slabs? "slabinfo -a" is empty.
+> 
+> So the thing is, with slub debugging, slub shouldn't be merging
+> different slab caches.
+> 
+> HOWEVER.
+> 
+> The pipe-info structure isn't using its own slab cache, it's just
+> using "kmalloc()". So it by definition will merge with all other
+> kmalloc() allocations of the same size (or, to be exact, of "similar
+> enough size to hit the same size bucket"). In your case it's the
+> 192-byte-sized bucket.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+I turned on kmalloc-192 tracing to find what else is using it: struct
+nfs_fh, struct bio, and struct cred. Poking around those, struct bio has
+bi_cnt, but it is way down in the struct. struct cred has "usage", but it
+comes first. Hmm. Nevertheless, I set:
+
+CONFIG_DEBUG_MUTEXES=y
+CONFIG_DEBUG_LIST=y
+CONFIG_DEBUG_CREDENTIALS=y
+
+And tried:
+
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index ec48bac..216dc43 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -168,7 +168,7 @@ static inline void *bio_data(struct bio *bio)
+  * returns. and then bio would be freed memory when if (bio->bi_flags ...)
+  * runs
+  */
+-#define bio_get(bio)	atomic_inc(&(bio)->bi_cnt)
++#define bio_get(bio)	WARN_ON(atomic_inc_return(&(bio)->bi_cnt) == 0x6c)
+ 
+ #if defined(CONFIG_BLK_DEV_INTEGRITY)
+ /*
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index 04421e8..2646fe9 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -205,7 +205,9 @@ static inline void validate_process_creds(void)
+  */
+ static inline struct cred *get_new_cred(struct cred *cred)
+ {
+-	atomic_inc(&cred->usage);
++	if (atomic_inc_return(&cred->usage) == 0x6c) {
++		WARN_ON(cred->uid == 0x6b);
++	}
+ 	return cred;
+ }
+ 
+On the same server, this last hunk warned fairly quickly:
+
+[  850.303535] ------------[ cut here ]------------
+[  850.312774] WARNING: CPU: 3 PID: 6169 at include/linux/cred.h:209 get_empty_filp+0x109/0x1b0()
+[  850.329974] Modules linked in: ipmi_devintf aoe ipmi_si bnx2 ipmi_msghandler evdev serio_raw
+[  850.346913] CPU: 3 PID: 6169 Comm: omreport Not tainted 3.12.0-hw-debug-mutexes+ #83
+[  850.362374] Hardware name: Dell Inc. PowerEdge 1950/0UR033, BIOS 2.0.1 10/30/2007
+[  850.377316]  0000000000000009 ffff880428d0fd28 ffffffff817f2407 ffff88043fccf9e8
+[  850.392134]  0000000000000000 ffff880428d0fd68 ffffffff8105a537 ffff880428d0fd58
+[  850.406936]  ffff880428d89e00 ffff88042960f480 ffff880428d0ff24 ffff88042a190000
+[  850.421746] Call Trace:
+[  850.426627]  [<ffffffff817f2407>] dump_stack+0x46/0x58
+[  850.436888]  [<ffffffff8105a537>] warn_slowpath_common+0x87/0xb0
+[  850.448878]  [<ffffffff8105a575>] warn_slowpath_null+0x15/0x20
+[  850.460523]  [<ffffffff8113c7c9>] get_empty_filp+0x109/0x1b0
+[  850.471818]  [<ffffffff811499c3>] path_openat+0x43/0x660
+[  850.482426]  [<ffffffff8118595b>] ? fcntl_setlk+0x5b/0x2d0
+[  850.493391]  [<ffffffff8114a38e>] do_filp_open+0x3e/0xa0
+[  850.504008]  [<ffffffff81157bc4>] ? mntput_no_expire+0x44/0x130
+[  850.515842]  [<ffffffff81156032>] ? __alloc_fd+0x42/0x110
+[  850.526630]  [<ffffffff81139e9c>] do_sys_open+0x13c/0x230
+[  850.537428]  [<ffffffff81187946>] compat_SyS_open+0x16/0x20
+[  850.548579]  [<ffffffff81802268>] sysenter_dispatch+0x7/0x25
+[  850.559888] ---[ end trace acdbea3e141dbaec ]---
+
+All traces are the same, and all Comms are "omreport", which is from the
+Dell OpenManage tools blob, executed regularly for RAID monitoring.
+Running it directly does not seem to cause the warning. kern.log shows it
+seems to warn every 20 minutes. No warnings from CONFIG_DEBUG_CREDENTIALS
+magic checking at all.
+
+Is there anything interesting about this tool? It is 32-bit. I can hook
+path_openat() and check for the cred contents there to print the path, if
+that would help.
+
+Simon-
