@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751379Ab3K3UFI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 15:05:08 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:51686 "HELO
+	id S1751532Ab3K3UH5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 15:07:57 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:54053 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751056Ab3K3UFG (ORCPT
+	with SMTP id S1751425Ab3K3UHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 15:05:06 -0500
+	Sat, 30 Nov 2013 15:07:51 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Francis Moreau <francis.moro@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jingoo Han <jg1.han@samsung.com>,
-        "'Wei WANG'" <wei_wang@realsil.com.cn>,
-        "'Samuel Ortiz'" <sameo@linux.intel.com>,
-        "'Chris Ball'" <cjb@laptop.org>, "'Borislav Petkov'" <bp@alien8.de>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-Date: Sat, 30 Nov 2013 21:17:57 +0100
-Message-ID: <8367476.3aVdCMMH8P@vostro.rjw.lan>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] cpufreq: Introduce cpufreq_notify_post_transition()
+Date: Sat, 30 Nov 2013 21:20:44 +0100
+Message-ID: <15590294.HtstlaFcjF@vostro.rjw.lan>
 User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <5299FF38.7060203@gmail.com>
-References: <20131117195358.GO27323@pd.tnic> <alpine.DEB.2.02.1311290958560.30673@ionos.tec.linutronix.de> <5299FF38.7060203@gmail.com>
+In-Reply-To: <0d635c6701654a75f6d25dd435705dc1ede3e19c.1385826776.git.viresh.kumar@linaro.org>
+References: <0d635c6701654a75f6d25dd435705dc1ede3e19c.1385826776.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -27,70 +25,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, November 30, 2013 04:07:36 PM Francis Moreau wrote:
-> Hello Thomas,
+On Saturday, November 30, 2013 09:26:19 PM Viresh Kumar wrote:
+> This introduces another routine cpufreq_notify_post_transition() which can be
+> used to send POSTCHANGE notification for new freq with or without both
+> {PRE|POST}CHANGE notifications for last freq in case of failures. This is useful
+> at multiple places, specially for sending transition failure notifications.
 > 
-> Sorry for the delay.
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
 > 
-> On 11/29/2013 10:02 AM, Thomas Gleixner wrote:
-> > On Fri, 29 Nov 2013, Francis Moreau wrote:
-> >> Since it seems to be related to rtsx driver or its upper layer, could
-> >> the folks involved in this area have a look to this issue please ?
-> > 
-> > I'm not involved, but looking at the debug objects backtrace it's
-> > related to the delayed work in rtsx.
-> > 
-> > Does the untested patch below cure the issue?
-> > 
+> Hi Rafael,
 > 
-> It seems it does since I can't see the debug object trace anymore
-> however Ican see this now:
+> Please see if you want to take it for 3.13 or 14, as this fixes bugs which are
+> partly introduced in 3.13..
 
-So Thomas' patch should be applied to the rtsx driver.
-
-> [   64.498270] irq 16: nobody cared (try booting with the "irqpoll" option)
-> [   64.498314] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.11.0-rc2-ARCH #65
-> [   64.498316] Hardware name: CLEVO CO.                        W55xEU
->                        /W55xEU                          , BIOS 4.6.5
-> 03/05/2013
-> [   64.498317]  ffff8804078bd38c ffff88041e203e48 ffffffff81459fe9
-> ffff8804078bd300
-> [   64.498320]  ffff88041e203e70 ffffffff810d8632 ffff8804078bd300
-> 0000000000000010
-> [   64.498322]  0000000000000000 ffff88041e203eb0 ffffffff810d8a58
-> ffffffff8136a882
-> [   64.498324] Call Trace:
-> [   64.498325]  <IRQ>  [<ffffffff81459fe9>] dump_stack+0x54/0x8d
-> [   64.498334]  [<ffffffff810d8632>] __report_bad_irq+0x32/0xd0
-> [   64.498337]  [<ffffffff810d8a58>] note_interrupt+0x138/0x1f0
-> [   64.498340]  [<ffffffff8136a882>] ? cpuidle_enter_state+0x52/0xc0
-> [   64.498343]  [<ffffffff810d6439>] handle_irq_event_percpu+0xf9/0x250
-> [   64.498345]  [<ffffffff810d65cd>] handle_irq_event+0x3d/0x60
-> [   64.498347]  [<ffffffff810d95ca>] handle_fasteoi_irq+0x5a/0x100
-> [   64.498350]  [<ffffffff81004a6e>] handle_irq+0x1e/0x30
-> [   64.498353]  [<ffffffff8146aafd>] do_IRQ+0x4d/0xc0
-> [   64.498355]  [<ffffffff8146116d>] common_interrupt+0x6d/0x6d
-> [   64.498356]  <EOI>  [<ffffffff8136a882>] ? cpuidle_enter_state+0x52/0xc0
-> [   64.498360]  [<ffffffff8136a878>] ? cpuidle_enter_state+0x48/0xc0
-> [   64.498362]  [<ffffffff8136a9b9>] cpuidle_idle_call+0xc9/0x280
-> [   64.498365]  [<ffffffff8100bf6e>] arch_cpu_idle+0xe/0x30
-> [   64.498368]  [<ffffffff810a1287>] cpu_startup_entry+0x257/0x2d0
-> [   64.498370]  [<ffffffff8144d404>] rest_init+0x84/0x90
-> [   64.498373]  [<ffffffff818d9ee1>] start_kernel+0x414/0x420
-> [   64.498375]  [<ffffffff818d98d6>] ? repair_env_string+0x5c/0x5c
-> [   64.498377]  [<ffffffff818d9120>] ? early_idt_handlers+0x120/0x120
-> [   64.498379]  [<ffffffff818d95be>] x86_64_start_reservations+0x2a/0x2c
-> [   64.498381]  [<ffffffff818d96c8>] x86_64_start_kernel+0x108/0x117
-> [   64.498382] handlers:
-> [   64.498402] [<ffffffffa00168f0>] usb_hcd_irq [usbcore]
-> [   64.498422] Disabling IRQ #16
-> 
-> So I don't think it completely solve the problem but it's a good start.
-
-That issue may or may not be related.
-
-If your system survives resume (I guess it does?), can you please send
-/proc/interrupts before and after the first suspend/resume cycle?
+Which ones?
 
 Rafael
 
+
+>  drivers/cpufreq/cpufreq.c | 14 ++++++++++++++
+>  include/linux/cpufreq.h   |  2 ++
+>  2 files changed, 16 insertions(+)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 606224a..a862aa9 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -324,6 +324,20 @@ void cpufreq_notify_transition(struct cpufreq_policy *policy,
+>  }
+>  EXPORT_SYMBOL_GPL(cpufreq_notify_transition);
+>  
+> +/* Do post notifications when there are chances that transition has failed */
+> +void cpufreq_notify_post_transition(struct cpufreq_policy *policy,
+> +		struct cpufreq_freqs *freqs, int transition_failed)
+> +{
+> +	cpufreq_notify_transition(policy, freqs, CPUFREQ_POSTCHANGE);
+> +	if (!transition_failed)
+> +		return;
+> +
+> +	swap(freqs->old, freqs->new);
+> +	cpufreq_notify_transition(policy, freqs, CPUFREQ_PRECHANGE);
+> +	cpufreq_notify_transition(policy, freqs, CPUFREQ_POSTCHANGE);
+> +}
+> +EXPORT_SYMBOL_GPL(cpufreq_notify_post_transition);
+> +
+>  
+>  /*********************************************************************
+>   *                          SYSFS INTERFACE                          *
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+> index ee5fe9d..57e48db 100644
+> --- a/include/linux/cpufreq.h
+> +++ b/include/linux/cpufreq.h
+> @@ -314,6 +314,8 @@ int cpufreq_unregister_notifier(struct notifier_block *nb, unsigned int list);
+>  
+>  void cpufreq_notify_transition(struct cpufreq_policy *policy,
+>  		struct cpufreq_freqs *freqs, unsigned int state);
+> +void cpufreq_notify_post_transition(struct cpufreq_policy *policy,
+> +		struct cpufreq_freqs *freqs, int transition_failed);
+>  
+>  #else /* CONFIG_CPU_FREQ */
+>  static inline int cpufreq_register_notifier(struct notifier_block *nb,
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
