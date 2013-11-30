@@ -1,85 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751764Ab3K3L7D (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 06:59:03 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:59949 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214Ab3K3L67 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 06:58:59 -0500
-Message-ID: <5299D306.7070701@gmail.com>
-Date: Sat, 30 Nov 2013 19:59:02 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751655Ab3K3MId (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 07:08:33 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:44413 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751264Ab3K3MI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Nov 2013 07:08:29 -0500
+Date: Sat, 30 Nov 2013 13:08:27 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Levente Kurusa <levex@linux.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Tony Luck <tony.luck@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, EDAC <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: mcheck: call put_device on device_register failure
+Message-ID: <20131130120827.GE4323@pd.tnic>
+References: <5298F900.9000208@linux.com>
+ <20131129205628.GA20144@pd.tnic>
+ <52999419.7040600@linux.com>
+ <20131130111214.GB4323@pd.tnic>
+ <5299CB38.8090808@linux.com>
+ <20131130113229.GD4323@pd.tnic>
+ <5299CFBB.4010209@linux.com>
 MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: "John W. Linville" <linville@tuxdriver.com>, rkuo <rkuo@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, linux-wireless@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH] net: mac80211: tx.c: be sure of 'sdata->vif.type' must
- be NL80211_IFTYPE_AP when be in NL80211_IFTYPE_AP case
-References: <528AEFB7.4060301@gmail.com>  <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com>  <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com>  <52957ADA.2080704@gmail.com> (sfid-20131127_055211_558798_A7DF5684) <1385739487.8656.1.camel@jlt4.sipsolutions.net>
-In-Reply-To: <1385739487.8656.1.camel@jlt4.sipsolutions.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5299CFBB.4010209@linux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2013 11:38 PM, Johannes Berg wrote:
-> 
->> +++ b/net/mac80211/tx.c
->> @@ -1814,8 +1814,9 @@ netdev_tx_t ieee80211_subif_start_xmit(struct sk_buff *skb,
->>  			break;
->>  		/* fall through */
->>  	case NL80211_IFTYPE_AP:
->> -		if (sdata->vif.type == NL80211_IFTYPE_AP)
->> -			chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
->> +		if (sdata->vif.type != NL80211_IFTYPE_AP)
->> +			goto fail_rcu;
->> +		chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
-> 
-> This change is completely wrong.
-> 
+On Sat, Nov 30, 2013 at 12:44:59PM +0100, Levente Kurusa wrote:
+> Yes, I saw that as well. By that I meant that by doing some identifier
+> searches for device_register and then checking whether they call
+> put_device and have device_release registered. Also, I wonder if it
+> would be beneficial to have a generic device_release? Most of the
+> drivers I quickly swept through only call kfree(). Wouldn't a generic
+> one save some space?
 
-Oh, it is.
+Again, I wouldn't waste my time with hypothetical issues which never
+happen - there are many other, real issues which would rather need
+attention than what-if ones.
 
-Hmm... for me, this work flow still can be implemented with a little
-clearer way (at least it will avoid related warning):
+About saving space, that could be worth a try. If you can actually do
+that and show numbers to back it up, I'm sure people will have a look.
+And if you can't show any space savings, you'll still have learned stuff
+along the way.
 
--------------------------diff begin------------------------------
+But don't ask me about whether it makes sense to have a generic
+device_release - I'm no driver core and am not even trying. You could
+try to answer that question yourself, btw. :)
 
-diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
-index c558b24..7076128 100644
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -1810,14 +1810,14 @@ netdev_tx_t ieee80211_subif_start_xmit(struct sk_buff *skb,
- 		if (!chanctx_conf)
- 			goto fail_rcu;
- 		band = chanctx_conf->def.chan->band;
--		if (sta)
--			break;
--		/* fall through */
-+		if (!sta)
-+			goto try_next;
-+		break;
- 	case NL80211_IFTYPE_AP:
--		if (sdata->vif.type == NL80211_IFTYPE_AP)
--			chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
-+		chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
- 		if (!chanctx_conf)
- 			goto fail_rcu;
-+try_next:
- 		fc |= cpu_to_le16(IEEE80211_FCTL_FROMDS);
- 		/* DA BSSID SA */
- 		memcpy(hdr.addr1, skb->data, ETH_ALEN);
+> Yes, I do that daily usually, but most of the time I only get some
+> uninitialized warnings. :-)
 
+You can always try to understand why such warnings get issued and maybe
+even fix them if they're legit and the compiler is right. Also, look
+through git log for examples how others have fixed such warnings.
 
+For example, sometimes changing code flow instead of simply shutting
+up the variable is much better. But in order to do that, you'd need to
+understand the code first and try to change it so that it doesn't break
+and the warning disappears. This is a very good way, IMO, to get to
+really understand what the code does and learn from others.
 
--------------------------diff end--------------------------------
+Another good exercise is trying to boot those random kernels with kvm -
+that can catch a bunch of issues too.
 
+The save-space experiment you can also quickly test with kvm. By now you
+probably are catching my drift: testing kernels with kvm is awesome! :-)
 
-Thanks.
+> What does that do? Never heard of it yet.
+
+Well, you can have a look: scripts/Makefile.build
+
+:-)
+
+Good luck!
+
 -- 
-Chen Gang
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
