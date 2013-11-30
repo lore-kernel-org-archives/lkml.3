@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637Ab3K3FRz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 00:17:55 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56586 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750893Ab3K3FRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 00:17:54 -0500
-Message-ID: <529974C9.6040607@zytor.com>
-Date: Fri, 29 Nov 2013 21:16:57 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751641Ab3K3FaV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 00:30:21 -0500
+Received: from dmz-mailsec-scanner-4.mit.edu ([18.9.25.15]:65070 "EHLO
+	dmz-mailsec-scanner-4.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751097Ab3K3FaR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Nov 2013 00:30:17 -0500
+X-AuditID: 1209190f-b7fb86d000000c36-c2-529977e873e0
+Date: Sat, 30 Nov 2013 00:30:14 -0500
+From: Greg Price <price@MIT.EDU>
+To: "Theodore Ts'o" <tytso@MIT.EDU>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/9] random: simplify loop in random_read
+Message-ID: <20131130053014.GG8043@ringworld.MIT.EDU>
+References: <cover.1384329436.git.price@mit.edu>
+ <20131113080740.GR16018@ringworld.MIT.EDU>
+ <20131129200905.GD3778@thunk.org>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>
-CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH] Add a text_poke syscall v2
-References: <1385426236-14960-1-git-send-email-andi@firstfloor.org> <20131129183558.GA9803@redhat.com> <20131129195419.GB17656@two.firstfloor.org> <20131129200532.GA13561@redhat.com>
-In-Reply-To: <20131129200532.GA13561@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131129200905.GD3778@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHIsWRmVeSWpSXmKPExsUixG6nrvuifGaQwYG5BhaXd81hc2D0+LxJ
+	LoAxissmJTUnsyy1SN8ugStj4pu3TAVHmSpub77A3MDYxNTFyMkhIWAisWDXGShbTOLCvfVs
+	XYxcHEICs5kkVvXPYYZwNjJK9HxZzwrh/GKUeHt4G3sXIwcHi4CqxOfNGSDdbAIKEj/mr2MG
+	CYsIOEo0vgMbKixgK3G7pRsszCtgKtHRkQoxpZFRovXQfFaQGl4BQYmTM5+wgNjMAloSN/69
+	ZAKpZxaQllj+jwMkzCmgJ3F7xjFmEFtUQEViysltbBMYBWYh6Z6FpHsWQvcCRuZVjLIpuVW6
+	uYmZOcWpybrFyYl5ealFuiZ6uZkleqkppZsYQcHIKcm/g/HbQaVDjAIcjEo8vBavZwQJsSaW
+	FVfmHmKU5GBSEuU1KJkZJMSXlJ9SmZFYnBFfVJqTWnyIUYKDWUmEd5EHUI43JbGyKrUoHyYl
+	zcGiJM57k8M+SEggPbEkNTs1tSC1CCYrw8GhJMErDow6IcGi1PTUirTMnBKENBMHJ8hwHqDh
+	Z8pAhhcXJOYWZ6ZD5E8xKkqJ8/4BSQiAJDJK8+B6YcniFaM40CvCvHwgK3iAiQau+xXQYCag
+	we++TgMZXJKIkJJqYLSvKHOe/GGO6sUlPpvVNWsOcK3hLgx3PFjMUJcm9+rm2fbfc49f9dY3
+	nf9L7mj66vqni0Pu8xTIaPgLVx9uEll7Iitkz8+NHO1Pns858fHgRNGQ7TU9lz8GNFrGGLxY
+	V/nartNU4V/REXmNN5X5bwpd7bb5unb72X6fkiW2dvOtWc07HT4KX1JiKc5INNRiLipOBAAb
+	hEHc8QIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2013 12:05 PM, Oleg Nesterov wrote:
-> On 11/29, Andi Kleen wrote:
->>
->>> Andi, et al. I am going to discuss the things I do not really
->>> understand, probably this can't make any sense, but...
->>
->> I think it's enough to set the dirty bit in the underlying
->> struct page, no need to play games with the PTE.
-> 
-> Ah, sorry for confusion, I guess you misunderstood.
-> 
-> I meant, perhaps sys_text_poke() doesn't the in-kernel text_poke
-> machinery altogether?
-> 
-> Can't we invalidate pte (so that any user will stuck in page fault),
-> update the page(s), restore the pte and drop the locks?
-> 
-> This way sys_text_poke() won't be x86-specific, and it will be per-mm.
-> 
+On Fri, Nov 29, 2013 at 03:09:05PM -0500, Theodore Ts'o wrote:
+> Applied, although I slightly edited the commit description the the
+> debug message mentioned in the description was removed since the first
+> version of your patch series, and it wasn't updated as part of the
+> rebase.
 
-Hmmm... if we hold mmap_sem() this pretty much will be the net result,
-no?  That would mean no additional tests needed on the page fault path.
- What I'm not sure of is whether or not it is actually safe to hold
-mmap_sem across all the code we need -- on the other hand, we may very
-well need to do so.
+Ah, good catch.  Thanks!
 
-	-hpa
-
-
+Greg
