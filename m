@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910Ab3K3J63 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 04:58:29 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:57714 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204Ab3K3J60 (ORCPT
+	id S1751982Ab3K3J7N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 04:59:13 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:46387 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204Ab3K3J7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 04:58:26 -0500
-Message-ID: <6662B6F95D1C4783A007CAC82A8DA641@ivogl>
-From: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-To: <gregkh@linuxfoundation.org>
-Cc: =?koi8-r?B?6dfByszPIOTJzcnU0s/X?= <freemangordon@abv.bg>,
-        <pali.rohar@gmail.com>, <sre@ring0.de>, <pavel@ucw.cz>,
-        <omar.ramirez@copitl.com>, <tony@atomide.com>,
-        <felipe.contreras@gmail.com>, <s-anna@ti.com>, <nm@ti.com>,
-        <ohad@wizery.com>, <stable@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Staging: tidspbridge: disable driver
-Date: Sat, 30 Nov 2013 11:58:23 +0200
+	Sat, 30 Nov 2013 04:59:08 -0500
+Message-ID: <5299B65C.4070700@huawei.com>
+Date: Sat, 30 Nov 2013 17:56:44 +0800
+From: Weng Meiling <wengmeiling.weng@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="koi8-r";
-	reply-type=original
+To: <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>, "J. Bruce Fields" <bfields@fieldses.org>,
+        <Trond.Myklebust@netapp.com>, <davem@davemloft.net>
+CC: Li Zefan <lizefan@huawei.com>, Huang Qiang <h.huangqiang@huawei.com>
+Subject: [PATCH] sunrpc: fix some typos
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5931
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+X-Originating-IP: [10.135.68.127]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-(re-sending in plain text, sorry for the noise)
+From: Weng Meiling <wengmeiling.weng@huawei.com>
 
-commit 
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=930ba4a374b96560ef9fde2145cdc454a164ddcc
-disables tidspbridge driver for the reasons it has a security bug and there 
-is no active maintainer.
-I was following the development of that driver for a bit and my impression 
-was that the reason it is
-still in staging is this 
-http://www.spinics.net/lists/linux-omap/msg84115.html . And as dmtimer
-driver is on its way to be merged upstream(or was it already merged?)  I was 
-planning to work on
-tidspbridge driver to fix it and send the patches. I also have a couple of 
-another small patches
-ready to be send.
+Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
+---
+ include/linux/sunrpc/svc.h | 2 +-
+ net/sunrpc/xprtsock.c      | 7 +++----
+ 2 files changed, 4 insertions(+), 5 deletions(-)
 
-However, could you elaborate on the "security bug" so I can try to fix it 
-and send the patch?
-Also, what needs to be done for the tidspdriver to get out of staging as it 
-seems that what I
-though initially is incorrect.
+diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
+index 6eecfc2..b6316423 100644
+--- a/include/linux/sunrpc/svc.h
++++ b/include/linux/sunrpc/svc.h
+@@ -368,7 +368,7 @@ struct svc_program {
+ 	struct svc_program *	pg_next;	/* other programs (same xprt) */
+ 	u32			pg_prog;	/* program number */
+ 	unsigned int		pg_lovers;	/* lowest version */
+-	unsigned int		pg_hivers;	/* lowest version */
++	unsigned int		pg_hivers;	/* highest version */
+ 	unsigned int		pg_nvers;	/* number of versions */
+ 	struct svc_version **	pg_vers;	/* version array */
+ 	char *			pg_name;	/* service name */
+diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+index dd9d295..0f4f391 100644
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -2932,10 +2932,9 @@ static struct rpc_xprt *xs_setup_bc_tcp(struct xprt_create *args)
 
-Regards,
-Ivo
+ 	/*
+ 	 * Once we've associated a backchannel xprt with a connection,
+-	 * we want to keep it around as long as long as the connection
+-	 * lasts, in case we need to start using it for a backchannel
+-	 * again; this reference won't be dropped until bc_xprt is
+-	 * destroyed.
++	 * we want to keep it around as long as the connection lasts,
++	 * in case we need to start using it for a backchannel again;
++	 * this reference won't be dropped until bc_xprt is destroyed.
+ 	 */
+ 	xprt_get(xprt);
+ 	args->bc_xprt->xpt_bc_xprt = xprt;
+-- 
+1.8.3
 
-PS: my further mails will be from this account on gmal as it seems LKML does 
-not like
-my abv.bg account (freemangordon at abv dot bg) 
 
