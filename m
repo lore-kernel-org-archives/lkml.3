@@ -1,28 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987Ab3K3M43 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 07:56:29 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59654 "EHLO
+	id S1754040Ab3K3M4y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 07:56:54 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59625 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752946Ab3K3Mv6 (ORCPT
+	with ESMTP id S1752796Ab3K3Mvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 07:51:58 -0500
-Date: Sat, 30 Nov 2013 04:51:43 -0800
-From: tip-bot for Stanislav Fomichev <tipbot@zytor.com>
-Message-ID: <tip-c87097d39dae1c42a5068e00dd3b76a4162ee0fc@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, stfomichev@yandex-team.ru,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, stfomichev@yandex-team.ru, tglx@linutronix.de
-In-Reply-To: <1383323151-19810-5-git-send-email-stfomichev@yandex-team.ru>
-References: <1383323151-19810-5-git-send-email-stfomichev@yandex-team.ru>
+	Sat, 30 Nov 2013 07:51:42 -0500
+Date: Sat, 30 Nov 2013 04:50:46 -0800
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-4bc437964ef540462bd15af4a713da62961809aa@git.kernel.org>
+Cc: acme@redhat.com, eranian@google.com, mingo@redhat.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, efault@gmx.de, peterz@infradead.org,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, namhyung@gmail.com,
+        adrian.hunter@intel.com
+Reply-To: mingo@kernel.org, mingo@redhat.com, eranian@google.com,
+        acme@redhat.com, a.p.zijlstra@chello.nl, peterz@infradead.org,
+        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, namhyung@gmail.com,
+        adrian.hunter@intel.com
+In-Reply-To: <1384768557-23331-3-git-send-email-adrian.hunter@intel.com>
+References: <1384768557-23331-3-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf timechart:
-  Add support for displaying only tasks related data
-Git-Commit-ID: c87097d39dae1c42a5068e00dd3b76a4162ee0fc
+Subject: [tip:perf/core] perf tools: Allow '--inherit' as the negation of 
+ '--no-inherit'
+Git-Commit-ID: 4bc437964ef540462bd15af4a713da62961809aa
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,90 +36,78 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 30 Nov 2013 04:51:49 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 30 Nov 2013 04:50:52 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c87097d39dae1c42a5068e00dd3b76a4162ee0fc
-Gitweb:     http://git.kernel.org/tip/c87097d39dae1c42a5068e00dd3b76a4162ee0fc
-Author:     Stanislav Fomichev <stfomichev@yandex-team.ru>
-AuthorDate: Fri, 1 Nov 2013 20:25:48 +0400
+Commit-ID:  4bc437964ef540462bd15af4a713da62961809aa
+Gitweb:     http://git.kernel.org/tip/4bc437964ef540462bd15af4a713da62961809aa
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Mon, 18 Nov 2013 11:55:55 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 27 Nov 2013 14:58:37 -0300
+CommitDate: Wed, 27 Nov 2013 14:58:36 -0300
 
-perf timechart: Add support for displaying only tasks related data
+perf tools: Allow '--inherit' as the negation of '--no-inherit'
 
-In order to make SVG smaller and faster to browse add possibility to
-switch off power related information with -T switch.
+Long options can be negated by prefixing them with 'no-'.  However
+options that already start with 'no-', such as '--no-inherit' result in
+ugly double 'no's.
 
-Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+Avoid that by accepting that the removal of 'no-' also negates the long
+option.
+
+Suggested-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1383323151-19810-5-git-send-email-stfomichev@yandex-team.ru
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1384768557-23331-3-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-timechart.txt |  3 +++
- tools/perf/builtin-timechart.c              | 11 ++++++++++-
- 2 files changed, 13 insertions(+), 1 deletion(-)
+ tools/perf/util/parse-options.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
-index 4373144..d844189 100644
---- a/tools/perf/Documentation/perf-timechart.txt
-+++ b/tools/perf/Documentation/perf-timechart.txt
-@@ -35,6 +35,9 @@ OPTIONS
- -P::
- --power-only::
-         Only output the CPU power section of the diagram
-+-T::
-+--tasks-only::
-+        Don't output processor state transitions
- -p::
- --process::
-         Select the processes to display, by name or PID
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 6410c9e..b3f175a 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -51,6 +51,7 @@ static u64		turbo_frequency;
- static u64		first_time, last_time;
- 
- static bool		power_only;
-+static bool		tasks_only;
- 
- 
- struct per_pid;
-@@ -971,7 +972,8 @@ static void write_svg_file(const char *filename)
- 	draw_cpu_usage();
- 	if (proc_num)
- 		draw_process_bars();
--	draw_c_p_states();
-+	if (!tasks_only)
-+		draw_c_p_states();
- 	if (proc_num)
- 		draw_wakeups();
- 
-@@ -1102,6 +1104,8 @@ int cmd_timechart(int argc, const char **argv,
- 	OPT_STRING('o', "output", &output_name, "file", "output file name"),
- 	OPT_INTEGER('w', "width", &svg_page_width, "page width"),
- 	OPT_BOOLEAN('P', "power-only", &power_only, "output power data only"),
-+	OPT_BOOLEAN('T', "tasks-only", &tasks_only,
-+		    "output processes data only"),
- 	OPT_CALLBACK('p', "process", NULL, "process",
- 		      "process selector. Pass a pid or process name.",
- 		       parse_process),
-@@ -1119,6 +1123,11 @@ int cmd_timechart(int argc, const char **argv,
- 	argc = parse_options(argc, argv, options, timechart_usage,
- 			PARSE_OPT_STOP_AT_NON_OPTION);
- 
-+	if (power_only && tasks_only) {
-+		pr_err("-P and -T options cannot be used at the same time.\n");
-+		return -1;
-+	}
-+
- 	symbol__init();
- 
- 	if (argc && !strncmp(argv[0], "rec", 3))
+diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
+index 31f404a..b6b39ff 100644
+--- a/tools/perf/util/parse-options.c
++++ b/tools/perf/util/parse-options.c
+@@ -224,6 +224,24 @@ static int parse_long_opt(struct parse_opt_ctx_t *p, const char *arg,
+ 			return 0;
+ 		}
+ 		if (!rest) {
++			if (!prefixcmp(options->long_name, "no-")) {
++				/*
++				 * The long name itself starts with "no-", so
++				 * accept the option without "no-" so that users
++				 * do not have to enter "no-no-" to get the
++				 * negation.
++				 */
++				rest = skip_prefix(arg, options->long_name + 3);
++				if (rest) {
++					flags |= OPT_UNSET;
++					goto match;
++				}
++				/* Abbreviated case */
++				if (!prefixcmp(options->long_name + 3, arg)) {
++					flags |= OPT_UNSET;
++					goto is_abbreviated;
++				}
++			}
+ 			/* abbreviated? */
+ 			if (!strncmp(options->long_name, arg, arg_end - arg)) {
+ is_abbreviated:
+@@ -259,6 +277,7 @@ is_abbreviated:
+ 			if (!rest)
+ 				continue;
+ 		}
++match:
+ 		if (*rest) {
+ 			if (*rest != '=')
+ 				continue;
