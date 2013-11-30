@@ -1,96 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311Ab3K3RYW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 12:24:22 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:45654 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336Ab3K3RYV (ORCPT
+	id S1752744Ab3K3RZh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 12:25:37 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:40299 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab3K3RZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 12:24:21 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/so7GVxB+TncCp507Vwbfn
-Date: Sat, 30 Nov 2013 09:24:19 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] pinctrl: single: fix pcs_disable with bits_per_mux
-Message-ID: <20131130172418.GD23334@atomide.com>
-References: <1385638160-30125-1-git-send-email-tomi.valkeinen@ti.com>
- <1385638160-30125-2-git-send-email-tomi.valkeinen@ti.com>
- <52973061.2070100@ti.com>
- <20131130170700.GB23334@atomide.com>
+	Sat, 30 Nov 2013 12:25:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131130170700.GB23334@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131130094343.GA12573@hostway.ca>
+References: <CAOJsxLGA+Aha8JcPsWyNd3BLQ6L0g7iznN0o2fG5yL5Xw0s8Lg@mail.gmail.com>
+	<20130819201717.GA23608@hostway.ca>
+	<0000014098447577-0d3e3f6b-f97b-4c73-946d-d70b697ce194-000000@email.amazonses.com>
+	<CA+55aFxiYzxLDUnr+9BGQ+fsfmb1T8_zW4fOOC=SQ4rVzwbv4A@mail.gmail.com>
+	<20130820040648.GG27005@ZenIV.linux.org.uk>
+	<CAEcaRjip29P8TdMHF8zJ3zzsQj7o_B9chEz7Q6xH0Bqtw3A-jg@mail.gmail.com>
+	<20130820072143.GJ27005@ZenIV.linux.org.uk>
+	<CAEcaRjg7GJhEbQoduup6xQKea4Pn4+SOgv8GbbJUeU=xR74dVQ@mail.gmail.com>
+	<20131126004456.GF19648@hostway.ca>
+	<CA+55aFxmVteJApiC5e=d9NmYO6PSbNertq5ipLpunmVreCTYUQ@mail.gmail.com>
+	<20131130094343.GA12573@hostway.ca>
+Date: Sat, 30 Nov 2013 09:25:33 -0800
+X-Google-Sender-Auth: WBPaUvQXeL5SSDfanstDwlWBs4k
+Message-ID: <CA+55aFy_Tb9kqZpa670MT9BW+W+LAizB+KoUxrJECgb1G_fGug@mail.gmail.com>
+Subject: Re: [3.10] Oopses in kmem_cache_allocate() via prepare_creds()
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Simon Kirby <sim@hostway.ca>
+Cc: Ian Applegate <ia@cloudflare.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Lameter <cl@gentwo.org>, Pekka Enberg <penberg@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@fusionio.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [131130 09:08]:
-> * Peter Ujfalusi <peter.ujfalusi@ti.com> [131128 04:01]:
-> > On 11/28/2013 01:29 PM, Tomi Valkeinen wrote:
-> > > pcs_enable() uses vals->mask instead of pcs->fmask when bits_per_mux is
-> > > enabled. However, pcs_disable() always uses pcs->fmask.
-> > > 
-> > > Fix pcs_disable() to use vals->mask with bits_per_mux.
-> > 
-> > I wonder how did I missed this?
-> 
-> Probably because the disable can be a nop for some hardware.
-> 
-> > Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+On Sat, Nov 30, 2013 at 1:43 AM, Simon Kirby <sim@hostway.ca> wrote:
+> On Tue, Nov 26, 2013 at 03:16:09PM -0800, Linus Torvalds wrote:
+>>
+>> The pipe-info structure isn't using its own slab cache, it's just
+>> using "kmalloc()". So it by definition will merge with all other
+>> kmalloc() allocations of the same size (or, to be exact, of "similar
+>> enough size to hit the same size bucket"). In your case it's the
+>> 192-byte-sized bucket.
+>
+> I turned on kmalloc-192 tracing to find what else is using it: struct
+> nfs_fh, struct bio, and struct cred. Poking around those, struct bio has
+> bi_cnt, but it is way down in the struct. struct cred has "usage", but it
+> comes first. Hmm. Nevertheless, I set:
+>
+> CONFIG_DEBUG_MUTEXES=y
+> CONFIG_DEBUG_LIST=y
+> CONFIG_DEBUG_CREDENTIALS=y
+>
+> And tried:
+>
+> diff --git a/include/linux/cred.h b/include/linux/cred.h
+> index 04421e8..2646fe9 100644
+> --- a/include/linux/cred.h
+> +++ b/include/linux/cred.h
+> @@ -205,7 +205,9 @@ static inline void validate_process_creds(void)
+>   */
+>  static inline struct cred *get_new_cred(struct cred *cred)
+>  {
+> -       atomic_inc(&cred->usage);
+> +       if (atomic_inc_return(&cred->usage) == 0x6c) {
+> +               WARN_ON(cred->uid == 0x6b);
 
-Linus W, might be worth also mentioning the regression causing commit
-here. Commit 9e605cb68a21d5 (pinctrl: pinctrl-single: Add
-pinctrl-single,bits type of mux) added support for multiple muxes
-in a single register, but forgot to modify pcs_disable() function the
-same way as pcs_enable() was modified.
- 
-> Acked-by: Tony Lindgren <tony@atomide.com>
->  
->  
-> > > Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-> > > ---
-> > >  drivers/pinctrl/pinctrl-single.c | 10 ++++++++--
-> > >  1 file changed, 8 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
-> > > index 829b98c5c66f..174f4c50cd77 100644
-> > > --- a/drivers/pinctrl/pinctrl-single.c
-> > > +++ b/drivers/pinctrl/pinctrl-single.c
-> > > @@ -525,12 +525,18 @@ static void pcs_disable(struct pinctrl_dev *pctldev, unsigned fselector,
-> > >  	for (i = 0; i < func->nvals; i++) {
-> > >  		struct pcs_func_vals *vals;
-> > >  		unsigned long flags;
-> > > -		unsigned val;
-> > > +		unsigned val, mask;
-> > >  
-> > >  		vals = &func->vals[i];
-> > >  		raw_spin_lock_irqsave(&pcs->lock, flags);
-> > >  		val = pcs->read(vals->reg);
-> > > -		val &= ~pcs->fmask;
-> > > +
-> > > +		if (pcs->bits_per_mux)
-> > > +			mask = vals->mask;
-> > > +		else
-> > > +			mask = pcs->fmask;
-> > > +
-> > > +		val &= ~mask;
-> > >  		val |= pcs->foff << pcs->fshift;
-> > >  		pcs->write(val, vals->reg);
-> > >  		raw_spin_unlock_irqrestore(&pcs->lock, flags);
-> > > 
-> > 
-> > 
-> > -- 
-> > Péter
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Oh, damn, I thought you had found it, and got very excited and already
+wrote a long email about things I wanted you to try. And then I
+started looking closer...
+
+That test is wrong. Both of those fields are 32-bit, so testing them
+against 0x6b/0x6c is bogus: you're just catching real cases. The
+reason it catches omreport is presumably because omreport runs as some
+special user that happens to have uid 107 (on my machine that happens
+to be qemu). And having a usage count of 108 isn't particularly
+strange either - creds get a lot of re-use.
+
+So close. It *might* still be one of those cases, but it doesn't
+really sound very likely. "bi_cnt" is deep inside the struct bio, and
+"usage" is at offset 0, not offset 4. And the ns_fh isn't very
+interesting.
+
+             Linus
