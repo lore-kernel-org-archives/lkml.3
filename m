@@ -1,81 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892Ab3K3NnH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 08:43:07 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60179 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab3K3NnD (ORCPT
+	id S1752094Ab3K3Nq0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 08:46:26 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:46205 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540Ab3K3NqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 08:43:03 -0500
-Date: Sat, 30 Nov 2013 05:42:50 -0800
-From: tip-bot for Henrik Austad <tipbot@zytor.com>
-Message-ID: <tip-854ff82ab085aed7509f6fb90f79ce6c41ee1fa4@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        henrik@austad.us, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        henrik@austad.us, tglx@linutronix.de
-In-Reply-To: <1385590680-8110-1-git-send-email-henrik@austad.us>
-References: <1385590680-8110-1-git-send-email-henrik@austad.us>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] Documentation/robust-futex-API:
-  Count properly to 4
-Git-Commit-ID: 854ff82ab085aed7509f6fb90f79ce6c41ee1fa4
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sat, 30 Nov 2013 08:46:22 -0500
+Date: Sat, 30 Nov 2013 14:46:18 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-arch@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        virtualization@lists.linux-foundation.org, systemtap@sourceware.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: Re: Re: Re: [PATCH -tip v3 00/23] kprobes: introduce
+ NOKPROBE_SYMBOL() and general cleaning of kprobe blacklist
+Message-ID: <20131130134618.GA18768@gmail.com>
+References: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal>
+ <y0mvbznxi6k.fsf@fche.csb>
+ <20131120153801.GA9743@gmail.com>
+ <20131120173600.GK8993@redhat.com>
+ <528D6C9F.8050809@hitachi.com>
+ <20131121072938.GA16912@gmail.com>
+ <528EC2FF.30301@hitachi.com>
+ <528F4406.3090309@hitachi.com>
+ <20131127133045.GC18422@gmail.com>
+ <52971E66.9080006@hitachi.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 30 Nov 2013 05:42:57 -0800 (PST)
+In-Reply-To: <52971E66.9080006@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  854ff82ab085aed7509f6fb90f79ce6c41ee1fa4
-Gitweb:     http://git.kernel.org/tip/854ff82ab085aed7509f6fb90f79ce6c41ee1fa4
-Author:     Henrik Austad <henrik@austad.us>
-AuthorDate: Wed, 27 Nov 2013 23:18:00 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 30 Nov 2013 14:08:28 +0100
 
-Documentation/robust-futex-API: Count properly to 4
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-A strictly monotonically increasing sequence is normally used in
-numbered lists as they provide an intuitive ordering of the
-elements.
+> (2013/11/27 22:30), Ingo Molnar wrote:
+> > 
+> > * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> > 
+> >> (2013/11/22 11:35), Masami Hiramatsu wrote:
+> >>> (2013/11/21 16:29), Ingo Molnar wrote:
+> >>>>
+> >>>> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> >>>>
+> >>>>> (2013/11/21 2:36), Frank Ch. Eigler wrote:
+> >>>>
+> >>>> [ ... ]
+> >>>>>> one needs to resort to something like:
+> >>>>>>
+> >>>>>> # cat /proc/kallsyms | grep ' [tT] ' | while read addr type symbol; do
+> >>>>>>    perf probe $symbol
+> >>>>>> done
+> >>>>>>
+> >>>>>> then wait for a few hours for that to finish. Then, or while the loop
+> >>>>>> is still running, run
+> >>>>>>
+> >>>>>> # perf record -e 'probe:*' -aR sleep 1
+> >>>>>>
+> >>>>>> to take a kernel down.
+> >>>>>
+> >>>>> Um, indeed, current blacklist is not perfect. [...]
+> >>>>
+> >>>> Then it needs to be fixed ASAP!
+> >>>
+> >>> OK, I see. At least the two patches included this series
+> >>> should be fixed. :)
+> >>>
+> >>> And more, I need to test all symbols and drills down.
+> >>
+> >> OK, what I've found was;
+> >>  - The functions which can be ftraced look good.
+> >>    (see tracing/available_filter_functions)
+> >>  - following functions should not be able to be probed.
+> >>    - memcpy, memset
+> >>    - native_load_sp0 and some other native functions (need to be clear)
+> >>    - restore
+> >>    - trace_graph_return
+> >>    - trace_hardirqs_off_thunk, trace_hardirqs_on_thunk
+> >>    - This list still be not perfect. I just enabled/disabled kprobes
+> >>      one by one. There might be combined bugs (combination of several
+> >>      kprobes).
+> >>  - Some of them are hard to specify by NOKPROBE_SYMBOL because they are
+> >>    defined in assembly file.
+> >>
+> >> Anyway, to fix all of them, I think we need file-based blacklist
+> >> especially for assembler symbols.
+> > 
+> > assembler symbols shouldn't be particular hard either, just put them 
+> > into the noprobes section.
+> 
+> Would you mean .kprobes.text? Hmm, I hope not to use it anymore, but 
+> yeah, bugfix is more important. Agreed.
 
-However, in situations where race conditions can appear, this
-assumption breaks down and you can end up with unpredictable
-results, leading to a rather confusing list :-)
+No, why not put the symbol address into the 'blacklist' section, 
+within the asm file? We fill out exception table entries in .S files 
+as well, see the _ASM_EXTABLE() macro, it's possible to do all that. 
 
-This changes the numbered list 1,2,2,2 to the more intuitive
-1,2,3,4.
+It needs not a CPP macro but an assembly macro.
 
-Introduced in:
+Thanks,
 
-  2eec9ad91f71 [PATCH] lightweight robust futexes: docs
-
-Signed-off-by: Henrik Austad <henrik@austad.us>
-Link: http://lkml.kernel.org/r/1385590680-8110-1-git-send-email-henrik@austad.us
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- Documentation/robust-futex-ABI.txt | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/robust-futex-ABI.txt b/Documentation/robust-futex-ABI.txt
-index fd1cd8a..16eb314f 100644
---- a/Documentation/robust-futex-ABI.txt
-+++ b/Documentation/robust-futex-ABI.txt
-@@ -146,8 +146,8 @@ On removal:
-  1) set the 'list_op_pending' word to the address of the 'lock entry'
-     to be removed,
-  2) remove the lock entry for this lock from the 'head' list,
-- 2) release the futex lock, and
-- 2) clear the 'lock_op_pending' word.
-+ 3) release the futex lock, and
-+ 4) clear the 'lock_op_pending' word.
- 
- On exit, the kernel will consider the address stored in
- 'list_op_pending' and the address of each 'lock word' found by walking
+	Ingo
