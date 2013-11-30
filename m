@@ -1,32 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753013Ab3K3MwA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 07:52:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59652 "EHLO
+	id S1753128Ab3K3MwP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 07:52:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59664 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752931Ab3K3Mv4 (ORCPT
+	with ESMTP id S1753025Ab3K3MwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 07:51:56 -0500
-Date: Sat, 30 Nov 2013 04:51:05 -0800
-From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-69e7e5b02bc6a9e5cf4a54911b27ca133cc1f99f@git.kernel.org>
-Cc: acme@redhat.com, eranian@google.com, mingo@redhat.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, efault@gmx.de, peterz@infradead.org,
-        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, namhyung@gmail.com,
-        adrian.hunter@intel.com
-Reply-To: mingo@kernel.org, mingo@redhat.com, eranian@google.com,
-        acme@redhat.com, a.p.zijlstra@chello.nl, peterz@infradead.org,
-        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, namhyung@gmail.com,
-        adrian.hunter@intel.com
-In-Reply-To: <1384768557-23331-5-git-send-email-adrian.hunter@intel.com>
-References: <1384768557-23331-5-git-send-email-adrian.hunter@intel.com>
+	Sat, 30 Nov 2013 07:52:08 -0500
+Date: Sat, 30 Nov 2013 04:51:52 -0800
+From: tip-bot for Stanislav Fomichev <tipbot@zytor.com>
+Message-ID: <tip-cbb2e81e5232b1bca5cd2aa1d7a7eb1cd30f8304@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung@kernel.org, stfomichev@yandex-team.ru,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, stfomichev@yandex-team.ru, tglx@linutronix.de
+In-Reply-To: <1383323151-19810-6-git-send-email-stfomichev@yandex-team.ru>
+References: <1383323151-19810-6-git-send-email-stfomichev@yandex-team.ru>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf record: Default -t option to no inheritance
-Git-Commit-ID: 69e7e5b02bc6a9e5cf4a54911b27ca133cc1f99f
+Subject: [tip:perf/core] perf timechart:
+  Group figures and add title with details
+Git-Commit-ID: cbb2e81e5232b1bca5cd2aa1d7a7eb1cd30f8304
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,91 +31,276 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 30 Nov 2013 04:51:11 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 30 Nov 2013 04:51:59 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  69e7e5b02bc6a9e5cf4a54911b27ca133cc1f99f
-Gitweb:     http://git.kernel.org/tip/69e7e5b02bc6a9e5cf4a54911b27ca133cc1f99f
-Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Mon, 18 Nov 2013 11:55:57 +0200
+Commit-ID:  cbb2e81e5232b1bca5cd2aa1d7a7eb1cd30f8304
+Gitweb:     http://git.kernel.org/tip/cbb2e81e5232b1bca5cd2aa1d7a7eb1cd30f8304
+Author:     Stanislav Fomichev <stfomichev@yandex-team.ru>
+AuthorDate: Fri, 1 Nov 2013 20:25:49 +0400
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 27 Nov 2013 14:58:36 -0300
+CommitDate: Wed, 27 Nov 2013 14:58:37 -0300
 
-perf record: Default -t option to no inheritance
+perf timechart: Group figures and add title with details
 
-The change to per-cpu mmaps causes the -p, -t and -u options now to have
-inheritance enabled by default.  Change that back to no inheritance but
-for the -t option only.
+Add titles to figures so we can run SVG interactively in Firefox and
+check event details in the tooltips.
 
-Requested-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+This also aids exploring SVG with Inkscape because when user clicks on
+one part of logical figure, all parts are selected.
+
+It's also possible to read titles with Inkscape in the object details.
+
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1384768557-23331-5-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1383323151-19810-6-git-send-email-stfomichev@yandex-team.ru
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-record.txt | 2 ++
- tools/perf/builtin-record.c              | 8 ++++++--
- tools/perf/perf.h                        | 1 +
- 3 files changed, 9 insertions(+), 2 deletions(-)
+ tools/perf/builtin-timechart.c |  6 ++---
+ tools/perf/util/svghelper.c    | 56 ++++++++++++++++++++++++++++++++++++++++--
+ tools/perf/util/svghelper.h    |  5 ++--
+ 3 files changed, 60 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 6ac867e..c407897 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -57,6 +57,8 @@ OPTIONS
- -t::
- --tid=::
-         Record events on existing thread ID (comma separated list).
-+        This option also disables inheritance by default.  Enable it by adding
-+        --inherit.
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index b3f175a..6a848b8 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -798,11 +798,11 @@ static void draw_process_bars(void)
+ 			sample = c->samples;
+ 			while (sample) {
+ 				if (sample->type == TYPE_RUNNING)
+-					svg_sample(Y, sample->cpu, sample->start_time, sample->end_time);
++					svg_running(Y, sample->cpu, sample->start_time, sample->end_time);
+ 				if (sample->type == TYPE_BLOCKED)
+-					svg_box(Y, sample->start_time, sample->end_time, "blocked");
++					svg_blocked(Y, sample->cpu, sample->start_time, sample->end_time);
+ 				if (sample->type == TYPE_WAITING)
+-					svg_waiting(Y, sample->start_time, sample->end_time);
++					svg_waiting(Y, sample->cpu, sample->start_time, sample->end_time);
+ 				sample = sample->next;
+ 			}
  
- -u::
- --uid=::
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index f5b18b8..65615a8 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -843,8 +843,9 @@ const struct option record_options[] = {
- 	OPT_U64('c', "count", &record.opts.user_interval, "event period to sample"),
- 	OPT_STRING('o', "output", &record.file.path, "file",
- 		    "output file name"),
--	OPT_BOOLEAN('i', "no-inherit", &record.opts.no_inherit,
--		    "child tasks do not inherit counters"),
-+	OPT_BOOLEAN_SET('i', "no-inherit", &record.opts.no_inherit,
-+			&record.opts.no_inherit_set,
-+			"child tasks do not inherit counters"),
- 	OPT_UINTEGER('F', "freq", &record.opts.user_freq, "profile at this frequency"),
- 	OPT_CALLBACK('m', "mmap-pages", &record.opts.mmap_pages, "pages",
- 		     "number of mmap data pages",
-@@ -939,6 +940,9 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
- 		goto out_symbol_exit;
- 	}
+diff --git a/tools/perf/util/svghelper.c b/tools/perf/util/svghelper.c
+index 96c8660..9a5b413 100644
+--- a/tools/perf/util/svghelper.c
++++ b/tools/perf/util/svghelper.c
+@@ -95,6 +95,7 @@ void open_svg(const char *filename, int cpus, int rows, u64 start, u64 end)
  
-+	if (rec->opts.target.tid && !rec->opts.no_inherit_set)
-+		rec->opts.no_inherit = true;
+ 	total_height = (1 + rows + cpu2slot(cpus)) * SLOT_MULT;
+ 	fprintf(svgfile, "<?xml version=\"1.0\" standalone=\"no\"?> \n");
++	fprintf(svgfile, "<!DOCTYPE svg SYSTEM \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n");
+ 	fprintf(svgfile, "<svg width=\"%i\" height=\"%" PRIu64 "\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\">\n", svg_page_width, total_height);
+ 
+ 	fprintf(svgfile, "<defs>\n  <style type=\"text/css\">\n    <![CDATA[\n");
+@@ -128,12 +129,29 @@ void svg_box(int Yslot, u64 start, u64 end, const char *type)
+ 		time2pixels(start), time2pixels(end)-time2pixels(start), Yslot * SLOT_MULT, SLOT_HEIGHT, type);
+ }
+ 
+-void svg_sample(int Yslot, int cpu, u64 start, u64 end)
++static char *time_to_string(u64 duration);
++void svg_blocked(int Yslot, int cpu, u64 start, u64 end)
++{
++	if (!svgfile)
++		return;
 +
- 	err = target__validate(&rec->opts.target);
- 	if (err) {
- 		target__strerror(&rec->opts.target, err, errbuf, BUFSIZ);
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index b079304..b23fed5 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -254,6 +254,7 @@ struct perf_record_opts {
- 	bool	     inherit_stat;
- 	bool	     no_delay;
- 	bool	     no_inherit;
-+	bool	     no_inherit_set;
- 	bool	     no_samples;
- 	bool	     raw_samples;
- 	bool	     sample_address;
++	fprintf(svgfile, "<g>\n");
++	fprintf(svgfile, "<title>#%d blocked %s</title>\n", cpu,
++		time_to_string(end - start));
++	svg_box(Yslot, start, end, "blocked");
++	fprintf(svgfile, "</g>\n");
++}
++
++void svg_running(int Yslot, int cpu, u64 start, u64 end)
+ {
+ 	double text_size;
+ 	if (!svgfile)
+ 		return;
+ 
++	fprintf(svgfile, "<g>\n");
++
++	fprintf(svgfile, "<title>#%d running %s</title>\n",
++		cpu, time_to_string(end - start));
+ 	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"sample\"/>\n",
+ 		time2pixels(start), time2pixels(end)-time2pixels(start), Yslot * SLOT_MULT, SLOT_HEIGHT);
+ 
+@@ -148,6 +166,7 @@ void svg_sample(int Yslot, int cpu, u64 start, u64 end)
+ 		fprintf(svgfile, "<text x=\"%1.8f\" y=\"%1.8f\" font-size=\"%1.8fpt\">%i</text>\n",
+ 			time2pixels(start), Yslot *  SLOT_MULT + SLOT_HEIGHT - 1, text_size,  cpu + 1);
+ 
++	fprintf(svgfile, "</g>\n");
+ }
+ 
+ static char *time_to_string(u64 duration)
+@@ -168,7 +187,7 @@ static char *time_to_string(u64 duration)
+ 	return text;
+ }
+ 
+-void svg_waiting(int Yslot, u64 start, u64 end)
++void svg_waiting(int Yslot, int cpu, u64 start, u64 end)
+ {
+ 	char *text;
+ 	const char *style;
+@@ -192,6 +211,7 @@ void svg_waiting(int Yslot, u64 start, u64 end)
+ 	font_size = round_text_size(font_size);
+ 
+ 	fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\">\n", time2pixels(start), Yslot * SLOT_MULT);
++	fprintf(svgfile, "<title>#%d waiting %s</title>\n", cpu, time_to_string(end - start));
+ 	fprintf(svgfile, "<rect x=\"0\" width=\"%4.8f\" y=\"0\" height=\"%4.1f\" class=\"%s\"/>\n",
+ 		time2pixels(end)-time2pixels(start), SLOT_HEIGHT, style);
+ 	if (font_size > MIN_TEXT_SIZE)
+@@ -242,6 +262,8 @@ void svg_cpu_box(int cpu, u64 __max_freq, u64 __turbo_freq)
+ 	max_freq = __max_freq;
+ 	turbo_frequency = __turbo_freq;
+ 
++	fprintf(svgfile, "<g>\n");
++
+ 	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"cpu\"/>\n",
+ 		time2pixels(first_time),
+ 		time2pixels(last_time)-time2pixels(first_time),
+@@ -253,6 +275,8 @@ void svg_cpu_box(int cpu, u64 __max_freq, u64 __turbo_freq)
+ 
+ 	fprintf(svgfile, "<text transform=\"translate(%4.8f,%4.8f)\" font-size=\"1.25pt\">%s</text>\n",
+ 		10+time2pixels(first_time), cpu2y(cpu) + SLOT_MULT + SLOT_HEIGHT - 4, cpu_model());
++
++	fprintf(svgfile, "</g>\n");
+ }
+ 
+ void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name)
+@@ -264,6 +288,7 @@ void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name
+ 
+ 
+ 	fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\">\n", time2pixels(start), cpu2y(cpu));
++	fprintf(svgfile, "<title>%s %s</title>\n", name, time_to_string(end - start));
+ 	fprintf(svgfile, "<rect x=\"0\" width=\"%4.8f\" y=\"0\" height=\"%4.1f\" class=\"%s\"/>\n",
+ 		time2pixels(end)-time2pixels(start), SLOT_MULT+SLOT_HEIGHT, type);
+ 	width = time2pixels(end)-time2pixels(start);
+@@ -288,6 +313,8 @@ void svg_cstate(int cpu, u64 start, u64 end, int type)
+ 		return;
+ 
+ 
++	fprintf(svgfile, "<g>\n");
++
+ 	if (type > 6)
+ 		type = 6;
+ 	sprintf(style, "c%i", type);
+@@ -306,6 +333,8 @@ void svg_cstate(int cpu, u64 start, u64 end, int type)
+ 	if (width > MIN_TEXT_SIZE)
+ 		fprintf(svgfile, "<text x=\"%4.8f\" y=\"%4.8f\" font-size=\"%3.8fpt\">C%i</text>\n",
+ 			time2pixels(start), cpu2y(cpu)+width, width, type);
++
++	fprintf(svgfile, "</g>\n");
+ }
+ 
+ static char *HzToHuman(unsigned long hz)
+@@ -339,6 +368,8 @@ void svg_pstate(int cpu, u64 start, u64 end, u64 freq)
+ 	if (!svgfile)
+ 		return;
+ 
++	fprintf(svgfile, "<g>\n");
++
+ 	if (max_freq)
+ 		height = freq * 1.0 / max_freq * (SLOT_HEIGHT + SLOT_MULT);
+ 	height = 1 + cpu2y(cpu) + SLOT_MULT + SLOT_HEIGHT - height;
+@@ -347,6 +378,7 @@ void svg_pstate(int cpu, u64 start, u64 end, u64 freq)
+ 	fprintf(svgfile, "<text x=\"%4.8f\" y=\"%4.8f\" font-size=\"0.25pt\">%s</text>\n",
+ 		time2pixels(start), height+0.9, HzToHuman(freq));
+ 
++	fprintf(svgfile, "</g>\n");
+ }
+ 
+ 
+@@ -358,6 +390,12 @@ void svg_partial_wakeline(u64 start, int row1, char *desc1, int row2, char *desc
+ 		return;
+ 
+ 
++	fprintf(svgfile, "<g>\n");
++
++	fprintf(svgfile, "<title>%s wakes up %s</title>\n",
++		desc1 ? desc1 : "?",
++		desc2 ? desc2 : "?");
++
+ 	if (row1 < row2) {
+ 		if (row1) {
+ 			fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%4.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
+@@ -395,6 +433,8 @@ void svg_partial_wakeline(u64 start, int row1, char *desc1, int row2, char *desc
+ 	if (row1)
+ 		fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(32,255,32)\"/>\n",
+ 			time2pixels(start), height);
++
++	fprintf(svgfile, "</g>\n");
+ }
+ 
+ void svg_wakeline(u64 start, int row1, int row2)
+@@ -405,6 +445,8 @@ void svg_wakeline(u64 start, int row1, int row2)
+ 		return;
+ 
+ 
++	fprintf(svgfile, "<g>\n");
++
+ 	if (row1 < row2)
+ 		fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%4.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
+ 			time2pixels(start), row1 * SLOT_MULT + SLOT_HEIGHT,  time2pixels(start), row2 * SLOT_MULT);
+@@ -417,6 +459,8 @@ void svg_wakeline(u64 start, int row1, int row2)
+ 		height += SLOT_HEIGHT;
+ 	fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(32,255,32)\"/>\n",
+ 			time2pixels(start), height);
++
++	fprintf(svgfile, "</g>\n");
+ }
+ 
+ void svg_interrupt(u64 start, int row)
+@@ -424,10 +468,16 @@ void svg_interrupt(u64 start, int row)
+ 	if (!svgfile)
+ 		return;
+ 
++	fprintf(svgfile, "<g>\n");
++
++	fprintf(svgfile, "<title>Wakeup from interrupt</title>\n");
++
+ 	fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(255,128,128)\"/>\n",
+ 			time2pixels(start), row * SLOT_MULT);
+ 	fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(255,128,128)\"/>\n",
+ 			time2pixels(start), row * SLOT_MULT + SLOT_HEIGHT);
++
++	fprintf(svgfile, "</g>\n");
+ }
+ 
+ void svg_text(int Yslot, u64 start, const char *text)
+@@ -455,6 +505,7 @@ void svg_legenda(void)
+ 	if (!svgfile)
+ 		return;
+ 
++	fprintf(svgfile, "<g>\n");
+ 	svg_legenda_box(0,	"Running", "sample");
+ 	svg_legenda_box(100,	"Idle","c1");
+ 	svg_legenda_box(200,	"Deeper Idle", "c3");
+@@ -462,6 +513,7 @@ void svg_legenda(void)
+ 	svg_legenda_box(550,	"Sleeping", "process2");
+ 	svg_legenda_box(650,	"Waiting for cpu", "waiting");
+ 	svg_legenda_box(800,	"Blocked on IO", "blocked");
++	fprintf(svgfile, "</g>\n");
+ }
+ 
+ void svg_time_grid(void)
+diff --git a/tools/perf/util/svghelper.h b/tools/perf/util/svghelper.h
+index e078198..aa53345 100644
+--- a/tools/perf/util/svghelper.h
++++ b/tools/perf/util/svghelper.h
+@@ -5,8 +5,9 @@
+ 
+ extern void open_svg(const char *filename, int cpus, int rows, u64 start, u64 end);
+ extern void svg_box(int Yslot, u64 start, u64 end, const char *type);
+-extern void svg_sample(int Yslot, int cpu, u64 start, u64 end);
+-extern void svg_waiting(int Yslot, u64 start, u64 end);
++extern void svg_blocked(int Yslot, int cpu, u64 start, u64 end);
++extern void svg_running(int Yslot, int cpu, u64 start, u64 end);
++extern void svg_waiting(int Yslot, int cpu, u64 start, u64 end);
+ extern void svg_cpu_box(int cpu, u64 max_frequency, u64 turbo_frequency);
+ 
+ 
