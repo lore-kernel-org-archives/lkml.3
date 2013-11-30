@@ -1,140 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659Ab3K3WlO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 17:41:14 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:21625 "EHLO
+	id S1751728Ab3K3WlR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 17:41:17 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:21631 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751432Ab3K3Wko (ORCPT
+	with ESMTP id S1751434Ab3K3Wkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 17:40:44 -0500
+	Sat, 30 Nov 2013 17:40:45 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3 05/12] PCI: pcibus address to resource converting take bus instead of dev
-Date: Sat, 30 Nov 2013 14:40:31 -0800
-Message-Id: <1385851238-21085-6-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v3 00/12] PCI: Double removing fix and allocate 64bit mmio pref
+Date: Sat, 30 Nov 2013 14:40:26 -0800
+Message-Id: <1385851238-21085-1-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1385851238-21085-1-git-send-email-yinghai@kernel.org>
-References: <1385851238-21085-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For allocating resource under bus path, we do not have dev to pass along,
-and we only have bus to use instead.
+First 4 are for Gu Zheng <guz.fnst@cn.fujitsu.com> to help double pci
+device removing via sysfs.
+For patch 4, rafael like to have use lock instead of atomic.
 
--v2: drop pcibios_bus_addr_to_resource().
+Patch 6 are for not enabling realloc auto when 64bit mmio is not there for
+root bus.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/host-bridge.c | 34 +++++++++++++++++++++-------------
- include/linux/pci.h       |  5 +++++
- 2 files changed, 26 insertions(+), 13 deletions(-)
+Others are about mmio 64 allocation that could help Guo Chao <yan@linux.vnet.ibm.com> on powerpc mmio allocation.
+It will try to assign 64 bit resource above 4g at first.
 
-diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
-index a68dc61..c988a30 100644
---- a/drivers/pci/host-bridge.c
-+++ b/drivers/pci/host-bridge.c
-@@ -9,22 +9,19 @@
- 
- #include "pci.h"
- 
--static struct pci_bus *find_pci_root_bus(struct pci_dev *dev)
-+static struct pci_bus *find_pci_root_bus(struct pci_bus *bus)
- {
--	struct pci_bus *bus;
--
--	bus = dev->bus;
- 	while (bus->parent)
- 		bus = bus->parent;
- 
- 	return bus;
- }
- 
--static struct pci_host_bridge *find_pci_host_bridge(struct pci_dev *dev)
-+static struct pci_host_bridge *find_pci_host_bridge(struct pci_bus *bus)
- {
--	struct pci_bus *bus = find_pci_root_bus(dev);
-+	struct pci_bus *root_bus = find_pci_root_bus(bus);
- 
--	return to_pci_host_bridge(bus->bridge);
-+	return to_pci_host_bridge(root_bus->bridge);
- }
- 
- void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
-@@ -40,10 +37,11 @@ static bool resource_contains(struct resource *res1, struct resource *res2)
- 	return res1->start <= res2->start && res1->end >= res2->end;
- }
- 
--void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
--			     struct resource *res)
-+void __pcibios_resource_to_bus(struct pci_bus *bus,
-+				      struct pci_bus_region *region,
-+				      struct resource *res)
- {
--	struct pci_host_bridge *bridge = find_pci_host_bridge(dev);
-+	struct pci_host_bridge *bridge = find_pci_host_bridge(bus);
- 	struct pci_host_bridge_window *window;
- 	resource_size_t offset = 0;
- 
-@@ -60,6 +58,11 @@ void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
- 	region->start = res->start - offset;
- 	region->end = res->end - offset;
- }
-+void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
-+			     struct resource *res)
-+{
-+	__pcibios_resource_to_bus(dev->bus, region, res);
-+}
- EXPORT_SYMBOL(pcibios_resource_to_bus);
- 
- static bool region_contains(struct pci_bus_region *region1,
-@@ -68,10 +71,10 @@ static bool region_contains(struct pci_bus_region *region1,
- 	return region1->start <= region2->start && region1->end >= region2->end;
- }
- 
--void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
--			     struct pci_bus_region *region)
-+void __pcibios_bus_to_resource(struct pci_bus *bus, struct resource *res,
-+				      struct pci_bus_region *region)
- {
--	struct pci_host_bridge *bridge = find_pci_host_bridge(dev);
-+	struct pci_host_bridge *bridge = find_pci_host_bridge(bus);
- 	struct pci_host_bridge_window *window;
- 	resource_size_t offset = 0;
- 
-@@ -93,4 +96,9 @@ void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
- 	res->start = region->start + offset;
- 	res->end = region->end + offset;
- }
-+void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
-+			     struct pci_bus_region *region)
-+{
-+	__pcibios_bus_to_resource(dev->bus, res, region);
-+}
- EXPORT_SYMBOL(pcibios_bus_to_resource);
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 1ca5438..a51b343 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -738,8 +738,13 @@ void pci_fixup_cardbus(struct pci_bus *);
- 
- /* Generic PCI functions used internally */
- 
-+void __pcibios_resource_to_bus(struct pci_bus *bus,
-+			       struct pci_bus_region *region,
-+			       struct resource *res);
- void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
- 			     struct resource *res);
-+void __pcibios_bus_to_resource(struct pci_bus *bus, struct resource *res,
-+				      struct pci_bus_region *region);
- void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
- 			     struct pci_bus_region *region);
- void pcibios_scan_specific_bus(int busn);
+Patch 1-4 and Patch 5-12 could be appliey seperatedly.
+
+Could be found:
+        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-3.14
+
+And it is based on current pci/for-linus.
+
+-v2: update after patch that move device_del down to pci_destroy_dev.
+     add "Try best to allocate pref mmio 64bit above 4G"
+
+-v3: refresh and send out after pci_clip_resource() changes,
+     as Bjorn is not happy with attachments.
+
+Yinghai Lu (12):
+  PCI: Use device_release_driver in pci_stop_root_bus
+  PCI: Move back pci_proc_attach_devices calling
+  PCI: Move resources and bus_list releasing to pci_release_dev
+  PCI: Destroy pci dev only once
+  PCI: pcibus address to resource converting take bus instead of dev
+  PCI: Only enable realloc auto when root bus has 64bit mmio
+  PCI: Don't use 4G bus address directly in resource allocation
+  PCI: Try to allocate mem64 above 4G at first
+  PCI: Kill PCIBIOS_MAX_MEM_32
+  PCI: Try best to allocate pref mmio 64bit above 4g
+  PCI: Sort pci root bus resources list
+  intel-gtt: Read 64bit for gmar_bus_addr
+
+ arch/x86/include/asm/pci.h   |   1 -
+ drivers/char/agp/intel-gtt.c |  14 ++--
+ drivers/pci/bus.c            |  74 ++++++++++++++++---
+ drivers/pci/host-bridge.c    |  34 +++++----
+ drivers/pci/probe.c          |  23 +++++-
+ drivers/pci/remove.c         |  31 ++------
+ drivers/pci/setup-bus.c      | 165 ++++++++++++++++++++++++++++++-------------
+ drivers/pci/setup-res.c      |  14 +++-
+ include/linux/pci.h          |  10 +--
+ 9 files changed, 257 insertions(+), 109 deletions(-)
+
 -- 
 1.8.1.4
 
