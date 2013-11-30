@@ -1,103 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752296Ab3K3N7N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 08:59:13 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:56274 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913Ab3K3N7L (ORCPT
+	id S1752204Ab3K3OCG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 09:02:06 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:45384 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744Ab3K3OCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 08:59:11 -0500
-Date: Sat, 30 Nov 2013 14:59:07 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [GIT PULL] dynticks updates for 3.13
-Message-ID: <20131130135907.GA19027@gmail.com>
-References: <1384181387-30194-1-git-send-email-fweisbec@gmail.com>
+	Sat, 30 Nov 2013 09:02:03 -0500
+Message-ID: <5299EFDD.6060405@gmail.com>
+Date: Sat, 30 Nov 2013 22:02:05 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384181387-30194-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: "John W. Linville" <linville@tuxdriver.com>, rkuo <rkuo@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, linux-wireless@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH] net: mac80211: tx.c: be sure of 'sdata->vif.type' must
+ be NL80211_IFTYPE_AP when be in NL80211_IFTYPE_AP case
+References: <528AEFB7.4060301@gmail.com>   <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com>   <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com>   <52957ADA.2080704@gmail.com>  (sfid-20131127_055211_558798_A7DF5684) <1385739487.8656.1.camel@jlt4.sipsolutions.net>  <5299D306.7070701@gmail.com> (sfid-20131130_125901_519610_EDA4068E) <1385816013.4327.1.camel@jlt4.sipsolutions.net> <5299ED38.4090509@gmail.com>
+In-Reply-To: <5299ED38.4090509@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
-
-> Ingo,
+On 11/30/2013 09:50 PM, Chen Gang wrote:
+> On 11/30/2013 08:53 PM, Johannes Berg wrote:
+>> On Sat, 2013-11-30 at 19:59 +0800, Chen Gang wrote:
+>>> On 11/29/2013 11:38 PM, Johannes Berg wrote:
+>>>>
+>>>>> +++ b/net/mac80211/tx.c
+>>>>> @@ -1814,8 +1814,9 @@ netdev_tx_t ieee80211_subif_start_xmit(struct sk_buff *skb,
+>>>>>  			break;
+>>>>>  		/* fall through */
+>>>>>  	case NL80211_IFTYPE_AP:
+>>>>> -		if (sdata->vif.type == NL80211_IFTYPE_AP)
+>>>>> -			chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
+>>>>> +		if (sdata->vif.type != NL80211_IFTYPE_AP)
+>>>>> +			goto fail_rcu;
+>>>>> +		chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
+>>>>
+>>>> This change is completely wrong.
+>>>>
+>>>
+>>> Oh, it is.
+>>>
+>>> Hmm... for me, this work flow still can be implemented with a little
+>>> clearer way (at least it will avoid related warning):
+>>>
+>>> -------------------------diff begin------------------------------
+>>>
+>>> diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
+>>> index c558b24..7076128 100644
+>>> --- a/net/mac80211/tx.c
+>>> +++ b/net/mac80211/tx.c
+>>> @@ -1810,14 +1810,14 @@ netdev_tx_t ieee80211_subif_start_xmit(struct sk_buff *skb,
+>>>  		if (!chanctx_conf)
+>>>  			goto fail_rcu;
+>>>  		band = chanctx_conf->def.chan->band;
+>>> -		if (sta)
+>>> -			break;
+>>> -		/* fall through */
+>>> +		if (!sta)
+>>> +			goto try_next;
+>>> +		break;
+>>>  	case NL80211_IFTYPE_AP:
+>>> -		if (sdata->vif.type == NL80211_IFTYPE_AP)
+>>> -			chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
+>>> +		chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
+>>>  		if (!chanctx_conf)
+>>>  			goto fail_rcu;
+>>> +try_next:
+>>
+>> I don't think that's better than the (fairly obvious) fall-through, and
+>> has a pretty odd goto. Also, depending on the compiler, it still knows
+>> the previous case label and doesn't warn.
+>>
 > 
-> Please pull the timers/core branch that can be found at:
+> Yeah, fall-through is obvious. But check 'A' again just near by "case A"
+> seems a little strange, and some of compilers (or some of versions) are
+> really not quit smart enough to know it is not a warning.
 > 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> 	timers/core
-> 
-> It passed through 0-day testing. I'm proposing it for 3.13 just in case but I'm ok
-> as well if you think it's too late and should be delayed for 3.14
 
-Pulled into tip:timers/core, thanks Frederic!
+Sorry, the paragraph above may lead misunderstanding, I repeated again:
 
-In the future it would be nice to write a higher level description 
-that I can put into the merge commit. I wrote this:
+ - fall-through is obvious (although I did not notice it, originally).
 
-  Pull dynticks updates from Frederic Weisbecker: smaller fixes and 
-  cleanups.
+ - Check 'A' again just near by "case A" seems a little strange.
 
-Btw., how does the bug here:
+ - Some compilers aren't quit smart enough to know 'chanctx_conf' is OK.
 
-  92e73cf831ba posix-timers: Fix full dynticks CPUs kick on timer rescheduling
 
-manifest itself to users? Is there any real bug, or suboptimal nohz 
-behavior? (more wakeups than expected) This kind of information should 
-really be in the changelog.
+Thanks.
 
-> 
-> Thanks,
-> 	Frederic
-> ---
-> 
-> Frederic Weisbecker (5):
->       nohz: Convert a few places to use local per cpu accesses
->       context_tracking: Wrap static key check into more intuitive function name
->       context_tracking: Rename context_tracking_active() to context_tracking_cpu_is_enabled()
->       posix-timers: Spare workqueue if there is no full dynticks CPU to kick
->       posix-timers: Fix full dynticks CPUs kick on timer rescheduling
-> 
-> Paul Gortmaker (1):
->       trivial: fix spelling in CONTEXT_TRACKING_FORCE help text
+> Hmm... for me, if the code (implementation) can express real logical
+> work flow as much as directly and simply, the code (implementation) is
+> clear enough (don't mind whether use 'goto' or not).
 > 
 > 
->  include/linux/context_tracking.h       | 10 ++++-----
->  include/linux/context_tracking_state.h | 11 +++++++---
->  include/linux/tick.h                   |  8 ++++----
->  include/linux/vtime.h                  |  4 ++--
->  init/Kconfig                           |  2 +-
->  kernel/context_tracking.c              |  8 ++++----
->  kernel/posix-cpu-timers.c              | 21 +++++++++----------
->  kernel/softirq.c                       |  4 +---
->  kernel/time/tick-broadcast.c           |  6 +++---
->  kernel/time/tick-internal.h            |  4 ++--
->  kernel/time/tick-sched.c               | 37 ++++++++++++++--------------------
->  11 files changed, 54 insertions(+), 61 deletions(-)
+> And originally, at first, I am really not quite careful enough, and sent
+> an incorrect patch after noticed the related compiler's warning. :-)
+> 
+> 
+> Thanks.
+> 
 
-Btw., I noticed one other detail:
 
--       tick_check_oneshot_broadcast(cpu);
--       tick_check_nohz(cpu);
-+       tick_check_oneshot_broadcast();
-+       tick_check_nohz();
-
-it would be nice to name such functions that lose a 'cpu' argument 
-with the this_cpu pattern, i.e.:
-
-	- tick_check_oneshot_broadcast_this_cpu()
-	- tick_check_nohz_this_cpu()
-
-This makes it more obvious at a glance that they have 'current CPU' 
-assumptions in them.
-
-	Ingo
+-- 
+Chen Gang
