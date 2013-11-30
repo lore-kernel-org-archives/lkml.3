@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532Ab3K3UH5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 15:07:57 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:54053 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751425Ab3K3UHv (ORCPT
+	id S1751663Ab3K3UJK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 15:09:10 -0500
+Received: from s3.sipsolutions.net ([144.76.43.152]:60204 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366Ab3K3UJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 15:07:51 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] cpufreq: Introduce cpufreq_notify_post_transition()
-Date: Sat, 30 Nov 2013 21:20:44 +0100
-Message-ID: <15590294.HtstlaFcjF@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <0d635c6701654a75f6d25dd435705dc1ede3e19c.1385826776.git.viresh.kumar@linaro.org>
-References: <0d635c6701654a75f6d25dd435705dc1ede3e19c.1385826776.git.viresh.kumar@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Sat, 30 Nov 2013 15:09:06 -0500
+Message-ID: <1385842134.6108.4.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH] net: mac80211: tx.c: be sure of 'sdata->vif.type' must
+ be NL80211_IFTYPE_AP when be in NL80211_IFTYPE_AP case
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>, rkuo <rkuo@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, linux-wireless@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Date: Sat, 30 Nov 2013 21:08:54 +0100
+In-Reply-To: <5299EFDD.6060405@gmail.com> (sfid-20131130_150205_984535_068F14A9)
+References: <528AEFB7.4060301@gmail.com>
+	   <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com>
+	   <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com>
+	   <52957ADA.2080704@gmail.com>
+	  (sfid-20131127_055211_558798_A7DF5684) <1385739487.8656.1.camel@jlt4.sipsolutions.net>
+	  <5299D306.7070701@gmail.com>
+	 (sfid-20131130_125901_519610_EDA4068E) <1385816013.4327.1.camel@jlt4.sipsolutions.net>
+	 <5299ED38.4090509@gmail.com> <5299EFDD.6060405@gmail.com>
+	 (sfid-20131130_150205_984535_068F14A9)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, November 30, 2013 09:26:19 PM Viresh Kumar wrote:
-> This introduces another routine cpufreq_notify_post_transition() which can be
-> used to send POSTCHANGE notification for new freq with or without both
-> {PRE|POST}CHANGE notifications for last freq in case of failures. This is useful
-> at multiple places, specially for sending transition failure notifications.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-> 
-> Hi Rafael,
-> 
-> Please see if you want to take it for 3.13 or 14, as this fixes bugs which are
-> partly introduced in 3.13..
+On Sat, 2013-11-30 at 22:02 +0800, Chen Gang wrote:
 
-Which ones?
-
-Rafael
-
-
->  drivers/cpufreq/cpufreq.c | 14 ++++++++++++++
->  include/linux/cpufreq.h   |  2 ++
->  2 files changed, 16 insertions(+)
+> >>>  	case NL80211_IFTYPE_AP:
+> >>> -		if (sdata->vif.type == NL80211_IFTYPE_AP)
+> >>> -			chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
+> >>> +		chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
+> >>>  		if (!chanctx_conf)
+> >>>  			goto fail_rcu;
+> >>> +try_next:
+> >>
+> >> I don't think that's better than the (fairly obvious) fall-through, and
+> >> has a pretty odd goto. Also, depending on the compiler, it still knows
+> >> the previous case label and doesn't warn.
+> >>
+> > 
+> > Yeah, fall-through is obvious. But check 'A' again just near by "case A"
+> > seems a little strange, and some of compilers (or some of versions) are
+> > really not quit smart enough to know it is not a warning.
+> > 
 > 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 606224a..a862aa9 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -324,6 +324,20 @@ void cpufreq_notify_transition(struct cpufreq_policy *policy,
->  }
->  EXPORT_SYMBOL_GPL(cpufreq_notify_transition);
->  
-> +/* Do post notifications when there are chances that transition has failed */
-> +void cpufreq_notify_post_transition(struct cpufreq_policy *policy,
-> +		struct cpufreq_freqs *freqs, int transition_failed)
-> +{
-> +	cpufreq_notify_transition(policy, freqs, CPUFREQ_POSTCHANGE);
-> +	if (!transition_failed)
-> +		return;
-> +
-> +	swap(freqs->old, freqs->new);
-> +	cpufreq_notify_transition(policy, freqs, CPUFREQ_PRECHANGE);
-> +	cpufreq_notify_transition(policy, freqs, CPUFREQ_POSTCHANGE);
-> +}
-> +EXPORT_SYMBOL_GPL(cpufreq_notify_post_transition);
-> +
->  
->  /*********************************************************************
->   *                          SYSFS INTERFACE                          *
-> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-> index ee5fe9d..57e48db 100644
-> --- a/include/linux/cpufreq.h
-> +++ b/include/linux/cpufreq.h
-> @@ -314,6 +314,8 @@ int cpufreq_unregister_notifier(struct notifier_block *nb, unsigned int list);
->  
->  void cpufreq_notify_transition(struct cpufreq_policy *policy,
->  		struct cpufreq_freqs *freqs, unsigned int state);
-> +void cpufreq_notify_post_transition(struct cpufreq_policy *policy,
-> +		struct cpufreq_freqs *freqs, int transition_failed);
->  
->  #else /* CONFIG_CPU_FREQ */
->  static inline int cpufreq_register_notifier(struct notifier_block *nb,
+> Sorry, the paragraph above may lead misunderstanding, I repeated again:
 > 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+>  - fall-through is obvious (although I did not notice it, originally).
+> 
+>  - Check 'A' again just near by "case A" seems a little strange.
+> 
+>  - Some compilers aren't quit smart enough to know 'chanctx_conf' is OK.
+
+I know. If you have any good ideas of how to make it more obvious to the
+compiler, I'm all ears, I just don't like any of the solutions offered
+so far (and you aren't the first to do so either) :-)
+
+FWIW, I find the label to be odd because if you're familiar with the
+code then AP/AP_VLAN *should* be identical except for two special things
+that are now linearly & neatly handled in the code (the first being the
+4-addr station, the second the chanctx assignment which always has to be
+done regardless of 4-addr). IMHO the == check after case should be
+enough to make a human reader take a closer look. I understand that you
+didn't and that's OK since you were just trying to squelch compile
+warnings, but I don't see that this one warrants much attention.
+
+johannes
+
