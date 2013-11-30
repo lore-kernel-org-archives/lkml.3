@@ -1,192 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563Ab3K3O7u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 09:59:50 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:60551 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807Ab3K3O7s (ORCPT
+	id S1752254Ab3K3PHH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 10:07:07 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:38427 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413Ab3K3PHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 09:59:48 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, linux-kernel@vger.kernel.org, levex@linux.com,
-        rob@landley.net, rdunlap@infradead.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH/v3] [trivial] doc: Fix typo in Documentation/devicetree
-Date: Sat, 30 Nov 2013 23:59:39 +0900
-Message-Id: <1385823579-31255-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.5.rc1.28.g7061504
-In-Reply-To: <1385817454-19505-1-git-send-email-standby24x7@gmail.com>
-References: <1385817454-19505-1-git-send-email-standby24x7@gmail.com>
+	Sat, 30 Nov 2013 10:07:04 -0500
+Message-ID: <5299FF38.7060203@gmail.com>
+Date: Sat, 30 Nov 2013 16:07:36 +0100
+From: Francis Moreau <francis.moro@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Jingoo Han <jg1.han@samsung.com>, "'Wei WANG'" <wei_wang@realsil.com.cn>,
+        "'Samuel Ortiz'" <sameo@linux.intel.com>,
+        "'Chris Ball'" <cjb@laptop.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "'Borislav Petkov'" <bp@alien8.de>,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
+References: <20131117195358.GO27323@pd.tnic> <4523614.I5MBhorHFt@vostro.rjw.lan> <5292FF5D.1050304@gmail.com> <1821758.2MoNI3h1Mv@vostro.rjw.lan> <52985041.5050000@gmail.com> <alpine.DEB.2.02.1311290958560.30673@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1311290958560.30673@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo in Documentation/devicetree
+Hello Thomas,
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-Reviewed-By: Levente Kurusa <levex@linux.com>
+Sorry for the delay.
 
----
- Documentation/devicetree/bindings/arm/omap/timer.txt        | 2 +-
- Documentation/devicetree/bindings/bus/mvebu-mbus.txt        | 2 +-
- Documentation/devicetree/bindings/crypto/fsl-sec6.txt       | 2 +-
- Documentation/devicetree/bindings/gpio/mrvl-gpio.txt        | 2 +-
- Documentation/devicetree/bindings/mfd/s2mps11.txt           | 2 +-
- Documentation/devicetree/bindings/mmc/samsung-sdhci.txt     | 2 +-
- Documentation/devicetree/bindings/mmc/synopsys-dw-mshc.txt  | 4 ++--
- Documentation/devicetree/bindings/phy/phy-bindings.txt      | 2 +-
- Documentation/devicetree/bindings/spi/spi-bus.txt           | 2 +-
- Documentation/devicetree/bindings/timer/lsi,zevio-timer.txt | 2 +-
- Documentation/devicetree/bindings/video/atmel,lcdc.txt      | 4 ++--
- 11 files changed, 13 insertions(+), 13 deletions(-)
+On 11/29/2013 10:02 AM, Thomas Gleixner wrote:
+> On Fri, 29 Nov 2013, Francis Moreau wrote:
+>> Since it seems to be related to rtsx driver or its upper layer, could
+>> the folks involved in this area have a look to this issue please ?
+> 
+> I'm not involved, but looking at the debug objects backtrace it's
+> related to the delayed work in rtsx.
+> 
+> Does the untested patch below cure the issue?
+> 
 
-diff --git a/Documentation/devicetree/bindings/arm/omap/timer.txt b/Documentation/devicetree/bindings/arm/omap/timer.txt
-index d02e27c..8cda976 100644
---- a/Documentation/devicetree/bindings/arm/omap/timer.txt
-+++ b/Documentation/devicetree/bindings/arm/omap/timer.txt
-@@ -25,7 +25,7 @@ Required properties:
- 			HW spec.
- 
- Optional properties:
--- ti,timer-alwon:	Indicates the timer is in an alway-on power domain.
-+- ti,timer-alwon:	Indicates the timer is in an always-on power domain.
- - ti,timer-dsp:		Indicates the timer can interrupt the on-chip DSP in
- 			addition to the ARM CPU.
- - ti,timer-pwm: 	Indicates the timer can generate a PWM output.
-diff --git a/Documentation/devicetree/bindings/bus/mvebu-mbus.txt b/Documentation/devicetree/bindings/bus/mvebu-mbus.txt
-index 7586fb6..5fa44f5 100644
---- a/Documentation/devicetree/bindings/bus/mvebu-mbus.txt
-+++ b/Documentation/devicetree/bindings/bus/mvebu-mbus.txt
-@@ -197,7 +197,7 @@ to be set by the operating system and that are guaranteed to be free of overlaps
- with one another or with the system memory ranges.
- 
- Each entry in the property refers to exactly one window. If the operating system
--choses to use a different set of mbus windows, it must ensure that any address
-+chooses to use a different set of mbus windows, it must ensure that any address
- translations performed from downstream devices are adapted accordingly.
- 
- The operating system may insert additional mbus windows that do not conflict
-diff --git a/Documentation/devicetree/bindings/crypto/fsl-sec6.txt b/Documentation/devicetree/bindings/crypto/fsl-sec6.txt
-index c0a20cd..baf8a3c 100644
---- a/Documentation/devicetree/bindings/crypto/fsl-sec6.txt
-+++ b/Documentation/devicetree/bindings/crypto/fsl-sec6.txt
-@@ -1,5 +1,5 @@
- SEC 6 is as Freescale's Cryptographic Accelerator and Assurance Module (CAAM).
--Currently Freescale powerpc chip C29X is embeded with SEC 6.
-+Currently Freescale powerpc chip C29X is embedded with SEC 6.
- SEC 6 device tree binding include:
-    -SEC 6 Node
-    -Job Ring Node
-diff --git a/Documentation/devicetree/bindings/gpio/mrvl-gpio.txt b/Documentation/devicetree/bindings/gpio/mrvl-gpio.txt
-index 6641626..99daf57 100644
---- a/Documentation/devicetree/bindings/gpio/mrvl-gpio.txt
-+++ b/Documentation/devicetree/bindings/gpio/mrvl-gpio.txt
-@@ -12,7 +12,7 @@ Required properties:
-   gpio_mux.
- - interrupt-names : Should be the names of irq resources. Each interrupt
-   uses its own interrupt name, so there should be as many interrupt names
--  as referenced interrups.
-+  as referenced interrupts.
- - interrupt-controller : Identifies the node as an interrupt controller.
- - #interrupt-cells: Specifies the number of cells needed to encode an
-   interrupt source.
-diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-index 78a840d..2234c8c 100644
---- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
-+++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-@@ -41,7 +41,7 @@ sub-node should be of the format as listed below.
- 
-  regulator-ramp-delay for BUCKs = [6250/12500/25000(default)/50000] uV/us
- 
-- BUCK[2/3/4/6] supports disabling ramp delay on hardware, so explictly
-+ BUCK[2/3/4/6] supports disabling ramp delay on hardware, so explicitly
-  regulator-ramp-delay = <0> can be used for them to disable ramp delay.
-  In the absence of the regulator-ramp-delay property, the default ramp
-  delay will be used.
-diff --git a/Documentation/devicetree/bindings/mmc/samsung-sdhci.txt b/Documentation/devicetree/bindings/mmc/samsung-sdhci.txt
-index 328e990..42e0a9af 100644
---- a/Documentation/devicetree/bindings/mmc/samsung-sdhci.txt
-+++ b/Documentation/devicetree/bindings/mmc/samsung-sdhci.txt
-@@ -3,7 +3,7 @@
- Samsung's SDHCI controller is used as a connectivity interface with external
- MMC, SD and eMMC storage mediums. This file documents differences between the
- core mmc properties described by mmc.txt and the properties used by the
--Samsung implmentation of the SDHCI controller.
-+Samsung implementation of the SDHCI controller.
- 
- Required SoC Specific Properties:
- - compatible: should be one of the following
-diff --git a/Documentation/devicetree/bindings/mmc/synopsys-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/synopsys-dw-mshc.txt
-index 8f3f133..9f9b30a 100644
---- a/Documentation/devicetree/bindings/mmc/synopsys-dw-mshc.txt
-+++ b/Documentation/devicetree/bindings/mmc/synopsys-dw-mshc.txt
-@@ -13,10 +13,10 @@ Required Properties:
- * #size-cells: should be 0.
- 
- # Slots: The slot specific information are contained within child-nodes with
--  each child-node representing a supported slot. There should be atleast one
-+  each child-node representing a supported slot. There should be at least one
-   child node representing a card slot. The name of the child node representing
-   the slot is recommended to be slot@n where n is the unique number of the slot
--  connnected to the controller. The following are optional properties which
-+  connected to the controller. The following are optional properties which
-   can be included in the slot child node.
- 
- 	* reg: specifies the physical slot number. The valid values of this
-diff --git a/Documentation/devicetree/bindings/phy/phy-bindings.txt b/Documentation/devicetree/bindings/phy/phy-bindings.txt
-index 8ae844f..7db7d46 100644
---- a/Documentation/devicetree/bindings/phy/phy-bindings.txt
-+++ b/Documentation/devicetree/bindings/phy/phy-bindings.txt
-@@ -23,7 +23,7 @@ phys: phy {
- };
- 
- That node describes an IP block (PHY provider) that implements 2 different PHYs.
--In order to differentiate between these 2 PHYs, an additonal specifier should be
-+In order to differentiate between these 2 PHYs, an additional specifier should be
- given while trying to get a reference to it.
- 
- PHY user node
-diff --git a/Documentation/devicetree/bindings/spi/spi-bus.txt b/Documentation/devicetree/bindings/spi/spi-bus.txt
-index 800dafe..4b9cf5c 100644
---- a/Documentation/devicetree/bindings/spi/spi-bus.txt
-+++ b/Documentation/devicetree/bindings/spi/spi-bus.txt
-@@ -61,7 +61,7 @@ contain the following properties.
-                       used for MISO. Defaults to 1 if not present.
- 
- Some SPI controllers and devices support Dual and Quad SPI transfer mode.
--It allows data in SPI system transfered in 2 wires(DUAL) or 4 wires(QUAD).
-+It allows data in SPI system transferred in 2 wires(DUAL) or 4 wires(QUAD).
- Now the value that spi-tx-bus-width and spi-rx-bus-width can receive is
- only 1(SINGLE), 2(DUAL) and 4(QUAD).
- Dual/Quad mode is not allowed when 3-wire mode is used.
-diff --git a/Documentation/devicetree/bindings/timer/lsi,zevio-timer.txt b/Documentation/devicetree/bindings/timer/lsi,zevio-timer.txt
-index b2d07ad..201e0c3 100644
---- a/Documentation/devicetree/bindings/timer/lsi,zevio-timer.txt
-+++ b/Documentation/devicetree/bindings/timer/lsi,zevio-timer.txt
-@@ -9,7 +9,7 @@ Required properties:
- Optional properties:
- 
- - interrupts : The interrupt number of the first timer.
--- reg : The interrupt acknowledgement registers
-+- reg : The interrupt acknowledgment registers
- 	(always after timer base address)
- 
- If any of the optional properties are not given, the timer is added as a
-diff --git a/Documentation/devicetree/bindings/video/atmel,lcdc.txt b/Documentation/devicetree/bindings/video/atmel,lcdc.txt
-index 1ec175e..47981dd 100644
---- a/Documentation/devicetree/bindings/video/atmel,lcdc.txt
-+++ b/Documentation/devicetree/bindings/video/atmel,lcdc.txt
-@@ -39,8 +39,8 @@ Atmel LCDC Display
- -----------------------------------------------------
- Required properties (as per of_videomode_helper):
- 
-- - atmel,dmacon: dma controler configuration
-- - atmel,lcdcon2: lcd controler configuration
-+ - atmel,dmacon: dma controller configuration
-+ - atmel,lcdcon2: lcd controller configuration
-  - atmel,guard-time: lcd guard time (Delay in frame periods)
-  - bits-per-pixel: lcd panel bit-depth.
- 
--- 
-1.8.5.rc1.28.g7061504
+It seems it does since I can't see the debug object trace anymore
+however Ican see this now:
+
+[   64.498270] irq 16: nobody cared (try booting with the "irqpoll" option)
+[   64.498314] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.11.0-rc2-ARCH #65
+[   64.498316] Hardware name: CLEVO CO.                        W55xEU
+                       /W55xEU                          , BIOS 4.6.5
+03/05/2013
+[   64.498317]  ffff8804078bd38c ffff88041e203e48 ffffffff81459fe9
+ffff8804078bd300
+[   64.498320]  ffff88041e203e70 ffffffff810d8632 ffff8804078bd300
+0000000000000010
+[   64.498322]  0000000000000000 ffff88041e203eb0 ffffffff810d8a58
+ffffffff8136a882
+[   64.498324] Call Trace:
+[   64.498325]  <IRQ>  [<ffffffff81459fe9>] dump_stack+0x54/0x8d
+[   64.498334]  [<ffffffff810d8632>] __report_bad_irq+0x32/0xd0
+[   64.498337]  [<ffffffff810d8a58>] note_interrupt+0x138/0x1f0
+[   64.498340]  [<ffffffff8136a882>] ? cpuidle_enter_state+0x52/0xc0
+[   64.498343]  [<ffffffff810d6439>] handle_irq_event_percpu+0xf9/0x250
+[   64.498345]  [<ffffffff810d65cd>] handle_irq_event+0x3d/0x60
+[   64.498347]  [<ffffffff810d95ca>] handle_fasteoi_irq+0x5a/0x100
+[   64.498350]  [<ffffffff81004a6e>] handle_irq+0x1e/0x30
+[   64.498353]  [<ffffffff8146aafd>] do_IRQ+0x4d/0xc0
+[   64.498355]  [<ffffffff8146116d>] common_interrupt+0x6d/0x6d
+[   64.498356]  <EOI>  [<ffffffff8136a882>] ? cpuidle_enter_state+0x52/0xc0
+[   64.498360]  [<ffffffff8136a878>] ? cpuidle_enter_state+0x48/0xc0
+[   64.498362]  [<ffffffff8136a9b9>] cpuidle_idle_call+0xc9/0x280
+[   64.498365]  [<ffffffff8100bf6e>] arch_cpu_idle+0xe/0x30
+[   64.498368]  [<ffffffff810a1287>] cpu_startup_entry+0x257/0x2d0
+[   64.498370]  [<ffffffff8144d404>] rest_init+0x84/0x90
+[   64.498373]  [<ffffffff818d9ee1>] start_kernel+0x414/0x420
+[   64.498375]  [<ffffffff818d98d6>] ? repair_env_string+0x5c/0x5c
+[   64.498377]  [<ffffffff818d9120>] ? early_idt_handlers+0x120/0x120
+[   64.498379]  [<ffffffff818d95be>] x86_64_start_reservations+0x2a/0x2c
+[   64.498381]  [<ffffffff818d96c8>] x86_64_start_kernel+0x108/0x117
+[   64.498382] handlers:
+[   64.498402] [<ffffffffa00168f0>] usb_hcd_irq [usbcore]
+[   64.498422] Disabling IRQ #16
+
+So I don't think it completely solve the problem but it's a good start.
+
+Thank you.
 
