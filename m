@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751555Ab3K3COK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 21:14:10 -0500
-Received: from tundra.namei.org ([65.99.196.166]:45812 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751273Ab3K3COF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 21:14:05 -0500
-Date: Sat, 30 Nov 2013 13:25:31 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] bugfix for IMA code
-Message-ID: <alpine.LRH.2.02.1311301324440.14854@tundra.namei.org>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1751404Ab3K3Cyb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 21:54:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43543 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119Ab3K3Cya (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 21:54:30 -0500
+Date: Fri, 29 Nov 2013 18:55:24 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
+        bhelgaas@google.com
+Subject: Re: [PATCHSET PARTIAL REPOST driver-core-next] sysfs: separate out
+ kernfs, take #3
+Message-ID: <20131130025524.GA26861@kroah.com>
+References: <20131128060518.GA5291@kroah.com>
+ <1385668487-10181-1-git-send-email-tj@kernel.org>
+ <20131129222112.GI21755@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131129222112.GI21755@mtj.dyndns.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes another regression in the IMA code.
+On Fri, Nov 29, 2013 at 05:21:12PM -0500, Tejun Heo wrote:
+> On Thu, Nov 28, 2013 at 02:54:13PM -0500, Tejun Heo wrote:
+> > Hello, Greg.
+> > 
+> > For some reason, quilt can rebase the patches automatically here.  I'm
+> > reposting the rest of the series (patches 07-41) here just in case.
+> > git branches for both pending patchsets are updated accordingly.
+> > 
+> >  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-separate-out-kernfs
+> >  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-kernfs-xattr
+> 
+> Two patches updated - 0032 updated to v3 and 0033 updated to v2.  Both
+> add explicit noop implementation of inline functions for !CONFIG_SYSFS
+> cases.  git branches are updated.  If it's too confusing, pleaes let
+> me know.  I'll repost the whole series.
 
-Please pull.
+No, I think I got it all right, I've applied the series to my tree, care
+to check that I didn't mess anything up?
 
-The following changes since commit dc1ccc48159d63eca5089e507c82c7d22ef60839:
+thanks,
 
-  Linux 3.13-rc2 (2013-11-29 12:57:14 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
-
-Roberto Sassu (1):
-      ima: store address of template_fmt_copy in a pointer before calling strsep
-
- security/integrity/ima/ima_template.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-commit af91706d5ddecb4a9858cca9e90d463037cfd498
-Author: Roberto Sassu <roberto.sassu@polito.it>
-Date:   Wed Nov 27 14:40:41 2013 +0100
-
-    ima: store address of template_fmt_copy in a pointer before calling strsep
-    
-    This patch stores the address of the 'template_fmt_copy' variable in a new
-    variable, called 'template_fmt_ptr', so that the latter is passed as an
-    argument of strsep() instead of the former. This modification is needed
-    in order to correctly free the memory area referenced by
-    'template_fmt_copy' (strsep() modifies the pointer of the passed string).
-    
-    Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-    Reported-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
-    Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-    Signed-off-by: James Morris <james.l.morris@oracle.com>
-
----
-
-diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
-index 913e192..635695f 100644
---- a/security/integrity/ima/ima_template.c
-+++ b/security/integrity/ima/ima_template.c
-@@ -110,7 +110,7 @@ static int template_desc_init_fields(const char *template_fmt,
- 				     struct ima_template_field ***fields,
- 				     int *num_fields)
- {
--	char *c, *template_fmt_copy;
-+	char *c, *template_fmt_copy, *template_fmt_ptr;
- 	int template_num_fields = template_fmt_size(template_fmt);
- 	int i, result = 0;
- 
-@@ -127,7 +127,9 @@ static int template_desc_init_fields(const char *template_fmt,
- 		result = -ENOMEM;
- 		goto out;
- 	}
--	for (i = 0; (c = strsep(&template_fmt_copy, "|")) != NULL &&
-+
-+	template_fmt_ptr = template_fmt_copy;
-+	for (i = 0; (c = strsep(&template_fmt_ptr, "|")) != NULL &&
- 	     i < template_num_fields; i++) {
- 		struct ima_template_field *f = lookup_template_field(c);
- 
+greg k-h
