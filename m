@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540Ab3K3Ezw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 23:55:52 -0500
-Received: from smtp33.i.mail.ru ([94.100.177.93]:45976 "EHLO smtp33.i.mail.ru"
+	id S1751412Ab3K3FBm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 00:01:42 -0500
+Received: from smtp1.mail.ru ([94.100.176.129]:34267 "EHLO smtp1.mail.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751072Ab3K3Ezs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 23:55:48 -0500
-X-Greylist: delayed 62157 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Nov 2013 23:55:48 EST
+	id S1750893Ab3K3FBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Nov 2013 00:01:38 -0500
 From: Alexander Shiyan <shc_work@mail.ru>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, Samuel Ortiz <sameo@linux.intel.com>,
         Lee Jones <lee.jones@linaro.org>, Shawn Guo <shawn.guo@linaro.org>,
         Sascha Hauer <kernel@pengutronix.de>,
         Alexander Shiyan <shc_work@mail.ru>
-Subject: [PATCH RESEND] mfd: mc13xxx: Fix null pointer dereference in mc13xxx_common_init
-Date: Sat, 30 Nov 2013 08:55:37 +0400
-Message-Id: <1385787337-5296-1-git-send-email-shc_work@mail.ru>
+Subject: [PATCH RESEND] mfd: mc13xxx: Remove unneeded mc13xxx_lock/unlock
+Date: Sat, 30 Nov 2013 09:01:21 +0400
+Message-Id: <1385787681-7736-1-git-send-email-shc_work@mail.ru>
 X-Mailer: git-send-email 1.8.3.2
 X-Spam: Not detected
 X-Mras: Ok
@@ -23,112 +22,850 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If this driver being loaded from devicetree, the pdata is NULL.
-This cause kernel Oops when "fsl,mc13xxx-uses-codec" and/or
-"fsl,mc13xxx-uses-touch" properties is specified.
-
-mc13xxx spi0.0: mc13783: rev: 3.3, fin: 0, fab: 0, icid: 2/0
-Unable to handle kernel NULL pointer dereference at virtual address 00000018
-pgd = c0004000
-[00000018] *pgd=00000000
-Internal error: Oops: 5 [#1] PREEMPT ARM
-CPU: 0 PID: 1 Comm: swapper Not tainted 3.12.0-next-20131105-00004-g201dd34-dirty #5
-task: c7833bc0 ti: c7834000 task.ti: c7834000
-PC is at mc13xxx_common_init+0x1fc/0x280
-LR is at mfd_add_device+0x2a8/0x308
-pc : [<c024875c>]    lr : [<c0248d74>]    psr: 20000013
-sp : c7835d38  ip : 00000002  fp : c786a160
-r10: 00000000  r9 : c786a170  r8 : 00000000
-r7 : c06eab74  r6 : 00000000  r5 : 00000000  r4 : c79ffa10
-r3 : 00000008  r2 : 20000013  r1 : c05079c8  r0 : c79ffa10
-Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 0005317f  Table: a0004000  DAC: 00000017
-Process swapper (pid: 1, stack limit = 0xc78341c0)
-Stack: (0xc7835d38 to 0xc7836000)
-5d20:                                                       c0507958 c79ffa10
-5d40: c791ab80 0000009b 00000000 c791ab80 c05de138 c023a998 c05a9854 c0293cf8
-5d60: c0293ce0 c023a774 c023a998 00000000 c791ab80 c023a998 c79ffc00 c02393ac
-5d80: c785a25c c7940e54 c791ab80 c791abb4 c791ab80 c023a4cc c791ab80 c05b2704
-5da0: c791ab80 c02395e8 c791ab80 00000000 c791ab88 c0237938 00000000 c01d5ed8
-5dc0: 60000013 c791ab80 c791ab80 c791ab80 00000000 c786a170 00000000 c06eaa04
-5de0: c786a170 c0294d08 00000001 c79ffc00 c06eab74 c791ab80 00000000 c02953a8
-5e00: c79f56a0 00000000 00000063 01312d00 00000000 c79ffc00 c79ffd78 c79ffc00
-5e20: c06eaa04 00000000 c79ffd70 c0296cbc c780a840 c02978c0 00000000 c051054c
-5e40: c79ffd70 c787c1f0 00000000 c0462b1c 00000000 00000002 c787c1f0 c786a170
-5e60: c05b2864 c786a1a4 c05b2864 00000000 c05c5800 c0579430 00000000 c023b614
-5e80: c023b5fc c786a170 c05de138 c023a774 00000000 c786a170 c05b2864 c786a1a4
-5ea0: 00000000 c023a994 00000000 c05b2864 c023a908 c0239034 c7825d6c c785e610
-5ec0: c05b2864 c7a0bae0 c05a9138 c02397dc c051054c c01bd2f8 c05b2864 c05b2864
-5ee0: c0585094 579da752 00000000 c023ad38 00000000 00000006 c0585094 c0564a24
-5f00: 0000047a 00000000 579da752 00000000 00000000 a0000053 c059b070 00000001
-5f20: c06eefc9 c044c6a0 000000a7 c002cd48 c7835f5c c0036f44 c051aae4 c053d7f4
-5f40: 00000006 00000006 c059b064 00000006 00000006 c0585094 c058db68 c0564480
-5f60: c05850a0 c05c5800 000000a7 c0564c18 00000006 00000006 c0564480 c7833bc0
-5f80: c7835f9c c0036da4 00000000 c043013c 00000000 00000000 00000000 00000000
-5fa0: 00000000 c0430144 00000000 c0009490 00000000 00000000 00000000 00000000
-5fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-5fe0: 00000000 00000000 00000000 00000000 00000013 00000000 df7f9b78 3b477df6
-[<c024875c>] (mc13xxx_common_init+0x1fc/0x280) from [<c0293cf8>] (spi_drv_probe+0x18/0x1c)
-[<c0293cf8>] (spi_drv_probe+0x18/0x1c) from [<c023a774>] (driver_probe_device+0x78/0x20c)
-[<c023a774>] (driver_probe_device+0x78/0x20c) from [<c02393ac>] (bus_for_each_drv+0x48/0x90)
-[<c02393ac>] (bus_for_each_drv+0x48/0x90) from [<c023a4cc>] (device_attach+0x74/0x80)
-[<c023a4cc>] (device_attach+0x74/0x80) from [<c02395e8>] (bus_probe_device+0x88/0xb0)
-[<c02395e8>] (bus_probe_device+0x88/0xb0) from [<c0237938>] (device_add+0x31c/0x4c4)
-[<c0237938>] (device_add+0x31c/0x4c4) from [<c0294d08>] (spi_add_device+0xa4/0x118)
-[<c0294d08>] (spi_add_device+0xa4/0x118) from [<c02953a8>] (spi_register_master+0x53c/0x6a0)
-[<c02953a8>] (spi_register_master+0x53c/0x6a0) from [<c0296cbc>] (spi_bitbang_start+0x88/0x100)
-[<c0296cbc>] (spi_bitbang_start+0x88/0x100) from [<c02978c0>] (spi_imx_probe+0x3a8/0x478)
-[<c02978c0>] (spi_imx_probe+0x3a8/0x478) from [<c023b614>] (platform_drv_probe+0x18/0x48)
-[<c023b614>] (platform_drv_probe+0x18/0x48) from [<c023a774>] (driver_probe_device+0x78/0x20c)
-[<c023a774>] (driver_probe_device+0x78/0x20c) from [<c023a994>] (__driver_attach+0x8c/0x90)
-[<c023a994>] (__driver_attach+0x8c/0x90) from [<c0239034>] (bus_for_each_dev+0x5c/0x8c)
-[<c0239034>] (bus_for_each_dev+0x5c/0x8c) from [<c02397dc>] (bus_add_driver+0xd4/0x1c8)
-[<c02397dc>] (bus_add_driver+0xd4/0x1c8) from [<c023ad38>] (driver_register+0x78/0xf4)
-[<c023ad38>] (driver_register+0x78/0xf4) from [<c0564a24>] (do_one_initcall+0x5c/0x168)
-[<c0564a24>] (do_one_initcall+0x5c/0x168) from [<c0564c18>] (kernel_init_freeable+0xe8/0x1a8)
-[<c0564c18>] (kernel_init_freeable+0xe8/0x1a8) from [<c0430144>] (kernel_init+0x8/0x110)
-[<c0430144>] (kernel_init+0x8/0x110) from [<c0009490>] (ret_from_fork+0x14/0x24)
-Code: eaffffdb e3a03008 e1a00004 e59f107c (e5962018)
----[ end trace 71265dd116f3967e ]---
-Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+Locking is performed by regmap API so no additional locking is needed.
+Nevertheless, keep locking in the ADC conversion routine. This need
+for keep proper read ADC sequence when calling from adc & touchscreen
+drivers.
 
 Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
 ---
- drivers/mfd/mc13xxx-core.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/input/misc/mc13783-pwrbutton.c     | 11 ----
+ drivers/input/touchscreen/mc13783_ts.c     |  9 +--
+ drivers/leds/leds-mc13783.c                | 16 +----
+ drivers/mfd/mc13xxx-core.c                 | 53 +++-------------
+ drivers/regulator/mc13783-regulator.c      | 11 +---
+ drivers/regulator/mc13892-regulator.c      | 45 +++-----------
+ drivers/regulator/mc13xxx-regulator-core.c | 27 +-------
+ drivers/rtc/rtc-mc13xxx.c                  | 98 +++++++-----------------------
+ include/linux/mfd/mc13xxx.h                |  3 -
+ 9 files changed, 49 insertions(+), 224 deletions(-)
 
+diff --git a/drivers/input/misc/mc13783-pwrbutton.c b/drivers/input/misc/mc13783-pwrbutton.c
+index d0277a7..10e929a 100644
+--- a/drivers/input/misc/mc13783-pwrbutton.c
++++ b/drivers/input/misc/mc13783-pwrbutton.c
+@@ -124,8 +124,6 @@ static int mc13783_pwrbutton_probe(struct platform_device *pdev)
+ 	priv->pwr = pwr;
+ 	priv->mc13783 = mc13783;
+ 
+-	mc13xxx_lock(mc13783);
+-
+ 	if (pdata->b1on_flags & MC13783_BUTTON_ENABLE) {
+ 		priv->keymap[0] = pdata->b1on_key;
+ 		if (pdata->b1on_key != KEY_RESERVED)
+@@ -185,8 +183,6 @@ static int mc13783_pwrbutton_probe(struct platform_device *pdev)
+ 
+ 	mc13xxx_reg_rmw(mc13783, MC13783_REG_POWER_CONTROL_2, 0x3FE, reg);
+ 
+-	mc13xxx_unlock(mc13783);
+-
+ 	pwr->name = "mc13783_pwrbutton";
+ 	pwr->phys = "mc13783_pwrbutton/input0";
+ 	pwr->dev.parent = &pdev->dev;
+@@ -207,8 +203,6 @@ static int mc13783_pwrbutton_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ free_irq:
+-	mc13xxx_lock(mc13783);
+-
+ 	if (pdata->b3on_flags & MC13783_BUTTON_ENABLE)
+ 		mc13xxx_irq_free(mc13783, MC13783_IRQ_ONOFD3, priv);
+ 
+@@ -221,7 +215,6 @@ free_irq_b1:
+ 		mc13xxx_irq_free(mc13783, MC13783_IRQ_ONOFD1, priv);
+ 
+ free_priv:
+-	mc13xxx_unlock(mc13783);
+ 	kfree(priv);
+ 
+ free_input_dev:
+@@ -237,8 +230,6 @@ static int mc13783_pwrbutton_remove(struct platform_device *pdev)
+ 
+ 	pdata = dev_get_platdata(&pdev->dev);
+ 
+-	mc13xxx_lock(priv->mc13783);
+-
+ 	if (pdata->b3on_flags & MC13783_BUTTON_ENABLE)
+ 		mc13xxx_irq_free(priv->mc13783, MC13783_IRQ_ONOFD3, priv);
+ 	if (pdata->b2on_flags & MC13783_BUTTON_ENABLE)
+@@ -246,8 +237,6 @@ static int mc13783_pwrbutton_remove(struct platform_device *pdev)
+ 	if (pdata->b1on_flags & MC13783_BUTTON_ENABLE)
+ 		mc13xxx_irq_free(priv->mc13783, MC13783_IRQ_ONOFD1, priv);
+ 
+-	mc13xxx_unlock(priv->mc13783);
+-
+ 	input_unregister_device(priv->pwr);
+ 	kfree(priv);
+ 
+diff --git a/drivers/input/touchscreen/mc13783_ts.c b/drivers/input/touchscreen/mc13783_ts.c
+index d6f099c..8bd62f9 100644
+--- a/drivers/input/touchscreen/mc13783_ts.c
++++ b/drivers/input/touchscreen/mc13783_ts.c
+@@ -137,21 +137,18 @@ static int mc13783_ts_open(struct input_dev *dev)
+ 	struct mc13783_ts_priv *priv = input_get_drvdata(dev);
+ 	int ret;
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+-
+ 	mc13xxx_irq_ack(priv->mc13xxx, MC13XXX_IRQ_TS);
+ 
+ 	ret = mc13xxx_irq_request(priv->mc13xxx, MC13XXX_IRQ_TS,
+ 		mc13783_ts_handler, MC13783_TS_NAME, priv);
+ 	if (ret)
+-		goto out;
++		return ret;
+ 
+ 	ret = mc13xxx_reg_rmw(priv->mc13xxx, MC13XXX_ADC0,
+ 			MC13XXX_ADC0_TSMOD_MASK, MC13XXX_ADC0_TSMOD0);
+ 	if (ret)
+ 		mc13xxx_irq_free(priv->mc13xxx, MC13XXX_IRQ_TS, priv);
+-out:
+-	mc13xxx_unlock(priv->mc13xxx);
++
+ 	return ret;
+ }
+ 
+@@ -159,11 +156,9 @@ static void mc13783_ts_close(struct input_dev *dev)
+ {
+ 	struct mc13783_ts_priv *priv = input_get_drvdata(dev);
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+ 	mc13xxx_reg_rmw(priv->mc13xxx, MC13XXX_ADC0,
+ 			MC13XXX_ADC0_TSMOD_MASK, 0);
+ 	mc13xxx_irq_free(priv->mc13xxx, MC13XXX_IRQ_TS, priv);
+-	mc13xxx_unlock(priv->mc13xxx);
+ 
+ 	cancel_delayed_work_sync(&priv->work);
+ }
+diff --git a/drivers/leds/leds-mc13783.c b/drivers/leds/leds-mc13783.c
+index fa9b439..173cc91 100644
+--- a/drivers/leds/leds-mc13783.c
++++ b/drivers/leds/leds-mc13783.c
+@@ -117,9 +117,7 @@ static void mc13xxx_led_work(struct work_struct *work)
+ 		BUG();
+ 	}
+ 
+-	mc13xxx_lock(led->master);
+ 	mc13xxx_reg_rmw(led->master, reg, mask << shift, value << shift);
+-	mc13xxx_unlock(led->master);
+ }
+ 
+ static void mc13xxx_led_set(struct led_classdev *led_cdev,
+@@ -134,7 +132,7 @@ static void mc13xxx_led_set(struct led_classdev *led_cdev,
+ 
+ static int __init mc13xxx_led_setup(struct mc13xxx_led *led, int max_current)
+ {
+-	int shift, mask, reg, ret, bank;
++	int shift, mask, reg, bank;
+ 
+ 	switch (led->id) {
+ 	case MC13783_LED_MD:
+@@ -193,12 +191,8 @@ static int __init mc13xxx_led_setup(struct mc13xxx_led *led, int max_current)
+ 		BUG();
+ 	}
+ 
+-	mc13xxx_lock(led->master);
+-	ret = mc13xxx_reg_rmw(led->master, reg, mask << shift,
+-			      max_current << shift);
+-	mc13xxx_unlock(led->master);
+-
+-	return ret;
++	return mc13xxx_reg_rmw(led->master, reg, mask << shift,
++			       max_current << shift);
+ }
+ 
+ static int __init mc13xxx_led_probe(struct platform_device *pdev)
+@@ -233,7 +227,6 @@ static int __init mc13xxx_led_probe(struct platform_device *pdev)
+ 	leds->num_leds = num_leds;
+ 	platform_set_drvdata(pdev, leds);
+ 
+-	mc13xxx_lock(mcdev);
+ 	for (i = 0; i < devtype->num_regs; i++) {
+ 		reg = pdata->led_control[i];
+ 		WARN_ON(reg >= (1 << 24));
+@@ -241,7 +234,6 @@ static int __init mc13xxx_led_probe(struct platform_device *pdev)
+ 		if (ret)
+ 			break;
+ 	}
+-	mc13xxx_unlock(mcdev);
+ 
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Unable to init LED driver\n");
+@@ -313,10 +305,8 @@ static int mc13xxx_led_remove(struct platform_device *pdev)
+ 		cancel_work_sync(&leds->led[i].work);
+ 	}
+ 
+-	mc13xxx_lock(mcdev);
+ 	for (i = 0; i < leds->devtype->num_regs; i++)
+ 		mc13xxx_reg_write(mcdev, MC13XXX_REG_LED_CONTROL(i), 0);
+-	mc13xxx_unlock(mcdev);
+ 
+ 	return 0;
+ }
 diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-index dbbf8ee..625633a 100644
+index 625633a..f106fc6 100644
 --- a/drivers/mfd/mc13xxx-core.c
 +++ b/drivers/mfd/mc13xxx-core.c
-@@ -682,14 +682,14 @@ err_revision:
- 	if (mc13xxx->flags & MC13XXX_USE_ADC)
- 		mc13xxx_add_subdevice(mc13xxx, "%s-adc");
+@@ -133,27 +133,6 @@
  
--	if (mc13xxx->flags & MC13XXX_USE_CODEC)
-+	if ((mc13xxx->flags & MC13XXX_USE_CODEC) && pdata)
- 		mc13xxx_add_subdevice_pdata(mc13xxx, "%s-codec",
- 					pdata->codec, sizeof(*pdata->codec));
+ #define MC13XXX_ADC2		45
  
- 	if (mc13xxx->flags & MC13XXX_USE_RTC)
- 		mc13xxx_add_subdevice(mc13xxx, "%s-rtc");
+-void mc13xxx_lock(struct mc13xxx *mc13xxx)
+-{
+-	if (!mutex_trylock(&mc13xxx->lock)) {
+-		dev_dbg(mc13xxx->dev, "wait for %s from %pf\n",
+-				__func__, __builtin_return_address(0));
+-
+-		mutex_lock(&mc13xxx->lock);
+-	}
+-	dev_dbg(mc13xxx->dev, "%s from %pf\n",
+-			__func__, __builtin_return_address(0));
+-}
+-EXPORT_SYMBOL(mc13xxx_lock);
+-
+-void mc13xxx_unlock(struct mc13xxx *mc13xxx)
+-{
+-	dev_dbg(mc13xxx->dev, "%s from %pf\n",
+-			__func__, __builtin_return_address(0));
+-	mutex_unlock(&mc13xxx->lock);
+-}
+-EXPORT_SYMBOL(mc13xxx_unlock);
+-
+ int mc13xxx_reg_read(struct mc13xxx *mc13xxx, unsigned int offset, u32 *val)
+ {
+ 	int ret;
+@@ -283,7 +262,6 @@ EXPORT_SYMBOL(mc13xxx_irq_ack);
+ int mc13xxx_irq_request_nounmask(struct mc13xxx *mc13xxx, int irq,
+ 		irq_handler_t handler, const char *name, void *dev)
+ {
+-	BUG_ON(!mutex_is_locked(&mc13xxx->lock));
+ 	BUG_ON(!handler);
  
--	if (mc13xxx->flags & MC13XXX_USE_TOUCHSCREEN)
-+	if ((mc13xxx->flags & MC13XXX_USE_CODEC) && pdata)
- 		mc13xxx_add_subdevice_pdata(mc13xxx, "%s-ts",
- 				&pdata->touch, sizeof(pdata->touch));
+ 	if (irq < 0 || irq >= MC13XXX_NUM_IRQ)
+@@ -322,7 +300,6 @@ EXPORT_SYMBOL(mc13xxx_irq_request);
+ int mc13xxx_irq_free(struct mc13xxx *mc13xxx, int irq, void *dev)
+ {
+ 	int ret;
+-	BUG_ON(!mutex_is_locked(&mc13xxx->lock));
  
-@@ -701,6 +701,10 @@ err_revision:
- 		mc13xxx_add_subdevice_pdata(mc13xxx, "%s-pwrbutton",
- 				pdata->buttons, sizeof(*pdata->buttons));
- 	} else {
-+		if (mc13xxx->flags & MC13XXX_USE_CODEC)
-+			mc13xxx_add_subdevice(mc13xxx, "%s-codec");
-+		if (mc13xxx->flags & MC13XXX_USE_TOUCHSCREEN)
-+			mc13xxx_add_subdevice(mc13xxx, "%s-ts");
- 		mc13xxx_add_subdevice(mc13xxx, "%s-regulator");
- 		mc13xxx_add_subdevice(mc13xxx, "%s-led");
- 		mc13xxx_add_subdevice(mc13xxx, "%s-pwrbutton");
+ 	if (irq < 0 || irq >= MC13XXX_NUM_IRQ || !mc13xxx->irqhandler[irq] ||
+ 			mc13xxx->irqdata[irq] != dev)
+@@ -393,8 +370,6 @@ static irqreturn_t mc13xxx_irq_thread(int irq, void *data)
+ 	irqreturn_t ret;
+ 	int handled = 0;
+ 
+-	mc13xxx_lock(mc13xxx);
+-
+ 	ret = mc13xxx_irq_handle(mc13xxx, MC13XXX_IRQSTAT0,
+ 			MC13XXX_IRQMASK0, 0);
+ 	if (ret > 0)
+@@ -405,8 +380,6 @@ static irqreturn_t mc13xxx_irq_thread(int irq, void *data)
+ 	if (ret > 0)
+ 		handled = 1;
+ 
+-	mc13xxx_unlock(mc13xxx);
+-
+ 	return IRQ_RETVAL(handled);
+ }
+ 
+@@ -500,7 +473,7 @@ int mc13xxx_adc_do_conversion(struct mc13xxx *mc13xxx, unsigned int mode,
+ 
+ 	dev_dbg(mc13xxx->dev, "%s\n", __func__);
+ 
+-	mc13xxx_lock(mc13xxx);
++	mutex_lock(&mc13xxx->lock);
+ 
+ 	if (mc13xxx->adcflags & MC13XXX_ADC_WORKING) {
+ 		ret = -EBUSY;
+@@ -536,7 +509,7 @@ int mc13xxx_adc_do_conversion(struct mc13xxx *mc13xxx, unsigned int mode,
+ 		break;
+ 
+ 	default:
+-		mc13xxx_unlock(mc13xxx);
++		mutex_unlock(&mc13xxx->lock);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -552,14 +525,14 @@ int mc13xxx_adc_do_conversion(struct mc13xxx *mc13xxx, unsigned int mode,
+ 	mc13xxx_reg_write(mc13xxx, MC13XXX_ADC0, adc0);
+ 	mc13xxx_reg_write(mc13xxx, MC13XXX_ADC1, adc1);
+ 
+-	mc13xxx_unlock(mc13xxx);
++	mutex_unlock(&mc13xxx->lock);
+ 
+ 	ret = wait_for_completion_interruptible_timeout(&adcdone_data.done, HZ);
+ 
+ 	if (!ret)
+ 		ret = -ETIMEDOUT;
+ 
+-	mc13xxx_lock(mc13xxx);
++	mutex_lock(&mc13xxx->lock);
+ 
+ 	mc13xxx_irq_free(mc13xxx, MC13XXX_IRQ_ADCDONE, &adcdone_data);
+ 
+@@ -577,7 +550,7 @@ int mc13xxx_adc_do_conversion(struct mc13xxx *mc13xxx, unsigned int mode,
+ 
+ 	mc13xxx->adcflags &= ~MC13XXX_ADC_WORKING;
+ out:
+-	mc13xxx_unlock(mc13xxx);
++	mutex_unlock(&mc13xxx->lock);
+ 
+ 	return ret;
+ }
+@@ -645,37 +618,29 @@ int mc13xxx_common_init(struct mc13xxx *mc13xxx,
+ 	int ret;
+ 	u32 revision;
+ 
+-	mc13xxx_lock(mc13xxx);
+-
+ 	ret = mc13xxx_reg_read(mc13xxx, MC13XXX_REVISION, &revision);
+ 	if (ret)
+-		goto err_revision;
++		return ret;
+ 
+ 	mc13xxx->variant->print_revision(mc13xxx, revision);
+ 
+ 	/* mask all irqs */
+ 	ret = mc13xxx_reg_write(mc13xxx, MC13XXX_IRQMASK0, 0x00ffffff);
+ 	if (ret)
+-		goto err_mask;
++		return ret;
+ 
+ 	ret = mc13xxx_reg_write(mc13xxx, MC13XXX_IRQMASK1, 0x00ffffff);
+ 	if (ret)
+-		goto err_mask;
++		return ret;
+ 
+ 	ret = request_threaded_irq(irq, NULL, mc13xxx_irq_thread,
+ 			IRQF_ONESHOT | IRQF_TRIGGER_HIGH, "mc13xxx", mc13xxx);
+ 
+-	if (ret) {
+-err_mask:
+-err_revision:
+-		mc13xxx_unlock(mc13xxx);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	mc13xxx->irq = irq;
+ 
+-	mc13xxx_unlock(mc13xxx);
+-
+ 	if (mc13xxx_probe_flags_dt(mc13xxx) < 0 && pdata)
+ 		mc13xxx->flags = pdata->flags;
+ 
+diff --git a/drivers/regulator/mc13783-regulator.c b/drivers/regulator/mc13783-regulator.c
+index 7f4a67e..6e8a0c2 100644
+--- a/drivers/regulator/mc13783-regulator.c
++++ b/drivers/regulator/mc13783-regulator.c
+@@ -304,10 +304,9 @@ static int mc13783_powermisc_rmw(struct mc13xxx_regulator_priv *priv, u32 mask,
+ 
+ 	BUG_ON(val & ~mask);
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+ 	ret = mc13xxx_reg_read(mc13783, MC13783_REG_POWERMISC, &valread);
+ 	if (ret)
+-		goto out;
++		return ret;
+ 
+ 	/* Update the stored state for Power Gates. */
+ 	priv->powermisc_pwgt_state =
+@@ -320,10 +319,7 @@ static int mc13783_powermisc_rmw(struct mc13xxx_regulator_priv *priv, u32 mask,
+ 	valread = (valread & ~MC13783_REG_POWERMISC_PWGTSPI_M) |
+ 						priv->powermisc_pwgt_state;
+ 
+-	ret = mc13xxx_reg_write(mc13783, MC13783_REG_POWERMISC, valread);
+-out:
+-	mc13xxx_unlock(priv->mc13xxx);
+-	return ret;
++	return mc13xxx_reg_write(mc13783, MC13783_REG_POWERMISC, valread);
+ }
+ 
+ static int mc13783_gpo_regulator_enable(struct regulator_dev *rdev)
+@@ -369,10 +365,7 @@ static int mc13783_gpo_regulator_is_enabled(struct regulator_dev *rdev)
+ 	int ret, id = rdev_get_id(rdev);
+ 	unsigned int val;
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+ 	ret = mc13xxx_reg_read(priv->mc13xxx, mc13xxx_regulators[id].reg, &val);
+-	mc13xxx_unlock(priv->mc13xxx);
+-
+ 	if (ret)
+ 		return ret;
+ 
+diff --git a/drivers/regulator/mc13892-regulator.c b/drivers/regulator/mc13892-regulator.c
+index 96c9f80..2b1e11a 100644
+--- a/drivers/regulator/mc13892-regulator.c
++++ b/drivers/regulator/mc13892-regulator.c
+@@ -312,10 +312,9 @@ static int mc13892_powermisc_rmw(struct mc13xxx_regulator_priv *priv, u32 mask,
+ 
+ 	BUG_ON(val & ~mask);
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+ 	ret = mc13xxx_reg_read(mc13892, MC13892_POWERMISC, &valread);
+ 	if (ret)
+-		goto out;
++		return ret;
+ 
+ 	/* Update the stored state for Power Gates. */
+ 	priv->powermisc_pwgt_state =
+@@ -328,10 +327,7 @@ static int mc13892_powermisc_rmw(struct mc13xxx_regulator_priv *priv, u32 mask,
+ 	valread = (valread & ~MC13892_POWERMISC_PWGTSPI_M) |
+ 		priv->powermisc_pwgt_state;
+ 
+-	ret = mc13xxx_reg_write(mc13892, MC13892_POWERMISC, valread);
+-out:
+-	mc13xxx_unlock(priv->mc13xxx);
+-	return ret;
++	return mc13xxx_reg_write(mc13892, MC13892_POWERMISC, valread);
+ }
+ 
+ static int mc13892_gpo_regulator_enable(struct regulator_dev *rdev)
+@@ -375,10 +371,7 @@ static int mc13892_gpo_regulator_is_enabled(struct regulator_dev *rdev)
+ 	int ret, id = rdev_get_id(rdev);
+ 	unsigned int val;
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+ 	ret = mc13xxx_reg_read(priv->mc13xxx, mc13892_regulators[id].reg, &val);
+-	mc13xxx_unlock(priv->mc13xxx);
+-
+ 	if (ret)
+ 		return ret;
+ 
+@@ -407,10 +400,8 @@ static int mc13892_sw_regulator_get_voltage_sel(struct regulator_dev *rdev)
+ 
+ 	dev_dbg(rdev_get_dev(rdev), "%s id: %d\n", __func__, id);
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+ 	ret = mc13xxx_reg_read(priv->mc13xxx,
+ 		mc13892_regulators[id].vsel_reg, &val);
+-	mc13xxx_unlock(priv->mc13xxx);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -444,7 +435,6 @@ static int mc13892_sw_regulator_set_voltage_sel(struct regulator_dev *rdev,
+ 	struct mc13xxx_regulator_priv *priv = rdev_get_drvdata(rdev);
+ 	int volt, mask, id = rdev_get_id(rdev);
+ 	u32 reg_value;
+-	int ret;
+ 
+ 	volt = rdev->desc->volt_table[selector];
+ 	mask = mc13892_regulators[id].vsel_mask;
+@@ -475,12 +465,8 @@ static int mc13892_sw_regulator_set_voltage_sel(struct regulator_dev *rdev,
+ 		}
+ 	}
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+-	ret = mc13xxx_reg_rmw(priv->mc13xxx, mc13892_regulators[id].vsel_reg, mask,
+-			      reg_value);
+-	mc13xxx_unlock(priv->mc13xxx);
+-
+-	return ret;
++	return mc13xxx_reg_rmw(priv->mc13xxx, mc13892_regulators[id].vsel_reg,
++			       mask, reg_value);
+ }
+ 
+ static struct regulator_ops mc13892_sw_regulator_ops = {
+@@ -494,17 +480,13 @@ static int mc13892_vcam_set_mode(struct regulator_dev *rdev, unsigned int mode)
+ {
+ 	unsigned int en_val = 0;
+ 	struct mc13xxx_regulator_priv *priv = rdev_get_drvdata(rdev);
+-	int ret, id = rdev_get_id(rdev);
++	int id = rdev_get_id(rdev);
+ 
+ 	if (mode == REGULATOR_MODE_FAST)
+ 		en_val = MC13892_REGULATORMODE1_VCAMCONFIGEN;
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+-	ret = mc13xxx_reg_rmw(priv->mc13xxx, mc13892_regulators[id].reg,
++	return mc13xxx_reg_rmw(priv->mc13xxx, mc13892_regulators[id].reg,
+ 		MC13892_REGULATORMODE1_VCAMCONFIGEN, en_val);
+-	mc13xxx_unlock(priv->mc13xxx);
+-
+-	return ret;
+ }
+ 
+ static unsigned int mc13892_vcam_get_mode(struct regulator_dev *rdev)
+@@ -513,10 +495,7 @@ static unsigned int mc13892_vcam_get_mode(struct regulator_dev *rdev)
+ 	int ret, id = rdev_get_id(rdev);
+ 	unsigned int val;
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+ 	ret = mc13xxx_reg_read(priv->mc13xxx, mc13892_regulators[id].reg, &val);
+-	mc13xxx_unlock(priv->mc13xxx);
+-
+ 	if (ret)
+ 		return ret;
+ 
+@@ -557,10 +536,9 @@ static int mc13892_regulator_probe(struct platform_device *pdev)
+ 	priv->mc13xxx = mc13892;
+ 	platform_set_drvdata(pdev, priv);
+ 
+-	mc13xxx_lock(mc13892);
+ 	ret = mc13xxx_reg_read(mc13892, MC13892_REVISION, &val);
+ 	if (ret)
+-		goto err_unlock;
++		return ret;
+ 
+ 	/* enable switch auto mode (on 2.0A silicon only) */
+ 	if ((val & 0x0000FFFF) == 0x45d0) {
+@@ -570,7 +548,7 @@ static int mc13892_regulator_probe(struct platform_device *pdev)
+ 			MC13892_SWITCHERS4_SW1MODE_AUTO |
+ 			MC13892_SWITCHERS4_SW2MODE_AUTO);
+ 		if (ret)
+-			goto err_unlock;
++			return ret;
+ 
+ 		ret = mc13xxx_reg_rmw(mc13892, MC13892_SWITCHERS5,
+ 			MC13892_SWITCHERS5_SW3MODE_M |
+@@ -578,9 +556,8 @@ static int mc13892_regulator_probe(struct platform_device *pdev)
+ 			MC13892_SWITCHERS5_SW3MODE_AUTO |
+ 			MC13892_SWITCHERS5_SW4MODE_AUTO);
+ 		if (ret)
+-			goto err_unlock;
++			return ret;
+ 	}
+-	mc13xxx_unlock(mc13892);
+ 
+ 	mc13892_regulators[MC13892_VCAM].desc.ops->set_mode
+ 		= mc13892_vcam_set_mode;
+@@ -621,10 +598,6 @@ static int mc13892_regulator_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	return 0;
+-
+-err_unlock:
+-	mc13xxx_unlock(mc13892);
+-	return ret;
+ }
+ 
+ static struct platform_driver mc13892_regulator_driver = {
+diff --git a/drivers/regulator/mc13xxx-regulator-core.c b/drivers/regulator/mc13xxx-regulator-core.c
+index da48592..005122f 100644
+--- a/drivers/regulator/mc13xxx-regulator-core.c
++++ b/drivers/regulator/mc13xxx-regulator-core.c
+@@ -33,17 +33,12 @@ static int mc13xxx_regulator_enable(struct regulator_dev *rdev)
+ 	struct mc13xxx_regulator_priv *priv = rdev_get_drvdata(rdev);
+ 	struct mc13xxx_regulator *mc13xxx_regulators = priv->mc13xxx_regulators;
+ 	int id = rdev_get_id(rdev);
+-	int ret;
+ 
+ 	dev_dbg(rdev_get_dev(rdev), "%s id: %d\n", __func__, id);
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+-	ret = mc13xxx_reg_rmw(priv->mc13xxx, mc13xxx_regulators[id].reg,
++	return mc13xxx_reg_rmw(priv->mc13xxx, mc13xxx_regulators[id].reg,
+ 			mc13xxx_regulators[id].enable_bit,
+ 			mc13xxx_regulators[id].enable_bit);
+-	mc13xxx_unlock(priv->mc13xxx);
+-
+-	return ret;
+ }
+ 
+ static int mc13xxx_regulator_disable(struct regulator_dev *rdev)
+@@ -51,16 +46,11 @@ static int mc13xxx_regulator_disable(struct regulator_dev *rdev)
+ 	struct mc13xxx_regulator_priv *priv = rdev_get_drvdata(rdev);
+ 	struct mc13xxx_regulator *mc13xxx_regulators = priv->mc13xxx_regulators;
+ 	int id = rdev_get_id(rdev);
+-	int ret;
+ 
+ 	dev_dbg(rdev_get_dev(rdev), "%s id: %d\n", __func__, id);
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+-	ret = mc13xxx_reg_rmw(priv->mc13xxx, mc13xxx_regulators[id].reg,
++	return mc13xxx_reg_rmw(priv->mc13xxx, mc13xxx_regulators[id].reg,
+ 			mc13xxx_regulators[id].enable_bit, 0);
+-	mc13xxx_unlock(priv->mc13xxx);
+-
+-	return ret;
+ }
+ 
+ static int mc13xxx_regulator_is_enabled(struct regulator_dev *rdev)
+@@ -70,10 +60,7 @@ static int mc13xxx_regulator_is_enabled(struct regulator_dev *rdev)
+ 	int ret, id = rdev_get_id(rdev);
+ 	unsigned int val;
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+ 	ret = mc13xxx_reg_read(priv->mc13xxx, mc13xxx_regulators[id].reg, &val);
+-	mc13xxx_unlock(priv->mc13xxx);
+-
+ 	if (ret)
+ 		return ret;
+ 
+@@ -86,15 +73,10 @@ static int mc13xxx_regulator_set_voltage_sel(struct regulator_dev *rdev,
+ 	struct mc13xxx_regulator_priv *priv = rdev_get_drvdata(rdev);
+ 	struct mc13xxx_regulator *mc13xxx_regulators = priv->mc13xxx_regulators;
+ 	int id = rdev_get_id(rdev);
+-	int ret;
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+-	ret = mc13xxx_reg_rmw(priv->mc13xxx, mc13xxx_regulators[id].vsel_reg,
++	return mc13xxx_reg_rmw(priv->mc13xxx, mc13xxx_regulators[id].vsel_reg,
+ 			mc13xxx_regulators[id].vsel_mask,
+ 			selector << mc13xxx_regulators[id].vsel_shift);
+-	mc13xxx_unlock(priv->mc13xxx);
+-
+-	return ret;
+ }
+ 
+ static int mc13xxx_regulator_get_voltage(struct regulator_dev *rdev)
+@@ -106,11 +88,8 @@ static int mc13xxx_regulator_get_voltage(struct regulator_dev *rdev)
+ 
+ 	dev_dbg(rdev_get_dev(rdev), "%s id: %d\n", __func__, id);
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+ 	ret = mc13xxx_reg_read(priv->mc13xxx,
+ 				mc13xxx_regulators[id].vsel_reg, &val);
+-	mc13xxx_unlock(priv->mc13xxx);
+-
+ 	if (ret)
+ 		return ret;
+ 
+diff --git a/drivers/rtc/rtc-mc13xxx.c b/drivers/rtc/rtc-mc13xxx.c
+index 77ea989..91eef38 100644
+--- a/drivers/rtc/rtc-mc13xxx.c
++++ b/drivers/rtc/rtc-mc13xxx.c
+@@ -29,7 +29,7 @@ struct mc13xxx_rtc {
+ 	int valid;
+ };
+ 
+-static int mc13xxx_rtc_irq_enable_unlocked(struct device *dev,
++static int mc13xxx_rtc_irq_enable(struct device *dev,
+ 		unsigned int enabled, int irq)
+ {
+ 	struct mc13xxx_rtc *priv = dev_get_drvdata(dev);
+@@ -39,22 +39,8 @@ static int mc13xxx_rtc_irq_enable_unlocked(struct device *dev,
+ 		return -ENODATA;
+ 
+ 	func = enabled ? mc13xxx_irq_unmask : mc13xxx_irq_mask;
+-	return func(priv->mc13xxx, irq);
+-}
+-
+-static int mc13xxx_rtc_irq_enable(struct device *dev,
+-		unsigned int enabled, int irq)
+-{
+-	struct mc13xxx_rtc *priv = dev_get_drvdata(dev);
+-	int ret;
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+-
+-	ret = mc13xxx_rtc_irq_enable_unlocked(dev, enabled, irq);
+-
+-	mc13xxx_unlock(priv->mc13xxx);
+-
+-	return ret;
++	return func(priv->mc13xxx, irq);
+ }
+ 
+ static int mc13xxx_rtc_read_time(struct device *dev, struct rtc_time *tm)
+@@ -64,25 +50,18 @@ static int mc13xxx_rtc_read_time(struct device *dev, struct rtc_time *tm)
+ 	unsigned long s1970;
+ 	int ret;
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+-
+-	if (!priv->valid) {
+-		ret = -ENODATA;
+-		goto out;
+-	}
++	if (!priv->valid)
++		return -ENODATA;
+ 
+ 	ret = mc13xxx_reg_read(priv->mc13xxx, MC13XXX_RTCDAY, &days1);
+ 	if (unlikely(ret))
+-		goto out;
++		return ret;
+ 
+ 	ret = mc13xxx_reg_read(priv->mc13xxx, MC13XXX_RTCTOD, &seconds);
+ 	if (unlikely(ret))
+-		goto out;
++		return ret;
+ 
+ 	ret = mc13xxx_reg_read(priv->mc13xxx, MC13XXX_RTCDAY, &days2);
+-out:
+-	mc13xxx_unlock(priv->mc13xxx);
+-
+ 	if (ret)
+ 		return ret;
+ 
+@@ -113,8 +92,6 @@ static int mc13xxx_rtc_set_mmss(struct device *dev, unsigned long secs)
+ 	seconds = secs % 86400;
+ 	days = secs / 86400;
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+-
+ 	/*
+ 	 * temporarily invalidate alarm to prevent triggering it when the day is
+ 	 * already updated while the time isn't yet.
+@@ -162,8 +139,6 @@ static int mc13xxx_rtc_set_mmss(struct device *dev, unsigned long secs)
+ out:
+ 	priv->valid = !ret;
+ 
+-	mc13xxx_unlock(priv->mc13xxx);
+-
+ 	return ret;
+ }
+ 
+@@ -175,26 +150,18 @@ static int mc13xxx_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
+ 	int enabled, pending;
+ 	int ret;
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+-
+ 	ret = mc13xxx_reg_read(priv->mc13xxx, MC13XXX_RTCTODA, &seconds);
+ 	if (unlikely(ret))
+-		goto out;
+-	if (seconds >= 86400) {
+-		ret = -ENODATA;
+-		goto out;
+-	}
++		return ret;
++	if (seconds >= 86400)
++		return -ENODATA;
+ 
+ 	ret = mc13xxx_reg_read(priv->mc13xxx, MC13XXX_RTCDAY, &days);
+ 	if (unlikely(ret))
+-		goto out;
++		return ret;
+ 
+ 	ret = mc13xxx_irq_status(priv->mc13xxx, MC13XXX_IRQ_TODA,
+ 			&enabled, &pending);
+-
+-out:
+-	mc13xxx_unlock(priv->mc13xxx);
+-
+ 	if (ret)
+ 		return ret;
+ 
+@@ -216,42 +183,34 @@ static int mc13xxx_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
+ 	unsigned seconds, days;
+ 	int ret;
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+-
+ 	/* disable alarm to prevent false triggering */
+ 	ret = mc13xxx_reg_write(priv->mc13xxx, MC13XXX_RTCTODA, 0x1ffff);
+ 	if (unlikely(ret))
+-		goto out;
++		return ret;
+ 
+ 	ret = mc13xxx_irq_ack(priv->mc13xxx, MC13XXX_IRQ_TODA);
+ 	if (unlikely(ret))
+-		goto out;
++		return ret;
+ 
+ 	ret = rtc_tm_to_time(&alarm->time, &s1970);
+ 	if (unlikely(ret))
+-		goto out;
++		return ret;
+ 
+ 	dev_dbg(dev, "%s: o%2.s %lu\n", __func__, alarm->enabled ? "n" : "ff",
+ 			s1970);
+ 
+-	ret = mc13xxx_rtc_irq_enable_unlocked(dev, alarm->enabled,
+-			MC13XXX_IRQ_TODA);
++	ret = mc13xxx_rtc_irq_enable(dev, alarm->enabled, MC13XXX_IRQ_TODA);
+ 	if (unlikely(ret))
+-		goto out;
++		return ret;
+ 
+ 	seconds = s1970 % 86400;
+ 	days = s1970 / 86400;
+ 
+ 	ret = mc13xxx_reg_write(priv->mc13xxx, MC13XXX_RTCDAYA, days);
+ 	if (unlikely(ret))
+-		goto out;
+-
+-	ret = mc13xxx_reg_write(priv->mc13xxx, MC13XXX_RTCTODA, seconds);
+-
+-out:
+-	mc13xxx_unlock(priv->mc13xxx);
++		return ret;
+ 
+-	return ret;
++	return mc13xxx_reg_write(priv->mc13xxx, MC13XXX_RTCTODA, seconds);
+ }
+ 
+ static irqreturn_t mc13xxx_rtc_alarm_handler(int irq, void *dev)
+@@ -325,17 +284,15 @@ static int __init mc13xxx_rtc_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, priv);
+ 
+-	mc13xxx_lock(mc13xxx);
+-
+ 	ret = mc13xxx_irq_request(mc13xxx, MC13XXX_IRQ_RTCRST,
+ 			mc13xxx_rtc_reset_handler, DRIVER_NAME, priv);
+ 	if (ret)
+-		goto err_reset_irq_request;
++		return ret;
+ 
+ 	ret = mc13xxx_irq_status(mc13xxx, MC13XXX_IRQ_RTCRST,
+ 			NULL, &rtcrst_pending);
+ 	if (ret)
+-		goto err_reset_irq_status;
++		return ret;
+ 
+ 	priv->valid = !rtcrst_pending;
+ 
+@@ -349,27 +306,18 @@ static int __init mc13xxx_rtc_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		goto err_alarm_irq_request;
+ 
+-	mc13xxx_unlock(mc13xxx);
+-
+ 	priv->rtc = devm_rtc_device_register(&pdev->dev, pdev->name,
+ 					&mc13xxx_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(priv->rtc)) {
+ 		ret = PTR_ERR(priv->rtc);
+ 
+-		mc13xxx_lock(mc13xxx);
+-
+ 		mc13xxx_irq_free(mc13xxx, MC13XXX_IRQ_TODA, priv);
+-err_alarm_irq_request:
+ 
++err_alarm_irq_request:
+ 		mc13xxx_irq_free(mc13xxx, MC13XXX_IRQ_1HZ, priv);
+-err_update_irq_request:
+-
+-err_reset_irq_status:
+ 
++err_update_irq_request:
+ 		mc13xxx_irq_free(mc13xxx, MC13XXX_IRQ_RTCRST, priv);
+-err_reset_irq_request:
+-
+-		mc13xxx_unlock(mc13xxx);
+ 	}
+ 
+ 	return ret;
+@@ -379,14 +327,10 @@ static int __exit mc13xxx_rtc_remove(struct platform_device *pdev)
+ {
+ 	struct mc13xxx_rtc *priv = platform_get_drvdata(pdev);
+ 
+-	mc13xxx_lock(priv->mc13xxx);
+-
+ 	mc13xxx_irq_free(priv->mc13xxx, MC13XXX_IRQ_TODA, priv);
+ 	mc13xxx_irq_free(priv->mc13xxx, MC13XXX_IRQ_1HZ, priv);
+ 	mc13xxx_irq_free(priv->mc13xxx, MC13XXX_IRQ_RTCRST, priv);
+ 
+-	mc13xxx_unlock(priv->mc13xxx);
+-
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/mfd/mc13xxx.h b/include/linux/mfd/mc13xxx.h
+index 67c17b5..2c2afcf 100644
+--- a/include/linux/mfd/mc13xxx.h
++++ b/include/linux/mfd/mc13xxx.h
+@@ -13,9 +13,6 @@
+ 
+ struct mc13xxx;
+ 
+-void mc13xxx_lock(struct mc13xxx *mc13xxx);
+-void mc13xxx_unlock(struct mc13xxx *mc13xxx);
+-
+ int mc13xxx_reg_read(struct mc13xxx *mc13xxx, unsigned int offset, u32 *val);
+ int mc13xxx_reg_write(struct mc13xxx *mc13xxx, unsigned int offset, u32 val);
+ int mc13xxx_reg_rmw(struct mc13xxx *mc13xxx, unsigned int offset,
 -- 
 1.8.3.2
 
