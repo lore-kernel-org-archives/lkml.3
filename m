@@ -1,113 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204Ab3K3OCG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 09:02:06 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:45384 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744Ab3K3OCD (ORCPT
+	id S1752063Ab3K3OGk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 09:06:40 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:58933 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab3K3OGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 09:02:03 -0500
-Message-ID: <5299EFDD.6060405@gmail.com>
-Date: Sat, 30 Nov 2013 22:02:05 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Sat, 30 Nov 2013 09:06:37 -0500
+Date: Sat, 30 Nov 2013 15:06:33 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
+        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 02/14] sched: add extended scheduling interface. (new ABI)
+Message-ID: <20131130140633.GB19027@gmail.com>
+References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
+ <1383831828-15501-3-git-send-email-juri.lelli@gmail.com>
+ <20131127132354.GA18422@gmail.com>
+ <20131127133027.GE10022@twins.programming.kicks-ass.net>
+ <20131127140143.GB24403@gmail.com>
+ <20131127141334.GA13532@twins.programming.kicks-ass.net>
+ <20131127141721.GA24979@gmail.com>
+ <5297257B.7090200@gmail.com>
+ <20131128112858.GK10022@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: "John W. Linville" <linville@tuxdriver.com>, rkuo <rkuo@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, linux-wireless@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH] net: mac80211: tx.c: be sure of 'sdata->vif.type' must
- be NL80211_IFTYPE_AP when be in NL80211_IFTYPE_AP case
-References: <528AEFB7.4060301@gmail.com>   <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com>   <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com>   <52957ADA.2080704@gmail.com>  (sfid-20131127_055211_558798_A7DF5684) <1385739487.8656.1.camel@jlt4.sipsolutions.net>  <5299D306.7070701@gmail.com> (sfid-20131130_125901_519610_EDA4068E) <1385816013.4327.1.camel@jlt4.sipsolutions.net> <5299ED38.4090509@gmail.com>
-In-Reply-To: <5299ED38.4090509@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131128112858.GK10022@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2013 09:50 PM, Chen Gang wrote:
-> On 11/30/2013 08:53 PM, Johannes Berg wrote:
->> On Sat, 2013-11-30 at 19:59 +0800, Chen Gang wrote:
->>> On 11/29/2013 11:38 PM, Johannes Berg wrote:
->>>>
->>>>> +++ b/net/mac80211/tx.c
->>>>> @@ -1814,8 +1814,9 @@ netdev_tx_t ieee80211_subif_start_xmit(struct sk_buff *skb,
->>>>>  			break;
->>>>>  		/* fall through */
->>>>>  	case NL80211_IFTYPE_AP:
->>>>> -		if (sdata->vif.type == NL80211_IFTYPE_AP)
->>>>> -			chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
->>>>> +		if (sdata->vif.type != NL80211_IFTYPE_AP)
->>>>> +			goto fail_rcu;
->>>>> +		chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
->>>>
->>>> This change is completely wrong.
->>>>
->>>
->>> Oh, it is.
->>>
->>> Hmm... for me, this work flow still can be implemented with a little
->>> clearer way (at least it will avoid related warning):
->>>
->>> -------------------------diff begin------------------------------
->>>
->>> diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
->>> index c558b24..7076128 100644
->>> --- a/net/mac80211/tx.c
->>> +++ b/net/mac80211/tx.c
->>> @@ -1810,14 +1810,14 @@ netdev_tx_t ieee80211_subif_start_xmit(struct sk_buff *skb,
->>>  		if (!chanctx_conf)
->>>  			goto fail_rcu;
->>>  		band = chanctx_conf->def.chan->band;
->>> -		if (sta)
->>> -			break;
->>> -		/* fall through */
->>> +		if (!sta)
->>> +			goto try_next;
->>> +		break;
->>>  	case NL80211_IFTYPE_AP:
->>> -		if (sdata->vif.type == NL80211_IFTYPE_AP)
->>> -			chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
->>> +		chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
->>>  		if (!chanctx_conf)
->>>  			goto fail_rcu;
->>> +try_next:
->>
->> I don't think that's better than the (fairly obvious) fall-through, and
->> has a pretty odd goto. Also, depending on the compiler, it still knows
->> the previous case label and doesn't warn.
->>
-> 
-> Yeah, fall-through is obvious. But check 'A' again just near by "case A"
-> seems a little strange, and some of compilers (or some of versions) are
-> really not quit smart enough to know it is not a warning.
-> 
 
-Sorry, the paragraph above may lead misunderstanding, I repeated again:
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
- - fall-through is obvious (although I did not notice it, originally).
-
- - Check 'A' again just near by "case A" seems a little strange.
-
- - Some compilers aren't quit smart enough to know 'chanctx_conf' is OK.
-
-
-Thanks.
-
-> Hmm... for me, if the code (implementation) can express real logical
-> work flow as much as directly and simply, the code (implementation) is
-> clear enough (don't mind whether use 'goto' or not).
+> On Thu, Nov 28, 2013 at 12:14:03PM +0100, Juri Lelli wrote:
+> > +SYSCALL_DEFINE2(sched_getattr, pid_t, pid, struct sched_attr __user *, attr)
+> >  {
+> > -	struct sched_param2 lp;
+> > +	struct sched_attr lp;
+> >  	struct task_struct *p;
+> >  	int retval;
+> >  
+> > -	if (!param2 || pid < 0)
+> > +	if (!attr || pid < 0)
+> >  		return -EINVAL;
+> >  
+> > +	memset(&lp, 0, sizeof(struct sched_attr));
+> > +
+> >  	rcu_read_lock();
+> >  	p = find_process_by_pid(pid);
+> >  	retval = -ESRCH;
+> > @@ -3427,7 +3495,7 @@ SYSCALL_DEFINE2(sched_getparam2, pid_t, pid, struct sched_param2 __user *, param
+> >  	lp.sched_priority = p->rt_priority;
+> >  	rcu_read_unlock();
+> >  
+> > -	retval = copy_to_user(param2, &lp, sizeof(lp)) ? -EFAULT : 0;
+> > +	retval = copy_to_user(attr, &lp, sizeof(lp)) ? -EFAULT : 0;
+> >  	return retval;
+> >  
+> >  out_unlock:
 > 
 > 
-> And originally, at first, I am really not quite careful enough, and sent
-> an incorrect patch after noticed the related compiler's warning. :-)
+> So this side needs a bit more care; suppose the kernel has a larger attr
+> than userspace knows about.
 > 
+> What would make more sense; add another syscall argument with the
+> userspace sizeof(struct sched_attr), or expect userspace to initialize
+> attr->size to the right value before calling sched_getattr() ?
 > 
-> Thanks.
+> To me the extra argument makes more sense; that is:
 > 
+>   struct sched_attr attr;
+> 
+>   ret = sched_getattr(0, &attr, sizeof(attr));
+> 
+> seems like a saner thing than:
+> 
+>   struct sched_attr attr = { .size = sizeof(attr), };
+> 
+>   ret = sched_getattr(0, &attr);
+> 
+> Mostly because the former has a clear separation between input and 
+> output arguments, whereas for the second form the attr argument is 
+> both input and output.
+> 
+> Ingo?
 
+I suppose so - in the sys_perf_event_open() case we ran out of 
+arguments, so attr::size was the only sane way to do it.
 
--- 
-Chen Gang
+[ Btw., perf events side note: for completeness and for debugging we 
+  probably want to add a sys_perf_event_get() method as well, to 
+  recover the attributes of an existing event. Unidirectional APIs are 
+  not very nice. ]
+
+Thanks,
+
+	Ingo
