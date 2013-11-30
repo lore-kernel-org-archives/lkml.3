@@ -1,124 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750965Ab3K3UjX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 15:39:23 -0500
-Received: from smtprelay0137.hostedemail.com ([216.40.44.137]:49483 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751259Ab3K3UjF (ORCPT
+	id S1751610Ab3K3Umo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 15:42:44 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43467 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242Ab3K3Umj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 15:39:05 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:981:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:1963:2393:2553:2559:2562:2692:2828:2893:3138:3139:3140:3141:3142:3355:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:5007:7652:7809:7875:7903:9036:10004:10400:10471:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12663:12740:13161:13229:13255,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: salt42_89256baa87b63
-X-Filterd-Recvd-Size: 4775
-Message-ID: <1385843940.2664.4.camel@joe-AO722>
-Subject: Re: [PATCH] net: mac80211: tx.c: be sure of 'sdata->vif.type' must
- be NL80211_IFTYPE_AP when be in NL80211_IFTYPE_AP case
-From: Joe Perches <joe@perches.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Chen Gang <gang.chen.5i5j@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        rkuo <rkuo@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, linux-wireless@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Date: Sat, 30 Nov 2013 12:39:00 -0800
-In-Reply-To: <1385842134.6108.4.camel@jlt4.sipsolutions.net>
-References: <528AEFB7.4060301@gmail.com>
-	 <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com>
-	 <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com>
-	 <52957ADA.2080704@gmail.com>
-	 (sfid-20131127_055211_558798_A7DF5684) <1385739487.8656.1.camel@jlt4.sipsolutions.net>
-	 <5299D306.7070701@gmail.com>
-	 (sfid-20131130_125901_519610_EDA4068E) <1385816013.4327.1.camel@jlt4.sipsolutions.net>
-	 <5299ED38.4090509@gmail.com> <5299EFDD.6060405@gmail.com>
-	 (sfid-20131130_150205_984535_068F14A9) <1385842134.6108.4.camel@jlt4.sipsolutions.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 30 Nov 2013 15:42:39 -0500
+Date: Sat, 30 Nov 2013 21:42:37 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>, gregkh@linuxfoundation.org,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        pali.rohar@gmail.com, sre@ring0.de, omar.ramirez@copitl.com,
+        tony@atomide.com, felipe.contreras@gmail.com, s-anna@ti.com, nm@ti.com,
+        ohad@wizery.com, stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nico@ngolde.de
+Subject: [patch] Staging: tidspbridge: make mmap root-only so it is not a
+ security problem
+Message-ID: <20131130204237.GA17912@amd.pavel.ucw.cz>
+References: <6662B6F95D1C4783A007CAC82A8DA641@ivogl>
+ <20131130191931.GA5286@amd.pavel.ucw.cz>
+ <20131130194935.GG5443@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131130194935.GG5443@mwanda>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-11-30 at 21:08 +0100, Johannes Berg wrote:
-> On Sat, 2013-11-30 at 22:02 +0800, Chen Gang wrote:
+
+mmap in tidspbridge is missing range-checks. For now, make this
+interface root-only, so that it does not cause security problems.
+
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+
+---
+
+On Sat 2013-11-30 22:49:35, Dan Carpenter wrote:
+> On Sat, Nov 30, 2013 at 08:19:32PM +0100, Pavel Machek wrote:
+> > so perhaps Nico Golde or Dan Carpenter can elaborate? I Cc-ed them
+> > now.
+> > 
+> > Or is it some kind of super-secret issue and still under embargo for
+> > 10 days?
 > 
-> > >>>  	case NL80211_IFTYPE_AP:
-> > >>> -		if (sdata->vif.type == NL80211_IFTYPE_AP)
-> > >>> -			chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
-> > >>> +		chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
-> > >>>  		if (!chanctx_conf)
-> > >>>  			goto fail_rcu;
-> > >>> +try_next:
-> > >>
-> > >> I don't think that's better than the (fairly obvious) fall-through, and
-> > >> has a pretty odd goto. Also, depending on the compiler, it still knows
-> > >> the previous case label and doesn't warn.
-> > >>
-> > > 
-> > > Yeah, fall-through is obvious. But check 'A' again just near by "case A"
-> > > seems a little strange, and some of compilers (or some of versions) are
-> > > really not quit smart enough to know it is not a warning.
-> > > 
-> > 
-> > Sorry, the paragraph above may lead misunderstanding, I repeated again:
-> > 
-> >  - fall-through is obvious (although I did not notice it, originally).
-> > 
-> >  - Check 'A' again just near by "case A" seems a little strange.
-> > 
-> >  - Some compilers aren't quit smart enough to know 'chanctx_conf' is OK.
-> 
-> I know. If you have any good ideas of how to make it more obvious to the
-> compiler, I'm all ears, I just don't like any of the solutions offered
-> so far (and you aren't the first to do so either) :-)
-> 
-> FWIW, I find the label to be odd because if you're familiar with the
-> code then AP/AP_VLAN *should* be identical except for two special things
-> that are now linearly & neatly handled in the code (the first being the
-> 4-addr station, the second the chanctx assignment which always has to be
-> done regardless of 4-addr). IMHO the == check after case should be
-> enough to make a human reader take a closer look. I understand that you
-> didn't and that's OK since you were just trying to squelch compile
-> warnings, but I don't see that this one warrants much attention.
+> Nope,  it's not secret.  Here is the original report from Nico and
+> Fabian.  Please give them credit when you fix the bug.
 
-The label/test could be moved to save a couple of lines
-of duplicated code.
+Thanks!
 
-Maybe:
+> Felipe Contreras says we could just remove mmap() support and the driver
+> would still work, but no one has submitted a patch to do that.  Really
+> this driver needs an actual maintainer who will respond to security bugs
+> and also start to move the driver out of staging.
 
- net/mac80211/tx.c | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+There starts to be real traction around Nokia N900, so I believe it is
+going to be fixed. (And with Nemo/Mer getting popularity due to Jolla,
+it should get even better).
 
-diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
-index 70b5a05..b2160f4 100644
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -1777,18 +1777,16 @@ netdev_tx_t ieee80211_subif_start_xmit(struct sk_buff *skb,
- 		}
- 		ap_sdata = container_of(sdata->bss, struct ieee80211_sub_if_data,
- 					u.ap);
--		chanctx_conf = rcu_dereference(ap_sdata->vif.chanctx_conf);
--		if (!chanctx_conf)
--			goto fail_rcu;
--		band = chanctx_conf->def.chan->band;
--		if (sta)
--			break;
- 		/* fall through */
- 	case NL80211_IFTYPE_AP:
--		if (sdata->vif.type == NL80211_IFTYPE_AP)
--			chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
-+		chanctx_conf = rcu_dereference(ap_sdata->vif.chanctx_conf);
- 		if (!chanctx_conf)
- 			goto fail_rcu;
-+		if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN) {
-+			band = chanctx_conf->def.chan->band;
-+			if (sta)
-+				break;
-+		}
- 		fc |= cpu_to_le16(IEEE80211_FCTL_FROMDS);
- 		/* DA BSSID SA */
- 		memcpy(hdr.addr1, skb->data, ETH_ALEN);
+But no, I did not figure out how to run Nemo in qemu, yet...
+									Pavel 
 
+diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+index 1aa4a3f..8533e67 100644
+--- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
++++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+@@ -258,7 +258,10 @@ err:
+ /* This function maps kernel space memory to user space memory. */
+ static int bridge_mmap(struct file *filp, struct vm_area_struct *vma)
+ {
+-	u32 status;
++	int status;
++
++	if (!capable(CAP_SYS_RAWIO))
++		return -EPERM;
+ 
+ 	/* VM_IO | VM_DONTEXPAND | VM_DONTDUMP are set by remap_pfn_range() */
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+@@ -271,10 +274,10 @@ static int bridge_mmap(struct file *filp, struct vm_area_struct *vma)
+ 	status = remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
+ 				 vma->vm_end - vma->vm_start,
+ 				 vma->vm_page_prot);
+-	if (status != 0)
+-		status = -EAGAIN;
++	if (status)
++		return -EAGAIN;
+ 
+-	return status;
++	return 0;
+ }
+ 
+ static const struct file_operations bridge_fops = {
 
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
