@@ -1,269 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425Ab3K3ASw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 19:18:52 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:56752 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751191Ab3K3ASl (ORCPT
+	id S1751911Ab3K3ATO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 19:19:14 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:43039 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab3K3ATK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 19:18:41 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: [PATCH v2 04/10] PCI: Destroy pci dev only once
-Date: Sat, 30 Nov 2013 01:31:33 +0100
-Message-ID: <2994709.aBAqQ6JkJi@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <4276127.HzbOlVUbc2@vostro.rjw.lan>
-References: <1385429290-25397-1-git-send-email-yinghai@kernel.org> <461934992.nFRx8soJrp@vostro.rjw.lan> <4276127.HzbOlVUbc2@vostro.rjw.lan>
+	Fri, 29 Nov 2013 19:19:10 -0500
+Message-ID: <52992EFA.4000903@acm.org>
+Date: Fri, 29 Nov 2013 18:19:06 -0600
+From: Corey Minyard <minyard@acm.org>
+Reply-To: minyard@acm.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Srinivas_G_Gowda@Dell.com, tcminyard@gmail.com,
+        linux-kernel@vger.kernel.org, openipmi@mvista.com
+Subject: Re: [PATCH 1/1] ipmi: setting mod_timer for read_event_msg buffer
+ cmd
+References: <52931C2D.4070908@dell.com> <5294D9D8.2030305@acm.org> <75F7F7632819D94BA80703D8B1F10B6D29CEE95A1D@BLRX7MCDC201.AMER.DELL.COM>
+In-Reply-To: <75F7F7632819D94BA80703D8B1F10B6D29CEE95A1D@BLRX7MCDC201.AMER.DELL.COM>
+Content-Type: multipart/mixed;
+ boundary="------------080305010206030903060902"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, November 30, 2013 12:45:55 AM Rafael J. Wysocki wrote:
-> On Saturday, November 30, 2013 12:38:26 AM Rafael J. Wysocki wrote:
-> > On Tuesday, November 26, 2013 06:26:54 PM Yinghai Lu wrote:
-> > > On Tue, Nov 26, 2013 at 5:24 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > > >
-> > > > So assume pci_destroy_dev() is called twice in parallel for the same dev
-> > > > by two different threads.  Thread 1 does the atomic_inc_and_test() and
-> > > > finds that it is OK to do the device_del() and put_device() which causes
-> > > > the device object to be freed.  Then thread 2 does the atomic_inc_and_test()
-> > > > on the already freed device object and crashes the kernel.
-> > > >
-> > > thread2 should still hold one extra reference.
-> > > that is in
-> > >   device_schedule_callback
-> > >      ==> sysfs_schedule_callback
-> > >          ==> kobject_get(kobj)
-> > > 
-> > > pci_destroy_dev for thread2 is called at this point.
-> > > 
-> > > and that reference will be released from
-> > >         sysfs_schedule_callback
-> > >         ==> kobject_put()...
-> > 
-> > Well, that would be the case if thread 2 was started by device_schedule_callback(),
-> > but again, for example, it may be trim_stale_devices() started by acpiphp_check_bridge()
-> > that doesn't hold extra references to the pci_dev.  [Well, that piece of code
-> > is racy anyway, because it walks bus->devices without locking.  Which is my
-> > fault too, because I overlooked that.  Shame, shame.]
-> > 
-> > Perhaps we can do something like the (untested) patch below (in addition to the
-> > $subject patch).  Do you see any immediate problems with it?
-> 
-> Ah, I see one.  It will break pci_stop_bus_device() and pci_remove_bus_device().
-> So much for being clever.
-> 
-> Moreover, it looks like those two routines above are racy too for the same
-> reason?
+This is a multi-part message in MIME format.
+--------------080305010206030903060902
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 
-The (still untested) patch below is what I have come up with for now.  The
-is_gone flag is now only operated under pci_remove_rescan_mutex, so it need
-not be atomic.  Of course, whoever calls pci_stop_and_remove_bus_device()
-(the "locked" one) should hold a ref to the device being removed to avoid
-use-after-free (the callers need to be audited for that).
+On 11/27/2013 04:34 AM, Srinivas_G_Gowda@Dell.com wrote:
+>
+> *Dell - Internal Use - Confidential *
+>
+> I hit a bug during one of our stress tests, Here is the issue that I
+> am looking at.
+>
+> We have IPMI_READ_EVENT_MSG_BUFFER_CMD getting invoked from
+> smi_event_handler.
+>
+> In case we hit error scenario, say "OBF not ready in time" we do not
+> have smi_timeout driving the interface.
+>
+> Seems like the timer is not armed when we invoke
+> IPMI_READ_EVENT_MSG_BUFFER_CMD from smi_event_handler.
+>
+> For the proposed patch I checked the return value of mod_timer just
+> before smi_info->handlers->start_transaction, that returns 0 !!!
+>
+> gWithout smi_timeout handler getting called periodically, if the BMC
+> fails to set OBF flag during the msg transaction of
+> IPMI_READ_EVENT_MSG_BUFFER_CMD,
+>
+> the driver just keeps looping until the flag is set. Ideally we would
+> want BMC to set the flag, but in case it doesn’t we do not want the
+> driver to loop indefinitely rather hit KCS_ERROR states.
+>
+> To summarize, we do not have timer set to invoke smi_timeout() when we
+> call IPMI_READ_EVENT_MSG_BUFFER_CMD from smi_event_handler.
+>
+> Do you feel there is a better way to fix it or a bug elsewhere…!
+>
 
-Well, I probably still missed something, because it's the middle of the night
-and I should be going to sleep instead of starig at the PCI removal code.  Sigh.
+Ok, I think I know what is happening, and I think I have a fix. I'm
+betting that you have interrupts on this, and
+I found a situation where if an interrupt came in at a certain time, it
+wouldn't start the timer. The attached patch should fix the problem.
 
-Thanks,
-Rafael
+Can you try this out?
 
+Thanks for the detailed description.
 
+-corey
+
+--------------080305010206030903060902
+Content-Type: text/x-diff;
+ name="0001-IPMI-Start-the-timer-properly-in-certain-situations.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-IPMI-Start-the-timer-properly-in-certain-situations.pat";
+ filename*1="ch"
+
+>From a3dcd3ce65c4072acd707a000ba30ff917d52ef3 Mon Sep 17 00:00:00 2001
+From: Corey Minyard <cminyard@mvista.com>
+Date: Fri, 29 Nov 2013 18:13:45 -0600
+Subject: [PATCH] IPMI: Start the timer properly in certain situations
+
+If using interrupt, or in some cases with the IPMI thread, the
+IPMI timer would not be started to time out operations, resulting
+in the driver operation hanging.
+
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
 ---
- drivers/pci/hotplug/acpiphp_glue.c |   15 ++++++++++++---
- drivers/pci/pci-sysfs.c            |   17 ++++++++++++-----
- drivers/pci/pci.h                  |    3 +++
- drivers/pci/remove.c               |   15 +++++++++++++--
- include/linux/pci.h                |    1 +
- 5 files changed, 41 insertions(+), 10 deletions(-)
+ drivers/char/ipmi/ipmi_si_intf.c | 17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
-Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-+++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -553,6 +553,8 @@ static void __ref enable_slot(struct acp
- 	int max, pass;
- 	LIST_HEAD(add_list);
+diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+index 68c5ef5..a8dfd94 100644
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -981,6 +981,13 @@ static int ipmi_thread_busy_wait(enum si_sm_result smi_result,
+ 	return 1;
+ }
  
-+	lock_pci_remove_rescan();
-+
- 	acpiphp_rescan_slot(slot);
- 	max = acpiphp_max_busnr(bus);
- 	for (pass = 0; pass < 2; pass++) {
-@@ -586,6 +588,8 @@ static void __ref enable_slot(struct acp
++static void ipmi_start_timer_if_necessary(struct smi_info *smi_info)
++{
++	if (!timer_pending(&smi_info->si_timer)) {
++		mod_timer(&smi_info->si_timer, jiffies + SI_TIMEOUT_JIFFIES);
++		smi_info->last_timeout_jiffies = jiffies;
++	}
++}
  
- 	pci_bus_add_devices(bus);
- 
-+	unlock_pci_remove_rescan();
-+
- 	slot->flags |= SLOT_ENABLED;
- 	list_for_each_entry(func, &slot->funcs, sibling) {
- 		dev = pci_get_slot(bus, PCI_DEVFN(slot->device,
-@@ -626,6 +630,7 @@ static void disable_slot(struct acpiphp_
- 	struct acpiphp_func *func;
- 	struct pci_dev *pdev;
- 
-+	lock_pci_remove_rescan();
- 	/*
- 	 * enable_slot() enumerates all functions in this device via
- 	 * pci_scan_slot(), whether they have associated ACPI hotplug
-@@ -633,9 +638,10 @@ static void disable_slot(struct acpiphp_
- 	 * here.
- 	 */
- 	while ((pdev = dev_in_slot(slot))) {
--		pci_stop_and_remove_bus_device(pdev);
-+		__pci_stop_and_remove_bus_device(pdev);
- 		pci_dev_put(pdev);
+ /*
+  * A busy-waiting loop for speeding up IPMI operation.
+@@ -1014,8 +1021,10 @@ static int ipmi_thread(void *data)
+ 			schedule();
+ 		else if (smi_result == SI_SM_IDLE)
+ 			schedule_timeout_interruptible(100);
+-		else
++		else {
++			ipmi_start_timer_if_necessary(smi_info);
+ 			schedule_timeout_interruptible(1);
++		}
  	}
-+	unlock_pci_remove_rescan();
- 
- 	list_for_each_entry(func, &slot->funcs, sibling)
- 		acpiphp_bus_trim(func_to_handle(func));
-@@ -710,7 +716,7 @@ static void trim_stale_devices(struct pc
- 		alive = pci_bus_read_dev_vendor_id(dev->bus, dev->devfn, &v, 0);
- 	}
- 	if (!alive) {
--		pci_stop_and_remove_bus_device(dev);
-+		__pci_stop_and_remove_bus_device(dev);
- 		if (handle)
- 			acpiphp_bus_trim(handle);
- 	} else if (bus) {
-@@ -743,12 +749,15 @@ static void acpiphp_check_bridge(struct
- 		mutex_lock(&slot->crit_sect);
- 		/* wake up all functions */
- 		if (get_slot_status(slot) == ACPI_STA_ALL) {
-+			lock_pci_remove_rescan();
-+
- 			/* remove stale devices if any */
- 			list_for_each_entry_safe(dev, tmp, &bus->devices,
- 						 bus_list)
- 				if (PCI_SLOT(dev->devfn) == slot->device)
- 					trim_stale_devices(dev);
- 
-+			unlock_pci_remove_rescan();
- 			/* configure all functions */
- 			enable_slot(slot);
- 		} else {
-@@ -783,7 +792,7 @@ static void acpiphp_sanitize_bus(struct
- 					res->end) {
- 				/* Could not assign a required resources
- 				 * for this device, remove it */
--				pci_stop_and_remove_bus_device(dev);
-+				__pci_stop_and_remove_bus_device(dev);
- 				break;
- 			}
- 		}
-Index: linux-pm/drivers/pci/pci-sysfs.c
-===================================================================
---- linux-pm.orig/drivers/pci/pci-sysfs.c
-+++ linux-pm/drivers/pci/pci-sysfs.c
-@@ -298,6 +298,17 @@ msi_bus_store(struct device *dev, struct
- static DEVICE_ATTR_RW(msi_bus);
- 
- static DEFINE_MUTEX(pci_remove_rescan_mutex);
-+
-+void lock_pci_remove_rescan(void)
-+{
-+	mutex_lock(&pci_remove_rescan_mutex);
-+}
-+
-+void unlock_pci_remove_rescan(void)
-+{
-+	mutex_unlock(&pci_remove_rescan_mutex);
-+}
-+
- static ssize_t bus_rescan_store(struct bus_type *bus, const char *buf,
- 				size_t count)
- {
-@@ -354,11 +365,7 @@ static struct device_attribute dev_resca
- 
- static void remove_callback(struct device *dev)
- {
--	struct pci_dev *pdev = to_pci_dev(dev);
--
--	mutex_lock(&pci_remove_rescan_mutex);
--	pci_stop_and_remove_bus_device(pdev);
--	mutex_unlock(&pci_remove_rescan_mutex);
-+	pci_stop_and_remove_bus_device(to_pci_dev(dev));
+ 	return 0;
  }
- 
- static ssize_t
-Index: linux-pm/drivers/pci/pci.h
-===================================================================
---- linux-pm.orig/drivers/pci/pci.h
-+++ linux-pm/drivers/pci/pci.h
-@@ -11,8 +11,11 @@ extern const unsigned char pcie_link_spe
- 
- /* Functions internal to the PCI core code */
- 
-+void lock_pci_remove_rescan(void);
-+void unlock_pci_remove_rescan(void);
- int pci_create_sysfs_dev_files(struct pci_dev *pdev);
- void pci_remove_sysfs_dev_files(struct pci_dev *pdev);
-+void __pci_stop_and_remove_bus_device(struct pci_dev *pdev);
- #if !defined(CONFIG_DMI) && !defined(CONFIG_ACPI)
- static inline void pci_create_firmware_label_files(struct pci_dev *pdev)
- { return; }
-Index: linux-pm/drivers/pci/remove.c
-===================================================================
---- linux-pm.orig/drivers/pci/remove.c
-+++ linux-pm/drivers/pci/remove.c
-@@ -34,6 +34,10 @@ static void pci_stop_dev(struct pci_dev
- 
- static void pci_destroy_dev(struct pci_dev *dev)
- {
-+	if (dev->is_gone)
-+		return;
-+
-+	dev->is_gone = 1;
- 	device_del(&dev->dev);
- 
- 	down_write(&pci_bus_sem);
-@@ -95,6 +99,12 @@ static void pci_remove_bus_device(struct
- 	pci_destroy_dev(dev);
+@@ -1118,7 +1127,8 @@ static irqreturn_t si_irq_handler(int irq, void *data)
+ 	do_gettimeofday(&t);
+ 	printk(KERN_DEBUG "**Interrupt: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+ #endif
+-	smi_event_handler(smi_info, 0);
++	if (smi_event_handler(smi_info, 0) != SI_SM_IDLE)
++		ipmi_start_timer_if_necessary(smi_info);
+ 	spin_unlock_irqrestore(&(smi_info->si_lock), flags);
+ 	return IRQ_HANDLED;
  }
+@@ -1979,7 +1989,8 @@ static u32 ipmi_acpi_gpe(acpi_handle gpe_device,
+ 	do_gettimeofday(&t);
+ 	printk("**ACPI_GPE: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+ #endif
+-	smi_event_handler(smi_info, 0);
++	if (smi_event_handler(smi_info, 0) != SI_SM_IDLE)
++		ipmi_start_timer_if_necessary(smi_info);
+ 	spin_unlock_irqrestore(&(smi_info->si_lock), flags);
  
-+void __pci_stop_and_remove_bus_device(struct pci_dev *dev)
-+{
-+	pci_stop_bus_device(dev);
-+	pci_remove_bus_device(dev);
-+}
-+
- /**
-  * pci_stop_and_remove_bus_device - remove a PCI device and any children
-  * @dev: the device to remove
-@@ -109,8 +119,9 @@ static void pci_remove_bus_device(struct
-  */
- void pci_stop_and_remove_bus_device(struct pci_dev *dev)
- {
--	pci_stop_bus_device(dev);
--	pci_remove_bus_device(dev);
-+	lock_pci_remove_rescan();
-+	__pci_stop_and_remove_bus_device(dev);
-+	unlock_pci_remove_rescan();
- }
- EXPORT_SYMBOL(pci_stop_and_remove_bus_device);
- 
-Index: linux-pm/include/linux/pci.h
-===================================================================
---- linux-pm.orig/include/linux/pci.h
-+++ linux-pm/include/linux/pci.h
-@@ -321,6 +321,7 @@ struct pci_dev {
- 	unsigned int	multifunction:1;/* Part of multi-function device */
- 	/* keep track of device state */
- 	unsigned int	is_added:1;
-+	unsigned int	is_gone:1;
- 	unsigned int	is_busmaster:1; /* device is busmaster */
- 	unsigned int	no_msi:1;	/* device may not use msi */
- 	unsigned int	block_cfg_access:1;	/* config space access is blocked */
+ 	return ACPI_INTERRUPT_HANDLED;
+-- 
+1.8.3.1
 
+
+--------------080305010206030903060902--
