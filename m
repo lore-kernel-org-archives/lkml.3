@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751555Ab3K3B5A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 20:57:00 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55818 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273Ab3K3B47 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 20:56:59 -0500
-Message-ID: <529945E9.303@infradead.org>
-Date: Fri, 29 Nov 2013 17:56:57 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1751555Ab3K3COK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 21:14:10 -0500
+Received: from tundra.namei.org ([65.99.196.166]:45812 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751273Ab3K3COF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 21:14:05 -0500
+Date: Sat, 30 Nov 2013 13:25:31 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] bugfix for IMA code
+Message-ID: <alpine.LRH.2.02.1311301324440.14854@tundra.namei.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        David Airlie <airlied@linux.ie>
-Subject: Re: linux-next: Tree for Nov 29 (i915/intel_opregion)
-References: <20131129134535.f886fbf966dcfea00178a1b7@canb.auug.org.au>
-In-Reply-To: <20131129134535.f886fbf966dcfea00178a1b7@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/13 18:45, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Changes since 20131128:
-> 
+This fixes another regression in the IMA code.
 
-on x86_64:
+Please pull.
 
-CONFIG_ACPI is not enabled.
+The following changes since commit dc1ccc48159d63eca5089e507c82c7d22ef60839:
 
+  Linux 3.13-rc2 (2013-11-29 12:57:14 -0800)
 
-  CC      drivers/gpu/drm/i915/intel_opregion.o
-In file included from drivers/gpu/drm/i915/intel_opregion.c:31:0:
-include/linux/acpi_io.h:7:45: error: unknown type name 'acpi_physical_address'
-include/linux/acpi_io.h:8:10: error: unknown type name 'acpi_size'
-include/linux/acpi_io.h:13:33: error: unknown type name 'acpi_physical_address'
-include/linux/acpi_io.h:15:40: warning: 'struct acpi_generic_address' declared inside parameter list [enabled by default]
-include/linux/acpi_io.h:15:40: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
-include/linux/acpi_io.h:16:43: warning: 'struct acpi_generic_address' declared inside parameter list [enabled by default]
-drivers/gpu/drm/i915/intel_opregion.c: In function 'intel_opregion_setup':
-drivers/gpu/drm/i915/intel_opregion.c:866:2: error: implicit declaration of function 'acpi_os_ioremap' [-Werror=implicit-function-declaration]
-drivers/gpu/drm/i915/intel_opregion.c:866:7: warning: assignment makes pointer from integer without a cast [enabled by default]
-cc1: some warnings being treated as errors
-make[5]: *** [drivers/gpu/drm/i915/intel_opregion.o] Error 1
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
 
+Roberto Sassu (1):
+      ima: store address of template_fmt_copy in a pointer before calling strsep
 
--- 
-~Randy
+ security/integrity/ima/ima_template.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+commit af91706d5ddecb4a9858cca9e90d463037cfd498
+Author: Roberto Sassu <roberto.sassu@polito.it>
+Date:   Wed Nov 27 14:40:41 2013 +0100
+
+    ima: store address of template_fmt_copy in a pointer before calling strsep
+    
+    This patch stores the address of the 'template_fmt_copy' variable in a new
+    variable, called 'template_fmt_ptr', so that the latter is passed as an
+    argument of strsep() instead of the former. This modification is needed
+    in order to correctly free the memory area referenced by
+    'template_fmt_copy' (strsep() modifies the pointer of the passed string).
+    
+    Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+    Reported-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
+    Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+    Signed-off-by: James Morris <james.l.morris@oracle.com>
+
+---
+
+diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
+index 913e192..635695f 100644
+--- a/security/integrity/ima/ima_template.c
++++ b/security/integrity/ima/ima_template.c
+@@ -110,7 +110,7 @@ static int template_desc_init_fields(const char *template_fmt,
+ 				     struct ima_template_field ***fields,
+ 				     int *num_fields)
+ {
+-	char *c, *template_fmt_copy;
++	char *c, *template_fmt_copy, *template_fmt_ptr;
+ 	int template_num_fields = template_fmt_size(template_fmt);
+ 	int i, result = 0;
+ 
+@@ -127,7 +127,9 @@ static int template_desc_init_fields(const char *template_fmt,
+ 		result = -ENOMEM;
+ 		goto out;
+ 	}
+-	for (i = 0; (c = strsep(&template_fmt_copy, "|")) != NULL &&
++
++	template_fmt_ptr = template_fmt_copy;
++	for (i = 0; (c = strsep(&template_fmt_ptr, "|")) != NULL &&
+ 	     i < template_num_fields; i++) {
+ 		struct ima_template_field *f = lookup_template_field(c);
+ 
