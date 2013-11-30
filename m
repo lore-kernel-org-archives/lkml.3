@@ -1,29 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab3K3MyJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 07:54:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59787 "EHLO
+	id S1753765Ab3K3Mxx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 07:53:53 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59775 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753777Ab3K3Mxz (ORCPT
+	with ESMTP id S1753656Ab3K3Mxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 07:53:55 -0500
-Date: Sat, 30 Nov 2013 04:53:36 -0800
-From: tip-bot for Stanislav Fomichev <tipbot@zytor.com>
-Message-ID: <tip-3ed0d21e1103787e21ca38bed2ff50c9f087bedb@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, rostedt@goodmis.org,
-        stfomichev@yandex-team.ru, tglx@linutronix.de, olvaffe@gmail.com
+	Sat, 30 Nov 2013 07:53:48 -0500
+Date: Sat, 30 Nov 2013 04:53:27 -0800
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-449867e346bfd52c5df6bba5b706a795c35e78d4@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
+        jolsa@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
+        dsahern@gmail.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, rostedt@goodmis.org, stfomichev@yandex-team.ru,
-        tglx@linutronix.de, olvaffe@gmail.com
-In-Reply-To: <20131127104459.GB3309@stfomichev-desktop>
-References: <20131127104459.GB3309@stfomichev-desktop>
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        adrian.hunter@intel.com, tglx@linutronix.de
+In-Reply-To: <1385471964-4037-1-git-send-email-adrian.hunter@intel.com>
+References: <1385471964-4037-1-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf timechart:
-  dynamically determine event fields offset
-Git-Commit-ID: 3ed0d21e1103787e21ca38bed2ff50c9f087bedb
+Subject: [tip:perf/core] perf symbols:
+  Fix not finding kcore in buildid cache
+Git-Commit-ID: 449867e346bfd52c5df6bba5b706a795c35e78d4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,273 +34,77 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 30 Nov 2013 04:53:43 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 30 Nov 2013 04:53:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3ed0d21e1103787e21ca38bed2ff50c9f087bedb
-Gitweb:     http://git.kernel.org/tip/3ed0d21e1103787e21ca38bed2ff50c9f087bedb
-Author:     Stanislav Fomichev <stfomichev@yandex-team.ru>
-AuthorDate: Wed, 27 Nov 2013 14:45:00 +0400
+Commit-ID:  449867e346bfd52c5df6bba5b706a795c35e78d4
+Gitweb:     http://git.kernel.org/tip/449867e346bfd52c5df6bba5b706a795c35e78d4
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Tue, 26 Nov 2013 15:19:24 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 27 Nov 2013 15:10:11 -0300
+CommitDate: Wed, 27 Nov 2013 14:58:38 -0300
 
-perf timechart: dynamically determine event fields offset
+perf symbols: Fix not finding kcore in buildid cache
 
-Since b000c8065a92 "tracing: Remove the extra 4 bytes of padding in
-events" removed padding bytes, perf timechart got out of sync with the
-kernel's trace_entry structure.
+The logic was not looking in the buildid cache for kcore if the host
+kernel buildid did not match the recorded kernel buildid.
 
-Convert perf timechart to use dynamic fields offsets (via
-perf_evsel__intval) not relying on a hardcoded copy of fields layout
-from the kernel.
+This affects the non-live case i.e. the kernel has changed and we are
+looking at a special copy of kcore that we placed in the buildid cache
+(using "perf buildid-cache -v -k /proc/kcore") when the data was
+recorded.
 
-Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Chia-I Wu <olvaffe@gmail.com>
+After this fix kernel symbols get resolved/annotated correctly.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/20131127104459.GB3309@stfomichev-desktop
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1385471964-4037-1-git-send-email-adrian.hunter@intel.com
+[ Added further explanation extracted from conversation between Ingo & Adrian on lkml ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-timechart.c | 119 +++++++++++++++--------------------------
- 1 file changed, 42 insertions(+), 77 deletions(-)
+ tools/perf/util/symbol.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 491662b..436cb5f 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -306,50 +306,10 @@ static int process_exit_event(struct perf_tool *tool __maybe_unused,
- 	return 0;
- }
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index ce9ce10..360eefe 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1526,14 +1526,15 @@ static char *dso__find_kallsyms(struct dso *dso, struct map *map)
  
--struct trace_entry {
--	unsigned short		type;
--	unsigned char		flags;
--	unsigned char		preempt_count;
--	int			pid;
--	int			lock_depth;
--};
--
- #ifdef SUPPORT_OLD_POWER_EVENTS
- static int use_old_power_events;
--struct power_entry_old {
--	struct trace_entry te;
--	u64	type;
--	u64	value;
--	u64	cpu_id;
--};
- #endif
+ 	build_id__sprintf(dso->build_id, sizeof(dso->build_id), sbuild_id);
  
--struct power_processor_entry {
--	struct trace_entry te;
--	u32	state;
--	u32	cpu_id;
--};
--
--#define TASK_COMM_LEN 16
--struct wakeup_entry {
--	struct trace_entry te;
--	char comm[TASK_COMM_LEN];
--	int   pid;
--	int   prio;
--	int   success;
--};
--
--struct sched_switch {
--	struct trace_entry te;
--	char prev_comm[TASK_COMM_LEN];
--	int  prev_pid;
--	int  prev_prio;
--	long prev_state; /* Arjan weeps. */
--	char next_comm[TASK_COMM_LEN];
--	int  next_pid;
--	int  next_prio;
--};
--
- static void c_state_start(int cpu, u64 timestamp, int state)
- {
- 	cpus_cstate_start_times[cpu] = timestamp;
-@@ -409,25 +369,23 @@ static void p_state_change(int cpu, u64 timestamp, u64 new_freq)
- 			turbo_frequency = max_freq;
- }
++	scnprintf(path, sizeof(path), "%s/[kernel.kcore]/%s", buildid_dir,
++		  sbuild_id);
++
+ 	/* Use /proc/kallsyms if possible */
+ 	if (is_host) {
+ 		DIR *d;
+ 		int fd;
  
--static void
--sched_wakeup(int cpu, u64 timestamp, int pid, struct trace_entry *te,
--	     const char *backtrace)
-+static void sched_wakeup(int cpu, u64 timestamp, int waker, int wakee,
-+			 u8 flags, const char *backtrace)
- {
- 	struct per_pid *p;
--	struct wakeup_entry *wake = (void *)te;
- 	struct wake_event *we = zalloc(sizeof(*we));
- 
- 	if (!we)
- 		return;
- 
- 	we->time = timestamp;
--	we->waker = pid;
-+	we->waker = waker;
- 	we->backtrace = backtrace;
- 
--	if ((te->flags & TRACE_FLAG_HARDIRQ) || (te->flags & TRACE_FLAG_SOFTIRQ))
-+	if ((flags & TRACE_FLAG_HARDIRQ) || (flags & TRACE_FLAG_SOFTIRQ))
- 		we->waker = -1;
- 
--	we->wakee = wake->pid;
-+	we->wakee = wakee;
- 	we->next = wake_events;
- 	wake_events = we;
- 	p = find_create_pid(we->wakee);
-@@ -444,24 +402,22 @@ sched_wakeup(int cpu, u64 timestamp, int pid, struct trace_entry *te,
+ 		/* If no cached kcore go with /proc/kallsyms */
+-		scnprintf(path, sizeof(path), "%s/[kernel.kcore]/%s",
+-			  buildid_dir, sbuild_id);
+ 		d = opendir(path);
+ 		if (!d)
+ 			goto proc_kallsyms;
+@@ -1558,6 +1559,10 @@ static char *dso__find_kallsyms(struct dso *dso, struct map *map)
+ 		goto proc_kallsyms;
  	}
- }
  
--static void sched_switch(int cpu, u64 timestamp, struct trace_entry *te,
--			 const char *backtrace)
-+static void sched_switch(int cpu, u64 timestamp, int prev_pid, int next_pid,
-+			 u64 prev_state, const char *backtrace)
- {
- 	struct per_pid *p = NULL, *prev_p;
--	struct sched_switch *sw = (void *)te;
--
++	/* Find kallsyms in build-id cache with kcore */
++	if (!find_matching_kcore(map, path, sizeof(path)))
++		return strdup(path);
++
+ 	scnprintf(path, sizeof(path), "%s/[kernel.kallsyms]/%s",
+ 		  buildid_dir, sbuild_id);
  
--	prev_p = find_create_pid(sw->prev_pid);
-+	prev_p = find_create_pid(prev_pid);
- 
--	p = find_create_pid(sw->next_pid);
-+	p = find_create_pid(next_pid);
- 
- 	if (prev_p->current && prev_p->current->state != TYPE_NONE)
--		pid_put_sample(sw->prev_pid, TYPE_RUNNING, cpu,
-+		pid_put_sample(prev_pid, TYPE_RUNNING, cpu,
- 			       prev_p->current->state_since, timestamp,
- 			       backtrace);
- 	if (p && p->current) {
- 		if (p->current->state != TYPE_NONE)
--			pid_put_sample(sw->next_pid, p->current->state, cpu,
-+			pid_put_sample(next_pid, p->current->state, cpu,
- 				       p->current->state_since, timestamp,
- 				       backtrace);
- 
-@@ -472,9 +428,9 @@ static void sched_switch(int cpu, u64 timestamp, struct trace_entry *te,
- 	if (prev_p->current) {
- 		prev_p->current->state = TYPE_NONE;
- 		prev_p->current->state_since = timestamp;
--		if (sw->prev_state & 2)
-+		if (prev_state & 2)
- 			prev_p->current->state = TYPE_BLOCKED;
--		if (sw->prev_state == 0)
-+		if (prev_state == 0)
- 			prev_p->current->state = TYPE_WAITING;
- 	}
- }
-@@ -586,61 +542,69 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
- }
- 
- static int
--process_sample_cpu_idle(struct perf_evsel *evsel __maybe_unused,
-+process_sample_cpu_idle(struct perf_evsel *evsel,
- 			struct perf_sample *sample,
- 			const char *backtrace __maybe_unused)
- {
--	struct power_processor_entry *ppe = sample->raw_data;
-+	u32 state = perf_evsel__intval(evsel, sample, "state");
-+	u32 cpu_id = perf_evsel__intval(evsel, sample, "cpu_id");
- 
--	if (ppe->state == (u32) PWR_EVENT_EXIT)
--		c_state_end(ppe->cpu_id, sample->time);
-+	if (state == (u32)PWR_EVENT_EXIT)
-+		c_state_end(cpu_id, sample->time);
- 	else
--		c_state_start(ppe->cpu_id, sample->time, ppe->state);
-+		c_state_start(cpu_id, sample->time, state);
- 	return 0;
- }
- 
- static int
--process_sample_cpu_frequency(struct perf_evsel *evsel __maybe_unused,
-+process_sample_cpu_frequency(struct perf_evsel *evsel,
- 			     struct perf_sample *sample,
- 			     const char *backtrace __maybe_unused)
- {
--	struct power_processor_entry *ppe = sample->raw_data;
-+	u32 state = perf_evsel__intval(evsel, sample, "state");
-+	u32 cpu_id = perf_evsel__intval(evsel, sample, "cpu_id");
- 
--	p_state_change(ppe->cpu_id, sample->time, ppe->state);
-+	p_state_change(cpu_id, sample->time, state);
- 	return 0;
- }
- 
- static int
--process_sample_sched_wakeup(struct perf_evsel *evsel __maybe_unused,
-+process_sample_sched_wakeup(struct perf_evsel *evsel,
- 			    struct perf_sample *sample,
- 			    const char *backtrace)
- {
--	struct trace_entry *te = sample->raw_data;
-+	u8 flags = perf_evsel__intval(evsel, sample, "common_flags");
-+	int waker = perf_evsel__intval(evsel, sample, "common_pid");
-+	int wakee = perf_evsel__intval(evsel, sample, "pid");
- 
--	sched_wakeup(sample->cpu, sample->time, sample->pid, te, backtrace);
-+	sched_wakeup(sample->cpu, sample->time, waker, wakee, flags, backtrace);
- 	return 0;
- }
- 
- static int
--process_sample_sched_switch(struct perf_evsel *evsel __maybe_unused,
-+process_sample_sched_switch(struct perf_evsel *evsel,
- 			    struct perf_sample *sample,
- 			    const char *backtrace)
- {
--	struct trace_entry *te = sample->raw_data;
-+	int prev_pid = perf_evsel__intval(evsel, sample, "prev_pid");
-+	int next_pid = perf_evsel__intval(evsel, sample, "next_pid");
-+	u64 prev_state = perf_evsel__intval(evsel, sample, "prev_state");
- 
--	sched_switch(sample->cpu, sample->time, te, backtrace);
-+	sched_switch(sample->cpu, sample->time, prev_pid, next_pid, prev_state,
-+		     backtrace);
- 	return 0;
- }
- 
- #ifdef SUPPORT_OLD_POWER_EVENTS
- static int
--process_sample_power_start(struct perf_evsel *evsel __maybe_unused,
-+process_sample_power_start(struct perf_evsel *evsel,
- 			   struct perf_sample *sample,
- 			   const char *backtrace __maybe_unused)
- {
--	struct power_entry_old *peo = sample->raw_data;
-+	u64 cpu_id = perf_evsel__intval(evsel, sample, "cpu_id");
-+	u64 value = perf_evsel__intval(evsel, sample, "value");
- 
--	c_state_start(peo->cpu_id, sample->time, peo->value);
-+	c_state_start(cpu_id, sample->time, value);
- 	return 0;
- }
- 
-@@ -654,13 +618,14 @@ process_sample_power_end(struct perf_evsel *evsel __maybe_unused,
- }
- 
- static int
--process_sample_power_frequency(struct perf_evsel *evsel __maybe_unused,
-+process_sample_power_frequency(struct perf_evsel *evsel,
- 			       struct perf_sample *sample,
- 			       const char *backtrace __maybe_unused)
- {
--	struct power_entry_old *peo = sample->raw_data;
-+	u64 cpu_id = perf_evsel__intval(evsel, sample, "cpu_id");
-+	u64 value = perf_evsel__intval(evsel, sample, "value");
- 
--	p_state_change(peo->cpu_id, sample->time, peo->value);
-+	p_state_change(cpu_id, sample->time, value);
- 	return 0;
- }
- #endif /* SUPPORT_OLD_POWER_EVENTS */
