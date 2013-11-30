@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024Ab3K3Wli (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 17:41:38 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:51853 "EHLO
+	id S1751977Ab3K3Wle (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 17:41:34 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:51852 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab3K3Wks (ORCPT
+	with ESMTP id S1751477Ab3K3Wks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 30 Nov 2013 17:40:48 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,9 +13,9 @@ Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3 04/12] PCI: Destroy pci dev only once
-Date: Sat, 30 Nov 2013 14:40:30 -0800
-Message-Id: <1385851238-21085-5-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v3 06/12] PCI: Only enable realloc auto when root bus has 64bit mmio
+Date: Sat, 30 Nov 2013 14:40:32 -0800
+Message-Id: <1385851238-21085-7-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1385851238-21085-1-git-send-email-yinghai@kernel.org>
 References: <1385851238-21085-1-git-send-email-yinghai@kernel.org>
@@ -24,108 +24,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mutliple removing via /sys will call pci_destroy_dev two times.
-
-| When concurent removing pci devices which are in the same pci subtree
-| via sysfs, such as:
-| echo -n 1 > /sys/bus/pci/devices/0000\:10\:00.0/remove ; echo -n 1 >
-| /sys/bus/pci/devices/0000\:1a\:01.0/remove
-| (1a:01.0 device is downstream from the 10:00.0 bridge)
+Joseph found
+| commit b07f2ebc109b607789f648dedcff4b125f9afec6
+| Date:   Thu Feb 23 19:23:32 2012 -0800
 |
-| the following warning will show:
-| [ 1799.280918] ------------[ cut here ]------------
-| [ 1799.336199] WARNING: CPU: 7 PID: 126 at lib/list_debug.c:53 __list_del_entry+0x63/0xd0()
-| [ 1799.433093] list_del corruption, ffff8807b4a7c000->next is LIST_POISON1 (dead000000100100)
-| [ 1800.276623] CPU: 7 PID: 126 Comm: kworker/u512:1 Tainted: G        W    3.12.0-rc5+ #196
-| [ 1800.508918] Workqueue: sysfsd sysfs_schedule_callback_work
-| [ 1800.574703]  0000000000000009 ffff8807adbadbd8 ffffffff8168b26c ffff8807c27d08a8
-| [ 1800.663860]  ffff8807adbadc28 ffff8807adbadc18 ffffffff810711dc ffff8807adbadc68
-| [ 1800.753130]  ffff8807b4a7c000 ffff8807b4a7c000 ffff8807ad089c00 0000000000000000
-| [ 1800.842282] Call Trace:
-| [ 1800.871651]  [<ffffffff8168b26c>] dump_stack+0x55/0x76
-| [ 1800.933301]  [<ffffffff810711dc>] warn_slowpath_common+0x8c/0xc0
-| [ 1801.005283]  [<ffffffff810712c6>] warn_slowpath_fmt+0x46/0x50
-| [ 1801.074081]  [<ffffffff8135a343>] __list_del_entry+0x63/0xd0
-| [ 1801.141839]  [<ffffffff8135a3c1>] list_del+0x11/0x40
-| [ 1801.201320]  [<ffffffff813734da>] pci_remove_bus_device+0x6a/0xe0
-| [ 1801.274279]  [<ffffffff8137356e>] pci_stop_and_remove_bus_device+0x1e/0x30
-| [ 1801.356606]  [<ffffffff8137b20b>] remove_callback+0x2b/0x40
-| [ 1801.423412]  [<ffffffff81251848>] sysfs_schedule_callback_work+0x18/0x60
-| [ 1801.503744]  [<ffffffff8108eab5>] process_one_work+0x1f5/0x540
-| [ 1801.573640]  [<ffffffff8108ea53>] ? process_one_work+0x193/0x540
-| [ 1801.645616]  [<ffffffff8108f2ac>] worker_thread+0x11c/0x370
-| [ 1801.712337]  [<ffffffff8108f190>] ? rescuer_thread+0x350/0x350
-| [ 1801.782178]  [<ffffffff8109731d>] kthread+0xed/0x100
-| [ 1801.841661]  [<ffffffff81097230>] ? kthread_create_on_node+0x160/0x160
-| [ 1801.919919]  [<ffffffff8169cc3c>] ret_from_fork+0x7c/0xb0
-| [ 1801.984608]  [<ffffffff81097230>] ? kthread_create_on_node+0x160/0x160
-| [ 1802.062825] ---[ end trace d77f2054de000fb7 ]---
-|
-| This issue is related to the bug 54411:
-| https://bugzilla.kernel.org/show_bug.cgi?id=54411
+|    PCI: add a PCI resource reallocation config option
 
-Add is_removed to record if pci_destroy_dev is called already.
+cause one system can not load driver for Intel x520 NIC's.
 
-During second calling, still have extra dev ref hold via
-device_schedule_call, so we are safe to check dev->is_removed.
+The root resource:
+[    1.212470] PCI host bridge to bus 0000:20
+[    1.212475] pci_bus 0000:20: root bus resource [bus 20-3e]
+[    1.212479] pci_bus 0000:20: root bus resource [io  0xc000-0xdfff]
+[    1.212483] pci_bus 0000:20: root bus resource [mem 0xfecc0000-0xfecfffff]
+[    1.212487] pci_bus 0000:20: root bus resource [mem 0xe9400000-0xe97fffff]
 
-It fixes the problem In Gu's test.
+and bios does not assign sriov, also have two function ROM bar point to same
+position.
+[    1.213197] pci 0000:22:00.0: [8086:10fb] type 00 class 0x020000
+...
+[    1.213240] pci 0000:22:00.0: reg 0x30: [mem 0xe9500000-0xe957ffff pref]
+[    1.213303] pci 0000:22:00.0: reg 0x184: [mem 0x00000000-0x00003fff 64bit]
+[    1.213317] pci 0000:22:00.0: reg 0x190: [mem 0x00000000-0x00003fff 64bit]
+[    1.213366] pci 0000:22:00.1: [8086:10fb] type 00 class 0x020000
+...
+[    1.213408] pci 0000:22:00.1: reg 0x30: [mem 0xe9500000-0xe957ffff pref]
+[    1.213468] pci 0000:22:00.1: reg 0x184: [mem 0x00000000-0x00003fff 64bit]
+[    1.213481] pci 0000:22:00.1: reg 0x190: [mem 0x00000000-0x00003fff 64bit]
+[    1.218527] pci 0000:20:03.0: PCI bridge to [bus 22]
+[    1.218534] pci 0000:20:03.0:   bridge window [io  0xd000-0xdfff]
+[    1.218537] pci 0000:20:03.0:   bridge window [mem 0xe9400000-0xe95fffff]
+...
+[    1.254103] pci 0000:22:00.1: address space collision: [mem 0xe9500000-0xe957ffff pref] conflicts with 0000:22:00.0 [mem 0xe9500000-0xe957ffff pref]
+[    1.254111] pci 0000:23:00.1: address space collision: [mem 0xe9700000-0xe977ffff pref] conflicts with 0000:23:00.0 [mem 0xe9700000-0xe977ffff pref]
 
--v2: add partial changelog from Gu Zheng <guz.fnst@cn.fujitsu.com>
-     refresh after patch of moving device_del from Rafael.
--v3: use atomic operations to prevent racing that Rafael and Bjorn concern.
+We don't need to enable realloc for this case, as we can not alter root bus mmio
+range to get big one to hold two rom bar, and sriov under 4G.
 
+Add checking if pci root bus have 4G above mmio res, and don't enable
+realloc auto accordingly.
+
+bug report at: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1245938
+
+Reported-by: Joseph Salisbury <joseph.salisbury@canonical.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/probe.c  | 2 ++
- drivers/pci/remove.c | 8 +++++---
- include/linux/pci.h  | 1 +
- 3 files changed, 8 insertions(+), 3 deletions(-)
+ drivers/pci/setup-bus.c | 32 +++++++++++++++++++++++++++-----
+ 1 file changed, 27 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 12ec56c..edab71d 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1398,6 +1398,8 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
- 	dev->match_driver = false;
- 	ret = device_add(&dev->dev);
- 	WARN_ON(ret < 0);
+diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+index 219a410..f9e6efb 100644
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -1432,17 +1432,39 @@ static int iov_resources_unassigned(struct pci_dev *dev, void *data)
+ 	return 0;
+ }
+ 
++static bool pci_bus_mem_above_4g(struct pci_bus *bus)
++{
++	int i;
++	struct resource *res;
 +
-+	atomic_set(&dev->removed_count, -1);
- }
- 
- struct pci_dev *__ref pci_scan_single_device(struct pci_bus *bus, int devfn)
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index f452148..122de10 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -20,9 +20,11 @@ static void pci_stop_dev(struct pci_dev *dev)
- 
- static void pci_destroy_dev(struct pci_dev *dev)
++	pci_bus_for_each_resource(bus, res, i) {
++		struct pci_bus_region region;
++
++		if (!res || !(res->flags & IORESOURCE_MEM))
++			continue;
++
++		__pcibios_resource_to_bus(bus, &region, res);
++		if (region.end > 0xffffffff)
++			return true;
++	}
++
++	return false;
++}
++
+ static enum enable_type pci_realloc_detect(struct pci_bus *bus,
+ 			 enum enable_type enable_local)
  {
--	device_del(&dev->dev);
+-	bool unassigned = false;
 -
--	put_device(&dev->dev);
-+	if (atomic_inc_and_test(&dev->removed_count)) {
-+		device_del(&dev->dev);
-+		put_device(&dev->dev);
-+	} else
-+		atomic_dec(&dev->removed_count);
+ 	if (enable_local != undefined)
+ 		return enable_local;
+ 
+-	pci_walk_bus(bus, iov_resources_unassigned, &unassigned);
+-	if (unassigned)
+-		return auto_enabled;
++	/* only enable auto when root bus does support 64bit mmio */
++	if (pci_bus_mem_above_4g(bus)) {
++		bool unassigned = false;
++
++		pci_walk_bus(bus, iov_resources_unassigned, &unassigned);
++		if (unassigned)
++			return auto_enabled;
++	}
+ 
+ 	return enable_local;
  }
- 
- void pci_remove_bus(struct pci_bus *bus)
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 1084a15..1ca5438 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -316,6 +316,7 @@ struct pci_dev {
- 	struct resource resource[DEVICE_COUNT_RESOURCE]; /* I/O and memory regions + expansion ROMs */
- 
- 	bool match_driver;		/* Skip attaching driver */
-+	atomic_t	removed_count;	/* pci_destroy_dev is called */
- 	/* These fields are used by common fixups */
- 	unsigned int	transparent:1;	/* Subtractive decode PCI bridge */
- 	unsigned int	multifunction:1;/* Part of multi-function device */
 -- 
 1.8.1.4
 
