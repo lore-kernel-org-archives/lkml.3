@@ -1,97 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092Ab3K3Nuv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 08:50:51 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:48886 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327Ab3K3Nur (ORCPT
+	id S1752260Ab3K3Nxy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 08:53:54 -0500
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:43745 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860Ab3K3Nxx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 08:50:47 -0500
-Message-ID: <5299ED38.4090509@gmail.com>
-Date: Sat, 30 Nov 2013 21:50:48 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Sat, 30 Nov 2013 08:53:53 -0500
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: [REGRESSION] 3.13-rc2: locks up hard on trying to transfer a file to mmc based internal SD card slot
+Date: Sat, 30 Nov 2013 14:53:51 +0100
+Message-ID: <4578341.ZjSDW1Al5s@merkaba>
+User-Agent: KMail/4.11.3 (Linux/3.12.0-tp520; KDE/4.11.3; x86_64; ; )
 MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: "John W. Linville" <linville@tuxdriver.com>, rkuo <rkuo@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, linux-wireless@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH] net: mac80211: tx.c: be sure of 'sdata->vif.type' must
- be NL80211_IFTYPE_AP when be in NL80211_IFTYPE_AP case
-References: <528AEFB7.4060301@gmail.com>   <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com>   <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com>   <52957ADA.2080704@gmail.com>  (sfid-20131127_055211_558798_A7DF5684) <1385739487.8656.1.camel@jlt4.sipsolutions.net>  <5299D306.7070701@gmail.com> (sfid-20131130_125901_519610_EDA4068E) <1385816013.4327.1.camel@jlt4.sipsolutions.net>
-In-Reply-To: <1385816013.4327.1.camel@jlt4.sipsolutions.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2013 08:53 PM, Johannes Berg wrote:
-> On Sat, 2013-11-30 at 19:59 +0800, Chen Gang wrote:
->> On 11/29/2013 11:38 PM, Johannes Berg wrote:
->>>
->>>> +++ b/net/mac80211/tx.c
->>>> @@ -1814,8 +1814,9 @@ netdev_tx_t ieee80211_subif_start_xmit(struct sk_buff *skb,
->>>>  			break;
->>>>  		/* fall through */
->>>>  	case NL80211_IFTYPE_AP:
->>>> -		if (sdata->vif.type == NL80211_IFTYPE_AP)
->>>> -			chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
->>>> +		if (sdata->vif.type != NL80211_IFTYPE_AP)
->>>> +			goto fail_rcu;
->>>> +		chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
->>>
->>> This change is completely wrong.
->>>
->>
->> Oh, it is.
->>
->> Hmm... for me, this work flow still can be implemented with a little
->> clearer way (at least it will avoid related warning):
->>
->> -------------------------diff begin------------------------------
->>
->> diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
->> index c558b24..7076128 100644
->> --- a/net/mac80211/tx.c
->> +++ b/net/mac80211/tx.c
->> @@ -1810,14 +1810,14 @@ netdev_tx_t ieee80211_subif_start_xmit(struct sk_buff *skb,
->>  		if (!chanctx_conf)
->>  			goto fail_rcu;
->>  		band = chanctx_conf->def.chan->band;
->> -		if (sta)
->> -			break;
->> -		/* fall through */
->> +		if (!sta)
->> +			goto try_next;
->> +		break;
->>  	case NL80211_IFTYPE_AP:
->> -		if (sdata->vif.type == NL80211_IFTYPE_AP)
->> -			chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
->> +		chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
->>  		if (!chanctx_conf)
->>  			goto fail_rcu;
->> +try_next:
-> 
-> I don't think that's better than the (fairly obvious) fall-through, and
-> has a pretty odd goto. Also, depending on the compiler, it still knows
-> the previous case label and doesn't warn.
-> 
-
-Yeah, fall-through is obvious. But check 'A' again just near by "case A"
-seems a little strange, and some of compilers (or some of versions) are
-really not quit smart enough to know it is not a warning.
-
-Hmm... for me, if the code (implementation) can express real logical
-work flow as much as directly and simply, the code (implementation) is
-clear enough (don't mind whether use 'goto' or not).
+Just added linux-mmc. And I might git-bisect that at some time, but I do not 
+intend to do it during my precious weekend. The chances of me bisecting it 
+increase with workable suggestions on how to cut down the amount of iterations 
+needed and avoid testing highly experimental between 3.12 and 3.13-rc1 kernels 
+on a production laptop. I may be willing to test a patch or two. As I see 
+there seem to have been quite some changes in MMC subsystem.
 
 
-And originally, at first, I am really not quite careful enough, and sent
-an incorrect patch after noticed the related compiler's warning. :-)
 
 
-Thanks.
+Hi!
+
+Just does that on a ThinkPad T520 with:
+
+merkaba:~> lspci -nn | grep MMC
+0d:00.0 System peripheral [0880]: Ricoh Co Ltd PCIe SDXC/MMC Host Controller 
+[1180:e823] (rev 08)
+
+Mouse pointer freezes, no Ctrl-Alt-F1.
+
+
+merkaba:~> fdisk -l /dev/mmcblk0
+
+Disk /dev/mmcblk0: 31.4 GB, 31439454208 bytes
+255 heads, 63 sectors/track, 3822 cylinders, total 61405184 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0x00000000
+
+        Device Boot      Start         End      Blocks   Id  System
+/dev/mmcblk0p1            8192    61405183    30698496    c  W95 FAT32 (LBA
+
+
+merkaba:/sys/block/mmcblk0#2> grep . * 2>/dev/null
+alignment_offset:0
+capability:10
+dev:179:0
+discard_alignment:0
+ext_range:8
+force_ro:0
+inflight:       0        0
+range:8
+removable:0
+ro:0
+size:61405184
+stat:     176       33     1672      102        0        0        0        0        
+0      102      102
+uevent:MAJOR=179
+uevent:MINOR=0
+uevent:DEVNAME=mmcblk0
+uevent:DEVTYPE=disk
+
+
+I do not want to take the time to diagnose this further, especially as its one 
+of those nasty "I just lock up and I don´t tell you what went wrong" kind of 
+bugs. Thats just not a nice way to tell that there has been an error.
+
+
+If there is any five or ten minute information gathering task, I am willing to 
+provide more information, but right now there is no chance on Earth that I 
+will be bisecting while having a long list of more interesting things to do 
+than that.
+
+
+Thus for now I just use 3.12 kernel again. Maybe I will try with some rc5 or 
+so again.
+
+Ciao,
 -- 
-Chen Gang
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
