@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744Ab3K3RZh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 12:25:37 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:40299 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab3K3RZe (ORCPT
+	id S1752871Ab3K3R1v (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 12:27:51 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:30031 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752490Ab3K3R1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 12:25:34 -0500
+	Sat, 30 Nov 2013 12:27:49 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+u3C67OxcPb98eAEpZNnRo
+Date: Sat, 30 Nov 2013 09:27:40 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        pali.rohar@gmail.com, sre@ring0.de, pavel@ucw.cz,
+        omar.ramirez@copitl.com, felipe.contreras@gmail.com, s-anna@ti.com,
+        nm@ti.com, ohad@wizery.com, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Staging: tidspbridge: disable driver
+Message-ID: <20131130172739.GE23334@atomide.com>
+References: <6662B6F95D1C4783A007CAC82A8DA641@ivogl>
+ <20131130162023.GB15077@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20131130094343.GA12573@hostway.ca>
-References: <CAOJsxLGA+Aha8JcPsWyNd3BLQ6L0g7iznN0o2fG5yL5Xw0s8Lg@mail.gmail.com>
-	<20130819201717.GA23608@hostway.ca>
-	<0000014098447577-0d3e3f6b-f97b-4c73-946d-d70b697ce194-000000@email.amazonses.com>
-	<CA+55aFxiYzxLDUnr+9BGQ+fsfmb1T8_zW4fOOC=SQ4rVzwbv4A@mail.gmail.com>
-	<20130820040648.GG27005@ZenIV.linux.org.uk>
-	<CAEcaRjip29P8TdMHF8zJ3zzsQj7o_B9chEz7Q6xH0Bqtw3A-jg@mail.gmail.com>
-	<20130820072143.GJ27005@ZenIV.linux.org.uk>
-	<CAEcaRjg7GJhEbQoduup6xQKea4Pn4+SOgv8GbbJUeU=xR74dVQ@mail.gmail.com>
-	<20131126004456.GF19648@hostway.ca>
-	<CA+55aFxmVteJApiC5e=d9NmYO6PSbNertq5ipLpunmVreCTYUQ@mail.gmail.com>
-	<20131130094343.GA12573@hostway.ca>
-Date: Sat, 30 Nov 2013 09:25:33 -0800
-X-Google-Sender-Auth: WBPaUvQXeL5SSDfanstDwlWBs4k
-Message-ID: <CA+55aFy_Tb9kqZpa670MT9BW+W+LAizB+KoUxrJECgb1G_fGug@mail.gmail.com>
-Subject: Re: [3.10] Oopses in kmem_cache_allocate() via prepare_creds()
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Simon Kirby <sim@hostway.ca>
-Cc: Ian Applegate <ia@cloudflare.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Lameter <cl@gentwo.org>, Pekka Enberg <penberg@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@fusionio.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131130162023.GB15077@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 30, 2013 at 1:43 AM, Simon Kirby <sim@hostway.ca> wrote:
-> On Tue, Nov 26, 2013 at 03:16:09PM -0800, Linus Torvalds wrote:
->>
->> The pipe-info structure isn't using its own slab cache, it's just
->> using "kmalloc()". So it by definition will merge with all other
->> kmalloc() allocations of the same size (or, to be exact, of "similar
->> enough size to hit the same size bucket"). In your case it's the
->> 192-byte-sized bucket.
->
-> I turned on kmalloc-192 tracing to find what else is using it: struct
-> nfs_fh, struct bio, and struct cred. Poking around those, struct bio has
-> bi_cnt, but it is way down in the struct. struct cred has "usage", but it
-> comes first. Hmm. Nevertheless, I set:
->
-> CONFIG_DEBUG_MUTEXES=y
-> CONFIG_DEBUG_LIST=y
-> CONFIG_DEBUG_CREDENTIALS=y
->
-> And tried:
->
-> diff --git a/include/linux/cred.h b/include/linux/cred.h
-> index 04421e8..2646fe9 100644
-> --- a/include/linux/cred.h
-> +++ b/include/linux/cred.h
-> @@ -205,7 +205,9 @@ static inline void validate_process_creds(void)
->   */
->  static inline struct cred *get_new_cred(struct cred *cred)
->  {
-> -       atomic_inc(&cred->usage);
-> +       if (atomic_inc_return(&cred->usage) == 0x6c) {
-> +               WARN_ON(cred->uid == 0x6b);
+* Greg KH <gregkh@linuxfoundation.org> [131130 08:20]:
+> On Sat, Nov 30, 2013 at 11:58:23AM +0200, Ivajlo Dimitrov wrote:
+> > Hi,
+> > 
+> > (re-sending in plain text, sorry for the noise)
+> > 
+> > commit 
+> > https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=930ba4a374b96560ef9fde2145cdc454a164ddcc
+> > disables tidspbridge driver for the reasons it has a security bug and there 
+> > is no active maintainer.
+> > I was following the development of that driver for a bit and my impression 
+> > was that the reason it is
+> > still in staging is this 
+> > http://www.spinics.net/lists/linux-omap/msg84115.html . And as dmtimer
+> > driver is on its way to be merged upstream(or was it already merged?)  I was 
+> > planning to work on
+> > tidspbridge driver to fix it and send the patches. I also have a couple of 
+> > another small patches
+> > ready to be send.
 
-Oh, damn, I thought you had found it, and got very excited and already
-wrote a long email about things I wanted you to try. And then I
-started looking closer...
+I'd rather not just export 27 omap specific functions for the dmtimer to the
+drivers knowing what kind of mess it will be.. There's some work happening
+to make the dmtimer more generic, so for those parts we should have a solution
+soonish.
 
-That test is wrong. Both of those fields are 32-bit, so testing them
-against 0x6b/0x6c is bogus: you're just catching real cases. The
-reason it catches omreport is presumably because omreport runs as some
-special user that happens to have uid 107 (on my machine that happens
-to be qemu). And having a usage count of 108 isn't particularly
-strange either - creds get a lot of re-use.
+> > However, could you elaborate on the "security bug" so I can try to fix it 
+> > and send the patch?
+> > Also, what needs to be done for the tidspdriver to get out of staging as it 
+> > seems that what I
+> > though initially is incorrect.
+> 
+> There is also the very long TODO list in drivers/staging/tidspbridge/
+> 
+> What is the progression on that?
 
-So close. It *might* still be one of those cases, but it doesn't
-really sound very likely. "bi_cnt" is deep inside the struct bio, and
-"usage" is at offset 0, not offset 4. And the ns_fh isn't very
-interesting.
+Yeah and the tidspbridge should use the remoteproc which seems to be missing
+from the TODO file. Anyways, the pending dmtimer work should not impact fixing
+the other issues from development point of view.
 
-             Linus
+Regards,
+
+Tony
