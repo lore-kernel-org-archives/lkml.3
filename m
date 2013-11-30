@@ -1,287 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425Ab3K3W1U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 17:27:20 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:60719 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975Ab3K3W1Q (ORCPT
+	id S1751411Ab3K3Wby (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 17:31:54 -0500
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:40004 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159Ab3K3Wbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 17:27:16 -0500
+	Sat, 30 Nov 2013 17:31:51 -0500
+Date: Sat, 30 Nov 2013 14:31:48 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Meelis Roos <mroos@linux.ee>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: Slab BUG with DEBUG_* options
+In-Reply-To: <alpine.SOC.1.00.1311300125490.6363@math.ut.ee>
+Message-ID: <alpine.DEB.2.02.1311301428390.18027@chino.kir.corp.google.com>
+References: <alpine.SOC.1.00.1311300125490.6363@math.ut.ee>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1574386.HU3xxHAoDX@vostro.rjw.lan>
-References: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
-	<4276127.HzbOlVUbc2@vostro.rjw.lan>
-	<2994709.aBAqQ6JkJi@vostro.rjw.lan>
-	<1574386.HU3xxHAoDX@vostro.rjw.lan>
-Date: Sat, 30 Nov 2013 14:27:15 -0800
-X-Google-Sender-Auth: iMYapFtnUEtXNP2HfgYQeY-1YRU
-Message-ID: <CAE9FiQUG-WV26o5MtM=QPfN1kEDGs4Li2wdGB88T==yrxGum_w@mail.gmail.com>
-Subject: Re: [PATCH v2 04/10] PCI: Destroy pci dev only once
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 30, 2013 at 1:37 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Saturday, November 30, 2013 01:31:33 AM Rafael J. Wysocki wrote:
->> On Saturday, November 30, 2013 12:45:55 AM Rafael J. Wysocki wrote:
->> > On Saturday, November 30, 2013 12:38:26 AM Rafael J. Wysocki wrote:
->> > > On Tuesday, November 26, 2013 06:26:54 PM Yinghai Lu wrote:
->> > > > On Tue, Nov 26, 2013 at 5:24 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->> > > > >
->> > > > > So assume pci_destroy_dev() is called twice in parallel for the same dev
->> > > > > by two different threads.  Thread 1 does the atomic_inc_and_test() and
->> > > > > finds that it is OK to do the device_del() and put_device() which causes
->> > > > > the device object to be freed.  Then thread 2 does the atomic_inc_and_test()
->> > > > > on the already freed device object and crashes the kernel.
->> > > > >
->> > > > thread2 should still hold one extra reference.
->> > > > that is in
->> > > >   device_schedule_callback
->> > > >      ==> sysfs_schedule_callback
->> > > >          ==> kobject_get(kobj)
->> > > >
->> > > > pci_destroy_dev for thread2 is called at this point.
->> > > >
->> > > > and that reference will be released from
->> > > >         sysfs_schedule_callback
->> > > >         ==> kobject_put()...
->> > >
->> > > Well, that would be the case if thread 2 was started by device_schedule_callback(),
->> > > but again, for example, it may be trim_stale_devices() started by acpiphp_check_bridge()
->> > > that doesn't hold extra references to the pci_dev.  [Well, that piece of code
->> > > is racy anyway, because it walks bus->devices without locking.  Which is my
->> > > fault too, because I overlooked that.  Shame, shame.]
->> > >
+On Sat, 30 Nov 2013, Meelis Roos wrote:
 
-can you add extra reference to that path?
+> I am debugging a reboot problem on Sun Ultra 5 (sparc64) with 512M RAM 
+> and turned on DEBUG_PAGEALLOC DEBUG_SLAB and DEBUG_SLAB_LEAK (and most 
+> other debug options) and got the following BUG and hang on startup. This 
+> happened originally with 3.11-rc2-00058 where my bisection of 
+> another problem lead, but I retested 3.12 to have the same BUG in the 
+> same place.
+> 
+> kernel BUG at mm/slab.c:2391!
+>               \|/ ____ \|/
+>               "@'/ .. \`@"
+>               /_| \__/ |_\
+>                  \__U_/
+> swapper(0): Kernel bad sw trap 5 [#1]
+> CPU: 0 PID: 0 Comm: swapper Not tainted 3.11.0-rc2-00058-g20bafb3-dirty #127
+> task: 00000000008ac468 ti: 000000000089c000 task.ti: 000000000089c000
+> TSTATE: 0000004480e01606 TPC: 00000000004f57d4 TNPC: 00000000004f57d8 Y: 00000000    Not tainted
+> TPC: <__kmem_cache_create+0x374/0x480>
+> g0: 00000000000000f8 g1: 00000000008bb400 g2: 000000000002780b g3: 00000000008b5120
+> g4: 00000000008ac468 g5: 0000000000000000 g6: 000000000089c000 g7: 0000000000000000
+> o0: 0000000000845f08 o1: 0000000000000957 o2: ffffffffffffffe0 o3: 0000000000000000
+> o4: 0000000000002004 o5: 0000000000000000 sp: 000000000089f301 ret_pc: 00000000004f57cc
+> RPC: <__kmem_cache_create+0x36c/0x480>
+> l0: fffff8001e812040 l1: fffff8001e819f80 l2: fffff8001e819fb8 l3: fffff8001e819fd8
+> l4: 0000000000000001 l5: fffff8001e819fc8 l6: 0000000000845f08 l7: fffff8001e8300a0
+> i0: fffff8001e831fa0 i1: 0000000080002800 i2: 0000000080000000 i3: 0000000000000034
+> i4: 0000000000000000 i5: 0000000000002000 i6: 000000000089f3b1 i7: 0000000000907464
+> I7: <create_boot_cache+0x4c/0x84>
+> Call Trace:
+>  [0000000000907464] create_boot_cache+0x4c/0x84
+>  [00000000009074d0] create_kmalloc_cache+0x34/0x60
+>  [0000000000907540] create_kmalloc_caches+0x44/0x168
+>  [0000000000908dfc] kmem_cache_init+0x1d0/0x1e0
+>  [00000000008fc658] start_kernel+0x18c/0x370
+>  [0000000000761df4] tlb_fixup_done+0x88/0x94
+>  [0000000000000000]           (null)
+> Disabling lock debugging due to kernel taint
+> Caller[0000000000907464]: create_boot_cache+0x4c/0x84
+> Caller[00000000009074d0]: create_kmalloc_cache+0x34/0x60
+> Caller[0000000000907540]: create_kmalloc_caches+0x44/0x168
+> Caller[0000000000908dfc]: kmem_cache_init+0x1d0/0x1e0
+> Caller[00000000008fc658]: start_kernel+0x18c/0x370
+> Caller[0000000000761df4]: tlb_fixup_done+0x88/0x94
+> Caller[0000000000000000]:           (null)
+> Instruction DUMP: 92102957  7ffccb35  90122308 <91d02005> 90100018  4009b371  920f20d0  ba922000  02480006 
+> Kernel panic - not syncing: Attempted to kill the idle task!
+> Press Stop-A (L1-A) to return to the boot prom
+> 
+> The line shows that __kmem_cache_create gets a NULL from kmalloc_slab().
+> 
+> I instrumented the code and found the following:
+> 
+> __kmem_cache_create: starting, size=248, flags=8192
+> __kmem_cache_create: now flags=76800
+> __kmem_cache_create: aligned size to 248 because of redzoning
+> __kmem_cache_create: pagealloc debug, setting size to 8192
+> __kmem_cache_create: aligned size to 8192
+> __kmem_cache_create: num=1, slab_size=64
+> __kmem_cache_create: starting, size=96, flags=8192
+> __kmem_cache_create: now flags=76800
+> __kmem_cache_create: aligned size to 96 because of redzoning
+> __kmem_cache_create: pagealloc debug, setting size to 8192
+> __kmem_cache_create: aligned size to 8192
+> __kmem_cache_create: num=1, slab_size=64
+> __kmem_cache_create: starting, size=192, flags=8192
+> __kmem_cache_create: now flags=76800
+> __kmem_cache_create: aligned size to 192 because of redzoning
+> __kmem_cache_create: pagealloc debug, setting size to 8192
+> __kmem_cache_create: aligned size to 8192
+> __kmem_cache_create: num=1, slab_size=64
+> __kmem_cache_create: starting, size=32, flags=8192
+> __kmem_cache_create: now flags=76800
+> __kmem_cache_create: aligned size to 32 because of redzoning
+> __kmem_cache_create: aligned size to 32
+> __kmem_cache_create: num=226, slab_size=960
+> __kmem_cache_create: starting, size=64, flags=8192
+> __kmem_cache_create: now flags=76800
+> __kmem_cache_create: aligned size to 64 because of redzoning
+> __kmem_cache_create: pagealloc debug, setting size to 8192
+> __kmem_cache_create: turning on CFLGS_OFF_SLAB, size=8192
+> __kmem_cache_create: aligned size to 8192
+> __kmem_cache_create: num=1, slab_size=64
+> __kmem_cache_create: CFLGS_OFF_SLAB, size=8192, slab_size=52
+> __kmem_cache_create: CFLGS_OFF_SLAB, allocating slab 52
+> 
+> With slab size 64, it turns on CFLGS_OFF_SLAB and off slab allocation 
+> with this size fails. I do not know slab internals so I can not tell if 
+> this just happens because of the debug paths, or is it a real problem 
+> without the debug options too.
+> 
 
->> > > Perhaps we can do something like the (untested) patch below (in addition to the
->> > > $subject patch).  Do you see any immediate problems with it?
->> >
->> > Ah, I see one.  It will break pci_stop_bus_device() and pci_remove_bus_device().
->> > So much for being clever.
->> >
->> > Moreover, it looks like those two routines above are racy too for the same
->> > reason?
->>
->> The (still untested) patch below is what I have come up with for now.  The
->> is_gone flag is now only operated under pci_remove_rescan_mutex, so it need
->> not be atomic.  Of course, whoever calls pci_stop_and_remove_bus_device()
->> (the "locked" one) should hold a ref to the device being removed to avoid
->> use-after-free (the callers need to be audited for that).
+Sounds like a problem with create_kmalloc_caches(), what are the values 
+for KMALLOC_SHIFT_LOW and KMALLOC_SHIFT_HIGH?
 
-if you can use device_schedule_..., should have hold reference may be
-atomic would be better than lock/unlock everywhere?
-
->>
->> Well, I probably still missed something, because it's the middle of the night
->> and I should be going to sleep instead of starig at the PCI removal code.  Sigh.
-
-
->
-> Thunderbolt hotplug works for me with this patch applied FWIW.
->
->> ---
->>  drivers/pci/hotplug/acpiphp_glue.c |   15 ++++++++++++---
->>  drivers/pci/pci-sysfs.c            |   17 ++++++++++++-----
->>  drivers/pci/pci.h                  |    3 +++
->>  drivers/pci/remove.c               |   15 +++++++++++++--
->>  include/linux/pci.h                |    1 +
->>  5 files changed, 41 insertions(+), 10 deletions(-)
->>
->> Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
->> ===================================================================
->> --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
->> +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
->> @@ -553,6 +553,8 @@ static void __ref enable_slot(struct acp
->>       int max, pass;
->>       LIST_HEAD(add_list);
->>
->> +     lock_pci_remove_rescan();
->> +
->>       acpiphp_rescan_slot(slot);
->>       max = acpiphp_max_busnr(bus);
->>       for (pass = 0; pass < 2; pass++) {
->> @@ -586,6 +588,8 @@ static void __ref enable_slot(struct acp
->>
->>       pci_bus_add_devices(bus);
->>
->> +     unlock_pci_remove_rescan();
->> +
->>       slot->flags |= SLOT_ENABLED;
->>       list_for_each_entry(func, &slot->funcs, sibling) {
->>               dev = pci_get_slot(bus, PCI_DEVFN(slot->device,
->> @@ -626,6 +630,7 @@ static void disable_slot(struct acpiphp_
->>       struct acpiphp_func *func;
->>       struct pci_dev *pdev;
->>
->> +     lock_pci_remove_rescan();
->>       /*
->>        * enable_slot() enumerates all functions in this device via
->>        * pci_scan_slot(), whether they have associated ACPI hotplug
->> @@ -633,9 +638,10 @@ static void disable_slot(struct acpiphp_
->>        * here.
->>        */
->>       while ((pdev = dev_in_slot(slot))) {
->> -             pci_stop_and_remove_bus_device(pdev);
->> +             __pci_stop_and_remove_bus_device(pdev);
->>               pci_dev_put(pdev);
->>       }
->> +     unlock_pci_remove_rescan();
->>
->>       list_for_each_entry(func, &slot->funcs, sibling)
->>               acpiphp_bus_trim(func_to_handle(func));
->> @@ -710,7 +716,7 @@ static void trim_stale_devices(struct pc
->>               alive = pci_bus_read_dev_vendor_id(dev->bus, dev->devfn, &v, 0);
->>       }
->>       if (!alive) {
->> -             pci_stop_and_remove_bus_device(dev);
->> +             __pci_stop_and_remove_bus_device(dev);
->>               if (handle)
->>                       acpiphp_bus_trim(handle);
->>       } else if (bus) {
->> @@ -743,12 +749,15 @@ static void acpiphp_check_bridge(struct
->>               mutex_lock(&slot->crit_sect);
->>               /* wake up all functions */
->>               if (get_slot_status(slot) == ACPI_STA_ALL) {
->> +                     lock_pci_remove_rescan();
->> +
->>                       /* remove stale devices if any */
->>                       list_for_each_entry_safe(dev, tmp, &bus->devices,
->>                                                bus_list)
->>                               if (PCI_SLOT(dev->devfn) == slot->device)
->>                                       trim_stale_devices(dev);
->>
->> +                     unlock_pci_remove_rescan();
->>                       /* configure all functions */
->>                       enable_slot(slot);
->>               } else {
->> @@ -783,7 +792,7 @@ static void acpiphp_sanitize_bus(struct
->>                                       res->end) {
->>                               /* Could not assign a required resources
->>                                * for this device, remove it */
->> -                             pci_stop_and_remove_bus_device(dev);
->> +                             __pci_stop_and_remove_bus_device(dev);
->>                               break;
->>                       }
->>               }
->> Index: linux-pm/drivers/pci/pci-sysfs.c
->> ===================================================================
->> --- linux-pm.orig/drivers/pci/pci-sysfs.c
->> +++ linux-pm/drivers/pci/pci-sysfs.c
->> @@ -298,6 +298,17 @@ msi_bus_store(struct device *dev, struct
->>  static DEVICE_ATTR_RW(msi_bus);
->>
->>  static DEFINE_MUTEX(pci_remove_rescan_mutex);
->> +
->> +void lock_pci_remove_rescan(void)
->> +{
->> +     mutex_lock(&pci_remove_rescan_mutex);
->> +}
->> +
->> +void unlock_pci_remove_rescan(void)
->> +{
->> +     mutex_unlock(&pci_remove_rescan_mutex);
->> +}
->> +
->>  static ssize_t bus_rescan_store(struct bus_type *bus, const char *buf,
->>                               size_t count)
->>  {
->> @@ -354,11 +365,7 @@ static struct device_attribute dev_resca
->>
->>  static void remove_callback(struct device *dev)
->>  {
->> -     struct pci_dev *pdev = to_pci_dev(dev);
->> -
->> -     mutex_lock(&pci_remove_rescan_mutex);
->> -     pci_stop_and_remove_bus_device(pdev);
->> -     mutex_unlock(&pci_remove_rescan_mutex);
->> +     pci_stop_and_remove_bus_device(to_pci_dev(dev));
->>  }
->>
->>  static ssize_t
->> Index: linux-pm/drivers/pci/pci.h
->> ===================================================================
->> --- linux-pm.orig/drivers/pci/pci.h
->> +++ linux-pm/drivers/pci/pci.h
->> @@ -11,8 +11,11 @@ extern const unsigned char pcie_link_spe
->>
->>  /* Functions internal to the PCI core code */
->>
->> +void lock_pci_remove_rescan(void);
->> +void unlock_pci_remove_rescan(void);
->>  int pci_create_sysfs_dev_files(struct pci_dev *pdev);
->>  void pci_remove_sysfs_dev_files(struct pci_dev *pdev);
->> +void __pci_stop_and_remove_bus_device(struct pci_dev *pdev);
->>  #if !defined(CONFIG_DMI) && !defined(CONFIG_ACPI)
->>  static inline void pci_create_firmware_label_files(struct pci_dev *pdev)
->>  { return; }
->> Index: linux-pm/drivers/pci/remove.c
->> ===================================================================
->> --- linux-pm.orig/drivers/pci/remove.c
->> +++ linux-pm/drivers/pci/remove.c
->> @@ -34,6 +34,10 @@ static void pci_stop_dev(struct pci_dev
->>
->>  static void pci_destroy_dev(struct pci_dev *dev)
->>  {
->> +     if (dev->is_gone)
->> +             return;
->> +
->> +     dev->is_gone = 1;
->>       device_del(&dev->dev);
->>
->>       down_write(&pci_bus_sem);
->> @@ -95,6 +99,12 @@ static void pci_remove_bus_device(struct
->>       pci_destroy_dev(dev);
->>  }
->>
->> +void __pci_stop_and_remove_bus_device(struct pci_dev *dev)
->> +{
->> +     pci_stop_bus_device(dev);
->> +     pci_remove_bus_device(dev);
->> +}
->> +
->>  /**
->>   * pci_stop_and_remove_bus_device - remove a PCI device and any children
->>   * @dev: the device to remove
->> @@ -109,8 +119,9 @@ static void pci_remove_bus_device(struct
->>   */
->>  void pci_stop_and_remove_bus_device(struct pci_dev *dev)
->>  {
->> -     pci_stop_bus_device(dev);
->> -     pci_remove_bus_device(dev);
->> +     lock_pci_remove_rescan();
->> +     __pci_stop_and_remove_bus_device(dev);
->> +     unlock_pci_remove_rescan();
->>  }
->>  EXPORT_SYMBOL(pci_stop_and_remove_bus_device);
->>
->> Index: linux-pm/include/linux/pci.h
->> ===================================================================
->> --- linux-pm.orig/include/linux/pci.h
->> +++ linux-pm/include/linux/pci.h
->> @@ -321,6 +321,7 @@ struct pci_dev {
->>       unsigned int    multifunction:1;/* Part of multi-function device */
->>       /* keep track of device state */
->>       unsigned int    is_added:1;
->> +     unsigned int    is_gone:1;
->>       unsigned int    is_busmaster:1; /* device is busmaster */
->>       unsigned int    no_msi:1;       /* device may not use msi */
->>       unsigned int    block_cfg_access:1;     /* config space access is blocked */
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+It's interesting you report this as starting with 3.11-rc2 because this 
+changed in 3.9, what kernels were tested before 3.11-rc2 if any?
