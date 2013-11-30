@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752388Ab3K3QT3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 11:19:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46832 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751432Ab3K3QT2 (ORCPT
+	id S1752759Ab3K3QT7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 11:19:59 -0500
+Received: from mail.kmu-office.ch ([178.209.48.102]:35549 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab3K3QTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 11:19:28 -0500
-Date: Sat, 30 Nov 2013 08:20:23 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-Cc: =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        pali.rohar@gmail.com, sre@ring0.de, pavel@ucw.cz,
-        omar.ramirez@copitl.com, tony@atomide.com, felipe.contreras@gmail.com,
-        s-anna@ti.com, nm@ti.com, ohad@wizery.com, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Staging: tidspbridge: disable driver
-Message-ID: <20131130162023.GB15077@kroah.com>
-References: <6662B6F95D1C4783A007CAC82A8DA641@ivogl>
+	Sat, 30 Nov 2013 11:19:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6662B6F95D1C4783A007CAC82A8DA641@ivogl>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+Date: Sat, 30 Nov 2013 17:24:14 +0100
+From: Stefan Agner <stefan@agner.ch>
+To: Lucas Stach <l.stach@pengutronix.de>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, thierry.reding@gmail.com,
+        sameo@linux.intel.com, dev@lynxeye.de, mark.rutland@arm.com,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/3] ARM: tegra: set SM2 voltage correct
+In-Reply-To: <1385632196.5838.4.camel@weser.hi.pengutronix.de>
+References: <cover.1385508112.git.stefan@agner.ch>
+ <c9ceead9e3df77b5a33ad654db23c241cd624096.1385508112.git.stefan@agner.ch>
+ <5296281C.1060403@wwwdotorg.org>
+ <1385632196.5838.4.camel@weser.hi.pengutronix.de>
+Message-ID: <ab16891b4a6bcfbb1854aa766e4926a7@agner.ch>
+User-Agent: Roundcube Webmail/0.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 30, 2013 at 11:58:23AM +0200, Ivajlo Dimitrov wrote:
-> Hi,
-> 
-> (re-sending in plain text, sorry for the noise)
-> 
-> commit 
-> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=930ba4a374b96560ef9fde2145cdc454a164ddcc
-> disables tidspbridge driver for the reasons it has a security bug and there 
-> is no active maintainer.
-> I was following the development of that driver for a bit and my impression 
-> was that the reason it is
-> still in staging is this 
-> http://www.spinics.net/lists/linux-omap/msg84115.html . And as dmtimer
-> driver is on its way to be merged upstream(or was it already merged?)  I was 
-> planning to work on
-> tidspbridge driver to fix it and send the patches. I also have a couple of 
-> another small patches
-> ready to be send.
-> However, could you elaborate on the "security bug" so I can try to fix it 
-> and send the patch?
-> Also, what needs to be done for the tidspdriver to get out of staging as it 
-> seems that what I
-> though initially is incorrect.
+Am 2013-11-28 10:49, schrieb Lucas Stach:
+> Am Mittwoch, den 27.11.2013, 10:13 -0700 schrieb Stephen Warren:
+>> On 11/26/2013 04:45 PM, Stefan Agner wrote:
+>> > Set the requested SM2 voltage to the correct value of 1.8V. The value
+>> > before used to work on TPS658623 since the driver applied a wrong
+>> > voltage table too. However, the TPS658643 used on newer devices uses
+>> > yet another voltage table and those broke that compatibility. The
+>> > regulator driver now has the correct voltage table for both regulator
+>> > versions and those the correct voltage can be used in this device
+>> > tree.
+>>
+>> One thing you haven't called out explicitly here is that this series is
+>> an incompatible change to the DT, since the old buggy driver used to
+>> allow old buggy DT content to accidentally work.
+>>
+> The current (wrong and potentially dangerous) DT content only worked on
+> the engineering sample models. So this change definitely does improve
+> the situation, even with the risk of breaking a small fraction of
+> working boards.
+On the released modules, the current value ends in a freeze during
+boot-up (since the wrong voltage table results in a too low voltage).
 
-There is also the very long TODO list in drivers/staging/tidspbridge/
+When I use 1.8V in the device tree, the old drivers refuses to set any
+voltage. The regulators default/bootloader settings work then better
+than the wrongfully applied values (tested on a new device). The probe
+just fails:
 
-What is the progression on that?
+[    0.243864] tps6586x-regulator tps6586x-regulator: failed to register
+regulator REG-SM_2
+[    0.244317] tps6586x-regulator: probe of tps6586x-regulator failed
+with error -22
 
-thanks,
+So, for newer modules, the incompatible 1.8V DT results in a successful
+boot. Since we don't have a regulator driver at all, likely other things
+are broken at that situation...
 
-greg k-h
+--
+Stefan
