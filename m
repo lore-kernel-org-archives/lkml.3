@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894Ab3K3DwP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 22:52:15 -0500
-Received: from mail.fpasia.hk ([202.130.89.98]:38841 "EHLO fpa01n0.fpasia.hk"
+	id S1751644Ab3K3DwG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 22:52:06 -0500
+Received: from mail.fpasia.hk ([202.130.89.98]:38833 "EHLO fpa01n0.fpasia.hk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751801Ab3K3DwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 22:52:12 -0500
+	id S1751326Ab3K3DwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 22:52:03 -0500
 From: Chris Ruehl <chris.ruehl@gtsys.com.hk>
 To: alexander.shishkin@linux.intel.com, gregkh@linuxfoundation.org
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         Chris Ruehl <chris.ruehl@gtsys.com.hk>
-Subject: [PATCH 3/3 v3] usb: chipidea: hw_phymode_configure moved before ci_usb_phy_init
-Date: Sat, 30 Nov 2013 11:52:02 +0800
-Message-Id: <1385783522-22539-1-git-send-email-chris.ruehl@gtsys.com.hk>
+Subject: [PATCH 1/3 v3] usb: chipidea: Reallocate regmap only if lpm is detected
+Date: Sat, 30 Nov 2013 11:51:42 +0800
+Message-Id: <1385783502-22462-1-git-send-email-chris.ruehl@gtsys.com.hk>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-usb: chipidea: hw_phymode_configure moved before ci_usb_phy_init
+usb: chipidea: Reallocate regmap only if lpm is detected
 
-hw_phymode_configure configures the PORTSC registers and allow the
-following phy_inits to operate on the right parameters. This fix a problem
-where the UPLI (ISP1504) could not detected, because the Viewport was not
-available and register reads return 0's only.
+The regmap only needs to reallocate if the hw_read on the CAP register shows
+lpm is used. Therefore the if() statement check the change.
 
 Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
 Acked-by: Peter Chen <peter.chen@freescale.com>
 ---
- drivers/usb/chipidea/core.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/chipidea/core.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
-index 2c634c1..50231f6 100644
+index 5d8981c..5075407 100644
 --- a/drivers/usb/chipidea/core.c
 +++ b/drivers/usb/chipidea/core.c
-@@ -576,6 +576,8 @@ static int ci_hdrc_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
-+	hw_phymode_configure(ci);
-+
- 	ret = ci_usb_phy_init(ci);
- 	if (ret) {
- 		dev_err(dev, "unable to init phy: %d\n", ret);
-@@ -593,8 +595,6 @@ static int ci_hdrc_probe(struct platform_device *pdev)
- 
- 	ci_get_otg_capable(ci);
- 
--	hw_phymode_configure(ci);
--
- 	dr_mode = ci->platdata->dr_mode;
- 	/* initialize role(s) before the interrupt is requested */
- 	if (dr_mode == USB_DR_MODE_OTG || dr_mode == USB_DR_MODE_HOST) {
+@@ -208,7 +208,8 @@ static int hw_device_init(struct ci_hdrc *ci, void __iomem *base)
+ 	reg = hw_read(ci, CAP_HCCPARAMS, HCCPARAMS_LEN) >>
+ 		__ffs(HCCPARAMS_LEN);
+ 	ci->hw_bank.lpm  = reg;
+-	hw_alloc_regmap(ci, !!reg);
++	if (reg)
++		hw_alloc_regmap(ci, !!reg);
+ 	ci->hw_bank.size = ci->hw_bank.op - ci->hw_bank.abs;
+ 	ci->hw_bank.size += OP_LAST;
+ 	ci->hw_bank.size /= sizeof(u32);
 -- 
 1.7.10.4
 
