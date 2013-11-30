@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533Ab3K3BSp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Nov 2013 20:18:45 -0500
-Received: from mail.fpasia.hk ([202.130.89.98]:51837 "EHLO fpa01n0.fpasia.hk"
+	id S1751412Ab3K3BeB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Nov 2013 20:34:01 -0500
+Received: from mail.fpasia.hk ([202.130.89.98]:49726 "EHLO fpa01n0.fpasia.hk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751119Ab3K3BSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Nov 2013 20:18:43 -0500
-Message-ID: <52993CE9.6030009@gtsys.com.hk>
-Date: Sat, 30 Nov 2013 09:18:33 +0800
+	id S1750898Ab3K3Bd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Nov 2013 20:33:59 -0500
+Message-ID: <5299407C.30109@gtsys.com.hk>
+Date: Sat, 30 Nov 2013 09:33:48 +0800
 From: Chris Ruehl <chris.ruehl@gtsys.com.hk>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11 ThunderBrowse/3.8
 MIME-Version: 1.0
@@ -18,8 +18,8 @@ Subject: Re: [PATCH 2/3 v2] usb: chipidea: Fix Internal error: : 808 [#1]
  ARM related to STS flag
 References: <1385709585-10459-1-git-send-email-chris.ruehl@gtsys.com.hk> <20131129182812.GF3516@pengutronix.de>
 In-Reply-To: <20131129182812.GF3516@pengutronix.de>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -71,36 +71,30 @@ On Saturday, November 30, 2013 02:28 AM, Michael Grzeschik wrote:
 >
 > Michael
 
-Michael,
+That's happen when I remove the if() statements and unconditional write the sts flag
 
-I agree that this patch is not sufficient. I had a look in the reference manual 
-for the imx27 and here:
-
-Serial Transceiver Select—Read/Write. This register bit is used in conjunction 
-with the configuration constant
-VUSB_HS_PHY_SERIAL to control whether the parallel or serial transceiver 
-interface is selected for FS and LS
-operation. The Serial Interface Engine can be used in combination with the UTMI+ 
-or ULPI physical interface to
-provide FS/LS signaling instead of the parallel interface. If VUSB_HS_PHY_SERIAL 
-is set for 0 or 1 then this
-bit is read only. If VUSB_HS_PHY_SERIAL is 3 or 4 then this bit is read/write.
-This bit has no effect unless Parallel Transceiver Select is set to UTMI+ or 
-ULPI. The Serial/1.1 physical interface
-will use the Serial Interface Engine for FS/LS signaling regardless of this bit 
-value.
-Note: This bit is reserved for future operation and is a placeholder adding 
-dynamic use of the serial engine in
-accord with UMTI+ and ULPI characterization logic.
-This bit is not defined in the EHCI specification.
+[    1.128482] ehci-mxc: Freescale On-Chip EHCI Host driver
+[    1.136702] usbcore: registered new interface driver usb-storage
+[    1.147594] imx_usb 10024000.usb: dummy supplies not allowed
+[    1.154803] Unhandled fault: external abort on non-linefetch (0x808) at 
+0xf4424184
+[    1.162424] Internal error: : 808 [#1] ARM
+[    1.166548] Modules linked in:
+[    1.169670] CPU: 0 PID: 1 Comm: swapper Not tainted 
+3.13.0-rc1-next-20131125-dirty #44
+[    1.177629] task: cf850000 ti: cf852000 task.ti: cf852000
+[    1.183086] PC is at ci_hdrc_probe+0x250/0x630
+[    1.187582] LR is at console_unlock+0x2d4/0x30c
+[    1.192165] pc : [<c025f7a8>]    lr : [<c003ec50>]    psr: 60000013
 
 
-To make it short. In some VUSB_HS_PHY_SERIAL configurations the STS is a READ 
-ONLY and should not be written. The current code (without my wrong patch) always 
-write to the STS!
-With the patch there was no write and no oops with Internal 808 ARM exception..
-
-Let me rework it.
-
-Regards
+regards
 Chris
+
+-- 
+GTSYS Limited RFID Technology
+A01 24/F Gold King Industrial Bld
+35-41 Tai Lin Pai Road, Kwai Chung, Hong Kong
+Fax (852) 8167 4060 - Tel (852) 3598 9488
+
+Disclaimer: http://www.gtsys.com.hk/email/classified.html
