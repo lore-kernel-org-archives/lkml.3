@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab3K3Qbj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 11:31:39 -0500
-Received: from ares07.inai.de ([5.9.24.206]:52866 "EHLO ares07.inai.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751559Ab3K3Qbi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 11:31:38 -0500
-Date: Sat, 30 Nov 2013 17:31:34 +0100 (CET)
-From: Jan Engelhardt <jengelh@inai.de>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-cc: daniel.vetter@ffwll.ch, dri-devel@lists.freedesktop.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: i915: pipe state still does not match
-In-Reply-To: <20131129104825.GE27806@nuc-i3427.alporthouse.com>
-Message-ID: <alpine.LSU.2.11.1311301727440.31825@nerf07.vanv.qr>
-References: <alpine.LSU.2.11.1311271156060.20996@nerf07.vanv.qr> <20131127110836.GA6087@nuc-i3427.alporthouse.com> <alpine.LSU.2.11.1311282017400.4098@nerf07.vanv.qr> <20131129104825.GE27806@nuc-i3427.alporthouse.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	id S1752219Ab3K3Qgt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 11:36:49 -0500
+Received: from smtpauth05h.mfg.siteprotect.com ([64.26.60.146]:51586 "EHLO
+	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751788Ab3K3Qgs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Nov 2013 11:36:48 -0500
+Date: Sat, 30 Nov 2013 11:39:09 -0500 (EST)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Stephane Eranian <eranian@google.com>
+cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
+        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Subject: Re: [PATCH v7 3/4] perf,x86: add Intel RAPL PMU support
+In-Reply-To: <CABPqkBRtBESMT-+FokR0+JYYL3Q=GUG-e5gZGOeHT3wOOtEaow@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1311301135220.22019@pianoman.cluster.toy>
+References: <1384275531-10892-1-git-send-email-eranian@google.com> <1384275531-10892-4-git-send-email-eranian@google.com> <alpine.DEB.2.02.1311271328590.22932@pianoman.cluster.toy> <CABPqkBScotKO03hTA6YNcD4sDVj_Gx1fjicmWOJh_MBYTF+rfQ@mail.gmail.com>
+ <alpine.DEB.2.02.1311271653280.24499@pianoman.cluster.toy> <20131128122619.GA6561@gmail.com> <CABPqkBSiLkDCcLFz5oxs2KS02LbiMNoAucrcx36aYqodiVpCpg@mail.gmail.com> <alpine.DEB.2.02.1311291413430.13064@pianoman.cluster.toy> <CABPqkBTvhgXm_UNWDEgjP4aVf=G2MxfgBpnJBsiAZpcg7x-r=w@mail.gmail.com>
+ <20131129203103.GJ4266@pd.tnic> <CABPqkBRtBESMT-+FokR0+JYYL3Q=GUG-e5gZGOeHT3wOOtEaow@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020201.529A141F.0082,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 30 Nov 2013, Stephane Eranian wrote:
 
-On Friday 2013-11-29 11:48, Chris Wilson wrote:
->> What I could collect so far:
->
->Thanks, I broke the handling of cropped XvImages along the fast paths.
->It should be fixed by:
->
->commit fd007d9d465b9b3ddbbaf769931ec921a6f5ecb8
->Author: Chris Wilson <chris@chris-wilson.co.uk>
->Date:   Thu Nov 28 21:13:33 2013 +0000
->
->    sna/video: Correct handling of cropped images along packed fast path
+> Ok, I have added PP1 now and it works fine on my HSW desktop.
+> What I want to know now is what is this map to on servers?
+> And on clients, it is always mapped to the GFX. If so, then
+> we can use a more specific name: power/energy-gfx/
 
-I didn't manage to crash X within an hour, so that's commit is looking 
-good.
+I don't know if it is documented well, but I get the impression that PP1 
+is always graphics.
 
-The kernel error message for i915 pipe state however still appears -
-namely, whenever the X server is terminating, including "reasonably
-proper" terminations induced with sending SIGTERM to the X process.
-Could it be that the i915 module does not handle sudden shutdowns
-(which however can occur at any time) of the /dev/dri/cardN file
-descriptor well enough?
+The turbostat code included with the kernel certainly thinks it is always 
+graphics, it maps PP1 to "GFX"
+
+The turbostat code also has a map of which chips have which features, 
+although it seems to use internal Intel abbreviations that I don't 
+necessarily follow (BYT? AVN?):
+
+
+        switch (model) {
+        case 0x2A:
+        case 0x3A:
+        case 0x3C:      /* HSW */
+        case 0x3F:      /* HSW */
+        case 0x45:      /* HSW */
+        case 0x46:      /* HSW */
+                do_rapl = RAPL_PKG | RAPL_CORES | RAPL_CORE_POLICY | 
+RAPL_GFX | RAPL_PKG_POWER_INFO;
+                break;
+        case 0x2D:
+        case 0x3E:
+                do_rapl = RAPL_PKG | RAPL_CORES | RAPL_CORE_POLICY | 
+RAPL_DRAM | RAPL_PKG_PERF_STATUS | RAPL_DRAM_PERF_STATUS | 
+RAPL_PKG_POWER_INFO;
+                break;
+        case 0x37:      /* BYT */
+        case 0x4D:      /* AVN */
+                do_rapl = RAPL_PKG | RAPL_CORES ;
+                break;
+        default:
+                return;
+        }
+
