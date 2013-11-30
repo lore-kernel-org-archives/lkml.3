@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751373Ab3K3THt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 14:07:49 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:47552 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915Ab3K3THq (ORCPT
+	id S1751336Ab3K3TTh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 14:19:37 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:41222 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940Ab3K3TTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 14:07:46 -0500
+	Sat, 30 Nov 2013 14:19:34 -0500
+Date: Sat, 30 Nov 2013 20:19:32 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+Cc: gregkh@linuxfoundation.org,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        pali.rohar@gmail.com, sre@ring0.de, omar.ramirez@copitl.com,
+        tony@atomide.com, felipe.contreras@gmail.com, s-anna@ti.com, nm@ti.com,
+        ohad@wizery.com, stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nico@ngolde.de, dan.carpenter@oracle.com
+Subject: Re: Staging: tidspbridge: disable driver
+Message-ID: <20131130191931.GA5286@amd.pavel.ucw.cz>
+References: <6662B6F95D1C4783A007CAC82A8DA641@ivogl>
 MIME-Version: 1.0
-In-Reply-To: <1385227995-3956-1-git-send-email-alchark@gmail.com>
-References: <1385227995-3956-1-git-send-email-alchark@gmail.com>
-Date: Sat, 30 Nov 2013 23:07:44 +0400
-Message-ID: <CABjd4Yx9bkbLaCVk01u0iPg0V5GJLBq3xbaLU0Ay17e9rEuCNg@mail.gmail.com>
-Subject: Re: [PATCH 0/3] net: via-rhine: add support for on-chip Rhine controllers
-From: Alexey Charkov <alchark@gmail.com>
-To: Roger Luethi <rl@hellgate.ch>, netdev@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tony Prisk <linux@prisktech.co.nz>
-Cc: Alexey Charkov <alchark@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6662B6F95D1C4783A007CAC82A8DA641@ivogl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/23, Alexey Charkov <alchark@gmail.com>:
-> This series introduces platform bus (OpenFirmware) binding for via-rhine,
-> as used in various ARM-based Systems-on-Chip by VIA/WonderMedia.
->
-> This has been tested on a WM8950-based VIA APC Rock development board
->
-> Alexey Charkov (3):
->   net: via-rhine: switch to generic DMA functions
->   net: via-rhine: reduce usage of the PCI-specific struct
->   net: via-rhine: add OF bus binding
->
->  .../devicetree/bindings/net/via-rhine.txt          |  18 +
->  drivers/net/ethernet/via/Kconfig                   |   2 +-
->  drivers/net/ethernet/via/via-rhine.c               | 403
-> ++++++++++++---------
->  3 files changed, 260 insertions(+), 163 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/net/via-rhine.txt
->
-> --
-> 1.8.1.5
->
+Hi!
 
-Dear all,
+> However, could you elaborate on the "security bug" so I can try to
+> fix it and send the patch?
+> Also, what needs to be done for the tidspdriver to get out of
+> staging as it seems that what I
+> though initially is incorrect.
 
-There hasn't been any feedback on this so far (which is
-understandable, given that it came pretty early in the release cycle).
+Commit
 
-Is there any chance to get this reviewed, to be eventually included in
-net-next for 3.14? That would be highly appreciated.
+commit 930ba4a374b96560ef9fde2145cdc454a164ddcc
+Author: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date:   Wed Nov 27 09:32:49 2013 -0800
 
-Thanks a lot,
-Alexey
+    Staging: tidspbridge: disable driver
+    
+    There seems to be no active maintainer for the driver, and there
+    is an
+    unfixed security bug, so disable the driver for now.
+    
+    Hopefully someone steps up to be the maintainer, and works to get
+    this
+    out of staging, otherwise it will be deleted soon.
+    
+    Reported-by: Nico Golde <nico@ngolde.de>
+    Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+
+
+so perhaps Nico Golde or Dan Carpenter can elaborate? I Cc-ed them
+now.
+
+Or is it some kind of super-secret issue and still under embargo for
+10 days?
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
