@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128Ab3K3MwP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 07:52:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59664 "EHLO
+	id S1753203Ab3K3MwX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 07:52:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59673 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753025Ab3K3MwI (ORCPT
+	with ESMTP id S1753025Ab3K3MwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 07:52:08 -0500
-Date: Sat, 30 Nov 2013 04:51:52 -0800
+	Sat, 30 Nov 2013 07:52:17 -0500
+Date: Sat, 30 Nov 2013 04:52:01 -0800
 From: tip-bot for Stanislav Fomichev <tipbot@zytor.com>
-Message-ID: <tip-cbb2e81e5232b1bca5cd2aa1d7a7eb1cd30f8304@git.kernel.org>
+Message-ID: <tip-367b3152d72c20d789b07650bd1189ce0fe266b8@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
         a.p.zijlstra@chello.nl, namhyung@kernel.org, stfomichev@yandex-team.ru,
@@ -17,12 +17,12 @@ Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
 Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
         namhyung@kernel.org, stfomichev@yandex-team.ru, tglx@linutronix.de
-In-Reply-To: <1383323151-19810-6-git-send-email-stfomichev@yandex-team.ru>
-References: <1383323151-19810-6-git-send-email-stfomichev@yandex-team.ru>
+In-Reply-To: <1383323151-19810-7-git-send-email-stfomichev@yandex-team.ru>
+References: <1383323151-19810-7-git-send-email-stfomichev@yandex-team.ru>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] perf timechart:
-  Group figures and add title with details
-Git-Commit-ID: cbb2e81e5232b1bca5cd2aa1d7a7eb1cd30f8304
+  Add support for -P and -T in timechart recording
+Git-Commit-ID: 367b3152d72c20d789b07650bd1189ce0fe266b8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,27 +31,23 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 30 Nov 2013 04:51:59 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 30 Nov 2013 04:52:08 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cbb2e81e5232b1bca5cd2aa1d7a7eb1cd30f8304
-Gitweb:     http://git.kernel.org/tip/cbb2e81e5232b1bca5cd2aa1d7a7eb1cd30f8304
+Commit-ID:  367b3152d72c20d789b07650bd1189ce0fe266b8
+Gitweb:     http://git.kernel.org/tip/367b3152d72c20d789b07650bd1189ce0fe266b8
 Author:     Stanislav Fomichev <stfomichev@yandex-team.ru>
-AuthorDate: Fri, 1 Nov 2013 20:25:49 +0400
+AuthorDate: Fri, 1 Nov 2013 20:25:50 +0400
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Wed, 27 Nov 2013 14:58:37 -0300
 
-perf timechart: Group figures and add title with details
+perf timechart: Add support for -P and -T in timechart recording
 
-Add titles to figures so we can run SVG interactively in Firefox and
-check event details in the tooltips.
-
-This also aids exploring SVG with Inkscape because when user clicks on
-one part of logical figure, all parts are selected.
-
-It's also possible to read titles with Inkscape in the object details.
+If we don't want either power or task events we may use -T or -P with
+the `perf timechart record` command to filter out events while recording
+to keep perf.data small.
 
 Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
 Acked-by: Namhyung Kim <namhyung@kernel.org>
@@ -59,248 +55,208 @@ Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1383323151-19810-6-git-send-email-stfomichev@yandex-team.ru
+Link: http://lkml.kernel.org/r/1383323151-19810-7-git-send-email-stfomichev@yandex-team.ru
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-timechart.c |  6 ++---
- tools/perf/util/svghelper.c    | 56 ++++++++++++++++++++++++++++++++++++++++--
- tools/perf/util/svghelper.h    |  5 ++--
- 3 files changed, 60 insertions(+), 7 deletions(-)
+ tools/perf/Documentation/perf-timechart.txt |  16 +++--
+ tools/perf/builtin-timechart.c              | 101 +++++++++++++++++++++-------
+ 2 files changed, 87 insertions(+), 30 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
+index d844189..8359cfa 100644
+--- a/tools/perf/Documentation/perf-timechart.txt
++++ b/tools/perf/Documentation/perf-timechart.txt
+@@ -8,8 +8,7 @@ perf-timechart - Tool to visualize total system behavior during a workload
+ SYNOPSIS
+ --------
+ [verse]
+-'perf timechart' record <command>
+-'perf timechart' [<options>]
++'perf timechart' [<timechart options>] {record} [<record options>]
+ 
+ DESCRIPTION
+ -----------
+@@ -21,8 +20,8 @@ There are two variants of perf timechart:
+   'perf timechart' to turn a trace into a Scalable Vector Graphics file,
+   that can be viewed with popular SVG viewers such as 'Inkscape'.
+ 
+-OPTIONS
+--------
++TIMECHART OPTIONS
++-----------------
+ -o::
+ --output=::
+         Select the output file (default: output.svg)
+@@ -61,6 +60,15 @@ $ perf timechart
+ --proc-num::
+         Print task info for at least given number of tasks.
+ 
++RECORD OPTIONS
++--------------
++-P::
++--power-only::
++        Record only power-related events
++-T::
++--tasks-only::
++        Record only tasks-related events
++
+ SEE ALSO
+ --------
+ linkperf:perf-record[1]
 diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index b3f175a..6a848b8 100644
+index 6a848b8..1c60ed3 100644
 --- a/tools/perf/builtin-timechart.c
 +++ b/tools/perf/builtin-timechart.c
-@@ -798,11 +798,11 @@ static void draw_process_bars(void)
- 			sample = c->samples;
- 			while (sample) {
- 				if (sample->type == TYPE_RUNNING)
--					svg_sample(Y, sample->cpu, sample->start_time, sample->end_time);
-+					svg_running(Y, sample->cpu, sample->start_time, sample->end_time);
- 				if (sample->type == TYPE_BLOCKED)
--					svg_box(Y, sample->start_time, sample->end_time, "blocked");
-+					svg_blocked(Y, sample->cpu, sample->start_time, sample->end_time);
- 				if (sample->type == TYPE_WAITING)
--					svg_waiting(Y, sample->start_time, sample->end_time);
-+					svg_waiting(Y, sample->cpu, sample->start_time, sample->end_time);
- 				sample = sample->next;
- 			}
+@@ -1040,50 +1040,81 @@ out_delete:
  
-diff --git a/tools/perf/util/svghelper.c b/tools/perf/util/svghelper.c
-index 96c8660..9a5b413 100644
---- a/tools/perf/util/svghelper.c
-+++ b/tools/perf/util/svghelper.c
-@@ -95,6 +95,7 @@ void open_svg(const char *filename, int cpus, int rows, u64 start, u64 end)
- 
- 	total_height = (1 + rows + cpu2slot(cpus)) * SLOT_MULT;
- 	fprintf(svgfile, "<?xml version=\"1.0\" standalone=\"no\"?> \n");
-+	fprintf(svgfile, "<!DOCTYPE svg SYSTEM \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n");
- 	fprintf(svgfile, "<svg width=\"%i\" height=\"%" PRIu64 "\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\">\n", svg_page_width, total_height);
- 
- 	fprintf(svgfile, "<defs>\n  <style type=\"text/css\">\n    <![CDATA[\n");
-@@ -128,12 +129,29 @@ void svg_box(int Yslot, u64 start, u64 end, const char *type)
- 		time2pixels(start), time2pixels(end)-time2pixels(start), Yslot * SLOT_MULT, SLOT_HEIGHT, type);
- }
- 
--void svg_sample(int Yslot, int cpu, u64 start, u64 end)
-+static char *time_to_string(u64 duration);
-+void svg_blocked(int Yslot, int cpu, u64 start, u64 end)
-+{
-+	if (!svgfile)
-+		return;
-+
-+	fprintf(svgfile, "<g>\n");
-+	fprintf(svgfile, "<title>#%d blocked %s</title>\n", cpu,
-+		time_to_string(end - start));
-+	svg_box(Yslot, start, end, "blocked");
-+	fprintf(svgfile, "</g>\n");
-+}
-+
-+void svg_running(int Yslot, int cpu, u64 start, u64 end)
+ static int __cmd_record(int argc, const char **argv)
  {
- 	double text_size;
- 	if (!svgfile)
- 		return;
- 
-+	fprintf(svgfile, "<g>\n");
+-#ifdef SUPPORT_OLD_POWER_EVENTS
+-	const char * const record_old_args[] = {
++	unsigned int rec_argc, i, j;
++	const char **rec_argv;
++	const char **p;
++	unsigned int record_elems;
 +
-+	fprintf(svgfile, "<title>#%d running %s</title>\n",
-+		cpu, time_to_string(end - start));
- 	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"sample\"/>\n",
- 		time2pixels(start), time2pixels(end)-time2pixels(start), Yslot * SLOT_MULT, SLOT_HEIGHT);
++	const char * const common_args[] = {
+ 		"record", "-a", "-R", "-c", "1",
++	};
++	unsigned int common_args_nr = ARRAY_SIZE(common_args);
++
++	const char * const power_args[] = {
++		"-e", "power:cpu_frequency",
++		"-e", "power:cpu_idle",
++	};
++	unsigned int power_args_nr = ARRAY_SIZE(power_args);
++
++	const char * const old_power_args[] = {
++#ifdef SUPPORT_OLD_POWER_EVENTS
+ 		"-e", "power:power_start",
+ 		"-e", "power:power_end",
+ 		"-e", "power:power_frequency",
+-		"-e", "sched:sched_wakeup",
+-		"-e", "sched:sched_switch",
+-	};
+ #endif
+-	const char * const record_new_args[] = {
+-		"record", "-a", "-R", "-c", "1",
+-		"-e", "power:cpu_frequency",
+-		"-e", "power:cpu_idle",
++	};
++	unsigned int old_power_args_nr = ARRAY_SIZE(old_power_args);
++
++	const char * const tasks_args[] = {
+ 		"-e", "sched:sched_wakeup",
+ 		"-e", "sched:sched_switch",
+ 	};
+-	unsigned int rec_argc, i, j;
+-	const char **rec_argv;
+-	const char * const *record_args = record_new_args;
+-	unsigned int record_elems = ARRAY_SIZE(record_new_args);
++	unsigned int tasks_args_nr = ARRAY_SIZE(tasks_args);
  
-@@ -148,6 +166,7 @@ void svg_sample(int Yslot, int cpu, u64 start, u64 end)
- 		fprintf(svgfile, "<text x=\"%1.8f\" y=\"%1.8f\" font-size=\"%1.8fpt\">%i</text>\n",
- 			time2pixels(start), Yslot *  SLOT_MULT + SLOT_HEIGHT - 1, text_size,  cpu + 1);
+ #ifdef SUPPORT_OLD_POWER_EVENTS
+ 	if (!is_valid_tracepoint("power:cpu_idle") &&
+ 	    is_valid_tracepoint("power:power_start")) {
+ 		use_old_power_events = 1;
+-		record_args = record_old_args;
+-		record_elems = ARRAY_SIZE(record_old_args);
++		power_args_nr = 0;
++	} else {
++		old_power_args_nr = 0;
+ 	}
+ #endif
  
-+	fprintf(svgfile, "</g>\n");
+-	rec_argc = record_elems + argc - 1;
++	if (power_only)
++		tasks_args_nr = 0;
++
++	if (tasks_only) {
++		power_args_nr = 0;
++		old_power_args_nr = 0;
++	}
++
++	record_elems = common_args_nr + tasks_args_nr +
++		power_args_nr + old_power_args_nr;
++
++	rec_argc = record_elems + argc;
+ 	rec_argv = calloc(rec_argc + 1, sizeof(char *));
+ 
+ 	if (rec_argv == NULL)
+ 		return -ENOMEM;
+ 
+-	for (i = 0; i < record_elems; i++)
+-		rec_argv[i] = strdup(record_args[i]);
++	p = rec_argv;
++	for (i = 0; i < common_args_nr; i++)
++		*p++ = strdup(common_args[i]);
++
++	for (i = 0; i < tasks_args_nr; i++)
++		*p++ = strdup(tasks_args[i]);
++
++	for (i = 0; i < power_args_nr; i++)
++		*p++ = strdup(power_args[i]);
+ 
+-	for (j = 1; j < (unsigned int)argc; j++, i++)
+-		rec_argv[i] = argv[j];
++	for (i = 0; i < old_power_args_nr; i++)
++		*p++ = strdup(old_power_args[i]);
+ 
+-	return cmd_record(i, rec_argv, NULL);
++	for (j = 1; j < (unsigned int)argc; j++)
++		*p++ = argv[j];
++
++	return cmd_record(rec_argc, rec_argv, NULL);
  }
  
- static char *time_to_string(u64 duration)
-@@ -168,7 +187,7 @@ static char *time_to_string(u64 duration)
- 	return text;
- }
- 
--void svg_waiting(int Yslot, u64 start, u64 end)
-+void svg_waiting(int Yslot, int cpu, u64 start, u64 end)
+ static int
+@@ -1099,7 +1130,7 @@ int cmd_timechart(int argc, const char **argv,
+ 		  const char *prefix __maybe_unused)
  {
- 	char *text;
- 	const char *style;
-@@ -192,6 +211,7 @@ void svg_waiting(int Yslot, u64 start, u64 end)
- 	font_size = round_text_size(font_size);
+ 	const char *output_name = "output.svg";
+-	const struct option options[] = {
++	const struct option timechart_options[] = {
+ 	OPT_STRING('i', "input", &input_name, "file", "input file name"),
+ 	OPT_STRING('o', "output", &output_name, "file", "output file name"),
+ 	OPT_INTEGER('w', "width", &svg_page_width, "page width"),
+@@ -1120,7 +1151,17 @@ int cmd_timechart(int argc, const char **argv,
+ 		NULL
+ 	};
  
- 	fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\">\n", time2pixels(start), Yslot * SLOT_MULT);
-+	fprintf(svgfile, "<title>#%d waiting %s</title>\n", cpu, time_to_string(end - start));
- 	fprintf(svgfile, "<rect x=\"0\" width=\"%4.8f\" y=\"0\" height=\"%4.1f\" class=\"%s\"/>\n",
- 		time2pixels(end)-time2pixels(start), SLOT_HEIGHT, style);
- 	if (font_size > MIN_TEXT_SIZE)
-@@ -242,6 +262,8 @@ void svg_cpu_box(int cpu, u64 __max_freq, u64 __turbo_freq)
- 	max_freq = __max_freq;
- 	turbo_frequency = __turbo_freq;
+-	argc = parse_options(argc, argv, options, timechart_usage,
++	const struct option record_options[] = {
++	OPT_BOOLEAN('P', "power-only", &power_only, "output power data only"),
++	OPT_BOOLEAN('T', "tasks-only", &tasks_only,
++		    "output processes data only"),
++	OPT_END()
++	};
++	const char * const record_usage[] = {
++		"perf timechart record [<options>]",
++		NULL
++	};
++	argc = parse_options(argc, argv, timechart_options, timechart_usage,
+ 			PARSE_OPT_STOP_AT_NON_OPTION);
  
-+	fprintf(svgfile, "<g>\n");
+ 	if (power_only && tasks_only) {
+@@ -1130,10 +1171,18 @@ int cmd_timechart(int argc, const char **argv,
+ 
+ 	symbol__init();
+ 
+-	if (argc && !strncmp(argv[0], "rec", 3))
++	if (argc && !strncmp(argv[0], "rec", 3)) {
++		argc = parse_options(argc, argv, record_options, record_usage,
++				     PARSE_OPT_STOP_AT_NON_OPTION);
 +
- 	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"cpu\"/>\n",
- 		time2pixels(first_time),
- 		time2pixels(last_time)-time2pixels(first_time),
-@@ -253,6 +275,8 @@ void svg_cpu_box(int cpu, u64 __max_freq, u64 __turbo_freq)
- 
- 	fprintf(svgfile, "<text transform=\"translate(%4.8f,%4.8f)\" font-size=\"1.25pt\">%s</text>\n",
- 		10+time2pixels(first_time), cpu2y(cpu) + SLOT_MULT + SLOT_HEIGHT - 4, cpu_model());
++		if (power_only && tasks_only) {
++			pr_err("-P and -T options cannot be used at the same time.\n");
++			return -1;
++		}
 +
-+	fprintf(svgfile, "</g>\n");
- }
+ 		return __cmd_record(argc, argv);
+-	else if (argc)
+-		usage_with_options(timechart_usage, options);
++	} else if (argc)
++		usage_with_options(timechart_usage, timechart_options);
  
- void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name)
-@@ -264,6 +288,7 @@ void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name
- 
- 
- 	fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\">\n", time2pixels(start), cpu2y(cpu));
-+	fprintf(svgfile, "<title>%s %s</title>\n", name, time_to_string(end - start));
- 	fprintf(svgfile, "<rect x=\"0\" width=\"%4.8f\" y=\"0\" height=\"%4.1f\" class=\"%s\"/>\n",
- 		time2pixels(end)-time2pixels(start), SLOT_MULT+SLOT_HEIGHT, type);
- 	width = time2pixels(end)-time2pixels(start);
-@@ -288,6 +313,8 @@ void svg_cstate(int cpu, u64 start, u64 end, int type)
- 		return;
- 
- 
-+	fprintf(svgfile, "<g>\n");
-+
- 	if (type > 6)
- 		type = 6;
- 	sprintf(style, "c%i", type);
-@@ -306,6 +333,8 @@ void svg_cstate(int cpu, u64 start, u64 end, int type)
- 	if (width > MIN_TEXT_SIZE)
- 		fprintf(svgfile, "<text x=\"%4.8f\" y=\"%4.8f\" font-size=\"%3.8fpt\">C%i</text>\n",
- 			time2pixels(start), cpu2y(cpu)+width, width, type);
-+
-+	fprintf(svgfile, "</g>\n");
- }
- 
- static char *HzToHuman(unsigned long hz)
-@@ -339,6 +368,8 @@ void svg_pstate(int cpu, u64 start, u64 end, u64 freq)
- 	if (!svgfile)
- 		return;
- 
-+	fprintf(svgfile, "<g>\n");
-+
- 	if (max_freq)
- 		height = freq * 1.0 / max_freq * (SLOT_HEIGHT + SLOT_MULT);
- 	height = 1 + cpu2y(cpu) + SLOT_MULT + SLOT_HEIGHT - height;
-@@ -347,6 +378,7 @@ void svg_pstate(int cpu, u64 start, u64 end, u64 freq)
- 	fprintf(svgfile, "<text x=\"%4.8f\" y=\"%4.8f\" font-size=\"0.25pt\">%s</text>\n",
- 		time2pixels(start), height+0.9, HzToHuman(freq));
- 
-+	fprintf(svgfile, "</g>\n");
- }
- 
- 
-@@ -358,6 +390,12 @@ void svg_partial_wakeline(u64 start, int row1, char *desc1, int row2, char *desc
- 		return;
- 
- 
-+	fprintf(svgfile, "<g>\n");
-+
-+	fprintf(svgfile, "<title>%s wakes up %s</title>\n",
-+		desc1 ? desc1 : "?",
-+		desc2 ? desc2 : "?");
-+
- 	if (row1 < row2) {
- 		if (row1) {
- 			fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%4.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
-@@ -395,6 +433,8 @@ void svg_partial_wakeline(u64 start, int row1, char *desc1, int row2, char *desc
- 	if (row1)
- 		fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(32,255,32)\"/>\n",
- 			time2pixels(start), height);
-+
-+	fprintf(svgfile, "</g>\n");
- }
- 
- void svg_wakeline(u64 start, int row1, int row2)
-@@ -405,6 +445,8 @@ void svg_wakeline(u64 start, int row1, int row2)
- 		return;
- 
- 
-+	fprintf(svgfile, "<g>\n");
-+
- 	if (row1 < row2)
- 		fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%4.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
- 			time2pixels(start), row1 * SLOT_MULT + SLOT_HEIGHT,  time2pixels(start), row2 * SLOT_MULT);
-@@ -417,6 +459,8 @@ void svg_wakeline(u64 start, int row1, int row2)
- 		height += SLOT_HEIGHT;
- 	fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(32,255,32)\"/>\n",
- 			time2pixels(start), height);
-+
-+	fprintf(svgfile, "</g>\n");
- }
- 
- void svg_interrupt(u64 start, int row)
-@@ -424,10 +468,16 @@ void svg_interrupt(u64 start, int row)
- 	if (!svgfile)
- 		return;
- 
-+	fprintf(svgfile, "<g>\n");
-+
-+	fprintf(svgfile, "<title>Wakeup from interrupt</title>\n");
-+
- 	fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(255,128,128)\"/>\n",
- 			time2pixels(start), row * SLOT_MULT);
- 	fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(255,128,128)\"/>\n",
- 			time2pixels(start), row * SLOT_MULT + SLOT_HEIGHT);
-+
-+	fprintf(svgfile, "</g>\n");
- }
- 
- void svg_text(int Yslot, u64 start, const char *text)
-@@ -455,6 +505,7 @@ void svg_legenda(void)
- 	if (!svgfile)
- 		return;
- 
-+	fprintf(svgfile, "<g>\n");
- 	svg_legenda_box(0,	"Running", "sample");
- 	svg_legenda_box(100,	"Idle","c1");
- 	svg_legenda_box(200,	"Deeper Idle", "c3");
-@@ -462,6 +513,7 @@ void svg_legenda(void)
- 	svg_legenda_box(550,	"Sleeping", "process2");
- 	svg_legenda_box(650,	"Waiting for cpu", "waiting");
- 	svg_legenda_box(800,	"Blocked on IO", "blocked");
-+	fprintf(svgfile, "</g>\n");
- }
- 
- void svg_time_grid(void)
-diff --git a/tools/perf/util/svghelper.h b/tools/perf/util/svghelper.h
-index e078198..aa53345 100644
---- a/tools/perf/util/svghelper.h
-+++ b/tools/perf/util/svghelper.h
-@@ -5,8 +5,9 @@
- 
- extern void open_svg(const char *filename, int cpus, int rows, u64 start, u64 end);
- extern void svg_box(int Yslot, u64 start, u64 end, const char *type);
--extern void svg_sample(int Yslot, int cpu, u64 start, u64 end);
--extern void svg_waiting(int Yslot, u64 start, u64 end);
-+extern void svg_blocked(int Yslot, int cpu, u64 start, u64 end);
-+extern void svg_running(int Yslot, int cpu, u64 start, u64 end);
-+extern void svg_waiting(int Yslot, int cpu, u64 start, u64 end);
- extern void svg_cpu_box(int cpu, u64 max_frequency, u64 turbo_frequency);
- 
+ 	setup_pager();
  
