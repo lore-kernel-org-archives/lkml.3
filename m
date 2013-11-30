@@ -1,82 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751159Ab3K3SO7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 13:14:59 -0500
-Received: from ring0.de ([91.143.88.219]:36493 "EHLO smtp.ring0.de"
+	id S1751217Ab3K3S1p (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 13:27:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36626 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750739Ab3K3SO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 13:14:57 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
-	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
-	*      for more information.
-	*      [URIs: linaro.org]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Sat, 30 Nov 2013 19:14:54 +0100
-From: Sebastian Reichel <sre@debian.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Documentation: DTS: bq27xxx are trivial i2c devices
-Message-ID: <20131130181453.GA15492@earth.universe>
-Mail-Followup-To: Wolfram Sang <wsa@the-dreams.de>,
-	linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1382446577-28270-1-git-send-email-sre@debian.org>
- <20131025195634.EEBECC40531@trevor.secretlab.ca>
+	id S1750739Ab3K3S1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Nov 2013 13:27:44 -0500
+Date: Sat, 30 Nov 2013 18:31:18 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH] Add a text_poke syscall v2
+Message-ID: <20131130173118.GA26278@redhat.com>
+References: <1385426236-14960-1-git-send-email-andi@firstfloor.org> <20131129183558.GA9803@redhat.com> <20131129195419.GB17656@two.firstfloor.org> <20131129200532.GA13561@redhat.com> <alpine.LRH.2.00.1311300023070.9932@twin.jikos.cz> <20131130165122.GA24507@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="LQksG6bCIzRHxTLp"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131025195634.EEBECC40531@trevor.secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131130165122.GA24507@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/30, Oleg Nesterov wrote:
+>
+> First of all, this smp_wmb() is not clear.
 
---LQksG6bCIzRHxTLp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, but...
 
-Hi Wolfram,
+> However, do_int3() does preempt_conditional_sti() and this looks
+> as if it can be called with irqs enabled?
 
-On Fri, Oct 25, 2013 at 08:56:34PM +0100, Grant Likely wrote:
-> On Tue, 22 Oct 2013 14:56:16 +0200, Sebastian Reichel <sre@debian.org> wr=
-ote:
-> > Add all chips supported by the bq27xxx driver to the list
-> > of trivial i2c devices.
-> >=20
-> > Signed-off-by: Sebastian Reichel <sre@debian.org>
-> Acked-by: Grant Likely <grant.likely@linaro.org>
+Ah, please ignore, I misread preempt_conditional_sti(). It enables
+irqs if they were enabled before the exception, unless I misread it
+again.
 
-Can you take the Documentation patch [0] through your queue?
+Oleg.
 
-[0] https://lkml.org/lkml/2013/10/22/149
-
--- Sebastian
-
---LQksG6bCIzRHxTLp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSmisdAAoJENju1/PIO/qa0M4P/iPn6LsPTszIObMTcNsUOL+9
-3bWt0zG+5sajLJXLNVc5BavryM9QJ80EsNFT00ne11888oO0RvrhX5d5tvnFH6Lw
-IjSXqgNX5M15uvemdaxQVVM7zUBNWNYl6z+NjRixtr0fznBsdEOzW+36eqgNrtuj
-zq/5eLSPVLXw9+yM7soqyac1il21s+cVpJIUkZmFEqgu6pBIcfhdaPsHoiM8lsYf
-Gf6LmKZ3NPOANQ/vF02hGvCh1fgL705CyEGST/QITkbkZfpEjEHYaOyzC2VeSB82
-QRWtkbts8fLIkZq8zpsvzBAsNRsKChbjejM0pFlAPFusZFBgLhOYRQC9VREGg12L
-PS4xY1PK7OVPQUdJTYMagH5M6EovCGZnZvs60w+wD/KO2HSumH5KPDs+f33XuO6x
-hKs5sCyTHMf/GidST8lL+pY62RlKW/o4XUUxJfBUezBwjUgtxeFEU9G+pj69Omt+
-cpjnv50dmohOQYskSuTJ5b3/C7PEdhtNofvUGoA+kLIvPotSiu/XUnvJAb9pNFPu
-dbItUEhswQCEZzitn4mZCZPCzji/M66BNzKuvNHvUkbX8Qrp26lLa4C3wLD1FSOZ
-0nAGseggZu8swQlakFTwKKig/crTZaNCSEH6jNxPN4aN5e+74GYjY9RTpy8Wj98B
-h48R6VwVl//szNYXWJMt
-=wWks
------END PGP SIGNATURE-----
-
---LQksG6bCIzRHxTLp--
