@@ -1,80 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089Ab3LARGX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 12:06:23 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:37125 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751599Ab3LARGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 12:06:19 -0500
-X-IronPort-AV: E=Sophos;i="4.93,806,1378857600"; 
-   d="scan'208";a="79515538"
-Date: Sun, 1 Dec 2013 17:06:00 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ian Jackson <Ian.Jackson@eu.citrix.com>, <netdev@vger.kernel.org>,
-        Michael Chan <mchan@broadcom.com>, <dl-mptfusionlinux@lsi.com>,
-        <linux-scsi@vger.kernel.org>, <support@lsi.com>,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
-        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
-        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: "swiotlb buffer is full" with 3.13-rc1+ but not 3.4.
-In-Reply-To: <1385844524.2170.10.camel@dabdike>
-Message-ID: <alpine.DEB.2.02.1312011659500.3198@kaball.uk.xensource.com>
-References: <21144.47873.639231.96901@mariner.uk.xensource.com>  <20131130185639.GA13039@pegasus.dumpdata.com> <1385844524.2170.10.camel@dabdike>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+	id S1752116Ab3LARIl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 12:08:41 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:58288 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab3LARIh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Dec 2013 12:08:37 -0500
+From: Ivaylo DImitrov <ivo.g.dimitrov.75@gmail.com>
+To: <omar.ramirez@copitl.com>
+Cc: gregkh@linuxfoundation.org, pali.rohar@gmail.com, pavel@ucw.cz,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Ivaylo Dimitrov <freemangordon@abv.bg>
+Subject: [PATCH] Staging: TIDSPBRIDGE: Remove UUID helper
+Date: Sun,  1 Dec 2013 19:07:40 +0200
+Message-Id: <1385917660-2676-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+X-Mailer: git-send-email 1.8.4.msysgit.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 30 Nov 2013, James Bottomley wrote:
-> On Sat, 2013-11-30 at 13:56 -0500, Konrad Rzeszutek Wilk wrote:
-> > My theory is that the SWIOTLB is not full - it is just that the request
-> > is for a compound page that is more than 512kB. Please note that
-> > SWIOTLB highest "chunk" of buffer it can deal with is 512kb.
-> > 
-> > And that is of course the question comes out - why would it try to
-> > bounce buffer it. In Xen the answer is simple - the sg chunks cross page
-> > boundaries which means that they are not physically contingous - so we
-> > have to use the bounce buffer. It would be better if the the sg list
-> > provided a large list of 4KB pages instead of compound pages as that
-> > could help in avoiding the bounce buffer.
-> > 
-> > But I digress - this is a theory - I don't know whether the SCSI layer
-> > does any colescing of the sg list - and if so, whether there is any
-> > easy knob to tell it to not do it.
-> 
-> Well, SCSI doesn't, but block does.  It's actually an efficiency thing
-> since most firmware descriptor formats cope with multiple pages and the
-> more descriptors you have for a transaction, the more work the on-board
-> processor on the HBA has to do.  If you have an emulated HBA, like
-> virtio, you could turn off physical coalesing by setting the
-> use_clustering flag to DISABLE_CLUSTERING.  But you can't do that for a
-> real card.  I assume the problem here is that the host is passing the
-> card directly to the guest and the guest clusters based on its idea of
-> guest pages which don't map to contiguous physical pages?
-> 
-> The way you tell how many physically contiguous pages block is willing
-> to merge is by looking at /sys/block/<dev>/queue/max_segment_size if
-> that's 4k then it won't merge, if it's greater than 4k, then it will.
-> 
-> I'm not quite sure what to do ... you can't turn of clustering globally
-> in the guest because the virtio drivers use it to reduce ring descriptor
-> pressure, what you probably want is some way to flag a pass through
-> device.
+From: Ivaylo Dimitrov <freemangordon@abv.bg>
 
-Given that we don't use virtio on Xen, we could actually turn off
-clustering globally (if we are running on Xen).
+Custom uuid helper function is needed only in rmgr/dbdcd.c and doesn't
+need to be exported. It can also be made way simpler by using sscanf.
 
-In fact for example BIOVEC_PHYS_MERGEABLE is defined:
+Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
+---
+ drivers/staging/tidspbridge/Makefile               |    2 +-
+ drivers/staging/tidspbridge/gen/uuidutil.c         |   85 --------------------
+ .../tidspbridge/include/dspbridge/uuidutil.h       |   18 ----
+ drivers/staging/tidspbridge/rmgr/dbdcd.c           |   42 +++++++++-
+ 4 files changed, 39 insertions(+), 108 deletions(-)
+ delete mode 100644 drivers/staging/tidspbridge/gen/uuidutil.c
 
-+#define BIOVEC_PHYS_MERGEABLE(vec1, vec2)				\
-+	(__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&				\
-+	 (!xen_domain() || xen_biovec_phys_mergeable(vec1, vec2)))
+diff --git a/drivers/staging/tidspbridge/Makefile b/drivers/staging/tidspbridge/Makefile
+index 230e3e6..2e77734 100644
+--- a/drivers/staging/tidspbridge/Makefile
++++ b/drivers/staging/tidspbridge/Makefile
+@@ -1,6 +1,6 @@
+ obj-$(CONFIG_TIDSPBRIDGE)	+= tidspbridge.o
+ 
+-libgen = gen/gh.o gen/uuidutil.o
++libgen = gen/gh.o
+ libcore = core/chnl_sm.o core/msg_sm.o core/io_sm.o core/tiomap3430.o \
+ 		core/tiomap3430_pwr.o core/tiomap_io.o \
+ 		core/ue_deh.o core/wdt.o core/dsp-clock.o core/sync.o
+diff --git a/drivers/staging/tidspbridge/gen/uuidutil.c b/drivers/staging/tidspbridge/gen/uuidutil.c
+deleted file mode 100644
+index b7d8313..0000000
+--- a/drivers/staging/tidspbridge/gen/uuidutil.c
++++ /dev/null
+@@ -1,85 +0,0 @@
+-/*
+- * uuidutil.c
+- *
+- * DSP-BIOS Bridge driver support functions for TI OMAP processors.
+- *
+- * This file contains the implementation of UUID helper functions.
+- *
+- * Copyright (C) 2005-2006 Texas Instruments, Inc.
+- *
+- * This package is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- *
+- * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+- * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+- * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+- */
+-#include <linux/types.h>
+-
+-/*  ----------------------------------- Host OS */
+-#include <dspbridge/host_os.h>
+-
+-/*  ----------------------------------- DSP/BIOS Bridge */
+-#include <dspbridge/dbdefs.h>
+-
+-/*  ----------------------------------- This */
+-#include <dspbridge/uuidutil.h>
+-
+-static s32 uuid_hex_to_bin(char *buf, s32 len)
+-{
+-	s32 i;
+-	s32 result = 0;
+-	int value;
+-
+-	for (i = 0; i < len; i++) {
+-		value = hex_to_bin(*buf++);
+-		result *= 16;
+-		if (value > 0)
+-			result += value;
+-	}
+-
+-	return result;
+-}
+-
+-/*
+- *  ======== uuid_uuid_from_string ========
+- *  Purpose:
+- *      Converts a string to a struct dsp_uuid.
+- */
+-void uuid_uuid_from_string(char *sz_uuid, struct dsp_uuid *uuid_obj)
+-{
+-	s32 j;
+-
+-	uuid_obj->data1 = uuid_hex_to_bin(sz_uuid, 8);
+-	sz_uuid += 8;
+-
+-	/* Step over underscore */
+-	sz_uuid++;
+-
+-	uuid_obj->data2 = (u16) uuid_hex_to_bin(sz_uuid, 4);
+-	sz_uuid += 4;
+-
+-	/* Step over underscore */
+-	sz_uuid++;
+-
+-	uuid_obj->data3 = (u16) uuid_hex_to_bin(sz_uuid, 4);
+-	sz_uuid += 4;
+-
+-	/* Step over underscore */
+-	sz_uuid++;
+-
+-	uuid_obj->data4 = (u8) uuid_hex_to_bin(sz_uuid, 2);
+-	sz_uuid += 2;
+-
+-	uuid_obj->data5 = (u8) uuid_hex_to_bin(sz_uuid, 2);
+-	sz_uuid += 2;
+-
+-	/* Step over underscore */
+-	sz_uuid++;
+-
+-	for (j = 0; j < 6; j++) {
+-		uuid_obj->data6[j] = (u8) uuid_hex_to_bin(sz_uuid, 2);
+-		sz_uuid += 2;
+-	}
+-}
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/uuidutil.h b/drivers/staging/tidspbridge/include/dspbridge/uuidutil.h
+index 414bf71..b4951a1 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/uuidutil.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/uuidutil.h
+@@ -21,22 +21,4 @@
+ 
+ #define MAXUUIDLEN  37
+ 
+-/*
+- *  ======== uuid_uuid_from_string ========
+- *  Purpose:
+- *      Converts an ANSI string to a dsp_uuid.
+- *  Parameters:
+- *      sz_uuid:    Pointer to a string that represents a dsp_uuid object.
+- *      uuid_obj:      Pointer to a dsp_uuid object.
+- *  Returns:
+- *  Requires:
+- *      uuid_obj & sz_uuid are non-NULL values.
+- *  Ensures:
+- *  Details:
+- *      We assume the string representation of a UUID has the following format:
+- *      "12345678_1234_1234_1234_123456789abc".
+- */
+-extern void uuid_uuid_from_string(char *sz_uuid,
+-				  struct dsp_uuid *uuid_obj);
+-
+ #endif /* UUIDUTIL_ */
+diff --git a/drivers/staging/tidspbridge/rmgr/dbdcd.c b/drivers/staging/tidspbridge/rmgr/dbdcd.c
+index 3d2a26f..d640794 100644
+--- a/drivers/staging/tidspbridge/rmgr/dbdcd.c
++++ b/drivers/staging/tidspbridge/rmgr/dbdcd.c
+@@ -74,6 +74,40 @@ static int get_dep_lib_info(struct dcd_manager *hdcd_mgr,
+ 				   enum nldr_phase phase);
+ 
+ /*
++ *  ======== dcd_uuid_from_string ========
++ *  Purpose:
++ *      Converts an ANSI string to a dsp_uuid.
++ *  Parameters:
++ *      sz_uuid:    Pointer to a string that represents a dsp_uuid object.
++ *      uuid_obj:      Pointer to a dsp_uuid object.
++ *  Returns:
++ *  Requires:
++ *      uuid_obj & sz_uuid are non-NULL values.
++ *  Ensures:
++ *  Details:
++ *      We assume the string representation of a UUID has the following format:
++ *      "12345678_1234_1234_1234_123456789abc".
++ */
++static void dcd_uuid_from_string(char *sz_uuid, struct dsp_uuid *uuid_obj)
++{
++	char c;
++	u64 t;
++
++	/*
++	 * sscanf implementation cannot deal with hh format modifier
++	 * if the converted value doesn't fit in u32. So, convert the
++	 * last six bytes to u64 and memcpy what is needed
++	 */
++	sscanf(sz_uuid, "%8x%c%4hx%c%4hx%c%2hhx%2hhx%c%llx",
++	       &uuid_obj->data1, &c, &uuid_obj->data2, &c,
++	       &uuid_obj->data3, &c, &uuid_obj->data4,
++	       &uuid_obj->data5, &c, &t);
++
++	t = cpu_to_be64(t);
++	memcpy(&uuid_obj->data6[0], ((char*)&t) + 2, 6);
++}
++
++/*
+  *  ======== dcd_auto_register ========
+  *  Purpose:
+  *      Parses the supplied image and resigsters with DCD.
+@@ -253,7 +287,7 @@ int dcd_enumerate_object(s32 index, enum dsp_dcdobjtype obj_type,
+ 		if (!status) {
+ 			/* Create UUID value using string retrieved from
+ 			 * registry. */
+-			uuid_uuid_from_string(sz_value, &dsp_uuid_obj);
++			dcd_uuid_from_string(sz_value, &dsp_uuid_obj);
+ 
+ 			*uuid_obj = dsp_uuid_obj;
+ 
+@@ -581,7 +615,7 @@ int dcd_get_objects(struct dcd_manager *hdcd_mgr,
+ 		psz_cur = psz_coff_buf;
+ 		while ((token = strsep(&psz_cur, seps)) && *token != '\0') {
+ 			/*  Retrieve UUID string. */
+-			uuid_uuid_from_string(token, &dsp_uuid_obj);
++			dcd_uuid_from_string(token, &dsp_uuid_obj);
+ 
+ 			/*  Retrieve object type */
+ 			token = strsep(&psz_cur, seps);
+@@ -1001,7 +1035,7 @@ static int get_attrs_from_buf(char *psz_buf, u32 ul_buf_size,
+ 		token = strsep(&psz_cur, seps);
+ 
+ 		/* dsp_uuid ui_node_id */
+-		uuid_uuid_from_string(token,
++		dcd_uuid_from_string(token,
+ 				      &gen_obj->obj_data.node_obj.ndb_props.
+ 				      ui_node_id);
+ 		token = strsep(&psz_cur, seps);
+@@ -1400,7 +1434,7 @@ static int get_dep_lib_info(struct dcd_manager *hdcd_mgr,
+ 				break;
+ 			} else {
+ 				/* Retrieve UUID string. */
+-				uuid_uuid_from_string(token,
++				dcd_uuid_from_string(token,
+ 						      &(dep_lib_uuids
+ 							[dep_libs]));
+ 				/* Is this library persistent? */
+-- 
+1.5.6.1
 
-so that we can disable it if the two bv_page are not actually physical
-contiguous.
