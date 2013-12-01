@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894Ab3LALud (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 06:50:33 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:61862 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569Ab3LALub (ORCPT
+	id S1752394Ab3LAMKM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 07:10:12 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36136 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752351Ab3LAMKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 06:50:31 -0500
-Message-ID: <529B2283.7040808@gmail.com>
-Date: Sun, 01 Dec 2013 19:50:27 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Sun, 1 Dec 2013 07:10:08 -0500
+Date: Sun, 1 Dec 2013 13:10:06 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<ivo.g.dimitrov.75@gmail.com>
+Cc: Pali =?iso-8859-1?Q?Roh=E1?= <pali.rohar@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU?= <freemangordon@abv.bg>, sre@ring0.de,
+        omar.ramirez@copitl.com, tony@atomide.com, felipe.contreras@gmail.com,
+        s-anna@ti.com, nm@ti.com, ohad@wizery.com, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nico@ngolde.de
+Subject: Re: [patch] Staging: tidspbridge: make mmap root-only so it is not
+ a security problem
+Message-ID: <20131201121006.GA26072@amd.pavel.ucw.cz>
+References: <6662B6F95D1C4783A007CAC82A8DA641@ivogl>
+ <20131130220553.GA1901@kroah.com>
+ <20131130225822.GA26031@amd.pavel.ucw.cz>
+ <201312011041.40071@pali>
+ <1385891913.11457.2.camel@Nokia-N900>
 MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: Joe Perches <joe@perches.com>, "John W. Linville" <linville@tuxdriver.com>,
-        rkuo <rkuo@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, linux-wireless@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH] net: mac80211: tx.c: be sure of 'sdata->vif.type' must
- be NL80211_IFTYPE_AP when be in NL80211_IFTYPE_AP case
-References: <528AEFB7.4060301@gmail.com>   <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com>   <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com>   <52957ADA.2080704@gmail.com>   (sfid-20131127_055211_558798_A7DF5684) <1385739487.8656.1.camel@jlt4.sipsolutions.net>   <5299D306.7070701@gmail.com>   (sfid-20131130_125901_519610_EDA4068E) <1385816013.4327.1.camel@jlt4.sipsolutions.net>   <5299ED38.4090509@gmail.com> <5299EFDD.6060405@gmail.com>   (sfid-20131130_150205_984535_068F14A9) <1385842134.6108.4.camel@jlt4.sipsolutions.net>  <1385843940.2664.4.camel@joe-AO722> <529A7955.9010507@gmail.com>  (sfid-20131201_004838_825869_AF1FBAAC) <1385890647.4171.3.camel@jlt4.sipsolutions.net>
-In-Reply-To: <1385890647.4171.3.camel@jlt4.sipsolutions.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385891913.11457.2.camel@Nokia-N900>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2013 05:37 PM, Johannes Berg wrote:
-> On Sun, 2013-12-01 at 07:48 +0800, Chen Gang wrote:
-> 
->> If ieee80211_subif_start_xmit() is not performance sensitive (I guess
->> so), we can use some short static functions instead of some code blocks
->> within ieee80211_subif_start_xmit().
->>
->>  - ieee80211_subif_start_xmit() is a long function (600+ lines).
->>
->>  - use short static function can share some code.
->>
->>  - if code can be shared, the work flow can be more clearer too (don't
->>    need fall-through or goto).
-> 
-> Frankly, I'm getting tired of discussing this. Please don't try to
-> rewrite this code until you've understood it. You suggesting that
-> "start_xmit()" isn't a performance sensitive function makes me realize
-> you haven't even tried.
+Hi!
+
+> I can (and will) test whatever patches is needed. Also will try to get rid of uuid helpers and send a patch today.
 > 
 
-OK, thank you for "you are getting tired ...". Please help try when you
-have time.  :-)
+So ... here's patch that you can start from, and that may even work...
 
-No I didn't try -- so use 'if' and 'guess' for discussing.
+Thanks,
+									Pavel
 
-Hmm... if it is performance sensitive:
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
- - use static function instead of some code block and try to share them.
-   it adds additional instructions, but can shrink binary code size.
-   if the performance is acceptable, it is the best way to me.
+diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+index 1aa4a3f..a8e86cf 100644
+--- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
++++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+@@ -258,7 +258,17 @@ err:
+ /* This function maps kernel space memory to user space memory. */
+ static int bridge_mmap(struct file *filp, struct vm_area_struct *vma)
+ {
+-	u32 status;
++	int status;
++	struct omap_dsp_platform_data *pdata =
++	    omap_dspbridge_dev->dev.platform_data;
++	unsigned long start = vma->vm_pgoff << PAGE_SHIFT;
++		
++	if (start < pdata->phys_mempool_base)
++		return -EINVAL;
++
++	if (vma->vm_end - vma->vm_start + (start - pdata->phys_mempool_base) 
++	    > pdata->phys_mempool_size)
++		return -EINVAL;
+ 
+ 	/* VM_IO | VM_DONTEXPAND | VM_DONTDUMP are set by remap_pfn_range() */
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+@@ -271,10 +281,10 @@ static int bridge_mmap(struct file *filp, struct vm_area_struct *vma)
+ 	status = remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
+ 				 vma->vm_end - vma->vm_start,
+ 				 vma->vm_page_prot);
+-	if (status != 0)
+-		status = -EAGAIN;
++	if (status)
++		return -EAGAIN;
+ 
+-	return status;
++	return 0;
+ }
+ 
+ static const struct file_operations bridge_fops = {
 
- - else (1st way not acceptable), use macro instead of static function.
-   it expends binary code size, but can save some instructions.
-   if the performance is acceptable, it is the acceptable way to me.
 
- - If neither of static function nor macro are acceptable,
-   I still prefer to use 'goto' instead of 'fall-through'.
-   that can let all compilers feel well, and can not feel any strange.
-
-     normally, when prev case uses fall-through,
-     it need be sure of next case need not notice about it (prev case).
-     or it will make a little strange for readers when read next case.
-
-
-Welcome any suggestions or completions.
-
-Thanks.
 -- 
-Chen Gang
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
