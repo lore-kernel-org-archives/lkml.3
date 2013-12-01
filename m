@@ -1,85 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826Ab3LALaR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 06:30:17 -0500
-Received: from ring0.de ([91.143.88.219]:39352 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751447Ab3LALaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 06:30:14 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
-	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
-	*      for more information.
-	*      [URIs: lkml.org]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Sun, 1 Dec 2013 12:30:10 +0100
-From: Sebastian Reichel <sre@debian.org>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: hci_h4p from linux-n900 branch: fix with new bluetooth for
- 3.13-rc1
-Message-ID: <20131201113010.GA9213@earth.universe>
-Mail-Followup-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-	Pavel Machek <pavel@ucw.cz>,
-	kernel list <linux-kernel@vger.kernel.org>
-References: <20131127125149.GA9389@amd.pavel.ucw.cz>
- <201311271559.21855@pali>
- <20131201104839.GC7403@earth.universe>
- <201312011216.42192@pali>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="8t9RHnE3ZwKMSgU+"
-Content-Disposition: inline
-In-Reply-To: <201312011216.42192@pali>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751898Ab3LALax (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 06:30:53 -0500
+Received: from georges.telenet-ops.be ([195.130.137.68]:53230 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529Ab3LALau (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Dec 2013 06:30:50 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-m68k@vger.kernel.org
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH v3 2/2] m68k: Add support to export bootinfo in procfs
+Date: Sun,  1 Dec 2013 12:30:35 +0100
+Message-Id: <1385897435-18618-3-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1385897435-18618-1-git-send-email-geert@linux-m68k.org>
+References: <1385897435-18618-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add optional support to export the bootinfo used to boot the kernel in a
+"bootinfo" file in procfs.  This is useful with kexec.
 
---8t9RHnE3ZwKMSgU+
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is based on the similar feature for ATAGS on ARM.
 
-On Sun, Dec 01, 2013 at 12:16:42PM +0100, Pali Roh=E1r wrote:
-> On Sunday 01 December 2013 11:48:40 Sebastian Reichel wrote:
-> > While talking about the hci_h4p: What's the status of the
-> > mainline inclusion? I saw, that you sent it to
-> > linux-bluetooth guys some time ago.
->=20
-> Yes, but code needs to be changed... see that thread.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+v2:
+  - No changes
+v3:
+  - Rebased on top of current m68k tree
 
-I only saw the few small suggestions from [0]. That's
-why I was wondering about the status. Have there been
-more mails?
+ arch/m68k/Kconfig                |    7 ++++
+ arch/m68k/include/asm/bootinfo.h |   12 ++++++
+ arch/m68k/kernel/Makefile        |    1 +
+ arch/m68k/kernel/bootinfo_proc.c |   80 ++++++++++++++++++++++++++++++++++++++
+ arch/m68k/kernel/setup_mm.c      |    2 +
+ 5 files changed, 102 insertions(+)
+ create mode 100644 arch/m68k/kernel/bootinfo_proc.c
 
--- Sebastian
+diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
+index 178dffa9de80..dbdd2231c75d 100644
+--- a/arch/m68k/Kconfig
++++ b/arch/m68k/Kconfig
+@@ -104,6 +104,13 @@ config KEXEC
+ 	  interface is strongly in flux, so no good recommendation can be
+ 	  made.
+ 
++config BOOTINFO_PROC
++	bool "Export bootinfo in procfs"
++	depends on KEXEC && M68KCLASSIC
++	help
++	  Say Y to export the bootinfo used to boot the kernel in a
++	  "bootinfo" file in procfs.  This is useful with kexec.
++
+ menu "Platform setup"
+ 
+ source arch/m68k/Kconfig.cpu
+diff --git a/arch/m68k/include/asm/bootinfo.h b/arch/m68k/include/asm/bootinfo.h
+index 9edc31893fb8..8e213267f8e7 100644
+--- a/arch/m68k/include/asm/bootinfo.h
++++ b/arch/m68k/include/asm/bootinfo.h
+@@ -13,4 +13,16 @@
+ 
+ #include <uapi/asm/bootinfo.h>
+ 
++
++#ifndef __ASSEMBLY__
++
++#ifdef CONFIG_BOOTINFO_PROC
++extern void save_bootinfo(const struct bi_record *bi);
++#else
++static inline void save_bootinfo(const struct bi_record *bi) {}
++#endif
++
++#endif /* __ASSEMBLY__ */
++
++
+ #endif /* _M68K_BOOTINFO_H */
+diff --git a/arch/m68k/kernel/Makefile b/arch/m68k/kernel/Makefile
+index 7ee5f00a9abb..2d5d9be16273 100644
+--- a/arch/m68k/kernel/Makefile
++++ b/arch/m68k/kernel/Makefile
+@@ -23,4 +23,5 @@ obj-$(CONFIG_PCI) += pcibios.o
+ obj-$(CONFIG_HAS_DMA)	+= dma.o
+ 
+ obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel.o
++obj-$(CONFIG_BOOTINFO_PROC)	+= bootinfo_proc.o
+ 
+diff --git a/arch/m68k/kernel/bootinfo_proc.c b/arch/m68k/kernel/bootinfo_proc.c
+new file mode 100644
+index 000000000000..7ee853e1432b
+--- /dev/null
++++ b/arch/m68k/kernel/bootinfo_proc.c
+@@ -0,0 +1,80 @@
++/*
++ * Based on arch/arm/kernel/atags_proc.c
++ */
++
++#include <linux/fs.h>
++#include <linux/init.h>
++#include <linux/printk.h>
++#include <linux/proc_fs.h>
++#include <linux/slab.h>
++#include <linux/string.h>
++
++#include <asm/bootinfo.h>
++#include <asm/byteorder.h>
++
++
++static char bootinfo_tmp[1536] __initdata;
++
++static void *bootinfo_copy;
++static size_t bootinfo_size;
++
++static ssize_t bootinfo_read(struct file *file, char __user *buf,
++			  size_t count, loff_t *ppos)
++{
++	return simple_read_from_buffer(buf, count, ppos, bootinfo_copy,
++				       bootinfo_size);
++}
++
++static const struct file_operations bootinfo_fops = {
++	.read = bootinfo_read,
++	.llseek = default_llseek,
++};
++
++void __init save_bootinfo(const struct bi_record *bi)
++{
++	const void *start = bi;
++	size_t size = sizeof(bi->tag);
++
++	while (be16_to_cpu(bi->tag) != BI_LAST) {
++		uint16_t n = be16_to_cpu(bi->size);
++		size += n;
++		bi = (struct bi_record *)((unsigned long)bi + n);
++	}
++
++	if (size > sizeof(bootinfo_tmp)) {
++		pr_err("Cannot save %zu bytes of bootinfo\n", size);
++		return;
++	}
++
++	pr_info("Saving %zu bytes of bootinfo\n", size);
++	memcpy(bootinfo_tmp, start, size);
++	bootinfo_size = size;
++}
++
++static int __init init_bootinfo_procfs(void)
++{
++	/*
++	 * This cannot go into save_bootinfo() because kmalloc and proc don't
++	 * work yet when it is called.
++	 */
++	struct proc_dir_entry *pde;
++
++	if (!bootinfo_size)
++		return -EINVAL;
++
++	bootinfo_copy = kmalloc(bootinfo_size, GFP_KERNEL);
++	if (!bootinfo_copy)
++		return -ENOMEM;
++
++	memcpy(bootinfo_copy, bootinfo_tmp, bootinfo_size);
++
++	pde = proc_create_data("bootinfo", 0400, NULL, &bootinfo_fops, NULL);
++	if (!pde) {
++		kfree(bootinfo_copy);
++		return -ENOMEM;
++	}
++
++	return 0;
++}
++
++arch_initcall(init_bootinfo_procfs);
+diff --git a/arch/m68k/kernel/setup_mm.c b/arch/m68k/kernel/setup_mm.c
+index 28abca421974..5b8ec4d5f8e8 100644
+--- a/arch/m68k/kernel/setup_mm.c
++++ b/arch/m68k/kernel/setup_mm.c
+@@ -146,6 +146,8 @@ static void __init m68k_parse_bootinfo(const struct bi_record *record)
+ {
+ 	uint16_t tag;
+ 
++	save_bootinfo(record);
++
+ 	while ((tag = be16_to_cpu(record->tag)) != BI_LAST) {
+ 		int unknown = 0;
+ 		const void *data = record->data;
+-- 
+1.7.9.5
 
-[0] https://lkml.org/lkml/2013/10/24/375
-
---8t9RHnE3ZwKMSgU+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSmx3CAAoJENju1/PIO/qaoh4P/jV4T8EOvPM7xcngnYuGT8C1
-qnw2BOocwPur+n7Im4RgurJr89nRk5iFL6PDSCzRvgDAvBVk84k5FHJRYTaP4ZUQ
-EKF8erLpHDpnJVSzdUxG77AoVEHVflR3kK5voI4EKlby2yeVY4NYVRb9XzWASw35
-U9J/xXqRKMuqWKB/G48g7BBWKvIZcAde2MCa76AtF8ZHQfaDPby9gxVXkYfOKL8r
-wvGoqziBikuuBtDAVklTnsw24MirJIemS4eOHwcpiayKyVGzcuRMwT2oHDmwA+iV
-Q6bXjPi4YJQTrKtbj2RHGAADmw/SyF28BsowZeA/hvZJawBiLLjbZ7bvY5rp4Y83
-bQ23aNRDYj92EmUarITUpU9HAlE+Pxdvw+ysKe7AOSussTFWxqQhSSOuSUdUiH5T
-jXh/oggEVrXpSERHGyo1q9stIBh+cHH+IDT3tt3PqZCwk0ryG9bKhKX9FeIA+t1d
-Y5FUlyrRHyRxICfPoBSDIz8e57lfXU852WiUuvQd57/UqIukmnpjPOAEPp8/4ZlR
-CXtH3n+RFTmydCPr7TWpPgxmaOcst5vteliCXKXIVXqKS8m2J82NFkqhPfPySAaO
-DONBA6d7bsGsbtbCxfoJ4hMsvTqXmkYSjrYE7LFOjRFb82gzMT09tWp+df6GgBP+
-4xGzG+LXtaff/Uzh+4qZ
-=zKx1
------END PGP SIGNATURE-----
-
---8t9RHnE3ZwKMSgU+--
