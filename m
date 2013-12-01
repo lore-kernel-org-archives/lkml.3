@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779Ab3LAL0O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 06:26:14 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34863 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494Ab3LAL0M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 06:26:12 -0500
-Date: Sun, 1 Dec 2013 12:26:10 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        pali.rohar@gmail.com, sre@ring0.de, omar.ramirez@copitl.com,
-        tony@atomide.com, felipe.contreras@gmail.com, s-anna@ti.com, nm@ti.com,
-        ohad@wizery.com, stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nico@ngolde.de
-Subject: Re: [patch] Staging: tidspbridge: make mmap root-only so it is not
- a security problem
-Message-ID: <20131201112610.GA19791@amd.pavel.ucw.cz>
-References: <6662B6F95D1C4783A007CAC82A8DA641@ivogl>
- <20131130191931.GA5286@amd.pavel.ucw.cz>
- <20131130194935.GG5443@mwanda>
- <20131130204237.GA17912@amd.pavel.ucw.cz>
- <20131130220553.GA1901@kroah.com>
- <20131130225822.GA26031@amd.pavel.ucw.cz>
- <20131201034501.GA10803@kroah.com>
+	id S1751826Ab3LALaR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 06:30:17 -0500
+Received: from ring0.de ([91.143.88.219]:39352 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751447Ab3LALaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Dec 2013 06:30:14 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
+	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
+	*      for more information.
+	*      [URIs: lkml.org]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Sun, 1 Dec 2013 12:30:10 +0100
+From: Sebastian Reichel <sre@debian.org>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: hci_h4p from linux-n900 branch: fix with new bluetooth for
+ 3.13-rc1
+Message-ID: <20131201113010.GA9213@earth.universe>
+Mail-Followup-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+	Pavel Machek <pavel@ucw.cz>,
+	kernel list <linux-kernel@vger.kernel.org>
+References: <20131127125149.GA9389@amd.pavel.ucw.cz>
+ <201311271559.21855@pali>
+ <20131201104839.GC7403@earth.universe>
+ <201312011216.42192@pali>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="8t9RHnE3ZwKMSgU+"
 Content-Disposition: inline
-In-Reply-To: <20131201034501.GA10803@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201312011216.42192@pali>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
 
-On Sat 2013-11-30 19:45:01, Greg KH wrote:
-> On Sat, Nov 30, 2013 at 11:58:23PM +0100, Pavel Machek wrote:
-> > On Sat 2013-11-30 14:05:53, Greg KH wrote:
-> > > On Sat, Nov 30, 2013 at 09:42:37PM +0100, Pavel Machek wrote:
-> > > > 
-> > > > mmap in tidspbridge is missing range-checks. For now, make this
-> > > > interface root-only, so that it does not cause security problems.
-> > > 
-> > > Please fix this properly and don't paper over the real problem here.
-> > 
-> > Well, if the driver is left uncompilable, I'm pretty sure it will
-> > bitrot.
-> > 
-> > I do have the hardware, but I'm pretty sure current mailine does not
-> > have enough support to boot Maemo, so it is non trivial for me to test
-> > changes here.
-> > 
-> > And yes, I'd like to get N900 to better shape, but there's more urgent
-> > work to do there. Such as "make sure N900 still boots once omap moves away
-> > from device files".
-> > 
-> > [It seems like check should be that
-> > 
-> > vma->vm_pgoff << PAGE_SHIFT >= pdata->phys_mempool_base and 
-> > vma->vm_end - vma->vm_start + (vma->vm_pgoff << PAGE_SHIFT - pdata->phys_mempool_base) <= pdata->phys_mempool_size .
-> > 
-> > But... this is some kind of DSP coprocessor, and I am not sure if
-> > just exposing its address space to untrusted processes is good idea.
-> > 
-> > Heck, are you sure this is security problem in the first place? Yes,
-> > it is unchecked mmap. So what? If the device is 600 root.root, and if
-> > the DSP can take over main system, 
-> > 
-> >         if (!capable(CAP_SYS_RAWIO))
-> >                 return -EPERM;
-> 
-> Will that break userspace?  Who opens and mmaps this device?  If you
-> don't know if users do this, how can you say this patch isn't going to
-> break things just as much as not having the driver there at all?
+--8t9RHnE3ZwKMSgU+
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On maemo, /dev/DspBridge is mode 666. I tried looking up with fuser
-who might use it, but that one does not seem to work on maemo.
+On Sun, Dec 01, 2013 at 12:16:42PM +0100, Pali Roh=E1r wrote:
+> On Sunday 01 December 2013 11:48:40 Sebastian Reichel wrote:
+> > While talking about the hci_h4p: What's the status of the
+> > mainline inclusion? I saw, that you sent it to
+> > linux-bluetooth guys some time ago.
+>=20
+> Yes, but code needs to be changed... see that thread.
 
-So yes, this would "break" existing users... OTOH maemo does not work
-on mainline kernels, and never did. (Maemo is not open source).
+I only saw the few small suggestions from [0]. That's
+why I was wondering about the status. Have there been
+more mails?
 
-Anyway, tell me what you prefer. We seem to have chicken and egg
-problem here... I can create the patch but not test it.
+-- Sebastian
 
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+[0] https://lkml.org/lkml/2013/10/24/375
+
+--8t9RHnE3ZwKMSgU+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSmx3CAAoJENju1/PIO/qaoh4P/jV4T8EOvPM7xcngnYuGT8C1
+qnw2BOocwPur+n7Im4RgurJr89nRk5iFL6PDSCzRvgDAvBVk84k5FHJRYTaP4ZUQ
+EKF8erLpHDpnJVSzdUxG77AoVEHVflR3kK5voI4EKlby2yeVY4NYVRb9XzWASw35
+U9J/xXqRKMuqWKB/G48g7BBWKvIZcAde2MCa76AtF8ZHQfaDPby9gxVXkYfOKL8r
+wvGoqziBikuuBtDAVklTnsw24MirJIemS4eOHwcpiayKyVGzcuRMwT2oHDmwA+iV
+Q6bXjPi4YJQTrKtbj2RHGAADmw/SyF28BsowZeA/hvZJawBiLLjbZ7bvY5rp4Y83
+bQ23aNRDYj92EmUarITUpU9HAlE+Pxdvw+ysKe7AOSussTFWxqQhSSOuSUdUiH5T
+jXh/oggEVrXpSERHGyo1q9stIBh+cHH+IDT3tt3PqZCwk0ryG9bKhKX9FeIA+t1d
+Y5FUlyrRHyRxICfPoBSDIz8e57lfXU852WiUuvQd57/UqIukmnpjPOAEPp8/4ZlR
+CXtH3n+RFTmydCPr7TWpPgxmaOcst5vteliCXKXIVXqKS8m2J82NFkqhPfPySAaO
+DONBA6d7bsGsbtbCxfoJ4hMsvTqXmkYSjrYE7LFOjRFb82gzMT09tWp+df6GgBP+
+4xGzG+LXtaff/Uzh+4qZ
+=zKx1
+-----END PGP SIGNATURE-----
+
+--8t9RHnE3ZwKMSgU+--
