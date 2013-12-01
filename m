@@ -1,127 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751845Ab3LALPt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 06:15:49 -0500
-Received: from jacques.telenet-ops.be ([195.130.132.50]:47120 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807Ab3LALPp (ORCPT
+	id S1751887Ab3LALQs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 06:16:48 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:43851 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518Ab3LALQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 06:15:45 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-m68k@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH v2] m68k/amiga,atari: Fix specifying multiple debug= parameters
-Date: Sun,  1 Dec 2013 12:15:39 +0100
-Message-Id: <1385896539-18351-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 1 Dec 2013 06:16:45 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Sebastian Reichel <sre@debian.org>
+Subject: Re: hci_h4p from linux-n900 branch: fix with new bluetooth for 3.13-rc1
+Date: Sun, 1 Dec 2013 12:16:42 +0100
+User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.3; x86_64; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>
+References: <20131127125149.GA9389@amd.pavel.ucw.cz> <201311271559.21855@pali> <20131201104839.GC7403@earth.universe>
+In-Reply-To: <20131201104839.GC7403@earth.universe>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart1805477.DOBsUNFWPt";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312011216.42192@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit d6713b4091a99fa2af2fabdcd2f3fb97f32ecf2e ("m68k: early
-parameter support"), the user can specify multiple debug consoles using the
-"debug=" kernel command line parameter.
-However, as there's only a single struct console object, which is reused,
-it would actually register the same console object multiple times, causing
-the following warning:
+--nextPart1805477.DOBsUNFWPt
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-WARNING: CPU: 0 PID: 0 at kernel/printk/printk.c:2233 register_console+0x36/
-console 'debug0' already registered
+On Sunday 01 December 2013 11:48:40 Sebastian Reichel wrote:
+> Hi Pali,
+>=20
+> While talking about the hci_h4p: What's the status of the
+> mainline inclusion? I saw, that you sent it to
+> linux-bluetooth guys some time ago.
+>=20
+> -- Sebastian
 
-Make sure to register the console object only once, to avoid the warning.
+Yes, but code needs to be changed... see that thread.
 
-Note that still only one console (the one corresponding to the last
-"debug=" parameter) will be active at the same time, as the .write() method
-of the already registered console object is overwritten by a subsequent
-"debug=" parameter.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
-v2:
-  - Skip console registration in case of a non-NULL .write() method,
-    instead of using separate console objects,
-  - Add fix for Atari.
+--nextPart1805477.DOBsUNFWPt
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
- arch/m68k/amiga/config.c |   19 ++++++++++++++-----
- arch/m68k/atari/debug.c  |    5 ++++-
- 2 files changed, 18 insertions(+), 6 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-diff --git a/arch/m68k/amiga/config.c b/arch/m68k/amiga/config.c
-index c425fa6c2795..9625b7132227 100644
---- a/arch/m68k/amiga/config.c
-+++ b/arch/m68k/amiga/config.c
-@@ -620,6 +620,8 @@ static void amiga_mem_console_write(struct console *co, const char *s,
- 
- static int __init amiga_savekmsg_setup(char *arg)
- {
-+	bool registered;
-+
- 	if (!MACH_IS_AMIGA || strcmp(arg, "mem"))
- 		return 0;
- 
-@@ -636,8 +638,10 @@ static int __init amiga_savekmsg_setup(char *arg)
- 	savekmsg->magicptr = ZTWO_PADDR(savekmsg);
- 	savekmsg->size = 0;
- 
-+	registered = !!amiga_console_driver.write;
- 	amiga_console_driver.write = amiga_mem_console_write;
--	register_console(&amiga_console_driver);
-+	if (!registered)
-+		register_console(&amiga_console_driver);
- 	return 0;
- }
- 
-@@ -719,11 +723,16 @@ void amiga_serial_gets(struct console *co, char *s, int len)
- 
- static int __init amiga_debug_setup(char *arg)
- {
--	if (MACH_IS_AMIGA && !strcmp(arg, "ser")) {
--		/* no initialization required (?) */
--		amiga_console_driver.write = amiga_serial_console_write;
-+	bool registered;
-+
-+	if (!MACH_IS_AMIGA || strcmp(arg, "ser"))
-+		return 0;
-+
-+	/* no initialization required (?) */
-+	registered = !!amiga_console_driver.write;
-+	amiga_console_driver.write = amiga_serial_console_write;
-+	if (!registered)
- 		register_console(&amiga_console_driver);
--	}
- 	return 0;
- }
- 
-diff --git a/arch/m68k/atari/debug.c b/arch/m68k/atari/debug.c
-index a547ba9683d1..03cb5e08d7cf 100644
---- a/arch/m68k/atari/debug.c
-+++ b/arch/m68k/atari/debug.c
-@@ -287,6 +287,8 @@ static void __init atari_init_midi_port(int cflag)
- 
- static int __init atari_debug_setup(char *arg)
- {
-+	bool registered;
-+
- 	if (!MACH_IS_ATARI)
- 		return 0;
- 
-@@ -294,6 +296,7 @@ static int __init atari_debug_setup(char *arg)
- 		/* defaults to ser2 for a Falcon and ser1 otherwise */
- 		arg = MACH_IS_FALCON ? "ser2" : "ser1";
- 
-+	registered = !!atari_console_driver.write;
- 	if (!strcmp(arg, "ser1")) {
- 		/* ST-MFP Modem1 serial port */
- 		atari_init_mfp_port(B9600|CS8);
-@@ -317,7 +320,7 @@ static int __init atari_debug_setup(char *arg)
- 		sound_ym.wd_data = sound_ym.rd_data_reg_sel | 0x20; /* strobe H */
- 		atari_console_driver.write = atari_par_console_write;
- 	}
--	if (atari_console_driver.write)
-+	if (atari_console_driver.write && !registered)
- 		register_console(&atari_console_driver);
- 
- 	return 0;
--- 
-1.7.9.5
+iEYEABECAAYFAlKbGpoACgkQi/DJPQPkQ1KzKACfanZxsVOS3K3pDM5phn1X42OX
+hGUAoIvNkjdFlKYDFpbpQVDkntTYqdTt
+=CaTZ
+-----END PGP SIGNATURE-----
 
+--nextPart1805477.DOBsUNFWPt--
