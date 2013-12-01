@@ -1,63 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141Ab3LAP7s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 10:59:48 -0500
-Received: from mail.kmu-office.ch ([178.209.48.102]:52475 "EHLO
+	id S1752029Ab3LAP7q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 10:59:46 -0500
+Received: from mail.kmu-office.ch ([178.209.48.102]:52471 "EHLO
 	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801Ab3LAP7j (ORCPT
+	with ESMTP id S1751728Ab3LAP7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 10:59:39 -0500
+	Sun, 1 Dec 2013 10:59:38 -0500
 From: Stefan Agner <stefan@agner.ch>
 To: swarren@wwwdotorg.org, thierry.reding@gmail.com, dev@lynxeye.de,
         lee.jones@linaro.org, lgirdwood@gmail.com, broonie@kernel.org
 Cc: kai.poggensee@avionic-design.de, sameo@linux.intel.com,
         linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, Stefan Agner <stefan@agner.ch>
-Subject: [PATCH v2 0/3] regulator: tps6586x: add version detection and voltage tables
-Date: Sun,  1 Dec 2013 16:59:12 +0100
-Message-Id: <cover.1385913227.git.stefan@agner.ch>
+Subject: [PATCH v2 3/3] ARM: tegra: correct Colibri T20 regulator settings
+Date: Sun,  1 Dec 2013 16:59:15 +0100
+Message-Id: <45a6c86d41a3373e0ca72cc78cafa92732b883b3.1385913228.git.stefan@agner.ch>
 X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <cover.1385913227.git.stefan@agner.ch>
+References: <cover.1385913227.git.stefan@agner.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-regulator: tps6586x: add version detection and voltage tables
+Set the parent of the regulators LDO2 to LDO9 according to the
+schematic. Set the base voltage to 3.3V, there is only 3.3V on the
+module itself.
 
-This is the 2nd version of this patchset which adds version detection
-for the tps6586x mfd family. This is required because some regulator
-versions use different voltage tables. The regulator driver now uses
-the right voltage table according to the version. Is it still posible
-to see this patch in v3.13?
+Set the Core and CPU voltage to the specified voltages of 1.2V and
+1.0V respectivly.
 
-While at it, there are a few other incorrect regulator entries in the
-device tree, change them accordingly (this patch is new and grew out
-of a patch with the same name which Lucas Stach posted in July).
+LDO6 should deliver 2.85V. The attached peripherals were not in
+use so far.
 
-Tested on Colibri T20 V1.1 and V1.2 which makes use of diffent version
-of that regulator.
+Signed-off-by: Stefan Agner <stefan@agner.ch>
+---
+ arch/arm/boot/dts/tegra20-colibri-512.dtsi | 30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
 
-Changes since v1:
-  - Merged DT and driver change (preserves bisectability)
-  - Use different regulator tables for different regulator version
-    * This also makes the TPS6586X_ANY version needless
-  - Replaced enum with defines
-  - Move version message in a sperate function
-  - Include regulator bugfix, use correct supply voltage
-  - Checked all voltages, fix SM0/SM1 (Core/CPU) and LDO6 voltage (VDAC/VI)
-    in another commit
-  - Rebased on top of v3.13-rc2
-
-Stefan Agner (3):
-  mfd: tps6586x: add version detection
-  regulator: tps6586x: add and use correct voltage table
-  ARM: tegra: correct Colibri T20 regulator settings
-
- arch/arm/boot/dts/tegra20-colibri-512.dtsi | 34 ++++++------
- drivers/mfd/tps6586x.c                     | 47 +++++++++++++---
- drivers/regulator/tps6586x-regulator.c     | 89 +++++++++++++++++++++++-------
- include/linux/mfd/tps6586x.h               |  7 +++
- 4 files changed, 132 insertions(+), 45 deletions(-)
-
+diff --git a/arch/arm/boot/dts/tegra20-colibri-512.dtsi b/arch/arm/boot/dts/tegra20-colibri-512.dtsi
+index cbe89ff..51e0880 100644
+--- a/arch/arm/boot/dts/tegra20-colibri-512.dtsi
++++ b/arch/arm/boot/dts/tegra20-colibri-512.dtsi
+@@ -225,15 +225,15 @@
+ 			#gpio-cells = <2>;
+ 			gpio-controller;
+ 
+-			sys-supply = <&vdd_5v0_reg>;
++			sys-supply = <&vdd_3v3_reg>;
+ 			vin-sm0-supply = <&sys_reg>;
+ 			vin-sm1-supply = <&sys_reg>;
+ 			vin-sm2-supply = <&sys_reg>;
+ 			vinldo01-supply = <&sm2_reg>;
+-			vinldo23-supply = <&sm2_reg>;
+-			vinldo4-supply = <&sm2_reg>;
+-			vinldo678-supply = <&sm2_reg>;
+-			vinldo9-supply = <&sm2_reg>;
++			vinldo23-supply = <&vdd_3v3_reg>;
++			vinldo4-supply = <&vdd_3v3_reg>;
++			vinldo678-supply = <&vdd_3v3_reg>;
++			vinldo9-supply = <&vdd_3v3_reg>;
+ 
+ 			regulators {
+ 				#address-cells = <1>;
+@@ -250,8 +250,8 @@
+ 					reg = <1>;
+ 					regulator-compatible = "sm0";
+ 					regulator-name = "vdd_sm0,vdd_core";
+-					regulator-min-microvolt = <1275000>;
+-					regulator-max-microvolt = <1275000>;
++					regulator-min-microvolt = <1200000>;
++					regulator-max-microvolt = <1200000>;
+ 					regulator-always-on;
+ 				};
+ 
+@@ -259,8 +259,8 @@
+ 					reg = <2>;
+ 					regulator-compatible = "sm1";
+ 					regulator-name = "vdd_sm1,vdd_cpu";
+-					regulator-min-microvolt = <1100000>;
+-					regulator-max-microvolt = <1100000>;
++					regulator-min-microvolt = <1000000>;
++					regulator-max-microvolt = <1000000>;
+ 					regulator-always-on;
+ 				};
+ 
+@@ -316,8 +316,8 @@
+ 					reg = <10>;
+ 					regulator-compatible = "ldo6";
+ 					regulator-name = "vdd_ldo6,avdd_vdac,vddio_vi,vddio_cam";
+-					regulator-min-microvolt = <1800000>;
+-					regulator-max-microvolt = <1800000>;
++					regulator-min-microvolt = <2850000>;
++					regulator-max-microvolt = <2850000>;
+ 				};
+ 
+ 				hdmi_vdd_reg: regulator@11 {
+@@ -504,12 +504,12 @@
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 
+-		vdd_5v0_reg: regulator@100 {
++		vdd_3v3_reg: regulator@100 {
+ 			compatible = "regulator-fixed";
+ 			reg = <100>;
+-			regulator-name = "vdd_5v0";
+-			regulator-min-microvolt = <5000000>;
+-			regulator-max-microvolt = <5000000>;
++			regulator-name = "vdd_3v3";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
+ 			regulator-always-on;
+ 		};
+ 
 -- 
 1.8.4.2
 
