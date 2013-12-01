@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424Ab3LAX5N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 18:57:13 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:29405 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752391Ab3LAX5L (ORCPT
+	id S1752481Ab3LAX5c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 18:57:32 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:14230 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752456Ab3LAX5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 18:57:11 -0500
-X-AuditID: cbfee68f-b7f336d00000481b-50-529bccd5148a
+	Sun, 1 Dec 2013 18:57:31 -0500
+X-AuditID: cbfee691-b7f666d0000048b0-30-529bcce51d8e
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <000001ceeef0$d88a7f40$899f7dc0$%han@samsung.com>
 In-reply-to: <000001ceeef0$d88a7f40$899f7dc0$%han@samsung.com>
-Subject: [PATCH 4/8] backlight: ot200_bl: use devm_backlight_device_register()
-Date: Mon, 02 Dec 2013 08:57:09 +0900
-Message-id: <000301ceeef1$0c17d2e0$244778a0$%han@samsung.com>
+Subject: [PATCH 5/8] backlight: tosa: use devm_backlight_device_register()
+Date: Mon, 02 Dec 2013 08:57:24 +0900
+Message-id: <000401ceeef1$1511cc20$3f356460$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7u8NgcVnqPK6OFQjq+Xy+HsAignwAACZfg
+Thread-index: Ac7u8NgcVnqPK6OFQjq+Xy+HsAignwAADJPQ
 Content-language: ko
-x-cr-hashedpuzzle: A8tL C1bl EpYb FOv3 HrXy Hscc Mn8K QlEs TYJd YmEV Y3ad Z5N4
- dH+O dIRw dZ4e
- f7M4;3;YQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGoAZwAxAC4AaABhAG4AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnAA==;Sosha1_v1;7;{B8146538-4784-4931-8C0A-FB849F207FE1};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Sun,
- 01 Dec 2013 23:57:04
- GMT;WwBQAEEAVABDAEgAIAA0AC8AOABdACAAYgBhAGMAawBsAGkAZwBoAHQAOgAgAG8AdAAyADAAMABfAGIAbAA6ACAAdQBzAGUAIABkAGUAdgBtAF8AYgBhAGMAawBsAGkAZwBoAHQAXwBkAGUAdgBpAGMAZQBfAHIAZQBnAGkAcwB0AGUAcgAoACkA
-x-cr-puzzleid: {B8146538-4784-4931-8C0A-FB849F207FE1}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJIsWRmVeSWpSXmKPExsVy+t8zA92rZ2YHGbzfYWMxZ/0aNovLCy+x
-	WlzeNYfNgdnjxIzfLB59W1YxenzeJBfAHMVlk5Kak1mWWqRvl8CVsWPxQpaC/VwV274cZ2pg
-	/MrRxcjJISFgIjF7zkI2CFtM4sK99UA2F4eQwDJGiWUrFrDAFO3/9p4VIjGdUWJ/YzsLhPOL
-	UWL1wmZGkCo2ATWJL18Os3cxcnCICOhLtLVogJjMAi4SR6eJgFQICdhKbHh0ngnE5hSwk5hw
-	8w+YLSzgJ3Fw2kJWkHIWAVWJRSeTQMK8QOUTWk4zQ9iCEj8m3wM7h1lAS2L9zuNMELa8xOY1
-	b5lBWiUE1CUe/dWF2G8k0ffBDKJCRGLfi3eMIPdKCHxhkZh6ajcjxFemEsePfWOHSNxil/h3
-	ZgHYLhYBAYlvkw+xQMyUldh0gBmiXlLi4IobLBMYpWYhuWgWkotmIbloFpLdCxhZVjGKphYk
-	FxQnpRcZ6xUn5haX5qXrJefnbmKERGv/Dsa7B6wPMSYDrZ/ILCWanA+M9rySeENjMyMLUxNT
-	YyNzSzPShJXEee8/TAoSEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwCiRxNly+98OrXUT+y/t
-	uqV6ff6X8K8Ofr7OJaFl9yfJlLNKbm/Ky71xLO2p1zu7N9GnprQv+jvnb475luhwx7AJj5er
-	79bbJGz0dAb3psN/90xcFSNi1nNzw8PUNUdPnuuol+D6uNXJKrhgppTtwi3f2Rcp9m3pk8pp
-	/6btMe/UNfblu53m1rQosRRnJBpqMRcVJwIADFGeaewCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGKsWRmVeSWpSXmKPExsVy+t9jQd2rZ2YHGTz4ZGExZ/0aNovLCy+x
-	WlzeNYfNgdnjxIzfLB59W1YxenzeJBfAHNXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZg
-	qGtoaWGupJCXmJtqq+TiE6DrlpkDtElJoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyP
-	kQEaSFjHmLFj8UKWgv1cFdu+HGdqYPzK0cXIySEhYCKx/9t7VghbTOLCvfVsXYxcHEIC0xkl
-	9je2s0A4vxglVi9sZgSpYhNQk/jy5TB7FyMHh4iAvkRbiwaIySzgInF0mghIhZCArcSGR+eZ
-	QGxOATuJCTf/gNnCAn4SB6ctZAUpZxFQlVh0MgkkzAtUPqHlNDOELSjxY/I9FhCbWUBLYv3O
-	40wQtrzE5jVvmUFaJQTUJR791YXYbyTR98EMokJEYt+Ld4wg90oIfGGRmHpqNyPEV6YSx499
-	Y5/AKDILyYZZSDbMQrJhFpJZCxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEp4Jn0jsY
-	VzVYHGIU4GBU4uG9cGJ2kBBrYllxZe4hRgkOZiURXouvs4KEeFMSK6tSi/Lji0pzUosPMSYD
-	/T+RWUo0OR+YpvJK4g2NTcyMLI3MLIxMzM1JE1YS5z3Yah0oJJCeWJKanZpakFoEs4WJg1Oq
-	gbEvcmXQh7Y7LO2rNxp/NfL94s2+/alb8Hv7Sul85Zv26neV+rZXLldKigm7LLUjR2HnS569
-	KZ23Viyc6pDAuf1i7/rytBk/8zMTEmZ5/SzXevD6zQxeEbvS79eb38g8V13wS+XTxcRfCWGa
-	4qZFyrL60xMWc0ucVDc+WfVX5va7tnNa3WH8f5VYijMSDbWYi4oTAa0uBPlJAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zQ92nZ2YHGew/xWwxZ/0aNovLCy+x
+	WlzeNYfNgdnjxIzfLB59W1YxenzeJBfAHMVlk5Kak1mWWqRvl8CV8X4LW0EfZ8XMpScYGxiP
+	sncxcnBICJhIzFqd1cXICWSKSVy4t56ti5GLQ0hgGaPE3IePmSASJhL3H/9jBbGFBBYxSrx6
+	agBR9ItR4srMHrAiNgE1iS9fDoMNFRHQl2hr0QAxmQVcJI5OE4FotZXY8Og8WDWngJ3EhJt/
+	wGxhAS+JO22X2UFsFgFVibVLrjGD2LxA9Xd/zWCFsAUlfky+xwJiMwtoSazfeZwJwpaX2Lzm
+	LTPEK+oSj/7qgoRFBIwkti3YwAxRIiKx78U7RpCLJQT2sUv0nv3BBrFLQOLb5EMsEL2yEpsO
+	MEN8KylxcMUNlgmMErOQbJ6FZPMsJJtnIVmxgJFlFaNoakFyQXFSepGpXnFibnFpXrpecn7u
+	JkZI5E3cwXj/gPUhxmSg9ROZpUST84GRm1cSb2hsZmRhamJqbGRuaUaasJI4b/qjpCAhgfTE
+	ktTs1NSC1KL4otKc1OJDjEwcnFINjHkleuFm7oHHM2zXmZg8s3r8Yqn07r4bfAExC9/H/lQW
+	Lim7XzwtXY5L/uWjFd/7zfW8O4yzBawvvVwqd8E8+N7fmk1ZoX9fO8fk1HoorxERDFycyjpf
+	Jf8z19SZhwQ/P034f9GaJychiz/zyar12rb7P/x89mMb1xyD/f1Grwt9P3vLbGexV2Ipzkg0
+	1GIuKk4EAKoDfyLSAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDKsWRmVeSWpSXmKPExsVy+t9jAd2nZ2YHGSyWs5izfg2bxeWFl1gt
+	Lu+aw+bA7HFixm8Wj74tqxg9Pm+SC2COamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDU
+	NbS0MFdSyEvMTbVVcvEJ0HXLzAFapKRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfI
+	AA0krGPMeL+FraCPs2Lm0hOMDYxH2bsYOTkkBEwk7j/+xwphi0lcuLeeDcQWEljEKPHqqUEX
+	IxeQ/YtR4srMHiaQBJuAmsSXL4eBmjk4RAT0JdpaNEBMZgEXiaPTRCBabSU2PDoPVs0pYCcx
+	4eYfMFtYwEviTttlsLUsAqoSa5dcYwaxeYHq7/6awQphC0r8mHyPBcRmFtCSWL/zOBOELS+x
+	ec1bZpBVEgLqEo/+6oKERQSMJLYt2MAMUSIise/FO8YJjEKzkEyahWTSLCSTZiFpWcDIsopR
+	NLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOK6fSe1gXNlgcYhRgINRiYe34tjsICHWxLLiytxD
+	jBIczEoivBZfZwUJ8aYkVlalFuXHF5XmpBYfYkwGenQis5Rocj4w5eSVxBsam5gZWRqZWRiZ
+	mJuTJqwkznug1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA+M03tuXEtUP3TLP0D5hffDhp0ux8gmW
+	Jet+Hu/LCdgakbbVNKPwubp7/TbvzYnH0mxYI0Md7T60bN+kpWGvdTQm94WDer3FpmuTfIQ2
+	LN5RKPE59LnHxAkKTddKTlSnzHj+Z4vHNnXFnSK/c6oWH8+8tplLLfbay8RLr9sF5/4IiVKt
+	zdby7FViKc5INNRiLipOBABXry0qLwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -64,36 +58,35 @@ Use devm_backlight_device_register() to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/ot200_bl.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ drivers/video/backlight/tosa_bl.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/video/backlight/ot200_bl.c b/drivers/video/backlight/ot200_bl.c
-index fdbb6ee..f5a5202 100644
---- a/drivers/video/backlight/ot200_bl.c
-+++ b/drivers/video/backlight/ot200_bl.c
-@@ -118,8 +118,9 @@ static int ot200_backlight_probe(struct platform_device *pdev)
- 	props.brightness = 100;
+diff --git a/drivers/video/backlight/tosa_bl.c b/drivers/video/backlight/tosa_bl.c
+index b8db933..3ad6765 100644
+--- a/drivers/video/backlight/tosa_bl.c
++++ b/drivers/video/backlight/tosa_bl.c
+@@ -105,8 +105,9 @@ static int tosa_bl_probe(struct i2c_client *client,
+ 	memset(&props, 0, sizeof(struct backlight_properties));
  	props.type = BACKLIGHT_RAW;
- 
--	bl = backlight_device_register(dev_name(&pdev->dev), &pdev->dev, data,
--					&ot200_backlight_ops, &props);
-+	bl = devm_backlight_device_register(&pdev->dev, dev_name(&pdev->dev),
-+					&pdev->dev, data, &ot200_backlight_ops,
-+					&props);
- 	if (IS_ERR(bl)) {
- 		dev_err(&pdev->dev, "failed to register backlight\n");
- 		retval = PTR_ERR(bl);
-@@ -137,10 +138,6 @@ error_devm_kzalloc:
- 
- static int ot200_backlight_remove(struct platform_device *pdev)
+ 	props.max_brightness = 512 - 1;
+-	data->bl = backlight_device_register("tosa-bl", &client->dev, data,
+-					     &bl_ops, &props);
++	data->bl = devm_backlight_device_register(&client->dev, "tosa-bl",
++						&client->dev, data, &bl_ops,
++						&props);
+ 	if (IS_ERR(data->bl)) {
+ 		ret = PTR_ERR(data->bl);
+ 		goto err_reg;
+@@ -128,9 +129,7 @@ static int tosa_bl_remove(struct i2c_client *client)
  {
--	struct backlight_device *bl = platform_get_drvdata(pdev);
+ 	struct tosa_bl_data *data = i2c_get_clientdata(client);
+ 
+-	backlight_device_unregister(data->bl);
+ 	data->bl = NULL;
 -
--	backlight_device_unregister(bl);
--
- 	/* on module unload set brightness to 100% */
- 	cs5535_mfgpt_write(pwm_timer, MFGPT_REG_COUNTER, 0);
- 	cs5535_mfgpt_write(pwm_timer, MFGPT_REG_SETUP, MFGPT_SETUP_CNTEN);
+ 	return 0;
+ }
+ 
 -- 
 1.7.10.4
 
