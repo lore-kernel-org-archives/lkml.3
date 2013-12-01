@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872Ab3LAWMF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 17:12:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4937 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751063Ab3LAWMC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 17:12:02 -0500
-Date: Mon, 2 Dec 2013 00:15:01 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] include/linux/kernel.h: Make might_fault to be a nop for
- !MMU
-Message-ID: <20131201221501.GE5998@redhat.com>
-References: <1385710934.11444.2.camel@phoenix>
+	id S1752001Ab3LAW0M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 17:26:12 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:53226 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063Ab3LAW0H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Dec 2013 17:26:07 -0500
+Date: Sun, 1 Dec 2013 14:20:58 -0800
+From: Anton Vorontsov <anton@enomsg.org>
+To: "Tc, Jenny" <jenny.tc@intel.com>
+Cc: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "freemangordon@abv.bg" <freemangordon@abv.bg>,
+        "aaro.koskinen@iki.fi" <aaro.koskinen@iki.fi>,
+        "pavel@ucw.cz" <pavel@ucw.cz>
+Subject: Re: [PATCH v2 1/3] power_supply: Add power_supply notifier
+Message-ID: <20131201222057.GA22142@lizard>
+References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
+ <1384856285-19593-1-git-send-email-pali.rohar@gmail.com>
+ <1384856285-19593-2-git-send-email-pali.rohar@gmail.com>
+ <20ADAB092842284E95860F279283C5640AAF43B1@BGSMSX104.gar.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1385710934.11444.2.camel@phoenix>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20ADAB092842284E95860F279283C5640AAF43B1@BGSMSX104.gar.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 29, 2013 at 03:42:14PM +0800, Axel Lin wrote:
-> No fault if !MUU, thus make might_fault to be a nop for !MMU.
+On Wed, Nov 27, 2013 at 05:23:34PM +0000, Tc, Jenny wrote:
 > 
-> This fixes below build error if
-> !CONFIG_MMU && (CONFIG_PROVE_LOCKING=y || CONFIG_DEBUG_ATOMIC_SLEEP=y):
+> > Subject: [PATCH v2 1/3] power_supply: Add power_supply notifier
+> > 
+> > This patch adds a notifier chain to the power_supply.
+> > This notifier helps drivers in other subsystem to listen to changes in power supply
+> > subsystem. This would help to take some actions in those drivers on changing the power
+> > supply properties.
+> > One such scenario is to increase/decrease system performance based on the battery
+> > capacity/voltage. Another scenario is to adjust the h/w peak current detection
+> > voltage/current thresholds based on battery voltage/capacity. The notifier helps drivers to
+> > listen to changes in power_suppy susbystem without polling the power_supply properties
+> > 
+> > Signed-off-by: Jenny TC <jenny.tc@intel.com>
+> > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+> > ---
 > 
-> arch/arm/kernel/built-in.o: In function `arch_ptrace':
-> arch/arm/kernel/ptrace.c:852: undefined reference to `might_fault'
-> arch/arm/kernel/built-in.o: In function `restore_sigframe':
-> arch/arm/kernel/signal.c:173: undefined reference to `might_fault'
-> arch/arm/kernel/signal.c:174: undefined reference to `might_fault'
-> arch/arm/kernel/signal.c:175: undefined reference to `might_fault'
-> arch/arm/kernel/signal.c:176: undefined reference to `might_fault'
-> arch/arm/kernel/built-in.o:arch/arm/kernel/signal.c:177: more undefined references to `might_fault' follow
-> make: *** [vmlinux] Error 1
-> 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
+> Acked-by: Jenny TC <jenny.tc@intel.com>
 
-Makes sense. FWIW
+Applied, thanks a lot!
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-
-> ---
->  include/linux/kernel.h | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index 2ac0277..8b0ad48 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -193,7 +193,8 @@ extern int _cond_resched(void);
->  		(__x < 0) ? -__x : __x;		\
->  	})
->  
-> -#if defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP)
-> +#if defined(CONFIG_MMU) && \
-> +	(defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP))
->  void might_fault(void);
->  #else
->  static inline void might_fault(void) { }
-> -- 
-> 1.8.1.2
-> 
-> 
+Anton
