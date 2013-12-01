@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab3LALQs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 06:16:48 -0500
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:43851 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518Ab3LALQp (ORCPT
+	id S1751779Ab3LAL0O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 06:26:14 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34863 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494Ab3LAL0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 06:16:45 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Sebastian Reichel <sre@debian.org>
-Subject: Re: hci_h4p from linux-n900 branch: fix with new bluetooth for 3.13-rc1
-Date: Sun, 1 Dec 2013 12:16:42 +0100
-User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.3; x86_64; ; )
-Cc: Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>
-References: <20131127125149.GA9389@amd.pavel.ucw.cz> <201311271559.21855@pali> <20131201104839.GC7403@earth.universe>
-In-Reply-To: <20131201104839.GC7403@earth.universe>
+	Sun, 1 Dec 2013 06:26:12 -0500
+Date: Sun, 1 Dec 2013 12:26:10 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        pali.rohar@gmail.com, sre@ring0.de, omar.ramirez@copitl.com,
+        tony@atomide.com, felipe.contreras@gmail.com, s-anna@ti.com, nm@ti.com,
+        ohad@wizery.com, stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nico@ngolde.de
+Subject: Re: [patch] Staging: tidspbridge: make mmap root-only so it is not
+ a security problem
+Message-ID: <20131201112610.GA19791@amd.pavel.ucw.cz>
+References: <6662B6F95D1C4783A007CAC82A8DA641@ivogl>
+ <20131130191931.GA5286@amd.pavel.ucw.cz>
+ <20131130194935.GG5443@mwanda>
+ <20131130204237.GA17912@amd.pavel.ucw.cz>
+ <20131130220553.GA1901@kroah.com>
+ <20131130225822.GA26031@amd.pavel.ucw.cz>
+ <20131201034501.GA10803@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1805477.DOBsUNFWPt";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312011216.42192@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131201034501.GA10803@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1805477.DOBsUNFWPt
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Hi!
 
-On Sunday 01 December 2013 11:48:40 Sebastian Reichel wrote:
-> Hi Pali,
->=20
-> While talking about the hci_h4p: What's the status of the
-> mainline inclusion? I saw, that you sent it to
-> linux-bluetooth guys some time ago.
->=20
-> -- Sebastian
+On Sat 2013-11-30 19:45:01, Greg KH wrote:
+> On Sat, Nov 30, 2013 at 11:58:23PM +0100, Pavel Machek wrote:
+> > On Sat 2013-11-30 14:05:53, Greg KH wrote:
+> > > On Sat, Nov 30, 2013 at 09:42:37PM +0100, Pavel Machek wrote:
+> > > > 
+> > > > mmap in tidspbridge is missing range-checks. For now, make this
+> > > > interface root-only, so that it does not cause security problems.
+> > > 
+> > > Please fix this properly and don't paper over the real problem here.
+> > 
+> > Well, if the driver is left uncompilable, I'm pretty sure it will
+> > bitrot.
+> > 
+> > I do have the hardware, but I'm pretty sure current mailine does not
+> > have enough support to boot Maemo, so it is non trivial for me to test
+> > changes here.
+> > 
+> > And yes, I'd like to get N900 to better shape, but there's more urgent
+> > work to do there. Such as "make sure N900 still boots once omap moves away
+> > from device files".
+> > 
+> > [It seems like check should be that
+> > 
+> > vma->vm_pgoff << PAGE_SHIFT >= pdata->phys_mempool_base and 
+> > vma->vm_end - vma->vm_start + (vma->vm_pgoff << PAGE_SHIFT - pdata->phys_mempool_base) <= pdata->phys_mempool_size .
+> > 
+> > But... this is some kind of DSP coprocessor, and I am not sure if
+> > just exposing its address space to untrusted processes is good idea.
+> > 
+> > Heck, are you sure this is security problem in the first place? Yes,
+> > it is unchecked mmap. So what? If the device is 600 root.root, and if
+> > the DSP can take over main system, 
+> > 
+> >         if (!capable(CAP_SYS_RAWIO))
+> >                 return -EPERM;
+> 
+> Will that break userspace?  Who opens and mmaps this device?  If you
+> don't know if users do this, how can you say this patch isn't going to
+> break things just as much as not having the driver there at all?
 
-Yes, but code needs to be changed... see that thread.
+On maemo, /dev/DspBridge is mode 666. I tried looking up with fuser
+who might use it, but that one does not seem to work on maemo.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+So yes, this would "break" existing users... OTOH maemo does not work
+on mainline kernels, and never did. (Maemo is not open source).
 
---nextPart1805477.DOBsUNFWPt
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+Anyway, tell me what you prefer. We seem to have chicken and egg
+problem here... I can create the patch but not test it.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlKbGpoACgkQi/DJPQPkQ1KzKACfanZxsVOS3K3pDM5phn1X42OX
-hGUAoIvNkjdFlKYDFpbpQVDkntTYqdTt
-=CaTZ
------END PGP SIGNATURE-----
-
---nextPart1805477.DOBsUNFWPt--
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
