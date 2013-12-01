@@ -1,157 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103Ab3LASYc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 13:24:32 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:54198 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751635Ab3LASY3 (ORCPT
+	id S1752114Ab3LAS40 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 13:56:26 -0500
+Received: from mail-we0-f175.google.com ([74.125.82.175]:45274 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751838Ab3LAS4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 13:24:29 -0500
-Date: Sun, 1 Dec 2013 19:23:55 +0100
-From: Vladimir Murzin <murzin.v@gmail.com>
-To: Jianyu Zhan <nasa4836@gmail.com>
-Cc: akpm@linux-foundation.org, iamjoonsoo.kim@lge.com,
-        zhangyanfei@cn.fujitsu.com, rientjes@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]mm/vmalloc: interchage the implementation of
- vmalloc_to_{pfn,page}
-Message-ID: <20131201182349.GA1847@hp530>
-References: <20131128181114.GA5154@lcx>
+	Sun, 1 Dec 2013 13:56:20 -0500
+Message-ID: <529B864F.3000206@gmail.com>
+Date: Sun, 01 Dec 2013 19:56:15 +0100
+From: Xose Vazquez Perez <xose.vazquez@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
-Content-Disposition: inline
-In-Reply-To: <20131128181114.GA5154@lcx>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Fix Free Software Foundation address in file headers
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 29, 2013 at 02:11:14AM +0800, Jianyu Zhan wrote:
-> 
-> Hi, Vladimir,
-> 
-> On Fri, Nov 29, 2013 at 1:41 AM, Vladimir Murzin <murzin.v@gmail.com> wrote:
-> >
-> > Any numbers for efficiency?
-> >
-> 
-> For the original implementation, vmalloc_to_pfn() wraps the vmalloc_to_page(),
-> which means
-> 
->      pfn   ------>         struct page      ------>    pfn
->       |                                                          |
->   vmalloc_to_page()                             vmalloc_to_pfn()
-> 
-> So this patch interchange the implementation, do the dirty page table
-> walking code in vmalloc_to_pfn(), and then vmalloc_to_page() uses it, the graph
-> now becomes
-> 
->      pfn            ------>         struct page        
->        |                                     |
->   vmalloc_to_pfn()         vmalloc_to_page()
-> 
-> 
-> >>  /*
-> >> - * Walk a vmap address to the struct page it maps.
-> >> + * Walk a vmap address to the physical pfn it maps to.
-> >>   */
-> >> -struct page *vmalloc_to_page(const void *vmalloc_addr)
-> >> +unsigned long vmalloc_to_pfn(const void *vmalloc_addr)
-> >>  {
-> >>       unsigned long addr = (unsigned long) vmalloc_addr;
-> >> -     struct page *page = NULL;
-> >> +     unsigned long pfn;
-> >
-> > uninitialized pfn will lead to a bug.
-> >
-> 
-> Why? The coding pratice has mandates we use it after we initialize it,
-> And if we initialize it , to what value will it promise no bug?
+Jeff Kirsher wrote:
 
-Unless you initialize it conditionally. I bet gcc warned you about this ;)
+> This came up when John Fastabend got a patch to fix up the headers in
+> the drivers/scsi/ directory and so I did a quick search of the network
+> drivers and found several instances in the file headers where an old FSF
+> address remains.  The old address is:
+> 
+> 59 Temple Place - Suite 330
+> Boston, MA 02111-1307
+> 
+> The current address is:
+> 
+> 51 Franklin Street - Fifth Floor
+> Boston, MA 02110-1301
+> 
+> I am wondering whether it may be best to just put a link to the Free
+> Software Foundation web page instead of having to update the address any
+> time a change is made.
+> 
+> Either way, I feel the address either needs to get corrected or changed
+> to the URL, even though I am not a fan of huge patch series to make
+> trivial changes like this.
+> 
+> Thoughts?
 
-> It is unlikely a rubbish initial value will creep in.
-> 
-> 
-> >>       /*
-> >> @@ -244,23 +244,23 @@ struct page *vmalloc_to_page(const void *vmalloc_addr)
-> >>                               ptep = pte_offset_map(pmd, addr);
-> >>                               pte = *ptep;
-> >>                               if (pte_present(pte))
-> >> -                                     page = pte_page(pte);
-> >> +                                     pfn = pte_page(pte);
-> >
-> > page_to_pfn is missed here.
-> >
-> > Have you ever tested there is no functional changes?
-> 
-> Oh, gods. My fault. It did has no functional changes.
-> 
-> I just sent the incorrect patch...
-> 
-> it should be  
->  -   page = pte_page(pte);
->  +  pfn = pte_pfn(pte);;
-> 
-> Here is the resent patch:
-> 
+Something like that should be enough:
 
-I think it is incorrect too. Originally, vmalloc_to_page might return NULL
-under some conditions. With your implementation it will return pfn_to_page(0)
-which is not the same as NULL.
+     [...]
+     You should have received a copy of the GNU General Public License along
+-    with this program; if not, write to the Free Software Foundation, Inc.,
+-    59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
++    with this program.  If not, see <http://www.gnu.org/licenses/>.
+     [...]
 
-Vladimir
+This was changed in that form in gpl3.
 
-> 
-> ---
-> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-> index 0fdf968..e4f0db2 100644
-> --- a/mm/vmalloc.c
-> +++ b/mm/vmalloc.c
-> @@ -220,12 +220,12 @@ int is_vmalloc_or_module_addr(const void *x)
->  }
->  
->  /*
-> - * Walk a vmap address to the struct page it maps.
-> + * Walk a vmap address to the physical pfn it maps to.
->   */
-> -struct page *vmalloc_to_page(const void *vmalloc_addr)
-> +unsigned long vmalloc_to_pfn(const void *vmalloc_addr)
->  {
->  	unsigned long addr = (unsigned long) vmalloc_addr;
-> -	struct page *page = NULL;
-> +	unsigned long pfn = 0;
->  	pgd_t *pgd = pgd_offset_k(addr);
->  
->  	/*
-> @@ -244,23 +244,23 @@ struct page *vmalloc_to_page(const void *vmalloc_addr)
->  				ptep = pte_offset_map(pmd, addr);
->  				pte = *ptep;
->  				if (pte_present(pte))
-> -					page = pte_page(pte);
-> +					pfn = pte_pfn(pte);
->  				pte_unmap(ptep);
->  			}
->  		}
->  	}
-> -	return page;
-> +	return pfn;
->  }
-> -EXPORT_SYMBOL(vmalloc_to_page);
-> +EXPORT_SYMBOL(vmalloc_to_pfn);
->  
->  /*
-> - * Map a vmalloc()-space virtual address to the physical page frame number.
-> + * Map a vmalloc()-space virtual address to the struct page.
->   */
-> -unsigned long vmalloc_to_pfn(const void *vmalloc_addr)
-> +struct page *vmalloc_to_page(const void *vmalloc_addr)
->  {
-> -	return page_to_pfn(vmalloc_to_page(vmalloc_addr));
-> +	return pfn_to_page(vmalloc_to_pfn(vmalloc_addr));
->  }
-> -EXPORT_SYMBOL(vmalloc_to_pfn);
-> +EXPORT_SYMBOL(vmalloc_to_page);
->  
->  
->  /*** Global kva allocator ***/
+
+There are about 3684 references with, at least, 140 variations. Infinite Patience(TM).
