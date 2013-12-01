@@ -1,89 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751615Ab3LAJuT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 04:50:19 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:55490 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909Ab3LAJuR (ORCPT
+	id S1751812Ab3LAJu1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 04:50:27 -0500
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:52230 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632Ab3LAJuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 04:50:17 -0500
+	Sun, 1 Dec 2013 04:50:20 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>, sre@ring0.de
+Subject: Re: device-tree based boot on linux-n900 branch
+Date: Sun, 1 Dec 2013 10:50:18 +0100
+User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.3; x86_64; ; )
+Cc: sre@debian.org, kernel list <linux-kernel@vger.kernel.org>
+References: <20131127125149.GA9389@amd.pavel.ucw.cz> <20131130172938.GA5194@amd.pavel.ucw.cz> <20131130231532.GA6688@amd.pavel.ucw.cz>
+In-Reply-To: <20131130231532.GA6688@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-In-Reply-To: <1385891092-13266-1-git-send-email-geert@linux-m68k.org>
-References: <1385891092-13266-1-git-send-email-geert@linux-m68k.org>
-Date: Sun, 1 Dec 2013 10:50:16 +0100
-X-Google-Sender-Auth: QgtI7_jH7zur0hEi-JMd1-Z6WBg
-Message-ID: <CAMuHMdV1hoUnYixPghCAy-LuTaB9JU-BFfBPH06gxhLRAqfp8Q@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.13-rc2
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        sparclinux <sparclinux@vger.kernel.org>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed;
+  boundary="nextPart2106292.LcEy5OkLn7";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312011050.18256@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 1, 2013 at 10:44 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.13-rc2[1] to v3.13-rc1[3], the summaries are:
->   - build errors: +8/-8
->   - build warnings: +147/-97
+--nextPart2106292.LcEy5OkLn7
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-  + /scratch/kisskb/src/drivers/crypto/caam/jr.c: error: implicit
-declaration of function 'of_iomap'
-[-Werror=implicit-function-declaration]:  => 468:2
+On Sunday 01 December 2013 00:15:32 Pavel Machek wrote:
+> On Sat 2013-11-30 18:29:38, Pavel Machek wrote:
+> > Hi!
+> >=20
+> > > > > > Hi, I already have this patch prepared for 3.13.
+> > > > >=20
+> > > > > Cool :-). Do you plan to publish / is there 3.13 based
+> > > > > tree I could pull somewhere?
+> > > > >=20
+> > > > > Thanks,
+> > > > >=20
+> > > > > 								Pavel
+> > > >=20
+> > > > Yes, I will rebase n900 patches on top of next 3.13 rc
+> > > > release which will have some patches already included.
+> > > > I have not created full n900 3.13 branch yet.
+> > >=20
+> > > New branch 3.13-rc2 is now on gitorious linux-n900 tree:
+> > > git://gitorious.org/linux-n900/linux-n900.git
+> >=20
+> > Branch seems to be named "v3.13-rc2-n900". Thanks!
+>=20
+> Is this one expected to boot in devicetree-based setup? If so,
+> does someone have .config?
+>=20
+> Thanks,
+> 								Pavel
 
-powerpc/mpc85xx_defconfig
+No, this my tree has rx51_defconfig which is used for classic=20
+booting with board files.
 
-  + /scratch/kisskb/src/arch/powerpc/kernel/swsusp_booke.S: Error:
-invalid sprg number:  => 161, 85, 165, 91, 167, 163, 87, 89
+Sebastian, can you create new rx51_defconfig or at least patch=20
+which enable DT booting? Also some steps how to compile DT kernel=20
+will be usefull (maybe on http://elinux.org/N900).
 
-powerpc-randconfig
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-  + /scratch/kisskb/src/drivers/tty/ehv_bytechan.c: error: type
-defaults to 'int' in declaration of 'console_initcall'
-[-Werror=implicit-int]:  => 363:1
+--nextPart2106292.LcEy5OkLn7
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-powerpc-allmodconfig
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-  + /scratch/kisskb/src/arch/sparc/kernel/kgdb_64.c: error: implicit
-declaration of function 'exception_enter'
-[-Werror=implicit-function-declaration]:  => 162:7
-  + /scratch/kisskb/src/arch/sparc/kernel/kgdb_64.c: error: implicit
-declaration of function 'exception_exit'
-[-Werror=implicit-function-declaration]:  => 176:2
+iEYEABECAAYFAlKbBloACgkQi/DJPQPkQ1J0EQCfcFdlDLnKdVXRGWgCmjNos0Th
+OZ8AoJEueTmOFRjeAtBSrbTXo91VuWw+
+=rpjP
+-----END PGP SIGNATURE-----
 
-sparc64-allmodconfig
-
-  + error: drivers/built-in.o: undefined reference to
-`i2c_register_driver':  => .init.literal+0xd88)
-  + error: sram.c: undefined reference to `devm_regmap_init_i2c':  =>
-.text+0x590dc)
-
-sparc-allmodconfig
-xtensa-allmodconfig
-
-  + /scratch/kisskb/src/drivers/gpu/drm/drm_gem_cma_helper.c: error:
-implicit declaration of function 'dma_alloc_writecombine'
-[-Werror=implicit-function-declaration]:  => 91:2
-  + /scratch/kisskb/src/drivers/gpu/drm/drm_gem_cma_helper.c: error:
-implicit declaration of function 'dma_free_writecombine'
-[-Werror=implicit-function-declaration]:  => 176:3
-
-sh-randconfig
-
-> [1] http://kisskb.ellerman.id.au/kisskb/head/6939/ (119 out of 120 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/6919/ (119 out of 120 configs)
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+--nextPart2106292.LcEy5OkLn7--
