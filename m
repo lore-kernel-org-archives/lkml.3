@@ -1,534 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752156Ab3LAVKJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 16:10:09 -0500
-Received: from plane.gmane.org ([80.91.229.3]:43609 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810Ab3LAVKF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 16:10:05 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Brecht Machiels <brecht@mos6581.org>
-Subject: [REGRESSION] 41c7f74 rtc: Disable the alarm in the hardware (v2)
-Date: Sun, 1 Dec 2013 22:03:43 +0100
-Message-ID: <20131201220343.2285b12ee1c1e54252dc7dd9@mos6581.org>
-Mime-Version: 1.0
-Content-Type: multipart/mixed;
- boundary="Multipart=_Sun__1_Dec_2013_22_03_43_+0100_JFW0FZzo0DUgCKRf"
-X-Complaints-To: usenet@ger.gmane.org
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@alien8.de>, Jonathan Nieder <jrnieder@gmail.com>,
-        Heinz Wiesinger <HMWiesinger@gmx.at>
-X-Gmane-NNTP-Posting-Host: ip-83-101-57-24.customer.schedom-europe.net
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.22; x86_64-unknown-linux-gnu)
-X-Newsreader: Sylpheed 3.3.0 (GTK+ 2.24.22; x86_64-unknown-linux-gnu)
+	id S1752060Ab3LAVqN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 16:46:13 -0500
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:48461 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401Ab3LAVqM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Dec 2013 16:46:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <1385930357.5352.44.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <20131125203358.156292370@linutronix.de>
+	<1385453551.12603.16.camel@buesod1.americas.hpqcorp.net>
+	<20131126085256.GD789@laptop.programming.kicks-ass.net>
+	<1385493911.25945.3.camel@buesod1.americas.hpqcorp.net>
+	<1385499085.23083.7.camel@buesod1.americas.hpqcorp.net>
+	<alpine.DEB.2.02.1311262206150.30673@ionos.tec.linutronix.de>
+	<1385624678.22210.25.camel@buesod1.americas.hpqcorp.net>
+	<20131128115946.GD13532@twins.programming.kicks-ass.net>
+	<20131201121022.GB12115@gmail.com>
+	<20131201125604.GH16796@laptop.programming.kicks-ass.net>
+	<20131201165538.GA12864@gmail.com>
+	<CA+55aFz-v62jWpTqzAhrf5rGS5drbvgG-XHDDN6cdHCLB+kMxg@mail.gmail.com>
+	<1385930357.5352.44.camel@edumazet-glaptop2.roam.corp.google.com>
+Date: Sun, 1 Dec 2013 13:46:11 -0800
+X-Google-Sender-Auth: gydBnTPHnashxcab7iiHMsa-DOY
+Message-ID: <CA+55aFynzPDA2Ccrh=dKHJ3U25HSi+RrYsCs2x_wt2xTKyzXpg@mail.gmail.com>
+Subject: Re: [RFC patch 0/5] futex: Allow lockless empty check of hashbucket
+ plist in futex_wake()
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Jason Low <jason.low2@hp.com>,
+        Darren Hart <dvhart@linux.intel.com>, Mike Galbraith <efault@gmx.de>,
+        Jeff Mahoney <jeffm@suse.com>, Scott Norton <scott.norton@hp.com>,
+        Tom Vaden <tom.vaden@hp.com>, Aswin Chandramouleeswaran <aswin@hp.com>,
+        Waiman Long <Waiman.Long@hp.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+On Sun, Dec 1, 2013 at 12:39 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>
+> Last time I checked, private futexes were used when appropriate.
+>
+> "strace -e futex" mainly show _PRIVATE uses.
 
---Multipart=_Sun__1_Dec_2013_22_03_43_+0100_JFW0FZzo0DUgCKRf
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Yeah, pthread mutexes seem to do it. Sadly we don't do it for
+mm_release(), so the case of clear_child_tid doesn't trigger it, and
+that happened to be what I tested (I did "git diff" with the threaded
+pre-population of the stat data).  And we can't change that because
+it's ABI. Sad.
 
-Hi,
+So we do have a couple of corner cases where we *could* use the
+private ones but don't. But I guess that thread creation/exit is
+heavy-weight enough that that particular one doesn't really matter.
 
-I recently installed (Arch x86_64) Linux with the 3.12.1 kernel on a Toshiba Satellite L300 laptop. After shutting down Linux, the laptop will spontaneously boot up after about five minutes. This seems to be consistent. There are no options in the BIOS for en/disabling or configuring the RTC wakeup alarm. After 'shudown --halt' and shutting down the laptop manually (pressing the power button for 3 seconds), it will not spontaneously boot up. I understand Linux is configuring the RTC alarm on shutdown? 
-
-After finding some other reports of similar problems, I have built a custom 3.12.1 kernel after reverting commit 41c7f74 (rtc: Disable the alarm in the hardware (v2)) [1]. This seems to solve the problem for me.
-
-Related discussions and bug reports:
-* http://thread.gmane.org/gmane.linux.kernel/1527538
-  refers to: https://bugzilla.novell.com/show_bug.cgi?id=812592
-             https://bugzilla.novell.com/show_bug.cgi?id=805740
-* http://thread.gmane.org/gmane.linux.kernel/1275165/focus=1388471
-  refers to: http://bugs.debian.org/691902
-
-Both LKML threads seem to have died without any action being taken.
-
-Setting the RTC alarm time way in the future, as suggested in [2] didn't work for me.
-
-Output of dmidecode is attached. Please let me know if any other information could be useful.
-
-[1] https://github.com/torvalds/linux/commit/41c7f74
-[2] https://forums.computers.toshiba-europe.com/forums/thread.jspa?messageID=256816
-
-Best regards
--- 
-Brecht Machiels
-
---Multipart=_Sun__1_Dec_2013_22_03_43_+0100_JFW0FZzo0DUgCKRf
-Content-Type: text/plain;
- name="dmidecode_toshiba_pslb8e.log"
-Content-Disposition: attachment;
- filename="dmidecode_toshiba_pslb8e.log"
-Content-Transfer-Encoding: 7bit
-
-# dmidecode 2.12
-SMBIOS 2.4 present.
-35 structures occupying 1491 bytes.
-Table at 0x000E8150.
-
-Handle 0x0000, DMI type 0, 24 bytes
-BIOS Information
-	Vendor: INSYDE
-	Version: 2.20
-	Release Date: 12/09/2009
-	ROM Size: 1024 kB
-	Characteristics:
-		PCI is supported
-		BIOS is upgradeable
-		BIOS shadowing is allowed
-		Boot from CD is supported
-		Selectable boot is supported
-		BIOS ROM is socketed
-		EDD is supported
-		Japanese floppy for NEC 9800 1.2 MB is supported (int 13h)
-		Japanese floppy for Toshiba 1.2 MB is supported (int 13h)
-		5.25"/360 kB floppy services are supported (int 13h)
-		5.25"/1.2 MB floppy services are supported (int 13h)
-		3.5"/720 kB floppy services are supported (int 13h)
-		3.5"/2.88 MB floppy services are supported (int 13h)
-		8042 keyboard services are supported (int 9h)
-		CGA/mono video services are supported (int 10h)
-		ACPI is supported
-		USB legacy is supported
-		Targeted content distribution is supported
-
-Handle 0x0001, DMI type 1, 27 bytes
-System Information
-	Manufacturer: TOSHIBA
-	Product Name: Satellite L300
-	Version: PSLB8E-15P00DBT
-	Serial Number: 99031030Q
-	UUID: CF9C87E0-9691-11DE-BBA9-001E33F3CD6A
-	Wake-up Type: Power Switch
-	SKU Number: Montevina_Fab
-	Family: Intel_Mobile
-
-Handle 0x0002, DMI type 2, 16 bytes
-Base Board Information
-	Manufacturer: TOSHIBA
-	Product Name: Portable PC
-	Version: Base Board Version
-	Serial Number: Base Board Serial Number
-	Asset Tag: Base Board Asset Tag
-	Features:
-		Board is a hosting board
-		Board is replaceable
-	Location In Chassis: Base Board Chassis Location
-	Chassis Handle: 0x0003
-	Type: Motherboard
-	Contained Object Handles: 0
-
-Handle 0x0003, DMI type 3, 22 bytes
-Chassis Information
-	Manufacturer: Chassis Manufacturer
-	Type: Notebook
-	Lock: Not Present
-	Version: Chassis Version
-	Serial Number: Chassis Serial Number
-	Asset Tag: No Asset Tag
-	Boot-up State: Safe
-	Power Supply State: Safe
-	Thermal State: Safe
-	Security Status: None
-	OEM Information: 0x00000000
-	Height: Unspecified
-	Number Of Power Cords: 1
-	Contained Elements: 0
-	SKU Number: Not Specified
-
-Handle 0x0004, DMI type 5, 20 bytes
-Memory Controller Information
-	Error Detecting Method: None
-	Error Correcting Capabilities:
-		None
-	Supported Interleave: One-way Interleave
-	Current Interleave: One-way Interleave
-	Maximum Memory Module Size: 4096 MB
-	Maximum Total Memory Size: 8192 MB
-	Supported Speeds:
-		Other
-	Supported Memory Types:
-		Other
-	Memory Module Voltage: Unknown
-	Associated Memory Slots: 2
-		0x0000
-		0x0000
-	Enabled Error Correcting Capabilities:
-		None
-
-Handle 0x0005, DMI type 9, 13 bytes
-System Slot Information
-	Designation: J6B2
-	Type: x16 PCI Express
-	Current Usage: Available
-	Length: Other
-	ID: 0
-	Characteristics:
-		PME signal is supported
-		Hot-plug devices are supported
-
-Handle 0x0006, DMI type 9, 13 bytes
-System Slot Information
-	Designation: J6B1
-	Type: x1 PCI Express
-	Current Usage: Available
-	Length: Other
-	ID: 0
-	Characteristics:
-		PME signal is supported
-		Hot-plug devices are supported
-
-Handle 0x0007, DMI type 9, 13 bytes
-System Slot Information
-	Designation: J6C2
-	Type: x1 PCI Express
-	Current Usage: Available
-	Length: Other
-	ID: 1
-	Characteristics:
-		PME signal is supported
-		Hot-plug devices are supported
-
-Handle 0x0008, DMI type 9, 13 bytes
-System Slot Information
-	Designation: J7B1
-	Type: x1 PCI Express
-	Current Usage: Available
-	Length: Other
-	ID: 2
-	Characteristics:
-		PME signal is supported
-		Hot-plug devices are supported
-
-Handle 0x0009, DMI type 9, 13 bytes
-System Slot Information
-	Designation: J8B3
-	Type: x1 PCI Express
-	Current Usage: Available
-	Length: Other
-	ID: 3
-	Characteristics:
-		PME signal is supported
-		Hot-plug devices are supported
-
-Handle 0x000A, DMI type 9, 13 bytes
-System Slot Information
-	Designation: J8D1
-	Type: x1 PCI Express
-	Current Usage: Available
-	Length: Other
-	ID: 4
-	Characteristics:
-		PME signal is supported
-		Hot-plug devices are supported
-
-Handle 0x000B, DMI type 11, 5 bytes
-OEM Strings
-	String 1: SSLB8E15P00DBT
-	String 2:              
-	String 3:              
-	String 4:              
-	String 5: SSLB8E15P00DBT
-
-Handle 0x000C, DMI type 12, 5 bytes
-System Configuration Options
-	Option 1: NVR:00707002
-	Option 2: DSN: 89I2SGQQS          
-	Option 3: DSN:M4 70T5663EH3-CF7 6184D953 
-	Option 4: DSN:4D0F3E37
-
-Handle 0x000D, DMI type 15, 29 bytes
-System Event Log
-	Area Length: 32672 bytes
-	Header Start Offset: 0x0000
-	Data Start Offset: 0x0000
-	Access Method: General-purpose non-volatile data functions
-	Access Address: 0x0000
-	Status: Valid, Not Full
-	Change Token: 0x12345678
-	Header Format: OEM-specific
-	Supported Log Type Descriptors: 3
-	Descriptor 1: POST memory resize
-	Data Format 1: None
-	Descriptor 2: POST error
-	Data Format 2: POST results bitmap
-	Descriptor 3: Log area reset/cleared
-	Data Format 3: None
-
-Handle 0x000E, DMI type 21, 7 bytes
-Built-in Pointing Device
-	Type: Touch Pad
-	Interface: PS/2
-	Buttons: 4
-
-Handle 0x000F, DMI type 27, 14 bytes
-Cooling Device
-	Type: Fan
-	Status: OK
-	OEM-specific Information: 0x00000000
-	Nominal Speed: 43690 rpm
-
-Handle 0x0010, DMI type 32, 20 bytes
-System Boot Information
-	Status: No errors detected
-
-Handle 0x0011, DMI type 39, 22 bytes
-System Power Supply
-	Location: OEM_Define0
-	Name: OEM_Define1
-	Manufacturer: OEM_Define2
-	Serial Number: OEM_Define2
-	Asset Tag: OEM_Define3
-	Model Part Number: OEM_Define4
-	Revision: OEM_Define5
-	Max Power Capacity: 75 W
-	Status: Present, OK
-	Type: Regulator
-	Input Voltage Range Switching: Auto-switch
-	Plugged: No
-	Hot Replaceable: No
-
-Handle 0x0012, DMI type 129, 5 bytes
-OEM-specific Type
-	Header and Data:
-		81 05 12 00 4F
-	Strings:
-		em Test 1
-		Oem Test 2
-
-Handle 0x0013, DMI type 16, 15 bytes
-Physical Memory Array
-	Location: System Board Or Motherboard
-	Use: System Memory
-	Error Correction Type: None
-	Maximum Capacity: 8 GB
-	Error Information Handle: No Error
-	Number Of Devices: 2
-
-Handle 0x0014, DMI type 6, 12 bytes
-Memory Module Information
-	Socket Designation: DIMM0
-	Bank Connections: 0 0
-	Current Speed: 1 ns
-	Type: None
-	Installed Size: 2048 MB (Single-bank Connection)
-	Enabled Size: 2048 MB (Single-bank Connection)
-	Error Status: OK
-
-Handle 0x0015, DMI type 17, 27 bytes
-Memory Device
-	Array Handle: 0x0013
-	Error Information Handle: 0x0016
-	Total Width: 64 bits
-	Data Width: 64 bits
-	Size: 2048 MB
-	Form Factor: SODIMM
-	Set: None
-	Locator: DIMM0
-	Bank Locator: BANK 0
-	Type: DDR2
-	Type Detail: Synchronous
-	Speed: 800 MHz
-	Manufacturer: Samsung
-	Serial Number: 6184D9AF
-	Asset Tag: Unknown
-	Part Number: AFAFAFAFAFAFAFAFAFAFAFAFAFAFAFAFAFAF
-
-Handle 0x0016, DMI type 18, 23 bytes
-32-bit Memory Error Information
-	Type: OK
-	Granularity: Unknown
-	Operation: Unknown
-	Vendor Syndrome: Unknown
-	Memory Array Address: Unknown
-	Device Address: Unknown
-	Resolution: Unknown
-
-Handle 0x0017, DMI type 20, 19 bytes
-Memory Device Mapped Address
-	Starting Address: 0x00000000000
-	Ending Address: 0x0007FFFFFFF
-	Range Size: 2 GB
-	Physical Device Handle: 0x0015
-	Memory Array Mapped Address Handle: 0x001D
-	Partition Row Position: Unknown
-	Interleave Position: 1
-	Interleaved Data Depth: 1
-
-Handle 0x0018, DMI type 6, 12 bytes
-Memory Module Information
-	Socket Designation: DIMM2
-	Bank Connections: 0 0
-	Current Speed: 1 ns
-	Type: None
-	Installed Size: 2048 MB (Single-bank Connection)
-	Enabled Size: 2048 MB (Single-bank Connection)
-	Error Status: OK
-
-Handle 0x0019, DMI type 17, 27 bytes
-Memory Device
-	Array Handle: 0x0013
-	Error Information Handle: 0x001A
-	Total Width: 64 bits
-	Data Width: 64 bits
-	Size: 2048 MB
-	Form Factor: SODIMM
-	Set: None
-	Locator: DIMM2
-	Bank Locator: BANK 2
-	Type: DDR2
-	Type Detail: Synchronous
-	Speed: 800 MHz
-	Manufacturer: Samsung
-	Serial Number: 7742A109
-	Asset Tag: Unknown
-	Part Number: 090909090909090909090909090909090909
-
-Handle 0x001A, DMI type 18, 23 bytes
-32-bit Memory Error Information
-	Type: OK
-	Granularity: Unknown
-	Operation: Unknown
-	Vendor Syndrome: Unknown
-	Memory Array Address: Unknown
-	Device Address: Unknown
-	Resolution: Unknown
-
-Handle 0x001B, DMI type 20, 19 bytes
-Memory Device Mapped Address
-	Starting Address: 0x00000000000
-	Ending Address: 0x0007FFFFFFF
-	Range Size: 2 GB
-	Physical Device Handle: 0x0019
-	Memory Array Mapped Address Handle: 0x001D
-	Partition Row Position: Unknown
-	Interleave Position: 2
-	Interleaved Data Depth: 1
-
-Handle 0x001C, DMI type 18, 23 bytes
-32-bit Memory Error Information
-	Type: OK
-	Granularity: Unknown
-	Operation: Unknown
-	Vendor Syndrome: Unknown
-	Memory Array Address: Unknown
-	Device Address: Unknown
-	Resolution: Unknown
-
-Handle 0x001D, DMI type 19, 15 bytes
-Memory Array Mapped Address
-	Starting Address: 0x00000000000
-	Ending Address: 0x000FFFFFFFF
-	Range Size: 4 GB
-	Physical Array Handle: 0x0013
-	Partition Width: 2
-
-Handle 0x001E, DMI type 4, 35 bytes
-Processor Information
-	Socket Designation: CPU
-	Type: Central Processor
-	Family: Pentium M
-	Manufacturer: Intel(R) Corporation
-	ID: 7A 06 01 00 FF FB EB BF
-	Signature: Type 0, Family 6, Model 23, Stepping 10
-	Flags:
-		FPU (Floating-point unit on-chip)
-		VME (Virtual mode extension)
-		DE (Debugging extension)
-		PSE (Page size extension)
-		TSC (Time stamp counter)
-		MSR (Model specific registers)
-		PAE (Physical address extension)
-		MCE (Machine check exception)
-		CX8 (CMPXCHG8 instruction supported)
-		APIC (On-chip APIC hardware supported)
-		SEP (Fast system call)
-		MTRR (Memory type range registers)
-		PGE (Page global enable)
-		MCA (Machine check architecture)
-		CMOV (Conditional move instruction supported)
-		PAT (Page attribute table)
-		PSE-36 (36-bit page size extension)
-		CLFSH (CLFLUSH instruction supported)
-		DS (Debug store)
-		ACPI (ACPI supported)
-		MMX (MMX technology supported)
-		FXSR (FXSAVE and FXSTOR instructions supported)
-		SSE (Streaming SIMD extensions)
-		SSE2 (Streaming SIMD extensions 2)
-		SS (Self-snoop)
-		HTT (Multi-threading)
-		TM (Thermal monitor supported)
-		PBE (Pending break enabled)
-	Version: Celeron(R) Dual-Core CPU       T3000  @ 1.80GHz
-	Voltage: 1.6 V
-	External Clock: 800 MHz
-	Max Speed: 1800 MHz
-	Current Speed: 1800 MHz
-	Status: Populated, Enabled
-	Upgrade: <OUT OF SPEC>
-	L1 Cache Handle: 0x0021
-	L2 Cache Handle: 0x001F
-	L3 Cache Handle: Not Provided
-	Serial Number: Not Specified
-	Asset Tag: FFFF
-	Part Number: Not Specified
-
-Handle 0x001F, DMI type 7, 19 bytes
-Cache Information
-	Socket Designation: Unknown
-	Configuration: Enabled, Not Socketed, Level 2
-	Operational Mode: Write Back
-	Location: Internal
-	Installed Size: 1024 kB
-	Maximum Size: 1024 kB
-	Supported SRAM Types:
-		Synchronous
-	Installed SRAM Type: Synchronous
-	Speed: Unknown
-	Error Correction Type: Single-bit ECC
-	System Type: Unified
-	Associativity: 4-way Set-associative
-
-Handle 0x0020, DMI type 7, 19 bytes
-Cache Information
-	Socket Designation: Unknown
-	Configuration: Enabled, Not Socketed, Level 1
-	Operational Mode: Write Back
-	Location: Internal
-	Installed Size: 32 kB
-	Maximum Size: 32 kB
-	Supported SRAM Types:
-		Synchronous
-	Installed SRAM Type: Synchronous
-	Speed: Unknown
-	Error Correction Type: Single-bit ECC
-	System Type: Instruction
-	Associativity: 8-way Set-associative
-
-Handle 0x0021, DMI type 7, 19 bytes
-Cache Information
-	Socket Designation: Unknown
-	Configuration: Enabled, Not Socketed, Level 1
-	Operational Mode: Write Back
-	Location: Internal
-	Installed Size: 32 kB
-	Maximum Size: 32 kB
-	Supported SRAM Types:
-		Synchronous
-	Installed SRAM Type: Synchronous
-	Speed: Unknown
-	Error Correction Type: Single-bit ECC
-	System Type: Data
-	Associativity: 8-way Set-associative
-
-Handle 0x0022, DMI type 127, 4 bytes
-End Of Table
-
-
---Multipart=_Sun__1_Dec_2013_22_03_43_+0100_JFW0FZzo0DUgCKRf--
-
+               Linus
