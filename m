@@ -1,148 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752196Ab3LAQA0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 11:00:26 -0500
-Received: from mail.kmu-office.ch ([178.209.48.102]:52474 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779Ab3LAP7j (ORCPT
+	id S1751894Ab3LAQRM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 11:17:12 -0500
+Received: from smtp03.stone-is.org ([87.238.162.66]:47656 "EHLO
+	smtpgw.stone-is.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035Ab3LAQRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 10:59:39 -0500
-From: Stefan Agner <stefan@agner.ch>
-To: swarren@wwwdotorg.org, thierry.reding@gmail.com, dev@lynxeye.de,
-        lee.jones@linaro.org, lgirdwood@gmail.com, broonie@kernel.org
-Cc: kai.poggensee@avionic-design.de, sameo@linux.intel.com,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Stefan Agner <stefan@agner.ch>
-Subject: [PATCH v2 1/3] mfd: tps6586x: add version detection
-Date: Sun,  1 Dec 2013 16:59:13 +0100
-Message-Id: <2d5282f031a16d2ff227694daaabc977440fbd2e.1385913228.git.stefan@agner.ch>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <cover.1385913227.git.stefan@agner.ch>
-References: <cover.1385913227.git.stefan@agner.ch>
+	Sun, 1 Dec 2013 11:17:09 -0500
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+Message-ID: <529B60FF.7030601@acm.org>
+Date: Sun, 01 Dec 2013 17:17:03 +0100
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Chen Gang <gang.chen.5i5j@gmail.com>, Bottomley@parallels.com,
+        linux-scsi@vger.kernel.org
+CC: rkuo <rkuo@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers: scsi: scsi_lib.c: add prefix "SCSILIB_" to macro
+ "SP"
+References: <528AEFB7.4060301@gmail.com> <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com> <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com> <52955913.3060809@gmail.com>
+In-Reply-To: <52955913.3060809@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the VERSIONCRC to determine the exact device version. According to
-the datasheet this register can be used as device identifier. The
-identification is needed since some tps6586x regulators use a different
-voltage table.
+On 11/27/13 03:29, Chen Gang wrote:
+> the macro "SP" is too common to make conflict with some architectures,
+> so recommend to add prefix for it.
+> 
+> The related warning (with allmodconfig for hexagon):
+> 
+>     CC [M]  drivers/scsi/scsi_lib.o
+>   drivers/scsi/scsi_lib.c:46:0: warning: "SP" redefined [enabled by default]
+>   arch/hexagon/include/uapi/asm/registers.h:9:0: note: this is the location of the previous definition
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> ---
+>  drivers/scsi/scsi_lib.c |   16 ++++++++--------
+>  1 files changed, 8 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> index 7bd7f0d..f78e21b 100644
+> --- a/drivers/scsi/scsi_lib.c
+> +++ b/drivers/scsi/scsi_lib.c
+> @@ -43,28 +43,28 @@ struct scsi_host_sg_pool {
+>  	mempool_t	*pool;
+>  };
+>  
+> -#define SP(x) { x, "sgpool-" __stringify(x) }
+> +#define SCSILIB_SP(x) { x, "sgpool-" __stringify(x) }
+>  #if (SCSI_MAX_SG_SEGMENTS < 32)
+>  #error SCSI_MAX_SG_SEGMENTS is too small (must be 32 or greater)
+>  #endif
+>  static struct scsi_host_sg_pool scsi_sg_pools[] = {
+> -	SP(8),
+> -	SP(16),
+> +	SCSILIB_SP(8),
+> +	SCSILIB_SP(16),
+>  #if (SCSI_MAX_SG_SEGMENTS > 32)
+> -	SP(32),
+> +	SCSILIB_SP(32),
+>  #if (SCSI_MAX_SG_SEGMENTS > 64)
+> -	SP(64),
+> +	SCSILIB_SP(64),
+>  #if (SCSI_MAX_SG_SEGMENTS > 128)
+> -	SP(128),
+> +	SCSILIB_SP(128),
+>  #if (SCSI_MAX_SG_SEGMENTS > 256)
+>  #error SCSI_MAX_SG_SEGMENTS is too large (256 MAX)
+>  #endif
+>  #endif
+>  #endif
+>  #endif
+> -	SP(SCSI_MAX_SG_SEGMENTS)
+> +	SCSILIB_SP(SCSI_MAX_SG_SEGMENTS)
+>  };
+> -#undef SP
+> +#undef SCSILIB_SP
+>  
+>  struct kmem_cache *scsi_sdb_cache;
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
- drivers/mfd/tps6586x.c       | 47 +++++++++++++++++++++++++++++++++++++-------
- include/linux/mfd/tps6586x.h |  7 +++++++
- 2 files changed, 47 insertions(+), 7 deletions(-)
+Sorry but the "SCSILIB_SP" name doesn't look very descriptive to me.
+There are probably better choices possible. How about using e.g.
+SG_POOL() instead ?
 
-diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-index ee61fd7..8fc5a68 100644
---- a/drivers/mfd/tps6586x.c
-+++ b/drivers/mfd/tps6586x.c
-@@ -124,6 +124,7 @@ struct tps6586x {
- 	struct device		*dev;
- 	struct i2c_client	*client;
- 	struct regmap		*regmap;
-+	int			version;
- 
- 	int			irq;
- 	struct irq_chip		irq_chip;
-@@ -208,6 +209,14 @@ int tps6586x_irq_get_virq(struct device *dev, int irq)
- }
- EXPORT_SYMBOL_GPL(tps6586x_irq_get_virq);
- 
-+int tps6586x_get_version(struct device *dev)
-+{
-+	struct tps6586x *tps6586x = dev_get_drvdata(dev);
-+
-+	return tps6586x->version;
-+}
-+EXPORT_SYMBOL_GPL(tps6586x_get_version);
-+
- static int __remove_subdev(struct device *dev, void *unused)
- {
- 	platform_device_unregister(to_platform_device(dev));
-@@ -472,6 +481,31 @@ static void tps6586x_power_off(void)
- 	tps6586x_set_bits(tps6586x_dev, TPS6586X_SUPPLYENE, SLEEP_MODE_BIT);
- }
- 
-+static void tps6586x_print_version(struct i2c_client *client, int version)
-+{
-+	const char *name;
-+
-+	switch (version) {
-+	case TPS658621A:
-+		name = "TPS658621A";
-+		break;
-+	case TPS658621CD:
-+		name = "TPS658621C/D";
-+		break;
-+	case TPS658623:
-+		name = "TPS658623";
-+		break;
-+	case TPS658643:
-+		name = "TPS658643";
-+		break;
-+	default:
-+		name = "TPS6586X";
-+		break;
-+	}
-+
-+	dev_info(&client->dev, "Found %s, VERSIONCRC is %02x\n", name, version);
-+}
-+
- static int tps6586x_i2c_probe(struct i2c_client *client,
- 					const struct i2c_device_id *id)
- {
-@@ -487,19 +521,18 @@ static int tps6586x_i2c_probe(struct i2c_client *client,
- 		return -ENOTSUPP;
- 	}
- 
-+	tps6586x = devm_kzalloc(&client->dev, sizeof(*tps6586x), GFP_KERNEL);
-+	if (!tps6586x)
-+		return -ENOMEM;
-+
- 	ret = i2c_smbus_read_byte_data(client, TPS6586X_VERSIONCRC);
- 	if (ret < 0) {
- 		dev_err(&client->dev, "Chip ID read failed: %d\n", ret);
- 		return -EIO;
- 	}
- 
--	dev_info(&client->dev, "VERSIONCRC is %02x\n", ret);
--
--	tps6586x = devm_kzalloc(&client->dev, sizeof(*tps6586x), GFP_KERNEL);
--	if (tps6586x == NULL) {
--		dev_err(&client->dev, "memory for tps6586x alloc failed\n");
--		return -ENOMEM;
--	}
-+	tps6586x->version = ret;
-+	tps6586x_print_version(client, tps6586x->version);
- 
- 	tps6586x->client = client;
- 	tps6586x->dev = &client->dev;
-diff --git a/include/linux/mfd/tps6586x.h b/include/linux/mfd/tps6586x.h
-index 8799454..cbecec2 100644
---- a/include/linux/mfd/tps6586x.h
-+++ b/include/linux/mfd/tps6586x.h
-@@ -13,6 +13,12 @@
- #define TPS6586X_SLEW_RATE_SET		0x08
- #define TPS6586X_SLEW_RATE_MASK         0x07
- 
-+/* VERSION CRC */
-+#define TPS658621A	0x15
-+#define TPS658621CD	0x2c
-+#define TPS658623	0x1b
-+#define TPS658643	0x03
-+
- enum {
- 	TPS6586X_ID_SYS,
- 	TPS6586X_ID_SM_0,
-@@ -97,5 +103,6 @@ extern int tps6586x_clr_bits(struct device *dev, int reg, uint8_t bit_mask);
- extern int tps6586x_update(struct device *dev, int reg, uint8_t val,
- 			   uint8_t mask);
- extern int tps6586x_irq_get_virq(struct device *dev, int irq);
-+extern int tps6586x_get_version(struct device *dev);
- 
- #endif /*__LINUX_MFD_TPS6586X_H */
--- 
-1.8.4.2
+Bart.
 
