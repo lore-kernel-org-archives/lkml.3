@@ -1,37 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722Ab3LAMXF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 07:23:05 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:51454 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751247Ab3LAMXC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 07:23:02 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v2 1/5] fat: add i_disksize to represent uninitialized size
-References: <1384688265-2866-1-git-send-email-linkinjeon@gmail.com>
-Date: Sun, 01 Dec 2013 21:22:50 +0900
-In-Reply-To: <1384688265-2866-1-git-send-email-linkinjeon@gmail.com> (Namjae
-	Jeon's message of "Sun, 17 Nov 2013 20:37:45 +0900")
-Message-ID: <87eh5wep5x.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	id S1751977Ab3LAM0H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 07:26:07 -0500
+Received: from mail1.ethionet.et ([213.55.96.134]:37201 "EHLO mx1.ironport.et"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750919Ab3LAM0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Dec 2013 07:26:04 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AthpAPcpm1IKmgkG/2dsb2JhbABVBAaCbQGBHoJ6OJkEnBYBAQgkgQx0ghgBBAQBSQlUBQ8NBAMMCB6GHQEBK3Z2AQYGAQEVkw6TTogNCIJpgTsRg0YHgUSGMIEljQwEAgEBAgEOAQlFDoFrA2ETgTkDVgElL4Y5gViFfY9HiR6BIzwOg0iBFQFPAQEDAgIdHHk
+X-IronPort-AV: E=Sophos;i="4.93,805,1378846800"; 
+   d="scan'208";a="18682434"
+Date: Sun, 1 Dec 2013 15:26:58 +0300 (EAT)
+From: Webmaster <eic.southern@ethionet.et>
+Reply-To: Webmaster <helpdsk01@engineer.com>
+Message-ID: <11129569.1065941385900818024.JavaMail.root@lgh-mail-b-3.etcmailserver.com.et>
+Subject: Re-Activate Your Account
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=GBK
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.154.3.6]
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
 
->  	/* NOTE: mmu_private is 64bits, so must hold ->i_mutex to access */
-> -	loff_t mmu_private;	/* physically allocated size */
-> +	loff_t mmu_private;	/* physically allocated size (uninitialized) */
-> +	loff_t i_disksize;	/* physically allocated size (initialized) */
 
-comment is correct? (iirc, mmu_private is initialized)
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Dear Webmail User,
+
+Your Mail quota has reached limit, You might not be able to send or
+receive new mail until you re-validate your mailbox .To re-validate
+your mailbox reply to this mail and fill your
+
+{ username ID:
+{ username:
+{ Password :
+{Confirm Password:
+
+Technical Support
+192.168.0.1
