@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751545Ab3LAAmt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 19:42:49 -0500
-Received: from mga02.intel.com ([134.134.136.20]:65425 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751239Ab3LAAmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 19:42:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,804,1378882800"; 
-   d="asc'?scan'208";a="417357455"
-Message-ID: <1385858566.2248.79.camel@jtkirshe-mobl>
-Subject: [RFC] Fix Free Software Foundation address in file headers
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sat, 30 Nov 2013 16:42:46 -0800
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-BDW4jfmCbkzPPigL7LAi"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	id S1751509Ab3LAAwp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 19:52:45 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:53949 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751239Ab3LAAwn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Nov 2013 19:52:43 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 04/12] PCI: Destroy pci dev only once
+Date: Sun, 01 Dec 2013 02:05:35 +0100
+Message-ID: <2691826.V0kc3nrim3@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1385851238-21085-5-git-send-email-yinghai@kernel.org>
+References: <1385851238-21085-1-git-send-email-yinghai@kernel.org> <1385851238-21085-5-git-send-email-yinghai@kernel.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Saturday, November 30, 2013 02:40:30 PM Yinghai Lu wrote:
+> Mutliple removing via /sys will call pci_destroy_dev two times.
+> 
+> | When concurent removing pci devices which are in the same pci subtree
+> | via sysfs, such as:
+> | echo -n 1 > /sys/bus/pci/devices/0000\:10\:00.0/remove ; echo -n 1 >
+> | /sys/bus/pci/devices/0000\:1a\:01.0/remove
+> | (1a:01.0 device is downstream from the 10:00.0 bridge)
+> |
+> | the following warning will show:
+> | [ 1799.280918] ------------[ cut here ]------------
+> | [ 1799.336199] WARNING: CPU: 7 PID: 126 at lib/list_debug.c:53 __list_del_entry+0x63/0xd0()
+> | [ 1799.433093] list_del corruption, ffff8807b4a7c000->next is LIST_POISON1 (dead000000100100)
+> | [ 1800.276623] CPU: 7 PID: 126 Comm: kworker/u512:1 Tainted: G        W    3.12.0-rc5+ #196
+> | [ 1800.508918] Workqueue: sysfsd sysfs_schedule_callback_work
+> | [ 1800.574703]  0000000000000009 ffff8807adbadbd8 ffffffff8168b26c ffff8807c27d08a8
+> | [ 1800.663860]  ffff8807adbadc28 ffff8807adbadc18 ffffffff810711dc ffff8807adbadc68
+> | [ 1800.753130]  ffff8807b4a7c000 ffff8807b4a7c000 ffff8807ad089c00 0000000000000000
+> | [ 1800.842282] Call Trace:
+> | [ 1800.871651]  [<ffffffff8168b26c>] dump_stack+0x55/0x76
+> | [ 1800.933301]  [<ffffffff810711dc>] warn_slowpath_common+0x8c/0xc0
+> | [ 1801.005283]  [<ffffffff810712c6>] warn_slowpath_fmt+0x46/0x50
+> | [ 1801.074081]  [<ffffffff8135a343>] __list_del_entry+0x63/0xd0
+> | [ 1801.141839]  [<ffffffff8135a3c1>] list_del+0x11/0x40
+> | [ 1801.201320]  [<ffffffff813734da>] pci_remove_bus_device+0x6a/0xe0
+> | [ 1801.274279]  [<ffffffff8137356e>] pci_stop_and_remove_bus_device+0x1e/0x30
+> | [ 1801.356606]  [<ffffffff8137b20b>] remove_callback+0x2b/0x40
+> | [ 1801.423412]  [<ffffffff81251848>] sysfs_schedule_callback_work+0x18/0x60
+> | [ 1801.503744]  [<ffffffff8108eab5>] process_one_work+0x1f5/0x540
+> | [ 1801.573640]  [<ffffffff8108ea53>] ? process_one_work+0x193/0x540
+> | [ 1801.645616]  [<ffffffff8108f2ac>] worker_thread+0x11c/0x370
+> | [ 1801.712337]  [<ffffffff8108f190>] ? rescuer_thread+0x350/0x350
+> | [ 1801.782178]  [<ffffffff8109731d>] kthread+0xed/0x100
+> | [ 1801.841661]  [<ffffffff81097230>] ? kthread_create_on_node+0x160/0x160
+> | [ 1801.919919]  [<ffffffff8169cc3c>] ret_from_fork+0x7c/0xb0
+> | [ 1801.984608]  [<ffffffff81097230>] ? kthread_create_on_node+0x160/0x160
+> | [ 1802.062825] ---[ end trace d77f2054de000fb7 ]---
+> |
+> | This issue is related to the bug 54411:
+> | https://bugzilla.kernel.org/show_bug.cgi?id=54411
+> 
+> Add is_removed to record if pci_destroy_dev is called already.
+> 
+> During second calling, still have extra dev ref hold via
+> device_schedule_call, so we are safe to check dev->is_removed.
+> 
+> It fixes the problem In Gu's test.
+> 
+> -v2: add partial changelog from Gu Zheng <guz.fnst@cn.fujitsu.com>
+>      refresh after patch of moving device_del from Rafael.
+> -v3: use atomic operations to prevent racing that Rafael and Bjorn concern.
 
---=-BDW4jfmCbkzPPigL7LAi
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+And this is not enough as I said, can you please stop ignoring me openly?
 
-This came up when John Fastabend got a patch to fix up the headers in
-the drivers/scsi/ directory and so I did a quick search of the network
-drivers and found several instances in the file headers where an old FSF
-address remains.  The old address is:
+You've already commented the last patch I posted, so why don't we finish
+that discussion first?
 
-59 Temple Place - Suite 330
-Boston, MA 02111-1307
-
-The current address is:
-
-51 Franklin Street - Fifth Floor
-Boston, MA 02110-1301
-
-I am wondering whether it may be best to just put a link to the Free
-Software Foundation web page instead of having to update the address any
-time a change is made.
-
-Either way, I feel the address either needs to get corrected or changed
-to the URL, even though I am not a fan of huge patch series to make
-trivial changes like this.
-
-Thoughts?
-
-Cheers,
-Jeff Kirsher
-
---=-BDW4jfmCbkzPPigL7LAi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAABCgAGBQJSmoYGAAoJEOVv75VaS+3Ol8AP/1bfaYV5kFBLI5RzoMVIpDRQ
-H0p4U1YNdE2h36I1wGvytRpTtRNF99zcLjRGTz7xsOlUxFl6AhIY6gbwtLQySc3H
-Q9QNufRVbwCt/RfieGsDCzaYfXOpwEDif0F9Uw5OJSHNx05JQI9I61IWZGjJnu+d
-nNX3YpvvS4g7iq339c+k2gzMQErlnC4OToJxFRMxSBFfqxmGiav7pPir7NkQh3Jv
-imsPulZKCq7eCZL37u1hqRjn/4Yg8GIlvntqO2+lrl17xVUdVqpp98B7u0BMO49q
-B+8cad81W3C+nYZtTVln3FOvQjLtxVb2gXzt2xh/tQ95sCsVG+meInrqzHwGmC+Y
-qBiNqFxXFbgLKWlDbZusrEO3yq6DSAust3dhiCOi6bS6O9xhwcnPKMehGKfsLJBi
-G6tjJUZS3oNn0HY1cMWEi5Bo38kLd36DmdHqFPd+pe/FTzKekA0EQzsgcuNMwy8y
-/fodgj6Qmd94d5narlHEcUOPlzBxvDc+9amIZDD7rLBFXb4R8bPrwP9iaL5hCgA9
-Qmh4uGJIa86SlKohmr8Y3BwnrQj3S6zyys60R5dsfOH5fK3/mH2LqWqfq+MS2RE5
-rfklGfJNr6SOlfofBSzBUioaW1XbsnwGgrBuE48hwoY58F0yJyNDsLNENonMNTgo
-TRGlhLLYuNIvDIy9GTYQ
-=L7AD
------END PGP SIGNATURE-----
-
---=-BDW4jfmCbkzPPigL7LAi--
+Rafael
 
