@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114Ab3LAS40 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 13:56:26 -0500
-Received: from mail-we0-f175.google.com ([74.125.82.175]:45274 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab3LAS4U (ORCPT
+	id S1752190Ab3LAS5O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 13:57:14 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50989 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751838Ab3LAS5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 13:56:20 -0500
-Message-ID: <529B864F.3000206@gmail.com>
-Date: Sun, 01 Dec 2013 19:56:15 +0100
-From: Xose Vazquez Perez <xose.vazquez@gmail.com>
+	Sun, 1 Dec 2013 13:57:11 -0500
+Date: Sun, 1 Dec 2013 19:57:10 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Pali =?iso-8859-1?Q?Roh=E1?= <pali.rohar@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU?= <freemangordon@abv.bg>, sre@ring0.de,
+        omar.ramirez@copitl.com, tony@atomide.com, felipe.contreras@gmail.com,
+        s-anna@ti.com, nm@ti.com, ohad@wizery.com, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nico@ngolde.de
+Subject: Re: [patch] Staging: tidspbridge: make mmap root-only so it is not
+ a security problem
+Message-ID: <20131201185709.GC9743@amd.pavel.ucw.cz>
+References: <6662B6F95D1C4783A007CAC82A8DA641@ivogl>
+ <20131130220553.GA1901@kroah.com>
+ <20131130225822.GA26031@amd.pavel.ucw.cz>
+ <201312011041.40071@pali>
+ <1385891913.11457.2.camel@Nokia-N900>
+ <20131201121006.GA26072@amd.pavel.ucw.cz>
+ <20131201122756.GH5443@mwanda>
+ <529B7C8D.7060101@gmail.com>
 MIME-Version: 1.0
-To: jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Fix Free Software Foundation address in file headers
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <529B7C8D.7060101@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Kirsher wrote:
+Hi!
 
-> This came up when John Fastabend got a patch to fix up the headers in
-> the drivers/scsi/ directory and so I did a quick search of the network
-> drivers and found several instances in the file headers where an old FSF
-> address remains.  The old address is:
+> >>--- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
+> >>+++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+> >>@@ -258,7 +258,17 @@ err:
+> >>  /* This function maps kernel space memory to user space memory. */
+> >>  static int bridge_mmap(struct file *filp, struct vm_area_struct *vma)
+> >>  {
+> >>-	u32 status;
+> >>+	int status;
+> >>+	struct omap_dsp_platform_data *pdata =
+> >>+	    omap_dspbridge_dev->dev.platform_data;
+> >>+	unsigned long start = vma->vm_pgoff << PAGE_SHIFT;
+> >>+		
+> >>+	if (start < pdata->phys_mempool_base)
+> >>+		return -EINVAL;
+> >>+
+> >>+	if (vma->vm_end - vma->vm_start + (start - pdata->phys_mempool_base)
+> >>+	    > pdata->phys_mempool_size)
+> >This test is vulnerable to integer overflows if you pick a very high
+> >value for start.  Consider using the vm_iomap_memory() helper function
+> >instead of calling remap_pfn_range() directly.  Commit 7314e613d5ff
+> >('Fix a few incorrectly checked [io_]remap_pfn_range() calls') has an
+> >example of how the conversion works.
+> >
+> >regards,
+> >dan carpenter
+> >
+> Dan,
 > 
-> 59 Temple Place - Suite 330
-> Boston, MA 02111-1307
-> 
-> The current address is:
-> 
-> 51 Franklin Street - Fifth Floor
-> Boston, MA 02110-1301
-> 
-> I am wondering whether it may be best to just put a link to the Free
-> Software Foundation web page instead of having to update the address any
-> time a change is made.
-> 
-> Either way, I feel the address either needs to get corrected or changed
-> to the URL, even though I am not a fan of huge patch series to make
-> trivial changes like this.
-> 
-> Thoughts?
+> If that one looks fine, I'll send a correctly formatted patch.
 
-Something like that should be enough:
+Looks good to me. Feel free to add
 
-     [...]
-     You should have received a copy of the GNU General Public License along
--    with this program; if not, write to the Free Software Foundation, Inc.,
--    59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-+    with this program.  If not, see <http://www.gnu.org/licenses/>.
-     [...]
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
 
-This was changed in that form in gpl3.
-
-
-There are about 3684 references with, at least, 140 variations. Infinite Patience(TM).
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
