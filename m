@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303Ab3LAVz0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 16:55:26 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:48558 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab3LAVzW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 16:55:22 -0500
-Date: Sun, 1 Dec 2013 13:50:13 -0800
-From: Anton Vorontsov <anton@enomsg.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: dwmw2@infradead.org, rostedt@goodmis.org, fweisbec@gmail.com,
-        mingo@redhat.com, rjw@rjwysocki.net, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] power_supply: Fix Oops from NULL pointer
- dereference from wakeup_source_activate
-Message-ID: <20131201215012.GA6271@lizard>
-References: <cover.1385138418.git.shuah.kh@samsung.com>
- <739760cf69fca695a825246b5f6f1849cd2cf57a.1385138418.git.shuah.kh@samsung.com>
+	id S1751872Ab3LAWMF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 17:12:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4937 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751063Ab3LAWMC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Dec 2013 17:12:02 -0500
+Date: Mon, 2 Dec 2013 00:15:01 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] include/linux/kernel.h: Make might_fault to be a nop for
+ !MMU
+Message-ID: <20131201221501.GE5998@redhat.com>
+References: <1385710934.11444.2.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <739760cf69fca695a825246b5f6f1849cd2cf57a.1385138418.git.shuah.kh@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1385710934.11444.2.camel@phoenix>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 10:54:28AM -0700, Shuah Khan wrote:
-> power_supply_register() calls device_init_wakeup() to register a wakeup
-> source before initializing dev_name. As a result, device_wakeup_enable()
-> end up registering wakeup source with a null name when wakeup_source_register()
-> gets called with dev_name(dev) which is null at the time.
+On Fri, Nov 29, 2013 at 03:42:14PM +0800, Axel Lin wrote:
+> No fault if !MUU, thus make might_fault to be a nop for !MMU.
 > 
-> When kernel is booted with wakeup_source_activate enabled, it will panic
-> when the trace point code tries to dereference ws->name.
+> This fixes below build error if
+> !CONFIG_MMU && (CONFIG_PROVE_LOCKING=y || CONFIG_DEBUG_ATOMIC_SLEEP=y):
 > 
-> Fixed the problem by moving up the kobject_set_name() call prior to accesses
-> to dev_name(). Replaced kobject_set_name() with dev_set_name() which is the
-> right interface to be called from drivers. Fixed the call to device_del() prior
-> to device_add() in for wakeup_init_failed error handling code.
+> arch/arm/kernel/built-in.o: In function `arch_ptrace':
+> arch/arm/kernel/ptrace.c:852: undefined reference to `might_fault'
+> arch/arm/kernel/built-in.o: In function `restore_sigframe':
+> arch/arm/kernel/signal.c:173: undefined reference to `might_fault'
+> arch/arm/kernel/signal.c:174: undefined reference to `might_fault'
+> arch/arm/kernel/signal.c:175: undefined reference to `might_fault'
+> arch/arm/kernel/signal.c:176: undefined reference to `might_fault'
+> arch/arm/kernel/built-in.o:arch/arm/kernel/signal.c:177: more undefined references to `might_fault' follow
+> make: *** [vmlinux] Error 1
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
 
-Applied, thanks a lot!
+Makes sense. FWIW
 
-Anton
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+
+> ---
+>  include/linux/kernel.h | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 2ac0277..8b0ad48 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -193,7 +193,8 @@ extern int _cond_resched(void);
+>  		(__x < 0) ? -__x : __x;		\
+>  	})
+>  
+> -#if defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP)
+> +#if defined(CONFIG_MMU) && \
+> +	(defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP))
+>  void might_fault(void);
+>  #else
+>  static inline void might_fault(void) { }
+> -- 
+> 1.8.1.2
+> 
+> 
