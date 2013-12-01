@@ -1,53 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751578Ab3LABK2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 20:10:28 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:37334 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361Ab3LABK0 convert rfc822-to-8bit (ORCPT
+	id S1751659Ab3LABVt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 20:21:49 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59022 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751373Ab3LABVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 20:10:26 -0500
+	Sat, 30 Nov 2013 20:21:44 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: netdev@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>, David Miller <davem@davemloft.net>
+Subject: [PATCH] PCI / tg3: Give up chip reset and carrier loss handling if PCI device is not present
+Date: Sun, 01 Dec 2013 02:34:37 +0100
+Message-ID: <7807315.7cU9KldDtM@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
 MIME-Version: 1.0
-Reply-To: customerservicedpt@admin.in.th
-Date: Sun, 1 Dec 2013 02:10:26 +0100
-Message-ID: <CAMBtTDywq5RjzBAzG9_f15HC2_AR75UeZDdCdVbOrBL4na5Wmg@mail.gmail.com>
-Subject: 
-From: =?ISO-8859-1?Q?Google=AE?= <frankwayne55@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--- 
-wir gratulieren Ihnen über Ihren Erfolg in der folgenden amtlichen
-Veröffentlichung der Ergebnisse der E -Mail- Electronic Online
-Gewinnspiel Organisiert von Google, in Verbindung mit der Stiftung für
-die Förderung von Software-Produkten , (FPS) am 26. November 2013 hier
-in London UK . Google verdient seinen Gewinn vor allem aus der Werbung
-mit ihren ganz eigenen Google-Suchmaschine , Google Mail, Gala, Sify ,
-E -Mail-Dienst Google Maps, Google Apps , Orkut Social Networking und
-You Tube -Video-Sharing , die alle der Öffentlichkeit kostenlos zur
-Verfügung gestellt werden . Wir möchten Sie noch einmal zu
-gratulieren, als eines der Zwölf (12) ausgewählten Preisträger in den
-laufenden E -Mail- Electronic Online Gewinnspiel . Daher glauben wir,
-mit Ihren Preis , werden Sie weiterhin aktiv zu sein in Ihrem
-Schirmherrschaft für Google und seine Produkte . Ein Bank-Scheck
-haben, zu Ihren Gunsten ausgestellt wurde, damit Sie für sich die
-Summe der 950.000.00EUR ( Neun hundertfünfzigtausend Euro ) , Ein
-Google Nexus Tablet 10 gewonnen haben und auch Sie als einer der
-Google -Botschafter für das Jahr 2013 angeworben wurden, .
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Um Ihre Belohnung , kontaktieren Sie bitte die auszahlende Bank für
-die sofortige Freigabe der Mittel an ( info_lv@inbox.lv )
+Modify tg3_chip_reset() and tg3_close() to check if the PCI network
+adapter device is accessible at all in order to skip poking it or
+trying to handle a carrier loss in vain when that's not the case.
+Introduce a special PCI helper function pci_device_is_present()
+for this purpose.
 
-Herzlichen Glückwunsch von den Staffs und Mitglieder des Vorstands
-Google -Kommission.
+Of course, this uncovers the lack of the appropriate RTNL locking
+in tg3_suspend() and tg3_resume(), so add that locking in there
+too.
 
+These changes prevent tg3 from burning a CPU at 100% load level for
+solid several seconds after the Thunderbolt link is disconnected from
+a Matrox DS1 docking station.
 
-MD Matt Brittin ,
-Präsident des Verwaltungsrates und Geschäftsführer ,
-Google Großbritannien.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/net/ethernet/broadcom/tg3.c |   26 +++++++++++++++++++-------
+ drivers/pci/pci.c                   |    8 ++++++++
+ include/linux/pci.h                 |    1 +
+ 3 files changed, 28 insertions(+), 7 deletions(-)
 
-© 2013 Google Corporation.
+Index: linux-pm/drivers/net/ethernet/broadcom/tg3.c
+===================================================================
+--- linux-pm.orig/drivers/net/ethernet/broadcom/tg3.c
++++ linux-pm/drivers/net/ethernet/broadcom/tg3.c
+@@ -8932,6 +8932,9 @@ static int tg3_chip_reset(struct tg3 *tp
+ 	void (*write_op)(struct tg3 *, u32, u32);
+ 	int i, err;
+ 
++	if (!pci_device_is_present(tp->pdev))
++		return -ENODEV;
++
+ 	tg3_nvram_lock(tp);
+ 
+ 	tg3_ape_lock(tp, TG3_APE_LOCK_GRC);
+@@ -11594,10 +11597,11 @@ static int tg3_close(struct net_device *
+ 	memset(&tp->net_stats_prev, 0, sizeof(tp->net_stats_prev));
+ 	memset(&tp->estats_prev, 0, sizeof(tp->estats_prev));
+ 
+-	tg3_power_down_prepare(tp);
+-
+-	tg3_carrier_off(tp);
++	if (pci_device_is_present(tp->pdev)) {
++		tg3_power_down_prepare(tp);
+ 
++		tg3_carrier_off(tp);
++	}
+ 	return 0;
+ }
+ 
+@@ -17739,10 +17743,12 @@ static int tg3_suspend(struct device *de
+ 	struct pci_dev *pdev = to_pci_dev(device);
+ 	struct net_device *dev = pci_get_drvdata(pdev);
+ 	struct tg3 *tp = netdev_priv(dev);
+-	int err;
++	int err = 0;
++
++	rtnl_lock();
+ 
+ 	if (!netif_running(dev))
+-		return 0;
++		goto unlock;
+ 
+ 	tg3_reset_task_cancel(tp);
+ 	tg3_phy_stop(tp);
+@@ -17784,6 +17790,8 @@ out:
+ 			tg3_phy_start(tp);
+ 	}
+ 
++unlock:
++	rtnl_unlock();
+ 	return err;
+ }
+ 
+@@ -17792,10 +17800,12 @@ static int tg3_resume(struct device *dev
+ 	struct pci_dev *pdev = to_pci_dev(device);
+ 	struct net_device *dev = pci_get_drvdata(pdev);
+ 	struct tg3 *tp = netdev_priv(dev);
+-	int err;
++	int err = 0;
++
++	rtnl_lock();
+ 
+ 	if (!netif_running(dev))
+-		return 0;
++		goto unlock;
+ 
+ 	netif_device_attach(dev);
+ 
+@@ -17819,6 +17829,8 @@ out:
+ 	if (!err)
+ 		tg3_phy_start(tp);
+ 
++unlock:
++	rtnl_unlock();
+ 	return err;
+ }
+ #endif /* CONFIG_PM_SLEEP */
+Index: linux-pm/drivers/pci/pci.c
+===================================================================
+--- linux-pm.orig/drivers/pci/pci.c
++++ linux-pm/drivers/pci/pci.c
+@@ -4171,6 +4171,14 @@ int pci_set_vga_state(struct pci_dev *de
+ 	return 0;
+ }
+ 
++bool pci_device_is_present(struct pci_dev *pdev)
++{
++	u32 v;
++
++	return pci_bus_read_dev_vendor_id(pdev->bus, pdev->devfn, &v, 0);
++}
++EXPORT_SYMBOL_GPL(pci_device_is_present);
++
+ #define RESOURCE_ALIGNMENT_PARAM_SIZE COMMAND_LINE_SIZE
+ static char resource_alignment_param[RESOURCE_ALIGNMENT_PARAM_SIZE] = {0};
+ static DEFINE_SPINLOCK(resource_alignment_lock);
+Index: linux-pm/include/linux/pci.h
+===================================================================
+--- linux-pm.orig/include/linux/pci.h
++++ linux-pm/include/linux/pci.h
+@@ -961,6 +961,7 @@ void pci_update_resource(struct pci_dev
+ int __must_check pci_assign_resource(struct pci_dev *dev, int i);
+ int __must_check pci_reassign_resource(struct pci_dev *dev, int i, resource_size_t add_size, resource_size_t align);
+ int pci_select_bars(struct pci_dev *dev, unsigned long flags);
++bool pci_device_is_present(struct pci_dev *pdev);
+ 
+ /* ROM control related routines */
+ int pci_enable_rom(struct pci_dev *pdev);
+
