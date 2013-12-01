@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308Ab3LATr4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 14:47:56 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:35134 "EHLO gloria.sntech.de"
+	id S1752379Ab3LATsP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 14:48:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26658 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752060Ab3LATry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 14:47:54 -0500
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Subject: [PATCH v3 1/2] dt-bindings: add hym8563 binding
-Date: Sun, 1 Dec 2013 20:47:42 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        devicetree@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        Mike Turquette <mturquette@linaro.org>,
-        Richard Weinberger <richard.weinberger@gmail.com>
-References: <201312012047.02299.heiko@sntech.de>
-In-Reply-To: <201312012047.02299.heiko@sntech.de>
+	id S1752156Ab3LATsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Dec 2013 14:48:12 -0500
+Date: Sun, 1 Dec 2013 20:48:09 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH v4 1/3] perf diff: color the Delta column
+Message-ID: <20131201194809.GA1215@krava.brq.redhat.com>
+References: <1385732192-27713-1-git-send-email-artagnon@gmail.com>
+ <1385732192-27713-2-git-send-email-artagnon@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312012047.42669.heiko@sntech.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385732192-27713-2-git-send-email-artagnon@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add binding documentation for the hym8563 rtc chip.
+On Fri, Nov 29, 2013 at 07:06:30PM +0530, Ramkumar Ramachandra wrote:
+> Color the numbers in the Delta column using percent_color_snprintf().
+> Generalize the function so that we can accommodate all three comparison
+> methods in the future: delta, ratio, and wdiff.
+> 
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+> ---
+>  tools/perf/builtin-diff.c | 49 ++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 48 insertions(+), 1 deletion(-)
+> 
+> diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+> index 3b67ea2..c970aae 100644
+> --- a/tools/perf/builtin-diff.c
+> +++ b/tools/perf/builtin-diff.c
+> @@ -769,6 +769,45 @@ static int hpp__entry_baseline(struct hist_entry *he, char *buf, size_t size)
+>  	return ret;
+>  }
+>  
+> +static int __hpp__color_compare(struct perf_hpp_fmt *fmt,
+> +				struct perf_hpp *hpp, struct hist_entry *he,
+> +				int comparison_method)
+> +{
+> +	struct diff_hpp_fmt *dfmt =
+> +		container_of(fmt, struct diff_hpp_fmt, fmt);
+> +	struct hist_entry *pair = get_pair_fmt(he, dfmt);
+> +	double diff;
+> +	char pfmt[20] = " ";
+> +
+> +	if (!pair)
+> +		goto dummy_print;
+> +
+> +	switch(comparison_method){
+> +	case COMPUTE_DELTA:
+> +		if (pair->diff.computed)
+> +			diff = pair->diff.period_ratio_delta;
+> +		else
+> +			diff = compute_delta(he, pair);
+> +
+> +		if (fabs(diff) < 0.01)
+> +			goto dummy_print;
+> +		scnprintf(pfmt, 20, "%%%+d.2f%%%%", dfmt->header_width - 1);
+> +		return percent_color_snprintf(hpp->buf, hpp->size,
+> +					pfmt, fabs(diff));
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
----
- .../devicetree/bindings/rtc/haoyu,hym8563.txt      |   27 ++++++++++++++++++++
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- 2 files changed, 28 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/rtc/haoyu,hym8563.txt
+we dont want print fabs(diff)..  we just want percent_color_snprintf
+assign proper color for negative numbers, the change needs to go there
 
-diff --git a/Documentation/devicetree/bindings/rtc/haoyu,hym8563.txt b/Documentation/devicetree/bindings/rtc/haoyu,hym8563.txt
-new file mode 100644
-index 0000000..5ec0828
---- /dev/null
-+++ b/Documentation/devicetree/bindings/rtc/haoyu,hym8563.txt
-@@ -0,0 +1,27 @@
-+Haoyu Microelectronics HYM8563 Real Time Clock
-+
-+The HYM8563 provides basic rtc and alarm functionality
-+as well as a clock output of up to 32kHz.
-+
-+Required properties:
-+- compatible: should be: "haoyu,hym8563"
-+- reg: i2c address
-+- gpios: alarm interrupt gpio
-+- #clock-cells: the value should be 0
-+
-+Example:
-+
-+hym8563: hym8563@51 {
-+	compatible = "haoyu,hym8563";
-+	reg = <0x51>;
-+
-+	gpios = <&gpio0 13 0>;
-+
-+	#clock-cells = <0>;
-+};
-+
-+device {
-+...
-+	clocks = <&hym8563>;
-+...
-+};
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index 2956800..3452270 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -28,6 +28,7 @@ est	ESTeem Wireless Modems
- fsl	Freescale Semiconductor
- GEFanuc	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
- gef	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
-+haoyu	Haoyu Microelectronic Co. Ltd.
- hisilicon	Hisilicon Limited.
- hp	Hewlett Packard
- ibm	International Business Machines (IBM)
--- 
-1.7.10.4
-
+jirka
