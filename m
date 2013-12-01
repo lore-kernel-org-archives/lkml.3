@@ -1,96 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865Ab3LARFF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 12:05:05 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:58717 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075Ab3LARFC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 12:05:02 -0500
+	id S1752089Ab3LARGX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 12:06:23 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:37125 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751599Ab3LARGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Dec 2013 12:06:19 -0500
+X-IronPort-AV: E=Sophos;i="4.93,806,1378857600"; 
+   d="scan'208";a="79515538"
+Date: Sun, 1 Dec 2013 17:06:00 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ian Jackson <Ian.Jackson@eu.citrix.com>, <netdev@vger.kernel.org>,
+        Michael Chan <mchan@broadcom.com>, <dl-mptfusionlinux@lsi.com>,
+        <linux-scsi@vger.kernel.org>, <support@lsi.com>,
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
+        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
+        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: "swiotlb buffer is full" with 3.13-rc1+ but not 3.4.
+In-Reply-To: <1385844524.2170.10.camel@dabdike>
+Message-ID: <alpine.DEB.2.02.1312011659500.3198@kaball.uk.xensource.com>
+References: <21144.47873.639231.96901@mariner.uk.xensource.com>  <20131130185639.GA13039@pegasus.dumpdata.com> <1385844524.2170.10.camel@dabdike>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1385851238-21085-1-git-send-email-yinghai@kernel.org>
-References: <1385851238-21085-1-git-send-email-yinghai@kernel.org>
-Date: Sun, 1 Dec 2013 10:05:00 -0700
-Message-ID: <CAL-B5D3t=K-m5Y=Vvgv=SnrOLni8rAJC5eW8J1CEBsgafjTemA@mail.gmail.com>
-Subject: Re: [PATCH v3 00/12] PCI: Double removing fix and allocate 64bit mmio pref
-From: Myron Stowe <myron.stowe@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yinghai:
+On Sat, 30 Nov 2013, James Bottomley wrote:
+> On Sat, 2013-11-30 at 13:56 -0500, Konrad Rzeszutek Wilk wrote:
+> > My theory is that the SWIOTLB is not full - it is just that the request
+> > is for a compound page that is more than 512kB. Please note that
+> > SWIOTLB highest "chunk" of buffer it can deal with is 512kb.
+> > 
+> > And that is of course the question comes out - why would it try to
+> > bounce buffer it. In Xen the answer is simple - the sg chunks cross page
+> > boundaries which means that they are not physically contingous - so we
+> > have to use the bounce buffer. It would be better if the the sg list
+> > provided a large list of 4KB pages instead of compound pages as that
+> > could help in avoiding the bounce buffer.
+> > 
+> > But I digress - this is a theory - I don't know whether the SCSI layer
+> > does any colescing of the sg list - and if so, whether there is any
+> > easy knob to tell it to not do it.
+> 
+> Well, SCSI doesn't, but block does.  It's actually an efficiency thing
+> since most firmware descriptor formats cope with multiple pages and the
+> more descriptors you have for a transaction, the more work the on-board
+> processor on the HBA has to do.  If you have an emulated HBA, like
+> virtio, you could turn off physical coalesing by setting the
+> use_clustering flag to DISABLE_CLUSTERING.  But you can't do that for a
+> real card.  I assume the problem here is that the host is passing the
+> card directly to the guest and the guest clusters based on its idea of
+> guest pages which don't map to contiguous physical pages?
+> 
+> The way you tell how many physically contiguous pages block is willing
+> to merge is by looking at /sys/block/<dev>/queue/max_segment_size if
+> that's 4k then it won't merge, if it's greater than 4k, then it will.
+> 
+> I'm not quite sure what to do ... you can't turn of clustering globally
+> in the guest because the virtio drivers use it to reduce ring descriptor
+> pressure, what you probably want is some way to flag a pass through
+> device.
 
-Would you please consider *not* bundling unrelated, or at least
-non-dependent, patches together in one series.  As a distrobution
-subsystem maintainer, this type of bundling really complicates trying
-to identify and isolate key material for bringing in.  It also makes
-trying to identify the core content for key fixes, which can occur
-many months or years later, significantly more difficult when they
-were buried within a series with other unrelated content
+Given that we don't use virtio on Xen, we could actually turn off
+clustering globally (if we are running on Xen).
 
-Thanks,
- Myron.
+In fact for example BIOVEC_PHYS_MERGEABLE is defined:
 
-On Sat, Nov 30, 2013 at 3:40 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> First 4 are for Gu Zheng <guz.fnst@cn.fujitsu.com> to help double pci
-> device removing via sysfs.
-> For patch 4, rafael like to have use lock instead of atomic.
->
-> Patch 6 are for not enabling realloc auto when 64bit mmio is not there for
-> root bus.
->
-> Others are about mmio 64 allocation that could help Guo Chao <yan@linux.vnet.ibm.com> on powerpc mmio allocation.
-> It will try to assign 64 bit resource above 4g at first.
->
-> Patch 1-4 and Patch 5-12 could be appliey seperatedly.
->
-> Could be found:
->         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-3.14
->
-> And it is based on current pci/for-linus.
->
-> -v2: update after patch that move device_del down to pci_destroy_dev.
->      add "Try best to allocate pref mmio 64bit above 4G"
->
-> -v3: refresh and send out after pci_clip_resource() changes,
->      as Bjorn is not happy with attachments.
->
-> Yinghai Lu (12):
->   PCI: Use device_release_driver in pci_stop_root_bus
->   PCI: Move back pci_proc_attach_devices calling
->   PCI: Move resources and bus_list releasing to pci_release_dev
->   PCI: Destroy pci dev only once
->   PCI: pcibus address to resource converting take bus instead of dev
->   PCI: Only enable realloc auto when root bus has 64bit mmio
->   PCI: Don't use 4G bus address directly in resource allocation
->   PCI: Try to allocate mem64 above 4G at first
->   PCI: Kill PCIBIOS_MAX_MEM_32
->   PCI: Try best to allocate pref mmio 64bit above 4g
->   PCI: Sort pci root bus resources list
->   intel-gtt: Read 64bit for gmar_bus_addr
->
->  arch/x86/include/asm/pci.h   |   1 -
->  drivers/char/agp/intel-gtt.c |  14 ++--
->  drivers/pci/bus.c            |  74 ++++++++++++++++---
->  drivers/pci/host-bridge.c    |  34 +++++----
->  drivers/pci/probe.c          |  23 +++++-
->  drivers/pci/remove.c         |  31 ++------
->  drivers/pci/setup-bus.c      | 165 ++++++++++++++++++++++++++++++-------------
->  drivers/pci/setup-res.c      |  14 +++-
->  include/linux/pci.h          |  10 +--
->  9 files changed, 257 insertions(+), 109 deletions(-)
->
-> --
-> 1.8.1.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
++#define BIOVEC_PHYS_MERGEABLE(vec1, vec2)				\
++	(__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&				\
++	 (!xen_domain() || xen_biovec_phys_mergeable(vec1, vec2)))
+
+so that we can disable it if the two bv_page are not actually physical
+contiguous.
