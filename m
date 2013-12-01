@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab3LAX5q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 18:57:46 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:29452 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485Ab3LAX5o (ORCPT
+	id S1752541Ab3LAX6I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 18:58:08 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:27978 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752488Ab3LAX6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 18:57:44 -0500
-X-AuditID: cbfee690-b7f126d00000418c-a6-529bccf7b64d
+	Sun, 1 Dec 2013 18:58:04 -0500
+X-AuditID: cbfee68d-b7f1a6d0000055a7-4f-529bcd0bf4fe
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <000001ceeef0$d88a7f40$899f7dc0$%han@samsung.com>
 In-reply-to: <000001ceeef0$d88a7f40$899f7dc0$%han@samsung.com>
-Subject: [PATCH 6/8] backlight: jornada720: use devm_lcd_device_register()
-Date: Mon, 02 Dec 2013 08:57:43 +0900
-Message-id: <000501ceeef1$20110b40$603321c0$%han@samsung.com>
+Subject: [PATCH 7/8] backlight: l4f00242t03: use devm_lcd_device_register()
+Date: Mon, 02 Dec 2013 08:58:02 +0900
+Message-id: <000601ceeef1$2bd15070$8373f150$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7u8NgcVnqPK6OFQjq+Xy+HsAignwAAD4cg
+Thread-index: Ac7u8NgcVnqPK6OFQjq+Xy+HsAignwAAEk+w
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zI93vZ2YHGWw5JmcxZ/0aNovLCy+x
-	WlzeNYfNgdnjxIzfLB59W1YxenzeJBfAHMVlk5Kak1mWWqRvl8CV8WzKEdaCu1wV9y52sTYw
-	tnF2MXJySAiYSDzff5INwhaTuHBvPZDNxSEksIxR4sirXsYuRg6wogV/ZSHiixgltq97xALS
-	ICTwi1HiRGMxiM0moCbx5cthdpB6EQF9ibYWDRCTWcBF4ug0EYhqW4kNj84zgdicAnYSE27+
-	AbOFBbwklvxrBjuBRUBV4nX3G0YQmxeo/u2tq1C2oMSPyffAtjILaEms33mcCcKWl9i85i0z
-	xJXqEo/+6oKERQSMJO4unMgOUSIise/FO0aID/exS1zs84FYJSDxbfIhFohWWYlNB5ghSiQl
-	Dq64wTKBUWIWksWzkCyehWTxLCQbFjCyrGIUTS1ILihOSi8y0StOzC0uzUvXS87P3cQIibwJ
-	OxjvHbA+xJgMtH4is5Rocj4wcvNK4g2NzYwsTE1MjY3MLc1IE1YS51V7lBQkJJCeWJKanZpa
-	kFoUX1Sak1p8iJGJg1OqgVHnhB1P3OUPtS6S7Nb7ldsij9m/X3ZrUviy3xcXXL5w6K+ogiKf
-	olD+HJX58oc+r3wqp69rH2XXf/31/nuhwSZzP1+xnX6zMcRP2v/QBI+9x4Pr+g8Ir+L8sep9
-	VESJwb4FnDEmfrPCdSO6PxzSuJnxbdNiqw+1fZo2k3+yfhMolYl8deetvJgSS3FGoqEWc1Fx
-	IgCGl5N30gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jAd3vZ2YHGbzpkLaYs34Nm8XlhZdY
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t8zY13us7ODDLb0qFrMWb+GzeLywkus
+	Fpd3zWFzYPY4MeM3i0ffllWMHp83yQUwR3HZpKTmZJalFunbJXBlvLj9i6VgPUfF/OebWRsY
+	29i7GDk5JARMJB5v/MQIYYtJXLi3nq2LkYtDSGAZo8StKw1MMEVt/SfYIRLTGSVmnnoP5fxi
+	lDi77xsbSBWbgJrEly+HgRIcHCIC+hJtLRogJrOAi8TRaSIgFUICthIbHp0Hm8kpYCcx4eYf
+	MFtYwFtiTc9KZhCbRUBVounKYUaQVl6g+sXHE0DCvAKCEj8m32MBsZkFtCTW7zzOBGHLS2xe
+	85YZpFxCQF3i0V9dkLCIgJHE7d3/ocpFJPa9eMcIcrCEwDF2ifdPJzBBrBKQ+Db5EAtEr6zE
+	pgPMEN9KShxccYNlAqPELCSbZyHZPAvJ5llIVixgZFnFKJpakFxQnJReZKhXnJhbXJqXrpec
+	n7uJERJ9vTsYbx+wPsSYDLR+IrOUaHI+MHrzSuINjc2MLExNTI2NzC3NSBNWEudNepgUJCSQ
+	nliSmp2aWpBaFF9UmpNafIiRiYNTqoGR99nlZan32z/vbH43Yd9Hu22Pw/y0rkycsOdvz//G
+	Y6fS3zM3Xjp+LGtWhaZHqBmzgHSX+BzZ50r6Ii+nK3MfbjTeydRXyhL28d3EJ3ccomOO5YVZ
+	frLaNl3R4L32EsnWFTqbNDdc7PFymqgkbfPgxhErHyEXt2UMftsNj9g6L18Suu2a6FF9JZbi
+	jERDLeai4kQAQb01uNQCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jQV3us7ODDH7eULSYs34Nm8XlhZdY
 	LS7vmsPmwOxxYsZvFo++LasYPT5vkgtgjmpgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw
 	1DW0tDBXUshLzE21VXLxCdB1y8wB2qSkUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7H
-	yAANJKxjzHg25QhrwV2uinsXu1gbGNs4uxg5OCQETCQW/JXtYuQEMsUkLtxbz9bFyMUhJLCI
-	UWL7ukcsIAkhgV+MEicai0FsNgE1iS9fDrOD9IoI6Eu0tWiAmMwCLhJHp4lAVNtKbHh0ngnE
-	5hSwk5hw8w+YLSzgJbHkXzMbiM0ioCrxuvsNI4jNC1T/9tZVKFtQ4sfke2BbmQW0JNbvPM4E
-	YctLbF7zlhniYnWJR391QcIiAkYSdxdOZIcoEZHY9+Id4wRGoVlIJs1CMmkWkkmzkLQsYGRZ
-	xSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREc2c+kdzCuarA4xCjAwajEw3vhxOwgIdbEsuLK
-	3EOMEhzMSiK8Fl9nBQnxpiRWVqUW5ccXleakFh9iTAZ6dCKzlGhyPjDp5JXEGxqbmBlZGplZ
-	GJmYm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMHp1QDo5icTXvN5fS6NhWtB5dD+8ySX2Zp
-	LH/kXR2pGfJo/1z5vWf//H37fN2m9/OX1OXz3XXuVTDuqGNTY/YRujDfJGyldvnV3ppSz9dr
-	Mze+KVTNTHfNcnsU8rxux5ydwhP5HLxLQh+2bEqMuKPBdM5WeW/LpV2LuOtv91e/dpf85NKd
-	1TrVoGmDEktxRqKhFnNRcSIAVl9q2jADAAA=
+	yAANJKxjzHhx+xdLwXqOivnPN7M2MLaxdzFyckgImEi09Z+AssUkLtxbz9bFyMUhJDCdUWLm
+	qffsEM4vRomz+76xgVSxCahJfPlyGCjBwSEioC/R1qIBYjILuEgcnSYCUiEkYCux4dF5JhCb
+	U8BOYsLNP2C2sIC3xJqelcwgNouAqkTTlcOMIK28QPWLjyeAhHkFBCV+TL7HAmIzC2hJrN95
+	nAnClpfYvOYtM0i5hIC6xKO/uiBhEQEjidu7/0OVi0jse/GOcQKj0Cwkk2YhmTQLyaRZSFoW
+	MLKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAiO7WfSOxhXNVgcYhTgYFTi4b1wYnaQEGti
+	WXFl7iFGCQ5mJRFei6+zgoR4UxIrq1KL8uOLSnNSiw8xJgP9OZFZSjQ5H5h28kriDY1NzIws
+	jcwsjEzMzUkTVhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBMWXNBL5tadseNybmhtnHCG2c
+	dZTtyLbXZXEi4VInvyt2WR/cs8Hm/dUn2448jndcFH3ikRsnX+O33zYvv7sLMMwrmr/PjD2d
+	W/AwS01p/mzD02fPt7jMumey5LeK5f5o/c6pu1gfX/imNmnj7M4N6fnJW6+L6bYVBSk+nqJ6
+	eJrMHvUPW7bItCqxFGckGmoxFxUnAgC1HpZbMQMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,47 +54,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_lcd_device_register() to make cleanup paths simpler,
-and remove unnecessary remove().
+Use devm_lcd_device_register() to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/jornada720_lcd.c |   13 ++-----------
- 1 file changed, 2 insertions(+), 11 deletions(-)
+ drivers/video/backlight/l4f00242t03.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/video/backlight/jornada720_lcd.c b/drivers/video/backlight/jornada720_lcd.c
-index b061413..da3876c 100644
---- a/drivers/video/backlight/jornada720_lcd.c
-+++ b/drivers/video/backlight/jornada720_lcd.c
-@@ -100,7 +100,8 @@ static int jornada_lcd_probe(struct platform_device *pdev)
- 	struct lcd_device *lcd_device;
- 	int ret;
+diff --git a/drivers/video/backlight/l4f00242t03.c b/drivers/video/backlight/l4f00242t03.c
+index b5fc13b..63e7638 100644
+--- a/drivers/video/backlight/l4f00242t03.c
++++ b/drivers/video/backlight/l4f00242t03.c
+@@ -223,8 +223,8 @@ static int l4f00242t03_probe(struct spi_device *spi)
+ 		return PTR_ERR(priv->core_reg);
+ 	}
  
--	lcd_device = lcd_device_register(S1D_DEVICENAME, &pdev->dev, NULL, &jornada_lcd_props);
-+	lcd_device = devm_lcd_device_register(&pdev->dev, S1D_DEVICENAME,
-+					&pdev->dev, NULL, &jornada_lcd_props);
+-	priv->ld = lcd_device_register("l4f00242t03",
+-					&spi->dev, priv, &l4f_ops);
++	priv->ld = devm_lcd_device_register(&spi->dev, "l4f00242t03", &spi->dev,
++					priv, &l4f_ops);
+ 	if (IS_ERR(priv->ld))
+ 		return PTR_ERR(priv->ld);
  
- 	if (IS_ERR(lcd_device)) {
- 		ret = PTR_ERR(lcd_device);
-@@ -119,18 +120,8 @@ static int jornada_lcd_probe(struct platform_device *pdev)
+@@ -243,8 +243,6 @@ static int l4f00242t03_remove(struct spi_device *spi)
+ 	struct l4f00242t03_priv *priv = spi_get_drvdata(spi);
+ 
+ 	l4f00242t03_lcd_power_set(priv->ld, FB_BLANK_POWERDOWN);
+-	lcd_device_unregister(priv->ld);
+-
  	return 0;
  }
  
--static int jornada_lcd_remove(struct platform_device *pdev)
--{
--	struct lcd_device *lcd_device = platform_get_drvdata(pdev);
--
--	lcd_device_unregister(lcd_device);
--
--	return 0;
--}
--
- static struct platform_driver jornada_lcd_driver = {
- 	.probe	= jornada_lcd_probe,
--	.remove	= jornada_lcd_remove,
- 	.driver	= {
- 		.name	= "jornada_lcd",
- 	},
 -- 
 1.7.10.4
 
