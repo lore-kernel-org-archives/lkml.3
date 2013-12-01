@@ -1,57 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221Ab3LAS62 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 13:58:28 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:60821 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab3LAS60 (ORCPT
+	id S1752263Ab3LATAR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 14:00:17 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:52791 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751838Ab3LATAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 13:58:26 -0500
+	Sun, 1 Dec 2013 14:00:13 -0500
+Message-ID: <529B8739.60701@wwwdotorg.org>
+Date: Sun, 01 Dec 2013 12:00:09 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <20131201165538.GA12864@gmail.com>
-References: <20131125203358.156292370@linutronix.de>
-	<1385453551.12603.16.camel@buesod1.americas.hpqcorp.net>
-	<20131126085256.GD789@laptop.programming.kicks-ass.net>
-	<1385493911.25945.3.camel@buesod1.americas.hpqcorp.net>
-	<1385499085.23083.7.camel@buesod1.americas.hpqcorp.net>
-	<alpine.DEB.2.02.1311262206150.30673@ionos.tec.linutronix.de>
-	<1385624678.22210.25.camel@buesod1.americas.hpqcorp.net>
-	<20131128115946.GD13532@twins.programming.kicks-ass.net>
-	<20131201121022.GB12115@gmail.com>
-	<20131201125604.GH16796@laptop.programming.kicks-ass.net>
-	<20131201165538.GA12864@gmail.com>
-Date: Sun, 1 Dec 2013 10:58:25 -0800
-X-Google-Sender-Auth: V4GOPUp3OI9nHTpNMsGourThiR4
-Message-ID: <CA+55aFz-v62jWpTqzAhrf5rGS5drbvgG-XHDDN6cdHCLB+kMxg@mail.gmail.com>
-Subject: Re: [RFC patch 0/5] futex: Allow lockless empty check of hashbucket
- plist in futex_wake()
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Davidlohr Bueso <davidlohr@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Jason Low <jason.low2@hp.com>,
-        Darren Hart <dvhart@linux.intel.com>, Mike Galbraith <efault@gmx.de>,
-        Jeff Mahoney <jeffm@suse.com>, Scott Norton <scott.norton@hp.com>,
-        Tom Vaden <tom.vaden@hp.com>, Aswin Chandramouleeswaran <aswin@hp.com>,
-        Waiman Long <Waiman.Long@hp.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+CC: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "lorenzo.pieralisi@arm.com" <lorenzo.pieralisi@arm.com>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCHv6+++ 01/13] of: introduce of_property_for_earch_phandle_with_args()
+References: <20131121.191720.1487772262083864095.hdoyu@nvidia.com><528E577C.2050506@wwwdotorg.org><20131128.145818.1345100874304396564.hdoyu@nvidia.com> <20131129.134625.431945240074254704.hdoyu@nvidia.com>
+In-Reply-To: <20131129.134625.431945240074254704.hdoyu@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 1, 2013 at 8:55 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> Keeping the page invariant would bring significant performance
-> advantages to hashing.
+On 11/29/2013 04:46 AM, Hiroshi Doyu wrote:
+...
+> Iterating over a property containing a list of phandles with arguments
+> is a common operation for device drivers. This patch adds a new
+> of_property_for_each_phandle_with_args() macro to make the iteration
+> simpler.
+> 
+> Introduced a new struct "of_phandle_iter" to keep the state when
+> iterating over the list.
+> 
+> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> ---
+> v6+++:
 
-Or not. Rather, it would make things much worse. The virtual address
-is much simpler and better to avoid needing any page table lookup etc
-crap. The key is just the mm and the virtual address, and no silly
-page table walks etc necessary.
+Surely that's v9; "+++" is rather unusual.
 
-Of course, I have no idea if people are properly using the private
-futexes. glibc _should_ use them, but who the heck knows..
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
 
-                Linus
+> +void of_phandle_iter_next(struct of_phandle_iter *iter,
+> +			  struct of_phandle_args *out_args)
+> +{
+> +	phandle phandle;
+> +	struct device_node *dn;
+> +	int i, count = iter->cell_count;
+> +
+> +	iter->err = -EINVAL;
+> +	if (!iter->cells_name && !iter->cell_count)
+> +		return;
+
+Wasn't that already checked in _start()?
+
+Why not set err = -EINVAL inside the if, rather than setting it to an
+error value here by default, then having to over-write it at the end of
+the function?
+
+> +static void __of_phandle_iter_set(struct of_phandle_iter *iter,
+
+This is only used in one place; why not simply inline this into
+of_phandle_iter_start()? It would make the code simpler.
+
+> +void of_phandle_iter_start(struct of_phandle_iter *iter,
+
+> +	iter->cells_name = cells_name;
+> +	iter->cell_count = cell_count;
+
+Why not pass these values into of_phandle_iter_next() instead? There's
+no need to pass them just to _start() so they can be read by _next()
+instead.
+
+> diff --git a/include/linux/of.h b/include/linux/of.h
+
+> +/*
+> + * keep the state at iterating a list of phandles with variable number
+> + * of args
+> + */
+> +struct of_phandle_iter {
+> +	int		err;
+> +	const __be32	*cur;		/* current phandle */
+> +	const __be32	*end;		/* end of the last phandle */
+
+Can't you detect an error case by e.g. (cur == NULL) and thus avoid
+requiring an explicit err field?
+
+Together with removing:
+
+> +	const char	*cells_name;
+> +	int		cell_count;
+
+... then you'd only be left with cur/end, so I think you could get away
+without a struct at all, but simply "cur" as the iterator variable, plus
+"end" as the one temp variable.
