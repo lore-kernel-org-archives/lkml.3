@@ -1,160 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659Ab3LABVt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 20:21:49 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:59022 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751373Ab3LABVo (ORCPT
+	id S1751569Ab3LACQk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 21:16:40 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:50138 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412Ab3LACQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 20:21:44 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: netdev@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>, David Miller <davem@davemloft.net>
-Subject: [PATCH] PCI / tg3: Give up chip reset and carrier loss handling if PCI device is not present
-Date: Sun, 01 Dec 2013 02:34:37 +0100
-Message-ID: <7807315.7cU9KldDtM@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+	Sat, 30 Nov 2013 21:16:38 -0500
+Message-ID: <529A9C02.4090909@hitachi.com>
+Date: Sun, 01 Dec 2013 11:16:34 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-arch@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        virtualization@lists.linux-foundation.org, systemtap@sourceware.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: Re: Re: Re: Re: [PATCH -tip v3 00/23] kprobes: introduce NOKPROBE_SYMBOL()
+ and general cleaning of kprobe blacklist
+References: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal> <y0mvbznxi6k.fsf@fche.csb> <20131120153801.GA9743@gmail.com> <20131120173600.GK8993@redhat.com> <528D6C9F.8050809@hitachi.com> <20131121072938.GA16912@gmail.com> <528EC2FF.30301@hitachi.com> <528F4406.3090309@hitachi.com> <20131127133045.GC18422@gmail.com> <52971E66.9080006@hitachi.com> <20131130134618.GA18768@gmail.com>
+In-Reply-To: <20131130134618.GA18768@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+(2013/11/30 22:46), Ingo Molnar wrote:
+>>>> Anyway, to fix all of them, I think we need file-based blacklist
+>>>> especially for assembler symbols.
+>>>
+>>> assembler symbols shouldn't be particular hard either, just put them 
+>>> into the noprobes section.
+>>
+>> Would you mean .kprobes.text? Hmm, I hope not to use it anymore, but 
+>> yeah, bugfix is more important. Agreed.
+> 
+> No, why not put the symbol address into the 'blacklist' section, 
+> within the asm file? We fill out exception table entries in .S files 
+> as well, see the _ASM_EXTABLE() macro, it's possible to do all that. 
 
-Modify tg3_chip_reset() and tg3_close() to check if the PCI network
-adapter device is accessible at all in order to skip poking it or
-trying to handle a carrier loss in vain when that's not the case.
-Introduce a special PCI helper function pci_device_is_present()
-for this purpose.
+Oh! I got it. Thank you for the pointer! :)
 
-Of course, this uncovers the lack of the appropriate RTNL locking
-in tg3_suspend() and tg3_resume(), so add that locking in there
-too.
+> 
+> It needs not a CPP macro but an assembly macro.
 
-These changes prevent tg3 from burning a CPU at 100% load level for
-solid several seconds after the Thunderbolt link is disconnected from
-a Matrox DS1 docking station.
+OK, I'll try that.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/net/ethernet/broadcom/tg3.c |   26 +++++++++++++++++++-------
- drivers/pci/pci.c                   |    8 ++++++++
- include/linux/pci.h                 |    1 +
- 3 files changed, 28 insertions(+), 7 deletions(-)
+Thanks again,
 
-Index: linux-pm/drivers/net/ethernet/broadcom/tg3.c
-===================================================================
---- linux-pm.orig/drivers/net/ethernet/broadcom/tg3.c
-+++ linux-pm/drivers/net/ethernet/broadcom/tg3.c
-@@ -8932,6 +8932,9 @@ static int tg3_chip_reset(struct tg3 *tp
- 	void (*write_op)(struct tg3 *, u32, u32);
- 	int i, err;
- 
-+	if (!pci_device_is_present(tp->pdev))
-+		return -ENODEV;
-+
- 	tg3_nvram_lock(tp);
- 
- 	tg3_ape_lock(tp, TG3_APE_LOCK_GRC);
-@@ -11594,10 +11597,11 @@ static int tg3_close(struct net_device *
- 	memset(&tp->net_stats_prev, 0, sizeof(tp->net_stats_prev));
- 	memset(&tp->estats_prev, 0, sizeof(tp->estats_prev));
- 
--	tg3_power_down_prepare(tp);
--
--	tg3_carrier_off(tp);
-+	if (pci_device_is_present(tp->pdev)) {
-+		tg3_power_down_prepare(tp);
- 
-+		tg3_carrier_off(tp);
-+	}
- 	return 0;
- }
- 
-@@ -17739,10 +17743,12 @@ static int tg3_suspend(struct device *de
- 	struct pci_dev *pdev = to_pci_dev(device);
- 	struct net_device *dev = pci_get_drvdata(pdev);
- 	struct tg3 *tp = netdev_priv(dev);
--	int err;
-+	int err = 0;
-+
-+	rtnl_lock();
- 
- 	if (!netif_running(dev))
--		return 0;
-+		goto unlock;
- 
- 	tg3_reset_task_cancel(tp);
- 	tg3_phy_stop(tp);
-@@ -17784,6 +17790,8 @@ out:
- 			tg3_phy_start(tp);
- 	}
- 
-+unlock:
-+	rtnl_unlock();
- 	return err;
- }
- 
-@@ -17792,10 +17800,12 @@ static int tg3_resume(struct device *dev
- 	struct pci_dev *pdev = to_pci_dev(device);
- 	struct net_device *dev = pci_get_drvdata(pdev);
- 	struct tg3 *tp = netdev_priv(dev);
--	int err;
-+	int err = 0;
-+
-+	rtnl_lock();
- 
- 	if (!netif_running(dev))
--		return 0;
-+		goto unlock;
- 
- 	netif_device_attach(dev);
- 
-@@ -17819,6 +17829,8 @@ out:
- 	if (!err)
- 		tg3_phy_start(tp);
- 
-+unlock:
-+	rtnl_unlock();
- 	return err;
- }
- #endif /* CONFIG_PM_SLEEP */
-Index: linux-pm/drivers/pci/pci.c
-===================================================================
---- linux-pm.orig/drivers/pci/pci.c
-+++ linux-pm/drivers/pci/pci.c
-@@ -4171,6 +4171,14 @@ int pci_set_vga_state(struct pci_dev *de
- 	return 0;
- }
- 
-+bool pci_device_is_present(struct pci_dev *pdev)
-+{
-+	u32 v;
-+
-+	return pci_bus_read_dev_vendor_id(pdev->bus, pdev->devfn, &v, 0);
-+}
-+EXPORT_SYMBOL_GPL(pci_device_is_present);
-+
- #define RESOURCE_ALIGNMENT_PARAM_SIZE COMMAND_LINE_SIZE
- static char resource_alignment_param[RESOURCE_ALIGNMENT_PARAM_SIZE] = {0};
- static DEFINE_SPINLOCK(resource_alignment_lock);
-Index: linux-pm/include/linux/pci.h
-===================================================================
---- linux-pm.orig/include/linux/pci.h
-+++ linux-pm/include/linux/pci.h
-@@ -961,6 +961,7 @@ void pci_update_resource(struct pci_dev
- int __must_check pci_assign_resource(struct pci_dev *dev, int i);
- int __must_check pci_reassign_resource(struct pci_dev *dev, int i, resource_size_t add_size, resource_size_t align);
- int pci_select_bars(struct pci_dev *dev, unsigned long flags);
-+bool pci_device_is_present(struct pci_dev *pdev);
- 
- /* ROM control related routines */
- int pci_enable_rom(struct pci_dev *pdev);
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
