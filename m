@@ -1,111 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263Ab3LATAR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 14:00:17 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52791 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab3LATAN (ORCPT
+	id S1752152Ab3LATGQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 14:06:16 -0500
+Received: from smtprelay0241.hostedemail.com ([216.40.44.241]:51005 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751770Ab3LATGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 14:00:13 -0500
-Message-ID: <529B8739.60701@wwwdotorg.org>
-Date: Sun, 01 Dec 2013 12:00:09 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-CC: "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "robherring2@gmail.com" <robherring2@gmail.com>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "lorenzo.pieralisi@arm.com" <lorenzo.pieralisi@arm.com>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCHv6+++ 01/13] of: introduce of_property_for_earch_phandle_with_args()
-References: <20131121.191720.1487772262083864095.hdoyu@nvidia.com><528E577C.2050506@wwwdotorg.org><20131128.145818.1345100874304396564.hdoyu@nvidia.com> <20131129.134625.431945240074254704.hdoyu@nvidia.com>
-In-Reply-To: <20131129.134625.431945240074254704.hdoyu@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 1 Dec 2013 14:06:14 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:966:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2196:2198:2199:2200:2393:2559:2562:2736:2828:2914:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3874:4250:4321:4385:4605:5007:7576:7652:7903:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12296:12438:12517:12519:12555:12663:12679:12740:13101,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: rifle30_70608aaa85745
+X-Filterd-Recvd-Size: 3406
+Message-ID: <1385924770.2664.14.camel@joe-AO722>
+Subject: Re: [PATCH] Staging: TIDSPBRIDGE: Remove UUID helper
+From: Joe Perches <joe@perches.com>
+To: Ivaylo DImitrov <ivo.g.dimitrov.75@gmail.com>
+Cc: omar.ramirez@copitl.com, gregkh@linuxfoundation.org, pali.rohar@gmail.com,
+        pavel@ucw.cz, linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Ivaylo Dimitrov <freemangordon@abv.bg>
+Date: Sun, 01 Dec 2013 11:06:10 -0800
+In-Reply-To: <1385917660-2676-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+References: <1385917660-2676-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2013 04:46 AM, Hiroshi Doyu wrote:
-...
-> Iterating over a property containing a list of phandles with arguments
-> is a common operation for device drivers. This patch adds a new
-> of_property_for_each_phandle_with_args() macro to make the iteration
-> simpler.
+On Sun, 2013-12-01 at 19:07 +0200, Ivaylo DImitrov wrote:
+> From: Ivaylo Dimitrov <freemangordon@abv.bg>
 > 
-> Introduced a new struct "of_phandle_iter" to keep the state when
-> iterating over the list.
-> 
-> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> ---
-> v6+++:
-
-Surely that's v9; "+++" is rather unusual.
-
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-
-> +void of_phandle_iter_next(struct of_phandle_iter *iter,
-> +			  struct of_phandle_args *out_args)
-> +{
-> +	phandle phandle;
-> +	struct device_node *dn;
-> +	int i, count = iter->cell_count;
-> +
-> +	iter->err = -EINVAL;
-> +	if (!iter->cells_name && !iter->cell_count)
-> +		return;
-
-Wasn't that already checked in _start()?
-
-Why not set err = -EINVAL inside the if, rather than setting it to an
-error value here by default, then having to over-write it at the end of
-the function?
-
-> +static void __of_phandle_iter_set(struct of_phandle_iter *iter,
-
-This is only used in one place; why not simply inline this into
-of_phandle_iter_start()? It would make the code simpler.
-
-> +void of_phandle_iter_start(struct of_phandle_iter *iter,
-
-> +	iter->cells_name = cells_name;
-> +	iter->cell_count = cell_count;
-
-Why not pass these values into of_phandle_iter_next() instead? There's
-no need to pass them just to _start() so they can be read by _next()
-instead.
-
-> diff --git a/include/linux/of.h b/include/linux/of.h
-
-> +/*
-> + * keep the state at iterating a list of phandles with variable number
-> + * of args
+> Custom uuid helper function is needed only in rmgr/dbdcd.c and doesn't
+> need to be exported. It can also be made way simpler by using sscanf.
+[]
+> diff --git a/drivers/staging/tidspbridge/rmgr/dbdcd.c b/drivers/staging/tidspbridge/rmgr/dbdcd.c
+[]
+> @@ -74,6 +74,40 @@ static int get_dep_lib_info(struct dcd_manager *hdcd_mgr,
+>  				   enum nldr_phase phase);
+>  
+>  /*
+> + *  ======== dcd_uuid_from_string ========
+> + *  Purpose:
+> + *      Converts an ANSI string to a dsp_uuid.
+> + *  Parameters:
+> + *      sz_uuid:    Pointer to a string that represents a dsp_uuid object.
+> + *      uuid_obj:      Pointer to a dsp_uuid object.
+> + *  Returns:
+> + *  Requires:
+> + *      uuid_obj & sz_uuid are non-NULL values.
+> + *  Ensures:
+> + *  Details:
+> + *      We assume the string representation of a UUID has the following format:
+> + *      "12345678_1234_1234_1234_123456789abc".
 > + */
-> +struct of_phandle_iter {
-> +	int		err;
-> +	const __be32	*cur;		/* current phandle */
-> +	const __be32	*end;		/* end of the last phandle */
+> +static void dcd_uuid_from_string(char *sz_uuid, struct dsp_uuid *uuid_obj)
+> +{
+> +	char c;
+> +	u64 t;
+> +
+> +	/*
+> +	 * sscanf implementation cannot deal with hh format modifier
+> +	 * if the converted value doesn't fit in u32. So, convert the
+> +	 * last six bytes to u64 and memcpy what is needed
+> +	 */
+> +	sscanf(sz_uuid, "%8x%c%4hx%c%4hx%c%2hhx%2hhx%c%llx",
+> +	       &uuid_obj->data1, &c, &uuid_obj->data2, &c,
+> +	       &uuid_obj->data3, &c, &uuid_obj->data4,
+> +	       &uuid_obj->data5, &c, &t);
+> +
+> +	t = cpu_to_be64(t);
+> +	memcpy(&uuid_obj->data6[0], ((char*)&t) + 2, 6);
+> +}
 
-Can't you detect an error case by e.g. (cur == NULL) and thus avoid
-requiring an explicit err field?
+It'd probably be better to return true or false on
+successful conversion, use a temporary struct dsp_uuid,
+check the sscanf return is 10 and only copy to uuid_obj
+on success.
 
-Together with removing:
+Something like:
 
-> +	const char	*cells_name;
-> +	int		cell_count;
+static bool dcd_uuid_from_string(char *sz_uuid, struct dsp_uuid *uuid_obj)
+{
+	char c;
+	u64 t;
+	struct dsp_uuid tmp;
 
-... then you'd only be left with cur/end, so I think you could get away
-without a struct at all, but simply "cur" as the iterator variable, plus
-"end" as the one temp variable.
+	/*
+	 * sscanf implementation cannot deal with hh format modifier
+	 * if the converted value doesn't fit in u32. So, convert the
+	 * last six bytes to u64 and memcpy what is needed
+	 */
+	if (sscanf(sz_uuid, "%8x%c%4hx%c%4hx%c%2hhx%2hhx%c%llx",
+		   &tmp.data1, &c, &tmp.data2, &c,
+		   &tmp.data3, &c, &tmp.data4,
+		   &tmp.data5, &c, &t) != 10)
+		return false;
+
+	t = cpu_to_be64(t);
+	memcpy(&tmp.data6[0], ((char*)&t) + 2, 6);
+	*uuid_obj =  tmp;
+
+	return true;
+}
+
+
