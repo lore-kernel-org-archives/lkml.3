@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190Ab3LAS5O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 13:57:14 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50989 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab3LAS5L (ORCPT
+	id S1752221Ab3LAS62 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 13:58:28 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:60821 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751838Ab3LAS60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 13:57:11 -0500
-Date: Sun, 1 Dec 2013 19:57:10 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Pali =?iso-8859-1?Q?Roh=E1?= <pali.rohar@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU?= <freemangordon@abv.bg>, sre@ring0.de,
-        omar.ramirez@copitl.com, tony@atomide.com, felipe.contreras@gmail.com,
-        s-anna@ti.com, nm@ti.com, ohad@wizery.com, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nico@ngolde.de
-Subject: Re: [patch] Staging: tidspbridge: make mmap root-only so it is not
- a security problem
-Message-ID: <20131201185709.GC9743@amd.pavel.ucw.cz>
-References: <6662B6F95D1C4783A007CAC82A8DA641@ivogl>
- <20131130220553.GA1901@kroah.com>
- <20131130225822.GA26031@amd.pavel.ucw.cz>
- <201312011041.40071@pali>
- <1385891913.11457.2.camel@Nokia-N900>
- <20131201121006.GA26072@amd.pavel.ucw.cz>
- <20131201122756.GH5443@mwanda>
- <529B7C8D.7060101@gmail.com>
+	Sun, 1 Dec 2013 13:58:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <529B7C8D.7060101@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131201165538.GA12864@gmail.com>
+References: <20131125203358.156292370@linutronix.de>
+	<1385453551.12603.16.camel@buesod1.americas.hpqcorp.net>
+	<20131126085256.GD789@laptop.programming.kicks-ass.net>
+	<1385493911.25945.3.camel@buesod1.americas.hpqcorp.net>
+	<1385499085.23083.7.camel@buesod1.americas.hpqcorp.net>
+	<alpine.DEB.2.02.1311262206150.30673@ionos.tec.linutronix.de>
+	<1385624678.22210.25.camel@buesod1.americas.hpqcorp.net>
+	<20131128115946.GD13532@twins.programming.kicks-ass.net>
+	<20131201121022.GB12115@gmail.com>
+	<20131201125604.GH16796@laptop.programming.kicks-ass.net>
+	<20131201165538.GA12864@gmail.com>
+Date: Sun, 1 Dec 2013 10:58:25 -0800
+X-Google-Sender-Auth: V4GOPUp3OI9nHTpNMsGourThiR4
+Message-ID: <CA+55aFz-v62jWpTqzAhrf5rGS5drbvgG-XHDDN6cdHCLB+kMxg@mail.gmail.com>
+Subject: Re: [RFC patch 0/5] futex: Allow lockless empty check of hashbucket
+ plist in futex_wake()
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Davidlohr Bueso <davidlohr@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Jason Low <jason.low2@hp.com>,
+        Darren Hart <dvhart@linux.intel.com>, Mike Galbraith <efault@gmx.de>,
+        Jeff Mahoney <jeffm@suse.com>, Scott Norton <scott.norton@hp.com>,
+        Tom Vaden <tom.vaden@hp.com>, Aswin Chandramouleeswaran <aswin@hp.com>,
+        Waiman Long <Waiman.Long@hp.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Sun, Dec 1, 2013 at 8:55 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> Keeping the page invariant would bring significant performance
+> advantages to hashing.
 
-> >>--- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
-> >>+++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
-> >>@@ -258,7 +258,17 @@ err:
-> >>  /* This function maps kernel space memory to user space memory. */
-> >>  static int bridge_mmap(struct file *filp, struct vm_area_struct *vma)
-> >>  {
-> >>-	u32 status;
-> >>+	int status;
-> >>+	struct omap_dsp_platform_data *pdata =
-> >>+	    omap_dspbridge_dev->dev.platform_data;
-> >>+	unsigned long start = vma->vm_pgoff << PAGE_SHIFT;
-> >>+		
-> >>+	if (start < pdata->phys_mempool_base)
-> >>+		return -EINVAL;
-> >>+
-> >>+	if (vma->vm_end - vma->vm_start + (start - pdata->phys_mempool_base)
-> >>+	    > pdata->phys_mempool_size)
-> >This test is vulnerable to integer overflows if you pick a very high
-> >value for start.  Consider using the vm_iomap_memory() helper function
-> >instead of calling remap_pfn_range() directly.  Commit 7314e613d5ff
-> >('Fix a few incorrectly checked [io_]remap_pfn_range() calls') has an
-> >example of how the conversion works.
-> >
-> >regards,
-> >dan carpenter
-> >
-> Dan,
-> 
-> If that one looks fine, I'll send a correctly formatted patch.
+Or not. Rather, it would make things much worse. The virtual address
+is much simpler and better to avoid needing any page table lookup etc
+crap. The key is just the mm and the virtual address, and no silly
+page table walks etc necessary.
 
-Looks good to me. Feel free to add
+Of course, I have no idea if people are properly using the private
+futexes. glibc _should_ use them, but who the heck knows..
 
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+                Linus
