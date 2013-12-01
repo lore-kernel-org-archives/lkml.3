@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751684Ab3LADoH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 22:44:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49906 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426Ab3LADoF (ORCPT
+	id S1751819Ab3LAEhl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Nov 2013 23:37:41 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:23156 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726Ab3LAEhk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 22:44:05 -0500
-Date: Sat, 30 Nov 2013 19:45:01 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        pali.rohar@gmail.com, sre@ring0.de, omar.ramirez@copitl.com,
-        tony@atomide.com, felipe.contreras@gmail.com, s-anna@ti.com, nm@ti.com,
-        ohad@wizery.com, stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nico@ngolde.de
-Subject: Re: [patch] Staging: tidspbridge: make mmap root-only so it is not a
- security problem
-Message-ID: <20131201034501.GA10803@kroah.com>
-References: <6662B6F95D1C4783A007CAC82A8DA641@ivogl>
- <20131130191931.GA5286@amd.pavel.ucw.cz>
- <20131130194935.GG5443@mwanda>
- <20131130204237.GA17912@amd.pavel.ucw.cz>
- <20131130220553.GA1901@kroah.com>
- <20131130225822.GA26031@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131130225822.GA26031@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Sat, 30 Nov 2013 23:37:40 -0500
+Message-ID: <1385872653.17749.13.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [RFC patch 0/5] futex: Allow lockless empty check of hashbucket
+ plist in futex_wake()
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Jason Low <jason.low2@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Darren Hart <dvhart@linux.intel.com>, Mike Galbraith <efault@gmx.de>,
+        Jeff Mahoney <jeffm@suse.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Scott Norton <scott.norton@hp.com>, Tom Vaden <tom.vaden@hp.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Waiman Long <Waiman.Long@hp.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Sat, 30 Nov 2013 20:37:33 -0800
+In-Reply-To: <20131128115946.GD13532@twins.programming.kicks-ass.net>
+References: <20131125203358.156292370@linutronix.de>
+	 <1385453551.12603.16.camel@buesod1.americas.hpqcorp.net>
+	 <20131126085256.GD789@laptop.programming.kicks-ass.net>
+	 <1385493911.25945.3.camel@buesod1.americas.hpqcorp.net>
+	 <1385499085.23083.7.camel@buesod1.americas.hpqcorp.net>
+	 <alpine.DEB.2.02.1311262206150.30673@ionos.tec.linutronix.de>
+	 <1385624678.22210.25.camel@buesod1.americas.hpqcorp.net>
+	 <20131128115946.GD13532@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 30, 2013 at 11:58:23PM +0100, Pavel Machek wrote:
-> On Sat 2013-11-30 14:05:53, Greg KH wrote:
-> > On Sat, Nov 30, 2013 at 09:42:37PM +0100, Pavel Machek wrote:
-> > > 
-> > > mmap in tidspbridge is missing range-checks. For now, make this
-> > > interface root-only, so that it does not cause security problems.
-> > 
-> > Please fix this properly and don't paper over the real problem here.
+On Thu, 2013-11-28 at 12:59 +0100, Peter Zijlstra wrote:
+> On Wed, Nov 27, 2013 at 11:44:38PM -0800, Davidlohr Bueso wrote:
+> > How about both enlarging the table _and_ aligning the buckets? As you
+> > know, increasing the size of the table also benefits (particularly in
+> > larger systems) in having more spinlocks. So we reduce the amount of
+> > collisions and alleviate contention on the hb->lock. Btw, do you have
+> > any particular concerns about the larger hash table patch? 
 > 
-> Well, if the driver is left uncompilable, I'm pretty sure it will
-> bitrot.
+> My only concern was the amount of #ifdef.
 > 
-> I do have the hardware, but I'm pretty sure current mailine does not
-> have enough support to boot Maemo, so it is non trivial for me to test
-> changes here.
-> 
-> And yes, I'd like to get N900 to better shape, but there's more urgent
-> work to do there. Such as "make sure N900 still boots once omap moves away
-> from device files".
-> 
-> [It seems like check should be that
-> 
-> vma->vm_pgoff << PAGE_SHIFT >= pdata->phys_mempool_base and 
-> vma->vm_end - vma->vm_start + (vma->vm_pgoff << PAGE_SHIFT - pdata->phys_mempool_base) <= pdata->phys_mempool_size .
-> 
-> But... this is some kind of DSP coprocessor, and I am not sure if
-> just exposing its address space to untrusted processes is good idea.
-> 
-> Heck, are you sure this is security problem in the first place? Yes,
-> it is unchecked mmap. So what? If the device is 600 root.root, and if
-> the DSP can take over main system, 
-> 
->         if (!capable(CAP_SYS_RAWIO))
->                 return -EPERM;
+> Wouldn't something like the below also work?
 
-Will that break userspace?  Who opens and mmaps this device?  If you
-don't know if users do this, how can you say this patch isn't going to
-break things just as much as not having the driver there at all?
+Below are the results for a workload that stresses the uaddr hashing for
+large amounts of futexes (just make waits fail the uval check, so no
+list handing overhead) on an 80 core, 1Tb NUMA system.
 
-thanks,
++---------+--------------------+------------------------+-----------------------+-------------------------------+
+| threads | baseline (ops/sec) | aligned-only (ops/sec) | large table (ops/sec) | large table+aligned (ops/sec) |
++---------+--------------------+------------------------+-----------------------+-------------------------------+
+|     512 |              32426 | 50531  (+55.8%)        | 255274  (+687.2%)     | 292553  (+802.2%)             |
+|     256 |              65360 | 99588  (+52.3%)        | 443563  (+578.6%)     | 508088  (+677.3%)             |
+|     128 |             125635 | 200075 (+59.2%)        | 742613  (+491.1%)     | 835452  (+564.9%)             |
+|      80 |             193559 | 323425 (+67.1%)        | 1028147 (+431.1%)     | 1130304 (+483.9%)             |
+|      64 |             247667 | 443740 (+79.1%)        | 997300  (+302.6%)     | 1145494 (+362.5%)             |
+|      32 |             628412 | 721401 (+14.7%)        | 965996  (+53.7%)      | 1122115 (+78.5%)              |
++---------+--------------------+------------------------+-----------------------+-------------------------------+
 
-greg k-h
+Baseline of course sucks compared to any other performance boost, and we
+get the best throughput when applying both optimizations, no surprise.
+We do particularly well for more than 32 threads, and the 'aligned-only'
+column nicely exemplifies the benefits of SMP aligning the buckets
+without considering the reduction in collisions.
+
+Thanks,
+Davidlohr
+
