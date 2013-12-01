@@ -1,110 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151Ab3LASO7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 13:14:59 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:36425 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751841Ab3LASO4 (ORCPT
+	id S1752103Ab3LASYc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 13:24:32 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:54198 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635Ab3LASY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 13:14:56 -0500
-Message-ID: <529B7C8D.7060101@gmail.com>
-Date: Sun, 01 Dec 2013 20:14:37 +0200
-From: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Sun, 1 Dec 2013 13:24:29 -0500
+Date: Sun, 1 Dec 2013 19:23:55 +0100
+From: Vladimir Murzin <murzin.v@gmail.com>
+To: Jianyu Zhan <nasa4836@gmail.com>
+Cc: akpm@linux-foundation.org, iamjoonsoo.kim@lge.com,
+        zhangyanfei@cn.fujitsu.com, rientjes@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]mm/vmalloc: interchage the implementation of
+ vmalloc_to_{pfn,page}
+Message-ID: <20131201182349.GA1847@hp530>
+References: <20131128181114.GA5154@lcx>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>, Pavel Machek <pavel@ucw.cz>
-CC: =?UTF-8?B?UGFsaSBSb2jDoQ==?= <pali.rohar@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        =?UTF-8?B?0JjQstCw0LnQu9C+INCU?= <freemangordon@abv.bg>, sre@ring0.de,
-        omar.ramirez@copitl.com, tony@atomide.com, felipe.contreras@gmail.com,
-        s-anna@ti.com, nm@ti.com, ohad@wizery.com, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nico@ngolde.de
-Subject: Re: [patch] Staging: tidspbridge: make mmap root-only so it is not
- a security problem
-References: <6662B6F95D1C4783A007CAC82A8DA641@ivogl> <20131130220553.GA1901@kroah.com> <20131130225822.GA26031@amd.pavel.ucw.cz> <201312011041.40071@pali> <1385891913.11457.2.camel@Nokia-N900> <20131201121006.GA26072@amd.pavel.ucw.cz> <20131201122756.GH5443@mwanda>
-In-Reply-To: <20131201122756.GH5443@mwanda>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=koi8-r
+Content-Disposition: inline
+In-Reply-To: <20131128181114.GA5154@lcx>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 29, 2013 at 02:11:14AM +0800, Jianyu Zhan wrote:
+> 
+> Hi, Vladimir,
+> 
+> On Fri, Nov 29, 2013 at 1:41 AM, Vladimir Murzin <murzin.v@gmail.com> wrote:
+> >
+> > Any numbers for efficiency?
+> >
+> 
+> For the original implementation, vmalloc_to_pfn() wraps the vmalloc_to_page(),
+> which means
+> 
+>      pfn   ------>         struct page      ------>    pfn
+>       |                                                          |
+>   vmalloc_to_page()                             vmalloc_to_pfn()
+> 
+> So this patch interchange the implementation, do the dirty page table
+> walking code in vmalloc_to_pfn(), and then vmalloc_to_page() uses it, the graph
+> now becomes
+> 
+>      pfn            ------>         struct page        
+>        |                                     |
+>   vmalloc_to_pfn()         vmalloc_to_page()
+> 
+> 
+> >>  /*
+> >> - * Walk a vmap address to the struct page it maps.
+> >> + * Walk a vmap address to the physical pfn it maps to.
+> >>   */
+> >> -struct page *vmalloc_to_page(const void *vmalloc_addr)
+> >> +unsigned long vmalloc_to_pfn(const void *vmalloc_addr)
+> >>  {
+> >>       unsigned long addr = (unsigned long) vmalloc_addr;
+> >> -     struct page *page = NULL;
+> >> +     unsigned long pfn;
+> >
+> > uninitialized pfn will lead to a bug.
+> >
+> 
+> Why? The coding pratice has mandates we use it after we initialize it,
+> And if we initialize it , to what value will it promise no bug?
 
-On 01.12.2013 14:27, Dan Carpenter wrote:
-> On Sun, Dec 01, 2013 at 01:10:06PM +0100, Pavel Machek wrote:
->> diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c b/drivers/staging/tidspbridge/rmgr/drv_interface.c
->> index 1aa4a3f..a8e86cf 100644
->> --- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
->> +++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
->> @@ -258,7 +258,17 @@ err:
->>   /* This function maps kernel space memory to user space memory. */
->>   static int bridge_mmap(struct file *filp, struct vm_area_struct *vma)
->>   {
->> -	u32 status;
->> +	int status;
->> +	struct omap_dsp_platform_data *pdata =
->> +	    omap_dspbridge_dev->dev.platform_data;
->> +	unsigned long start = vma->vm_pgoff << PAGE_SHIFT;
->> +		
->> +	if (start < pdata->phys_mempool_base)
->> +		return -EINVAL;
->> +
->> +	if (vma->vm_end - vma->vm_start + (start - pdata->phys_mempool_base)
->> +	    > pdata->phys_mempool_size)
-> This test is vulnerable to integer overflows if you pick a very high
-> value for start.  Consider using the vm_iomap_memory() helper function
-> instead of calling remap_pfn_range() directly.  Commit 7314e613d5ff
-> ('Fix a few incorrectly checked [io_]remap_pfn_range() calls') has an
-> example of how the conversion works.
->
-> regards,
-> dan carpenter
->
-Dan,
+Unless you initialize it conditionally. I bet gcc warned you about this ;)
 
-If that one looks fine, I'll send a correctly formatted patch.
+> It is unlikely a rubbish initial value will creep in.
+> 
+> 
+> >>       /*
+> >> @@ -244,23 +244,23 @@ struct page *vmalloc_to_page(const void *vmalloc_addr)
+> >>                               ptep = pte_offset_map(pmd, addr);
+> >>                               pte = *ptep;
+> >>                               if (pte_present(pte))
+> >> -                                     page = pte_page(pte);
+> >> +                                     pfn = pte_page(pte);
+> >
+> > page_to_pfn is missed here.
+> >
+> > Have you ever tested there is no functional changes?
+> 
+> Oh, gods. My fault. It did has no functional changes.
+> 
+> I just sent the incorrect patch...
+> 
+> it should be  
+>  -   page = pte_page(pte);
+>  +  pfn = pte_pfn(pte);;
+> 
+> Here is the resent patch:
+> 
 
-Pavel - feel free you to do it, I don't want to "steal" your bug :) .
+I think it is incorrect too. Originally, vmalloc_to_page might return NULL
+under some conditions. With your implementation it will return pfn_to_page(0)
+which is not the same as NULL.
 
-Patch tested with Maemo5 on n900:
+Vladimir
 
-diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c 
-b/drivers/staging/tidspbridge/rmgr/drv_interface.c
-index 1aa4a3f..2d500ea 100644
---- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
-+++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
-@@ -258,8 +258,9 @@ err:
-  /* This function maps kernel space memory to user space memory. */
-  static int bridge_mmap(struct file *filp, struct vm_area_struct *vma)
-  {
--    u32 status;
--
-+    struct omap_dsp_platform_data *pdata =
-+        omap_dspbridge_dev->dev.platform_data;
-+
-      /* VM_IO | VM_DONTEXPAND | VM_DONTDUMP are set by remap_pfn_range() */
-      vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-
-@@ -268,13 +269,9 @@ static int bridge_mmap(struct file *filp, struct 
-vm_area_struct *vma)
-          vma->vm_start, vma->vm_end, vma->vm_page_prot,
-          vma->vm_flags);
-
--    status = remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
--                 vma->vm_end - vma->vm_start,
--                 vma->vm_page_prot);
--    if (status != 0)
--        status = -EAGAIN;
--
--    return status;
-+    return vm_iomap_memory(vma,
-+                   pdata->phys_mempool_base,
-+                   pdata->phys_mempool_size);
-  }
-
-  static const struct file_operations bridge_fops = {
-
-
-
-
-
+> 
+> ---
+> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> index 0fdf968..e4f0db2 100644
+> --- a/mm/vmalloc.c
+> +++ b/mm/vmalloc.c
+> @@ -220,12 +220,12 @@ int is_vmalloc_or_module_addr(const void *x)
+>  }
+>  
+>  /*
+> - * Walk a vmap address to the struct page it maps.
+> + * Walk a vmap address to the physical pfn it maps to.
+>   */
+> -struct page *vmalloc_to_page(const void *vmalloc_addr)
+> +unsigned long vmalloc_to_pfn(const void *vmalloc_addr)
+>  {
+>  	unsigned long addr = (unsigned long) vmalloc_addr;
+> -	struct page *page = NULL;
+> +	unsigned long pfn = 0;
+>  	pgd_t *pgd = pgd_offset_k(addr);
+>  
+>  	/*
+> @@ -244,23 +244,23 @@ struct page *vmalloc_to_page(const void *vmalloc_addr)
+>  				ptep = pte_offset_map(pmd, addr);
+>  				pte = *ptep;
+>  				if (pte_present(pte))
+> -					page = pte_page(pte);
+> +					pfn = pte_pfn(pte);
+>  				pte_unmap(ptep);
+>  			}
+>  		}
+>  	}
+> -	return page;
+> +	return pfn;
+>  }
+> -EXPORT_SYMBOL(vmalloc_to_page);
+> +EXPORT_SYMBOL(vmalloc_to_pfn);
+>  
+>  /*
+> - * Map a vmalloc()-space virtual address to the physical page frame number.
+> + * Map a vmalloc()-space virtual address to the struct page.
+>   */
+> -unsigned long vmalloc_to_pfn(const void *vmalloc_addr)
+> +struct page *vmalloc_to_page(const void *vmalloc_addr)
+>  {
+> -	return page_to_pfn(vmalloc_to_page(vmalloc_addr));
+> +	return pfn_to_page(vmalloc_to_pfn(vmalloc_addr));
+>  }
+> -EXPORT_SYMBOL(vmalloc_to_pfn);
+> +EXPORT_SYMBOL(vmalloc_to_page);
+>  
+>  
+>  /*** Global kva allocator ***/
