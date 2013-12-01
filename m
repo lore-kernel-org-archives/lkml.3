@@ -1,77 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751753Ab3LAJ6s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 04:58:48 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:55290 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab3LAJ6i (ORCPT
+	id S1751578Ab3LAJ6V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 04:58:21 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:35085 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909Ab3LAJ6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 04:58:38 -0500
-From: =?UTF-8?Q?=D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE_?=
-	 =?UTF-8?Q?=D0=94=D0=B8=D0=BC=D0=B8=D1=82=D1=80=D0=BE=D0=B2?= 
-	<ivo.g.dimitrov.75@gmail.com>
-Reply-To: =?UTF-8?Q?=D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE_?=
-	   =?UTF-8?Q?=D0=94=D0=B8=D0=BC=D0=B8=D1=82=D1=80=D0=BE=D0=B2?= 
-	  <ivo.g.dimitrov.75@gmail.com>
-To: Pali =?ISO-8859-1?Q?Roh=E1?= <pali.rohar@gmail.com>,
-        Pavel Machek <pavel@ucw.cz>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        =?UTF-8?Q?=D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE_=D0=94?= 
-	<freemangordon@abv.bg>,
-        sre@ring0.de, omar.ramirez@copitl.com, tony@atomide.com,
-        felipe.contreras@gmail.com, s-anna@ti.com, nm@ti.com, ohad@wizery.com,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org, nico@ngolde.de
-Subject: Re: [patch] Staging: tidspbridge: make mmap root-only so it is not
-	a security problem
-X-Mailer: Modest 3.90.7
-References: <6662B6F95D1C4783A007CAC82A8DA641@ivogl>
-	 <20131130220553.GA1901@kroah.com> <20131130225822.GA26031@amd.pavel.ucw.cz>
-	  <201312011041.40071@pali>
-In-Reply-To: <201312011041.40071@pali>
-Content-Type: text/plain; charset=utf-8
-Content-ID: <1385891913.11457.1.camel@Nokia-N900>
-Date: Sun, 01 Dec 2013 11:58:33 +0200
-Message-Id: <1385891913.11457.2.camel@Nokia-N900>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Sun, 1 Dec 2013 04:58:19 -0500
+MIME-Version: 1.0
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <1385843936.10971.5.camel@x41.thuisdomein>
+References: <1385843936.10971.5.camel@x41.thuisdomein>
+Date: Sun, 1 Dec 2013 10:58:18 +0100
+Message-ID: <CAKMK7uHRW-1OiMY44s2G9dwbbQLMUxZ4fHf=Eaf9gJ_WASpvLQ@mail.gmail.com>
+Subject: Re: [i915] WARNING: [...] drivers/gpu/drm/i915/intel_display.c:9948 intel_get_pipe_from_connector
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: David Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I can (and will) test whatever patches is needed. Also will try to get rid of uuid helpers and send a patch today.
+Should be fixed with
 
-On Sun Dec   1 11:41:39 2013 Pali Rohár <pali.rohar@gmail.com> wrote:
-> On Saturday 30 November 2013 23:58:23 Pavel Machek wrote:
-> > On Sat 2013-11-30 14:05:53, Greg KH wrote:
-> > > On Sat, Nov 30, 2013 at 09:42:37PM +0100, Pavel Machek wrote:
-> > > > mmap in tidspbridge is missing range-checks. For now, make
-> > > > this interface root-only, so that it does not cause
-> > > > security problems.
-> > > 
-> > > Please fix this properly and don't paper over the real
-> > > problem here.
-> > 
-> > Well, if the driver is left uncompilable, I'm pretty sure it
-> > will bitrot.
-> > 
-> 
-> If you want to compile tidspbridge driver, you need this patch:
-> https://gitorious.org/linux-n900/linux-n900/commit/b9adde42d5351467fa9d281190213bb652499577
-> 
-> Removing BROKEN is not enough.
-> 
-> > I do have the hardware, but I'm pretty sure current mailine
-> > does not have enough support to boot Maemo, so it is non
-> > trivial for me to test changes here.
-> > 
-> 
-> Use linux-n900 tree, there are patches also for tidspbridge
-> driver, so old maemo and new harmattan userspace can use it. But
-> HD videos not working yet (due to another problem, search for
-> OMAPFB: CMA allocation failures).
-> 
-> -- 
-> Pali Rohár
-> pali.rohar@gmail.com
+commit 7c063c725987406d743cc7de7625ff224fab75de
+Author: Jesse Barnes <jbarnes@virtuousgeek.org>
+Date:   Tue Nov 26 09:13:41 2013 -0800
 
+    drm/i915: take mode config lock around crtc disable at suspend
+
+which is currently in drm-intel-fixes. I'll forward it early next week.
+-Daniel
+
+
+On Sat, Nov 30, 2013 at 9:38 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> On both v3.13-rc1 and v3.13-rc2 is see this at every boot and during
+> every suspend and resume cycle:
+>
+> <4>[    2.682468] WARNING: CPU: 0 PID: 173 at drivers/gpu/drm/i915/intel_display.c:9948 intel_get_pipe_from_connector+0x42/0x50 [i915]()
+> <5>[    2.682470] Modules linked in: i915(F+) ata_generic(F) pata_acpi(F) yenta_socket(F+) i2c_algo_bit(F) drm_kms_helper(F) tg3(F+) ptp(F) pps_core(F) drm(F) i2c_core(F) video(F) sunrpc(F)
+> <5>[    2.682489] CPU: 0 PID: 173 Comm: systemd-udevd Tainted: GF            3.13.0-0.rc2.1.local0.fc18.i686 #1
+> <5>[    2.682492] Hardware name: IBM 2525FAG/2525FAG, BIOS 74ET61WW (2.06 ) 03/14/2006
+> <5>[    2.682495]  00000000 00000000 f54739f4 c09b66d2 00000000 f5473a24 c0449b14 c0b541a4
+> <5>[    2.682502]  00000000 000000ad f82c9524 000026dc f8282692 f8282692 f555ed80 00061200
+> <5>[    2.682509]  f567c000 f5473a34 c0449b52 00000009 00000000 f5473a40 f8282692 f5578800
+> <5>[    2.682516] Call Trace:
+> <5>[    2.682528]  [<c09b66d2>] dump_stack+0x41/0x52
+> <5>[    2.682534]  [<c0449b14>] warn_slowpath_common+0x84/0xa0
+> <5>[    2.682571]  [<f8282692>] ? intel_get_pipe_from_connector+0x42/0x50 [i915]
+> <5>[    2.682607]  [<f8282692>] ? intel_get_pipe_from_connector+0x42/0x50 [i915]
+> <5>[    2.682612]  [<c0449b52>] warn_slowpath_null+0x22/0x30
+> <5>[    2.682648]  [<f8282692>] intel_get_pipe_from_connector+0x42/0x50 [i915]
+> <5>[    2.682689]  [<f829b161>] intel_panel_disable_backlight+0x21/0x160 [i915]
+> <5>[    2.682725]  [<f8287041>] intel_disable_lvds+0x41/0x160 [i915]
+> <5>[    2.682760]  [<f8278530>] i9xx_crtc_disable+0x200/0x2c0 [i915]
+> <5>[    2.682802]  [<f82b3951>] ? gen4_read32+0x31/0x90 [i915]
+> <5>[    2.682839]  [<f8284aae>] intel_modeset_setup_hw_state+0x92e/0xb00 [i915]
+> <5>[    2.682844]  [<c09b3e00>] ? power_down+0x8c/0x8d
+> <5>[    2.682884]  [<f82b3bb0>] ? gen4_write64+0xa0/0xa0 [i915]
+> <5>[    2.682920]  [<f8284ca0>] intel_modeset_gem_init+0x20/0x30 [i915]
+> <5>[    2.682950]  [<f824ab73>] i915_driver_load+0xb53/0xdd0 [i915]
+> <5>[    2.682978]  [<f8248270>] ? i915_switcheroo_set_state+0xa0/0xa0 [i915]
+> <5>[    2.683003]  [<f80c4d5c>] drm_dev_register+0x8c/0x1a0 [drm]
+> <5>[    2.683043]  [<f80c6895>] drm_get_pci_dev+0x85/0x130 [drm]
+> <5>[    2.683050]  [<c05be578>] ? sysfs_do_create_link_sd.isra.3+0xa8/0x1c0
+> <5>[    2.683057]  [<c09bffc3>] ? notifier_call_chain+0x43/0x60
+> <5>[    2.683086]  [<f82474aa>] i915_pci_probe+0x3a/0x80 [i915]
+> <5>[    2.683093]  [<c06cc8d9>] pci_device_probe+0x79/0xc0
+> <5>[    2.683097]  [<c05be6b5>] ? sysfs_create_link+0x25/0x40
+> <5>[    2.683104]  [<c077d9b9>] driver_probe_device+0x79/0x360
+> <5>[    2.683108]  [<c06cc81e>] ? pci_match_device+0x9e/0xb0
+> <5>[    2.683113]  [<c077dd31>] __driver_attach+0x91/0xa0
+> <5>[    2.683117]  [<c077dca0>] ? driver_probe_device+0x360/0x360
+> <5>[    2.683121]  [<c077bf52>] bus_for_each_dev+0x42/0x80
+> <5>[    2.683125]  [<c077d3ce>] driver_attach+0x1e/0x20
+> <5>[    2.683130]  [<c077dca0>] ? driver_probe_device+0x360/0x360
+> <5>[    2.683134]  [<c077d07c>] bus_add_driver+0xec/0x210
+> <5>[    2.683138]  [<c077e349>] driver_register+0x59/0xe0
+> <5>[    2.683142]  [<f7fb2000>] ? 0xf7fb1fff
+> <5>[    2.683147]  [<c06cba63>] __pci_register_driver+0x33/0x40
+> <5>[    2.683150]  [<f7fb2000>] ? 0xf7fb1fff
+> <5>[    2.683166]  [<f80c6a3d>] drm_pci_init+0xfd/0x110 [drm]
+> <5>[    2.683170]  [<f7fb2000>] ? 0xf7fb1fff
+> <5>[    2.683198]  [<f7fb205e>] i915_init+0x5e/0x60 [i915]
+> <5>[    2.683203]  [<c040049a>] do_one_initcall+0xda/0x1a0
+> <5>[    2.683206]  [<f7fb2000>] ? 0xf7fb1fff
+> <5>[    2.683211]  [<c04eff41>] ? __add_event_to_tracers+0x21/0x30
+> <5>[    2.683215]  [<f7fb2000>] ? 0xf7fb1fff
+> <5>[    2.683221]  [<c043dff7>] ? set_memory_ro+0x37/0x40
+> <5>[    2.683228]  [<c04b15ad>] load_module+0x1abd/0x2390
+> <5>[    2.683235]  [<c04b1f27>] SyS_init_module+0xa7/0x110
+> <5>[    2.683242]  [<c052214b>] ? vm_mmap_pgoff+0x8b/0xb0
+> <5>[    2.683248]  [<c09c3a0d>] sysenter_do_call+0x12/0x28
+>
+> Feel free to prod for further details.
+>
+>
+> Paul Bolle
+>
+
+
+
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
