@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752342Ab3LAX4r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 18:56:47 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:10841 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752154Ab3LAX4q (ORCPT
+	id S1752424Ab3LAX5N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 18:57:13 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:29405 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752391Ab3LAX5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 18:56:46 -0500
-X-AuditID: cbfee68f-b7f336d00000481b-40-529bccbc745d
+	Sun, 1 Dec 2013 18:57:11 -0500
+X-AuditID: cbfee68f-b7f336d00000481b-50-529bccd5148a
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <000001ceeef0$d88a7f40$899f7dc0$%han@samsung.com>
 In-reply-to: <000001ceeef0$d88a7f40$899f7dc0$%han@samsung.com>
-Subject: [PATCH 3/8] backlight: omap1: use devm_backlight_device_register()
-Date: Mon, 02 Dec 2013 08:56:44 +0900
-Message-id: <000201ceeef0$fd142280$f73c6780$%han@samsung.com>
+Subject: [PATCH 4/8] backlight: ot200_bl: use devm_backlight_device_register()
+Date: Mon, 02 Dec 2013 08:57:09 +0900
+Message-id: <000301ceeef1$0c17d2e0$244778a0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7u8NgcVnqPK6OFQjq+Xy+HsAignwAABqkQ
+Thread-index: Ac7u8NgcVnqPK6OFQjq+Xy+HsAignwAACZfg
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zA909Z2YHGTTesLCYs34Nm8XlhZdY
-	LS7vmsPmwOxxYsZvFo++LasYPT5vkgtgjuKySUnNySxLLdK3S+DK2LP8AHvBKe6KU7c7GRsY
-	b3J2MXJySAiYSOx58owdwhaTuHBvPVsXIxeHkMAyRonN6xexwBRt/bkUKrGIUeLfq9/MEM4v
-	Rok1yz4yglSxCahJfPlyGGgUB4eIgL5EW4sGiMks4CJxdJoISIWQgK3EhkfnmUBsTgE7iQk3
-	/4DZwgLeEo2zH4FNYRFQlVjb9ZsRpJUXqH7nTBmQMK+AoMSPyffAzmEW0JJYv/M4E4QtL7F5
-	zVtmkHIJAXWJR391IfYbSUz5ogRRISKx78U7RpB7JQQOsUuc2reNCWKTgMS3yYdYIFplJTYd
-	YIZ4VlLi4IobLBMYJWYhWTwLyeJZSBbPQrJiASPLKkbR1ILkguKk9CJjveLE3OLSvHS95Pzc
-	TYyQ2OvfwXj3gPUhxmSg9ROZpUST84Gxm1cSb2hsZmRhamJqbGRuaUaasJI47/2HSUFCAumJ
-	JanZqakFqUXxRaU5qcWHGJk4OKUaGJVkHWKc/xkvmPt+yY7O+XedH1goOSTzHL+edOLA+z2z
-	el99i1+7YIlpvvmpCINFBqWZDJLzLk5xsy3Oa+FfdYY7a+EcK5m+2IaUtHbHLcdnRD55wGC9
-	N+Oo6rr5Dc3X16/8syw4RpJjnYfSvQ+L17zfW5S7ePP3FZ+Ln25Vkn1mvNkm7tzk/RZKLMUZ
-	iYZazEXFiQApvGcC0wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jAd09Z2YHGSxZYWoxZ/0aNovLCy+x
+x-cr-hashedpuzzle: A8tL C1bl EpYb FOv3 HrXy Hscc Mn8K QlEs TYJd YmEV Y3ad Z5N4
+ dH+O dIRw dZ4e
+ f7M4;3;YQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGoAZwAxAC4AaABhAG4AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnAA==;Sosha1_v1;7;{B8146538-4784-4931-8C0A-FB849F207FE1};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Sun,
+ 01 Dec 2013 23:57:04
+ GMT;WwBQAEEAVABDAEgAIAA0AC8AOABdACAAYgBhAGMAawBsAGkAZwBoAHQAOgAgAG8AdAAyADAAMABfAGIAbAA6ACAAdQBzAGUAIABkAGUAdgBtAF8AYgBhAGMAawBsAGkAZwBoAHQAXwBkAGUAdgBpAGMAZQBfAHIAZQBnAGkAcwB0AGUAcgAoACkA
+x-cr-puzzleid: {B8146538-4784-4931-8C0A-FB849F207FE1}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJIsWRmVeSWpSXmKPExsVy+t8zA92rZ2YHGbzfYWMxZ/0aNovLCy+x
+	WlzeNYfNgdnjxIzfLB59W1YxenzeJBfAHMVlk5Kak1mWWqRvl8CVsWPxQpaC/VwV274cZ2pg
+	/MrRxcjJISFgIjF7zkI2CFtM4sK99UA2F4eQwDJGiWUrFrDAFO3/9p4VIjGdUWJ/YzsLhPOL
+	UWL1wmZGkCo2ATWJL18Os3cxcnCICOhLtLVogJjMAi4SR6eJgFQICdhKbHh0ngnE5hSwk5hw
+	8w+YLSzgJ3Fw2kJWkHIWAVWJRSeTQMK8QOUTWk4zQ9iCEj8m3wM7h1lAS2L9zuNMELa8xOY1
+	b5lBWiUE1CUe/dWF2G8k0ffBDKJCRGLfi3eMIPdKCHxhkZh6ajcjxFemEsePfWOHSNxil/h3
+	ZgHYLhYBAYlvkw+xQMyUldh0gBmiXlLi4IobLBMYpWYhuWgWkotmIbloFpLdCxhZVjGKphYk
+	FxQnpRcZ6xUn5haX5qXrJefnbmKERGv/Dsa7B6wPMSYDrZ/ILCWanA+M9rySeENjMyMLUxNT
+	YyNzSzPShJXEee8/TAoSEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwCiRxNly+98OrXUT+y/t
+	uqV6ff6X8K8Ofr7OJaFl9yfJlLNKbm/Ky71xLO2p1zu7N9GnprQv+jvnb475luhwx7AJj5er
+	79bbJGz0dAb3psN/90xcFSNi1nNzw8PUNUdPnuuol+D6uNXJKrhgppTtwi3f2Rcp9m3pk8pp
+	/6btMe/UNfblu53m1rQosRRnJBpqMRcVJwIADFGeaewCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGKsWRmVeSWpSXmKPExsVy+t9jQd2rZ2YHGTz4ZGExZ/0aNovLCy+x
 	WlzeNYfNgdnjxIzfLB59W1YxenzeJBfAHNXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZg
 	qGtoaWGupJCXmJtqq+TiE6DrlpkDtElJoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyP
-	kQEaSFjHmLFn+QH2glPcFadudzI2MN7k7GLk5JAQMJHY+nMpG4QtJnHh3nogm4tDSGARo8S/
-	V7+ZIZxfjBJrln1kBKliE1CT+PLlMHsXIweHiIC+RFuLBojJLOAicXSaCEiFkICtxIZH55lA
-	bE4BO4kJN/+A2cIC3hKNsx+BTWERUJVY2/WbEaSVF6h+50wZkDCvgKDEj8n3WEBsZgEtifU7
-	jzNB2PISm9e8ZQYplxBQl3j0Vxdiv5HElC9KEBUiEvtevGOcwCg0C8mgWUgGzUIyaBaSlgWM
-	LKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgiP7mdQOxpUNFocYBTgYlXh4K47NDhJiTSwr
-	rsw9xCjBwawkwmvxdVaQEG9KYmVValF+fFFpTmrxIcZkoDcnMkuJJucDk05eSbyhsYmZkaWR
-	mYWRibk5acJK4rwHWq0DhQTSE0tSs1NTC1KLYLYwcXBKNTA6X49c90uzvOer1YY6mevHKgy2
-	hMhwP42+kaf7qqQ9YpZEK+eav+UWc50mmfkqadQUS2/xPaF46x/LBabGR3vmLm4t2Zvll/Lz
-	23SBQ+XXs933Z7w+ya24ND1sh/bpZoOsybIXX6rapomfEryjOG9f66qO6KBphy00/9n5PfCM
-	aXnwZY7orJlKLMUZiYZazEXFiQDsn0OTMAMAAA==
+	kQEaSFjHmLFj8UKWgv1cFdu+HGdqYPzK0cXIySEhYCKx/9t7VghbTOLCvfVsXYxcHEIC0xkl
+	9je2s0A4vxglVi9sZgSpYhNQk/jy5TB7FyMHh4iAvkRbiwaIySzgInF0mghIhZCArcSGR+eZ
+	QGxOATuJCTf/gNnCAn4SB6ctZAUpZxFQlVh0MgkkzAtUPqHlNDOELSjxY/I9FhCbWUBLYv3O
+	40wQtrzE5jVvmUFaJQTUJR791YXYbyTR98EMokJEYt+Ld4wg90oIfGGRmHpqNyPEV6YSx499
+	Y5/AKDILyYZZSDbMQrJhFpJZCxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEp4Jn0jsY
+	VzVYHGIU4GBU4uG9cGJ2kBBrYllxZe4hRgkOZiURXouvs4KEeFMSK6tSi/Lji0pzUosPMSYD
+	/T+RWUo0OR+YpvJK4g2NTcyMLI3MLIxMzM1JE1YS5z3Yah0oJJCeWJKanZpakFoEs4WJg1Oq
+	gbEvcmXQh7Y7LO2rNxp/NfL94s2+/alb8Hv7Sul85Zv26neV+rZXLldKigm7LLUjR2HnS569
+	KZ23Viyc6pDAuf1i7/rytBk/8zMTEmZ5/SzXevD6zQxeEbvS79eb38g8V13wS+XTxcRfCWGa
+	4qZFyrL60xMWc0ucVDc+WfVX5va7tnNa3WH8f5VYijMSDbWYi4oTAa0uBPlJAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,50 +60,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_backlight_device_register() to make cleanup paths simpler,
-and remove unnecessary remove().
+Use devm_backlight_device_register() to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/omap1_bl.c |   14 ++------------
- 1 file changed, 2 insertions(+), 12 deletions(-)
+ drivers/video/backlight/ot200_bl.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/video/backlight/omap1_bl.c b/drivers/video/backlight/omap1_bl.c
-index ac11a46..a0dcd88 100644
---- a/drivers/video/backlight/omap1_bl.c
-+++ b/drivers/video/backlight/omap1_bl.c
-@@ -146,8 +146,8 @@ static int omapbl_probe(struct platform_device *pdev)
- 	memset(&props, 0, sizeof(struct backlight_properties));
+diff --git a/drivers/video/backlight/ot200_bl.c b/drivers/video/backlight/ot200_bl.c
+index fdbb6ee..f5a5202 100644
+--- a/drivers/video/backlight/ot200_bl.c
++++ b/drivers/video/backlight/ot200_bl.c
+@@ -118,8 +118,9 @@ static int ot200_backlight_probe(struct platform_device *pdev)
+ 	props.brightness = 100;
  	props.type = BACKLIGHT_RAW;
- 	props.max_brightness = OMAPBL_MAX_INTENSITY;
--	dev = backlight_device_register("omap-bl", &pdev->dev, bl, &omapbl_ops,
--					&props);
-+	dev = devm_backlight_device_register(&pdev->dev, "omap-bl", &pdev->dev,
-+					bl, &omapbl_ops, &props);
- 	if (IS_ERR(dev))
- 		return PTR_ERR(dev);
  
-@@ -170,20 +170,10 @@ static int omapbl_probe(struct platform_device *pdev)
- 	return 0;
- }
+-	bl = backlight_device_register(dev_name(&pdev->dev), &pdev->dev, data,
+-					&ot200_backlight_ops, &props);
++	bl = devm_backlight_device_register(&pdev->dev, dev_name(&pdev->dev),
++					&pdev->dev, data, &ot200_backlight_ops,
++					&props);
+ 	if (IS_ERR(bl)) {
+ 		dev_err(&pdev->dev, "failed to register backlight\n");
+ 		retval = PTR_ERR(bl);
+@@ -137,10 +138,6 @@ error_devm_kzalloc:
  
--static int omapbl_remove(struct platform_device *pdev)
--{
--	struct backlight_device *dev = platform_get_drvdata(pdev);
+ static int ot200_backlight_remove(struct platform_device *pdev)
+ {
+-	struct backlight_device *bl = platform_get_drvdata(pdev);
 -
--	backlight_device_unregister(dev);
+-	backlight_device_unregister(bl);
 -
--	return 0;
--}
--
- static SIMPLE_DEV_PM_OPS(omapbl_pm_ops, omapbl_suspend, omapbl_resume);
- 
- static struct platform_driver omapbl_driver = {
- 	.probe		= omapbl_probe,
--	.remove		= omapbl_remove,
- 	.driver		= {
- 		.name	= "omap-bl",
- 		.pm	= &omapbl_pm_ops,
+ 	/* on module unload set brightness to 100% */
+ 	cs5535_mfgpt_write(pwm_timer, MFGPT_REG_COUNTER, 0);
+ 	cs5535_mfgpt_write(pwm_timer, MFGPT_REG_SETUP, MFGPT_SETUP_CNTEN);
 -- 
 1.7.10.4
 
