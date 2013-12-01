@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab3LARTl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 12:19:41 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:34234 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751035Ab3LARTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 12:19:39 -0500
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Subject: Re: [PATCH v2 2/2] rtc: add hym8563 rtc-driver
-Date: Sun, 1 Dec 2013 18:19:25 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        devicetree@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, rtc-linux@googlegroups.com,
-        Mike Turquette <mturquette@linaro.org>
-References: <201312011437.47432.heiko@sntech.de> <201312011439.45417.heiko@sntech.de> <CAFLxGvz6ZYHaDJqc6LPwtPsLUaLuEwSEQaJLZ-hV1m8PxruOow@mail.gmail.com>
-In-Reply-To: <CAFLxGvz6ZYHaDJqc6LPwtPsLUaLuEwSEQaJLZ-hV1m8PxruOow@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201312011819.26005.heiko@sntech.de>
+	id S1751993Ab3LARcN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 12:32:13 -0500
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:63074 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751035Ab3LARcH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Dec 2013 12:32:07 -0500
+Message-ID: <1385919125.7199.17.camel@x41.thuisdomein>
+Subject: firmware: new "platform microcode" warning in v3.13-rc1+
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Neil Horman <nhorman@tuxdriver.com>, Ming Lei <ming.lei@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Date: Sun, 01 Dec 2013 18:32:05 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 01 Dec 2013 17:32:05.0979 (UTC) FILETIME=[41287AB0:01CEEEBB]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, 1. Dezember 2013, 15:38:40 schrieb Richard Weinberger:
-> On Sun, Dec 1, 2013 at 2:39 PM, Heiko Stübner <heiko@sntech.de> wrote:
-> > +static int hym8563_probe(struct i2c_client *client,
-> > +                        const struct i2c_device_id *id)
-> > +{
-> > +       struct hym8563 *hym8563;
-> > +       int ret, gpio_int;
-> > +
-> > +       hym8563 = devm_kzalloc(&client->dev, sizeof(hym8563),
-> > GFP_KERNEL);
-> 
-> Shouldn't this be sizeof(*hym8563)?
+0) Booting v3.13-rc1 and v3.13-rc2 triggers two new warnings on an
+(outdated, I'm afraid) ThinkPad X41:
+    [...]
+    <6>[   16.746119] libipw: 802.11 data/management/control stack, git-1.1.13
+    <6>[   16.746125] libipw: Copyright (C) 2004-2005 Intel Corporation <jketreno@linux.intel.com>
+    <4>[   16.761998] platform microcode: Direct firmware load failed with error -2
+    <4>[   16.762022] platform microcode: Falling back to user helper
+    <6>[   16.787885] ipw2200: Intel(R) PRO/Wireless 2200/2915 Network Driver, 1.2.2kmprq
+    <6>[   16.787895] ipw2200: Copyright(c) 2003-2006 Intel Corporation
+    <6>[   16.788741] ipw2200: Detected Intel PRO/Wireless 2915ABG Network Connection
+    [...]
 
-you're right of course, thanks for catching the missing "*", I'll send a v3 
-shortly.
+(I've added the surrounding lines because they suggest this is about the
+firmware for that wireless device. Please note that this device appears
+to work no worse than it did under v3.12.)
+
+1) These warnings can be traced back to commit 3e358ac2bb5b ("firmware:
+Be a bit more verbose about direct firmware loading failure").
+
+2) Is there something I'm supposed to do to silence these warnings? If
+so, what would that be? If not, can these messages perhaps be downgraded
+to dev_info or dev_notice?
 
 
-Heiko
+Paul Bolle
+
