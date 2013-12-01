@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751961Ab3LAM4i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 07:56:38 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:53597 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531Ab3LAM4h (ORCPT
+	id S1752116Ab3LAM4v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 07:56:51 -0500
+Received: from mail.parknet.co.jp ([210.171.160.6]:51483 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954Ab3LAM4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 07:56:37 -0500
-Date: Sun, 1 Dec 2013 13:56:04 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Jason Low <jason.low2@hp.com>,
-        Darren Hart <dvhart@linux.intel.com>, Mike Galbraith <efault@gmx.de>,
-        Jeff Mahoney <jeffm@suse.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Scott Norton <scott.norton@hp.com>, Tom Vaden <tom.vaden@hp.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Waiman Long <Waiman.Long@hp.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC patch 0/5] futex: Allow lockless empty check of hashbucket
- plist in futex_wake()
-Message-ID: <20131201125604.GH16796@laptop.programming.kicks-ass.net>
-References: <20131125203358.156292370@linutronix.de>
- <1385453551.12603.16.camel@buesod1.americas.hpqcorp.net>
- <20131126085256.GD789@laptop.programming.kicks-ass.net>
- <1385493911.25945.3.camel@buesod1.americas.hpqcorp.net>
- <1385499085.23083.7.camel@buesod1.americas.hpqcorp.net>
- <alpine.DEB.2.02.1311262206150.30673@ionos.tec.linutronix.de>
- <1385624678.22210.25.camel@buesod1.americas.hpqcorp.net>
- <20131128115946.GD13532@twins.programming.kicks-ass.net>
- <20131201121022.GB12115@gmail.com>
+	Sun, 1 Dec 2013 07:56:47 -0500
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>
+Subject: Re: [PATCH v2 0/5] fat: additions to support fat_fallocate
+References: <1384688224-2832-1-git-send-email-linkinjeon@gmail.com>
+Date: Sun, 01 Dec 2013 21:56:44 +0900
+In-Reply-To: <1384688224-2832-1-git-send-email-linkinjeon@gmail.com> (Namjae
+	Jeon's message of "Sun, 17 Nov 2013 20:37:04 +0900")
+Message-ID: <87siucd90z.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131201121022.GB12115@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 01, 2013 at 01:10:22PM +0100, Ingo Molnar wrote:
-> But more importantly, since these are all NUMA systems, would it make 
-> sense to create per node hashes on NUMA? Each futex would be enqueued 
-> into the hash belonging to its own page's node.
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-Can't do that; we hash on vaddr, the actual page can move between nodes
-while a futex is queued.
+> From: Namjae Jeon <namjae.jeon@samsung.com>
+>
+> This patch set provides support for doing fallocate operation
+> on FAT filesystem.
+> After series of review for the the feature
+> The complete functionality is broken down into smaller subsets.
+>
+> v2:
+>  - remove a stary unlock(from Dan Carpenter)
+>  - check ->mmu_private and ->i_disksize to truncate uninitialized data.
+>
+> Namjae Jeon (5):
+>  fat: add i_disksize to represent uninitialized size
+>  fat: add fat_fallocate operation
+>  fat: zero out seek range on _fat_get_block
+>  fat: fallback to buffered write in case of fallocatded region on direct IO
+>  fat: permit to return phy block number by fibmap in fallocated region
 
-This would mean that the waiting futex is queued on another node than
-the waker is looking.
+Let's add document about FAT's fallocate() behavior to
+Documents/filesystem/vfat.txt.
+
+I.e. it will be truncated evict_inode(). So, user has to assume
+fallocate() is only valid until last close(), and user has to re-call
+fallocate() after re-open to make sure fallocate() region.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
