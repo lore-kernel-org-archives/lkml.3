@@ -1,170 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab3LBQhi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 11:37:38 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:23876 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752311Ab3LBQhh (ORCPT
+	id S1752869Ab3LBQiY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 11:38:24 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:39828 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752727Ab3LBQiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 11:37:37 -0500
-Date: Mon, 2 Dec 2013 11:37:35 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [ANNOUNCE] 3.4.69-rt86
-Message-ID: <20131202113735.041dacb6@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Mon, 2 Dec 2013 11:38:20 -0500
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Manuel Krause <manuelkrause@netscape.net>
+Cc: Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        Greg KH <gregkh@linuxfoundation.org>, linux-input@vger.kernel.org,
+        linux-serial <linux-serial@vger.kernel.org>
+Subject: Re: 3.12.x looses serial mouse over hibernate + resume
+Date: Mon, 02 Dec 2013 08:38:16 -0800
+Message-ID: <19253701.sgP3OieFUq@dtor-d630.eng.vmware.com>
+User-Agent: KMail/4.11.3 (Linux/3.11.7-200.fc19.x86_64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <529CB07C.2040609@netscape.net>
+References: <52951E69.7090602@netscape.net> <529B591F.1020909@hurleysoftware.com> <529CB07C.2040609@netscape.net>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday, December 02, 2013 05:08:28 PM Manuel Krause wrote:
+> On 2013-12-01 16:43, Peter Hurley wrote:
+> > [ +cc Dmitry Torokhov, Greg Kroah-Hartman, linux-input,
+> > linux-serial ]
+> > 
+> > On 11/26/2013 05:19 PM, Manuel Krause wrote:
+> >> Since kernel 3.12.0 I have a problem with hibernate+resume
+> >> not reactivating my serial mouse (trackball) with my HP notebook.
+> >> Kernels 3.11.0 til 9 don't show this behaviour.
+> >> 
+> >> Machine:           HP Notebook with Core2Duo CPU (Penryn)
+> >> Distro:            openSUSE 12.3, 64bit, continuously updated
+> >> Desktop:           KDE 4.11.3
+> >> MESA & drm & Xorg: most recent ones from:
+> >> 
+> >> http://download.opensuse.org/repositories/home:/pontostroy:/X11/openSUSE_
+> >> 12.3/x86_64/
+> >> 
+> >> Current kernel:    3.12.1 vanilla from openSUSE repos, with
+> >> 
+> >>                     -ck1 and BFQ patches
+> >> 
+> >> The Logitech Trackman Marble FX is a PS/2 device and connected
+> >> via an original Logitech
+> >> PS/2-COM-port adapter and manually configured via my xorg.conf.
+> >> 
+> >> At first, I blamed the -ck1 patches from Con Kolivas for this
+> >> behaviour that I use in
+> >> addition  to the BFQ patches, what has showed up as not right:
+> >> This happens with the
+> >> normal vanilla kernel
+> >> schedulers for CPU and disk I/O, too.
+> >> 
+> >> By coincidence I found a weird(!) way to reactivate the serial
+> >> mouse:
+> >> (1) call Hibernate (suspend-to-disk) from KDE desktop as normal
+> >> (2) resume --> the PS/2 touchpad is working, the serial
+> >> trackball NOT
+> >> (3) call suspend-to-RAM (Sleep) from KDE, serial trackball
+> >> still dead
+> >> (4) execute `setserial -a /dev/ttyS0` in a konsole window or a
+> >> tty* console
+> >> (5) ==> serial trackball is back with all configuration from
+> >> xorg.conf
+> >> 
+> >> It's fully reproducible over multiple hibernations. This also
+> >> happens when calling
+> >> `pm-hibernate` (to-disk) and `pm-suspend` (to-RAM) and the
+> >> setserial from a root shell
+> >> in KDE or any tty*.
+> >> 
+> >> Please, _always_CC_me_ -- as I'm not on the kernel mailing list.
+> > 
+> > Manuel,
+> > 
+> > Please attach complete dmesgs (zipped, if necessary) of a
+> > suspend/resume cycle
+> > on a vanilla 3.12.x (where resume fails) _and_ a vanilla 3.11.x
+> > (where resume succeeds).
+> > 
+> > For the test configurations, please do not apply patches.
+> > 
+> > Regards,
+> > Peter Hurley
+> 
+> Thank you very much for your reply!
+> Attached you'll find a zip file with the two edited dmesg logs of
+> plain vanilla kernel runs.
+> 
+> I have to add, that the resumes _do_ succeed in both cases, only
+> the serial mouse doesn't get activated after hibernate in 3.12.x
+> automatically. Just scan for and compare the lines indicating
+> "serial 00:08: disabled" or "serial 00:08: activated". In 3.12.x
+> the activation doesn't happen after hibernate, but after
+> suspend-to-ram (sleep). That only after STR and not before a
+> setserial gets my mouse back... a miracle. ;-)
 
-Dear RT Folks,
+I do not see
 
-I'm pleased to announce the 3.4.69-rt86 stable release.
+> [  206.577370] serial 00:08: activated
 
+in the restore from hibernation log of 3.12 which shoudl come from PNP
+layer.
 
-You can get this release via the git tree at:
+[dtor@dtor-d630 work]$ git log --oneline v3.11..v3.12 -- drivers/pnp/ 
+729377d pnp: change pnp bus pm_ops to invoke pnp driver dev_pm_ops if specified
+ce63e18 Merge branch 'pnp'
+8ad928d ACPI / PM: Use ACPI_STATE_D3_COLD instead of ACPI_STATE_D3 everywhere
+eaf140b PNP: convert PNP driver bus legacy pm_ops to dev_pm_ops
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+I'd start looking into these commits.
 
-  branch: v3.4-rt
-  Head SHA1: 09408b6936f6c62a98e06fa46c737a42725b9c9f
+Thanks.
 
-
-Or to build 3.4.69-rt86 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.69.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.69-rt86.patch.xz
-
-
-
-You can also build from 3.4.69-rt85 by applying the incremental patch:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/incr/patch-3.4.69-rt85-rt86.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-Changes from v3.4.69-rt85:
-
----
-
-Mike Galbraith (1):
-      hwlat-detector: Don't ignore threshold module parameter
-
-Sebastian Andrzej Siewior (1):
-      drm: remove preempt_disable() from drm_calc_vbltimestamp_from_scanoutpos()
-
-Steven Rostedt (Red Hat) (1):
-      Linux 3.4.69-rt86
-
-Thomas Pfaff (1):
-      genirq: Set the irq thread policy without checking CAP_SYS_NICE
-
-Yang Shi (1):
-      mm/memcontrol: Don't call schedule_work_on in preemption disabled context
-
-----
- drivers/gpu/drm/drm_irq.c     | 7 -------
- drivers/misc/hwlat_detector.c | 2 +-
- kernel/irq/manage.c           | 2 +-
- localversion-rt               | 2 +-
- mm/memcontrol.c               | 4 ++--
- 5 files changed, 5 insertions(+), 12 deletions(-)
----------------------------
-diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
-index dc33ba5..07dfb99 100644
---- a/drivers/gpu/drm/drm_irq.c
-+++ b/drivers/gpu/drm/drm_irq.c
-@@ -619,11 +619,6 @@ int drm_calc_vbltimestamp_from_scanoutpos(struct drm_device *dev, int crtc,
- 	 * code gets preempted or delayed for some reason.
- 	 */
- 	for (i = 0; i < DRM_TIMESTAMP_MAXRETRIES; i++) {
--		/* Disable preemption to make it very likely to
--		 * succeed in the first iteration even on PREEMPT_RT kernel.
--		 */
--		preempt_disable();
--
- 		/* Get system timestamp before query. */
- 		do_gettimeofday(&stime);
- 
-@@ -633,8 +628,6 @@ int drm_calc_vbltimestamp_from_scanoutpos(struct drm_device *dev, int crtc,
- 		/* Get system timestamp after query. */
- 		do_gettimeofday(&raw_time);
- 
--		preempt_enable();
--
- 		/* Return as no-op if scanout query unsupported or failed. */
- 		if (!(vbl_status & DRM_SCANOUTPOS_VALID)) {
- 			DRM_DEBUG("crtc %d : scanoutpos query failed [%d].\n",
-diff --git a/drivers/misc/hwlat_detector.c b/drivers/misc/hwlat_detector.c
-index 6f61d5f..d2676b8 100644
---- a/drivers/misc/hwlat_detector.c
-+++ b/drivers/misc/hwlat_detector.c
-@@ -413,7 +413,7 @@ static int init_stats(void)
- 		goto out;
- 
- 	__reset_stats();
--	data.threshold = DEFAULT_LAT_THRESHOLD;	    /* threshold us */
-+	data.threshold = threshold ?: DEFAULT_LAT_THRESHOLD;	    /* threshold us */
- 	data.sample_window = DEFAULT_SAMPLE_WINDOW; /* window us */
- 	data.sample_width = DEFAULT_SAMPLE_WIDTH;   /* width us */
- 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index a6bea19..30211a7 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -1024,7 +1024,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 			goto out_mput;
- 		}
- 
--		sched_setscheduler(t, SCHED_FIFO, &param);
-+		sched_setscheduler_nocheck(t, SCHED_FIFO, &param);
- 
- 		/*
- 		 * We keep the reference to the task struct even if
-diff --git a/localversion-rt b/localversion-rt
-index 168858f..0e811ca 100644
---- a/localversion-rt
-+++ b/localversion-rt
-@@ -1 +1 @@
---rt85
-+-rt86
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 9c36442..107c0ba 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2082,7 +2082,7 @@ static void drain_all_stock(struct mem_cgroup *root_memcg, bool sync)
- 
- 	/* Notify other cpus that system-wide "drain" is running */
- 	get_online_cpus();
--	curcpu = get_cpu();
-+	curcpu = get_cpu_light();
- 	for_each_online_cpu(cpu) {
- 		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
- 		struct mem_cgroup *memcg;
-@@ -2099,7 +2099,7 @@ static void drain_all_stock(struct mem_cgroup *root_memcg, bool sync)
- 				schedule_work_on(cpu, &stock->work);
- 		}
- 	}
--	put_cpu();
-+	put_cpu_light();
- 
- 	if (!sync)
- 		goto out;
+-- 
+Dmitry
