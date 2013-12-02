@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759456Ab3LBVOX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:14:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38453 "EHLO
+	id S932357Ab3LBVOU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:14:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38411 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970Ab3LBTNC (ORCPT
+	with ESMTP id S1753966Ab3LBTNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:02 -0500
+	Mon, 2 Dec 2013 14:13:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 043/173] ipc: update locking scheme comments
-Date: Mon,  2 Dec 2013 11:10:26 -0800
-Message-Id: <20131202191147.609232256@linuxfoundation.org>
+        Ionut Nicu <ioan.nicu.ext@nsn.com>,
+        Peter Korsgaard <peter.korsgaard@barco.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH 3.10 028/173] i2c: mux: gpio: use gpio_set_value_cansleep()
+Date: Mon,  2 Dec 2013 11:10:11 -0800
+Message-Id: <20131202191146.015226082@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -29,58 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Davidlohr Bueso <davidlohr@hp.com>
+From: Ionut Nicu <ioan.nicu.ext@nsn.com>
 
-commit 18ccee263c7e250a57f01c9434658f11f4118a64 upstream.
+commit 250ad590d6f12d93f4d85be305b0a598d609232e upstream.
 
-The initial documentation was a bit incomplete, update accordingly.
+Some gpio chips may have get/set operations that
+can sleep. gpio_set_value() only works for chips
+which do not sleep, for the others we will get a
+kernel warning. Using gpio_set_value_cansleep()
+will work for both chips that do sleep and those
+who don't.
 
-[akpm@linux-foundation.org: make it more readable in 80 columns]
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-Acked-by: Manfred Spraul <manfred@colorfullife.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ionut Nicu <ioan.nicu.ext@nsn.com>
+Acked-by: Peter Korsgaard <peter.korsgaard@barco.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/util.c |   27 +++++++++++++++++++++------
- 1 file changed, 21 insertions(+), 6 deletions(-)
+ drivers/i2c/muxes/i2c-mux-gpio.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/ipc/util.c
-+++ b/ipc/util.c
-@@ -17,12 +17,27 @@
-  *            Pavel Emelianov <xemul@openvz.org>
-  *
-  * General sysv ipc locking scheme:
-- *  when doing ipc id lookups, take the ids->rwsem
-- *      rcu_read_lock()
-- *          obtain the ipc object (kern_ipc_perm)
-- *          perform security, capabilities, auditing and permission checks, etc.
-- *          acquire the ipc lock (kern_ipc_perm.lock) throught ipc_lock_object()
-- *             perform data updates (ie: SET, RMID, LOCK/UNLOCK commands)
-+ *	rcu_read_lock()
-+ *          obtain the ipc object (kern_ipc_perm) by looking up the id in an idr
-+ *	    tree.
-+ *	    - perform initial checks (capabilities, auditing and permission,
-+ *	      etc).
-+ *	    - perform read-only operations, such as STAT, INFO commands.
-+ *	      acquire the ipc lock (kern_ipc_perm.lock) through
-+ *	      ipc_lock_object()
-+ *		- perform data updates, such as SET, RMID commands and
-+ *		  mechanism-specific operations (semop/semtimedop,
-+ *		  msgsnd/msgrcv, shmat/shmdt).
-+ *	    drop the ipc lock, through ipc_unlock_object().
-+ *	rcu_read_unlock()
-+ *
-+ *  The ids->rwsem must be taken when:
-+ *	- creating, removing and iterating the existing entries in ipc
-+ *	  identifier sets.
-+ *	- iterating through files under /proc/sysvipc/
-+ *
-+ *  Note that sems have a special fast path that avoids kern_ipc_perm.lock -
-+ *  see sem_lock().
-  */
+--- a/drivers/i2c/muxes/i2c-mux-gpio.c
++++ b/drivers/i2c/muxes/i2c-mux-gpio.c
+@@ -31,8 +31,8 @@ static void i2c_mux_gpio_set(const struc
+ 	int i;
  
- #include <linux/mm.h>
+ 	for (i = 0; i < mux->data.n_gpios; i++)
+-		gpio_set_value(mux->gpio_base + mux->data.gpios[i],
+-			       val & (1 << i));
++		gpio_set_value_cansleep(mux->gpio_base + mux->data.gpios[i],
++					val & (1 << i));
+ }
+ 
+ static int i2c_mux_gpio_select(struct i2c_adapter *adap, void *data, u32 chan)
 
 
