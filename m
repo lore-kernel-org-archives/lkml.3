@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932271Ab3LBVDa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:03:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38531 "EHLO
+	id S932290Ab3LBVFB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:05:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38623 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754056Ab3LBTNX (ORCPT
+	with ESMTP id S1753664Ab3LBTNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:23 -0500
+	Mon, 2 Dec 2013 14:13:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Matthieu Baerts <matttbe@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 062/173] rtlwifi: rtl8192se: Fix incorrect signal strength for unassociated AP
-Date: Mon,  2 Dec 2013 11:10:45 -0800
-Message-Id: <20131202191149.692500083@linuxfoundation.org>
+        Shiva Krishna Merla <shivakrishna.merla@netapp.com>,
+        Krishnasamy Somasundaram <somasundaram.krishnasamy@netapp.com>,
+        Speagle Andy <Andy.Speagle@netapp.com>,
+        Junichi Nomura <j-nomura@ce.jp.nec.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.10 069/173] dm mpath: fix race condition between multipath_dtr and pg_init_done
+Date: Mon,  2 Dec 2013 11:10:52 -0800
+Message-Id: <20131202191150.749712648@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -28,36 +30,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Shiva Krishna Merla <shivakrishna.merla@netapp.com>
 
-commit b4ade797668e33b4e8353c2701ce01d7084dfafa upstream.
+commit 954a73d5d3073df2231820c718fdd2f18b0fe4c9 upstream.
 
-The routine that processes received frames was returning the RSSI value for the
-signal strength; however, that value is available only for associated APs. As
-a result, the strength was the absurd value of 10 dBm. As a result, scans
-return incorrect values for the strength, which causes unwanted attempts to roam.
+Whenever multipath_dtr() is happening we must prevent queueing any
+further path activation work.  Implement this by adding a new
+'pg_init_disabled' flag to the multipath structure that denotes future
+path activation work should be skipped if it is set.  By disabling
+pg_init and then re-enabling in flush_multipath_work() we also avoid the
+potential for pg_init to be initiated while suspending an mpath device.
 
-This patch fixes https://bugzilla.kernel.org/show_bug.cgi?id=63881.
+Without this patch a race condition exists that may result in a kernel
+panic:
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Reported-by: Matthieu Baerts <matttbe@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+1) If after pg_init_done() decrements pg_init_in_progress to 0, a call
+   to wait_for_pg_init_completion() assumes there are no more pending path
+   management commands.
+2) If pg_init_required is set by pg_init_done(), due to retryable
+   mode_select errors, then process_queued_ios() will again queue the
+   path activation work.
+3) If free_multipath() completes before activate_path() work is called a
+   NULL pointer dereference like the following can be seen when
+   accessing members of the recently destructed multipath:
+
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000090
+RIP: 0010:[<ffffffffa003db1b>]  [<ffffffffa003db1b>] activate_path+0x1b/0x30 [dm_multipath]
+[<ffffffff81090ac0>] worker_thread+0x170/0x2a0
+[<ffffffff81096c80>] ? autoremove_wake_function+0x0/0x40
+
+[switch to disabling pg_init in flush_multipath_work & header edits by Mike Snitzer]
+Signed-off-by: Shiva Krishna Merla <shivakrishna.merla@netapp.com>
+Reviewed-by: Krishnasamy Somasundaram <somasundaram.krishnasamy@netapp.com>
+Tested-by: Speagle Andy <Andy.Speagle@netapp.com>
+Acked-by: Junichi Nomura <j-nomura@ce.jp.nec.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192se/trx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/dm-mpath.c |   18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
-@@ -329,7 +329,7 @@ bool rtl92se_rx_query_desc(struct ieee80
- 	}
+--- a/drivers/md/dm-mpath.c
++++ b/drivers/md/dm-mpath.c
+@@ -86,6 +86,7 @@ struct multipath {
+ 	unsigned queue_if_no_path:1;	/* Queue I/O if last path fails? */
+ 	unsigned saved_queue_if_no_path:1; /* Saved state during suspension */
+ 	unsigned retain_attached_hw_handler:1; /* If there's already a hw_handler present, don't change it. */
++	unsigned pg_init_disabled:1;	/* pg_init is not currently allowed */
  
- 	/*rx_status->qual = stats->signal; */
--	rx_status->signal = stats->rssi + 10;
-+	rx_status->signal = stats->recvsignalpower + 10;
- 	/*rx_status->noise = -stats->noise; */
+ 	unsigned pg_init_retries;	/* Number of times to retry pg_init */
+ 	unsigned pg_init_count;		/* Number of times pg_init called */
+@@ -497,7 +498,8 @@ static void process_queued_ios(struct wo
+ 	    (!pgpath && !m->queue_if_no_path))
+ 		must_queue = 0;
  
- 	return true;
+-	if (m->pg_init_required && !m->pg_init_in_progress && pgpath)
++	if (m->pg_init_required && !m->pg_init_in_progress && pgpath &&
++	    !m->pg_init_disabled)
+ 		__pg_init_all_paths(m);
+ 
+ 	spin_unlock_irqrestore(&m->lock, flags);
+@@ -942,10 +944,20 @@ static void multipath_wait_for_pg_init_c
+ 
+ static void flush_multipath_work(struct multipath *m)
+ {
++	unsigned long flags;
++
++	spin_lock_irqsave(&m->lock, flags);
++	m->pg_init_disabled = 1;
++	spin_unlock_irqrestore(&m->lock, flags);
++
+ 	flush_workqueue(kmpath_handlerd);
+ 	multipath_wait_for_pg_init_completion(m);
+ 	flush_workqueue(kmultipathd);
+ 	flush_work(&m->trigger_event);
++
++	spin_lock_irqsave(&m->lock, flags);
++	m->pg_init_disabled = 0;
++	spin_unlock_irqrestore(&m->lock, flags);
+ }
+ 
+ static void multipath_dtr(struct dm_target *ti)
+@@ -1164,7 +1176,7 @@ static int pg_init_limit_reached(struct
+ 
+ 	spin_lock_irqsave(&m->lock, flags);
+ 
+-	if (m->pg_init_count <= m->pg_init_retries)
++	if (m->pg_init_count <= m->pg_init_retries && !m->pg_init_disabled)
+ 		m->pg_init_required = 1;
+ 	else
+ 		limit_reached = 1;
+@@ -1699,7 +1711,7 @@ out:
+  *---------------------------------------------------------------*/
+ static struct target_type multipath_target = {
+ 	.name = "multipath",
+-	.version = {1, 5, 1},
++	.version = {1, 6, 0},
+ 	.module = THIS_MODULE,
+ 	.ctr = multipath_ctr,
+ 	.dtr = multipath_dtr,
 
 
