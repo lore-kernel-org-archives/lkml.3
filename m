@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759797Ab3LBVWm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:22:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38402 "EHLO
+	id S1759827Ab3LBVWt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:22:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38399 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752983Ab3LBTMl (ORCPT
+	with ESMTP id S1752911Ab3LBTMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:12:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.10 004/173] ARM: 7876/1: clear Thumb-2 IT state on exception handling
-Date: Mon,  2 Dec 2013 11:09:47 -0800
-Message-Id: <20131202191143.466897498@linuxfoundation.org>
+Subject: [PATCH 3.10 003/173] ARM: sa11x0/assabet: ensure CS2 is configured appropriately
+Date: Mon,  2 Dec 2013 11:09:46 -0800
+Message-Id: <20131202191143.358705986@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -29,54 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Zyngier <Marc.Zyngier@arm.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit e16b31bf47738f4498d7ce632e12d7d2a6a2492a upstream.
+commit f3964fe1c9d9a887d65faf594669852e4dec46e0 upstream.
 
-The exception handling code fails to clear the IT state, potentially
-leading to incorrect execution of the fixup if the size of the IT
-block is more than one.
+The CS2 region contains the Assabet board configuration and status
+registers, which are 32-bit.  Unfortunately, some boot loaders do not
+configure this region correctly, leaving it setup as a 16-bit region.
+Fix this.
 
-Let fixup_exception do the IT sanitizing if a fixup has been found,
-and restore CPSR from the stack when returning from a data abort.
-
-Cc: Will Deacon <will.deacon@arm.com>
-Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/entry-armv.S |    1 +
- arch/arm/mm/extable.c        |    7 ++++++-
- 2 files changed, 7 insertions(+), 1 deletion(-)
+ arch/arm/mach-sa1100/assabet.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/arm/kernel/entry-armv.S
-+++ b/arch/arm/kernel/entry-armv.S
-@@ -192,6 +192,7 @@ __dabt_svc:
- 	svc_entry
- 	mov	r2, sp
- 	dabt_helper
-+ THUMB(	ldr	r5, [sp, #S_PSR]	)	@ potentially updated CPSR
- 	svc_exit r5				@ return from exception
-  UNWIND(.fnend		)
- ENDPROC(__dabt_svc)
---- a/arch/arm/mm/extable.c
-+++ b/arch/arm/mm/extable.c
-@@ -9,8 +9,13 @@ int fixup_exception(struct pt_regs *regs
- 	const struct exception_table_entry *fixup;
+--- a/arch/arm/mach-sa1100/assabet.c
++++ b/arch/arm/mach-sa1100/assabet.c
+@@ -512,6 +512,9 @@ static void __init assabet_map_io(void)
+ 	 * Its called GPCLKR0 in my SA1110 manual.
+ 	 */
+ 	Ser1SDCR0 |= SDCR0_SUS;
++	MSC1 = (MSC1 & ~0xffff) |
++		MSC_NonBrst | MSC_32BitStMem |
++		MSC_RdAcc(2) | MSC_WrAcc(2) | MSC_Rec(0);
  
- 	fixup = search_exception_tables(instruction_pointer(regs));
--	if (fixup)
-+	if (fixup) {
- 		regs->ARM_pc = fixup->fixup;
-+#ifdef CONFIG_THUMB2_KERNEL
-+		/* Clear the IT state to avoid nasty surprises in the fixup */
-+		regs->ARM_cpsr &= ~PSR_IT_MASK;
-+#endif
-+	}
- 
- 	return fixup != NULL;
- }
+ 	if (!machine_has_neponset())
+ 		sa1100_register_uart_fns(&assabet_port_fns);
 
 
