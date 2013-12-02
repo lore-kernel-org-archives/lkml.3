@@ -1,95 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111Ab3LBO2o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 09:28:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61541 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751729Ab3LBO2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 09:28:39 -0500
-Date: Mon, 2 Dec 2013 09:28:29 -0500
-From: Dave Jones <davej@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Subject: Re: HID: kye: Add report fixup for Genius Manticore Keyboard
-Message-ID: <20131202142829.GA2411@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Jiri Kosina <jkosina@suse.cz>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Benjamin Tissoires <benjamin.tissoires@redhat.com>
-References: <20131128051223.28802660D26@gitolite.kernel.org>
- <20131130214211.GA16854@redhat.com>
- <alpine.LNX.2.00.1312021515300.24931@pobox.suse.cz>
+	id S1752144Ab3LBO27 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 09:28:59 -0500
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:40948 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751961Ab3LBO2m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 09:28:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1312021515300.24931@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131130175903.GL24171@order.stressinduktion.org>
+References: <20131128190411.GD24171@order.stressinduktion.org>
+	<20131129.163930.203685593163996122.davem@davemloft.net>
+	<20131130174635.GK24171@order.stressinduktion.org>
+	<20131130.125110.248139896351909341.davem@davemloft.net>
+	<20131130175903.GL24171@order.stressinduktion.org>
+Date: Mon, 2 Dec 2013 19:58:41 +0530
+Message-ID: <CAP8BHkHqNbyEjTUZiKdJ+qz7USGy39t-15b55VfzCu88rnZpjQ@mail.gmail.com>
+Subject: Re: [PATCH] ipv6: ip6_pkt_prohibit(_out) should not depend on CONFIG_IPV6_MULTIPLE_TABLES
+From: Kamala R <kamala@aristanetworks.com>
+To: David Miller <davem@davemloft.net>, Kamala R <kamala@aristanetworks.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 03:16:24PM +0100, Jiri Kosina wrote:
- > On Sat, 30 Nov 2013, Dave Jones wrote:
- > 
- > >  > Commit:     4a2c94c9b6c03af61b04993340bd9559e2277de4
- > >  > Author:     Benjamin Tissoires <benjamin.tissoires@redhat.com>
- > >  > AuthorDate: Wed Nov 20 09:49:41 2013 -0500
- > >  > Committer:  Jiri Kosina <jkosina@suse.cz>
- > >  > CommitDate: Thu Nov 21 10:28:58 2013 +0100
- > >  > 
- > >  >     HID: kye: Add report fixup for Genius Manticore Keyboard
- > >  >     
- > >  >     Genius Manticore Keyboard presents the same problem in its report
- > >  >     descriptors than Genius Gila Gaming Mouse and Genius Imperator Keyboard.
- > >  >     Use the same fixup.
- > > 
- > > ..
- > > 
- > >  > diff --git a/drivers/hid/hid-kye.c b/drivers/hid/hid-kye.c
- > >  > index 7384512..35a4f9c 100644
- > >  > --- a/drivers/hid/hid-kye.c
- > >  > +++ b/drivers/hid/hid-kye.c
- > >  > @@ -341,6 +341,9 @@ static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- > >  >  	case USB_DEVICE_ID_GENIUS_GX_IMPERATOR:
- > >  >  		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 83,
- > >  >  					"Genius Gx Imperator Keyboard");
- > >  > +	case USB_DEVICE_ID_GENIUS_MANTICORE:
- > >  > +		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 104,
- > >  > +					"Genius Manticore Keyboard");
- > >  >  		break;
- > > 
- > > 
- > > Is the IMPERATOR case supposed to fall-through to MANTICORE here, or is there a missing break ?
- > > The commit text describes using the same fixup, but has this alternative case.
- > 
- > I am almost certain that the missing break is a mistake, and the offsets 
- > in both report descriptors are just different, and there is no need for 
- > two fixups.
- > 
- > I am queuing this for 3.13 still, but having final confirmation from 
- > Benjamin would of course be nice.
+Hi,
 
-If that is the case..
+I have submitted a version 4 of my patch that squashes the above
+changes into it as well. Is that the right way to do it ?
 
--- 
+Regards,
+Kamala
 
-
-Commit 4a2c94c9b6 inadvertantly removed a break from the GENIUS_GX_IMPERATOR case.
-Spotted by Coverity.
-
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
-
-diff --git a/drivers/hid/hid-kye.c b/drivers/hid/hid-kye.c
-index ecb5ca669e97..e77696367591 100644
---- a/drivers/hid/hid-kye.c
-+++ b/drivers/hid/hid-kye.c
-@@ -341,6 +341,7 @@ static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 	case USB_DEVICE_ID_GENIUS_GX_IMPERATOR:
- 		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 83,
- 					"Genius Gx Imperator Keyboard");
-+		break;
- 	case USB_DEVICE_ID_GENIUS_MANTICORE:
- 		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 104,
- 					"Genius Manticore Keyboard");
-
+On Sat, Nov 30, 2013 at 11:29 PM, Hannes Frederic Sowa
+<hannes@stressinduktion.org> wrote:
+> On Sat, Nov 30, 2013 at 12:51:10PM -0500, David Miller wrote:
+>> From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+>> Date: Sat, 30 Nov 2013 18:46:35 +0100
+>>
+>> > On Fri, Nov 29, 2013 at 04:39:30PM -0500, David Miller wrote:
+>> >> From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+>> >> Date: Thu, 28 Nov 2013 20:04:11 +0100
+>> >>
+>> >> > Since patch "IPv6: Fixed support for blackhole and prohibit routes" we
+>> >> > need ip6_pkt_prohibit(_out) available without CONFIG_IPV6_MULTIPLE_TABLES
+>> >> > defined.
+>> >> >
+>> >> > Cc: Kamala R <kamala@aristanetworks.com>
+>> >> > Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+>> >>
+>> >> Please reference the SHA1 ID of the change as well as it's commit
+>> >> header text, thank you.
+>> >
+>> > This patch is a follow-up patch for the first one in this thread which is not
+>> > committed, yet. Either Kamala can squash them into one or I'll repost it
+>> > later.
+>>
+>> I think they need to be combined, otherwise bisection is broken.
+>
+> Kamala, as your patch is the main one, can you squash my patch into yours?
+>
