@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128Ab3LBVWx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:22:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38395 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752867Ab3LBTMk (ORCPT
+	id S1759878Ab3LBVYF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:24:05 -0500
+Received: from smtprelay0197.hostedemail.com ([216.40.44.197]:44575 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758055Ab3LBVYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:12:40 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Markus Pargmann <mpa@pengutronix.de>, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.10 002/173] ARM: OMAP2+: irq, AM33XX add missing register check
-Date: Mon,  2 Dec 2013 11:09:45 -0800
-Message-Id: <20131202191143.253902242@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
-References: <20131202191142.873808297@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	Mon, 2 Dec 2013 16:24:01 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2198:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3865:3867:3870:3873:4605:5007:6119:7652:7809:8660:10004:10400:10848:11026:11473:11657:11658:11914:12043:12296:12438:12517:12519:13069:13148:13161:13229:13230:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: low12_3ffd60f955c16
+X-Filterd-Recvd-Size: 2155
+Message-ID: <1386019438.2680.32.camel@joe-AO722>
+Subject: checkpatch not warning for some split strings
+From: Joe Perches <joe@perches.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>
+Date: Mon, 02 Dec 2013 13:23:58 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Hey Josh.
 
-------------------
+Back when you added commit ca56dc098ca
+("checkpatch: check for quoted strings broken across lines")
 
-From: Markus Pargmann <mpa@pengutronix.de>
+You added this test case:
 
-commit 0bebda684857f76548ea48c8886785198701d8d3 upstream.
+    Test case:
+    
+    void context(void)
+    {
+        struct { unsigned magic; const char *strdata; } foo[] = {
+                { 42, "these strings"
+                      "do not produce warnings" },
+                { 256, "though perhaps"
+                       "they should" },
+        };
 
-am33xx has a INTC_PENDING_IRQ3 register that is not checked for pending
-interrupts. This patch adds AM33XX to the ifdef of SOCs that have to
-check this register.
+which avoids emitting a warning on split strings across
+multiple lines without a function-call like '(' use on
+the line above.
 
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Perhaps the "\(" test should be removed as checkpatch
+doesn't emit a warning for some uses like:
 
----
- arch/arm/mach-omap2/irq.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/arm/mach-omap2/irq.c
-+++ b/arch/arm/mach-omap2/irq.c
-@@ -233,7 +233,7 @@ static inline void omap_intc_handle_irq(
- 			goto out;
- 
- 		irqnr = readl_relaxed(base_addr + 0xd8);
--#ifdef CONFIG_SOC_TI81XX
-+#if IS_ENABLED(CONFIG_SOC_TI81XX) || IS_ENABLED(CONFIG_SOC_AM33XX)
- 		if (irqnr)
- 			goto out;
- 		irqnr = readl_relaxed(base_addr + 0xf8);
+diff --git a/drivers/net/wireless/iwlwifi/mvm/rs.c b/drivers/net/wireless/iwlwifi/mvm/rs.c
+[]
+@@ -1868,7 +1865,8 @@ static void rs_rate_scale_perform(struct iwl_mvm *mvm,
+                /* Else poor success; go back to mode in "active" table */
+                } else {
+                        IWL_DEBUG_RATE(mvm,
+-                                      "LQ: GOING BACK TO THE OLD TABLE suc=%d cur-tpt=%d old-tpt=%d\n",
++                                      "GOING BACK TO THE OLD TABLE: SR %d "
++                                      "cur-tpt %d old-tpt %d\n",
+                                       window->success_ratio,
+                                       window->average_tpt,
+                                       lq_sta->last_tpt);
 
 
