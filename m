@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833Ab3LBUII (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:08:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39216 "EHLO
+	id S1756895Ab3LBUJP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:09:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39150 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754588Ab3LBTRi (ORCPT
+	with ESMTP id S1754585Ab3LBTRg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:38 -0500
+	Mon, 2 Dec 2013 14:17:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Wu <josh.wu@atmel.com>,
         Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.12 071/212] mtd: atmel_nand: fix bug driver will in a dead lock if no nand detected
-Date: Mon,  2 Dec 2013 11:14:22 -0800
-Message-Id: <20131202191255.819566799@linuxfoundation.org>
+Subject: [PATCH 3.12 068/212] mtd: nand: hack ONFI for non-power-of-2 dimensions
+Date: Mon,  2 Dec 2013 11:14:19 -0800
+Message-Id: <20131202191255.548726190@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,52 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Wu <josh.wu@atmel.com>
+From: Brian Norris <computersforpeace@gmail.com>
 
-commit a749d13acd8e079ed4c77a9456d842dc94af8f17 upstream.
+commit 4355b70cf48363c50a9de450b01178c83aba8f6a upstream.
 
-In the atmel driver probe function, the code shows like following:
-  atmel_nand_probe(...) {
-        ...
+Some bright specification writers decided to write this in the ONFI spec
+(from ONFI 3.0, Section 3.1):
 
-  err_nand_ioremap:
-        platform_driver_unregister(&atmel_nand_nfc_driver);
-        return res;
-  }
+  "The number of blocks and number of pages per block is not required to
+  be a power of two. In the case where one of these values is not a
+  power of two, the corresponding address shall be rounded to an
+  integral number of bits such that it addresses a range up to the
+  subsequent power of two value. The host shall not access upper
+  addresses in a range that is shown as not supported."
 
-If no nand flash detected, the driver probe function will goto
-err_nand_ioremap label.
-Then platform_driver_unregister() will be called. It will get the
-lock of atmel_nand device since it is parent of nfc_device. The
-problem is the lock is already hold by atmel_nand_probe itself.
-So system will be in a dead lock.
+This breaks every assumption MTD makes about NAND block/chip-size
+dimensions -- they *must* be a power of two!
 
-This patch just simply removed to platform_driver_unregister() call.
-When atmel_nand driver is quit the platform_driver_unregister() will
-be called in atmel_nand_remove().
+And of course, an enterprising manufacturer has made use of this lovely
+freedom. Exhibit A: Micron MT29F32G08CBADAWP
 
-[Brian: the NAND platform probe really has no business
- registering/unregistering another driver; this fixes the deadlock, but
- we should follow up the likely racy behavior here with a better
- architecture]
+  "- Plane size: 2 planes x 1064 blocks per plane
+   - Device size: 32Gb: 2128 blockss [sic]"
 
-Signed-off-by: Josh Wu <josh.wu@atmel.com>
+This quickly hits a BUG() in nand_base.c, since the extra dimensions
+overflow so we think it's a second chip (on my single-chip setup):
+
+    ONFI param page 0 valid
+    ONFI flash detected
+    NAND device: Manufacturer ID: 0x2c, Chip ID: 0x44 (Micron MT29F32G08CBADAWP), 4256MiB, page size: 8192, OOB size: 744
+    ------------[ cut here ]------------
+    kernel BUG at drivers/mtd/nand/nand_base.c:203!
+    Internal error: Oops - BUG: 0 [#1] SMP ARM
+    [... trim ...]
+    [<c02cf3e4>] (nand_select_chip+0x18/0x2c) from [<c02d25c0>] (nand_do_read_ops+0x90/0x424)
+    [<c02d25c0>] (nand_do_read_ops+0x90/0x424) from [<c02d2dd8>] (nand_read+0x54/0x78)
+    [<c02d2dd8>] (nand_read+0x54/0x78) from [<c02ad2c8>] (mtd_read+0x84/0xbc)
+    [<c02ad2c8>] (mtd_read+0x84/0xbc) from [<c02d4b28>] (scan_read.clone.4+0x4c/0x64)
+    [<c02d4b28>] (scan_read.clone.4+0x4c/0x64) from [<c02d4c88>] (search_bbt+0x148/0x290)
+    [<c02d4c88>] (search_bbt+0x148/0x290) from [<c02d4ea4>] (nand_scan_bbt+0xd4/0x5c0)
+    [... trim ...]
+    ---[ end trace 0c9363860d865ff2 ]---
+
+So to fix this, just truncate these dimensions down to the greatest
+power-of-2 dimension that is less than or equal to the specified
+dimension.
+
 Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/atmel_nand.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/mtd/nand/nand_base.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
---- a/drivers/mtd/nand/atmel_nand.c
-+++ b/drivers/mtd/nand/atmel_nand.c
-@@ -2177,7 +2177,6 @@ err_no_card:
- 	if (host->dma_chan)
- 		dma_release_channel(host->dma_chan);
- err_nand_ioremap:
--	platform_driver_unregister(&atmel_nand_nfc_driver);
- 	return res;
- }
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -2981,10 +2981,21 @@ static int nand_flash_detect_onfi(struct
+ 	sanitize_string(p->model, sizeof(p->model));
+ 	if (!mtd->name)
+ 		mtd->name = p->model;
++
+ 	mtd->writesize = le32_to_cpu(p->byte_per_page);
+-	mtd->erasesize = le32_to_cpu(p->pages_per_block) * mtd->writesize;
++
++	/*
++	 * pages_per_block and blocks_per_lun may not be a power-of-2 size
++	 * (don't ask me who thought of this...). MTD assumes that these
++	 * dimensions will be power-of-2, so just truncate the remaining area.
++	 */
++	mtd->erasesize = 1 << (fls(le32_to_cpu(p->pages_per_block)) - 1);
++	mtd->erasesize *= mtd->writesize;
++
+ 	mtd->oobsize = le16_to_cpu(p->spare_bytes_per_page);
+-	chip->chipsize = le32_to_cpu(p->blocks_per_lun);
++
++	/* See erasesize comment */
++	chip->chipsize = 1 << (fls(le32_to_cpu(p->blocks_per_lun)) - 1);
+ 	chip->chipsize *= (uint64_t)mtd->erasesize * p->lun_count;
  
+ 	if (onfi_feature(chip) & ONFI_FEATURE_16_BIT_BUS)
 
 
