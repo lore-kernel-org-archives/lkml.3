@@ -1,197 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324Ab3LBJj0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 04:39:26 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:51094 "EHLO arroyo.ext.ti.com"
+	id S1753334Ab3LBJk3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 04:40:29 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:59446 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752723Ab3LBJjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 04:39:22 -0500
-Message-ID: <529C5537.3080300@ti.com>
-Date: Mon, 2 Dec 2013 11:39:03 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1752723Ab3LBJkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 04:40:25 -0500
+Date: Mon, 2 Dec 2013 10:40:20 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
+Subject: Re: [PATCH v4 06/12] efi: export efi runtime memory mapping to sysfs
+Message-ID: <20131202094020.GA7380@pd.tnic>
+References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
+ <1385445477-9665-7-git-send-email-dyoung@redhat.com>
+ <20131127114402.GB32267@pd.tnic>
+ <20131129094034.GI4186@dhcp-16-126.nay.redhat.com>
+ <20131129115029.GB4266@pd.tnic>
+ <20131202025942.GF3999@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-To: Michael Trimarchi <michael@amarulasolutions.com>
-CC: Lee Jones <lee.jones@linaro.org>, <sameo@linux.intel.com>,
-        <tomi.valkeinen@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Stefan Roese <sr@denx.de>, <ljkenny.mailinglists@gmail.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>, Benoit Cousson <bcousson@baylibre.com>,
-        "tony@atomide.com" <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCH 1/1] mfd: omap-usb-host: Fix USB device detection problems
- on OMAP4 Panda
-References: <1385730118-26402-1-git-send-email-rogerq@ti.com>	<1385730118-26402-2-git-send-email-rogerq@ti.com> <CAOf5uwnttvOQ26USuDK1naq1nNtVbHo4c0UAfdep64bK2wyvBA@mail.gmail.com>
-In-Reply-To: <CAOf5uwnttvOQ26USuDK1naq1nNtVbHo4c0UAfdep64bK2wyvBA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131202025942.GF3999@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+Benoit, Tony, Paul.
+On Mon, Dec 02, 2013 at 10:59:42AM +0800, Dave Young wrote:
+> They are only called if there's setup_data SETUP_EFI passed in. Yes, I
+> think only kexec need that part of code. But I hesitated to mess the
+> code with a lot of #if. Will think about it.
 
-Hi Michael,
+Well, the accepted strategy with the efi code is to have function calls
+in efi.c and then have different versions of those functions defined for
+32 and 64-bit, i.e. efi_32.c and efi_64.c.
 
-On 11/30/2013 06:48 AM, Michael Trimarchi wrote:
-> Hi Roger
-> 
-> On Fri, Nov 29, 2013 at 2:01 PM, Roger Quadros <rogerq@ti.com> wrote:
->> With u-boot 2013.10, USB devices are sometimes not detected
->> on OMAP4 Panda. To make us independent of what bootloader does
->> with the USB Host module, we must RESET it to get it to a known
->> good state. This patch Soft RESETs the USB Host module.
->>
->> Reported-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
->> Cc: <stable@vger.kernel.org> # 3.10+
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> ---
->>  drivers/mfd/omap-usb-host.c | 115 +++++++++++++++++++++++++++++++++++++++++---
->>  1 file changed, 109 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
->> index 142650f..d4bd464 100644
->> --- a/drivers/mfd/omap-usb-host.c
->> +++ b/drivers/mfd/omap-usb-host.c
->> @@ -43,14 +43,18 @@
->>  /* UHH Register Set */
->>  #define        OMAP_UHH_REVISION                               (0x00)
->>  #define        OMAP_UHH_SYSCONFIG                              (0x10)
->> -#define        OMAP_UHH_SYSCONFIG_MIDLEMODE                    (1 << 12)
->> +#define        OMAP_UHH_SYSCONFIG_MIDLEMASK                    (3 << 12)
->> +#define OMAP_UHH_SYSCONFIG_MIDLESHIFT                  (12)
->>  #define        OMAP_UHH_SYSCONFIG_CACTIVITY                    (1 << 8)
->> -#define        OMAP_UHH_SYSCONFIG_SIDLEMODE                    (1 << 3)
->> +#define        OMAP_UHH_SYSCONFIG_SIDLEMASK                    (3 << 3)
->> +#define        OMAP_UHH_SYSCONFIG_SIDLESHIFT                   (3)
->>  #define        OMAP_UHH_SYSCONFIG_ENAWAKEUP                    (1 << 2)
->>  #define        OMAP_UHH_SYSCONFIG_SOFTRESET                    (1 << 1)
->>  #define        OMAP_UHH_SYSCONFIG_AUTOIDLE                     (1 << 0)
->>
->>  #define        OMAP_UHH_SYSSTATUS                              (0x14)
->> +#define OMAP_UHH_SYSSTATUS_RESETDONE                   (1 << 0)
->> +
->>  #define        OMAP_UHH_HOSTCONFIG                             (0x40)
->>  #define        OMAP_UHH_HOSTCONFIG_ULPI_BYPASS                 (1 << 0)
->>  #define        OMAP_UHH_HOSTCONFIG_ULPI_P1_BYPASS              (1 << 0)
->> @@ -66,10 +70,10 @@
->>  #define OMAP4_UHH_HOSTCONFIG_APP_START_CLK             (1 << 31)
->>
->>  /* OMAP4-specific defines */
->> -#define OMAP4_UHH_SYSCONFIG_IDLEMODE_CLEAR             (3 << 2)
->> -#define OMAP4_UHH_SYSCONFIG_NOIDLE                     (1 << 2)
->> -#define OMAP4_UHH_SYSCONFIG_STDBYMODE_CLEAR            (3 << 4)
->> -#define OMAP4_UHH_SYSCONFIG_NOSTDBY                    (1 << 4)
->> +#define OMAP4_UHH_SYSCONFIG_MIDLEMASK                  (3 << 2)
->> +#define OMAP4_UHH_SYSCONFIG_MIDLESHIFT                 (2)
->> +#define OMAP4_UHH_SYSCONFIG_SIDLEMASK                  (3 << 4)
->> +#define OMAP4_UHH_SYSCONFIG_SIDLESHIFT                 (4)
->>  #define OMAP4_UHH_SYSCONFIG_SOFTRESET                  (1 << 0)
->>
->>  #define OMAP4_P1_MODE_CLEAR                            (3 << 16)
->> @@ -81,6 +85,12 @@
->>
->>  #define        OMAP_UHH_DEBUG_CSR                              (0x44)
->>
->> +/* MIDLE modes */
->> +#define OMAP_UHH_SYSCONFIG_MIDLE_NOSTANDBY             (1)
->> +
->> +/* SIDLE modes */
->> +#define OMAP_UHH_SYSCONFIG_SIDLE_NOIDLE                        (1)
->> +
->>  /* Values of UHH_REVISION - Note: these are not given in the TRM */
->>  #define OMAP_USBHS_REV1                0x00000010      /* OMAP3 */
->>  #define OMAP_USBHS_REV2                0x50700100      /* OMAP4 */
->> @@ -474,6 +484,97 @@ static unsigned omap_usbhs_rev2_hostconfig(struct usbhs_hcd_omap *omap,
->>         return reg;
->>  }
->>
-> 
-> I'm digging in the code but as I understand this should be done by
-> omap_hwmod and
-> i660 avoid reset of the ehci module. This is done by ocp_softreset?
-> 
+I can imagine adding an efi_kexec.c could make the whole deal very
+clearly arranged without ifdeffery.
 
-It won't be done by omap_hwmod as we set HWMOD_INIT_NO_RESET flag in the hwmod data [1].
+-- 
+Regards/Gruss,
+    Boris.
 
-Question is do we do it in the driver of leave it to hwmod?
-
-The other concern about i660 is in this comment [1]
-
-	/*
-	 * During system boot; If the hwmod framework resets the module
-	 * the module will have smart idle settings; which can lead to deadlock
-	 * (above Errata Id:i660); so, dont reset the module during boot;
-	 * Use HWMOD_INIT_NO_RESET.
-	 */
-
-But if you look at the errata document [2], Advisory 1.108, it doesn't say that we can't be in smart-idle, but
-only that we should put the module in force-idle, before cutting the module's functional clock. It also states
-that the only way to recover from a lockup condition is to soft reset the module. So I'm not sure if the above comment
-in the code is really valid. What if the lockup happens in the bootloader? In that case we will have to reset the module in
-the kernel.
-
-Doing the reset in probe does solve a problem for now i.e. eliminates dependency on bootloader.
-
-[1] - http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c#n2024
-[2] - http://www.ti.com/litv/pdf/sprz318e
-
-> 
->> +static void omap_usbhs_rev1_reset(struct device *dev)
->> +{
->> +       struct usbhs_hcd_omap *omap = dev_get_drvdata(dev);
->> +       u32 reg;
->> +       unsigned long timeout;
->> +
->> +       reg = usbhs_read(omap->uhh_base, OMAP_UHH_SYSCONFIG);
->> +
->> +       /* Soft Reset */
->> +       usbhs_write(omap->uhh_base, OMAP_UHH_SYSCONFIG,
->> +                   reg | OMAP_UHH_SYSCONFIG_SOFTRESET);
->> +
->> +       timeout = jiffies + msecs_to_jiffies(100);
->> +       while (!(usbhs_read(omap->uhh_base, OMAP_UHH_SYSSTATUS)
->> +                       & OMAP_UHH_SYSSTATUS_RESETDONE)) {
->> +               cpu_relax();
->> +
->> +               if (time_after(jiffies, timeout)) {
->> +                       dev_err(dev, "Soft RESET operation timed out\n");
->> +                       break;
->> +               }
->> +       }
->> +
->> +       /* Set No-Standby */
->> +       reg &= ~OMAP_UHH_SYSCONFIG_MIDLEMASK;
->> +       reg |= OMAP_UHH_SYSCONFIG_MIDLE_NOSTANDBY
->> +               << OMAP_UHH_SYSCONFIG_MIDLESHIFT;
->> +
->> +       /* Set No-Idle */
->> +       reg &= ~OMAP_UHH_SYSCONFIG_SIDLEMASK;
->> +       reg |= OMAP_UHH_SYSCONFIG_SIDLE_NOIDLE
->> +               << OMAP_UHH_SYSCONFIG_SIDLESHIFT;
->> +
->> +       usbhs_write(omap->uhh_base, OMAP_UHH_SYSCONFIG, reg);
->> +}
->> +
->> +static void omap_usbhs_rev2_reset(struct device *dev)
->> +{
->> +       struct usbhs_hcd_omap *omap = dev_get_drvdata(dev);
->> +       u32 reg;
->> +       unsigned long timeout;
->> +
->> +       reg = usbhs_read(omap->uhh_base, OMAP_UHH_SYSCONFIG);
->> +
->> +       /* Soft Reset */
->> +       usbhs_write(omap->uhh_base, OMAP_UHH_SYSCONFIG,
->> +                   reg | OMAP4_UHH_SYSCONFIG_SOFTRESET);
->> +
->> +       /* OMAP4: Need to wait before SYSCONFIG can be accessed */
->> +       udelay(2);
-> 
-> is this the srst_udelay?
-
-It was supposed to be, but it doesn't seem to be necessary for the UHH module. So I'll get rid of that.
-
-cheers,
--roger
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
