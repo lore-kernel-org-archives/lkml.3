@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758744Ab3LBU4r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:56:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38722 "EHLO
+	id S1753621Ab3LBU6B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:58:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38395 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753639Ab3LBTNl (ORCPT
+	with ESMTP id S1754116Ab3LBTNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:41 -0500
+	Mon, 2 Dec 2013 14:13:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Bulkow <David.Bulkow@stratus.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.10 087/173] PCI: Remove duplicate pci_disable_device() from pcie_portdrv_remove()
-Date: Mon,  2 Dec 2013 11:11:10 -0800
-Message-Id: <20131202191153.590909734@linuxfoundation.org>
+        Jakob Bornecrantz <jakob@vmware.com>,
+        =?UTF-8?q?Thomas=20Hellstr=C3=B6m?= <thellstrom@vmware.com>
+Subject: [PATCH 3.10 095/173] drm/ttm: Handle in-memory region copies
+Date: Mon,  2 Dec 2013 11:11:18 -0800
+Message-Id: <20131202191154.854087877@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,42 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Jakob Bornecrantz <jakob@vmware.com>
 
-commit e7cc5cf74544d97d7b69e2701595037474db1f96 upstream.
+commit 9a0599ddeae012a771bba5e23393fc52d8a59d89 upstream.
 
-The pcie_portdrv .probe() method calls pci_enable_device() once, in
-pcie_port_device_register(), but the .remove() method calls
-pci_disable_device() twice, in pcie_port_device_remove() and in
-pcie_portdrv_remove().
+Fix the case where the ttm pointer may be NULL causing
+a NULL pointer dereference.
 
-That causes a "disabling already-disabled device" warning when removing a
-PCIe port device.  This happens all the time when removing Thunderbolt
-devices, but is also easy to reproduce with, e.g.,
-"echo 0000:00:1c.3 > /sys/bus/pci/drivers/pcieport/unbind"
-
-This patch removes the disable from pcie_portdrv_remove().
-
-[bhelgaas: changelog, tag for stable]
-Reported-by: David Bulkow <David.Bulkow@stratus.com>
-Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Jakob Bornecrantz <jakob@vmware.com>
+Signed-off-by: Thomas Hellström <thellstrom@vmware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pcie/portdrv_pci.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/gpu/drm/ttm/ttm_bo_util.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/pci/pcie/portdrv_pci.c
-+++ b/drivers/pci/pcie/portdrv_pci.c
-@@ -223,7 +223,6 @@ static int pcie_portdrv_probe(struct pci
- static void pcie_portdrv_remove(struct pci_dev *dev)
- {
- 	pcie_port_device_remove(dev);
--	pci_disable_device(dev);
- }
+--- a/drivers/gpu/drm/ttm/ttm_bo_util.c
++++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
+@@ -347,7 +347,9 @@ int ttm_bo_move_memcpy(struct ttm_buffer
+ 	if (old_iomap == NULL && ttm == NULL)
+ 		goto out2;
  
- static int error_detected_iter(struct device *device, void *data)
+-	if (ttm->state == tt_unpopulated) {
++	/* TTM might be null for moves within the same region.
++	 */
++	if (ttm && ttm->state == tt_unpopulated) {
+ 		ret = ttm->bdev->driver->ttm_tt_populate(ttm);
+ 		if (ret) {
+ 			/* if we fail here don't nuke the mm node
 
 
