@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760016Ab3LBVaN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:30:13 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:47441 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753263Ab3LBVaJ (ORCPT
+	id S1753255Ab3LBTHA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:07:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38171 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198Ab3LBTGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 16:30:09 -0500
-Date: Mon, 2 Dec 2013 22:30:07 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: venkata koppula <vmrkoppula@gmail.com>
-Cc: Austin S Hemmelgarn <ahferroin7@gmail.com>, Andreas Mohr <andi@lisas.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Copying large files eats all of the RAM
-Message-ID: <20131202213007.GA3124@rhlx01.hs-esslingen.de>
-References: <20131129215616.GA32242@rhlx01.hs-esslingen.de>
- <52992659.5040503@gmail.com>
- <CAKK=TULveq5m2zX9YQS_v3KUp04qV+XME06tEhFx9upHG7D00w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKK=TULveq5m2zX9YQS_v3KUp04qV+XME06tEhFx9upHG7D00w@mail.gmail.com>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 2 Dec 2013 14:06:53 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.4 07/60] ASoC: blackfin: Fix missing break
+Date: Mon,  2 Dec 2013 11:05:48 -0800
+Message-Id: <20131202190331.798945107@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
+References: <20131202190330.152596462@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 30, 2013 at 11:59:07AM +0530, venkata koppula wrote:
-> Thanks for you replies.
-> 
-> Yeah, I understand that we need to utilize the resources as much as we
-> can. At the same time user should not
-> feel that system is slow and user should never wait for the copying
-> operation should complete to launch another
-> application meanwhile.
-> 
-> If the user is a system administrator or a programmer, he/she
-> understands the problem and will try to tune the kernel
-> based on his/her requirements. As an application user(A desktop user
-> doesn't worry about the optimizations,
-> even doesn't know what it is:)) faster response is important.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-I'm afraid you're damn right - standard configuration ought to be pretty
-similar to the optimum, without any tuning, given that most people don't
-(know to) do manual tuning.
-And even in recent times the kernel did not manage to achieve that goal,
-for several use cases. But I'm quite certain we're getting closer :)
+------------------
 
-BTW, a quite likely related and possibly helpful topic is
-"[patch 7/9] mm: thrash detection-based file cache sizing" https://lkml.org/lkml/2013/12/2/483
+From: Takashi Iwai <tiwai@suse.de>
 
-HTH,
+commit afed4dbe3a043dbd833a53b6b4951e155708afd2 upstream.
 
-Andreas Mohr
+Fixes: 4b2ffc205cb9 ('ASoC: Blackfin I2S: add 8-bit sample support')
+Reported-by: David Binderman
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
--- 
-GNU/Linux. It's not the software that's free, it's you.
+---
+ sound/soc/blackfin/bf5xx-i2s.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/sound/soc/blackfin/bf5xx-i2s.c
++++ b/sound/soc/blackfin/bf5xx-i2s.c
+@@ -111,6 +111,7 @@ static int bf5xx_i2s_hw_params(struct sn
+ 		bf5xx_i2s->tcr2 |= 7;
+ 		bf5xx_i2s->rcr2 |= 7;
+ 		sport_handle->wdsize = 1;
++		break;
+ 	case SNDRV_PCM_FORMAT_S16_LE:
+ 		bf5xx_i2s->tcr2 |= 15;
+ 		bf5xx_i2s->rcr2 |= 15;
+
+
