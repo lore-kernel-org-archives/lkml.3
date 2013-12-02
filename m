@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759938Ab3LBV0l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:26:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38323 "EHLO
+	id S1759960Ab3LBV1M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:27:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38315 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390Ab3LBTHR (ORCPT
+	with ESMTP id S1753375Ab3LBTHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:07:17 -0500
+	Mon, 2 Dec 2013 14:07:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Gundersen <teg@jklm.no>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.4 54/60] Input: i8042 - add PNP modaliases
-Date: Mon,  2 Dec 2013 11:06:35 -0800
-Message-Id: <20131202190342.103916229@linuxfoundation.org>
+        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.4 52/60] ALSA: hda/realtek - Set pcbeep amp for ALC668
+Date: Mon,  2 Dec 2013 11:06:33 -0800
+Message-Id: <20131202190341.643678281@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
 References: <20131202190330.152596462@linuxfoundation.org>
@@ -27,40 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Gundersen <teg@jklm.no>
+From: Kailang Yang <kailang@realtek.com>
 
-commit 78551277e4df57864b0b0e7f85c23ede2be2edb8 upstream.
+commit 9ad54547cf6f4410eba83bb95dfd2a0966718d6d upstream.
 
-This allows the module to be autoloaded in the common case.
+Set the missing pcbeep default amp for ALC668.
 
-In order to work on non-PnP systems the module should be compiled in or
-loaded unconditionally at boot (c.f. modules-load.d(5)), as before.
-
-Signed-off-by: Tom Gundersen <teg@jklm.no>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Kailang Yang <kailang@realtek.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/serio/i8042-x86ia64io.h |    2 ++
- 1 file changed, 2 insertions(+)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -765,6 +765,7 @@ static struct pnp_device_id pnp_kbd_devi
- 	{ .id = "CPQA0D7", .driver_data = 0 },
- 	{ .id = "", },
- };
-+MODULE_DEVICE_TABLE(pnp, pnp_kbd_devids);
- 
- static struct pnp_driver i8042_pnp_kbd_driver = {
- 	.name           = "i8042 kbd",
-@@ -786,6 +787,7 @@ static struct pnp_device_id pnp_aux_devi
- 	{ .id = "SYN0801", .driver_data = 0 },
- 	{ .id = "", },
- };
-+MODULE_DEVICE_TABLE(pnp, pnp_aux_devids);
- 
- static struct pnp_driver i8042_pnp_aux_driver = {
- 	.name           = "i8042 aux",
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6969,6 +6969,7 @@ static int patch_alc662(struct hda_codec
+ 		case 0x10ec0272:
+ 		case 0x10ec0663:
+ 		case 0x10ec0665:
++		case 0x10ec0668:
+ 			set_beep_amp(spec, 0x0b, 0x04, HDA_INPUT);
+ 			break;
+ 		case 0x10ec0273:
 
 
