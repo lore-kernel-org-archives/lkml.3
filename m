@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086Ab3LBUDY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:03:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39216 "EHLO
+	id S1754523Ab3LBUD0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:03:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39211 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753925Ab3LBTRw (ORCPT
+	with ESMTP id S1753924Ab3LBTRv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:52 -0500
+	Mon, 2 Dec 2013 14:17:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeff Layton <jlayton@redhat.com>,
-        Pavel Shilovsky <piastry@etersoft.ru>,
-        Steve French <smfrench@gmail.com>
-Subject: [PATCH 3.12 102/212] CIFS: Fix symbolic links usage
-Date: Mon,  2 Dec 2013 11:14:53 -0800
-Message-Id: <20131202191258.741725418@linuxfoundation.org>
+        Kent Overstreet <kmo@daterainc.com>
+Subject: [PATCH 3.12 101/212] bcache: Fix dirty_data accounting
+Date: Mon,  2 Dec 2013 11:14:52 -0800
+Message-Id: <20131202191258.644237194@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -28,265 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Shilovsky <piastry@etersoft.ru>
+From: Kent Overstreet <kmo@daterainc.com>
 
-commit eb85d94bdd91fb4dbea4ee465d4349cbea4eaaca upstream.
+commit 1fa8455deb92e9ec7756df23030e73b2d28eeca7 upstream.
 
-Now we treat any reparse point as a symbolic link and map it to a Unix
-one that is not true in a common case due to many reparse point types
-supported by SMB servers.
+Dirty data accounting wasn't quite right - firstly, we were adding the key we're
+inserting after it could have merged with another dirty key already in the
+btree, and secondly we could sometimes pass the wrong offset to
+bcache_dev_sectors_dirty_add() for dirty data we were overwriting - which is
+important when tracking dirty data by stripe.
 
-Distinguish reparse point types into two groups:
-1) that can be accessed directly through a reparse point
-(junctions, deduplicated files, NFS symlinks);
-2) that need to be processed manually (Windows symbolic links, DFS);
-
-and map only Windows symbolic links to Unix ones.
-
-Acked-by: Jeff Layton <jlayton@redhat.com>
-Reported-and-tested-by: Joao Correia <joaomiguelcorreia@gmail.com>
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/cifsglob.h  |    2 +-
- fs/cifs/inode.c     |   23 +++++++++++++----------
- fs/cifs/readdir.c   |   40 ++++++++--------------------------------
- fs/cifs/smb1ops.c   |   21 ++++++++++++++++++++-
- fs/cifs/smb2inode.c |   16 ++++++++++++----
- fs/cifs/smb2proto.h |    2 +-
- 6 files changed, 55 insertions(+), 49 deletions(-)
+ drivers/md/bcache/btree.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -261,7 +261,7 @@ struct smb_version_operations {
- 	/* query path data from the server */
- 	int (*query_path_info)(const unsigned int, struct cifs_tcon *,
- 			       struct cifs_sb_info *, const char *,
--			       FILE_ALL_INFO *, bool *);
-+			       FILE_ALL_INFO *, bool *, bool *);
- 	/* query file data from the server */
- 	int (*query_file_info)(const unsigned int, struct cifs_tcon *,
- 			       struct cifs_fid *, FILE_ALL_INFO *);
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -542,7 +542,8 @@ static int cifs_sfu_mode(struct cifs_fat
- /* Fill a cifs_fattr struct with info from FILE_ALL_INFO */
- static void
- cifs_all_info_to_fattr(struct cifs_fattr *fattr, FILE_ALL_INFO *info,
--		       struct cifs_sb_info *cifs_sb, bool adjust_tz)
-+		       struct cifs_sb_info *cifs_sb, bool adjust_tz,
-+		       bool symlink)
- {
- 	struct cifs_tcon *tcon = cifs_sb_master_tcon(cifs_sb);
- 
-@@ -569,7 +570,11 @@ cifs_all_info_to_fattr(struct cifs_fattr
- 	fattr->cf_createtime = le64_to_cpu(info->CreationTime);
- 
- 	fattr->cf_nlink = le32_to_cpu(info->NumberOfLinks);
--	if (fattr->cf_cifsattrs & ATTR_DIRECTORY) {
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -1742,6 +1742,9 @@ static bool fix_overlapping_extents(stru
+ 		if (bkey_cmp(insert, k) < 0) {
+ 			bch_cut_front(insert, k);
+ 		} else {
++			if (bkey_cmp(&START_KEY(insert), &START_KEY(k)) > 0)
++				old_offset = KEY_START(insert);
 +
-+	if (symlink) {
-+		fattr->cf_mode = S_IFLNK;
-+		fattr->cf_dtype = DT_LNK;
-+	} else if (fattr->cf_cifsattrs & ATTR_DIRECTORY) {
- 		fattr->cf_mode = S_IFDIR | cifs_sb->mnt_dir_mode;
- 		fattr->cf_dtype = DT_DIR;
- 		/*
-@@ -578,10 +583,6 @@ cifs_all_info_to_fattr(struct cifs_fattr
- 		 */
- 		if (!tcon->unix_ext)
- 			fattr->cf_flags |= CIFS_FATTR_UNKNOWN_NLINK;
--	} else if (fattr->cf_cifsattrs & ATTR_REPARSE) {
--		fattr->cf_mode = S_IFLNK;
--		fattr->cf_dtype = DT_LNK;
--		fattr->cf_nlink = le32_to_cpu(info->NumberOfLinks);
- 	} else {
- 		fattr->cf_mode = S_IFREG | cifs_sb->mnt_file_mode;
- 		fattr->cf_dtype = DT_REG;
-@@ -626,7 +627,8 @@ cifs_get_file_info(struct file *filp)
- 	rc = server->ops->query_file_info(xid, tcon, &cfile->fid, &find_data);
- 	switch (rc) {
- 	case 0:
--		cifs_all_info_to_fattr(&fattr, &find_data, cifs_sb, false);
-+		cifs_all_info_to_fattr(&fattr, &find_data, cifs_sb, false,
-+				       false);
- 		break;
- 	case -EREMOTE:
- 		cifs_create_dfs_fattr(&fattr, inode->i_sb);
-@@ -673,6 +675,7 @@ cifs_get_inode_info(struct inode **inode
- 	bool adjust_tz = false;
- 	struct cifs_fattr fattr;
- 	struct cifs_search_info *srchinf = NULL;
-+	bool symlink = false;
+ 			if (bkey_written(b, k) &&
+ 			    bkey_cmp(&START_KEY(insert), &START_KEY(k)) <= 0) {
+ 				/*
+@@ -1803,6 +1806,10 @@ static bool btree_insert_key(struct btre
+ 		if (fix_overlapping_extents(b, k, &iter, op))
+ 			return false;
  
- 	tlink = cifs_sb_tlink(cifs_sb);
- 	if (IS_ERR(tlink))
-@@ -702,12 +705,12 @@ cifs_get_inode_info(struct inode **inode
- 		}
- 		data = (FILE_ALL_INFO *)buf;
- 		rc = server->ops->query_path_info(xid, tcon, cifs_sb, full_path,
--						  data, &adjust_tz);
-+						  data, &adjust_tz, &symlink);
- 	}
- 
- 	if (!rc) {
--		cifs_all_info_to_fattr(&fattr, (FILE_ALL_INFO *)data, cifs_sb,
--				       adjust_tz);
-+		cifs_all_info_to_fattr(&fattr, data, cifs_sb, adjust_tz,
-+				       symlink);
- 	} else if (rc == -EREMOTE) {
- 		cifs_create_dfs_fattr(&fattr, sb);
- 		rc = 0;
---- a/fs/cifs/readdir.c
-+++ b/fs/cifs/readdir.c
-@@ -134,22 +134,6 @@ out:
- 	dput(dentry);
- }
- 
--/*
-- * Is it possible that this directory might turn out to be a DFS referral
-- * once we go to try and use it?
-- */
--static bool
--cifs_dfs_is_possible(struct cifs_sb_info *cifs_sb)
--{
--#ifdef CONFIG_CIFS_DFS_UPCALL
--	struct cifs_tcon *tcon = cifs_sb_master_tcon(cifs_sb);
++		if (KEY_DIRTY(k))
++			bcache_dev_sectors_dirty_add(b->c, KEY_INODE(k),
++						     KEY_START(k), KEY_SIZE(k));
++
+ 		while (m != end(i) &&
+ 		       bkey_cmp(k, &START_KEY(m)) > 0)
+ 			prev = m, m = bkey_next(m);
+@@ -1831,10 +1838,6 @@ static bool btree_insert_key(struct btre
+ insert:	shift_keys(b, m, k);
+ copy:	bkey_copy(m, k);
+ merged:
+-	if (KEY_DIRTY(k))
+-		bcache_dev_sectors_dirty_add(b->c, KEY_INODE(k),
+-					     KEY_START(k), KEY_SIZE(k));
 -
--	if (tcon->Flags & SMB_SHARE_IS_IN_DFS)
--		return true;
--#endif
--	return false;
--}
--
- static void
- cifs_fill_common_info(struct cifs_fattr *fattr, struct cifs_sb_info *cifs_sb)
- {
-@@ -159,27 +143,19 @@ cifs_fill_common_info(struct cifs_fattr
- 	if (fattr->cf_cifsattrs & ATTR_DIRECTORY) {
- 		fattr->cf_mode = S_IFDIR | cifs_sb->mnt_dir_mode;
- 		fattr->cf_dtype = DT_DIR;
--		/*
--		 * Windows CIFS servers generally make DFS referrals look
--		 * like directories in FIND_* responses with the reparse
--		 * attribute flag also set (since DFS junctions are
--		 * reparse points). We must revalidate at least these
--		 * directory inodes before trying to use them (if
--		 * they are DFS we will get PATH_NOT_COVERED back
--		 * when queried directly and can then try to connect
--		 * to the DFS target)
--		 */
--		if (cifs_dfs_is_possible(cifs_sb) &&
--		    (fattr->cf_cifsattrs & ATTR_REPARSE))
--			fattr->cf_flags |= CIFS_FATTR_NEED_REVAL;
--	} else if (fattr->cf_cifsattrs & ATTR_REPARSE) {
--		fattr->cf_mode = S_IFLNK;
--		fattr->cf_dtype = DT_LNK;
- 	} else {
- 		fattr->cf_mode = S_IFREG | cifs_sb->mnt_file_mode;
- 		fattr->cf_dtype = DT_REG;
- 	}
+ 	bch_check_keys(b, "%u for %s", status, op_type(op));
  
-+	/*
-+	 * We need to revalidate it further to make a decision about whether it
-+	 * is a symbolic link, DFS referral or a reparse point with a direct
-+	 * access like junctions, deduplicated files, NFS symlinks.
-+	 */
-+	if (fattr->cf_cifsattrs & ATTR_REPARSE)
-+		fattr->cf_flags |= CIFS_FATTR_NEED_REVAL;
-+
- 	/* non-unix readdir doesn't provide nlink */
- 	fattr->cf_flags |= CIFS_FATTR_UNKNOWN_NLINK;
- 
---- a/fs/cifs/smb1ops.c
-+++ b/fs/cifs/smb1ops.c
-@@ -534,10 +534,12 @@ cifs_is_path_accessible(const unsigned i
- static int
- cifs_query_path_info(const unsigned int xid, struct cifs_tcon *tcon,
- 		     struct cifs_sb_info *cifs_sb, const char *full_path,
--		     FILE_ALL_INFO *data, bool *adjustTZ)
-+		     FILE_ALL_INFO *data, bool *adjustTZ, bool *symlink)
- {
- 	int rc;
- 
-+	*symlink = false;
-+
- 	/* could do find first instead but this returns more info */
- 	rc = CIFSSMBQPathInfo(xid, tcon, full_path, data, 0 /* not legacy */,
- 			      cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
-@@ -554,6 +556,23 @@ cifs_query_path_info(const unsigned int
- 						CIFS_MOUNT_MAP_SPECIAL_CHR);
- 		*adjustTZ = true;
- 	}
-+
-+	if (!rc && (le32_to_cpu(data->Attributes) & ATTR_REPARSE)) {
-+		int tmprc;
-+		int oplock = 0;
-+		__u16 netfid;
-+
-+		/* Need to check if this is a symbolic link or not */
-+		tmprc = CIFSSMBOpen(xid, tcon, full_path, FILE_OPEN,
-+				    FILE_READ_ATTRIBUTES, 0, &netfid, &oplock,
-+				    NULL, cifs_sb->local_nls,
-+			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
-+		if (tmprc == -EOPNOTSUPP)
-+			*symlink = true;
-+		else
-+			CIFSSMBClose(xid, tcon, netfid);
-+	}
-+
- 	return rc;
- }
- 
---- a/fs/cifs/smb2inode.c
-+++ b/fs/cifs/smb2inode.c
-@@ -123,12 +123,13 @@ move_smb2_info_to_cifs(FILE_ALL_INFO *ds
- int
- smb2_query_path_info(const unsigned int xid, struct cifs_tcon *tcon,
- 		     struct cifs_sb_info *cifs_sb, const char *full_path,
--		     FILE_ALL_INFO *data, bool *adjust_tz)
-+		     FILE_ALL_INFO *data, bool *adjust_tz, bool *symlink)
- {
- 	int rc;
- 	struct smb2_file_all_info *smb2_data;
- 
- 	*adjust_tz = false;
-+	*symlink = false;
- 
- 	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + MAX_NAME * 2,
- 			    GFP_KERNEL);
-@@ -136,9 +137,16 @@ smb2_query_path_info(const unsigned int
- 		return -ENOMEM;
- 
- 	rc = smb2_open_op_close(xid, tcon, cifs_sb, full_path,
--				FILE_READ_ATTRIBUTES, FILE_OPEN,
--				OPEN_REPARSE_POINT, smb2_data,
--				SMB2_OP_QUERY_INFO);
-+				FILE_READ_ATTRIBUTES, FILE_OPEN, 0,
-+				smb2_data, SMB2_OP_QUERY_INFO);
-+	if (rc == -EOPNOTSUPP) {
-+		*symlink = true;
-+		/* Failed on a symbolic link - query a reparse point info */
-+		rc = smb2_open_op_close(xid, tcon, cifs_sb, full_path,
-+					FILE_READ_ATTRIBUTES, FILE_OPEN,
-+					OPEN_REPARSE_POINT, smb2_data,
-+					SMB2_OP_QUERY_INFO);
-+	}
- 	if (rc)
- 		goto out;
- 
---- a/fs/cifs/smb2proto.h
-+++ b/fs/cifs/smb2proto.h
-@@ -61,7 +61,7 @@ extern void move_smb2_info_to_cifs(FILE_
- extern int smb2_query_path_info(const unsigned int xid, struct cifs_tcon *tcon,
- 				struct cifs_sb_info *cifs_sb,
- 				const char *full_path, FILE_ALL_INFO *data,
--				bool *adjust_tz);
-+				bool *adjust_tz, bool *symlink);
- extern int smb2_set_path_size(const unsigned int xid, struct cifs_tcon *tcon,
- 			      const char *full_path, __u64 size,
- 			      struct cifs_sb_info *cifs_sb, bool set_alloc);
+ 	if (b->level && !KEY_OFFSET(k))
 
 
