@@ -1,148 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752970Ab3LBQ4B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 11:56:01 -0500
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:41020 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752792Ab3LBQz7 (ORCPT
+	id S1752781Ab3LBRBq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 12:01:46 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:29706 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751964Ab3LBRBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 11:55:59 -0500
-X-Greylist: delayed 347 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Dec 2013 11:55:59 EST
-Date: Mon, 2 Dec 2013 11:50:06 -0500
-From: Tejun Heo <htejun@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] sched: Revert 14a40ffccd61 ("sched: replace
- PF_THREAD_BOUND with PF_NO_SETAFFINITY")
-Message-ID: <20131202165006.GA19064@htj.dyndns.org>
-References: <20131202152956.GI16796@laptop.programming.kicks-ass.net>
- <20131202153746.GA27781@gmail.com>
+	Mon, 2 Dec 2013 12:01:44 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Boris BREZILLON <b.brezillon@overkiz.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [GIT PULL] at91: cleanup for 3.14 #1 (aka move to CCF)
+Date: Mon, 2 Dec 2013 18:01:41 +0100
+Message-ID: <1386003701-29760-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131202153746.GA27781@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
+Arnd, Olof, Kevin,
 
-On Mon, Dec 02, 2013 at 04:37:46PM +0100, Ingo Molnar wrote:
-> >  - We should strive to never consciously place artificial limitations on
-> >    kernel functionality; our main reason to place limitations should be
-> >    correctness.
+This is the big move of AT91 to Common Clock Framework for 3.14. I collected
+all the material as a "cleanup" topic so that the CCF can be considered as a
+base for all our AT91 patches for 3.14.
+I prefer to have the sama5d3 use of AT91 CCF included into this pull-request
+so that it can be read as an example and clearly states that it has been tested
+in real life.
+We agreed with Mike to send this work upstream through arm-soc so that we will
+be able to stack other patches for 3.14 on top of that work without having to
+deal with conflicts.
 
-It is a correctness issue tho.  We'd be promising, say, NUMA affinity
-and then possibly give out workers which aren't affine to the NUMA
-node.  Workqueue provides an API to set random affinity and its users
-can rightfully expect the configured affinity and code accordingly.
+For merging with the "fixes" pull-request that I sent earlier today, I also
+uploaded a little branch for reference:
+at91-3.14-next_fixes_cleanup_dt-resolution.
+In two words, the clock section of the arch/arm/mach-at91/sama5d3.c file
+has to be deleted.
 
-> >    There are cases where limiting affinity is justified: for example the
-> >    case of single cpu workqueue threads, which are special for their
-> >    limited concurrency, esp. when coupled with per-cpu resources --
-> >    allowing such threads to run on other cpus is a correctness violation
-> >    and can crash the kernel.
+Do not hesitate to ask questions about this material.
 
-So can any requested affinity if the wq user configured it.  I think
-you're too focused on the binary bound / unbound distinction.  Things
-are a lot more generic now.
+Thanks, best regards,
 
-> >  - But using it outside this case is overly broad; it dis-allows usage
-> >    that is functionally fine and in some cases desired.
-> > 
-> >    In particular; tj argues ( http://lkml.kernel.org/r/20131128143848.GD3925@htj.dyndns.org )
-> > 
-> >    "That's just inviting people to do weirdest things and then
-> >    reporting things like "crypt jobs on some of our 500 machines end up
-> >    stuck on a single cpu once in a while" which will eventually be
-> >    tracked down to some weird shell script setting affinity on workers
-> >    doing something else."
-> > 
-> >    While that is exactly what HPC/RT people _want_ in order to avoid
-> >    disturbing the other CPUs with said crypt work.
+The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
 
-Hmmm... I think you're missing the point there.  The point is that you
-can't really do that reliably by meddling with kworkers from userland
-directly.  It's gonna be fragile and dangerous.  Userland would have
-to continously poll for new kworkers while kernel workqueue users
-would get their affinity expectations broken.  I don't think that's
-what HPC/RT people want.  If HPC/RT people want to limit the cpus that
-unbound workqueues without specific affinity configured can run on,
-let's please implement that properly.
+  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
 
-> >  - Furthermore, the above example is also wrong in that you should not
-> >    protect root from itself; there's plenty root can do to shoot his
-> >    own foot off, let alone shoot his head off.
-> > 
-> >    Setting affinities is limited to root, and if root messes up the
-> >    system he can keep the pieces. But limiting in an overly broad
-> >    fashion stifles the functionality of the system.
+are available in the git repository at:
 
-This is the same problem with bound workers.  Userland could be
-actively breaking configured affinities of kworkers which may be
-depended upon by its users and there's no way for userland to tell
-which kworker is gonna serve which workqueue - there's no fixed
-relationship between them, so it's not like userland can, say, modify
-affinities on crypto kworkers in isolation.  Both userland and kernel
-wouldn't have much idea of the impact of such fiddling.
+  git://github.com/at91linux/linux-at91.git tags/at91-cleanup
 
-> >  - Lastly; the flag actually blocks entry into cgroups as well asn
-> >    sched_setaffinity(), so the name is misleading at best.
+for you to fetch changes up to b46e837d8ef1f3c777bbf9513e2cdb5d87d6c374:
 
-Yeah, the name could be better.
+  ARM: at91/dt: remove old clk material (2013-12-02 15:31:29 +0100)
 
-> > The right fix is to only set PF_THREAD_BOUND on per-cpu workers:
-> > 
-> >  --- a/kernel/workqueue.c
-> >  +++ b/kernel/workqueue.c
-> > 
-> >          set_cpus_allowed_ptr(worker->task, pool->attrs->cpumask);
-> > 
-> >  -       /* prevent userland from meddling with cpumask of workqueue workers */
-> >  -       worker->task->flags |= PF_NO_SETAFFINITY;
-> >  -
-> >          /*
-> >           * The caller is responsible for ensuring %POOL_DISASSOCIATED
-> >           * remains stable across this function.  See the comments above the
-> >           * flag definition for details.
-> >           */
-> >  -       if (pool->flags & POOL_DISASSOCIATED)
-> >  +       if (pool->flags & POOL_DISASSOCIATED) {
-> >                  worker->flags |= WORKER_UNBOUND;
-> >  +       } else {
-> >  +               /*
-> >  +                * Prevent userland from meddling with cpumask of workqueue
-> >  +                * workers:
-> >  +                */
-> >  +               worker->task->flags |= PF_THREAD_BOUND;
-> >  +       }
-> > 
-> > Therefore revert the patch and add an annoying but non-destructive warning
-> > check against abuse.
-> 
-> Hm, I missed these problems with the approach, but I think you are 
-> right.
-> 
-> Tejun, I suspect you concur with Peter's analysis, can I also add 
+----------------------------------------------------------------
+AT91: Move to Common Clock Framework and sama5d3 implementation
+This is the first step to move AT91 to the CCF.
+- core CCF and drivers for most of the clocks
+- use of CCF for sama5d3 (100% DT-based)
 
-So, not really.
+----------------------------------------------------------------
+Boris BREZILLON (22):
+      ARM: at91: move at91_pmc.h to include/linux/clk/at91_pmc.h
+      ARM: at91: add Kconfig options for common clk support
+      clk: at91: add PMC base support
+      clk: at91: add PMC macro file for dt definitions
+      clk: at91: add PMC main clock
+      clk: at91: add PMC pll clocks
+      clk: at91: add PMC master clock
+      clk: at91: add PMC system clocks
+      clk: at91: add PMC peripheral clocks
+      clk: at91: add PMC programmable clocks
+      clk: at91: add PMC utmi clock
+      clk: at91: add PMC usb clock
+      clk: at91: add PMC smd clock
+      dt: binding: add at91 clks dt bindings documentation
+      ARM: at91: move pit timer to common clk framework
+      ARM: at91: add new compatible strings for pmc driver
+      ARM: at91: prepare sama5 dt boards transition to common clk
+      ARM: at91: prepare common clk transition for sama5d3 SoC
+      ARM: at91/dt: define sama5d3 clocks
+      ARM: at91/dt: define sama5d3xek's main clk frequency
+      ARM: at91: move sama5d3 SoC to common clk
+      ARM: at91/dt: remove old clk material
 
-> Peter's workqueue.c fixlet above to workqueue.c to this patch plus 
-> your Acked-by, so that the two changes are together?
-
-The above would trigger the added warning if a new kworker is created
-for a per-cpu workqueue while the cpu is down, which may happen, so
-the patch itself is somewhat broken.
-
-I don't think this is the right path to accomodate HPC/RT use cases.
-Let's please implement something proper if keeping unbound kworkers
-off certain cpus is necessary.
-
-Thanks.
+ .../devicetree/bindings/clock/at91-clock.txt       | 339 +++++++++++++
+ arch/arm/boot/dts/sama5d3.dtsi                     | 379 ++++++++++++++-
+ arch/arm/boot/dts/sama5d3_can.dtsi                 |  20 +
+ arch/arm/boot/dts/sama5d3_emac.dtsi                |  11 +
+ arch/arm/boot/dts/sama5d3_gmac.dtsi                |  11 +
+ arch/arm/boot/dts/sama5d3_lcd.dtsi                 |  17 +
+ arch/arm/boot/dts/sama5d3_mci2.dtsi                |  12 +
+ arch/arm/boot/dts/sama5d3_tcb1.dtsi                |  12 +
+ arch/arm/boot/dts/sama5d3_uart.dtsi                |  21 +
+ arch/arm/boot/dts/sama5d3xcm.dtsi                  |  17 +-
+ arch/arm/mach-at91/Kconfig                         |  43 ++
+ arch/arm/mach-at91/Kconfig.non_dt                  |   6 +
+ arch/arm/mach-at91/Makefile                        |   2 +-
+ arch/arm/mach-at91/at91rm9200.c                    |   2 +-
+ arch/arm/mach-at91/at91sam9260.c                   |   2 +-
+ arch/arm/mach-at91/at91sam9261.c                   |   2 +-
+ arch/arm/mach-at91/at91sam9263.c                   |   2 +-
+ arch/arm/mach-at91/at91sam926x_time.c              |  14 +-
+ arch/arm/mach-at91/at91sam9g45.c                   |   2 +-
+ arch/arm/mach-at91/at91sam9n12.c                   |   2 +-
+ arch/arm/mach-at91/at91sam9rl.c                    |   2 +-
+ arch/arm/mach-at91/at91sam9x5.c                    |   2 +-
+ arch/arm/mach-at91/board-dt-sama5.c                |  10 +-
+ arch/arm/mach-at91/clock.c                         |   7 +-
+ arch/arm/mach-at91/generic.h                       |   3 +-
+ arch/arm/mach-at91/pm.c                            |   2 +-
+ arch/arm/mach-at91/pm_slowclock.S                  |   2 +-
+ arch/arm/mach-at91/sama5d3.c                       | 344 +------------
+ arch/arm/mach-at91/setup.c                         |   8 +-
+ drivers/clk/Makefile                               |   1 +
+ drivers/clk/at91/Makefile                          |  12 +
+ drivers/clk/at91/clk-main.c                        | 187 ++++++++
+ drivers/clk/at91/clk-master.c                      | 270 +++++++++++
+ drivers/clk/at91/clk-peripheral.c                  | 410 ++++++++++++++++
+ drivers/clk/at91/clk-pll.c                         | 531 +++++++++++++++++++++
+ drivers/clk/at91/clk-plldiv.c                      | 135 ++++++
+ drivers/clk/at91/clk-programmable.c                | 366 ++++++++++++++
+ drivers/clk/at91/clk-smd.c                         | 171 +++++++
+ drivers/clk/at91/clk-system.c                      | 135 ++++++
+ drivers/clk/at91/clk-usb.c                         | 398 +++++++++++++++
+ drivers/clk/at91/clk-utmi.c                        | 159 ++++++
+ drivers/clk/at91/pmc.c                             | 397 +++++++++++++++
+ drivers/clk/at91/pmc.h                             | 116 +++++
+ drivers/usb/gadget/atmel_usba_udc.c                |   2 +-
+ include/dt-bindings/clk/at91.h                     |  22 +
+ .../include/mach => include/linux/clk}/at91_pmc.h  |   4 +-
+ 46 files changed, 4237 insertions(+), 375 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/at91-clock.txt
+ create mode 100644 drivers/clk/at91/Makefile
+ create mode 100644 drivers/clk/at91/clk-main.c
+ create mode 100644 drivers/clk/at91/clk-master.c
+ create mode 100644 drivers/clk/at91/clk-peripheral.c
+ create mode 100644 drivers/clk/at91/clk-pll.c
+ create mode 100644 drivers/clk/at91/clk-plldiv.c
+ create mode 100644 drivers/clk/at91/clk-programmable.c
+ create mode 100644 drivers/clk/at91/clk-smd.c
+ create mode 100644 drivers/clk/at91/clk-system.c
+ create mode 100644 drivers/clk/at91/clk-usb.c
+ create mode 100644 drivers/clk/at91/clk-utmi.c
+ create mode 100644 drivers/clk/at91/pmc.c
+ create mode 100644 drivers/clk/at91/pmc.h
+ create mode 100644 include/dt-bindings/clk/at91.h
+ rename {arch/arm/mach-at91/include/mach => include/linux/clk}/at91_pmc.h (98%)
 
 -- 
-tejun
+Nicolas Ferre
