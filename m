@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489Ab3LBTOo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:14:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38886 "EHLO
+	id S1752891Ab3LBTQo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:16:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38957 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754362Ab3LBTOX (ORCPT
+	with ESMTP id S1753731Ab3LBTOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:14:23 -0500
+	Mon, 2 Dec 2013 14:14:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH 3.10 146/173] media: av7110_hw: Dont use dynamic static allocation
-Date: Mon,  2 Dec 2013 11:12:09 -0800
-Message-Id: <20131202191200.120577815@linuxfoundation.org>
+        Tristan Rice <rice@outerearth.net>, Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.10 162/173] HID: enable Mayflash USB Gamecube Adapter
+Date: Mon,  2 Dec 2013 11:12:25 -0800
+Message-Id: <20131202191201.770570883@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,73 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+From: Tristan Rice <rice@outerearth.net>
 
-commit 5bf30b3bc4ff80ef71a733a1f459cca4fa507892 upstream.
+commit e17f5d7667c5414b8f12a93ef14aae0824bd2beb upstream.
 
-Dynamic static allocation is evil, as Kernel stack is too low, and
-compilation complains about it on some archs:
-	drivers/media/pci/ttpci/av7110_hw.c:510:1: warning: 'av7110_fw_cmd' uses dynamic stack allocation [enabled by default]
-Instead, let's enforce a limit for the buffer.
-In the specific case of this driver, the maximum fw command size
-is 6 + 2, as checked using:
-	$ git grep -A1 av7110_fw_cmd drivers/media/pci/ttpci/
-So, use 8 for the buffer size.
+This is a patch that adds the new Mayflash Gamecube Controller to USB adapter
+(ID 1a34:f705 ACRUX) to the ACRUX driver (drivers/hid/hid-axff.c) with full
+force feedback support.
 
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Tristan Rice <rice@outerearth.net>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/pci/ttpci/av7110_hw.c |   19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+ drivers/hid/hid-axff.c |    3 ++-
+ drivers/hid/hid-core.c |    1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/media/pci/ttpci/av7110_hw.c
-+++ b/drivers/media/pci/ttpci/av7110_hw.c
-@@ -22,7 +22,7 @@
-  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-  * Or, point your browser to http://www.gnu.org/copyleft/gpl.html
-  *
-- * the project's page is at http://www.linuxtv.org/ 
-+ * the project's page is at http://www.linuxtv.org/
-  */
+--- a/drivers/hid/hid-axff.c
++++ b/drivers/hid/hid-axff.c
+@@ -95,7 +95,7 @@ static int axff_init(struct hid_device *
+ 		}
+ 	}
  
- /* for debugging ARM communication: */
-@@ -40,6 +40,14 @@
+-	if (field_count < 4) {
++	if (field_count < 4 && hid->product != 0xf705) {
+ 		hid_err(hid, "not enough fields in the report: %d\n",
+ 			field_count);
+ 		return -ENODEV;
+@@ -180,6 +180,7 @@ static void ax_remove(struct hid_device
  
- #define _NOHANDSHAKE
- 
-+/*
-+ * Max transfer size done by av7110_fw_cmd()
-+ *
-+ * The maximum size passed to this function is 6 bytes. The buffer also
-+ * uses two additional ones for type and size. So, 8 bytes is enough.
-+ */
-+#define MAX_XFER_SIZE  8
-+
- /****************************************************************************
-  * DEBI functions
-  ****************************************************************************/
-@@ -488,11 +496,18 @@ static int av7110_send_fw_cmd(struct av7
- int av7110_fw_cmd(struct av7110 *av7110, int type, int com, int num, ...)
- {
- 	va_list args;
--	u16 buf[num + 2];
-+	u16 buf[MAX_XFER_SIZE];
- 	int i, ret;
- 
- //	dprintk(4, "%p\n", av7110);
- 
-+	if (2 + num > sizeof(buf)) {
-+		printk(KERN_WARNING
-+		       "%s: %s len=%d is too big!\n",
-+		       KBUILD_MODNAME, __func__, num);
-+		return -EINVAL;
-+	}
-+
- 	buf[0] = ((type << 8) | com);
- 	buf[1] = num;
- 
+ static const struct hid_device_id ax_devices[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ACRUX, 0x0802), },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ACRUX, 0xf705), },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(hid, ax_devices);
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1562,6 +1562,7 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_X5_005D) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_RP_649) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ACRUX, 0x0802) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ACRUX, 0xf705) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_MIGHTYMOUSE) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_MAGICMOUSE) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_MAGICTRACKPAD) },
 
 
