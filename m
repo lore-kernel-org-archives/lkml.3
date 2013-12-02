@@ -1,230 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab3LBIsx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 03:48:53 -0500
-Received: from mga02.intel.com ([134.134.136.20]:37023 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752562Ab3LBIsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 03:48:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,809,1378882800"; 
-   d="scan'208";a="445165987"
-Date: Mon, 2 Dec 2013 10:48:45 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Sergei Ianovich <ynvich@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
-        "open list:SERIAL DRIVERS" <linux-serial@vger.kernel.org>
-Subject: Re: [PATCH 05/11] serial: support for 16550 serial ports on LP-8x4x
-Message-ID: <20131202084845.GD3942@xps8300>
-References: <1385879185-22455-1-git-send-email-ynvich@gmail.com>
- <1385879185-22455-6-git-send-email-ynvich@gmail.com>
+	id S1752964Ab3LBIvu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 03:51:50 -0500
+Received: from mail-db9lp0248.outbound.messaging.microsoft.com ([213.199.154.248]:8098
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751132Ab3LBIvt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 03:51:49 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1f42h1ee6h1ce5h1fdah201ch2073h2146h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hzz1de098h8275bh1de097hz31h87h2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1ad9h1b0ah1b2fh224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h129fi1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: <shh.xie@gmail.com>
+To: <davem@davemloft.net>, <jg1.han@samsung.com>, <mugunthanvnm@ti.com>,
+        <f.fainelli@gmail.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <Shaohui.Xie@freescale.com>
+Subject: [PATCH 3/6][v2] phylib: turn genphy_driver to an array
+Date: Mon, 2 Dec 2013 15:30:47 +0800
+Message-ID: <1385969447-17079-1-git-send-email-shh.xie@gmail.com>
+X-Mailer: git-send-email 1.8.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385879185-22455-6-git-send-email-ynvich@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Shaohui Xie <Shaohui.Xie@freescale.com>
 
-On Sun, Dec 01, 2013 at 10:26:18AM +0400, Sergei Ianovich wrote:
-> The patch adds support for 3 additional LP-8x4x built-in serial
-> ports.
-> 
-> The device can also host up to 8 extension cards with 4 serial ports
-> on each card for a total of 35 ports. However, I don't have
-> the hardware to test extension cards, so they are not supported, yet.
-> 
-> Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
-> ---
->  arch/arm/configs/lp8x4x_defconfig       |   1 +
->  arch/arm/mach-pxa/include/mach/lp8x4x.h |   6 ++
->  drivers/tty/serial/8250/8250_lp8x4x.c   | 181 ++++++++++++++++++++++++++++++++
->  drivers/tty/serial/8250/Kconfig         |  11 ++
->  drivers/tty/serial/8250/Makefile        |   1 +
->  5 files changed, 200 insertions(+)
->  create mode 100644 drivers/tty/serial/8250/8250_lp8x4x.c
-> 
-> diff --git a/arch/arm/configs/lp8x4x_defconfig b/arch/arm/configs/lp8x4x_defconfig
-> index 03c85bc..d297a67 100644
-> --- a/arch/arm/configs/lp8x4x_defconfig
-> +++ b/arch/arm/configs/lp8x4x_defconfig
-> @@ -1141,6 +1141,7 @@ CONFIG_SERIAL_8250_NR_UARTS=36
->  CONFIG_SERIAL_8250_RUNTIME_UARTS=36
->  CONFIG_SERIAL_8250_EXTENDED=y
->  CONFIG_SERIAL_8250_MANY_PORTS=y
-> +CONFIG_SERIAL_8250_LP8X4X=m
->  CONFIG_SERIAL_8250_SHARE_IRQ=y
->  # CONFIG_SERIAL_8250_DETECT_IRQ is not set
->  # CONFIG_SERIAL_8250_RSA is not set
-> diff --git a/arch/arm/mach-pxa/include/mach/lp8x4x.h b/arch/arm/mach-pxa/include/mach/lp8x4x.h
-> index a49df22..4d5474e 100644
-> --- a/arch/arm/mach-pxa/include/mach/lp8x4x.h
-> +++ b/arch/arm/mach-pxa/include/mach/lp8x4x.h
-> @@ -50,6 +50,12 @@
->  #define LP8X4X_CLRFALLINT	LP8X4X_P2V(0x1700901a)
->  #define LP8X4X_RWRTC		LP8X4X_P2V(0x1700901c)
->  #define LP8X4X_SRAMBANK		0x1700901e
-> +#define LP8X4X_TTYS0_QUIRK	0x17009030
-> +#define LP8X4X_TTYS1_QUIRK	0x17009032
-> +#define LP8X4X_TTYS2_QUIRK	0x17009034
-> +#define LP8X4X_TTYS0_IOMEM	0x17009050
-> +#define LP8X4X_TTYS1_IOMEM	0x17009060
-> +#define LP8X4X_TTYS2_IOMEM	0x17009070
->  #define LP8X4X_SRAM		0x1700a000
->  
->  /* board specific IRQs */
-> diff --git a/drivers/tty/serial/8250/8250_lp8x4x.c b/drivers/tty/serial/8250/8250_lp8x4x.c
-> new file mode 100644
-> index 0000000..27b01f0b
-> --- /dev/null
-> +++ b/drivers/tty/serial/8250/8250_lp8x4x.c
-> @@ -0,0 +1,181 @@
-> +/*  linux/drivers/tty/serial/8250/8250_lp8x4x.c
-> + *
-> + *  Support for 16550 serial ports on ICP DAS LP-8x4x
-> + *
-> + *  Copyright (C) 2013 Sergei Ianovich <ynvich@gmail.com>
-> + *  Framework taken from linux/drivers/tty/serial/8250/8250_accent.c
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License version 2 as
-> + *  published by the Free Software Foundation.
-> + */
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/irq.h>
-> +#include <linux/delay.h>
-> +#include <linux/serial_8250.h>
-> +#include <mach/lp8x4x.h>
-> +#include <linux/io.h>
-> +
-> +#define QUIRK_PORT(_base, _irq)					\
-> +	{							\
-> +		.iobase		= _base,			\
-> +		.membase	= (void *) _base,		\
-> +		.mapbase	= _base,			\
-> +		.irq		= _irq,				\
-> +		.uartclk	= 14745600,			\
-> +		.regshift	= 1,				\
-> +		.iotype		= UPIO_MEM,			\
-> +		.flags		= UPF_IOREMAP,			\
-> +		.set_termios	= lp8x4x_set_termios,		\
-> +		.serial_in	= lp8x4x_serial_in,		\
-> +		.serial_out	= lp8x4x_serial_out,		\
-> +	}
-> +
-> +static void lp8x4x_set_termios(struct uart_port *port,
-> +		struct ktermios *termios, struct ktermios *old)
-> +{
+Then other generic phy driver such as generic 10g phy driver can join it.
 
-<snip>
+Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
+---
+v2 changes: add break if find a match in unbind.
 
-> +}
-> +
-> +static unsigned int lp8x4x_serial_in(struct uart_port *p, int offset)
-> +{
-> +	unsigned int b;
-> +	udelay(30);
-> +	offset = offset << p->regshift;
-> +	b = readb(p->membase + offset);
-> +	return b;
-> +}
-> +
-> +static void lp8x4x_serial_out(struct uart_port *p, int offset, int value)
-> +{
-> +	offset = offset << p->regshift;
-> +	writeb(value, p->membase + offset);
-> +}
-> +
-> +static struct plat_serial8250_port lp8x4x_data[] = {
-> +	QUIRK_PORT(LP8X4X_TTYS0_IOMEM, LP8X4X_TTYS0_IRQ),
-> +	QUIRK_PORT(LP8X4X_TTYS1_IOMEM, LP8X4X_TTYS1_IRQ),
-> +	QUIRK_PORT(LP8X4X_TTYS2_IOMEM, LP8X4X_TTYS2_IRQ),
-> +	{ },
-> +};
-> +
-> +/* Total number of ports can be 35. The first 3 ports are on
-> + * the device, the rest are on extension slots. Only the first 3
-> + * require termios quirk */
-> +#define LP8X4X_QUIRK_PORTS	3
-> +
-> +static unsigned int extra_mem[LP8X4X_QUIRK_PORTS] = {
-> +	LP8X4X_TTYS0_QUIRK,
-> +	LP8X4X_TTYS1_QUIRK,
-> +	LP8X4X_TTYS2_QUIRK
-> +};
-> +
-> +static int request_and_remap(int i)
-> +{
-> +	if (!request_mem_region(extra_mem[i], 1, "serial"))
-> +		return -EBUSY;
-> +
-> +	lp8x4x_data[i].private_data = ioremap(extra_mem[i], 1);
-> +	if (lp8x4x_data[i].private_data)
-> +		return 0;
-> +
-> +	release_mem_region(extra_mem[i], 1);
-> +	return -ENODEV;
-> +}
-> +
-> +static void release_and_unmap(int i)
-> +{
-> +	iounmap((void *) lp8x4x_data[i].private_data);
-> +	release_mem_region(extra_mem[i], 1);
-> +}
-> +
-> +static struct platform_device lp8x4x_device = {
-> +	.name			= "serial8250",
-> +	.id			= PLAT8250_DEV_ACCENT,
-> +	.dev			= {
-> +		.platform_data	= lp8x4x_data,
-> +	},
-> +};
-> +
-> +static int __init lp8x4x_init(void)
-> +{
-> +	int i = 0;
-> +	int err = 0;
-> +
-> +	for (i = 0; i < LP8X4X_QUIRK_PORTS; i++) {
-> +		err = request_and_remap(i);
-> +		if (err == 0)
-> +			continue;
-> +
-> +		for (; i >= 0; i--)
-> +			release_and_unmap(i);
-> +		lp8x4x_device.dev.platform_data = NULL;
-> +		return err;
-> +	}
-> +	return platform_device_register(&lp8x4x_device);
-> +}
-> +
-> +module_init(lp8x4x_init);
+ drivers/net/phy/phy_device.c | 29 +++++++++++++++++++++--------
+ 1 file changed, 21 insertions(+), 8 deletions(-)
 
-Instead of registering a platform device for serial8250 here, you need
-to simply register a platform driver for something like lp8x4x_serial.
-The platform code will to registers the platform devices for it. You
-will use serial8250_register_8250_port() in your probe to register a
-new port. Use 8250_em.c and 8250_dw.c under drivers/tty/serial/8250/
-as an example.
-
-You don't need to introduce plat_serial8250_port so you won't need
-the QUIRK_PORT stuff. You deliver the iomem and the irq as normal
-resources that the driver uses when you create the platform device.
-That of course also means the driver does not need to care about the
-instances. The platform code will generate a platform device for as
-many ports you have and set to resources accordingly.
-
-
-Thanks,
-
+diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+index d6447b3..748bf07 100644
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -53,7 +53,12 @@ static void phy_device_release(struct device *dev)
+ 	kfree(to_phy_device(dev));
+ }
+ 
+-static struct phy_driver genphy_driver;
++enum genphy_driver {
++	GENPHY_DRV_1G,
++	GENPHY_DRV_MAX
++};
++
++static struct phy_driver genphy_driver[GENPHY_DRV_MAX];
+ extern int mdio_bus_init(void);
+ extern void mdio_bus_exit(void);
+ 
+@@ -539,7 +544,7 @@ static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
+ 			return -ENODEV;
+ 		}
+ 
+-		d->driver = &genphy_driver.driver;
++		d->driver = &genphy_driver[GENPHY_DRV_1G].driver;
+ 
+ 		err = d->driver->probe(d);
+ 		if (err >= 0)
+@@ -613,6 +618,7 @@ EXPORT_SYMBOL(phy_attach);
+  */
+ void phy_detach(struct phy_device *phydev)
+ {
++	int i;
+ 	phydev->attached_dev->phydev = NULL;
+ 	phydev->attached_dev = NULL;
+ 
+@@ -620,8 +626,12 @@ void phy_detach(struct phy_device *phydev)
+ 	 * was using the generic driver), we unbind the device
+ 	 * from the generic driver so that there's a chance a
+ 	 * real driver could be loaded */
+-	if (phydev->dev.driver == &genphy_driver.driver)
+-		device_release_driver(&phydev->dev);
++	for (i = 0; i < ARRAY_SIZE(genphy_driver); i++) {
++		if (phydev->dev.driver == &genphy_driver[i].driver) {
++			device_release_driver(&phydev->dev);
++			break;
++		}
++	}
+ }
+ EXPORT_SYMBOL(phy_detach);
+ 
+@@ -1116,7 +1126,8 @@ void phy_drivers_unregister(struct phy_driver *drv, int n)
+ }
+ EXPORT_SYMBOL(phy_drivers_unregister);
+ 
+-static struct phy_driver genphy_driver = {
++static struct phy_driver genphy_driver[] = {
++{
+ 	.phy_id		= 0xffffffff,
+ 	.phy_id_mask	= 0xffffffff,
+ 	.name		= "Generic PHY",
+@@ -1127,7 +1138,7 @@ static struct phy_driver genphy_driver = {
+ 	.suspend	= genphy_suspend,
+ 	.resume		= genphy_resume,
+ 	.driver		= {.owner= THIS_MODULE, },
+-};
++} };
+ 
+ static int __init phy_init(void)
+ {
+@@ -1137,7 +1148,8 @@ static int __init phy_init(void)
+ 	if (rc)
+ 		return rc;
+ 
+-	rc = phy_driver_register(&genphy_driver);
++	rc = phy_drivers_register(genphy_driver,
++				  ARRAY_SIZE(genphy_driver));
+ 	if (rc)
+ 		mdio_bus_exit();
+ 
+@@ -1146,7 +1158,8 @@ static int __init phy_init(void)
+ 
+ static void __exit phy_exit(void)
+ {
+-	phy_driver_unregister(&genphy_driver);
++	phy_drivers_unregister(genphy_driver,
++			       ARRAY_SIZE(genphy_driver));
+ 	mdio_bus_exit();
+ }
+ 
 -- 
-heikki
+1.8.4.1
+
+
