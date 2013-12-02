@@ -1,79 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742Ab3LBBtc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 20:49:32 -0500
-Received: from nm18-vm0.bullet.mail.bf1.yahoo.com ([98.139.213.138]:33562 "HELO
-	nm18-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752449Ab3LBBta convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 20:49:30 -0500
-X-Greylist: delayed 342 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 Dec 2013 20:49:30 EST
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 992885.11252.bm@omp1057.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=tJiB43OVm3dqxiY8ghpG/piycJBahqE+37hLKEOALSAS9J3LKPydOFCuYVcYOT4PwI/PasC062gxsJRkG3H0zrmLPcudVfRkv2nwGX/LhEftDri67D1zavHnriXwLQ7poSaXlfJoVWhlQdDF/GBMmQ3evqB3c6391li2dCoUbOk=;
-X-YMail-OSG: Pu3_AeMVM1lZhF5fYVbetYsRZT0OJG3b.WVK0Jlox6_BwSh
- IGu084HCFFZWzcKGuY8FkhRd4CtDQ5EljN4pmvwfolfshRCDfQrShrEKJ_n5
- fdSTf9Pe1jtu57fMUDnOPvxYf_952fiM7QEae9NLZGVzf8fEpQaC4LrF.czp
- MzByzA1Ry9hV0Zg6aiI0uBV0pN0sg6Fv2zdSkSR6iM5H9kptubhOjb67ouIA
- XZ_rWxxEDaYPErfh42HsxizubbvV5uea2jSAls8o03D7s0pA.sRHSMuSWO4l
- Dc2j6wLcp5mai0UV0b_9an0BHCarhTB1QfevY2yRb2GIe0n0KcHVOzBPJveP
- UH9HyBrx8goaupk7M69nI06NEP86bh4jL32xby9RSNNUSjB.iD_fedLg076a
- kHTVS8S_AOdddjAkoZiBBUgrgvQY9pwLkka7e2HF9fHTiBcjT4pMVnP2uumu
- wmY0xkqNLGP7QnLJADZ48fkmoavFT1HTgjaJkFlxALiZPjrsfbybD88x6BdL
- jIXL7jPw25f2VQ9rv4YBDfuoZQGzaD_o2j.sqpvL5K48Gt80JeyXVhnd4HuU
- LynmiluiuuZ9b
-X-Rocket-MIMEInfo: 002.001,SSBoYXZlIGEgRGVsbCBJbnNwaXJvbiBONzAxMCBMYXB0b3Agd2l0aCBJbnRlbCBncmFwaGljcy4gV2hlbiB0aGUgZGVsbC1sYXB0b3AgbW9kdWxlIGlzIGxvYWRlZCwKdHdvIGJhY2tsaWdodCBkZXZpY2UgZGV2aWNlcyBhcmUgY3JlYXRlZDsgZGVsbF9iYWNrbGlnaHQsIGFuZCBpbnRlbF9iYWNrbGlnaHQgZnJvbSB0aGUgSW50ZWwKZ3JhcGhpY3MgZHJpdmVyLiBUaGUgZGVsbF9iYWNrbGlnaHQgZGV2aWNlIGlzIG5vbi1mdW5jdGlvbmFsLCBidXQgdGhlIGdyYXBoaWNzIHN1YnN5c3RlbSB1c2VzCml0IGluc3QBMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.167.602
-Message-ID: <1385948627.51494.YahooMailNeo@web160404.mail.bf1.yahoo.com>
-Date: Sun, 1 Dec 2013 17:43:47 -0800 (PST)
-From: Alex Davis <alex14641@yahoo.com>
-Reply-To: Alex Davis <alex14641@yahoo.com>
-Subject: [PATCH 1/1] dell_laptop: add disable_backlight module parameter
-To: "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+	id S1752766Ab3LBBtp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 20:49:45 -0500
+Received: from mail.fpasia.hk ([202.130.89.98]:52706 "EHLO fpa01n0.fpasia.hk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752552Ab3LBBto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Dec 2013 20:49:44 -0500
+Message-ID: <529BE72C.9030805@gtsys.com.hk>
+Date: Mon, 02 Dec 2013 09:49:32 +0800
+From: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11 ThunderBrowse/3.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Peter Chen <Peter.Chen@freescale.com>
+CC: "alexander.shishkin@linux.intel.com" 
+	<alexander.shishkin@linux.intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3 v3] usb: chipidea: Fix Internal error: : 808 [#1]
+ ARM related to STS flag
+References: <1385783513-22502-1-git-send-email-chris.ruehl@gtsys.com.hk> <F281D0F91ED19E4D8E63A7504E8A64980413B204@039-SN2MPN1-021.039d.mgd.msft.net>
+In-Reply-To: <F281D0F91ED19E4D8E63A7504E8A64980413B204@039-SN2MPN1-021.039d.mgd.msft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a Dell Inspiron N7010 Laptop with Intel graphics. When the dell-laptop module is loaded,
-two backlight device devices are created; dell_backlight, and intel_backlight from the Intel
-graphics driver. The dell_backlight device is non-functional, but the graphics subsystem uses
-it instead of the functioning intel_backlight device. The result is that, when running KDE,
-screen dimming does not work. I've added a module parameter, disable_backlight, which when 
-true will disable the dell_backlight device, and leave only the intel_backlight: with this,
-screen dimming works.
-
-Signed-off-by: Alex Davis <alex14641@yahoo.com>
---- dell-laptop.c.orig    2013-12-01 19:05:39.693149050 -0500
-+++ dell-laptop.c    2013-12-01 17:29:27.613372482 -0500
-@@ -35,6 +35,9 @@
- /* This structure will be modified by the firmware when we enter
-  * system management mode, hence the volatiles */
- 
-+static bool disable_backlight;
-+module_param(disable_backlight, bool, 0644);
-+
- struct calling_interface_buffer {
-     u16 class;
-     u16 select;
-@@ -561,6 +564,9 @@ static int __init dell_init(void)
- 
-     dell_laptop_dir = debugfs_create_dir("dell_laptop", NULL);
- 
-+    if (disable_backlight)
-+        return 0;
-+
- #ifdef CONFIG_ACPI
-     /* In the event of an ACPI backlight being available, don't
-      * register the platform controller.
 
 
+On Saturday, November 30, 2013 06:20 PM, Peter Chen wrote:
+>
+>>
+>> usb: chipidea: Fix Internal error: : 808 [#1] ARM related to STS flag
+>>
+>> * init the sts flag to 0 (missed)
+>> * Set PORTCS_STS only if VUSB_HS_PHY_TYPE>  1
+>>    otherwise the register is ReadOnly
+>> * Set/Reset correct BIT(28)/BIT(29) for STS
+>>
+>> Signed-off-by: Chris Ruehl<chris.ruehl@gtsys.com.hk>
+>> ---
+>>   drivers/usb/chipidea/core.c |   20 +++++++++++++++++---
+>>   1 file changed, 17 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
+>> index 5075407..2c634c1 100644
+>> --- a/drivers/usb/chipidea/core.c
+>> +++ b/drivers/usb/chipidea/core.c
+>> @@ -243,7 +243,7 @@ static int hw_device_init(struct ci_hdrc *ci, void
+>> __iomem *base)
+>>
+>>   static void hw_phymode_configure(struct ci_hdrc *ci)
+>>   {
+>> -	u32 portsc, lpm, sts;
+>> +	u32 portsc, lpm, sts = 0;
+>>
+>>   	switch (ci->platdata->phy_mode) {
+>>   	case USBPHY_INTERFACE_MODE_UTMI:
+>> @@ -273,10 +273,24 @@ static void hw_phymode_configure(struct ci_hdrc *ci)
+>>
+>>   	if (ci->hw_bank.lpm) {
+>>   		hw_write(ci, OP_DEVLC, DEVLC_PTS(7) | DEVLC_PTW, lpm);
+>> -		hw_write(ci, OP_DEVLC, DEVLC_STS, sts);
+>> +		if ( sts )
+>> +			hw_write(ci, OP_DEVLC, DEVLC_STS, BIT(28));
+>> +		else
+>> +			hw_write(ci, OP_DEVLC, DEVLC_STS, ~BIT(28));
+>>   	} else {
+>>   		hw_write(ci, OP_PORTSC, PORTSC_PTS(7) | PORTSC_PTW, portsc);
+>> -		hw_write(ci, OP_PORTSC, PORTSC_STS, sts);
+>> +		if (((portsc>>  30)&  0x3)>  1) {
+>> +			if (sts) {
+>> +				hw_write(ci, OP_PORTSC, PORTSC_STS, BIT(29));
+>> +			}
+>> +			else {
+>> +				portsc = (ioread32(ci->hw_bank.regmap[OP_PORTSC])
+>> +						&  PORTSC_STS);
+>> +				if (portsc)
+>> +					hw_write(ci, OP_PORTSC, PORTSC_STS,
+>> +							~BIT(29));
+>> +			}
+>> +		}
+>>   	}
+>>   }
+>>
+>> --
+>
+> At my chipidea datasheet, the VUSB_HS_PHY_SERIAL is at HWGENERAL (bit[10..11]),
+> We are still not sure the portsc_sts is needed to set or clear, and how to do
+> it. My suggestion is just use v2 patch (except fixing one code style problem)
+>
+> Peter
+>
 
+Peter,
+Thanks you for your comments.
 
-I code, therefore I am 
+If you have a look into the function hw_write() you will see that there is no 
+effect if hw_write(...,sts) is called with sts=0/1, because the mask will cut 
+off all bits beside BIT(29).
+I used BIT(29) rather then PORTCS_STS to make it more clear what going on.
+A write to PORTCS will always be "0" for the STS Register no matter if sts is 1 
+or 0 within Patch v2. Patch v3 will take care of the registers bit position and 
+set 1 or 0 to PORTCS_STS.
+
+I used the imx27 reference manual Capital 30.8.1.5.12 PORTSCx.
+
+Please comment.
+Chris
