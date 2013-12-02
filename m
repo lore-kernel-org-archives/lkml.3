@@ -1,104 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188Ab3LBPvF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 10:51:05 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:62464 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902Ab3LBPvD (ORCPT
+	id S1752257Ab3LBQAl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 11:00:41 -0500
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:40226 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965Ab3LBQAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 10:51:03 -0500
+	Mon, 2 Dec 2013 11:00:39 -0500
 MIME-Version: 1.0
-In-Reply-To: <4994754.y6gINBtP7i@vostro.rjw.lan>
-References: <Pine.LNX.4.44L0.1311291014020.27250-100000@netrider.rowland.org>
-	<4994754.y6gINBtP7i@vostro.rjw.lan>
-Date: Mon, 2 Dec 2013 16:50:59 +0100
-Message-ID: <CAPDyKFpf58CRKUhFPKHyg4S9oaUR=XHJQs=hK7p63Hkv8gnbbw@mail.gmail.com>
-Subject: Re: [PATCH 0/5] PM: Enable option of re-use runtime PM callbacks at
- system suspend
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Mon, 2 Dec 2013 08:00:38 -0800
+X-Google-Sender-Auth: uFNKcwonQ7NAFmJh5a0JK2fy3fk
+Message-ID: <CA+55aFyez7uZ6LeXrBRCqJzgJ=w4Xv+CV6QSYp5NkOJ2R9Xang@mail.gmail.com>
+Subject: Found it! (was Re: [3.10] Oopses in kmem_cache_allocate() via prepare_creds())
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Simon Kirby <sim@hostway.ca>
+Cc: Ian Applegate <ia@cloudflare.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Lameter <cl@gentwo.org>, Pekka Enberg <penberg@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@fusionio.com>
+Content-Type: multipart/mixed; boundary=089e013a0b1afa806d04ec8f47e9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--089e013a0b1afa806d04ec8f47e9
+Content-Type: text/plain; charset=UTF-8
+
+On Sat, Nov 30, 2013 at 1:08 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> That would be kind of OK, if the driver's .suspend_late() only invoked its own
-> .runtime_suspend(), what you did below.
->
-> But, in the Ulf's approach the driver calls .runtime_suspend() from
-> its *subsystem* in the hope that it will all work out properly (or
-> perhaps based on the knowledge about this particular subsystem).
+> I still don't see what could be wrong with the pipe_inode_info thing,
+> but the fact that it's been so consistent in your traces does make me
+> suspect it really is *that* particular slab.
 
-Correct assumption.
+I think I finally found it.
 
->
-> As I said, that may lead to problems when the same driver is attempted to
-> be used with a different subsystem-level code (for example, a different PM
-> domain).
+I've spent waaayy too much time looking at and thinking about that
+code without seeing anything wrong, but this morning I woke up and
+thought to myself "What if.."
 
-I don't think this is an issue we need to consider.
+And looking at the code again, I went "BINGO".
 
-I assume the reason for having a PM domain is typically because you
-have a PM domain regulator to handle. Certainly the PM domain,
-controls it by using the runtime PM callbacks.
+All our reference counting etc seems right, but we have one very
+subtle bug: on the freeing path, we have a pattern like this:
 
-Thus it does not make sense to bypass the PM domain callbacks, and
-just letting the driver call it's own runtime PM callbacks during
-system suspend. It will only do parts of the work then.
+        spin_lock(&inode->i_lock);
+        if (!--pipe->files) {
+                inode->i_pipe = NULL;
+                kill = 1;
+        }
+        spin_unlock(&inode->i_lock);
+        __pipe_unlock(pipe);
+        if (kill)
+                free_pipe_info(pipe);
 
->
->> The amount of code needed is quite small; basically nothing more than:
->>
->>       if (!pm_runtime_status_suspended(dev))
->>               dev->driver->pm->runtime_suspend(dev);
->>
->> The problems are:
->>
->>      1. Which callback does this code belong in?
->>
->>      2. Which runtime_suspend callback should be invoked?  The example
->>       above uses dev->driver->pm->runtime_suspend, but this may not
->>       always be the right one.
->
-> Well, none of them may always be the right one, which is my point.
->
-> I don't think we can come up with a really generic set of routines that will
-> be generally useful regardless of the subsystem/driver combination in question,
-> so in my opinion the PM core is not the right place to put such routines into.
->
-> I wouldn't have problems with them being defined in the OMAP PM code.  As part
-> of that code they are free to do whatever they like if that code's maintainers
-> are fine with that.  But I don't want to see such confusing stuff in the core.
+which on the face of it is trying to be very careful in not accessing
+the pipe-info after it is released by having that "kill" flag, and
+doing the release last.
 
-As I just replied in my other email, having the code to be available
-and used in the PM domain code is not an option that we will gain
-from. The OMAP PM domain already does this, though in a slightly other
-form  - and side effects is not what we want.
+And it's complete garbage.
 
-The drivers need to re-use and invoke the runtime PM callbacks, that
-is to me the only option that makes sense.
+Why?
 
-At the same time, I somewhat agree with you that the new functions I
-propose to be added is not so "generic". What if we think of them as
-pm_runtime helper functions instead, would that make more sense?
+Because the thread that decrements "pipe->files" *without* releasing
+it, will very much access it after it has been dropped: that
+"__pipe_unlock(pipe)" happens *after* we've decremented the pipe
+reference count and dropped the inode lock. So another CPU can come in
+and free the structure concurrently with that __pipe_unlock(pipe).
 
-Kind regards
-Uffe
+This happens in two places, and we don't actually need or want the
+pipe lock for the pipe->files accesses (since pipe->files is protected
+by inode->i_lock, not the pipe lock), so the solution is to just do
+the __pipe_unlock() before the whole dance about the pipe->files
+reference count.
 
->
-> Anyway, I'd like to understand what problems in particular those things would
-> be useful to solve, as I suspect that they may be addressed differently and
-> more cleanly.
->
-> Thanks,
-> Rafael
->
+Patch appended. And no wonder nobody has ever seen it, because the
+race is unlikely as hell to ever happen. Simon, I assume it will be
+another few months before we can say "yeah, that fixed it", but I
+really think this is it. It explains all the symptoms, including
+"DEBUG_PAGEALLOC didn't catch it" (because the access happens just as
+it is released, and DEBUG_PAGEALLOC takes too long to actually free
+unmap the page etc).
+
+                     Linus
+
+--089e013a0b1afa806d04ec8f47e9
+Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hopwkp6k1
+
+IGZzL3BpcGUuYyB8IDYgKysrKy0tCiAxIGZpbGUgY2hhbmdlZCwgNCBpbnNlcnRpb25zKCspLCAy
+IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2ZzL3BpcGUuYyBiL2ZzL3BpcGUuYwppbmRleCBk
+MmM0NWUxNGU2ZDguLjE4ZjFhNGIyZGJiYyAxMDA2NDQKLS0tIGEvZnMvcGlwZS5jCisrKyBiL2Zz
+L3BpcGUuYwpAQCAtNzQzLDEzICs3NDMsMTQgQEAgcGlwZV9yZWxlYXNlKHN0cnVjdCBpbm9kZSAq
+aW5vZGUsIHN0cnVjdCBmaWxlICpmaWxlKQogCQlraWxsX2Zhc3luYygmcGlwZS0+ZmFzeW5jX3Jl
+YWRlcnMsIFNJR0lPLCBQT0xMX0lOKTsKIAkJa2lsbF9mYXN5bmMoJnBpcGUtPmZhc3luY193cml0
+ZXJzLCBTSUdJTywgUE9MTF9PVVQpOwogCX0KKwlfX3BpcGVfdW5sb2NrKHBpcGUpOworCiAJc3Bp
+bl9sb2NrKCZpbm9kZS0+aV9sb2NrKTsKIAlpZiAoIS0tcGlwZS0+ZmlsZXMpIHsKIAkJaW5vZGUt
+PmlfcGlwZSA9IE5VTEw7CiAJCWtpbGwgPSAxOwogCX0KIAlzcGluX3VubG9jaygmaW5vZGUtPmlf
+bG9jayk7Ci0JX19waXBlX3VubG9jayhwaXBlKTsKIAogCWlmIChraWxsKQogCQlmcmVlX3BpcGVf
+aW5mbyhwaXBlKTsKQEAgLTExMzAsMTMgKzExMzEsMTQgQEAgZXJyX3dyOgogCWdvdG8gZXJyOwog
+CiBlcnI6CisJX19waXBlX3VubG9jayhwaXBlKTsKKwogCXNwaW5fbG9jaygmaW5vZGUtPmlfbG9j
+ayk7CiAJaWYgKCEtLXBpcGUtPmZpbGVzKSB7CiAJCWlub2RlLT5pX3BpcGUgPSBOVUxMOwogCQlr
+aWxsID0gMTsKIAl9CiAJc3Bpbl91bmxvY2soJmlub2RlLT5pX2xvY2spOwotCV9fcGlwZV91bmxv
+Y2socGlwZSk7CiAJaWYgKGtpbGwpCiAJCWZyZWVfcGlwZV9pbmZvKHBpcGUpOwogCXJldHVybiBy
+ZXQ7Cg==
+--089e013a0b1afa806d04ec8f47e9--
