@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759595Ab3LBVTF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:19:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38421 "EHLO
+	id S1756705Ab3LBVTD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:19:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38447 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753586Ab3LBTMt (ORCPT
+	with ESMTP id S1753595Ab3LBTMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:12:49 -0500
+	Mon, 2 Dec 2013 14:12:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [PATCH 3.10 011/173] staging: vt6656: [BUG] Fix for TX USB resets from vendors driver.
-Date: Mon,  2 Dec 2013 11:09:54 -0800
-Message-Id: <20131202191144.223628288@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 012/173] backlight: atmel-pwm-bl: fix gpio polarity in remove
+Date: Mon,  2 Dec 2013 11:09:55 -0800
+Message-Id: <20131202191144.325643949@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -26,85 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 9df682927c2e3a92f43803d6b52095992e3b2ab8 upstream.
+commit ad5066d4c2b1d696749f8d7816357c23b648c4d3 upstream.
 
-This fixes resets on heavy TX data traffic.
+Make sure to honour gpio polarity also at remove so that the backlight is
+actually disabled on boards with active-low enable pin.
 
-Vendor driver
-VT6656_Linux_src_v1.21.03_x86_11.04.zip
-http://www.viaembedded.com/servlet/downloadSvl?id=1890&download_file_id=14704
-This is GPL-licensed code.
-
-original code
-BBbVT3184Init
-...
-//2007-0725, RobertChang add, Enable Squelch detect reset option(SQ_RST_Opt), USB (register4, bit1)
-CONTROLnsRequestIn(pDevice,
-                                 MESSAGE_TYPE_READ,
-                                 (WORD)0x600+4,     // USB's Reg4's bit1
-                                 MESSAGE_REQUEST_MEM,
-                                 1,
-                                 (PBYTE) &byData);
-byData = byData|2 ;
-CONTROLnsRequestOut(pDevice,
-                              MESSAGE_TYPE_WRITE,
-                              (WORD)0x600+4,     // USB's Reg4's bit1
-                              MESSAGE_REQUEST_MEM,
-                              1,
-                              (PBYTE) &byData);
-
-return TRUE;//ntStatus;
-....
-
-A back port patch is needed for kernels less than 3.10.
-
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Acked-by: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/baseband.c |   11 +++++++++++
- drivers/staging/vt6656/rndis.h    |    2 ++
- 2 files changed, 13 insertions(+)
+ drivers/video/backlight/atmel-pwm-bl.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/vt6656/baseband.c
-+++ b/drivers/staging/vt6656/baseband.c
-@@ -941,6 +941,7 @@ int BBbVT3184Init(struct vnt_private *pD
-     u8 *                   pbyAgc;
-     u16                    wLengthAgc;
-     u8                    abyArray[256];
-+	u8 data;
- 
-     ntStatus = CONTROLnsRequestIn(pDevice,
-                                   MESSAGE_TYPE_READ,
-@@ -1106,6 +1107,16 @@ else {
-     ControlvWriteByte(pDevice,MESSAGE_REQUEST_BBREG,0x0D,0x01);
- 
-     RFbRFTableDownload(pDevice);
-+
-+	/* Fix for TX USB resets from vendors driver */
-+	CONTROLnsRequestIn(pDevice, MESSAGE_TYPE_READ, USB_REG4,
-+		MESSAGE_REQUEST_MEM, sizeof(data), &data);
-+
-+	data |= 0x2;
-+
-+	CONTROLnsRequestOut(pDevice, MESSAGE_TYPE_WRITE, USB_REG4,
-+		MESSAGE_REQUEST_MEM, sizeof(data), &data);
-+
-     return true;//ntStatus;
- }
- 
---- a/drivers/staging/vt6656/rndis.h
-+++ b/drivers/staging/vt6656/rndis.h
-@@ -66,6 +66,8 @@
- 
- #define VIAUSB20_PACKET_HEADER          0x04
- 
-+#define USB_REG4	0x604
-+
- typedef struct _CMD_MESSAGE
+--- a/drivers/video/backlight/atmel-pwm-bl.c
++++ b/drivers/video/backlight/atmel-pwm-bl.c
+@@ -207,8 +207,10 @@ static int atmel_pwm_bl_remove(struct pl
  {
-     u8        byData[256];
+ 	struct atmel_pwm_bl *pwmbl = platform_get_drvdata(pdev);
+ 
+-	if (pwmbl->gpio_on != -1)
+-		gpio_set_value(pwmbl->gpio_on, 0);
++	if (pwmbl->gpio_on != -1) {
++		gpio_set_value(pwmbl->gpio_on,
++					0 ^ pwmbl->pdata->on_active_low);
++	}
+ 	pwm_channel_disable(&pwmbl->pwmc);
+ 	pwm_channel_free(&pwmbl->pwmc);
+ 	backlight_device_unregister(pwmbl->bldev);
 
 
