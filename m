@@ -1,264 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757766Ab3LBU3F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:29:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38990 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752957Ab3LBTQu (ORCPT
+	id S1757868Ab3LBUaP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:30:15 -0500
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:47231 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757723Ab3LBU2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:16:50 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 3.12 007/212] ARM: at91: fix hanged boot due to early rtc-interrupt
-Date: Mon,  2 Dec 2013 11:13:18 -0800
-Message-Id: <20131202191249.428951903@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
-References: <20131202191248.517975703@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	Mon, 2 Dec 2013 15:28:54 -0500
+MIME-Version: 1.0
+In-Reply-To: <529CDBAB.60402@linaro.org>
+References: <CALCETrXUZe9xmUyDHgZRRe2TBP7CXSVpXkvH61qiLLxcANicUg@mail.gmail.com>
+ <529CDBAB.60402@linaro.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 2 Dec 2013 12:28:33 -0800
+Message-ID: <CALCETrXBivBbt+17pL_=AUZqDywUHuaxS==aqJn5nrwz9WJZow@mail.gmail.com>
+Subject: Re: Clock control algorithms (Re: [RFC][PATCH 5/7] x86: Use latch
+ data structure for cyc2ns)
+To: John Stultz <john.stultz@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Dec 2, 2013 at 11:12 AM, John Stultz <john.stultz@linaro.org> wrote:
+> On 11/30/2013 09:29 AM, Andy Lutomirski wrote:
+>> [Subject changed because this isn't relevant to the patches in
+>> question any more.]
+>>
+>> On Sat, Nov 30, 2013 at 1:18 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>> On Fri, Nov 29, 2013 at 03:22:45PM -0800, Andy Lutomirski wrote:
+>>>> I've occasionally wondered whether it would be possible to make a
+>>>> monotonicity-preserving version of this and use it for clock_gettime.
+>>>> One approach: have the writer set the time for the update to be a bit
+>>>> in the future and have the reader compare the current raw time to the
+>>>> cutoff to see which set of frequency/offset to use.  (This requires
+>>>> having some kind of bound on how long it takes to update the data
+>>>> structures.)
+>>>>
+>>>> The advantage: clock_gettime would never block.
+>>>> The disadvantage: complicated, potentially nasty to implement, and it
+>>>> would get complicated if anyone tried to allow multiple updates in
+>>>> rapid succession.
+>
+>
+> So yea, I talked a bit with Mathieu Desnoyers during plumbers about
+> this, since he was working with Peter and proposing a very similar idea.
+>
+> Unfortunately, in the timekeeping case, since we are changing the
+> clock's frequency there's a number of corner cases where if the clock
+> updating logic is delayed for some reason (long NMI or more
+> realistically, quirky scheduling on the host of a VM), we could observe
+> time inconsistencies in the readers (Peter's comment in the patch
+> mentions this).
+>
+> If you care for the details, the case in question is when the update
+> decides to slow the clock frequency down. So we go from (F) originally
+> set at time T_0 to (F-adj) at a given time T_1.  But should this update
+> be delayed mid-operation, readers on other cpus will continue to use
+> frequency F. Then at some time T_2, the update completes, and thus we
+> have a potential time inconsistency.
+>
+> T_2(old) = cycles(T_2 - T_0)*F + base_time(T_0)
+>
+> T_2(new) = cycles(T_2 - T_1)*(F-adj) + base_time(T_1)
+>
+> Where base_time(T_1) = base_time(T_0) + cycles(T_1-T_0)*(F)
+>
+> Thus if adj is large enough, and T_2-T_1 is long enough, we would see
+> time go backwards.
+>
+> We can bound adj, which makes it so we'd need longer cycle intervals to
+> observe a ns inconsistency, but with things like VM scheduling, the
+> delay could be essentially unbounded. I've discussed ideas for what I
+> call "valid intervals", which I think is similar to what Peter is
+> calling the "chained linear segments", where each update has a cycle
+> interval it would be valid for, and readers would have to wait if that
+> interval has expired, but that basically re-introduces the seqlock style
+> waiting, and complicates things further, as we don't want to have the
+> update cpu is delayed beyond the interval, then when the hrtimer fires
+> and we check the time, have it deadlock waiting for itself to do the
+> update. :(
+>
+>
 
-------------------
+Maybe the vdso variant could fall back to a real syscall if the update
+gets delayed, and that syscall could do something intelligent (like
+blocking).  This would be more complicated than the current setup, but
+I doubt that any new deadlocks could be introduced, since the current
+timing code already blocks for an unbounded amount of time if the
+updater lags out.
 
-From: Johan Hovold <jhovold@gmail.com>
+>
+>
+>>> Yes, that way you can chain a number of linear segments in various
+>>> slots, but you're indeed right in that it will limit the update
+>>> frequency. More slots will give you more room, but eventually you're
+>>> limited.
+>>>
+>>> I suppose NTP is the primary updater in that case, does that have a
+>>> limit on the updates? All the other updates we can artificially limit,
+>>> that shouldn't really matter.
+>>>
+>>> But yeah in my case we pretty much assume the TSC is complete crap and a
+>>> little more crap simply doesn't matter.
+>>>
+>>> For the 'stable' tsc on modern machines we never set the frequency and
+>>> it doesn't matter anyway.
+>> I assume that NTP works by filddling with the frequency and offset on
+>> a regular basis to preserve monotonicity while still controlling the
+>> clock.
+>>
+>> TBH, I've never understood why the NTP code is so integrated into the
+>> kernel's timing infrastucture or, for that matter, lives in the kernel
+>> at all.
+>
+> It is a bit historical, though with the exception of the offset
+> adjustments, the adjtimex interface isn't particularly ntp exclusive.
+>
+>
+>>   Shouldn't the core interface be something more like "starting
+>> at time t_1, change the frequency to f_1, then at time t_2, change the
+>> frequency to f_2"?  That would give the ability to manage a control
+>> loop in userspace (or some kernel thread) and to reliably slew the
+>> clock by a small, fixed amount.  I suppose this could be elaborated to
+>> allow more than two adjustments to be scheduled in advance, but I
+>> really don't see the need for anything much fancier.
+>
+> The difficult part with that is time t_1 and t_2 in your case may not be
+> aligned with timer interrupts. So we'd have to do reader-side clock
+> manipulation, which would add overhead, or accept the tick granular
+> error. Its a very similar problem to the leap-second edge issue, where
+> we apply leapseconds at the timer tick, instead of the actual
+> leap-second edge.
 
-commit 6de714c21a8ea315fffba6a93bbe537f4c1bf4f0 upstream.
+I still think that (the VM / NMI latency issue aside) the reader-side
+manipulation would be essentially free, in that it could replace the
+current check for negative times (see below).
 
-Make sure the RTC-interrupts are masked at boot by adding a new helper
-function to be used at SOC-init.
+>
+>
+>> Benefits:
+>>  - Comprehensible without reading the entire NTP spec and all the
+>> various addenda.
+>>  - No need for any timing code at all in the tick handler -- the whole
+>> thing could presumably be done with hrtimers and a bit fancier data
+>> structure that lets clock_gettime figure out when to update*.
+>>  - Things like PTP don't need to pretend to be NTP.
+>>
+>> Disadvantages: No clue, since I don't know why NTP works the way it
+>> does right now.
+>
+> Well, we'd have to still preserve the existing adjtimex behavior. So we
+> have to live with that.
+>
+> But I think something like this could be added on as an extended mode to
+> adjtimex, and I have heard some folks wish for similar before, so it
+> might be worth investigating.
 
-This fixes hanged boot on all AT91 SOCs with an RTC (but RM9200), for
-example, after a reset during an RTC-update or if an RTC-alarm goes off
-after shutdown (e.g. when using RTC wakeup).
+Is it currently guaranteed that CLOCK_REALTIME and CLOCK_MONOTONIC
+advance at exactly the same rate except when the time is stepped?  If
+so, and if extended adjtimex things are being considered, I think that
+a lot of userspace code could benefit from the ability to directly
+read the realtime-monotonic offset (especially combined with the
+timerfd settimeofday detection stuff).
 
-The RTC and RTT-peripherals are powered by backup power (VDDBU) (on all
-AT91 SOCs but RM9200) and are not reset on wake-up, user, watchdog or
-software reset. This means that their interrupts may be enabled during
-early boot if, for example, they where not disabled during a previous
-shutdown (e.g. due to a buggy driver or a non-clean shutdown such as a
-user reset). Furthermore, an RTC or RTT-alarm may also be active.
+>
+>
+>> * vclock_gettime on x86_64 already has a branch that depends on the
+>> time.  I think that good implementation could do all of this fancy
+>> stuff with exactly one branch, resulting in the fast path being just
+>> as fast.
+>
+> Does it? I don't know if I see that.... maybe I'm not looking closely
+> enough? Again, this would be important if we want to fix the leap-second
+> edge issue as well.
 
-The RTC and RTT-interrupts use the shared system-interrupt line, which
-is also used by the PIT, and if an interrupt occurs before a handler
-(e.g. RTC-driver) has been installed this leads to the system interrupt
-being disabled and prevents the system from booting.
+It's this thing in vread_tsc:
 
-Note that when boot hangs due to an early RTC or RTT-interrupt, the only
-way to get the system to start again is to remove the backup power (e.g.
-battery) or to disable the interrupt manually from the bootloader. In
-particular, a user reset is not sufficient.
+        if (likely(ret >= last))
+                return ret;
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+as long as the frequencies and offsets are chosen such that a little
+bit of TSC skew won't overflow, then I think this can go away and get
+replaced by a similar branch to do reader-side frequency switching at
+predefined times.
 
----
- arch/arm/mach-at91/Makefile                   |    2 -
- arch/arm/mach-at91/at91sam9g45.c              |    2 +
- arch/arm/mach-at91/at91sam9n12.c              |    6 +++
- arch/arm/mach-at91/at91sam9rl.c               |    2 +
- arch/arm/mach-at91/at91sam9x5.c               |    6 +++
- arch/arm/mach-at91/generic.h                  |    1 
- arch/arm/mach-at91/include/mach/at91sam9n12.h |    5 ++
- arch/arm/mach-at91/include/mach/at91sam9x5.h  |    5 ++
- arch/arm/mach-at91/include/mach/sama5d3.h     |    5 ++
- arch/arm/mach-at91/sama5d3.c                  |    6 +++
- arch/arm/mach-at91/sysirq_mask.c              |   47 ++++++++++++++++++++++++++
- 11 files changed, 86 insertions(+), 1 deletion(-)
+Some day I'd like to see the vdso clock reading code be unified with
+the in-kernel code.  It does essentially the same thing.
 
---- a/arch/arm/mach-at91/Makefile
-+++ b/arch/arm/mach-at91/Makefile
-@@ -2,7 +2,7 @@
- # Makefile for the linux kernel.
- #
- 
--obj-y		:= irq.o gpio.o setup.o
-+obj-y		:= irq.o gpio.o setup.o sysirq_mask.o
- obj-m		:=
- obj-n		:=
- obj-		:=
---- a/arch/arm/mach-at91/at91sam9g45.c
-+++ b/arch/arm/mach-at91/at91sam9g45.c
-@@ -377,6 +377,8 @@ static void __init at91sam9g45_initializ
- 	arm_pm_idle = at91sam9_idle;
- 	arm_pm_restart = at91sam9g45_restart;
- 
-+	at91_sysirq_mask_rtc(AT91SAM9G45_BASE_RTC);
-+
- 	/* Register GPIO subsystem */
- 	at91_gpio_init(at91sam9g45_gpio, 5);
- }
---- a/arch/arm/mach-at91/at91sam9n12.c
-+++ b/arch/arm/mach-at91/at91sam9n12.c
-@@ -223,7 +223,13 @@ static void __init at91sam9n12_map_io(vo
- 	at91_init_sram(0, AT91SAM9N12_SRAM_BASE, AT91SAM9N12_SRAM_SIZE);
- }
- 
-+static void __init at91sam9n12_initialize(void)
-+{
-+	at91_sysirq_mask_rtc(AT91SAM9N12_BASE_RTC);
-+}
-+
- AT91_SOC_START(at91sam9n12)
- 	.map_io = at91sam9n12_map_io,
- 	.register_clocks = at91sam9n12_register_clocks,
-+	.init = at91sam9n12_initialize,
- AT91_SOC_END
---- a/arch/arm/mach-at91/at91sam9rl.c
-+++ b/arch/arm/mach-at91/at91sam9rl.c
-@@ -294,6 +294,8 @@ static void __init at91sam9rl_initialize
- 	arm_pm_idle = at91sam9_idle;
- 	arm_pm_restart = at91sam9_alt_restart;
- 
-+	at91_sysirq_mask_rtc(AT91SAM9RL_BASE_RTC);
-+
- 	/* Register GPIO subsystem */
- 	at91_gpio_init(at91sam9rl_gpio, 4);
- }
---- a/arch/arm/mach-at91/at91sam9x5.c
-+++ b/arch/arm/mach-at91/at91sam9x5.c
-@@ -322,6 +322,11 @@ static void __init at91sam9x5_map_io(voi
- 	at91_init_sram(0, AT91SAM9X5_SRAM_BASE, AT91SAM9X5_SRAM_SIZE);
- }
- 
-+static void __init at91sam9x5_initialize(void)
-+{
-+	at91_sysirq_mask_rtc(AT91SAM9X5_BASE_RTC);
-+}
-+
- /* --------------------------------------------------------------------
-  *  Interrupt initialization
-  * -------------------------------------------------------------------- */
-@@ -329,4 +334,5 @@ static void __init at91sam9x5_map_io(voi
- AT91_SOC_START(at91sam9x5)
- 	.map_io = at91sam9x5_map_io,
- 	.register_clocks = at91sam9x5_register_clocks,
-+	.init = at91sam9x5_initialize,
- AT91_SOC_END
---- a/arch/arm/mach-at91/generic.h
-+++ b/arch/arm/mach-at91/generic.h
-@@ -34,6 +34,7 @@ extern int  __init at91_aic_of_init(stru
- 				    struct device_node *parent);
- extern int  __init at91_aic5_of_init(struct device_node *node,
- 				    struct device_node *parent);
-+extern void __init at91_sysirq_mask_rtc(u32 rtc_base);
- 
- 
-  /* Timer */
---- a/arch/arm/mach-at91/include/mach/at91sam9n12.h
-+++ b/arch/arm/mach-at91/include/mach/at91sam9n12.h
-@@ -49,6 +49,11 @@
- #define AT91SAM9N12_BASE_USART3	0xf8028000
- 
- /*
-+ * System Peripherals
-+ */
-+#define AT91SAM9N12_BASE_RTC	0xfffffeb0
-+
-+/*
-  * Internal Memory.
-  */
- #define AT91SAM9N12_SRAM_BASE	0x00300000	/* Internal SRAM base address */
---- a/arch/arm/mach-at91/include/mach/at91sam9x5.h
-+++ b/arch/arm/mach-at91/include/mach/at91sam9x5.h
-@@ -55,6 +55,11 @@
- #define AT91SAM9X5_BASE_USART2	0xf8024000
- 
- /*
-+ * System Peripherals
-+ */
-+#define AT91SAM9X5_BASE_RTC	0xfffffeb0
-+
-+/*
-  * Internal Memory.
-  */
- #define AT91SAM9X5_SRAM_BASE	0x00300000	/* Internal SRAM base address */
---- a/arch/arm/mach-at91/include/mach/sama5d3.h
-+++ b/arch/arm/mach-at91/include/mach/sama5d3.h
-@@ -73,6 +73,11 @@
- #define SAMA5D3_BASE_USART3	0xf8024000
- 
- /*
-+ * System Peripherals
-+ */
-+#define SAMA5D3_BASE_RTC	0xfffffeb0
-+
-+/*
-  * Internal Memory
-  */
- #define SAMA5D3_SRAM_BASE	0x00300000	/* Internal SRAM base address */
---- a/arch/arm/mach-at91/sama5d3.c
-+++ b/arch/arm/mach-at91/sama5d3.c
-@@ -371,7 +371,13 @@ static void __init sama5d3_map_io(void)
- 	at91_init_sram(0, SAMA5D3_SRAM_BASE, SAMA5D3_SRAM_SIZE);
- }
- 
-+static void __init sama5d3_initialize(void)
-+{
-+	at91_sysirq_mask_rtc(SAMA5D3_BASE_RTC);
-+}
-+
- AT91_SOC_START(sama5d3)
- 	.map_io = sama5d3_map_io,
- 	.register_clocks = sama5d3_register_clocks,
-+	.init = sama5d3_initialize,
- AT91_SOC_END
---- /dev/null
-+++ b/arch/arm/mach-at91/sysirq_mask.c
-@@ -0,0 +1,47 @@
-+/*
-+ * sysirq_mask.c - System-interrupt masking
-+ *
-+ * Copyright (C) 2013 Johan Hovold <jhovold@gmail.com>
-+ *
-+ * Functions to disable system interrupts from backup-powered peripherals.
-+ *
-+ * The RTC and RTT-peripherals are generally powered by backup power (VDDBU)
-+ * and are not reset on wake-up, user, watchdog or software reset. This means
-+ * that their interrupts may be enabled during early boot (e.g. after a user
-+ * reset).
-+ *
-+ * As the RTC and RTT share the system-interrupt line with the PIT, an
-+ * interrupt occurring before a handler has been installed would lead to the
-+ * system interrupt being disabled and prevent the system from booting.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/io.h>
-+
-+#include "generic.h"
-+
-+#define AT91_RTC_IDR	0x24	/* Interrupt Disable Register */
-+#define AT91_RTC_IMR	0x28	/* Interrupt Mask Register */
-+
-+void __init at91_sysirq_mask_rtc(u32 rtc_base)
-+{
-+	void __iomem *base;
-+	u32 mask;
-+
-+	base = ioremap(rtc_base, 64);
-+	if (!base)
-+		return;
-+
-+	mask = readl_relaxed(base + AT91_RTC_IMR);
-+	if (mask) {
-+		pr_info("AT91: Disabling rtc irq\n");
-+		writel_relaxed(mask, base + AT91_RTC_IDR);
-+		(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
-+	}
-+
-+	iounmap(base);
-+}
-
-
+--Andy
