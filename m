@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297Ab3LBUOI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:14:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39220 "EHLO
+	id S1757285Ab3LBUOG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:14:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39166 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754572Ab3LBTR3 (ORCPT
+	with ESMTP id S1753141Ab3LBTRb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:29 -0500
+	Mon, 2 Dec 2013 14:17:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bart Van Assche <bvanassche@acm.org>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.12 064/212] IB/srp: Avoid offlining operational SCSI devices
-Date: Mon,  2 Dec 2013 11:14:15 -0800
-Message-Id: <20131202191255.177610014@linuxfoundation.org>
+        Moussa Ba <moussaba@micron.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.12 057/212] iscsi-target: Fix mutex_trylock usage in iscsit_increment_maxcmdsn
+Date: Mon,  2 Dec 2013 11:14:08 -0800
+Message-Id: <20131202191254.488061181@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,39 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 99b6697a50c2acbe3ca2772d359fc9a28835dc84 upstream.
+commit 5e8e6b4b3adebf01a9d97056cbbfd8c44330df99 upstream.
 
-If SCSI commands are submitted with a SCSI request timeout that is
-lower than the the IB RC timeout, it can happen that the SCSI error
-handler has already started device recovery before transport layer
-error handling starts.  So it can happen that the SCSI error handler
-tries to abort a SCSI command after it has been reset by
-srp_rport_reconnect().
+This patch fixes a >= v3.10 regression bug with mutex_trylock() usage
+within iscsit_increment_maxcmdsn(), that was originally added to allow
+for a special case where ->cmdsn_mutex was already held from the
+iscsit_execute_cmd() exception path for ib_isert.
 
-Tell the SCSI error handler that such commands have finished and that
-it is not necessary to continue its recovery strategy for commands
-that have been reset by srp_rport_reconnect().
+When !mutex_trylock() was occuring under contention during normal RX/TX
+process context codepaths, the bug was manifesting itself as the following
+protocol error:
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+  Received CmdSN: 0x000fcbb7 is greater than MaxCmdSN: 0x000fcbb6, protocol error.
+  Received CmdSN: 0x000fcbb8 is greater than MaxCmdSN: 0x000fcbb6, protocol error.
+
+This patch simply avoids the direct ib_isert callback in lio_queue_status()
+for the special iscsi_execute_cmd() exception cases, that allows the problematic
+mutex_trylock() usage in iscsit_increment_maxcmdsn() to go away.
+
+Reported-by: Moussa Ba <moussaba@micron.com>
+Tested-by: Moussa Ba <moussaba@micron.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/srp/ib_srp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/iscsi/iscsi_target_configfs.c |    5 +++++
+ drivers/target/iscsi/iscsi_target_device.c   |    6 +-----
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -1752,7 +1752,7 @@ static int srp_abort(struct scsi_cmnd *s
- 	shost_printk(KERN_ERR, target->scsi_host, "SRP abort called\n");
+--- a/drivers/target/iscsi/iscsi_target_configfs.c
++++ b/drivers/target/iscsi/iscsi_target_configfs.c
+@@ -1784,6 +1784,11 @@ static int lio_queue_status(struct se_cm
+ 	struct iscsi_cmd *cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
  
- 	if (!req || !srp_claim_req(target, req, scmnd))
--		return FAILED;
-+		return SUCCESS;
- 	if (srp_send_tsk_mgmt(target, req->index, scmnd->device->lun,
- 			      SRP_TSK_ABORT_TASK) == 0)
- 		ret = SUCCESS;
+ 	cmd->i_state = ISTATE_SEND_STATUS;
++
++	if (cmd->se_cmd.scsi_status || cmd->sense_reason) {
++		iscsit_add_cmd_to_response_queue(cmd, cmd->conn, cmd->i_state);
++		return 0;
++	}
+ 	cmd->conn->conn_transport->iscsit_queue_status(cmd->conn, cmd);
+ 
+ 	return 0;
+--- a/drivers/target/iscsi/iscsi_target_device.c
++++ b/drivers/target/iscsi/iscsi_target_device.c
+@@ -58,11 +58,7 @@ void iscsit_increment_maxcmdsn(struct is
+ 
+ 	cmd->maxcmdsn_inc = 1;
+ 
+-	if (!mutex_trylock(&sess->cmdsn_mutex)) {
+-		sess->max_cmd_sn += 1;
+-		pr_debug("Updated MaxCmdSN to 0x%08x\n", sess->max_cmd_sn);
+-		return;
+-	}
++	mutex_lock(&sess->cmdsn_mutex);
+ 	sess->max_cmd_sn += 1;
+ 	pr_debug("Updated MaxCmdSN to 0x%08x\n", sess->max_cmd_sn);
+ 	mutex_unlock(&sess->cmdsn_mutex);
 
 
