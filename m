@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738Ab3LBLVM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 06:21:12 -0500
-Received: from relay.parallels.com ([195.214.232.42]:47531 "EHLO
+	id S1753547Ab3LBLUE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 06:20:04 -0500
+Received: from relay.parallels.com ([195.214.232.42]:47385 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753553Ab3LBLUH (ORCPT
+	with ESMTP id S1753496Ab3LBLT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 06:20:07 -0500
+	Mon, 2 Dec 2013 06:19:58 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <dchinner@redhat.com>,
         <akpm@linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
         <vdavydov@parallels.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v12 13/18] memcg: per-memcg kmem shrinking
-Date: Mon, 2 Dec 2013 15:19:48 +0400
-Message-ID: <6a255c838dd290844d6ea437612e9671a88e6f31.1385974612.git.vdavydov@parallels.com>
+        Rik van Riel <riel@redhat.com>
+Subject: [PATCH v12 08/18] vmscan: do_try_to_free_pages(): remove shrink_control argument
+Date: Mon, 2 Dec 2013 15:19:43 +0400
+Message-ID: <cf461ed10d3e9ed7100ae38ec2e3a9011b90cd05.1385974612.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1385974612.git.vdavydov@parallels.com>
 References: <cover.1385974612.git.vdavydov@parallels.com>
@@ -28,20 +27,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a memory cgroup's kmem limit is less than its user memory limit, we
-can run into a situation where our allocation fail, but freeing user
-pages will buy us nothing. In such scenarios we would like to call a
-specialized reclaimer that only frees kernel memory. This patch adds it.
-All the magic lies behind the previous patches that made slab shrinkers
-memcg-aware, this patch only employs the shrink_slab() facility to scan
-slab objects accounted to a specific memory cgroup, however, there is
-one thing that is worth noticing.
-
-The point is that since all memcg-aware shrinkers are FS-dependent, we
-have no option rather than failing all GFP_NOFS allocations when we are
-close to the kmem limit. The best thing we can do in such a situation is
-to spawn the reclaimer in a background process hoping next allocations
-will succeed.
+There is no need passing on a shrink_control struct from
+try_to_free_pages() and friends to do_try_to_free_pages() and then to
+shrink_zones(), because it is only used in shrink_zones() and the only
+fields initialized on the top level is gfp_mask, which always equals to
+scan_control.gfp_mask known to shrink_zones(). So let's move
+shrink_control initialization to shrink_zones().
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
@@ -49,165 +40,137 @@ Cc: Michal Hocko <mhocko@suse.cz>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mgorman@suse.de>
 Cc: Rik van Riel <riel@redhat.com>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- include/linux/swap.h |    2 ++
- mm/memcontrol.c      |   51 +++++++++++++++++++++++++++++++++++++++++++++++++-
- mm/vmscan.c          |   38 ++++++++++++++++++++++++++++++++++++-
- 3 files changed, 89 insertions(+), 2 deletions(-)
+ mm/vmscan.c |   32 ++++++++++++--------------------
+ 1 file changed, 12 insertions(+), 20 deletions(-)
 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 46ba0c6..367a773 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -309,6 +309,8 @@ extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- extern int __isolate_lru_page(struct page *page, isolate_mode_t mode);
- extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
- 						  gfp_t gfp_mask, bool noswap);
-+extern unsigned long try_to_free_mem_cgroup_kmem(struct mem_cgroup *mem,
-+						 gfp_t gfp_mask);
- extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 						gfp_t gfp_mask, bool noswap,
- 						struct zone *zone,
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index da06f91..3679acb 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -323,6 +323,8 @@ struct mem_cgroup {
- 	struct mutex slab_caches_mutex;
-         /* Index in the kmem_cache->memcg_params->memcg_caches array */
- 	int kmemcg_id;
-+	/* when kmem shrinkers cannot proceed due to context */
-+	struct work_struct kmem_shrink_work;
- #endif
- 
- 	int last_scanned_node;
-@@ -3431,13 +3433,57 @@ static int mem_cgroup_slabinfo_read(struct cgroup_subsys_state *css,
- }
- #endif
- 
-+static void kmem_shrink_work_func(struct work_struct *w)
-+{
-+	struct mem_cgroup *memcg;
-+
-+	memcg = container_of(w, struct mem_cgroup, kmem_shrink_work);
-+	try_to_free_mem_cgroup_kmem(memcg, GFP_KERNEL);
-+}
-+
-+static int memcg_try_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
-+{
-+	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
-+	struct mem_cgroup *mem_over_limit;
-+	struct res_counter *fail_res;
-+	int ret;
-+
-+	do {
-+		ret = res_counter_charge(&memcg->kmem, size, &fail_res);
-+		if (!ret)
-+			break;
-+
-+		mem_over_limit = mem_cgroup_from_res_counter(fail_res, kmem);
-+
-+		/*
-+		 * Now we are going to shrink kernel memory present in caches.
-+		 * If we cannot wait, we will have no option rather than fail
-+		 * the current allocation and make room in the background
-+		 * hoping the next one will succeed.
-+		 *
-+		 * If we are in FS context, then although we can wait, we
-+		 * cannot call the shrinkers, because most FS shrinkers will
-+		 * not run without __GFP_FS to avoid deadlock.
-+		 */
-+		if (!(gfp & __GFP_WAIT) || !(gfp & __GFP_FS)) {
-+			schedule_work(&mem_over_limit->kmem_shrink_work);
-+			break;
-+		}
-+
-+		if (!try_to_free_mem_cgroup_kmem(mem_over_limit, gfp))
-+			break;
-+	} while (--nr_retries > 0);
-+
-+	return ret;
-+}
-+
- static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
- {
- 	struct res_counter *fail_res;
- 	struct mem_cgroup *_memcg;
- 	int ret = 0;
- 
--	ret = res_counter_charge(&memcg->kmem, size, &fail_res);
-+	ret = memcg_try_charge_kmem(memcg, gfp, size);
- 	if (ret)
- 		return ret;
- 
-@@ -6289,6 +6335,7 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- 	int ret;
- 
- 	INIT_LIST_HEAD(&memcg->memcg_slab_caches);
-+	INIT_WORK(&memcg->kmem_shrink_work, kmem_shrink_work_func);
- 	mutex_init(&memcg->slab_caches_mutex);
- 	memcg->kmemcg_id = -1;
- 	ret = memcg_propagate_kmem(memcg);
-@@ -6309,6 +6356,8 @@ static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
- 	if (!memcg_kmem_is_active(memcg))
- 		return;
- 
-+	cancel_work_sync(&memcg->kmem_shrink_work);
-+
- 	/*
- 	 * kmem charges can outlive the cgroup. In the case of slab
- 	 * pages, for instance, a page contain objects from various
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 04df967..10e6b2f 100644
+index ba1ad6e..7601b95 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2729,7 +2729,43 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
- 
- 	return nr_reclaimed;
- }
--#endif
-+
-+#ifdef CONFIG_MEMCG_KMEM
-+unsigned long try_to_free_mem_cgroup_kmem(struct mem_cgroup *memcg,
-+					  gfp_t gfp_mask)
-+{
-+	struct reclaim_state reclaim_state;
-+	struct shrink_control shrink = {
-+		.gfp_mask = gfp_mask,
-+		.target_mem_cgroup = memcg,
-+	};
-+	int priority = DEF_PRIORITY;
-+	unsigned long nr_to_reclaim = SWAP_CLUSTER_MAX;
-+	unsigned long freed, total_freed = 0;
-+
-+	nodes_setall(shrink.nodes_to_scan);
-+
-+	lockdep_set_current_reclaim_state(sc.gfp_mask);
-+	reclaim_state.reclaimed_slab = 0;
-+	current->reclaim_state = &reclaim_state;
-+
-+	do {
-+		freed = shrink_slab(&shrink, 1000, 1000 << priority);
-+		if (!freed)
-+			congestion_wait(BLK_RW_ASYNC, HZ/10);
-+		total_freed += freed;
-+		if (current->reclaim_state->reclaimed_slab >= nr_to_reclaim)
-+			break;
-+	} while (--priority >= 0);
-+
-+	current->reclaim_state = NULL;
-+	lockdep_clear_current_reclaim_state();
-+
-+	return total_freed;
-+}
-+#endif /* CONFIG_MEMCG_KMEM */
-+
-+#endif /* CONFIG_MEMCG */
- 
- static void age_active_anon(struct zone *zone, struct scan_control *sc)
+@@ -2274,8 +2274,7 @@ static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
+  * further reclaim.
+  */
+ static bool shrink_zones(struct zonelist *zonelist,
+-			 struct scan_control *sc,
+-			 struct shrink_control *shrink)
++			 struct scan_control *sc)
  {
+ 	struct zoneref *z;
+ 	struct zone *zone;
+@@ -2284,6 +2283,9 @@ static bool shrink_zones(struct zonelist *zonelist,
+ 	unsigned long lru_pages = 0;
+ 	bool aborted_reclaim = false;
+ 	struct reclaim_state *reclaim_state = current->reclaim_state;
++	struct shrink_control shrink = {
++		.gfp_mask = sc->gfp_mask,
++	};
+ 
+ 	/*
+ 	 * If the number of buffer_heads in the machine exceeds the maximum
+@@ -2293,7 +2295,7 @@ static bool shrink_zones(struct zonelist *zonelist,
+ 	if (buffer_heads_over_limit)
+ 		sc->gfp_mask |= __GFP_HIGHMEM;
+ 
+-	nodes_clear(shrink->nodes_to_scan);
++	nodes_clear(shrink.nodes_to_scan);
+ 
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 					gfp_zone(sc->gfp_mask), sc->nodemask) {
+@@ -2308,7 +2310,7 @@ static bool shrink_zones(struct zonelist *zonelist,
+ 				continue;
+ 
+ 			lru_pages += zone_reclaimable_pages(zone);
+-			node_set(zone_to_nid(zone), shrink->nodes_to_scan);
++			node_set(zone_to_nid(zone), shrink.nodes_to_scan);
+ 
+ 			if (sc->priority != DEF_PRIORITY &&
+ 			    !zone_reclaimable(zone))
+@@ -2353,7 +2355,7 @@ static bool shrink_zones(struct zonelist *zonelist,
+ 	 * LRU pages over slab pages.
+ 	 */
+ 	if (global_reclaim(sc)) {
+-		shrink_slab(shrink, sc->nr_scanned, lru_pages);
++		shrink_slab(&shrink, sc->nr_scanned, lru_pages);
+ 		if (reclaim_state) {
+ 			sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+ 			reclaim_state->reclaimed_slab = 0;
+@@ -2400,8 +2402,7 @@ static bool all_unreclaimable(struct zonelist *zonelist,
+  * 		else, the number of pages reclaimed
+  */
+ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+-					struct scan_control *sc,
+-					struct shrink_control *shrink)
++					  struct scan_control *sc)
+ {
+ 	unsigned long total_scanned = 0;
+ 	unsigned long writeback_threshold;
+@@ -2416,7 +2417,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 		vmpressure_prio(sc->gfp_mask, sc->target_mem_cgroup,
+ 				sc->priority);
+ 		sc->nr_scanned = 0;
+-		aborted_reclaim = shrink_zones(zonelist, sc, shrink);
++		aborted_reclaim = shrink_zones(zonelist, sc);
+ 
+ 		total_scanned += sc->nr_scanned;
+ 		if (sc->nr_reclaimed >= sc->nr_to_reclaim)
+@@ -2579,9 +2580,6 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 		.target_mem_cgroup = NULL,
+ 		.nodemask = nodemask,
+ 	};
+-	struct shrink_control shrink = {
+-		.gfp_mask = sc.gfp_mask,
+-	};
+ 
+ 	/*
+ 	 * Do not enter reclaim if fatal signal was delivered while throttled.
+@@ -2595,7 +2593,7 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 				sc.may_writepage,
+ 				gfp_mask);
+ 
+-	nr_reclaimed = do_try_to_free_pages(zonelist, &sc, &shrink);
++	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
+ 
+ 	trace_mm_vmscan_direct_reclaim_end(nr_reclaimed);
+ 
+@@ -2662,9 +2660,6 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
+ 		.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
+ 				(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK),
+ 	};
+-	struct shrink_control shrink = {
+-		.gfp_mask = sc.gfp_mask,
+-	};
+ 
+ 	/*
+ 	 * Unlike direct reclaim via alloc_pages(), memcg's reclaim doesn't
+@@ -2679,7 +2674,7 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
+ 					    sc.may_writepage,
+ 					    sc.gfp_mask);
+ 
+-	nr_reclaimed = do_try_to_free_pages(zonelist, &sc, &shrink);
++	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
+ 
+ 	trace_mm_vmscan_memcg_reclaim_end(nr_reclaimed);
+ 
+@@ -3335,9 +3330,6 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
+ 		.order = 0,
+ 		.priority = DEF_PRIORITY,
+ 	};
+-	struct shrink_control shrink = {
+-		.gfp_mask = sc.gfp_mask,
+-	};
+ 	struct zonelist *zonelist = node_zonelist(numa_node_id(), sc.gfp_mask);
+ 	struct task_struct *p = current;
+ 	unsigned long nr_reclaimed;
+@@ -3347,7 +3339,7 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
+ 	reclaim_state.reclaimed_slab = 0;
+ 	p->reclaim_state = &reclaim_state;
+ 
+-	nr_reclaimed = do_try_to_free_pages(zonelist, &sc, &shrink);
++	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
+ 
+ 	p->reclaim_state = NULL;
+ 	lockdep_clear_current_reclaim_state();
 -- 
 1.7.10.4
 
