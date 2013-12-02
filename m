@@ -1,147 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab3LBSPP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 13:15:15 -0500
-Received: from mail-ie0-f201.google.com ([209.85.223.201]:61042 "EHLO
-	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753223Ab3LBSPK (ORCPT
+	id S1753186Ab3LBSWS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 13:22:18 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56673 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752721Ab3LBSWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 13:15:10 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>
-Cc: Leela Krishna Amudala <l.krishna@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Ben Dooks <ben-linux@fluff.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] watchdog: s3c2410_wdt: Report when the watchdog reset the system
-Date: Mon,  2 Dec 2013 10:14:41 -0800
-Message-Id: <1386008082-28740-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.4.1
+	Mon, 2 Dec 2013 13:22:15 -0500
+Date: Mon, 2 Dec 2013 18:22:04 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] usb: phy-generic: Add ULPI VBUS support
+Message-ID: <20131202182204.GQ12952@e106331-lin.cambridge.arm.com>
+References: <1385967919-13258-1-git-send-email-chris.ruehl@gtsys.com.hk>
+ <1385967919-13258-4-git-send-email-chris.ruehl@gtsys.com.hk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385967919-13258-4-git-send-email-chris.ruehl@gtsys.com.hk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A good watchdog driver is supposed to report when it was responsible
-for resetting the system.  Implement this for the s3c2410, at least on
-exynos5250 and exynos5420 where we already have a pointer to the PMU
-registers to read the information.
+On Mon, Dec 02, 2013 at 07:05:19AM +0000, Chris Ruehl wrote:
+> usb: phy-generic: Add ULPI VBUS support
+> 
+> Some platforms need to set the VBUS parameters of the ULPI
+> like ISP1504 which interact with overcurrent protection and
+> power switch MIC2575. Therefore it requires to set
+> * DRVVBUS
+> * DRVVBUS_EXT
+> * EXTVBUSIND
+> * CHRGVBUS
+> of the ULPI.
+> This patch add support for it.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-This patch is based atop Leela Krishna's recent series that ends with
-(ARM: dts: update watchdog device nodes for Exynos5250 and Exynos5420)
-AKA <https://patchwork.kernel.org/patch/3251861/>.
+Could you elaborate on when we need to do this and why?
 
- drivers/watchdog/s3c2410_wdt.c | 42 +++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 39 insertions(+), 3 deletions(-)
+> 
+> Devicetree configuration example:
+> 
+> usbphy0: usbphy@0x10024170 {
+>  compatible = "usb-nop-xceiv";
+>  reg = <0x10024170 0x4>; /* ULPI Viewport OTG */
+>  clocks = <&clks 75>;
+>  clock-names = "main_clk";
+> };
+> 
+> &usbphy0 {
+>         reset-gpios = <&gpio1 31 1>;
+>         pinctrl-names = "default";
+>         pinctrl-0 = <&pinctrl_usbphy0 &pinctrl_usbotg1>;
+>         ulpi_set_vbus = <0x0f>;
+> };
+> 
+> Please refer to the phy-bindings.txt for the value of ulpi_set_vbus commit
+> with this patch.
+> 
+> Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+> ---
+>  .../devicetree/bindings/phy/phy-bindings.txt       |   15 ++++++
+>  drivers/usb/phy/phy-generic.c                      |   50 +++++++++++++++++++-
+>  drivers/usb/phy/phy-generic.h                      |    3 ++
+>  3 files changed, 67 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/phy/phy-bindings.txt b/Documentation/devicetree/bindings/phy/phy-bindings.txt
+> index 8ae844f..b109b2f 100644
+> --- a/Documentation/devicetree/bindings/phy/phy-bindings.txt
+> +++ b/Documentation/devicetree/bindings/phy/phy-bindings.txt
+> @@ -34,6 +34,18 @@ phys : the phandle for the PHY device (used by the PHY subsystem)
+>  phy-names : the names of the PHY corresponding to the PHYs present in the
+>  	    *phys* phandle
+>  
+> +Optional Properties:
+> +reset-gpios :	GPIO used to reset ULPI like ISP1504 with
+> +		0 = reset active high ; 1 = reset active low.
 
-diff --git a/drivers/watchdog/s3c2410_wdt.c b/drivers/watchdog/s3c2410_wdt.c
-index 47f4dcf..2c87d37 100644
---- a/drivers/watchdog/s3c2410_wdt.c
-+++ b/drivers/watchdog/s3c2410_wdt.c
-@@ -62,9 +62,13 @@
- #define CONFIG_S3C2410_WATCHDOG_ATBOOT		(0)
- #define CONFIG_S3C2410_WATCHDOG_DEFAULT_TIME	(15)
- 
-+#define RST_STAT_REG_OFFSET		0x0404
- #define WDT_DISABLE_REG_OFFSET		0x0408
- #define WDT_MASK_RESET_REG_OFFSET	0x040c
- #define QUIRK_NEEDS_PMU_CONFIG		(1 << 0)
-+#define QUIRK_HAS_RST_STAT		(1 << 1)
-+#define QUIRKS_NEED_PMUREG		(QUIRK_NEEDS_PMU_CONFIG | \
-+					 QUIRK_HAS_RST_STAT)
- 
- static bool nowayout	= WATCHDOG_NOWAYOUT;
- static int tmr_margin;
-@@ -98,6 +102,9 @@ MODULE_PARM_DESC(debug, "Watchdog debug, set to >1 for debug (default 0)");
-  * timer reset functionality.
-  * @mask_bit: Bit number for the watchdog timer in the disable register and the
-  * mask reset register.
-+ * @rst_stat_reg: Offset in pmureg for the register that has the reset status.
-+ * @rst_stat_bit: Bit number in the rst_stat register indicating a watchdog
-+ * reset.
-  * @quirks: A bitfield of quirks.
-  */
- 
-@@ -105,6 +112,8 @@ struct s3c2410_wdt_variant {
- 	int disable_reg;
- 	int mask_reset_reg;
- 	int mask_bit;
-+	int rst_stat_reg;
-+	int rst_stat_bit;
- 	u32 quirks;
- };
- 
-@@ -131,14 +140,20 @@ static const struct s3c2410_wdt_variant drv_data_exynos5250  = {
- 	.disable_reg = WDT_DISABLE_REG_OFFSET,
- 	.mask_reset_reg = WDT_MASK_RESET_REG_OFFSET,
- 	.mask_bit = 20,
--	.quirks = QUIRK_NEEDS_PMU_CONFIG
-+	.rst_stat_reg = RST_STAT_REG_OFFSET,
-+	.rst_stat_bit = 20,
-+	.quirks = QUIRK_NEEDS_PMU_CONFIG |
-+		QUIRK_HAS_RST_STAT,
- };
- 
- static const struct s3c2410_wdt_variant drv_data_exynos5420 = {
- 	.disable_reg = WDT_DISABLE_REG_OFFSET,
- 	.mask_reset_reg = WDT_MASK_RESET_REG_OFFSET,
- 	.mask_bit = 0,
--	.quirks = QUIRK_NEEDS_PMU_CONFIG
-+	.rst_stat_reg = RST_STAT_REG_OFFSET,
-+	.rst_stat_bit = 9,
-+	.quirks = QUIRK_NEEDS_PMU_CONFIG |
-+		QUIRK_HAS_RST_STAT,
- };
- 
- static const struct of_device_id s3c2410_wdt_match[] = {
-@@ -423,6 +438,25 @@ static inline void s3c2410wdt_cpufreq_deregister(struct s3c2410_wdt *wdt)
- }
- #endif
- 
-+static inline unsigned int s3c2410wdt_get_bootstatus(struct s3c2410_wdt *wdt)
-+{
-+	unsigned int bootstatus = 0;
-+	int ret;
-+
-+	if (wdt->drv_data->quirks & QUIRK_HAS_RST_STAT) {
-+		unsigned int rst_stat;
-+
-+		ret = regmap_read(wdt->pmureg, wdt->drv_data->rst_stat_reg,
-+				  &rst_stat);
-+		if (ret)
-+			dev_warn(wdt->dev, "Couldn't get RST_STAT register\n");
-+		else if (rst_stat & BIT(wdt->drv_data->rst_stat_bit))
-+			bootstatus |= WDIOF_CARDRESET;
-+	}
-+
-+	return bootstatus;
-+}
-+
- /* s3c2410_get_wdt_driver_data */
- static inline struct s3c2410_wdt_variant *
- get_wdt_drv_data(struct platform_device *pdev)
-@@ -460,7 +494,7 @@ static int s3c2410wdt_probe(struct platform_device *pdev)
- 	wdt->wdt_device = s3c2410_wdd;
- 
- 	wdt->drv_data = get_wdt_drv_data(pdev);
--	if (wdt->drv_data->quirks & QUIRK_NEEDS_PMU_CONFIG) {
-+	if (wdt->drv_data->quirks & QUIRKS_NEED_PMUREG) {
- 		wdt->pmureg = syscon_regmap_lookup_by_phandle(dev->of_node,
- 							"samsung,syscon-phandle");
- 		if (IS_ERR(wdt->pmureg)) {
-@@ -531,6 +565,8 @@ static int s3c2410wdt_probe(struct platform_device *pdev)
- 
- 	watchdog_set_nowayout(&wdt->wdt_device, nowayout);
- 
-+	wdt->wdt_device.bootstatus = s3c2410wdt_get_bootstatus(wdt);
-+
- 	ret = watchdog_register_device(&wdt->wdt_device);
- 	if (ret) {
- 		dev_err(dev, "cannot register watchdog (%d)\n", ret);
--- 
-1.8.4.1
+The format of the gpio-specifier doesn't matter here.
 
+Why do you need to mention the ISP1504? Either this is generic, or it
+doesn't belong here.
+
+Perhaps we need a ulpi-phy binding document. This and the rest of the
+patch is strongly tied to ULPI.
+
+> +cs-gpios :	GPIO used to activate a ULPI like ISP1504 with
+> +		0 = reset acitive high; 1 = reset active low.
+
+Again, the format of the gpio-specifier is not a concern here. I'm also
+a little confused as to the name "cs-gpios" for something that activates
+the ULPI.
+
+> +ulpi_set_vbus :	ULPI configuation parameter to program the VBUS signaling of 
+> +		ISP1504 or similar chipsets.
+
+Could you elaborate on this? Is this applicable to any ULPI PHY? The
+description implies that it's somewhat tied to ISP1504 (if it's not,
+drop the mention of ISP1504).
+
+Why exactly do we need this, and why should it live in the DT?
+
+Why can se not figure this out automatically, or have defaults that work
+in more places?
+
+Also, s/_/-/ on property names please.
+
+> +		Set the parameter:
+> +		DRVVBUS = (1) DRVVBUS_EXT = (1<<1) EXTVBUSIND = (1<<2) CHRGVBUS = (1<<3)
+> +		eg: DRVVBUS | DRVVBUS_EXT = 0x03
+> +		    ulpi_set_vbus = <0x03>
+
+I don't like putting arbitrary bitfields like this in DT. They're
+illegible and easy to abuse.
+
+Boolean properties are nicer for flags.
+
+What exactly do these flags mean?
+
+[...]
+
+> @@ -253,14 +284,15 @@ static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
+>  
+>  	if (dev->of_node) {
+>  		struct device_node *node = dev->of_node;
+> +		struct resource	*res;
+>  		enum of_gpio_flags flags;
+>  		enum of_gpio_flags csflags;
+> +		u32 ulpi_vbus;
+>  
+>  		if (of_property_read_u32(node, "clock-frequency", &clk_rate))
+>  			clk_rate = 0;
+>  
+>  		needs_vcc = of_property_read_bool(node, "vcc-supply");
+> -
+>  		nop->gpio_reset = of_get_named_gpio_flags(node, "reset-gpios",
+>  								0, &flags);
+
+Why the random line deletion?
+
+>  
+> @@ -274,6 +306,22 @@ static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
+>  		if (gpio_is_valid(nop->gpio_chipselect))
+>  			nop->cs_active_low = csflags & OF_GPIO_ACTIVE_LOW;
+>  
+> +		err = of_property_read_u32(node, "ulpi_set_vbus",&ulpi_vbus);
+> +		if (err) {
+> +			nop->ulpi_vbus = -1;
+> +			nop->viewport = NULL;
+> +			ulpi_vbus = 0;
+> +		} else {
+> +			dev_dbg(dev,"ULPI ulpi_set_vbus 0x%02x",ulpi_vbus);
+> +			nop->ulpi_vbus = ulpi_vbus;
+> +			res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+
+This wasn't described in the binding document, and it's ULPI specific. I
+think we need a separate ulpi-phy binding that builds upon the generic
+one.
+
+Thanks,
+Mark.
