@@ -1,94 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab3LBS0w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 13:26:52 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:43037 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752700Ab3LBS0s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 13:26:48 -0500
+	id S1752672Ab3LBS1O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 13:27:14 -0500
+Received: from mga11.intel.com ([192.55.52.93]:2934 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752030Ab3LBS1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 13:27:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,812,1378882800"; 
+   d="asc'?scan'208";a="443322664"
+Message-ID: <529CD206.5080605@linux.intel.com>
+Date: Mon, 02 Dec 2013 10:31:34 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-In-Reply-To: <20131202181501.GA5524@dhcp22.suse.cz>
-References: <1385989693-28788-1-git-send-email-vdavydov@parallels.com>
-	<20131202181501.GA5524@dhcp22.suse.cz>
-Date: Mon, 2 Dec 2013 22:26:48 +0400
-Message-ID: <CAA6-i6rWsZNQmFY5L-=yc6TaTGyg4hP4qn9gMZVsu8wWJ=1ywg@mail.gmail.com>
-Subject: Re: [PATCH] memcg: remove KMEM_ACCOUNTED_ACTIVATED
-From: Glauber Costa <glommer@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Vladimir Davydov <vdavydov@parallels.com>,
-        LKML <linux-kernel@vger.kernel.org>, cgroups@vger.kernel.org,
-        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+To: balbi@ti.com
+CC: gregkh@linuxfoundation.org, stern@rowland.harvard.edu, mina86@mina86.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 5/5] usb: dwc3: implement gadget's quirk ep_out_align_size
+References: <1384290286-21432-1-git-send-email-david.a.cohen@linux.intel.com> <1384290286-21432-6-git-send-email-david.a.cohen@linux.intel.com> <20131125210614.GP18046@saruman.home>
+In-Reply-To: <20131125210614.GP18046@saruman.home>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="ixuSVaweQ2X3KuIQT16v6TKitot8Bitjk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 2, 2013 at 10:15 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> [CCing Glauber - please do so in other posts for kmem related changes]
->
-> On Mon 02-12-13 17:08:13, Vladimir Davydov wrote:
->> The KMEM_ACCOUNTED_ACTIVATED was introduced by commit a8964b9b ("memcg:
->> use static branches when code not in use") in order to guarantee that
->> static_key_slow_inc(&memcg_kmem_enabled_key) will be called only once
->> for each memory cgroup when its kmem limit is set. The point is that at
->> that time the memcg_update_kmem_limit() function's workflow looked like
->> this:
->>
->>       bool must_inc_static_branch = false;
->>
->>       cgroup_lock();
->>       mutex_lock(&set_limit_mutex);
->>       if (!memcg->kmem_account_flags && val != RESOURCE_MAX) {
->>               /* The kmem limit is set for the first time */
->>               ret = res_counter_set_limit(&memcg->kmem, val);
->>
->>               memcg_kmem_set_activated(memcg);
->>               must_inc_static_branch = true;
->>       } else
->>               ret = res_counter_set_limit(&memcg->kmem, val);
->>       mutex_unlock(&set_limit_mutex);
->>       cgroup_unlock();
->>
->>       if (must_inc_static_branch) {
->>               /* We can't do this under cgroup_lock */
->>               static_key_slow_inc(&memcg_kmem_enabled_key);
->>               memcg_kmem_set_active(memcg);
->>       }
->>
->> Today, we don't use cgroup_lock in memcg_update_kmem_limit(), and
->> static_key_slow_inc() is called under the set_limit_mutex, but the
->> leftover from the above-mentioned commit is still here. Let's remove it.
->
-> OK, so I have looked there again and 692e89abd154b (memcg: increment
-> static branch right after limit set) which went in after cgroup_mutex
-> has been removed. It came along with the following comment.
->                 /*
->                  * setting the active bit after the inc will guarantee no one
->                  * starts accounting before all call sites are patched
->                  */
->
-> This suggests that the flag is needed after all because we have
-> to be sure that _all_ the places have to be patched. AFAIU
-> memcg_kmem_newpage_charge might see the static key already patched so
-> it would do a charge but memcg_kmem_commit_charge would still see it
-> unpatched and so the charge won't be committed.
->
-> Or am I missing something?
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--ixuSVaweQ2X3KuIQT16v6TKitot8Bitjk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-You are correct. This flag is there due to the way we are using static branches.
-The patching of one call site is atomic, but the patching of all of
-them are not.
-Therefore we need to use a two-flag scheme to guarantee that in the first time
-we turn the static branches on, there will be a clear point after
-which we're going
-to start accounting.
+On 11/25/2013 01:06 PM, Felipe Balbi wrote:
+> Hi,
+>=20
+> On Tue, Nov 12, 2013 at 01:04:46PM -0800, David Cohen wrote:
+>> diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+>> index 5452c0fce360..7c2d36f6ad4b 100644
+>> --- a/drivers/usb/dwc3/gadget.c
+>> +++ b/drivers/usb/dwc3/gadget.c
+>> @@ -1130,6 +1130,14 @@ static int dwc3_gadget_ep_queue(struct usb_ep *=
+ep, struct usb_request *request,
+>>  	dev_vdbg(dwc->dev, "queing request %p to %s length %d\n",
+>>  			request, ep->name, request->length);
+>> =20
+>> +	/* If ep out, roundup request->length to epout maxpacketsize */
+>> +	if (!(dep->number & 1)) {
+>=20
+> we have a direction field in the dep structure, please use that.
+>=20
+>> +		unsigned int aligned =3D roundup(request->length,
+>> +					       ep->desc->wMaxPacketSize);
+>> +		req->pad =3D aligned - request->length;
+>> +		request->length =3D aligned;
+>=20
+> this is quite dangerous. You really don't know the size that gadget
+> driver allocated. What if we're using SLOB and gadget driver allocated
+> exactly 31 bytes (think MSC's CBW) ? Then you change request->length to=
+
+> 512-bytes (or 1024 if USB SS), and host happens to be buggy (or
+> exploited somehow) and sends more than 31-bytes ? You told dwc3 you
+> could receive more than 31-bytes even though you don't know what follow=
+s
+> your 31-byte buffer.
+>=20
+> This is why I have been saying that gadget driver *must* be the one
+> hadnling this issue based on the quirk flag.
+
+Thanks. I've seen different point of views in this thread. Since you're
+the maintainer, I'll resend the patch following your directions.
+
+Br, David
 
 
 
+--ixuSVaweQ2X3KuIQT16v6TKitot8Bitjk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
 
--- 
-E Mare, Libertas
+iQIcBAEBAgAGBQJSnNIIAAoJEGU5KLu7JjjxsioP/jpEUtl1MJRNR2fzBigrMWCW
+lpN4QGGhfT6S7vRw2dVGhUVGu73v1WOjmAXKLyQFxW2Sh9dlcn+MKT4YpVo8WkHG
+Wv6DasjmDd49GWUc4b0RnnVu1KmNzVn2LnDyts5x6sQw77eBT7FWAKnhyGJ3Vf3b
+evcB+xGMURalr4oTXvw6UQACMuUvxWLo5voX8XCukR8/I0jakCUbVBSjuT6bKvfn
+XpxOy6wks/DB5tJnEmnQ1/zWs6ma2SRgBCbAfrUd8aUauin0/QG9EM47v1vJKOwn
+8kYsZd1xFCo9p+MPRy9spO7GEigBUQl6nFQvAPQ/szjtBWdIItHQZMrAfoFO31nk
+kg/GYKXprVL9UoZV7BYtaP0UBeYuiNcC8+iGgbAxTuw9m1bcsT1THBXcXFLpKwpL
+M7KfQQBMYveUai6wWSsZeFiStTjCqv+bp4Qs48UBwquRhbFIvm2/42tVzylkvqBf
+s4jJMmR78nRsN3eq4QaSvVTaxZL/5//7U6Bi8q/4Ga1pGDQIp4kq8puhJxDJJR9y
+N+3j5tpql0uc6u/RcFEvSWdsfrQhfLGgE8GKGtuzIZP1ktENpWvpxJGYCnyFwSCg
+juFE8lo06tXDzRIT9wdEBeX3tujJFiVrG8ZvDGXlSK18+vmfwIkvybJ4Whaee/o5
+prO9yx/cF4SqK9zgCVL+
+=sj9E
+-----END PGP SIGNATURE-----
+
+--ixuSVaweQ2X3KuIQT16v6TKitot8Bitjk--
