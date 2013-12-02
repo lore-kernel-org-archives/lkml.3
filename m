@@ -1,68 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab3LBKN3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 05:13:29 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:46501 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187Ab3LBKNJ (ORCPT
+	id S1753319Ab3LBKNc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 05:13:32 -0500
+Received: from smtpfb2-g21.free.fr ([212.27.42.10]:55143 "EHLO
+	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753237Ab3LBKNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 05:13:09 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <jiri.prchal@aksignal.cz>,
-        <b.brezillon@overkiz.com>, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] ARM: at91: add usart3 alias to dtsi
-Date: Mon, 2 Dec 2013 11:13:06 +0100
-Message-ID: <1385979186-29447-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 2 Dec 2013 05:13:22 -0500
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Yann Droneaud <ydroneaud@opteya.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH v2] net: handle error more gracefully in socketpair()
+Date: Mon,  2 Dec 2013 11:12:26 +0100
+Message-Id: <1385979146-13825-1-git-send-email-ydroneaud@opteya.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1385977019-12282-1-git-send-email-ydroneaud@opteya.com>
+References: <1385977019-12282-1-git-send-email-ydroneaud@opteya.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alias was missing for SoC of the at91sam9x5 familly that embed USART3.
-Preripheral node and pinctrl declarations are already in the
-at91sam9x5_usart3.dtsi file.
+socketpair() error paths can be simplified to not call
+heavy-weight sys_close().
 
-Reported-by: Jiri Prchal <jiri.prchal@aksignal.cz>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+This patch makes socketpair() use of error paths which do not
+rely on heavy-weight call to sys_lose(): it's better to try
+to push the file descriptor to userspace before installing
+the socket file to the file descriptor, so that errors are
+catched earlier and being easier to handle.
+
+Three distinct error paths are needed since calling fput()
+on file structure returned by sock_alloc_file() will
+implicitly call sock_release() on the associated socket
+structure.
+
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Link: http://marc.info/?i=1385977019-12282-1-git-send-email-ydroneaud@opteya.com
 ---
- arch/arm/boot/dts/at91sam9g25.dtsi | 4 ++++
- arch/arm/boot/dts/at91sam9x25.dtsi | 4 ++++
- 2 files changed, 8 insertions(+)
 
-diff --git a/arch/arm/boot/dts/at91sam9g25.dtsi b/arch/arm/boot/dts/at91sam9g25.dtsi
-index 17b879990914..d4650b4e9ebb 100644
---- a/arch/arm/boot/dts/at91sam9g25.dtsi
-+++ b/arch/arm/boot/dts/at91sam9g25.dtsi
-@@ -14,6 +14,10 @@
- 	model = "Atmel AT91SAM9G25 SoC";
- 	compatible = "atmel,at91sam9g25", "atmel,at91sam9x5";
- 
-+	aliases {
-+		serial4 = &usart3;
-+	};
+Hi,
+
+Please discard my previous patch "[PATCH] net: handle error
+more gracefully in socketpair()" [1] as I haven't double checked
+the underlying reason for the not-so-complicated error paths.
+
+This one is perhaps less appealing. But I think it's still
+a good thing to write the file descriptor to userspace before
+calling fd_install(): it's making error recovery easier.
+
+Changes from v1 [1]:
+
+- use three different error path to handle file allocated through
+  sock_alloc_file().
+
+Regards.
+
+[1] http://mid.gmane.org/1385977019-12282-1-git-send-email-ydroneaud@opteya.com
+
+ net/socket.c | 49 +++++++++++++++++++++++++++++++------------------
+ 1 file changed, 31 insertions(+), 18 deletions(-)
+
+diff --git a/net/socket.c b/net/socket.c
+index 0b18693f2be6..72bf3c41f4f0 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1445,48 +1445,61 @@ SYSCALL_DEFINE4(socketpair, int, family, int, type, int, protocol,
+ 		err = fd1;
+ 		goto out_release_both;
+ 	}
 +
- 	ahb {
- 		apb {
- 			pinctrl@fffff400 {
-diff --git a/arch/arm/boot/dts/at91sam9x25.dtsi b/arch/arm/boot/dts/at91sam9x25.dtsi
-index c2554219f7a4..aceee86f60eb 100644
---- a/arch/arm/boot/dts/at91sam9x25.dtsi
-+++ b/arch/arm/boot/dts/at91sam9x25.dtsi
-@@ -15,6 +15,10 @@
- 	model = "Atmel AT91SAM9X25 SoC";
- 	compatible = "atmel,at91sam9x25", "atmel,at91sam9x5";
+ 	fd2 = get_unused_fd_flags(flags);
+ 	if (unlikely(fd2 < 0)) {
+ 		err = fd2;
+-		put_unused_fd(fd1);
+-		goto out_release_both;
++		goto out_put_unused_1;
+ 	}
  
-+	aliases {
-+		serial4 = &usart3;
-+	};
+ 	newfile1 = sock_alloc_file(sock1, flags, NULL);
+ 	if (unlikely(IS_ERR(newfile1))) {
+ 		err = PTR_ERR(newfile1);
+-		put_unused_fd(fd1);
+-		put_unused_fd(fd2);
+-		goto out_release_both;
++		goto out_put_unused_both;
+ 	}
+ 
+ 	newfile2 = sock_alloc_file(sock2, flags, NULL);
+ 	if (IS_ERR(newfile2)) {
+ 		err = PTR_ERR(newfile2);
+-		fput(newfile1);
+-		put_unused_fd(fd1);
+-		put_unused_fd(fd2);
+-		sock_release(sock2);
+-		goto out;
++		goto out_fput_1;
+ 	}
+ 
++	err = put_user(fd1, &usockvec[0]);
++	if (err)
++		goto out_fput_both;
 +
- 	ahb {
- 		apb {
- 			pinctrl@fffff400 {
++	err = put_user(fd2, &usockvec[1]);
++	if (err)
++		goto out_fput_both;
++
+ 	audit_fd_pair(fd1, fd2);
++
+ 	fd_install(fd1, newfile1);
+ 	fd_install(fd2, newfile2);
+ 	/* fd1 and fd2 may be already another descriptors.
+ 	 * Not kernel problem.
+ 	 */
+ 
+-	err = put_user(fd1, &usockvec[0]);
+-	if (!err)
+-		err = put_user(fd2, &usockvec[1]);
+-	if (!err)
+-		return 0;
++	return 0;
+ 
+-	sys_close(fd2);
+-	sys_close(fd1);
+-	return err;
++out_fput_both:
++	fput(newfile2);
++	fput(newfile1);
++	put_unused_fd(fd2);
++	put_unused_fd(fd1);
++	goto out;
++
++out_fput_1:
++	fput(newfile1);
++	put_unused_fd(fd2);
++	put_unused_fd(fd1);
++	sock_release(sock2);
++	goto out;
+ 
++out_put_unused_both:
++	put_unused_fd(fd2);
++out_put_unused_1:
++	put_unused_fd(fd1);
+ out_release_both:
+ 	sock_release(sock2);
+ out_release_1:
 -- 
-1.8.2.2
+1.8.4.2
 
