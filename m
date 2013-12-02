@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758413Ab3LBUqE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:46:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38743 "EHLO
+	id S1758386Ab3LBUp6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:45:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38468 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754075Ab3LBTN4 (ORCPT
+	with ESMTP id S1753478Ab3LBTN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:13:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.10 107/173] powerpc/signals: Improved mark VSX not saved with small contexts fix
-Date: Mon,  2 Dec 2013 11:11:30 -0800
-Message-Id: <20131202191156.218565407@linuxfoundation.org>
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [PATCH 3.10 098/173] drm/nouveau: when bailing out of a pushbuf ioctl, do not remove previous fence
+Date: Mon,  2 Dec 2013 11:11:21 -0800
+Message-Id: <20131202191155.308810169@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,85 +26,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Ben Skeggs <bskeggs@redhat.com>
 
-commit ec67ad82814bee92251fd963bf01c7a173856555 upstream.
+commit 9360bd1112d8874d21942e2ae74f5416b00a8db6 upstream.
 
-In a recent patch:
-  commit c13f20ac48328b05cd3b8c19e31ed6c132b44b42
-  Author: Michael Neuling <mikey@neuling.org>
-  powerpc/signals: Mark VSX not saved with small contexts
-
-We fixed an issue but an improved solution was later discussed after the patch
-was merged.
-
-Firstly, this patch doesn't handle the 64bit signals case, which could also hit
-this issue (but has never been reported).
-
-Secondly, the original patch isn't clear what MSR VSX should be set to.  The
-new approach below always clears the MSR VSX bit (to indicate no VSX is in the
-context) and sets it only in the specific case where VSX is available (ie. when
-VSX has been used and the signal context passed has space to provide the
-state).
-
-This reverts the original patch and replaces it with the improved solution.  It
-also adds a 64 bit version.
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/signal_32.c |   16 +++++++---------
- arch/powerpc/kernel/signal_64.c |    6 ++++++
- 2 files changed, 13 insertions(+), 9 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_gem.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/signal_32.c
-+++ b/arch/powerpc/kernel/signal_32.c
-@@ -442,6 +442,12 @@ static int save_user_regs(struct pt_regs
- #endif /* CONFIG_ALTIVEC */
- 	if (copy_fpr_to_user(&frame->mc_fregs, current))
- 		return 1;
-+
-+	/*
-+	 * Clear the MSR VSX bit to indicate there is no valid state attached
-+	 * to this context, except in the specific case below where we set it.
-+	 */
-+	msr &= ~MSR_VSX;
- #ifdef CONFIG_VSX
- 	/*
- 	 * Copy VSR 0-31 upper half from thread_struct to local
-@@ -454,15 +460,7 @@ static int save_user_regs(struct pt_regs
- 		if (copy_vsx_to_user(&frame->mc_vsregs, current))
- 			return 1;
- 		msr |= MSR_VSX;
--	} else if (!ctx_has_vsx_region)
--		/*
--		 * With a small context structure we can't hold the VSX
--		 * registers, hence clear the MSR value to indicate the state
--		 * was not saved.
--		 */
--		msr &= ~MSR_VSX;
--
--
-+	}
- #endif /* CONFIG_VSX */
- #ifdef CONFIG_SPE
- 	/* save spe registers */
---- a/arch/powerpc/kernel/signal_64.c
-+++ b/arch/powerpc/kernel/signal_64.c
-@@ -121,6 +121,12 @@ static long setup_sigcontext(struct sigc
- 	flush_fp_to_thread(current);
- 	/* copy fpr regs and fpscr */
- 	err |= copy_fpr_to_user(&sc->fp_regs, current);
-+
-+	/*
-+	 * Clear the MSR VSX bit to indicate there is no valid state attached
-+	 * to this context, except in the specific case below where we set it.
-+	 */
-+	msr &= ~MSR_VSX;
- #ifdef CONFIG_VSX
- 	/*
- 	 * Copy VSX low doubleword to local buffer for formatting,
+--- a/drivers/gpu/drm/nouveau/nouveau_gem.c
++++ b/drivers/gpu/drm/nouveau/nouveau_gem.c
+@@ -287,7 +287,8 @@ validate_fini_list(struct list_head *lis
+ 	list_for_each_safe(entry, tmp, list) {
+ 		nvbo = list_entry(entry, struct nouveau_bo, entry);
+ 
+-		nouveau_bo_fence(nvbo, fence);
++		if (likely(fence))
++			nouveau_bo_fence(nvbo, fence);
+ 
+ 		if (unlikely(nvbo->validate_mapped)) {
+ 			ttm_bo_kunmap(&nvbo->kmap);
 
 
