@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759602Ab3LBVTo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:19:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38411 "EHLO
+	id S1759740Ab3LBVVw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:21:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38422 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753324Ab3LBTMs (ORCPT
+	with ESMTP id S1753562Ab3LBTMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:12:48 -0500
+	Mon, 2 Dec 2013 14:12:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olav Haugan <ohaugan@codeaurora.org>
-Subject: [PATCH 3.10 010/173] staging: zsmalloc: Ensure handle is never 0 on success
-Date: Mon,  2 Dec 2013 11:09:53 -0800
-Message-Id: <20131202191144.100960023@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.10 017/173] ASoC: blackfin: Fix missing break
+Date: Mon,  2 Dec 2013 11:10:00 -0800
+Message-Id: <20131202191144.827733347@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -26,69 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olav Haugan <ohaugan@codeaurora.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 67296874eb1cc80317bf2a8fba22b494e21eb29b upstream.
+commit afed4dbe3a043dbd833a53b6b4951e155708afd2 upstream.
 
-zsmalloc encodes a handle using the pfn and an object
-index. On hardware platforms with physical memory starting
-at 0x0 the pfn can be 0. This causes the encoded handle to be
-0 and is incorrectly interpreted as an allocation failure.
-
-This issue affects all current and future SoCs with physical
-memory starting at 0x0. All MSM8974 SoCs which includes
-Google Nexus 5 devices are affected.
-
-To prevent this false error we ensure that the encoded handle
-will not be 0 when allocation succeeds.
-
-Signed-off-by: Olav Haugan <ohaugan@codeaurora.org>
+Fixes: 4b2ffc205cb9 ('ASoC: Blackfin I2S: add 8-bit sample support')
+Reported-by: David Binderman
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/zsmalloc/zsmalloc-main.c |   17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+ sound/soc/blackfin/bf5xx-i2s.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -430,7 +430,12 @@ static struct page *get_next_page(struct
- 	return next;
- }
- 
--/* Encode <page, obj_idx> as a single handle value */
-+/*
-+ * Encode <page, obj_idx> as a single handle value.
-+ * On hardware platforms with physical memory starting at 0x0 the pfn
-+ * could be 0 so we ensure that the handle will never be 0 by adjusting the
-+ * encoded obj_idx value before encoding.
-+ */
- static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
- {
- 	unsigned long handle;
-@@ -441,17 +446,21 @@ static void *obj_location_to_handle(stru
- 	}
- 
- 	handle = page_to_pfn(page) << OBJ_INDEX_BITS;
--	handle |= (obj_idx & OBJ_INDEX_MASK);
-+	handle |= ((obj_idx + 1) & OBJ_INDEX_MASK);
- 
- 	return (void *)handle;
- }
- 
--/* Decode <page, obj_idx> pair from the given object handle */
-+/*
-+ * Decode <page, obj_idx> pair from the given object handle. We adjust the
-+ * decoded obj_idx back to its original value since it was adjusted in
-+ * obj_location_to_handle().
-+ */
- static void obj_handle_to_location(unsigned long handle, struct page **page,
- 				unsigned long *obj_idx)
- {
- 	*page = pfn_to_page(handle >> OBJ_INDEX_BITS);
--	*obj_idx = handle & OBJ_INDEX_MASK;
-+	*obj_idx = (handle & OBJ_INDEX_MASK) - 1;
- }
- 
- static unsigned long obj_idx_to_offset(struct page *page,
+--- a/sound/soc/blackfin/bf5xx-i2s.c
++++ b/sound/soc/blackfin/bf5xx-i2s.c
+@@ -111,6 +111,7 @@ static int bf5xx_i2s_hw_params(struct sn
+ 		bf5xx_i2s->tcr2 |= 7;
+ 		bf5xx_i2s->rcr2 |= 7;
+ 		sport_handle->wdsize = 1;
++		break;
+ 	case SNDRV_PCM_FORMAT_S16_LE:
+ 		bf5xx_i2s->tcr2 |= 15;
+ 		bf5xx_i2s->rcr2 |= 15;
 
 
