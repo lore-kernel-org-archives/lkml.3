@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760062Ab3LBVay (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:30:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38180 "EHLO
+	id S1760047Ab3LBVav (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:30:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38186 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245Ab3LBTG7 (ORCPT
+	with ESMTP id S1753251Ab3LBTHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:06:59 -0500
+	Mon, 2 Dec 2013 14:07:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pang Xunlei <pang.xunlei@zte.com.cn>, Zhang Yi <zhang.yi20@zte.com.cn>,
-        Lu Zhongjun <lu.zhongjun@zte.com.cn>,
+        Huang Shijie <b32955@freescale.com>,
         Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.4 23/60] mtd: map: fixed bug in 64-bit systems
-Date: Mon,  2 Dec 2013 11:06:04 -0800
-Message-Id: <20131202190335.331790041@linuxfoundation.org>
+Subject: [PATCH 3.4 24/60] mtd: gpmi: fix kernel BUG due to racing DMA operations
+Date: Mon,  2 Dec 2013 11:06:05 -0800
+Message-Id: <20131202190335.579844926@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
 References: <20131202190330.152596462@linuxfoundation.org>
@@ -28,71 +27,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wang Haitao <wang.haitao1@zte.com.cn>
+From: Huang Shijie <b32955@freescale.com>
 
-commit a4d62babf988fe5dfde24437fa135ef147bc7aa0 upstream.
+commit 7b3d2fb92067bcb29f0f085a9fa9fa64920a6646 upstream.
 
-Hardware:
-	CPU: XLP832,the 64-bit OS
-	NOR Flash:S29GL128S 128M
-Software:
-	Kernel:2.6.32.41
-	Filesystem:JFFS2
-When writing files, errors appear:
-	Write len 182  but return retlen 180
-	Write of 182 bytes at 0x072c815c failed. returned -5, retlen 180
-	Write len 186  but return retlen 184
-	Write of 186 bytes at 0x072caff4 failed. returned -5, retlen 184
-These errors exist only in 64-bit systems,not in 32-bit systems. After analysis, we
-found that the left shift operation is wrong in map_word_load_partial. For instance:
-	unsigned char buf[3] ={0x9e,0x3a,0xea};
-	map_bankwidth(map) is 4;
-	for (i=0; i < 3; i++) {
-		int bitpos;
-		bitpos = (map_bankwidth(map)-1-i)*8;
-		orig.x[0] &= ~(0xff << bitpos);
-		orig.x[0] |= buf[i] << bitpos;
-	}
+[1] The gpmi uses the nand_command_lp to issue the commands to NAND chips.
+    The gpmi issues a DMA operation with gpmi_cmd_ctrl when it handles
+    a NAND_CMD_NONE control command. So when we read a page(NAND_CMD_READ0)
+    from the NAND, we may send two DMA operations back-to-back.
 
-The value of orig.x[0] is expected to be 0x9e3aeaff, but in this situation(64-bit
-System) we'll get the wrong value of 0xffffffff9e3aeaff due to the 64-bit sign
-extension:
-buf[i] is defined as "unsigned char" and the left-shift operation will convert it
-to the type of "signed int", so when left-shift buf[i] by 24 bits, the final result
-will get the wrong value: 0xffffffff9e3aeaff.
+    If we do not serialize the two DMA operations, we will meet a bug when
 
-If the left-shift bits are less than 24, then sign extension will not occur. Whereas
-the bankwidth of the nor flash we used is 4, therefore this BUG emerges.
+    1.1) we enable CONFIG_DMA_API_DEBUG, CONFIG_DMADEVICES_DEBUG,
+         and CONFIG_DEBUG_SG.
 
-Signed-off-by: Pang Xunlei <pang.xunlei@zte.com.cn>
-Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
-Signed-off-by: Lu Zhongjun <lu.zhongjun@zte.com.cn>
+    1.2) Use the following commands in an UART console and a SSH console:
+         cmd 1: while true;do dd if=/dev/mtd0 of=/dev/null;done
+         cmd 1: while true;do dd if=/dev/mmcblk0 of=/dev/null;done
+
+    The kernel log shows below:
+    -----------------------------------------------------------------
+    kernel BUG at lib/scatterlist.c:28!
+    Unable to handle kernel NULL pointer dereference at virtual address 00000000
+      .........................
+    [<80044a0c>] (__bug+0x18/0x24) from [<80249b74>] (sg_next+0x48/0x4c)
+    [<80249b74>] (sg_next+0x48/0x4c) from [<80255398>] (debug_dma_unmap_sg+0x170/0x1a4)
+    [<80255398>] (debug_dma_unmap_sg+0x170/0x1a4) from [<8004af58>] (dma_unmap_sg+0x14/0x6c)
+    [<8004af58>] (dma_unmap_sg+0x14/0x6c) from [<8027e594>] (mxs_dma_tasklet+0x18/0x1c)
+    [<8027e594>] (mxs_dma_tasklet+0x18/0x1c) from [<8007d444>] (tasklet_action+0x114/0x164)
+    -----------------------------------------------------------------
+
+    1.3) Assume the two DMA operations is X (first) and Y (second).
+
+         The root cause of the bug:
+	   Assume process P issues DMA X, and sleep on the completion
+	 @this->dma_done. X's tasklet callback is dma_irq_callback. It firstly
+	 wake up the process sleeping on the completion @this->dma_done,
+	 and then trid to unmap the scatterlist S. The waked process P will
+	 issue Y in another ARM core. Y initializes S->sg_magic to zero
+	 with sg_init_one(), while dma_irq_callback is unmapping S at the same
+	 time.
+
+	 See the diagram:
+
+                   ARM core 0              |         ARM core 1
+	 -------------------------------------------------------------
+         (P issues DMA X, then sleep)  --> |
+                                           |
+         (X's tasklet wakes P)         --> |
+                                           |
+                                           | <-- (P begin to issue DMA Y)
+                                           |
+         (X's tasklet unmap the            |
+      scatterlist S with dma_unmap_sg) --> | <-- (Y calls sg_init_one() to init
+                                           |      scatterlist S)
+                                           |
+
+[2] This patch serialize both the X and Y in the following way:
+     Unmap the DMA scatterlist S firstly, and wake up the process at the end
+     of the DMA callback, in such a way, Y will be executed after X.
+
+     After this patch:
+
+                   ARM core 0              |         ARM core 1
+	 -------------------------------------------------------------
+         (P issues DMA X, then sleep)  --> |
+                                           |
+         (X's tasklet unmap the            |
+      scatterlist S with dma_unmap_sg) --> |
+                                           |
+         (X's tasklet wakes P)         --> |
+                                           |
+                                           | <-- (P begin to issue DMA Y)
+                                           |
+                                           | <-- (Y calls sg_init_one() to init
+                                           |     scatterlist S)
+                                           |
+
+Signed-off-by: Huang Shijie <b32955@freescale.com>
 Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/mtd/map.h |    4 ++--
+ drivers/mtd/nand/gpmi-nand/gpmi-nand.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/include/linux/mtd/map.h
-+++ b/include/linux/mtd/map.h
-@@ -362,7 +362,7 @@ static inline map_word map_word_load_par
- 			bitpos = (map_bankwidth(map)-1-i)*8;
- #endif
- 			orig.x[0] &= ~(0xff << bitpos);
--			orig.x[0] |= buf[i-start] << bitpos;
-+			orig.x[0] |= (unsigned long)buf[i-start] << bitpos;
- 		}
- 	}
- 	return orig;
-@@ -381,7 +381,7 @@ static inline map_word map_word_ff(struc
+--- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
++++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
+@@ -227,8 +227,6 @@ static void dma_irq_callback(void *param
+ 	struct gpmi_nand_data *this = param;
+ 	struct completion *dma_c = &this->dma_done;
  
- 	if (map_bankwidth(map) < MAP_FF_LIMIT) {
- 		int bw = 8 * map_bankwidth(map);
--		r.x[0] = (1 << bw) - 1;
-+		r.x[0] = (1UL << bw) - 1;
- 	} else {
- 		for (i=0; i<map_words(map); i++)
- 			r.x[i] = ~0UL;
+-	complete(dma_c);
+-
+ 	switch (this->dma_type) {
+ 	case DMA_FOR_COMMAND:
+ 		dma_unmap_sg(this->dev, &this->cmd_sgl, 1, DMA_TO_DEVICE);
+@@ -253,6 +251,8 @@ static void dma_irq_callback(void *param
+ 	default:
+ 		pr_err("in wrong DMA operation.\n");
+ 	}
++
++	complete(dma_c);
+ }
+ 
+ int start_dma_without_bch_irq(struct gpmi_nand_data *this,
 
 
