@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab3LBT40 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:56:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39383 "EHLO
+	id S1756564Ab3LBT4q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:56:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39379 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754714Ab3LBTSJ (ORCPT
+	with ESMTP id S1754710Ab3LBTSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:09 -0500
+	Mon, 2 Dec 2013 14:18:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jakob Bornecrantz <jakob@vmware.com>,
-        =?UTF-8?q?Thomas=20Hellstr=C3=B6m?= <thellstrom@vmware.com>
-Subject: [PATCH 3.12 126/212] drm/ttm: Handle in-memory region copies
-Date: Mon,  2 Dec 2013 11:15:17 -0800
-Message-Id: <20131202191301.109466996@linuxfoundation.org>
+        =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>
+Subject: [PATCH 3.12 113/212] avr32: setup crt for early panic()
+Date: Mon,  2 Dec 2013 11:15:04 -0800
+Message-Id: <20131202191259.825379798@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -30,33 +31,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jakob Bornecrantz <jakob@vmware.com>
+From: Andreas Bießmann <andreas@biessmann.de>
 
-commit 9a0599ddeae012a771bba5e23393fc52d8a59d89 upstream.
+commit 7a2a74f4b856993218aa7cdeeb6c3103101340db upstream.
 
-Fix the case where the ttm pointer may be NULL causing
-a NULL pointer dereference.
+Before the CRT was (fully) set up in kernel_entry (bss cleared before in
+_start, but also not before jump to panic() in no_tag_table case).
 
-Signed-off-by: Jakob Bornecrantz <jakob@vmware.com>
-Signed-off-by: Thomas Hellström <thellstrom@vmware.com>
+This patch fixes this up to have a fully working CRT when branching to panic()
+in no_tag_table.
+
+Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/ttm/ttm_bo_util.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/avr32/boot/u-boot/head.S |   30 +++++++++++++++++++++++++-----
+ arch/avr32/kernel/head.S      |   20 --------------------
+ 2 files changed, 25 insertions(+), 25 deletions(-)
 
---- a/drivers/gpu/drm/ttm/ttm_bo_util.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
-@@ -348,7 +348,9 @@ int ttm_bo_move_memcpy(struct ttm_buffer
- 	if (old_iomap == NULL && ttm == NULL)
- 		goto out2;
+--- a/arch/avr32/boot/u-boot/head.S
++++ b/arch/avr32/boot/u-boot/head.S
+@@ -8,6 +8,8 @@
+  * published by the Free Software Foundation.
+  */
+ #include <asm/setup.h>
++#include <asm/thread_info.h>
++#include <asm/sysreg.h>
  
--	if (ttm->state == tt_unpopulated) {
-+	/* TTM might be null for moves within the same region.
-+	 */
-+	if (ttm && ttm->state == tt_unpopulated) {
- 		ret = ttm->bdev->driver->ttm_tt_populate(ttm);
- 		if (ret) {
- 			/* if we fail here don't nuke the mm node
+ 	/*
+ 	 * The kernel is loaded where we want it to be and all caches
+@@ -20,11 +22,6 @@
+ 	.section .init.text,"ax"
+ 	.global _start
+ _start:
+-	/* Check if the boot loader actually provided a tag table */
+-	lddpc	r0, magic_number
+-	cp.w	r12, r0
+-	brne	no_tag_table
+-
+ 	/* Initialize .bss */
+ 	lddpc	r2, bss_start_addr
+ 	lddpc   r3, end_addr
+@@ -34,6 +31,25 @@ _start:
+ 	cp      r2, r3
+ 	brlo    1b
+ 
++	/* Initialize status register */
++	lddpc	r0, init_sr
++	mtsr	SYSREG_SR, r0
++
++	/* Set initial stack pointer */
++	lddpc	sp, stack_addr
++	sub	sp, -THREAD_SIZE
++
++#ifdef CONFIG_FRAME_POINTER
++	/* Mark last stack frame */
++	mov	lr, 0
++	mov	r7, 0
++#endif
++
++	/* Check if the boot loader actually provided a tag table */
++	lddpc	r0, magic_number
++	cp.w	r12, r0
++	brne	no_tag_table
++
+ 	/*
+ 	 * Save the tag table address for later use. This must be done
+ 	 * _after_ .bss has been initialized...
+@@ -53,6 +69,10 @@ bss_start_addr:
+ 	.long   __bss_start
+ end_addr:
+ 	.long   _end
++init_sr:
++	.long	0x007f0000	/* Supervisor mode, everything masked */
++stack_addr:
++	.long	init_thread_union
+ 
+ no_tag_table:
+ 	sub	r12, pc, (. - 2f)
+--- a/arch/avr32/kernel/head.S
++++ b/arch/avr32/kernel/head.S
+@@ -10,33 +10,13 @@
+ #include <linux/linkage.h>
+ 
+ #include <asm/page.h>
+-#include <asm/thread_info.h>
+-#include <asm/sysreg.h>
+ 
+ 	.section .init.text,"ax"
+ 	.global kernel_entry
+ kernel_entry:
+-	/* Initialize status register */
+-	lddpc   r0, init_sr
+-	mtsr	SYSREG_SR, r0
+-
+-	/* Set initial stack pointer */
+-	lddpc   sp, stack_addr
+-	sub	sp, -THREAD_SIZE
+-
+-#ifdef CONFIG_FRAME_POINTER
+-	/* Mark last stack frame */
+-	mov	lr, 0
+-	mov	r7, 0
+-#endif
+-
+ 	/* Start the show */
+ 	lddpc   pc, kernel_start_addr
+ 
+ 	.align  2
+-init_sr:
+-	.long   0x007f0000	/* Supervisor mode, everything masked */
+-stack_addr:
+-	.long   init_thread_union
+ kernel_start_addr:
+ 	.long   start_kernel
 
 
