@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932256Ab3LBUyS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:54:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38468 "EHLO
+	id S1758696Ab3LBUy6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:54:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38743 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754170Ab3LBTNq (ORCPT
+	with ESMTP id S1753688Ab3LBTNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:46 -0500
+	Mon, 2 Dec 2013 14:13:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeff Layton <jlayton@redhat.com>, Eric Paris <eparis@redhat.com>,
-        Richard Guy Briggs <rgb@redhat.com>
-Subject: [PATCH 3.10 085/173] audit: add child record before the create to handle case where create fails
-Date: Mon,  2 Dec 2013 11:11:08 -0800
-Message-Id: <20131202191153.293634915@linuxfoundation.org>
+        Dave Wysochanski <dwysocha@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.10 093/173] ftrace: Fix function graph with loading of modules
+Date: Mon,  2 Dec 2013 11:11:16 -0800
+Message-Id: <20131202191154.529645887@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,53 +27,244 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 14e972b4517128ac8e30e3de2ee4fbd995084223 upstream.
+commit 8a56d7761d2d041ae5e8215d20b4167d8aa93f51 upstream.
 
-Historically, when a syscall that creates a dentry fails, you get an audit
-record that looks something like this (when trying to create a file named
-"new" in "/tmp/tmp.SxiLnCcv63"):
+Commit 8c4f3c3fa9681 "ftrace: Check module functions being traced on reload"
+fixed module loading and unloading with respect to function tracing, but
+it missed the function graph tracer. If you perform the following
 
-    type=PATH msg=audit(1366128956.279:965): item=0 name="/tmp/tmp.SxiLnCcv63/new" inode=2138308 dev=fd:02 mode=040700 ouid=0 ogid=0 rdev=00:00 obj=staff_u:object_r:user_tmp_t:s15:c0.c1023
+ # cd /sys/kernel/debug/tracing
+ # echo function_graph > current_tracer
+ # modprobe nfsd
+ # echo nop > current_tracer
 
-This record makes no sense since it's associating the inode information for
-"/tmp/tmp.SxiLnCcv63" with the path "/tmp/tmp.SxiLnCcv63/new". The recent
-patch I posted to fix the audit_inode call in do_last fixes this, by making it
-look more like this:
+You'll get the following oops message:
 
-    type=PATH msg=audit(1366128765.989:13875): item=0 name="/tmp/tmp.DJ1O8V3e4f/" inode=141 dev=fd:02 mode=040700 ouid=0 ogid=0 rdev=00:00 obj=staff_u:object_r:user_tmp_t:s15:c0.c1023
+ ------------[ cut here ]------------
+ WARNING: CPU: 2 PID: 2910 at /linux.git/kernel/trace/ftrace.c:1640 __ftrace_hash_rec_update.part.35+0x168/0x1b9()
+ Modules linked in: nfsd exportfs nfs_acl lockd ipt_MASQUERADE sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables uinput snd_hda_codec_idt
+ CPU: 2 PID: 2910 Comm: bash Not tainted 3.13.0-rc1-test #7
+ Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
+  0000000000000668 ffff8800787efcf8 ffffffff814fe193 ffff88007d500000
+  0000000000000000 ffff8800787efd38 ffffffff8103b80a 0000000000000668
+  ffffffff810b2b9a ffffffff81a48370 0000000000000001 ffff880037aea000
+ Call Trace:
+  [<ffffffff814fe193>] dump_stack+0x4f/0x7c
+  [<ffffffff8103b80a>] warn_slowpath_common+0x81/0x9b
+  [<ffffffff810b2b9a>] ? __ftrace_hash_rec_update.part.35+0x168/0x1b9
+  [<ffffffff8103b83e>] warn_slowpath_null+0x1a/0x1c
+  [<ffffffff810b2b9a>] __ftrace_hash_rec_update.part.35+0x168/0x1b9
+  [<ffffffff81502f89>] ? __mutex_lock_slowpath+0x364/0x364
+  [<ffffffff810b2cc2>] ftrace_shutdown+0xd7/0x12b
+  [<ffffffff810b47f0>] unregister_ftrace_graph+0x49/0x78
+  [<ffffffff810c4b30>] graph_trace_reset+0xe/0x10
+  [<ffffffff810bf393>] tracing_set_tracer+0xa7/0x26a
+  [<ffffffff810bf5e1>] tracing_set_trace_write+0x8b/0xbd
+  [<ffffffff810c501c>] ? ftrace_return_to_handler+0xb2/0xde
+  [<ffffffff811240a8>] ? __sb_end_write+0x5e/0x5e
+  [<ffffffff81122aed>] vfs_write+0xab/0xf6
+  [<ffffffff8150a185>] ftrace_graph_caller+0x85/0x85
+  [<ffffffff81122dbd>] SyS_write+0x59/0x82
+  [<ffffffff8150a185>] ftrace_graph_caller+0x85/0x85
+  [<ffffffff8150a2d2>] system_call_fastpath+0x16/0x1b
+ ---[ end trace 940358030751eafb ]---
 
-While this is more correct, if the creation of the file fails, then we
-have no record of the filename that the user tried to create.
+The above mentioned commit didn't go far enough. Well, it covered the
+function tracer by adding checks in __register_ftrace_function(). The
+problem is that the function graph tracer circumvents that (for a slight
+efficiency gain when function graph trace is running with a function
+tracer. The gain was not worth this).
 
-This patch adds a call to audit_inode_child to may_create. This creates
-an AUDIT_TYPE_CHILD_CREATE record that will sit in place until the
-create succeeds. When and if the create does succeed, then this record
-will be updated with the correct inode info from the create.
+The problem came with ftrace_startup() which should always be called after
+__register_ftrace_function(), if you want this bug to be completely fixed.
 
-This fixes what was broken in commit bfcec708.
-Commit 79f6530c should also be backported to stable v3.7+.
+Anyway, this solution moves __register_ftrace_function() inside of
+ftrace_startup() and removes the need to call them both.
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+Reported-by: Dave Wysochanski <dwysocha@redhat.com>
+Fixes: ed926f9b35cd ("ftrace: Use counters to enable functions to trace")
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/namei.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/trace/ftrace.c |   64 +++++++++++++++++++++++++++-----------------------
+ 1 file changed, 35 insertions(+), 29 deletions(-)
 
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2263,6 +2263,7 @@ static int may_delete(struct inode *dir,
-  */
- static inline int may_create(struct inode *dir, struct dentry *child)
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -367,9 +367,6 @@ static int remove_ftrace_list_ops(struct
+ 
+ static int __register_ftrace_function(struct ftrace_ops *ops)
  {
-+	audit_inode_child(dir, child, AUDIT_TYPE_CHILD_CREATE);
- 	if (child->d_inode)
- 		return -EEXIST;
- 	if (IS_DEADDIR(dir))
+-	if (unlikely(ftrace_disabled))
+-		return -ENODEV;
+-
+ 	if (FTRACE_WARN_ON(ops == &global_ops))
+ 		return -EINVAL;
+ 
+@@ -417,9 +414,6 @@ static int __unregister_ftrace_function(
+ {
+ 	int ret;
+ 
+-	if (ftrace_disabled)
+-		return -ENODEV;
+-
+ 	if (WARN_ON(!(ops->flags & FTRACE_OPS_FL_ENABLED)))
+ 		return -EBUSY;
+ 
+@@ -2048,10 +2042,15 @@ static void ftrace_startup_enable(int co
+ static int ftrace_startup(struct ftrace_ops *ops, int command)
+ {
+ 	bool hash_enable = true;
++	int ret;
+ 
+ 	if (unlikely(ftrace_disabled))
+ 		return -ENODEV;
+ 
++	ret = __register_ftrace_function(ops);
++	if (ret)
++		return ret;
++
+ 	ftrace_start_up++;
+ 	command |= FTRACE_UPDATE_CALLS;
+ 
+@@ -2073,12 +2072,17 @@ static int ftrace_startup(struct ftrace_
+ 	return 0;
+ }
+ 
+-static void ftrace_shutdown(struct ftrace_ops *ops, int command)
++static int ftrace_shutdown(struct ftrace_ops *ops, int command)
+ {
+ 	bool hash_disable = true;
++	int ret;
+ 
+ 	if (unlikely(ftrace_disabled))
+-		return;
++		return -ENODEV;
++
++	ret = __unregister_ftrace_function(ops);
++	if (ret)
++		return ret;
+ 
+ 	ftrace_start_up--;
+ 	/*
+@@ -2113,9 +2117,10 @@ static void ftrace_shutdown(struct ftrac
+ 	}
+ 
+ 	if (!command || !ftrace_enabled)
+-		return;
++		return 0;
+ 
+ 	ftrace_run_update_code(command);
++	return 0;
+ }
+ 
+ static void ftrace_startup_sysctl(void)
+@@ -3020,16 +3025,13 @@ static void __enable_ftrace_function_pro
+ 	if (i == FTRACE_FUNC_HASHSIZE)
+ 		return;
+ 
+-	ret = __register_ftrace_function(&trace_probe_ops);
+-	if (!ret)
+-		ret = ftrace_startup(&trace_probe_ops, 0);
++	ret = ftrace_startup(&trace_probe_ops, 0);
+ 
+ 	ftrace_probe_registered = 1;
+ }
+ 
+ static void __disable_ftrace_function_probe(void)
+ {
+-	int ret;
+ 	int i;
+ 
+ 	if (!ftrace_probe_registered)
+@@ -3042,9 +3044,7 @@ static void __disable_ftrace_function_pr
+ 	}
+ 
+ 	/* no more funcs left */
+-	ret = __unregister_ftrace_function(&trace_probe_ops);
+-	if (!ret)
+-		ftrace_shutdown(&trace_probe_ops, 0);
++	ftrace_shutdown(&trace_probe_ops, 0);
+ 
+ 	ftrace_probe_registered = 0;
+ }
+@@ -4241,12 +4241,15 @@ core_initcall(ftrace_nodyn_init);
+ static inline int ftrace_init_dyn_debugfs(struct dentry *d_tracer) { return 0; }
+ static inline void ftrace_startup_enable(int command) { }
+ /* Keep as macros so we do not need to define the commands */
+-# define ftrace_startup(ops, command)			\
+-	({						\
+-		(ops)->flags |= FTRACE_OPS_FL_ENABLED;	\
+-		0;					\
++# define ftrace_startup(ops, command)					\
++	({								\
++		int ___ret = __register_ftrace_function(ops);		\
++		if (!___ret)						\
++			(ops)->flags |= FTRACE_OPS_FL_ENABLED;		\
++		___ret;							\
+ 	})
+-# define ftrace_shutdown(ops, command)	do { } while (0)
++# define ftrace_shutdown(ops, command) __unregister_ftrace_function(ops)
++
+ # define ftrace_startup_sysctl()	do { } while (0)
+ # define ftrace_shutdown_sysctl()	do { } while (0)
+ 
+@@ -4646,9 +4649,7 @@ int register_ftrace_function(struct ftra
+ 
+ 	mutex_lock(&ftrace_lock);
+ 
+-	ret = __register_ftrace_function(ops);
+-	if (!ret)
+-		ret = ftrace_startup(ops, 0);
++	ret = ftrace_startup(ops, 0);
+ 
+ 	mutex_unlock(&ftrace_lock);
+ 
+@@ -4667,9 +4668,7 @@ int unregister_ftrace_function(struct ft
+ 	int ret;
+ 
+ 	mutex_lock(&ftrace_lock);
+-	ret = __unregister_ftrace_function(ops);
+-	if (!ret)
+-		ftrace_shutdown(ops, 0);
++	ret = ftrace_shutdown(ops, 0);
+ 	mutex_unlock(&ftrace_lock);
+ 
+ 	return ret;
+@@ -4863,6 +4862,13 @@ ftrace_suspend_notifier_call(struct noti
+ 	return NOTIFY_DONE;
+ }
+ 
++/* Just a place holder for function graph */
++static struct ftrace_ops fgraph_ops __read_mostly = {
++	.func		= ftrace_stub,
++	.flags		= FTRACE_OPS_FL_STUB | FTRACE_OPS_FL_GLOBAL |
++				FTRACE_OPS_FL_RECURSION_SAFE,
++};
++
+ int register_ftrace_graph(trace_func_graph_ret_t retfunc,
+ 			trace_func_graph_ent_t entryfunc)
+ {
+@@ -4889,7 +4895,7 @@ int register_ftrace_graph(trace_func_gra
+ 	ftrace_graph_return = retfunc;
+ 	ftrace_graph_entry = entryfunc;
+ 
+-	ret = ftrace_startup(&global_ops, FTRACE_START_FUNC_RET);
++	ret = ftrace_startup(&fgraph_ops, FTRACE_START_FUNC_RET);
+ 
+ out:
+ 	mutex_unlock(&ftrace_lock);
+@@ -4906,7 +4912,7 @@ void unregister_ftrace_graph(void)
+ 	ftrace_graph_active--;
+ 	ftrace_graph_return = (trace_func_graph_ret_t)ftrace_stub;
+ 	ftrace_graph_entry = ftrace_graph_entry_stub;
+-	ftrace_shutdown(&global_ops, FTRACE_STOP_FUNC_RET);
++	ftrace_shutdown(&fgraph_ops, FTRACE_STOP_FUNC_RET);
+ 	unregister_pm_notifier(&ftrace_suspend_notifier);
+ 	unregister_trace_sched_switch(ftrace_graph_probe_sched_switch, NULL);
+ 
 
 
