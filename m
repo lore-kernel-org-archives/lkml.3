@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759436Ab3LBVOM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:14:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38447 "EHLO
+	id S1757851Ab3LBVOD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:14:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38526 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753968Ab3LBTNB (ORCPT
+	with ESMTP id S1753973Ab3LBTND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:01 -0500
+	Mon, 2 Dec 2013 14:13:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 042/173] ipc, msg: forbid negative values for "msg{max,mnb,mni}"
-Date: Mon,  2 Dec 2013 11:10:25 -0800
-Message-Id: <20131202191147.502624518@linuxfoundation.org>
+        Gwendal Grignou <gwendal@google.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 034/173] libata: Fix display of sata speed
+Date: Mon,  2 Dec 2013 11:10:17 -0800
+Message-Id: <20131202191146.638696040@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -28,112 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Gwendal Grignou <gwendal@google.com>
 
-commit 9bf76ca325d5e9208eb343f7bd4cc666f703ed30 upstream.
+commit 3e85c3ecbc520751324a191d23bb94873ed01b10 upstream.
 
-Negative message lengths make no sense -- so don't do negative queue
-lenghts or identifier counts. Prevent them from getting negative.
+6.0 Gbps link speed was not decoded properly:
+speed was reported at 3.0 Gbps only.
 
-Also change the underlying data types to be unsigned to avoid hairy
-surprises with sign extensions in cases where those variables get
-evaluated in unsigned expressions with bigger data types, e.g size_t.
+Tested: On a machine where libata reports 6.0 Gbps in
+        /var/log/messages:
+    ata1: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
 
-In case a user still wants to have "unlimited" sizes she could just use
-INT_MAX instead.
+    Before:
+    	cat /sys/class/ata_link/link1/sata_spd
+    	3.0 Gbps
+    After:
+    	cat /sys/class/ata_link/link1/sata_spd
+    	6.0 Gbps
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Gwendal Grignou <gwendal@google.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ipc_namespace.h |    6 +++---
- ipc/ipc_sysctl.c              |   20 ++++++++++++--------
- 2 files changed, 15 insertions(+), 11 deletions(-)
+ drivers/ata/libata-transport.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/include/linux/ipc_namespace.h
-+++ b/include/linux/ipc_namespace.h
-@@ -34,9 +34,9 @@ struct ipc_namespace {
- 	int		sem_ctls[4];
- 	int		used_sems;
+--- a/drivers/ata/libata-transport.c
++++ b/drivers/ata/libata-transport.c
+@@ -319,25 +319,25 @@ int ata_tport_add(struct device *parent,
+ /*
+  * ATA link attributes
+  */
++static int noop(int x) { return x; }
  
--	int		msg_ctlmax;
--	int		msg_ctlmnb;
--	int		msg_ctlmni;
-+	unsigned int	msg_ctlmax;
-+	unsigned int	msg_ctlmnb;
-+	unsigned int	msg_ctlmni;
- 	atomic_t	msg_bytes;
- 	atomic_t	msg_hdrs;
- 	int		auto_msgmni;
---- a/ipc/ipc_sysctl.c
-+++ b/ipc/ipc_sysctl.c
-@@ -62,7 +62,7 @@ static int proc_ipc_dointvec_minmax_orph
- 	return err;
+-
+-#define ata_link_show_linkspeed(field)					\
++#define ata_link_show_linkspeed(field, format)			        \
+ static ssize_t								\
+ show_ata_link_##field(struct device *dev,				\
+ 		      struct device_attribute *attr, char *buf)		\
+ {									\
+ 	struct ata_link *link = transport_class_to_link(dev);		\
+ 									\
+-	return sprintf(buf,"%s\n", sata_spd_string(fls(link->field)));	\
++	return sprintf(buf, "%s\n", sata_spd_string(format(link->field))); \
  }
  
--static int proc_ipc_callback_dointvec(ctl_table *table, int write,
-+static int proc_ipc_callback_dointvec_minmax(ctl_table *table, int write,
- 	void __user *buffer, size_t *lenp, loff_t *ppos)
- {
- 	struct ctl_table ipc_table;
-@@ -72,7 +72,7 @@ static int proc_ipc_callback_dointvec(ct
- 	memcpy(&ipc_table, table, sizeof(ipc_table));
- 	ipc_table.data = get_ipc(table);
+-#define ata_link_linkspeed_attr(field)					\
+-	ata_link_show_linkspeed(field)					\
++#define ata_link_linkspeed_attr(field, format)				\
++	ata_link_show_linkspeed(field, format)				\
+ static DEVICE_ATTR(field, S_IRUGO, show_ata_link_##field, NULL)
  
--	rc = proc_dointvec(&ipc_table, write, buffer, lenp, ppos);
-+	rc = proc_dointvec_minmax(&ipc_table, write, buffer, lenp, ppos);
+-ata_link_linkspeed_attr(hw_sata_spd_limit);
+-ata_link_linkspeed_attr(sata_spd_limit);
+-ata_link_linkspeed_attr(sata_spd);
++ata_link_linkspeed_attr(hw_sata_spd_limit, fls);
++ata_link_linkspeed_attr(sata_spd_limit, fls);
++ata_link_linkspeed_attr(sata_spd, noop);
  
- 	if (write && !rc && lenp_bef == *lenp)
- 		/*
-@@ -152,15 +152,13 @@ static int proc_ipcauto_dointvec_minmax(
- #define proc_ipc_dointvec	   NULL
- #define proc_ipc_dointvec_minmax   NULL
- #define proc_ipc_dointvec_minmax_orphans   NULL
--#define proc_ipc_callback_dointvec NULL
-+#define proc_ipc_callback_dointvec_minmax  NULL
- #define proc_ipcauto_dointvec_minmax NULL
- #endif
  
- static int zero;
- static int one = 1;
--#ifdef CONFIG_CHECKPOINT_RESTORE
- static int int_max = INT_MAX;
--#endif
- 
- static struct ctl_table ipc_kern_table[] = {
- 	{
-@@ -198,21 +196,27 @@ static struct ctl_table ipc_kern_table[]
- 		.data		= &init_ipc_ns.msg_ctlmax,
- 		.maxlen		= sizeof (init_ipc_ns.msg_ctlmax),
- 		.mode		= 0644,
--		.proc_handler	= proc_ipc_dointvec,
-+		.proc_handler	= proc_ipc_dointvec_minmax,
-+		.extra1		= &zero,
-+		.extra2		= &int_max,
- 	},
- 	{
- 		.procname	= "msgmni",
- 		.data		= &init_ipc_ns.msg_ctlmni,
- 		.maxlen		= sizeof (init_ipc_ns.msg_ctlmni),
- 		.mode		= 0644,
--		.proc_handler	= proc_ipc_callback_dointvec,
-+		.proc_handler	= proc_ipc_callback_dointvec_minmax,
-+		.extra1		= &zero,
-+		.extra2		= &int_max,
- 	},
- 	{
- 		.procname	=  "msgmnb",
- 		.data		= &init_ipc_ns.msg_ctlmnb,
- 		.maxlen		= sizeof (init_ipc_ns.msg_ctlmnb),
- 		.mode		= 0644,
--		.proc_handler	= proc_ipc_dointvec,
-+		.proc_handler	= proc_ipc_dointvec_minmax,
-+		.extra1		= &zero,
-+		.extra2		= &int_max,
- 	},
- 	{
- 		.procname	= "sem",
+ static DECLARE_TRANSPORT_CLASS(ata_link_class,
 
 
