@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758063Ab3LBUgY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:36:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38896 "EHLO
+	id S1758051Ab3LBUgW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:36:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38899 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754372Ab3LBTOZ (ORCPT
+	with ESMTP id S1754378Ab3LBTOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:14:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Stefan Achatz <erazor_de@users.sourceforge.net>,
         Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.10 160/173] HID: roccat: fix Coverity CID 141438
-Date: Mon,  2 Dec 2013 11:12:23 -0800
-Message-Id: <20131202191201.585666424@linuxfoundation.org>
+Subject: [PATCH 3.10 161/173] HID: roccat: add missing special driver declarations
+Date: Mon,  2 Dec 2013 11:12:24 -0800
+Message-Id: <20131202191201.679344510@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -29,33 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stefan Achatz <erazor_de@users.sourceforge.net>
 
-commit 7be63f20b00840a6f1c718dcee00855688d64acd upstream.
+commit e078809df5611600965f4d3420c3256260fc3e3d upstream.
 
-Add missing switch breaks.
+Forgot two special driver declarations and sorted the list.
 
 Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-roccat-kovaplus.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/hid/hid-core.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-roccat-kovaplus.c
-+++ b/drivers/hid/hid-roccat-kovaplus.c
-@@ -577,9 +577,13 @@ static void kovaplus_keep_values_up_to_d
- 		break;
- 	case KOVAPLUS_MOUSE_REPORT_BUTTON_TYPE_CPI:
- 		kovaplus->actual_cpi = kovaplus_convert_event_cpi(button_report->data1);
-+		break;
- 	case KOVAPLUS_MOUSE_REPORT_BUTTON_TYPE_SENSITIVITY:
- 		kovaplus->actual_x_sensitivity = button_report->data1;
- 		kovaplus->actual_y_sensitivity = button_report->data2;
-+		break;
-+	default:
-+		break;
- 	}
- }
- 
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1751,12 +1751,14 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX, USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_PRIMAX, USB_DEVICE_ID_PRIMAX_KEYBOARD) },
+ #if IS_ENABLED(CONFIG_HID_ROCCAT)
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_ARVO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_ISKU) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_ISKUFX) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEPLUS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEPURE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEPURE_OPTICAL) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEXTD) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KOVAPLUS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_LUA) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_PYRA_WIRED) },
 
 
