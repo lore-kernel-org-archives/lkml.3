@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab3LBQ3m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 11:29:42 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:40611 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528Ab3LBQ3l (ORCPT
+	id S1752739Ab3LBQeM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 11:34:12 -0500
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:56205 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075Ab3LBQeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 11:29:41 -0500
-Date: Mon, 2 Dec 2013 16:29:39 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Andreas Noever <andreas.noever@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/12] Thunderbolt hotplug support for Apple hardware
- (testers needed)
-Message-ID: <20131202162938.GA11241@srcf.ucam.org>
-References: <1385688949-7101-1-git-send-email-andreas.noever@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385688949-7101-1-git-send-email-andreas.noever@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Mon, 2 Dec 2013 11:34:08 -0500
+Message-ID: <1386001999.5352.51.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH 1/4] pch_gbe: Fix transmit queue management
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: David.Laight@ACULAB.COM, puzman@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 02 Dec 2013 08:33:19 -0800
+In-Reply-To: <20131202.111600.1622488165507147936.davem@davemloft.net>
+References: <1385631882-12827-2-git-send-email-puzman@gmail.com>
+	 <20131129.164229.2292905485668904870.davem@davemloft.net>
+	 <AE90C24D6B3A694183C094C60CF0A2F6026B744F@saturn3.aculab.com>
+	 <20131202.111600.1622488165507147936.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 29, 2013 at 02:35:37AM +0100, Andreas Noever wrote:> 
-> There are still a number of limitations:
->  (1) The system must be booted with acpi_osi=Darwin. Otherwise ACPI will cut
-> power to the controller.
->  (2) After suspend the controller is gone. I think that ACPI thinks that we are
-> Windows and cuts power, even with acpi_osi=Darwin.
+On Mon, 2013-12-02 at 11:16 -0500, David Miller wrote:
 
-There's a few ACPI methods involved here. The first is DTLK, which is 
-called by the firmware on resume. It'll cut power to the chip. So, you 
-need to be able to power it back up. However, you only want to power it 
-up if there's a device connected. The XRIL method will return 1 if 
-there's a device connected and 0 otherwise. If there's a device 
-connected, call XRPE with an argument of 1 to power it back up.
+> Fragment lists are not to be found in the transmit function of the
+> driver.  Any such SKBs will be linearized or similar first.  We do
+> want to support them in some capacity in the future, but right now
+> we don't.
 
-That works fine if there's no hotplugging involved, but there is so 
-things get a little more complicated. Apple provide an out of band 
-mechanism for receiving notifications on the device. Call the _GPE 
-method and install a gpe handler for the value that you get back. This 
-will be called on every device plug or unplug (possibly just plug? It's 
-been a while since I tested). Call XRIL to confirm that there's a device 
-attached and then call XRPE to power it up.
+Right. Such skb are segmented before reaching the driver, unless driver
+asserts NETIF_F_FRAGLIST.
 
-At least, that's my recollection. There's also the SXIO, SXIL, SXLV and 
-SXFP methods that provide some kind of power management, but I'm not 
-sure how those fit in.
+So far, only virtual drivers and 2 or 3 others advertise
+NETIF_F_FRAGLIST 'support'.
 
-If you want to confirm that you're supposed to be using these methods, 
-call _DSM on the device with a UUID of 
-C6B7B5A0-1813-1C44-B0C9-FE695EAF949B (see DTGP in the DSDT), arg1 of 1, 
-arg2 of 0. If it's an Apple you'll get back return value of 1 and a 
-buffer containing the string "power-save". If it's not an Apple, or if 
-the device doesn't support power saving, you'll get back a zero or an 
-error that the method wasn't found.
+I suspect that the '2 or 3 others' are plain bugs, I'll check this.
 
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
