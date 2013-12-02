@@ -1,71 +1,358 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab3LBT2X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:28:23 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:40363 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753929Ab3LBT2S (ORCPT
+	id S1755528Ab3LBT3P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:29:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39748 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755068Ab3LBTTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:28:18 -0500
-Date: Mon, 2 Dec 2013 20:28:13 +0100
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: backports@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [ANN v2] New central Linux backports tree for development
-Message-ID: <20131202192813.GB15791@cerro.do-not-panic.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zx4FCpZtqtKETZ7O"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 2 Dec 2013 14:19:13 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>, Antti Palosaari <crope@iki.fi>
+Subject: [PATCH 3.12 203/212] media: dvb-frontends: Dont use dynamic static allocation
+Date: Mon,  2 Dec 2013 11:16:34 -0800
+Message-Id: <20131202191311.725846416@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
+References: <20131202191248.517975703@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
---zx4FCpZtqtKETZ7O
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+------------------
 
-[ first e-mail made a typo on a mailing list ]
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-First, thanks *tons* to Hauke for taking over the tree maintenance
-while I was shackled. I'm back now though and ready to help
-out again, so keep 'em patches 'comin.
+commit 37ebaf6891ee81687bb558e8375c0712d8264ed8 upstream.
 
-It was convenient to switch maintenance between me and Hauke but
-it was an *inconvenience* to tell developers about a different repo
-switch during development, as such we now have a central repository
-which you should use and update your trees *one last time*:
+Dynamic static allocation is evil, as Kernel stack is too low, and
+compilation complains about it on some archs:
+	drivers/media/dvb-frontends/af9013.c:77:1: warning: 'af9013_wr_regs_i2c' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/af9033.c:188:1: warning: 'af9033_wr_reg_val_tab' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/af9033.c:68:1: warning: 'af9033_wr_regs' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/bcm3510.c:230:1: warning: 'bcm3510_do_hab_cmd' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/cxd2820r_core.c:84:1: warning: 'cxd2820r_rd_regs_i2c.isra.1' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/rtl2830.c:56:1: warning: 'rtl2830_wr' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/rtl2832.c:187:1: warning: 'rtl2832_wr' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/tda10071.c:52:1: warning: 'tda10071_wr_regs' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/tda10071.c:84:1: warning: 'tda10071_rd_regs' uses dynamic stack allocation [enabled by default]
+Instead, let's enforce a limit for the buffer. Considering that I2C
+transfers are generally limited, and that devices used on USB has a
+max data length of 64 bytes for	the control URBs.
+So, it seem safe to use 64 bytes as the hard limit for all those devices.
+ On most cases, the limit is a way lower than that, but	this limit
+is small enough to not affect the Kernel stack, and it is a no brain
+limit, as using smaller ones would require to either carefully each
+driver or to take a look on each datasheet.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/backports/backports.git
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
+Reviewed-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Please use this moving forward, if we ever need to switch who is
-maintaining the trees this should hopefully be fully transparent to
-development.
+---
+ drivers/media/dvb-frontends/af9013.c        |   14 ++++++++++++--
+ drivers/media/dvb-frontends/af9033.c        |   23 ++++++++++++++++++++---
+ drivers/media/dvb-frontends/cxd2820r_core.c |   21 +++++++++++++++++++--
+ drivers/media/dvb-frontends/rtl2830.c       |   14 ++++++++++++--
+ drivers/media/dvb-frontends/rtl2832.c       |   14 ++++++++++++--
+ drivers/media/dvb-frontends/tda10071.c      |   25 +++++++++++++++++++++----
+ 6 files changed, 96 insertions(+), 15 deletions(-)
 
-  Luis
+--- a/drivers/media/dvb-frontends/af9013.c
++++ b/drivers/media/dvb-frontends/af9013.c
+@@ -24,6 +24,9 @@
+ 
+ #include "af9013_priv.h"
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
++
+ struct af9013_state {
+ 	struct i2c_adapter *i2c;
+ 	struct dvb_frontend fe;
+@@ -50,16 +53,23 @@ static int af9013_wr_regs_i2c(struct af9
+ 	const u8 *val, int len)
+ {
+ 	int ret;
+-	u8 buf[3+len];
++	u8 buf[MAX_XFER_SIZE];
+ 	struct i2c_msg msg[1] = {
+ 		{
+ 			.addr = priv->config.i2c_addr,
+ 			.flags = 0,
+-			.len = sizeof(buf),
++			.len = 3 + len,
+ 			.buf = buf,
+ 		}
+ 	};
+ 
++	if (3 + len > sizeof(buf)) {
++		dev_warn(&priv->i2c->dev,
++			 "%s: i2c wr reg=%04x: len=%d is too big!\n",
++			 KBUILD_MODNAME, reg, len);
++		return -EINVAL;
++	}
++
+ 	buf[0] = (reg >> 8) & 0xff;
+ 	buf[1] = (reg >> 0) & 0xff;
+ 	buf[2] = mbox;
+--- a/drivers/media/dvb-frontends/af9033.c
++++ b/drivers/media/dvb-frontends/af9033.c
+@@ -21,6 +21,9 @@
+ 
+ #include "af9033_priv.h"
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
++
+ struct af9033_state {
+ 	struct i2c_adapter *i2c;
+ 	struct dvb_frontend fe;
+@@ -40,16 +43,23 @@ static int af9033_wr_regs(struct af9033_
+ 		int len)
+ {
+ 	int ret;
+-	u8 buf[3 + len];
++	u8 buf[MAX_XFER_SIZE];
+ 	struct i2c_msg msg[1] = {
+ 		{
+ 			.addr = state->cfg.i2c_addr,
+ 			.flags = 0,
+-			.len = sizeof(buf),
++			.len = 3 + len,
+ 			.buf = buf,
+ 		}
+ 	};
+ 
++	if (3 + len > sizeof(buf)) {
++		dev_warn(&state->i2c->dev,
++			 "%s: i2c wr reg=%04x: len=%d is too big!\n",
++			 KBUILD_MODNAME, reg, len);
++		return -EINVAL;
++	}
++
+ 	buf[0] = (reg >> 16) & 0xff;
+ 	buf[1] = (reg >>  8) & 0xff;
+ 	buf[2] = (reg >>  0) & 0xff;
+@@ -161,7 +171,14 @@ static int af9033_wr_reg_val_tab(struct
+ 		const struct reg_val *tab, int tab_len)
+ {
+ 	int ret, i, j;
+-	u8 buf[tab_len];
++	u8 buf[MAX_XFER_SIZE];
++
++	if (tab_len > sizeof(buf)) {
++		dev_warn(&state->i2c->dev,
++			 "%s: i2c wr len=%d is too big!\n",
++			 KBUILD_MODNAME, tab_len);
++		return -EINVAL;
++	}
+ 
+ 	dev_dbg(&state->i2c->dev, "%s: tab_len=%d\n", __func__, tab_len);
+ 
+--- a/drivers/media/dvb-frontends/cxd2820r_core.c
++++ b/drivers/media/dvb-frontends/cxd2820r_core.c
+@@ -21,12 +21,15 @@
+ 
+ #include "cxd2820r_priv.h"
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
++
+ /* write multiple registers */
+ static int cxd2820r_wr_regs_i2c(struct cxd2820r_priv *priv, u8 i2c, u8 reg,
+ 	u8 *val, int len)
+ {
+ 	int ret;
+-	u8 buf[len+1];
++	u8 buf[MAX_XFER_SIZE];
+ 	struct i2c_msg msg[1] = {
+ 		{
+ 			.addr = i2c,
+@@ -36,6 +39,13 @@ static int cxd2820r_wr_regs_i2c(struct c
+ 		}
+ 	};
+ 
++	if (1 + len > sizeof(buf)) {
++		dev_warn(&priv->i2c->dev,
++			 "%s: i2c wr reg=%04x: len=%d is too big!\n",
++			 KBUILD_MODNAME, reg, len);
++		return -EINVAL;
++	}
++
+ 	buf[0] = reg;
+ 	memcpy(&buf[1], val, len);
+ 
+@@ -55,7 +65,7 @@ static int cxd2820r_rd_regs_i2c(struct c
+ 	u8 *val, int len)
+ {
+ 	int ret;
+-	u8 buf[len];
++	u8 buf[MAX_XFER_SIZE];
+ 	struct i2c_msg msg[2] = {
+ 		{
+ 			.addr = i2c,
+@@ -70,6 +80,13 @@ static int cxd2820r_rd_regs_i2c(struct c
+ 		}
+ 	};
+ 
++	if (len > sizeof(buf)) {
++		dev_warn(&priv->i2c->dev,
++			 "%s: i2c wr reg=%04x: len=%d is too big!\n",
++			 KBUILD_MODNAME, reg, len);
++		return -EINVAL;
++	}
++
+ 	ret = i2c_transfer(priv->i2c, msg, 2);
+ 	if (ret == 2) {
+ 		memcpy(val, buf, len);
+--- a/drivers/media/dvb-frontends/rtl2830.c
++++ b/drivers/media/dvb-frontends/rtl2830.c
+@@ -27,20 +27,30 @@
+ 
+ #include "rtl2830_priv.h"
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
++
+ /* write multiple hardware registers */
+ static int rtl2830_wr(struct rtl2830_priv *priv, u8 reg, const u8 *val, int len)
+ {
+ 	int ret;
+-	u8 buf[1+len];
++	u8 buf[MAX_XFER_SIZE];
+ 	struct i2c_msg msg[1] = {
+ 		{
+ 			.addr = priv->cfg.i2c_addr,
+ 			.flags = 0,
+-			.len = 1+len,
++			.len = 1 + len,
+ 			.buf = buf,
+ 		}
+ 	};
+ 
++	if (1 + len > sizeof(buf)) {
++		dev_warn(&priv->i2c->dev,
++			 "%s: i2c wr reg=%04x: len=%d is too big!\n",
++			 KBUILD_MODNAME, reg, len);
++		return -EINVAL;
++	}
++
+ 	buf[0] = reg;
+ 	memcpy(&buf[1], val, len);
+ 
+--- a/drivers/media/dvb-frontends/rtl2832.c
++++ b/drivers/media/dvb-frontends/rtl2832.c
+@@ -22,6 +22,9 @@
+ #include "dvb_math.h"
+ #include <linux/bitops.h>
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
++
+ int rtl2832_debug;
+ module_param_named(debug, rtl2832_debug, int, 0644);
+ MODULE_PARM_DESC(debug, "Turn on/off frontend debugging (default:off).");
+@@ -162,16 +165,23 @@ static const struct rtl2832_reg_entry re
+ static int rtl2832_wr(struct rtl2832_priv *priv, u8 reg, u8 *val, int len)
+ {
+ 	int ret;
+-	u8 buf[1+len];
++	u8 buf[MAX_XFER_SIZE];
+ 	struct i2c_msg msg[1] = {
+ 		{
+ 			.addr = priv->cfg.i2c_addr,
+ 			.flags = 0,
+-			.len = 1+len,
++			.len = 1 + len,
+ 			.buf = buf,
+ 		}
+ 	};
+ 
++	if (1 + len > sizeof(buf)) {
++		dev_warn(&priv->i2c->dev,
++			 "%s: i2c wr reg=%04x: len=%d is too big!\n",
++			 KBUILD_MODNAME, reg, len);
++		return -EINVAL;
++	}
++
+ 	buf[0] = reg;
+ 	memcpy(&buf[1], val, len);
+ 
+--- a/drivers/media/dvb-frontends/tda10071.c
++++ b/drivers/media/dvb-frontends/tda10071.c
+@@ -20,6 +20,9 @@
+ 
+ #include "tda10071_priv.h"
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
++
+ static struct dvb_frontend_ops tda10071_ops;
+ 
+ /* write multiple registers */
+@@ -27,16 +30,23 @@ static int tda10071_wr_regs(struct tda10
+ 	int len)
+ {
+ 	int ret;
+-	u8 buf[len+1];
++	u8 buf[MAX_XFER_SIZE];
+ 	struct i2c_msg msg[1] = {
+ 		{
+ 			.addr = priv->cfg.demod_i2c_addr,
+ 			.flags = 0,
+-			.len = sizeof(buf),
++			.len = 1 + len,
+ 			.buf = buf,
+ 		}
+ 	};
+ 
++	if (1 + len > sizeof(buf)) {
++		dev_warn(&priv->i2c->dev,
++			 "%s: i2c wr reg=%04x: len=%d is too big!\n",
++			 KBUILD_MODNAME, reg, len);
++		return -EINVAL;
++	}
++
+ 	buf[0] = reg;
+ 	memcpy(&buf[1], val, len);
+ 
+@@ -56,7 +66,7 @@ static int tda10071_rd_regs(struct tda10
+ 	int len)
+ {
+ 	int ret;
+-	u8 buf[len];
++	u8 buf[MAX_XFER_SIZE];
+ 	struct i2c_msg msg[2] = {
+ 		{
+ 			.addr = priv->cfg.demod_i2c_addr,
+@@ -66,11 +76,18 @@ static int tda10071_rd_regs(struct tda10
+ 		}, {
+ 			.addr = priv->cfg.demod_i2c_addr,
+ 			.flags = I2C_M_RD,
+-			.len = sizeof(buf),
++			.len = len,
+ 			.buf = buf,
+ 		}
+ 	};
+ 
++	if (len > sizeof(buf)) {
++		dev_warn(&priv->i2c->dev,
++			 "%s: i2c wr reg=%04x: len=%d is too big!\n",
++			 KBUILD_MODNAME, reg, len);
++		return -EINVAL;
++	}
++
+ 	ret = i2c_transfer(priv->i2c, msg, 2);
+ 	if (ret == 2) {
+ 		memcpy(val, buf, len);
 
---zx4FCpZtqtKETZ7O
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSnN9NAAoJELt3oFG5aZ5Lp2UQAI671er0Pwvem09LtS6JTBap
-W5v4dPW3UsO2jMj8y0EjcUAif4/ugwqHs2lCVZRUqhkth10ZuzQyXnPifgsGmmjw
-sXbA/ahaakr+upDErRJp/HCUwvuChOmdmjK0cEWZlIC5ipfR3y11UUPtAKYH/wzT
-6Q5HDnVItkmus7Hc9Chugyocbp+QD43qiLnyK8OaBkoYRVjfasKNRFRboHcDGyzl
-ZxBAsmXqrbIFSh8zGSwh4WbxxncxBwshJ0AuCfjx7BrOZ31nJwsT/0WLWLtTpBrh
-00/TvxU88fJOKfHq9J1S6mAkztmKnTJEoripALUHhUksSBCP9sBcf2MBZXw4hsws
-bYHCa2si6oNC5RE4J9MQtCL+RcRBWBbKdZ5lYV/tbZm0+bqYaHC/9MFeHmIokUys
-kTtNB1d+T/OT5qsOyguhak9oN5XIW0UAqphJCzv1TWK7CdeSMkrNb0QTu79AUaJH
-Pl+0lkgsPsWa9/GY6rjEmbM7gnq/1aRaFGyemBOQ0zrLJLBFmARuRKOJrSkFSXEm
-f6+8Gz/ki0F+KCh5xaFnAbOi6R0TsE9wMkCWN7tLbPuPLqFahN10C6xRIOjWkI8l
-yoVSIzUEYg70d3ZhnulO1M2g/DC7pPHEVNgfWRqdbc2y043AJZH8INsh+A7itkJF
-F1vrL8+K6GXQThzXngj+
-=xiBj
------END PGP SIGNATURE-----
-
---zx4FCpZtqtKETZ7O--
