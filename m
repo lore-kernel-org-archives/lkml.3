@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab3LBWxC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 17:53:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41371 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752262Ab3LBWxA (ORCPT
+	id S1754453Ab3LBW5X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 17:57:23 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:45146 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025Ab3LBW5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 17:53:00 -0500
-Date: Mon, 2 Dec 2013 14:52:58 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH 4/9] mm/rmap: make rmap_walk to get the
- rmap_walk_control argument
-Message-Id: <20131202145258.9f14767c1190c068becece0d@linux-foundation.org>
-In-Reply-To: <1385624926-28883-5-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1385624926-28883-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<1385624926-28883-5-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Dec 2013 17:57:22 -0500
+MIME-Version: 1.0
+X-Originating-IP: [173.161.199.49]
+In-Reply-To: <CAErSpo7rbf7dwSZ12uoVXaf6HoRNDn0Pxxy-Vo_6F9kk+p07Qg@mail.gmail.com>
+References: <CAFi4uRvcUPvKvaeO5gZnjhMCFS+08MhEixJw-iN0AWbeBfiHvQ@mail.gmail.com>
+ <CAErSpo7rbf7dwSZ12uoVXaf6HoRNDn0Pxxy-Vo_6F9kk+p07Qg@mail.gmail.com>
+From: Nick Pegg <nick@nickpegg.com>
+Date: Mon, 2 Dec 2013 17:57:01 -0500
+Message-ID: <CAFi4uRvm6Afag3_4LnEoHJ-WrtWPJLzTcqpia4mr_tCfUEpZeg@mail.gmail.com>
+Subject: Re: NETDEV WATCHDOG: eth0 (e1000e): transmit queue 0 timed out
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Nov 2013 16:48:41 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> Intel maintains newer drivers out-of-tree at
+> http://sourceforge.net/projects/e1000/, and it's possible this is some
+> bug that has already been fixed.  The current version there looks like
+> e1000e-2.5.4, released 2013-09-05.
+>
+> Possible similar report: http://sourceforge.net/p/e1000/bugs/367/ (no
+> real data there).
 
-> In each rmap traverse case, there is some difference so that we need
-> function pointers and arguments to them in order to handle these
-> difference properly.
-> 
-> For this purpose, struct rmap_walk_control is introduced in this patch,
-> and will be extended in following patch. Introducing and extending are
-> separate, because it clarify changes.
-> 
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -198,7 +198,12 @@ out:
->   */
->  static void remove_migration_ptes(struct page *old, struct page *new)
->  {
-> -	rmap_walk(new, remove_migration_pte, old);
-> +	struct rmap_walk_control rwc;
-> +
-> +	memset(&rwc, 0, sizeof(rwc));
-> +	rwc.main = remove_migration_pte;
-> +	rwc.arg = old;
-> +	rmap_walk(new, &rwc);
->  }
+I've looked through the existing bug reports and version changelogs
+and didn't see anything that seemed very relevant.
 
-It is much neater to do
+I was able to debug the e1000e object file and get the specific code
+that's bugging out after the interface is unexpectedly reset:
+--------
+(gdb) l *e1000_clean_rx_irq+0x101
+0x19d81 is in e1000_clean_rx_irq
+(drivers/net/ethernet/intel/e1000e/netdev.c:933).
+928                     rmb();  /* read descriptor and rx_buffer_info
+after status DD */
+929
+930                     skb = buffer_info->skb;
+931                     buffer_info->skb = NULL;
+932
+933                     prefetch(skb->data - NET_IP_ALIGN);
+934
+935                     i++;
+936                     if (i == rx_ring->count)
+937                             i = 0;
+--------
 
-	struct rmap_walk_control rwc = {
-		.main = remove_migration_pte,
-		.arg = old,
-	};
-
-which will zero out all remaining fields as well.
+The above code is from kernel version 3.9.2 and e1000e driver version
+2.2.14-k. Should there be a check here to see if skb is NULL? I
+checked the latest e1000e release (2.5.4) and there is no check there
+either (near netdev.c:994).
