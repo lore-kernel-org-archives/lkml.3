@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab3LBS7g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 13:59:36 -0500
-Received: from mout.gmx.net ([212.227.17.20]:60963 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752725Ab3LBS7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 13:59:35 -0500
-Date: Mon, 2 Dec 2013 19:59:31 +0100
-From: Helge Deller <deller@gmx.de>
-To: linux-nfs@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-parisc@vger.kernel.org
-Subject: [PATCH] nfs: fix do_div() warning by instead using sector_div()
-Message-ID: <20131202185931.GA1992@ls3530.box>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V03:K0:2w84FELOJ06Ui5FIColeSHt0NgjmHCKIIkCbBzy8WTsjjBBNEl2
- U1/r9ZptM8qgRMdgfH+8e515Fd7Rw3K39q5T4Sq7IXkK03EyWr+PUCQ/QvHNjU40yukPq6x
- a1SV1pg+DZJAZMfxJSI0OjPkeso0EYVI4JGiFXcKwsBEFf1LOwVAhDJiIS0/Lchec9LNnfJ
- xFXlFbyEPNJwjtg0/J6Iw==
+	id S1752802Ab3LBTD2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:03:28 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:7858 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751975Ab3LBTDZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 14:03:25 -0500
+Date: Mon, 2 Dec 2013 14:03:22 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: [RFC] Packaging libtraceevent.so
+Message-ID: <20131202140322.4ad6a151@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When compiling a 32bit kernel with CONFIG_LBDAF=n the compiler complains like
-shown below.  Fix this warning by instead using sector_div() which is provided
-by the kernel.h header file.
- 
-fs/nfs/blocklayout/extents.c: In function ‘normalize’:
-include/asm-generic/div64.h:43:28: warning: comparison of distinct pointer types lacks a cast [enabled by default]
-fs/nfs/blocklayout/extents.c:47:13: note: in expansion of macro ‘do_div’
-nfs/blocklayout/extents.c:47:2: warning: right shift count >= width of type [enabled by default]
-fs/nfs/blocklayout/extents.c:47:2: warning: passing argument 1 of ‘__div64_32’ from incompatible pointer type [enabled by default]
-include/asm-generic/div64.h:35:17: note: expected ‘uint64_t *’ but argument is of type ‘sector_t *’
- extern uint32_t __div64_32(uint64_t *dividend, uint32_t divisor);
+Hi all!
 
-Signed-off-by: Helge Deller <deller@gmx.de>
+The question has recently come up in Fedora about packaging the
+libtraceevent.so library. Currently there's 4 users of it:
 
-diff --git a/fs/nfs/blocklayout/extents.c b/fs/nfs/blocklayout/extents.c
-index 9c3e117..4d01614 100644
---- a/fs/nfs/blocklayout/extents.c
-+++ b/fs/nfs/blocklayout/extents.c
-@@ -44,7 +44,7 @@
- static inline sector_t normalize(sector_t s, int base)
- {
- 	sector_t tmp = s; /* Since do_div modifies its argument */
--	return s - do_div(tmp, base);
-+	return s - sector_div(tmp, base);
- }
- 
- static inline sector_t normalize_up(sector_t s, int base)
+ 1) perf
+ 2) trace-cmd
+ 3) powertop
+ 4) rasdaemon
+
+But each have their own copy of the code.
+
+Both perf and trace-cmd are the major developers of the package, and I
+would recommend that they continue using the *.a version, but for those
+tools that are simple users of the library, it would probably make
+sense to have them use libtraceevent.so and remove their copies from
+the code (powertop and rasdaemon).
+
+The question that I'm posing here is, what currently needs to be done
+to have this happen?
+
+Is the API stable enough for a release?
+
+We probably should have a dot versioning with the .so (ie.
+libtraceevent.so.1)
+
+So what are people's thoughts on this topic?
+
+-- Steve
