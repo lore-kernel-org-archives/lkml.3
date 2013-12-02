@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528Ab3LBT3P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:29:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39748 "EHLO
+	id S1755117Ab3LBT3N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:29:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39742 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755068Ab3LBTTN (ORCPT
+	with ESMTP id S1755005Ab3LBTTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:19:13 -0500
+	Mon, 2 Dec 2013 14:19:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>, Antti Palosaari <crope@iki.fi>
-Subject: [PATCH 3.12 203/212] media: dvb-frontends: Dont use dynamic static allocation
-Date: Mon,  2 Dec 2013 11:16:34 -0800
-Message-Id: <20131202191311.725846416@linuxfoundation.org>
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: [PATCH 3.12 204/212] media: dvb-frontends: again, Dont use dynamic static allocation
+Date: Mon,  2 Dec 2013 11:16:35 -0800
+Message-Id: <20131202191311.867601970@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -29,330 +29,340 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit 37ebaf6891ee81687bb558e8375c0712d8264ed8 upstream.
+commit 8393796dfa4cf5dffcceec464c7789bec3a2f471 upstream.
 
 Dynamic static allocation is evil, as Kernel stack is too low, and
 compilation complains about it on some archs:
-	drivers/media/dvb-frontends/af9013.c:77:1: warning: 'af9013_wr_regs_i2c' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/af9033.c:188:1: warning: 'af9033_wr_reg_val_tab' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/af9033.c:68:1: warning: 'af9033_wr_regs' uses dynamic stack allocation [enabled by default]
 	drivers/media/dvb-frontends/bcm3510.c:230:1: warning: 'bcm3510_do_hab_cmd' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/cxd2820r_core.c:84:1: warning: 'cxd2820r_rd_regs_i2c.isra.1' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/rtl2830.c:56:1: warning: 'rtl2830_wr' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/rtl2832.c:187:1: warning: 'rtl2832_wr' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/tda10071.c:52:1: warning: 'tda10071_wr_regs' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/tda10071.c:84:1: warning: 'tda10071_rd_regs' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/itd1000.c:69:1: warning: 'itd1000_write_regs.constprop.0' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/mt312.c:126:1: warning: 'mt312_write' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/nxt200x.c:111:1: warning: 'nxt200x_writebytes' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/stb6100.c:216:1: warning: 'stb6100_write_reg_range.constprop.3' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/stv6110.c:98:1: warning: 'stv6110_write_regs' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/stv6110x.c:85:1: warning: 'stv6110x_write_regs' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/tda18271c2dd.c:147:1: warning: 'WriteRegs' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/zl10039.c:119:1: warning: 'zl10039_write' uses dynamic stack allocation [enabled by default]
 Instead, let's enforce a limit for the buffer. Considering that I2C
 transfers are generally limited, and that devices used on USB has a
-max data length of 64 bytes for	the control URBs.
+max data length of 64 bytes for the control URBs.
 So, it seem safe to use 64 bytes as the hard limit for all those devices.
- On most cases, the limit is a way lower than that, but	this limit
+ On most cases, the limit is a way lower than that, but this limit
 is small enough to not affect the Kernel stack, and it is a no brain
 limit, as using smaller ones would require to either carefully each
 driver or to take a look on each datasheet.
 
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
-Reviewed-by: Antti Palosaari <crope@iki.fi>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-frontends/af9013.c        |   14 ++++++++++++--
- drivers/media/dvb-frontends/af9033.c        |   23 ++++++++++++++++++++---
- drivers/media/dvb-frontends/cxd2820r_core.c |   21 +++++++++++++++++++--
- drivers/media/dvb-frontends/rtl2830.c       |   14 ++++++++++++--
- drivers/media/dvb-frontends/rtl2832.c       |   14 ++++++++++++--
- drivers/media/dvb-frontends/tda10071.c      |   25 +++++++++++++++++++++----
- 6 files changed, 96 insertions(+), 15 deletions(-)
+ drivers/media/dvb-frontends/bcm3510.c      |   15 ++++++++++++++-
+ drivers/media/dvb-frontends/itd1000.c      |   13 ++++++++++++-
+ drivers/media/dvb-frontends/mt312.c        |   10 +++++++++-
+ drivers/media/dvb-frontends/nxt200x.c      |   11 ++++++++++-
+ drivers/media/dvb-frontends/stb6100.c      |   11 ++++++++++-
+ drivers/media/dvb-frontends/stv6110.c      |   12 +++++++++++-
+ drivers/media/dvb-frontends/stv6110x.c     |   13 ++++++++++++-
+ drivers/media/dvb-frontends/tda18271c2dd.c |   14 ++++++++++++--
+ drivers/media/dvb-frontends/zl10039.c      |   12 +++++++++++-
+ 9 files changed, 101 insertions(+), 10 deletions(-)
 
---- a/drivers/media/dvb-frontends/af9013.c
-+++ b/drivers/media/dvb-frontends/af9013.c
-@@ -24,6 +24,9 @@
+--- a/drivers/media/dvb-frontends/bcm3510.c
++++ b/drivers/media/dvb-frontends/bcm3510.c
+@@ -44,6 +44,9 @@
+ #include "bcm3510.h"
+ #include "bcm3510_priv.h"
  
- #include "af9013_priv.h"
++/* Max transfer size done by bcm3510_do_hab_cmd() function */
++#define MAX_XFER_SIZE	128
++
+ struct bcm3510_state {
+ 
+ 	struct i2c_adapter* i2c;
+@@ -201,9 +204,19 @@ static int bcm3510_hab_send_request(stru
+ 
+ static int bcm3510_do_hab_cmd(struct bcm3510_state *st, u8 cmd, u8 msgid, u8 *obuf, u8 olen, u8 *ibuf, u8 ilen)
+ {
+-	u8 ob[olen+2],ib[ilen+2];
++	u8 ob[MAX_XFER_SIZE], ib[MAX_XFER_SIZE];
+ 	int ret = 0;
+ 
++	if (ilen + 2 > sizeof(ib)) {
++		deb_hab("do_hab_cmd: ilen=%d is too big!\n", ilen);
++		return -EINVAL;
++	}
++
++	if (olen + 2 > sizeof(ob)) {
++		deb_hab("do_hab_cmd: olen=%d is too big!\n", olen);
++		return -EINVAL;
++	}
++
+ 	ob[0] = cmd;
+ 	ob[1] = msgid;
+ 	memcpy(&ob[2],obuf,olen);
+--- a/drivers/media/dvb-frontends/itd1000.c
++++ b/drivers/media/dvb-frontends/itd1000.c
+@@ -31,6 +31,9 @@
+ #include "itd1000.h"
+ #include "itd1000_priv.h"
  
 +/* Max transfer size done by I2C transfer functions */
 +#define MAX_XFER_SIZE  64
 +
- struct af9013_state {
- 	struct i2c_adapter *i2c;
- 	struct dvb_frontend fe;
-@@ -50,16 +53,23 @@ static int af9013_wr_regs_i2c(struct af9
- 	const u8 *val, int len)
+ static int debug;
+ module_param(debug, int, 0644);
+ MODULE_PARM_DESC(debug, "Turn on/off debugging (default:off).");
+@@ -52,10 +55,18 @@ MODULE_PARM_DESC(debug, "Turn on/off deb
+ /* don't write more than one byte with flexcop behind */
+ static int itd1000_write_regs(struct itd1000_state *state, u8 reg, u8 v[], u8 len)
  {
- 	int ret;
--	u8 buf[3+len];
-+	u8 buf[MAX_XFER_SIZE];
- 	struct i2c_msg msg[1] = {
- 		{
- 			.addr = priv->config.i2c_addr,
- 			.flags = 0,
--			.len = sizeof(buf),
-+			.len = 3 + len,
- 			.buf = buf,
- 		}
- 	};
- 
-+	if (3 + len > sizeof(buf)) {
-+		dev_warn(&priv->i2c->dev,
-+			 "%s: i2c wr reg=%04x: len=%d is too big!\n",
-+			 KBUILD_MODNAME, reg, len);
-+		return -EINVAL;
-+	}
-+
- 	buf[0] = (reg >> 8) & 0xff;
- 	buf[1] = (reg >> 0) & 0xff;
- 	buf[2] = mbox;
---- a/drivers/media/dvb-frontends/af9033.c
-+++ b/drivers/media/dvb-frontends/af9033.c
-@@ -21,6 +21,9 @@
- 
- #include "af9033_priv.h"
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- struct af9033_state {
- 	struct i2c_adapter *i2c;
- 	struct dvb_frontend fe;
-@@ -40,16 +43,23 @@ static int af9033_wr_regs(struct af9033_
- 		int len)
- {
- 	int ret;
--	u8 buf[3 + len];
-+	u8 buf[MAX_XFER_SIZE];
- 	struct i2c_msg msg[1] = {
- 		{
- 			.addr = state->cfg.i2c_addr,
- 			.flags = 0,
--			.len = sizeof(buf),
-+			.len = 3 + len,
- 			.buf = buf,
- 		}
- 	};
- 
-+	if (3 + len > sizeof(buf)) {
-+		dev_warn(&state->i2c->dev,
-+			 "%s: i2c wr reg=%04x: len=%d is too big!\n",
-+			 KBUILD_MODNAME, reg, len);
-+		return -EINVAL;
-+	}
-+
- 	buf[0] = (reg >> 16) & 0xff;
- 	buf[1] = (reg >>  8) & 0xff;
- 	buf[2] = (reg >>  0) & 0xff;
-@@ -161,7 +171,14 @@ static int af9033_wr_reg_val_tab(struct
- 		const struct reg_val *tab, int tab_len)
- {
- 	int ret, i, j;
--	u8 buf[tab_len];
-+	u8 buf[MAX_XFER_SIZE];
-+
-+	if (tab_len > sizeof(buf)) {
-+		dev_warn(&state->i2c->dev,
-+			 "%s: i2c wr len=%d is too big!\n",
-+			 KBUILD_MODNAME, tab_len);
-+		return -EINVAL;
-+	}
- 
- 	dev_dbg(&state->i2c->dev, "%s: tab_len=%d\n", __func__, tab_len);
- 
---- a/drivers/media/dvb-frontends/cxd2820r_core.c
-+++ b/drivers/media/dvb-frontends/cxd2820r_core.c
-@@ -21,12 +21,15 @@
- 
- #include "cxd2820r_priv.h"
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- /* write multiple registers */
- static int cxd2820r_wr_regs_i2c(struct cxd2820r_priv *priv, u8 i2c, u8 reg,
- 	u8 *val, int len)
- {
- 	int ret;
--	u8 buf[len+1];
-+	u8 buf[MAX_XFER_SIZE];
- 	struct i2c_msg msg[1] = {
- 		{
- 			.addr = i2c,
-@@ -36,6 +39,13 @@ static int cxd2820r_wr_regs_i2c(struct c
- 		}
- 	};
- 
-+	if (1 + len > sizeof(buf)) {
-+		dev_warn(&priv->i2c->dev,
-+			 "%s: i2c wr reg=%04x: len=%d is too big!\n",
-+			 KBUILD_MODNAME, reg, len);
-+		return -EINVAL;
-+	}
-+
- 	buf[0] = reg;
- 	memcpy(&buf[1], val, len);
- 
-@@ -55,7 +65,7 @@ static int cxd2820r_rd_regs_i2c(struct c
- 	u8 *val, int len)
- {
- 	int ret;
--	u8 buf[len];
-+	u8 buf[MAX_XFER_SIZE];
- 	struct i2c_msg msg[2] = {
- 		{
- 			.addr = i2c,
-@@ -70,6 +80,13 @@ static int cxd2820r_rd_regs_i2c(struct c
- 		}
- 	};
- 
-+	if (len > sizeof(buf)) {
-+		dev_warn(&priv->i2c->dev,
-+			 "%s: i2c wr reg=%04x: len=%d is too big!\n",
-+			 KBUILD_MODNAME, reg, len);
-+		return -EINVAL;
-+	}
-+
- 	ret = i2c_transfer(priv->i2c, msg, 2);
- 	if (ret == 2) {
- 		memcpy(val, buf, len);
---- a/drivers/media/dvb-frontends/rtl2830.c
-+++ b/drivers/media/dvb-frontends/rtl2830.c
-@@ -27,20 +27,30 @@
- 
- #include "rtl2830_priv.h"
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- /* write multiple hardware registers */
- static int rtl2830_wr(struct rtl2830_priv *priv, u8 reg, const u8 *val, int len)
- {
- 	int ret;
 -	u8 buf[1+len];
 +	u8 buf[MAX_XFER_SIZE];
- 	struct i2c_msg msg[1] = {
- 		{
- 			.addr = priv->cfg.i2c_addr,
- 			.flags = 0,
--			.len = 1+len,
-+			.len = 1 + len,
- 			.buf = buf,
- 		}
+ 	struct i2c_msg msg = {
+ 		.addr = state->cfg->i2c_address, .flags = 0, .buf = buf, .len = len+1
  	};
- 
++
 +	if (1 + len > sizeof(buf)) {
-+		dev_warn(&priv->i2c->dev,
-+			 "%s: i2c wr reg=%04x: len=%d is too big!\n",
-+			 KBUILD_MODNAME, reg, len);
++		printk(KERN_WARNING
++		       "itd1000: i2c wr reg=%04x: len=%d is too big!\n",
++		       reg, len);
 +		return -EINVAL;
 +	}
 +
  	buf[0] = reg;
- 	memcpy(&buf[1], val, len);
+ 	memcpy(&buf[1], v, len);
  
---- a/drivers/media/dvb-frontends/rtl2832.c
-+++ b/drivers/media/dvb-frontends/rtl2832.c
-@@ -22,6 +22,9 @@
- #include "dvb_math.h"
- #include <linux/bitops.h>
+--- a/drivers/media/dvb-frontends/mt312.c
++++ b/drivers/media/dvb-frontends/mt312.c
+@@ -36,6 +36,8 @@
+ #include "mt312_priv.h"
+ #include "mt312.h"
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
+ 
+ struct mt312_state {
+ 	struct i2c_adapter *i2c;
+@@ -96,9 +98,15 @@ static int mt312_write(struct mt312_stat
+ 		       const u8 *src, const size_t count)
+ {
+ 	int ret;
+-	u8 buf[count + 1];
++	u8 buf[MAX_XFER_SIZE];
+ 	struct i2c_msg msg;
+ 
++	if (1 + count > sizeof(buf)) {
++		printk(KERN_WARNING
++		       "mt312: write: len=%zd is too big!\n", count);
++		return -EINVAL;
++	}
++
+ 	if (debug) {
+ 		int i;
+ 		dprintk("W(%d):", reg & 0x7f);
+--- a/drivers/media/dvb-frontends/nxt200x.c
++++ b/drivers/media/dvb-frontends/nxt200x.c
+@@ -39,6 +39,9 @@
+  */
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
  
 +/* Max transfer size done by I2C transfer functions */
 +#define MAX_XFER_SIZE  64
 +
- int rtl2832_debug;
- module_param_named(debug, rtl2832_debug, int, 0644);
- MODULE_PARM_DESC(debug, "Turn on/off frontend debugging (default:off).");
-@@ -162,16 +165,23 @@ static const struct rtl2832_reg_entry re
- static int rtl2832_wr(struct rtl2832_priv *priv, u8 reg, u8 *val, int len)
+ #define NXT2002_DEFAULT_FIRMWARE "dvb-fe-nxt2002.fw"
+ #define NXT2004_DEFAULT_FIRMWARE "dvb-fe-nxt2004.fw"
+ #define CRC_CCIT_MASK 0x1021
+@@ -95,10 +98,16 @@ static int i2c_readbytes(struct nxt200x_
+ static int nxt200x_writebytes (struct nxt200x_state* state, u8 reg,
+ 			       const u8 *buf, u8 len)
  {
- 	int ret;
--	u8 buf[1+len];
-+	u8 buf[MAX_XFER_SIZE];
- 	struct i2c_msg msg[1] = {
- 		{
- 			.addr = priv->cfg.i2c_addr,
- 			.flags = 0,
--			.len = 1+len,
-+			.len = 1 + len,
- 			.buf = buf,
- 		}
- 	};
+-	u8 buf2 [len+1];
++	u8 buf2[MAX_XFER_SIZE];
+ 	int err;
+ 	struct i2c_msg msg = { .addr = state->config->demod_address, .flags = 0, .buf = buf2, .len = len + 1 };
  
-+	if (1 + len > sizeof(buf)) {
-+		dev_warn(&priv->i2c->dev,
-+			 "%s: i2c wr reg=%04x: len=%d is too big!\n",
-+			 KBUILD_MODNAME, reg, len);
++	if (1 + len > sizeof(buf2)) {
++		pr_warn("%s: i2c wr reg=%04x: len=%d is too big!\n",
++			 __func__, reg, len);
 +		return -EINVAL;
 +	}
 +
- 	buf[0] = reg;
- 	memcpy(&buf[1], val, len);
+ 	buf2[0] = reg;
+ 	memcpy(&buf2[1], buf, len);
  
---- a/drivers/media/dvb-frontends/tda10071.c
-+++ b/drivers/media/dvb-frontends/tda10071.c
-@@ -20,6 +20,9 @@
+--- a/drivers/media/dvb-frontends/stb6100.c
++++ b/drivers/media/dvb-frontends/stb6100.c
+@@ -31,6 +31,8 @@
+ static unsigned int verbose;
+ module_param(verbose, int, 0644);
  
- #include "tda10071_priv.h"
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
+ 
+ #define FE_ERROR		0
+ #define FE_NOTICE		1
+@@ -183,7 +185,7 @@ static int stb6100_read_reg(struct stb61
+ static int stb6100_write_reg_range(struct stb6100_state *state, u8 buf[], int start, int len)
+ {
+ 	int rc;
+-	u8 cmdbuf[len + 1];
++	u8 cmdbuf[MAX_XFER_SIZE];
+ 	struct i2c_msg msg = {
+ 		.addr	= state->config->tuner_address,
+ 		.flags	= 0,
+@@ -191,6 +193,13 @@ static int stb6100_write_reg_range(struc
+ 		.len	= len + 1
+ 	};
+ 
++	if (1 + len > sizeof(buf)) {
++		printk(KERN_WARNING
++		       "%s: i2c wr: len=%d is too big!\n",
++		       KBUILD_MODNAME, len);
++		return -EINVAL;
++	}
++
+ 	if (unlikely(start < 1 || start + len > STB6100_NUMREGS)) {
+ 		dprintk(verbose, FE_ERROR, 1, "Invalid register range %d:%d",
+ 			start, len);
+--- a/drivers/media/dvb-frontends/stv6110.c
++++ b/drivers/media/dvb-frontends/stv6110.c
+@@ -30,6 +30,9 @@
+ 
+ #include "stv6110.h"
  
 +/* Max transfer size done by I2C transfer functions */
 +#define MAX_XFER_SIZE  64
 +
- static struct dvb_frontend_ops tda10071_ops;
+ static int debug;
  
- /* write multiple registers */
-@@ -27,16 +30,23 @@ static int tda10071_wr_regs(struct tda10
- 	int len)
+ struct stv6110_priv {
+@@ -68,7 +71,7 @@ static int stv6110_write_regs(struct dvb
+ {
+ 	struct stv6110_priv *priv = fe->tuner_priv;
+ 	int rc;
+-	u8 cmdbuf[len + 1];
++	u8 cmdbuf[MAX_XFER_SIZE];
+ 	struct i2c_msg msg = {
+ 		.addr	= priv->i2c_address,
+ 		.flags	= 0,
+@@ -78,6 +81,13 @@ static int stv6110_write_regs(struct dvb
+ 
+ 	dprintk("%s\n", __func__);
+ 
++	if (1 + len > sizeof(cmdbuf)) {
++		printk(KERN_WARNING
++		       "%s: i2c wr: len=%d is too big!\n",
++		       KBUILD_MODNAME, len);
++		return -EINVAL;
++	}
++
+ 	if (start + len > 8)
+ 		return -EINVAL;
+ 
+--- a/drivers/media/dvb-frontends/stv6110x.c
++++ b/drivers/media/dvb-frontends/stv6110x.c
+@@ -32,6 +32,9 @@
+ #include "stv6110x.h"
+ #include "stv6110x_priv.h"
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
++
+ static unsigned int verbose;
+ module_param(verbose, int, 0644);
+ MODULE_PARM_DESC(verbose, "Set Verbosity level");
+@@ -61,7 +64,8 @@ static int stv6110x_write_regs(struct st
  {
  	int ret;
--	u8 buf[len+1];
+ 	const struct stv6110x_config *config = stv6110x->config;
+-	u8 buf[len + 1];
 +	u8 buf[MAX_XFER_SIZE];
- 	struct i2c_msg msg[1] = {
- 		{
- 			.addr = priv->cfg.demod_i2c_addr,
- 			.flags = 0,
--			.len = sizeof(buf),
-+			.len = 1 + len,
- 			.buf = buf,
- 		}
++
+ 	struct i2c_msg msg = {
+ 		.addr = config->addr,
+ 		.flags = 0,
+@@ -69,6 +73,13 @@ static int stv6110x_write_regs(struct st
+ 		.len = len + 1
  	};
  
 +	if (1 + len > sizeof(buf)) {
-+		dev_warn(&priv->i2c->dev,
-+			 "%s: i2c wr reg=%04x: len=%d is too big!\n",
-+			 KBUILD_MODNAME, reg, len);
++		printk(KERN_WARNING
++		       "%s: i2c wr: len=%d is too big!\n",
++		       KBUILD_MODNAME, len);
 +		return -EINVAL;
 +	}
 +
- 	buf[0] = reg;
- 	memcpy(&buf[1], val, len);
+ 	if (start + len > 8)
+ 		return -EINVAL;
  
-@@ -56,7 +66,7 @@ static int tda10071_rd_regs(struct tda10
- 	int len)
+--- a/drivers/media/dvb-frontends/tda18271c2dd.c
++++ b/drivers/media/dvb-frontends/tda18271c2dd.c
+@@ -34,6 +34,9 @@
+ #include "dvb_frontend.h"
+ #include "tda18271c2dd.h"
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
++
+ struct SStandardParam {
+ 	s32   m_IFFrequency;
+ 	u32   m_BandWidth;
+@@ -139,11 +142,18 @@ static int i2c_write(struct i2c_adapter
+ static int WriteRegs(struct tda_state *state,
+ 		     u8 SubAddr, u8 *Regs, u16 nRegs)
  {
- 	int ret;
--	u8 buf[len];
+-	u8 data[nRegs+1];
++	u8 data[MAX_XFER_SIZE];
++
++	if (1 + nRegs > sizeof(data)) {
++		printk(KERN_WARNING
++		       "%s: i2c wr: len=%d is too big!\n",
++		       KBUILD_MODNAME, nRegs);
++		return -EINVAL;
++	}
+ 
+ 	data[0] = SubAddr;
+ 	memcpy(data + 1, Regs, nRegs);
+-	return i2c_write(state->i2c, state->adr, data, nRegs+1);
++	return i2c_write(state->i2c, state->adr, data, nRegs + 1);
+ }
+ 
+ static int WriteReg(struct tda_state *state, u8 SubAddr, u8 Reg)
+--- a/drivers/media/dvb-frontends/zl10039.c
++++ b/drivers/media/dvb-frontends/zl10039.c
+@@ -30,6 +30,9 @@
+ 
+ static int debug;
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
++
+ #define dprintk(args...) \
+ 	do { \
+ 		if (debug) \
+@@ -98,7 +101,7 @@ static int zl10039_write(struct zl10039_
+ 			const enum zl10039_reg_addr reg, const u8 *src,
+ 			const size_t count)
+ {
+-	u8 buf[count + 1];
 +	u8 buf[MAX_XFER_SIZE];
- 	struct i2c_msg msg[2] = {
- 		{
- 			.addr = priv->cfg.demod_i2c_addr,
-@@ -66,11 +76,18 @@ static int tda10071_rd_regs(struct tda10
- 		}, {
- 			.addr = priv->cfg.demod_i2c_addr,
- 			.flags = I2C_M_RD,
--			.len = sizeof(buf),
-+			.len = len,
- 			.buf = buf,
- 		}
+ 	struct i2c_msg msg = {
+ 		.addr = state->i2c_addr,
+ 		.flags = 0,
+@@ -106,6 +109,13 @@ static int zl10039_write(struct zl10039_
+ 		.len = count + 1,
  	};
  
-+	if (len > sizeof(buf)) {
-+		dev_warn(&priv->i2c->dev,
-+			 "%s: i2c wr reg=%04x: len=%d is too big!\n",
-+			 KBUILD_MODNAME, reg, len);
++	if (1 + count > sizeof(buf)) {
++		printk(KERN_WARNING
++		       "%s: i2c wr reg=%04x: len=%zd is too big!\n",
++		       KBUILD_MODNAME, reg, count);
 +		return -EINVAL;
 +	}
 +
- 	ret = i2c_transfer(priv->i2c, msg, 2);
- 	if (ret == 2) {
- 		memcpy(val, buf, len);
+ 	dprintk("%s\n", __func__);
+ 	/* Write register address and data in one go */
+ 	buf[0] = reg;
 
 
