@@ -1,155 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460Ab3LBXBC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 18:01:02 -0500
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:38556 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602Ab3LBXA5 convert rfc822-to-8bit (ORCPT
+	id S1751949Ab3LBXBN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 18:01:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41464 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754478Ab3LBXBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 18:00:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <5298C932.60709@ti.com>
-References: <1385506004-14943-1-git-send-email-caesarxuchao@gmail.com>
-	<5298C932.60709@ti.com>
-Date: Mon, 2 Dec 2013 17:00:56 -0600
-Message-ID: <CAKZq+rd2yVOzRhcf2_dGudaYR7EqZ4vk7nv-GX2OKKxwdWKjUg@mail.gmail.com>
-Subject: Re: [PATCH V2] gpio: omap: refresh patch "be more aggressive with
- pm_runtime" against v3.12-rc5
-From: Chao Xu <caesarxuchao@gmail.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: linux-omap@vger.kernel.org, Kevin Hilman <khilman@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        balbi@ti.com, Nishanth Menon <nm@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Mon, 2 Dec 2013 18:01:09 -0500
+Date: Mon, 2 Dec 2013 15:01:07 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Joonsoo Kim <js1304@gmail.com>
+Subject: Re: [PATCH 6/9] mm/rmap: use rmap_walk() in try_to_unmap()
+Message-Id: <20131202150107.7a814d0753356afc47b58b09@linux-foundation.org>
+In-Reply-To: <1385624926-28883-7-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1385624926-28883-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<1385624926-28883-7-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the late reply.
+On Thu, 28 Nov 2013 16:48:43 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
 
-On Fri, Nov 29, 2013 at 11:04 AM, Santosh Shilimkar
-<santosh.shilimkar@ti.com> wrote:
-> Adding Kevin's Linaro id, + Nishant,
+> Now, we have an infrastructure in rmap_walk() to handle difference
+> from variants of rmap traversing functions.
+> 
+> So, just use it in try_to_unmap().
+> 
+> In this patch, I change following things.
+> 
+> 1. enable rmap_walk() if !CONFIG_MIGRATION.
+> 2. mechanical change to use rmap_walk() in try_to_unmap().
+> 
+> ...
 >
-> On Tuesday 26 November 2013 05:46 PM, Chao Xu wrote:
->> From: Felipe Balbi <balbi@ti.com>
->>
->> try to keep gpio block suspended as much as possible.
->>
->> Tested with pandaboard and a sysfs exported gpio.
->>
->> Signed-off-by: Felipe Balbi <balbi at ti.com>
->>
->> [caesarxuchao@gmail.com : Refreshed against v3.12-rc5, and added revision check to enable aggressive pm_runtime on OMAP4-only. Because am33xx_gpio_sysc.idlemodes seems to be wrongly marked as SIDLE_SMART_WKUP, which might cause missed interrupts with this patch. Tested on Pandaboard rev A2.]
->>
-> Please format the text and limit it to 80 char rule.
+> --- a/include/linux/rmap.h
+> +++ b/include/linux/rmap.h
+> @@ -190,7 +190,7 @@ int page_referenced_one(struct page *, struct vm_area_struct *,
+>  
+>  int try_to_unmap(struct page *, enum ttu_flags flags);
+>  int try_to_unmap_one(struct page *, struct vm_area_struct *,
+> -			unsigned long address, enum ttu_flags flags);
+> +			unsigned long address, void *arg);
+
+This change is ugly and unchangelogged.
+
+Also, "enum ttu_flags flags" was nice and meaningful, but "void *arg"
+conveys far less information.  A suitable way to address this
+shortcoming is to document `arg' at the try_to_unmap_one() definition
+site.  try_to_unmap_one() doesn't actually have any documentation at
+this stage - let's please fix that?
+
 >
-Sorry. It's my first time submitting a patch. I will fix it and resubmit.
->> Signed-off-by: Chao Xu <caesarxuchao@gmail.com>
->> ---
->> According to Mr. Felipe Balbi, the original patch was not accepted because interrupts would be missed when GPIO was used as IRQ source. But in my tests with pandaboard, interrupts were not missed. This is because _idle_sysc() sets the idlemode of gpio module to smart-idle-wakeup, and according to OMAP4430 TRM, under this idlemode, the gpio can generate an asynchronous wakeup request to the PRCM. And after GPIO is awake, the wake-up request is reflected into the interrupt status registers.
->>
->> A change made on the original patch is only applying the aggressive runtime pm scheme on OMAP4, because I don’t have HW to test OMAP3 or am33xx devices. According to the respective TRMs, their GPIO modules also can generate wake-up request if the idlemode is set to smart-idle or smart-idle-wakeup. So the patch should work for them, too. But I suspect a potential SW bug may cause missed interrupts: the am33xx_gpio_sysc.idlemodes is marked as capable of SIDLE_SMART_WKUP in omap_hwmod_33xx.c. But according to AM335x TRM, _only_ gpio0 is capable of this mode. This may make GPIO stuck in force-idle mode and unable to generate wakeup request. And thus interrupt will be missed. Again, I don’t have the HW to verify whether this is a bug or not :(
->>
-> In general I am not against this idea but patch has many assumptions which
-> are not entirely correct.
+> ...
 >
-> - SMART_WAKEUP will take care of waking IP etc not always true to power
-> domain getting into idle.
+> @@ -1509,6 +1510,11 @@ bool is_vma_temporary_stack(struct vm_area_struct *vma)
+>  	return false;
+>  }
+>  
+> +static int skip_vma_temporary_stack(struct vm_area_struct *vma, void *arg)
+> +{
+> +	return (int)is_vma_temporary_stack(vma);
+> +}
+
+The (int) cast is unneeded - the compiler will turn a bool into an int.
+
+Should this function (and rmap_walk_control.skip()) really be returning
+a bool?
+
+The name of this function is poor: "skip_foo" implies that the function
+will skip over a foo.  But that isn't what this function does.  Please
+choose something which accurately reflects the function's behavior.
+
+>  /**
+>   * try_to_unmap_anon - unmap or unlock anonymous page using the object-based
+>   * rmap method
+> @@ -1554,7 +1560,7 @@ static int try_to_unmap_anon(struct page *page, enum ttu_flags flags)
+>  			continue;
+>  
+>  		address = vma_address(page, vma);
+> -		ret = try_to_unmap_one(page, vma, address, flags);
+> +		ret = try_to_unmap_one(page, vma, address, (void *)flags);
+>  		if (ret != SWAP_AGAIN || !page_mapped(page))
+>  			break;
+>  	}
 >
-I agree that if the power domain goes to idle, SMART_WAKEUP
-won't be effective. But, correct me if i'm wrong, even if we don't call
-runtime_put(), the power domain can still go to idle. Because the
-modulemode of GPIO is set to HW_AUTO in this case, which won't
-prevent the power domain goes to retention. So this patch doesn't
-make the situation worse.
-> - If we want to go on this path then I would like to see we address
-> omap2_gpio_[prepare/resumne]_for_idle()
+> ...
 >
-I did a quick google search but didn't find the problem with the two
-functions. Could you give me a pointer here?
-> - GPIO though sound simple is one of the most notorious IP block
-> on PM front so this needs lot of testing. This patch not seems be
-> tested at all so I would have much liked it to be in RFC/RFT
-> state.
-I tested using a gpio pin as interrupt source after applying the patch.
-What are the other tests that I should do? Is there a formal way of
-reporting test results here?
+>  /**
+>   * try_to_unmap - try to remove all page table mappings to a page
+>   * @page: the page to get unmapped
+> @@ -1630,16 +1641,30 @@ out:
+>  int try_to_unmap(struct page *page, enum ttu_flags flags)
+>  {
+>  	int ret;
+> +	struct rmap_walk_control rwc;
+>  
+> -	BUG_ON(!PageLocked(page));
+>  	VM_BUG_ON(!PageHuge(page) && PageTransHuge(page));
+>  
+> -	if (unlikely(PageKsm(page)))
+> -		ret = try_to_unmap_ksm(page, flags);
+> -	else if (PageAnon(page))
+> -		ret = try_to_unmap_anon(page, flags);
+> -	else
+> -		ret = try_to_unmap_file(page, flags);
+> +	memset(&rwc, 0, sizeof(rwc));
+> +	rwc.main = try_to_unmap_one;
+> +	rwc.arg = (void *)flags;
+> +	rwc.main_done = page_not_mapped;
+> +	rwc.file_nonlinear = try_to_unmap_nonlinear;
+> +	rwc.anon_lock = page_lock_anon_vma_read;
+
+	struct rmap_walk_control rwc = {
+		...
+	};
+
+> +	/*
+> +	 * During exec, a temporary VMA is setup and later moved.
+> +	 * The VMA is moved under the anon_vma lock but not the
+> +	 * page tables leading to a race where migration cannot
+> +	 * find the migration ptes. Rather than increasing the
+> +	 * locking requirements of exec(), migration skips
+> +	 * temporary VMAs until after exec() completes.
+> +	 */
+> +	if (flags & TTU_MIGRATION && !PageKsm(page) && PageAnon(page))
+> +		rwc.vma_skip = skip_vma_temporary_stack;
+> +
+> +	ret = rmap_walk(page, &rwc);
+> +
+>  	if (ret != SWAP_MLOCK && !page_mapped(page))
+>  		ret = SWAP_SUCCESS;
+>  	return ret;
 >
->>  drivers/gpio/gpio-omap.c                |  103 ++++++++++++++++++++++++++-----
->>  include/linux/platform_data/gpio-omap.h |    1 +
->>  2 files changed, 87 insertions(+), 17 deletions(-)
->>
->> diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
->> index 89675f8..90661f2 100644
->> --- a/drivers/gpio/gpio-omap.c
->> +++ b/drivers/gpio/gpio-omap.c
->> @@ -76,6 +76,7 @@ struct gpio_bank {
->>       int context_loss_count;
->>       int power_mode;
->>       bool workaround_enabled;
->> +     bool is_aggressive_pm;
->>
->>       void (*set_dataout)(struct gpio_bank *bank, int gpio, int enable);
->>       int (*get_context_loss_count)(struct device *dev);
->> @@ -473,8 +474,15 @@ static void _disable_gpio_module(struct gpio_bank *bank, unsigned offset)
->>  static int gpio_is_input(struct gpio_bank *bank, int mask)
->>  {
->>       void __iomem *reg = bank->base + bank->regs->direction;
->> +     u32 val;
->>
->> -     return __raw_readl(reg) & mask;
->> +     if (bank->is_aggressive_pm)
->> +             pm_runtime_get_sync(bank->dev);
->> +     val = __raw_readl(reg) & mask;
->> +     if (bank->is_aggressive_pm)
->> +             pm_runtime_put(bank->dev);
->> +
-> Move above in some wrapper instead of sprinkling the
-> 'is_aggressive_pm' check everywhere.
->
-Will do.
->> @@ -1585,18 +1651,21 @@ static const struct omap_gpio_platform_data omap2_pdata = {
->>       .regs = &omap2_gpio_regs,
->>       .bank_width = 32,
->>       .dbck_flag = false,
->> +     .is_aggressive_pm = false,
->>  };
->>
->>  static const struct omap_gpio_platform_data omap3_pdata = {
->>       .regs = &omap2_gpio_regs,
->>       .bank_width = 32,
->>       .dbck_flag = true,
->> +     .is_aggressive_pm = false,
->>  };
->>
->>  static const struct omap_gpio_platform_data omap4_pdata = {
->>       .regs = &omap4_gpio_regs,
->>       .bank_width = 32,
->>       .dbck_flag = true,
->> +     .is_aggressive_pm = true,
->>  };
->>
-> Well OMAP IP shouldn't have different behavior on OMAP3 and
-> OMAP4 at least so something you can enable for OMAP4, you
-> should be able to do it for OMAP3 as well.
->
-the am33xx_gpio_sysc.idlemodes is marked as capable of
-SMART_WKUP in omap_hwmod_33xx.c. But according to TRM,
-only gpio0 is capable of this. So i suspect the patch won't work
-for omap3. I don't have the hardware to verify this. Could someone
-verify it? Thank you.
-> Kevin might have some more concerns to add.
->
-> Regards,
-> Santosh
+> ...
 >
 
-
-
--- 
-Regards,
-Chao Xu
