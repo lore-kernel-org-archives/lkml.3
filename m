@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757611Ab3LBU0n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:26:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38999 "EHLO
+	id S1757628Ab3LBU0r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:26:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38990 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753322Ab3LBTQ4 (ORCPT
+	with ESMTP id S1753219Ab3LBTQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:16:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [PATCH 3.12 014/212] staging: vt6656: [BUG] Fix for TX USB resets from vendors driver.
-Date: Mon,  2 Dec 2013 11:13:25 -0800
-Message-Id: <20131202191250.228597496@linuxfoundation.org>
+        Minchan Kim <minchan@kernel.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>
+Subject: [PATCH 3.12 013/212] Staging: zram: Fix memory leak by refcount mismatch
+Date: Mon,  2 Dec 2013 11:13:24 -0800
+Message-Id: <20131202191250.122965760@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,85 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Rashika Kheria <rashika.kheria@gmail.com>
 
-commit 9df682927c2e3a92f43803d6b52095992e3b2ab8 upstream.
+commit 1b672224d128ec2570eb37572ff803cfe452b4f7 upstream.
 
-This fixes resets on heavy TX data traffic.
+As suggested by Minchan Kim and Jerome Marchand "The code in reset_store
+get the block device (bdget_disk()) but it does not put it (bdput()) when
+it's done using it. The usage count is therefore incremented but never
+decremented."
 
-Vendor driver
-VT6656_Linux_src_v1.21.03_x86_11.04.zip
-http://www.viaembedded.com/servlet/downloadSvl?id=1890&download_file_id=14704
-This is GPL-licensed code.
+This patch also puts bdput() for all error cases.
 
-original code
-BBbVT3184Init
-...
-//2007-0725, RobertChang add, Enable Squelch detect reset option(SQ_RST_Opt), USB (register4, bit1)
-CONTROLnsRequestIn(pDevice,
-                                 MESSAGE_TYPE_READ,
-                                 (WORD)0x600+4,     // USB's Reg4's bit1
-                                 MESSAGE_REQUEST_MEM,
-                                 1,
-                                 (PBYTE) &byData);
-byData = byData|2 ;
-CONTROLnsRequestOut(pDevice,
-                              MESSAGE_TYPE_WRITE,
-                              (WORD)0x600+4,     // USB's Reg4's bit1
-                              MESSAGE_REQUEST_MEM,
-                              1,
-                              (PBYTE) &byData);
-
-return TRUE;//ntStatus;
-....
-
-A back port patch is needed for kernels less than 3.10.
-
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/baseband.c |   11 +++++++++++
- drivers/staging/vt6656/rndis.h    |    2 ++
- 2 files changed, 13 insertions(+)
+ drivers/staging/zram/zram_drv.c |   19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
---- a/drivers/staging/vt6656/baseband.c
-+++ b/drivers/staging/vt6656/baseband.c
-@@ -939,6 +939,7 @@ int BBbVT3184Init(struct vnt_private *pD
-     u8 *                   pbyAgc;
-     u16                    wLengthAgc;
-     u8                    abyArray[256];
-+	u8 data;
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -652,21 +652,30 @@ static ssize_t reset_store(struct device
+ 		return -ENOMEM;
  
-     ntStatus = CONTROLnsRequestIn(pDevice,
-                                   MESSAGE_TYPE_READ,
-@@ -1104,6 +1105,16 @@ else {
-     ControlvWriteByte(pDevice,MESSAGE_REQUEST_BBREG,0x0D,0x01);
+ 	/* Do not reset an active device! */
+-	if (bdev->bd_holders)
+-		return -EBUSY;
++	if (bdev->bd_holders) {
++		ret = -EBUSY;
++		goto out;
++	}
  
-     RFbRFTableDownload(pDevice);
+ 	ret = kstrtou16(buf, 10, &do_reset);
+ 	if (ret)
+-		return ret;
++		goto out;
+ 
+-	if (!do_reset)
+-		return -EINVAL;
++	if (!do_reset) {
++		ret = -EINVAL;
++		goto out;
++	}
+ 
+ 	/* Make sure all pending I/O is finished */
+ 	fsync_bdev(bdev);
++	bdput(bdev);
+ 
+ 	zram_reset_device(zram, true);
+ 	return len;
 +
-+	/* Fix for TX USB resets from vendors driver */
-+	CONTROLnsRequestIn(pDevice, MESSAGE_TYPE_READ, USB_REG4,
-+		MESSAGE_REQUEST_MEM, sizeof(data), &data);
-+
-+	data |= 0x2;
-+
-+	CONTROLnsRequestOut(pDevice, MESSAGE_TYPE_WRITE, USB_REG4,
-+		MESSAGE_REQUEST_MEM, sizeof(data), &data);
-+
-     return true;//ntStatus;
++out:
++	bdput(bdev);
++	return ret;
  }
  
---- a/drivers/staging/vt6656/rndis.h
-+++ b/drivers/staging/vt6656/rndis.h
-@@ -66,6 +66,8 @@
- 
- #define VIAUSB20_PACKET_HEADER          0x04
- 
-+#define USB_REG4	0x604
-+
- typedef struct _CMD_MESSAGE
- {
-     u8        byData[256];
+ static void __zram_make_request(struct zram *zram, struct bio *bio, int rw)
 
 
