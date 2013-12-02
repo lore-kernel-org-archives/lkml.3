@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab3LBTR7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:17:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39200 "EHLO
+	id S1756698Ab3LBUBe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:01:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39204 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab3LBTRq (ORCPT
+	with ESMTP id S1754641Ab3LBTR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:46 -0500
+	Mon, 2 Dec 2013 14:17:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
-        Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 082/212] mm: ensure get_unmapped_area() returns higher address than mmap_min_addr
-Date: Mon,  2 Dec 2013 11:14:33 -0800
-Message-Id: <20131202191256.848650754@linuxfoundation.org>
+        Oliver Lorenz <olli@olorenz.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.12 098/212] PM / Hibernate: Do not crash kernel in free_basic_memory_bitmaps()
+Date: Mon,  2 Dec 2013 11:14:49 -0800
+Message-Id: <20131202191258.369635385@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -30,124 +27,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 2afc745f3e3079ab16c826be4860da2529054dd2 upstream.
+commit 6a0c7cd33075f6b7f1d80145bb19812beb3fc5c9 upstream.
 
-This patch fixes the problem that get_unmapped_area() can return illegal
-address and result in failing mmap(2) etc.
+I have received a report about the BUG_ON() in free_basic_memory_bitmaps()
+triggering mysteriously during an aborted s2disk hibernation attempt.
+The only way I can explain that is that /dev/snapshot was first
+opened for writing (resume mode), then closed and then opened again
+for reading and closed again without freezing tasks.  In that case
+the first invocation of snapshot_open() would set the free_bitmaps
+flag in snapshot_state, which is a static variable.  That flag
+wouldn't be cleared later and the second invocation of snapshot_open()
+would just leave it like that, so the subsequent snapshot_release()
+would see data->frozen set and free_basic_memory_bitmaps() would be
+called unnecessarily.
 
-In case that the address higher than PAGE_SIZE is set to
-/proc/sys/vm/mmap_min_addr, the address lower than mmap_min_addr can be
-returned by get_unmapped_area(), even if you do not pass any virtual
-address hint (i.e.  the second argument).
+To prevent that from happening clear data->free_bitmaps in
+snapshot_open() when the file is being opened for reading (hibernate
+mode).
 
-This is because the current get_unmapped_area() code does not take into
-account mmap_min_addr.
+In addition to that, replace the BUG_ON() in free_basic_memory_bitmaps()
+with a WARN_ON() as the kernel can continue just fine if the condition
+checked by that macro occurs.
 
-This leads to two actual problems as follows:
-
-1. mmap(2) can fail with EPERM on the process without CAP_SYS_RAWIO,
-   although any illegal parameter is not passed.
-
-2. The bottom-up search path after the top-down search might not work in
-   arch_get_unmapped_area_topdown().
-
-Note: The first and third chunk of my patch, which changes "len" check,
-are for more precise check using mmap_min_addr, and not for solving the
-above problem.
-
-[How to reproduce]
-
-	--- test.c -------------------------------------------------
-	#include <stdio.h>
-	#include <unistd.h>
-	#include <sys/mman.h>
-	#include <sys/errno.h>
-
-	int main(int argc, char *argv[])
-	{
-		void *ret = NULL, *last_map;
-		size_t pagesize = sysconf(_SC_PAGESIZE);
-
-		do {
-			last_map = ret;
-			ret = mmap(0, pagesize, PROT_NONE,
-				MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-	//		printf("ret=%p\n", ret);
-		} while (ret != MAP_FAILED);
-
-		if (errno != ENOMEM) {
-			printf("ERR: unexpected errno: %d (last map=%p)\n",
-			errno, last_map);
-		}
-
-		return 0;
-	}
-	---------------------------------------------------------------
-
-	$ gcc -m32 -o test test.c
-	$ sudo sysctl -w vm.mmap_min_addr=65536
-	vm.mmap_min_addr = 65536
-	$ ./test  (run as non-priviledge user)
-	ERR: unexpected errno: 1 (last map=0x10000)
-
-Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
-Signed-off-by: Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: aab172891542 (PM / hibernate: Fix user space driven resume regression)
+Reported-by: Oliver Lorenz <olli@olorenz.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mmap.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ kernel/power/snapshot.c |    3 ++-
+ kernel/power/user.c     |    1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1856,7 +1856,7 @@ arch_get_unmapped_area(struct file *filp
- 	struct vm_area_struct *vma;
- 	struct vm_unmapped_area_info info;
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -792,7 +792,8 @@ void free_basic_memory_bitmaps(void)
+ {
+ 	struct memory_bitmap *bm1, *bm2;
  
--	if (len > TASK_SIZE)
-+	if (len > TASK_SIZE - mmap_min_addr)
- 		return -ENOMEM;
+-	BUG_ON(!(forbidden_pages_map && free_pages_map));
++	if (WARN_ON(!(forbidden_pages_map && free_pages_map)))
++		return;
  
- 	if (flags & MAP_FIXED)
-@@ -1865,7 +1865,7 @@ arch_get_unmapped_area(struct file *filp
- 	if (addr) {
- 		addr = PAGE_ALIGN(addr);
- 		vma = find_vma(mm, addr);
--		if (TASK_SIZE - len >= addr &&
-+		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
- 		    (!vma || addr + len <= vma->vm_start))
- 			return addr;
- 	}
-@@ -1895,7 +1895,7 @@ arch_get_unmapped_area_topdown(struct fi
- 	struct vm_unmapped_area_info info;
- 
- 	/* requested length too big for entire address space */
--	if (len > TASK_SIZE)
-+	if (len > TASK_SIZE - mmap_min_addr)
- 		return -ENOMEM;
- 
- 	if (flags & MAP_FIXED)
-@@ -1905,14 +1905,14 @@ arch_get_unmapped_area_topdown(struct fi
- 	if (addr) {
- 		addr = PAGE_ALIGN(addr);
- 		vma = find_vma(mm, addr);
--		if (TASK_SIZE - len >= addr &&
-+		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
- 				(!vma || addr + len <= vma->vm_start))
- 			return addr;
- 	}
- 
- 	info.flags = VM_UNMAPPED_AREA_TOPDOWN;
- 	info.length = len;
--	info.low_limit = PAGE_SIZE;
-+	info.low_limit = max(PAGE_SIZE, mmap_min_addr);
- 	info.high_limit = mm->mmap_base;
- 	info.align_mask = 0;
- 	addr = vm_unmapped_area(&info);
+ 	bm1 = forbidden_pages_map;
+ 	bm2 = free_pages_map;
+--- a/kernel/power/user.c
++++ b/kernel/power/user.c
+@@ -70,6 +70,7 @@ static int snapshot_open(struct inode *i
+ 		data->swap = swsusp_resume_device ?
+ 			swap_type_of(swsusp_resume_device, 0, NULL) : -1;
+ 		data->mode = O_RDONLY;
++		data->free_bitmaps = false;
+ 		error = pm_notifier_call_chain(PM_HIBERNATION_PREPARE);
+ 		if (error)
+ 			pm_notifier_call_chain(PM_POST_HIBERNATION);
 
 
