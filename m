@@ -1,111 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab3LBBtp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 20:49:45 -0500
-Received: from mail.fpasia.hk ([202.130.89.98]:52706 "EHLO fpa01n0.fpasia.hk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752552Ab3LBBto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 20:49:44 -0500
-Message-ID: <529BE72C.9030805@gtsys.com.hk>
-Date: Mon, 02 Dec 2013 09:49:32 +0800
-From: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11 ThunderBrowse/3.8
+	id S1752673Ab3LBBva (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 20:51:30 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:54533 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752488Ab3LBBv3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Dec 2013 20:51:29 -0500
+X-IronPort-AV: E=Sophos;i="4.93,807,1378828800"; 
+   d="scan'208";a="9167281"
+Message-ID: <529C9DFD.6040707@cn.fujitsu.com>
+Date: Mon, 02 Dec 2013 09:49:33 -0500
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Peter Chen <Peter.Chen@freescale.com>
-CC: "alexander.shishkin@linux.intel.com" 
-	<alexander.shishkin@linux.intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3 v3] usb: chipidea: Fix Internal error: : 808 [#1]
- ARM related to STS flag
-References: <1385783513-22502-1-git-send-email-chris.ruehl@gtsys.com.hk> <F281D0F91ED19E4D8E63A7504E8A64980413B204@039-SN2MPN1-021.039d.mgd.msft.net>
-In-Reply-To: <F281D0F91ED19E4D8E63A7504E8A64980413B204@039-SN2MPN1-021.039d.mgd.msft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf Makefile: Correct the message in feature-libnuma
+ checking.
+References: <1385759152-19752-1-git-send-email-yangds.fnst@cn.fujitsu.com> <20131129181417.GA9876@ghostprotocols.net> <529C9521.6020300@cn.fujitsu.com> <529BE386.9060601@hurleysoftware.com>
+In-Reply-To: <529BE386.9060601@hurleysoftware.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/02 09:51:09,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/02 09:51:23,
+	Serialize complete at 2013/12/02 09:51:23
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Saturday, November 30, 2013 06:20 PM, Peter Chen wrote:
+On 12/01/2013 08:33 PM, Peter Hurley wrote:
+> On 12/02/2013 09:11 AM, Dongsheng Yang wrote:
+>> ccing linux-kernel@vger.kernel.org
+>>
+>> On 11/29/2013 01:14 PM, Arnaldo Carvalho de Melo wrote:
+>>> Em Fri, Nov 29, 2013 at 04:05:52PM -0500, Dongsheng Yang escreveu:
+>>>> The package required for numa is named numactl-devel in Fedora and 
+>>>> RHEL and
+>>>> libnuma-devel in OpenSuSE. This patch correct the package name in 
+>>>> warning
+>>>> message.
 >
->>
->> usb: chipidea: Fix Internal error: : 808 [#1] ARM related to STS flag
->>
->> * init the sts flag to 0 (missed)
->> * Set PORTCS_STS only if VUSB_HS_PHY_TYPE>  1
->>    otherwise the register is ReadOnly
->> * Set/Reset correct BIT(28)/BIT(29) for STS
->>
->> Signed-off-by: Chris Ruehl<chris.ruehl@gtsys.com.hk>
->> ---
->>   drivers/usb/chipidea/core.c |   20 +++++++++++++++++---
->>   1 file changed, 17 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
->> index 5075407..2c634c1 100644
->> --- a/drivers/usb/chipidea/core.c
->> +++ b/drivers/usb/chipidea/core.c
->> @@ -243,7 +243,7 @@ static int hw_device_init(struct ci_hdrc *ci, void
->> __iomem *base)
->>
->>   static void hw_phymode_configure(struct ci_hdrc *ci)
->>   {
->> -	u32 portsc, lpm, sts;
->> +	u32 portsc, lpm, sts = 0;
->>
->>   	switch (ci->platdata->phy_mode) {
->>   	case USBPHY_INTERFACE_MODE_UTMI:
->> @@ -273,10 +273,24 @@ static void hw_phymode_configure(struct ci_hdrc *ci)
->>
->>   	if (ci->hw_bank.lpm) {
->>   		hw_write(ci, OP_DEVLC, DEVLC_PTS(7) | DEVLC_PTW, lpm);
->> -		hw_write(ci, OP_DEVLC, DEVLC_STS, sts);
->> +		if ( sts )
->> +			hw_write(ci, OP_DEVLC, DEVLC_STS, BIT(28));
->> +		else
->> +			hw_write(ci, OP_DEVLC, DEVLC_STS, ~BIT(28));
->>   	} else {
->>   		hw_write(ci, OP_PORTSC, PORTSC_PTS(7) | PORTSC_PTW, portsc);
->> -		hw_write(ci, OP_PORTSC, PORTSC_STS, sts);
->> +		if (((portsc>>  30)&  0x3)>  1) {
->> +			if (sts) {
->> +				hw_write(ci, OP_PORTSC, PORTSC_STS, BIT(29));
->> +			}
->> +			else {
->> +				portsc = (ioread32(ci->hw_bank.regmap[OP_PORTSC])
->> +						&  PORTSC_STS);
->> +				if (portsc)
->> +					hw_write(ci, OP_PORTSC, PORTSC_STS,
->> +							~BIT(29));
->> +			}
->> +		}
->>   	}
->>   }
->>
->> --
->
-> At my chipidea datasheet, the VUSB_HS_PHY_SERIAL is at HWGENERAL (bit[10..11]),
-> We are still not sure the portsc_sts is needed to set or clear, and how to do
-> it. My suggestion is just use v2 patch (except fixing one code style problem)
->
-> Peter
+> and libnuma-dev in Ubuntu.
 >
 
-Peter,
-Thanks you for your comments.
+Right, I will send v2 with 'numactl-devel/libnuma-dev/libnuma-devel'.
 
-If you have a look into the function hw_write() you will see that there is no 
-effect if hw_write(...,sts) is called with sts=0/1, because the mask will cut 
-off all bits beside BIT(29).
-I used BIT(29) rather then PORTCS_STS to make it more clear what going on.
-A write to PORTCS will always be "0" for the STS Register no matter if sts is 1 
-or 0 within Patch v2. Patch v3 will take care of the registers bit position and 
-set 1 or 0 to PORTCS_STS.
+Thanx Peter.
+>>> Applying, but please always CC linux-kernel@vger.kernel.org, so that
+>>> others can review it as well.
+>>
+>> Okey!!
+>>
+>> Thanx Arnaldo.
+>>>
+>>> - Arnaldo
+>>>> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+>>>> ---
+>>>>   tools/perf/config/Makefile | 2 +-
+>>>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+>>>> index 80ea6d8..2e615d8 100644
+>>>> --- a/tools/perf/config/Makefile
+>>>> +++ b/tools/perf/config/Makefile
+>>>> @@ -537,7 +537,7 @@ endif
+>>>>   ifndef NO_LIBNUMA
+>>>>     ifeq ($(feature-libnuma), 0)
+>>>> -    msg := $(warning No numa.h found, disables 'perf bench numa 
+>>>> mem' benchmark, please install numa-libs-devel or libnuma-dev);
+>>>> +    msg := $(warning No numa.h found, disables 'perf bench numa 
+>>>> mem' benchmark, please install numactl-devel or libnuma-devel);
+>>>>       NO_LIBNUMA := 1
+>>>>     else
+>>>>       CFLAGS += -DHAVE_LIBNUMA_SUPPORT
+>>>> -- 
+>>>> 1.8.2.1
+>
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe 
+> linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-I used the imx27 reference manual Capital 30.8.1.5.12 PORTSCx.
-
-Please comment.
-Chris
