@@ -1,38 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab3LBNY2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 08:24:28 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43824 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753109Ab3LBNY0 (ORCPT
+	id S1752754Ab3LBN0b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 08:26:31 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:46208 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989Ab3LBN0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 08:24:26 -0500
-Date: Mon, 2 Dec 2013 13:23:33 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: panchaxari <panchaxari.prasannamurthy@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Michal Simek <monstr@monstr.eu>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM:INTEGRATOR: Default enable ARM_PATCH_PHYS_VIRT,
-	AUTO_ZRELADDR
-Message-ID: <20131202132333.GJ16735@n2100.arm.linux.org.uk>
-References: <1385983731-13196-1-git-send-email-panchaxari.prasannamurthy@linaro.org> <1385983731-13196-2-git-send-email-panchaxari.prasannamurthy@linaro.org> <20131202114638.GH16735@n2100.arm.linux.org.uk> <CACRpkdZv9cZekBfJ2P1G4pMYOyAobmA2mszF=kN0Db5TC6_5+Q@mail.gmail.com>
+	Mon, 2 Dec 2013 08:26:30 -0500
+Message-ID: <529C8A83.50003@codeaurora.org>
+Date: Mon, 02 Dec 2013 08:26:27 -0500
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZv9cZekBfJ2P1G4pMYOyAobmA2mszF=kN0Db5TC6_5+Q@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Pavel Machek <pavel@ucw.cz>
+CC: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        OH@amd.pavel.ucw.cz
+Subject: Re: Nemo on emulated Nokia n900 (qemu-arm)
+References: <20131128171153.GA20486@amd.pavel.ucw.cz>
+In-Reply-To: <20131128171153.GA20486@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 01:57:10PM +0100, Linus Walleij wrote:
-> Good point, I've also seen "[RFT]" (request for testing) in some
-> cases.
+Hi Pavel,
 
-Note that it still needs [PATCH] before it.  A good way to integrate it
-is to use the form "[PATCH CFT n/nn]" where n/nn exists if you have a
-series.
+On 11/28/2013 12:11 PM, Pavel Machek wrote:
+> Hi!
+> 
+> For testing, it would be good to have some real
+> userland... unfortunately I can't figure out how to do it.
+> 
+> Ideally, I'd like to put nemo-armv7hl-n900-mmcblk0p.raw on emulated sd
+> card, but I get:
+> 
+> [    1.566345] Initializing XFRM netlink socket
+> [    1.568023] NET: Registered protocol family 17
+> [    1.570220] NET: Registered protocol family 15
+> [    1.572601] Key type dns_resolver registered
+> [    1.581481] omap_vp_forceupdate_scale: vdd_mpu_iva TRANXDONE
+> timeout exceeded while trying to clear the TRANXDONE status
+> [    1.586242] omap_vp_forceupdate_scale: vdd_core TRANXDONE timeout
+> exceeded while trying to clear the TRANXDONE status
+> [    1.601074] omap_vp_forceupdate_scale: vdd_mpu_iva TRANXDONE
+> timeout exceeded. Voltage change aborted
+> [    1.604522] cpu cpu0: omap_target: unable to scale voltage up.
+> [    1.606933] omap_hsmmc omap_hsmmc.1: no support for card's volts
+> [    1.609252] mmc1: error -22 whilst initialising SDIO card
+> SD: ACMD41 in a wrong state
+> SD: ACMD41 in a wrong state
+> SD: ACMD41 in a wrong state
+> SD: ACMD41 in a wrong state
+> SD: CMD1 in a wrong state
+> [    1.613830] cpufreq: __cpufreq_driver_target: Failed to change cpu
+> frequency: -110
+> [    1.622650] ThumbEE CPU extension supported.
+> 
+> But according to google, old linux kernels were able to work with SD
+> on qemu-arm...
+> 
+> IIRC there was some discussion that qemu does not properly emulate SD
+> card, and that internal NAND emulation can be used instead. I tried
+> using qflasher, but it is not able to use 3.5GB
+> nemo-armv7hl-n900-mmcblk0p.rawnemo-armv7hl-n900-mmcblk0p.raw -- strace
+> revealed file too big error.
+> 
+> Any ideas?
+
+While I don't know the details of QEMU SD/MMC and NAND support, another option
+you could try is the VirtIO block device peripheral.
+
+http://www.linux-kvm.org/page/Boot_from_virtio_block_device
+
+Regards,
+Christopher
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
