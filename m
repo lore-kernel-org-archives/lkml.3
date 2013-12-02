@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760102Ab3LBVca (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:32:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38192 "EHLO
+	id S1760117Ab3LBVcc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:32:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38186 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753206Ab3LBTG4 (ORCPT
+	with ESMTP id S1753128Ab3LBTGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:06:56 -0500
+	Mon, 2 Dec 2013 14:06:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gwendal Grignou <gwendal@google.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.4 11/60] libata: Fix display of sata speed
-Date: Mon,  2 Dec 2013 11:05:52 -0800
-Message-Id: <20131202190332.708724774@linuxfoundation.org>
+        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.4 10/60] can: flexcan: fix flexcan_chip_start() on imx6
+Date: Mon,  2 Dec 2013 11:05:51 -0800
+Message-Id: <20131202190332.461892828@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
 References: <20131202190330.152596462@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,67 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gwendal Grignou <gwendal@google.com>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit 3e85c3ecbc520751324a191d23bb94873ed01b10 upstream.
+commit 0d1862ea1a5bb876cf05555a7307080cb75bf379 upstream.
 
-6.0 Gbps link speed was not decoded properly:
-speed was reported at 3.0 Gbps only.
+In the flexcan_chip_start() function first the flexcan core is going through
+the soft reset sequence, then the RX FIFO is enabled.
 
-Tested: On a machine where libata reports 6.0 Gbps in
-        /var/log/messages:
-    ata1: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
+With the hardware is put into FIFO mode, message buffers 1...7 are reserved by
+the FIFO engine. The remaining message buffers are in reset default values.
+This patch removes the bogus initialization of the message buffers, as it
+causes an imprecise external abort on imx6.
 
-    Before:
-    	cat /sys/class/ata_link/link1/sata_spd
-    	3.0 Gbps
-    After:
-    	cat /sys/class/ata_link/link1/sata_spd
-    	6.0 Gbps
-
-Signed-off-by: Gwendal Grignou <gwendal@google.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Lothar Waßmann <LW@KARO-electronics.de>
+Tested-by: Lothar Waßmann <LW@KARO-electronics.de>
+[mkl: adjusted context for stable]
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/ata/libata-transport.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/net/can/flexcan.c |   12 ------------
+ 1 file changed, 12 deletions(-)
 
---- a/drivers/ata/libata-transport.c
-+++ b/drivers/ata/libata-transport.c
-@@ -319,25 +319,25 @@ int ata_tport_add(struct device *parent,
- /*
-  * ATA link attributes
-  */
-+static int noop(int x) { return x; }
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -667,7 +667,6 @@ static int flexcan_chip_start(struct net
+ {
+ 	struct flexcan_priv *priv = netdev_priv(dev);
+ 	struct flexcan_regs __iomem *regs = priv->base;
+-	unsigned int i;
+ 	int err;
+ 	u32 reg_mcr, reg_ctrl;
  
+@@ -735,17 +734,6 @@ static int flexcan_chip_start(struct net
+ 	netdev_dbg(dev, "%s: writing ctrl=0x%08x", __func__, reg_ctrl);
+ 	flexcan_write(reg_ctrl, &regs->ctrl);
+ 
+-	for (i = 0; i < ARRAY_SIZE(regs->cantxfg); i++) {
+-		flexcan_write(0, &regs->cantxfg[i].can_ctrl);
+-		flexcan_write(0, &regs->cantxfg[i].can_id);
+-		flexcan_write(0, &regs->cantxfg[i].data[0]);
+-		flexcan_write(0, &regs->cantxfg[i].data[1]);
 -
--#define ata_link_show_linkspeed(field)					\
-+#define ata_link_show_linkspeed(field, format)			        \
- static ssize_t								\
- show_ata_link_##field(struct device *dev,				\
- 		      struct device_attribute *attr, char *buf)		\
- {									\
- 	struct ata_link *link = transport_class_to_link(dev);		\
- 									\
--	return sprintf(buf,"%s\n", sata_spd_string(fls(link->field)));	\
-+	return sprintf(buf, "%s\n", sata_spd_string(format(link->field))); \
- }
- 
--#define ata_link_linkspeed_attr(field)					\
--	ata_link_show_linkspeed(field)					\
-+#define ata_link_linkspeed_attr(field, format)				\
-+	ata_link_show_linkspeed(field, format)				\
- static DEVICE_ATTR(field, S_IRUGO, show_ata_link_##field, NULL)
- 
--ata_link_linkspeed_attr(hw_sata_spd_limit);
--ata_link_linkspeed_attr(sata_spd_limit);
--ata_link_linkspeed_attr(sata_spd);
-+ata_link_linkspeed_attr(hw_sata_spd_limit, fls);
-+ata_link_linkspeed_attr(sata_spd_limit, fls);
-+ata_link_linkspeed_attr(sata_spd, noop);
- 
- 
- static DECLARE_TRANSPORT_CLASS(ata_link_class,
+-		/* put MB into rx queue */
+-		flexcan_write(FLEXCAN_MB_CNT_CODE(0x4),
+-			&regs->cantxfg[i].can_ctrl);
+-	}
+-
+ 	/* Abort any pending TX, mark Mailbox as INACTIVE */
+ 	flexcan_write(FLEXCAN_MB_CNT_CODE(0x4),
+ 		      &regs->cantxfg[FLEXCAN_TX_BUF_ID].can_ctrl);
 
 
