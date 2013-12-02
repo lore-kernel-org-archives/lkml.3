@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756473Ab3LBUSK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:18:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39200 "EHLO
+	id S1757351Ab3LBUR6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:17:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39204 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518Ab3LBTRZ (ORCPT
+	with ESMTP id S1754548Ab3LBTR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:25 -0500
+	Mon, 2 Dec 2013 14:17:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Magnus Damm <damm@opensource.se>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.12 044/212] gpio: rcar: NULL dereference on error in probe()
-Date: Mon,  2 Dec 2013 11:13:55 -0800
-Message-Id: <20131202191253.248957041@linuxfoundation.org>
+        Shan Hai <shan.hai@windriver.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.12 046/212] drivers/libata: Set max sector to 65535 for Slimtype DVD A DS8A9SH drive
+Date: Mon,  2 Dec 2013 11:13:57 -0800
+Message-Id: <20131202191253.434357574@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -28,34 +26,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Shan Hai <shan.hai@windriver.com>
 
-commit 0c8aab8e65e450f2bfea494c1b6a86ded653f88c upstream.
+commit 0523f037f65dba10191b0fa9c51266f90ba64630 upstream.
 
-It's not obvious from the label name but "err1" tries to release
-"p->irq_domain" which leads to a NULL dereference.
+The "Slimtype DVD A  DS8A9SH" drive locks up with following backtrace when
+the max sector is smaller than 65535 bytes, fix it by adding a quirk to set
+the max sector to 65535 bytes.
 
-Fixes: 119f5e448d32 ('gpio: Renesas R-Car GPIO driver V3')
+INFO: task flush-11:0:663 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+flush-11:0    D 00000000ffff5ceb     0   663      2 0x00000000
+ ffff88026d3b1710 0000000000000046 0000000000000001 0000000000000000
+ ffff88026f2530c0 ffff88026d365860 ffff88026d3b16e0 ffffffff812ffd52
+ ffff88026d4fd3d0 0000000100000001 ffff88026d3b16f0 ffff88026d3b1fd8
+Call Trace:
+ [<ffffffff812ffd52>] ? cfq_may_queue+0x52/0xf0
+ [<ffffffff81604338>] schedule+0x18/0x30
+ [<ffffffff81604392>] io_schedule+0x42/0x60
+ [<ffffffff812f22bb>] get_request_wait+0xeb/0x1f0
+ [<ffffffff81065660>] ? autoremove_wake_function+0x0/0x40
+ [<ffffffff812eb382>] ? elv_merge+0x42/0x210
+ [<ffffffff812f26ae>] __make_request+0x8e/0x4e0
+ [<ffffffff812f068e>] generic_make_request+0x21e/0x5e0
+ [<ffffffff812f0aad>] submit_bio+0x5d/0xd0
+ [<ffffffff81141422>] submit_bh+0xf2/0x130
+ [<ffffffff8114474c>] __block_write_full_page+0x1dc/0x3a0
+ [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
+ [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
+ [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
+ [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
+ [<ffffffff811449ee>] block_write_full_page_endio+0xde/0x100
+ [<ffffffff81144a20>] block_write_full_page+0x10/0x20
+ [<ffffffff81148703>] blkdev_writepage+0x13/0x20
+ [<ffffffff810d7525>] __writepage+0x15/0x40
+ [<ffffffff810d7c0f>] write_cache_pages+0x1cf/0x3e0
+ [<ffffffff810d7510>] ? __writepage+0x0/0x40
+ [<ffffffff810d7e42>] generic_writepages+0x22/0x30
+ [<ffffffff810d7e6f>] do_writepages+0x1f/0x40
+ [<ffffffff8113ae67>] writeback_single_inode+0xe7/0x3b0
+ [<ffffffff8113b574>] writeback_sb_inodes+0x184/0x280
+ [<ffffffff8113bedb>] writeback_inodes_wb+0x6b/0x1a0
+ [<ffffffff8113c24b>] wb_writeback+0x23b/0x2a0
+ [<ffffffff8113c42d>] wb_do_writeback+0x17d/0x190
+ [<ffffffff8113c48b>] bdi_writeback_task+0x4b/0xe0
+ [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
+ [<ffffffff810e8321>] bdi_start_fn+0x81/0x100
+ [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
+ [<ffffffff8106522e>] kthread+0x8e/0xa0
+ [<ffffffff81039274>] ? finish_task_switch+0x54/0xc0
+ [<ffffffff81003334>] kernel_thread_helper+0x4/0x10
+ [<ffffffff810651a0>] ? kthread+0x0/0xa0
+ [<ffffffff81003330>] ? kernel_thread_helper+0x0/0x10
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Magnus Damm <damm@opensource.se>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+ The above trace was triggered by
+   "dd if=/dev/zero of=/dev/sr0 bs=2048 count=32768"
+
+Signed-off-by: Shan Hai <shan.hai@windriver.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpio-rcar.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/libata-core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpio/gpio-rcar.c
-+++ b/drivers/gpio/gpio-rcar.c
-@@ -380,7 +380,7 @@ static int gpio_rcar_probe(struct platfo
- 	if (!p->irq_domain) {
- 		ret = -ENXIO;
- 		dev_err(&pdev->dev, "cannot initialize irq domain\n");
--		goto err1;
-+		goto err0;
- 	}
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4126,6 +4126,7 @@ static const struct ata_blacklist_entry
+ 	{ "TORiSAN DVD-ROM DRD-N216", NULL,	ATA_HORKAGE_MAX_SEC_128 },
+ 	{ "QUANTUM DAT    DAT72-000", NULL,	ATA_HORKAGE_ATAPI_MOD16_DMA },
+ 	{ "Slimtype DVD A  DS8A8SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
++	{ "Slimtype DVD A  DS8A9SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
  
- 	if (devm_request_irq(&pdev->dev, irq->start,
+ 	/* Devices we expect to fail diagnostics */
+ 
 
 
