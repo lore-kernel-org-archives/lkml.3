@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757688Ab3LBU1i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:27:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39020 "EHLO
+	id S1757673Ab3LBU1f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:27:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38991 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753079Ab3LBTQy (ORCPT
+	with ESMTP id S1753163Ab3LBTQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:16:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [PATCH 3.12 015/212] staging: r8188eu: Fix AP mode
-Date: Mon,  2 Dec 2013 11:13:26 -0800
-Message-Id: <20131202191250.329563036@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 016/212] backlight: atmel-pwm-bl: fix gpio polarity in remove
+Date: Mon,  2 Dec 2013 11:13:27 -0800
+Message-Id: <20131202191250.446881041@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,30 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 9ecfc0f45033584ec58617cf6ec37f75833d97e8 upstream.
+commit ad5066d4c2b1d696749f8d7816357c23b648c4d3 upstream.
 
-Two code lines were accidentally deleted.  Restore them.
+Make sure to honour gpio polarity also at remove so that the backlight is
+actually disabled on boards with active-low enable pin.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Acked-by: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/rtl8188eu/core/rtw_ap.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/video/backlight/atmel-pwm-bl.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/rtl8188eu/core/rtw_ap.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_ap.c
-@@ -1115,6 +1115,9 @@ int rtw_check_beacon_data(struct adapter
- 			return _FAIL;
- 	}
+--- a/drivers/video/backlight/atmel-pwm-bl.c
++++ b/drivers/video/backlight/atmel-pwm-bl.c
+@@ -206,8 +206,10 @@ static int atmel_pwm_bl_remove(struct pl
+ {
+ 	struct atmel_pwm_bl *pwmbl = platform_get_drvdata(pdev);
  
-+	/* fix bug of flush_cam_entry at STOP AP mode */
-+	psta->state |= WIFI_AP_STATE;
-+	rtw_indicate_connect(padapter);
- 	pmlmepriv->cur_network.join_res = true;/* for check if already set beacon */
- 	return ret;
- }
+-	if (pwmbl->gpio_on != -1)
+-		gpio_set_value(pwmbl->gpio_on, 0);
++	if (pwmbl->gpio_on != -1) {
++		gpio_set_value(pwmbl->gpio_on,
++					0 ^ pwmbl->pdata->on_active_low);
++	}
+ 	pwm_channel_disable(&pwmbl->pwmc);
+ 	pwm_channel_free(&pwmbl->pwmc);
+ 	backlight_device_unregister(pwmbl->bldev);
 
 
