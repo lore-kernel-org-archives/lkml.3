@@ -1,340 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab3LBLXS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 06:23:18 -0500
-Received: from relay.parallels.com ([195.214.232.42]:47422 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab3LBLUA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 06:20:00 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <dchinner@redhat.com>,
-        <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
-        <vdavydov@parallels.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v12 12/18] fs: make icache, dcache shrinkers memcg-aware
-Date: Mon, 2 Dec 2013 15:19:47 +0400
-Message-ID: <8e7582ad42f35cd9a9ea274bd203e2423b944b62.1385974612.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1385974612.git.vdavydov@parallels.com>
-References: <cover.1385974612.git.vdavydov@parallels.com>
+	id S1753945Ab3LBLXw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 06:23:52 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:35737 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753257Ab3LBLXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 06:23:46 -0500
+Message-ID: <529C6165.3050106@c-s.fr>
+Date: Mon, 02 Dec 2013 11:31:01 +0100
+From: leroy christophe <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+To: Guenter Roeck <linux@roeck-us.net>, Wim Van Sebroeck <wim@iguana.be>,
+        scottwood@freescale.com
+CC: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] watchdog: mpc8xxx_wdt convert to watchdog core
+References: <20131130153345.3070443E15@localhost.localdomain> <529B9019.9090404@roeck-us.net>
+In-Reply-To: <529B9019.9090404@roeck-us.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the per-memcg LRU infrastructure introduced by previous patches,
-this patch makes dcache and icache shrinkers memcg-aware. To achieve
-that, it converts s_dentry_lru and s_inode_lru from list_lru to
-memcg_list_lru and restricts the reclaim to per-memcg parts of the lists
-in case of memcg pressure.
 
-Other FS objects are currently ignored and only reclaimed on global
-pressure, because their shrinkers are heavily FS-specific and can't be
-converted to be memcg-aware so easily. However, we can pass on target
-memcg to the FS layer and let it decide if per-memcg objects should be
-reclaimed.
+Le 01/12/2013 20:38, Guenter Roeck a écrit :
+> On 11/30/2013 07:33 AM, Christophe Leroy wrote:
+>> Convert mpc8xxx_wdt.c to the new watchdog API.
+>>
+>> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+>>
+>> diff -ur a/drivers/watchdog/mpc8xxx_wdt.c 
+>> b/drivers/watchdog/mpc8xxx_wdt.c
+>> --- a/drivers/watchdog/mpc8xxx_wdt.c    2013-05-11 22:57:46.000000000 
+>> +0200
+>> +++ b/drivers/watchdog/mpc8xxx_wdt.c    2013-11-30 16:14:53.803495472 
+>> +0100
+>> @@ -72,28 +72,31 @@
+>>    * to 0
+>>    */
+>>   static int prescale = 1;
+>> -static unsigned int timeout_sec;
+>>
+>> -static unsigned long wdt_is_open;
+>>   static DEFINE_SPINLOCK(wdt_spinlock);
+>>
+>> -static void mpc8xxx_wdt_keepalive(void)
+>> +static int mpc8xxx_wdt_ping(struct watchdog_device *w)
+>>   {
+>>       /* Ping the WDT */
+>>       spin_lock(&wdt_spinlock);
+>>       out_be16(&wd_base->swsrr, 0x556c);
+>>       out_be16(&wd_base->swsrr, 0xaa39);
+>>       spin_unlock(&wdt_spinlock);
+>> +    return 0;
+>
+> The return code is never checked, so you can make this function void.
+watchdog .h expects an int function.
+Wouldn't it be an error to make it void, if for instance in the future 
+the return code is checked by the core ?
+>
+>>   }
+>>
+>> +static struct watchdog_device mpc8xxx_wdt_dev;
+>>   static void mpc8xxx_wdt_timer_ping(unsigned long arg);
+>> -static DEFINE_TIMER(wdt_timer, mpc8xxx_wdt_timer_ping, 0, 0);
+>> +static DEFINE_TIMER(wdt_timer, mpc8xxx_wdt_timer_ping, 0,
+>> +        (unsigned long)&mpc8xxx_wdt_dev);
+>>
+>>   static void mpc8xxx_wdt_timer_ping(unsigned long arg)
+>>   {
+>> -    mpc8xxx_wdt_keepalive();
+>> +    struct watchdog_device *w = (struct watchdog_device *)arg;
+>> +
+>> +    mpc8xxx_wdt_ping(w);
+>>       /* We're pinging it twice faster than needed, just to be sure. */
+>> -    mod_timer(&wdt_timer, jiffies + HZ * timeout_sec / 2);
+>> +    mod_timer(&wdt_timer, jiffies + HZ * w->timeout / 2);
+>>   }
+>>
+>>   static void mpc8xxx_wdt_pr_warn(const char *msg)
+>> @@ -102,19 +105,9 @@
+>>           reset ? "reset" : "machine check exception");
+>>   }
+>>
+>> -static ssize_t mpc8xxx_wdt_write(struct file *file, const char 
+>> __user *buf,
+>> -                 size_t count, loff_t *ppos)
+>> -{
+>> -    if (count)
+>> -        mpc8xxx_wdt_keepalive();
+>> -    return count;
+>> -}
+>> -
+>> -static int mpc8xxx_wdt_open(struct inode *inode, struct file *file)
+>> +static int mpc8xxx_wdt_start(struct watchdog_device *w)
+>>   {
+>>       u32 tmp = SWCRR_SWEN;
+>> -    if (test_and_set_bit(0, &wdt_is_open))
+>> -        return -EBUSY;
+>>
+>>       /* Once we start the watchdog we can't stop it */
+>>       if (nowayout)
+>
+> This code and the subsequent module_get can be removed; it is handled 
+> by the infrastructure.
+>
+>
+>> @@ -132,59 +125,30 @@
+>>
+>>       del_timer_sync(&wdt_timer);
+>>
+>> -    return nonseekable_open(inode, file);
+>> +    return 0;
+>>   }
+>>
+>> -static int mpc8xxx_wdt_release(struct inode *inode, struct file *file)
+>> +static int mpc8xxx_wdt_stop(struct watchdog_device *w)
+>>   {
+>> -    if (!nowayout)
+>> -        mpc8xxx_wdt_timer_ping(0);
+>> -    else
+>> -        mpc8xxx_wdt_pr_warn("watchdog closed");
+>> -    clear_bit(0, &wdt_is_open);
+>> +    mpc8xxx_wdt_timer_ping((unsigned long)w);
+>
+> I really dislike this typecasting back and forth.
+>
+> I think it would be better to move the mod_timer() call from 
+> mpc8xxx_wdt_timer_ping
+> into mpc8xxx_wdt_ping and call mpc8xxx_wdt_ping directly whenever 
+> possible.
+> From mpc8xxx_wdt_timer_ping you can then just call mpc8xxx_wdt_ping 
+> with the
+> typecasted parameter.
+I'm not sure I understand what you mean.
+mpc8xxx_wdt_ping() is called by the core when the user app writes into 
+/dev/watchdog.
+We don't want the set the timer in that case.
+The timer is only used for when no user app has opened /dev/watchdog yet.
 
-Note that with this patch applied we lose global LRU order, but it does
-not appear to be a critical drawback, because global pressure should try
-to balance the amount reclaimed from all memcgs. On the other hand,
-preserving global LRU order would require an extra list_head added to
-each dentry and inode, which seems to be too costly.
-
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Dave Chinner <dchinner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- fs/dcache.c        |   25 +++++++++++++++----------
- fs/inode.c         |   16 ++++++++++------
- fs/internal.h      |    9 +++++----
- fs/super.c         |   43 +++++++++++++++++++++++++------------------
- include/linux/fs.h |    4 ++--
- 5 files changed, 57 insertions(+), 40 deletions(-)
-
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 4bdb300..e8499db 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -343,18 +343,24 @@ static void dentry_unlink_inode(struct dentry * dentry)
- #define D_FLAG_VERIFY(dentry,x) WARN_ON_ONCE(((dentry)->d_flags & (DCACHE_LRU_LIST | DCACHE_SHRINK_LIST)) != (x))
- static void d_lru_add(struct dentry *dentry)
- {
-+	struct list_lru *lru =
-+		mem_cgroup_kmem_list_lru(&dentry->d_sb->s_dentry_lru, dentry);
-+
- 	D_FLAG_VERIFY(dentry, 0);
- 	dentry->d_flags |= DCACHE_LRU_LIST;
- 	this_cpu_inc(nr_dentry_unused);
--	WARN_ON_ONCE(!list_lru_add(&dentry->d_sb->s_dentry_lru, &dentry->d_lru));
-+	WARN_ON_ONCE(!list_lru_add(lru, &dentry->d_lru));
- }
- 
- static void d_lru_del(struct dentry *dentry)
- {
-+	struct list_lru *lru =
-+		mem_cgroup_kmem_list_lru(&dentry->d_sb->s_dentry_lru, dentry);
-+
- 	D_FLAG_VERIFY(dentry, DCACHE_LRU_LIST);
- 	dentry->d_flags &= ~DCACHE_LRU_LIST;
- 	this_cpu_dec(nr_dentry_unused);
--	WARN_ON_ONCE(!list_lru_del(&dentry->d_sb->s_dentry_lru, &dentry->d_lru));
-+	WARN_ON_ONCE(!list_lru_del(lru, &dentry->d_lru));
- }
- 
- static void d_shrink_del(struct dentry *dentry)
-@@ -970,9 +976,9 @@ dentry_lru_isolate(struct list_head *item, spinlock_t *lru_lock, void *arg)
- }
- 
- /**
-- * prune_dcache_sb - shrink the dcache
-- * @sb: superblock
-- * @nr_to_scan : number of entries to try to free
-+ * prune_dcache_lru - shrink the dcache
-+ * @lru: dentry lru list
-+ * @nr_to_scan: number of entries to try to free
-  * @nid: which node to scan for freeable entities
-  *
-  * Attempt to shrink the superblock dcache LRU by @nr_to_scan entries. This is
-@@ -982,14 +988,13 @@ dentry_lru_isolate(struct list_head *item, spinlock_t *lru_lock, void *arg)
-  * This function may fail to free any resources if all the dentries are in
-  * use.
-  */
--long prune_dcache_sb(struct super_block *sb, unsigned long nr_to_scan,
--		     int nid)
-+long prune_dcache_lru(struct list_lru *lru, unsigned long nr_to_scan, int nid)
- {
- 	LIST_HEAD(dispose);
- 	long freed;
- 
--	freed = list_lru_walk_node(&sb->s_dentry_lru, nid, dentry_lru_isolate,
--				       &dispose, &nr_to_scan);
-+	freed = list_lru_walk_node(lru, nid, dentry_lru_isolate,
-+				   &dispose, &nr_to_scan);
- 	shrink_dentry_list(&dispose);
- 	return freed;
- }
-@@ -1029,7 +1034,7 @@ void shrink_dcache_sb(struct super_block *sb)
- 	do {
- 		LIST_HEAD(dispose);
- 
--		freed = list_lru_walk(&sb->s_dentry_lru,
-+		freed = memcg_list_lru_walk_all(&sb->s_dentry_lru,
- 			dentry_lru_isolate_shrink, &dispose, UINT_MAX);
- 
- 		this_cpu_sub(nr_dentry_unused, freed);
-diff --git a/fs/inode.c b/fs/inode.c
-index 4bcdad3..f06a963 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -402,7 +402,10 @@ EXPORT_SYMBOL(ihold);
- 
- static void inode_lru_list_add(struct inode *inode)
- {
--	if (list_lru_add(&inode->i_sb->s_inode_lru, &inode->i_lru))
-+	struct list_lru *lru =
-+		mem_cgroup_kmem_list_lru(&inode->i_sb->s_inode_lru, inode);
-+
-+	if (list_lru_add(lru, &inode->i_lru))
- 		this_cpu_inc(nr_unused);
- }
- 
-@@ -421,8 +424,10 @@ void inode_add_lru(struct inode *inode)
- 
- static void inode_lru_list_del(struct inode *inode)
- {
-+	struct list_lru *lru =
-+		mem_cgroup_kmem_list_lru(&inode->i_sb->s_inode_lru, inode);
- 
--	if (list_lru_del(&inode->i_sb->s_inode_lru, &inode->i_lru))
-+	if (list_lru_del(lru, &inode->i_lru))
- 		this_cpu_dec(nr_unused);
- }
- 
-@@ -748,14 +753,13 @@ inode_lru_isolate(struct list_head *item, spinlock_t *lru_lock, void *arg)
-  * to trim from the LRU. Inodes to be freed are moved to a temporary list and
-  * then are freed outside inode_lock by dispose_list().
-  */
--long prune_icache_sb(struct super_block *sb, unsigned long nr_to_scan,
--		     int nid)
-+long prune_icache_lru(struct list_lru *lru, unsigned long nr_to_scan, int nid)
- {
- 	LIST_HEAD(freeable);
- 	long freed;
- 
--	freed = list_lru_walk_node(&sb->s_inode_lru, nid, inode_lru_isolate,
--				       &freeable, &nr_to_scan);
-+	freed = list_lru_walk_node(lru, nid, inode_lru_isolate,
-+				   &freeable, &nr_to_scan);
- 	dispose_list(&freeable);
- 	return freed;
- }
-diff --git a/fs/internal.h b/fs/internal.h
-index 4657424..5d977f3 100644
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -14,6 +14,7 @@ struct file_system_type;
- struct linux_binprm;
- struct path;
- struct mount;
-+struct list_lru;
- 
- /*
-  * block_dev.c
-@@ -107,8 +108,8 @@ extern int open_check_o_direct(struct file *f);
-  * inode.c
-  */
- extern spinlock_t inode_sb_list_lock;
--extern long prune_icache_sb(struct super_block *sb, unsigned long nr_to_scan,
--			    int nid);
-+extern long prune_icache_lru(struct list_lru *lru,
-+			     unsigned long nr_to_scan, int nid);
- extern void inode_add_lru(struct inode *inode);
- 
- /*
-@@ -125,8 +126,8 @@ extern int invalidate_inodes(struct super_block *, bool);
-  */
- extern struct dentry *__d_alloc(struct super_block *, const struct qstr *);
- extern int d_set_mounted(struct dentry *dentry);
--extern long prune_dcache_sb(struct super_block *sb, unsigned long nr_to_scan,
--			    int nid);
-+extern long prune_dcache_lru(struct list_lru *lru,
-+			     unsigned long nr_to_scan, int nid);
- 
- /*
-  * read_write.c
-diff --git a/fs/super.c b/fs/super.c
-index cece164..b198da4 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -57,6 +57,8 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
- 				      struct shrink_control *sc)
- {
- 	struct super_block *sb;
-+	struct list_lru *inode_lru;
-+	struct list_lru *dentry_lru;
- 	long	fs_objects = 0;
- 	long	total_objects;
- 	long	freed = 0;
-@@ -75,11 +77,14 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
- 	if (!grab_super_passive(sb))
- 		return SHRINK_STOP;
- 
--	if (sb->s_op->nr_cached_objects)
-+	if (sb->s_op->nr_cached_objects && !sc->memcg)
- 		fs_objects = sb->s_op->nr_cached_objects(sb, sc->nid);
- 
--	inodes = list_lru_count_node(&sb->s_inode_lru, sc->nid);
--	dentries = list_lru_count_node(&sb->s_dentry_lru, sc->nid);
-+	inode_lru = mem_cgroup_list_lru(&sb->s_inode_lru, sc->memcg);
-+	dentry_lru = mem_cgroup_list_lru(&sb->s_dentry_lru, sc->memcg);
-+
-+	inodes = list_lru_count_node(inode_lru, sc->nid);
-+	dentries = list_lru_count_node(dentry_lru, sc->nid);
- 	total_objects = dentries + inodes + fs_objects + 1;
- 
- 	/* proportion the scan between the caches */
-@@ -90,8 +95,8 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
- 	 * prune the dcache first as the icache is pinned by it, then
- 	 * prune the icache, followed by the filesystem specific caches
- 	 */
--	freed = prune_dcache_sb(sb, dentries, sc->nid);
--	freed += prune_icache_sb(sb, inodes, sc->nid);
-+	freed = prune_dcache_lru(dentry_lru, dentries, sc->nid);
-+	freed += prune_icache_lru(inode_lru, inodes, sc->nid);
- 
- 	if (fs_objects) {
- 		fs_objects = mult_frac(sc->nr_to_scan, fs_objects,
-@@ -108,6 +113,8 @@ static unsigned long super_cache_count(struct shrinker *shrink,
- 				       struct shrink_control *sc)
- {
- 	struct super_block *sb;
-+	struct list_lru *inode_lru;
-+	struct list_lru *dentry_lru;
- 	long	total_objects = 0;
- 
- 	sb = container_of(shrink, struct super_block, s_shrink);
-@@ -115,14 +122,14 @@ static unsigned long super_cache_count(struct shrinker *shrink,
- 	if (!grab_super_passive(sb))
- 		return 0;
- 
--	if (sb->s_op && sb->s_op->nr_cached_objects)
--		total_objects = sb->s_op->nr_cached_objects(sb,
--						 sc->nid);
-+	if (sb->s_op && sb->s_op->nr_cached_objects && !sc->memcg)
-+		total_objects = sb->s_op->nr_cached_objects(sb, sc->nid);
-+
-+	inode_lru = mem_cgroup_list_lru(&sb->s_inode_lru, sc->memcg);
-+	dentry_lru = mem_cgroup_list_lru(&sb->s_dentry_lru, sc->memcg);
- 
--	total_objects += list_lru_count_node(&sb->s_dentry_lru,
--						 sc->nid);
--	total_objects += list_lru_count_node(&sb->s_inode_lru,
--						 sc->nid);
-+	total_objects += list_lru_count_node(dentry_lru, sc->nid);
-+	total_objects += list_lru_count_node(inode_lru, sc->nid);
- 
- 	total_objects = vfs_pressure_ratio(total_objects);
- 	drop_super(sb);
-@@ -138,8 +145,8 @@ static unsigned long super_cache_count(struct shrinker *shrink,
- static void destroy_super(struct super_block *s)
- {
- 	int i;
--	list_lru_destroy(&s->s_dentry_lru);
--	list_lru_destroy(&s->s_inode_lru);
-+	memcg_list_lru_destroy(&s->s_dentry_lru);
-+	memcg_list_lru_destroy(&s->s_inode_lru);
- 	for (i = 0; i < SB_FREEZE_LEVELS; i++)
- 		percpu_counter_destroy(&s->s_writers.counter[i]);
- 	security_sb_free(s);
-@@ -183,10 +190,10 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
- 	INIT_HLIST_BL_HEAD(&s->s_anon);
- 	INIT_LIST_HEAD(&s->s_inodes);
- 
--	if (list_lru_init(&s->s_dentry_lru))
-+	if (memcg_list_lru_init(&s->s_dentry_lru))
- 		goto fail;
--	if (list_lru_init(&s->s_inode_lru)) {
--		list_lru_destroy(&s->s_dentry_lru);
-+	if (memcg_list_lru_init(&s->s_inode_lru)) {
-+		memcg_list_lru_destroy(&s->s_dentry_lru);
- 		goto fail;
- 	}
- 
-@@ -225,7 +232,7 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
- 	s->s_shrink.scan_objects = super_cache_scan;
- 	s->s_shrink.count_objects = super_cache_count;
- 	s->s_shrink.batch = 1024;
--	s->s_shrink.flags = SHRINKER_NUMA_AWARE;
-+	s->s_shrink.flags = SHRINKER_NUMA_AWARE | SHRINKER_MEMCG_AWARE;
- 	return s;
- 
- fail:
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 121f11f..8256a7e 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1322,8 +1322,8 @@ struct super_block {
- 	 * Keep the lru lists last in the structure so they always sit on their
- 	 * own individual cachelines.
- 	 */
--	struct list_lru		s_dentry_lru ____cacheline_aligned_in_smp;
--	struct list_lru		s_inode_lru ____cacheline_aligned_in_smp;
-+	struct memcg_list_lru s_dentry_lru ____cacheline_aligned_in_smp;
-+	struct memcg_list_lru s_inode_lru ____cacheline_aligned_in_smp;
- 	struct rcu_head		rcu;
- };
- 
--- 
-1.7.10.4
+>
+>>       return 0;
+>>   }
+>>
+>> -static long mpc8xxx_wdt_ioctl(struct file *file, unsigned int cmd,
+>> -                            unsigned long arg)
+>> -{
+>> -    void __user *argp = (void __user *)arg;
+>> -    int __user *p = argp;
+>> -    static const struct watchdog_info ident = {
+>> -        .options = WDIOF_KEEPALIVEPING,
+>> -        .firmware_version = 1,
+>> -        .identity = "MPC8xxx",
+>> -    };
+>> -
+>> -    switch (cmd) {
+>> -    case WDIOC_GETSUPPORT:
+>> -        return copy_to_user(argp, &ident, sizeof(ident)) ? -EFAULT : 0;
+>> -    case WDIOC_GETSTATUS:
+>> -    case WDIOC_GETBOOTSTATUS:
+>> -        return put_user(0, p);
+>> -    case WDIOC_KEEPALIVE:
+>> -        mpc8xxx_wdt_keepalive();
+>> -        return 0;
+>> -    case WDIOC_GETTIMEOUT:
+>> -        return put_user(timeout_sec, p);
+>> -    default:
+>> -        return -ENOTTY;
+>> -    }
+>> -}
+>> +static struct watchdog_info mpc8xxx_wdt_info = {
+>> +    .options = WDIOF_KEEPALIVEPING,
+>> +    .firmware_version = 1,
+>> +    .identity = "MPC8xxx",
+>> +};
+>>
+>> -static const struct file_operations mpc8xxx_wdt_fops = {
+>> -    .owner        = THIS_MODULE,
+>> -    .llseek        = no_llseek,
+>> -    .write        = mpc8xxx_wdt_write,
+>> -    .unlocked_ioctl    = mpc8xxx_wdt_ioctl,
+>> -    .open        = mpc8xxx_wdt_open,
+>> -    .release    = mpc8xxx_wdt_release,
+>> +static struct watchdog_ops mpc8xxx_wdt_ops = {
+>> +    .owner = THIS_MODULE,
+>> +    .start = mpc8xxx_wdt_start,
+>> +    .stop = mpc8xxx_wdt_stop,
+>>   };
+>>
+>> -static struct miscdevice mpc8xxx_wdt_miscdev = {
+>> -    .minor    = WATCHDOG_MINOR,
+>> -    .name    = "watchdog",
+>> -    .fops    = &mpc8xxx_wdt_fops,
+>> +static struct watchdog_device mpc8xxx_wdt_dev = {
+>> +    .info = &mpc8xxx_wdt_info,
+>> +    .ops = &mpc8xxx_wdt_ops,
+>>   };
+>>
+>>   static const struct of_device_id mpc8xxx_wdt_match[];
+>> @@ -196,6 +160,7 @@
+>>       const struct mpc8xxx_wdt_type *wdt_type;
+>>       u32 freq = fsl_get_sys_freq();
+>>       bool enabled;
+>> +    unsigned int timeout_sec;
+>>
+>>       match = of_match_device(mpc8xxx_wdt_match, &ofdev->dev);
+>>       if (!match)
+>> @@ -222,6 +187,7 @@
+>>       else
+>>           timeout_sec = timeout / freq;
+>>
+>> +    mpc8xxx_wdt_dev.timeout = timeout_sec;
+>>   #ifdef MODULE
+>>       ret = mpc8xxx_wdt_init_late();
+>>       if (ret)
+>> @@ -237,7 +203,7 @@
+>>        * userspace handles it.
+>>        */
+>>       if (enabled)
+>> -        mpc8xxx_wdt_timer_ping(0);
+>> +        mpc8xxx_wdt_timer_ping((unsigned long)&mpc8xxx_wdt_dev);
+>>       return 0;
+>>   err_unmap:
+>>       iounmap(wd_base);
+>> @@ -249,7 +215,7 @@
+>>   {
+>>       mpc8xxx_wdt_pr_warn("watchdog removed");
+>
+> The mpc8xxx_wdt_pr_warn function is now rather unnecessary since
+> it is called only once. Might as well merge it into this function.
+>
+>>       del_timer_sync(&wdt_timer);
+>> -    misc_deregister(&mpc8xxx_wdt_miscdev);
+>> +    watchdog_unregister_device(&mpc8xxx_wdt_dev);
+>>       iounmap(wd_base);
+>>
+>>       return 0;
+>> @@ -301,10 +267,11 @@
+>>       if (!wd_base)
+>>           return -ENODEV;
+>>
+>> -    ret = misc_register(&mpc8xxx_wdt_miscdev);
+>> +    watchdog_set_nowayout(&mpc8xxx_wdt_dev, nowayout);
+>> +
+>> +    ret = watchdog_register_device(&mpc8xxx_wdt_dev);
+>>       if (ret) {
+>> -        pr_err("cannot register miscdev on minor=%d (err=%d)\n",
+>> -               WATCHDOG_MINOR, ret);
+>> +        pr_err("cannot register watchdog device (err=%d)\n", ret);
+>>           return ret;
+>>       }
+>>       return 0;
+>> diff -ur a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+>> --- a/drivers/watchdog/Kconfig
+>> +++ b/drivers/watchdog/Kconfig
+>> @@ -1146,6 +1146,7 @@
+>>   config 8xxx_WDT
+>>       tristate "MPC8xxx Platform Watchdog Timer"
+>>       depends on PPC_8xx || PPC_83xx || PPC_86xx
+>> +    select WATCHDOG_CORE
+>>       help
+>>         This driver is for a SoC level watchdog that exists on some
+>>         Freescale PowerPC processors. So far this driver supports:
+>>
+>> ---
+>> Ce courrier électronique ne contient aucun virus ou logiciel 
+>> malveillant parce que la protection avast! Antivirus est active.
+>> http://www.avast.com
+>>
+>> -- 
+>> To unsubscribe from this list: send the line "unsubscribe 
+>> linux-watchdog" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>>
+>>
+>
 
