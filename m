@@ -1,83 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700Ab3LBVi4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:38:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46298 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881Ab3LBVix (ORCPT
+	id S1752932Ab3LBVox (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:44:53 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:46778 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752007Ab3LBVov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 16:38:53 -0500
-Message-ID: <529CFDE4.9070409@canonical.com>
-Date: Mon, 02 Dec 2013 16:38:44 -0500
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 2 Dec 2013 16:44:51 -0500
+Date: Mon, 2 Dec 2013 16:43:40 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Matt Wilson <msw@linux.com>, xen-devel@lists.xenproject.org,
+        Matt Wilson <msw@amazon.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Anthony Liguori <aliguori@amazon.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xen/gnttab: leave lazy MMU mode in the case of a m2p
+ override failure
+Message-ID: <20131202214340.GA12852@phenom.dumpdata.com>
+References: <1384978295-18292-1-git-send-email-msw@linux.com>
+ <20131122152110.GA3124@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1311291222150.3198@kaball.uk.xensource.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Tim Gardner <tim.gardner@canonical.com>
-Subject: Re: [REGRESSION][v3.4-rc1] PCI: add a PCI resource reallocation config
- option
-References: <52965493.8060208@canonical.com> <CAE9FiQV104AgXC+EaSvBzuRg7WTLEDvQZETPeWHY4gdpg2eY_w@mail.gmail.com>
-In-Reply-To: <CAE9FiQV104AgXC+EaSvBzuRg7WTLEDvQZETPeWHY4gdpg2eY_w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1311291222150.3198@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2013 02:17 AM, Yinghai Lu wrote:
-> On Wed, Nov 27, 2013 at 12:22 PM, Joseph Salisbury
-> <joseph.salisbury@canonical.com> wrote:
->> Hi Yinghai,
->>
->> A kernel bug was opened against Ubuntu [0].  After a kernel bisect, it
->> was found that the following commit introduced the bug:
->>
->> commit b07f2ebc109b607789f648dedcff4b125f9afec6
->> Author: Yinghai Lu <yinghai@kernel.org>
->> Date:   Thu Feb 23 19:23:32 2012 -0800
->>
->>     PCI: add a PCI resource reallocation config option
->>
->>
->>
->> The regression was introduced as of v3.4-rc1 and also exists in current
->> mainline.
->>
->> The bug seems platform specific since we have not had allot of other
->> reports.  The bug is preventing ixgbe to probe Intel x520 NIC's.
->>
->> It would be easy enough to disable the PCI_REALLOC_ENABLE_AUTO config
->> option, but I wanted to get your feedback since you are the author.  It
->> looks like the bug reporter may also be able to work around the problem
->> with the pci=realloc=.
-> The bios has problem to have two functions rom bar to same place, and
-> root bus does
-> not enough mmio range and confuse realloc logic.
->
-> Please try attached patches to top of linus's tree, or your internal tree.
->
-> Thanks
->
-> Yinghai
+On Fri, Nov 29, 2013 at 12:22:40PM +0000, Stefano Stabellini wrote:
+> On Fri, 22 Nov 2013, Konrad Rzeszutek Wilk wrote:
+> > On Wed, Nov 20, 2013 at 12:11:35PM -0800, Matt Wilson wrote:
+> > > From: Matt Wilson <msw@amazon.com>
+> > > 
+> > > Commit f62805f1 introduced a bug where lazy MMU mode isn't exited if a
+> > > m2p_add/remove_override call fails.
+> > 
+> > Stefano?
+> > 
+> 
+> Already acked here:
+> 
+> http://marc.info/?l=linux-kernel&m=138505917602905&w=2
 
-Hi Yinghai,
+Sent to Linus today.
 
-Your patches were tested against the 3.5 tree.  The patches did fix the
-bug, and allowed the Intel x520 NIC's to work properly.  We were unable
-to test this with Linus' tree due to another bug, which prevents the
-system from booting.  We are looking deeper into that bug and should be
-able to test the mainline tree at some point.
-
-Testing against the 3.5 tree required that I cherry-pick the following
-commits: ff35147, 55ed83a, 967260c and 223d96f.  However, that shouldn't
-affect the test results of your patches.
-
-Thanks for your assistance with this!
-
-
-Joe
-
+Thank you!
+> 
+> 
+> 
+> > > Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > > Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> > > Cc: David Vrabel <david.vrabel@citrix.com>
+> > > Cc: Anthony Liguori <aliguori@amazon.com>
+> > > Cc: xen-devel@lists.xenproject.org
+> > > Cc: linux-kernel@vger.kernel.org
+> > > Signed-off-by: Matt Wilson <msw@amazon.com>
+> > > ---
+> > >  drivers/xen/grant-table.c |    6 ++++--
+> > >  1 file changed, 4 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> > > index 62ccf54..0283871 100644
+> > > --- a/drivers/xen/grant-table.c
+> > > +++ b/drivers/xen/grant-table.c
+> > > @@ -930,9 +930,10 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+> > >  		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+> > >  				       &kmap_ops[i] : NULL);
+> > >  		if (ret)
+> > > -			return ret;
+> > > +			goto out;
+> > >  	}
+> > >  
+> > > + out:
+> > >  	if (lazy)
+> > >  		arch_leave_lazy_mmu_mode();
+> > >  
+> > > @@ -969,9 +970,10 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+> > >  		ret = m2p_remove_override(pages[i], kmap_ops ?
+> > >  				       &kmap_ops[i] : NULL);
+> > >  		if (ret)
+> > > -			return ret;
+> > > +			goto out;
+> > >  	}
+> > >  
+> > > + out:
+> > >  	if (lazy)
+> > >  		arch_leave_lazy_mmu_mode();
+> > >  
+> > > -- 
+> > > 1.7.9.5
+> > > 
+> > 
