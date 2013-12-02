@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab3LBMTq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 07:19:46 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:37413 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753719Ab3LBMTi (ORCPT
+	id S1753889Ab3LBMTx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 07:19:53 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:37604 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753719Ab3LBMTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 07:19:38 -0500
-X-AuditID: cbfee61a-b7f316d000007e34-a2-529c7ad97c5e
+	Mon, 2 Dec 2013 07:19:47 -0500
+X-AuditID: cbfee61a-b7f316d000007e34-b0-529c7ae23b0d
 From: Lukasz Majewski <l.majewski@samsung.com>
 To: Viresh Kumar <viresh.kumar@linaro.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -22,441 +22,114 @@ Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com,
         linux-samsung-soc@vger.kernel.org
-Subject: [PATCH RESEND v10 1/7] cpufreq: Add boost frequency support in core
-Date: Mon, 02 Dec 2013 13:19:15 +0100
-Message-id: <1385986761-17934-2-git-send-email-l.majewski@samsung.com>
+Subject: [PATCH RESEND v10 3/7] cpufreq:boost:Kconfig: Provide support for
+ software managed BOOST
+Date: Mon, 02 Dec 2013 13:19:17 +0100
+Message-id: <1385986761-17934-4-git-send-email-l.majewski@samsung.com>
 X-Mailer: git-send-email 1.7.10
 In-reply-to: <1385986761-17934-1-git-send-email-l.majewski@samsung.com>
 References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
  <1385986761-17934-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrELMWRmVeSWpSXmKPExsVy+t9jQd2bVXOCDJaeE7DYOGM9q8XTph/s
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrELMWRmVeSWpSXmKPExsVy+t9jQd1HVXOCDPbs17PYOGM9q8XTph/s
 	Fn0/rzBbrNn/k8mi8+wTZos3j7gt3jzczGhxedccNovPvUcYLWac38dkcbtxBZvFmdOXWC2e
 	POxjs9j41cOBz2PxnpdMHneu7WHzWDftLbPHlqvtLB59W1Yxehy/sZ3J4/MmuQD2KC6blNSc
-	zLLUIn27BK6M/11zGQvmFVdc+TOFvYFxVXwXIyeHhICJxOw5xxghbDGJC/fWs3UxcnEICUxn
-	lDh48hcrhNPFJPG9aw5YFZuAnsTnu0+ZQBIiAksYJV43LQCrYhbYyCyxc+ZbNpAqYQEfiWuz
-	G8FsFgFViZ7Hv9lBbF4BN4nzJ7qYIPbJSzy93wdWwyngLtH3+gkjxLomRonNi/cyTWDkXcDI
-	sIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOGSfSe1gXNlgcYhRgINRiYf3ovCcICHWxLLi
-	ytxDjBIczEoivC8TgUK8KYmVValF+fFFpTmpxYcYpTlYlMR5D7RaBwoJpCeWpGanphakFsFk
-	mTg4pRoYFfoPdrvvf6JTvTd1b9qyn6EnJ20ye6G0+lPHQqlQvyOyPEdMEou6/BUiFC7xhyzt
-	ObKtf7/Tpq+Ji90D+4JLp29bc8l/0WzW6YdXTw/euT0/d08f8y993aeT/k1YfJT/RNW/wsPc
-	GgcK/I1kPXSLK/7tynDljPhya56Nj7tavOsHJpP/++QmK7EUZyQaajEXFScCAHwd5NFVAgAA
+	zLLUIn27BK6MI/+msxecF6nYPX0TSwPjD4EuRk4OCQETiQfHTrNC2GISF+6tZ+ti5OIQEpjO
+	KPHt/w5WCKeLSaLn8w0mkCo2AT2Jz3efMoEkRASWMEq8bloAVsUssJFZYufMt2wgVcICyRKv
+	zjeA2SwCqhJnT25jAbF5Bdwk5s35BrVPXuLp/T6wGk4Bd4m+108YIdY1MUpsXryXaQIj7wJG
+	hlWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwSH7TGoH48oGi0OMAhyMSjy8F4XnBAmxJpYV
+	V+YeYpTgYFYS4X2ZCBTiTUmsrEotyo8vKs1JLT7EKM3BoiTOe6DVOlBIID2xJDU7NbUgtQgm
+	y8TBKdXAWBFzvfmc3rUA+49bFdOnB7zwnTyXPe3xjNQwziRzFv3z/MyvdtRW7zQ6uCTy9uIG
+	5UNGxzVvmnh/ipnRsUR86oZFSbs/Pjqa+6omJ3H+g6cf/BJSk9o44wWk+2zsn1W0M0xluK7x
+	2X7d6+tVVbdKQk7nKO6OVgs7H3J8v4qw4IFSo1ve340TlFiKMxINtZiLihMB7f7ZCVUCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds boost frequency support in cpufreq core (Hardware &
-Software). Some SoCs (like Exynos4 - e.g. 4x12) allow setting frequency
-above its normal operation limits. Such mode shall be only used for a
-short time.
+For safety reasons new flag - CONFIG_CPU_FREQ_BOOST_SW has been added.
+Only after selecting "EXYNOS Frequency Overclocking - Software" Kconfig
+option the software managed boost is enabled. It also selects thermal
+subsystem to be compiled in. Thermal is necessary for disabling boost
+and cooling down the device when overheating detected.
 
-Overclocking (boost) support is essentially provided by platform
-dependent cpufreq driver.
+Boost _MUST_NOT_ work without thermal subsystem with properly defined
+overheating temperatures.
 
-This commit unifies support for SW and HW (Intel) overclocking solutions
-in the core cpufreq driver. Previously the "boost" sysfs attribute was
-defined at acpi driver code. By default boost is disabled. One global
-attribute is available at: /sys/devices/system/cpu/cpufreq/boost.
-
-It only shows up when cpufreq driver supports overclocking.
-Under the hood frequencies dedicated for boosting are marked with a
-special flag (CPUFREQ_BOOST_FREQ) at driver's frequency table.
-It is the user's concern to enable/disable overclocking with a proper call
-to sysfs.
-
-The cpufreq_boost_trigger_state() function is defined non static on purpose.
-It is used later with thermal subsystem to provide automatic enable/disable
-of the BOOST feature.
+This option doesn't affect x86's ACPI hardware managed boost support
+(i.e. Intel, AMD). In this situation boost management is embedded at
+hardware.
 
 Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
 Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
 ---
 Changes for v10:
 - None
 
 Changes for v9:
-- Add cpufreq_freq_attr_scaling_boost_freqs to *cpufreq_generic_attr table
-- Introduce CONFIG_CPU_FREQ_BOOST_SW generic config flag to show BOOST
-  frequencies only when cpufreq driver supports boost
+- None
 
 Changes for v8:
-- Correction of error message at cpufreq_boost_trigger_state() function
-- Rewrite the cpufreq_boost_set_sw() function to print error message and
-  break the loop when policy adjustment fails
+- None
 
 Changes for v7:
-- Properly change cpufreq_driver->boost_enabled when set_boost() fails
-  (=0 to =!state)
-- Add likely() around cpufreq_driver
-- Remove parenthesis around boost.attr
+- Remove superfluous "default n" definition
+- Generic CPU_FREQ_BOOST_SW depends on THERMAL
 
 Changes for v6:
-- Remove sysfs boost attribute when subsys_iterface_unregister() fails
-- Move global boost_enabled variable from cpufreq.c to platform dependent
-  struct cpufreq_driver
-- pr_err() message is also printed when boost disable fails
-- Call __cpufreq_governor() to force recalculation of next frequency when
-  boost is triggered. It is needed with i.e. performance class of governors
-- Change cpufreq_boost_enable_sw() -> cpufreq_boost_set_sw()
-- Rename .enable_boost function pointer to .set_boost
+- CPU_FREQ_BOOST_SW [1] is now defined as "invisible" bool option.
+- Platform dependent ARM_EXYNOS_CPU_FREQ_BOOST_SW config option has been
+  added. It depends on ARM_EXYNOS_CPUFREQ options and selects
+  EXYNOS_THERMAL with the main boost config [1].
 
 Changes for v5:
-- Rename cpufreq_boost_trigger_state_sw() to cpufreq_boost_enable_sw()
-- Extent cpufreq_register_driver() to check if cpufreq driver provided
-  boost_enable callback. If not provided, then use cpufreq_boost_enable_sw()
-- Use single call to cpufreq_driver->enable_boost() with cpufreq driver
-  provided callback or default SW boost enable routine
-- Move pr_debug call to store_boost() from cpufreq_boost_trigger_state()
-- Change the user_policy.max value when SW boost is toggled. It is necessary
-  for proper operation of e.g. thermal subsystem.
-- Add check if cpufreq_driver pointer is not NULL at
-  cpufreq_boost_supported() routine
-- Add EXPORT_SYMBOL_GPL for cpufreq_boost_supported() and
-  cpufreq_boost_enabled()
-- Remove extra check for cpufreq_boost_supported() at
-  cpufreq_freq_table_cpuinfo()
-- Explanation of show boost logic at show_available_freqs()
-- Add cpufreq_set_boost_enabled() method to set initial value of boost_enabled
-  global flag
+- New patch
 
-Changes for v4:
-- Remove boost parameter from cpufreq_frequency_table_cpuinfo() function
-- Introduce cpufreq_boost_supported() method
-- Use of cpufreq_boost_supported() and cpufreq_boost_enabled() to decide
-  if frequency shall be skipped
-- Rename set_boost_freq() to enable_boost()
-- cpufreq_attr_available_freq() moved to freq_table.c
-- Use policy list to get access to cpufreq policies
-- Rename global boost flag (cpufreq_boost_enabled -> boost_enabled)
-- pr_err corrected ( %sable)
-- Remove sanity check at cpufreq_boost_trigger_state() entrance [to test if
-  boost is supported]
-- Use either HW (boost_enable) callback or SW managed boost
-- Introduce new cpufreq_boost_trigger_state_sw() method to handle boost
-  at SW.
-- Protect boost_enabled manipulation with lock.
+ drivers/cpufreq/Kconfig     |    4 ++++
+ drivers/cpufreq/Kconfig.arm |   15 +++++++++++++++
+ 2 files changed, 19 insertions(+)
 
-Changes for v3:
-- Method for reading boost status
-- Removal of cpufreq_frequency_table_max()
-- Extent cpufreq_frequency_table_cpuinfo() to support boost parameter
-- boost_supported flag added to cpufreq_driver struct
-- "boost" sysfs attribute control flag removed
-- One global flag describing state of the boost defined at cpufreq core
-- Rename cpufreq_driver's low_level_boost field to set_boost_freq()
-- Usage of cpufreq_sysfs_{remove|add}_file() routines
-
-Changes for v2:
-- Removal of cpufreq_boost structure and move its fields to cpufreq_driver
-  structure
-- Flag to indicate if global boost attribute is already defined
-- Extent the pr_{err|debbug} functions to show current function names
-
- drivers/cpufreq/cpufreq.c    |  118 +++++++++++++++++++++++++++++++++++++++++-
- drivers/cpufreq/freq_table.c |   56 +++++++++++++++++---
- include/linux/cpufreq.h      |   24 +++++++++
- 3 files changed, 190 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 606224a..a0d1ea0 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -328,6 +328,33 @@ EXPORT_SYMBOL_GPL(cpufreq_notify_transition);
- /*********************************************************************
-  *                          SYSFS INTERFACE                          *
-  *********************************************************************/
-+ssize_t show_boost(struct kobject *kobj,
-+				 struct attribute *attr, char *buf)
-+{
-+	return sprintf(buf, "%d\n", cpufreq_driver->boost_enabled);
-+}
-+
-+static ssize_t store_boost(struct kobject *kobj, struct attribute *attr,
-+				  const char *buf, size_t count)
-+{
-+	int ret, enable;
-+
-+	ret = sscanf(buf, "%d", &enable);
-+	if (ret != 1 || enable < 0 || enable > 1)
-+		return -EINVAL;
-+
-+	if (cpufreq_boost_trigger_state(enable)) {
-+		pr_err("%s: Cannot %s BOOST!\n", __func__,
-+		       enable ? "enable" : "disable");
-+		return -EINVAL;
-+	}
-+
-+	pr_debug("%s: cpufreq BOOST %s\n", __func__,
-+		 enable ? "enabled" : "disabled");
-+
-+	return count;
-+}
-+define_one_global_rw(boost);
+diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+index 38093e2..c8818c1 100644
+--- a/drivers/cpufreq/Kconfig
++++ b/drivers/cpufreq/Kconfig
+@@ -20,6 +20,10 @@ if CPU_FREQ
+ config CPU_FREQ_GOV_COMMON
+ 	bool
  
- static struct cpufreq_governor *__find_governor(const char *str_governor)
- {
-@@ -2149,6 +2176,73 @@ static struct notifier_block __refdata cpufreq_cpu_notifier = {
- };
++config CPU_FREQ_BOOST_SW
++	bool
++	depends on THERMAL
++
+ config CPU_FREQ_STAT
+ 	tristate "CPU frequency translation statistics"
+ 	default y
+diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+index ce52ed9..25599d6 100644
+--- a/drivers/cpufreq/Kconfig.arm
++++ b/drivers/cpufreq/Kconfig.arm
+@@ -64,6 +64,21 @@ config ARM_EXYNOS5440_CPUFREQ
  
- /*********************************************************************
-+ *               BOOST						     *
-+ *********************************************************************/
-+static int cpufreq_boost_set_sw(int state)
-+{
-+	struct cpufreq_frequency_table *freq_table;
-+	struct cpufreq_policy *policy;
-+	int ret = -EINVAL;
-+
-+	list_for_each_entry(policy, &cpufreq_policy_list, policy_list) {
-+		freq_table = cpufreq_frequency_get_table(policy->cpu);
-+		if (freq_table) {
-+			ret = cpufreq_frequency_table_cpuinfo(policy,
-+							freq_table);
-+			if (ret) {
-+				pr_err("%s: Policy frequency update failed\n",
-+				       __func__);
-+				break;
-+			}
-+			policy->user_policy.max = policy->max;
-+			__cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+int cpufreq_boost_trigger_state(int state)
-+{
-+	unsigned long flags;
-+	int ret = 0;
-+
-+	if (cpufreq_driver->boost_enabled == state)
-+		return 0;
-+
-+	write_lock_irqsave(&cpufreq_driver_lock, flags);
-+	cpufreq_driver->boost_enabled = state;
-+	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+
-+	ret = cpufreq_driver->set_boost(state);
-+	if (ret) {
-+		write_lock_irqsave(&cpufreq_driver_lock, flags);
-+		cpufreq_driver->boost_enabled = !state;
-+		write_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+
-+		pr_err("%s: Cannot %s BOOST\n", __func__,
-+		       state ? "enable" : "disable");
-+	}
-+
-+	return ret;
-+}
-+
-+int cpufreq_boost_supported(void)
-+{
-+	if (likely(cpufreq_driver))
-+		return cpufreq_driver->boost_supported;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(cpufreq_boost_supported);
-+
-+int cpufreq_boost_enabled(void)
-+{
-+	return cpufreq_driver->boost_enabled;
-+}
-+EXPORT_SYMBOL_GPL(cpufreq_boost_enabled);
-+
-+/*********************************************************************
-  *               REGISTER / UNREGISTER CPUFREQ DRIVER                *
-  *********************************************************************/
+ 	  If in doubt, say N.
  
-@@ -2188,9 +2282,25 @@ int cpufreq_register_driver(struct cpufreq_driver *driver_data)
- 	cpufreq_driver = driver_data;
- 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
- 
-+	if (cpufreq_boost_supported()) {
-+		/*
-+		 * Check if driver provides function to enable boost -
-+		 * if not, use cpufreq_boost_set_sw as default
-+		 */
-+		if (!cpufreq_driver->set_boost)
-+			cpufreq_driver->set_boost = cpufreq_boost_set_sw;
++config ARM_EXYNOS_CPU_FREQ_BOOST_SW
++	bool "EXYNOS Frequency Overclocking - Software"
++	depends on ARM_EXYNOS_CPUFREQ
++	select CPU_FREQ_BOOST_SW
++	select EXYNOS_THERMAL
++	help
++	  This driver supports software managed overclocking (BOOST).
++	  It allows usage of special frequencies for Samsung Exynos
++	  processors if thermal conditions are appropriate.
 +
-+		ret = cpufreq_sysfs_create_file(&boost.attr);
-+		if (ret) {
-+			pr_err("%s: cannot register global BOOST sysfs file\n",
-+				__func__);
-+			goto err_null_driver;
-+		}
-+	}
++	  It reguires, for safe operation, thermal framework with properly
++	  defined trip points.
 +
- 	ret = subsys_interface_register(&cpufreq_interface);
- 	if (ret)
--		goto err_null_driver;
-+		goto err_boost_unreg;
- 
- 	if (!(cpufreq_driver->flags & CPUFREQ_STICKY)) {
- 		int i;
-@@ -2217,6 +2327,9 @@ int cpufreq_register_driver(struct cpufreq_driver *driver_data)
- 	return 0;
- err_if_unreg:
- 	subsys_interface_unregister(&cpufreq_interface);
-+err_boost_unreg:
-+	if (cpufreq_boost_supported())
-+		cpufreq_sysfs_remove_file(&boost.attr);
- err_null_driver:
- 	write_lock_irqsave(&cpufreq_driver_lock, flags);
- 	cpufreq_driver = NULL;
-@@ -2243,6 +2356,9 @@ int cpufreq_unregister_driver(struct cpufreq_driver *driver)
- 	pr_debug("unregistering driver %s\n", driver->name);
- 
- 	subsys_interface_unregister(&cpufreq_interface);
-+	if (cpufreq_boost_supported())
-+		cpufreq_sysfs_remove_file(&boost.attr);
++	  If in doubt, say N.
 +
- 	unregister_hotcpu_notifier(&cpufreq_cpu_notifier);
- 
- 	down_write(&cpufreq_rwsem);
-diff --git a/drivers/cpufreq/freq_table.c b/drivers/cpufreq/freq_table.c
-index 3458d27..776e88a 100644
---- a/drivers/cpufreq/freq_table.c
-+++ b/drivers/cpufreq/freq_table.c
-@@ -32,6 +32,10 @@ int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
- 
- 			continue;
- 		}
-+		if (!cpufreq_boost_enabled()
-+		    && table[i].driver_data == CPUFREQ_BOOST_FREQ)
-+			continue;
-+
- 		pr_debug("table entry %u: %u kHz, %u driver_data\n",
- 					i, freq, table[i].driver_data);
- 		if (freq < min_freq)
-@@ -182,7 +186,8 @@ static DEFINE_PER_CPU(struct cpufreq_frequency_table *, cpufreq_show_table);
- /**
-  * show_available_freqs - show available frequencies for the specified CPU
-  */
--static ssize_t show_available_freqs(struct cpufreq_policy *policy, char *buf)
-+static ssize_t show_available_freqs(struct cpufreq_policy *policy, char *buf,
-+				    bool show_boost)
- {
- 	unsigned int i = 0;
- 	unsigned int cpu = policy->cpu;
-@@ -197,6 +202,20 @@ static ssize_t show_available_freqs(struct cpufreq_policy *policy, char *buf)
- 	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
- 		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
- 			continue;
-+		/*
-+		 * show_boost = true and driver_data = BOOST freq
-+		 * display BOOST freqs
-+		 *
-+		 * show_boost = false and driver_data = BOOST freq
-+		 * show_boost = true and driver_data != BOOST freq
-+		 * continue - do not display anything
-+		 *
-+		 * show_boost = false and driver_data != BOOST freq
-+		 * display NON BOOST freqs
-+		 */
-+		if (show_boost ^ (table[i].driver_data == CPUFREQ_BOOST_FREQ))
-+			continue;
-+
- 		count += sprintf(&buf[count], "%d ", table[i].frequency);
- 	}
- 	count += sprintf(&buf[count], "\n");
-@@ -205,16 +224,39 @@ static ssize_t show_available_freqs(struct cpufreq_policy *policy, char *buf)
- 
- }
- 
--struct freq_attr cpufreq_freq_attr_scaling_available_freqs = {
--	.attr = { .name = "scaling_available_frequencies",
--		  .mode = 0444,
--		},
--	.show = show_available_freqs,
--};
-+#define cpufreq_attr_available_freq(_name)	  \
-+struct freq_attr cpufreq_freq_attr_##_name##_freqs =     \
-+__ATTR_RO(_name##_frequencies)
-+
-+/**
-+ * show_scaling_available_frequencies - show available normal frequencies for
-+ * the specified CPU
-+ */
-+static ssize_t scaling_available_frequencies_show(struct cpufreq_policy *policy,
-+						  char *buf)
-+{
-+	return show_available_freqs(policy, buf, false);
-+}
-+cpufreq_attr_available_freq(scaling_available);
- EXPORT_SYMBOL_GPL(cpufreq_freq_attr_scaling_available_freqs);
- 
-+/**
-+ * show_available_boost_freqs - show available boost frequencies for
-+ * the specified CPU
-+ */
-+static ssize_t scaling_boost_frequencies_show(struct cpufreq_policy *policy,
-+					      char *buf)
-+{
-+	return show_available_freqs(policy, buf, true);
-+}
-+cpufreq_attr_available_freq(scaling_boost);
-+EXPORT_SYMBOL_GPL(cpufreq_freq_attr_scaling_boost_freqs);
-+
- struct freq_attr *cpufreq_generic_attr[] = {
- 	&cpufreq_freq_attr_scaling_available_freqs,
-+#ifdef CONFIG_CPU_FREQ_BOOST_SW
-+	&cpufreq_freq_attr_scaling_boost_freqs,
-+#endif
- 	NULL,
- };
- EXPORT_SYMBOL_GPL(cpufreq_generic_attr);
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index ee5fe9d..68f32dc 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -225,6 +225,11 @@ struct cpufreq_driver {
- 	int	(*suspend)	(struct cpufreq_policy *policy);
- 	int	(*resume)	(struct cpufreq_policy *policy);
- 	struct freq_attr	**attr;
-+
-+	/* platform specific boost support code */
-+	bool                    boost_supported;
-+	bool                    boost_enabled;
-+	int     (*set_boost)    (int state);
- };
- 
- /* flags */
-@@ -428,6 +433,7 @@ extern struct cpufreq_governor cpufreq_gov_conservative;
- 
- #define CPUFREQ_ENTRY_INVALID ~0
- #define CPUFREQ_TABLE_END     ~1
-+#define CPUFREQ_BOOST_FREQ    ~2
- 
- struct cpufreq_frequency_table {
- 	unsigned int	driver_data; /* driver specific data, not used by core */
-@@ -451,6 +457,24 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
- void cpufreq_frequency_table_update_policy_cpu(struct cpufreq_policy *policy);
- ssize_t cpufreq_show_cpus(const struct cpumask *mask, char *buf);
- 
-+#ifdef CONFIG_CPU_FREQ
-+int cpufreq_boost_trigger_state(int state);
-+int cpufreq_boost_supported(void);
-+int cpufreq_boost_enabled(void);
-+#else
-+static inline int cpufreq_boost_trigger_state(int state)
-+{
-+	return 0;
-+}
-+static inline int cpufreq_boost_supported(void)
-+{
-+	return 0;
-+}
-+static inline int cpufreq_boost_enabled(void)
-+{
-+	return 0;
-+}
-+#endif
- /* the following funtion is for cpufreq core use only */
- struct cpufreq_frequency_table *cpufreq_frequency_get_table(unsigned int cpu);
- 
+ config ARM_HIGHBANK_CPUFREQ
+ 	tristate "Calxeda Highbank-based"
+ 	depends on ARCH_HIGHBANK
 -- 
 1.7.10.4
 
