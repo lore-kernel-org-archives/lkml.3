@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758386Ab3LBUp6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:45:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38468 "EHLO
+	id S1758370Ab3LBUp4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:45:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38751 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753478Ab3LBTN4 (ORCPT
+	with ESMTP id S1754222Ab3LBTN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:56 -0500
+	Mon, 2 Dec 2013 14:13:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.10 098/173] drm/nouveau: when bailing out of a pushbuf ioctl, do not remove previous fence
-Date: Mon,  2 Dec 2013 11:11:21 -0800
-Message-Id: <20131202191155.308810169@linuxfoundation.org>
+        Forest Bond <forest.bond@rapidrollout.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.10 122/173] HID: dont ignore eGalax/D-Wav/EETI HIDs
+Date: Mon,  2 Dec 2013 11:11:45 -0800
+Message-Id: <20131202191157.645975985@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -26,28 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: Forest Bond <forest.bond@rapidrollout.com>
 
-commit 9360bd1112d8874d21942e2ae74f5416b00a8db6 upstream.
+commit 95d50b6c5e18ff7351c5f2a6ff53afaed5f7e664 upstream.
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Certain devices with class HID, protocol None did not work with the HID
+driver at one point, and as a result were bound to usbtouchscreen
+instead as of commit 139ebe8 ("Input: usbtouchscreen - fix eGalax HID
+ignoring").  This change was prompted by the following report:
+
+https://lkml.org/lkml/2009/1/25/127
+
+Unfortunately, the device mentioned in this report is no longer
+available for testing.
+
+We've recently discovered that some devices with class HID, protocol
+None do not work with usbtouchscreen, but do work with usbhid.  Here is
+the report that made this evident:
+
+http://comments.gmane.org/gmane.linux.kernel.input/31710
+
+Driver binding for these devices has flip-flopped a few times, so both
+of the above reports were regressions.
+
+This situation would appear to leave us with no easy way to bind every
+device to the right driver.  However, in my own testing with several
+devices I have not found a device with class HID that does not work with
+the current HID driver.  It is my belief that changes to the HID driver
+since the original report have likely fixed the issue(s) that made it
+unsuitable at the time, and that we should prefer it over usbtouchscreen
+for these devices.  In particular, HID quirks affecting these devices
+were added/removed in the following commits since then:
+
+fe6065d HID: add multi-input quirk for eGalax Touchcontroller
+77933c3 Merge branch 'egalax' into for-linus
+ebd11fe HID: Add quirk for eGalax touch controler.
+d34c4aa HID: add no-get quirk for eGalax touch controller
+
+This patch makes the HID driver no longer ignore eGalax/D-Wav/EETI
+devices with class HID.  If there are in fact devices with class HID
+that still do not work with the HID driver, we will see another round of
+regressions.  In that case I propose we investigate why the device is
+not working with the HID driver rather than re-introduce regressions for
+functioning HID devices by again binding them to usbtouchscreen.
+
+The corresponding change to usbtouchscreen will be made separately.
+
+Signed-off-by: Forest Bond <forest.bond@rapidrollout.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_gem.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/hid/hid-core.c |    9 ---------
+ 1 file changed, 9 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/nouveau_gem.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_gem.c
-@@ -287,7 +287,8 @@ validate_fini_list(struct list_head *lis
- 	list_for_each_safe(entry, tmp, list) {
- 		nvbo = list_entry(entry, struct nouveau_bo, entry);
- 
--		nouveau_bo_fence(nvbo, fence);
-+		if (likely(fence))
-+			nouveau_bo_fence(nvbo, fence);
- 
- 		if (unlikely(nvbo->validate_mapped)) {
- 			ttm_bo_kunmap(&nvbo->kmap);
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -2317,15 +2317,6 @@ bool hid_ignore(struct hid_device *hdev)
+ 				hdev->type == HID_TYPE_USBNONE)
+ 			return true;
+ 		break;
+-	case USB_VENDOR_ID_DWAV:
+-		/* These are handled by usbtouchscreen. hdev->type is probably
+-		 * HID_TYPE_USBNONE, but we say !HID_TYPE_USBMOUSE to match
+-		 * usbtouchscreen. */
+-		if ((hdev->product == USB_DEVICE_ID_EGALAX_TOUCHCONTROLLER ||
+-		     hdev->product == USB_DEVICE_ID_DWAV_TOUCHCONTROLLER) &&
+-		    hdev->type != HID_TYPE_USBMOUSE)
+-			return true;
+-		break;
+ 	case USB_VENDOR_ID_VELLEMAN:
+ 		/* These are not HID devices.  They are handled by comedi. */
+ 		if ((hdev->product >= USB_DEVICE_ID_VELLEMAN_K8055_FIRST &&
 
 
