@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760238Ab3LBVhW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:37:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38161 "EHLO
+	id S1760252Ab3LBVhl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:37:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38149 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117Ab3LBTGq (ORCPT
+	with ESMTP id S1752962Ab3LBTGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:06:46 -0500
+	Mon, 2 Dec 2013 14:06:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felipe Pena <felipensp@gmail.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.4 14/60] rtlwifi: rtl8192se: Fix wrong assignment
-Date: Mon,  2 Dec 2013 11:05:55 -0800
-Message-Id: <20131202190333.375766744@linuxfoundation.org>
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Olof Johansson <olof@lixom.net>
+Subject: [PATCH 3.4 02/60] ARM: integrator_cp: Set LCD{0,1} enable lines when turning on CLCD
+Date: Mon,  2 Dec 2013 11:05:43 -0800
+Message-Id: <20131202190330.740292588@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
 References: <20131202190330.152596462@linuxfoundation.org>
@@ -28,33 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Pena <felipensp@gmail.com>
+From: Jonathan Austin <jonathan.austin@arm.com>
 
-commit 3aef7dde8dcf09e0124f0a2665845a507331972b upstream.
+commit 30aeadd44deea3f3b0df45b9a70ee0fd5f8d6dc2 upstream.
 
-There is a typo in the struct member name on assignment when checking
-rtlphy->current_chan_bw == HT_CHANNEL_WIDTH_20_40, the check uses pwrgroup_ht40
-for bound limit and uses pwrgroup_ht20 when assigning instead.
+This turns on the internal integrator LCD display(s). It seems that the code
+to do this got lost in refactoring of the CLCD driver.
 
-Signed-off-by: Felipe Pena <felipensp@gmail.com>
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Jonathan Austin <jonathan.austin@arm.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Olof Johansson <olof@lixom.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192se/rf.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-integrator/integrator_cp.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192se/rf.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192se/rf.c
-@@ -268,7 +268,7 @@ static void _rtl92s_get_txpower_writeval
- 				    rtlefuse->pwrgroup_ht40
- 				    [RF90_PATH_A][chnl - 1]) {
- 					pwrdiff_limit[i] =
--					  rtlefuse->pwrgroup_ht20
-+					  rtlefuse->pwrgroup_ht40
- 					  [RF90_PATH_A][chnl - 1];
- 				}
- 			} else {
+--- a/arch/arm/mach-integrator/integrator_cp.c
++++ b/arch/arm/mach-integrator/integrator_cp.c
+@@ -366,7 +366,8 @@ static AMBA_APB_DEVICE(aaci, "mb:1d", 0,
+ static void cp_clcd_enable(struct clcd_fb *fb)
+ {
+ 	struct fb_var_screeninfo *var = &fb->fb.var;
+-	u32 val = CM_CTRL_STATIC1 | CM_CTRL_STATIC2;
++	u32 val = CM_CTRL_STATIC1 | CM_CTRL_STATIC2
++			| CM_CTRL_LCDEN0 | CM_CTRL_LCDEN1;
+ 
+ 	if (var->bits_per_pixel <= 8 ||
+ 	    (var->bits_per_pixel == 16 && var->green.length == 5))
 
 
