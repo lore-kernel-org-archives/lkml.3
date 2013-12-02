@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756646Ab3LBU0Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:26:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39000 "EHLO
+	id S1757611Ab3LBU0n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:26:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38999 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753452Ab3LBTQ5 (ORCPT
+	with ESMTP id S1753322Ab3LBTQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:16:57 -0500
+	Mon, 2 Dec 2013 14:16:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Hudson-Doyle <michael.hudson@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Will Deacon <will.deacon@arm.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 3.12 027/212] perf tools: Remove cast of non-variadic function to variadic
-Date: Mon,  2 Dec 2013 11:13:38 -0800
-Message-Id: <20131202191251.646626590@linuxfoundation.org>
+        Malcolm Priestley <tvboxspy@gmail.com>
+Subject: [PATCH 3.12 014/212] staging: vt6656: [BUG] Fix for TX USB resets from vendors driver.
+Date: Mon,  2 Dec 2013 11:13:25 -0800
+Message-Id: <20131202191250.228597496@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -29,75 +26,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Hudson-Doyle <michael.hudson@linaro.org>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 53805eca3d89b095062c11a6798689bb0af09216 upstream.
+commit 9df682927c2e3a92f43803d6b52095992e3b2ab8 upstream.
 
-The 4fb71074a570 (perf ui/hist: Consolidate hpp helpers) cset introduced
-a cast of percent_color_snprintf to a function pointer type with
-varargs.  Change percent_color_snprintf to be variadic and remove the
-cast.
+This fixes resets on heavy TX data traffic.
 
-The symptom of this was all percentages being reported as 0.00% in perf
-report --stdio output on the armhf arch.
+Vendor driver
+VT6656_Linux_src_v1.21.03_x86_11.04.zip
+http://www.viaembedded.com/servlet/downloadSvl?id=1890&download_file_id=14704
+This is GPL-licensed code.
 
-Signed-off-by: Michael Hudson-Doyle <michael.hudson@linaro.org>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Link: http://lkml.kernel.org/r/87zjppvw7y.fsf@canonical.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+original code
+BBbVT3184Init
+...
+//2007-0725, RobertChang add, Enable Squelch detect reset option(SQ_RST_Opt), USB (register4, bit1)
+CONTROLnsRequestIn(pDevice,
+                                 MESSAGE_TYPE_READ,
+                                 (WORD)0x600+4,     // USB's Reg4's bit1
+                                 MESSAGE_REQUEST_MEM,
+                                 1,
+                                 (PBYTE) &byData);
+byData = byData|2 ;
+CONTROLnsRequestOut(pDevice,
+                              MESSAGE_TYPE_WRITE,
+                              (WORD)0x600+4,     // USB's Reg4's bit1
+                              MESSAGE_REQUEST_MEM,
+                              1,
+                              (PBYTE) &byData);
+
+return TRUE;//ntStatus;
+....
+
+A back port patch is needed for kernels less than 3.10.
+
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/ui/hist.c    |    2 +-
- tools/perf/util/color.c |   11 +++++++++--
- tools/perf/util/color.h |    2 +-
- 3 files changed, 11 insertions(+), 4 deletions(-)
+ drivers/staging/vt6656/baseband.c |   11 +++++++++++
+ drivers/staging/vt6656/rndis.h    |    2 ++
+ 2 files changed, 13 insertions(+)
 
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -117,7 +117,7 @@ static int hpp__color_##_type(struct per
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
- 	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
--			  (hpp_snprint_fn)percent_color_snprintf, true);	\
-+			  percent_color_snprintf, true);			\
- }
+--- a/drivers/staging/vt6656/baseband.c
++++ b/drivers/staging/vt6656/baseband.c
+@@ -939,6 +939,7 @@ int BBbVT3184Init(struct vnt_private *pD
+     u8 *                   pbyAgc;
+     u16                    wLengthAgc;
+     u8                    abyArray[256];
++	u8 data;
  
- #define __HPP_ENTRY_PERCENT_FN(_type, _field)					\
---- a/tools/perf/util/color.c
-+++ b/tools/perf/util/color.c
-@@ -318,8 +318,15 @@ int percent_color_fprintf(FILE *fp, cons
- 	return r;
- }
+     ntStatus = CONTROLnsRequestIn(pDevice,
+                                   MESSAGE_TYPE_READ,
+@@ -1104,6 +1105,16 @@ else {
+     ControlvWriteByte(pDevice,MESSAGE_REQUEST_BBREG,0x0D,0x01);
  
--int percent_color_snprintf(char *bf, size_t size, const char *fmt, double percent)
-+int percent_color_snprintf(char *bf, size_t size, const char *fmt, ...)
- {
--	const char *color = get_percent_color(percent);
-+	va_list args;
-+	double percent;
-+	const char *color;
+     RFbRFTableDownload(pDevice);
 +
-+	va_start(args, fmt);
-+	percent = va_arg(args, double);
-+	va_end(args);
-+	color = get_percent_color(percent);
- 	return color_snprintf(bf, size, color, fmt, percent);
++	/* Fix for TX USB resets from vendors driver */
++	CONTROLnsRequestIn(pDevice, MESSAGE_TYPE_READ, USB_REG4,
++		MESSAGE_REQUEST_MEM, sizeof(data), &data);
++
++	data |= 0x2;
++
++	CONTROLnsRequestOut(pDevice, MESSAGE_TYPE_WRITE, USB_REG4,
++		MESSAGE_REQUEST_MEM, sizeof(data), &data);
++
+     return true;//ntStatus;
  }
---- a/tools/perf/util/color.h
-+++ b/tools/perf/util/color.h
-@@ -39,7 +39,7 @@ int color_fprintf(FILE *fp, const char *
- int color_snprintf(char *bf, size_t size, const char *color, const char *fmt, ...);
- int color_fprintf_ln(FILE *fp, const char *color, const char *fmt, ...);
- int color_fwrite_lines(FILE *fp, const char *color, size_t count, const char *buf);
--int percent_color_snprintf(char *bf, size_t size, const char *fmt, double percent);
-+int percent_color_snprintf(char *bf, size_t size, const char *fmt, ...);
- int percent_color_fprintf(FILE *fp, const char *fmt, double percent);
- const char *get_percent_color(double percent);
  
+--- a/drivers/staging/vt6656/rndis.h
++++ b/drivers/staging/vt6656/rndis.h
+@@ -66,6 +66,8 @@
+ 
+ #define VIAUSB20_PACKET_HEADER          0x04
+ 
++#define USB_REG4	0x604
++
+ typedef struct _CMD_MESSAGE
+ {
+     u8        byData[256];
 
 
