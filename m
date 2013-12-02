@@ -1,93 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab3LBHUF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 02:20:05 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:55567 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124Ab3LBHUB (ORCPT
+	id S1752579Ab3LBHUf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 02:20:35 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64373 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190Ab3LBHUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 02:20:01 -0500
-From: zhouzhouyi@gmail.com
-To: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <kvm-ppc@vger.kernel.org>, <kvm@vger.kernel.org>,
-        <dwmw2@infradead.org>, <joro@8bytes.org>, <benh@kernel.crashing.org>
-Cc: Zhouyi Zhou <zhouzhouyi@gmail.com>
-Subject: re: ping: re:[PATCH 1/1] kernel code that do not handle NULL return of kmem_cache_zalloc
-Date: Mon,  2 Dec 2013 15:19:44 +0800
-Message-Id: <1385968784-25901-1-git-send-email-zhouzhouyi@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 2 Dec 2013 02:20:33 -0500
+X-AuditID: 9c93016f-b7ce9ae000002b4b-e4-529c34c03d25
+From: Namhyung Kim <namhyung@kernel.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 03/17] tracing/kprobes: Factor out struct trace_probe
+References: <1385533203-10014-1-git-send-email-namhyung@kernel.org>
+	<1385533203-10014-4-git-send-email-namhyung@kernel.org>
+	<20131129092521.GA9585@linux.vnet.ibm.com>
+Date: Mon, 02 Dec 2013 16:20:32 +0900
+In-Reply-To: <20131129092521.GA9585@linux.vnet.ibm.com> (Srikar Dronamraju's
+	message of "Fri, 29 Nov 2013 14:55:21 +0530")
+Message-ID: <87a9gjpvlr.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhouyi Zhou <zhouzhouyi@gmail.com>
+Hi Srikar,
 
-the text of previous ping message maybe garbled sorry for the trouble
+On Fri, 29 Nov 2013 14:55:21 +0530, Srikar Dronamraju wrote:
+> * Namhyung Kim <namhyung@kernel.org> [2013-11-27 15:19:49]:
+>>  /**
+>>   * Kprobe event core functions
+>>   */
+>> -struct trace_probe {
+>> +struct trace_kprobe {
+>>  	struct list_head	list;
+>>  	struct kretprobe	rp;	/* Use rp.kp for kprobe use */
+>>  	unsigned long 		nhit;
+>> -	unsigned int		flags;	/* For TP_FLAG_* */
+>>  	const char		*symbol;	/* symbol name */
+>> -	struct ftrace_event_class	class;
+>> -	struct ftrace_event_call	call;
+>> -	struct list_head	files;
+>> -	ssize_t			size;		/* trace entry size */
+>> -	unsigned int		nr_args;
+>> -	struct probe_arg	args[];
+>> +	struct trace_probe	p;
+>
+> Can I suggest to use tp instead of p to denote trace_probe?
 
-> I do a grep for kmem_cache_zalloc and kmem_cache_alloc
-> in kernel tree, and find some code do not handle NULL
-> return of kmem_cache_zalloc correctly
+Sure.  I'll change it.
 
+>
+>>  };
+>> 
+>> 
+>
+> <..snipped..>
+>
+>> -static int register_probe_event(struct trace_probe *tp);
+>> -static int unregister_probe_event(struct trace_probe *tp);
+>> +static int register_kprobe_event(struct trace_kprobe *tk);
+>> +static int unregister_kprobe_event(struct trace_kprobe *tk);
+>> 
+>>  static DEFINE_MUTEX(probe_lock);
+>>  static LIST_HEAD(probe_list);
+>> @@ -107,14 +91,14 @@ static int kretprobe_dispatcher(struct kretprobe_instance *ri,
+>>  /*
+>>   * Allocate new trace_probe and initialize it (including kprobes).
+>>   */
+>> -static struct trace_probe *alloc_trace_probe(const char *group,
+>> +static struct trace_kprobe *alloc_trace_kprobe(const char *group,
+>>  					     const char *event,
+>>  					     void *addr,
+>>  					     const char *symbol,
+>>  					     unsigned long offs,
+>>  					     int nargs, bool is_return)
+>>  {
+>> -	struct trace_probe *tp;
+>> +	struct trace_kprobe *tp;
+>
+> Nit: Here and couple of places below: Given that tk was used to
+> represent trace_kprobe, can we use tk everywhere. Using tp to represent
+> trace_probe and trace_kprobe is a bit confusing.
 
-> Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
----
- arch/powerpc/kvm/book3s_32_mmu_host.c |    5 +++++
- drivers/iommu/omap-iommu.c            |    3 ++-
- fs/jffs2/malloc.c                     |    4 ++++
- 3 files changed, 11 insertions(+), 1 deletion(-)
+Right.  I did it because changing it to 'tk' leads to many oneline hunks
+here and there so I worried it might disturb reviewers.
 
-diff --git a/arch/powerpc/kvm/book3s_32_mmu_host.c b/arch/powerpc/kvm/book3s_32_mmu_host.c
-index 3a0abd2..5fac89d 100644
---- a/arch/powerpc/kvm/book3s_32_mmu_host.c
-+++ b/arch/powerpc/kvm/book3s_32_mmu_host.c
-@@ -243,6 +243,11 @@ next_pteg:
- 	/* Now tell our Shadow PTE code about the new page */
- 
- 	pte = kvmppc_mmu_hpte_cache_next(vcpu);
-+	if (!pte) {
-+		kvm_release_pfn_clean(hpaddr >> PAGE_SHIFT);
-+		r = -EAGAIN;
-+		goto out;
-+	}
- 
- 	dprintk_mmu("KVM: %c%c Map 0x%llx: [%lx] 0x%llx (0x%llx) -> %lx\n",
- 		    orig_pte->may_write ? 'w' : '-',
-diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
-index bcd78a7..5155714 100644
---- a/drivers/iommu/omap-iommu.c
-+++ b/drivers/iommu/omap-iommu.c
-@@ -551,7 +551,8 @@ static u32 *iopte_alloc(struct omap_iommu *obj, u32 *iopgd, u32 da)
- 		dev_vdbg(obj->dev, "%s: a new pte:%p\n", __func__, iopte);
- 	} else {
- 		/* We raced, free the reduniovant table */
--		iopte_free(iopte);
-+		if (iopte)
-+			iopte_free(iopte);
- 	}
- 
- pte_ready:
-diff --git a/fs/jffs2/malloc.c b/fs/jffs2/malloc.c
-index 4f47aa2..58e2336 100644
---- a/fs/jffs2/malloc.c
-+++ b/fs/jffs2/malloc.c
-@@ -287,6 +287,8 @@ struct jffs2_xattr_datum *jffs2_alloc_xattr_datum(void)
- {
- 	struct jffs2_xattr_datum *xd;
- 	xd = kmem_cache_zalloc(xattr_datum_cache, GFP_KERNEL);
-+	if (!xd)
-+		return NULL;
- 	dbg_memalloc("%p\n", xd);
- 
- 	xd->class = RAWNODE_CLASS_XATTR_DATUM;
-@@ -305,6 +307,8 @@ struct jffs2_xattr_ref *jffs2_alloc_xattr_ref(void)
- {
- 	struct jffs2_xattr_ref *ref;
- 	ref = kmem_cache_zalloc(xattr_ref_cache, GFP_KERNEL);
-+	if (!ref)
-+		return NULL;
- 	dbg_memalloc("%p\n", ref);
- 
- 	ref->class = RAWNODE_CLASS_XATTR_REF;
--- 
-1.7.10.4
+But yeah, I also dislike it.  I'll change it to have consistent names.
 
+>
+>>  	int ret = -ENOMEM;
+>> 
+>
+> The rest looks fine.
+
+Thanks for your review!
+Namhyung
