@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758633Ab3LBUw1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:52:27 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:54070 "EHLO
+	id S1758646Ab3LBUwb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:52:31 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54071 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758549Ab3LBUtU (ORCPT
+	with ESMTP id S1758550Ab3LBUtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 15:49:20 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 07/12] perf timechart: Move all_data per_pid list to 'struct timechart'
-Date: Mon,  2 Dec 2013 17:49:04 -0300
-Message-Id: <1386017349-24486-8-git-send-email-acme@infradead.org>
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 02/12] perf tools: Use correct return type for readn function
+Date: Mon,  2 Dec 2013 17:48:59 -0300
+Message-Id: <1386017349-24486-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1386017349-24486-1-git-send-email-acme@infradead.org>
 References: <1386017349-24486-1-git-send-email-acme@infradead.org>
@@ -30,386 +28,159 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-Removing another global variable.
+Changing readn function return type to ssize_t because read returns
+ssize_t not int.
 
-This one tho would be better done by using the machine infrastructure,
-searching for the 'struct thread' with a pid, then using thread->priv,
-etc.
+Changing callers holding variable types as well.
 
-TODO list material for now.
-
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-yyfpudgjvr6mev4bue9u72a2@git.kernel.org
+Link: http://lkml.kernel.org/r/1385634619-8129-3-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-timechart.c | 113 +++++++++++++++++++++--------------------
- 1 file changed, 59 insertions(+), 54 deletions(-)
+ tools/perf/util/header.c  | 18 +++++++++---------
+ tools/perf/util/session.c |  2 +-
+ tools/perf/util/util.c    |  4 ++--
+ tools/perf/util/util.h    |  2 +-
+ 4 files changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index e2d62f1a96e4..0c955acc08a2 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -41,8 +41,11 @@
- #define SUPPORT_OLD_POWER_EVENTS 1
- #define PWR_EVENT_EXIT -1
- 
-+struct per_pid;
-+
- struct timechart {
- 	struct perf_tool	tool;
-+	struct per_pid		*all_data;
- 	int			proc_num;
- 	unsigned int		numcpus;
- 	u64			min_freq,	/* Lowest CPU frequency seen */
-@@ -123,8 +126,6 @@ struct cpu_sample {
- 	const char *backtrace;
- };
- 
--static struct per_pid *all_data;
--
- #define CSTATE 1
- #define PSTATE 2
- 
-@@ -157,9 +158,9 @@ struct process_filter {
- static struct process_filter *process_filter;
- 
- 
--static struct per_pid *find_create_pid(int pid)
-+static struct per_pid *find_create_pid(struct timechart *tchart, int pid)
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 1cd035708931..3e755f2bfe8f 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1709,7 +1709,7 @@ static int process_nrcpus(struct perf_file_section *section __maybe_unused,
+ 			  struct perf_header *ph, int fd,
+ 			  void *data __maybe_unused)
  {
--	struct per_pid *cursor = all_data;
-+	struct per_pid *cursor = tchart->all_data;
+-	size_t ret;
++	ssize_t ret;
+ 	u32 nr;
  
- 	while (cursor) {
- 		if (cursor->pid == pid)
-@@ -169,16 +170,16 @@ static struct per_pid *find_create_pid(int pid)
- 	cursor = zalloc(sizeof(*cursor));
- 	assert(cursor != NULL);
- 	cursor->pid = pid;
--	cursor->next = all_data;
--	all_data = cursor;
-+	cursor->next = tchart->all_data;
-+	tchart->all_data = cursor;
- 	return cursor;
- }
- 
--static void pid_set_comm(int pid, char *comm)
-+static void pid_set_comm(struct timechart *tchart, int pid, char *comm)
+ 	ret = readn(fd, &nr, sizeof(nr));
+@@ -1753,7 +1753,7 @@ static int process_total_mem(struct perf_file_section *section __maybe_unused,
+ 			     void *data __maybe_unused)
  {
- 	struct per_pid *p;
- 	struct per_pidcomm *c;
--	p = find_create_pid(pid);
-+	p = find_create_pid(tchart, pid);
- 	c = p->all;
- 	while (c) {
- 		if (c->comm && strcmp(c->comm, comm) == 0) {
-@@ -200,14 +201,14 @@ static void pid_set_comm(int pid, char *comm)
- 	p->all = c;
- }
+ 	uint64_t mem;
+-	size_t ret;
++	ssize_t ret;
  
--static void pid_fork(int pid, int ppid, u64 timestamp)
-+static void pid_fork(struct timechart *tchart, int pid, int ppid, u64 timestamp)
+ 	ret = readn(fd, &mem, sizeof(mem));
+ 	if (ret != sizeof(mem))
+@@ -1822,7 +1822,7 @@ static int process_cmdline(struct perf_file_section *section __maybe_unused,
+ 			   struct perf_header *ph, int fd,
+ 			   void *data __maybe_unused)
  {
- 	struct per_pid *p, *pp;
--	p = find_create_pid(pid);
--	pp = find_create_pid(ppid);
-+	p = find_create_pid(tchart, pid);
-+	pp = find_create_pid(tchart, ppid);
- 	p->ppid = ppid;
- 	if (pp->current && pp->current->comm && !p->current)
--		pid_set_comm(pid, pp->current->comm);
-+		pid_set_comm(tchart, pid, pp->current->comm);
- 
- 	p->start_time = timestamp;
- 	if (p->current) {
-@@ -216,24 +217,24 @@ static void pid_fork(int pid, int ppid, u64 timestamp)
- 	}
- }
- 
--static void pid_exit(int pid, u64 timestamp)
-+static void pid_exit(struct timechart *tchart, int pid, u64 timestamp)
+-	size_t ret;
++	ssize_t ret;
+ 	char *str;
+ 	u32 nr, i;
+ 	struct strbuf sb;
+@@ -1858,7 +1858,7 @@ static int process_cpu_topology(struct perf_file_section *section __maybe_unused
+ 				struct perf_header *ph, int fd,
+ 				void *data __maybe_unused)
  {
- 	struct per_pid *p;
--	p = find_create_pid(pid);
-+	p = find_create_pid(tchart, pid);
- 	p->end_time = timestamp;
- 	if (p->current)
- 		p->current->end_time = timestamp;
- }
- 
--static void
--pid_put_sample(int pid, int type, unsigned int cpu, u64 start, u64 end,
--	       const char *backtrace)
-+static void pid_put_sample(struct timechart *tchart, int pid, int type,
-+			   unsigned int cpu, u64 start, u64 end,
-+			   const char *backtrace)
+-	size_t ret;
++	ssize_t ret;
+ 	u32 nr, i;
+ 	char *str;
+ 	struct strbuf sb;
+@@ -1914,7 +1914,7 @@ static int process_numa_topology(struct perf_file_section *section __maybe_unuse
+ 				 struct perf_header *ph, int fd,
+ 				 void *data __maybe_unused)
  {
- 	struct per_pid *p;
- 	struct per_pidcomm *c;
- 	struct cpu_sample *sample;
- 
--	p = find_create_pid(pid);
-+	p = find_create_pid(tchart, pid);
- 	c = p->current;
- 	if (!c) {
- 		c = zalloc(sizeof(*c));
-@@ -271,30 +272,33 @@ static int cpus_cstate_state[MAX_CPUS];
- static u64 cpus_pstate_start_times[MAX_CPUS];
- static u64 cpus_pstate_state[MAX_CPUS];
- 
--static int process_comm_event(struct perf_tool *tool __maybe_unused,
-+static int process_comm_event(struct perf_tool *tool,
- 			      union perf_event *event,
- 			      struct perf_sample *sample __maybe_unused,
- 			      struct machine *machine __maybe_unused)
+-	size_t ret;
++	ssize_t ret;
+ 	u32 nr, node, i;
+ 	char *str;
+ 	uint64_t mem_total, mem_free;
+@@ -1974,7 +1974,7 @@ static int process_pmu_mappings(struct perf_file_section *section __maybe_unused
+ 				struct perf_header *ph, int fd,
+ 				void *data __maybe_unused)
  {
--	pid_set_comm(event->comm.tid, event->comm.comm);
-+	struct timechart *tchart = container_of(tool, struct timechart, tool);
-+	pid_set_comm(tchart, event->comm.tid, event->comm.comm);
- 	return 0;
- }
- 
--static int process_fork_event(struct perf_tool *tool __maybe_unused,
-+static int process_fork_event(struct perf_tool *tool,
- 			      union perf_event *event,
- 			      struct perf_sample *sample __maybe_unused,
- 			      struct machine *machine __maybe_unused)
+-	size_t ret;
++	ssize_t ret;
+ 	char *name;
+ 	u32 pmu_num;
+ 	u32 type;
+@@ -2534,7 +2534,7 @@ static int check_magic_endian(u64 magic, uint64_t hdr_sz,
+ int perf_file_header__read(struct perf_file_header *header,
+ 			   struct perf_header *ph, int fd)
  {
--	pid_fork(event->fork.pid, event->fork.ppid, event->fork.time);
-+	struct timechart *tchart = container_of(tool, struct timechart, tool);
-+	pid_fork(tchart, event->fork.pid, event->fork.ppid, event->fork.time);
- 	return 0;
- }
+-	int ret;
++	ssize_t ret;
  
--static int process_exit_event(struct perf_tool *tool __maybe_unused,
-+static int process_exit_event(struct perf_tool *tool,
- 			      union perf_event *event,
- 			      struct perf_sample *sample __maybe_unused,
- 			      struct machine *machine __maybe_unused)
+ 	lseek(fd, 0, SEEK_SET);
+ 
+@@ -2628,7 +2628,7 @@ static int perf_file_header__read_pipe(struct perf_pipe_file_header *header,
+ 				       struct perf_header *ph, int fd,
+ 				       bool repipe)
  {
--	pid_exit(event->fork.pid, event->fork.time);
-+	struct timechart *tchart = container_of(tool, struct timechart, tool);
-+	pid_exit(tchart, event->fork.pid, event->fork.time);
- 	return 0;
+-	int ret;
++	ssize_t ret;
+ 
+ 	ret = readn(fd, header, sizeof(*header));
+ 	if (ret <= 0)
+@@ -2669,7 +2669,7 @@ static int read_attr(int fd, struct perf_header *ph,
+ 	struct perf_event_attr *attr = &f_attr->attr;
+ 	size_t sz, left;
+ 	size_t our_sz = sizeof(f_attr->attr);
+-	int ret;
++	ssize_t ret;
+ 
+ 	memset(f_attr, 0, sizeof(*f_attr));
+ 
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index b0b15e213df5..4ce146bae552 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1158,7 +1158,7 @@ static int __perf_session__process_pipe_events(struct perf_session *session,
+ 	void *buf = NULL;
+ 	int skip = 0;
+ 	u64 head;
+-	int err;
++	ssize_t err;
+ 	void *p;
+ 
+ 	perf_tool__fill_defaults(tool);
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 28a0a89c1f73..9440481e9092 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -151,12 +151,12 @@ unsigned long convert_unit(unsigned long value, char *unit)
+ 	return value;
  }
  
-@@ -361,8 +365,8 @@ static void p_state_change(struct timechart *tchart, int cpu, u64 timestamp, u64
- 		tchart->turbo_frequency = tchart->max_freq;
- }
- 
--static void sched_wakeup(int cpu, u64 timestamp, int waker, int wakee,
--			 u8 flags, const char *backtrace)
-+static void sched_wakeup(struct timechart *tchart, int cpu, u64 timestamp,
-+			 int waker, int wakee, u8 flags, const char *backtrace)
+-int readn(int fd, void *buf, size_t n)
++ssize_t readn(int fd, void *buf, size_t n)
  {
- 	struct per_pid *p;
- 	struct wake_event *we = zalloc(sizeof(*we));
-@@ -380,36 +384,37 @@ static void sched_wakeup(int cpu, u64 timestamp, int waker, int wakee,
- 	we->wakee = wakee;
- 	we->next = wake_events;
- 	wake_events = we;
--	p = find_create_pid(we->wakee);
-+	p = find_create_pid(tchart, we->wakee);
+ 	void *buf_start = buf;
  
- 	if (p && p->current && p->current->state == TYPE_NONE) {
- 		p->current->state_since = timestamp;
- 		p->current->state = TYPE_WAITING;
- 	}
- 	if (p && p->current && p->current->state == TYPE_BLOCKED) {
--		pid_put_sample(p->pid, p->current->state, cpu,
-+		pid_put_sample(tchart, p->pid, p->current->state, cpu,
- 			       p->current->state_since, timestamp, NULL);
- 		p->current->state_since = timestamp;
- 		p->current->state = TYPE_WAITING;
- 	}
- }
+ 	while (n) {
+-		int ret = read(fd, buf, n);
++		ssize_t ret = read(fd, buf, n);
  
--static void sched_switch(int cpu, u64 timestamp, int prev_pid, int next_pid,
--			 u64 prev_state, const char *backtrace)
-+static void sched_switch(struct timechart *tchart, int cpu, u64 timestamp,
-+			 int prev_pid, int next_pid, u64 prev_state,
-+			 const char *backtrace)
- {
- 	struct per_pid *p = NULL, *prev_p;
+ 		if (ret <= 0)
+ 			return ret;
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index c8f362daba87..9f6b928f6b2b 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -253,7 +253,7 @@ bool strlazymatch(const char *str, const char *pat);
+ int strtailcmp(const char *s1, const char *s2);
+ char *strxfrchar(char *s, char from, char to);
+ unsigned long convert_unit(unsigned long value, char *unit);
+-int readn(int fd, void *buf, size_t size);
++ssize_t readn(int fd, void *buf, size_t n);
  
--	prev_p = find_create_pid(prev_pid);
-+	prev_p = find_create_pid(tchart, prev_pid);
- 
--	p = find_create_pid(next_pid);
-+	p = find_create_pid(tchart, next_pid);
- 
- 	if (prev_p->current && prev_p->current->state != TYPE_NONE)
--		pid_put_sample(prev_pid, TYPE_RUNNING, cpu,
-+		pid_put_sample(tchart, prev_pid, TYPE_RUNNING, cpu,
- 			       prev_p->current->state_since, timestamp,
- 			       backtrace);
- 	if (p && p->current) {
- 		if (p->current->state != TYPE_NONE)
--			pid_put_sample(next_pid, p->current->state, cpu,
-+			pid_put_sample(tchart, next_pid, p->current->state, cpu,
- 				       p->current->state_since, timestamp,
- 				       backtrace);
- 
-@@ -566,7 +571,7 @@ process_sample_cpu_frequency(struct timechart *tchart,
- }
- 
- static int
--process_sample_sched_wakeup(struct timechart *tchart __maybe_unused,
-+process_sample_sched_wakeup(struct timechart *tchart,
- 			    struct perf_evsel *evsel,
- 			    struct perf_sample *sample,
- 			    const char *backtrace)
-@@ -575,12 +580,12 @@ process_sample_sched_wakeup(struct timechart *tchart __maybe_unused,
- 	int waker = perf_evsel__intval(evsel, sample, "common_pid");
- 	int wakee = perf_evsel__intval(evsel, sample, "pid");
- 
--	sched_wakeup(sample->cpu, sample->time, waker, wakee, flags, backtrace);
-+	sched_wakeup(tchart, sample->cpu, sample->time, waker, wakee, flags, backtrace);
- 	return 0;
- }
- 
- static int
--process_sample_sched_switch(struct timechart *tchart __maybe_unused,
-+process_sample_sched_switch(struct timechart *tchart,
- 			    struct perf_evsel *evsel,
- 			    struct perf_sample *sample,
- 			    const char *backtrace)
-@@ -589,8 +594,8 @@ process_sample_sched_switch(struct timechart *tchart __maybe_unused,
- 	int next_pid = perf_evsel__intval(evsel, sample, "next_pid");
- 	u64 prev_state = perf_evsel__intval(evsel, sample, "prev_state");
- 
--	sched_switch(sample->cpu, sample->time, prev_pid, next_pid, prev_state,
--		     backtrace);
-+	sched_switch(tchart, sample->cpu, sample->time, prev_pid, next_pid,
-+		     prev_state, backtrace);
- 	return 0;
- }
- 
-@@ -681,16 +686,16 @@ static void end_sample_processing(struct timechart *tchart)
- /*
-  * Sort the pid datastructure
-  */
--static void sort_pids(void)
-+static void sort_pids(struct timechart *tchart)
- {
- 	struct per_pid *new_list, *p, *cursor, *prev;
- 	/* sort by ppid first, then by pid, lowest to highest */
- 
- 	new_list = NULL;
- 
--	while (all_data) {
--		p = all_data;
--		all_data = p->next;
-+	while (tchart->all_data) {
-+		p = tchart->all_data;
-+		tchart->all_data = p->next;
- 		p->next = NULL;
- 
- 		if (new_list == NULL) {
-@@ -723,7 +728,7 @@ static void sort_pids(void)
- 				prev->next = p;
- 		}
- 	}
--	all_data = new_list;
-+	tchart->all_data = new_list;
- }
- 
- 
-@@ -752,7 +757,7 @@ static void draw_c_p_states(struct timechart *tchart)
- 	}
- }
- 
--static void draw_wakeups(void)
-+static void draw_wakeups(struct timechart *tchart)
- {
- 	struct wake_event *we;
- 	struct per_pid *p;
-@@ -764,7 +769,7 @@ static void draw_wakeups(void)
- 		char *task_from = NULL, *task_to = NULL;
- 
- 		/* locate the column of the waker and wakee */
--		p = all_data;
-+		p = tchart->all_data;
- 		while (p) {
- 			if (p->pid == we->waker || p->pid == we->wakee) {
- 				c = p->all;
-@@ -820,12 +825,12 @@ static void draw_wakeups(void)
- 	}
- }
- 
--static void draw_cpu_usage(void)
-+static void draw_cpu_usage(struct timechart *tchart)
- {
- 	struct per_pid *p;
- 	struct per_pidcomm *c;
- 	struct cpu_sample *sample;
--	p = all_data;
-+	p = tchart->all_data;
- 	while (p) {
- 		c = p->all;
- 		while (c) {
-@@ -851,7 +856,7 @@ static void draw_process_bars(struct timechart *tchart)
- 
- 	Y = 2 * tchart->numcpus + 2;
- 
--	p = all_data;
-+	p = tchart->all_data;
- 	while (p) {
- 		c = p->all;
- 		while (c) {
-@@ -937,7 +942,7 @@ static int determine_display_tasks_filtered(struct timechart *tchart)
- 	struct per_pidcomm *c;
- 	int count = 0;
- 
--	p = all_data;
-+	p = tchart->all_data;
- 	while (p) {
- 		p->display = 0;
- 		if (p->start_time == 1)
-@@ -980,7 +985,7 @@ static int determine_display_tasks(struct timechart *tchart, u64 threshold)
- 	if (process_filter)
- 		return determine_display_tasks_filtered(tchart);
- 
--	p = all_data;
-+	p = tchart->all_data;
- 	while (p) {
- 		p->display = 0;
- 		if (p->start_time == 1)
-@@ -1045,13 +1050,13 @@ static void write_svg_file(struct timechart *tchart, const char *filename)
- 	for (i = 0; i < tchart->numcpus; i++)
- 		svg_cpu_box(i, tchart->max_freq, tchart->turbo_frequency);
- 
--	draw_cpu_usage();
-+	draw_cpu_usage(tchart);
- 	if (tchart->proc_num)
- 		draw_process_bars(tchart);
- 	if (!tchart->tasks_only)
- 		draw_c_p_states(tchart);
- 	if (tchart->proc_num)
--		draw_wakeups();
-+		draw_wakeups(tchart);
- 
- 	svg_close();
- }
-@@ -1096,7 +1101,7 @@ static int __cmd_timechart(struct timechart *tchart, const char *output_name)
- 
- 	end_sample_processing(tchart);
- 
--	sort_pids();
-+	sort_pids(tchart);
- 
- 	write_svg_file(tchart, output_name);
+ struct perf_event_attr;
  
 -- 
 1.8.1.4
