@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab3LBTjE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:39:04 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:37738 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752417Ab3LBTi7 (ORCPT
+	id S1756003Ab3LBTkA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:40:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39583 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754760Ab3LBTSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:38:59 -0500
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Masanari Iida <standby24x7@gmail.com>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Vlad Lungu <vlad.lungu@windriver.com>
-Subject: [PATCH] tty: xuartps: Properly guard sysrq specific code
-Date: Mon,  2 Dec 2013 11:38:38 -0800
-Message-Id: <1386013118-25280-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.4.4
+	Mon, 2 Dec 2013 14:18:47 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 158/212] ALSA: hda/realtek - Set pcbeep amp for ALC668
+Date: Mon,  2 Dec 2013 11:15:49 -0800
+Message-Id: <20131202191305.276653948@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
+References: <20131202191248.517975703@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 'tty: xuartps: Implement BREAK detection, add SYSRQ support'
-(0c0c47bc40a2e358d593b2d7fb93b50027fbfc0c) introduced sysrq support
-without properly guarding sysrq specific code which results in build
-errors when sysrq is disabled:
-	DNAME=KBUILD_STR(xilinx_uartps)" -c -o
-	drivers/tty/serial/.tmp_xilinx_uartps.o
-	drivers/tty/serial/xilinx_uartps.c
-	drivers/tty/serial/xilinx_uartps.c: In function 'xuartps_isr':
-	drivers/tty/serial/xilinx_uartps.c:247:5: error: 'struct uart_port'
-	has no member named 'sysrq'
-	drivers/tty/serial/xilinx_uartps.c:247:5: error: 'struct uart_port'
-	has no member named 'sysrq'
-	drivers/tty/serial/xilinx_uartps.c:247:5: error: 'struct uart_port'
-	has no member named 'sysrq'
-	make[3]: *** [drivers/tty/serial/xilinx_uartps.o] Error 1
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Reported-by: Masanari Iida <standby24x7@gmail.com>
-Cc: Vlad Lungu <vlad.lungu@windriver.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+------------------
+
+From: Kailang Yang <kailang@realtek.com>
+
+commit 9ad54547cf6f4410eba83bb95dfd2a0966718d6d upstream.
+
+Set the missing pcbeep default amp for ALC668.
+
+Signed-off-by: Kailang Yang <kailang@realtek.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/tty/serial/xilinx_uartps.c | 2 ++
- 1 file changed, 2 insertions(+)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
-index e46e9f3f19b9..f619ad5b5eae 100644
---- a/drivers/tty/serial/xilinx_uartps.c
-+++ b/drivers/tty/serial/xilinx_uartps.c
-@@ -240,6 +240,7 @@ static irqreturn_t xuartps_isr(int irq, void *dev_id)
- 					continue;
- 			}
- 
-+#ifdef SUPPORT_SYSRQ
- 			/*
- 			 * uart_handle_sysrq_char() doesn't work if
- 			 * spinlocked, for some reason
-@@ -253,6 +254,7 @@ static irqreturn_t xuartps_isr(int irq, void *dev_id)
- 				}
- 				spin_lock(&port->lock);
- 			}
-+#endif
- 
- 			port->icount.rx++;
- 
--- 
-1.8.4.4
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4864,6 +4864,7 @@ static int patch_alc662(struct hda_codec
+ 		case 0x10ec0272:
+ 		case 0x10ec0663:
+ 		case 0x10ec0665:
++		case 0x10ec0668:
+ 			set_beep_amp(spec, 0x0b, 0x04, HDA_INPUT);
+ 			break;
+ 		case 0x10ec0273:
+
 
