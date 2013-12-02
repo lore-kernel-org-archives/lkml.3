@@ -1,46 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756787Ab3LBUDv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:03:51 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:49199 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756780Ab3LBUDX (ORCPT
+	id S1756769Ab3LBUDU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:03:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39165 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754629Ab3LBTRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 15:03:23 -0500
-MIME-Version: 1.0
-From: Bryan Wu <cooloney@gmail.com>
-Date: Mon, 2 Dec 2013 12:03:01 -0800
-Message-ID: <CAK5ve-Jf=rEBaS0MDfk9DCXEeRa16ddKtF1fseW=c_8q7tm0Vg@mail.gmail.com>
-Subject: [GIT PULL] leds fixes for 3.13-rc2
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 2 Dec 2013 14:17:53 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dave Jiang <dave.jiang@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [PATCH 3.12 092/212] ioatdma: fix selection of 16 vs 8 source path
+Date: Mon,  2 Dec 2013 11:14:43 -0800
+Message-Id: <20131202191257.802260586@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
+References: <20131202191248.517975703@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Please consider the following bug fix since commit
-dc1ccc48159d63eca5089e507c82c7d22ef60839:
+------------------
 
-  Linux 3.13-rc2 (2013-11-29 12:57:14 -0800)
+From: Dan Williams <dan.j.williams@intel.com>
 
-are available in the git repository at:
+commit 21e96c7313486390c694919522a76dfea0a86c59 upstream.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git
-leds-fixes-for-3.13
+When performing continuations there are implied sources that need to be
+added to the source count. Quoting dma_set_maxpq:
 
-for you to fetch changes up to aa1a6d6d74fff31060e08f6007037e6d807c8130:
+/* dma_maxpq - reduce maxpq in the face of continued operations
+ * @dma - dma device with PQ capability
+ * @flags - to check if DMA_PREP_CONTINUE and DMA_PREP_PQ_DISABLE_P are set
+ *
+ * When an engine does not support native continuation we need 3 extra
+ * source slots to reuse P and Q with the following coefficients:
+ * 1/ {00} * P : remove P from Q', but use it as a source for P'
+ * 2/ {01} * Q : use Q to continue Q' calculation
+ * 3/ {00} * Q : subtract Q from P' to cancel (2)
+ *
+ * In the case where P is disabled we only need 1 extra source:
+ * 1/ {01} * Q : use Q to continue Q' calculation
+ */
 
-  leds: pwm: Fix for deferred probe in DT booted mode (2013-12-02
-11:53:17 -0800)
+...fix the selection of the 16 source path to take these implied sources
+into account.
 
-----------------------------------------------------------------
-Peter Ujfalusi (1):
-      leds: pwm: Fix for deferred probe in DT booted mode
+Note this also kills the BUG_ON(src_cnt < 9) check in
+__ioat3_prep_pq16_lock().  Besides not accounting for implied sources
+the check is redundant given we already made the path selection.
 
- drivers/leds/leds-pwm.c | 53 ++++++++++++++++++++++++-------------------------
- 1 file changed, 26 insertions(+), 27 deletions(-)
+Cc: Dave Jiang <dave.jiang@intel.com>
+Acked-by: Dave Jiang <dave.jiang@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/dma/ioat/dma_v3.c |   30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
+
+--- a/drivers/dma/ioat/dma_v3.c
++++ b/drivers/dma/ioat/dma_v3.c
+@@ -1116,9 +1116,6 @@ __ioat3_prep_pq16_lock(struct dma_chan *
+ 	u8 op;
+ 	int i, s, idx, num_descs;
+ 
+-	/* this function only handles src_cnt 9 - 16 */
+-	BUG_ON(src_cnt < 9);
+-
+ 	/* this function is only called with 9-16 sources */
+ 	op = result ? IOAT_OP_PQ_VAL_16S : IOAT_OP_PQ_16S;
+ 
+@@ -1204,13 +1201,21 @@ __ioat3_prep_pq16_lock(struct dma_chan *
+ 	return &desc->txd;
+ }
+ 
++static int src_cnt_flags(unsigned int src_cnt, unsigned long flags)
++{
++	if (dmaf_p_disabled_continue(flags))
++		return src_cnt + 1;
++	else if (dmaf_continue(flags))
++		return src_cnt + 3;
++	else
++		return src_cnt;
++}
++
+ static struct dma_async_tx_descriptor *
+ ioat3_prep_pq(struct dma_chan *chan, dma_addr_t *dst, dma_addr_t *src,
+ 	      unsigned int src_cnt, const unsigned char *scf, size_t len,
+ 	      unsigned long flags)
+ {
+-	struct dma_device *dma = chan->device;
+-
+ 	/* specify valid address for disabled result */
+ 	if (flags & DMA_PREP_PQ_DISABLE_P)
+ 		dst[0] = dst[1];
+@@ -1230,7 +1235,7 @@ ioat3_prep_pq(struct dma_chan *chan, dma
+ 		single_source_coef[0] = scf[0];
+ 		single_source_coef[1] = 0;
+ 
+-		return (src_cnt > 8) && (dma->max_pq > 8) ?
++		return src_cnt_flags(src_cnt, flags) > 8 ?
+ 			__ioat3_prep_pq16_lock(chan, NULL, dst, single_source,
+ 					       2, single_source_coef, len,
+ 					       flags) :
+@@ -1238,7 +1243,7 @@ ioat3_prep_pq(struct dma_chan *chan, dma
+ 					     single_source_coef, len, flags);
+ 
+ 	} else {
+-		return (src_cnt > 8) && (dma->max_pq > 8) ?
++		return src_cnt_flags(src_cnt, flags) > 8 ?
+ 			__ioat3_prep_pq16_lock(chan, NULL, dst, src, src_cnt,
+ 					       scf, len, flags) :
+ 			__ioat3_prep_pq_lock(chan, NULL, dst, src, src_cnt,
+@@ -1251,8 +1256,6 @@ ioat3_prep_pq_val(struct dma_chan *chan,
+ 		  unsigned int src_cnt, const unsigned char *scf, size_t len,
+ 		  enum sum_check_flags *pqres, unsigned long flags)
+ {
+-	struct dma_device *dma = chan->device;
+-
+ 	/* specify valid address for disabled result */
+ 	if (flags & DMA_PREP_PQ_DISABLE_P)
+ 		pq[0] = pq[1];
+@@ -1264,7 +1267,7 @@ ioat3_prep_pq_val(struct dma_chan *chan,
+ 	 */
+ 	*pqres = 0;
+ 
+-	return (src_cnt > 8) && (dma->max_pq > 8) ?
++	return src_cnt_flags(src_cnt, flags) > 8 ?
+ 		__ioat3_prep_pq16_lock(chan, pqres, pq, src, src_cnt, scf, len,
+ 				       flags) :
+ 		__ioat3_prep_pq_lock(chan, pqres, pq, src, src_cnt, scf, len,
+@@ -1275,7 +1278,6 @@ static struct dma_async_tx_descriptor *
+ ioat3_prep_pqxor(struct dma_chan *chan, dma_addr_t dst, dma_addr_t *src,
+ 		 unsigned int src_cnt, size_t len, unsigned long flags)
+ {
+-	struct dma_device *dma = chan->device;
+ 	unsigned char scf[src_cnt];
+ 	dma_addr_t pq[2];
+ 
+@@ -1284,7 +1286,7 @@ ioat3_prep_pqxor(struct dma_chan *chan,
+ 	flags |= DMA_PREP_PQ_DISABLE_Q;
+ 	pq[1] = dst; /* specify valid address for disabled result */
+ 
+-	return (src_cnt > 8) && (dma->max_pq > 8) ?
++	return src_cnt_flags(src_cnt, flags) > 8 ?
+ 		__ioat3_prep_pq16_lock(chan, NULL, pq, src, src_cnt, scf, len,
+ 				       flags) :
+ 		__ioat3_prep_pq_lock(chan, NULL, pq, src, src_cnt, scf, len,
+@@ -1296,7 +1298,6 @@ ioat3_prep_pqxor_val(struct dma_chan *ch
+ 		     unsigned int src_cnt, size_t len,
+ 		     enum sum_check_flags *result, unsigned long flags)
+ {
+-	struct dma_device *dma = chan->device;
+ 	unsigned char scf[src_cnt];
+ 	dma_addr_t pq[2];
+ 
+@@ -1310,8 +1311,7 @@ ioat3_prep_pqxor_val(struct dma_chan *ch
+ 	flags |= DMA_PREP_PQ_DISABLE_Q;
+ 	pq[1] = pq[0]; /* specify valid address for disabled result */
+ 
+-
+-	return (src_cnt > 8) && (dma->max_pq > 8) ?
++	return src_cnt_flags(src_cnt, flags) > 8 ?
+ 		__ioat3_prep_pq16_lock(chan, result, pq, &src[1], src_cnt - 1,
+ 				       scf, len, flags) :
+ 		__ioat3_prep_pq_lock(chan, result, pq, &src[1], src_cnt - 1,
+
+
