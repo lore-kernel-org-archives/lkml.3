@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757024Ab3LBUnQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:43:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38798 "EHLO
+	id S1757159Ab3LBUnu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:43:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38751 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754251Ab3LBTOE (ORCPT
+	with ESMTP id S1754247Ab3LBTOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:14:04 -0500
+	Mon, 2 Dec 2013 14:14:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Stone <daniels@collabora.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.10 119/173] Input: evdev - fall back to vmalloc for client event buffer
-Date: Mon,  2 Dec 2013 11:11:42 -0800
-Message-Id: <20131202191157.373989087@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 117/173] ALSA: hda - Check leaf nodes to find aamix amps
+Date: Mon,  2 Dec 2013 11:11:40 -0800
+Message-Id: <20131202191157.176019939@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,69 +26,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Stone <daniel@fooishbar.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 92eb77d0ffbaa71b501a0a8dabf09a351bf4267f upstream.
+commit 2ded3e5b61d61d0bc90bebb8004db6184c7db6eb upstream.
 
-evdev always tries to allocate the event buffer for clients using
-kzalloc rather than vmalloc, presumably to avoid mapping overhead where
-possible.  However, drivers like bcm5974, which claims support for
-reporting 16 fingers simultaneously, can have an extraordinarily large
-buffer.  The resultant contiguous order-4 allocation attempt fails due
-to fragmentation, and the device is thus unusable until reboot.
+The current generic parser assumes blindly that the volume and mute
+amps are found in the aamix node itself.  But on some codecs,
+typically Analog Devices ones, the aamix amps are separately
+implemented in each leaf node of the aamix node, and the current
+driver can't establish the correct amp controls.  This is a regression
+compared with the previous static quirks.
 
-Try kzalloc if we can to avoid the mapping overhead, but if that fails,
-fall back to vzalloc.
+This patch extends the search for the amps to the leaf nodes for
+allowing the aamix controls again on such codecs.
+In this implementation, I didn't code to loop through the whole paths,
+since usually one depth should suffice, and we can't search too
+deeply, as it may result in the conflicting control assignments.
 
-Signed-off-by: Daniel Stone <daniels@collabora.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=65641
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/evdev.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ sound/pci/hda/hda_generic.c |   57 ++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 45 insertions(+), 12 deletions(-)
 
---- a/drivers/input/evdev.c
-+++ b/drivers/input/evdev.c
-@@ -18,6 +18,8 @@
- #include <linux/poll.h>
- #include <linux/sched.h>
- #include <linux/slab.h>
-+#include <linux/vmalloc.h>
-+#include <linux/mm.h>
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/input/mt.h>
-@@ -289,7 +291,11 @@ static int evdev_release(struct inode *i
- 	mutex_unlock(&evdev->mutex);
+--- a/sound/pci/hda/hda_generic.c
++++ b/sound/pci/hda/hda_generic.c
+@@ -2747,6 +2747,42 @@ static int add_loopback_list(struct hda_
+ 	return 0;
+ }
  
- 	evdev_detach_client(evdev, client);
--	kfree(client);
++/* return true if either a volume or a mute amp is found for the given
++ * aamix path; the amp has to be either in the mixer node or its direct leaf
++ */
++static bool look_for_mix_leaf_ctls(struct hda_codec *codec, hda_nid_t mix_nid,
++				   hda_nid_t pin, unsigned int *mix_val,
++				   unsigned int *mute_val)
++{
++	int idx, num_conns;
++	const hda_nid_t *list;
++	hda_nid_t nid;
 +
-+	if (is_vmalloc_addr(client))
-+		vfree(client);
-+	else
-+		kfree(client);
- 
- 	evdev_close_device(evdev);
- 
-@@ -309,12 +315,14 @@ static int evdev_open(struct inode *inod
++	idx = snd_hda_get_conn_index(codec, mix_nid, pin, true);
++	if (idx < 0)
++		return false;
++
++	*mix_val = *mute_val = 0;
++	if (nid_has_volume(codec, mix_nid, HDA_INPUT))
++		*mix_val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
++	if (nid_has_mute(codec, mix_nid, HDA_INPUT))
++		*mute_val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
++	if (*mix_val && *mute_val)
++		return true;
++
++	/* check leaf node */
++	num_conns = snd_hda_get_conn_list(codec, mix_nid, &list);
++	if (num_conns < idx)
++		return false;
++	nid = list[idx];
++	if (!*mix_val && nid_has_volume(codec, nid, HDA_OUTPUT))
++		*mix_val = HDA_COMPOSE_AMP_VAL(nid, 3, 0, HDA_OUTPUT);
++	if (!*mute_val && nid_has_mute(codec, nid, HDA_OUTPUT))
++		*mute_val = HDA_COMPOSE_AMP_VAL(nid, 3, 0, HDA_OUTPUT);
++
++	return *mix_val || *mute_val;
++}
++
+ /* create input playback/capture controls for the given pin */
+ static int new_analog_input(struct hda_codec *codec, int input_idx,
+ 			    hda_nid_t pin, const char *ctlname, int ctlidx,
+@@ -2754,12 +2790,11 @@ static int new_analog_input(struct hda_c
  {
- 	struct evdev *evdev = container_of(inode->i_cdev, struct evdev, cdev);
- 	unsigned int bufsize = evdev_compute_buffer_size(evdev->handle.dev);
-+	unsigned int size = sizeof(struct evdev_client) +
-+					bufsize * sizeof(struct input_event);
- 	struct evdev_client *client;
- 	int error;
+ 	struct hda_gen_spec *spec = codec->spec;
+ 	struct nid_path *path;
+-	unsigned int val;
++	unsigned int mix_val, mute_val;
+ 	int err, idx;
  
--	client = kzalloc(sizeof(struct evdev_client) +
--				bufsize * sizeof(struct input_event),
--			 GFP_KERNEL);
-+	client = kzalloc(size, GFP_KERNEL | __GFP_NOWARN);
-+	if (!client)
-+		client = vzalloc(size);
- 	if (!client)
- 		return -ENOMEM;
+-	if (!nid_has_volume(codec, mix_nid, HDA_INPUT) &&
+-	    !nid_has_mute(codec, mix_nid, HDA_INPUT))
+-		return 0; /* no need for analog loopback */
++	if (!look_for_mix_leaf_ctls(codec, mix_nid, pin, &mix_val, &mute_val))
++		return 0;
  
+ 	path = snd_hda_add_new_path(codec, pin, mix_nid, 0);
+ 	if (!path)
+@@ -2768,20 +2803,18 @@ static int new_analog_input(struct hda_c
+ 	spec->loopback_paths[input_idx] = snd_hda_get_path_idx(codec, path);
+ 
+ 	idx = path->idx[path->depth - 1];
+-	if (nid_has_volume(codec, mix_nid, HDA_INPUT)) {
+-		val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
+-		err = __add_pb_vol_ctrl(spec, HDA_CTL_WIDGET_VOL, ctlname, ctlidx, val);
++	if (mix_val) {
++		err = __add_pb_vol_ctrl(spec, HDA_CTL_WIDGET_VOL, ctlname, ctlidx, mix_val);
+ 		if (err < 0)
+ 			return err;
+-		path->ctls[NID_PATH_VOL_CTL] = val;
++		path->ctls[NID_PATH_VOL_CTL] = mix_val;
+ 	}
+ 
+-	if (nid_has_mute(codec, mix_nid, HDA_INPUT)) {
+-		val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
+-		err = __add_pb_sw_ctrl(spec, HDA_CTL_WIDGET_MUTE, ctlname, ctlidx, val);
++	if (mute_val) {
++		err = __add_pb_sw_ctrl(spec, HDA_CTL_WIDGET_MUTE, ctlname, ctlidx, mute_val);
+ 		if (err < 0)
+ 			return err;
+-		path->ctls[NID_PATH_MUTE_CTL] = val;
++		path->ctls[NID_PATH_MUTE_CTL] = mute_val;
+ 	}
+ 
+ 	path->active = true;
 
 
