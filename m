@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932065Ab3LBTxi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:53:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39383 "EHLO
+	id S1756484Ab3LBTxo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:53:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39373 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754625Ab3LBTSP (ORCPT
+	with ESMTP id S1754738Ab3LBTSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:15 -0500
+	Mon, 2 Dec 2013 14:18:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 3.12 119/212] n_tty: Ensure reader restarts worker for next reader
-Date: Mon,  2 Dec 2013 11:15:10 -0800
-Message-Id: <20131202191300.431715789@linuxfoundation.org>
+Subject: [PATCH 3.12 117/212] n_tty: Fix echo overrun tail computation
+Date: Mon,  2 Dec 2013 11:15:08 -0800
+Message-Id: <20131202191300.248356199@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -28,40 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Hurley <peter@hurleysoftware.com>
 
-commit 42458f41d08f0873299e830464c1232a6839297d upstream.
+commit 6f2225363c205e186c1465c2c7c84f17c1635504 upstream.
 
-A departing reader must restart a flush_to_ldisc() worker _before_
-the next reader enters the read loop; this is to avoid the new reader
-concluding no more i/o is available and prematurely exiting, when the
-old reader simply hasn't re-started the worker yet.
+Commit cbfd0340ae1993378fd47179db949e050e16e697,
+'n_tty: Process echoes in blocks', introduced an error when
+consuming the echo buffer tail to prevent buffer overrun, where
+the incorrect operation code byte is checked to determine how
+far to advance the tail to the next echo byte.
+
+Check the correct byte for the echo operation code byte.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_tty.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/tty/n_tty.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 --- a/drivers/tty/n_tty.c
 +++ b/drivers/tty/n_tty.c
-@@ -2253,6 +2253,9 @@ static ssize_t n_tty_read(struct tty_str
- 		if (time)
- 			timeout = time;
- 	}
-+	n_tty_set_room(tty);
-+	up_read(&tty->termios_rwsem);
-+
- 	mutex_unlock(&ldata->atomic_read_lock);
- 	remove_wait_queue(&tty->read_wait, &wait);
- 
-@@ -2263,8 +2266,6 @@ static ssize_t n_tty_read(struct tty_str
- 	if (b - buf)
- 		retval = b - buf;
- 
--	n_tty_set_room(tty);
--	up_read(&tty->termios_rwsem);
- 	return retval;
- }
- 
+@@ -768,7 +768,7 @@ static size_t __process_echoes(struct tt
+ 	 * data at the tail to prevent a subsequent overrun */
+ 	while (ldata->echo_commit - tail >= ECHO_DISCARD_WATERMARK) {
+ 		if (echo_buf(ldata, tail) == ECHO_OP_START) {
+-			if (echo_buf(ldata, tail) == ECHO_OP_ERASE_TAB)
++			if (echo_buf(ldata, tail + 1) == ECHO_OP_ERASE_TAB)
+ 				tail += 3;
+ 			else
+ 				tail += 2;
 
 
