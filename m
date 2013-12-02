@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827Ab3LBIr0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 03:47:26 -0500
+	id S1753183Ab3LBIr6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 03:47:58 -0500
 Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:60846 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751284Ab3LBIrY (ORCPT
+	with ESMTP id S1752522Ab3LBIr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 03:47:24 -0500
-X-AuditID: 9c930179-b7b6eae000007f2a-47-529c491ab8f2
+	Mon, 2 Dec 2013 03:47:26 -0500
+X-AuditID: 9c930179-b7b6eae000007f2a-59-529c491b71ca
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Pekka Enberg <penberg@kernel.org>
 Cc: Christoph Lameter <cl@linux.com>,
@@ -16,23 +16,34 @@ Cc: Christoph Lameter <cl@linux.com>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v3 0/5] slab: implement byte sized indexes for the freelist of a slab
-Date: Mon,  2 Dec 2013 17:49:38 +0900
-Message-Id: <1385974183-31423-1-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v3 4/5] slab: introduce byte sized index for the freelist of a slab
+Date: Mon,  2 Dec 2013 17:49:42 +0900
+Message-Id: <1385974183-31423-5-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1385974183-31423-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1385974183-31423-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset implements byte sized indexes for the freelist of a slab.
-
 Currently, the freelist of a slab consist of unsigned int sized indexes.
-Most of slabs have less number of objects than 256, so much space is wasted.
-To reduce this overhead, this patchset implements byte sized indexes for
-the freelist of a slab. With it, we can save 3 bytes for each objects.
+Since most of slabs have less number of objects than 256, large sized
+indexes is needless. For example, consider the minimum kmalloc slab. It's
+object size is 32 byte and it would consist of one page, so 256 indexes
+through byte sized index are enough to contain all possible indexes.
 
-Below is some numbers of 'cat /proc/slabinfo'.
+There can be some slabs whose object size is 8 byte. We cannot handle
+this case with byte sized index, so we need to restrict minimum
+object size. Since these slabs are not major, wasted memory from these
+slabs would be negligible.
+
+Some architectures' page size isn't 4096 bytes and rather larger than
+4096 bytes (One example is 64KB page size on PPC or IA64) so that
+byte sized index doesn't fit to them. In this case, we will use
+two bytes sized index.
+
+Below is some number for this patch.
 
 * Before *
 kmalloc-512          525    640    512    8    1 : tunables   54   27    0 : slabdata     80     80      0
@@ -81,24 +92,70 @@ Here are the performance results on my 4 cpus machine.
 cache-misses are reduced by this patchset, roughly 5%.
 And elapsed times are improved by 1%.
 
-This patchset comes from a Christoph's idea.
-https://lkml.org/lkml/2013/8/23/315
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-Patches are on top of v3.13-rc1.
-
-Thanks.
-
-Joonsoo Kim (5):
-  slab: factor out calculate nr objects in cache_estimate
-  slab: introduce helper functions to get/set free object
-  slab: restrict the number of objects in a slab
-  slab: introduce byte sized index for the freelist of a slab
-  slab: make more slab management structure off the slab
-
- include/linux/slab.h |   11 ++++++
- mm/slab.c            |   97 +++++++++++++++++++++++++++++++++-----------------
- 2 files changed, 76 insertions(+), 32 deletions(-)
-
+diff --git a/mm/slab.c b/mm/slab.c
+index 7c3c132..7fab788 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -634,8 +634,8 @@ static void cache_estimate(unsigned long gfporder, size_t buffer_size,
+ 
+ 	} else {
+ 		nr_objs = calculate_nr_objs(slab_size, buffer_size,
+-					sizeof(unsigned int), align);
+-		mgmt_size = ALIGN(nr_objs * sizeof(unsigned int), align);
++					sizeof(freelist_idx_t), align);
++		mgmt_size = ALIGN(nr_objs * sizeof(freelist_idx_t), align);
+ 	}
+ 	*num = nr_objs;
+ 	*left_over = slab_size - nr_objs*buffer_size - mgmt_size;
+@@ -2038,7 +2038,7 @@ static size_t calculate_slab_order(struct kmem_cache *cachep,
+ 			 * looping condition in cache_grow().
+ 			 */
+ 			offslab_limit = size;
+-			offslab_limit /= sizeof(unsigned int);
++			offslab_limit /= sizeof(freelist_idx_t);
+ 
+  			if (num > offslab_limit)
+ 				break;
+@@ -2286,7 +2286,7 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
+ 		return -E2BIG;
+ 
+ 	freelist_size =
+-		ALIGN(cachep->num * sizeof(unsigned int), cachep->align);
++		ALIGN(cachep->num * sizeof(freelist_idx_t), cachep->align);
+ 
+ 	/*
+ 	 * If the slab has been placed off-slab, and we have enough space then
+@@ -2299,7 +2299,7 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
+ 
+ 	if (flags & CFLGS_OFF_SLAB) {
+ 		/* really off slab. No need for manual alignment */
+-		freelist_size = cachep->num * sizeof(unsigned int);
++		freelist_size = cachep->num * sizeof(freelist_idx_t);
+ 
+ #ifdef CONFIG_PAGE_POISONING
+ 		/* If we're going to use the generic kernel_map_pages()
+@@ -2569,15 +2569,15 @@ static void *alloc_slabmgmt(struct kmem_cache *cachep,
+ 	return freelist;
+ }
+ 
+-static inline unsigned int get_free_obj(struct page *page, unsigned int idx)
++static inline freelist_idx_t get_free_obj(struct page *page, unsigned char idx)
+ {
+-	return ((unsigned int *)page->freelist)[idx];
++	return ((freelist_idx_t *)page->freelist)[idx];
+ }
+ 
+ static inline void set_free_obj(struct page *page,
+-					unsigned int idx, unsigned int val)
++					unsigned char idx, freelist_idx_t val)
+ {
+-	((unsigned int *)(page->freelist))[idx] = val;
++	((freelist_idx_t *)(page->freelist))[idx] = val;
+ }
+ 
+ static void cache_init_objs(struct kmem_cache *cachep,
 -- 
 1.7.9.5
 
