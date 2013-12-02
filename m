@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab3LBTRp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:17:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39165 "EHLO
+	id S1754705Ab3LBTSH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:18:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39252 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab3LBTRa (ORCPT
+	with ESMTP id S1753905Ab3LBTRs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:30 -0500
+	Mon, 2 Dec 2013 14:17:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Samir Benmendil <samir.benmendil@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Levente Kurusa <levex@linux.com>
-Subject: [PATCH 3.12 055/212] ahci: add Marvell 9230 to the AHCI PCI device list
-Date: Mon,  2 Dec 2013 11:14:06 -0800
-Message-Id: <20131202191254.292282872@linuxfoundation.org>
+        Rodolfo Giometti <giometti@enneenne.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, Chris Ball <cjb@laptop.org>
+Subject: [PATCH 3.12 085/212] mmc: atmel-mci: fix oops in atmci_tasklet_func
+Date: Mon,  2 Dec 2013 11:14:36 -0800
+Message-Id: <20131202191257.136891310@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,31 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Samir Benmendil <samir.benmendil@gmail.com>
+From: Rodolfo Giometti <giometti@enneenne.com>
 
-commit 6d5278a68a75891db1df5ae1ecf83d288fc58c65 upstream.
+commit fbd986cd420d1deeabf1039ec4e74075a5639db5 upstream.
 
-Tested with a DAWICONTROL DC-624e on 3.10.10
+In some cases, a NULL pointer dereference happens because data is NULL when
+STATE_END_REQUEST case is reached in atmci_tasklet_func.
 
-Signed-off-by: Samir Benmendil <samir.benmendil@gmail.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reviewed-by: Levente Kurusa <levex@linux.com>
+Signed-off-by: Rodolfo Giometti <giometti@enneenne.com>
+Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/mmc/host/atmel-mci.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -435,6 +435,8 @@ static const struct pci_device_id ahci_p
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 on some Gigabyte */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x91a3),
- 	  .driver_data = board_ahci_yes_fbs },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9230),
-+	  .driver_data = board_ahci_yes_fbs },
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -1810,12 +1810,14 @@ static void atmci_tasklet_func(unsigned
+ 			if (unlikely(status)) {
+ 				host->stop_transfer(host);
+ 				host->data = NULL;
+-				if (status & ATMCI_DTOE) {
+-					data->error = -ETIMEDOUT;
+-				} else if (status & ATMCI_DCRCE) {
+-					data->error = -EILSEQ;
+-				} else {
+-					data->error = -EIO;
++				if (data) {
++					if (status & ATMCI_DTOE) {
++						data->error = -ETIMEDOUT;
++					} else if (status & ATMCI_DCRCE) {
++						data->error = -EILSEQ;
++					} else {
++						data->error = -EIO;
++					}
+ 				}
+ 			}
  
- 	/* Promise */
- 	{ PCI_VDEVICE(PROMISE, 0x3f20), board_ahci },	/* PDC42819 */
 
 
