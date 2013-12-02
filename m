@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006Ab3LBUZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:25:11 -0500
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:37267 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753756Ab3LBUZG (ORCPT
+	id S1757581Ab3LBUY0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:24:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39018 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576Ab3LBTRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 15:25:06 -0500
-Date: Mon, 2 Dec 2013 17:24:59 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>, Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Pekka Enberg <penberg@iki.fi>
-Subject: Re: [PATCH 1/3] perf tools: Record total sampling time
-Message-ID: <20131202202459.GF17149@ghostprotocols.net>
-References: <1385967199-3759-1-git-send-email-namhyung@kernel.org>
- <1385967199-3759-2-git-send-email-namhyung@kernel.org>
- <20131202124527.GB22212@gmail.com>
- <20131202125709.GA22404@gmail.com>
- <1385999009.1710.72.camel@leonhard>
- <20131202163620.GC27781@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131202163620.GC27781@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 2 Dec 2013 14:17:04 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Thomas Pfaff <tpfaff@pcs.com>, Ivo Sieben <meltedpianoman@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.12 026/212] genirq: Set the irq thread policy without checking CAP_SYS_NICE
+Date: Mon,  2 Dec 2013 11:13:37 -0800
+Message-Id: <20131202191251.547725120@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
+References: <20131202191248.517975703@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Dec 02, 2013 at 05:36:20PM +0100, Ingo Molnar escreveu:
-> * Namhyung Kim <namhyung@kernel.org> wrote:
-> > 2013-12-02 (월), 13:57 +0100, Ingo Molnar:
-> > > So basically, in the end I think it should be possible to have the 
-> > > following behavior:
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-> > >    perf record -a -e cycles sleep 1
+------------------
 
-> > >    perf report stat              # Reports as if we ran: 'perf stat -a -e cycles sleep 1'
-> > >    perf report                   # Reports the usual histogram
+From: Thomas Pfaff <tpfaff@pcs.com>
 
-> > >    perf report --stat            # Reports the perf stat output and the histogram
+commit bbfe65c219c638e19f1da5adab1005b2d68ca810 upstream.
 
-> > > or so.
+In commit ee23871389 ("genirq: Set irq thread to RT priority on
+creation") we moved the assigment of the thread's priority from the
+thread's function into __setup_irq(). That function may run in user
+context for instance if the user opens an UART node and then driver
+calls requests in the ->open() callback. That user may not have
+CAP_SYS_NICE and so the irq thread won't run with the SCHED_OTHER
+policy.
 
-> > I don't think we need both of 'perf report stat' and 'perf report
-> > --stat'.  At least it looks somewhat confusing to users IMHO.
+This patch uses sched_setscheduler_nocheck() so we omit the CAP_SYS_NICE
+check which is otherwise required for the SCHED_OTHER policy.
+
+[bigeasy: Rewrite the changelog]
+
+Signed-off-by: Thomas Pfaff <tpfaff@pcs.com>
+Cc: Ivo Sieben <meltedpianoman@gmail.com>
+Link: http://lkml.kernel.org/r/1381489240-29626-1-git-send-email-bigeasy@linutronix.de
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/irq/manage.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -956,7 +956,7 @@ __setup_irq(unsigned int irq, struct irq
+ 			goto out_mput;
+ 		}
  
-> Okay. Maybe the --stat option would be the more logical choice, 
-> because '--' options can be added arbitrarily, while it would be weird 
-> to add multiple subcommand options.
+-		sched_setscheduler(t, SCHED_FIFO, &param);
++		sched_setscheduler_nocheck(t, SCHED_FIFO, &param);
  
-> So basically there would be two options:
- 
->    --show-stat         [--no-show-stat]
->    --show-histogram    [--no-show-histogram]
- 
-> Today --show-histogram is the only one enabled by default.
- 
-> Running:
- 
->    perf report --no-show-histogram --show-stat
+ 		/*
+ 		 * We keep the reference to the task struct even if
 
-Why not:
 
-perf stat -i perf.data
-
-and make it be an optional argument, so plain:
-
-perf stat -i
-
-would process perf.data, i.e. would get the samples, accrue the periods,
-calculate the time, etc and then present it as 'perf stat <some
-target>'.
-
-Right now 'perf stat -i' i used for '--no-inherit', perhaps we can just
-have --no-inherit have no short option and grab -i to have the same
-meaning as in 'report', 'script', etc.
-
-- Arnaldo
