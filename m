@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758011Ab3LBUfE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:35:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38911 "EHLO
+	id S932098Ab3LBUfZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:35:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38908 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754396Ab3LBTO2 (ORCPT
+	with ESMTP id S1754391Ab3LBTO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:14:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH 3.10 153/173] media: stv0367: Dont use dynamic static allocation
-Date: Mon,  2 Dec 2013 11:12:16 -0800
-Message-Id: <20131202191200.897965049@linuxfoundation.org>
+Subject: [PATCH 3.10 152/173] media: stv090x: Dont use dynamic static allocation
+Date: Mon,  2 Dec 2013 11:12:15 -0800
+Message-Id: <20131202191200.789340389@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -29,11 +29,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit 9aca4fb0571ce9cfef680ceb08d19dd008015307 upstream.
+commit f7a35df15b1f7de7823946aebc9164854e66ea07 upstream.
 
 Dynamic static allocation is evil, as Kernel stack is too low, and
 compilation complains about it on some archs:
-	drivers/media/dvb-frontends/stv0367.c:791:1: warning: 'stv0367_writeregs.constprop.4' uses dynamic stack allocation [enabled by default]
+       drivers/media/dvb-frontends/stv090x.c:750:1: warning: 'stv090x_write_regs.constprop.6' uses dynamic stack allocation [enabled by default]
 Instead, let's enforce a limit for the buffer. Considering that I2C
 transfers are generally limited, and that devices used on USB has a
 max data length of 64 bytes for	the control URBs.
@@ -49,44 +49,38 @@ Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-frontends/stv0367.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/media/dvb-frontends/stv090x.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/drivers/media/dvb-frontends/stv0367.c
-+++ b/drivers/media/dvb-frontends/stv0367.c
-@@ -33,6 +33,9 @@
- #include "stv0367_regs.h"
- #include "stv0367_priv.h"
+--- a/drivers/media/dvb-frontends/stv090x.c
++++ b/drivers/media/dvb-frontends/stv090x.c
+@@ -35,6 +35,9 @@
+ #include "stv090x.h"
+ #include "stv090x_priv.h"
  
 +/* Max transfer size done by I2C transfer functions */
 +#define MAX_XFER_SIZE  64
 +
- static int stvdebug;
- module_param_named(debug, stvdebug, int, 0644);
+ static unsigned int verbose;
+ module_param(verbose, int, 0644);
  
-@@ -767,7 +770,7 @@ static struct st_register def0367cab[STV
- static
- int stv0367_writeregs(struct stv0367_state *state, u16 reg, u8 *data, int len)
+@@ -722,9 +725,16 @@ static int stv090x_write_regs(struct stv
  {
--	u8 buf[len + 2];
-+	u8 buf[MAX_XFER_SIZE];
- 	struct i2c_msg msg = {
- 		.addr = state->config->demod_address,
- 		.flags = 0,
-@@ -776,6 +779,14 @@ int stv0367_writeregs(struct stv0367_sta
- 	};
+ 	const struct stv090x_config *config = state->config;
  	int ret;
+-	u8 buf[2 + count];
++	u8 buf[MAX_XFER_SIZE];
+ 	struct i2c_msg i2c_msg = { .addr = config->address, .flags = 0, .buf = buf, .len = 2 + count };
  
-+	if (2 + len > sizeof(buf)) {
++	if (2 + count > sizeof(buf)) {
 +		printk(KERN_WARNING
 +		       "%s: i2c wr reg=%04x: len=%d is too big!\n",
-+		       KBUILD_MODNAME, reg, len);
++		       KBUILD_MODNAME, reg, count);
 +		return -EINVAL;
 +	}
 +
-+
- 	buf[0] = MSB(reg);
- 	buf[1] = LSB(reg);
- 	memcpy(buf + 2, data, len);
+ 	buf[0] = reg >> 8;
+ 	buf[1] = reg & 0xff;
+ 	memcpy(&buf[2], data, count);
 
 
