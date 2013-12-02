@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756480Ab3LBUQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:16:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39211 "EHLO
+	id S1757364Ab3LBUSB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:18:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39152 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754553Ab3LBTR1 (ORCPT
+	with ESMTP id S1754547Ab3LBTR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:27 -0500
+	Mon, 2 Dec 2013 14:17:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.12 049/212] rtlwifi: Fix endian error in extracting packet type
-Date: Mon,  2 Dec 2013 11:14:00 -0800
-Message-Id: <20131202191253.703718883@linuxfoundation.org>
+        Ryan Mallon <rmallon@gmail.com>, Kees Cook <keescook@chromium.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Joe Perches <joe@perches.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 047/212] vsprintf: check real user/group id for %pK
+Date: Mon,  2 Dec 2013 11:13:58 -0800
+Message-Id: <20131202191253.528886767@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -28,163 +31,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
+From: Ryan Mallon <rmallon@gmail.com>
 
-commit 0c5d63f0ab6728f05ddefa25aff55e31297f95e6 upstream.
+commit 312b4e226951f707e120b95b118cbc14f3d162b2 upstream.
 
-All of the rtlwifi drivers have an error in the routine that tests if
-the data is "special". If it is, the subsequant transmission will be
-at the lowest rate to enhance reliability. The 16-bit quantity is
-big-endian, but was being extracted in native CPU mode. One of the
-effects of this bug is to inhibit association under some conditions
-as the TX rate is too high.
+Some setuid binaries will allow reading of files which have read
+permission by the real user id.  This is problematic with files which
+use %pK because the file access permission is checked at open() time,
+but the kptr_restrict setting is checked at read() time.  If a setuid
+binary opens a %pK file as an unprivileged user, and then elevates
+permissions before reading the file, then kernel pointer values may be
+leaked.
 
-Based on suggestions by Joe Perches, the entire routine is rewritten.
+This happens for example with the setuid pppd application on Ubuntu 12.04:
 
-One of the local headers contained duplicates of some of the ETH_P_XXX
-definitions. These are deleted.
+  $ head -1 /proc/kallsyms
+  00000000 T startup_32
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+  $ pppd file /proc/kallsyms
+  pppd: In file /proc/kallsyms: unrecognized option 'c1000000'
+
+This will only leak the pointer value from the first line, but other
+setuid binaries may leak more information.
+
+Fix this by adding a check that in addition to the current process having
+CAP_SYSLOG, that effective user and group ids are equal to the real ids.
+If a setuid binary reads the contents of a file which uses %pK then the
+pointer values will be printed as NULL if the real user is unprivileged.
+
+Update the sysctl documentation to reflect the changes, and also correct
+the documentation to state the kptr_restrict=0 is the default.
+
+This is a only temporary solution to the issue.  The correct solution is
+to do the permission check at open() time on files, and to replace %pK
+with a function which checks the open() time permission.  %pK uses in
+printk should be removed since no sane permission check can be done, and
+instead protected by using dmesg_restrict.
+
+Signed-off-by: Ryan Mallon <rmallon@gmail.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Joe Perches <joe@perches.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/base.c |   97 +++++++++++++++---------------------
- drivers/net/wireless/rtlwifi/wifi.h |    6 --
- 2 files changed, 44 insertions(+), 59 deletions(-)
+ Documentation/sysctl/kernel.txt |   25 ++++++++++++++++++-------
+ lib/vsprintf.c                  |   33 ++++++++++++++++++++++++++++++---
+ 2 files changed, 48 insertions(+), 10 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/base.c
-+++ b/drivers/net/wireless/rtlwifi/base.c
-@@ -37,6 +37,7 @@
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -290,13 +290,24 @@ Default value is "/sbin/hotplug".
+ kptr_restrict:
  
- #include <linux/ip.h>
- #include <linux/module.h>
-+#include <linux/udp.h>
- 
- /*
-  *NOTICE!!!: This file will be very big, we should
-@@ -1074,64 +1075,52 @@ u8 rtl_is_special_data(struct ieee80211_
- 	if (!ieee80211_is_data(fc))
- 		return false;
- 
-+	ip = (const struct iphdr *)(skb->data + mac_hdr_len +
-+				    SNAP_SIZE + PROTOC_TYPE_SIZE);
-+	ether_type = be16_to_cpup((__be16 *)
-+				  (skb->data + mac_hdr_len + SNAP_SIZE));
+ This toggle indicates whether restrictions are placed on
+-exposing kernel addresses via /proc and other interfaces.  When
+-kptr_restrict is set to (0), there are no restrictions.  When
+-kptr_restrict is set to (1), the default, kernel pointers
+-printed using the %pK format specifier will be replaced with 0's
+-unless the user has CAP_SYSLOG.  When kptr_restrict is set to
+-(2), kernel pointers printed using %pK will be replaced with 0's
+-regardless of privileges.
++exposing kernel addresses via /proc and other interfaces.
 +
-+	switch (ether_type) {
-+	case ETH_P_IP: {
-+		struct udphdr *udp;
-+		u16 src;
-+		u16 dst;
++When kptr_restrict is set to (0), the default, there are no restrictions.
 +
-+		if (ip->protocol != IPPROTO_UDP)
-+			return false;
-+		udp = (struct udphdr *)((u8 *)ip + (ip->ihl << 2));
-+		src = be16_to_cpu(udp->source);
-+		dst = be16_to_cpu(udp->dest);
++When kptr_restrict is set to (1), kernel pointers printed using the %pK
++format specifier will be replaced with 0's unless the user has CAP_SYSLOG
++and effective user and group ids are equal to the real ids. This is
++because %pK checks are done at read() time rather than open() time, so
++if permissions are elevated between the open() and the read() (e.g via
++a setuid binary) then %pK will not leak kernel pointers to unprivileged
++users. Note, this is a temporary solution only. The correct long-term
++solution is to do the permission checks at open() time. Consider removing
++world read permissions from files that use %pK, and using dmesg_restrict
++to protect against uses of %pK in dmesg(8) if leaking kernel pointer
++values to unprivileged users is a concern.
 +
-+		/* If this case involves port 68 (UDP BOOTP client) connecting
-+		 * with port 67 (UDP BOOTP server), then return true so that
-+		 * the lowest speed is used.
-+		 */
-+		if (!((src == 68 && dst == 67) || (src == 67 && dst == 68)))
-+			return false;
++When kptr_restrict is set to (2), kernel pointers printed using
++%pK will be replaced with 0's regardless of privileges.
  
--	ip = (struct iphdr *)((u8 *) skb->data + mac_hdr_len +
--			      SNAP_SIZE + PROTOC_TYPE_SIZE);
--	ether_type = *(u16 *) ((u8 *) skb->data + mac_hdr_len + SNAP_SIZE);
--	/*	ether_type = ntohs(ether_type); */
--
--	if (ETH_P_IP == ether_type) {
--		if (IPPROTO_UDP == ip->protocol) {
--			struct udphdr *udp = (struct udphdr *)((u8 *) ip +
--							       (ip->ihl << 2));
--			if (((((u8 *) udp)[1] == 68) &&
--			     (((u8 *) udp)[3] == 67)) ||
--			    ((((u8 *) udp)[1] == 67) &&
--			     (((u8 *) udp)[3] == 68))) {
--				/*
--				 * 68 : UDP BOOTP client
--				 * 67 : UDP BOOTP server
--				 */
--				RT_TRACE(rtlpriv, (COMP_SEND | COMP_RECV),
--					 DBG_DMESG, "dhcp %s !!\n",
--					 is_tx ? "Tx" : "Rx");
--
--				if (is_tx) {
--					rtlpriv->enter_ps = false;
--					schedule_work(&rtlpriv->
--						      works.lps_change_work);
--					ppsc->last_delaylps_stamp_jiffies =
--					    jiffies;
--				}
--
--				return true;
--			}
--		}
--	} else if (ETH_P_ARP == ether_type) {
--		if (is_tx) {
--			rtlpriv->enter_ps = false;
--			schedule_work(&rtlpriv->works.lps_change_work);
--			ppsc->last_delaylps_stamp_jiffies = jiffies;
--		}
--
--		return true;
--	} else if (ETH_P_PAE == ether_type) {
-+		RT_TRACE(rtlpriv, (COMP_SEND | COMP_RECV), DBG_DMESG,
-+			 "dhcp %s !!\n", is_tx ? "Tx" : "Rx");
-+		break;
-+	}
-+	case ETH_P_ARP:
-+		break;
-+	case ETH_P_PAE:
- 		RT_TRACE(rtlpriv, (COMP_SEND | COMP_RECV), DBG_DMESG,
- 			 "802.1X %s EAPOL pkt!!\n", is_tx ? "Tx" : "Rx");
--
--		if (is_tx) {
--			rtlpriv->enter_ps = false;
--			schedule_work(&rtlpriv->works.lps_change_work);
--			ppsc->last_delaylps_stamp_jiffies = jiffies;
--		}
--
--		return true;
--	} else if (ETH_P_IPV6 == ether_type) {
--		/* IPv6 */
--		return true;
-+		break;
-+	case ETH_P_IPV6:
-+		/* TODO: Is this right? */
-+		return false;
-+	default:
-+		return false;
- 	}
--
--	return false;
-+	if (is_tx) {
-+		rtlpriv->enter_ps = false;
-+		schedule_work(&rtlpriv->works.lps_change_work);
-+		ppsc->last_delaylps_stamp_jiffies = jiffies;
-+	}
-+	return true;
- }
- EXPORT_SYMBOL_GPL(rtl_is_special_data);
+ ==============================================================
  
---- a/drivers/net/wireless/rtlwifi/wifi.h
-+++ b/drivers/net/wireless/rtlwifi/wifi.h
-@@ -77,11 +77,7 @@
- #define RTL_SLOT_TIME_9				9
- #define RTL_SLOT_TIME_20			20
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -27,6 +27,7 @@
+ #include <linux/uaccess.h>
+ #include <linux/ioport.h>
+ #include <linux/dcache.h>
++#include <linux/cred.h>
+ #include <net/addrconf.h>
  
--/*related with tcp/ip. */
--/*if_ehther.h*/
--#define ETH_P_PAE		0x888E	/*Port Access Entity (IEEE 802.1X) */
--#define ETH_P_IP		0x0800	/*Internet Protocol packet */
--#define ETH_P_ARP		0x0806	/*Address Resolution packet */
-+/*related to tcp/ip. */
- #define SNAP_SIZE		6
- #define PROTOC_TYPE_SIZE	2
- 
+ #include <asm/page.h>		/* for PAGE_SIZE */
+@@ -1312,11 +1313,37 @@ char *pointer(const char *fmt, char *buf
+ 				spec.field_width = default_width;
+ 			return string(buf, end, "pK-error", spec);
+ 		}
+-		if (!((kptr_restrict == 0) ||
+-		      (kptr_restrict == 1 &&
+-		       has_capability_noaudit(current, CAP_SYSLOG))))
++
++		switch (kptr_restrict) {
++		case 0:
++			/* Always print %pK values */
++			break;
++		case 1: {
++			/*
++			 * Only print the real pointer value if the current
++			 * process has CAP_SYSLOG and is running with the
++			 * same credentials it started with. This is because
++			 * access to files is checked at open() time, but %pK
++			 * checks permission at read() time. We don't want to
++			 * leak pointer values if a binary opens a file using
++			 * %pK and then elevates privileges before reading it.
++			 */
++			const struct cred *cred = current_cred();
++
++			if (!has_capability_noaudit(current, CAP_SYSLOG) ||
++			    !uid_eq(cred->euid, cred->uid) ||
++			    !gid_eq(cred->egid, cred->gid))
++				ptr = NULL;
++			break;
++		}
++		case 2:
++		default:
++			/* Always print 0's for %pK */
+ 			ptr = NULL;
++			break;
++		}
+ 		break;
++
+ 	case 'N':
+ 		switch (fmt[1]) {
+ 		case 'F':
 
 
