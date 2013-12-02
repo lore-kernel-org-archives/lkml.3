@@ -1,70 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760139Ab3LBVcw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:32:52 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:49446 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192Ab3LBVcr (ORCPT
+	id S1756837Ab3LBVc0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:32:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38203 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753210Ab3LBTG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 16:32:47 -0500
-Date: Mon, 2 Dec 2013 15:32:43 -0600
-From: rkuo <rkuo@codeaurora.org>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Bart Van Assche <bvanassche@acm.org>, Bottomley@parallels.com,
-        linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers: scsi: scsi_lib.c: add prefix "SCSILIB_" to
- macro "SP"
-Message-ID: <20131202213243.GA20646@codeaurora.org>
-References: <528AEFB7.4060301@gmail.com>
- <20131125011938.GB18921@codeaurora.org>
- <5292B845.3010404@gmail.com>
- <5292B8A0.7020409@gmail.com>
- <5294255E.7040105@gmail.com>
- <52955913.3060809@gmail.com>
- <529B60FF.7030601@acm.org>
- <529BD584.7060504@gmail.com>
- <1385945387.20150.2.camel@dabdike.int.hansenpartnership.com>
- <529C5D89.8050809@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <529C5D89.8050809@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 2 Dec 2013 14:06:57 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Shan Hai <shan.hai@windriver.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.4 12/60] drivers/libata: Set max sector to 65535 for Slimtype DVD A DS8A9SH drive
+Date: Mon,  2 Dec 2013 11:05:53 -0800
+Message-Id: <20131202190332.911845373@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
+References: <20131202190330.152596462@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 06:14:33PM +0800, Chen Gang wrote:
-> If one issue occurs, normally, both sides need improvement.
-> 
-> For our issue:
-> 
->  - need try to keep uapi no touch ("arch/hexagon/uapi/asm/registers.h").
-> 
->  - improving our module is much easier than improving hexagon.
-> 
->  - for 'SP', it is really short enough to like a register name.
->    SG_POOL seems more suitable for our 'sgpool' related operations.
-> 
-> 
-> It will be better to improve hexagon too, but it is not quit easy (maybe
-> have to bear it), it is uapi :-(
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-I can't speak for SCSI, but that define in Hexagon isn't really used outside
-of that file anyways (the two SP macros themselves).  I'm also pretty sure
-the userspace isn't currently using it anyways.  Seeing as it's not really
-buying us anything, I'm fine with just removing it and continuing to review
-the other defines.  I'll make that change and test it locally.
+------------------
+
+From: Shan Hai <shan.hai@windriver.com>
+
+commit 0523f037f65dba10191b0fa9c51266f90ba64630 upstream.
+
+The "Slimtype DVD A  DS8A9SH" drive locks up with following backtrace when
+the max sector is smaller than 65535 bytes, fix it by adding a quirk to set
+the max sector to 65535 bytes.
+
+INFO: task flush-11:0:663 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+flush-11:0    D 00000000ffff5ceb     0   663      2 0x00000000
+ ffff88026d3b1710 0000000000000046 0000000000000001 0000000000000000
+ ffff88026f2530c0 ffff88026d365860 ffff88026d3b16e0 ffffffff812ffd52
+ ffff88026d4fd3d0 0000000100000001 ffff88026d3b16f0 ffff88026d3b1fd8
+Call Trace:
+ [<ffffffff812ffd52>] ? cfq_may_queue+0x52/0xf0
+ [<ffffffff81604338>] schedule+0x18/0x30
+ [<ffffffff81604392>] io_schedule+0x42/0x60
+ [<ffffffff812f22bb>] get_request_wait+0xeb/0x1f0
+ [<ffffffff81065660>] ? autoremove_wake_function+0x0/0x40
+ [<ffffffff812eb382>] ? elv_merge+0x42/0x210
+ [<ffffffff812f26ae>] __make_request+0x8e/0x4e0
+ [<ffffffff812f068e>] generic_make_request+0x21e/0x5e0
+ [<ffffffff812f0aad>] submit_bio+0x5d/0xd0
+ [<ffffffff81141422>] submit_bh+0xf2/0x130
+ [<ffffffff8114474c>] __block_write_full_page+0x1dc/0x3a0
+ [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
+ [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
+ [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
+ [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
+ [<ffffffff811449ee>] block_write_full_page_endio+0xde/0x100
+ [<ffffffff81144a20>] block_write_full_page+0x10/0x20
+ [<ffffffff81148703>] blkdev_writepage+0x13/0x20
+ [<ffffffff810d7525>] __writepage+0x15/0x40
+ [<ffffffff810d7c0f>] write_cache_pages+0x1cf/0x3e0
+ [<ffffffff810d7510>] ? __writepage+0x0/0x40
+ [<ffffffff810d7e42>] generic_writepages+0x22/0x30
+ [<ffffffff810d7e6f>] do_writepages+0x1f/0x40
+ [<ffffffff8113ae67>] writeback_single_inode+0xe7/0x3b0
+ [<ffffffff8113b574>] writeback_sb_inodes+0x184/0x280
+ [<ffffffff8113bedb>] writeback_inodes_wb+0x6b/0x1a0
+ [<ffffffff8113c24b>] wb_writeback+0x23b/0x2a0
+ [<ffffffff8113c42d>] wb_do_writeback+0x17d/0x190
+ [<ffffffff8113c48b>] bdi_writeback_task+0x4b/0xe0
+ [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
+ [<ffffffff810e8321>] bdi_start_fn+0x81/0x100
+ [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
+ [<ffffffff8106522e>] kthread+0x8e/0xa0
+ [<ffffffff81039274>] ? finish_task_switch+0x54/0xc0
+ [<ffffffff81003334>] kernel_thread_helper+0x4/0x10
+ [<ffffffff810651a0>] ? kthread+0x0/0xa0
+ [<ffffffff81003330>] ? kernel_thread_helper+0x0/0x10
+
+ The above trace was triggered by
+   "dd if=/dev/zero of=/dev/sr0 bs=2048 count=32768"
+
+Signed-off-by: Shan Hai <shan.hai@windriver.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/ata/libata-core.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4074,6 +4074,7 @@ static const struct ata_blacklist_entry
+ 	{ "TORiSAN DVD-ROM DRD-N216", NULL,	ATA_HORKAGE_MAX_SEC_128 },
+ 	{ "QUANTUM DAT    DAT72-000", NULL,	ATA_HORKAGE_ATAPI_MOD16_DMA },
+ 	{ "Slimtype DVD A  DS8A8SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
++	{ "Slimtype DVD A  DS8A9SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
+ 
+ 	/* Devices we expect to fail diagnostics */
+ 
 
 
-Thanks,
-Richard Kuo
-
-
--- 
-
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
