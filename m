@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758106Ab3LBUhr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:37:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38882 "EHLO
+	id S1758111Ab3LBUiM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:38:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38881 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754353Ab3LBTOW (ORCPT
+	with ESMTP id S1754341Ab3LBTOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:14:22 -0500
+	Mon, 2 Dec 2013 14:14:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH 3.10 145/173] media: cxusb: Dont use dynamic static allocation
-Date: Mon,  2 Dec 2013 11:12:08 -0800
-Message-Id: <20131202191200.022731281@linuxfoundation.org>
+Subject: [PATCH 3.10 144/173] media: dibusb-common: Dont use dynamic static allocation
+Date: Mon,  2 Dec 2013 11:12:07 -0800
+Message-Id: <20131202191159.910898127@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -29,12 +29,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit 64f7ef8afbf89f3c72c4d2472e4914ca198c0668 upstream.
+commit 1d7fa359d4c0fbb2756fa01cc47212908d90b7b0 upstream.
 
 Dynamic static allocation is evil, as Kernel stack is too low, and
 compilation complains about it on some archs:
-	drivers/media/usb/dvb-usb/cxusb.c:209:1: warning: 'cxusb_i2c_xfer' uses dynamic stack allocation [enabled by default]
-	drivers/media/usb/dvb-usb/cxusb.c:69:1: warning: 'cxusb_ctrl_msg' uses dynamic stack allocation [enabled by default]
+	drivers/media/usb/dvb-usb/dibusb-common.c:124:1: warning: 'dibusb_i2c_msg' uses dynamic stack allocation [enabled by default]
 Instead, let's enforce a limit for the buffer to be the max size of
 a control URB payload data (64 bytes).
 
@@ -44,86 +43,38 @@ Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/dvb-usb/cxusb.c |   41 ++++++++++++++++++++++++++++++++++----
- 1 file changed, 37 insertions(+), 4 deletions(-)
+ drivers/media/usb/dvb-usb/dibusb-common.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/drivers/media/usb/dvb-usb/cxusb.c
-+++ b/drivers/media/usb/dvb-usb/cxusb.c
-@@ -43,6 +43,9 @@
- #include "lgs8gxx.h"
- #include "atbm8830.h"
+--- a/drivers/media/usb/dvb-usb/dibusb-common.c
++++ b/drivers/media/usb/dvb-usb/dibusb-common.c
+@@ -12,6 +12,9 @@
+ #include <linux/kconfig.h>
+ #include "dibusb.h"
  
 +/* Max transfer size done by I2C transfer functions */
 +#define MAX_XFER_SIZE  64
 +
- /* debug */
- static int dvb_usb_cxusb_debug;
- module_param_named(debug, dvb_usb_cxusb_debug, int, 0644);
-@@ -57,7 +60,14 @@ static int cxusb_ctrl_msg(struct dvb_usb
- 			  u8 cmd, u8 *wbuf, int wlen, u8 *rbuf, int rlen)
+ static int debug;
+ module_param(debug, int, 0644);
+ MODULE_PARM_DESC(debug, "set debugging level (1=info (|-able))." DVB_USB_DEBUG_STATUS);
+@@ -105,11 +108,16 @@ EXPORT_SYMBOL(dibusb2_0_power_ctrl);
+ static int dibusb_i2c_msg(struct dvb_usb_device *d, u8 addr,
+ 			  u8 *wbuf, u16 wlen, u8 *rbuf, u16 rlen)
  {
- 	int wo = (rbuf == NULL || rlen == 0); /* write-only */
--	u8 sndbuf[1+wlen];
-+	u8 sndbuf[MAX_XFER_SIZE];
-+
-+	if (1 + wlen > sizeof(sndbuf)) {
-+		warn("i2c wr: len=%d is too big!\n",
-+		     wlen);
+-	u8 sndbuf[wlen+4]; /* lead(1) devaddr,direction(1) addr(2) data(wlen) (len(2) (when reading)) */
++	u8 sndbuf[MAX_XFER_SIZE]; /* lead(1) devaddr,direction(1) addr(2) data(wlen) (len(2) (when reading)) */
+ 	/* write only ? */
+ 	int wo = (rbuf == NULL || rlen == 0),
+ 		len = 2 + wlen + (wo ? 0 : 2);
+ 
++	if (4 + wlen > sizeof(sndbuf)) {
++		warn("i2c wr: len=%d is too big!\n", wlen);
 +		return -EOPNOTSUPP;
 +	}
 +
- 	memset(sndbuf, 0, 1+wlen);
+ 	sndbuf[0] = wo ? DIBUSB_REQ_I2C_WRITE : DIBUSB_REQ_I2C_READ;
+ 	sndbuf[1] = (addr << 1) | (wo ? 0 : 1);
  
- 	sndbuf[0] = cmd;
-@@ -158,7 +168,13 @@ static int cxusb_i2c_xfer(struct i2c_ada
- 
- 		if (msg[i].flags & I2C_M_RD) {
- 			/* read only */
--			u8 obuf[3], ibuf[1+msg[i].len];
-+			u8 obuf[3], ibuf[MAX_XFER_SIZE];
-+
-+			if (1 + msg[i].len > sizeof(ibuf)) {
-+				warn("i2c rd: len=%d is too big!\n",
-+				     msg[i].len);
-+				return -EOPNOTSUPP;
-+			}
- 			obuf[0] = 0;
- 			obuf[1] = msg[i].len;
- 			obuf[2] = msg[i].addr;
-@@ -172,7 +188,18 @@ static int cxusb_i2c_xfer(struct i2c_ada
- 		} else if (i+1 < num && (msg[i+1].flags & I2C_M_RD) &&
- 			   msg[i].addr == msg[i+1].addr) {
- 			/* write to then read from same address */
--			u8 obuf[3+msg[i].len], ibuf[1+msg[i+1].len];
-+			u8 obuf[MAX_XFER_SIZE], ibuf[MAX_XFER_SIZE];
-+
-+			if (3 + msg[i].len > sizeof(obuf)) {
-+				warn("i2c wr: len=%d is too big!\n",
-+				     msg[i].len);
-+				return -EOPNOTSUPP;
-+			}
-+			if (1 + msg[i + 1].len > sizeof(ibuf)) {
-+				warn("i2c rd: len=%d is too big!\n",
-+				     msg[i + 1].len);
-+				return -EOPNOTSUPP;
-+			}
- 			obuf[0] = msg[i].len;
- 			obuf[1] = msg[i+1].len;
- 			obuf[2] = msg[i].addr;
-@@ -191,7 +218,13 @@ static int cxusb_i2c_xfer(struct i2c_ada
- 			i++;
- 		} else {
- 			/* write only */
--			u8 obuf[2+msg[i].len], ibuf;
-+			u8 obuf[MAX_XFER_SIZE], ibuf;
-+
-+			if (2 + msg[i].len > sizeof(obuf)) {
-+				warn("i2c wr: len=%d is too big!\n",
-+				     msg[i].len);
-+				return -EOPNOTSUPP;
-+			}
- 			obuf[0] = msg[i].addr;
- 			obuf[1] = msg[i].len;
- 			memcpy(&obuf[2], msg[i].buf, msg[i].len);
 
 
