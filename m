@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753012Ab3LBQqN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 11:46:13 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47626 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816Ab3LBQqJ (ORCPT
+	id S1752821Ab3LBQuN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 11:50:13 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:47457 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221Ab3LBQuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 11:46:09 -0500
-Date: Mon, 2 Dec 2013 16:46:01 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Simon Kirby <sim@hostway.ca>, Ian Applegate <ia@cloudflare.com>,
-        Christoph Lameter <cl@gentwo.org>, Pekka Enberg <penberg@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: Re: Found it! (was Re: [3.10] Oopses in kmem_cache_allocate() via
- prepare_creds())
-Message-ID: <20131202164601.GF10323@ZenIV.linux.org.uk>
-References: <CA+55aFyez7uZ6LeXrBRCqJzgJ=w4Xv+CV6QSYp5NkOJ2R9Xang@mail.gmail.com>
- <20131202162755.GB27781@gmail.com>
+	Mon, 2 Dec 2013 11:50:09 -0500
+Message-ID: <529CBA0A.8020703@kernel.dk>
+Date: Mon, 02 Dec 2013 09:49:14 -0700
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131202162755.GB27781@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jeff Moyer <jmoyer@redhat.com>, Ming Lei <tom.leiming@gmail.com>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] block: fix mq request allocation
+References: <1385890077-30873-1-git-send-email-tom.leiming@gmail.com> <x49ob4z700n.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49ob4z700n.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 05:27:55PM +0100, Ingo Molnar wrote:
-
-> It's not like there should be many (any?) VFS operations where a pipe 
-> is used via i_mutex and pipe->mutex in parallel, which would improve 
-> scalability - so I don't see the scalability advantage. (But I might 
-> be missing something)
+On 12/02/2013 08:20 AM, Jeff Moyer wrote:
+> Ming Lei <tom.leiming@gmail.com> writes:
 > 
-> Barring such kind of workload the extra mutex just adds extra 
-> micro-costs because now two locks have to be taken on 
-> creation/destruction, plus it adds extra complexity and races.
+>> blk_mq_alloc_request_pinned() may return NULL request in case of
+>> !__GFP_WAIT, so cause its callers to derefence NULL pointer for
+>> releasing current context.
+>>
+>> This patch introduces two flags to address the issue.
 > 
-> So unless I'm missing something obvious, another good fix would be to 
-> just revert pipe->mutex and rely on i_mutex as before?
+> Hi, Ming,
+> 
+> 
+> Good catch, but your patch seems overly complicated.  How about
+> something like the following (compile-tested only), instead?  Note that
+> I did not touch blk_make_request, as the put_ctx there seems to
+> correlate to a get_ctx earlier in the function (not a leaked reference
+> from __blk_mq_alloc_request).
 
-You are missing the extra shitloads of complexity in ->i_mutex ordering,
-and ->i_mutex is already used for too many things...
+I would tend to agree, it's overly complicated. The bug is real, however.
+
+> p.s. Jens, every time I see GFP_ATOMIC|__GFP_WAIT, my head explodes.  Just sayin'.
+
+It's perfectly fine :-)
+
+-- 
+Jens Axboe
+
