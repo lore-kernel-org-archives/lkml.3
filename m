@@ -1,143 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab3LBTmv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:42:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39577 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754876Ab3LBTSo (ORCPT
+	id S1756082Ab3LBTnG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:43:06 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:50973 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754876Ab3LBTnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:44 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 163/212] ALSA: hda - Check leaf nodes to find aamix amps
-Date: Mon,  2 Dec 2013 11:15:54 -0800
-Message-Id: <20131202191306.029756327@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
-References: <20131202191248.517975703@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	Mon, 2 Dec 2013 14:43:00 -0500
+Message-ID: <529CE2C0.5070401@monstr.eu>
+Date: Mon, 02 Dec 2013 20:42:56 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Chris Ball <cjb@laptop.org>, Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Subject: Re: [PATCH v3 1/2] mmc: arasan: Add driver for Arasan SDHCI
+References: <1386007357-11956-1-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1386007357-11956-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="3nr2BQRAj1aUNcgnhQemdqKOLhiO9SMsc"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--3nr2BQRAj1aUNcgnhQemdqKOLhiO9SMsc
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+On 12/02/2013 07:02 PM, Soren Brinkmann wrote:
+> Add a driver for Arasan's SDHCI controller core.
+>=20
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> Acked-by: Rob Herring <rob.herring@calxeda.com> [binding]
+> ---
+> As discussed, I left binding and license header as is and fixed the typ=
+os.
+>=20
+> v3:
+>  - fix typo in binding documentation
+>  - add missing '>' in MODULE_AUTHOR string
+> v2:
+>  - document 'interrupts' and 'interrupt-parent' properties in the drive=
+r
+>    bindings
+>  - append '-8.9a' IP version specifier to comaptibility string
+>=20
+>    	Thanks,
+> 	S=C3=B6ren
+>=20
+>  .../devicetree/bindings/mmc/arasan,sdhci.txt       |  27 +++
+>  MAINTAINERS                                        |   1 +
+>  drivers/mmc/host/Kconfig                           |  12 ++
+>  drivers/mmc/host/Makefile                          |   1 +
+>  drivers/mmc/host/sdhci-of-arasan.c                 | 224 +++++++++++++=
+++++++++
+>  5 files changed, 265 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mmc/arasan,sdhci.=
+txt
+>  create mode 100644 drivers/mmc/host/sdhci-of-arasan.c
 
-From: Takashi Iwai <tiwai@suse.de>
+Acked-by: Michal Simek <monstr@monstr.eu>
 
-commit 2ded3e5b61d61d0bc90bebb8004db6184c7db6eb upstream.
+Thanks,
+Michal
 
-The current generic parser assumes blindly that the volume and mute
-amps are found in the aamix node itself.  But on some codecs,
-typically Analog Devices ones, the aamix amps are separately
-implemented in each leaf node of the aamix node, and the current
-driver can't establish the correct amp controls.  This is a regression
-compared with the previous static quirks.
-
-This patch extends the search for the amps to the leaf nodes for
-allowing the aamix controls again on such codecs.
-In this implementation, I didn't code to loop through the whole paths,
-since usually one depth should suffice, and we can't search too
-deeply, as it may result in the conflicting control assignments.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=65641
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/pci/hda/hda_generic.c |   57 ++++++++++++++++++++++++++++++++++----------
- 1 file changed, 45 insertions(+), 12 deletions(-)
-
---- a/sound/pci/hda/hda_generic.c
-+++ b/sound/pci/hda/hda_generic.c
-@@ -2808,6 +2808,42 @@ static int add_loopback_list(struct hda_
- 	return 0;
- }
- 
-+/* return true if either a volume or a mute amp is found for the given
-+ * aamix path; the amp has to be either in the mixer node or its direct leaf
-+ */
-+static bool look_for_mix_leaf_ctls(struct hda_codec *codec, hda_nid_t mix_nid,
-+				   hda_nid_t pin, unsigned int *mix_val,
-+				   unsigned int *mute_val)
-+{
-+	int idx, num_conns;
-+	const hda_nid_t *list;
-+	hda_nid_t nid;
-+
-+	idx = snd_hda_get_conn_index(codec, mix_nid, pin, true);
-+	if (idx < 0)
-+		return false;
-+
-+	*mix_val = *mute_val = 0;
-+	if (nid_has_volume(codec, mix_nid, HDA_INPUT))
-+		*mix_val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
-+	if (nid_has_mute(codec, mix_nid, HDA_INPUT))
-+		*mute_val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
-+	if (*mix_val && *mute_val)
-+		return true;
-+
-+	/* check leaf node */
-+	num_conns = snd_hda_get_conn_list(codec, mix_nid, &list);
-+	if (num_conns < idx)
-+		return false;
-+	nid = list[idx];
-+	if (!*mix_val && nid_has_volume(codec, nid, HDA_OUTPUT))
-+		*mix_val = HDA_COMPOSE_AMP_VAL(nid, 3, 0, HDA_OUTPUT);
-+	if (!*mute_val && nid_has_mute(codec, nid, HDA_OUTPUT))
-+		*mute_val = HDA_COMPOSE_AMP_VAL(nid, 3, 0, HDA_OUTPUT);
-+
-+	return *mix_val || *mute_val;
-+}
-+
- /* create input playback/capture controls for the given pin */
- static int new_analog_input(struct hda_codec *codec, int input_idx,
- 			    hda_nid_t pin, const char *ctlname, int ctlidx,
-@@ -2815,12 +2851,11 @@ static int new_analog_input(struct hda_c
- {
- 	struct hda_gen_spec *spec = codec->spec;
- 	struct nid_path *path;
--	unsigned int val;
-+	unsigned int mix_val, mute_val;
- 	int err, idx;
- 
--	if (!nid_has_volume(codec, mix_nid, HDA_INPUT) &&
--	    !nid_has_mute(codec, mix_nid, HDA_INPUT))
--		return 0; /* no need for analog loopback */
-+	if (!look_for_mix_leaf_ctls(codec, mix_nid, pin, &mix_val, &mute_val))
-+		return 0;
- 
- 	path = snd_hda_add_new_path(codec, pin, mix_nid, 0);
- 	if (!path)
-@@ -2829,20 +2864,18 @@ static int new_analog_input(struct hda_c
- 	spec->loopback_paths[input_idx] = snd_hda_get_path_idx(codec, path);
- 
- 	idx = path->idx[path->depth - 1];
--	if (nid_has_volume(codec, mix_nid, HDA_INPUT)) {
--		val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
--		err = __add_pb_vol_ctrl(spec, HDA_CTL_WIDGET_VOL, ctlname, ctlidx, val);
-+	if (mix_val) {
-+		err = __add_pb_vol_ctrl(spec, HDA_CTL_WIDGET_VOL, ctlname, ctlidx, mix_val);
- 		if (err < 0)
- 			return err;
--		path->ctls[NID_PATH_VOL_CTL] = val;
-+		path->ctls[NID_PATH_VOL_CTL] = mix_val;
- 	}
- 
--	if (nid_has_mute(codec, mix_nid, HDA_INPUT)) {
--		val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
--		err = __add_pb_sw_ctrl(spec, HDA_CTL_WIDGET_MUTE, ctlname, ctlidx, val);
-+	if (mute_val) {
-+		err = __add_pb_sw_ctrl(spec, HDA_CTL_WIDGET_MUTE, ctlname, ctlidx, mute_val);
- 		if (err < 0)
- 			return err;
--		path->ctls[NID_PATH_MUTE_CTL] = val;
-+		path->ctls[NID_PATH_MUTE_CTL] = mute_val;
- 	}
- 
- 	path->active = true;
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
 
+
+--3nr2BQRAj1aUNcgnhQemdqKOLhiO9SMsc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlKc4sAACgkQykllyylKDCGZZwCeO0pTc5NWVETFcJOPE+pdARFH
+iCkAn39R+KL/403QXOpoKti5oo/HNqQS
+=QuoN
+-----END PGP SIGNATURE-----
+
+--3nr2BQRAj1aUNcgnhQemdqKOLhiO9SMsc--
