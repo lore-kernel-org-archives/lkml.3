@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab3LBTMz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:12:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38421 "EHLO
+	id S1753990Ab3LBTNH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:13:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38422 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752788Ab3LBTMp (ORCPT
+	with ESMTP id S1753938Ab3LBTMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:12:45 -0500
+	Mon, 2 Dec 2013 14:12:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oskar Schirmer <oskar@scara.com>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 018/173] ASoC: fsl: imx-pcm-fiq: omit fiq counter to avoid harm in unbalanced situations
-Date: Mon,  2 Dec 2013 11:10:01 -0800
-Message-Id: <20131202191144.927015514@linuxfoundation.org>
+        Phil Edworthy <phil.edworthy@renesas.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.10 014/173] ASoC: ak4642: prevent un-necessary changes to SG_SL1
+Date: Mon,  2 Dec 2013 11:09:57 -0800
+Message-Id: <20131202191144.525903955@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -26,108 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oskar Schirmer <oskar@scara.com>
+From: Phil Edworthy <phil.edworthy@renesas.com>
 
-commit fc7dc61d9a87011aaf8a6eb3144ebf9552adf5d2 upstream.
+commit 7b5bfb82882b9b1c8423ce0ed6852ca3762d967a upstream.
 
-Unbalanced calls to snd_imx_pcm_trigger() may result in endless
-FIQ activity and thus provoke eternal sound. While on the first glance,
-the switch statement looks pretty symmetric, the SUSPEND/RESUME
-pair is not: the suspend case comes along snd_pcm_suspend_all(),
-which for fsl/imx-pcm-fiq is called only at snd_soc_suspend(),
-but the resume case originates straight from the SNDRV_PCM_IOCTL_RESUME.
-This way userland may provoke an unbalanced resume, which might cause
-the fiq_enable counter to increase and never return to zero again,
-so eventually imx_pcm_fiq is never disabled.
+If you record the sound during playback,
+the playback sound becomes silent.
+Modify so that the codec driver does not clear
+SG_SL1::DACL bit which is controlled under widget
 
-Simply removing the fiq_enable will solve the problem, as long as
-one never goes play and capture game simultaneously, but beware
-trying both at once, the early TRIGGER_STOP will cut off the other
-activity prematurely. So now playing and capturing is scrutinized
-separately, instead of by counting.
-
-Signed-off-by: Oskar Schirmer <oskar@scara.com>
+Signed-off-by: Phil Edworthy <phil.edworthy@renesas.com>
+Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/fsl/imx-pcm-fiq.c |   29 +++++++++++++++++------------
- 1 file changed, 17 insertions(+), 12 deletions(-)
+ sound/soc/codecs/ak4642.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/fsl/imx-pcm-fiq.c
-+++ b/sound/soc/fsl/imx-pcm-fiq.c
-@@ -42,7 +42,8 @@ struct imx_pcm_runtime_data {
- 	struct hrtimer hrt;
- 	int poll_time_ns;
- 	struct snd_pcm_substream *substream;
--	atomic_t running;
-+	atomic_t playing;
-+	atomic_t capturing;
- };
- 
- static enum hrtimer_restart snd_hrtimer_callback(struct hrtimer *hrt)
-@@ -54,7 +55,7 @@ static enum hrtimer_restart snd_hrtimer_
- 	struct pt_regs regs;
- 	unsigned long delta;
- 
--	if (!atomic_read(&iprtd->running))
-+	if (!atomic_read(&iprtd->playing) && !atomic_read(&iprtd->capturing))
- 		return HRTIMER_NORESTART;
- 
- 	get_fiq_regs(&regs);
-@@ -122,7 +123,6 @@ static int snd_imx_pcm_prepare(struct sn
- 	return 0;
- }
- 
--static int fiq_enable;
- static int imx_pcm_fiq;
- 
- static int snd_imx_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
-@@ -134,23 +134,27 @@ static int snd_imx_pcm_trigger(struct sn
- 	case SNDRV_PCM_TRIGGER_START:
- 	case SNDRV_PCM_TRIGGER_RESUME:
- 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
--		atomic_set(&iprtd->running, 1);
-+		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-+			atomic_set(&iprtd->playing, 1);
-+		else
-+			atomic_set(&iprtd->capturing, 1);
- 		hrtimer_start(&iprtd->hrt, ns_to_ktime(iprtd->poll_time_ns),
- 		      HRTIMER_MODE_REL);
--		if (++fiq_enable == 1)
--			enable_fiq(imx_pcm_fiq);
--
-+		enable_fiq(imx_pcm_fiq);
- 		break;
- 
- 	case SNDRV_PCM_TRIGGER_STOP:
- 	case SNDRV_PCM_TRIGGER_SUSPEND:
- 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
--		atomic_set(&iprtd->running, 0);
--
--		if (--fiq_enable == 0)
-+		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-+			atomic_set(&iprtd->playing, 0);
-+		else
-+			atomic_set(&iprtd->capturing, 0);
-+		if (!atomic_read(&iprtd->playing) &&
-+				!atomic_read(&iprtd->capturing))
- 			disable_fiq(imx_pcm_fiq);
--
- 		break;
-+
- 	default:
- 		return -EINVAL;
- 	}
-@@ -198,7 +202,8 @@ static int snd_imx_open(struct snd_pcm_s
- 
- 	iprtd->substream = substream;
- 
--	atomic_set(&iprtd->running, 0);
-+	atomic_set(&iprtd->playing, 0);
-+	atomic_set(&iprtd->capturing, 0);
- 	hrtimer_init(&iprtd->hrt, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
- 	iprtd->hrt.function = snd_hrtimer_callback;
- 
+--- a/sound/soc/codecs/ak4642.c
++++ b/sound/soc/codecs/ak4642.c
+@@ -257,7 +257,7 @@ static int ak4642_dai_startup(struct snd
+ 		 * This operation came from example code of
+ 		 * "ASAHI KASEI AK4642" (japanese) manual p94.
+ 		 */
+-		snd_soc_write(codec, SG_SL1, PMMP | MGAIN0);
++		snd_soc_update_bits(codec, SG_SL1, PMMP | MGAIN0, PMMP | MGAIN0);
+ 		snd_soc_write(codec, TIMER, ZTM(0x3) | WTM(0x3));
+ 		snd_soc_write(codec, ALC_CTL1, ALC | LMTH0);
+ 		snd_soc_update_bits(codec, PW_MGMT1, PMADL, PMADL);
 
 
