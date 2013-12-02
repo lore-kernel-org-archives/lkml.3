@@ -1,100 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab3LBNyO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 08:54:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44419 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751534Ab3LBNyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 08:54:12 -0500
-Date: Mon, 2 Dec 2013 14:54:09 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Daniel Tang <dt.tangr@gmail.com>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de
-Subject: Re: [PATCH 1/2] clocksource: zevio-timer: fix incorrect function
- definition so the correct function pointer is passed to
- CLOCKSOURCE_OF_DECLARE
-In-Reply-To: <1385353764-88784-1-git-send-email-dt.tangr@gmail.com>
-Message-ID: <alpine.LNX.2.00.1312021453490.24931@pobox.suse.cz>
-References: <1385353764-88784-1-git-send-email-dt.tangr@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752800Ab3LBNy5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 08:54:57 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:45930 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab3LBNy4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 08:54:56 -0500
+Date: Mon, 2 Dec 2013 13:54:52 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LinusW <linus.walleij@linaro.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Message-ID: <20131202135452.GI27568@sirena.org.uk>
+References: <1384859269-19801-1-git-send-email-lee.jones@linaro.org>
+ <1384859269-19801-8-git-send-email-lee.jones@linaro.org>
+ <CAOesGMiu16f_L=cMWFCNZMjNB9tBK-2LXn02k-R7FhkkgR5-+g@mail.gmail.com>
+ <20131202101256.GA29373@lee--X1>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tdQcld/J3/3kIpyY"
+Content-Disposition: inline
+In-Reply-To: <20131202101256.GA29373@lee--X1>
+X-Cookie: Boycott meat -- suck your thumb.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel] [PATCH 07/10] ASoC: ux500: Store DMA data in the
+ DAI differently in the pdata and DT case
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Nov 2013, dt.tangr@gmail.com wrote:
 
-> From: Daniel Tang <dt.tangr@gmail.com>
-> 
+--tdQcld/J3/3kIpyY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This really needs a proper changelog.
+On Mon, Dec 02, 2013 at 10:12:56AM +0000, Lee Jones wrote:
 
-> 
-> Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
-> ---
->  drivers/clocksource/zevio-timer.c | 19 +++++++++----------
->  1 file changed, 9 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/clocksource/zevio-timer.c b/drivers/clocksource/zevio-timer.c
-> index ca81809..a1bd107 100644
-> --- a/drivers/clocksource/zevio-timer.c
-> +++ b/drivers/clocksource/zevio-timer.c
-> @@ -122,28 +122,27 @@ static irqreturn_t zevio_timer_interrupt(int irq, void *dev_id)
->  	return IRQ_HANDLED;
->  }
-> 
-> -static int __init zevio_timer_add(struct device_node *node)
-> +static void __init zevio_timer_add(struct device_node *node)
->  {
->  	struct zevio_timer *timer;
->  	struct resource res;
-> -	int irqnr, ret;
-> +	int irqnr;
-> 
->  	timer = kzalloc(sizeof(*timer), GFP_KERNEL);
->  	if (!timer)
-> -		return -ENOMEM;
-> +		return;
-> 
->  	timer->base = of_iomap(node, 0);
-> -	if (!timer->base) {
-> -		ret = -EINVAL;
-> +	if (!timer->base)
->  		goto error_free;
-> -	}
-> +
->  	timer->timer1 = timer->base + IO_TIMER1;
->  	timer->timer2 = timer->base + IO_TIMER2;
-> 
->  	timer->clk = of_clk_get(node, 0);
->  	if (IS_ERR(timer->clk)) {
-> -		ret = PTR_ERR(timer->clk);
-> -		pr_err("Timer clock not found! (error %d)\n", ret);
-> +		pr_err("Timer clock not found! (error %d)\n",
-> +				(int)PTR_ERR(timer->clk));
->  		goto error_unmap;
->  	}
-> 
-> @@ -204,12 +203,12 @@ static int __init zevio_timer_add(struct device_node *node)
-> 
->  	pr_info("Added %s as clocksource\n", timer->clocksource_name);
-> 
-> -	return 0;
-> +	return;
->  error_unmap:
->  	iounmap(timer->base);
->  error_free:
->  	kfree(timer);
-> -	return ret;
-> +	return;
->  }
-> 
->  CLOCKSOURCE_OF_DECLARE(zevio_timer, "lsi,zevio-timer", zevio_timer_add);
-> --
-> 1.8.1.3
-> 
+> It's actually my fault. I had two patches round the wrong way in the
+> series. The imediately subsequent patch in the set fixes this issue:
 
--- 
-Jiri Kosina
-SUSE Labs
+OK, so what do we do about this?  Is there going to be a revision of
+that patch adding the note about not using the autoconfiguration stuff
+and what (if any) are the dependencies on the arch/arm changes?
+
+--tdQcld/J3/3kIpyY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSnJEpAAoJELSic+t+oim9NkkP/i+Rc1fQnypUrmi35VrerqMb
+VV394BOw8NQA+eqqJFkXNMZUdzZzhvSFeUNZtvLwy5CEb0nGbiqoxIglQGfk/wNp
+fnAO5LGNcH3wn0bZaFKbU9SIqgFzZMVRB830QLgQeKpu8jfNHbmZQ65H2U8l0+n/
+j8cxRABz/byEWJbsxe7Dvd78p/r4XmoP4e5MBydrgEKJrt4hEG1V1GuQ4yLxJSvT
+EeOmIpZD6MTSdYn1oERFJzPg21lkrD9PXFO6edE6Yl4sRDvyMV4ZXn/Xobq+h9Ig
+vDZICkT5pwCfR0q9SVhkp14L3pz+TfbGmw5SDK5lzz96Z3FUKbdGRfvz0VcLoH44
+0lFWGHSy5lLp7/uofnDE5gx8LVv/cD+LP+phnXzRk8+0/kJlyqx3unExgLOJ8uxM
+pH/T6K6B8aRXAv76lY/QFrsa1QY7Q5C/V6Rxr19J6JXVY3XNzMJLQ4AgkkGS4uEx
+0glr4jFsgZ3r8fNw8gV3bJwpYejLD2LrJ4fZWmMHnMMCkYmYS/j6vbKpWOSgXgKS
+Ta6lamnMa7jVPLMGUQkIf6fY0cdmM1GuMx/XQ0lt1z8W1rUjiF4fu2glK1JjfaVq
+kOhtfHqiE2O2xcBuh4MGaajCg8md/NDzIHLpqhfLQWhkc9PYO4tYVjryOwuktCqJ
+xG2wOgP7NfXN5mzxs+AZ
+=NWay
+-----END PGP SIGNATURE-----
+
+--tdQcld/J3/3kIpyY--
