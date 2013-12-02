@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759283Ab3LBVJQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:09:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38477 "EHLO
+	id S1759277Ab3LBVJK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:09:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38489 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938Ab3LBTNI (ORCPT
+	with ESMTP id S1753995Ab3LBTNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:08 -0500
+	Mon, 2 Dec 2013 14:13:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Pax Team <pageexec@freemail.hu>, Davidlohr Bueso <davidlohr@hp.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 041/173] ipc, msg: fix message length check for negative values
-Date: Mon,  2 Dec 2013 11:10:24 -0800
-Message-Id: <20131202191147.403518282@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH 3.10 054/173] loop: fix crash if blk_alloc_queue fails
+Date: Mon,  2 Dec 2013 11:10:37 -0800
+Message-Id: <20131202191148.832931434@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -31,171 +27,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 4e9b45a19241354daec281d7a785739829b52359 upstream.
+commit 3ec981e30fae1f3c8728a05c730acaa1f627bcfb upstream.
 
-On 64 bit systems the test for negative message sizes is bogus as the
-size, which may be positive when evaluated as a long, will get truncated
-to an int when passed to load_msg().  So a long might very well contain a
-positive value but when truncated to an int it would become negative.
+loop: fix crash if blk_alloc_queue fails
 
-That in combination with a small negative value of msg_ctlmax (which will
-be promoted to an unsigned type for the comparison against msgsz, making
-it a big positive value and therefore make it pass the check) will lead to
-two problems: 1/ The kmalloc() call in alloc_msg() will allocate a too
-small buffer as the addition of alen is effectively a subtraction.  2/ The
-copy_from_user() call in load_msg() will first overflow the buffer with
-userland data and then, when the userland access generates an access
-violation, the fixup handler copy_user_handle_tail() will try to fill the
-remainder with zeros -- roughly 4GB.  That almost instantly results in a
-system crash or reset.
+If blk_alloc_queue fails, loop_add cleans up, but it doesn't clean up the
+identifier allocated with idr_alloc. That causes crash on module unload in
+idr_for_each(&loop_index_idr, &loop_exit_cb, NULL); where we attempt to
+remove non-existed device with that id.
 
-  ,-[ Reproducer (needs to be run as root) ]--
-  | #include <sys/stat.h>
-  | #include <sys/msg.h>
-  | #include <unistd.h>
-  | #include <fcntl.h>
-  |
-  | int main(void) {
-  |     long msg = 1;
-  |     int fd;
-  |
-  |     fd = open("/proc/sys/kernel/msgmax", O_WRONLY);
-  |     write(fd, "-1", 2);
-  |     close(fd);
-  |
-  |     msgsnd(0, &msg, 0xfffffff0, IPC_NOWAIT);
-  |
-  |     return 0;
-  | }
-  '---
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000380
+IP: [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
+PGD 43d399067 PUD 43d0ad067 PMD 0
+Oops: 0000 [#1] PREEMPT SMP
+Modules linked in: loop(-) dm_snapshot dm_zero dm_mirror dm_region_hash dm_log dm_loop dm_mod ip6table_filter ip6_tables uvesafb cfbcopyarea cfbimgblt cfbfillrect fbcon font bitblit fbcon_rotate fbcon_cw fbcon_ud fbcon_ccw softcursor fb fbdev msr ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc tun ipv6 cpufreq_userspace cpufreq_stats cpufreq_ondemand cpufreq_conservative cpufreq_powersave spadfs fuse hid_generic usbhid hid raid0 md_mod dmi_sysfs nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack snd_usb_audio snd_pcm_oss snd_mixer_oss snd_pcm snd_timer snd_page_alloc lm85 hwmon_vid snd_hwdep snd_usbmidi_lib snd_rawmidi snd soundcore acpi_cpufreq ohci_hcd freq_table tg3 ehci_pci mperf ehci_hcd kvm_amd kvm sata_svw serverworks libphy libata ide_core k10temp usbcore hwmon microcode ptp pcspkr pps_core e100 skge mii usb_common i2c_piix4 floppy evdev rtc_cmos i2c_core processor but!
+ ton unix
+CPU: 7 PID: 2735 Comm: rmmod Tainted: G        W    3.10.15-devel #15
+Hardware name: empty empty/S3992-E, BIOS 'V1.06   ' 06/09/2009
+task: ffff88043d38e780 ti: ffff88043d21e000 task.ti: ffff88043d21e000
+RIP: 0010:[<ffffffff812057c9>]  [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
+RSP: 0018:ffff88043d21fe10  EFLAGS: 00010282
+RAX: ffffffffa05102e0 RBX: 0000000000000000 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: ffff88043ea82800 RDI: 0000000000000000
+RBP: ffff88043d21fe48 R08: 0000000000000000 R09: 0000000000000001
+R10: 0000000000000001 R11: 0000000000000000 R12: 00000000000000ff
+R13: 0000000000000080 R14: 0000000000000000 R15: ffff88043ea82800
+FS:  00007ff646534700(0000) GS:ffff880447000000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000380 CR3: 000000043e9bf000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Stack:
+ ffffffff8100aba4 0000000000000092 ffff88043d21fe48 ffff88043ea82800
+ 00000000000000ff ffff88043d21fe98 0000000000000000 ffff88043d21fe60
+ ffffffffa05102b4 0000000000000000 ffff88043d21fe70 ffffffffa05102ec
+Call Trace:
+ [<ffffffff8100aba4>] ? native_sched_clock+0x24/0x80
+ [<ffffffffa05102b4>] loop_remove+0x14/0x40 [loop]
+ [<ffffffffa05102ec>] loop_exit_cb+0xc/0x10 [loop]
+ [<ffffffff81217b74>] idr_for_each+0x104/0x190
+ [<ffffffffa05102e0>] ? loop_remove+0x40/0x40 [loop]
+ [<ffffffff8109adc5>] ? trace_hardirqs_on_caller+0x105/0x1d0
+ [<ffffffffa05135dc>] loop_exit+0x34/0xa58 [loop]
+ [<ffffffff810a98ea>] SyS_delete_module+0x13a/0x260
+ [<ffffffff81221d5e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff813cff16>] system_call_fastpath+0x1a/0x1f
+Code: f0 4c 8b 6d f8 c9 c3 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 41 56 41 55 4c 8d af 80 00 00 00 41 54 53 48 89 fb 48 83 ec 18 <48> 83 bf 80 03 00
+00 00 74 4d e8 98 fe ff ff 31 f6 48 c7 c7 20
+RIP  [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
+ RSP <ffff88043d21fe10>
+CR2: 0000000000000380
+---[ end trace 64ec069ec70f1309 ]---
 
-Fix the issue by preventing msgsz from getting truncated by consistently
-using size_t for the message length.  This way the size checks in
-do_msgsnd() could still be passed with a negative value for msg_ctlmax but
-we would fail on the buffer allocation in that case and error out.
-
-Also change the type of m_ts from int to size_t to avoid similar nastiness
-in other code paths -- it is used in similar constructs, i.e.  signed vs.
-unsigned checks.  It should never become negative under normal
-circumstances, though.
-
-Setting msg_ctlmax to a negative value is an odd configuration and should
-be prevented.  As that might break existing userland, it will be handled
-in a separate commit so it could easily be reverted and reworked without
-reintroducing the above described bug.
-
-Hardening mechanisms for user copy operations would have catched that bug
-early -- e.g.  checking slab object sizes on user copy operations as the
-usercopy feature of the PaX patch does.  Or, for that matter, detect the
-long vs.  int sign change due to truncation, as the size overflow plugin
-of the very same patch does.
-
-[akpm@linux-foundation.org: fix i386 min() warnings]
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Pax Team <pageexec@freemail.hu>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Brad Spengler <spender@grsecurity.net>
-Cc: Manfred Spraul <manfred@colorfullife.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/msg.h |    6 +++---
- ipc/msgutil.c       |   20 ++++++++++----------
- ipc/util.h          |    4 ++--
- 3 files changed, 15 insertions(+), 15 deletions(-)
+ drivers/block/loop.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/include/linux/msg.h
-+++ b/include/linux/msg.h
-@@ -6,9 +6,9 @@
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1633,7 +1633,7 @@ static int loop_add(struct loop_device *
+ 	err = -ENOMEM;
+ 	lo->lo_queue = blk_alloc_queue(GFP_KERNEL);
+ 	if (!lo->lo_queue)
+-		goto out_free_dev;
++		goto out_free_idr;
  
- /* one msg_msg structure for each message */
- struct msg_msg {
--	struct list_head m_list; 
--	long  m_type;          
--	int m_ts;           /* message text size */
-+	struct list_head m_list;
-+	long m_type;
-+	size_t m_ts;		/* message text size */
- 	struct msg_msgseg* next;
- 	void *security;
- 	/* the actual message follows immediately */
---- a/ipc/msgutil.c
-+++ b/ipc/msgutil.c
-@@ -41,15 +41,15 @@ struct msg_msgseg {
- 	/* the next part of the message follows immediately */
- };
+ 	disk = lo->lo_disk = alloc_disk(1 << part_shift);
+ 	if (!disk)
+@@ -1678,6 +1678,8 @@ static int loop_add(struct loop_device *
  
--#define DATALEN_MSG	(int)(PAGE_SIZE-sizeof(struct msg_msg))
--#define DATALEN_SEG	(int)(PAGE_SIZE-sizeof(struct msg_msgseg))
-+#define DATALEN_MSG	((size_t)PAGE_SIZE-sizeof(struct msg_msg))
-+#define DATALEN_SEG	((size_t)PAGE_SIZE-sizeof(struct msg_msgseg))
- 
- 
--static struct msg_msg *alloc_msg(int len)
-+static struct msg_msg *alloc_msg(size_t len)
- {
- 	struct msg_msg *msg;
- 	struct msg_msgseg **pseg;
--	int alen;
-+	size_t alen;
- 
- 	alen = min(len, DATALEN_MSG);
- 	msg = kmalloc(sizeof(*msg) + alen, GFP_KERNEL);
-@@ -80,12 +80,12 @@ out_err:
- 	return NULL;
- }
- 
--struct msg_msg *load_msg(const void __user *src, int len)
-+struct msg_msg *load_msg(const void __user *src, size_t len)
- {
- 	struct msg_msg *msg;
- 	struct msg_msgseg *seg;
- 	int err = -EFAULT;
--	int alen;
-+	size_t alen;
- 
- 	msg = alloc_msg(len);
- 	if (msg == NULL)
-@@ -117,8 +117,8 @@ out_err:
- struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst)
- {
- 	struct msg_msgseg *dst_pseg, *src_pseg;
--	int len = src->m_ts;
--	int alen;
-+	size_t len = src->m_ts;
-+	size_t alen;
- 
- 	BUG_ON(dst == NULL);
- 	if (src->m_ts > dst->m_ts)
-@@ -147,9 +147,9 @@ struct msg_msg *copy_msg(struct msg_msg
- 	return ERR_PTR(-ENOSYS);
- }
- #endif
--int store_msg(void __user *dest, struct msg_msg *msg, int len)
-+int store_msg(void __user *dest, struct msg_msg *msg, size_t len)
- {
--	int alen;
-+	size_t alen;
- 	struct msg_msgseg *seg;
- 
- 	alen = min(len, DATALEN_MSG);
---- a/ipc/util.h
-+++ b/ipc/util.h
-@@ -148,9 +148,9 @@ int ipc_parse_version (int *cmd);
- #endif
- 
- extern void free_msg(struct msg_msg *msg);
--extern struct msg_msg *load_msg(const void __user *src, int len);
-+extern struct msg_msg *load_msg(const void __user *src, size_t len);
- extern struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst);
--extern int store_msg(void __user *dest, struct msg_msg *msg, int len);
-+extern int store_msg(void __user *dest, struct msg_msg *msg, size_t len);
- 
- extern void recompute_msgmni(struct ipc_namespace *);
- 
+ out_free_queue:
+ 	blk_cleanup_queue(lo->lo_queue);
++out_free_idr:
++	idr_remove(&loop_index_idr, i);
+ out_free_dev:
+ 	kfree(lo);
+ out:
 
 
