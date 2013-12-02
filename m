@@ -1,64 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942Ab3LBTEa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:04:30 -0500
-Received: from mga02.intel.com ([134.134.136.20]:65108 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752464Ab3LBTE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:04:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,812,1378882800"; 
-   d="scan'208";a="418120504"
-Message-ID: <529CD9B9.7060003@linux.intel.com>
-Date: Mon, 02 Dec 2013 11:04:25 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1753052Ab3LBTGW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:06:22 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:38461 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752028Ab3LBTGV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 14:06:21 -0500
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>
-CC: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: Re: [RFC] Packaging libtraceevent.so
-References: <20131202140322.4ad6a151@gandalf.local.home>
-In-Reply-To: <20131202140322.4ad6a151@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131202185112.GB5524@dhcp22.suse.cz>
+References: <1385989693-28788-1-git-send-email-vdavydov@parallels.com>
+	<20131202181501.GA5524@dhcp22.suse.cz>
+	<CAA6-i6rWsZNQmFY5L-=yc6TaTGyg4hP4qn9gMZVsu8wWJ=1ywg@mail.gmail.com>
+	<20131202185112.GB5524@dhcp22.suse.cz>
+Date: Mon, 2 Dec 2013 23:06:20 +0400
+Message-ID: <CAA6-i6redyQxTvbNxebMvO2ZRsSOKdAT57RJ6N2MCKoZmK6xaQ@mail.gmail.com>
+Subject: Re: [PATCH] memcg: remove KMEM_ACCOUNTED_ACTIVATED
+From: Glauber Costa <glommer@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Vladimir Davydov <vdavydov@parallels.com>,
+        LKML <linux-kernel@vger.kernel.org>, cgroups@vger.kernel.org,
+        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/2/2013 11:03 AM, Steven Rostedt wrote:
-> Hi all!
+On Mon, Dec 2, 2013 at 10:51 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> On Mon 02-12-13 22:26:48, Glauber Costa wrote:
+>> On Mon, Dec 2, 2013 at 10:15 PM, Michal Hocko <mhocko@suse.cz> wrote:
+>> > [CCing Glauber - please do so in other posts for kmem related changes]
+>> >
+>> > On Mon 02-12-13 17:08:13, Vladimir Davydov wrote:
+>> >> The KMEM_ACCOUNTED_ACTIVATED was introduced by commit a8964b9b ("memcg:
+>> >> use static branches when code not in use") in order to guarantee that
+>> >> static_key_slow_inc(&memcg_kmem_enabled_key) will be called only once
+>> >> for each memory cgroup when its kmem limit is set. The point is that at
+>> >> that time the memcg_update_kmem_limit() function's workflow looked like
+>> >> this:
+>> >>
+>> >>       bool must_inc_static_branch = false;
+>> >>
+>> >>       cgroup_lock();
+>> >>       mutex_lock(&set_limit_mutex);
+>> >>       if (!memcg->kmem_account_flags && val != RESOURCE_MAX) {
+>> >>               /* The kmem limit is set for the first time */
+>> >>               ret = res_counter_set_limit(&memcg->kmem, val);
+>> >>
+>> >>               memcg_kmem_set_activated(memcg);
+>> >>               must_inc_static_branch = true;
+>> >>       } else
+>> >>               ret = res_counter_set_limit(&memcg->kmem, val);
+>> >>       mutex_unlock(&set_limit_mutex);
+>> >>       cgroup_unlock();
+>> >>
+>> >>       if (must_inc_static_branch) {
+>> >>               /* We can't do this under cgroup_lock */
+>> >>               static_key_slow_inc(&memcg_kmem_enabled_key);
+>> >>               memcg_kmem_set_active(memcg);
+>> >>       }
+>> >>
+>> >> Today, we don't use cgroup_lock in memcg_update_kmem_limit(), and
+>> >> static_key_slow_inc() is called under the set_limit_mutex, but the
+>> >> leftover from the above-mentioned commit is still here. Let's remove it.
+>> >
+>> > OK, so I have looked there again and 692e89abd154b (memcg: increment
+>> > static branch right after limit set) which went in after cgroup_mutex
+>> > has been removed. It came along with the following comment.
+>> >                 /*
+>> >                  * setting the active bit after the inc will guarantee no one
+>> >                  * starts accounting before all call sites are patched
+>> >                  */
+>> >
+>> > This suggests that the flag is needed after all because we have
+>> > to be sure that _all_ the places have to be patched. AFAIU
+>> > memcg_kmem_newpage_charge might see the static key already patched so
+>> > it would do a charge but memcg_kmem_commit_charge would still see it
+>> > unpatched and so the charge won't be committed.
+>> >
+>> > Or am I missing something?
+>>
+>> You are correct. This flag is there due to the way we are using static branches.
+>> The patching of one call site is atomic, but the patching of all of
+>> them are not.
+>> Therefore we need to use a two-flag scheme to guarantee that in the first time
+>> we turn the static branches on, there will be a clear point after
+>> which we're going
+>> to start accounting.
 >
-> The question has recently come up in Fedora about packaging the
-> libtraceevent.so library. Currently there's 4 users of it:
->
->   1) perf
->   2) trace-cmd
->   3) powertop
->   4) rasdaemon
->
-> But each have their own copy of the code.
->
-> Both perf and trace-cmd are the major developers of the package, and I
-> would recommend that they continue using the *.a version, but for those
-> tools that are simple users of the library, it would probably make
-> sense to have them use libtraceevent.so and remove their copies from
-> the code (powertop and rasdaemon).
->
-> The question that I'm posing here is, what currently needs to be done
-> to have this happen?
->
-> Is the API stable enough for a release?
->
-> We probably should have a dot versioning with the .so (ie.
-> libtraceevent.so.1)
->
-> So what are people's thoughts on this topic?
->
+> So http://lkml.org/lkml/2013/11/27/314 is correct then, right?
 
-powertop would much rather use a system copy than our own...
-but if it's not there in common distros we need to carry our own obviously
-
+It looks correct.
