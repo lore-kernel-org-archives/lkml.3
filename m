@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755735Ab3LBTdE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:33:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39692 "EHLO
+	id S1755716Ab3LBTdB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:33:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39697 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755012Ab3LBTTD (ORCPT
+	with ESMTP id S1755017Ab3LBTTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:19:03 -0500
+	Mon, 2 Dec 2013 14:19:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>, Antti Palosaari <crope@iki.fi>
-Subject: [PATCH 3.12 189/212] media: af9015: Dont use dynamic static allocation
-Date: Mon,  2 Dec 2013 11:16:20 -0800
-Message-Id: <20131202191309.849159907@linuxfoundation.org>
+        KaiChung Cheng <kenny_cheng@wistron.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.12 180/212] HID: multicouh: add PID VID to support 1 new Wistron optical touch device
+Date: Mon,  2 Dec 2013 11:16:11 -0800
+Message-Id: <20131202191308.541328573@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,43 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+From: KaiChung Cheng <kenny_cheng@wistron.com>
 
-commit 65e2f1cb3fe0f0630834b9517ba8f631936f325c upstream.
+commit bf9d121efc18c30caa2caad85358cf9408eca117 upstream.
 
-Dynamic static allocation is evil, as Kernel stack is too low, and
-compilation complains about it on some archs:
-	drivers/media/usb/dvb-usb-v2/af9015.c:433:1: warning: 'af9015_eeprom_hash' uses dynamic stack allocation [enabled by default]
-In this specific case, it is a gcc bug, as the size is a const, but
-it is easy to just change it from const to a #define, getting rid of
-the gcc warning.
+This patch adds PID VID to support for the Wistron Inc. Optical touch panel.
 
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
-Reviewed-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: KaiChung Cheng <kenny_cheng@wistron.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/dvb-usb-v2/af9015.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/hid/Kconfig          |    1 +
+ drivers/hid/hid-ids.h        |    3 +++
+ drivers/hid/hid-multitouch.c |    6 ++++++
+ 3 files changed, 10 insertions(+)
 
---- a/drivers/media/usb/dvb-usb-v2/af9015.c
-+++ b/drivers/media/usb/dvb-usb-v2/af9015.c
-@@ -397,12 +397,13 @@ error:
- 	return ret;
- }
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -459,6 +459,7 @@ config HID_MULTITOUCH
+ 	  - Stantum multitouch panels
+ 	  - Touch International Panels
+ 	  - Unitec Panels
++	  - Wistron optical touch panels
+ 	  - XAT optical touch panels
+ 	  - Xiroku optical touch panels
+ 	  - Zytronic touch panels
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -898,6 +898,9 @@
+ #define USB_DEVICE_ID_SUPER_DUAL_BOX_PRO 0x8802
+ #define USB_DEVICE_ID_SUPER_JOY_BOX_5_PRO 0x8804
  
-+#define AF9015_EEPROM_SIZE 256
++#define USB_VENDOR_ID_WISTRON		0x0fb8
++#define USB_DEVICE_ID_WISTRON_OPTICAL_TOUCH		0x1109
 +
- /* hash (and dump) eeprom */
- static int af9015_eeprom_hash(struct dvb_usb_device *d)
- {
- 	struct af9015_state *state = d_to_priv(d);
- 	int ret, i;
--	static const unsigned int AF9015_EEPROM_SIZE = 256;
- 	u8 buf[AF9015_EEPROM_SIZE];
- 	struct req_t req = {READ_I2C, AF9015_I2C_EEPROM, 0, 0, 1, 1, NULL};
+ #define USB_VENDOR_ID_X_TENSIONS               0x1ae7
+ #define USB_DEVICE_ID_SPEEDLINK_VAD_CEZANNE    0x9001
  
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -1335,6 +1335,12 @@ static const struct hid_device_id mt_dev
+ 	{ .driver_data = MT_CLS_NSMU,
+ 		MT_USB_DEVICE(USB_VENDOR_ID_UNITEC,
+ 			USB_DEVICE_ID_UNITEC_USB_TOUCH_0A19) },
++
++	/* Wistron panels */
++	{ .driver_data = MT_CLS_NSMU,
++		MT_USB_DEVICE(USB_VENDOR_ID_WISTRON,
++			USB_DEVICE_ID_WISTRON_OPTICAL_TOUCH) },
++
+ 	/* XAT */
+ 	{ .driver_data = MT_CLS_NSMU,
+ 		MT_USB_DEVICE(USB_VENDOR_ID_XAT,
 
 
