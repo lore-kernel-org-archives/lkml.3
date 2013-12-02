@@ -1,71 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756008Ab3LBUCO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:02:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39152 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635Ab3LBTR5 (ORCPT
+	id S1756708Ab3LBUCa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:02:30 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:33594 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754635Ab3LBUCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:57 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 3.12 097/212] PM / runtime: Use pm_runtime_put_sync() in __device_release_driver()
-Date: Mon,  2 Dec 2013 11:14:48 -0800
-Message-Id: <20131202191258.268847211@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
-References: <20131202191248.517975703@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	Mon, 2 Dec 2013 15:02:25 -0500
+Date: Mon, 2 Dec 2013 21:02:21 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+Message-ID: <20131202200221.GC5524@dhcp22.suse.cz>
+References: <20131113233419.GJ707@cmpxchg.org>
+ <alpine.DEB.2.02.1311131649110.6735@chino.kir.corp.google.com>
+ <20131114032508.GL707@cmpxchg.org>
+ <alpine.DEB.2.02.1311141447160.21413@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1311141525440.30112@chino.kir.corp.google.com>
+ <20131118154115.GA3556@cmpxchg.org>
+ <20131118165110.GE32623@dhcp22.suse.cz>
+ <20131122165100.GN3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311261648570.21003@chino.kir.corp.google.com>
+ <20131127163435.GA3556@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131127163435.GA3556@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Wed 27-11-13 11:34:36, Johannes Weiner wrote:
+> On Tue, Nov 26, 2013 at 04:53:47PM -0800, David Rientjes wrote:
+> > On Fri, 22 Nov 2013, Johannes Weiner wrote:
+> > 
+> > > But userspace in all likeliness DOES need to take action.
+> > > 
+> > > Reclaim is a really long process.  If 5 times doing 12 priority cycles
+> > > and scanning thousands of pages is not enough to reclaim a single
+> > > page, what does that say about the health of the memcg?
+> > > 
+> > > But more importantly, OOM handling is just inherently racy.  A task
+> > > might receive the kill signal a split second *after* userspace was
+> > > notified.  Or a task may exit voluntarily a split second after a
+> > > victim was chosen and killed.
+> > > 
+> > 
+> > That's not true even today without the userspace oom handling proposal 
+> > currently being discussed if you have a memcg oom handler attached to a 
+> > parent memcg with access to more memory than an oom child memcg.  The oom 
+> > handler can disable the child memcg's oom killer with memory.oom_control 
+> > and implement its own policy to deal with any notification of oom.
+> 
+> I was never implying the kernel handler.  All the races exist with
+> userspace handling as well.
+> 
+> > This patch is required to ensure that in such a scenario that the oom 
+> > handler sitting in the parent memcg only wakes up when it's required to 
+> > intervene.
+> 
+> A task could receive an unrelated kill between the OOM notification
+> and going to sleep to wait for userspace OOM handling.  Or another
+> task could exit voluntarily between the notification and waitqueue
+> entry, which would again be short-cut by the oom_recover of the exit
+> uncharges.
+> 
+> oom:                           other tasks:
+> check signal/exiting
+>                                could exit or get killed here
+> mem_cgroup_oom_trylock()
+>                                could exit or get killed here
+> mem_cgroup_oom_notify()
+>                                could exit or get killed here
+> if (userspace_handler)
+>   sleep()                      could exit or get killed here
+> else
+>   oom_kill()
+>                                could exit or get killed here
+> 
+> It does not matter where your signal/exiting check is, OOM
+> notification can never be race free because OOM is just an arbitrary
+> line we draw.  We have no idea what all the tasks are up to and how
+> close they are to releasing memory.  Even if we freeze the whole group
+> to handle tasks, it does not change the fact that the userspace OOM
+> handler might kill one task and after the unfreeze another task
+> immediately exits voluntarily or got a kill signal a split second
+> after it was frozen.
+> 
+> You can't fix this.  We just have to draw the line somewhere and
+> accept that in rare situations the OOM kill was unnecessary.
 
-------------------
+But we are not talking just about races here. What if the OOM is a
+result of an OOM action itself. E.g. a killed task faults a memory in
+while exiting and it hasn't freed its memory yet. Should we notify in
+such a case? What would an userspace OOM handler do (the in-kernel
+implementation has an advantage because it can check the tasks flags)?
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+> So again, I don't see this patch is doing anything but blur the
+> current line and make notification less predictable. And, as someone
+> else in this thread already said, it's a uservisible change in
+> behavior and would break known tuning usecases.
 
-commit baab52ded242c35a2290e1fa82e0cc147d0d8c1a upstream.
+I would like to understand how would such a tuning usecase work and how
+it would break with this change.
 
-Commit fa180eb448fa (PM / Runtime: Idle devices asynchronously after
-probe|release) modified __device_release_driver() to call
-pm_runtime_put(dev) instead of pm_runtime_put_sync(dev) before
-detaching the driver from the device.  However, that was a mistake,
-because pm_runtime_put(dev) causes rpm_idle() to be queued up and
-the driver may be gone already when that function is executed.
-That breaks the assumptions the drivers have the right to make
-about the core's behavior on the basis of the existing documentation
-and actually causes problems to happen, so revert that part of
-commit fa180eb448fa and restore the previous behavior of
-__device_release_driver().
+Consider the above example. You would get 2 notification for the very
+same OOM condition.
+On the other hand if the encountered exiting task was just a race then
+we have two options basically. Either there are more tasks racing (and
+not all of them are exiting) or there is only one (all are exiting).
+We will not loose any notification in the first case because the flags
+are checked before mem_cgroup_oom_trylock and so one of tasks would lock
+and notify.
+The second case is more interesting. Userspace won't get notification
+but we also know that no action is required as the OOM will be resolved
+by itself. And now we should consider whether notification would do more
+good than harm. The tuning usecase would loose one event. Would such a
+rare situation skew the statistics so much? On the other hand a real OOM
+killer would do something which means something will be killed. I find
+the later much worse.
 
-Reported-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Fixes: fa180eb448fa (PM / Runtime: Idle devices asynchronously after probe|release)
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Acked-by: Kevin Hilman <khilman@linaro.org>
-Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+So all in all. I do agree with you that this path will never be race
+free and without pointless OOM actions. I also agree that drawing the
+line is hard. But I am more inclined to prevent from notification when
+we already know that _no action_ is required because IMHO the vast
+majority of oom listeners are there to _do_ an action which is mostly
+deadly.
 
----
- drivers/base/dd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Finally if this is too controversial then I would at least like to see
+the same check introduced before we go to sleep for oom_kill_disable
+case because that is a real bug.
 
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -499,7 +499,7 @@ static void __device_release_driver(stru
- 						     BUS_NOTIFY_UNBIND_DRIVER,
- 						     dev);
- 
--		pm_runtime_put(dev);
-+		pm_runtime_put_sync(dev);
- 
- 		if (dev->bus && dev->bus->remove)
- 			dev->bus->remove(dev);
-
-
+Thanks!
+-- 
+Michal Hocko
+SUSE Labs
