@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759760Ab3LBVWT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:22:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38411 "EHLO
+	id S1759797Ab3LBVWm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:22:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38402 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753407Ab3LBTMn (ORCPT
+	with ESMTP id S1752983Ab3LBTMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:12:43 -0500
+	Mon, 2 Dec 2013 14:12:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolin Chen <b42378@freescale.com>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 016/173] ASoC: wm8962: Turn on regcache_cache_only before disabling regulator
-Date: Mon,  2 Dec 2013 11:09:59 -0800
-Message-Id: <20131202191144.729714806@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.10 004/173] ARM: 7876/1: clear Thumb-2 IT state on exception handling
+Date: Mon,  2 Dec 2013 11:09:47 -0800
+Message-Id: <20131202191143.466897498@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -26,34 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolin Chen <b42378@freescale.com>
+From: Marc Zyngier <Marc.Zyngier@arm.com>
 
-commit 50bfcf2df2fadf77e143d6099150e6fa7ef4d78c upstream.
+commit e16b31bf47738f4498d7ce632e12d7d2a6a2492a upstream.
 
-It's safer to turn on regcache_cache_only before disabling regulator since
-the driver will turn off the regcache_cache_only after enabling regulator.
+The exception handling code fails to clear the IT state, potentially
+leading to incorrect execution of the fixup if the size of the IT
+block is more than one.
 
-If we remain cache_only false, some command like 'amixer cset' would get
-failure if being run before wm8962_resume().
+Let fixup_exception do the IT sanitizing if a fixup has been found,
+and restore CPSR from the stack when returning from a data abort.
 
-Signed-off-by: Nicolin Chen <b42378@freescale.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Cc: Will Deacon <will.deacon@arm.com>
+Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8962.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/kernel/entry-armv.S |    1 +
+ arch/arm/mm/extable.c        |    7 ++++++-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -3686,6 +3686,8 @@ static int wm8962_i2c_probe(struct i2c_c
- 	if (ret < 0)
- 		goto err_enable;
+--- a/arch/arm/kernel/entry-armv.S
++++ b/arch/arm/kernel/entry-armv.S
+@@ -192,6 +192,7 @@ __dabt_svc:
+ 	svc_entry
+ 	mov	r2, sp
+ 	dabt_helper
++ THUMB(	ldr	r5, [sp, #S_PSR]	)	@ potentially updated CPSR
+ 	svc_exit r5				@ return from exception
+  UNWIND(.fnend		)
+ ENDPROC(__dabt_svc)
+--- a/arch/arm/mm/extable.c
++++ b/arch/arm/mm/extable.c
+@@ -9,8 +9,13 @@ int fixup_exception(struct pt_regs *regs
+ 	const struct exception_table_entry *fixup;
  
-+	regcache_cache_only(wm8962->regmap, true);
-+
- 	/* The drivers should power up as needed */
- 	regulator_bulk_disable(ARRAY_SIZE(wm8962->supplies), wm8962->supplies);
+ 	fixup = search_exception_tables(instruction_pointer(regs));
+-	if (fixup)
++	if (fixup) {
+ 		regs->ARM_pc = fixup->fixup;
++#ifdef CONFIG_THUMB2_KERNEL
++		/* Clear the IT state to avoid nasty surprises in the fixup */
++		regs->ARM_cpsr &= ~PSR_IT_MASK;
++#endif
++	}
  
+ 	return fixup != NULL;
+ }
 
 
