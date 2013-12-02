@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab3LBTHa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:07:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38280 "EHLO
+	id S1753722Ab3LBTJX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:09:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38353 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753345Ab3LBTHM (ORCPT
+	with ESMTP id S1753480Ab3LBTH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:07:12 -0500
+	Mon, 2 Dec 2013 14:07:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.4 30/60] rtlwifi: rtl8192cu: Fix incorrect signal strength for unassociated AP
-Date: Mon,  2 Dec 2013 11:06:11 -0800
-Message-Id: <20131202190336.914793855@linuxfoundation.org>
+        Gleb Natapov <gleb@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.4 56/60] KVM: Fix iommu map/unmap to handle memory slot moves
+Date: Mon,  2 Dec 2013 11:06:37 -0800
+Message-Id: <20131202190342.594855168@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
 References: <20131202190330.152596462@linuxfoundation.org>
@@ -27,33 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit 78dbfecb95be4635b995af3bd29fa10013409fcd upstream.
+commit e40f193f5bb022e927a57a4f5d5194e4f12ddb74 upstream.
 
-The routine that processes received frames was returning the RSSI value for the
-signal strength; however, that value is available only for associated APs. As
-a result, the strength was the absurd value of 10 dBm. As a result, scans
-return incorrect values for the strength, which causes unwanted attempts to roam.
+The iommu integration into memory slots expects memory slots to be
+added or removed and doesn't handle the move case.  We can unmap
+slots from the iommu after we mark them invalid and map them before
+installing the final memslot array.  Also re-order the kmemdup vs
+map so we don't leave iommu mappings if we get ENOMEM.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reviewed-by: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/trx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ virt/kvm/kvm_main.c |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
-@@ -349,7 +349,7 @@ bool rtl92cu_rx_query_desc(struct ieee80
- 						 p_drvinfo);
- 	}
- 	/*rx_status->qual = stats->signal; */
--	rx_status->signal = stats->rssi + 10;
-+	rx_status->signal = stats->recvsignalpower + 10;
- 	/*rx_status->noise = -stats->noise; */
- 	return true;
- }
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -790,6 +790,8 @@ int __kvm_set_memory_region(struct kvm *
+ 		old_memslots = kvm->memslots;
+ 		rcu_assign_pointer(kvm->memslots, slots);
+ 		synchronize_srcu_expedited(&kvm->srcu);
++		/* slot was deleted or moved, clear iommu mapping */
++		kvm_iommu_unmap_pages(kvm, &old);
+ 		/* From this point no new shadow pages pointing to a deleted,
+ 		 * or moved, memslot will be created.
+ 		 *
+@@ -805,20 +807,19 @@ int __kvm_set_memory_region(struct kvm *
+ 	if (r)
+ 		goto out_free;
+ 
+-	/* map/unmap the pages in iommu page table */
+-	if (npages) {
+-		r = kvm_iommu_map_pages(kvm, &new);
+-		if (r)
+-			goto out_free;
+-	} else
+-		kvm_iommu_unmap_pages(kvm, &old);
+-
+ 	r = -ENOMEM;
+ 	slots = kmemdup(kvm->memslots, sizeof(struct kvm_memslots),
+ 			GFP_KERNEL);
+ 	if (!slots)
+ 		goto out_free;
+ 
++	/* map new memory slot into the iommu */
++	if (npages) {
++		r = kvm_iommu_map_pages(kvm, &new);
++		if (r)
++			goto out_slots;
++	}
++
+ 	/* actual memory is freed via old in kvm_free_physmem_slot below */
+ 	if (!npages) {
+ 		new.rmap = NULL;
+@@ -845,6 +846,8 @@ int __kvm_set_memory_region(struct kvm *
+ 
+ 	return 0;
+ 
++out_slots:
++	kfree(slots);
+ out_free:
+ 	kvm_free_physmem_slot(&new, &old);
+ out:
 
 
