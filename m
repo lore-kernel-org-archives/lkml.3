@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844Ab3LBJdP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 04:33:15 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37553 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752491Ab3LBJdJ (ORCPT
+	id S1753127Ab3LBJe1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 04:34:27 -0500
+Received: from exprod5og110.obsmtp.com ([64.18.0.20]:49731 "HELO
+	exprod5og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753001Ab3LBJeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 04:33:09 -0500
-X-Sasl-enc: q7xk1RrTGMM4zBet1UBksJG6+Zgv5ABk3oivf6mw/AB7 1385976788
-Message-ID: <529C53D2.8020203@iki.fi>
-Date: Mon, 02 Dec 2013 11:33:06 +0200
-From: Pekka Enberg <penberg@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>, acme@ghostprotocols.net,
-        linux-kernel@vger.kernel.org
-CC: namhyung@kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH 1/2] perf sched: Introduce timehist command - v2
-References: <1385943795-11761-1-git-send-email-dsahern@gmail.com> <1385943795-11761-2-git-send-email-dsahern@gmail.com>
-In-Reply-To: <1385943795-11761-2-git-send-email-dsahern@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Dec 2013 04:34:25 -0500
+From: Vinayak Kale <vkale@apm.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: tglx@linutronix.de, will.deacon@arm.com, patches@apm.com, jcm@redhat.com,
+        sboyd@codeaurora.org, marc.zyngier@arm.com,
+        Vinayak Kale <vkale@apm.com>
+Subject: [PATCH V6 0/2] genirq: arm64: perf: support for percpu pmu interrupt
+Date: Mon,  2 Dec 2013 15:04:01 +0530
+Message-Id: <1385976843-13280-1-git-send-email-vkale@apm.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2013 02:23 AM, David Ahern wrote:
-> 'perf sched timehist' provides an analysis of scheduling events.
->
-> Example usage:
->      perf sched record -- sleep 1
->      perf sched timehist
->
-> By default it shows the individual schedule events, including the time between
-> sched-in events for the task, the task scheduling delay (time between wakeup
-> and actually running) and run time for the task:
->
->             time cpu  task name[tid/pid]    b/n time sch delay  run time
->    ------------- ---- -------------------- --------- --------- ---------
->     79371.874569 [11] gcc[31949]               0.014     0.000     1.148
->     79371.874591 [10] gcc[31951]               0.000     0.000     0.024
->     79371.874603 [10] migration/10[59]         3.350     0.004     0.011
->     79371.874604 [11] <idle>                   1.148     0.000     0.035
->     79371.874723 [05] <idle>                   0.016     0.000     1.383
->     79371.874746 [05] gcc[31949]               0.153     0.078     0.022
+This patch series adds support to handle interrupt registration/deregistration
+in arm64 pmu driver when pmu interrupt type is percpu.
 
-What does "b/n time" mean?
+Changelog:
+V6:
+* In arm64 pmu driver: Use macro 'IRQ_TYPE_NONE' while passing irq type value
+  to enable_percpu_irq(). Change 'irqs' etc variables as unsigned, modify the
+  check for 'irqs' inside armpmu_[release/reserve]_hardware().
 
-I'm seeing rather large "sch delay" numbers on Fedora 19's default 
-kernel that seem like a data error of some sort:
+V5:
+* In irqdesc.h: Added Chris Smith's sign-off.
+  In arm64 pmu driver: Handle the invalid irq-0 case for platform_get_irq().
 
-     4500.663117 [02] fix_client[7216]         0.007 
-18446744073708.033     1.786
+V4:
+* In arm64 pmu driver: Avoid using irq_to_desc() to check validity of irq.
 
-Scheduling delays don't seem to be part of "-s" summary output. Why?
+V3:
+* Remove validity check for 'desc' from accessor function in irqdesc.h .
+  Instead, check the irq 'desc' validity in arm64 pmu driver.
 
-                             Pekka
+V2:
+* To determine whether an IRQ is percpu or not, added an accessor function in
+  irqdesc.h . This approach was used by Chris Smith here[1] for similar changes
+  in arm pmu driver.
+* In arm64 pmu driver: Got rid of unnecessary pointer typecastings.
+
+[1] http://lkml.indiana.edu/hypermail/linux/kernel/1207.3/02955.html
+
+Vinayak Kale (2):
+  genirq: Add an accessor for IRQ_PER_CPU flag
+  arm64: perf: add support for percpu pmu interrupt
+
+ arch/arm64/kernel/perf_event.c |  116 +++++++++++++++++++++++++++++-----------
+ include/linux/irqdesc.h        |    8 +++
+ 2 files changed, 94 insertions(+), 30 deletions(-)
+
+-- 
+1.7.9.5
+
