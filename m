@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab3LBX3P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 18:29:15 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:16386 "EHLO
+	id S1754107Ab3LBX3z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 18:29:55 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:16542 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751766Ab3LBX3O (ORCPT
+	with ESMTP id S1752620Ab3LBX3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 18:29:14 -0500
-X-AuditID: cbfee691-b7f666d0000048b0-82-529d17c84f84
+	Mon, 2 Dec 2013 18:29:50 -0500
+X-AuditID: cbfee68e-b7f7e6d00000477d-d3-529d17edc247
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Rusty Russell'" <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
+        devel@driverdev.osuosl.org
 References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
 In-reply-to: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
-Subject: [PATCH 33/39] virtio: pci: remove DEFINE_PCI_DEVICE_TABLE macro
-Date: Tue, 03 Dec 2013 08:29:12 +0900
-Message-id: <003601ceefb6$4ef0e6e0$ecd2b4a0$%han@samsung.com>
+Subject: [PATCH 34/39] vme: remove DEFINE_PCI_DEVICE_TABLE macro
+Date: Tue, 03 Dec 2013 08:29:48 +0900
+Message-id: <003701ceefb6$64918db0$2db4a910$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7vsUc6neA2wWIVTNSB4ceFa5FjuwABPFrw
+Thread-index: Ac7vsUc6neA2wWIVTNSB4ceFa5FjuwABQipg
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zA90T4nODDM7/tbFoXryezeLywkus
-	Fpd3zWGzuDntAovF8rPz2BxYPfbPXcPuMfnGckaPFRtOMHv0bVnF6PF5k1wAaxSXTUpqTmZZ
-	apG+XQJXxtcjz9kKzrJWzPv7j6mB8QpLFyMnh4SAicTU7ZeYIGwxiQv31rN1MXJxCAksY5SY
-	OvMkI0zR0489UIlFjBKNH1exgySEBH4xSkzsLgGx2QTUJL58OQwWFxEwldj4fgojSAOzwBxG
-	iWVtuxkhGmwlpr/YDLSOg4NTwE6i71MtSFhYwENi68TZYFewCKhKzHl3Cew6XqDylid7mCBs
-	QYkfk++BxZkFtCTW7zzOBGHLS2xe85YZZKSEgLrEo7+6IKaIgJHEjNdWEBUiEvtevAO7RkLg
-	HrvE5J4NjBCrBCS+TT7EAtEqK7HpADPEu5ISB1fcYJnAKDELyeJZSBbPQrJ4FpIVCxhZVjGK
-	phYkFxQnpReZ6hUn5haX5qXrJefnbmKExOnEHYz3D1gfYkwGWj+RWUo0OR8Y53kl8YbGZkYW
-	piamxkbmlmakCSuJ86Y/SgoSEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwFh67uaNGXGGc6wu
-	1Pi/ZKp4/TVr+dMZ2Yd5d3LMSDeYfa9zC4PfedNCvVrBoIOXrs6wKxPJNdnKGuZozmfAv4fr
-	dEpN1KaJC+weWc/O25xfPe+30d7a63r9Eor2bUJmAhM7xS5nXV2Vuy4v8H6T79SJu9qd13qe
-	10jrr2LXUF/K+FjrXFrnYSWW4oxEQy3mouJEAO5drVXpAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsVy+t9jAd0T4nODDLYtt7RoXryezeLywkus
-	Fpd3zWGzuDntAovF8rPz2BxYPfbPXcPuMfnGckaPFRtOMHv0bVnF6PF5k1wAa1QDo01GamJK
-	apFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0HYlhbLEnFKgUEBi
-	cbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEdY8bXI8/ZCs6yVsz7+4+pgfEKSxcjJ4eEgInE
-	0489bBC2mMSFe+uBbC4OIYFFjBKNH1exgySEBH4xSkzsLgGx2QTUJL58OQwWFxEwldj4fgoj
-	SAOzwBxGiWVtuxkhGmwlpr/YzNTFyMHBKWAn0fepFiQsLOAhsXXibCYQm0VAVWLOu0tgR/AC
-	lbc82cMEYQtK/Jh8DyzOLKAlsX7ncSYIW15i85q3zCAjJQTUJR791QUxRQSMJGa8toKoEJHY
-	9+Id4wRGoVlIBs1CMmgWkkGzkLQsYGRZxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iRGcBJ5J
-	72Bc1WBxiFGAg1GJh/fB9jlBQqyJZcWVuYcYJTiYlUR4O3nmBgnxpiRWVqUW5ccXleakFh9i
-	TAb6cyKzlGhyPjBB5ZXEGxqbmBlZGplZGJmYm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMH
-	p1QDI/vbHrO1X46WPzP5ke2uWnyqSPLvAh7dx7V7H3p9PFo0d8pGM/aZP7krxD8vdj/P+3Sv
-	0DmRIxsOrj3zKNrUtk2np11MV0Jj4uEbgtpFSfcZik+2J26/HhatfbP3sGRle+V34aVhmmrf
-	9108JqMTJum/+/rGfWkJ3qlihbaFZZb92Yk/O26WK7EUZyQaajEXFScCAMkoGwlGAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zQ9234nODDN7el7LYc+YXu0Xz4vVs
+	FpcXXmK1uLxrDpsDi8e9fYdZPPbPXcPu0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBkPly1i
+	Kmjiq3i99ztrA+M37i5GTg4JAROJttUT2SBsMYkL99YD2VwcQgLLGCW6DlxhgymaO+MeK0Ri
+	EaPEzfPnmSGcX4wSGybdZgKpYhNQk/jy5TA7iC0iYCqx8f0Uxi5GDg5mgSSJ19/CQcJCArYS
+	019sZgIJcwrYSfR9qgUxhQUcJG5NkwepYBFQlXh4sIUZxOYFql60axILhC0o8WPyPTCbWUBL
+	Yv3O40wQtrzE5jVvmUHGSAioSzz6qwux30hi87UdUOUiEvtevGMEOVhC4By7xMqlfUwQuwQk
+	vk0+xALRKyux6QAzxLeSEgdX3GCZwCgxC8nmWUg2z0KyeRaSFQsYWVYxiqYWJBcUJ6UXGekV
+	J+YWl+al6yXn525ihERk3w7GmwesDzEmA62fyCwlmpwPjOi8knhDYzMjC1MTU2Mjc0sz0oSV
+	xHkXPUwKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cC4/N+01Xn6dTkT2R2cZ03gfGPtLHqg
+	V3/lzLcKQanW+3nmPityTzOff4Dd+XyJovJUidwP7SvvKOr4Oq5Pv24g9uxXnKx7tsibX6LB
+	WaeuBZuHChf8r7izYvNui7rPB79UFDtMsefqjLht4mw102fBBX/2+5dUXV79OLo+qNH1uWSn
+	1Kb2RWlKLMUZiYZazEXFiQDC9FI83gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jAd234nODDBo38lrsOfOL3aJ58Xo2
+	i8sLL7FaXN41h82BxePevsMsHvvnrmH36NuyitHj8ya5AJaoBkabjNTElNQihdS85PyUzLx0
+	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
+	LWAaI3R9Q4LgeowM0EDCOsaMh8sWMRU08VW83vudtYHxG3cXIyeHhICJxNwZ91ghbDGJC/fW
+	s3UxcnEICSxilLh5/jwzhPOLUWLDpNtMIFVsAmoSX74cZgexRQRMJTa+n8LYxcjBwSyQJPH6
+	WzhIWEjAVmL6i81MIGFOATuJvk+1IKawgIPErWnyIBUsAqoSDw+2MIPYvEDVi3ZNYoGwBSV+
+	TL4HZjMLaEms33mcCcKWl9i85i0zyBgJAXWJR391IfYbSWy+tgOqXERi34t3jBMYhWYhmTQL
+	yaRZSCbNQtKygJFlFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZwvD+T3sG4qsHiEKMAB6MS
+	D++D7XOChFgTy4orcw8xSnAwK4nwdvLMDRLiTUmsrEotyo8vKs1JLT7EmAz06ERmKdHkfGAq
+	yiuJNzQ2MTOyNDKzMDIxNydNWEmc92CrdaCQQHpiSWp2ampBahHMFiYOTqkGxszw/Qe6joTl
+	dlSf/G+740dRwKXU5PshTD8OhO45wvjNz6L2moHuodOcf6a+iF8RflWx7l94I8t1XY1FqTzf
+	4iZ3xM479LbSPWdakNzmJ99seWSvxOn8i+rzd+JqPWEs/cDs4lWZgz97n5uzMnYdOXRp/1WD
+	My/Ue8yiLENYfO9LT6/4qnrtvRJLcUaioRZzUXEiAOzd+8s7AwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,21 +60,49 @@ is not preferred.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/virtio/virtio_pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/vme/boards/vme_vmivme7805.c |    2 +-
+ drivers/vme/bridges/vme_ca91cx42.c  |    2 +-
+ drivers/vme/bridges/vme_tsi148.c    |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index a37c699..a4a1f7c 100644
---- a/drivers/virtio/virtio_pci.c
-+++ b/drivers/virtio/virtio_pci.c
-@@ -91,7 +91,7 @@ struct virtio_pci_vq_info
- };
+diff --git a/drivers/vme/boards/vme_vmivme7805.c b/drivers/vme/boards/vme_vmivme7805.c
+index cf74aee..ac42212 100644
+--- a/drivers/vme/boards/vme_vmivme7805.c
++++ b/drivers/vme/boards/vme_vmivme7805.c
+@@ -27,7 +27,7 @@ static void __iomem *vmic_base;
  
- /* Qumranet donated their vendor ID for devices 0x1000 thru 0x10FF. */
--static DEFINE_PCI_DEVICE_TABLE(virtio_pci_id_table) = {
-+static const struct pci_device_id virtio_pci_id_table[] = {
- 	{ PCI_DEVICE(0x1af4, PCI_ANY_ID) },
- 	{ 0 }
+ static const char driver_name[] = "vmivme_7805";
+ 
+-static DEFINE_PCI_DEVICE_TABLE(vmic_ids) = {
++static const struct pci_device_id vmic_ids[] = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_VMIC, PCI_DEVICE_ID_VTIMR) },
+ 	{ },
+ };
+diff --git a/drivers/vme/bridges/vme_ca91cx42.c b/drivers/vme/bridges/vme_ca91cx42.c
+index f844857..a06edbf 100644
+--- a/drivers/vme/bridges/vme_ca91cx42.c
++++ b/drivers/vme/bridges/vme_ca91cx42.c
+@@ -42,7 +42,7 @@ static int geoid;
+ 
+ static const char driver_name[] = "vme_ca91cx42";
+ 
+-static DEFINE_PCI_DEVICE_TABLE(ca91cx42_ids) = {
++static const struct pci_device_id ca91cx42_ids[] = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_TUNDRA, PCI_DEVICE_ID_TUNDRA_CA91C142) },
+ 	{ },
+ };
+diff --git a/drivers/vme/bridges/vme_tsi148.c b/drivers/vme/bridges/vme_tsi148.c
+index 9cf8833..16830d8 100644
+--- a/drivers/vme/bridges/vme_tsi148.c
++++ b/drivers/vme/bridges/vme_tsi148.c
+@@ -45,7 +45,7 @@ static int geoid;
+ 
+ static const char driver_name[] = "vme_tsi148";
+ 
+-static DEFINE_PCI_DEVICE_TABLE(tsi148_ids) = {
++static const struct pci_device_id tsi148_ids[] = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_TUNDRA, PCI_DEVICE_ID_TUNDRA_TSI148) },
+ 	{ },
  };
 -- 
 1.7.10.4
