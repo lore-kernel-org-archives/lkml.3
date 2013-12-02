@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756541Ab3LBTz0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:55:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39165 "EHLO
+	id S932070Ab3LBTzY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:55:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39149 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753771Ab3LBTSL (ORCPT
+	with ESMTP id S1754723Ab3LBTSL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:18:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
         Thomas Richter <thor@math.tu-berlin.de>,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.12 128/212] drm/i915/dvo: call ->mode_set callback only when the port is running
-Date: Mon,  2 Dec 2013 11:15:19 -0800
-Message-Id: <20131202191301.306827719@linuxfoundation.org>
+Subject: [PATCH 3.12 129/212] drm/i915: flush cursors harder
+Date: Mon,  2 Dec 2013 11:15:20 -0800
+Message-Id: <20131202191301.403017452@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,77 +34,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 48f34e10169dbb3dd7a19af64e328492b7f54af4 upstream.
+commit b2ea8ef559b4d94190009f3651b5b3ab7c05afd3 upstream.
 
-The ns2501 controller seems to need the dpll and dvo port to accept
-the timing update commands. Quick testing on my x30 here seems to
-indicate that other dvo controllers don't mind. So let's move the
-->mode_set callback to a place where we have the port up and running
-already.
+Apparently they need the same treatment as primary planes. This fixes
+modesetting failures because of stuck cursors (!) on Thomas' i830M
+machine.
 
-Tested-by: Chris Wilson <chris@chris-wilson.co.uk>
+I've figured while at it I'll also roll it out for the ivb 3 pipe
+version of this function. I didn't do this for i845/i865 since Bspec
+says the update mechanism works differently, and there's some
+additional rules about what can be updated in which order.
+
 Tested-by: Thomas Richter <thor@math.tu-berlin.de>
+Cc:  Thomas Richter <thor@math.tu-berlin.de>
+Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_dvo.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_dvo.c
-+++ b/drivers/gpu/drm/i915/intel_dvo.c
-@@ -171,11 +171,16 @@ static void intel_enable_dvo(struct inte
- {
- 	struct drm_i915_private *dev_priv = encoder->base.dev->dev_private;
- 	struct intel_dvo *intel_dvo = enc_to_dvo(encoder);
-+	struct intel_crtc *crtc = to_intel_crtc(encoder->base.crtc);
- 	u32 dvo_reg = intel_dvo->dev.dvo_reg;
- 	u32 temp = I915_READ(dvo_reg);
- 
- 	I915_WRITE(dvo_reg, temp | DVO_ENABLE);
- 	I915_READ(dvo_reg);
-+	intel_dvo->dev.dev_ops->mode_set(&intel_dvo->dev,
-+					 &crtc->config.requested_mode,
-+					 &crtc->config.adjusted_mode);
-+
- 	intel_dvo->dev.dev_ops->dpms(&intel_dvo->dev, true);
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -6770,7 +6770,9 @@ static void i9xx_update_cursor(struct dr
+ 		intel_crtc->cursor_visible = visible;
+ 	}
+ 	/* and commit changes on next vblank */
++	POSTING_READ(CURCNTR(pipe));
+ 	I915_WRITE(CURBASE(pipe), base);
++	POSTING_READ(CURBASE(pipe));
  }
  
-@@ -184,6 +189,7 @@ static void intel_dvo_dpms(struct drm_co
- {
- 	struct intel_dvo *intel_dvo = intel_attached_dvo(connector);
- 	struct drm_crtc *crtc;
-+	struct intel_crtc_config *config;
- 
- 	/* dvo supports only 2 dpms states. */
- 	if (mode != DRM_MODE_DPMS_ON)
-@@ -204,10 +210,16 @@ static void intel_dvo_dpms(struct drm_co
- 	/* We call connector dpms manually below in case pipe dpms doesn't
- 	 * change due to cloning. */
- 	if (mode == DRM_MODE_DPMS_ON) {
-+		config = &to_intel_crtc(crtc)->config;
-+
- 		intel_dvo->base.connectors_active = true;
- 
- 		intel_crtc_update_dpms(crtc);
- 
-+		intel_dvo->dev.dev_ops->mode_set(&intel_dvo->dev,
-+						 &config->requested_mode,
-+						 &config->adjusted_mode);
-+
- 		intel_dvo->dev.dev_ops->dpms(&intel_dvo->dev, true);
- 	} else {
- 		intel_dvo->dev.dev_ops->dpms(&intel_dvo->dev, false);
-@@ -299,10 +311,6 @@ static void intel_dvo_mode_set(struct in
- 		break;
+ static void ivb_update_cursor(struct drm_crtc *crtc, u32 base)
+@@ -6799,7 +6801,9 @@ static void ivb_update_cursor(struct drm
+ 		intel_crtc->cursor_visible = visible;
  	}
+ 	/* and commit changes on next vblank */
++	POSTING_READ(CURCNTR_IVB(pipe));
+ 	I915_WRITE(CURBASE_IVB(pipe), base);
++	POSTING_READ(CURBASE_IVB(pipe));
+ }
  
--	intel_dvo->dev.dev_ops->mode_set(&intel_dvo->dev,
--					 &crtc->config.requested_mode,
--					 adjusted_mode);
--
- 	/* Save the data order, since I don't know what it should be set to. */
- 	dvo_val = I915_READ(dvo_reg) &
- 		  (DVO_PRESERVE_MASK | DVO_DATA_ORDER_GBRG);
+ /* If no-part of the cursor is visible on the framebuffer, then the GPU may hang... */
 
 
