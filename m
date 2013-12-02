@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756564Ab3LBT4q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:56:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39379 "EHLO
+	id S1756578Ab3LBT4w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:56:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39211 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754710Ab3LBTSI (ORCPT
+	with ESMTP id S1754706Ab3LBTSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:08 -0500
+	Mon, 2 Dec 2013 14:18:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>
-Subject: [PATCH 3.12 113/212] avr32: setup crt for early panic()
-Date: Mon,  2 Dec 2013 11:15:04 -0800
-Message-Id: <20131202191259.825379798@linuxfoundation.org>
+        Toshi Kani <toshi.kani@hp.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.12 111/212] ACPI / hotplug: Fix conflicted PCI bridge notify handlers
+Date: Mon,  2 Dec 2013 11:15:02 -0800
+Message-Id: <20131202191259.627566364@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,121 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Bießmann <andreas@biessmann.de>
+From: Toshi Kani <toshi.kani@hp.com>
 
-commit 7a2a74f4b856993218aa7cdeeb6c3103101340db upstream.
+commit ca499fc87ed945094d952da0eb7eea7dbeb1feec upstream.
 
-Before the CRT was (fully) set up in kernel_entry (bss cleared before in
-_start, but also not before jump to panic() in no_tag_table case).
+The PCI host bridge scan handler installs its own notify handler,
+handle_hotplug_event_root(), by itself.  Nevertheless, the ACPI
+hotplug framework also installs the common notify handler,
+acpi_hotplug_notify_cb(), for PCI root bridges.  This causes
+acpi_hotplug_notify_cb() to call _OST method with unsupported
+error as hotplug.enabled is not set.
 
-This patch fixes this up to have a fully working CRT when branching to panic()
-in no_tag_table.
+To address this issue, introduce hotplug.ignore flag, which
+indicates that the scan handler installs its own notify handler by
+itself.  The ACPI hotplug framework does not install the common
+notify handler when this flag is set.
 
-Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+[rjw: Changed the name of the new flag]
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/avr32/boot/u-boot/head.S |   30 +++++++++++++++++++++++++-----
- arch/avr32/kernel/head.S      |   20 --------------------
- 2 files changed, 25 insertions(+), 25 deletions(-)
+ drivers/acpi/pci_root.c |    3 +++
+ drivers/acpi/scan.c     |    2 +-
+ include/acpi/acpi_bus.h |    1 +
+ 3 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/arch/avr32/boot/u-boot/head.S
-+++ b/arch/avr32/boot/u-boot/head.S
-@@ -8,6 +8,8 @@
-  * published by the Free Software Foundation.
-  */
- #include <asm/setup.h>
-+#include <asm/thread_info.h>
-+#include <asm/sysreg.h>
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -63,6 +63,9 @@ static struct acpi_scan_handler pci_root
+ 	.ids = root_device_ids,
+ 	.attach = acpi_pci_root_add,
+ 	.detach = acpi_pci_root_remove,
++	.hotplug = {
++		.ignore = true,
++	},
+ };
  
- 	/*
- 	 * The kernel is loaded where we want it to be and all caches
-@@ -20,11 +22,6 @@
- 	.section .init.text,"ax"
- 	.global _start
- _start:
--	/* Check if the boot loader actually provided a tag table */
--	lddpc	r0, magic_number
--	cp.w	r12, r0
--	brne	no_tag_table
--
- 	/* Initialize .bss */
- 	lddpc	r2, bss_start_addr
- 	lddpc   r3, end_addr
-@@ -34,6 +31,25 @@ _start:
- 	cp      r2, r3
- 	brlo    1b
+ static DEFINE_MUTEX(osc_lock);
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -1812,7 +1812,7 @@ static void acpi_scan_init_hotplug(acpi_
+ 	 */
+ 	list_for_each_entry(hwid, &pnp.ids, list) {
+ 		handler = acpi_scan_match_handler(hwid->id, NULL);
+-		if (handler) {
++		if (handler && !handler->hotplug.ignore) {
+ 			acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+ 					acpi_hotplug_notify_cb, handler);
+ 			break;
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -100,6 +100,7 @@ enum acpi_hotplug_mode {
+ struct acpi_hotplug_profile {
+ 	struct kobject kobj;
+ 	bool enabled:1;
++	bool ignore:1;
+ 	enum acpi_hotplug_mode mode;
+ };
  
-+	/* Initialize status register */
-+	lddpc	r0, init_sr
-+	mtsr	SYSREG_SR, r0
-+
-+	/* Set initial stack pointer */
-+	lddpc	sp, stack_addr
-+	sub	sp, -THREAD_SIZE
-+
-+#ifdef CONFIG_FRAME_POINTER
-+	/* Mark last stack frame */
-+	mov	lr, 0
-+	mov	r7, 0
-+#endif
-+
-+	/* Check if the boot loader actually provided a tag table */
-+	lddpc	r0, magic_number
-+	cp.w	r12, r0
-+	brne	no_tag_table
-+
- 	/*
- 	 * Save the tag table address for later use. This must be done
- 	 * _after_ .bss has been initialized...
-@@ -53,6 +69,10 @@ bss_start_addr:
- 	.long   __bss_start
- end_addr:
- 	.long   _end
-+init_sr:
-+	.long	0x007f0000	/* Supervisor mode, everything masked */
-+stack_addr:
-+	.long	init_thread_union
- 
- no_tag_table:
- 	sub	r12, pc, (. - 2f)
---- a/arch/avr32/kernel/head.S
-+++ b/arch/avr32/kernel/head.S
-@@ -10,33 +10,13 @@
- #include <linux/linkage.h>
- 
- #include <asm/page.h>
--#include <asm/thread_info.h>
--#include <asm/sysreg.h>
- 
- 	.section .init.text,"ax"
- 	.global kernel_entry
- kernel_entry:
--	/* Initialize status register */
--	lddpc   r0, init_sr
--	mtsr	SYSREG_SR, r0
--
--	/* Set initial stack pointer */
--	lddpc   sp, stack_addr
--	sub	sp, -THREAD_SIZE
--
--#ifdef CONFIG_FRAME_POINTER
--	/* Mark last stack frame */
--	mov	lr, 0
--	mov	r7, 0
--#endif
--
- 	/* Start the show */
- 	lddpc   pc, kernel_start_addr
- 
- 	.align  2
--init_sr:
--	.long   0x007f0000	/* Supervisor mode, everything masked */
--stack_addr:
--	.long   init_thread_union
- kernel_start_addr:
- 	.long   start_kernel
 
 
