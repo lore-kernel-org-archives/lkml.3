@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759725Ab3LBVVt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:21:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38395 "EHLO
+	id S1759760Ab3LBVWT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:22:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38411 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753564Ab3LBTMq (ORCPT
+	with ESMTP id S1753407Ab3LBTMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:12:46 -0500
+	Mon, 2 Dec 2013 14:12:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Fitzgerald <rf@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 019/173] ASoC: arizona: Set FLL to free-run before disabling
-Date: Mon,  2 Dec 2013 11:10:02 -0800
-Message-Id: <20131202191145.041949824@linuxfoundation.org>
+        Nicolin Chen <b42378@freescale.com>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.10 016/173] ASoC: wm8962: Turn on regcache_cache_only before disabling regulator
+Date: Mon,  2 Dec 2013 11:09:59 -0800
+Message-Id: <20131202191144.729714806@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,40 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+From: Nicolin Chen <b42378@freescale.com>
 
-commit 3e68ce1bc72e5d6615677ec5a8b0a9bcb6c7a490 upstream.
+commit 50bfcf2df2fadf77e143d6099150e6fa7ef4d78c upstream.
 
-The FLL must be placed into free-run mode before disabling
-to allow it to entirely shut down.
+It's safer to turn on regcache_cache_only before disabling regulator since
+the driver will turn off the regcache_cache_only after enabling regulator.
 
-Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+If we remain cache_only false, some command like 'amixer cset' would get
+failure if being run before wm8962_resume().
+
+Signed-off-by: Nicolin Chen <b42378@freescale.com>
 Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/arizona.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ sound/soc/codecs/wm8962.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/soc/codecs/arizona.c
-+++ b/sound/soc/codecs/arizona.c
-@@ -1455,6 +1455,8 @@ static void arizona_enable_fll(struct ar
- 	try_wait_for_completion(&fll->ok);
+--- a/sound/soc/codecs/wm8962.c
++++ b/sound/soc/codecs/wm8962.c
+@@ -3686,6 +3686,8 @@ static int wm8962_i2c_probe(struct i2c_c
+ 	if (ret < 0)
+ 		goto err_enable;
  
- 	regmap_update_bits(arizona->regmap, fll->base + 1,
-+			   ARIZONA_FLL1_FREERUN, 0);
-+	regmap_update_bits(arizona->regmap, fll->base + 1,
- 			   ARIZONA_FLL1_ENA, ARIZONA_FLL1_ENA);
- 	if (fll->ref_src >= 0 && fll->sync_src >= 0 &&
- 	    fll->ref_src != fll->sync_src)
-@@ -1473,6 +1475,8 @@ static void arizona_disable_fll(struct a
- 	struct arizona *arizona = fll->arizona;
- 	bool change;
++	regcache_cache_only(wm8962->regmap, true);
++
+ 	/* The drivers should power up as needed */
+ 	regulator_bulk_disable(ARRAY_SIZE(wm8962->supplies), wm8962->supplies);
  
-+	regmap_update_bits(arizona->regmap, fll->base + 1,
-+			   ARIZONA_FLL1_FREERUN, ARIZONA_FLL1_FREERUN);
- 	regmap_update_bits_check(arizona->regmap, fll->base + 1,
- 				 ARIZONA_FLL1_ENA, 0, &change);
- 	regmap_update_bits(arizona->regmap, fll->base + 0x11,
 
 
