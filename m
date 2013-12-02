@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100Ab3LBPOR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 10:14:17 -0500
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:52783 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438Ab3LBPOP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 10:14:15 -0500
-Message-ID: <529CA3EA.5080708@gmail.com>
-Date: Mon, 02 Dec 2013 16:14:50 +0100
-From: Franck Bui-Huu <fbuihuu@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1752151Ab3LBPP6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 10:15:58 -0500
+Received: from ns.iliad.fr ([212.27.33.1]:38157 "EHLO ns.iliad.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751438Ab3LBPPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 10:15:55 -0500
+Message-ID: <529CA42A.3040504@freebox.fr>
+Date: Mon, 02 Dec 2013 16:15:54 +0100
+From: Nicolas Schichan <nschichan@freebox.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix detectition of kernel git repository in setlocalversion
- script
-References: <1385990497-11805-1-git-send-email-fbuihuu@gmail.com> <529C9FF7.3040005@suse.cz>
-In-Reply-To: <529C9FF7.3040005@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-2
+To: LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+CC: "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <florian@openwrt.org>,
+        Leigh Brown <leigh@solinno.co.uk>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Spurious timeouts in mvmdio
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2013 03:57 PM, Michal Marek wrote:
-> On 2.12.2013 14:21, Franck Bui-Huu wrote:
->> diff --git a/scripts/setlocalversion b/scripts/setlocalversion
->> index 0b5ccf3..c16e65d 100755
->> --- a/scripts/setlocalversion
->> +++ b/scripts/setlocalversion
->> @@ -43,7 +43,8 @@ scm_version()
->>  	fi
->>  
->>  	# Check for git and a git repo.
->> -	if test -d .git && head=`git rev-parse --verify --short HEAD 2>/dev/null`; then
->> +	if topdir=$(git rev-parse --show-cdup 2>/dev/null) && test -z "$topdir" &&
->> +	   head=`git rev-parse --verify --short HEAD 2>/dev/null`; then
-> 
-> You can do test -z "$(git rev-parse --show-cdup 2>/dev/null)" without
-> the $topdir variable.
 
-No, "$(git rev-parse --show-cdup 2>/dev/null)" would also give the empty
-string if the git command fails (ie not inside a git repository at all).
+Hi,
 
-Thanks.
+During 3.13-rc1 testing, I have found out that the mvmdio driver would report 
+timeouts on the kernel console:
+
+[   11.011334] orion-mdio orion-mdio: Timeout: SMI busy for too long
+
+The hardware is a MV88F6281 Kirkwood CPU. The mvmdio driver is using the irq 
+line 46 (ge00_err).
+
+I am inclined to believe that it is due to the fact that wait_event_timeout() 
+is called with a timeout parameter of 1 jiffy in orion_mdio_wait_ready(). If 
+the timer interrupt ticks right after calling wait_event_timeout(), we may end 
+up spending much less time than MVMDIO_SMI_TIMEOUT (1 msec) in 
+wait_event_timeout(), and as a result report a timeout as the MDIO access did 
+not complete in such a short time.
+
+As to how to fix this, I see two options (I don't know which one would be 
+prefered):
+
+- Option 1: always pass a timeout of at least 2 jiffy to wait_event_timeout().
+- Option 2: switch to wait_event_hrtimeout().
+
+I can provide patches for both options.
+
+Regards,
+
 -- 
-            Franck
+Nicolas Schichan
