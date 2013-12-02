@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab3LBTSK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:18:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39151 "EHLO
+	id S1754755Ab3LBTSS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:18:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39246 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753621Ab3LBTRr (ORCPT
+	with ESMTP id S1754620Ab3LBTRo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:47 -0500
+	Mon, 2 Dec 2013 14:17:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Alexander Morozov <etesial@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, Chris Ball <cjb@laptop.org>
-Subject: [PATCH 3.12 084/212] mmc: atmel-mci: abort transfer on timeout error
-Date: Mon,  2 Dec 2013 11:14:35 -0800
-Message-Id: <20131202191257.042106589@linuxfoundation.org>
+        Ursula Braun <ursula.braun@de.ibm.com>,
+        Frank Blaschka <frank.blaschka@de.ibm.com>,
+        Heiko Carstens <heicars2@linux.vnet.ibm.com>,
+        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 080/212] qeth: avoid buffer overflow in snmp ioctl
+Date: Mon,  2 Dec 2013 11:14:31 -0800
+Message-Id: <20131202191256.672108184@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -28,39 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
+From: Ursula Braun <ursula.braun@de.ibm.com>
 
-commit c1fa3426aa5c782724c97394303d52228206eda4 upstream.
+commit 6fb392b1a63ae36c31f62bc3fc8630b49d602b62 upstream.
 
-When a software timeout occurs, the transfer is not stopped. In DMA case,
-it causes DMA channel to be stuck because the transfer is still active
-causing following transfers to be queued but not computed.
+Check user-defined length in snmp ioctl request and allow request
+only if it fits into a qeth command buffer.
 
-Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Reported-by: Alexander Morozov <etesial@gmail.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Ursula Braun <ursula.braun@de.ibm.com>
+Signed-off-by: Frank Blaschka <frank.blaschka@de.ibm.com>
+Reviewed-by: Heiko Carstens <heicars2@linux.vnet.ibm.com>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/atmel-mci.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/s390/net/qeth_core_main.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -589,6 +589,13 @@ static void atmci_timeout_timer(unsigned
- 	if (host->mrq->cmd->data) {
- 		host->mrq->cmd->data->error = -ETIMEDOUT;
- 		host->data = NULL;
-+		/*
-+		 * With some SDIO modules, sometimes DMA transfer hangs. If
-+		 * stop_transfer() is not called then the DMA request is not
-+		 * removed, following ones are queued and never computed.
-+		 */
-+		if (host->state == STATE_DATA_XFER)
-+			host->stop_transfer(host);
- 	} else {
- 		host->mrq->cmd->error = -ETIMEDOUT;
- 		host->cmd = NULL;
+--- a/drivers/s390/net/qeth_core_main.c
++++ b/drivers/s390/net/qeth_core_main.c
+@@ -4451,7 +4451,7 @@ int qeth_snmp_command(struct qeth_card *
+ 	struct qeth_cmd_buffer *iob;
+ 	struct qeth_ipa_cmd *cmd;
+ 	struct qeth_snmp_ureq *ureq;
+-	int req_len;
++	unsigned int req_len;
+ 	struct qeth_arp_query_info qinfo = {0, };
+ 	int rc = 0;
+ 
+@@ -4467,6 +4467,10 @@ int qeth_snmp_command(struct qeth_card *
+ 	/* skip 4 bytes (data_len struct member) to get req_len */
+ 	if (copy_from_user(&req_len, udata + sizeof(int), sizeof(int)))
+ 		return -EFAULT;
++	if (req_len > (QETH_BUFSIZE - IPA_PDU_HEADER_SIZE -
++		       sizeof(struct qeth_ipacmd_hdr) -
++		       sizeof(struct qeth_ipacmd_setadpparms_hdr)))
++		return -EINVAL;
+ 	ureq = memdup_user(udata, req_len + sizeof(struct qeth_snmp_ureq_hdr));
+ 	if (IS_ERR(ureq)) {
+ 		QETH_CARD_TEXT(card, 2, "snmpnome");
 
 
