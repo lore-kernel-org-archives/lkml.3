@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755837Ab3LBTeu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:34:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39661 "EHLO
+	id S1754977Ab3LBTS4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:18:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39538 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754984Ab3LBTS6 (ORCPT
+	with ESMTP id S1753909Ab3LBTSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:58 -0500
+	Mon, 2 Dec 2013 14:18:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Elias Vanderstuyft <elias.vds@gmail.com>,
-        Simon Wood <simon@mungewell.org>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.12 182/212] HID:hid-lg4ff: Switch autocentering off when strength is set to zero.
-Date: Mon,  2 Dec 2013 11:16:13 -0800
-Message-Id: <20131202191308.845267662@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.12 148/212] md: test mddev->flags more safely in md_check_recovery.
+Date: Mon,  2 Dec 2013 11:15:39 -0800
+Message-Id: <20131202191303.823392615@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,63 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Wood <simon@mungewell.org>
+From: NeilBrown <neilb@suse.de>
 
-commit d2c02da549b468bbb28e67d269bd3c9e10683ff5 upstream.
+commit 142d44c310819e1965ca70b4d55d7679f5797e25 upstream.
 
-When the autocenter is set to zero, this patch issues a command to
-totally disable the autocenter - this results in less resistance
-in the wheel.
+commit 7a0a5355cbc71efa md: Don't test all of mddev->flags at once.
+made most tests on mddev->flags safer, but missed one.
 
-Reported-by: Elias Vanderstuyft <elias.vds@gmail.com>
-Signed-off-by: Simon Wood <simon@mungewell.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+When
+commit 260fa034ef7a4ff8b7306 md: avoid deadlock when dirty buffers during md_stop.
+added MD_STILL_CLOSED, this caused md_check_recovery to misbehave.
+It can think there is something to do but find nothing.  This can
+lead to the md thread spinning during array shutdown.
+
+https://bugzilla.kernel.org/show_bug.cgi?id=65721
+
+Reported-and-tested-by: Richard W.M. Jones <rjones@redhat.com>
+Fixes: 260fa034ef7a4ff8b7306
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-lg4ff.c |   25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ drivers/md/md.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hid/hid-lg4ff.c
-+++ b/drivers/hid/hid-lg4ff.c
-@@ -220,6 +220,20 @@ static void hid_lg4ff_set_autocenter_def
- 	__s32 *value = report->field[0]->value;
- 	__u32 expand_a, expand_b;
- 
-+	/* De-activate Auto-Center */
-+	if (magnitude == 0) {
-+		value[0] = 0xf5;
-+		value[1] = 0x00;
-+		value[2] = 0x00;
-+		value[3] = 0x00;
-+		value[4] = 0x00;
-+		value[5] = 0x00;
-+		value[6] = 0x00;
-+
-+		hid_hw_request(hid, report, HID_REQ_SET_REPORT);
-+		return;
-+	}
-+
- 	if (magnitude <= 0xaaaa) {
- 		expand_a = 0x0c * magnitude;
- 		expand_b = 0x80 * magnitude;
-@@ -236,6 +250,17 @@ static void hid_lg4ff_set_autocenter_def
- 	value[5] = 0x00;
- 	value[6] = 0x00;
- 
-+	hid_hw_request(hid, report, HID_REQ_SET_REPORT);
-+
-+	/* Activate Auto-Center */
-+	value[0] = 0x14;
-+	value[1] = 0x00;
-+	value[2] = 0x00;
-+	value[3] = 0x00;
-+	value[4] = 0x00;
-+	value[5] = 0x00;
-+	value[6] = 0x00;
-+
- 	hid_hw_request(hid, report, HID_REQ_SET_REPORT);
- }
- 
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7792,7 +7792,7 @@ void md_check_recovery(struct mddev *mdd
+ 	if (mddev->ro && !test_bit(MD_RECOVERY_NEEDED, &mddev->recovery))
+ 		return;
+ 	if ( ! (
+-		(mddev->flags & ~ (1<<MD_CHANGE_PENDING)) ||
++		(mddev->flags & MD_UPDATE_SB_FLAGS & ~ (1<<MD_CHANGE_PENDING)) ||
+ 		test_bit(MD_RECOVERY_NEEDED, &mddev->recovery) ||
+ 		test_bit(MD_RECOVERY_DONE, &mddev->recovery) ||
+ 		(mddev->external == 0 && mddev->safemode == 1) ||
 
 
