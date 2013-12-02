@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab3LBTqH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:46:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39550 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754758Ab3LBTSi (ORCPT
+	id S1756163Ab3LBTqF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:46:05 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:59546 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756138Ab3LBTpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:38 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.12 153/212] s390/uaccess: add missing page table walk range check
-Date: Mon,  2 Dec 2013 11:15:44 -0800
-Message-Id: <20131202191304.535673023@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
-References: <20131202191248.517975703@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	Mon, 2 Dec 2013 14:45:52 -0500
+Message-ID: <529CE36C.4020707@monstr.eu>
+Date: Mon, 02 Dec 2013 20:45:48 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Chris Ball <cjb@laptop.org>, Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Subject: Re: [PATCH v3 2/2] arm: dt: zynq: Add SDHCI nodes
+References: <1386007357-11956-1-git-send-email-soren.brinkmann@xilinx.com> <1386007357-11956-2-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1386007357-11956-2-git-send-email-soren.brinkmann@xilinx.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="epqDfHUX8lXpqe1s6MtQ46BBVauDxABRk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--epqDfHUX8lXpqe1s6MtQ46BBVauDxABRk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+On 12/02/2013 07:02 PM, Soren Brinkmann wrote:
+> Add nodes for the Arasan SDHCI controller to Zynq dts files.
+>=20
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+> v2:
+>  - update compatibilty string according to changes in 1/2 (append
+>    '-8.9a' IP version string)
+> ---
+>  arch/arm/boot/dts/zynq-7000.dtsi | 20 ++++++++++++++++++++
+>  arch/arm/boot/dts/zynq-zc702.dts |  4 ++++
+>  arch/arm/boot/dts/zynq-zc706.dts |  4 ++++
+>  arch/arm/boot/dts/zynq-zed.dts   |  4 ++++
+>  4 files changed, 32 insertions(+)
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+Chris: It is up to you if you want to take this through your tree
+or just let me to take it through my tree. It is adding new nodes
+to DTS file that's why it shouldn't be any problem to apply it
+separately.
 
-commit 71a86ef055f569b93bc6901f007bdf447dbf515f upstream.
+Anyway please let me know what you think.
+If you want to add it to your tree here is my
 
-When translating a user space address, the address must be checked against
-the ASCE limit of the process. If the address is larger than the maximum
-address that is reachable with the ASCE, an ASCE type exception must be
-generated.
+Acked-by: Michal Simek <monstr@monstr.eu>
 
-The current code simply ignored the higher order bits. This resulted in an
-address wrap around in user space instead of an exception in user space.
-
-Reviewed-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/s390/lib/uaccess_pt.c |    3 +++
- 1 file changed, 3 insertions(+)
-
---- a/arch/s390/lib/uaccess_pt.c
-+++ b/arch/s390/lib/uaccess_pt.c
-@@ -78,11 +78,14 @@ static size_t copy_in_kernel(size_t coun
-  * contains the (negative) exception code.
-  */
- #ifdef CONFIG_64BIT
-+
- static unsigned long follow_table(struct mm_struct *mm,
- 				  unsigned long address, int write)
- {
- 	unsigned long *table = (unsigned long *)__pa(mm->pgd);
- 
-+	if (unlikely(address > mm->context.asce_limit - 1))
-+		return -0x38UL;
- 	switch (mm->context.asce_bits & _ASCE_TYPE_MASK) {
- 	case _ASCE_TYPE_REGION1:
- 		table = table + ((address >> 53) & 0x7ff);
+Thanks,
+Michal
 
 
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--epqDfHUX8lXpqe1s6MtQ46BBVauDxABRk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlKc42wACgkQykllyylKDCFTpwCgjssBjNL0GVC3mQjeakH3P9un
+tqsAn3tn0//U7tycTsg8CIlQ8Ae8a2Jz
+=mKP+
+-----END PGP SIGNATURE-----
+
+--epqDfHUX8lXpqe1s6MtQ46BBVauDxABRk--
