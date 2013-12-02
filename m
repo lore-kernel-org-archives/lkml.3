@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808Ab3LBUHX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:07:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39165 "EHLO
+	id S1756212Ab3LBUIE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:08:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39157 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754594Ab3LBTRk (ORCPT
+	with ESMTP id S1753503Ab3LBTRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:40 -0500
+	Mon, 2 Dec 2013 14:17:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.12 074/212] ext4: avoid bh leak in retry path of ext4_expand_extra_isize_ea()
-Date: Mon,  2 Dec 2013 11:14:25 -0800
-Message-Id: <20131202191256.109000697@linuxfoundation.org>
+        Huang Shijie <b32955@freescale.com>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [PATCH 3.12 072/212] mtd: gpmi: fix kernel BUG due to racing DMA operations
+Date: Mon,  2 Dec 2013 11:14:23 -0800
+Message-Id: <20131202191255.912324739@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,27 +27,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Huang Shijie <b32955@freescale.com>
 
-commit dcb9917ba041866686fe152850364826c4622a36 upstream.
+commit 7b3d2fb92067bcb29f0f085a9fa9fa64920a6646 upstream.
 
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+[1] The gpmi uses the nand_command_lp to issue the commands to NAND chips.
+    The gpmi issues a DMA operation with gpmi_cmd_ctrl when it handles
+    a NAND_CMD_NONE control command. So when we read a page(NAND_CMD_READ0)
+    from the NAND, we may send two DMA operations back-to-back.
+
+    If we do not serialize the two DMA operations, we will meet a bug when
+
+    1.1) we enable CONFIG_DMA_API_DEBUG, CONFIG_DMADEVICES_DEBUG,
+         and CONFIG_DEBUG_SG.
+
+    1.2) Use the following commands in an UART console and a SSH console:
+         cmd 1: while true;do dd if=/dev/mtd0 of=/dev/null;done
+         cmd 1: while true;do dd if=/dev/mmcblk0 of=/dev/null;done
+
+    The kernel log shows below:
+    -----------------------------------------------------------------
+    kernel BUG at lib/scatterlist.c:28!
+    Unable to handle kernel NULL pointer dereference at virtual address 00000000
+      .........................
+    [<80044a0c>] (__bug+0x18/0x24) from [<80249b74>] (sg_next+0x48/0x4c)
+    [<80249b74>] (sg_next+0x48/0x4c) from [<80255398>] (debug_dma_unmap_sg+0x170/0x1a4)
+    [<80255398>] (debug_dma_unmap_sg+0x170/0x1a4) from [<8004af58>] (dma_unmap_sg+0x14/0x6c)
+    [<8004af58>] (dma_unmap_sg+0x14/0x6c) from [<8027e594>] (mxs_dma_tasklet+0x18/0x1c)
+    [<8027e594>] (mxs_dma_tasklet+0x18/0x1c) from [<8007d444>] (tasklet_action+0x114/0x164)
+    -----------------------------------------------------------------
+
+    1.3) Assume the two DMA operations is X (first) and Y (second).
+
+         The root cause of the bug:
+	   Assume process P issues DMA X, and sleep on the completion
+	 @this->dma_done. X's tasklet callback is dma_irq_callback. It firstly
+	 wake up the process sleeping on the completion @this->dma_done,
+	 and then trid to unmap the scatterlist S. The waked process P will
+	 issue Y in another ARM core. Y initializes S->sg_magic to zero
+	 with sg_init_one(), while dma_irq_callback is unmapping S at the same
+	 time.
+
+	 See the diagram:
+
+                   ARM core 0              |         ARM core 1
+	 -------------------------------------------------------------
+         (P issues DMA X, then sleep)  --> |
+                                           |
+         (X's tasklet wakes P)         --> |
+                                           |
+                                           | <-- (P begin to issue DMA Y)
+                                           |
+         (X's tasklet unmap the            |
+      scatterlist S with dma_unmap_sg) --> | <-- (Y calls sg_init_one() to init
+                                           |      scatterlist S)
+                                           |
+
+[2] This patch serialize both the X and Y in the following way:
+     Unmap the DMA scatterlist S firstly, and wake up the process at the end
+     of the DMA callback, in such a way, Y will be executed after X.
+
+     After this patch:
+
+                   ARM core 0              |         ARM core 1
+	 -------------------------------------------------------------
+         (P issues DMA X, then sleep)  --> |
+                                           |
+         (X's tasklet unmap the            |
+      scatterlist S with dma_unmap_sg) --> |
+                                           |
+         (X's tasklet wakes P)         --> |
+                                           |
+                                           | <-- (P begin to issue DMA Y)
+                                           |
+                                           | <-- (Y calls sg_init_one() to init
+                                           |     scatterlist S)
+                                           |
+
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/xattr.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/mtd/nand/gpmi-nand/gpmi-nand.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -1352,6 +1352,7 @@ retry:
- 					new_extra_isize = s_min_extra_isize;
- 					kfree(is); is = NULL;
- 					kfree(bs); bs = NULL;
-+					brelse(bh);
- 					goto retry;
- 				}
- 				error = -1;
+--- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
++++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
+@@ -392,8 +392,6 @@ static void dma_irq_callback(void *param
+ 	struct gpmi_nand_data *this = param;
+ 	struct completion *dma_c = &this->dma_done;
+ 
+-	complete(dma_c);
+-
+ 	switch (this->dma_type) {
+ 	case DMA_FOR_COMMAND:
+ 		dma_unmap_sg(this->dev, &this->cmd_sgl, 1, DMA_TO_DEVICE);
+@@ -418,6 +416,8 @@ static void dma_irq_callback(void *param
+ 	default:
+ 		pr_err("in wrong DMA operation.\n");
+ 	}
++
++	complete(dma_c);
+ }
+ 
+ int start_dma_without_bch_irq(struct gpmi_nand_data *this,
 
 
