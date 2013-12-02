@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769Ab3LBUDU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:03:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39165 "EHLO
+	id S1756757Ab3LBUDO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:03:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39149 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754629Ab3LBTRx (ORCPT
+	with ESMTP id S1753505Ab3LBTRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:53 -0500
+	Mon, 2 Dec 2013 14:17:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jiang <dave.jiang@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH 3.12 092/212] ioatdma: fix selection of 16 vs 8 source path
-Date: Mon,  2 Dec 2013 11:14:43 -0800
-Message-Id: <20131202191257.802260586@linuxfoundation.org>
+        Vu Pham <vu@mellanox.com>, Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.12 093/212] iser-target: Avoid using FRMR for single dma entry requests
+Date: Mon,  2 Dec 2013 11:14:44 -0800
+Message-Id: <20131202191257.897405691@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,149 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Vu Pham <vu@mellanox.com>
 
-commit 21e96c7313486390c694919522a76dfea0a86c59 upstream.
+commit f01b9f73392b48c6cda7c2c66594c73137c776da upstream.
 
-When performing continuations there are implied sources that need to be
-added to the source count. Quoting dma_set_maxpq:
+This patch changes isert_reg_rdma_frwr() to not use FRMR for single
+dma entry requests from small I/Os, in order to avoid the associated
+memory registration overhead.
 
-/* dma_maxpq - reduce maxpq in the face of continued operations
- * @dma - dma device with PQ capability
- * @flags - to check if DMA_PREP_CONTINUE and DMA_PREP_PQ_DISABLE_P are set
- *
- * When an engine does not support native continuation we need 3 extra
- * source slots to reuse P and Q with the following coefficients:
- * 1/ {00} * P : remove P from Q', but use it as a source for P'
- * 2/ {01} * Q : use Q to continue Q' calculation
- * 3/ {00} * Q : subtract Q from P' to cancel (2)
- *
- * In the case where P is disabled we only need 1 extra source:
- * 1/ {01} * Q : use Q to continue Q' calculation
- */
+Using DMA MR is sufficient here for the single dma entry requests,
+and addresses a >= v3.12 performance regression.
 
-...fix the selection of the 16 source path to take these implied sources
-into account.
-
-Note this also kills the BUG_ON(src_cnt < 9) check in
-__ioat3_prep_pq16_lock().  Besides not accounting for implied sources
-the check is redundant given we already made the path selection.
-
-Cc: Dave Jiang <dave.jiang@intel.com>
-Acked-by: Dave Jiang <dave.jiang@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Vu Pham <vu@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/ioat/dma_v3.c |   30 +++++++++++++++---------------
- 1 file changed, 15 insertions(+), 15 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c |   30 +++++++++++++++++++-----------
+ 1 file changed, 19 insertions(+), 11 deletions(-)
 
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -1116,9 +1116,6 @@ __ioat3_prep_pq16_lock(struct dma_chan *
- 	u8 op;
- 	int i, s, idx, num_descs;
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -2259,18 +2259,26 @@ isert_reg_rdma_frwr(struct iscsi_conn *c
+ 	data_len = min(data_left, rdma_write_max);
+ 	wr->cur_rdma_length = data_len;
  
--	/* this function only handles src_cnt 9 - 16 */
--	BUG_ON(src_cnt < 9);
--
- 	/* this function is only called with 9-16 sources */
- 	op = result ? IOAT_OP_PQ_VAL_16S : IOAT_OP_PQ_16S;
+-	spin_lock_irqsave(&isert_conn->conn_lock, flags);
+-	fr_desc = list_first_entry(&isert_conn->conn_frwr_pool,
+-				   struct fast_reg_descriptor, list);
+-	list_del(&fr_desc->list);
+-	spin_unlock_irqrestore(&isert_conn->conn_lock, flags);
+-	wr->fr_desc = fr_desc;
++	/* if there is a single dma entry, dma mr is sufficient */
++	if (count == 1) {
++		ib_sge->addr = ib_sg_dma_address(ib_dev, &sg_start[0]);
++		ib_sge->length = ib_sg_dma_len(ib_dev, &sg_start[0]);
++		ib_sge->lkey = isert_conn->conn_mr->lkey;
++		wr->fr_desc = NULL;
++	} else {
++		spin_lock_irqsave(&isert_conn->conn_lock, flags);
++		fr_desc = list_first_entry(&isert_conn->conn_frwr_pool,
++					   struct fast_reg_descriptor, list);
++		list_del(&fr_desc->list);
++		spin_unlock_irqrestore(&isert_conn->conn_lock, flags);
++		wr->fr_desc = fr_desc;
  
-@@ -1204,13 +1201,21 @@ __ioat3_prep_pq16_lock(struct dma_chan *
- 	return &desc->txd;
- }
+-	ret = isert_fast_reg_mr(fr_desc, isert_cmd, isert_conn,
+-			  ib_sge, offset, data_len);
+-	if (ret) {
+-		list_add_tail(&fr_desc->list, &isert_conn->conn_frwr_pool);
+-		goto unmap_sg;
++		ret = isert_fast_reg_mr(fr_desc, isert_cmd, isert_conn,
++				  ib_sge, offset, data_len);
++		if (ret) {
++			list_add_tail(&fr_desc->list, &isert_conn->conn_frwr_pool);
++			goto unmap_sg;
++		}
+ 	}
  
-+static int src_cnt_flags(unsigned int src_cnt, unsigned long flags)
-+{
-+	if (dmaf_p_disabled_continue(flags))
-+		return src_cnt + 1;
-+	else if (dmaf_continue(flags))
-+		return src_cnt + 3;
-+	else
-+		return src_cnt;
-+}
-+
- static struct dma_async_tx_descriptor *
- ioat3_prep_pq(struct dma_chan *chan, dma_addr_t *dst, dma_addr_t *src,
- 	      unsigned int src_cnt, const unsigned char *scf, size_t len,
- 	      unsigned long flags)
- {
--	struct dma_device *dma = chan->device;
--
- 	/* specify valid address for disabled result */
- 	if (flags & DMA_PREP_PQ_DISABLE_P)
- 		dst[0] = dst[1];
-@@ -1230,7 +1235,7 @@ ioat3_prep_pq(struct dma_chan *chan, dma
- 		single_source_coef[0] = scf[0];
- 		single_source_coef[1] = 0;
- 
--		return (src_cnt > 8) && (dma->max_pq > 8) ?
-+		return src_cnt_flags(src_cnt, flags) > 8 ?
- 			__ioat3_prep_pq16_lock(chan, NULL, dst, single_source,
- 					       2, single_source_coef, len,
- 					       flags) :
-@@ -1238,7 +1243,7 @@ ioat3_prep_pq(struct dma_chan *chan, dma
- 					     single_source_coef, len, flags);
- 
- 	} else {
--		return (src_cnt > 8) && (dma->max_pq > 8) ?
-+		return src_cnt_flags(src_cnt, flags) > 8 ?
- 			__ioat3_prep_pq16_lock(chan, NULL, dst, src, src_cnt,
- 					       scf, len, flags) :
- 			__ioat3_prep_pq_lock(chan, NULL, dst, src, src_cnt,
-@@ -1251,8 +1256,6 @@ ioat3_prep_pq_val(struct dma_chan *chan,
- 		  unsigned int src_cnt, const unsigned char *scf, size_t len,
- 		  enum sum_check_flags *pqres, unsigned long flags)
- {
--	struct dma_device *dma = chan->device;
--
- 	/* specify valid address for disabled result */
- 	if (flags & DMA_PREP_PQ_DISABLE_P)
- 		pq[0] = pq[1];
-@@ -1264,7 +1267,7 @@ ioat3_prep_pq_val(struct dma_chan *chan,
- 	 */
- 	*pqres = 0;
- 
--	return (src_cnt > 8) && (dma->max_pq > 8) ?
-+	return src_cnt_flags(src_cnt, flags) > 8 ?
- 		__ioat3_prep_pq16_lock(chan, pqres, pq, src, src_cnt, scf, len,
- 				       flags) :
- 		__ioat3_prep_pq_lock(chan, pqres, pq, src, src_cnt, scf, len,
-@@ -1275,7 +1278,6 @@ static struct dma_async_tx_descriptor *
- ioat3_prep_pqxor(struct dma_chan *chan, dma_addr_t dst, dma_addr_t *src,
- 		 unsigned int src_cnt, size_t len, unsigned long flags)
- {
--	struct dma_device *dma = chan->device;
- 	unsigned char scf[src_cnt];
- 	dma_addr_t pq[2];
- 
-@@ -1284,7 +1286,7 @@ ioat3_prep_pqxor(struct dma_chan *chan,
- 	flags |= DMA_PREP_PQ_DISABLE_Q;
- 	pq[1] = dst; /* specify valid address for disabled result */
- 
--	return (src_cnt > 8) && (dma->max_pq > 8) ?
-+	return src_cnt_flags(src_cnt, flags) > 8 ?
- 		__ioat3_prep_pq16_lock(chan, NULL, pq, src, src_cnt, scf, len,
- 				       flags) :
- 		__ioat3_prep_pq_lock(chan, NULL, pq, src, src_cnt, scf, len,
-@@ -1296,7 +1298,6 @@ ioat3_prep_pqxor_val(struct dma_chan *ch
- 		     unsigned int src_cnt, size_t len,
- 		     enum sum_check_flags *result, unsigned long flags)
- {
--	struct dma_device *dma = chan->device;
- 	unsigned char scf[src_cnt];
- 	dma_addr_t pq[2];
- 
-@@ -1310,8 +1311,7 @@ ioat3_prep_pqxor_val(struct dma_chan *ch
- 	flags |= DMA_PREP_PQ_DISABLE_Q;
- 	pq[1] = pq[0]; /* specify valid address for disabled result */
- 
--
--	return (src_cnt > 8) && (dma->max_pq > 8) ?
-+	return src_cnt_flags(src_cnt, flags) > 8 ?
- 		__ioat3_prep_pq16_lock(chan, result, pq, &src[1], src_cnt - 1,
- 				       scf, len, flags) :
- 		__ioat3_prep_pq_lock(chan, result, pq, &src[1], src_cnt - 1,
+ 	return 0;
 
 
