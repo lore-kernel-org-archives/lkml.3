@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab3LBTRA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:17:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38974 "EHLO
+	id S1753712Ab3LBTRR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:17:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38990 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930Ab3LBTQr (ORCPT
+	with ESMTP id S1752847Ab3LBTRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:16:47 -0500
+	Mon, 2 Dec 2013 14:17:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Markus Pargmann <mpa@pengutronix.de>, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.12 002/212] ARM: OMAP2+: irq, AM33XX add missing register check
-Date: Mon,  2 Dec 2013 11:13:13 -0800
-Message-Id: <20131202191248.841300457@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.12 022/212] ASoC: blackfin: Fix missing break
+Date: Mon,  2 Dec 2013 11:13:33 -0800
+Message-Id: <20131202191251.155678483@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,32 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markus Pargmann <mpa@pengutronix.de>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 0bebda684857f76548ea48c8886785198701d8d3 upstream.
+commit afed4dbe3a043dbd833a53b6b4951e155708afd2 upstream.
 
-am33xx has a INTC_PENDING_IRQ3 register that is not checked for pending
-interrupts. This patch adds AM33XX to the ifdef of SOCs that have to
-check this register.
-
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Fixes: 4b2ffc205cb9 ('ASoC: Blackfin I2S: add 8-bit sample support')
+Reported-by: David Binderman
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/irq.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/blackfin/bf5xx-i2s.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/mach-omap2/irq.c
-+++ b/arch/arm/mach-omap2/irq.c
-@@ -233,7 +233,7 @@ static inline void omap_intc_handle_irq(
- 			goto out;
- 
- 		irqnr = readl_relaxed(base_addr + 0xd8);
--#ifdef CONFIG_SOC_TI81XX
-+#if IS_ENABLED(CONFIG_SOC_TI81XX) || IS_ENABLED(CONFIG_SOC_AM33XX)
- 		if (irqnr)
- 			goto out;
- 		irqnr = readl_relaxed(base_addr + 0xf8);
+--- a/sound/soc/blackfin/bf5xx-i2s.c
++++ b/sound/soc/blackfin/bf5xx-i2s.c
+@@ -121,6 +121,7 @@ static int bf5xx_i2s_hw_params(struct sn
+ 		bf5xx_i2s->tcr2 |= 7;
+ 		bf5xx_i2s->rcr2 |= 7;
+ 		sport_handle->wdsize = 1;
++		break;
+ 	case SNDRV_PCM_FORMAT_S16_LE:
+ 		bf5xx_i2s->tcr2 |= 15;
+ 		bf5xx_i2s->rcr2 |= 15;
 
 
