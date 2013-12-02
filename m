@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370Ab3LBVOe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:14:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38430 "EHLO
+	id S1759484Ab3LBVOa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:14:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38406 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753961Ab3LBTM5 (ORCPT
+	with ESMTP id S1753962Ab3LBTM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:12:57 -0500
+	Mon, 2 Dec 2013 14:12:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>
-Subject: [PATCH 3.10 025/173] parisc: break out SOCK_NONBLOCK define to own asm header file
-Date: Mon,  2 Dec 2013 11:10:08 -0800
-Message-Id: <20131202191145.699438177@linuxfoundation.org>
+        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.10 026/173] can: flexcan: fix flexcan_chip_start() on imx6
+Date: Mon,  2 Dec 2013 11:10:09 -0800
+Message-Id: <20131202191145.802742057@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,55 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit 38c7937379276a5ea8c54481205003af2f2b5694 upstream.
+commit 0d1862ea1a5bb876cf05555a7307080cb75bf379 upstream.
 
-Break SOCK_NONBLOCK out to its own asm-file as other arches do. This
-fixes build errors with auditd and probably other packages.
+In the flexcan_chip_start() function first the flexcan core is going through
+the soft reset sequence, then the RX FIFO is enabled.
 
-Signed-off-by: Helge Deller <deller@gmx.de>
+With the hardware is put into FIFO mode, message buffers 1...7 are reserved by
+the FIFO engine. The remaining message buffers are in reset default values.
+This patch removes the bogus initialization of the message buffers, as it
+causes an imprecise external abort on imx6.
+
+Reported-by: Lothar Waßmann <LW@KARO-electronics.de>
+Tested-by: Lothar Waßmann <LW@KARO-electronics.de>
+[mkl: adjusted context for stable]
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/parisc/include/asm/socket.h      |   11 +++++++++++
- arch/parisc/include/uapi/asm/socket.h |   11 +++--------
- 2 files changed, 14 insertions(+), 8 deletions(-)
+ drivers/net/can/flexcan.c |   12 ------------
+ 1 file changed, 12 deletions(-)
 
---- /dev/null
-+++ b/arch/parisc/include/asm/socket.h
-@@ -0,0 +1,11 @@
-+#ifndef _ASM_SOCKET_H
-+#define _ASM_SOCKET_H
-+
-+#include <uapi/asm/socket.h>
-+
-+/* O_NONBLOCK clashes with the bits used for socket types.  Therefore we
-+ * have to define SOCK_NONBLOCK to a different value here.
-+ */
-+#define SOCK_NONBLOCK	0x40000000
-+
-+#endif /* _ASM_SOCKET_H */
---- a/arch/parisc/include/uapi/asm/socket.h
-+++ b/arch/parisc/include/uapi/asm/socket.h
-@@ -1,5 +1,5 @@
--#ifndef _ASM_SOCKET_H
--#define _ASM_SOCKET_H
-+#ifndef _UAPI_ASM_SOCKET_H
-+#define _UAPI_ASM_SOCKET_H
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -711,7 +711,6 @@ static int flexcan_chip_start(struct net
+ {
+ 	struct flexcan_priv *priv = netdev_priv(dev);
+ 	struct flexcan_regs __iomem *regs = priv->base;
+-	unsigned int i;
+ 	int err;
+ 	u32 reg_mcr, reg_ctrl;
  
- #include <asm/sockios.h>
+@@ -783,17 +782,6 @@ static int flexcan_chip_start(struct net
+ 	netdev_dbg(dev, "%s: writing ctrl=0x%08x", __func__, reg_ctrl);
+ 	flexcan_write(reg_ctrl, &regs->ctrl);
  
-@@ -73,9 +73,4 @@
- 
- #define SO_SELECT_ERR_QUEUE	0x4026
- 
--/* O_NONBLOCK clashes with the bits used for socket types.  Therefore we
-- * have to define SOCK_NONBLOCK to a different value here.
-- */
--#define SOCK_NONBLOCK   0x40000000
+-	for (i = 0; i < ARRAY_SIZE(regs->cantxfg); i++) {
+-		flexcan_write(0, &regs->cantxfg[i].can_ctrl);
+-		flexcan_write(0, &regs->cantxfg[i].can_id);
+-		flexcan_write(0, &regs->cantxfg[i].data[0]);
+-		flexcan_write(0, &regs->cantxfg[i].data[1]);
 -
--#endif /* _ASM_SOCKET_H */
-+#endif /* _UAPI_ASM_SOCKET_H */
+-		/* put MB into rx queue */
+-		flexcan_write(FLEXCAN_MB_CNT_CODE(0x4),
+-			&regs->cantxfg[i].can_ctrl);
+-	}
+-
+ 	/* Abort any pending TX, mark Mailbox as INACTIVE */
+ 	flexcan_write(FLEXCAN_MB_CNT_CODE(0x4),
+ 		      &regs->cantxfg[FLEXCAN_TX_BUF_ID].can_ctrl);
 
 
