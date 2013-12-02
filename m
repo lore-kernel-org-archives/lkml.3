@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab3LBTfN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:35:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39656 "EHLO
+	id S1755882Ab3LBTgQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:36:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39577 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754980Ab3LBTS6 (ORCPT
+	with ESMTP id S1754949Ab3LBTSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:58 -0500
+	Mon, 2 Dec 2013 14:18:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Elias Vanderstuyft <elias.vds@gmail.com>,
-        Simon Wood <simon@mungewell.org>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.12 181/212] HID:hid-lg4ff: Scale autocentering force properly on Logitech wheel
-Date: Mon,  2 Dec 2013 11:16:12 -0800
-Message-Id: <20131202191308.690305989@linuxfoundation.org>
+        Luosong <android@generaltouch.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.12 176/212] HID: multitouch: Fix GeneralTouch products and add more PIDs
+Date: Mon,  2 Dec 2013 11:16:07 -0800
+Message-Id: <20131202191307.896444710@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,48 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Wood <simon@mungewell.org>
+From: Luosong <android@generaltouch.com>
 
-commit f8c231569a7a455dfa1907294a46ba52b3aa8859 upstream.
+commit 7b2262920db2b98fe2cd32cde52141f02fd9eecf upstream.
 
-Adjust the scaling and lineartity to match that of the Windows
-driver (from MOMO testing).
+GeneralTouch products should use the quirk SLOT_IS_CONTACTID
+instead of SLOT_IS_CONTACTNUMBER.
 
-Reported-by: Elias Vanderstuyft <elias.vds@gmail.com>
-Signed-off-by: Simon Wood <simon@mungewell.org>
+Adding PIDs 0101,e100,0102,0106,010a from the new products.
+
+Tested on new and older products by GeneralTouch engineers.
+
+Signed-off-by: Luosong <android@generaltouch.com>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-lg4ff.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ drivers/hid/hid-ids.h        |    5 +++++
+ drivers/hid/hid-multitouch.c |   19 +++++++++++++++++--
+ 2 files changed, 22 insertions(+), 2 deletions(-)
 
---- a/drivers/hid/hid-lg4ff.c
-+++ b/drivers/hid/hid-lg4ff.c
-@@ -218,12 +218,21 @@ static void hid_lg4ff_set_autocenter_def
- 	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct hid_report *report = list_entry(report_list->next, struct hid_report, list);
- 	__s32 *value = report->field[0]->value;
-+	__u32 expand_a, expand_b;
-+
-+	if (magnitude <= 0xaaaa) {
-+		expand_a = 0x0c * magnitude;
-+		expand_b = 0x80 * magnitude;
-+	} else {
-+		expand_a = (0x0c * 0xaaaa) + 0x06 * (magnitude - 0xaaaa);
-+		expand_b = (0x80 * 0xaaaa) + 0xff * (magnitude - 0xaaaa);
-+	}
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -332,6 +332,11 @@
+ #define USB_VENDOR_ID_GENERAL_TOUCH	0x0dfc
+ #define USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS 0x0003
+ #define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS 0x0100
++#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0101 0x0101
++#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0102 0x0102
++#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0106 0x0106
++#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_010A 0x010a
++#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_E100 0xe100
  
- 	value[0] = 0xfe;
- 	value[1] = 0x0d;
--	value[2] = magnitude >> 13;
--	value[3] = magnitude >> 13;
--	value[4] = magnitude >> 8;
-+	value[2] = expand_a / 0xaaaa;
-+	value[3] = expand_a / 0xaaaa;
-+	value[4] = expand_b / 0xaaaa;
- 	value[5] = 0x00;
- 	value[6] = 0x00;
+ #define USB_VENDOR_ID_GLAB		0x06c2
+ #define USB_DEVICE_ID_4_PHIDGETSERVO_30	0x0038
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -250,12 +250,12 @@ static struct mt_class mt_classes[] = {
+ 	{ .name	= MT_CLS_GENERALTOUCH_TWOFINGERS,
+ 		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
+ 			MT_QUIRK_VALID_IS_INRANGE |
+-			MT_QUIRK_SLOT_IS_CONTACTNUMBER,
++			MT_QUIRK_SLOT_IS_CONTACTID,
+ 		.maxcontacts = 2
+ 	},
+ 	{ .name	= MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
+ 		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
+-			MT_QUIRK_SLOT_IS_CONTACTNUMBER
++			MT_QUIRK_SLOT_IS_CONTACTID
+ 	},
  
+ 	{ .name = MT_CLS_FLATFROG,
+@@ -1173,6 +1173,21 @@ static const struct hid_device_id mt_dev
+ 	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
+ 		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
+ 			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS) },
++	{ .driver_data = MT_CLS_GENERALTOUCH_TWOFINGERS,
++		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
++			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0101) },
++	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
++		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
++			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0102) },
++	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
++		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
++			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0106) },
++	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
++		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
++			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_010A) },
++	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
++		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
++			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_E100) },
+ 
+ 	/* Gametel game controller */
+ 	{ .driver_data = MT_CLS_NSMU,
 
 
