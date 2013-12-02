@@ -1,79 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085Ab3LBOEz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 09:04:55 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57879 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751798Ab3LBOEw (ORCPT
+	id S1751401Ab3LBOKB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 09:10:01 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:34589 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750874Ab3LBOJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 09:04:52 -0500
-Date: Mon, 2 Dec 2013 14:04:29 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LinusW <linus.walleij@linaro.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Message-ID: <20131202140429.GJ27568@sirena.org.uk>
-References: <1384859269-19801-1-git-send-email-lee.jones@linaro.org>
- <1384859269-19801-8-git-send-email-lee.jones@linaro.org>
- <CAOesGMiu16f_L=cMWFCNZMjNB9tBK-2LXn02k-R7FhkkgR5-+g@mail.gmail.com>
- <20131202101256.GA29373@lee--X1>
- <20131202135452.GI27568@sirena.org.uk>
- <20131202140324.GH31626@lee--X1>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/f+qQFZOmBlWs/IF"
-Content-Disposition: inline
-In-Reply-To: <20131202140324.GH31626@lee--X1>
-X-Cookie: Boycott meat -- suck your thumb.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH 07/10] ASoC: ux500: Store DMA data in the
- DAI differently in the pdata and DT case
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Mon, 2 Dec 2013 09:09:59 -0500
+Message-ID: <529C94B2.3040408@gmail.com>
+Date: Mon, 02 Dec 2013 15:09:54 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+To: Rob Herring <robherring2@gmail.com>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, Meelis Roos <mroos@linux.ee>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Scott Wood <scottwood@freescale.com>
+Subject: Re: [PATCH] OF: base: match each node compatible against all given
+ matches first
+References: <1385663785-8643-1-git-send-email-sebastian.hesselbarth@gmail.com> <20131202120300.GA12793@ulmo.nvidia.com> <529C927A.9000303@gmail.com>
+In-Reply-To: <529C927A.9000303@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/02/13 15:00, Rob Herring wrote:
+> On 12/02/2013 06:03 AM, Thierry Reding wrote:
+>> On Thu, Nov 28, 2013 at 07:36:25PM +0100, Sebastian Hesselbarth
+>> wrote:
+>>> Currently, of_match_node compares each given match against all
+>>> node's compatible strings with of_device_is_compatible.
+>>>
+>>> To achieve multiple compatible strings per node with ordering
+>>> from specific to generic, this requires given matches to be
+>>> ordered from specific to generic. For most of the drivers this
+>>> is not true and also an alphabetical ordering is more sane
+>>> there.
+>>>
+>>> Therefore, this patch modifies of_match_node to match each of
+>>> the node's compatible strings against all given matches first,
+>>> before checking the next compatible string. This implies that
+>>> node's compatibles are ordered from specific to generic while
+>>> given matches can be in any order.
+>>>
+>>> Signed-off-by: Sebastian Hesselbarth
+[...]
+>> That said, I think you might actually have nailed it with this
+>> patch. From what I remember all earlier attempt failed because
+>> they didn't match all compatible/name/type combinations properly.
+>> I'm adding a few people on Cc who were involved with the other
+>> patches, perhaps they can give your patch a spin and see if it
+>> fixes things for them.
+>
+> I agree and the change here is simple enough I think the chances of a
+> regression are low. But there is one issue...
+>
+>>
+>> Thierry
+>>
+>> [0]: https://lkml.org/lkml/2013/10/3/585
+>>
+>>> diff --git a/drivers/of/base.c b/drivers/of/base.c index
+>>> 7d4c70f..183a9c7 100644 --- a/drivers/of/base.c +++
+>>> b/drivers/of/base.c @@ -713,23 +713,37 @@ static const struct
+>>> of_device_id *__of_match_node(const struct of_device_id *matches,
+>>> const struct device_node *node) { +	const char *cp; + int cplen,
+>>> l; + if (!matches) return NULL;
+>>>
+>>> -	while (matches->name[0] || matches->type[0] ||
+>>> matches->compatible[0]) { -		int match = 1; -		if
+>>> (matches->name[0]) -			match &= node->name -				&&
+>>> !strcmp(matches->name, node->name); -		if (matches->type[0]) -
+>>> match &= node->type -				&& !strcmp(matches->type, node->type);
+>>> - if (matches->compatible[0]) -			match &=
+>>> __of_device_is_compatible(node, -							   matches->compatible);
+>>>   -		if (match) -			return matches; -		matches++; +	cp =
+>>> __of_get_property(node, "compatible", &cplen); +	if (!cp) +
+>>> return NULL;
+>
+> No compatible property and matching on name and/or type only is valid.
+> Remove the if here and changing the following should work:
+>
+>>> + +	while (cplen > 0) {
+>
+> do {
+>
+>>> +		const struct of_device_id *m = matches; + +		while
+>>> (m->name[0] || m->type[0] || m->compatible[0]) { +			int match =
+>>> 1; +			if (m->name[0]) +				match &= node->name +					&&
+>>> !strcmp(m->name, node->name); +			if (m->type[0]) +				match &=
+>>> node->type + && !strcmp(m->type, node->type); +			if
+>>> (m->compatible[0])
+>
+> if (cp && m->compatible[0])
+>
+>>> +				match &= !of_compat_cmp(cp, m->compatible, +
+>>> strlen(m->compatible)); +			if (match) +				return m; +			m++; +
+>>> } +		l = strlen(cp) + 1; +		cp += l; +		cplen -= l; }
+>
+>
+> } while (cp && (cplen > 0));
 
---/f+qQFZOmBlWs/IF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Rob,
 
-On Mon, Dec 02, 2013 at 02:03:24PM +0000, Lee Jones wrote:
+although quoting somehow got messed up, I see the point. The pointer
+arith right above loop end condition needs to be skipped too if !cp.
 
-> I'm not aware of any dependencies on the ARM changes. I haven't tested
-> the arch/arm and sound/soc adaptions orthogonally, but I _think_ the
-> right decisions should be made depending on the information passed
-> from platform/dt code.
+I will rework the loop to allow name/type matching with cp == NULL
+and resend in a day or two.
 
-OK, that sounds great thanks.
+Sebastian
 
---/f+qQFZOmBlWs/IF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSnJNqAAoJELSic+t+oim96g8P/A7ZT3s9/HvEg3cekG2FarKW
-3Qs902vCDidEuqGm8ApMBCey89wWhwDEg1lxAZddGk0RTcruu21C5eY/Ny482c9i
-E9HY8cAa+wPWfZxBaBomBaNes4OrWC30AVPSCSmNBOG44STtW+2fDUXZ0LMS6VNf
-lRsW/3OF9m5hEeypqcoHh6HWpDMLv3oJ7SHExS2zOa75cTVMktHzhJbXOGzoyc8b
-UQmT5Xxew2vVoo+YI/7djsV1ZwVQ9OQTTFb50X7/amVS7MKRxnkT0Ny9nX6Tq+sL
-3MqAIPawes0+2jj0e96fheGDjrX2x7MuW0GPgBfo6yp50aCFY4iF9qeoGtLSqrIc
-IivZFRXF8eRTTbdEHtxs1FS+755cdw8urZrvDm/XfwdqZICWst45CbmRHnwT2tJ/
-0YbXOWFALxC0GjTg/7zx3d10Ug408uLr71HXSF+H7YiBXBs9aEsXZhO0siXU4t4l
-vJZN4CDG1RzX4YfAJdVtFwqIRYyMgpn20lws28JQGlqBm4H80YXuwqIzdIedTaEC
-8hoXfKL4qARSo0TKDz6NpTfIJI4QalVNFPN70ZDR8TJtJJtdILFeE+dHqEkerZYx
-TZgL67Cb+TjsTEmSdRlEntEqQqyiE5Ldpg0SYzEn9UR6o6lxb0rWG+qhMT943D9G
-K6+2H4MwRVjYcP4+p4Cw
-=u850
------END PGP SIGNATURE-----
-
---/f+qQFZOmBlWs/IF--
