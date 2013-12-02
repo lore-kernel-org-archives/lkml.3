@@ -1,192 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752Ab3LBQg1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 11:36:27 -0500
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:48884 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752352Ab3LBQgY (ORCPT
+	id S1752823Ab3LBQhB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 11:37:01 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:21888 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752311Ab3LBQg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 11:36:24 -0500
-Date: Mon, 2 Dec 2013 17:36:20 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Pekka Enberg <penberg@iki.fi>
-Subject: Re: [PATCH 1/3] perf tools: Record total sampling time
-Message-ID: <20131202163620.GC27781@gmail.com>
-References: <1385967199-3759-1-git-send-email-namhyung@kernel.org>
- <1385967199-3759-2-git-send-email-namhyung@kernel.org>
- <20131202124527.GB22212@gmail.com>
- <20131202125709.GA22404@gmail.com>
- <1385999009.1710.72.camel@leonhard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1385999009.1710.72.camel@leonhard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 2 Dec 2013 11:36:58 -0500
+Date: Mon, 2 Dec 2013 11:36:56 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [ANNOUNCE] 3.8.13.13-rt25
+Message-ID: <20131202113656.59fc764d@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Namhyung Kim <namhyung@kernel.org> wrote:
+Dear RT Folks,
 
-> 2013-12-02 (월), 13:57 +0100, Ingo Molnar:
-> > So basically, in the end I think it should be possible to have the 
-> > following behavior:
-> > 
-> >    perf record -a -e cycles sleep 1
-> > 
-> >    perf report stat              # Reports as if we ran: 'perf stat -a -e cycles sleep 1'
-> >    perf report                   # Reports the usual histogram
-> > 
-> >    perf report --stat            # Reports the perf stat output and the histogram
-> > 
-> > or so.
-> 
-> I don't think we need both of 'perf report stat' and 'perf report
-> --stat'.  At least it looks somewhat confusing to users IMHO.
+I'm pleased to announce the 3.8.13.13-rt25 stable release.
 
-Okay. Maybe the --stat option would be the more logical choice, 
-because '--' options can be added arbitrarily, while it would be weird 
-to add multiple subcommand options.
 
-So basically there would be two options:
+You can get this release via the git tree at:
 
-   --show-stat         [--no-show-stat]
-   --show-histogram    [--no-show-histogram]
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
 
-Today --show-histogram is the only one enabled by default.
+  branch: v3.8-rt
+  Head SHA1: 4d81f9bebd839789f8d3672f1bf6fdcbe3a8740f
 
-Running:
 
-   perf report --no-show-histogram --show-stat
+Or to build 3.8.13.13-rt25 directly, the following patches should be applied:
 
-would give perf-stat output.
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.8.tar.xz
 
-This --show-* pattern could be used in the future, for example to 
-express debug output:
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.8.13.xz
 
-  perf report --show-debug
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/stable/patch-3.8.13.13.xz
 
-Or to show other details that are off by default.
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patch-3.8.13.13-rt25.patch.xz
 
-'perf report --show' should perhaps list all --show options that are 
-available currently.
 
-Maybe the syntax should be similar to the sort option?
 
-What's your preference?
+You can also build from 3.8.13.13-rt24 by applying the incremental patch:
 
-> For perf report stat usage, I think there's not much thing we can do 
-> for a single event - the most case.  We can simple show total count 
-> and elapsed (or sampled time) for the event, but it's already in the 
-> header with this patch.
-> 
->       # Samples: 4K of event 'cycles'
->       # Event count (approx.): 4087481688
->       # Total sampling time  : 1.001260 (sec)
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/incr/patch-3.8.13.13-rt24-rt25.patch.xz
 
-That's what I mean, instead of 'this patch' we should utilize perf 
-stat output mode. That will solve your particular feature request 
-here, plus gives us much more: it gives perf stat integration into 
-report.
 
-> If an user really want to see perf stat-like output (without the 
-> usual histogram) for a recorded session, it'd be better to have 
-> 'perf record --stat' do the job (like git diff --stat) IMHO.
 
-Why? Showing the result is a reporting feature really. Firstly we 
-record everything, then we 'analyze', looking at various details of 
-data.
+Enjoy,
 
-Getting perf stat output could be used to get a first, rough, high 
-level overview.
+-- Steve
 
-> > i.e. a perf.data file would by default always carry enough information 
-> > to enable the extraction of the 'perf stat' data.
-> > 
-> > At that point visualizing it is purely report-time logic, it does not 
-> > need any record-time options.
-> > 
-> > This would work for multi-event sampling as well, if we do:
-> > 
-> >    perf record -a -e cycles -e branches sleep 1
-> > 
-> > then 'perf report stat' would output the same as:
-> > 
-> >  $ perf stat -e cycles -e branches -a sleep 1
-> > 
-> >  Performance counter stats for 'system wide':
-> > 
-> >         34,174,518      cycles                    [100.00%]
-> >          3,155,677      branches                                                    
-> > 
-> >        1.000802852 seconds time elapsed
-> > 
-> 
-> Yeah, it'd be good to have same output both for perf stat and perf 
-> report --stat (or stat if you want).  But I don't think it's 
-> possible to determine multiplexed counter values like perf stat does 
-> unless we use PERF_SAMPLE_READ for recoding.
 
-That's my point: is there any reason why we shouldn't turn on 
-PERF_SAMPLE_READ for these events, and read them at the beginning and 
-at the end of a sampling session?
+Changes from v3.8.13.13-rt24:
 
-( some people might even want periodic samples emitted inbetween, to 
-  be able to see a time flow representation of samples, but that's for 
-  the future. )
+---
 
-> > Another neat feature this kind of workflo enables is the integration 
-> > of --repeat to perf record, so something like:
-> > 
-> >     perf record --repeat 3 -a -e cycles -e branches sleep 1
-> > 
-> > would save 3 samples after each other, and would allow extraction of 
-> > the statistical stability of the measurement, and 'perf report stat' 
-> > would print the same result as a raw perf stat run would:
-> > 
-> >  $ perf stat --repeat 3 -e cycles -e branches -e instructions -a sleep 1
-> > 
-> >  Performance counter stats for 'system wide' (3 runs):
-> > 
-> >     28,975,150,642      cycles                     ( +-  0.43% ) [100.00%]
-> >     10,740,235,371      branches                                                      ( +-  0.47% ) [100.00%]
-> >     44,535,464,754      instructions              #    1.54  insns per cycle          ( +-  0.47% )
-> > 
-> >        1.005718027 seconds time elapsed                                          ( +-  0.43% )
-> 
-> Yeah, but it can be used only for a new forked workload.
+Mike Galbraith (1):
+      hwlat-detector: Don't ignore threshold module parameter
 
-Well, it can be used for anything that perf record can do today, 
-except maybe the Ctrl-C method of measurement, right?
+Sebastian Andrzej Siewior (2):
+      mm/slub: do not rely on slab_cached passed to free_delayed()
+      drm: remove preempt_disable() from drm_calc_vbltimestamp_from_scanoutpos()
 
-> > Or something like that. At that point we share reporting between 
-> > perf stat and perf report, no special ad-hoc options are needed to 
-> > just measure and report timestamps, it would all be a 'natural' 
-> > side effect of having perf stat.
-> > 
-> > What do you think?
-> 
-> I think it'd be better if we can share code as much as possible.  
-> And it'd much better if we can forget about the difference in 
-> options. :)
+Steven Rostedt (Red Hat) (1):
+      Linux 3.8.13.13-rt25
 
-Agreed - see the --show-<xyz> pattern I suggested above.
+Thomas Pfaff (1):
+      genirq: Set the irq thread policy without checking CAP_SYS_NICE
 
-It could be different as well, sort-key alike:
+Wolfram Sang (1):
+      Kind of revert "powerpc: 52xx: provide a default in mpc52xx_irqhost_map()"
 
-   --show +stat,-hist,+debug
+Yang Shi (1):
+      mm/memcontrol: Don't call schedule_work_on in preemption disabled context
 
-Thanks,
-
-	Ingo
+----
+ arch/powerpc/platforms/52xx/mpc52xx_pic.c |  5 ++---
+ drivers/gpu/drm/drm_irq.c                 |  7 -------
+ drivers/misc/hwlat_detector.c             |  2 +-
+ kernel/irq/manage.c                       |  2 +-
+ localversion-rt                           |  2 +-
+ mm/memcontrol.c                           |  4 ++--
+ mm/slub.c                                 | 10 +++++-----
+ 7 files changed, 12 insertions(+), 20 deletions(-)
+---------------------------
+diff --git a/arch/powerpc/platforms/52xx/mpc52xx_pic.c b/arch/powerpc/platforms/52xx/mpc52xx_pic.c
+index b69221b..2898b73 100644
+--- a/arch/powerpc/platforms/52xx/mpc52xx_pic.c
++++ b/arch/powerpc/platforms/52xx/mpc52xx_pic.c
+@@ -340,7 +340,7 @@ static int mpc52xx_irqhost_map(struct irq_domain *h, unsigned int virq,
+ {
+ 	int l1irq;
+ 	int l2irq;
+-	struct irq_chip *irqchip;
++	struct irq_chip *uninitialized_var(irqchip);
+ 	void *hndlr;
+ 	int type;
+ 	u32 reg;
+@@ -373,9 +373,8 @@ static int mpc52xx_irqhost_map(struct irq_domain *h, unsigned int virq,
+ 	case MPC52xx_IRQ_L1_PERP: irqchip = &mpc52xx_periph_irqchip; break;
+ 	case MPC52xx_IRQ_L1_SDMA: irqchip = &mpc52xx_sdma_irqchip; break;
+ 	case MPC52xx_IRQ_L1_CRIT:
+-	default:
+ 		pr_warn("%s: Critical IRQ #%d is unsupported! Nopping it.\n",
+-			__func__, l1irq);
++			__func__, l2irq);
+ 		irq_set_chip(virq, &no_irq_chip);
+ 		return 0;
+ 	}
+diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
+index 0f3cdda..fe7546e 100644
+--- a/drivers/gpu/drm/drm_irq.c
++++ b/drivers/gpu/drm/drm_irq.c
+@@ -624,11 +624,6 @@ int drm_calc_vbltimestamp_from_scanoutpos(struct drm_device *dev, int crtc,
+ 	 * code gets preempted or delayed for some reason.
+ 	 */
+ 	for (i = 0; i < DRM_TIMESTAMP_MAXRETRIES; i++) {
+-		/* Disable preemption to make it very likely to
+-		 * succeed in the first iteration even on PREEMPT_RT kernel.
+-		 */
+-		preempt_disable();
+-
+ 		/* Get system timestamp before query. */
+ 		stime = ktime_get();
+ 
+@@ -640,8 +635,6 @@ int drm_calc_vbltimestamp_from_scanoutpos(struct drm_device *dev, int crtc,
+ 		if (!drm_timestamp_monotonic)
+ 			mono_time_offset = ktime_get_monotonic_offset();
+ 
+-		preempt_enable();
+-
+ 		/* Return as no-op if scanout query unsupported or failed. */
+ 		if (!(vbl_status & DRM_SCANOUTPOS_VALID)) {
+ 			DRM_DEBUG("crtc %d : scanoutpos query failed [%d].\n",
+diff --git a/drivers/misc/hwlat_detector.c b/drivers/misc/hwlat_detector.c
+index 6f61d5f..d2676b8 100644
+--- a/drivers/misc/hwlat_detector.c
++++ b/drivers/misc/hwlat_detector.c
+@@ -413,7 +413,7 @@ static int init_stats(void)
+ 		goto out;
+ 
+ 	__reset_stats();
+-	data.threshold = DEFAULT_LAT_THRESHOLD;	    /* threshold us */
++	data.threshold = threshold ?: DEFAULT_LAT_THRESHOLD;	    /* threshold us */
+ 	data.sample_window = DEFAULT_SAMPLE_WINDOW; /* window us */
+ 	data.sample_width = DEFAULT_SAMPLE_WIDTH;   /* width us */
+ 
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index a3cf48e..a569b71 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -1044,7 +1044,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 			goto out_mput;
+ 		}
+ 
+-		sched_setscheduler(t, SCHED_FIFO, &param);
++		sched_setscheduler_nocheck(t, SCHED_FIFO, &param);
+ 
+ 		/*
+ 		 * We keep the reference to the task struct even if
+diff --git a/localversion-rt b/localversion-rt
+index b2111a2..c5b71f9 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt24
++-rt25
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 6b7ff19..1503ca3 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2283,7 +2283,7 @@ static void drain_all_stock(struct mem_cgroup *root_memcg, bool sync)
+ 
+ 	/* Notify other cpus that system-wide "drain" is running */
+ 	get_online_cpus();
+-	curcpu = get_cpu();
++	curcpu = get_cpu_light();
+ 	for_each_online_cpu(cpu) {
+ 		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
+ 		struct mem_cgroup *memcg;
+@@ -2300,7 +2300,7 @@ static void drain_all_stock(struct mem_cgroup *root_memcg, bool sync)
+ 				schedule_work_on(cpu, &stock->work);
+ 		}
+ 	}
+-	put_cpu();
++	put_cpu_light();
+ 
+ 	if (!sync)
+ 		goto out;
+diff --git a/mm/slub.c b/mm/slub.c
+index f6871c5..7c925ae 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1427,13 +1427,13 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
+ 	__free_memcg_kmem_pages(page, order);
+ }
+ 
+-static void free_delayed(struct kmem_cache *s, struct list_head *h)
++static void free_delayed(struct list_head *h)
+ {
+ 	while(!list_empty(h)) {
+ 		struct page *page = list_first_entry(h, struct page, lru);
+ 
+ 		list_del(&page->lru);
+-		__free_slab(s, page);
++		__free_slab(page->slab_cache, page);
+ 	}
+ }
+ 
+@@ -2004,7 +2004,7 @@ static int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+ 				list_splice_init(&f->list, &tofree);
+ 				raw_spin_unlock(&f->lock);
+ 				local_irq_restore(flags);
+-				free_delayed(s, &tofree);
++				free_delayed(&tofree);
+ 				oldpage = NULL;
+ 				pobjects = 0;
+ 				pages = 0;
+@@ -2081,7 +2081,7 @@ static void flush_all(struct kmem_cache *s)
+ 		raw_spin_lock_irq(&f->lock);
+ 		list_splice_init(&f->list, &tofree);
+ 		raw_spin_unlock_irq(&f->lock);
+-		free_delayed(s, &tofree);
++		free_delayed(&tofree);
+ 	}
+ }
+ 
+@@ -2329,7 +2329,7 @@ out:
+ 	list_splice_init(&f->list, &tofree);
+ 	raw_spin_unlock(&f->lock);
+ 	local_irq_restore(flags);
+-	free_delayed(s, &tofree);
++	free_delayed(&tofree);
+ 	return freelist;
+ 
+ new_slab:
