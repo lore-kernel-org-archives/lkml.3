@@ -1,73 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024Ab3LBHS0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 02:18:26 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:44386
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750766Ab3LBHSU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 02:18:20 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(z579ehz1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de097hz2dh109h2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2184h21a6h2216h22d0h2336hbe9i1155h)
-From: Li Xiubo <Li.Xiubo@freescale.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Shawn Guo <Shawn.Guo@freescale.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "t.figa@samsung.com" <t.figa@samsung.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "rob@landley.net" <rob@landley.net>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: RE: [PATCHv6 4/4] Documentation: Add device tree bindings for
- Freescale FTM PWM.
-Thread-Topic: [PATCHv6 4/4] Documentation: Add device tree bindings for
- Freescale FTM PWM.
-Thread-Index: AQHO304Oa+l5Yof+m0uL31eeJzu+Zpo7Q+4AgAVaXVA=
-Date: Mon, 2 Dec 2013 07:17:56 +0000
-Message-ID: <1DD289F6464F0949A2FCA5AA6DC23F828E1A04@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1384220218-12716-1-git-send-email-Li.Xiubo@freescale.com>
- <1384220218-12716-5-git-send-email-Li.Xiubo@freescale.com>
- <20131128213159.GE14689@mithrandir>
-In-Reply-To: <20131128213159.GE14689@mithrandir>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.78]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1752473Ab3LBHUF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 02:20:05 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:55567 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab3LBHUB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 02:20:01 -0500
+From: zhouzhouyi@gmail.com
+To: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <kvm-ppc@vger.kernel.org>, <kvm@vger.kernel.org>,
+        <dwmw2@infradead.org>, <joro@8bytes.org>, <benh@kernel.crashing.org>
+Cc: Zhouyi Zhou <zhouzhouyi@gmail.com>
+Subject: re: ping: re:[PATCH 1/1] kernel code that do not handle NULL return of kmem_cache_zalloc
+Date: Mon,  2 Dec 2013 15:19:44 +0800
+Message-Id: <1385968784-25901-1-git-send-email-zhouzhouyi@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> > +    "ftm0" (module clock),
-> > +    "ftm0_counter" (counter clock),
-> > +- clocks : Must contain a clock specifier for each entry in
-> > +clock-names,
-> > +  See clock/clock-bindings.txt for details of the property values.
-> 
-> Note that the order is significant here, at least from the way the driver
-> currently implements this. You can probably make this more generic in the
-> driver by using of_property_match_string() on the clock-names property to
-> find the index of "ftm0_counter" and pass that index to the
-> of_parse_phandle_with_args() function to cope with the situation where the
-> device tree has the clocks in a different order.
-> 
+From: Zhouyi Zhou <zhouzhouyi@gmail.com>
 
-Yes, that's much better.
+the text of previous ping message maybe garbled sorry for the trouble
+
+> I do a grep for kmem_cache_zalloc and kmem_cache_alloc
+> in kernel tree, and find some code do not handle NULL
+> return of kmem_cache_zalloc correctly
+
+
+> Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+---
+ arch/powerpc/kvm/book3s_32_mmu_host.c |    5 +++++
+ drivers/iommu/omap-iommu.c            |    3 ++-
+ fs/jffs2/malloc.c                     |    4 ++++
+ 3 files changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/arch/powerpc/kvm/book3s_32_mmu_host.c b/arch/powerpc/kvm/book3s_32_mmu_host.c
+index 3a0abd2..5fac89d 100644
+--- a/arch/powerpc/kvm/book3s_32_mmu_host.c
++++ b/arch/powerpc/kvm/book3s_32_mmu_host.c
+@@ -243,6 +243,11 @@ next_pteg:
+ 	/* Now tell our Shadow PTE code about the new page */
+ 
+ 	pte = kvmppc_mmu_hpte_cache_next(vcpu);
++	if (!pte) {
++		kvm_release_pfn_clean(hpaddr >> PAGE_SHIFT);
++		r = -EAGAIN;
++		goto out;
++	}
+ 
+ 	dprintk_mmu("KVM: %c%c Map 0x%llx: [%lx] 0x%llx (0x%llx) -> %lx\n",
+ 		    orig_pte->may_write ? 'w' : '-',
+diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
+index bcd78a7..5155714 100644
+--- a/drivers/iommu/omap-iommu.c
++++ b/drivers/iommu/omap-iommu.c
+@@ -551,7 +551,8 @@ static u32 *iopte_alloc(struct omap_iommu *obj, u32 *iopgd, u32 da)
+ 		dev_vdbg(obj->dev, "%s: a new pte:%p\n", __func__, iopte);
+ 	} else {
+ 		/* We raced, free the reduniovant table */
+-		iopte_free(iopte);
++		if (iopte)
++			iopte_free(iopte);
+ 	}
+ 
+ pte_ready:
+diff --git a/fs/jffs2/malloc.c b/fs/jffs2/malloc.c
+index 4f47aa2..58e2336 100644
+--- a/fs/jffs2/malloc.c
++++ b/fs/jffs2/malloc.c
+@@ -287,6 +287,8 @@ struct jffs2_xattr_datum *jffs2_alloc_xattr_datum(void)
+ {
+ 	struct jffs2_xattr_datum *xd;
+ 	xd = kmem_cache_zalloc(xattr_datum_cache, GFP_KERNEL);
++	if (!xd)
++		return NULL;
+ 	dbg_memalloc("%p\n", xd);
+ 
+ 	xd->class = RAWNODE_CLASS_XATTR_DATUM;
+@@ -305,6 +307,8 @@ struct jffs2_xattr_ref *jffs2_alloc_xattr_ref(void)
+ {
+ 	struct jffs2_xattr_ref *ref;
+ 	ref = kmem_cache_zalloc(xattr_ref_cache, GFP_KERNEL);
++	if (!ref)
++		return NULL;
+ 	dbg_memalloc("%p\n", ref);
+ 
+ 	ref->class = RAWNODE_CLASS_XATTR_REF;
+-- 
+1.7.10.4
 
