@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760173Ab3LBVfU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:35:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38192 "EHLO
+	id S1757137Ab3LBVgk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:36:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38166 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753131Ab3LBTGv (ORCPT
+	with ESMTP id S1753122Ab3LBTGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:06:51 -0500
+	Mon, 2 Dec 2013 14:06:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 04/60] backlight: atmel-pwm-bl: fix reported brightness
-Date: Mon,  2 Dec 2013 11:05:45 -0800
-Message-Id: <20131202190331.162786090@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.4 15/60] rtlwifi: rtl8192cu: Fix more pointer arithmetic errors
+Date: Mon,  2 Dec 2013 11:05:56 -0800
+Message-Id: <20131202190333.581773718@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
 References: <20131202190330.152596462@linuxfoundation.org>
@@ -28,42 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 185d91442550110db67a7dc794a32efcea455a36 upstream.
+commit eafbdde9c5629bea58df07275c5917eb42afbbe7 upstream.
 
-The driver supports 16-bit brightness values, but the value returned
-from get_brightness was truncated to eight bits.
+This driver uses a number of macros to get and set various fields in the
+RX and TX descriptors. To work correctly, a u8 pointer to the descriptor
+must be used; however, in some cases a descriptor structure pointer is used
+instead. In addition, a duplicated statement is removed.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/backlight/atmel-pwm-bl.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/mac.c |    6 +++---
+ drivers/net/wireless/rtlwifi/rtl8192cu/trx.c |    6 +++---
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/video/backlight/atmel-pwm-bl.c
-+++ b/drivers/video/backlight/atmel-pwm-bl.c
-@@ -70,7 +70,7 @@ static int atmel_pwm_bl_set_intensity(st
- static int atmel_pwm_bl_get_intensity(struct backlight_device *bd)
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
+@@ -762,7 +762,7 @@ static long _rtl92c_signal_scale_mapping
+ 
+ static void _rtl92c_query_rxphystatus(struct ieee80211_hw *hw,
+ 				      struct rtl_stats *pstats,
+-				      struct rx_desc_92c *pdesc,
++				      struct rx_desc_92c *p_desc,
+ 				      struct rx_fwinfo_92c *p_drvinfo,
+ 				      bool packet_match_bssid,
+ 				      bool packet_toself,
+@@ -777,11 +777,11 @@ static void _rtl92c_query_rxphystatus(st
+ 	u32 rssi, total_rssi = 0;
+ 	bool in_powersavemode = false;
+ 	bool is_cck_rate;
++	u8 *pdesc = (u8 *)p_desc;
+ 
+-	is_cck_rate = RX_HAL_IS_CCK_RATE(pdesc);
++	is_cck_rate = RX_HAL_IS_CCK_RATE(p_desc);
+ 	pstats->packet_matchbssid = packet_match_bssid;
+ 	pstats->packet_toself = packet_toself;
+-	pstats->is_cck = is_cck_rate;
+ 	pstats->packet_beacon = packet_beacon;
+ 	pstats->is_cck = is_cck_rate;
+ 	pstats->RX_SIGQ[0] = -1;
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
+@@ -303,10 +303,10 @@ out:
+ bool rtl92cu_rx_query_desc(struct ieee80211_hw *hw,
+ 			   struct rtl_stats *stats,
+ 			   struct ieee80211_rx_status *rx_status,
+-			   u8 *p_desc, struct sk_buff *skb)
++			   u8 *pdesc, struct sk_buff *skb)
  {
- 	struct atmel_pwm_bl *pwmbl = bl_get_data(bd);
--	u8 intensity;
-+	u32 intensity;
+ 	struct rx_fwinfo_92c *p_drvinfo;
+-	struct rx_desc_92c *pdesc = (struct rx_desc_92c *)p_desc;
++	struct rx_desc_92c *p_desc = (struct rx_desc_92c *)pdesc;
+ 	u32 phystatus = GET_RX_DESC_PHY_STATUS(pdesc);
  
- 	if (pwmbl->pdata->pwm_active_low) {
- 		intensity = pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY) -
-@@ -80,7 +80,7 @@ static int atmel_pwm_bl_get_intensity(st
- 			pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY);
+ 	stats->length = (u16) GET_RX_DESC_PKT_LEN(pdesc);
+@@ -345,7 +345,7 @@ bool rtl92cu_rx_query_desc(struct ieee80
+ 	if (phystatus) {
+ 		p_drvinfo = (struct rx_fwinfo_92c *)(skb->data +
+ 						     stats->rx_bufshift);
+-		rtl92c_translate_rx_signal_stuff(hw, skb, stats, pdesc,
++		rtl92c_translate_rx_signal_stuff(hw, skb, stats, p_desc,
+ 						 p_drvinfo);
  	}
- 
--	return intensity;
-+	return intensity & 0xffff;
- }
- 
- static int atmel_pwm_bl_init_pwm(struct atmel_pwm_bl *pwmbl)
+ 	/*rx_status->qual = stats->signal; */
 
 
