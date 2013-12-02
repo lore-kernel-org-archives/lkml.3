@@ -1,93 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab3LBMbF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 07:31:05 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:56878 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753586Ab3LBMbD (ORCPT
+	id S1753864Ab3LBMd7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 07:33:59 -0500
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:54202 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753562Ab3LBMdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 07:31:03 -0500
+	Mon, 2 Dec 2013 07:33:54 -0500
+Date: Mon, 2 Dec 2013 09:33:47 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Pekka Enberg <penberg@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 3/3] perf report: Add --show-time-info option
+Message-ID: <20131202123347.GD2371@ghostprotocols.net>
+References: <1385967199-3759-1-git-send-email-namhyung@kernel.org>
+ <1385967199-3759-4-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20131202111124.GG3942@xps8300>
-References: <1385628388-23827-1-git-send-email-acourbot@nvidia.com>
- <20131129115748.GB3942@xps8300> <529C61FF.4020802@nvidia.com> <20131202111124.GG3942@xps8300>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Mon, 2 Dec 2013 21:30:42 +0900
-Message-ID: <CAAVeFu+LLR-EwiRskE_VBQwPrnXAdt-ahfcH08mOXsFuStFMJg@mail.gmail.com>
-Subject: Re: [PATCH] gpio: better lookup method for platform GPIOs
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Alex Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385967199-3759-4-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 2, 2013 at 8:11 PM, Heikki Krogerus
-<heikki.krogerus@linux.intel.com> wrote:
-> Hi,
->
-> On Mon, Dec 02, 2013 at 07:33:35PM +0900, Alex Courbot wrote:
->> On 11/29/2013 08:57 PM, Heikki Krogerus wrote:
->> >Hi,
->> >
->> >On Thu, Nov 28, 2013 at 05:46:28PM +0900, Alexandre Courbot wrote:
->> >>@@ -88,16 +89,20 @@ Note that GPIO_LOOKUP() is just a shortcut to GPIO_LOOKUP_IDX() where idx = 0.
->> >>
->> >>  A lookup table can then be defined as follows:
->> >>
->> >>-   struct gpiod_lookup gpios_table[] = {
->> >>-   GPIO_LOOKUP_IDX("gpio.0", 15, "foo.0", "led", 0, GPIO_ACTIVE_HIGH),
->> >>-   GPIO_LOOKUP_IDX("gpio.0", 16, "foo.0", "led", 1, GPIO_ACTIVE_HIGH),
->> >>-   GPIO_LOOKUP_IDX("gpio.0", 17, "foo.0", "led", 2, GPIO_ACTIVE_HIGH),
->> >>-   GPIO_LOOKUP("gpio.0", 1, "foo.0", "power", GPIO_ACTIVE_LOW),
->> >>-   };
->> >>+struct gpiod_lookup_table gpios_table = {
->> >>+   .dev_id = "foo.0",
->> >>+   .size = 4,
->> >>+   .table = {
->> >>+   GPIO_LOOKUP_IDX("gpio.0", 15, "led", 0, GPIO_ACTIVE_HIGH),
->> >>+   GPIO_LOOKUP_IDX("gpio.0", 16, "led", 1, GPIO_ACTIVE_HIGH),
->> >>+   GPIO_LOOKUP_IDX("gpio.0", 17, "led", 2, GPIO_ACTIVE_HIGH),
->> >>+   GPIO_LOOKUP("gpio.0", 1, "power", GPIO_ACTIVE_LOW),
->> >>+   },
->> >>+};
->> >
->> >Instead of using the size variable, wouldn't it be more clear to
->> >expect the array to be null terminated?
->>
->> This is a zero-length array, its entries are not pointers but
->> flattened lookup entries. Thus you cannot simply null-terminate it.
->> It would be possible to use { NULL } as a terminator, but this would
->> expand into a whole gpiod_lookup and is not very pleasant
->> esthetically-speaking. So I think the size member is maybe better
->> suited here.
->
-> The gpio_loopup_table would look like this, which IMO is more nicer
-> looking compared to the extra size variable:
->
-> struct gpiod_lookup_table gpios_table = {
->         .dev_id = "foo.0",
->         .table = {
->                 GPIO_LOOKUP_IDX("gpio.0", 15, "led", 0, GPIO_ACTIVE_HIGH),
->                 GPIO_LOOKUP_IDX("gpio.0", 16, "led", 1, GPIO_ACTIVE_HIGH),
->                 GPIO_LOOKUP_IDX("gpio.0", 17, "led", 2, GPIO_ACTIVE_HIGH),
->                 GPIO_LOOKUP("gpio.0", 1, "power", GPIO_ACTIVE_LOW),
->                 { },
->         },
-> };
->
-> That would also make it more straight forward to handle in gbiolib.c:
->
-> struct gpiod_lookup *p;
-> ...
-> for (p = table->table; p->chip_label; p++) {
-> ...
+Em Mon, Dec 02, 2013 at 03:53:19PM +0900, Namhyung Kim escreveu:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> The --show-time-info option is for displaying elapsed sampling time
 
-Ok, you're obviously right here. Will send a v3 tomorrow morning JST.
+Isn't that too long? Can't we use just --time/-t?
 
-Thanks for the review!
+> information for each entry.
+> 
+>   $ perf record -- perf bench sched messaging
+>   $ perf report --stdio --show-time-info
+>   ...
+>   # Samples: 10K of event 'cycles'
+>   # Event count (approx.): 5118793536
+>   # Total sampling time  : 0.184277 (sec)
+>   #
+>   # Overhead        Time          Command      Shared Object                       Symbol
+>   # ........  ..........  ...............  .................  ...........................
+>   #
+>        7.26%    0.007413  sched-messaging  [unknown]          [.] 0x0000003153e7a6e7
+>        4.79%    0.006088  sched-messaging  [kernel.kallsyms]  [k] avc_has_perm_flags
+>        4.38%    0.004809  sched-messaging  [kernel.kallsyms]  [k] copy_user_generic_string
+>        3.81%    0.005457  sched-messaging  [kernel.kallsyms]  [k] _raw_spin_lock
+>        2.92%    0.002745  sched-messaging  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
+>        2.72%    0.002896  sched-messaging  [kernel.kallsyms]  [k] unix_stream_recvmsg
+>        2.55%    0.003745  sched-messaging  [kernel.kallsyms]  [k] __slab_free
+>        2.45%    0.002807  sched-messaging  [kernel.kallsyms]  [k] page_fault
+>        2.08%    0.002258  sched-messaging  [kernel.kallsyms]  [k] sock_has_perm
+> 
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/builtin-report.c |  2 ++
+>  tools/perf/ui/hist.c        | 68 +++++++++++++++++++++++++++++++++++++--------
+>  tools/perf/util/hist.h      |  1 +
+>  tools/perf/util/symbol.h    |  3 +-
+>  4 files changed, 62 insertions(+), 12 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+> index eb849e9f7093..345cce6f5fa2 100644
+> --- a/tools/perf/builtin-report.c
+> +++ b/tools/perf/builtin-report.c
+> @@ -898,6 +898,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+>  	OPT_BOOLEAN(0, "mem-mode", &report.mem_mode, "mem access profile"),
+>  	OPT_CALLBACK(0, "percent-limit", &report, "percent",
+>  		     "Don't show entries under that percent", parse_percent_limit),
+> +	OPT_BOOLEAN(0, "show-time-info", &symbol_conf.show_time_info,
+> +		    "Show a column with the elapsed time"),
+>  	OPT_END()
+>  	};
+>  	struct perf_data_file file = {
+> diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+> index 78f4c92e9b73..7cf584a0bb61 100644
+> --- a/tools/perf/ui/hist.c
+> +++ b/tools/perf/ui/hist.c
+> @@ -7,19 +7,24 @@
+>  #include "../util/evsel.h"
+>  
+>  /* hist period print (hpp) functions */
+> +enum hpp_fmt_type {
+> +	HPP_FMT__PERCENT,
+> +	HPP_FMT__RAW,
+> +	HPP_FMT__TIME,
+> +};
+
+I wonder if we can't make this a bitmask... Does it make sense to print
+both percent and time, for instance?
+  
+>  typedef int (*hpp_snprint_fn)(char *buf, size_t size, const char *fmt, ...);
+>  
+>  static int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+>  		      u64 (*get_field)(struct hist_entry *),
+>  		      const char *fmt, hpp_snprint_fn print_fn,
+> -		      bool fmt_percent)
+> +		      enum hpp_fmt_type type)
+>  {
+>  	int ret;
+>  	struct hists *hists = he->hists;
+>  	struct perf_evsel *evsel = hists_to_evsel(hists);
+>  
+> -	if (fmt_percent) {
+> +	if (type == HPP_FMT__PERCENT) {
+>  		double percent = 0.0;
+>  
+>  		if (hists->stats.total_period)
+> @@ -27,8 +32,15 @@ static int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+>  				  hists->stats.total_period;
+>  
+>  		ret = print_fn(hpp->buf, hpp->size, fmt, percent);
+> -	} else
+> +	} else if (type == HPP_FMT__RAW) {
+>  		ret = print_fn(hpp->buf, hpp->size, fmt, get_field(he));
+> +	} else if (type == HPP_FMT__TIME) {
+> +		u64 time = get_field(he);
+> +		u64 sec = time / NSEC_PER_SEC;
+> +		u64 usec = (time - sec * NSEC_PER_SEC) / NSEC_PER_USEC;
+> +
+> +		ret = print_fn(hpp->buf, hpp->size, fmt, sec, usec);
+> +	}
+>  
+>  	if (perf_evsel__is_group_event(evsel)) {
+>  		int prev_idx, idx_delta;
+> @@ -53,15 +65,22 @@ static int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+>  				 * have no sample
+>  				 */
+>  				ret += print_fn(hpp->buf + ret, hpp->size - ret,
+> -						fmt, 0);
+> +						fmt, 0, 0);
+>  			}
+>  
+> -			if (fmt_percent)
+> +			if (type == HPP_FMT__PERCENT)
+>  				ret += print_fn(hpp->buf + ret, hpp->size - ret,
+>  						fmt, 100.0 * period / total);
+> -			else
+> +			else if (type == HPP_FMT__RAW)
+>  				ret += print_fn(hpp->buf + ret, hpp->size - ret,
+>  						fmt, period);
+> +			else if (type == HPP_FMT__TIME) {
+> +				u64 sec = period / NSEC_PER_SEC;
+> +				u64 usec = (period - sec * NSEC_PER_SEC) / NSEC_PER_USEC;
+> +
+> +				ret += print_fn(hpp->buf + ret, hpp->size - ret,
+> +						fmt, sec, usec);
+> +			}
+>  
+>  			prev_idx = perf_evsel__group_idx(evsel);
+>  		}
+> @@ -73,7 +92,7 @@ static int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+>  			 * zero-fill group members at last which have no sample
+>  			 */
+>  			ret += print_fn(hpp->buf + ret, hpp->size - ret,
+> -					fmt, 0);
+> +					fmt, 0, 0);
+>  		}
+>  	}
+>  	return ret;
+> @@ -117,7 +136,7 @@ static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
+>  			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+>  {										\
+>  	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
+> -			  percent_color_snprintf, true);			\
+> +			  percent_color_snprintf, HPP_FMT__PERCENT);		\
+>  }
+>  
+>  #define __HPP_ENTRY_PERCENT_FN(_type, _field)					\
+> @@ -126,7 +145,7 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
+>  {										\
+>  	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
+>  	return __hpp__fmt(hpp, he, he_get_##_field, fmt,			\
+> -			  scnprintf, true);					\
+> +			  scnprintf, HPP_FMT__PERCENT);				\
+>  }
+>  
+>  #define __HPP_ENTRY_RAW_FN(_type, _field)					\
+> @@ -139,7 +158,23 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
+>  			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+>  {										\
+>  	const char *fmt = symbol_conf.field_sep ? " %"PRIu64 : " %11"PRIu64;	\
+> -	return __hpp__fmt(hpp, he, he_get_raw_##_field, fmt, scnprintf, false);	\
+> +	return __hpp__fmt(hpp, he, he_get_raw_##_field, fmt, scnprintf,		\
+> +			  HPP_FMT__RAW);					\
+> +}
+> +
+> +#define __HPP_ENTRY_TIME_FN(_type, _field)					\
+> +static u64 he_get_raw_##_field(struct hist_entry *he)				\
+> +{										\
+> +	return he->stat._field;							\
+> +}										\
+> +										\
+> +static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
+> +			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+> +{										\
+> +	const char *fmt = symbol_conf.field_sep ? " %"PRIu64 ".%06"PRIu64 : 	\
+> +						  " %2"PRIu64 ".%06"PRIu64;	\
+> +	return __hpp__fmt(hpp, he, he_get_raw_##_field, fmt, scnprintf,		\
+> +			  HPP_FMT__TIME);					\
+>  }
+>  
+>  #define HPP_PERCENT_FNS(_type, _str, _field, _min_width, _unit_width)	\
+> @@ -153,6 +188,11 @@ __HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
+>  __HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
+>  __HPP_ENTRY_RAW_FN(_type, _field)
+>  
+> +#define HPP_TIME_FNS(_type, _str, _field, _min_width, _unit_width)	\
+> +__HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
+> +__HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
+> +__HPP_ENTRY_TIME_FN(_type, _field)
+> +
+>  
+>  HPP_PERCENT_FNS(overhead, "Overhead", period, 8, 8)
+>  HPP_PERCENT_FNS(overhead_sys, "sys", period_sys, 8, 8)
+> @@ -163,6 +203,8 @@ HPP_PERCENT_FNS(overhead_guest_us, "guest usr", period_guest_us, 9, 8)
+>  HPP_RAW_FNS(samples, "Samples", nr_events, 12, 12)
+>  HPP_RAW_FNS(period, "Period", period, 12, 12)
+>  
+> +HPP_TIME_FNS(time, "Time", time, 10, 10)
+> +
+>  #define HPP__COLOR_PRINT_FNS(_name)			\
+>  	{						\
+>  		.header	= hpp__header_ ## _name,	\
+> @@ -185,7 +227,8 @@ struct perf_hpp_fmt perf_hpp__format[] = {
+>  	HPP__COLOR_PRINT_FNS(overhead_guest_sys),
+>  	HPP__COLOR_PRINT_FNS(overhead_guest_us),
+>  	HPP__PRINT_FNS(samples),
+> -	HPP__PRINT_FNS(period)
+> +	HPP__PRINT_FNS(period),
+> +	HPP__PRINT_FNS(time)
+>  };
+>  
+>  LIST_HEAD(perf_hpp__list);
+> @@ -223,6 +266,9 @@ void perf_hpp__init(void)
+>  
+>  	if (symbol_conf.show_total_period)
+>  		perf_hpp__column_enable(PERF_HPP__PERIOD);
+> +
+> +	if (symbol_conf.show_time_info)
+> +		perf_hpp__column_enable(PERF_HPP__TIME);
+>  }
+>  
+>  void perf_hpp__column_register(struct perf_hpp_fmt *format)
+> diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+> index 0433469812dc..17e89fb31db9 100644
+> --- a/tools/perf/util/hist.h
+> +++ b/tools/perf/util/hist.h
+> @@ -162,6 +162,7 @@ enum {
+>  	PERF_HPP__OVERHEAD_GUEST_US,
+>  	PERF_HPP__SAMPLES,
+>  	PERF_HPP__PERIOD,
+> +	PERF_HPP__TIME,
+>  
+>  	PERF_HPP__MAX_INDEX
+>  };
+> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+> index f1031a1358a1..b29d26222c6f 100644
+> --- a/tools/perf/util/symbol.h
+> +++ b/tools/perf/util/symbol.h
+> @@ -99,7 +99,8 @@ struct symbol_conf {
+>  			annotate_asm_raw,
+>  			annotate_src,
+>  			event_group,
+> -			demangle;
+> +			demangle,
+> +			show_time_info;
+>  	const char	*vmlinux_name,
+>  			*kallsyms_name,
+>  			*source_prefix,
+> -- 
+> 1.7.11.7
