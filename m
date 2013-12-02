@@ -1,98 +1,409 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495Ab3LBBNt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 20:13:49 -0500
-Received: from ozlabs.org ([203.10.76.45]:46258 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752185Ab3LBBNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 20:13:39 -0500
-Date: Mon, 2 Dec 2013 12:13:26 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
-        <dri-devel@lists.freedesktop.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>, Deepak S <deepak.s@intel.com>
-Subject: Re: linux-next: manual merge of the drm-intel tree with the
- drm-intel-fixes tree
-Message-Id: <20131202121326.583f55020e627c86d84cabd0@canb.auug.org.au>
-In-Reply-To: <20131202120437.db17c98af3f3e09ecdde0f2e@canb.auug.org.au>
-References: <20131202120437.db17c98af3f3e09ecdde0f2e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__2_Dec_2013_12_13_26_+1100_LZgMeY39FOm0wAAU"
+	id S1752474Ab3LBBQy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 20:16:54 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60041 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752029Ab3LBBQw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Dec 2013 20:16:52 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Myron Stowe <myron.stowe@gmail.com>
+Subject: Re: [PATCH v2 04/10] PCI: Destroy pci dev only once
+Date: Mon, 02 Dec 2013 02:29:46 +0100
+Message-ID: <5750980.G76cQES87j@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <3611889.9a0SszCTpv@vostro.rjw.lan>
+References: <1385429290-25397-1-git-send-email-yinghai@kernel.org> <CAE9FiQUG-WV26o5MtM=QPfN1kEDGs4Li2wdGB88T==yrxGum_w@mail.gmail.com> <3611889.9a0SszCTpv@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__2_Dec_2013_12_13_26_+1100_LZgMeY39FOm0wAAU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sunday, December 01, 2013 02:24:33 AM Rafael J. Wysocki wrote:
+> On Saturday, November 30, 2013 02:27:15 PM Yinghai Lu wrote:
+> > On Sat, Nov 30, 2013 at 1:37 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > > On Saturday, November 30, 2013 01:31:33 AM Rafael J. Wysocki wrote:
+> > >> On Saturday, November 30, 2013 12:45:55 AM Rafael J. Wysocki wrote:
+> > >> > On Saturday, November 30, 2013 12:38:26 AM Rafael J. Wysocki wrote:
+> > >> > > On Tuesday, November 26, 2013 06:26:54 PM Yinghai Lu wrote:
+> > >> > > > On Tue, Nov 26, 2013 at 5:24 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > >> > > > >
+> > >> > > > > So assume pci_destroy_dev() is called twice in parallel for the same dev
+> > >> > > > > by two different threads.  Thread 1 does the atomic_inc_and_test() and
+> > >> > > > > finds that it is OK to do the device_del() and put_device() which causes
+> > >> > > > > the device object to be freed.  Then thread 2 does the atomic_inc_and_test()
+> > >> > > > > on the already freed device object and crashes the kernel.
+> > >> > > > >
+> > >> > > > thread2 should still hold one extra reference.
+> > >> > > > that is in
+> > >> > > >   device_schedule_callback
+> > >> > > >      ==> sysfs_schedule_callback
+> > >> > > >          ==> kobject_get(kobj)
+> > >> > > >
+> > >> > > > pci_destroy_dev for thread2 is called at this point.
+> > >> > > >
+> > >> > > > and that reference will be released from
+> > >> > > >         sysfs_schedule_callback
+> > >> > > >         ==> kobject_put()...
+> > >> > >
+> > >> > > Well, that would be the case if thread 2 was started by device_schedule_callback(),
+> > >> > > but again, for example, it may be trim_stale_devices() started by acpiphp_check_bridge()
+> > >> > > that doesn't hold extra references to the pci_dev.  [Well, that piece of code
+> > >> > > is racy anyway, because it walks bus->devices without locking.  Which is my
+> > >> > > fault too, because I overlooked that.  Shame, shame.]
+> > >> > >
+> > 
+> > can you add extra reference to that path?
+> 
+> hotplug_event_work()
+> 	hotplug_event()
+> 		acpiphp_check_bridge()
+> 			trim_stale_devices()
+> 				pci_stop_and_remove_bus_device()
+> 
+> Yes, it should hold a reference to dev, but adding it there doesn't really help,
+> because there are list walks over &bus->devices in acpiphp_check_bridge() and
+> trim_stale_devices() that are racy with respect to pci_stop_and_remove_bus_device()
+> run from device_schedule_callback().
+> 
+> > >> > > Perhaps we can do something like the (untested) patch below (in addition to the
+> > >> > > $subject patch).  Do you see any immediate problems with it?
+> > >> >
+> > >> > Ah, I see one.  It will break pci_stop_bus_device() and pci_remove_bus_device().
+> > >> > So much for being clever.
+> > >> >
+> > >> > Moreover, it looks like those two routines above are racy too for the same
+> > >> > reason?
+> > >>
+> > >> The (still untested) patch below is what I have come up with for now.  The
+> > >> is_gone flag is now only operated under pci_remove_rescan_mutex, so it need
+> > >> not be atomic.  Of course, whoever calls pci_stop_and_remove_bus_device()
+> > >> (the "locked" one) should hold a ref to the device being removed to avoid
+> > >> use-after-free (the callers need to be audited for that).
+> > 
+> > if you can use device_schedule_...,
+> 
+> No, I can't.  I need to hold acpi_scan_lock taken in hotplug_event_work()
+> throughout all bus trimming/scanning and I need to protect list walks over
+> &bus->devices too.
+> 
+> > should have hold reference may be
+> > atomic would be better than lock/unlock everywhere?
+> 
+> The locking is necessary not only for the device removal itself, but also for
+> the safety of the &bus->devices list walks.
+> 
+> Besides, remove_callback() in remove.c already holds pci_remove_rescan_mutex
+> around pci_stop_and_remove_bus_device() and I don't see how it would be safe
+> to run pci_stop_and_remove_bus_device() without holding that mutex from
+> anywhere else.
+> 
+> For one example, pci_stop_and_remove_bus_device() that is not run under
+> pci_remove_rescan_mutex can race with the stuff called under that mutex
+> in dev_bus_rescan_store() (and elsewhere in pci-sysfs.c).
+> 
+> So either pci_remove_rescan_mutex is useless and should be dropped, or
+> it is there for a purpose, in which case it needs to be used around
+> pci_stop_and_remove_bus_device() everywhere.  There's no other possibility
+> and to my eyes that mutex is necessary.
 
-On Mon, 2 Dec 2013 12:04:37 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
->
-> Today's linux-next merge of the drm-intel tree got a conflict in
-> drivers/gpu/drm/i915/intel_display.c between commit a1216444283e
-> ("drm/i915: use the correct force_wake function at the PC8 code") from
-> the drm-intel-fixes tree and commit c8d9a5905e45 ("drm/i915: Add power
-> well arguments to force wake routines") from the drm-intel tree.
->=20
-> I fixed it up (I just used the drm-intel-fixes version) and can carry the
-> fix as necessary (no action is required).
+So below is a new version of the patch (which has been tested on my Thunderbolt
+rig without visibly breaking anything) with the description of all the problems
+it attempts to address.  If any of the scenarios described in the changelog are
+not possible for some reason, please tell me why that is the case.  I couldn't
+find such reasons myself.
 
-Actually, I ended up doing the below.
+Thanks,
+Rafael
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/gpu/drm/i915/intel_display.c
-index 080f6fd4e839,0332d7ca892d..000000000000
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@@ -6402,7 -6583,7 +6583,7 @@@ static void hsw_restore_lcpll(struct dr
- =20
-  	/* Make sure we're not on PC8 state before disabling PC8, otherwise
-  	 * we'll hang the machine! */
-- 	gen6_gt_force_wake_get(dev_priv);
- -	dev_priv->uncore.funcs.force_wake_get(dev_priv, FORCEWAKE_ALL);
-++	gen6_gt_force_wake_get(dev_priv, FORCEWAKE_ALL);
- =20
-  	if (val & LCPLL_POWER_DOWN_ALLOW) {
-  		val &=3D ~LCPLL_POWER_DOWN_ALLOW;
-@@@ -6436,7 -6617,7 +6617,7 @@@
-  			DRM_ERROR("Switching back to LCPLL failed\n");
-  	}
- =20
-- 	gen6_gt_force_wake_put(dev_priv);
- -	dev_priv->uncore.funcs.force_wake_put(dev_priv, FORCEWAKE_ALL);
-++	gen6_gt_force_wake_put(dev_priv, FORCEWAKE_ALL);
-  }
- =20
-  void hsw_enable_pc8_work(struct work_struct *__work)
+---
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: PCI / hotplug / ACPI: Fix concurrency problems related to device removal
 
---Signature=_Mon__2_Dec_2013_12_13_26_+1100_LZgMeY39FOm0wAAU
-Content-Type: application/pgp-signature
+The following are concurrency problems related to the PCI device
+removal code in pci-sysfs.c and in ACPIPHP present in the current
+mainline kernel:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Scenario 1: pci_stop_and_remove_bus_device() run concurrently for
+  the same top device from remove_callback() in pci-sysfs.c and
+  from trim_stale_devices() in acpiphp_glue.c.
 
-iQIcBAEBCAAGBQJSm967AAoJEMDTa8Ir7ZwV1XkP/iRnZqH3mLFoASUyOHQQqQkW
-m3fyhw8+qMaVqXYzXJh6tM24+NEXmZdZrpyI+5djDcR8lkOzBVfpuBizDQz0u9y0
-3lC6B0mr4EVW7igN/9jvroffQ8vXOi+x47ZgAHHXmduf+7+s6wLqK4dPDGKCLgo3
-fFvc31lv55iDogIG6WjkCdgI8BDBhSxUCkYLne7eauCYRrTenGhnGjX3bZHCzhzV
-ituGTygdY/T5lk2zBt+yHPwxEDHYezgzMUlmzOxXg/fPLEC/JzCeWPY4SiPSPxIK
-RhE5xkMNQD2mxzvlr7mnz+5M1emazY4y3cK3gqCO1U3yYtwpNnFO1YDQRPMHsm3s
-N2xLPYZYL/es5ku07ERnQSandhPwJJkgOsjd4i5cYYoegnGnICUdorzlR7g/4djH
-cz2dmdhCCOFPgED8902RO3I1p7y57hUVBk8lMKTYxJXfsR2Bb6fAAOiDbDCpvcH7
-HrQvuipkxagCdXbXwL3eHvWvlTVZcG1BaVeQk3uoKG9Do9aaImbWfo8zVXA0HVWh
-HgTskVAXcHWg4oQ/uOmIa0I6SsR4S/dv5Joe02oPxnwrK27U35vVt7+abX1lBKFN
-Wsf+DMKMZhyLD6+Ti/xhDOq0cpKToHK2vbgdROmfwkdHRHkOckrCs9srsKUPEXSX
-AkYtsibdYEKldZSB1/xI
-=qHme
------END PGP SIGNATURE-----
+  In this scenario the second code path is executed without
+  pci_remove_rescan_mutex locked, so the &bus->devices list
+  walks in either trim_stale_devices() itself or in
+  acpiphp_check_bridge() can suffer from list corruption while the
+  first code path is executing pci_destroy_dev() for one of the
+  devices on those lists.
 
---Signature=_Mon__2_Dec_2013_12_13_26_+1100_LZgMeY39FOm0wAAU--
+  Moreover, if any of the device objects in question is freed
+  after pci_destroy_dev() executed by the first code path, the
+  second code path may suffer a use-after-free problem while
+  trying to access that device object.
+
+  Conversely, the second code path may execute pci_destroy_dev()
+  for one of the devices in question such that one of the
+  &bus->devices list walks in pci_stop_bus_device()
+  or pci_remove_bus_device() executed by the first code path will
+  suffer from a list corruption.
+
+  Moreover, use-after-free is also possible if one of the device
+  objects in question is freed as a result of calling
+  pci_destroy_dev() by the second code path and then the first
+  code path tries to access it (the first code path only holds
+  an extra reference to the device it has been run for, but not
+  for its child devices).
+
+Scenario 2: ACPI hotplug event occurs for a device under a bridge
+  being removed by pci_stop_and_remove_bus_device() run from
+  remove_callback() in pci-sysfs.c.
+
+  In that case it doesn't make sense to handle the hotplug event,
+  because the device in question will be removed anyway along with
+  its parent bridge and that will cause the context objects needed
+  for hotplug handling to be freed as well.
+
+  Moreover, if the event is handled regardless, it may cause one
+  or more devices already removed by pci_stop_and_remove_bus_device()
+  to be added again by the code handling the event, which will
+  conflict with the bridge removal.
+
+Scenario 3: pci_stop_and_remove_bus_device() is run from
+  trim_stale_devices() (as a result of an ACPI hotplug event) in
+  parallel with dev_bus_rescan_store() or bus_rescan_store(),
+  or dev_rescan_store().
+
+  In that scenario the second code path may attempt to operate
+  on device objects being removed by the first code path which
+  may lead to many interesting types of breakage.
+
+Scenario 4: acpi_pci_root_remove() run (as a result of an ACPI PCI
+  host bridge removal event) in  parallel with bus_rescan_store(),
+  dev_bus_rescan_store(), dev_rescan_store(), or remove_callback()
+  for any devices under the host bridge in question.
+
+  In that case the same symptoms as in Scenarios 1 and 3 may occur
+  depending on which code path wins the races involved.
+
+Scenario 5: pci_stop_and_remove_bus_device() is run concurrently
+  for a device and its parent bridge via remove_callback().
+
+  In that case both code paths attempt to acquire
+  pci_remove_rescan_mutex.  If the child device removal acquires
+  it first, there will be no problems.  However, if the parent
+  bridge removal acquires it first, it will eventually execute
+  pci_destroy_dev() for the child device, but that device will
+  not be freed yet due to the reference held by the concurrent
+  child removal.  Consequently, both pci_stop_bus_device() and
+  pci_remove_bus_device() will be executed for that device
+  unnecessarily and pci_destroy_dev() will see a corrupted list
+  head in that object.  Moreover, an excess put_device() will
+  be executed for that device in that case which may lead to a
+  use-after-free in the final kobject_put() done by
+  sysfs_schedule_callback_work().
+
+All of these scenarios are addressed by the patch below as follows.
+
+(1) To prevent Scenarios 1 and 3 from happening hold
+    pci_remove_rescan_mutex around hotplug_event() in
+    hotplug_event_work(() (acpiphp_glue.c).
+
+(2) To prevent Scenario 2 from happening, add an ACPIPHP bridge
+    flag is_going_away indicating that hotplug events should be
+    ignored for children below that bridge.  That flag is set
+    by cleanup_bridge() that for non-root bridges should be run
+    under pci_remove_rescan_mutex (for root bridges it is only
+    run under acpi_scan_lock anyway).
+
+(3) To prevent Scenario 4 from happening, hold
+    pci_remove_rescan_mutex around pci_stop_root_bus() and
+    pci_remove_root_bus() in acpi_pci_root_remove().
+
+(4) To prevent Scenario 5 from happening, add an new is_gone
+    flag to struct pci_dev that will be set by pci_destroy_dev()
+    and checked by pci_stop_and_remove_bus_device().  That only
+    covers cases in which pci_stop_and_remove_bus_device() is
+    run under pci_remove_rescan_mutex, but the other existing
+    cases need to be fixed to use that mutex anyway for other
+    reasons (analogous to Scenarios 1 and 3, for example).
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/pci_root.c            |    4 ++++
+ drivers/pci/hotplug/acpiphp.h      |    1 +
+ drivers/pci/hotplug/acpiphp_glue.c |   22 ++++++++++++++++++++--
+ drivers/pci/pci-sysfs.c            |   11 +++++++++++
+ drivers/pci/remove.c               |    7 +++++--
+ include/linux/pci.h                |    3 +++
+ 6 files changed, 44 insertions(+), 4 deletions(-)
+
+Index: linux-pm/include/linux/pci.h
+===================================================================
+--- linux-pm.orig/include/linux/pci.h
++++ linux-pm/include/linux/pci.h
+@@ -321,6 +321,7 @@ struct pci_dev {
+ 	unsigned int	multifunction:1;/* Part of multi-function device */
+ 	/* keep track of device state */
+ 	unsigned int	is_added:1;
++	unsigned int	is_gone:1;
+ 	unsigned int	is_busmaster:1; /* device is busmaster */
+ 	unsigned int	no_msi:1;	/* device may not use msi */
+ 	unsigned int	block_cfg_access:1;	/* config space access is blocked */
+@@ -1021,6 +1022,8 @@ void set_pcie_hotplug_bridge(struct pci_
+ int pci_bus_find_capability(struct pci_bus *bus, unsigned int devfn, int cap);
+ unsigned int pci_rescan_bus_bridge_resize(struct pci_dev *bridge);
+ unsigned int pci_rescan_bus(struct pci_bus *bus);
++void lock_pci_remove_rescan(void);
++void unlock_pci_remove_rescan(void);
+ 
+ /* Vital product data routines */
+ ssize_t pci_read_vpd(struct pci_dev *dev, loff_t pos, size_t count, void *buf);
+Index: linux-pm/drivers/pci/pci-sysfs.c
+===================================================================
+--- linux-pm.orig/drivers/pci/pci-sysfs.c
++++ linux-pm/drivers/pci/pci-sysfs.c
+@@ -298,6 +298,17 @@ msi_bus_store(struct device *dev, struct
+ static DEVICE_ATTR_RW(msi_bus);
+ 
+ static DEFINE_MUTEX(pci_remove_rescan_mutex);
++
++void lock_pci_remove_rescan(void)
++{
++	mutex_lock(&pci_remove_rescan_mutex);
++}
++
++void unlock_pci_remove_rescan(void)
++{
++	mutex_unlock(&pci_remove_rescan_mutex);
++}
++
+ static ssize_t bus_rescan_store(struct bus_type *bus, const char *buf,
+ 				size_t count)
+ {
+Index: linux-pm/drivers/pci/remove.c
+===================================================================
+--- linux-pm.orig/drivers/pci/remove.c
++++ linux-pm/drivers/pci/remove.c
+@@ -34,6 +34,7 @@ static void pci_stop_dev(struct pci_dev
+ 
+ static void pci_destroy_dev(struct pci_dev *dev)
+ {
++	dev->is_gone = 1;
+ 	device_del(&dev->dev);
+ 
+ 	down_write(&pci_bus_sem);
+@@ -109,8 +110,10 @@ static void pci_remove_bus_device(struct
+  */
+ void pci_stop_and_remove_bus_device(struct pci_dev *dev)
+ {
+-	pci_stop_bus_device(dev);
+-	pci_remove_bus_device(dev);
++	if (!dev->is_gone) {
++		pci_stop_bus_device(dev);
++		pci_remove_bus_device(dev);
++	}
+ }
+ EXPORT_SYMBOL(pci_stop_and_remove_bus_device);
+ 
+Index: linux-pm/drivers/pci/hotplug/acpiphp.h
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
++++ linux-pm/drivers/pci/hotplug/acpiphp.h
+@@ -71,6 +71,7 @@ struct acpiphp_bridge {
+ 	struct acpiphp_context *context;
+ 
+ 	int nr_slots;
++	bool is_going_away;
+ 
+ 	/* This bus (host bridge) or Secondary bus (PCI-to-PCI bridge) */
+ 	struct pci_bus *pci_bus;
+Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
++++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+@@ -439,6 +439,13 @@ static void cleanup_bridge(struct acpiph
+ 	mutex_lock(&bridge_mutex);
+ 	list_del(&bridge->list);
+ 	mutex_unlock(&bridge_mutex);
++
++	/*
++	 * For non-root bridges this flag is protected by the PCI remove/rescan
++	 * locking.  For root bridges it is only operated under acpi_scan_lock
++	 * anyway.
++	 */
++	bridge->is_going_away = true;
+ }
+ 
+ /**
+@@ -733,11 +740,17 @@ static void trim_stale_devices(struct pc
+  *
+  * Iterate over all slots under this bridge and make sure that if a
+  * card is present they are enabled, and if not they are disabled.
++ *
++ * For non-root bridges call under the PCI remove/rescan mutex.
+  */
+ static void acpiphp_check_bridge(struct acpiphp_bridge *bridge)
+ {
+ 	struct acpiphp_slot *slot;
+ 
++	/* Bail out if the bridge is going away. */
++	if (bridge->is_going_away)
++		return;
++
+ 	list_for_each_entry(slot, &bridge->slots, node) {
+ 		struct pci_bus *bus = slot->bus;
+ 		struct pci_dev *dev, *tmp;
+@@ -878,14 +891,19 @@ static void hotplug_event_work(void *dat
+ {
+ 	struct acpiphp_context *context = data;
+ 	acpi_handle handle = context->handle;
++	struct acpiphp_bridge *bridge = context->func.parent;
+ 
+ 	acpi_scan_lock_acquire();
++	lock_pci_remove_rescan();
+ 
+-	hotplug_event(handle, type, context);
++	/* Bail out if the parent bridge is going away. */
++	if (!bridge->is_going_away)
++		hotplug_event(handle, type, context);
+ 
++	unlock_pci_remove_rescan();
+ 	acpi_scan_lock_release();
+ 	acpi_evaluate_hotplug_ost(handle, type, ACPI_OST_SC_SUCCESS, NULL);
+-	put_bridge(context->func.parent);
++	put_bridge(bridge);
+ }
+ 
+ /**
+Index: linux-pm/drivers/acpi/pci_root.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/pci_root.c
++++ linux-pm/drivers/acpi/pci_root.c
+@@ -616,6 +616,8 @@ static void acpi_pci_root_remove(struct
+ {
+ 	struct acpi_pci_root *root = acpi_driver_data(device);
+ 
++	lock_pci_remove_rescan();
++
+ 	pci_stop_root_bus(root->bus);
+ 
+ 	device_set_run_wake(root->bus->bridge, false);
+@@ -623,6 +625,8 @@ static void acpi_pci_root_remove(struct
+ 
+ 	pci_remove_root_bus(root->bus);
+ 
++	unlock_pci_remove_rescan();
++
+ 	kfree(root);
+ }
+ 
+
