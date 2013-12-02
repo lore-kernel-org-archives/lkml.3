@@ -1,92 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758511Ab3LBUr4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:47:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38468 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754084Ab3LBTNw (ORCPT
+	id S1758541Ab3LBUsY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:48:24 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:34058 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758501Ab3LBUrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:52 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jerome Glisse <jglisse@redhat.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.10 102/173] radeon: workaround pinning failure on low ram gpu
-Date: Mon,  2 Dec 2013 11:11:25 -0800
-Message-Id: <20131202191155.714586398@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
-References: <20131202191142.873808297@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	Mon, 2 Dec 2013 15:47:55 -0500
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <20131202202120.GA23611@roeck-us.net>
+References: <1386008082-28740-1-git-send-email-dianders@chromium.org>
+	<20131202202120.GA23611@roeck-us.net>
+Date: Mon, 2 Dec 2013 12:47:53 -0800
+Message-ID: <CAOesGMi-P6LG1-XKVizUS_qX-gfZi_iXBO5r+=6a2nfvBS60mw@mail.gmail.com>
+Subject: Re: [PATCH] watchdog: s3c2410_wdt: Report when the watchdog reset the system
+From: Olof Johansson <olof@lixom.net>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Doug Anderson <dianders@chromium.org>, Wim Van Sebroeck <wim@iguana.be>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Dec 2, 2013 at 12:21 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On Mon, Dec 02, 2013 at 10:14:41AM -0800, Doug Anderson wrote:
+>> A good watchdog driver is supposed to report when it was responsible
+>> for resetting the system.  Implement this for the s3c2410, at least on
+>> exynos5250 and exynos5420 where we already have a pointer to the PMU
+>> registers to read the information.
+>>
+>> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>> ---
+>> This patch is based atop Leela Krishna's recent series that ends with
+>> (ARM: dts: update watchdog device nodes for Exynos5250 and Exynos5420)
+>> AKA <https://patchwork.kernel.org/patch/3251861/>.
+>>
+>>  drivers/watchdog/s3c2410_wdt.c | 42 +++++++++++++++++++++++++++++++++++++++---
+>>  1 file changed, 39 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/watchdog/s3c2410_wdt.c b/drivers/watchdog/s3c2410_wdt.c
+>> index 47f4dcf..2c87d37 100644
+>> --- a/drivers/watchdog/s3c2410_wdt.c
+>> +++ b/drivers/watchdog/s3c2410_wdt.c
+>> @@ -62,9 +62,13 @@
+>>  #define CONFIG_S3C2410_WATCHDOG_ATBOOT               (0)
+>>  #define CONFIG_S3C2410_WATCHDOG_DEFAULT_TIME (15)
+>>
+>> +#define RST_STAT_REG_OFFSET          0x0404
+>>  #define WDT_DISABLE_REG_OFFSET               0x0408
+>>  #define WDT_MASK_RESET_REG_OFFSET    0x040c
+>>  #define QUIRK_NEEDS_PMU_CONFIG               (1 << 0)
+>> +#define QUIRK_HAS_RST_STAT           (1 << 1)
+>> +#define QUIRKS_NEED_PMUREG           (QUIRK_NEEDS_PMU_CONFIG | \
+>> +                                      QUIRK_HAS_RST_STAT)
+>>
+> I am not really happy about the NEED (both of them, really) here.
+> How about HAS instead ?
 
-------------------
-
-From: Jerome Glisse <jglisse@redhat.com>
-
-commit 97b6ff6be9da7675aab339334fda996d6c5077d9 upstream.
-
-GPU with low amount of ram can fails at pinning new framebuffer before
-unpinning old one. On such failure, retry with unpinning old one before
-pinning new one allowing to work around the issue. This is somewhat
-ugly but only affect those old GPU we care about.
-
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/gpu/drm/radeon/radeon_legacy_crtc.c |   28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
-
---- a/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
-+++ b/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
-@@ -422,6 +422,7 @@ int radeon_crtc_do_set_base(struct drm_c
- 	/* Pin framebuffer & get tilling informations */
- 	obj = radeon_fb->obj;
- 	rbo = gem_to_radeon_bo(obj);
-+retry:
- 	r = radeon_bo_reserve(rbo, false);
- 	if (unlikely(r != 0))
- 		return r;
-@@ -430,6 +431,33 @@ int radeon_crtc_do_set_base(struct drm_c
- 				     &base);
- 	if (unlikely(r != 0)) {
- 		radeon_bo_unreserve(rbo);
-+
-+		/* On old GPU like RN50 with little vram pining can fails because
-+		 * current fb is taking all space needed. So instead of unpining
-+		 * the old buffer after pining the new one, first unpin old one
-+		 * and then retry pining new one.
-+		 *
-+		 * As only master can set mode only master can pin and it is
-+		 * unlikely the master client will race with itself especialy
-+		 * on those old gpu with single crtc.
-+		 *
-+		 * We don't shutdown the display controller because new buffer
-+		 * will end up in same spot.
-+		 */
-+		if (!atomic && fb && fb != crtc->fb) {
-+			struct radeon_bo *old_rbo;
-+			unsigned long nsize, osize;
-+
-+			old_rbo = gem_to_radeon_bo(to_radeon_framebuffer(fb)->obj);
-+			osize = radeon_bo_size(old_rbo);
-+			nsize = radeon_bo_size(rbo);
-+			if (nsize <= osize && !radeon_bo_reserve(old_rbo, false)) {
-+				radeon_bo_unpin(old_rbo);
-+				radeon_bo_unreserve(old_rbo);
-+				fb = NULL;
-+				goto retry;
-+			}
-+		}
- 		return -EINVAL;
- 	}
- 	radeon_bo_get_tiling_flags(rbo, &tiling_flags, NULL);
+Ah, I just commented on these things on our internal review site too
+on this patch. I don't even think a quirk is needed -- just use the
+presence of a non-0 rst_stat_reg to tell if you need to use regmap.
 
 
+-Olof
