@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759512Ab3LBVQf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:16:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38477 "EHLO
+	id S1759498Ab3LBVQc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:16:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38399 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753632Ab3LBTMy (ORCPT
+	with ESMTP id S1753957Ab3LBTMz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:12:54 -0500
+	Mon, 2 Dec 2013 14:12:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roel Kluin <roel.kluin@gmail.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.10 023/173] pinctrl: dove: unset twsi option3 for gconfig as well
-Date: Mon,  2 Dec 2013 11:10:06 -0800
-Message-Id: <20131202191145.481174356@linuxfoundation.org>
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.10 020/173] ASoC: wm5110: Add post SYSCLK register patch for rev D chip
+Date: Mon,  2 Dec 2013 11:10:03 -0800
+Message-Id: <20131202191145.149342287@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -28,31 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roel Kluin <roel.kluin@gmail.com>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit 6d0a4ed2b90a12e1403d3e7d9d8c2cc7fdc301b5 upstream.
+commit f69f86b1ba6493126a7f093a65a8952bcb183de2 upstream.
 
-This fixes a typo which left twsi config3 option enabled.
+Certain registers require patching after the SYSCLK has been brought up
+add support for this into the CODEC driver.
 
-Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
-Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pinctrl/mvebu/pinctrl-dove.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/codecs/wm5110.c |   43 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 42 insertions(+), 1 deletion(-)
 
---- a/drivers/pinctrl/mvebu/pinctrl-dove.c
-+++ b/drivers/pinctrl/mvebu/pinctrl-dove.c
-@@ -323,7 +323,7 @@ static int dove_twsi_ctrl_set(struct mve
- 	unsigned long gcfg2 = readl(DOVE_GLOBAL_CONFIG_2);
+--- a/sound/soc/codecs/wm5110.c
++++ b/sound/soc/codecs/wm5110.c
+@@ -37,6 +37,47 @@ struct wm5110_priv {
+ 	struct arizona_fll fll[2];
+ };
  
- 	gcfg1 &= ~DOVE_TWSI_ENABLE_OPTION1;
--	gcfg2 &= ~(DOVE_TWSI_ENABLE_OPTION2 | DOVE_TWSI_ENABLE_OPTION2);
-+	gcfg2 &= ~(DOVE_TWSI_ENABLE_OPTION2 | DOVE_TWSI_ENABLE_OPTION3);
++static const struct reg_default wm5110_sysclk_revd_patch[] = {
++	{ 0x3093, 0x1001 },
++	{ 0x30E3, 0x1301 },
++	{ 0x3133, 0x1201 },
++	{ 0x3183, 0x1501 },
++	{ 0x31D3, 0x1401 },
++};
++
++static int wm5110_sysclk_ev(struct snd_soc_dapm_widget *w,
++			    struct snd_kcontrol *kcontrol, int event)
++{
++	struct snd_soc_codec *codec = w->codec;
++	struct arizona *arizona = dev_get_drvdata(codec->dev->parent);
++	struct regmap *regmap = codec->control_data;
++	const struct reg_default *patch = NULL;
++	int i, patch_size;
++
++	switch (arizona->rev) {
++	case 3:
++		patch = wm5110_sysclk_revd_patch;
++		patch_size = ARRAY_SIZE(wm5110_sysclk_revd_patch);
++		break;
++	default:
++		return 0;
++	}
++
++	switch (event) {
++	case SND_SOC_DAPM_POST_PMU:
++		if (patch)
++			for (i = 0; i < patch_size; i++)
++				regmap_write(regmap, patch[i].reg,
++					     patch[i].def);
++		break;
++
++	default:
++		break;
++	}
++
++	return 0;
++}
++
+ static DECLARE_TLV_DB_SCALE(ana_tlv, 0, 100, 0);
+ static DECLARE_TLV_DB_SCALE(eq_tlv, -1200, 100, 0);
+ static DECLARE_TLV_DB_SCALE(digital_tlv, -6400, 50, 0);
+@@ -386,7 +427,7 @@ static const struct snd_kcontrol_new wm5
  
- 	switch (config) {
- 	case 1:
+ static const struct snd_soc_dapm_widget wm5110_dapm_widgets[] = {
+ SND_SOC_DAPM_SUPPLY("SYSCLK", ARIZONA_SYSTEM_CLOCK_1, ARIZONA_SYSCLK_ENA_SHIFT,
+-		    0, NULL, 0),
++		    0, wm5110_sysclk_ev, SND_SOC_DAPM_POST_PMU),
+ SND_SOC_DAPM_SUPPLY("ASYNCCLK", ARIZONA_ASYNC_CLOCK_1,
+ 		    ARIZONA_ASYNC_CLK_ENA_SHIFT, 0, NULL, 0),
+ SND_SOC_DAPM_SUPPLY("OPCLK", ARIZONA_OUTPUT_SYSTEM_CLOCK,
 
 
