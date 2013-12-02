@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757109Ab3LBUK3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:10:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2918 "EHLO mx1.redhat.com"
+	id S1757139Ab3LBUKw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:10:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41979 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755146Ab3LBUKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 15:10:24 -0500
-Date: Mon, 02 Dec 2013 15:10:06 -0500
+	id S1757076Ab3LBUKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 15:10:18 -0500
+Date: Mon, 02 Dec 2013 15:10:00 -0500
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
@@ -14,11 +14,11 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
         Ingo Molnar <mingo@kernel.org>, Hillf Danton <dhillf@gmail.com>,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Joonsoo Kim <js1304@gmail.com>
-Message-ID: <1386015006-hhbraep5-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1385624926-28883-10-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <1386015000-duz3i1h4-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1385624926-28883-9-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1385624926-28883-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1385624926-28883-10-git-send-email-iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH 9/9] mm/rmap: use rmap_walk() in page_mkclean()
+ <1385624926-28883-9-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH 8/9] mm/rmap: use rmap_walk() in page_referenced()
 Mime-Version: 1.0
 Content-Type: text/plain;
  charset=iso-2022-jp
@@ -30,17 +30,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 04:48:46PM +0900, Joonsoo Kim wrote:
+On Thu, Nov 28, 2013 at 04:48:45PM +0900, Joonsoo Kim wrote:
 > Now, we have an infrastructure in rmap_walk() to handle difference
 > from variants of rmap traversing functions.
 > 
-> So, just use it in page_mkclean().
+> So, just use it in page_referenced().
 > 
 > In this patch, I change following things.
 > 
 > 1. remove some variants of rmap traversing functions.
->     cf> page_mkclean_file
-> 2. mechanical change to use rmap_walk() in page_mkclean().
+> 	cf> page_referenced_ksm, page_referenced_anon,
+> 	page_referenced_file
+> 2. introduce new struct page_referenced_arg and pass it to
+> page_referenced_one(), main function of rmap_walk, in order to
+> count reference, to store vm_flags and to check finish condition.
+> 3. mechanical change to use rmap_walk() in page_referenced().
 > 
 > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
