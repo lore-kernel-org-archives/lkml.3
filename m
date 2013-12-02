@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190Ab3LBTUn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:20:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39775 "EHLO
+	id S1755180Ab3LBTUj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:20:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39780 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755103Ab3LBTTS (ORCPT
+	with ESMTP id S1755114Ab3LBTTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:19:18 -0500
+	Mon, 2 Dec 2013 14:19:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "=?UTF-8?q?Anders=20F . =20U . =20Ki=C3=A6r?=" 
-	<ablacksheep@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.12 210/212] HID: add support for LEETGION Hellion Gaming Mouse
-Date: Mon,  2 Dec 2013 11:16:41 -0800
-Message-Id: <20131202191312.928943269@linuxfoundation.org>
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: [PATCH 3.12 201/212] media: stv0367: Dont use dynamic static allocation
+Date: Mon,  2 Dec 2013 11:16:32 -0800
+Message-Id: <20131202191311.445138476@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,86 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anders F. U. Kiær <ablacksheep@gmail.com>
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit f1a4914bd04911fbeaee23445112adae8977144a upstream.
+commit 9aca4fb0571ce9cfef680ceb08d19dd008015307 upstream.
 
-Added id, bindings and comments for Holtek USB ID 04d9:a072
-LEETGION Hellion Gaming mouse to use the same corrections of the report
-descriptor as Holtek 04d9:a067. As the mouse exceed HID_MAX_USAGES at the
-same offsets in the reported descriptor.
-Tested on the hardware.
+Dynamic static allocation is evil, as Kernel stack is too low, and
+compilation complains about it on some archs:
+	drivers/media/dvb-frontends/stv0367.c:791:1: warning: 'stv0367_writeregs.constprop.4' uses dynamic stack allocation [enabled by default]
+Instead, let's enforce a limit for the buffer. Considering that I2C
+transfers are generally limited, and that devices used on USB has a
+max data length of 64 bytes for	the control URBs.
+So, it seem safe to use 64 bytes as the hard limit for all those devices.
+ On most cases, the limit is a way lower than that, but	this limit
+is small enough to not affect the Kernel stack, and it is a no brain
+limit, as using smaller ones would require to either carefully each
+driver or to take a look on each datasheet.
 
-Signed-off-by: Anders F. U. Kiær <ablacksheep@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/Kconfig            |    1 +
- drivers/hid/hid-core.c         |    1 +
- drivers/hid/hid-holtek-mouse.c |    4 ++++
- drivers/hid/hid-ids.h          |    3 ++-
- 4 files changed, 8 insertions(+), 1 deletion(-)
+ drivers/media/dvb-frontends/stv0367.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -242,6 +242,7 @@ config HID_HOLTEK
- 	  - Tracer Sniper TRM-503 / NOVA Gaming Slider X200 /
- 	    Zalman ZM-GM1
- 	  - SHARKOON DarkGlider Gaming mouse
-+	  - LEETGION Hellion Gaming Mouse
+--- a/drivers/media/dvb-frontends/stv0367.c
++++ b/drivers/media/dvb-frontends/stv0367.c
+@@ -33,6 +33,9 @@
+ #include "stv0367_regs.h"
+ #include "stv0367_priv.h"
  
- config HOLTEK_FF
- 	bool "Holtek On Line Grip force feedback support"
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1716,6 +1716,7 @@ static const struct hid_device_id hid_ha
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_KEYBOARD) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A04A) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A067) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A072) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A081) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_HUION, USB_DEVICE_ID_HUION_580) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_JESS2, USB_DEVICE_ID_JESS2_COLOR_RUMBLE_PAD) },
---- a/drivers/hid/hid-holtek-mouse.c
-+++ b/drivers/hid/hid-holtek-mouse.c
-@@ -28,6 +28,7 @@
-  * - USB ID 04d9:a04a, sold as Tracer Sniper TRM-503, NOVA Gaming Slider X200
-  *   and Zalman ZM-GM1
-  * - USB ID 04d9:a081, sold as SHARKOON DarkGlider Gaming mouse
-+ * - USB ID 04d9:a072, sold as LEETGION Hellion Gaming Mouse
-  */
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
++
+ static int stvdebug;
+ module_param_named(debug, stvdebug, int, 0644);
  
- static __u8 *holtek_mouse_report_fixup(struct hid_device *hdev, __u8 *rdesc,
-@@ -40,6 +41,7 @@ static __u8 *holtek_mouse_report_fixup(s
- 		 * 0x2fff, so they don't exceed HID_MAX_USAGES */
- 		switch (hdev->product) {
- 		case USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A067:
-+		case USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A072:
- 			if (*rsize >= 122 && rdesc[115] == 0xff && rdesc[116] == 0x7f
- 					&& rdesc[120] == 0xff && rdesc[121] == 0x7f) {
- 				hid_info(hdev, "Fixing up report descriptor\n");
-@@ -66,6 +68,8 @@ static const struct hid_device_id holtek
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT,
- 			USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A04A) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT,
-+			USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A072) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT,
- 			USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A081) },
- 	{ }
- };
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -453,8 +453,9 @@
+@@ -767,7 +770,7 @@ static struct st_register def0367cab[STV
+ static
+ int stv0367_writeregs(struct stv0367_state *state, u16 reg, u8 *data, int len)
+ {
+-	u8 buf[len + 2];
++	u8 buf[MAX_XFER_SIZE];
+ 	struct i2c_msg msg = {
+ 		.addr = state->config->demod_address,
+ 		.flags = 0,
+@@ -776,6 +779,14 @@ int stv0367_writeregs(struct stv0367_sta
+ 	};
+ 	int ret;
  
- #define USB_VENDOR_ID_HOLTEK_ALT		0x04d9
- #define USB_DEVICE_ID_HOLTEK_ALT_KEYBOARD	0xa055
--#define USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A067	0xa067
- #define USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A04A	0xa04a
-+#define USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A067	0xa067
-+#define USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A072	0xa072
- #define USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A081	0xa081
- 
- #define USB_VENDOR_ID_IMATION		0x0718
++	if (2 + len > sizeof(buf)) {
++		printk(KERN_WARNING
++		       "%s: i2c wr reg=%04x: len=%d is too big!\n",
++		       KBUILD_MODNAME, reg, len);
++		return -EINVAL;
++	}
++
++
+ 	buf[0] = MSB(reg);
+ 	buf[1] = LSB(reg);
+ 	memcpy(buf + 2, data, len);
 
 
