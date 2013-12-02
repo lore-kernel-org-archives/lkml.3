@@ -1,305 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663Ab3LBMSO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 07:18:14 -0500
-Received: from 13.mo4.mail-out.ovh.net ([178.33.251.8]:43638 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753421Ab3LBMSM (ORCPT
+	id S1753804Ab3LBMTg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 07:19:36 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:37404 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753706Ab3LBMTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 07:18:12 -0500
-X-Greylist: delayed 2091 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Dec 2013 07:18:12 EST
-Message-ID: <529C7A46.2070401@overkiz.com>
-Date: Mon, 02 Dec 2013 13:17:10 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Rob Landley <rob@landley.net>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/2] clk: add clk accuracy retrieval support
-References: <1385556285-19180-1-git-send-email-b.brezillon@overkiz.com> <1385556285-19180-2-git-send-email-b.brezillon@overkiz.com> <20131202075043.GB29721@pengutronix.de>
-In-Reply-To: <20131202075043.GB29721@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 8811574147497490528
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Mon, 2 Dec 2013 07:19:33 -0500
+X-AuditID: cbfee61a-b7f316d000007e34-9d-529c7ad3005d
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com,
+        linux-samsung-soc@vger.kernel.org
+Subject: [PATCH RESEND v10 0/7] cpufreq:boost: CPU Boost mode support
+Date: Mon, 02 Dec 2013 13:19:14 +0100
+Message-id: <1385986761-17934-1-git-send-email-l.majewski@samsung.com>
+X-Mailer: git-send-email 1.7.10
+In-reply-to: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t9jQd0rVXOCDNoXcVlsnLGe1eJp0w92
+	i76fV5gt1uz/yWTRefYJs8WbR9wWbx5uZrS4vGsOm8Xn3iOMFjPO72OyuN24gs3izOlLrBZP
+	HvaxWWz86uHA57F4z0smjzvX9rB5rJv2ltljy9V2Fo++LasYPY7f2M7k8XmTXAB7FJdNSmpO
+	Zllqkb5dAldG+8Ut7AWtkhXtX6azNjAeF+5i5OSQEDCRaPt2iRHCFpO4cG89WxcjF4eQwHRG
+	iS9vLjODJIQEupgkeiebgdhsAnoSn+8+ZQIpEhFYwijxumkBK4jDLLCRWWLnzLdsIFXCAq4S
+	W1+dA+tmEVCVmDNjBZjNK+AmMX/+NlaIdfIST+/3gdVzAsXnfnrBBrHNVeLmh5UsExh5FzAy
+	rGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQIDtdnUjsYVzZYHGIU4GBU4uG9KDwnSIg1say4
+	MvcQowQHs5II78tEoBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeA63WgUIC6YklqdmpqQWpRTBZ
+	Jg5OqQZGhr3zvs1+Ep6rM6Nb9+DlMMcFfus0ZQ8/2nV826mU01HvYu48bukOK9HoEf7+LmlD
+	7DSJObyeWfMkdkZfzuG5E7PrrcuMT//CuZWq9uWUJN3XebNdVeTjycB1cjdvrBBqeVBRXKNX
+	uvJ/nGe+vcR2Sf2nGpPevbVba5a1N3/Sxn578wPvuaddVmIpzkg01GIuKk4EAOUIlTdTAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Uwe,
+This patch series introduces support for CPU overclocking technique
+called Boost.
 
-Le 02/12/2013 08:50, Uwe Kleine-König a écrit :
-> Hello,
->
-> On Wed, Nov 27, 2013 at 01:44:44PM +0100, Boris BREZILLON wrote:
->> The clock accuracy is expressed in ppb (parts per billion) and represents
->> the possible clock drift.
->> Say you have a clock (e.g. an oscillator) which provides a fixed clock of
->> 20MHz with an accuracy of +- 20Hz. This accuracy expressed in ppb is
->> 20Hz/20MHz = 1000 ppb (or 1 ppm).
->>
->> Clock users may need the clock accuracy information in order to choose
->> the best clock (the one with the best accuracy) across several available
->> clocks.
->>
->> This patch adds clk accuracy retrieval support for common clk framework by
->> means of a new function called clk_get_accuracy.
->> This function returns the given clock accuracy expressed in ppb.
->>
->> In order to get the clock accuracy, this implementation adds one callback
->> called recalc_accuracy to the clk_ops structure.
->> This callback is given the parent clock accuracy (if the clock is not a
->> root clock) and should recalculate the given clock accuracy.
->>
->> This callback is optional and may be implemented if the clock is not
->> a perfect clock (accuracy != 0 ppb).
->>
->> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
->> ---
->>   Documentation/clk.txt        |    4 ++
->>   drivers/clk/clk.c            |  109 ++++++++++++++++++++++++++++++++++++++++--
->>   include/linux/clk-private.h  |    1 +
->>   include/linux/clk-provider.h |   11 +++++
->>   include/linux/clk.h          |   17 +++++++
->>   5 files changed, 138 insertions(+), 4 deletions(-)
->>
->> diff --git a/Documentation/clk.txt b/Documentation/clk.txt
->> index 3aeb5c4..eb20198 100644
->> --- a/Documentation/clk.txt
->> +++ b/Documentation/clk.txt
->> @@ -77,6 +77,8 @@ the operations defined in clk.h:
->>   		int		(*set_parent)(struct clk_hw *hw, u8 index);
->>   		u8		(*get_parent)(struct clk_hw *hw);
->>   		int		(*set_rate)(struct clk_hw *hw, unsigned long);
->> +		unsigned long	(*recalc_accuracy)(struct clk_hw *hw,
->> +						   unsigned long parent_accuracy);
->>   		void		(*init)(struct clk_hw *hw);
->>   	};
->>   
->> @@ -202,6 +204,8 @@ optional or must be evaluated on a case-by-case basis.
->>   .set_parent     |      |             | n             | y           | n    |
->>   .get_parent     |      |             | n             | y           | n    |
->>                   |      |             |               |             |      |
->> +.recalc_accuracy|      |             |               |             |      |
->> +                |      |             |               |             |      |
->>   .init           |      |             |               |             |      |
->>                   -----------------------------------------------------------
->>   [1] either one of round_rate or determine_rate is required.
->> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
->> index 2cf2ea6..4b0c1bc 100644
->> --- a/drivers/clk/clk.c
->> +++ b/drivers/clk/clk.c
->> @@ -104,10 +104,11 @@ static void clk_summary_show_one(struct seq_file *s, struct clk *c, int level)
->>   	if (!c)
->>   		return;
->>   
->> -	seq_printf(s, "%*s%-*s %-11d %-12d %-10lu",
->> +	seq_printf(s, "%*s%-*s %-11d %-12d %-10lu %-11lu",
->>   		   level * 3 + 1, "",
->>   		   30 - level * 3, c->name,
->> -		   c->enable_count, c->prepare_count, clk_get_rate(c));
->> +		   c->enable_count, c->prepare_count, clk_get_rate(c),
->> +		   clk_get_accuracy(c));
->>   	seq_printf(s, "\n");
->>   }
->>   
->> @@ -129,8 +130,8 @@ static int clk_summary_show(struct seq_file *s, void *data)
->>   {
->>   	struct clk *c;
->>   
->> -	seq_printf(s, "   clock                        enable_cnt  prepare_cnt  rate\n");
->> -	seq_printf(s, "---------------------------------------------------------------------\n");
->> +	seq_printf(s, "   clock                        enable_cnt  prepare_cnt  rate        accuracy\n");
->> +	seq_printf(s, "---------------------------------------------------------------------------------\n");
->>   
->>   	clk_prepare_lock();
->>   
->> @@ -167,6 +168,7 @@ static void clk_dump_one(struct seq_file *s, struct clk *c, int level)
->>   	seq_printf(s, "\"enable_count\": %d,", c->enable_count);
->>   	seq_printf(s, "\"prepare_count\": %d,", c->prepare_count);
->>   	seq_printf(s, "\"rate\": %lu", clk_get_rate(c));
->> +	seq_printf(s, "\"accuracy\": %lu", clk_get_accuracy(c));
->>   }
->>   
->>   static void clk_dump_subtree(struct seq_file *s, struct clk *c, int level)
->> @@ -248,6 +250,11 @@ static int clk_debug_create_one(struct clk *clk, struct dentry *pdentry)
->>   	if (!d)
->>   		goto err_out;
->>   
->> +	d = debugfs_create_u32("clk_accuracy", S_IRUGO, clk->dentry,
->> +			(u32 *)&clk->accuracy);
->> +	if (!d)
->> +		goto err_out;
->> +
->>   	d = debugfs_create_x32("clk_flags", S_IRUGO, clk->dentry,
->>   			(u32 *)&clk->flags);
->>   	if (!d)
->> @@ -602,6 +609,28 @@ out:
->>   	return ret;
->>   }
->>   
->> +unsigned long __clk_get_accuracy(struct clk *clk)
->> +{
->> +	unsigned long ret;
->> +
->> +	if (!clk) {
->> +		ret = 0;
->> +		goto out;
->> +	}
->> +
->> +	ret = clk->accuracy;
->> +
->> +	if (clk->flags & CLK_IS_ROOT)
->> +		goto out;
->> +
->> +	if (!clk->parent)
->> +		ret = 0;
-> Why do you need this? Wouldn't it be enough to assert clk->accuracy
-> being 0 in this case?
+It is a follow up of a LAB governor proposal. Boost is a LAB component:
+http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
 
-I'm not sure.
-I did this because it was done this way for __clk_get_rate (which is
-not a valid argument ;)).
+Boost unifies hardware based solution (e.g. Intel Nehalem) with
+software oriented one (like the one done at Exynos).
+For this reason cpufreq/freq_table code has been reorganized to include
+common code.
 
-Now that I think about it I don't find any good reason for not directly
-returning the clk->accuracy (even if the clk is orphan).
+Important design decisions:
+- Boost related code is compiled-in unconditionally to cpufreq core and
+  disabled by default. The cpufreq_driver is responsibile for setting
+  boost_supported flag and providing set_boost callback(if HW support
+  is needed). For software managed boost, special Kconfig flag -
+  CONFIG_CPU_FREQ_BOOST_SW has been defined. It will be selected only
+  when a target platform has thermal framework properly configured.
 
-I mean, if we consider the parent_clk as perfect (which is the case if
-the clk is orphan), then the child clk might still introduce some 
-inaccuracy.
-And I think it's better to return the maximum clk accuracy instead of
-considering the clk is perfect.
+- struct cpufreq_driver has been extended with boost related fields:
+        -- boost_supported - when driver supports boosting
+        -- boost_enabled - boost state
+        -- set_boost - callback to function, which is necessary to
+           enable/disable boost
 
-I'll fix this in the next version.
+- Boost sysfs attribute (/sys/devices/system/cpu/cpufreq/boost) is visible
+  _only_ when cpufreq driver supports Boost.
 
->> +out:
->> +	return ret;
->> +}
->> +EXPORT_SYMBOL_GPL(__clk_get_accuracy);
->> +
->>   unsigned long __clk_get_flags(struct clk *clk)
->>   {
->>   	return !clk ? 0 : clk->flags;
->> @@ -1016,6 +1045,59 @@ static int __clk_notify(struct clk *clk, unsigned long msg,
->>   }
->>   
->>   /**
->> + * __clk_recalc_accuracies
->> + * @clk: first clk in the subtree
->> + * @msg: notification type (see include/linux/clk.h)
-> There is no msg parameter in this function.
+- No special spin_lock for Boost was created. The one from cpufreq core
+  was reused.
 
-I'll fix the comment.
+- The Boost code doesn't rely on any policy. When boost state is changed,
+  then the policy list is iterated and proper adjustements are done.
 
->
->> + * Walks the subtree of clks starting with clk and recalculates accuracies as
->> + * it goes.  Note that if a clk does not implement the .recalc_rate callback
->> + * then it is assumed that the clock will take on the rate of it's parent.
->> + *
->> + * Caller must hold prepare_lock.
->> + */
->> +static void __clk_recalc_accuracies(struct clk *clk)
->> +{
->> +	unsigned long parent_accuracy = 0;
->> +	struct clk *child;
->> +
->> +	if (clk->parent)
->> +		parent_accuracy = clk->parent->accuracy;
->> +
->> +	if (clk->ops->recalc_accuracy)
->> +		clk->accuracy = clk->ops->recalc_accuracy(clk->hw,
->> +							  parent_accuracy);
->> +	else
->> +		clk->accuracy = parent_accuracy;
->> +
->> +	hlist_for_each_entry(child, &clk->children, child_node)
->> +		__clk_recalc_accuracies(child);
->> +}
->> +
->> +/**
->> + * clk_get_accuracy - return the accuracy of clk
->> + * @clk: the clk whose accuracy is being returned
->> + *
->> + * Simply returns the cached accuracy of the clk, unless
->> + * CLK_GET_ACCURACY_NOCACHE flag is set, which means a recalc_rate will be
->> + * issued.
->> + * If clk is NULL then returns 0.
->> + */
->> +long clk_get_accuracy(struct clk *clk)
->> +{
->> +	unsigned long accuracy;
->> +
->> +	clk_prepare_lock();
->> +	if (clk && (clk->flags & CLK_GET_ACCURACY_NOCACHE))
->> +		__clk_recalc_accuracies(clk);
->> +
->> +	accuracy = __clk_get_accuracy(clk);
->> +	clk_prepare_unlock();
->> +
->> +	return accuracy;
->> +}
->> +EXPORT_SYMBOL_GPL(clk_get_accuracy);
->> +
->> +/**
->>    * __clk_recalc_rates
->>    * @clk: first clk in the subtree
->>    * @msg: notification type (see include/linux/clk.h)
->> @@ -1551,6 +1633,7 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
->>   {
->>   	clk_reparent(clk, new_parent);
->>   	clk_debug_reparent(clk, new_parent);
->> +	__clk_recalc_accuracies(clk);
->>   	__clk_recalc_rates(clk, POST_RATE_CHANGE);
->>   }
->>   
->> @@ -1621,6 +1704,9 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
->>   	/* do the re-parent */
->>   	ret = __clk_set_parent(clk, parent, p_index);
->>   
->> +	/* propagate accuracy recalculation */
->> +	__clk_recalc_accuracies(clk);
->> +
-> Would it make sense to move this call into the if (ret) below? The rate
-> is only recalculated there, too.
-You mean only if __clk_set_parent returns 0.
-Yes it makes sense: the accuracy should not change if the parent hasn't 
-changed
-(is this case, if we fail to change the parent).
+- To improve safety level, the thermal framework is also extended to disable
+  software boosting, when thermal trip point is reached. After cooling down
+  the boost can be enabled again. This emulates behaviour similar to HW
+  managed boost (like x86)
 
-BTW, the rate is recalculated anyway, the only thing that changes is the 
-notification
-message.
+Tested at HW:
+       Exynos 4412 3.13-rc2 Linux
+       Intel Core i7-3770 3.13-rc2 Linux
 
-I'll fix this if no ones finds a good reason to recalculate the accuracy 
-when we fail
-to change the parent.
+Above patches were posted on top of kernel_pm/bleeding-edge
+(SHA1: 9483a9f69d5c8f83f1723361bf8340ddfb6475b4)
 
-Thanks for your review
 
-Best Regars,
+Lukasz Majewski (7):
+  cpufreq: Add boost frequency support in core
+  cpufreq:acpi:x86: Adjust the acpi-cpufreq.c code to work with common
+    boost solution
+  cpufreq:boost:Kconfig: Provide support for software managed BOOST
+  cpufreq:exynos:Extend Exynos cpufreq driver to support boost
+    framework
+  Documentation:cpufreq:boost: Update BOOST documentation
+  cpufreq:exynos4x12: Change L0 driver data to CPUFREQ_BOOST_FREQ
+  thermal:exynos:boost: Automatic enable/disable of BOOST feature (at
+    Exynos4412)
 
-Boris
->>   	/* propagate rate recalculation accordingly */
->>   	if (ret)
->>   		__clk_recalc_rates(clk, ABORT_RATE_CHANGE);
-> Best regards
-> Uwe
->
+ Documentation/cpu-freq/boost.txt          |   26 +++----
+ drivers/cpufreq/Kconfig                   |    4 +
+ drivers/cpufreq/Kconfig.arm               |   15 ++++
+ drivers/cpufreq/acpi-cpufreq.c            |   86 +++++++--------------
+ drivers/cpufreq/cpufreq.c                 |  118 ++++++++++++++++++++++++++++-
+ drivers/cpufreq/exynos-cpufreq.c          |    3 +
+ drivers/cpufreq/exynos4x12-cpufreq.c      |    2 +-
+ drivers/cpufreq/freq_table.c              |   56 ++++++++++++--
+ drivers/thermal/samsung/exynos_tmu_data.c |   47 ++++++++++++
+ include/linux/cpufreq.h                   |   24 ++++++
+ 10 files changed, 302 insertions(+), 79 deletions(-)
+
+-- 
+1.7.10.4
 
