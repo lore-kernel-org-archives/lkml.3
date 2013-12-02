@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998Ab3LBOCJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 09:02:09 -0500
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:52092 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751884Ab3LBOCG (ORCPT
+	id S1751788Ab3LBODh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 09:03:37 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:44655 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900Ab3LBODe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 09:02:06 -0500
-Message-ID: <529C91A8.3030401@st.com>
-Date: Mon, 2 Dec 2013 13:56:56 +0000
-From: srinivas kandagatla <srinivas.kandagatla@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Mon, 2 Dec 2013 09:03:34 -0500
+Date: Mon, 2 Dec 2013 14:03:24 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LinusW <linus.walleij@linaro.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: Re: [alsa-devel] [PATCH 07/10] ASoC: ux500: Store DMA data in the
+ DAI differently in the pdata and DT case
+Message-ID: <20131202140324.GH31626@lee--X1>
+References: <1384859269-19801-1-git-send-email-lee.jones@linaro.org>
+ <1384859269-19801-8-git-send-email-lee.jones@linaro.org>
+ <CAOesGMiu16f_L=cMWFCNZMjNB9tBK-2LXn02k-R7FhkkgR5-+g@mail.gmail.com>
+ <20131202101256.GA29373@lee--X1>
+ <20131202135452.GI27568@sirena.org.uk>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <dwmw2@infradead.org>, <linus.walleij@linaro.org>,
-        <linux-mtd@lists.infradead.org>, <angus.clark@st.com>
-Subject: Re: [PATCH v3 36/36] ARM: STi: Add support for the FSM Serial Flash
- Controller
-References: <1385727565-25794-1-git-send-email-lee.jones@linaro.org> <1385727565-25794-37-git-send-email-lee.jones@linaro.org> <529C858B.1040601@st.com> <20131202132013.GF31626@lee--X1> <529C8A99.1020204@st.com> <20131202134348.GG31626@lee--X1>
-In-Reply-To: <20131202134348.GG31626@lee--X1>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.65.51.59]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131202135452.GI27568@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/13 13:43, Lee Jones wrote:
-> On Mon, 02 Dec 2013, srinivas kandagatla wrote:
-> 
->> On 02/12/13 13:20, Lee Jones wrote:
->>>>> +		/* FSM */
->>>>> +		spifsm: spifsm@fe902000{
->>>>> +		        compatible         = "st,spi-fsm", "simple-bus";
->>>> "simple-bus" is redundant here.
->>>
->>> Yes I agree, good spot.
->>>
->>> I removed it from the Documentation, but missed this one.
->>>
->>> If I remove it, can I add your Ack for the remainder of the patch?
->> Yes,
->>
->> Acked-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->>
->> You should be aware that arch/arm/boot/dts/stih416-b2105.dts is not in
->> mainline yet.
-> 
-> Yes, I am aware of this. Are you queuing patches for it?
-Yes, I will post this soon.
+On Mon, 02 Dec 2013, Mark Brown wrote:
 
-thanks,
-srini
+> On Mon, Dec 02, 2013 at 10:12:56AM +0000, Lee Jones wrote:
 > 
->>>>> +		        reg                =  <0xfe902000 0x1000>;
->>>>> +		        reg-names          = "spi-fsm";
->>>>> +		        pinctrl-0          = <&pinctrl_fsm>;
->>>>> +
->>>>> +			st,syscfg	   = <&syscfg_rear>;
->>>>> +		        st,boot-device-reg = <0x958>;
->>>>> +		        st,boot-device-spi = <0x1a>;
->>>>> +
->>>>> +		        status = "okay";
->>>>> +		};
->>>
->>
+> > It's actually my fault. I had two patches round the wrong way in the
+> > series. The imediately subsequent patch in the set fixes this issue:
 > 
+> OK, so what do we do about this?  Is there going to be a revision of
+> that patch adding the note about not using the autoconfiguration stuff
+> and what (if any) are the dependencies on the arch/arm changes?
 
+I can shoot out a revision no problem.
+
+I'm not aware of any dependencies on the ARM changes. I haven't tested
+the arch/arm and sound/soc adaptions orthogonally, but I _think_ the
+right decisions should be made depending on the information passed
+from platform/dt code.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
