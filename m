@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab3LBR72 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 12:59:28 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:53547 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752879Ab3LBR71 (ORCPT
+	id S1753239Ab3LBR7j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 12:59:39 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:46075 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753214Ab3LBR7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 12:59:27 -0500
-Date: Mon, 2 Dec 2013 17:59:15 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Balaji Rao <balajirrao@openmoko.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20131202175915.GO27568@sirena.org.uk>
-References: <1385785263.24696.2.camel@phoenix>
+	Mon, 2 Dec 2013 12:59:33 -0500
+Message-ID: <529CD892.5010601@cogentembedded.com>
+Date: Mon, 02 Dec 2013 21:59:30 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QG/O2cIMOuWJCdDl"
-Content-Disposition: inline
-In-Reply-To: <1385785263.24696.2.camel@phoenix>
-X-Cookie: Boycott meat -- suck your thumb.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFT][PATCH] mfd: pcf50633: Correct device name for pcf50633
- regulator
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Chris Ruehl <chris.ruehl@gtsys.com.hk>, balbi@ti.com,
+        gregkh@linuxfoundation.org
+CC: linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] usb: phy-ulpi: Add EXTVBUSIND,CHRGVBUS flag support
+References: <1385967919-13258-1-git-send-email-chris.ruehl@gtsys.com.hk> <1385967919-13258-3-git-send-email-chris.ruehl@gtsys.com.hk>
+In-Reply-To: <1385967919-13258-3-git-send-email-chris.ruehl@gtsys.com.hk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/02/2013 10:05 AM, Chris Ruehl wrote:
 
---QG/O2cIMOuWJCdDl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> usb: phy-ulpi: Add EXTVBUSIND,CHRGVBUS flag support
 
-On Sat, Nov 30, 2013 at 12:21:03PM +0800, Axel Lin wrote:
-> Change the device name of the regulator function to the one chosen for
-> MODULE_ALIAS. This fixes kernel auto-module loading for the regulator function.
+> ULPI like ISP1504 support external vbus power indication
+> used in combination with vbus switches mic2075.
 
-Applied, thanks.
+> Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+> ---
+>   drivers/usb/phy/phy-ulpi.c |   11 ++++++++++-
+>   1 file changed, 10 insertions(+), 1 deletion(-)
 
---QG/O2cIMOuWJCdDl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> diff --git a/drivers/usb/phy/phy-ulpi.c b/drivers/usb/phy/phy-ulpi.c
+> index 217339d..e2f15c4 100644
+> --- a/drivers/usb/phy/phy-ulpi.c
+> +++ b/drivers/usb/phy/phy-ulpi.c
+> @@ -180,6 +180,8 @@ static int ulpi_init(struct usb_phy *phy)
+>   	int i, vid, pid, ret;
+>   	u32 ulpi_id = 0;
+>
+> +	pr_info("ULPI Viewport 0x%p\n",phy->io_priv);
+> +
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+    You forgot space after comma.
 
-iQIcBAEBAgAGBQJSnMpwAAoJELSic+t+oim9WGAP/jhF3+sj4/WXjLVU0dwHN2Q2
-iqKwlPH0nLNDm+eCcewCjg4OPYyGN8MgzVwQceyJ2JMkJh3R2H6UeEZUU3HzeagF
-kJxXV2cooakJpK159n7P8gSeDB08sKVNUTM6kFzcg/LXIK8fDMZf4S31w53X/Rja
-ePqhsgWWnlIoElqn8fYsIBlYP4lu97q34qq2mcULrwttOByiwL1tXq7zCCcU0LPs
-5+C5M7+FHaZXMna74mBktTjzZ9BruKyyHfIY6qrkfbhs3dady/KjVJ77i3YzCnG4
-jERU2CyF0AeTtubWnFaDaHCl7kpvpA6bp8Hf7X6THIu/JWiOn98pYm/NC7YNpcmy
-PNMyez2b057EIL3DIVI7QXhzp79srROEdoeZQUVYxXXUVQyvDWYriJv4THBgzNsT
-6LV5nBQSDQWctE8nrVQuR58yRfkFmraYKyBLqRGDQhNynEk8tNiGCrM//KuI/5f+
-TBA9M3qKR01NGEtLe5zP1FgxbDtfAZ3gpQT1zGX3xonDKhWGe7atwnQUmppSTXiX
-Uvhf3lvGLz+iE+V8LYoXCcxKewzn7A5jFXzWgAnalgekMeYuO7+68oKo146jDBQc
-P/+IZoAxZ/7sT37sIUwlvy2s3AuGw+EIHiHIrgNLinios+D6mggvzO3KyORyxIVS
-XfwKYd5cBXyFVdvijoLy
-=kZTz
------END PGP SIGNATURE-----
+WBR, Sergei
 
---QG/O2cIMOuWJCdDl--
