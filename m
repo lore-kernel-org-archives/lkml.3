@@ -1,151 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab3LBS4e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 13:56:34 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:42513 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752770Ab3LBS4b (ORCPT
+	id S1753073Ab3LBS7H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 13:59:07 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:53002 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752182Ab3LBS7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 13:56:31 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v2 tty-next 1/5] tty: Always handle NULL flag ptr
-Date: Mon,  2 Dec 2013 13:56:03 -0500
-Message-Id: <1386010563-4864-1-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <20131122222040.GA12800@core.coreip.homeip.net>
-References: <20131122222040.GA12800@core.coreip.homeip.net>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Mon, 2 Dec 2013 13:59:04 -0500
+Date: Mon, 02 Dec 2013 13:59:02 -0500 (EST)
+Message-Id: <20131202.135902.408377838919681103.davem@davemloft.net>
+To: agraf@suse.de
+Cc: herbert@gondor.apana.org.au, alexander.h.duyck@intel.com,
+        netdev@vger.kernel.org, edumazet@google.com, herbert@gondor.apana.org,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org
+Subject: Re: gem csum breakage with 018c5bba (Handle CHECKSUM_COMPLETE more
+ adequately ...)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <B8BCE323-6F65-4D14-BD4A-BFA07C3ED290@suse.de>
+References: <B8BCE323-6F65-4D14-BD4A-BFA07C3ED290@suse.de>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 02 Dec 2013 10:59:04 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most line disciplines already handle the undocumented NULL flag
-ptr in their .receive_buf method; however, several don't.
+From: Alexander Graf <agraf@suse.de>
+Date: Fri, 22 Nov 2013 19:08:16 +0100
 
-Document the NULL flag ptr, and correct handling in the
-N_MOUSE, N_GSM0710 and N_R394 line disciplines.
+> With current Linus' master tree my ibook started emitting a lot of
+> annoying csum calculation warnings. I've bisected it down to the
+> commit seen in the subject line, but I suppose the real problem lies
+> somewhere a lot deeper and only gets revealed thanks to the more
+> clever checksum logic applied now.
+> 
+> Any ideas how to dig further into this?
 
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
+Ok, I'm going to revert this commit, for several reasons.
 
-v2 - Uses 0 for no flags to serio layer per Dmitry.
+In addition to the problem you are running into, it just occurred to me
+that if the __pskb_trim() call fails, we'll leave a corrupted checksum
+in the SKB.
 
- drivers/input/serio/serport.c | 28 +++++++++++++++-------------
- drivers/tty/n_gsm.c           |  5 +++--
- drivers/tty/n_r3964.c         |  2 +-
- include/linux/tty_ldisc.h     |  6 ++++--
- 4 files changed, 23 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/input/serio/serport.c b/drivers/input/serio/serport.c
-index 8755f5f..0cb7ef5 100644
---- a/drivers/input/serio/serport.c
-+++ b/drivers/input/serio/serport.c
-@@ -124,7 +124,7 @@ static void serport_ldisc_receive(struct tty_struct *tty, const unsigned char *c
- {
- 	struct serport *serport = (struct serport*) tty->disc_data;
- 	unsigned long flags;
--	unsigned int ch_flags;
-+	unsigned int ch_flags = 0;
- 	int i;
- 
- 	spin_lock_irqsave(&serport->lock, flags);
-@@ -133,18 +133,20 @@ static void serport_ldisc_receive(struct tty_struct *tty, const unsigned char *c
- 		goto out;
- 
- 	for (i = 0; i < count; i++) {
--		switch (fp[i]) {
--		case TTY_FRAME:
--			ch_flags = SERIO_FRAME;
--			break;
--
--		case TTY_PARITY:
--			ch_flags = SERIO_PARITY;
--			break;
--
--		default:
--			ch_flags = 0;
--			break;
-+		if (fp) {
-+			switch (fp[i]) {
-+			case TTY_FRAME:
-+				ch_flags = SERIO_FRAME;
-+				break;
-+
-+			case TTY_PARITY:
-+				ch_flags = SERIO_PARITY;
-+				break;
-+
-+			default:
-+				ch_flags = 0;
-+				break;
-+			}
- 		}
- 
- 		serio_interrupt(serport->serio, cp[i], ch_flags);
-diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index c0f76da..c09db11 100644
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -2269,14 +2269,15 @@ static void gsmld_receive_buf(struct tty_struct *tty, const unsigned char *cp,
- 	char *f;
- 	int i;
- 	char buf[64];
--	char flags;
-+	char flags = TTY_NORMAL;
- 
- 	if (debug & 4)
- 		print_hex_dump_bytes("gsmld_receive: ", DUMP_PREFIX_OFFSET,
- 				     cp, count);
- 
- 	for (i = count, dp = cp, f = fp; i; i--, dp++) {
--		flags = *f++;
-+		if (f)
-+			flags = *f++;
- 		switch (flags) {
- 		case TTY_NORMAL:
- 			gsm->receive(gsm, *dp);
-diff --git a/drivers/tty/n_r3964.c b/drivers/tty/n_r3964.c
-index 1e64050..8b157d6 100644
---- a/drivers/tty/n_r3964.c
-+++ b/drivers/tty/n_r3964.c
-@@ -1244,7 +1244,7 @@ static void r3964_receive_buf(struct tty_struct *tty, const unsigned char *cp,
- {
- 	struct r3964_info *pInfo = tty->disc_data;
- 	const unsigned char *p;
--	char *f, flags = 0;
-+	char *f, flags = TTY_NORMAL;
- 	int i;
- 
- 	for (i = count, p = cp, f = fp; i; i--, p++) {
-diff --git a/include/linux/tty_ldisc.h b/include/linux/tty_ldisc.h
-index f15c898..b8347c2 100644
---- a/include/linux/tty_ldisc.h
-+++ b/include/linux/tty_ldisc.h
-@@ -84,7 +84,8 @@
-  *	processing.  <cp> is a pointer to the buffer of input
-  *	character received by the device.  <fp> is a pointer to a
-  *	pointer of flag bytes which indicate whether a character was
-- *	received with a parity error, etc.
-+ *	received with a parity error, etc. <fp> may be NULL to indicate
-+ *	all data received is TTY_NORMAL.
-  *
-  * void	(*write_wakeup)(struct tty_struct *);
-  *
-@@ -118,7 +119,8 @@
-  *	processing.  <cp> is a pointer to the buffer of input
-  *	character received by the device.  <fp> is a pointer to a
-  *	pointer of flag bytes which indicate whether a character was
-- *	received with a parity error, etc.
-+ *	received with a parity error, etc. <fp> may be NULL to indicate
-+ *	all data received is TTY_NORMAL.
-  *	If assigned, prefer this function for automatic flow control.
-  */
- 
--- 
-1.8.1.2
-
+Thanks for your report.
