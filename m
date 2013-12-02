@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900Ab3LBF7m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 00:59:42 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:53420 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087Ab3LBF7j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 00:59:39 -0500
-Message-ID: <529C21C5.3030007@hitachi.com>
-Date: Mon, 02 Dec 2013 14:59:33 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
+	id S1752908Ab3LBGHk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 01:07:40 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:46760 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751179Ab3LBGHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 01:07:38 -0500
+Date: Mon, 2 Dec 2013 11:37:29 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: David Ahern <dsahern@gmail.com>
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH 1/2] perf probe: Improve error message when function not
- found
-References: <1385942827-11637-1-git-send-email-dsahern@gmail.com>
-In-Reply-To: <1385942827-11637-1-git-send-email-dsahern@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org, namhyung@kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Jiri Olsa <jolsa@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH 2/2] perf sched: Add documentation for timehist options
+Message-ID: <20131202060729.GA28684@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <1385943795-11761-1-git-send-email-dsahern@gmail.com>
+ <1385943795-11761-3-git-send-email-dsahern@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1385943795-11761-3-git-send-email-dsahern@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120206-5806-0000-0000-000023904BB8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/02 9:07), David Ahern wrote:
-> When requesting a function from a userspace library the error message to
-> the user is less than helpful. e.g.,
-> 
->     perf probe -x /lib64/libpthread-2.14.90.so -a 'lock_full=__pthread_mutex_lock_full'
->     no symbols found in /lib64/libpthread-2.14.90.so, maybe install a debug package?
->     Failed to load map.
->        Error: Failed to add events. (-22)
-> 
-> In this cae the symbol really does exist but is a local symbol which is
-> filtered:
-> 
->     nm /lib64/libpthread-2.14.90.so | grep __pthread_mutex_lock_full
->     0000000000005700 t __pthread_mutex_lock_full
-> 
-> With this patch:
->     perf probe -x /lib64/libpthread-2.14.90.so -a 'lock_full=__pthread_mutex_lock_full'
-> 
->     no symbols found in /lib64/libpthread-2.14.90.so, maybe install a debug package?
->     Failed to find function in /lib64/libpthread-2.14.90.so. Perhaps it is a local variable?
+* David Ahern <dsahern@gmail.com> [2013-12-01 17:23:15]:
 
-Hmm, indeed current message is too less information, but your message looks
-wired. I think just showing "Failed to find requested symbol in %s" is enough. :)
+> Add entry to perf-sched documentation for timehist command and its
+> options.
+> 
+> v2: Addressed comments by Namhyung
+> 
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Stephane Eranian <eranian@google.com>
+> Cc: Pekka Enberg <penberg@kernel.org>
+> ---
+>  tools/perf/Documentation/perf-sched.txt | 61 ++++++++++++++++++++++++++++++++-
+>  1 file changed, 60 insertions(+), 1 deletion(-)
+> 
+> diff --git a/tools/perf/Documentation/perf-sched.txt b/tools/perf/Documentation/perf-sched.txt
+> index 8ff4df956951..e7bb19fcdbff 100644
+> --- a/tools/perf/Documentation/perf-sched.txt
+> +++ b/tools/perf/Documentation/perf-sched.txt
+> @@ -8,7 +8,7 @@ perf-sched - Tool to trace/measure scheduler properties (latencies)
+>  SYNOPSIS
+>  --------
+>  [verse]
+> -'perf sched' {record|latency|map|replay|script}
+> +'perf sched' {record|latency|map|replay|script|timehist}
+>  
+>  DESCRIPTION
+>  -----------
+> @@ -36,6 +36,11 @@ There are five variants of perf sched:
 
-Thank you,
+Nit: There are six variants now.
 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+Thanks and Regards
+Srikar Dronamraju
 
