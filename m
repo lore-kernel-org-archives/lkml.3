@@ -1,134 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964Ab3LBIvu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 03:51:50 -0500
-Received: from mail-db9lp0248.outbound.messaging.microsoft.com ([213.199.154.248]:8098
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751132Ab3LBIvt (ORCPT
+	id S1752664Ab3LBJAV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 04:00:21 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:29053 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751170Ab3LBJAU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 03:51:49 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1f42h1ee6h1ce5h1fdah201ch2073h2146h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hzz1de098h8275bh1de097hz31h87h2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1ad9h1b0ah1b2fh224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h129fi1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: <shh.xie@gmail.com>
-To: <davem@davemloft.net>, <jg1.han@samsung.com>, <mugunthanvnm@ti.com>,
-        <f.fainelli@gmail.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <Shaohui.Xie@freescale.com>
-Subject: [PATCH 3/6][v2] phylib: turn genphy_driver to an array
-Date: Mon, 2 Dec 2013 15:30:47 +0800
-Message-ID: <1385969447-17079-1-git-send-email-shh.xie@gmail.com>
-X-Mailer: git-send-email 1.8.4.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Mon, 2 Dec 2013 04:00:20 -0500
+X-AuditID: cbfee61b-b7f166d000007a34-80-529c4c2223d1
+From: Chao Yu <chao2.yu@samsung.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?UTF-8?B?J+iwreWnnSc=?= <shu.tan@samsung.com>
+References: <1385776085-21163-1-git-send-email-jaegeuk.kim@samsung.com>
+ <000201ceef25$e145cec0$a3d16c40$@samsung.com> <1385972094.2417.104.camel@kjgkr>
+In-reply-to: <1385972094.2417.104.camel@kjgkr>
+Subject: RE: [f2fs-dev] [PATCH] f2fs: remove the own bi_private allocation
+Date: Mon, 02 Dec 2013 16:59:28 +0800
+Message-id: <000301ceef3c$ecee00a0$c6ca01e0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQGX/9NZphYaRjZNa5uMOVNLOkn7OgIOjC1XAgEHCL2ajfqOEA==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsVy+t9jQV0lnzlBBrOWyFtc3/WXyeLSIneL
+	PXtPslhc3jWHzaJ14XlmB1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxqY5PYwF
+	10Urdv1fw97AuF6wi5GTQ0LAROLOrV8sELaYxIV769lAbCGB6YwSv7fLQNg/GCUm96eC2GwC
+	KhLLO/4zgdgiAtISsz7NA+tlFpjNKLF5tmMXIxdQ/UxGiZd/esASnAJ6Egs61zCD2MICXhIN
+	p96xg9gsAqoSPW+vgMV5BSwlmu98Y4OwBSV+TL4HNVRdYtK8RcwQtrbEk3cXWCEOVZDYcfY1
+	I8QRThK7/syCqheX2HjkFssERqFZSEbNQjJqFpJRs5C0LGBkWcUomlqQXFCclJ5rpFecmFtc
+	mpeul5yfu4kRHAPPpHcwrmqwOMQowMGoxMN74cTsICHWxLLiytxDjBIczEoivCx/gUK8KYmV
+	ValF+fFFpTmpxYcYpTlYlMR5D7ZaBwoJpCeWpGanphakFsFkmTg4pRoYS1arr5yx9qdAcPtf
+	I07psqMvnvkxC5g+VJUxiqpxN7I0uVXw7Jy7491ogQeyrsXJ+WfDq6p6Vx1eYhIScLMrYInu
+	tL0ai/wZU3e27YzVVf65ZDqXUfWMU3qfFDJrIiTS7nDFqW/i8rLe+/fyBdtjfI/6L/zUrat6
+	w3/W3emQBNOx9eyXNKOVWIozEg21mIuKEwHLwIq+fQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shaohui Xie <Shaohui.Xie@freescale.com>
+Hi Kim,
 
-Then other generic phy driver such as generic 10g phy driver can join it.
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> Sent: Monday, December 02, 2013 4:15 PM
+> To: Chao Yu
+> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net; 谭姝
+> Subject: RE: [f2fs-dev] [PATCH] f2fs: remove the own bi_private allocation
+> 
+> 2013-12-02 (월), 14:14 +0800, Chao Yu:
+> > Hi Kim,
+> >
+> > > -----Original Message-----
+> > > From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> > > Sent: Saturday, November 30, 2013 9:48 AM
+> > > Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net
+> > > Subject: [f2fs-dev] [PATCH] f2fs: remove the own bi_private allocation
+> > >
+> > > Previously f2fs allocates its own bi_private data structure all the time even
+> > > though we don't use it. But, can we remove this bi_private allocation?
+> > >
+> > > This patch removes such the additional bi_private allocation.
+> > >
+> > > 1. Retrieve f2fs_sb_info from its page->mapping->host->i_sb.
+> > >  - This removes the usecases of bi_private in end_io.
+> > >
+> > > 2. Use bi_private only when we really need it.
+> > >  - The bi_private is used only when the checkpoint procedure is conducted.
+> > >  - When conducting the checkpoint, f2fs submits a META_FLUSH bio to wait its bio
+> > > completion.
+> > >  - Since we have no dependancies to remove bi_private now, let's just use
+> > >  bi_private pointer as the completion pointer.
+> > >
+> > > Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> > > ---
+> > >  fs/f2fs/segment.c | 43 ++++++++++++++++---------------------------
+> > >  fs/f2fs/segment.h |  7 -------
+> > >  2 files changed, 16 insertions(+), 34 deletions(-)
+> > >
+> > > diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+> > > index 0387863..0db4027 100644
+> > > --- a/fs/f2fs/segment.c
+> > > +++ b/fs/f2fs/segment.c
+> > > @@ -791,7 +791,7 @@ static void f2fs_end_io_write(struct bio *bio, int err)
+> > >  {
+> > >  	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+> > >  	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
+> > > -	struct bio_private *p = bio->bi_private;
 
-Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
----
-v2 changes: add break if find a match in unbind.
+		f2fs_bug_on(unlikely(!bvec->bv_page->mapping));
 
- drivers/net/phy/phy_device.c | 29 +++++++++++++++++++++--------
- 1 file changed, 21 insertions(+), 8 deletions(-)
+> > > +	struct f2fs_sb_info *sbi = F2FS_SB(bvec->bv_page->mapping->host->i_sb);
+> >
+> > I'm not sure whether bvec->bv_page->mapping will be set to NULL in the flow
+> > where may not check WRITEBACK flag of page. Is it possible?
+> 
+> The mapping should be not NULL cause it is a writebacking page.
+> Otherwise, it's a bug.
 
-diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
-index d6447b3..748bf07 100644
---- a/drivers/net/phy/phy_device.c
-+++ b/drivers/net/phy/phy_device.c
-@@ -53,7 +53,12 @@ static void phy_device_release(struct device *dev)
- 	kfree(to_phy_device(dev));
- }
- 
--static struct phy_driver genphy_driver;
-+enum genphy_driver {
-+	GENPHY_DRV_1G,
-+	GENPHY_DRV_MAX
-+};
-+
-+static struct phy_driver genphy_driver[GENPHY_DRV_MAX];
- extern int mdio_bus_init(void);
- extern void mdio_bus_exit(void);
- 
-@@ -539,7 +544,7 @@ static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
- 			return -ENODEV;
- 		}
- 
--		d->driver = &genphy_driver.driver;
-+		d->driver = &genphy_driver[GENPHY_DRV_1G].driver;
- 
- 		err = d->driver->probe(d);
- 		if (err >= 0)
-@@ -613,6 +618,7 @@ EXPORT_SYMBOL(phy_attach);
-  */
- void phy_detach(struct phy_device *phydev)
- {
-+	int i;
- 	phydev->attached_dev->phydev = NULL;
- 	phydev->attached_dev = NULL;
- 
-@@ -620,8 +626,12 @@ void phy_detach(struct phy_device *phydev)
- 	 * was using the generic driver), we unbind the device
- 	 * from the generic driver so that there's a chance a
- 	 * real driver could be loaded */
--	if (phydev->dev.driver == &genphy_driver.driver)
--		device_release_driver(&phydev->dev);
-+	for (i = 0; i < ARRAY_SIZE(genphy_driver); i++) {
-+		if (phydev->dev.driver == &genphy_driver[i].driver) {
-+			device_release_driver(&phydev->dev);
-+			break;
-+		}
-+	}
- }
- EXPORT_SYMBOL(phy_detach);
- 
-@@ -1116,7 +1126,8 @@ void phy_drivers_unregister(struct phy_driver *drv, int n)
- }
- EXPORT_SYMBOL(phy_drivers_unregister);
- 
--static struct phy_driver genphy_driver = {
-+static struct phy_driver genphy_driver[] = {
-+{
- 	.phy_id		= 0xffffffff,
- 	.phy_id_mask	= 0xffffffff,
- 	.name		= "Generic PHY",
-@@ -1127,7 +1138,7 @@ static struct phy_driver genphy_driver = {
- 	.suspend	= genphy_suspend,
- 	.resume		= genphy_resume,
- 	.driver		= {.owner= THIS_MODULE, },
--};
-+} };
- 
- static int __init phy_init(void)
- {
-@@ -1137,7 +1148,8 @@ static int __init phy_init(void)
- 	if (rc)
- 		return rc;
- 
--	rc = phy_driver_register(&genphy_driver);
-+	rc = phy_drivers_register(genphy_driver,
-+				  ARRAY_SIZE(genphy_driver));
- 	if (rc)
- 		mdio_bus_exit();
- 
-@@ -1146,7 +1158,8 @@ static int __init phy_init(void)
- 
- static void __exit phy_exit(void)
- {
--	phy_driver_unregister(&genphy_driver);
-+	phy_drivers_unregister(genphy_driver,
-+			       ARRAY_SIZE(genphy_driver));
- 	mdio_bus_exit();
- }
- 
--- 
-1.8.4.1
+If so, should we add additional code as above?
 
+Regards,
+Yu
+
+> Thanks,
+> 
+> --
+> Jaegeuk Kim
+> Samsung
 
