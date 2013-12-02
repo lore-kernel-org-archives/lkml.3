@@ -1,180 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752888Ab3LBEDv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 23:03:51 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:19927 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752782Ab3LBEDs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 23:03:48 -0500
-X-AuditID: cbfee68f-b7f336d00000481b-80-529c06a22212
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Guenter Roeck'" <linux@roeck-us.net>, "'Joe Perches'" <joe@perches.com>
-Cc: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Andy Whitcroft'" <apw@canonical.com>, linux-serial@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <000601ceebdc$ee148de0$ca3da9a0$%han@samsung.com>
- <20131128040750.GA29917@kroah.com>
- <006001ceebfa$c85a1020$590e3060$%han@samsung.com>
- <1385617213.12210.5.camel@joe-AO722> <20131128055328.GA565@kroah.com>
- <1385619863.12210.14.camel@joe-AO722> <529C026E.2000302@roeck-us.net>
- <000f01ceef11$a14acf00$e3e06d00$%han@samsung.com>
- <529C04C7.9050506@roeck-us.net>
-In-reply-to: <529C04C7.9050506@roeck-us.net>
-Subject: Re: [PATCH 1/5] serial: 8250_pci: use DEFINE_PCI_DEVICE_TABLE macro
-Date: Mon, 02 Dec 2013 13:03:46 +0900
-Message-id: <001001ceef13$7fa3ee70$7eebcb50$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7vEmcwdTErvnjMSfKY6qsDu+Y6lwAANRkQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDIsWRmVeSWpSXmKPExsVy+t8zI91FbHOCDBav0beYs34Nm8WHtRoW
-	S5oyLJoXr2ezuLzwEqvF7PuPWSwu75rDZnF23nE2izOLe9ktniw8w+TA5TGroZfNY8GmUo8T
-	M36zeOyfu4bd48uqa8weO783sHv0bVnF6PF5k1wARxSXTUpqTmZZapG+XQJXxuY5JxgLlipX
-	XDi+kbGBsVmmi5GTQ0LARGLz8ndMELaYxIV769m6GLk4hASWMUp83HSdpYuRA6zo1rRKiPh0
-	RokJOx6zgTQICfxilPh7XxvEZhNQk/jy5TA7iC0i4Clx5sJ6RpAGZoFNTBJf7nxkh+j+wyTx
-	48VNsG5OAR2JnzcegnUIC/hILN4+FewMFgFVicer17GA2LwCthLn7k9ghrAFJX5MvgcWZxbQ
-	kli/8zgThC0vsXnNW2aIS9UlHv3VhTjCSGLNnK/MECUiEvtevGOE+HIqh8TS9+oQqwQkvk0+
-	BPWkrMSmA8wQJZISB1fcYJnAKDELyeJZSBbPQrJ4FpINCxhZVjGKphYkFxQnpRcZ6xUn5haX
-	5qXrJefnbmKExHz/Dsa7B6wPMSYDrZ/ILCWanA9MGXkl8YbGZkYWpiamxkbmlmakCSuJ895/
-	mBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgbHsQ7JCknPgQsN1XU6td/42PX1/8k3RT+7o
-	SCaBnunBd8/UV/RkSfm6f/zBtOjIb4af79k0BOUk7R+wKaVvYq8/emiS5011ly6n2VambS6d
-	BaL5IfP8j55+9u368lZWfYWpOhMKSpnzBMtDfjeu3Fl95fKSVUc8NAP9Gt+rXDa4rOUV06V7
-	QomlOCPRUIu5qDgRAPfwsiQPAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFKsWRmVeSWpSXmKPExsVy+t9jQd1FbHOCDBr+alrMWb+GzeLDWg2L
-	JU0ZFs2L17NZXF54idVi9v3HLBaXd81hszg77zibxZnFvewWTxaeYXLg8pjV0MvmsWBTqceJ
-	Gb9ZPPbPXcPu8WXVNWaPnd8b2D36tqxi9Pi8SS6AI6qB0SYjNTEltUghNS85PyUzL91WyTs4
-	3jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6EQlhbLEnFKgUEBicbGSvh2mCaEhbroWMI0R
-	ur4hQXA9RgZoIGEdY8bmOScYC5YqV1w4vpGxgbFZpouRg0NCwETi1rTKLkZOIFNM4sK99Wxd
-	jFwcQgLTGSUm7HjMBpIQEvjFKPH3vjaIzSagJvHly2F2EFtEwFPizIX1jCANzAKbmCS+3PnI
-	DtH9h0nix4ubYN2cAjoSP288BOsQFvCRWLx9KhOIzSKgKvF49ToWEJtXwFbi3P0JzBC2oMSP
-	yffA4swCWhLrdx5ngrDlJTavecsMcbW6xKO/uhBHGEmsmfOVGaJERGLfi3eMExiFZiGZNAvJ
-	pFlIJs1C0rKAkWUVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnBKeSa9g3FVg8UhRgEORiUe
-	3gsnZgcJsSaWFVfmHmKU4GBWEuFl+QsU4k1JrKxKLcqPLyrNSS0+xJgM9OhEZinR5Hxgussr
-	iTc0NjEzsjQyszAyMTcnTVhJnPdgq3WgkEB6YklqdmpqQWoRzBYmDk4pYJS2Kp6//zhnasSO
-	Vq1KrePFq+ZVWksvnNA494JU1O+82AQJjenSd4/y9l37lftGqy4sqi6WZ6p3HMtW1e3lviEt
-	KmE3WZZlfba/ZxFSLLT71stGoZnv101Vm3NWd1b7416OvfFnU3etNyiN4dnCMe2/w28+f82E
-	GTZT9mSZ8Mj2tHHU7d/5S4mlOCPRUIu5qDgRAKDQa/VtAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752911Ab3LBEEg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 23:04:36 -0500
+Received: from ozlabs.org ([203.10.76.45]:40421 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752439Ab3LBEEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Dec 2013 23:04:33 -0500
+Date: Mon, 2 Dec 2013 15:04:22 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>, Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kent Overstreet <kmo@daterainc.com>
+Subject: linux-next: manual merge of the block tree with the f2fs tree
+Message-Id: <20131202150422.f3c9db7e38f91f92d67c3149@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__2_Dec_2013_15_04_22_+1100_T+rnNf2MV6tew7Im"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 02, 2013 12:56 PM, Guenter Roeck wrote:
-> On 12/01/2013 07:50 PM, Jingoo Han wrote:
-> > On Monday, December 02, 2013 12:46 PM, Guenter Roeck wrote:
-> >> On 12/01/2013 04:07 PM, Jingoo Han wrote:
-> >>> On Friday, November 29, 2013 10:34 AM, Jingoo Han wrote:
-> >>>> On Thursday, November 28, 2013 3:24 PM, Joe Perches wrote:
-> >>>>> On Wed, 2013-11-27 at 21:53 -0800, 'Greg Kroah-Hartman' wrote:
-> >>>>>> On Wed, Nov 27, 2013 at 09:40:13PM -0800, Joe Perches wrote:
-> >>>>>>> On Thu, 2013-11-28 at 14:29 +0900, Jingoo Han wrote:
-> >>>>>>>> On Thursday, November 28, 2013 1:08 PM, Greg Kroah-Hartman wrote:
-> >>>>>>>>> On Thu, Nov 28, 2013 at 10:55:35AM +0900, Jingoo Han wrote:
-> >>>>>>>>>> This macro is used to create a struct pci_device_id array.
-> >>>>>>>>>
-> >>>>>>>>> Yeah, and it's a horrid macro that deserves to be removed, please don't
-> >>>>>>>>> use it in more places.
-> >>>>>>>>>
-> >>>>>>>>> Actually, if you could just remove it, that would be best, sorry, I'm
-> >>>>>>>>> not going to take these patches.
-> >>>>>>>>
-> >>>>>>>> (+cc Joe Perches, Andrew Morton, Andy Whitcroft)
-> >>>>>>>>
-> >>>>>>>> Hi Joe Perches,
-> >>>>>>>>
-> >>>>>>>> Would you fix checkpatch.pl about DEFINE_PCI_DEVICE_TABLE?
-> >>>>>>>> Currently, checkpatch.pl guides to use DEFINE_PCI_DEVICE_TABLE
-> >>>>>>>> as below.
-> >>>>>>>>
-> >>>>>>>>     WARNING: Use DEFINE_PCI_DEVICE_TABLE for struct pci_device_id
-> >>>>>>>>     #331: FILE: drivers/usb/host/ehci-pci.c:331:
-> >>>>>>>>     +static const struct pci_device_id pci_ids [] = { {
-> >>>>>>>>
-> >>>>>>>> However, Greg Kroah-Hartman mentioned that DEFINE_PCI_DEVICE_TABLE
-> >>>>>>>> shouldn't be used anymore.
-> >>>>>>>>
-> >>>>>>>> So, would you change checkpatch.pl in order to guide to use
-> >>>>>>>> struct pci_device_id instead of DEFINE_PCI_DEVICE_TABLE?
-> >>>>>>>>
-> >>>>>>>> For example,
-> >>>>>>>>     WARNING: Use struct pci_device_id instead of DEFINE_PCI_DEVICE_TABLE
-> >>>>>>>
-> >>>>>>> The documentation doesn't agree with Greg.
-> >>>>> []
-> >>>>>> I say just remove it, I should have done that years ago when I was the
-> >>>>>> PCI maintainer, just never got around to it.  No other bus has something
-> >>>>>> like this for their device ids, why should PCI be "special"?
-> >>>>>
-> >>>>> Anyone else have an opinion?
-> >>>>>
-> >>>>> I don't care one way or another, but please, one way
-> >>>>> not two.
-> >>>>
-> >>
-> >> Same here.
-> >>
-> >>>> (+cc Bjorn Helgaas, linux-pci)
-> >>>>
-> >>>> Then, how about the following steps?
-> >>>>
-> >>>> 1. Fix ./Documentation/PCI/pci.txt as below.
-> >>>>      (Jingoo Han)
-> >>>>      The ID table is an array of struct pci_device_id entries ending with an
-> >>>>      -all-zero entry; use of the macro DEFINE_PCI_DEVICE_TABLE is the preferred
-> >>>>      -method of declaring the table.  Each entry consists of:
-> >>>>      +all-zero entry; Each entry consists of:
-> >>>>
-> >>>> 2. Fix ./scripts/checkpatch.pl in order to guide to use
-> >>>>       struct pci_device_id instead of DEFINE_PCI_DEVICE_TABLE.
-> >>>>       (Joe Perches)
-> >>>
-> >>> If all DEFINE_PCI_DEVICE_TABLEs are replaced with 'const struct pci_device_id'
-> >>> and these patches are merged through 'driver-core.git', it will be not
-> >>> necessary to fix ./scripts/checkpatch.pl.
-> >>>
-> >> Why not ?
-> >
-> > I will replace all DEFINE_PCI_DEVICE_TABLEs with 'const struct pci_device_id',
-> > and remove the definition of DEFINE_PCI_DEVICE_TABLE macro.
-> >
-> > --- a/include/linux/pci.h
-> > +++ b/include/linux/pci.h
-> > @@ -631,16 +631,6 @@ struct pci_driver {
-> >   #define        to_pci_driver(drv) container_of(drv, struct pci_driver, driver)
-> >
-> >   /**
-> > - * DEFINE_PCI_DEVICE_TABLE - macro used to describe a pci device table
-> > - * @_table: device table name
-> > - *
-> > - * This macro is used to create a struct pci_device_id array (a device table)
-> > - * in a generic manner.
-> > - */
-> > -#define DEFINE_PCI_DEVICE_TABLE(_table) \
-> > -       const struct pci_device_id _table[]
-> > -
-> > -/**
-> >
-> > In this case, there is no DEFINE_PCI_DEVICE_TABLE usage
-> > in the kernel. If someone uses DEFINE_PCI_DEVICE_TABLE macro,
-> > it will make  build error.
-> >
-> 
-> And that will make the checkpatch warning go away ?
-> That seems to be very unlikely.
+--Signature=_Mon__2_Dec_2013_15_04_22_+1100_T+rnNf2MV6tew7Im
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-OK, I will ask Joe Perches to remove the following checkpatch
-warning.
+Hi Jens,
 
-    WARNING: Use DEFINE_PCI_DEVICE_TABLE for struct pci_device_id
+Today's linux-next merge of the block tree got conflicts in
+fs/f2fs/data.c and fs/f2fs/segment.c between commits 0626804cd9a6 ("f2fs:
+remove the own bi_private allocation") and 899d7625d85a ("f2fs: refactor
+bio-related operations") from the f2fs tree and commits 2c30c71bd653
+("block: Convert various code to bio_for_each_segment()") and  ("block:
+Abstract out bvec iterator") from the block tree.
 
-Best regards,
-Jingoo Han
+I fixed it up (hopefully - see below - the handling of sbi in
+f2fs_end_io_write is not the best) and can carry the fix as necessary (no
+action is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc fs/f2fs/data.c
+index 53e3bbbba7ed,a2c8de8ba6ce..b62a99cf6561
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@@ -25,205 -25,6 +25,201 @@@
+  #include <trace/events/f2fs.h>
+ =20
+  /*
+ + * Low-level block read/write IO operations.
+ + */
+ +static struct bio *__bio_alloc(struct block_device *bdev, int npages)
+ +{
+ +	struct bio *bio;
+ +
+ +	/* No failure on bio allocation */
+ +	bio =3D bio_alloc(GFP_NOIO, npages);
+ +	bio->bi_bdev =3D bdev;
+ +	bio->bi_private =3D NULL;
+ +	return bio;
+ +}
+ +
+ +static void f2fs_read_end_io(struct bio *bio, int err)
+ +{
+- 	const int uptodate =3D test_bit(BIO_UPTODATE, &bio->bi_flags);
+- 	struct bio_vec *bvec =3D bio->bi_io_vec + bio->bi_vcnt - 1;
+++	struct bio_vec *bvec;
+++	int i;
+ +
+- 	do {
+++	bio_for_each_segment_all(bvec, bio, i) {
+ +		struct page *page =3D bvec->bv_page;
+ +
+- 		if (--bvec >=3D bio->bi_io_vec)
+- 			prefetchw(&bvec->bv_page->flags);
+-=20
+- 		if (uptodate) {
+++		if (!err) {
+ +			SetPageUptodate(page);
+ +		} else {
+ +			ClearPageUptodate(page);
+ +			SetPageError(page);
+ +		}
+ +		unlock_page(page);
+- 	} while (bvec >=3D bio->bi_io_vec);
+++	}
+ +
+ +	bio_put(bio);
+ +}
+ +
+ +static void f2fs_write_end_io(struct bio *bio, int err)
+ +{
+- 	const int uptodate =3D test_bit(BIO_UPTODATE, &bio->bi_flags);
+- 	struct bio_vec *bvec =3D bio->bi_io_vec + bio->bi_vcnt - 1;
+- 	struct f2fs_sb_info *sbi =3D F2FS_SB(bvec->bv_page->mapping->host->i_sb);
+++	struct f2fs_sb_info *sbi =3D NULL;
+++	struct bio_vec *bvec;
+++	int i;
+ +
+- 	do {
+++	bio_for_each_segment_all(bvec, bio, i) {
+ +		struct page *page =3D bvec->bv_page;
+ +
+- 		if (--bvec >=3D bio->bi_io_vec)
+- 			prefetchw(&bvec->bv_page->flags);
+-=20
+- 		if (!uptodate) {
+++		if (!sbi)
+++			sbi =3D F2FS_SB(bvec->bv_page->mapping->host->i_sb);
+++		if (err) {
+ +			SetPageError(page);
+ +			set_bit(AS_EIO, &page->mapping->flags);
+ +			set_ckpt_flags(sbi->ckpt, CP_ERROR_FLAG);
+ +			sbi->sb->s_flags |=3D MS_RDONLY;
+ +		}
+ +		end_page_writeback(page);
+ +		dec_page_count(sbi, F2FS_WRITEBACK);
+- 	} while (bvec >=3D bio->bi_io_vec);
+++	}
+ +
+ +	if (bio->bi_private)
+ +		complete(bio->bi_private);
+ +
+ +	if (!get_pages(sbi, F2FS_WRITEBACK) &&
+ +			!list_empty(&sbi->cp_wait.task_list))
+ +		wake_up(&sbi->cp_wait);
+ +
+ +	bio_put(bio);
+ +}
+ +
+ +static void __submit_merged_bio(struct f2fs_sb_info *sbi,
+ +				struct f2fs_bio_info *io,
+ +				enum page_type type, bool sync, int rw)
+ +{
+ +	enum page_type btype =3D PAGE_TYPE_OF_BIO(type);
+ +
+ +	if (!io->bio)
+ +		return;
+ +
+ +	if (btype =3D=3D META)
+ +		rw |=3D REQ_META;
+ +
+ +	if (is_read_io(rw)) {
+ +		if (sync)
+ +			rw |=3D READ_SYNC;
+ +		submit_bio(rw, io->bio);
+ +		trace_f2fs_submit_read_bio(sbi->sb, rw, type, io->bio);
+ +		io->bio =3D NULL;
+ +		return;
+ +	}
+ +
+ +	if (sync)
+ +		rw |=3D WRITE_SYNC;
+ +	if (type >=3D META_FLUSH)
+ +		rw |=3D WRITE_FLUSH_FUA;
+ +
+ +	/*
+ +	 * META_FLUSH is only from the checkpoint procedure, and we should wait
+ +	 * this metadata bio for FS consistency.
+ +	 */
+ +	if (type =3D=3D META_FLUSH) {
+ +		DECLARE_COMPLETION_ONSTACK(wait);
+ +		io->bio->bi_private =3D &wait;
+ +		submit_bio(rw, io->bio);
+ +		wait_for_completion(&wait);
+ +	} else {
+ +		submit_bio(rw, io->bio);
+ +	}
+ +	trace_f2fs_submit_write_bio(sbi->sb, rw, btype, io->bio);
+ +	io->bio =3D NULL;
+ +}
+ +
+ +void f2fs_submit_merged_bio(struct f2fs_sb_info *sbi,
+ +				enum page_type type, bool sync, int rw)
+ +{
+ +	enum page_type btype =3D PAGE_TYPE_OF_BIO(type);
+ +	struct f2fs_bio_info *io;
+ +
+ +	io =3D is_read_io(rw) ? &sbi->read_io : &sbi->write_io[btype];
+ +
+ +	mutex_lock(&io->io_mutex);
+ +	__submit_merged_bio(sbi, io, type, sync, rw);
+ +	mutex_unlock(&io->io_mutex);
+ +}
+ +
+ +/*
+ + * Fill the locked page with data located in the block address.
+ + * Return unlocked page.
+ + */
+ +int f2fs_submit_page_bio(struct f2fs_sb_info *sbi, struct page *page,
+ +					block_t blk_addr, int rw)
+ +{
+ +	struct block_device *bdev =3D sbi->sb->s_bdev;
+ +	struct bio *bio;
+ +
+ +	trace_f2fs_submit_page_bio(page, blk_addr, rw);
+ +
+ +	/* Allocate a new bio */
+ +	bio =3D __bio_alloc(bdev, 1);
+ +
+ +	/* Initialize the bio */
+- 	bio->bi_sector =3D SECTOR_FROM_BLOCK(sbi, blk_addr);
+++	bio->bi_iter.bi_sector =3D SECTOR_FROM_BLOCK(sbi, blk_addr);
+ +	bio->bi_end_io =3D is_read_io(rw) ? f2fs_read_end_io : f2fs_write_end_io;
+ +
+ +	if (bio_add_page(bio, page, PAGE_CACHE_SIZE, 0) < PAGE_CACHE_SIZE) {
+ +		bio_put(bio);
+ +		f2fs_put_page(page, 1);
+ +		return -EFAULT;
+ +	}
+ +
+ +	submit_bio(rw, bio);
+ +	return 0;
+ +}
+ +
+ +void f2fs_submit_page_mbio(struct f2fs_sb_info *sbi, struct page *page,
+ +			block_t blk_addr, enum page_type type, int rw)
+ +{
+ +	enum page_type btype =3D PAGE_TYPE_OF_BIO(type);
+ +	struct block_device *bdev =3D sbi->sb->s_bdev;
+ +	struct f2fs_bio_info *io;
+ +	int bio_blocks;
+ +
+ +	io =3D is_read_io(rw) ? &sbi->read_io : &sbi->write_io[btype];
+ +
+ +	verify_block_addr(sbi, blk_addr);
+ +
+ +	mutex_lock(&io->io_mutex);
+ +
+ +	if (!is_read_io(rw))
+ +		inc_page_count(sbi, F2FS_WRITEBACK);
+ +
+ +	if (io->bio && io->last_block_in_bio !=3D blk_addr - 1)
+ +		__submit_merged_bio(sbi, io, type, true, rw);
+ +alloc_new:
+ +	if (io->bio =3D=3D NULL) {
+ +		bio_blocks =3D MAX_BIO_BLOCKS(max_hw_blocks(sbi));
+ +		io->bio =3D __bio_alloc(bdev, bio_blocks);
+- 		io->bio->bi_sector =3D SECTOR_FROM_BLOCK(sbi, blk_addr);
+++		io->bio->bi_iter.bi_sector =3D SECTOR_FROM_BLOCK(sbi, blk_addr);
+ +		io->bio->bi_end_io =3D is_read_io(rw) ? f2fs_read_end_io :
+ +							f2fs_write_end_io;
+ +		/*
+ +		 * The end_io will be assigned at the sumbission phase.
+ +		 * Until then, let bio_add_page() merge consecutive IOs as much
+ +		 * as possible.
+ +		 */
+ +	}
+ +
+ +	if (bio_add_page(io->bio, page, PAGE_CACHE_SIZE, 0) <
+ +							PAGE_CACHE_SIZE) {
+ +		__submit_merged_bio(sbi, io, type, true, rw);
+ +		io->bio =3D NULL;
+ +		goto alloc_new;
+ +	}
+ +
+ +	io->last_block_in_bio =3D blk_addr;
+ +
+ +	mutex_unlock(&io->io_mutex);
+ +	trace_f2fs_submit_page_mbio(page, rw, type, blk_addr);
+ +}
+ +
+ +/*
+   * Lock ordering for the change of data block address:
+   * ->data_page
+   *  ->node_page
+
+--Signature=_Mon__2_Dec_2013_15_04_22_+1100_T+rnNf2MV6tew7Im
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSnAbKAAoJEMDTa8Ir7ZwVSE0P+gIkrIRJ9Ny6wSpx2MlNeu7y
+Br5iwP4MF9RDf9rH0odlrlSR1x2NWYaAsq75QIF4aX5+S1MaELs8kW71N9g9styK
+wCgh4jmenzGuUoUtnbsiAiP1oiCljY9jyDLhW5+xqWWx0y4IisibvDsrS4vXuiHJ
+R8gw8ea3k9otBMMA/KNjNh7nGx6Avz7xz5CeEgH500J9UR8ClDhQN4TtEeMFhgbK
+lzElsNIAJedThzkRZm/V046q7MxZ1uJw5boYJIc2ghq40puN/HBk8zSSlNQXbTdc
+DPn4F81T9Qnm58Telew5wFEBsApaiQsa+7umTa4utMgOqRWe6FeQkQNFZbrt9uLK
+Nhabienz7OfxlQ4dwLF6mn9uyCrJZKHb/486xX+Jvmgo6aWvnDkvAJGT96AHFCml
+KFaA05Jb7LP9bVQ1H33yUUFC5nccTcJauy6SrDyR63wZd3oYHojpy2UI9cEcqbt5
+OOEXS638rXCkNB3xtQXVnE2+55IGK8sF0ay54LR5A2RQMzza3XEZMXwzeQu5zf8c
+OMhwqeX8DvOEiRvnhuN2fQfOZCDXK/cmmDX3VINbwSay2s7Ku6aBfkKc5IXB4x/E
+ybzpxZEzgIM3fgbJ1JPLmhTnqsl9ngbNw6XAEznLQb1DPgLbJltKzCLg9xRxR3rr
+fWGpoB1pMXIMoRbl92jO
+=M0bA
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__2_Dec_2013_15_04_22_+1100_T+rnNf2MV6tew7Im--
