@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759698Ab3LBVUp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:20:45 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:37720 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756768Ab3LBVUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 16:20:03 -0500
-Date: Mon, 2 Dec 2013 22:19:58 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Brecht Machiels <brecht@mos6581.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        Heinz Wiesinger <HMWiesinger@gmx.at>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [REGRESSION] 41c7f74 rtc: Disable the alarm in the hardware (v2)
-Message-ID: <20131202211958.GE7380@pd.tnic>
-References: <20131201220343.2285b12ee1c1e54252dc7dd9@mos6581.org>
- <529CF1D5.6010406@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <529CF1D5.6010406@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759618Ab3LBVTr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:19:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38406 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753599Ab3LBTMr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 14:12:47 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Nico Golde <nico@ngolde.de>, Dan Carpenter <dan.carpenter@oracle.com>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        "Kanigeri, Hari" <h-kanigeri2@ti.com>,
+        Ameya Palande <ameya.palande@nokia.com>,
+        "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
+        "Hebbar, Shivananda" <x0hebbar@ti.com>,
+        "Ramos Falcon, Ernesto" <ernesto@ti.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        "Anna, Suman" <s-anna@ti.com>, "Gupta, Ramesh" <grgupta@ti.com>,
+        "Gomez Castellanos, Ivan" <ivan.gomez@ti.com>,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+        Armando Uribe De Leon <x0095078@ti.com>,
+        Deepak Chitriki <deepak.chitriki@ti.com>,
+        "Menon, Nishanth" <nm@ti.com>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [PATCH 3.10 009/173] Staging: tidspbridge: disable driver
+Date: Mon,  2 Dec 2013 11:09:52 -0800
+Message-Id: <20131202191143.997826119@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
+References: <20131202191142.873808297@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 12:47:17PM -0800, John Stultz wrote:
-> Ok, sorry about this. I've been hoping we'd get some better insight
-> into what's actually happening on these strange BIOSes where disabling
-> the irq seems to cause it to scream (powering the system back on when
-> its shutdown), in the hopes of having a proper workaround. But despite
-> Borislav's efforts, he didn't seem to be able to root cause the issue.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Right, this bug is too nasty - you could generate good random numbers
-just from how the hardware behaves. :) And I've been trying to make
-sense of what happens but I failed, as you know. :(
+------------------
 
-I consider it a huge waste of time and efforts having to deal with such
-b0rked hardware instead of throwing it out of the window into the poring
-rain while it is still powered.
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-> Borislav, could you double check this patch still works on your
-> hardware as well?
+commit 930ba4a374b96560ef9fde2145cdc454a164ddcc upstream.
 
-Well, we have the patch in SLES11:
+There seems to be no active maintainer for the driver, and there is an
+unfixed security bug, so disable the driver for now.
 
-http://kernel.opensuse.org/cgit/kernel/commit/?h=SLE11-SP3&id=835398eb94dca7d55acd1a2628372e602ae3252a
+Hopefully someone steps up to be the maintainer, and works to get this
+out of staging, otherwise it will be deleted soon.
 
-and it passed testing.
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Omar Ramirez Luna <omar.ramirez@copitl.com>
+Cc: Omar Ramirez Luna <omar.ramirez@ti.com>
+Cc: Kanigeri, Hari <h-kanigeri2@ti.com>
+Cc: Ameya Palande <ameya.palande@nokia.com>
+Cc: Guzman Lugo, Fernando <fernando.lugo@ti.com>
+Cc: Hebbar, Shivananda <x0hebbar@ti.com>
+Cc: Ramos Falcon, Ernesto <ernesto@ti.com>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Anna, Suman <s-anna@ti.com>
+Cc: Gupta, Ramesh <grgupta@ti.com>
+Cc: Gomez Castellanos, Ivan <ivan.gomez@ti.com>
+Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Cc: Armando Uribe De Leon <x0095078@ti.com>
+Cc: Deepak Chitriki <deepak.chitriki@ti.com>
+Cc: Menon, Nishanth <nm@ti.com>
+Cc: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
->From what I see below, your version is equivalent to the one above
-with the logic reversed so it should work. I'll still try to get that
-affected box and run your version on it but it'll take a while.
+---
+ drivers/staging/tidspbridge/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks.
+--- a/drivers/staging/tidspbridge/Kconfig
++++ b/drivers/staging/tidspbridge/Kconfig
+@@ -4,7 +4,7 @@
+ 
+ menuconfig TIDSPBRIDGE
+ 	tristate "DSP Bridge driver"
+-	depends on ARCH_OMAP3 && !ARCH_MULTIPLATFORM
++	depends on ARCH_OMAP3 && !ARCH_MULTIPLATFORM && BROKEN
+ 	select OMAP_MBOX_FWK
+ 	help
+ 	  DSP/BIOS Bridge is designed for platforms that contain a GPP and
 
--- 
-Regards/Gruss,
-    Boris.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
