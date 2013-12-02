@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab3LBTxR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:53:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39165 "EHLO
+	id S932065Ab3LBTxi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:53:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39383 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754745Ab3LBTSQ (ORCPT
+	with ESMTP id S1754625Ab3LBTSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:16 -0500
+	Mon, 2 Dec 2013 14:18:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tim Harvey <tharvey@gateworks.com>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.12 121/212] regulator: pfuze100: allow misprogrammed ID
-Date: Mon,  2 Dec 2013 11:15:12 -0800
-Message-Id: <20131202191300.626967701@linuxfoundation.org>
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 3.12 119/212] n_tty: Ensure reader restarts worker for next reader
+Date: Mon,  2 Dec 2013 11:15:10 -0800
+Message-Id: <20131202191300.431715789@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,41 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tim Harvey <tharvey@gateworks.com>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit 88baf7148e899db7e0b676e4363647f50e48eaed upstream.
+commit 42458f41d08f0873299e830464c1232a6839297d upstream.
 
-prior to week 08 of 2013 Freescale misprogrammed between 1 and 3% of
-PFUZE1000 parts with a ID=0x8 instead of the expected ID=0x0
+A departing reader must restart a flush_to_ldisc() worker _before_
+the next reader enters the read loop; this is to avoid the new reader
+concluding no more i/o is available and prematurely exiting, when the
+old reader simply hasn't re-started the worker yet.
 
-Signed-off-by: Tim Harvey <tharvey@gateworks.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/regulator/pfuze100-regulator.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ drivers/tty/n_tty.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/regulator/pfuze100-regulator.c
-+++ b/drivers/regulator/pfuze100-regulator.c
-@@ -308,9 +308,15 @@ static int pfuze_identify(struct pfuze_c
- 	if (ret)
- 		return ret;
- 
--	if (value & 0x0f) {
--		dev_warn(pfuze_chip->dev, "Illegal ID: %x\n", value);
--		return -ENODEV;
-+	switch (value & 0x0f) {
-+		/* Freescale misprogrammed 1-3% of parts prior to week 8 of 2013 as ID=8 */
-+		case 0x8:
-+			dev_info(pfuze_chip->dev, "Assuming misprogrammed ID=0x8");
-+		case 0x0:
-+			break;
-+		default:
-+			dev_warn(pfuze_chip->dev, "Illegal ID: %x\n", value);
-+			return -ENODEV;
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -2253,6 +2253,9 @@ static ssize_t n_tty_read(struct tty_str
+ 		if (time)
+ 			timeout = time;
  	}
++	n_tty_set_room(tty);
++	up_read(&tty->termios_rwsem);
++
+ 	mutex_unlock(&ldata->atomic_read_lock);
+ 	remove_wait_queue(&tty->read_wait, &wait);
  
- 	ret = regmap_read(pfuze_chip->regmap, PFUZE100_REVID, &value);
+@@ -2263,8 +2266,6 @@ static ssize_t n_tty_read(struct tty_str
+ 	if (b - buf)
+ 		retval = b - buf;
+ 
+-	n_tty_set_room(tty);
+-	up_read(&tty->termios_rwsem);
+ 	return retval;
+ }
+ 
 
 
