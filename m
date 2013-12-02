@@ -1,194 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab3LBSnK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 13:43:10 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:64217 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752740Ab3LBSnG (ORCPT
+	id S1752878Ab3LBSpN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 13:45:13 -0500
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:10610 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087Ab3LBSpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 13:43:06 -0500
-From: Roberto Sassu <roberto.sassu@polito.it>
-To: jmorris@namei.org, zohar@linux.vnet.ibm.com
-Cc: d.kasatkin@samsung.com, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Roberto Sassu <roberto.sassu@polito.it>
-Subject: [PATCH] ima: properly free ima_template_entry structures
-Date: Mon,  2 Dec 2013 19:40:34 +0100
-Message-Id: <1386009638-32590-1-git-send-email-roberto.sassu@polito.it>
-X-Mailer: git-send-email 1.8.1.4
-MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----6229AA4E521AC437C362661DC56F05E7"
+	Mon, 2 Dec 2013 13:45:11 -0500
+X-AuditID: cbfec37c-b7f9d6d000003434-36-529cd535e27b
+Message-id: <529CD528.9000709@samsung.com>
+Date: Mon, 02 Dec 2013 11:44:56 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.0
+MIME-version: 1.0
+To: Manuel Krause <manuelkrause@netscape.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        Greg KH <gregkh@linuxfoundation.org>, linux-input@vger.kernel.org,
+        linux-serial <linux-serial@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: 3.12.x looses serial mouse over hibernate + resume
+References: <52951E69.7090602@netscape.net>
+ <529B591F.1020909@hurleysoftware.com> <529CB07C.2040609@netscape.net>
+ <19253701.sgP3OieFUq@dtor-d630.eng.vmware.com>
+ <20131202164525.GA32406@core.coreip.homeip.net> <529CD303.4040103@netscape.net>
+In-reply-to: <529CD303.4040103@netscape.net>
+Content-type: text/plain; charset=ISO-8859-15; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.21.63]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDLMWRmVeSWpSXmKPExsVy+t9hP13Tq3OCDNp/aFscXvSC0aJ58Xo2
+	i5ufvrFaXN41h83izOJedouuiQtZLI5d+sdo8XjFW3aLrz8dHDg9ds66y+6x4s96No/Fe14y
+	eeyfu4bd42PPI2aPz5vkAtiiuGxSUnMyy1KL9O0SuDJ23TzLUvBAu+LDaeMGxvnKXYycHBIC
+	JhI7925hhbDFJC7cW8/WxcjFISSwjFHi9sVlLBBOL5PE47Vz2SGcTYwSZy7OZwFp4RXQkjj2
+	5CYziM0ioCrx4kknI4jNJqAu8fn1DnYQW0hATqJpyWqwGlGBCImjq5+xQvQKSvyYfA9sjohA
+	jMT8zStYQRYwCxxmkph5ey1YQljAXuLgvu9Qm78xSjRO+Aa2gVNAR+JW53SgYzmAOmwkDs5P
+	AwkzC8hLbF7zlhlisbLEn8unmEBKJAQUJbavtprAKDILyepZCM2zkDQvYGRexShWWpxcUJyU
+	nlphrFecmFtcmpeul5yfu4kREmM1OxjvfbU5xCjAwajEw9uxdU6QEGtiWXFl7iFGCQ5mJRHe
+	6ReAQrwpiZVVqUX58UWlOanFhxiZODilGhhnMpZP0duXM6PRXjrt54uYOUt7alrkF320a+gt
+	ZnnzVHbaBQkG6+Tlzy5nrP7/PeXVjaWtlyQOWLbWtBpO3Pj2lI0c1xSZHX/16lvZn++/OeWP
+	R+v9G69q5r8++qNeVOAsZ2+P7YHJvf2ubd80jef4Mdkzp7v0xE0I5L+tdq147TJmHyuhumAl
+	luKMREMt5qLiRAC5289KjwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an S/MIME signed message
+On 12/02/2013 11:35 AM, Manuel Krause wrote:
+> On 2013-12-02 17:45, Dmitry Torokhov wrote:
+>> On Mon, Dec 02, 2013 at 08:38:16AM -0800, Dmitry Torokhov wrote:
+>>> On Monday, December 02, 2013 05:08:28 PM Manuel Krause wrote:
+>>>> On 2013-12-01 16:43, Peter Hurley wrote:
+>>>>> [ +cc Dmitry Torokhov, Greg Kroah-Hartman, linux-input,
+>>>>> linux-serial ]
+>>>>>
+>>>>> On 11/26/2013 05:19 PM, Manuel Krause wrote:
+>>>>>> Since kernel 3.12.0 I have a problem with hibernate+resume
+>>>>>> not reactivating my serial mouse (trackball) with my HP notebook.
+>>>>>> Kernels 3.11.0 til 9 don't show this behaviour.
+>>>>>>
+>>>>>> Machine:           HP Notebook with Core2Duo CPU (Penryn)
+>>>>>> Distro:            openSUSE 12.3, 64bit, continuously updated
+>>>>>> Desktop:           KDE 4.11.3
+>>>>>> MESA & drm & Xorg: most recent ones from:
+>>>>>>
+>>>>>> http://download.opensuse.org/repositories/home:/pontostroy:/X11/openSUSE_
+>>>>>>
+>>>>>> 12.3/x86_64/
+>>>>>>
+>>>>>> Current kernel:    3.12.1 vanilla from openSUSE repos, with
+>>>>>>
+>>>>>>                      -ck1 and BFQ patches
+>>>>>>
+>>>>>> The Logitech Trackman Marble FX is a PS/2 device and connected
+>>>>>> via an original Logitech
+>>>>>> PS/2-COM-port adapter and manually configured via my xorg.conf.
+>>>>>>
+>>>>>> At first, I blamed the -ck1 patches from Con Kolivas for this
+>>>>>> behaviour that I use in
+>>>>>> addition  to the BFQ patches, what has showed up as not right:
+>>>>>> This happens with the
+>>>>>> normal vanilla kernel
+>>>>>> schedulers for CPU and disk I/O, too.
+>>>>>>
+>>>>>> By coincidence I found a weird(!) way to reactivate the serial
+>>>>>> mouse:
+>>>>>> (1) call Hibernate (suspend-to-disk) from KDE desktop as normal
+>>>>>> (2) resume --> the PS/2 touchpad is working, the serial
+>>>>>> trackball NOT
+>>>>>> (3) call suspend-to-RAM (Sleep) from KDE, serial trackball
+>>>>>> still dead
+>>>>>> (4) execute `setserial -a /dev/ttyS0` in a konsole window or a
+>>>>>> tty* console
+>>>>>> (5) ==> serial trackball is back with all configuration from
+>>>>>> xorg.conf
+>>>>>>
+>>>>>> It's fully reproducible over multiple hibernations. This also
+>>>>>> happens when calling
+>>>>>> `pm-hibernate` (to-disk) and `pm-suspend` (to-RAM) and the
+>>>>>> setserial from a root shell
+>>>>>> in KDE or any tty*.
+>>>>>>
+>>>>>> Please, _always_CC_me_ -- as I'm not on the kernel mailing list.
+>>>>>
+>>>>> Manuel,
+>>>>>
+>>>>> Please attach complete dmesgs (zipped, if necessary) of a
+>>>>> suspend/resume cycle
+>>>>> on a vanilla 3.12.x (where resume fails) _and_ a vanilla 3.11.x
+>>>>> (where resume succeeds).
+>>>>>
+>>>>> For the test configurations, please do not apply patches.
+>>>>>
+>>>>> Regards,
+>>>>> Peter Hurley
+>>>>
+>>>> Thank you very much for your reply!
+>>>> Attached you'll find a zip file with the two edited dmesg logs of
+>>>> plain vanilla kernel runs.
+>>>>
+>>>> I have to add, that the resumes _do_ succeed in both cases, only
+>>>> the serial mouse doesn't get activated after hibernate in 3.12.x
+>>>> automatically. Just scan for and compare the lines indicating
+>>>> "serial 00:08: disabled" or "serial 00:08: activated". In 3.12.x
+>>>> the activation doesn't happen after hibernate, but after
+>>>> suspend-to-ram (sleep). That only after STR and not before a
+>>>> setserial gets my mouse back... a miracle. ;-)
+>>>
+>>> I do not see
+>>>
+>>>> [  206.577370] serial 00:08: activated
+>>>
+>>> in the restore from hibernation log of 3.12 which shoudl come from PNP
+>>> layer.
+>>>
+>>> [dtor@dtor-d630 work]$ git log --oneline v3.11..v3.12 -- drivers/pnp/
+>>> 729377d pnp: change pnp bus pm_ops to invoke pnp driver dev_pm_ops if
+>>> specified
+>>> ce63e18 Merge branch 'pnp'
+>>> 8ad928d ACPI / PM: Use ACPI_STATE_D3_COLD instead of ACPI_STATE_D3
+>>> everywhere
+>>> eaf140b PNP: convert PNP driver bus legacy pm_ops to dev_pm_ops
+>>>
+>>> I'd start looking into these commits.
+>>>
+>>
+>> Does the following patch fixes the issue?
+>>
+>
+> PNP: fix restoring devices after hibernation
+>
+> From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>
+> On returning from hibernation 'restore; callback is called, not 'resume'.
+> This fixes breakage introduced by commit
+> eaf140b60ec961252083ab8adaf67aef29a362dd
+>
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> ---
+>   drivers/pnp/driver.c |    3 ++-
+>   1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/pnp/driver.c b/drivers/pnp/driver.c
+> index a39ee38..185a24a 100644
+> --- a/drivers/pnp/driver.c
+> +++ b/drivers/pnp/driver.c
+> @@ -235,8 +235,9 @@ static int pnp_bus_resume(struct device *dev)
+>
+>   static const struct dev_pm_ops pnp_bus_dev_pm_ops = {
+>       .suspend = pnp_bus_suspend,
+> -    .freeze = pnp_bus_freeze,
+>       .resume = pnp_bus_resume,
+> +    .freeze = pnp_bus_freeze,
+> +    .restore = pnp_bus_resume,
+>   };
+>
+>   struct bus_type pnp_bus_type = {
+>
+>
+> YES! This patch fixes the issue!!! (Even if compiled with a patched
+> kernel.)   ;-)
+>
+> Many thanks for your work!
+>
+> Manuel Krause
+>
 
-------6229AA4E521AC437C362661DC56F05E7
+I am glad the problem is fixed. But I am puzzled. pnp_bus_resume() 
+didn't handle restore prior to this change. state doesn't get passed in 
+to legacy resume routines. I had to add freeze to handle PMSG_FREEZE 
+case, sounds like restore is needed as well, however I don't see where 
+how restore is handled prior to this change.
 
-The new templates management mechanism records information associated
-to an event into an array of 'ima_field_data' structures and makes it
-available through the 'template_data' field of the 'ima_template_entry'
-structure (the element of the measurements list created by IMA).
+-- Shuah
 
-Since 'ima_field_data' contains dynamically allocated data (which length
-varies depending on the data associated to a selected template field),
-it is not enough to just free the memory reserved for a
-'ima_template_entry' structure if something goes wrong.
-
-This patch creates the new function ima_free_template_entry() which
-walks the array of 'ima_field_data' structures, frees the memory
-referenced by the 'data' pointer and finally the space reserved for
-the 'ima_template_entry' structure. Further, it replaces existing kfree()
-that have a pointer to an 'ima_template_entry' structure as argument
-with calls to the new function.
-
-Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
----
- security/integrity/ima/ima.h      |  1 +
- security/integrity/ima/ima_api.c  | 21 +++++++++++++++++----
- security/integrity/ima/ima_init.c |  2 +-
- 3 files changed, 19 insertions(+), 5 deletions(-)
-
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 9636e17..0356e1d 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -148,6 +148,7 @@ int ima_alloc_init_template(struct integrity_iint_cache *iint,
- 			    int xattr_len, struct ima_template_entry **entry);
- int ima_store_template(struct ima_template_entry *entry, int violation,
- 		       struct inode *inode, const unsigned char *filename);
-+void ima_free_template_entry(struct ima_template_entry *entry);
- const char *ima_d_path(struct path *path, char **pathbuf);
- 
- /* rbtree tree calls to lookup, insert, delete
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index 8037484..c38bbce 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -22,6 +22,19 @@
- #include "ima.h"
- 
- /*
-+ * ima_free_template_entry - free an existing template entry
-+ */
-+void ima_free_template_entry(struct ima_template_entry *entry)
-+{
-+	int i;
-+
-+	for (i = 0; i < entry->template_desc->num_fields; i++)
-+		kfree(entry->template_data[i].data);
-+
-+	kfree(entry);
-+}
-+
-+/*
-  * ima_alloc_init_template - create and initialize a new template entry
-  */
- int ima_alloc_init_template(struct integrity_iint_cache *iint,
-@@ -37,6 +50,7 @@ int ima_alloc_init_template(struct integrity_iint_cache *iint,
- 	if (!*entry)
- 		return -ENOMEM;
- 
-+	(*entry)->template_desc = template_desc;
- 	for (i = 0; i < template_desc->num_fields; i++) {
- 		struct ima_template_field *field = template_desc->fields[i];
- 		u32 len;
-@@ -51,10 +65,9 @@ int ima_alloc_init_template(struct integrity_iint_cache *iint,
- 		(*entry)->template_data_len += sizeof(len);
- 		(*entry)->template_data_len += len;
- 	}
--	(*entry)->template_desc = template_desc;
- 	return 0;
- out:
--	kfree(*entry);
-+	ima_free_template_entry(*entry);
- 	*entry = NULL;
- 	return result;
- }
-@@ -134,7 +147,7 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
- 	}
- 	result = ima_store_template(entry, violation, inode, filename);
- 	if (result < 0)
--		kfree(entry);
-+		ima_free_template_entry(entry);
- err_out:
- 	integrity_audit_msg(AUDIT_INTEGRITY_PCR, inode, filename,
- 			    op, cause, result, 0);
-@@ -269,7 +282,7 @@ void ima_store_measurement(struct integrity_iint_cache *iint,
- 	if (!result || result == -EEXIST)
- 		iint->flags |= IMA_MEASURED;
- 	if (result < 0)
--		kfree(entry);
-+		ima_free_template_entry(entry);
- }
- 
- void ima_audit_measurement(struct integrity_iint_cache *iint,
-diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
-index 76b8e2c..3712276 100644
---- a/security/integrity/ima/ima_init.c
-+++ b/security/integrity/ima/ima_init.c
-@@ -75,7 +75,7 @@ static void __init ima_add_boot_aggregate(void)
- 	result = ima_store_template(entry, violation, NULL,
- 				    boot_aggregate_name);
- 	if (result < 0)
--		kfree(entry);
-+		ima_free_template_entry(entry);
- 	return;
- err_out:
- 	integrity_audit_msg(AUDIT_INTEGRITY_PCR, NULL, boot_aggregate_name, op,
 -- 
-1.8.1.4
-
-
-------6229AA4E521AC437C362661DC56F05E7
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-
-MIIICQYJKoZIhvcNAQcCoIIH+jCCB/YCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3
-DQEHAaCCBWQwggVgMIIESKADAgECAgICuzANBgkqhkiG9w0BAQUFADBlMQswCQYD
-VQQGEwJJVDEeMBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMTYwNAYDVQQD
-Ey1Qb2xpdGVjbmljbyBkaSBUb3Jpbm8gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkw
-HhcNMTAxMjIwMTExOTU0WhcNMTUxMjMxMjM1OTU5WjBfMQswCQYDVQQGEwJJVDEe
-MBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMRcwFQYDVQQDEw5Sb2JlcnRv
-ICBTYXNzdTEXMBUGCgmSJomT8ixkAQETB2QwMjEzMDUwggEiMA0GCSqGSIb3DQEB
-AQUAA4IBDwAwggEKAoIBAQDS6p4SaJdmmJHJu9On9ZohhBFE2GgYiY7YtRnhhQJA
-NfOtHEhSbpUMaSOfq/Pna6ipR5nAFrlM8cOGcSHZdxrPcgzeJU7F2v1fl2ThvFOc
-TIkcC1aAJGQUuCaCXDlQt+KFecJWTrRZnalMHZueO+J6cgHcvR1CQz5e88dSzo3Q
-XZy0w/hxGL9Ht9velqsl48ohBk2rs/svAOCp6GfqT1Yxwx1p87d3ViTrmuZB4/X+
-da39nJqmo6AZ/y3Zg+r91BgNcfsHVqFT0JTcG6qRIaeqTtqVYpYl+rH1rZzYCakD
-yQyys66sBvaXyaiMr0M+SpyH+LaGz5bDn5Odq16FYEq7AgMBAAGjggIeMIICGjAO
-BgNVHQ8BAf8EBAMCA/gwJwYDVR0lBCAwHgYIKwYBBQUHAwIGCCsGAQUFBwMDBggr
-BgEFBQcDBDAiBgNVHREEGzAZgRdyb2JlcnRvLnNhc3N1QHBvbGl0by5pdDAMBgNV
-HRMBAf8EAjAAMB0GA1UdDgQWBBQgKbXSXn+j769x0tsZQ9pSOzIIdDAfBgNVHSME
-GDAWgBTNm1tbnup2IcQQaOjSLTfbHy/I5DCBywYDVR0gBIHDMIHAMD4GCisGAQQB
-qQcBAQIwMDAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5ldXJvcGtpLm9yZy9jYS9j
-cHMvMS4yLzBEBgorBgEEAakHAgECMDYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
-aXRhbHkuZXVyb3BraS5vcmcvY2EvY3BzLzEuMi8wOAYKKwYBBAGVYgECAjAqMCgG
-CCsGAQUFBwIBFhxodHRwOi8vY2EucG9saXRvLml0L2Nwcy8yLjIvMGYGCCsGAQUF
-BwEBBFowWDAhBggrBgEFBQcwAYYVaHR0cDovL29jc3AucG9saXRvLml0MDMGCCsG
-AQUFBzAChidodHRwOi8vY2EucG9saXRvLml0L2NlcnRzL3BvbGl0b19jYS5jZXIw
-NwYDVR0fBDAwLjAsoCqgKIYmaHR0cDovL2NhLnBvbGl0by5pdC9jcmwvcG9saXRv
-X2NybC5jcmwwDQYJKoZIhvcNAQEFBQADggEBADMe0aHcBJXV6pMJPVVSt1Vazd8Y
-LuTLO45Igs9Sb2LuaO6pvcDGvq9dEJnBhP1B+zBAK6WEA1PWb66xC4QXaJnlGZTX
-S3XeBivHWm6BNOH2kNeU0HBeGZCV/n5r70TPxkEAcc7u8YY2i6CiMM428YhZK8Zj
-oN9D3QNIRf4HZgh0FTbf8eL/XvBbK/oPC+Rew+Qql6M3DHnaS1q2SKUwwO/4VXA4
-JsOdatFI68AMXH0Xx9UIcjRi+kvsyvwHlc0Z8AoAtfRMoIl4zFF4Qaowec2UunBK
-YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
-MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
-aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
-Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMzEyMDIxODQwMzhaMCMGCSqG
-SIb3DQEJBDEWBBT9XhbCJz+JlXpq8yjYeKKmShRAJDB5BgkqhkiG9w0BCQ8xbDBq
-MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
-DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQDMw6viwEeuv48HgGgGj0GefLt/
-k7exgELJSdhzrRBkY+lqGFubEFxe2JZRvq7nRNdpXFx7Um5Io9zfDSy1WjOit6YF
-1IkmFnYfXPBR5hGN76XK9qKn0TqVvPq3LwkVJmYvixuWXIrLEbfpF3fuoeSqktOe
-QENd5TGoe9aNPCfWj2HU+tWZVrG3kZPyuAt+URVk5/fE0INHJcx3iucOz8pwGNX0
-u+tf/3l+gJX2CCsjonaHPpx+V/5Yo4jfepgUFhaaEaZq/KDc8MKhkhqO2y9Rr0h8
-EoZ9wf5wVHonTT3AF70tfAodz8tpap2TClMPHDnOMfsmPEGdNk0NNTL85K0f
-
-------6229AA4E521AC437C362661DC56F05E7--
-
-
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
