@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758201Ab3LBUlU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:41:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38798 "EHLO
+	id S932104Ab3LBUlZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:41:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38475 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754273Ab3LBTOJ (ORCPT
+	with ESMTP id S1754272Ab3LBTOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:14:09 -0500
+	Mon, 2 Dec 2013 14:14:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Marineau <michael.marineau@coreos.com>,
-        Eric Van Hensbergen <ericvh@gmail.com>
-Subject: [PATCH 3.10 126/173] 9p: send uevent after adding/removing mount_tag attribute
-Date: Mon,  2 Dec 2013 11:11:49 -0800
-Message-Id: <20131202191158.003613691@linuxfoundation.org>
+        Simon Guinot <simon.guinot@sequanux.org>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Michael Turquette <mturquette@deferred.io>
+Subject: [PATCH 3.10 125/173] clk: armada-370: fix tclk frequencies
+Date: Mon,  2 Dec 2013 11:11:48 -0800
+Message-Id: <20131202191157.914236748@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,43 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Marineau <michael.marineau@coreos.com>
+From: Simon Guinot <simon.guinot@sequanux.org>
 
-commit e0d6cb9cd3a3ac8a3b8e5b22b83c4f8619786f22 upstream.
+commit 1022c75f5abd3a3b25e679bc8793d21bedd009b4 upstream.
 
-This driver adds an attribute to the existing virtio device so a CHANGE
-event is required in order udev rules to make use of it. The ADD event
-happens before this driver is probed and unlike a more typical driver
-like a block device there isn't a higher level device to watch for.
+This patch fixes the tclk frequency array for the Armada-370 SoC.
+This bug has been introduced by commit 6b72333d
+("clk: mvebu: add Armada 370 SoC-centric clock init").
 
-Signed-off-by: Michael Marineau <michael.marineau@coreos.com>
-Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
+A wrong tclk frequency affects the following drivers: mvsdio, mvneta,
+i2c-mv64xxx and mvebu-devbus. This list may be incomplete.
+
+About the mvneta Ethernet driver, note that the tclk frequency is used
+to compute the Rx time coalescence. Then, this bug harms the coalescence
+configuration and also degrades the networking performances with the
+default values.
+
+Signed-off-by: Simon Guinot <simon.guinot@sequanux.org>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Michael Turquette <mturquette@deferred.io>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/9p/trans_virtio.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/clk/mvebu/clk-core.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/9p/trans_virtio.c
-+++ b/net/9p/trans_virtio.c
-@@ -577,6 +577,10 @@ static int p9_virtio_probe(struct virtio
- 	mutex_lock(&virtio_9p_lock);
- 	list_add_tail(&chan->chan_list, &virtio_chan_list);
- 	mutex_unlock(&virtio_9p_lock);
-+
-+	/* Let udev rules use the new mount_tag attribute. */
-+	kobject_uevent(&(vdev->dev.kobj), KOBJ_CHANGE);
-+
- 	return 0;
+--- a/drivers/clk/mvebu/clk-core.c
++++ b/drivers/clk/mvebu/clk-core.c
+@@ -126,8 +126,8 @@ static void __init mvebu_clk_core_setup(
+ #define	    SARH_AXP_FAB_FREQ_OPT_SHIFT	    4
  
- out_free_tag:
-@@ -654,6 +658,7 @@ static void p9_virtio_remove(struct virt
- 	list_del(&chan->chan_list);
- 	mutex_unlock(&virtio_9p_lock);
- 	sysfs_remove_file(&(vdev->dev.kobj), &dev_attr_mount_tag.attr);
-+	kobject_uevent(&(vdev->dev.kobj), KOBJ_CHANGE);
- 	kfree(chan->tag);
- 	kfree(chan->vc_wq);
- 	kfree(chan);
+ static const u32 __initconst armada_370_tclk_frequencies[] = {
+-	16600000,
+-	20000000,
++	166000000,
++	200000000,
+ };
+ 
+ static u32 __init armada_370_get_tclk_freq(void __iomem *sar)
 
 
