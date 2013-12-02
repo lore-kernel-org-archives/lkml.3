@@ -1,57 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756694Ab3LBUBa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:01:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39329 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645Ab3LBTR6 (ORCPT
+	id S1756679Ab3LBUB2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:01:28 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:44184 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755485Ab3LBUBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:58 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.12 099/212] qxl: avoid an oops in the deferred io code.
-Date: Mon,  2 Dec 2013 11:14:50 -0800
-Message-Id: <20131202191258.460929986@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
-References: <20131202191248.517975703@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	Mon, 2 Dec 2013 15:01:24 -0500
+From: Ivaylo DImitrov <ivo.g.dimitrov.75@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: nico@ngolde.de, fabs@goesec.de, omar.ramirez@copitl.com,
+        pali.rohar@gmail.com, pavel@ucw.cz, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, tony@atomide.com,
+        felipe.contreras@gmail.com, Ivaylo Dimitrov <freemangordon@abv.bg>
+Subject: [PATCH] Staging: TIDSPBRIDGE: Use vm_iomap_memory for mmap-ing instead of remap_pfn_range
+Date: Mon,  2 Dec 2013 22:00:16 +0200
+Message-Id: <1386014416-4556-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+X-Mailer: git-send-email 1.8.4.msysgit.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+From: Ivaylo Dimitrov <freemangordon@abv.bg>
 
-------------------
+This fixes the following bug:
 
-From: Dave Airlie <airlied@redhat.com>
+----  Bug Report ----
 
-commit cc87509d87696d7cd393882f5dedea01e03e41a9 upstream.
+source file: drivers/staging/tidspbridge/rmgr/drv_interface.c
+issue      : mapping of physical memory without address range checks
 
-If we are using deferred io due to plymouth or X.org fbdev driver
-we will oops in memcpy due to this pointless multiply here,
+259 static int bridge_mmap(struct file *filp, struct vm_area_struct *vma)
+260 {
+261         u32 status;
+262
+263         /* VM_IO | VM_DONTEXPAND | VM_DONTDUMP are set by remap_pfn_range() */
+264         vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+265
+266         dev_dbg(bridge, "%s: vm filp %p start %lx end %lx page_prot %ulx "
+267                 "flags %lx\n", __func__, filp,
+268                 vma->vm_start, vma->vm_end, vma->vm_page_prot,
+269                 vma->vm_flags);
+270
+271         status = remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
+272                                  vma->vm_end - vma->vm_start,
+273                                  vma->vm_page_prot);
+274         if (status != 0)
+275                 status = -EAGAIN;
+276
+277         return status;
+278 }
 
-removing it fixes fbdev to start and not oops.
+The function provides an interface to remap physical memory to user space, but
+does not provide any checks to ensure that the memory is within the region that
+should be accessible.
 
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
 
+Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
 ---
- drivers/gpu/drm/qxl/qxl_fb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/tidspbridge/rmgr/drv_interface.c |   15 ++++++---------
+ 1 files changed, 6 insertions(+), 9 deletions(-)
 
---- a/drivers/gpu/drm/qxl/qxl_fb.c
-+++ b/drivers/gpu/drm/qxl/qxl_fb.c
-@@ -108,7 +108,7 @@ static void qxl_fb_dirty_flush(struct fb
- 	u32 x1, x2, y1, y2;
+diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+index 1aa4a3f..2d500ea 100644
+--- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
++++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+@@ -258,8 +258,9 @@ err:
+ /* This function maps kernel space memory to user space memory. */
+ static int bridge_mmap(struct file *filp, struct vm_area_struct *vma)
+ {
+-	u32 status;
+-
++	struct omap_dsp_platform_data *pdata =
++	    omap_dspbridge_dev->dev.platform_data;
++	
+ 	/* VM_IO | VM_DONTEXPAND | VM_DONTDUMP are set by remap_pfn_range() */
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
  
- 	/* TODO: hard coding 32 bpp */
--	int stride = qfbdev->qfb.base.pitches[0] * 4;
-+	int stride = qfbdev->qfb.base.pitches[0];
+@@ -268,13 +269,9 @@ static int bridge_mmap(struct file *filp, struct vm_area_struct *vma)
+ 		vma->vm_start, vma->vm_end, vma->vm_page_prot,
+ 		vma->vm_flags);
  
- 	x1 = qfbdev->dirty.x1;
- 	x2 = qfbdev->dirty.x2;
-
+-	status = remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
+-				 vma->vm_end - vma->vm_start,
+-				 vma->vm_page_prot);
+-	if (status != 0)
+-		status = -EAGAIN;
+-
+-	return status;
++	return vm_iomap_memory(vma,
++			       pdata->phys_mempool_base,
++			       pdata->phys_mempool_size);
+ }
+ 
+ static const struct file_operations bridge_fops = {
+-- 
+1.5.6.1
 
