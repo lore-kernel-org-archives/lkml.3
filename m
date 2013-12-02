@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757165Ab3LBUoV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:44:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38743 "EHLO
+	id S1758302Ab3LBUo5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:44:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38764 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754243Ab3LBTOB (ORCPT
+	with ESMTP id S1754230Ab3LBTOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:14:01 -0500
+	Mon, 2 Dec 2013 14:14:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 115/173] ALSA: hda - Create Headhpone Mic Jack Mode when really needed
-Date: Mon,  2 Dec 2013 11:11:38 -0800
-Message-Id: <20131202191157.005089120@linuxfoundation.org>
+        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 113/173] ALSA: hda/realtek - Add support of ALC231 codec
+Date: Mon,  2 Dec 2013 11:11:36 -0800
+Message-Id: <20131202191156.827241533@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -26,77 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Kailang Yang <kailang@realtek.com>
 
-commit ced4cefc75fdb8be95eaee325ad0f6b2fc0a484b upstream.
+commit ba4c4d0a9021ab034554d532a98133d668b87599 upstream.
 
-When a headphone jack is configurable as input, the generic parser
-tries to make it retaskable as Headphone Mic.  The switching can be
-done smoothly if Capture Source control exists (i.e. there is another
-input source).  Or when user explicitly enables the creation of jack
-mode controls, "Headhpone Mic Jack Mode" will be created accordingly.
+It's compatible with ALC269.
 
-However, if the headphone mic is the only input source, we have to
-create "Headphone Mic Jack Mode" control because there is no capture
-source selection.  Otherwise, the generic parser assumes that the
-input is constantly enabled, thus the headphone is permanently set
-as input.  This situation happens on the old MacBook Airs where no
-input is supported properly, for example.
-
-This patch fixes the problem: now "Headphone Mic Jack Mode" is created
-when such an input selection isn't possible.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=65681
+Signed-off-by: Kailang Yang <kailang@realtek.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_generic.c |   20 ++++++++++++--------
- 1 file changed, 12 insertions(+), 8 deletions(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/pci/hda/hda_generic.c
-+++ b/sound/pci/hda/hda_generic.c
-@@ -2445,12 +2445,8 @@ static int create_out_jack_modes(struct
- 
- 	for (i = 0; i < num_pins; i++) {
- 		hda_nid_t pin = pins[i];
--		if (pin == spec->hp_mic_pin) {
--			int ret = create_hp_mic_jack_mode(codec, pin);
--			if (ret < 0)
--				return ret;
-+		if (pin == spec->hp_mic_pin)
- 			continue;
--		}
- 		if (get_out_jack_num_items(codec, pin) > 1) {
- 			struct snd_kcontrol_new *knew;
- 			char name[44];
-@@ -2723,9 +2719,6 @@ static int create_hp_mic_jack_mode(struc
- 	struct hda_gen_spec *spec = codec->spec;
- 	struct snd_kcontrol_new *knew;
- 
--	if (get_out_jack_num_items(codec, pin) <= 1 &&
--	    get_in_jack_num_items(codec, pin) <= 1)
--		return 0; /* no need */
- 	knew = snd_hda_gen_add_kctl(spec, "Headphone Mic Jack Mode",
- 				    &hp_mic_jack_mode_enum);
- 	if (!knew)
-@@ -4287,6 +4280,17 @@ int snd_hda_gen_parse_auto_config(struct
- 	if (err < 0)
- 		return err;
- 
-+	/* create "Headphone Mic Jack Mode" if no input selection is
-+	 * available (or user specifies add_jack_modes hint)
-+	 */
-+	if (spec->hp_mic_pin &&
-+	    (spec->auto_mic || spec->input_mux.num_items == 1 ||
-+	     spec->add_jack_modes)) {
-+		err = create_hp_mic_jack_mode(codec, spec->hp_mic_pin);
-+		if (err < 0)
-+			return err;
-+	}
-+
- 	if (spec->add_jack_modes) {
- 		if (cfg->line_out_type != AUTO_PIN_SPEAKER_OUT) {
- 			err = create_out_jack_modes(codec, cfg->line_outs,
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4552,6 +4552,7 @@ static int patch_alc680(struct hda_codec
+  */
+ static const struct hda_codec_preset snd_hda_preset_realtek[] = {
+ 	{ .id = 0x10ec0221, .name = "ALC221", .patch = patch_alc269 },
++	{ .id = 0x10ec0231, .name = "ALC231", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0233, .name = "ALC233", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0255, .name = "ALC255", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0260, .name = "ALC260", .patch = patch_alc260 },
 
 
