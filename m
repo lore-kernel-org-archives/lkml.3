@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab3LBTHP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:07:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38186 "EHLO
+	id S1753445Ab3LBTHX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:07:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38285 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279Ab3LBTHD (ORCPT
+	with ESMTP id S1753330Ab3LBTHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:07:03 -0500
+	Mon, 2 Dec 2013 14:07:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Matthieu Baerts <matttbe@gmail.com>,
+        Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.4 29/60] rtlwifi: rtl8192se: Fix incorrect signal strength for unassociated AP
-Date: Mon,  2 Dec 2013 11:06:10 -0800
-Message-Id: <20131202190336.631757422@linuxfoundation.org>
+Subject: [PATCH 3.4 35/60] mwifiex: correct packet length for packets from SDIO interface
+Date: Mon,  2 Dec 2013 11:06:16 -0800
+Message-Id: <20131202190337.980788036@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
 References: <20131202190330.152596462@linuxfoundation.org>
@@ -28,36 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Avinash Patil <patila@marvell.com>
 
-commit b4ade797668e33b4e8353c2701ce01d7084dfafa upstream.
+commit d03b4aa77e1187b77dfe37d14a923547f00baa66 upstream.
 
-The routine that processes received frames was returning the RSSI value for the
-signal strength; however, that value is available only for associated APs. As
-a result, the strength was the absurd value of 10 dBm. As a result, scans
-return incorrect values for the strength, which causes unwanted attempts to roam.
+While receiving a packet on SDIO interface, we allocate skb with
+size multiple of SDIO block size. We need to resize this skb
+after RX using packet length from RX header.
 
-This patch fixes https://bugzilla.kernel.org/show_bug.cgi?id=63881.
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Reported-by: Matthieu Baerts <matttbe@gmail.com>
+Signed-off-by: Avinash Patil <patila@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192se/trx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/mwifiex/sdio.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
-@@ -582,7 +582,7 @@ bool rtl92se_rx_query_desc(struct ieee80
- 	}
+--- a/drivers/net/wireless/mwifiex/sdio.c
++++ b/drivers/net/wireless/mwifiex/sdio.c
+@@ -938,7 +938,10 @@ static int mwifiex_decode_rx_packet(stru
+ 				    struct sk_buff *skb, u32 upld_typ)
+ {
+ 	u8 *cmd_buf;
++	__le16 *curr_ptr = (__le16 *)skb->data;
++	u16 pkt_len = le16_to_cpu(*curr_ptr);
  
- 	/*rx_status->qual = stats->signal; */
--	rx_status->signal = stats->rssi + 10;
-+	rx_status->signal = stats->recvsignalpower + 10;
- 	/*rx_status->noise = -stats->noise; */
++	skb_trim(skb, pkt_len);
+ 	skb_pull(skb, INTF_HEADER_LEN);
  
- 	return true;
+ 	switch (upld_typ) {
 
 
