@@ -1,165 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753762Ab3LBTJg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:09:36 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:48728 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753731Ab3LBTJc (ORCPT
+	id S1753789Ab3LBTJr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:09:47 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:51331 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753769Ab3LBTJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:09:32 -0500
-Date: Mon, 2 Dec 2013 11:09:29 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH v2 tty-next 1/5] tty: Always handle NULL flag ptr
-Message-ID: <20131202190928.GC5245@core.coreip.homeip.net>
-References: <20131122222040.GA12800@core.coreip.homeip.net>
- <1386010563-4864-1-git-send-email-peter@hurleysoftware.com>
+	Mon, 2 Dec 2013 14:09:43 -0500
+Date: Mon, 2 Dec 2013 19:09:13 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, alsa-devel@alsa-project.org
+Message-ID: <20131202190913.GQ27568@sirena.org.uk>
+References: <1386007222-10081-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EVx8OOgYiG4KXJJB"
 Content-Disposition: inline
-In-Reply-To: <1386010563-4864-1-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1386007222-10081-1-git-send-email-lee.jones@linaro.org>
+X-Cookie: Boycott meat -- suck your thumb.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/3] ASoC: ux500_pcm: Stop pretending that we support
+ varying address widths
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 01:56:03PM -0500, Peter Hurley wrote:
-> Most line disciplines already handle the undocumented NULL flag
-> ptr in their .receive_buf method; however, several don't.
-> 
-> Document the NULL flag ptr, and correct handling in the
-> N_MOUSE, N_GSM0710 and N_R394 line disciplines.
-> 
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 
-For serport:
+--EVx8OOgYiG4KXJJB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-	Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+On Mon, Dec 02, 2013 at 06:00:20PM +0000, Lee Jones wrote:
+> The Slave Config's addr_width attribute is populated by data_width of
+> dma_cfg, which in turn is derived from dma_params' data_size attribute
+> and that comes from the slot_width which is always 16 bits (2 Bytes).
+> We're cutting out the middle man here and just setting the DMA Slave
+> Config directly.
 
-Thanks.
+Applied, thanks.
 
-> ---
-> 
-> v2 - Uses 0 for no flags to serio layer per Dmitry.
-> 
->  drivers/input/serio/serport.c | 28 +++++++++++++++-------------
->  drivers/tty/n_gsm.c           |  5 +++--
->  drivers/tty/n_r3964.c         |  2 +-
->  include/linux/tty_ldisc.h     |  6 ++++--
->  4 files changed, 23 insertions(+), 18 deletions(-)
-> 
-> diff --git a/drivers/input/serio/serport.c b/drivers/input/serio/serport.c
-> index 8755f5f..0cb7ef5 100644
-> --- a/drivers/input/serio/serport.c
-> +++ b/drivers/input/serio/serport.c
-> @@ -124,7 +124,7 @@ static void serport_ldisc_receive(struct tty_struct *tty, const unsigned char *c
->  {
->  	struct serport *serport = (struct serport*) tty->disc_data;
->  	unsigned long flags;
-> -	unsigned int ch_flags;
-> +	unsigned int ch_flags = 0;
->  	int i;
->  
->  	spin_lock_irqsave(&serport->lock, flags);
-> @@ -133,18 +133,20 @@ static void serport_ldisc_receive(struct tty_struct *tty, const unsigned char *c
->  		goto out;
->  
->  	for (i = 0; i < count; i++) {
-> -		switch (fp[i]) {
-> -		case TTY_FRAME:
-> -			ch_flags = SERIO_FRAME;
-> -			break;
-> -
-> -		case TTY_PARITY:
-> -			ch_flags = SERIO_PARITY;
-> -			break;
-> -
-> -		default:
-> -			ch_flags = 0;
-> -			break;
-> +		if (fp) {
-> +			switch (fp[i]) {
-> +			case TTY_FRAME:
-> +				ch_flags = SERIO_FRAME;
-> +				break;
-> +
-> +			case TTY_PARITY:
-> +				ch_flags = SERIO_PARITY;
-> +				break;
-> +
-> +			default:
-> +				ch_flags = 0;
-> +				break;
-> +			}
->  		}
->  
->  		serio_interrupt(serport->serio, cp[i], ch_flags);
-> diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-> index c0f76da..c09db11 100644
-> --- a/drivers/tty/n_gsm.c
-> +++ b/drivers/tty/n_gsm.c
-> @@ -2269,14 +2269,15 @@ static void gsmld_receive_buf(struct tty_struct *tty, const unsigned char *cp,
->  	char *f;
->  	int i;
->  	char buf[64];
-> -	char flags;
-> +	char flags = TTY_NORMAL;
->  
->  	if (debug & 4)
->  		print_hex_dump_bytes("gsmld_receive: ", DUMP_PREFIX_OFFSET,
->  				     cp, count);
->  
->  	for (i = count, dp = cp, f = fp; i; i--, dp++) {
-> -		flags = *f++;
-> +		if (f)
-> +			flags = *f++;
->  		switch (flags) {
->  		case TTY_NORMAL:
->  			gsm->receive(gsm, *dp);
-> diff --git a/drivers/tty/n_r3964.c b/drivers/tty/n_r3964.c
-> index 1e64050..8b157d6 100644
-> --- a/drivers/tty/n_r3964.c
-> +++ b/drivers/tty/n_r3964.c
-> @@ -1244,7 +1244,7 @@ static void r3964_receive_buf(struct tty_struct *tty, const unsigned char *cp,
->  {
->  	struct r3964_info *pInfo = tty->disc_data;
->  	const unsigned char *p;
-> -	char *f, flags = 0;
-> +	char *f, flags = TTY_NORMAL;
->  	int i;
->  
->  	for (i = count, p = cp, f = fp; i; i--, p++) {
-> diff --git a/include/linux/tty_ldisc.h b/include/linux/tty_ldisc.h
-> index f15c898..b8347c2 100644
-> --- a/include/linux/tty_ldisc.h
-> +++ b/include/linux/tty_ldisc.h
-> @@ -84,7 +84,8 @@
->   *	processing.  <cp> is a pointer to the buffer of input
->   *	character received by the device.  <fp> is a pointer to a
->   *	pointer of flag bytes which indicate whether a character was
-> - *	received with a parity error, etc.
-> + *	received with a parity error, etc. <fp> may be NULL to indicate
-> + *	all data received is TTY_NORMAL.
->   *
->   * void	(*write_wakeup)(struct tty_struct *);
->   *
-> @@ -118,7 +119,8 @@
->   *	processing.  <cp> is a pointer to the buffer of input
->   *	character received by the device.  <fp> is a pointer to a
->   *	pointer of flag bytes which indicate whether a character was
-> - *	received with a parity error, etc.
-> + *	received with a parity error, etc. <fp> may be NULL to indicate
-> + *	all data received is TTY_NORMAL.
->   *	If assigned, prefer this function for automatic flow control.
->   */
->  
-> -- 
-> 1.8.1.2
-> 
+--EVx8OOgYiG4KXJJB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-Dmitry
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSnNrWAAoJELSic+t+oim97PcP/0undSbMLAciSYvyApxYDOlJ
+IZI4GunVbKWjWLW1zI86N1KhPmdXk7ncaRlocolD4DWq7unP4BsLL/G4C0dtDYNm
+brPDrs4gP70nvmEPrRbfMb3rjJA2Ia/InVbomCNJKGXcIFhYhEQeijUrcnumAjJX
+v84S+nKrlQxSnwMEC7IhS2eqjDW2oomHer7ZHAHPKX3mY5AnfEU0HlfpPdOQuPf3
+wHIN5ke2pLbWDkGWCBVPooymqwdLU2yPrdZ5PRlACJ0Z5xqgUY2cRzfMs3PJm+uO
+XW/o+0LUeI8et+K7AlPUyeas4MUTiueDBokUJakngVR4JypIHXFE7n07g2f2dsuE
+kTNqZzlF9skf8uWJQdfsfKxWLCtNQR1rf7CMnCecXODkQ5rMU8Yuj/bWJ18xBIFK
+i6/Hds8bi7rO4nYlWOKIdztOEc0J84H7Zl5rdgpMBug47PKkvQZGxCenwfSAMVlK
+6WJjK4rk1smJ2jSo9iiGgwyEMfabPHe+y6k0OT+g34636LZhHl0bV2wedECnwJH3
+pQVJhAcsO+NtiJ+6vnpbXct7V8czF3I0mo9VEpEgpXkFRxvbbfVR9yPeK4O4iJj+
+mVq3nXRvSDNT3YJPhqeB+/gMOjKlNm7i9wwrz3Dplytw5Mw/URtj8581dWH/fENz
+GNKLYa+uuctDIXd9n85q
+=loza
+-----END PGP SIGNATURE-----
+
+--EVx8OOgYiG4KXJJB--
