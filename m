@@ -1,48 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab3LBPYZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 10:24:25 -0500
-Received: from mail-db9lp0252.outbound.messaging.microsoft.com ([213.199.154.252]:51711
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752180Ab3LBPYW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 10:24:22 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6h1082kzzz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1155h)
-Date: Mon, 2 Dec 2013 23:21:31 +0800
-From: Nicolin Chen <b42378@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: <timur@tabi.org>, <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <alsa-devel@alsa-project.org>,
-        <lgirdwood@gmail.com>
-Subject: Re: [PATCH v2] ASoC: fsl_ssi: Add monaural audio support for
- non-ac97 interface
-Message-ID: <20131202152130.GB8609@MrMyself>
-References: <1384532729-6588-1-git-send-email-b42378@freescale.com>
- <20131202115617.GV27568@sirena.org.uk>
+	id S1751994Ab3LBP1v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 10:27:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52699 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751432Ab3LBP1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 10:27:49 -0500
+Date: Mon, 2 Dec 2013 23:27:17 +0800
+From: WANG Chao <chaowang@redhat.com>
+To: Baoquan He <bhe@redhat.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, mjg59@srcf.ucam.org, greg@kroah.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, hpa@zytor.com
+Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in
+ kernel kexec
+Message-ID: <20131202152717.GC8340@dhcp12-158.nay.redhat.com>
+References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
+ <1384969851-7251-5-git-send-email-vgoyal@redhat.com>
+ <20131129031048.GE4318@dhcp-16-252.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131202115617.GV27568@sirena.org.uk>
+In-Reply-To: <20131129031048.GE4318@dhcp-16-252.nay.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 11:56:17AM +0000, Mark Brown wrote:
-> On Sat, Nov 16, 2013 at 12:25:29AM +0800, Nicolin Chen wrote:
-> > The normal mode of SSI allows it to send/receive data to/from the first
-> > slot of each period. So we can use this normal mode to trick I2S signal
-> > by puting/getting data to/from the first slot only (the left channel)
-> > so as to support monaural audio playback and recording.
+On 11/29/13 at 11:10am, Baoquan He wrote:
+> On 11/20/13 at 12:50pm, Vivek Goyal wrote:
+> > diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+> > index 4eabc16..fb41b73 100644
+> > --- a/arch/x86/kernel/machine_kexec_64.c
+> > +++ b/arch/x86/kernel/machine_kexec_64.c
+> > @@ -22,6 +22,13 @@
+> >  #include <asm/mmu_context.h>
+> >  #include <asm/debugreg.h>
+> >  
+> > +/* arch dependent functionality related to kexec file based syscall */
+> > +static struct kexec_file_type kexec_file_type[]={
+> > +	{"", NULL, NULL, NULL, NULL},
+> > +};
+> > +
+> > +
+> > +void *arch_kexec_kernel_image_load(struct kimage *image, char *kernel,
+> > +			unsigned long kernel_len, char *initrd,
+> > +			unsigned long initrd_len, char *cmdline,
+> > +			unsigned long cmdline_len)
+> > +{
+> > +	int idx = image->file_handler_idx;
+> > +
+> > +	if (idx < 0)
+> > +		return ERR_PTR(-ENOEXEC);
+> > +
+> > +	return kexec_file_type[idx].load(image, kernel, kernel_len, initrd,
+> > +					initrd_len, cmdline, cmdline_len);
+> > +}
+> > +
+> > +int arch_image_file_post_load_cleanup(struct kimage *image)
+> > +{
 > 
-> This looks OK but doesn't apply against current code, can you please
-> check and resend?
+> Hi Vivek,
+> 
+> This function is defined as one of arch specific fucntion set, why don't
+> we name it in a unified prefix as others.
+> 
+> And name of the default dummy function in kernel/kexec.c is not consistent
+> with the arch specific one, so currently
+> arch_image_file_post_load_cleanup of x86 arch is not called. Please
+> consider wihch one need be changed.
 
-Ah, I rebased it on the dual-fifo set. Sorry I didn't make it clean.
-I will resend it. Thank you.
+I think arch_kimage_file_post_load_cleanup should be used here.
 
+And Good catch!
 
+Thanks
+WANG Chao
+
+> 
+> > +
+> > +void __attribute__ ((weak))
+> > +arch_kimage_file_post_load_cleanup(struct kimage *image)
+> > +{
+> > +	return;
+> > +}
+> > +
+> 
+> 
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
