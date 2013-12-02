@@ -1,169 +1,351 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab3LBJS0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 04:18:26 -0500
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:42340 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232Ab3LBJSY (ORCPT
+	id S1752800Ab3LBJXi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 04:23:38 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47993 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232Ab3LBJXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 04:18:24 -0500
-Date: Mon, 2 Dec 2013 10:17:29 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Stefan Agner <stefan@agner.ch>
-Cc: swarren@wwwdotorg.org, dev@lynxeye.de, lee.jones@linaro.org,
-        lgirdwood@gmail.com, broonie@kernel.org,
-        kai.poggensee@avionic-design.de, sameo@linux.intel.com,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] mfd: tps6586x: add version detection
-Message-ID: <20131202091728.GE17834@ulmo.nvidia.com>
-References: <cover.1385913227.git.stefan@agner.ch>
- <2d5282f031a16d2ff227694daaabc977440fbd2e.1385913228.git.stefan@agner.ch>
+	Mon, 2 Dec 2013 04:23:36 -0500
+Date: Mon, 2 Dec 2013 10:23:33 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        sre@ring0.de, sre@debian.org,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: linux-n900: minor coding style fixes
+Message-ID: <20131202092333.GA19784@amd.pavel.ucw.cz>
+References: <20131127125149.GA9389@amd.pavel.ucw.cz>
+ <20131201200112.GE9743@amd.pavel.ucw.cz>
+ <20131201202500.GA24067@amd.pavel.ucw.cz>
+ <201312012136.39919@pali>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zjcmjzIkjQU2rmur"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2d5282f031a16d2ff227694daaabc977440fbd2e.1385913228.git.stefan@agner.ch>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <201312012136.39919@pali>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Replace RX51 with N900 (RX-51) in user-visible places.
 
---zjcmjzIkjQU2rmur
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Fix comment style.
 
-On Sun, Dec 01, 2013 at 04:59:13PM +0100, Stefan Agner wrote:
-> Use the VERSIONCRC to determine the exact device version. According to
-> the datasheet this register can be used as device identifier. The
-> identification is needed since some tps6586x regulators use a different
-> voltage table.
->=20
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
-> ---
->  drivers/mfd/tps6586x.c       | 47 +++++++++++++++++++++++++++++++++++++-=
-------
->  include/linux/mfd/tps6586x.h |  7 +++++++
->  2 files changed, 47 insertions(+), 7 deletions(-)
->=20
-> diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-> index ee61fd7..8fc5a68 100644
-> --- a/drivers/mfd/tps6586x.c
-> +++ b/drivers/mfd/tps6586x.c
-> @@ -124,6 +124,7 @@ struct tps6586x {
->  	struct device		*dev;
->  	struct i2c_client	*client;
->  	struct regmap		*regmap;
-> +	int			version;
-> =20
->  	int			irq;
->  	struct irq_chip		irq_chip;
-> @@ -208,6 +209,14 @@ int tps6586x_irq_get_virq(struct device *dev, int ir=
-q)
->  }
->  EXPORT_SYMBOL_GPL(tps6586x_irq_get_virq);
-> =20
-> +int tps6586x_get_version(struct device *dev)
-> +{
-> +	struct tps6586x *tps6586x =3D dev_get_drvdata(dev);
-> +
-> +	return tps6586x->version;
-> +}
-> +EXPORT_SYMBOL_GPL(tps6586x_get_version);
-> +
->  static int __remove_subdev(struct device *dev, void *unused)
->  {
->  	platform_device_unregister(to_platform_device(dev));
-> @@ -472,6 +481,31 @@ static void tps6586x_power_off(void)
->  	tps6586x_set_bits(tps6586x_dev, TPS6586X_SUPPLYENE, SLEEP_MODE_BIT);
->  }
-> =20
-> +static void tps6586x_print_version(struct i2c_client *client, int versio=
-n)
-> +{
-> +	const char *name;
-> +
-> +	switch (version) {
-> +	case TPS658621A:
-> +		name =3D "TPS658621A";
-> +		break;
-> +	case TPS658621CD:
-> +		name =3D "TPS658621C/D";
-> +		break;
-> +	case TPS658623:
-> +		name =3D "TPS658623";
-> +		break;
-> +	case TPS658643:
-> +		name =3D "TPS658643";
-> +		break;
-> +	default:
-> +		name =3D "TPS6586X";
-> +		break;
-> +	}
-> +
-> +	dev_info(&client->dev, "Found %s, VERSIONCRC is %02x\n", name, version);
-> +}
-> +
->  static int tps6586x_i2c_probe(struct i2c_client *client,
->  					const struct i2c_device_id *id)
->  {
-> @@ -487,19 +521,18 @@ static int tps6586x_i2c_probe(struct i2c_client *cl=
-ient,
->  		return -ENOTSUPP;
->  	}
-> =20
-> +	tps6586x =3D devm_kzalloc(&client->dev, sizeof(*tps6586x), GFP_KERNEL);
-> +	if (!tps6586x)
-> +		return -ENOMEM;
-> +
+Simplify obvious code.
 
-This hunk is being needlessly moved around....
+Add a fixme where error is not checked.
 
->  	ret =3D i2c_smbus_read_byte_data(client, TPS6586X_VERSIONCRC);
->  	if (ret < 0) {
->  		dev_err(&client->dev, "Chip ID read failed: %d\n", ret);
->  		return -EIO;
->  	}
-> =20
-> -	dev_info(&client->dev, "VERSIONCRC is %02x\n", ret);
-> -
-> -	tps6586x =3D devm_kzalloc(&client->dev, sizeof(*tps6586x), GFP_KERNEL);
-> -	if (tps6586x =3D=3D NULL) {
-> -		dev_err(&client->dev, "memory for tps6586x alloc failed\n");
-> -		return -ENOMEM;
-> -	}
-> +	tps6586x->version =3D ret;
-> +	tps6586x_print_version(client, tps6586x->version);
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-=2E.. none of this new code overwrites "ret", so you could just keep the
-previous order of operations. It probably doesn't matter all that much,
-but deferring allocation until we're sure that the chip actually exists
-is a minor optimization. Also not moving that hunk around makes the
-patch simpler.
 
-Thierry
+index e7604e5..64f7aca 100644
+--- a/drivers/hsi/clients/cmt_speech.c
++++ b/drivers/hsi/clients/cmt_speech.c
+@@ -642,7 +642,7 @@ static void cs_hsi_peek_on_data_complete(struct hsi_msg *msg)
+ 		cs_hsi_data_read_error(hi, msg);
+ }
+ 
+-/**
++/*
+  * Read/write transaction is ongoing. Returns false if in
+  * SSI_CHANNEL_STATE_POLL state.
+  */
+@@ -652,7 +652,7 @@ static inline int cs_state_xfer_active(unsigned int state)
+ 		(state & SSI_CHANNEL_STATE_READING);
+ }
+ 
+-/**
++/*
+  * No pending read/writes
+  */
+ static inline int cs_state_idle(unsigned int state)
+@@ -841,7 +841,7 @@ static int check_buf_params(struct cs_hsi_iface *hi,
+ 	return r;
+ }
+ 
+-/**
++/*
+  * Block until pending data transfers have completed.
+  */
+ static int cs_hsi_data_sync(struct cs_hsi_iface *hi)
+@@ -864,7 +864,7 @@ static int cs_hsi_data_sync(struct cs_hsi_iface *hi)
+ 			r = -ERESTARTSYS;
+ 			goto out;
+ 		}
+-		/**
++		/*
+ 		 * prepare_to_wait must be called with hi->lock held
+ 		 * so that callbacks can check for waitqueue_active()
+ 		 */
+diff --git a/drivers/media/i2c/Kconfig b/drivers/media/i2c/Kconfig
+index 4544798..31ead21 100644
+--- a/drivers/media/i2c/Kconfig
++++ b/drivers/media/i2c/Kconfig
+@@ -271,7 +271,7 @@ config VIDEO_AD5820
+ 	depends on I2C && VIDEO_V4L2 && MEDIA_CONTROLLER
+ 	---help---
+ 	  This is a driver for the AD5820 camera lens voice coil.
+-	  It is used for example in Nokia RX51.
++	  It is used for example in Nokia N900 (RX-51).
+ 
+ config VIDEO_SAA7110
+ 	tristate "Philips SAA7110 video decoder"
+diff --git a/drivers/media/i2c/ad5820.c b/drivers/media/i2c/ad5820.c
+index d2574b7..0f91673 100644
+--- a/drivers/media/i2c/ad5820.c
++++ b/drivers/media/i2c/ad5820.c
+@@ -1,5 +1,5 @@
+ /*
+- * drivers/media/video/ad5820.c
++ * drivers/media/i2c/ad5820.c
+  *
+  * AD5820 DAC driver for camera voice coil focus.
+  *
+@@ -101,9 +101,11 @@ static int ad5820_read(struct ad5820_device *coil)
+ 	return be16_to_cpu(data);
+ }
+ 
+-/* Calculate status word and write it to the device based on current
++/*
++ * Calculate status word and write it to the device based on current
+  * values of V4L2 controls. It is assumed that the stored V4L2 control
+- * values are properly limited and rounded. */
++ * values are properly limited and rounded.
++ */
+ static int ad5820_update_hw(struct ad5820_device *coil)
+ {
+ 	u16 status;
+@@ -119,15 +121,15 @@ static int ad5820_update_hw(struct ad5820_device *coil)
+ 	return ad5820_write(coil, status);
+ }
+ 
+-/* --------------------------------------------------------------------------
++/*
+  * Power handling
+  */
+-
+ static int ad5820_power_off(struct ad5820_device *coil, int standby)
+ {
+ 	int ret = 0;
+ 
+-	/* Go to standby first as real power off my be denied by the hardware
++	/*
++	 * Go to standby first as real power off my be denied by the hardware
+ 	 * (single power line control for both coil and sensor).
+ 	 */
+ 	if (standby) {
+@@ -172,10 +174,9 @@ fail:
+ 	return ret;
+ }
+ 
+-/* --------------------------------------------------------------------------
++/*
+  * V4L2 controls
+  */
+-
+ static int ad5820_set_ctrl(struct v4l2_ctrl *ctrl)
+ {
+ 	struct ad5820_device *coil =
+@@ -244,7 +245,8 @@ static int ad5820_init_controls(struct ad5820_device *coil)
+ 
+ 	v4l2_ctrl_handler_init(&coil->ctrls, ARRAY_SIZE(ad5820_ctrls) + 1);
+ 
+-	/* V4L2_CID_FOCUS_ABSOLUTE
++	/*
++	 * V4L2_CID_FOCUS_ABSOLUTE
+ 	 *
+ 	 * Minimum current is 0 mA, maximum is 100 mA. Thus, 1 code is
+ 	 * equivalent to 100/1023 = 0.0978 mA. Nevertheless, we do not use [mA]
+@@ -273,10 +275,9 @@ static int ad5820_init_controls(struct ad5820_device *coil)
+ 	return 0;
+ }
+ 
+-/* --------------------------------------------------------------------------
++/*
+  * V4L2 subdev operations
+  */
+-
+ static int
+ ad5820_registered(struct v4l2_subdev *subdev)
+ {
+@@ -323,7 +324,8 @@ ad5820_set_power(struct v4l2_subdev *subdev, int on)
+ 
+ 	mutex_lock(&coil->power_lock);
+ 
+-	/* If the power count is modified from 0 to != 0 or from != 0 to 0,
++	/*
++	 * If the power count is modified from 0 to != 0 or from != 0 to 0,
+ 	 * update the power state.
+ 	 */
+ 	if (coil->power_count == !on) {
+@@ -365,7 +367,7 @@ static const struct v4l2_subdev_internal_ops ad5820_internal_ops = {
+ 	.close = ad5820_close,
+ };
+ 
+-/* --------------------------------------------------------------------------
++/*
+  * I2C driver
+  */
+ #ifdef CONFIG_PM
+diff --git a/drivers/media/i2c/smia/Kconfig b/drivers/media/i2c/smia/Kconfig
+index ed089e4..13ca043 100644
+--- a/drivers/media/i2c/smia/Kconfig
++++ b/drivers/media/i2c/smia/Kconfig
+@@ -14,4 +14,4 @@ config VIDEO_ET8EK8
+ 	select VIDEO_SMIAREGS
+ 	---help---
+ 	  This is a driver for the Toshiba ET8EK8 5 MP camera sensor.
+-	  It is used for example in Nokia RX51.
++	  It is used for example in Nokia N900 (RX-51).
+diff --git a/drivers/media/i2c/smia/smiaregs.c b/drivers/media/i2c/smia/smiaregs.c
+index f88ac38..50193da 100644
+--- a/drivers/media/i2c/smia/smiaregs.c
++++ b/drivers/media/i2c/smia/smiaregs.c
+@@ -1,5 +1,5 @@
+ /*
+- * drivers/media/video/smiaregs.c
++ * drivers/media/i2c/smia/smiaregs.c
+  *
+  * Copyright (C) 2008 Nokia Corporation
+  *
+@@ -31,11 +31,8 @@
+ #include <media/smiaregs.h>
+ 
+ /*
+- *
+  * Video control helpers
+- *
+  */
+-
+ int smia_ctrl_find(const struct v4l2_queryctrl *ctrls, size_t nctrls, int id)
+ {
+ 	size_t i;
+@@ -183,11 +180,8 @@ int smia_mode_g_ctrl(const __u32 *ctrls, size_t nctrls, struct v4l2_control *vc,
+ EXPORT_SYMBOL_GPL(smia_mode_g_ctrl);
+ 
+ /*
+- *
+  * Reglist helpers
+- *
+  */
+-
+ static int smia_reglist_cmp(const void *a, const void *b)
+ {
+ 	const struct smia_reglist **list1 = (const struct smia_reglist **)a,
+@@ -197,22 +191,22 @@ static int smia_reglist_cmp(const void *a, const void *b)
+ 	if ((*list1)->type == SMIA_REGLIST_MODE &&
+ 	    (*list2)->type != SMIA_REGLIST_MODE)
+ 		return -1;
+-	else if ((*list1)->type != SMIA_REGLIST_MODE &&
+-		 (*list2)->type == SMIA_REGLIST_MODE)
++	if ((*list1)->type != SMIA_REGLIST_MODE &&
++	    (*list2)->type == SMIA_REGLIST_MODE)
+ 		return 1;
+ 
+ 	/* Descending width. */
+ 	if ((*list1)->mode.window_width > (*list2)->mode.window_width)
+ 		return -1;
+-	else if ((*list1)->mode.window_width < (*list2)->mode.window_width)
++	if ((*list1)->mode.window_width < (*list2)->mode.window_width)
+ 		return 1;
+ 
+ 	if ((*list1)->mode.window_height > (*list2)->mode.window_height)
+ 		return -1;
+-	else if ((*list1)->mode.window_height < (*list2)->mode.window_height)
++	if ((*list1)->mode.window_height < (*list2)->mode.window_height)
+ 		return 1;
+-	else
+-		return 0;
++
++	return 0;
+ }
+ 
+ /*
+diff --git a/drivers/media/radio/radio-bcm2048.c b/drivers/media/radio/radio-bcm2048.c
+index d948cac..087e321 100644
+--- a/drivers/media/radio/radio-bcm2048.c
++++ b/drivers/media/radio/radio-bcm2048.c
+@@ -353,6 +353,9 @@ static struct region_info region_configs[] = {
+ 
+ /*
+  *	I2C Interface read / write
++ *
++ * Note: callers use | operation to combine errors from multiple
++ * calls. So this has to return just single error value.
+  */
+ static int bcm2048_send_command(struct bcm2048_device *bdev, unsigned int reg,
+ 					unsigned int value)
+@@ -492,6 +495,8 @@ static int bcm2048_set_rds_no_lock(struct bcm2048_device *bdev, u8 rds_on)
+ 		memset(&bdev->rds_info, 0, sizeof(bdev->rds_info));
+ 	}
+ 
++	/* FIXME: if (err) return err ? */
++
+ 	err = bcm2048_send_command(bdev, BCM2048_I2C_FM_RDS_SYSTEM,
+ 					bdev->cache_fm_rds_system);
+ 
+@@ -633,10 +638,7 @@ static int bcm2048_get_fm_frequency(struct bcm2048_device *bdev)
+ 	if (err)
+ 		return err;
+ 
+-	err = compose_u16(msb, lsb);
+-	err += BCM2048_FREQUENCY_BASE;
+-
+-	return err;
++	return compose_u16(msb, lsb) + BCM2048_FREQUENCY_BASE;
+ }
+ 
+ static int bcm2048_set_fm_af_frequency(struct bcm2048_device *bdev,
+@@ -678,10 +680,7 @@ static int bcm2048_get_fm_af_frequency(struct bcm2048_device *bdev)
+ 	if (err)
+ 		return err;
+ 
+-	err = compose_u16(msb, lsb);
+-	err += BCM2048_FREQUENCY_BASE;
+-
+-	return err;
++	return compose_u16(msb, lsb) + BCM2048_FREQUENCY_BASE;
+ }
+ 
+ static int bcm2048_set_fm_deemphasis(struct bcm2048_device *bdev, int d)
+diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
+index a4b4300..66e7fed 100644
+--- a/drivers/staging/tidspbridge/core/tiomap3430.c
++++ b/drivers/staging/tidspbridge/core/tiomap3430.c
+@@ -527,7 +527,7 @@ static int bridge_brd_start(struct bridge_dev_context *dev_ctxt,
+ 		/* Set the DSP clock rate */
+ 		(void)dev_get_symbol(dev_context->dev_obj,
+ 				     "_BRIDGEINIT_DSP_FREQ", &ul_dsp_clk_addr);
+-		/*Set Autoidle Mode for IVA2 PLL */
++		/* Set Autoidle Mode for IVA2 PLL */
+ 		(*pdata->dsp_cm_write)(1,
+ 				OMAP3430_IVA2_MOD, OMAP3430_CM_AUTOIDLE_PLL);
+ 
+diff --git a/sound/soc/omap/Kconfig b/sound/soc/omap/Kconfig
+index a8319e6..45ea88a 100644
+--- a/sound/soc/omap/Kconfig
++++ b/sound/soc/omap/Kconfig
+@@ -25,14 +25,14 @@ config SND_OMAP_SOC_N810
+ 	  Say Y if you want to add support for SoC audio on Nokia N810.
+ 
+ config SND_OMAP_SOC_RX51
+-	tristate "SoC Audio support for Nokia RX-51"
++	tristate "SoC Audio support for Nokia N900 (RX-51)"
+ 	depends on SND_OMAP_SOC && I2C && ARM && (MACH_NOKIA_RX51 || COMPILE_TEST)
+ 	select SND_OMAP_SOC_MCBSP
+ 	select SND_SOC_TLV320AIC3X
+ 	select SND_SOC_TPA6130A2
+ 	help
+-	  Say Y if you want to add support for SoC audio on Nokia RX-51
+-	  hardware. This is also known as Nokia N900 product.
++	  Say Y if you want to add support for SoC audio on Nokia N900
++	  (RX-51) hardware.
+ 
+ config SND_OMAP_SOC_AMS_DELTA
+ 	tristate "SoC Audio support for Amstrad E3 (Delta) videophone"
 
---zjcmjzIkjQU2rmur
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSnFAoAAoJEN0jrNd/PrOhvzwP/1RImSaO0fYmmsT3HBBpLilE
-9gkimXZ2X1/DX0gTBY9AuAfMqWx3lP5EiY/YZ8O3ywjKO+YKh+fiUXicps4hMtpI
-EHJB99SRHZrhKvxO8f/XcKt15INqsEzylXSzq2uFvkJyxYxJkYLlvtTmMhnAOF3C
-yfOujVL1BIpyQSieCrHiyEbvMbH+MqVlX2a1MmYp28gS5V9/r2LM4d4ifgCZld64
-pHpyoUP9yXLYuUImf5Kb0raUr9/tgVjV1SJ+XRgjtfPl+too+Oxr6sl4t74VjG5x
-GawVhy86CdHwarOYKyNtFYonMX3+CneAEDZZqk4X0HPEZtUARBbP1r7THHvZSQ/d
-U72OhJiJOCd/zw212F4WlEECH1GjPC+qNoask2kX5oGC2pvt8c0l97hnvwF1ZD/w
-EXRk1bFhh74zgdOVLU2RyvC6aK8yWkkrBIVbb5D9H1uAs07ir+z2QuW2KI4zVO98
-g4lARwHByMlUqIenXElW807oDeg6KQqbal9hOsuutRfQteVIxObJGI7YGnheRTGC
-qgoUTjHjjwq4O1pmNEvFdGQaTIKcH+FNsaAAnvmWQX12ig3d+Q9OpaEl7cbqDWj7
-Gu9N34mg/bxP7Sgesnf6yCGWQBN3t7GojE+boJasmRfzvq9VkYfXa6Hk7WohbdgT
-HA3kekAdhEe52t7NAJTB
-=ih0y
------END PGP SIGNATURE-----
-
---zjcmjzIkjQU2rmur--
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
