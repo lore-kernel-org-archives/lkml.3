@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab3LBB5b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 20:57:31 -0500
-Received: from mail.fpasia.hk ([202.130.89.98]:43211 "EHLO fpa01n0.fpasia.hk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752250Ab3LBB5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 20:57:30 -0500
-Message-ID: <529BE903.1020408@gtsys.com.hk>
-Date: Mon, 02 Dec 2013 09:57:23 +0800
-From: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11 ThunderBrowse/3.8
+	id S1752670Ab3LBB5n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 20:57:43 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:64483 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab3LBB5k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Dec 2013 20:57:40 -0500
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3 v3] usb: chipidea: Fix Internal error: : 808 [#1]
- ARM related to STS flag
-References: <1385783513-22502-1-git-send-email-chris.ruehl@gtsys.com.hk> <529A2026.4050605@cogentembedded.com>
-In-Reply-To: <529A2026.4050605@cogentembedded.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [111.240.61.77]
+In-Reply-To: <CACVXFVPPK-s8ToH0L06Rq0DY9cvfomyHpYKJ7ufbbVoJq69mnA@mail.gmail.com>
+References: <CACVXFVNHryPXy2NQhPwXkoCeLUXQSgrWmgBkMNtGD_=X_62_5Q@mail.gmail.com>
+	<CAFRkauDGiy3yZOwKFWMEJvYUe0OoXMEZHKaxogZHdgzMxexdHA@mail.gmail.com>
+	<CACVXFVMAnewCkSNNke3kf1-yO+JCc_HBRp8iaLBPJ+14G79Haw@mail.gmail.com>
+	<87y54vzszo.fsf@rustcorp.com.au>
+	<CAFRkauBYUq3UAjqLvkuDVEz5BVyDpC0DuVRGTe4K+kcoCX17GA@mail.gmail.com>
+	<CACVXFVMvvG1unnR0rsmBMdp9p19Q3JRbURxZF-UWxvrThDPKTw@mail.gmail.com>
+	<CAFRkauCW3FDSuh4t0gvmSWH1m0+qaG0XSoBxmk30Wq1FMy7iFw@mail.gmail.com>
+	<CACVXFVMzOzD+D-MQCUBvC80d4zS-TJfcucKuUvzerGs6gT1fEg@mail.gmail.com>
+	<CACVXFVOnVXcVdRCm=OfPjpvvWCiXi8GRV+9ViOGmSZ3tTf6WDg@mail.gmail.com>
+	<528110B1.4060402@arm.com>
+	<20131111193236.GB16735@n2100.arm.linux.org.uk>
+	<CACVXFVPQfUtrc4r4cS9J+6q5Z6hGZDgafH=M_6JfrzrAUGJOHw@mail.gmail.com>
+	<CAFRkauACb7wPdisp-PEic_-ko5MhhnAyigcpg5gfjLEFUuJqGw@mail.gmail.com>
+	<CACVXFVPPK-s8ToH0L06Rq0DY9cvfomyHpYKJ7ufbbVoJq69mnA@mail.gmail.com>
+Date: Mon, 2 Dec 2013 09:57:39 +0800
+Message-ID: <CAFRkauCFdBFM3L9DA2i7jGDRPe4V5AQA2o-ZsZB7HYA-zvzHAA@mail.gmail.com>
+Subject: Re: kernel BUG at kernel/kallsyms.c:222!
+From: Axel Lin <axel.lin@ingics.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Michal Marek <mmarek@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+2013/11/13 Ming Lei <tom.leiming@gmail.com>:
+> Hi Axel,
+>
+> On Wed, Nov 13, 2013 at 5:58 PM, Axel Lin <axel.lin@ingics.com> wrote:
+>>
+>> Hi Ming,
+>> You missed "; then" in the end of if statement in your patch.
+>>
+>> So I got below error with your patch:
+>> scripts/link-vmlinux.sh: line 87: syntax error near unexpected token `fi'
+>> make: *** [vmlinuxclean] Error 2
+>
+> Thanks for your test, and I have fixed it and post a formal one for merge,
+> and you can find these two patches on arm list, but forget to Cc you, sorry
+> for that.
 
-On Sunday, December 01, 2013 01:28 AM, Sergei Shtylyov wrote:
-> Hello.
->
-> On 30-11-2013 7:51, Chris Ruehl wrote:
->
->> usb: chipidea: Fix Internal error: : 808 [#1] ARM related to STS flag
->
->> * init the sts flag to 0 (missed)
->> * Set PORTCS_STS only if VUSB_HS_PHY_TYPE > 1
->> otherwise the register is ReadOnly
->> * Set/Reset correct BIT(28)/BIT(29) for STS
->
->> Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
->
-> The coding style is still wrong at places...
->
-..
->> - hw_write(ci, OP_DEVLC, DEVLC_STS, sts);
->> + if ( sts )
->
-> Remove spaces around 'sts', please.
-...
->> + portsc = (ioread32(ci->hw_bank.regmap[OP_PORTSC])
->> + & PORTSC_STS);
->
-> No need for outer (). And it's preferred that an operator is left at the
-> end of a first line, not starts the continuation line.
->
-> WBR, Sergei
->
+Hi Ming,
+Both your patch and Jonathan's patch are still not in linux-next.
+Any chance to resend the patchs to RMK's patch system?
 
-Sergei,
-Thanks, I will take care of and have a question about style
-
-	 portsc = ioread32(ci->hw_bank.regmap[OP_PORTSC] & PORTSC_STS;
-
-the line in the if/else alignment extent the 80char barrier and should be 
-splitted in this case '&' is at 81 .. how serious I should follow this one?
-
-  	 portsc = ioread32(ci->hw_bank.regmap[OP_PORTSC] &
-                     PORTSC_STS;
-
-I keep this mail private don't want make too much noise on the list.
-
-regards
-Chris
+Thanks,
+Axel
