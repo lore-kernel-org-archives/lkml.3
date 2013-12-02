@@ -1,144 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756708Ab3LBUCa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:02:30 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:33594 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635Ab3LBUCZ (ORCPT
+	id S1756716Ab3LBUCu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:02:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39200 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753288Ab3LBTR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 15:02:25 -0500
-Date: Mon, 2 Dec 2013 21:02:21 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
- access to memory reserves
-Message-ID: <20131202200221.GC5524@dhcp22.suse.cz>
-References: <20131113233419.GJ707@cmpxchg.org>
- <alpine.DEB.2.02.1311131649110.6735@chino.kir.corp.google.com>
- <20131114032508.GL707@cmpxchg.org>
- <alpine.DEB.2.02.1311141447160.21413@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1311141525440.30112@chino.kir.corp.google.com>
- <20131118154115.GA3556@cmpxchg.org>
- <20131118165110.GE32623@dhcp22.suse.cz>
- <20131122165100.GN3556@cmpxchg.org>
- <alpine.DEB.2.02.1311261648570.21003@chino.kir.corp.google.com>
- <20131127163435.GA3556@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131127163435.GA3556@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 2 Dec 2013 14:17:56 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Aaron Lu <aaron.lu@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.12 096/212] PM / hibernate: Avoid overflow in hibernate_preallocate_memory()
+Date: Mon,  2 Dec 2013 11:14:47 -0800
+Message-Id: <20131202191258.182492963@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
+References: <20131202191248.517975703@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 27-11-13 11:34:36, Johannes Weiner wrote:
-> On Tue, Nov 26, 2013 at 04:53:47PM -0800, David Rientjes wrote:
-> > On Fri, 22 Nov 2013, Johannes Weiner wrote:
-> > 
-> > > But userspace in all likeliness DOES need to take action.
-> > > 
-> > > Reclaim is a really long process.  If 5 times doing 12 priority cycles
-> > > and scanning thousands of pages is not enough to reclaim a single
-> > > page, what does that say about the health of the memcg?
-> > > 
-> > > But more importantly, OOM handling is just inherently racy.  A task
-> > > might receive the kill signal a split second *after* userspace was
-> > > notified.  Or a task may exit voluntarily a split second after a
-> > > victim was chosen and killed.
-> > > 
-> > 
-> > That's not true even today without the userspace oom handling proposal 
-> > currently being discussed if you have a memcg oom handler attached to a 
-> > parent memcg with access to more memory than an oom child memcg.  The oom 
-> > handler can disable the child memcg's oom killer with memory.oom_control 
-> > and implement its own policy to deal with any notification of oom.
-> 
-> I was never implying the kernel handler.  All the races exist with
-> userspace handling as well.
-> 
-> > This patch is required to ensure that in such a scenario that the oom 
-> > handler sitting in the parent memcg only wakes up when it's required to 
-> > intervene.
-> 
-> A task could receive an unrelated kill between the OOM notification
-> and going to sleep to wait for userspace OOM handling.  Or another
-> task could exit voluntarily between the notification and waitqueue
-> entry, which would again be short-cut by the oom_recover of the exit
-> uncharges.
-> 
-> oom:                           other tasks:
-> check signal/exiting
->                                could exit or get killed here
-> mem_cgroup_oom_trylock()
->                                could exit or get killed here
-> mem_cgroup_oom_notify()
->                                could exit or get killed here
-> if (userspace_handler)
->   sleep()                      could exit or get killed here
-> else
->   oom_kill()
->                                could exit or get killed here
-> 
-> It does not matter where your signal/exiting check is, OOM
-> notification can never be race free because OOM is just an arbitrary
-> line we draw.  We have no idea what all the tasks are up to and how
-> close they are to releasing memory.  Even if we freeze the whole group
-> to handle tasks, it does not change the fact that the userspace OOM
-> handler might kill one task and after the unfreeze another task
-> immediately exits voluntarily or got a kill signal a split second
-> after it was frozen.
-> 
-> You can't fix this.  We just have to draw the line somewhere and
-> accept that in rare situations the OOM kill was unnecessary.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-But we are not talking just about races here. What if the OOM is a
-result of an OOM action itself. E.g. a killed task faults a memory in
-while exiting and it hasn't freed its memory yet. Should we notify in
-such a case? What would an userspace OOM handler do (the in-kernel
-implementation has an advantage because it can check the tasks flags)?
+------------------
 
-> So again, I don't see this patch is doing anything but blur the
-> current line and make notification less predictable. And, as someone
-> else in this thread already said, it's a uservisible change in
-> behavior and would break known tuning usecases.
+From: Aaron Lu <aaron.lu@intel.com>
 
-I would like to understand how would such a tuning usecase work and how
-it would break with this change.
+commit fd432b9f8c7c88428a4635b9f5a9c6e174df6e36 upstream.
 
-Consider the above example. You would get 2 notification for the very
-same OOM condition.
-On the other hand if the encountered exiting task was just a race then
-we have two options basically. Either there are more tasks racing (and
-not all of them are exiting) or there is only one (all are exiting).
-We will not loose any notification in the first case because the flags
-are checked before mem_cgroup_oom_trylock and so one of tasks would lock
-and notify.
-The second case is more interesting. Userspace won't get notification
-but we also know that no action is required as the OOM will be resolved
-by itself. And now we should consider whether notification would do more
-good than harm. The tuning usecase would loose one event. Would such a
-rare situation skew the statistics so much? On the other hand a real OOM
-killer would do something which means something will be killed. I find
-the later much worse.
+When system has a lot of highmem (e.g. 16GiB using a 32 bits kernel),
+the code to calculate how much memory we need to preallocate in
+normal zone may cause overflow. As Leon has analysed:
 
-So all in all. I do agree with you that this path will never be race
-free and without pointless OOM actions. I also agree that drawing the
-line is hard. But I am more inclined to prevent from notification when
-we already know that _no action_ is required because IMHO the vast
-majority of oom listeners are there to _do_ an action which is mostly
-deadly.
+ It looks that during computing 'alloc' variable there is overflow:
+ alloc = (3943404 - 1970542) - 1978280 = -5418 (signed)
+ And this function goes to err_out.
 
-Finally if this is too controversial then I would at least like to see
-the same check introduced before we go to sleep for oom_kill_disable
-case because that is a real bug.
+Fix this by avoiding that overflow.
 
-Thanks!
--- 
-Michal Hocko
-SUSE Labs
+References: https://bugzilla.kernel.org/show_bug.cgi?id=60817
+Reported-and-tested-by: Leon Drugi <eyak@wp.pl>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/power/snapshot.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -1402,7 +1402,11 @@ int hibernate_preallocate_memory(void)
+ 	 * highmem and non-highmem zones separately.
+ 	 */
+ 	pages_highmem = preallocate_image_highmem(highmem / 2);
+-	alloc = (count - max_size) - pages_highmem;
++	alloc = count - max_size;
++	if (alloc > pages_highmem)
++		alloc -= pages_highmem;
++	else
++		alloc = 0;
+ 	pages = preallocate_image_memory(alloc, avail_normal);
+ 	if (pages < alloc) {
+ 		/* We have exhausted non-highmem pages, try highmem. */
+
+
