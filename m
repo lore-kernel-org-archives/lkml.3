@@ -1,20 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756636Ab3LBU2S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:28:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39017 "EHLO
+	id S1757727Ab3LBU2y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:28:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39012 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753065Ab3LBTQx (ORCPT
+	with ESMTP id S1752995Ab3LBTQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:16:53 -0500
+	Mon, 2 Dec 2013 14:16:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Peng Tao <bergwolf@gmail.com>
-Subject: [PATCH 3.12 011/212] staging/lustre/ptlrpc: fix ptlrpc_stop_pinger logic
-Date: Mon,  2 Dec 2013 11:13:22 -0800
-Message-Id: <20131202191249.899688827@linuxfoundation.org>
+        Nico Golde <nico@ngolde.de>, Dan Carpenter <dan.carpenter@oracle.com>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        "Kanigeri, Hari" <h-kanigeri2@ti.com>,
+        Ameya Palande <ameya.palande@nokia.com>,
+        "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
+        "Hebbar, Shivananda" <x0hebbar@ti.com>,
+        "Ramos Falcon, Ernesto" <ernesto@ti.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        "Anna, Suman" <s-anna@ti.com>, "Gupta, Ramesh" <grgupta@ti.com>,
+        "Gomez Castellanos, Ivan" <ivan.gomez@ti.com>,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+        Armando Uribe De Leon <x0095078@ti.com>,
+        Deepak Chitriki <deepak.chitriki@ti.com>,
+        "Menon, Nishanth" <nm@ti.com>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [PATCH 3.12 010/212] Staging: tidspbridge: disable driver
+Date: Mon,  2 Dec 2013 11:13:21 -0800
+Message-Id: <20131202191249.790707327@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,33 +42,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peng Tao <bergwolf@gmail.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit b39f15c972c462903208531b82f9b34ba8ef3ec0 upstream.
+commit 930ba4a374b96560ef9fde2145cdc454a164ddcc upstream.
 
-It was introduced due to a patch hunk when porting
-commit 20802057 (staging/lustre/ptlrpc: race in pinger).
+There seems to be no active maintainer for the driver, and there is an
+unfixed security bug, so disable the driver for now.
 
-Cc: Andreas Dilger <andreas.dilger@intel.com>
-Signed-off-by: Peng Tao <bergwolf@gmail.com>
+Hopefully someone steps up to be the maintainer, and works to get this
+out of staging, otherwise it will be deleted soon.
+
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Omar Ramirez Luna <omar.ramirez@copitl.com>
+Cc: Omar Ramirez Luna <omar.ramirez@ti.com>
+Cc: Kanigeri, Hari <h-kanigeri2@ti.com>
+Cc: Ameya Palande <ameya.palande@nokia.com>
+Cc: Guzman Lugo, Fernando <fernando.lugo@ti.com>
+Cc: Hebbar, Shivananda <x0hebbar@ti.com>
+Cc: Ramos Falcon, Ernesto <ernesto@ti.com>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Anna, Suman <s-anna@ti.com>
+Cc: Gupta, Ramesh <grgupta@ti.com>
+Cc: Gomez Castellanos, Ivan <ivan.gomez@ti.com>
+Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Cc: Armando Uribe De Leon <x0095078@ti.com>
+Cc: Deepak Chitriki <deepak.chitriki@ti.com>
+Cc: Menon, Nishanth <nm@ti.com>
+Cc: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: stable <stable@vger.kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/lustre/lustre/ptlrpc/pinger.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/tidspbridge/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/lustre/lustre/ptlrpc/pinger.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/pinger.c
-@@ -409,8 +409,8 @@ int ptlrpc_stop_pinger(void)
- 	struct l_wait_info lwi = { 0 };
- 	int rc = 0;
+--- a/drivers/staging/tidspbridge/Kconfig
++++ b/drivers/staging/tidspbridge/Kconfig
+@@ -4,7 +4,7 @@
  
--	if (!thread_is_init(&pinger_thread) &&
--	    !thread_is_stopped(&pinger_thread))
-+	if (thread_is_init(&pinger_thread) ||
-+	    thread_is_stopped(&pinger_thread))
- 		return -EALREADY;
- 
- 	ptlrpc_pinger_remove_timeouts();
+ menuconfig TIDSPBRIDGE
+ 	tristate "DSP Bridge driver"
+-	depends on ARCH_OMAP3 && !ARCH_MULTIPLATFORM
++	depends on ARCH_OMAP3 && !ARCH_MULTIPLATFORM && BROKEN
+ 	select MAILBOX
+ 	select OMAP2PLUS_MBOX
+ 	help
 
 
