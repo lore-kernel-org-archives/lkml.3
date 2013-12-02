@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758912Ab3LBVBM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:01:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38489 "EHLO
+	id S1758925Ab3LBVBR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:01:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38477 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754076Ab3LBTNa (ORCPT
+	with ESMTP id S1754074Ab3LBTN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:30 -0500
+	Mon, 2 Dec 2013 14:13:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Mathias Krause <minipli@googlemail.com>,
-        Richard Guy Briggs <rgb@redhat.com>
-Subject: [PATCH 3.10 083/173] audit: fix info leak in AUDIT_GET requests
-Date: Mon,  2 Dec 2013 11:11:06 -0800
-Message-Id: <20131202191152.997351065@linuxfoundation.org>
+        Tyler Hicks <tyhicks@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Eric Paris <eparis@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com
+Subject: [PATCH 3.10 081/173] audit: printk USER_AVC messages when audit isnt enabled
+Date: Mon,  2 Dec 2013 11:11:04 -0800
+Message-Id: <20131202191152.749274714@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -28,33 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Tyler Hicks <tyhicks@canonical.com>
 
-commit 64fbff9ae0a0a843365d922e0057fc785f23f0e3 upstream.
+commit 0868a5e150bc4c47e7a003367cd755811eb41e0b upstream.
 
-We leak 4 bytes of kernel stack in response to an AUDIT_GET request as
-we miss to initialize the mask member of status_set. Fix that.
+When the audit=1 kernel parameter is absent and auditd is not running,
+AUDIT_USER_AVC messages are being silently discarded.
 
+AUDIT_USER_AVC messages should be sent to userspace using printk(), as
+mentioned in the commit message of 4a4cd633 ("AUDIT: Optimise the
+audit-disabled case for discarding user messages").
+
+When audit_enabled is 0, audit_receive_msg() discards all user messages
+except for AUDIT_USER_AVC messages. However, audit_log_common_recv_msg()
+refuses to allocate an audit_buffer if audit_enabled is 0. The fix is to
+special case AUDIT_USER_AVC messages in both functions.
+
+It looks like commit 50397bd1 ("[AUDIT] clean up audit_receive_msg()")
+introduced this bug.
+
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
 Cc: Al Viro <viro@zeniv.linux.org.uk>
 Cc: Eric Paris <eparis@redhat.com>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: linux-audit@redhat.com
+Acked-by: Kees Cook <keescook@chromium.org>
 Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/audit.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/audit.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 --- a/kernel/audit.c
 +++ b/kernel/audit.c
-@@ -659,6 +659,7 @@ static int audit_receive_msg(struct sk_b
+@@ -613,7 +613,7 @@ static int audit_log_common_recv_msg(str
+ 	int rc = 0;
+ 	uid_t uid = from_kuid(&init_user_ns, current_uid());
  
- 	switch (msg_type) {
- 	case AUDIT_GET:
-+		status_set.mask		 = 0;
- 		status_set.enabled	 = audit_enabled;
- 		status_set.failure	 = audit_failure;
- 		status_set.pid		 = audit_pid;
+-	if (!audit_enabled) {
++	if (!audit_enabled && msg_type != AUDIT_USER_AVC) {
+ 		*ab = NULL;
+ 		return rc;
+ 	}
 
 
