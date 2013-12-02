@@ -1,91 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab3LBLpE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 06:45:04 -0500
-Received: from 4.mo4.mail-out.ovh.net ([178.32.98.131]:58658 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753257Ab3LBLpA (ORCPT
+	id S1753567Ab3LBLqa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 06:46:30 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:49728 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753409Ab3LBLq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 06:45:00 -0500
-X-Greylist: delayed 484 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Dec 2013 06:45:00 EST
-Message-ID: <529C70C7.9050707@overkiz.com>
-Date: Mon, 02 Dec 2013 12:36:39 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org
-CC: linux-kernel@vger.kernel.org, jiri.prchal@aksignal.cz
-Subject: Re: [PATCH] ARM: at91: add usart3 alias to dtsi
-References: <1385979186-29447-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1385979186-29447-1-git-send-email-nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 8127308477948590188
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Mon, 2 Dec 2013 06:46:27 -0500
+Message-ID: <1385984782.12531.26.camel@host5.omatika.ru>
+Subject: Re: [PATCH 05/11] serial: support for 16550 serial ports on LP-8x4x
+From: Sergei Ianovich <ynvich@gmail.com>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
+        "open list:SERIAL DRIVERS" <linux-serial@vger.kernel.org>
+Date: Mon, 02 Dec 2013 15:46:22 +0400
+In-Reply-To: <20131202084845.GD3942@xps8300>
+References: <1385879185-22455-1-git-send-email-ynvich@gmail.com>
+	 <1385879185-22455-6-git-send-email-ynvich@gmail.com>
+	 <20131202084845.GD3942@xps8300>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nicolas,
+On Mon, 2013-12-02 at 10:48 +0200, Heikki Krogerus wrote:
+> On Sun, Dec 01, 2013 at 10:26:18AM +0400, Sergei Ianovich wrote:
+> > The patch adds support for 3 additional LP-8x4x built-in serial
+> > ports.
+> > 
+> > The device can also host up to 8 extension cards with 4 serial ports
+> > on each card for a total of 35 ports. However, I don't have
+> > the hardware to test extension cards, so they are not supported, yet.
 
-Le 02/12/2013 11:13, Nicolas Ferre a écrit :
-> Alias was missing for SoC of the at91sam9x5 familly that embed USART3.
-> Preripheral node and pinctrl declarations are already in the
-> at91sam9x5_usart3.dtsi file.
->
-> Reported-by: Jiri Prchal <jiri.prchal@aksignal.cz>
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
->   arch/arm/boot/dts/at91sam9g25.dtsi | 4 ++++
->   arch/arm/boot/dts/at91sam9x25.dtsi | 4 ++++
->   2 files changed, 8 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/at91sam9g25.dtsi b/arch/arm/boot/dts/at91sam9g25.dtsi
-> index 17b879990914..d4650b4e9ebb 100644
-> --- a/arch/arm/boot/dts/at91sam9g25.dtsi
-> +++ b/arch/arm/boot/dts/at91sam9g25.dtsi
-> @@ -14,6 +14,10 @@
->   	model = "Atmel AT91SAM9G25 SoC";
->   	compatible = "atmel,at91sam9g25", "atmel,at91sam9x5";
->   
-> +	aliases {
-> +		serial4 = &usart3;
-> +	};
-> +
+> > --- a/arch/arm/mach-pxa/include/mach/lp8x4x.h
+> > +++ b/arch/arm/mach-pxa/include/mach/lp8x4x.h
+> > @@ -50,6 +50,12 @@
+> >  #define LP8X4X_CLRFALLINT	LP8X4X_P2V(0x1700901a)
+> >  #define LP8X4X_RWRTC		LP8X4X_P2V(0x1700901c)
+> >  #define LP8X4X_SRAMBANK		0x1700901e
+> > +#define LP8X4X_TTYS0_QUIRK	0x17009030
+> > +#define LP8X4X_TTYS1_QUIRK	0x17009032
+> > +#define LP8X4X_TTYS2_QUIRK	0x17009034
+> > +#define LP8X4X_TTYS0_IOMEM	0x17009050
+> > +#define LP8X4X_TTYS1_IOMEM	0x17009060
+> > +#define LP8X4X_TTYS2_IOMEM	0x17009070
+> > +
+> > +static void lp8x4x_set_termios(struct uart_port *port,
+> > +		struct ktermios *termios, struct ktermios *old)
+> > +{
+> 
+> <snip>
+> 
+> > +static int request_and_remap(int i)
+> > +{
+> > +	if (!request_mem_region(extra_mem[i], 1, "serial"))
+> > +		return -EBUSY;
+> > +
+> > +	lp8x4x_data[i].private_data = ioremap(extra_mem[i], 1);
+> > +	if (lp8x4x_data[i].private_data)
+> > +		return 0;
+> > +
+> > +	release_mem_region(extra_mem[i], 1);
+> > +	return -ENODEV;
 
-Shouldn't this go into at91sam9x5_usart3.dtsi ?
-This way you would have the same alias for all the SoCs supporting usart3.
+> Instead of registering a platform device for serial8250 here, you need
+> to simply register a platform driver for something like lp8x4x_serial.
+> The platform code will to registers the platform devices for it. You
+> will use serial8250_register_8250_port() in your probe to register a
+> new port. Use 8250_em.c and 8250_dw.c under drivers/tty/serial/8250/
+> as an example.
+> 
+> You don't need to introduce plat_serial8250_port so you won't need
+> the QUIRK_PORT stuff. You deliver the iomem and the irq as normal
+> resources that the driver uses when you create the platform device.
+> That of course also means the driver does not need to care about the
+> instances. The platform code will generate a platform device for as
+> many ports you have and set to resources accordingly.
 
-Best Regards,
-
-Boris
-
->   	ahb {
->   		apb {
->   			pinctrl@fffff400 {
-> diff --git a/arch/arm/boot/dts/at91sam9x25.dtsi b/arch/arm/boot/dts/at91sam9x25.dtsi
-> index c2554219f7a4..aceee86f60eb 100644
-> --- a/arch/arm/boot/dts/at91sam9x25.dtsi
-> +++ b/arch/arm/boot/dts/at91sam9x25.dtsi
-> @@ -15,6 +15,10 @@
->   	model = "Atmel AT91SAM9X25 SoC";
->   	compatible = "atmel,at91sam9x25", "atmel,at91sam9x5";
->   
-> +	aliases {
-> +		serial4 = &usart3;
-> +	};
-> +
->   	ahb {
->   		apb {
->   			pinctrl@fffff400 {
+8250_core.c doesn't use platform infrastructure to request and map IO
+memory. There will be a conflict (and an error in
+serial8250_request_std_resource()), if main IO memory is requested by
+the platform device, won't it?
 
