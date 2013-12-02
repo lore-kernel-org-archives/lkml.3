@@ -1,109 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab3LBLeA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 06:34:00 -0500
-Received: from mail.kmu-office.ch ([178.209.48.102]:41975 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257Ab3LBLd5 (ORCPT
+	id S1753493Ab3LBLhw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 06:37:52 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48298 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753014Ab3LBLht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 06:33:57 -0500
+	Mon, 2 Dec 2013 06:37:49 -0500
+Date: Mon, 2 Dec 2013 11:37:20 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 4/5 v2] input: tc3589x-keypad: support probing from
+ device tree
+Message-ID: <20131202113720.GF12952@e106331-lin.cambridge.arm.com>
+References: <1384265618-10590-1-git-send-email-linus.walleij@linaro.org>
+ <20131112153057.GA9683@earth.universe>
+ <CACRpkdb_bryGJo7CKGP5tj3RFGv=Gh+Q5m9ucVKqJ068tjPC2g@mail.gmail.com>
+ <20131112200514.GA15413@earth.universe>
+ <CACRpkdaAaLjm_b+OLj3tobxBN8YGUcTPnXJ=qtBqd02=FTxhjQ@mail.gmail.com>
+ <20131112204013.GA17674@earth.universe>
+ <20131113142406.GH21713@e106331-lin.cambridge.arm.com>
+ <20131117182852.GC30012@xo-6d-61-c0.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-Date: Mon, 02 Dec 2013 12:38:58 +0100
-From: Stefan Agner <stefan@agner.ch>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: swarren@wwwdotorg.org, dev@lynxeye.de, lee.jones@linaro.org,
-        lgirdwood@gmail.com, broonie@kernel.org,
-        kai.poggensee@avionic-design.de, sameo@linux.intel.com,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-tegra-owner@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] regulator: tps6586x: add and use correct voltage
- table
-In-Reply-To: <20131202093622.GF17834@ulmo.nvidia.com>
-References: <cover.1385913227.git.stefan@agner.ch>
- <77c960e6e3a91cf39bc866ccb9cd578ccc5acc95.1385913228.git.stefan@agner.ch>
- <20131202093622.GF17834@ulmo.nvidia.com>
-Message-ID: <7ec014a74ccbcf975f45e0c517615ae2@agner.ch>
-User-Agent: Roundcube Webmail/0.9.5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131117182852.GC30012@xo-6d-61-c0.localdomain>
+Thread-Topic: [PATCH 4/5 v2] input: tc3589x-keypad: support probing from
+ device tree
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2013-12-02 10:36, schrieb Thierry Reding:
-> On Sun, Dec 01, 2013 at 04:59:14PM +0100, Stefan Agner wrote:
-> [...]
+On Sun, Nov 17, 2013 at 06:28:52PM +0000, Pavel Machek wrote:
 > 
-> This looks pretty good generally. A few minor nits below...
+> > > Thus I guess we should not use the name, which has the most adopters
+> > > in kernel (or out of kernel). Instead the most fitting name should
+> > > be used. Current suggestions (taken from kernel) are:
+> > > 
+> > > * <<vendor>>,no-autorepeat
+> > > * keypad,autorepeat
+> > > * linux,keypad-no-autorepeat
+> > > * linux,input-no-autorepeat
+> > > * linux,no-autorepeat
+> > > * autorepeat
+> > > 
+> > > I do not really care, which one is chosen, except for two things:
+> > > 
+> > > * <<vendor>> seems wrong. This is not vendor specific.
+> > > * I would prefer "input-" over "keypad-", since then the same name
+> > >   can be used for single keys, buttons, etc.
+> > 
+> > Both of those sound valid to me, but I think it may make sense to keep
+> > the "linux," prefix. As I understand it this is really telling the Linux
+> > input subsystem to react to a device acting in a certain way, rather
+> > than describing or configuring the device in a certain way.
 > 
->> diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
-> [...]
->> +#define tps658623_sm2_voltages tps6586x_ldo4_voltages
->>  static const unsigned int tps6586x_ldo4_voltages[] = {
->>  	1700000, 1725000, 1750000, 1775000, 1800000, 1825000, 1850000, 1875000,
->>  	1900000, 1925000, 1950000, 1975000, 2000000, 2025000, 2050000, 2075000,
-> 
-> I'd put the #define below the ldo4 table. This doesn't actually matter
-> for the preprocessor, but it makes it easier to read the code. Also an
-> additional blank line would help with readability.
-> 
->> +	TPS6586X_LDO(LDO_0, "vinldo01", tps6586x_ldo0, SUPPLYV1, 5, 3, ENC, 0,
->> +					END, 0),
-> 
-> Perhaps reduce the indentation here so there's more room in case this
-> ever needs to be extended?
+> I'd say it is very much configuring device in certain way, and yes, other
+> operating systems will want to do autorepeat, too.
 
-The last 4 lines indentation was already that far, so I just adopted
-those lines in order to avoid having to touch them too.
+Nothing is handled differently at the device with respect to this flag.
+The Linux input subsystem behaves differently. Thus this is
+configuration of the Linux input subsysytem, not the device.
 
+> 
+> I believe we don't want to end up with
+> 
+> linux,input-no-autorepeat
+> bsd,keypad-autorepeat
+> windows-phone,disable-autorepeat
+
+I do not see a problem with this. This is only as bad as the current
+situation, but has the benefit that the madness is constrained to
+particular vendor prefixes, which we can uniquely identify and handle
+differently if required.
 
 > 
->> @@ -351,6 +380,7 @@ static int tps6586x_regulator_probe(struct platform_device *pdev)
->>  	struct regulator_init_data *reg_data;
->>  	struct tps6586x_platform_data *pdata;
->>  	struct of_regulator_match *tps6586x_reg_matches = NULL;
->> +	int reg_version;
-> 
-> Why the prefix "reg_"?
-> 
->> @@ -373,10 +403,27 @@ static int tps6586x_regulator_probe(struct platform_device *pdev)
->>  		return -ENOMEM;
->>  	}
->>
->> +	reg_version = tps6586x_get_version(pdev->dev.parent);
->> +
->>  	for (id = 0; id < TPS6586X_ID_MAX_REGULATOR; ++id) {
->>  		reg_data = pdata->reg_init_data[id];
->>
->> -		ri = find_regulator_info(id);
->> +		switch(reg_version) {
->> +		case TPS658623:
->> +			ri = find_regulator_info(id, tps658623_regulator,
->> +					ARRAY_SIZE(tps658623_regulator));
->> +			break;
->> +		case TPS658643:
->> +			ri = find_regulator_info(id, tps658643_regulator,
->> +					ARRAY_SIZE(tps658643_regulator));
->> +			break;
->> +		}
-> 
-> Perhaps instead of repeating the function calls this could be:
-> 
-> 		switch (version) {
-> 		case TPS6586XYZ:
-> 			num = ARRAY_SIZE(tps6586xyz_regulator);
-> 			table = tps6586xys_regulator;
-> 			break;
-> 
-> 		...
-> 		}
-> 
-> 		if (table)
-> 			ri = find_regulator_info(id, table, num);
-> 
-> That's slightly longer, but I find that to be more intuitive. Perhaps
-> a bit more future-proof since you only have a single call. But that's
-> perhaps subjective, so I'm fine with your alternative, too.
+> ...and should avoid linux, prefix.
 
-Sounds reasonable, will change that accordingly in the next patch
-version.
+I disagree.
+
+Mark.
