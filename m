@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759248Ab3LBVJF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:09:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38411 "EHLO
+	id S1759236Ab3LBVJB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:09:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38421 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab3LBTNL (ORCPT
+	with ESMTP id S1754000Ab3LBTNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:11 -0500
+	Mon, 2 Dec 2013 14:13:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.10 056/173] mtd: nand: hack ONFI for non-power-of-2 dimensions
-Date: Mon,  2 Dec 2013 11:10:39 -0800
-Message-Id: <20131202191149.044729596@linuxfoundation.org>
+        James Ralston <james.d.ralston@intel.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 045/173] ahci: Add Device IDs for Intel Wildcat Point-LP
+Date: Mon,  2 Dec 2013 11:10:28 -0800
+Message-Id: <20131202191147.832667469@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -26,84 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Norris <computersforpeace@gmail.com>
+From: James Ralston <james.d.ralston@intel.com>
 
-commit 4355b70cf48363c50a9de450b01178c83aba8f6a upstream.
+commit 9f961a5f6efc87a79571d7166257b36af28ffcfe upstream.
 
-Some bright specification writers decided to write this in the ONFI spec
-(from ONFI 3.0, Section 3.1):
+This patch adds the AHCI-mode SATA Device IDs for the Intel Wildcat Point-LP PCH.
 
-  "The number of blocks and number of pages per block is not required to
-  be a power of two. In the case where one of these values is not a
-  power of two, the corresponding address shall be rounded to an
-  integral number of bits such that it addresses a range up to the
-  subsequent power of two value. The host shall not access upper
-  addresses in a range that is shown as not supported."
-
-This breaks every assumption MTD makes about NAND block/chip-size
-dimensions -- they *must* be a power of two!
-
-And of course, an enterprising manufacturer has made use of this lovely
-freedom. Exhibit A: Micron MT29F32G08CBADAWP
-
-  "- Plane size: 2 planes x 1064 blocks per plane
-   - Device size: 32Gb: 2128 blockss [sic]"
-
-This quickly hits a BUG() in nand_base.c, since the extra dimensions
-overflow so we think it's a second chip (on my single-chip setup):
-
-    ONFI param page 0 valid
-    ONFI flash detected
-    NAND device: Manufacturer ID: 0x2c, Chip ID: 0x44 (Micron MT29F32G08CBADAWP), 4256MiB, page size: 8192, OOB size: 744
-    ------------[ cut here ]------------
-    kernel BUG at drivers/mtd/nand/nand_base.c:203!
-    Internal error: Oops - BUG: 0 [#1] SMP ARM
-    [... trim ...]
-    [<c02cf3e4>] (nand_select_chip+0x18/0x2c) from [<c02d25c0>] (nand_do_read_ops+0x90/0x424)
-    [<c02d25c0>] (nand_do_read_ops+0x90/0x424) from [<c02d2dd8>] (nand_read+0x54/0x78)
-    [<c02d2dd8>] (nand_read+0x54/0x78) from [<c02ad2c8>] (mtd_read+0x84/0xbc)
-    [<c02ad2c8>] (mtd_read+0x84/0xbc) from [<c02d4b28>] (scan_read.clone.4+0x4c/0x64)
-    [<c02d4b28>] (scan_read.clone.4+0x4c/0x64) from [<c02d4c88>] (search_bbt+0x148/0x290)
-    [<c02d4c88>] (search_bbt+0x148/0x290) from [<c02d4ea4>] (nand_scan_bbt+0xd4/0x5c0)
-    [... trim ...]
-    ---[ end trace 0c9363860d865ff2 ]---
-
-So to fix this, just truncate these dimensions down to the greatest
-power-of-2 dimension that is less than or equal to the specified
-dimension.
-
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/nand_base.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ drivers/ata/ahci.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2904,10 +2904,21 @@ static int nand_flash_detect_onfi(struct
- 	sanitize_string(p->model, sizeof(p->model));
- 	if (!mtd->name)
- 		mtd->name = p->model;
-+
- 	mtd->writesize = le32_to_cpu(p->byte_per_page);
--	mtd->erasesize = le32_to_cpu(p->pages_per_block) * mtd->writesize;
-+
-+	/*
-+	 * pages_per_block and blocks_per_lun may not be a power-of-2 size
-+	 * (don't ask me who thought of this...). MTD assumes that these
-+	 * dimensions will be power-of-2, so just truncate the remaining area.
-+	 */
-+	mtd->erasesize = 1 << (fls(le32_to_cpu(p->pages_per_block)) - 1);
-+	mtd->erasesize *= mtd->writesize;
-+
- 	mtd->oobsize = le16_to_cpu(p->spare_bytes_per_page);
--	chip->chipsize = le32_to_cpu(p->blocks_per_lun);
-+
-+	/* See erasesize comment */
-+	chip->chipsize = 1 << (fls(le32_to_cpu(p->blocks_per_lun)) - 1);
- 	chip->chipsize *= (uint64_t)mtd->erasesize * p->lun_count;
- 	*busw = 0;
- 	if (le16_to_cpu(p->features) & 1)
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -292,6 +292,10 @@ static const struct pci_device_id ahci_p
+ 	{ PCI_VDEVICE(INTEL, 0x8d66), board_ahci }, /* Wellsburg RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8d6e), board_ahci }, /* Wellsburg RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x23a3), board_ahci }, /* Coleto Creek AHCI */
++	{ PCI_VDEVICE(INTEL, 0x9c83), board_ahci }, /* Wildcat Point-LP AHCI */
++	{ PCI_VDEVICE(INTEL, 0x9c85), board_ahci }, /* Wildcat Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x9c87), board_ahci }, /* Wildcat Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x9c8f), board_ahci }, /* Wildcat Point-LP RAID */
+ 
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 
 
