@@ -1,209 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998Ab3LBNLL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 08:11:11 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:7453 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750914Ab3LBNLI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 08:11:08 -0500
-Message-ID: <529C86E1.7070807@atmel.com>
-Date: Mon, 2 Dec 2013 14:10:57 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753108Ab3LBNMm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 08:12:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42667 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751039Ab3LBNMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 08:12:41 -0500
+Date: Mon, 2 Dec 2013 14:12:38 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>, azurit@pobox.sk,
+        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [merged]
+ mm-memcg-handle-non-error-oom-situations-more-gracefully.patch removed from
+ -mm tree
+Message-ID: <20131202131238.GB18838@dhcp22.suse.cz>
+References: <526028bd.k5qPj2+MDOK1o6ii%akpm@linux-foundation.org>
+ <alpine.DEB.2.02.1311271453270.13682@chino.kir.corp.google.com>
+ <20131127233353.GH3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311271622330.10617@chino.kir.corp.google.com>
+ <20131128021809.GI3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311271826001.5120@chino.kir.corp.google.com>
+ <20131128031313.GK3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311271914460.5120@chino.kir.corp.google.com>
+ <20131128100213.GE2761@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1311291600290.22413@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-CC: Russell King <linux@arm.linux.org.uk>, Felipe Balbi <balbi@ti.com>,
-        "Jason Cooper" <jason@lakedaemon.net>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>
-Subject: Re: [PATCH v6 00/16] ARM: at91: move to common clk framework
-References: <1385642184-6467-1-git-send-email-b.brezillon@overkiz.com> <20131130230549.16819.84161@quantum>
-In-Reply-To: <20131130230549.16819.84161@quantum>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1311291600290.22413@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2013 00:05, Mike Turquette :
-> Quoting Boris BREZILLON (2013-11-28 04:36:24)
->> Hello,
->>
->> This patch series is the 5th version of the at91 clk implementations
->> using the Common Clk Framework.
->
-> Oops, I just replied to v5 of this series. Thanks for the fixes. Which
-> tree do you want this to go through?
+On Fri 29-11-13 16:05:04, David Rientjes wrote:
+> On Thu, 28 Nov 2013, Michal Hocko wrote:
+> 
+> > > None that I am currently aware of,
+> > 
+> > Are you saing that scenarios described in 3812c8c8f395 (mm: memcg: do not
+> > trap chargers with full callstack on OOM) are not real or that _you_
+> > haven't seen an issue like that?
+> > 
+> > The later doesn't seem to be so relevant as we had at least one user who
+> > has seen those in the real life.
+> > 
+> 
+> I said I'm not currently aware of any additional problems with the 
+> patchset,
 
-Mike, Boris,
+I have obviously misread your reply. Sorry about that.
 
-I will take the series in the at91 git tree that will go through arm-soc.
+> but since Johannes said the entire series wasn't meant for that 
+> merge window, I asked if it was still being worked on.
+> 
+> > > You don't think something like this is helpful after scanning a memcg will 
+> > > a large number of processes?
+> > 
+> > It looks as a one-shot workaround for short lived processes to me.
+> 
+> It has nothing to do with how long a process has been running, both racing 
+> processes could have been running for years.  It's obvious that even this 
+> patch before calling oom_kill_process() does not catch a racing process 
+> that has already freed its memory and is exiting but it makes the 
+> liklihood significantly less in testing at scale. 
 
-This way, I can synchronize with the other series cooked by Boris which 
-actually implements the CCF for sama5d3 SoCs.
+I guess we need to know how much is significantly less.
+oom_scan_process_thread already aborts on exiting tasks so we do not
+kill anything and then the charge (whole page fault actually) is retried
+when we check for the OOM again so my intuition would say that we gave
+the exiting task quite a lot of time.
 
-Mike, I keep you in the CC list of my upcoming pull-request to Olof, 
-Kevin and Arnd.
-
-Thanks, bye,
-
-
->> Most of the clock provided by the PMC (Power Management Controller) are
->> implemented :
->> - main clock (main oscillator)
->> - pll clocks
->> - master clock
->> - programmable clocks
->> - utmi clock
->> - peripheral clocks
->> - system clocks
->>
->> Actually some clk drivers are missing (slow clk, main clk and processor
->> clk), and some drivers only implement a subset of the hardware capabilities
->> (master clk rate change is missing).
->> But this series implements all the already available clks, and I will hopefully
->> add missing features in a near future.
->>
->> This implementation is only compatible with device tree definition.
->> The goal is to define the whole clock tree using the device tree.
->>
->> Just a note to let you know these bindings are currently unstable and might
->> change in the future.
->>
->>
->> Best Regards,
->> Boris
->>
->> Changes since v5:
->>   - remove peripheral divisors macros from dt binding include file
->>   - remove file path from comment blocks
->>   - replace pll and utmi disable function by unprepare function to
->>     avoid issue when disabling and reenabling a clk
->>   - fix programmable clk interrupt retrieval
->>   - fix OF_CLK_DECLARE names (xxx_clk_main -> xxx_clk_pmc)
->>   - add missing comma in at91rm9200 main clk dt declaration
->>   - fix num_parents check in smd clk driver
->>
->> Changes since v4:
->>   - rework dt bindings:
->>     * replace "atmel,clk-id" property by the standard "reg" property
->>     * reference system, peripheral and programmable clks using the direct
->>       clk node instead of the parent node plus a clk id
->>   - provide a new helper function (of_at91_get_clk_range) to retrieve a clk
->>     range from the device tree
->>
->> Changes since v3:
->>   - simplify master clk implementation (drop set_rate/parent support)
->>   - fix bug in set_rate function of pll driver
->>   - fix coding style issues
->>   - define macros and constants where needed
->>   - remove peripheral id macro references
->>   - remove sam9g35 specific handling (sam9g35 = sam9x5)
->>   - rework main clk prepare function to handle automatic rate calculation
->>
->> Changes since v2:
->>   - fix several bugs in clk implementations
->>   - drop non-dt boards support
->>   - split the series to ease review and tests:
->>     * 1 patch series for new clk implementations (this series)
->>     * 1 patch series to move each at91 SoC to common clk framework (coming soon)
->>   - modify dt-bindings (add atmel,clk- prefix to atmel specific properties)
->>   - add clk macros for dt-bindings
->>   - add pmc framework (helper function to access pmc registers)
->>   - add interrupt support to enable passive wait in clk_prepare functions
->>
->> Changes since v1:
->>   - fix bugs in pll, programmable and system clock implementations
->>     (wrong bit position).
->>   - add usb clock configuration support (ohci and udc drivers +
->>     clk_lookup for non dt boards)
->>   - rework of the system clock interfaces (no need to define a parent clock,
->>     system clock is a gate with no rate info)
->>   - change system, peripheral and programmable clk dt bindings (1 master node
->>     and multiple child nodes each defining a system/peripheral or prog clock)
->>   - fix bugs in sama5 dt definition
->>
->> Boris BREZILLON (16):
->>    ARM: at91: move at91_pmc.h to include/linux/clk/at91_pmc.h
->>    ARM: at91: add Kconfig options for common clk support
->>    clk: at91: add PMC base support
->>    clk: at91: add PMC macro file for dt definitions
->>    clk: at91: add PMC main clock
->>    clk: at91: add PMC pll clocks
->>    clk: at91: add PMC master clock
->>    clk: at91: add PMC system clocks
->>    clk: at91: add PMC peripheral clocks
->>    clk: at91: add PMC programmable clocks
->>    clk: at91: add PMC utmi clock
->>    clk: at91: add PMC usb clock
->>    clk: at91: add PMC smd clock
->>    dt: binding: add at91 clks dt bindings documentation
->>    ARM: at91: move pit timer to common clk framework
->>    ARM: at91: add new compatible strings for pmc driver
->>
->>   .../devicetree/bindings/clock/at91-clock.txt       |  339 +++++++++++++
->>   arch/arm/mach-at91/Kconfig                         |   44 ++
->>   arch/arm/mach-at91/Kconfig.non_dt                  |    6 +
->>   arch/arm/mach-at91/Makefile                        |    2 +-
->>   arch/arm/mach-at91/at91rm9200.c                    |    2 +-
->>   arch/arm/mach-at91/at91sam9260.c                   |    2 +-
->>   arch/arm/mach-at91/at91sam9261.c                   |    2 +-
->>   arch/arm/mach-at91/at91sam9263.c                   |    2 +-
->>   arch/arm/mach-at91/at91sam926x_time.c              |   14 +-
->>   arch/arm/mach-at91/at91sam9g45.c                   |    2 +-
->>   arch/arm/mach-at91/at91sam9n12.c                   |    2 +-
->>   arch/arm/mach-at91/at91sam9rl.c                    |    2 +-
->>   arch/arm/mach-at91/at91sam9x5.c                    |    2 +-
->>   arch/arm/mach-at91/clock.c                         |    7 +-
->>   arch/arm/mach-at91/generic.h                       |    3 +-
->>   arch/arm/mach-at91/pm.c                            |    2 +-
->>   arch/arm/mach-at91/pm_slowclock.S                  |    2 +-
->>   arch/arm/mach-at91/sama5d3.c                       |    2 +-
->>   arch/arm/mach-at91/setup.c                         |    8 +-
->>   drivers/clk/Makefile                               |    1 +
->>   drivers/clk/at91/Makefile                          |   12 +
->>   drivers/clk/at91/clk-main.c                        |  187 +++++++
->>   drivers/clk/at91/clk-master.c                      |  270 ++++++++++
->>   drivers/clk/at91/clk-peripheral.c                  |  410 +++++++++++++++
->>   drivers/clk/at91/clk-pll.c                         |  531 ++++++++++++++++++++
->>   drivers/clk/at91/clk-plldiv.c                      |  135 +++++
->>   drivers/clk/at91/clk-programmable.c                |  366 ++++++++++++++
->>   drivers/clk/at91/clk-smd.c                         |  171 +++++++
->>   drivers/clk/at91/clk-system.c                      |  135 +++++
->>   drivers/clk/at91/clk-usb.c                         |  398 +++++++++++++++
->>   drivers/clk/at91/clk-utmi.c                        |  159 ++++++
->>   drivers/clk/at91/pmc.c                             |  397 +++++++++++++++
->>   drivers/clk/at91/pmc.h                             |  116 +++++
->>   drivers/usb/gadget/atmel_usba_udc.c                |    2 +-
->>   include/dt-bindings/clk/at91.h                     |   22 +
->>   .../include/mach => include/linux/clk}/at91_pmc.h  |    4 +-
->>   36 files changed, 3741 insertions(+), 20 deletions(-)
->>   create mode 100644 Documentation/devicetree/bindings/clock/at91-clock.txt
->>   create mode 100644 drivers/clk/at91/Makefile
->>   create mode 100644 drivers/clk/at91/clk-main.c
->>   create mode 100644 drivers/clk/at91/clk-master.c
->>   create mode 100644 drivers/clk/at91/clk-peripheral.c
->>   create mode 100644 drivers/clk/at91/clk-pll.c
->>   create mode 100644 drivers/clk/at91/clk-plldiv.c
->>   create mode 100644 drivers/clk/at91/clk-programmable.c
->>   create mode 100644 drivers/clk/at91/clk-smd.c
->>   create mode 100644 drivers/clk/at91/clk-system.c
->>   create mode 100644 drivers/clk/at91/clk-usb.c
->>   create mode 100644 drivers/clk/at91/clk-utmi.c
->>   create mode 100644 drivers/clk/at91/pmc.c
->>   create mode 100644 drivers/clk/at91/pmc.h
->>   create mode 100644 include/dt-bindings/clk/at91.h
->>   rename {arch/arm/mach-at91/include/mach => include/linux/clk}/at91_pmc.h (98%)
->>
->> --
->> 1.7.9.5
->
-
+> It's simply better to avoid unnecessary oom killing at anytime
+> possible and this is not a hotpath.
 
 -- 
-Nicolas Ferre
+Michal Hocko
+SUSE Labs
