@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758153Ab3LBV3r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:29:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38180 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753265Ab3LBTHC (ORCPT
+	id S1760016Ab3LBVaN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:30:13 -0500
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:47441 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753263Ab3LBVaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:07:02 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.4 28/60] rtlwifi: rtl8192de: Fix incorrect signal strength for unassociated AP
-Date: Mon,  2 Dec 2013 11:06:09 -0800
-Message-Id: <20131202190336.415634417@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
-References: <20131202190330.152596462@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	Mon, 2 Dec 2013 16:30:09 -0500
+Date: Mon, 2 Dec 2013 22:30:07 +0100
+From: Andreas Mohr <andi@lisas.de>
+To: venkata koppula <vmrkoppula@gmail.com>
+Cc: Austin S Hemmelgarn <ahferroin7@gmail.com>, Andreas Mohr <andi@lisas.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Copying large files eats all of the RAM
+Message-ID: <20131202213007.GA3124@rhlx01.hs-esslingen.de>
+References: <20131129215616.GA32242@rhlx01.hs-esslingen.de>
+ <52992659.5040503@gmail.com>
+ <CAKK=TULveq5m2zX9YQS_v3KUp04qV+XME06tEhFx9upHG7D00w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKK=TULveq5m2zX9YQS_v3KUp04qV+XME06tEhFx9upHG7D00w@mail.gmail.com>
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Sat, Nov 30, 2013 at 11:59:07AM +0530, venkata koppula wrote:
+> Thanks for you replies.
+> 
+> Yeah, I understand that we need to utilize the resources as much as we
+> can. At the same time user should not
+> feel that system is slow and user should never wait for the copying
+> operation should complete to launch another
+> application meanwhile.
+> 
+> If the user is a system administrator or a programmer, he/she
+> understands the problem and will try to tune the kernel
+> based on his/her requirements. As an application user(A desktop user
+> doesn't worry about the optimizations,
+> even doesn't know what it is:)) faster response is important.
 
-------------------
+I'm afraid you're damn right - standard configuration ought to be pretty
+similar to the optimum, without any tuning, given that most people don't
+(know to) do manual tuning.
+And even in recent times the kernel did not manage to achieve that goal,
+for several use cases. But I'm quite certain we're getting closer :)
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+BTW, a quite likely related and possibly helpful topic is
+"[patch 7/9] mm: thrash detection-based file cache sizing" https://lkml.org/lkml/2013/12/2/483
 
-commit 3545f3d5f4af715c914394123ce7725a9cf0a1c4 upstream.
+HTH,
 
-The routine that processes received frames was returning the RSSI value for the
-signal strength; however, that value is available only for associated APs. As
-a result, the strength was the absurd value of 10 dBm. As a result, scans
-return incorrect values for the strength, which causes unwanted attempts to roam.
+Andreas Mohr
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/net/wireless/rtlwifi/rtl8192de/trx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/net/wireless/rtlwifi/rtl8192de/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192de/trx.c
-@@ -529,7 +529,7 @@ bool rtl92de_rx_query_desc(struct ieee80
- 						   p_drvinfo);
- 	}
- 	/*rx_status->qual = stats->signal; */
--	rx_status->signal = stats->rssi + 10;
-+	rx_status->signal = stats->recvsignalpower + 10;
- 	/*rx_status->noise = -stats->noise; */
- 	return true;
- }
-
-
+-- 
+GNU/Linux. It's not the software that's free, it's you.
