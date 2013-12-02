@@ -1,129 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374Ab3LBNHp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 08:07:45 -0500
-Received: from exprod5og110.obsmtp.com ([64.18.0.20]:60637 "EHLO
-	exprod5og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025Ab3LBNHm convert rfc822-to-8bit (ORCPT
+	id S1752619Ab3LBNIW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 08:08:22 -0500
+Received: from relay.parallels.com ([195.214.232.42]:44167 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab3LBNIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 08:07:42 -0500
+	Mon, 2 Dec 2013 08:08:20 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <mhocko@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <devel@openvz.org>, <vdavydov@parallels.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH] memcg: remove KMEM_ACCOUNTED_ACTIVATED
+Date: Mon, 2 Dec 2013 17:08:13 +0400
+Message-ID: <1385989693-28788-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-In-Reply-To: <20131202110800.GC31626@lee--X1>
-References: <1385036008-1727-1-git-send-email-ruslan.ruslichenko@globallogic.com>
-	<20131127121908.GE3296@lee--X1>
-	<CAK9oHmyq3wOwgzxPYOLjoHuHahPFJE=vEN+GZCzfu-ZFhk9_Hw@mail.gmail.com>
-	<20131129091644.GB26086@lee--X1>
-	<20131129171013.GM31534@atomide.com>
-	<20131202110800.GC31626@lee--X1>
-Date: Mon, 2 Dec 2013 15:07:39 +0200
-Message-ID: <CAK9oHmxmwM0TLZHcgXM5ryLecxD=Ouogoh0Zni4C+d7r0sPwqQ@mail.gmail.com>
-Subject: Re: [PATCH] mfd: twl-core: Clean up module by removing twl603x pdata handling
-From: Ruslan Ruslichenko <ruslan.ruslichenko@globallogic.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Graeme Gregory <graeme.gregory@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since add_children() never called in not-dt boot, this patch does not
-change current
-OMAP4 boot behavior and devices initialization.
-Also as far as I see all these twl603x regulators (apart from CLK32KG)
-and TWL usb
-module now have dt-bindings support. Device tree support for CLK32KG
-have been removed
-since it should not be registered as regulator at all.
-So this patch can merged safely.
+The KMEM_ACCOUNTED_ACTIVATED was introduced by commit a8964b9b ("memcg:
+use static branches when code not in use") in order to guarantee that
+static_key_slow_inc(&memcg_kmem_enabled_key) will be called only once
+for each memory cgroup when its kmem limit is set. The point is that at
+that time the memcg_update_kmem_limit() function's workflow looked like
+this:
 
-On Mon, Dec 2, 2013 at 1:08 PM, Lee Jones <lee.jones@linaro.org> wrote:
->> > > > > Since currently nobody uses TWL603x platform data and all new
->> > > >
->> > > > Hmm... when you say nobody, how did you come to this conclusion?
->> > > >
->> > > > Without digging into it and probably not that relevant, it
->> > > > appears there is some references to it in platform data still:
->> > > >
->> > > > $ git grep twl603 -- arch/ | grep -v dts
->> > > > arch/arm/mach-omap2/common.h:extern int omap4_twl6030_hsmmc_init(struct
->> > > > omap2_hsmmc_info *controllers);
->> > > > arch/arm/mach-omap2/omap4-common.c:static int
->> > > > omap4_twl6030_hsmmc_late_init(struct device *dev)
->> > > > arch/arm/mach-omap2/omap4-common.c:             irq =
->> > > > twl6030_mmc_card_detect_config();
->> > > > arch/arm/mach-omap2/omap4-common.c:
->> > > > pdata->slots[0].card_detect = twl6030_mmc_card_detect;
->> > > > arch/arm/mach-omap2/omap4-common.c:static __init void
->> > > > omap4_twl6030_hsmmc_set_late_init(struct device *dev)
->> > > > arch/arm/mach-omap2/omap4-common.c:     pdata->init =
->> > > > omap4_twl6030_hsmmc_late_init;
->> > > > arch/arm/mach-omap2/omap4-common.c:int __init
->> > > > omap4_twl6030_hsmmc_init(struct omap2_hsmmc_info *controllers)
->> > > > arch/arm/mach-omap2/omap4-common.c:
->> > > > omap4_twl6030_hsmmc_set_late_init(&c->pdev->dev);
->> > > > arch/arm/mach-omap2/omap4-common.c:int __init
->> > > > omap4_twl6030_hsmmc_init(struct omap2_hsmmc_info *controllers)
->> > > > arch/arm/mach-omap2/omap_twl.c:static unsigned long
->> > > > twl6030_vsel_to_uv(const u8 vsel)
->> > > > arch/arm/mach-omap2/omap_twl.c:static u8 twl6030_uv_to_vsel(unsigned long
->> > > > uv)
->> > > > arch/arm/mach-omap2/omap_twl.c: if (uv > twl6030_vsel_to_uv(0x39)) {
->> > > > arch/arm/mach-omap2/omap_twl.c:                 __func__, uv,
->> > > > twl6030_vsel_to_uv(0x39));
->> > > > arch/arm/mach-omap2/omap_twl.c: .vsel_to_uv             =
->> > > > twl6030_vsel_to_uv,
->> > > > arch/arm/mach-omap2/omap_twl.c: .uv_to_vsel             =
->> > > > twl6030_uv_to_vsel,
->> > > > arch/arm/mach-omap2/omap_twl.c: .vsel_to_uv             =
->> > > > twl6030_vsel_to_uv,
->> > > > arch/arm/mach-omap2/omap_twl.c: .uv_to_vsel             =
->> > > > twl6030_uv_to_vsel,
->> > > > arch/arm/mach-omap2/omap_twl.c: .vsel_to_uv             =
->> > > > twl6030_vsel_to_uv,
->> > > > arch/arm/mach-omap2/omap_twl.c: .uv_to_vsel             =
->> > > > twl6030_uv_to_vsel,
->> > > >
->> > > Looks like some misunderstanding is here. This patch *only* removes
->> > > platform data for TWL603x
->> > > which were used to create TWL sub-devices like regulators, adc's,
->> > > watchdogs, etc.
->> > > Previously it was set up in twl_common.c by omap4_pmic_init(), which was
->> > > called from board files
->> > > with specific pmic config.
->> > > Since now in Linux kernel 3.13 OMAP4 non-DT boot is not supported and all
->> > > OMAP4 board files
->> > > have been removed omap4_pmic_init() is never called and all TWL603x
->> > > sub-devices are created
->> > > from device tree data.
->> >
->> > I'm not overly familiar with this driver (it looks like a big
->> > historical mess to me), or the current state of the OMAP4 platform, so
->> > I would like a second opinion on this.
->> >
->> > Tony would you be kind enough to oblige?
->>
->> We've moved omap4 to boot based on device tree only, so that legacy
->> platform data is no longer being used. It might be worth checking if
->> we do have bindings in place for all of that, or if some of it may
->> still be needed to be passed as auxdata while we wait for the bindings.
->
-> Ruslan, do you know the answer to these concerns?
->
-> --
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+	bool must_inc_static_branch = false;
 
+	cgroup_lock();
+	mutex_lock(&set_limit_mutex);
+	if (!memcg->kmem_account_flags && val != RESOURCE_MAX) {
+		/* The kmem limit is set for the first time */
+		ret = res_counter_set_limit(&memcg->kmem, val);
 
+		memcg_kmem_set_activated(memcg);
+		must_inc_static_branch = true;
+	} else
+		ret = res_counter_set_limit(&memcg->kmem, val);
+	mutex_unlock(&set_limit_mutex);
+	cgroup_unlock();
 
+	if (must_inc_static_branch) {
+		/* We can't do this under cgroup_lock */
+		static_key_slow_inc(&memcg_kmem_enabled_key);
+		memcg_kmem_set_active(memcg);
+	}
+
+Today, we don't use cgroup_lock in memcg_update_kmem_limit(), and
+static_key_slow_inc() is called under the set_limit_mutex, but the
+leftover from the above-mentioned commit is still here. Let's remove it.
+
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |   26 +-------------------------
+ 1 file changed, 1 insertion(+), 25 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index f1a0ae6..f78661f 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -344,14 +344,9 @@ static size_t memcg_size(void)
+ /* internal only representation about the status of kmem accounting. */
+ enum {
+ 	KMEM_ACCOUNTED_ACTIVE = 0, /* accounted by this cgroup itself */
+-	KMEM_ACCOUNTED_ACTIVATED, /* static key enabled. */
+ 	KMEM_ACCOUNTED_DEAD, /* dead memcg with pending kmem charges */
+ };
+ 
+-/* We account when limit is on, but only after call sites are patched */
+-#define KMEM_ACCOUNTED_MASK \
+-		((1 << KMEM_ACCOUNTED_ACTIVE) | (1 << KMEM_ACCOUNTED_ACTIVATED))
+-
+ #ifdef CONFIG_MEMCG_KMEM
+ static inline void memcg_kmem_set_active(struct mem_cgroup *memcg)
+ {
+@@ -363,16 +358,6 @@ static bool memcg_kmem_is_active(struct mem_cgroup *memcg)
+ 	return test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags);
+ }
+ 
+-static void memcg_kmem_set_activated(struct mem_cgroup *memcg)
+-{
+-	set_bit(KMEM_ACCOUNTED_ACTIVATED, &memcg->kmem_account_flags);
+-}
+-
+-static void memcg_kmem_clear_activated(struct mem_cgroup *memcg)
+-{
+-	clear_bit(KMEM_ACCOUNTED_ACTIVATED, &memcg->kmem_account_flags);
+-}
+-
+ static void memcg_kmem_mark_dead(struct mem_cgroup *memcg)
+ {
+ 	/*
+@@ -2956,7 +2941,7 @@ static DEFINE_MUTEX(set_limit_mutex);
+ static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
+ {
+ 	return !mem_cgroup_disabled() && !mem_cgroup_is_root(memcg) &&
+-		(memcg->kmem_account_flags & KMEM_ACCOUNTED_MASK);
++		memcg_kmem_is_active(memcg);
+ }
+ 
+ /*
+@@ -3091,19 +3076,10 @@ int memcg_update_cache_sizes(struct mem_cgroup *memcg)
+ 				0, MEMCG_CACHES_MAX_SIZE, GFP_KERNEL);
+ 	if (num < 0)
+ 		return num;
+-	/*
+-	 * After this point, kmem_accounted (that we test atomically in
+-	 * the beginning of this conditional), is no longer 0. This
+-	 * guarantees only one process will set the following boolean
+-	 * to true. We don't need test_and_set because we're protected
+-	 * by the set_limit_mutex anyway.
+-	 */
+-	memcg_kmem_set_activated(memcg);
+ 
+ 	ret = memcg_update_all_caches(num+1);
+ 	if (ret) {
+ 		ida_simple_remove(&kmem_limited_groups, num);
+-		memcg_kmem_clear_activated(memcg);
+ 		return ret;
+ 	}
+ 
 -- 
+1.7.10.4
 
-Ruslan Ruslichenko | Software Engineer
-GlobalLogic
-www.globallogic.com
-
-http://www.globallogic.com/email_disclaimer.txt
