@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365Ab3LBKcR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 05:32:17 -0500
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:44220 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753071Ab3LBKcN (ORCPT
+	id S1753409Ab3LBKdm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 05:33:42 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:2564 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753071Ab3LBKdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 05:32:13 -0500
+	Mon, 2 Dec 2013 05:33:39 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 02 Dec 2013 02:27:06 -0800
+Message-ID: <529C61FF.4020802@nvidia.com>
+Date: Mon, 2 Dec 2013 19:33:35 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-In-Reply-To: <5292A5EA.1030501@huawei.com>
-References: <20131111220626.GA7509@sbohrermbp13-local.rgmadvisors.com>
- <52820030.6000806@huawei.com> <20131112143147.GB6049@dhcp22.suse.cz>
- <20131112155530.GA2860@sbohrermbp13-local.rgmadvisors.com>
- <20131112165504.GF6049@dhcp22.suse.cz> <20131114225649.GA16725@sbohrermbp13-local.rgmadvisors.com>
- <20131115062458.GA9755@mtj.dyndns.org> <20131115075401.GB9755@mtj.dyndns.org>
- <alpine.LNX.2.00.1311171746160.15789@eggly.anvils> <CAJ75kXZYjKwV_XiEB493jNyGRqS395JZyY-S9xQBQJLyaCSOEQ@mail.gmail.com>
- <20131122221839.GD8981@mtj.dyndns.org> <CAJ75kXabrnxqdtb5SXqm_pYTrSih9yvP38DApF+_P+YZCepTMw@mail.gmail.com>
- <5292A5EA.1030501@huawei.com>
-From: William Dauchy <wdauchy@gmail.com>
-Date: Mon, 2 Dec 2013 11:31:53 +0100
-Message-ID: <CAJ75kXYKx67VaGYRs1nwataE2ra216qTB9Yks=MRGFN-c_b3uA@mail.gmail.com>
-Subject: Re: 3.10.16 cgroup_mutex deadlock
-To: Li Zefan <lizefan@huawei.com>
-Cc: Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Shawn Bohrer <shawn.bohrer@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Markus Blank-Burian <burian@muenster.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gpio: better lookup method for platform GPIOs
+References: <1385628388-23827-1-git-send-email-acourbot@nvidia.com> <20131129115748.GB3942@xps8300>
+In-Reply-To: <20131129115748.GB3942@xps8300>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Li,
+On 11/29/2013 08:57 PM, Heikki Krogerus wrote:
+> Hi,
+>
+> On Thu, Nov 28, 2013 at 05:46:28PM +0900, Alexandre Courbot wrote:
+>> @@ -88,16 +89,20 @@ Note that GPIO_LOOKUP() is just a shortcut to GPIO_LOOKUP_IDX() where idx = 0.
+>>
+>>   A lookup table can then be defined as follows:
+>>
+>> -	struct gpiod_lookup gpios_table[] = {
+>> -	GPIO_LOOKUP_IDX("gpio.0", 15, "foo.0", "led", 0, GPIO_ACTIVE_HIGH),
+>> -	GPIO_LOOKUP_IDX("gpio.0", 16, "foo.0", "led", 1, GPIO_ACTIVE_HIGH),
+>> -	GPIO_LOOKUP_IDX("gpio.0", 17, "foo.0", "led", 2, GPIO_ACTIVE_HIGH),
+>> -	GPIO_LOOKUP("gpio.0", 1, "foo.0", "power", GPIO_ACTIVE_LOW),
+>> -	};
+>> +struct gpiod_lookup_table gpios_table = {
+>> +	.dev_id = "foo.0",
+>> +	.size = 4,
+>> +	.table = {
+>> +	GPIO_LOOKUP_IDX("gpio.0", 15, "led", 0, GPIO_ACTIVE_HIGH),
+>> +	GPIO_LOOKUP_IDX("gpio.0", 16, "led", 1, GPIO_ACTIVE_HIGH),
+>> +	GPIO_LOOKUP_IDX("gpio.0", 17, "led", 2, GPIO_ACTIVE_HIGH),
+>> +	GPIO_LOOKUP("gpio.0", 1, "power", GPIO_ACTIVE_LOW),
+>> +	},
+>> +};
+>
+> Instead of using the size variable, wouldn't it be more clear to
+> expect the array to be null terminated?
 
-On Mon, Nov 25, 2013 at 2:20 AM, Li Zefan <lizefan@huawei.com> wrote:
-> I'll do this after the patch hits mainline, if Tejun doesn't plan to.
-
-Do you have some news about it?
--- 
-William
+This is a zero-length array, its entries are not pointers but flattened 
+lookup entries. Thus you cannot simply null-terminate it. It would be 
+possible to use { NULL } as a terminator, but this would expand into a 
+whole gpiod_lookup and is not very pleasant esthetically-speaking. So I 
+think the size member is maybe better suited here.
