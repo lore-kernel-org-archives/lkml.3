@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756603Ab3LBVHI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:07:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38531 "EHLO
+	id S1759155Ab3LBVHT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:07:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38447 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754001Ab3LBTNO (ORCPT
+	with ESMTP id S1753223Ab3LBTNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:14 -0500
+	Mon, 2 Dec 2013 14:13:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Moussa Ba <moussaba@micron.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 048/173] iscsi-target: Fix mutex_trylock usage in iscsit_increment_maxcmdsn
-Date: Mon,  2 Dec 2013 11:10:31 -0800
-Message-Id: <20131202191148.165675508@linuxfoundation.org>
+        Xiangliang Yu <yuxiangl@marvell.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 046/173] ahci: disabled FBS prior to issuing software reset
+Date: Mon,  2 Dec 2013 11:10:29 -0800
+Message-Id: <20131202191147.930454252@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,64 +26,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: xiangliang yu <yxlraid@gmail.com>
 
-commit 5e8e6b4b3adebf01a9d97056cbbfd8c44330df99 upstream.
+commit 89dafa20f3daab5b3e0c13d0068a28e8e64e2102 upstream.
 
-This patch fixes a >= v3.10 regression bug with mutex_trylock() usage
-within iscsit_increment_maxcmdsn(), that was originally added to allow
-for a special case where ->cmdsn_mutex was already held from the
-iscsit_execute_cmd() exception path for ib_isert.
+Tested with Marvell 88se9125, attached with one port mulitplier(5 ports)
+and one disk, we will get following boot log messages if using current
+code:
 
-When !mutex_trylock() was occuring under contention during normal RX/TX
-process context codepaths, the bug was manifesting itself as the following
-protocol error:
+  ata8: SATA link up 6.0 Gbps (SStatus 133 SControl 330)
+  ata8.15: Port Multiplier 1.2, 0x1b4b:0x9715 r160, 5 ports, feat 0x1/0x1f
+  ahci 0000:03:00.0: FBS is enabled
+  ata8.00: hard resetting link
+  ata8.00: SATA link down (SStatus 0 SControl 330)
+  ata8.01: hard resetting link
+  ata8.01: SATA link down (SStatus 0 SControl 330)
+  ata8.02: hard resetting link
+  ata8.02: SATA link down (SStatus 0 SControl 330)
+  ata8.03: hard resetting link
+  ata8.03: SATA link up 6.0 Gbps (SStatus 133 SControl 133)
+  ata8.04: hard resetting link
+  ata8.04: failed to resume link (SControl 133)
+  ata8.04: failed to read SCR 0 (Emask=0x40)
+  ata8.04: failed to read SCR 0 (Emask=0x40)
+  ata8.04: failed to read SCR 1 (Emask=0x40)
+  ata8.04: failed to read SCR 0 (Emask=0x40)
+  ata8.03: native sectors (2) is smaller than sectors (976773168)
+  ata8.03: ATA-8: ST3500413AS, JC4B, max UDMA/133
+  ata8.03: 976773168 sectors, multi 0: LBA48 NCQ (depth 31/32)
+  ata8.03: configured for UDMA/133
+  ata8.04: failed to IDENTIFY (I/O error, err_mask=0x100)
+  ata8.15: hard resetting link
+  ata8.15: SATA link up 6.0 Gbps (SStatus 133 SControl 330)
+  ata8.15: Port Multiplier vendor mismatch '0x1b4b' != '0x133'
+  ata8.15: PMP revalidation failed (errno=-19)
+  ata8.15: hard resetting link
+  ata8.15: SATA link up 6.0 Gbps (SStatus 133 SControl 330)
+  ata8.15: Port Multiplier vendor mismatch '0x1b4b' != '0x133'
+  ata8.15: PMP revalidation failed (errno=-19)
+  ata8.15: limiting SATA link speed to 3.0 Gbps
+  ata8.15: hard resetting link
+  ata8.15: SATA link up 3.0 Gbps (SStatus 123 SControl 320)
+  ata8.15: Port Multiplier vendor mismatch '0x1b4b' != '0x133'
+  ata8.15: PMP revalidation failed (errno=-19)
+  ata8.15: failed to recover PMP after 5 tries, giving up
+  ata8.15: Port Multiplier detaching
+  ata8.03: disabled
+  ata8.00: disabled
+  ata8: EH complete
 
-  Received CmdSN: 0x000fcbb7 is greater than MaxCmdSN: 0x000fcbb6, protocol error.
-  Received CmdSN: 0x000fcbb8 is greater than MaxCmdSN: 0x000fcbb6, protocol error.
+The reason is that current detection code doesn't follow AHCI spec:
 
-This patch simply avoids the direct ib_isert callback in lio_queue_status()
-for the special iscsi_execute_cmd() exception cases, that allows the problematic
-mutex_trylock() usage in iscsit_increment_maxcmdsn() to go away.
+First,the port multiplier detection process look like this:
 
-Reported-by: Moussa Ba <moussaba@micron.com>
-Tested-by: Moussa Ba <moussaba@micron.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+	ahci_hardreset(link, class, deadline)
+	if (class == ATA_DEV_PMP) {
+		sata_pmp_attach(dev)	/* will enable FBS */
+		sata_pmp_init_links(ap, nr_ports);
+		ata_for_each_link(link, ap, EDGE) {
+			sata_std_hardreset(link, class, deadline);
+			if (link_is_online)	/* do soft reset */
+				ahci_softreset(link, class, deadline);
+		}
+	}
+But, according to chapter 9.3.9 in AHCI spec: Prior to issuing software
+reset, software shall clear PxCMD.ST to '0' and then clear PxFBS.EN to
+'0'.
+
+The patch test ok with kernel 3.11.1.
+
+tj: Patch white space contaminated, applied manually with trivial
+    updates.
+
+Signed-off-by: Xiangliang Yu <yuxiangl@marvell.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target_configfs.c |    5 +++++
- drivers/target/iscsi/iscsi_target_device.c   |    6 +-----
- 2 files changed, 6 insertions(+), 5 deletions(-)
+ drivers/ata/libahci.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/drivers/target/iscsi/iscsi_target_configfs.c
-+++ b/drivers/target/iscsi/iscsi_target_configfs.c
-@@ -1650,6 +1650,11 @@ static int lio_queue_status(struct se_cm
- 	struct iscsi_cmd *cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -1266,9 +1266,11 @@ int ahci_do_softreset(struct ata_link *l
+ {
+ 	struct ata_port *ap = link->ap;
+ 	struct ahci_host_priv *hpriv = ap->host->private_data;
++	struct ahci_port_priv *pp = ap->private_data;
+ 	const char *reason = NULL;
+ 	unsigned long now, msecs;
+ 	struct ata_taskfile tf;
++	bool fbs_disabled = false;
+ 	int rc;
  
- 	cmd->i_state = ISTATE_SEND_STATUS;
-+
-+	if (cmd->se_cmd.scsi_status || cmd->sense_reason) {
-+		iscsit_add_cmd_to_response_queue(cmd, cmd->conn, cmd->i_state);
-+		return 0;
+ 	DPRINTK("ENTER\n");
+@@ -1278,6 +1280,16 @@ int ahci_do_softreset(struct ata_link *l
+ 	if (rc && rc != -EOPNOTSUPP)
+ 		ata_link_warn(link, "failed to reset engine (errno=%d)\n", rc);
+ 
++	/*
++	 * According to AHCI-1.2 9.3.9: if FBS is enable, software shall
++	 * clear PxFBS.EN to '0' prior to issuing software reset to devices
++	 * that is attached to port multiplier.
++	 */
++	if (!ata_is_host_link(link) && pp->fbs_enabled) {
++		ahci_disable_fbs(ap);
++		fbs_disabled = true;
 +	}
- 	cmd->conn->conn_transport->iscsit_queue_status(cmd->conn, cmd);
++
+ 	ata_tf_init(link->device, &tf);
  
+ 	/* issue the first D2H Register FIS */
+@@ -1318,6 +1330,10 @@ int ahci_do_softreset(struct ata_link *l
+ 	} else
+ 		*class = ahci_dev_classify(ap);
+ 
++	/* re-enable FBS if disabled before */
++	if (fbs_disabled)
++		ahci_enable_fbs(ap);
++
+ 	DPRINTK("EXIT, class=%u\n", *class);
  	return 0;
---- a/drivers/target/iscsi/iscsi_target_device.c
-+++ b/drivers/target/iscsi/iscsi_target_device.c
-@@ -60,11 +60,7 @@ void iscsit_increment_maxcmdsn(struct is
  
- 	cmd->maxcmdsn_inc = 1;
- 
--	if (!mutex_trylock(&sess->cmdsn_mutex)) {
--		sess->max_cmd_sn += 1;
--		pr_debug("Updated MaxCmdSN to 0x%08x\n", sess->max_cmd_sn);
--		return;
--	}
-+	mutex_lock(&sess->cmdsn_mutex);
- 	sess->max_cmd_sn += 1;
- 	pr_debug("Updated MaxCmdSN to 0x%08x\n", sess->max_cmd_sn);
- 	mutex_unlock(&sess->cmdsn_mutex);
 
 
