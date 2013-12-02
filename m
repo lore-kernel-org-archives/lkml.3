@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600Ab3LBT6Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:58:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39149 "EHLO
+	id S1756615Ab3LBT6T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:58:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39165 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752998Ab3LBTSE (ORCPT
+	with ESMTP id S1754677Ab3LBTSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:18:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Mathias Krause <minipli@googlemail.com>,
-        Richard Guy Briggs <rgb@redhat.com>
-Subject: [PATCH 3.12 107/212] audit: fix info leak in AUDIT_GET requests
-Date: Mon,  2 Dec 2013 11:14:58 -0800
-Message-Id: <20131202191259.220751374@linuxfoundation.org>
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 3.12 115/212] n_tty: Fix 4096-byte canonical reads
+Date: Mon,  2 Dec 2013 11:15:06 -0800
+Message-Id: <20131202191300.031914162@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -28,33 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit 64fbff9ae0a0a843365d922e0057fc785f23f0e3 upstream.
+commit c77569d2f3ef7844ee4ac7005a57da6898b302a8 upstream.
 
-We leak 4 bytes of kernel stack in response to an AUDIT_GET request as
-we miss to initialize the mask member of status_set. Fix that.
+Although the maximum allowable canonical line is specified to
+be 255 bytes (MAX_CANON), the practical limit has actually been
+the size of the line discipline read buffer (N_TTY_BUF_SIZE == 4096).
 
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+Commit 32f13521ca68bc624ff6effc77f308a52b038bf0,
+n_tty: Line copy to user buffer in canonical mode, limited the
+line copy to 4095 bytes. With a completely full line discipline
+read buffer and a userspace buffer > 4095, _no_ data was copied,
+and the read() syscall returned 0, indicating EOF.
+
+Fix the interval arithmetic to compute the correct number of bytes
+to copy to userspace in the range [1..4096].
+
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/audit.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/tty/n_tty.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -659,6 +659,7 @@ static int audit_receive_msg(struct sk_b
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -2005,7 +2005,10 @@ static int canon_copy_from_read_buf(stru
+ 		found = 1;
  
- 	switch (msg_type) {
- 	case AUDIT_GET:
-+		status_set.mask		 = 0;
- 		status_set.enabled	 = audit_enabled;
- 		status_set.failure	 = audit_failure;
- 		status_set.pid		 = audit_pid;
+ 	size = N_TTY_BUF_SIZE - tail;
+-	n = (found + eol + size) & (N_TTY_BUF_SIZE - 1);
++	n = eol - tail;
++	if (n > 4096)
++		n += 4096;
++	n += found;
+ 	c = n;
+ 
+ 	if (found && read_buf(ldata, eol) == __DISABLED_CHAR) {
 
 
