@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757460Ab3LBUVL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:21:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39150 "EHLO
+	id S1753174Ab3LBTRO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:17:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39027 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753745Ab3LBTRS (ORCPT
+	with ESMTP id S1752716Ab3LBTRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:18 -0500
+	Mon, 2 Dec 2013 14:17:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.12 036/212] i2c: mux: gpio: use reg value for i2c_add_mux_adapter
-Date: Mon,  2 Dec 2013 11:13:47 -0800
-Message-Id: <20131202191252.518840124@linuxfoundation.org>
+        Nicolin Chen <b42378@freescale.com>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.12 021/212] ASoC: wm8962: Turn on regcache_cache_only before disabling regulator
+Date: Mon,  2 Dec 2013 11:13:32 -0800
+Message-Id: <20131202191251.054658871@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -28,70 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ionut Nicu <ioan.nicu.ext@nsn.com>
+From: Nicolin Chen <b42378@freescale.com>
 
-commit 8c0ec2500eeb89749341884a972860d7f9e56f9c upstream.
+commit 50bfcf2df2fadf77e143d6099150e6fa7ef4d78c upstream.
 
-The i2c-mux driver requires that the chan_id parameter
-passed to the i2c_add_mux_adapter() function is equal
-to the reg value for that adapter:
+It's safer to turn on regcache_cache_only before disabling regulator since
+the driver will turn off the regcache_cache_only after enabling regulator.
 
-for_each_child_of_node(mux_dev->of_node, child) {
-	ret = of_property_read_u32(child, "reg", &reg);
-	if (ret)
-		continue;
-	if (chan_id == reg) {
-		priv->adap.dev.of_node = child;
-		break;
-	}
-}
+If we remain cache_only false, some command like 'amixer cset' would get
+failure if being run before wm8962_resume().
 
-The i2c-mux-gpio driver uses an internal logical index
-for chan_id when calling i2c_add_mux_adapter() instead
-of using the reg value.
-
-Because of this, there will problems in selecting the
-right adapter when the i2c-mux-gpio's index into
-mux->data.values doesn't match the reg value.
-
-An example of such a case:
-
-mux->data.values = { 1, 0 }
-
-For chan_id = 0, i2c-mux will bind the adapter to the
-of_node with reg = <0>, but when it will call the
-select() callback with chan_id set to 0, the i2c-mux-gpio
-will use it as an index into mux->data.values and it will
-actually select the bus with reg = <1>.
-
-Signed-off-by: Ionut Nicu <ioan.nicu.ext@nsn.com>
-Acked-by: Alexander Sverdlin <alexander.sverdlin@nsn.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Nicolin Chen <b42378@freescale.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/muxes/i2c-mux-gpio.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/soc/codecs/wm8962.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/i2c/muxes/i2c-mux-gpio.c
-+++ b/drivers/i2c/muxes/i2c-mux-gpio.c
-@@ -38,7 +38,7 @@ static int i2c_mux_gpio_select(struct i2
- {
- 	struct gpiomux *mux = data;
+--- a/sound/soc/codecs/wm8962.c
++++ b/sound/soc/codecs/wm8962.c
+@@ -3722,6 +3722,8 @@ static int wm8962_i2c_probe(struct i2c_c
+ 	if (ret < 0)
+ 		goto err_enable;
  
--	i2c_mux_gpio_set(mux, mux->data.values[chan]);
-+	i2c_mux_gpio_set(mux, chan);
++	regcache_cache_only(wm8962->regmap, true);
++
+ 	/* The drivers should power up as needed */
+ 	regulator_bulk_disable(ARRAY_SIZE(wm8962->supplies), wm8962->supplies);
  
- 	return 0;
- }
-@@ -228,7 +228,7 @@ static int i2c_mux_gpio_probe(struct pla
- 		unsigned int class = mux->data.classes ? mux->data.classes[i] : 0;
- 
- 		mux->adap[i] = i2c_add_mux_adapter(parent, &pdev->dev, mux, nr,
--						   i, class,
-+						   mux->data.values[i], class,
- 						   i2c_mux_gpio_select, deselect);
- 		if (!mux->adap[i]) {
- 			ret = -ENODEV;
 
 
