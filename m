@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752485Ab3LBOhD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 09:37:03 -0500
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:46619 "EHLO
-	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752380Ab3LBOgt (ORCPT
+	id S1752538Ab3LBOhY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 09:37:24 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:56956 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751927Ab3LBOhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 09:36:49 -0500
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
-To: linux-kernel@vger.kernel.org
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@ghostprotocols.net, jolsa@redhat.com
-Subject: [PATCH] perf tools: bring back old behavior when NO_DEMAGLE doesn't link with libbfd
-Date: Mon,  2 Dec 2013 18:36:39 +0400
-Message-Id: <1385994999-19889-1-git-send-email-stfomichev@yandex-team.ru>
-X-Mailer: git-send-email 1.8.3.2
+	Mon, 2 Dec 2013 09:37:18 -0500
+Date: Mon, 2 Dec 2013 09:37:13 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org, fweisbec@gmail.com,
+        mingo@redhat.com, linux-kernel@vger.kernel.org,
+        Jiri Kosina <trivial@kernel.org>
+Subject: Re: [PATCH] tracepoint: Spell Fix: Write "binay" as "binary"
+Message-ID: <20131202093713.662881e7@gandalf.local.home>
+In-Reply-To: <32a55f133a8138560044ecdac34f0e5aef97ddc3.1385977486.git.viresh.kumar@linaro.org>
+References: <32a55f133a8138560044ecdac34f0e5aef97ddc3.1385977486.git.viresh.kumar@linaro.org>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit reverts part of the 3e6a147deef9 "perf tools: Separate lbfd
-check out of NO_DEMANGLE condition" which always links perf with libbfd.
-I'd like to preserve old behavior when NO_DEMAGLE does not link with
-it, because some machines may contain different versions of binutils
-(hence miss required libbfd version) and I still want an option to build perf
-which works on any machine regardless of binutils version.
+On Mon,  2 Dec 2013 15:15:37 +0530
+Viresh Kumar <viresh.kumar@linaro.org> wrote:
 
-Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
----
- tools/perf/config/Makefile | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+> Binary was written as binay, probably by mistake. Fix it.
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 80ea6d823908..337cc786bafd 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -485,10 +485,6 @@ else
-   endif
- endif
- 
--ifeq ($(feature-libbfd), 1)
--  EXTLIBS += -lbfd
--endif
--
- ifdef NO_DEMANGLE
-   CFLAGS += -DNO_DEMANGLE
- else
-@@ -496,7 +492,9 @@ else
-     EXTLIBS += -liberty
-     CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
-   else
--    ifneq ($(feature-libbfd), 1)
-+    ifeq ($(feature-libbfd), 1)
-+      EXTLIBS += -lbfd
-+    else
-       $(call feature_check,liberty)
-       ifeq ($(feature-liberty), 1)
-         EXTLIBS += -lbfd -liberty
--- 
-1.8.3.2
+This can go through the trivial tree.
+
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
+
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  include/linux/tracepoint.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+> index ebeab36..f0c3e4c 100644
+> --- a/include/linux/tracepoint.h
+> +++ b/include/linux/tracepoint.h
+> @@ -274,7 +274,7 @@ static inline void tracepoint_synchronize_unregister(void)
+>   * For use with the TRACE_EVENT macro:
+>   *
+>   * We define a tracepoint, its arguments, its printk format
+> - * and its 'fast binay record' layout.
+> + * and its 'fast binary record' layout.
+>   *
+>   * Firstly, name your tracepoint via TRACE_EVENT(name : the
+>   * 'subsystem_event' notation is fine.
 
