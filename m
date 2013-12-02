@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758497Ab3LBUry (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:47:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38746 "EHLO
+	id S932180Ab3LBUs7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:48:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38764 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753645Ab3LBTNw (ORCPT
+	with ESMTP id S1754185Ab3LBTNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:52 -0500
+	Mon, 2 Dec 2013 14:13:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.10 101/173] drm/radeon: dont share PPLLs on DCE4.1
-Date: Mon,  2 Dec 2013 11:11:24 -0800
-Message-Id: <20131202191155.612898203@linuxfoundation.org>
+Subject: [PATCH 3.10 099/173] drm/radeon/si: fix define for MC_SEQ_TRAIN_WAKEUP_CNTL
+Date: Mon,  2 Dec 2013 11:11:22 -0800
+Message-Id: <20131202191155.400273308@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -28,30 +28,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 70471860ff9f335c60c004d42ebd48945bfa5403 upstream.
+commit d5693761b2b4ff530c8af8af9ec55b6eae76e617 upstream.
 
-Sharing PPLLs seems to cause problems on some boards.
+Typo in the register offset.
 
-Bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=45334
-
+Noticed-by: Sylvain BERTRAND <sylware@legeek.net>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_crtc.c |    2 +-
+ drivers/gpu/drm/radeon/sid.h |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/atombios_crtc.c
-+++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -1683,7 +1683,7 @@ static int radeon_atom_pick_pll(struct d
- 				if (pll != ATOM_PPLL_INVALID)
- 					return pll;
- 			}
--		} else {
-+		} else if (!ASIC_IS_DCE41(rdev)) { /* Don't share PLLs on DCE4.1 chips */
- 			/* use the same PPLL for all monitors with the same clock */
- 			pll = radeon_get_shared_nondp_ppll(crtc);
- 			if (pll != ATOM_PPLL_INVALID)
+--- a/drivers/gpu/drm/radeon/sid.h
++++ b/drivers/gpu/drm/radeon/sid.h
+@@ -247,7 +247,7 @@
+ #define		NOOFGROUPS_SHIFT				12
+ #define		NOOFGROUPS_MASK					0x00001000
+ 
+-#define	MC_SEQ_TRAIN_WAKEUP_CNTL			0x2808
++#define	MC_SEQ_TRAIN_WAKEUP_CNTL			0x28e8
+ #define		TRAIN_DONE_D0      			(1 << 30)
+ #define		TRAIN_DONE_D1      			(1 << 31)
+ 
 
 
