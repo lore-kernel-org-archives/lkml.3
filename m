@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756843Ab3LBUkD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:40:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38746 "EHLO
+	id S1758171Ab3LBUk1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:40:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38844 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287Ab3LBTOM (ORCPT
+	with ESMTP id S1754279Ab3LBTOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:14:12 -0500
+	Mon, 2 Dec 2013 14:14:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Elias Vanderstuyft <Elias.vds@gmail.com>,
+        Anssi Hannula <anssi.hannula@iki.fi>, Simon Wood <simon@mungewell.org>,
         Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.10 130/173] HID: hid-sensor-hub: fix report size
-Date: Mon,  2 Dec 2013 11:11:53 -0800
-Message-Id: <20131202191158.377618130@linuxfoundation.org>
+Subject: [PATCH 3.10 128/173] HID: logitech - lg2ff: Add IDs for Formula Vibration Feedback Wheel
+Date: Mon,  2 Dec 2013 11:11:51 -0800
+Message-Id: <20131202191158.176581737@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,63 +28,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+From: Elias Vanderstuyft <Elias.vds@gmail.com>
 
-commit d4b1bba76171cb783e32441b28462fe841073ed8 upstream.
+commit bd04363d3990c0727b7512a79a08c68436878bb0 upstream.
 
-Most of the hid sensor field size is reported in report_size field
-in the report descriptor. For rotation fusion sensor the quaternion
-data is 16 byte field, the report size was set to 4 and report
-count field is set to 4. So the total size is 16 bytes. But the current
-driver has a bug and not taking account for report count field. This
-causes user space to see only 4 bytes of data sent via IIO interface.
-The number of bytes in a field needs to take account of report_count
-field. Need to multiply report_size and report_count to get total
-number of bytes.
+Add USB IDs for Logitech Formula Vibration Feedback Wheel (046d:ca04).
 
-Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+The lg2ff force feedback subdriver is used for vibration and
+HID_GD_MULTIAXIS is set to avoid deadzone like other Logitech wheels.
+
+Kconfig description etc are also updated accordingly.
+
+Signed-off-by: Elias Vanderstuyft <Elias.vds@gmail.com>
+[anssi.hannula@iki.fi: added description and CCs]
+Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Signed-off-by: Simon Wood <simon@mungewell.org>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-sensor-hub.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/hid/Kconfig     |    8 +++++---
+ drivers/hid/hid-core.c  |    1 +
+ drivers/hid/hid-ids.h   |    1 +
+ drivers/hid/hid-lg.c    |    3 +++
+ drivers/hid/hid-lg2ff.c |    2 +-
+ 5 files changed, 11 insertions(+), 4 deletions(-)
 
---- a/drivers/hid/hid-sensor-hub.c
-+++ b/drivers/hid/hid-sensor-hub.c
-@@ -327,7 +327,8 @@ int sensor_hub_input_get_attribute_info(
- 				field->logical == attr_usage_id) {
- 				sensor_hub_fill_attr_info(info, i, report->id,
- 					field->unit, field->unit_exponent,
--					field->report_size);
-+					field->report_size *
-+							field->report_count);
- 				ret = 0;
- 			} else {
- 				for (j = 0; j < field->maxusage; ++j) {
-@@ -339,7 +340,8 @@ int sensor_hub_input_get_attribute_info(
- 							i, report->id,
- 							field->unit,
- 							field->unit_exponent,
--							field->report_size);
-+							field->report_size *
-+							field->report_count);
- 						ret = 0;
- 						break;
- 					}
-@@ -426,9 +428,10 @@ static int sensor_hub_raw_event(struct h
- 		hid_dbg(hdev, "%d collection_index:%x hid:%x sz:%x\n",
- 				i, report->field[i]->usage->collection_index,
- 				report->field[i]->usage->hid,
--				report->field[i]->report_size/8);
--
--		sz = report->field[i]->report_size/8;
-+				(report->field[i]->report_size *
-+					report->field[i]->report_count)/8);
-+		sz = (report->field[i]->report_size *
-+					report->field[i]->report_count)/8;
- 		if (pdata->pending.status && pdata->pending.attr_usage_id ==
- 				report->field[i]->usage->hid) {
- 			hid_dbg(hdev, "data was pending ...\n");
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -352,12 +352,14 @@ config LOGITECH_FF
+ 	  force feedback.
+ 
+ config LOGIRUMBLEPAD2_FF
+-	bool "Logitech RumblePad/Rumblepad 2 force feedback support"
++	bool "Logitech force feedback support (variant 2)"
+ 	depends on HID_LOGITECH
+ 	select INPUT_FF_MEMLESS
+ 	help
+-	  Say Y here if you want to enable force feedback support for Logitech
+-	  RumblePad and Rumblepad 2 devices.
++	  Say Y here if you want to enable force feedback support for:
++	  - Logitech RumblePad
++	  - Logitech Rumblepad 2
++	  - Logitech Formula Vibration Feedback Wheel
+ 
+ config LOGIG940_FF
+ 	bool "Logitech Flight System G940 force feedback support"
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1703,6 +1703,7 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_FLIGHT_SYSTEM_G940) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_MOMO_WHEEL) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_VIBRATION_WHEEL) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_DFP_WHEEL) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_DFGT_WHEEL) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_G25_WHEEL) },
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -562,6 +562,7 @@
+ #define USB_DEVICE_ID_DINOVO_EDGE	0xc714
+ #define USB_DEVICE_ID_DINOVO_MINI	0xc71f
+ #define USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2	0xca03
++#define USB_DEVICE_ID_LOGITECH_VIBRATION_WHEEL	0xca04
+ 
+ #define USB_VENDOR_ID_LUMIO		0x202e
+ #define USB_DEVICE_ID_CRYSTALTOUCH	0x0006
+--- a/drivers/hid/hid-lg.c
++++ b/drivers/hid/hid-lg.c
+@@ -492,6 +492,7 @@ static int lg_input_mapped(struct hid_de
+ 		case USB_DEVICE_ID_LOGITECH_G27_WHEEL:
+ 		case USB_DEVICE_ID_LOGITECH_WII_WHEEL:
+ 		case USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2:
++		case USB_DEVICE_ID_LOGITECH_VIBRATION_WHEEL:
+ 			field->application = HID_GD_MULTIAXIS;
+ 			break;
+ 		default:
+@@ -639,6 +640,8 @@ static const struct hid_device_id lg_dev
+ 		.driver_data = LG_NOGET | LG_FF4 },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2),
+ 		.driver_data = LG_FF4 },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_VIBRATION_WHEEL),
++		.driver_data = LG_FF2 },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_G25_WHEEL),
+ 		.driver_data = LG_FF4 },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_DFGT_WHEEL),
+--- a/drivers/hid/hid-lg2ff.c
++++ b/drivers/hid/hid-lg2ff.c
+@@ -95,7 +95,7 @@ int lg2ff_init(struct hid_device *hid)
+ 
+ 	hid_hw_request(hid, report, HID_REQ_SET_REPORT);
+ 
+-	hid_info(hid, "Force feedback for Logitech RumblePad/Rumblepad 2 by Anssi Hannula <anssi.hannula@gmail.com>\n");
++	hid_info(hid, "Force feedback for Logitech variant 2 rumble devices by Anssi Hannula <anssi.hannula@gmail.com>\n");
+ 
+ 	return 0;
+ }
 
 
