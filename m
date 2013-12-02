@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757351Ab3LBUR6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:17:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39204 "EHLO
+	id S1754545Ab3LBTRY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:17:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39017 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754548Ab3LBTR0 (ORCPT
+	with ESMTP id S1753518Ab3LBTQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:26 -0500
+	Mon, 2 Dec 2013 14:16:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shan Hai <shan.hai@windriver.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.12 046/212] drivers/libata: Set max sector to 65535 for Slimtype DVD A DS8A9SH drive
-Date: Mon,  2 Dec 2013 11:13:57 -0800
-Message-Id: <20131202191253.434357574@linuxfoundation.org>
+        Phil Edworthy <phil.edworthy@renesas.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.12 019/212] ASoC: ak4642: prevent un-necessary changes to SG_SL1
+Date: Mon,  2 Dec 2013 11:13:30 -0800
+Message-Id: <20131202191250.832802261@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,79 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shan Hai <shan.hai@windriver.com>
+From: Phil Edworthy <phil.edworthy@renesas.com>
 
-commit 0523f037f65dba10191b0fa9c51266f90ba64630 upstream.
+commit 7b5bfb82882b9b1c8423ce0ed6852ca3762d967a upstream.
 
-The "Slimtype DVD A  DS8A9SH" drive locks up with following backtrace when
-the max sector is smaller than 65535 bytes, fix it by adding a quirk to set
-the max sector to 65535 bytes.
+If you record the sound during playback,
+the playback sound becomes silent.
+Modify so that the codec driver does not clear
+SG_SL1::DACL bit which is controlled under widget
 
-INFO: task flush-11:0:663 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-flush-11:0    D 00000000ffff5ceb     0   663      2 0x00000000
- ffff88026d3b1710 0000000000000046 0000000000000001 0000000000000000
- ffff88026f2530c0 ffff88026d365860 ffff88026d3b16e0 ffffffff812ffd52
- ffff88026d4fd3d0 0000000100000001 ffff88026d3b16f0 ffff88026d3b1fd8
-Call Trace:
- [<ffffffff812ffd52>] ? cfq_may_queue+0x52/0xf0
- [<ffffffff81604338>] schedule+0x18/0x30
- [<ffffffff81604392>] io_schedule+0x42/0x60
- [<ffffffff812f22bb>] get_request_wait+0xeb/0x1f0
- [<ffffffff81065660>] ? autoremove_wake_function+0x0/0x40
- [<ffffffff812eb382>] ? elv_merge+0x42/0x210
- [<ffffffff812f26ae>] __make_request+0x8e/0x4e0
- [<ffffffff812f068e>] generic_make_request+0x21e/0x5e0
- [<ffffffff812f0aad>] submit_bio+0x5d/0xd0
- [<ffffffff81141422>] submit_bh+0xf2/0x130
- [<ffffffff8114474c>] __block_write_full_page+0x1dc/0x3a0
- [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
- [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
- [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
- [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
- [<ffffffff811449ee>] block_write_full_page_endio+0xde/0x100
- [<ffffffff81144a20>] block_write_full_page+0x10/0x20
- [<ffffffff81148703>] blkdev_writepage+0x13/0x20
- [<ffffffff810d7525>] __writepage+0x15/0x40
- [<ffffffff810d7c0f>] write_cache_pages+0x1cf/0x3e0
- [<ffffffff810d7510>] ? __writepage+0x0/0x40
- [<ffffffff810d7e42>] generic_writepages+0x22/0x30
- [<ffffffff810d7e6f>] do_writepages+0x1f/0x40
- [<ffffffff8113ae67>] writeback_single_inode+0xe7/0x3b0
- [<ffffffff8113b574>] writeback_sb_inodes+0x184/0x280
- [<ffffffff8113bedb>] writeback_inodes_wb+0x6b/0x1a0
- [<ffffffff8113c24b>] wb_writeback+0x23b/0x2a0
- [<ffffffff8113c42d>] wb_do_writeback+0x17d/0x190
- [<ffffffff8113c48b>] bdi_writeback_task+0x4b/0xe0
- [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
- [<ffffffff810e8321>] bdi_start_fn+0x81/0x100
- [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
- [<ffffffff8106522e>] kthread+0x8e/0xa0
- [<ffffffff81039274>] ? finish_task_switch+0x54/0xc0
- [<ffffffff81003334>] kernel_thread_helper+0x4/0x10
- [<ffffffff810651a0>] ? kthread+0x0/0xa0
- [<ffffffff81003330>] ? kernel_thread_helper+0x0/0x10
-
- The above trace was triggered by
-   "dd if=/dev/zero of=/dev/sr0 bs=2048 count=32768"
-
-Signed-off-by: Shan Hai <shan.hai@windriver.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Phil Edworthy <phil.edworthy@renesas.com>
+Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-core.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/soc/codecs/ak4642.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4126,6 +4126,7 @@ static const struct ata_blacklist_entry
- 	{ "TORiSAN DVD-ROM DRD-N216", NULL,	ATA_HORKAGE_MAX_SEC_128 },
- 	{ "QUANTUM DAT    DAT72-000", NULL,	ATA_HORKAGE_ATAPI_MOD16_DMA },
- 	{ "Slimtype DVD A  DS8A8SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
-+	{ "Slimtype DVD A  DS8A9SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
- 
- 	/* Devices we expect to fail diagnostics */
- 
+--- a/sound/soc/codecs/ak4642.c
++++ b/sound/soc/codecs/ak4642.c
+@@ -257,7 +257,7 @@ static int ak4642_dai_startup(struct snd
+ 		 * This operation came from example code of
+ 		 * "ASAHI KASEI AK4642" (japanese) manual p94.
+ 		 */
+-		snd_soc_write(codec, SG_SL1, PMMP | MGAIN0);
++		snd_soc_update_bits(codec, SG_SL1, PMMP | MGAIN0, PMMP | MGAIN0);
+ 		snd_soc_write(codec, TIMER, ZTM(0x3) | WTM(0x3));
+ 		snd_soc_write(codec, ALC_CTL1, ALC | LMTH0);
+ 		snd_soc_update_bits(codec, PW_MGMT1, PMADL, PMADL);
 
 
