@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756974Ab3LBUJa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:09:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39148 "EHLO
+	id S1756941Ab3LBUJY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:09:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39200 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754578Ab3LBTRe (ORCPT
+	with ESMTP id S1754580Ab3LBTRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:17:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vu Pham <vuhuong@mellanox.com>, Bart Van Assche <bvanassche@acm.org>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.12 063/212] IB/srp: Remove target from list before freeing Scsi_Host structure
-Date: Mon,  2 Dec 2013 11:14:14 -0800
-Message-Id: <20131202191255.084733210@linuxfoundation.org>
+        Xiangliang Yu <yuxiangl@marvell.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.12 054/212] ahci: disabled FBS prior to issuing software reset
+Date: Mon,  2 Dec 2013 11:14:05 -0800
+Message-Id: <20131202191254.199382441@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,61 +26,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vu Pham <vuhuong@mellanox.com>
+From: xiangliang yu <yxlraid@gmail.com>
 
-commit 65d7dd2f3479ef5aec1d9ddd1481cb7851c11af6 upstream.
+commit 89dafa20f3daab5b3e0c13d0068a28e8e64e2102 upstream.
 
-Remove an SRP target from the SRP target list before invoking the last
-scsi_host_put() call.  This change is necessary because that last put
-frees the memory that holds the srp_target_port structure.
+Tested with Marvell 88se9125, attached with one port mulitplier(5 ports)
+and one disk, we will get following boot log messages if using current
+code:
 
-This patch prevents the following kernel oops:
+  ata8: SATA link up 6.0 Gbps (SStatus 133 SControl 330)
+  ata8.15: Port Multiplier 1.2, 0x1b4b:0x9715 r160, 5 ports, feat 0x1/0x1f
+  ahci 0000:03:00.0: FBS is enabled
+  ata8.00: hard resetting link
+  ata8.00: SATA link down (SStatus 0 SControl 330)
+  ata8.01: hard resetting link
+  ata8.01: SATA link down (SStatus 0 SControl 330)
+  ata8.02: hard resetting link
+  ata8.02: SATA link down (SStatus 0 SControl 330)
+  ata8.03: hard resetting link
+  ata8.03: SATA link up 6.0 Gbps (SStatus 133 SControl 133)
+  ata8.04: hard resetting link
+  ata8.04: failed to resume link (SControl 133)
+  ata8.04: failed to read SCR 0 (Emask=0x40)
+  ata8.04: failed to read SCR 0 (Emask=0x40)
+  ata8.04: failed to read SCR 1 (Emask=0x40)
+  ata8.04: failed to read SCR 0 (Emask=0x40)
+  ata8.03: native sectors (2) is smaller than sectors (976773168)
+  ata8.03: ATA-8: ST3500413AS, JC4B, max UDMA/133
+  ata8.03: 976773168 sectors, multi 0: LBA48 NCQ (depth 31/32)
+  ata8.03: configured for UDMA/133
+  ata8.04: failed to IDENTIFY (I/O error, err_mask=0x100)
+  ata8.15: hard resetting link
+  ata8.15: SATA link up 6.0 Gbps (SStatus 133 SControl 330)
+  ata8.15: Port Multiplier vendor mismatch '0x1b4b' != '0x133'
+  ata8.15: PMP revalidation failed (errno=-19)
+  ata8.15: hard resetting link
+  ata8.15: SATA link up 6.0 Gbps (SStatus 133 SControl 330)
+  ata8.15: Port Multiplier vendor mismatch '0x1b4b' != '0x133'
+  ata8.15: PMP revalidation failed (errno=-19)
+  ata8.15: limiting SATA link speed to 3.0 Gbps
+  ata8.15: hard resetting link
+  ata8.15: SATA link up 3.0 Gbps (SStatus 123 SControl 320)
+  ata8.15: Port Multiplier vendor mismatch '0x1b4b' != '0x133'
+  ata8.15: PMP revalidation failed (errno=-19)
+  ata8.15: failed to recover PMP after 5 tries, giving up
+  ata8.15: Port Multiplier detaching
+  ata8.03: disabled
+  ata8.00: disabled
+  ata8: EH complete
 
-    RIP: 0010:[<ffffffff810b00d0>] __lock_acquire+0x500/0x1570
-    Call Trace:
-     [<ffffffff810b11e4>] lock_acquire+0xa4/0x120
-     [<ffffffff81531206>] _spin_lock+0x36/0x70
-     [<ffffffffa01b6d8f>] srp_remove_work+0xef/0x180 [ib_srp]
-     [<ffffffff8109125c>] worker_thread+0x21c/0x3d0
-     [<ffffffff81096e86>] kthread+0x96/0xa0
-     [<ffffffff8100c20a>] child_rip+0xa/0x20
+The reason is that current detection code doesn't follow AHCI spec:
 
-Signed-off-by: Vu Pham <vuhuong@mellanox.com>
+First,the port multiplier detection process look like this:
+
+	ahci_hardreset(link, class, deadline)
+	if (class == ATA_DEV_PMP) {
+		sata_pmp_attach(dev)	/* will enable FBS */
+		sata_pmp_init_links(ap, nr_ports);
+		ata_for_each_link(link, ap, EDGE) {
+			sata_std_hardreset(link, class, deadline);
+			if (link_is_online)	/* do soft reset */
+				ahci_softreset(link, class, deadline);
+		}
+	}
+But, according to chapter 9.3.9 in AHCI spec: Prior to issuing software
+reset, software shall clear PxCMD.ST to '0' and then clear PxFBS.EN to
+'0'.
+
+The patch test ok with kernel 3.11.1.
+
+tj: Patch white space contaminated, applied manually with trivial
+    updates.
+
+Signed-off-by: Xiangliang Yu <yuxiangl@marvell.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-[ bvanassche - Modified path description and CC'ed stable. ]
-
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-
 ---
- drivers/infiniband/ulp/srp/ib_srp.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/ata/libahci.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -534,6 +534,11 @@ static void srp_remove_target(struct srp
- 	ib_destroy_cm_id(target->cm_id);
- 	srp_free_target_ib(target);
- 	srp_free_req_data(target);
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -1275,9 +1275,11 @@ int ahci_do_softreset(struct ata_link *l
+ {
+ 	struct ata_port *ap = link->ap;
+ 	struct ahci_host_priv *hpriv = ap->host->private_data;
++	struct ahci_port_priv *pp = ap->private_data;
+ 	const char *reason = NULL;
+ 	unsigned long now, msecs;
+ 	struct ata_taskfile tf;
++	bool fbs_disabled = false;
+ 	int rc;
+ 
+ 	DPRINTK("ENTER\n");
+@@ -1287,6 +1289,16 @@ int ahci_do_softreset(struct ata_link *l
+ 	if (rc && rc != -EOPNOTSUPP)
+ 		ata_link_warn(link, "failed to reset engine (errno=%d)\n", rc);
+ 
++	/*
++	 * According to AHCI-1.2 9.3.9: if FBS is enable, software shall
++	 * clear PxFBS.EN to '0' prior to issuing software reset to devices
++	 * that is attached to port multiplier.
++	 */
++	if (!ata_is_host_link(link) && pp->fbs_enabled) {
++		ahci_disable_fbs(ap);
++		fbs_disabled = true;
++	}
 +
-+	spin_lock(&target->srp_host->target_lock);
-+	list_del(&target->list);
-+	spin_unlock(&target->srp_host->target_lock);
+ 	ata_tf_init(link->device, &tf);
+ 
+ 	/* issue the first D2H Register FIS */
+@@ -1327,6 +1339,10 @@ int ahci_do_softreset(struct ata_link *l
+ 	} else
+ 		*class = ahci_dev_classify(ap);
+ 
++	/* re-enable FBS if disabled before */
++	if (fbs_disabled)
++		ahci_enable_fbs(ap);
 +
- 	scsi_host_put(target->scsi_host);
- }
+ 	DPRINTK("EXIT, class=%u\n", *class);
+ 	return 0;
  
-@@ -545,10 +550,6 @@ static void srp_remove_work(struct work_
- 	WARN_ON_ONCE(target->state != SRP_TARGET_REMOVED);
- 
- 	srp_remove_target(target);
--
--	spin_lock(&target->srp_host->target_lock);
--	list_del(&target->list);
--	spin_unlock(&target->srp_host->target_lock);
- }
- 
- static void srp_rport_delete(struct srp_rport *rport)
 
 
