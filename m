@@ -1,81 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab3LBNpE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 08:45:04 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:45738 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609Ab3LBNpC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 08:45:02 -0500
-Message-ID: <529C8ED0.6060805@ti.com>
-Date: Mon, 2 Dec 2013 15:44:48 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1752100Ab3LBNxq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 08:53:46 -0500
+Received: from mga09.intel.com ([134.134.136.24]:29245 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751510Ab3LBNxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 08:53:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,811,1378882800"; 
+   d="scan'208";a="437101585"
+Date: Mon, 2 Dec 2013 15:53:33 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Sergei Ianovich <ynvich@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
+        "open list:SERIAL DRIVERS" <linux-serial@vger.kernel.org>
+Subject: Re: [PATCH 05/11] serial: support for 16550 serial ports on LP-8x4x
+Message-ID: <20131202135333.GJ3942@xps8300>
+References: <1385879185-22455-1-git-send-email-ynvich@gmail.com>
+ <1385879185-22455-6-git-send-email-ynvich@gmail.com>
+ <20131202084845.GD3942@xps8300>
+ <1385984782.12531.26.camel@host5.omatika.ru>
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Michael Trimarchi <michael@amarulasolutions.com>,
-        Felipe Balbi <balbi@ti.com>, <lee.jones@linaro.org>,
-        <sameo@linux.intel.com>, <tomi.valkeinen@ti.com>,
-        Stefan Roese <sr@denx.de>, <ljkenny.mailinglists@gmail.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] mfd: omap-usb-host: Fix USB device detection problems
- on OMAP4 Panda
-References: <1385730118-26402-1-git-send-email-rogerq@ti.com>	<1385730118-26402-2-git-send-email-rogerq@ti.com> <CAOf5uwmEkzFd=e3j8m8=qdTCAMkk_-DPw0fTm=7Vzy0PbE2oDQ@mail.gmail.com> <529C55DF.3000808@ti.com> <529C76AF.10106@linutronix.de> <529C7922.5000601@ti.com> <529C854F.3010101@linutronix.de> <529C8CBD.4070003@ti.com> <529C8D74.10007@linutronix.de>
-In-Reply-To: <529C8D74.10007@linutronix.de>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385984782.12531.26.camel@host5.omatika.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2013 03:39 PM, Sebastian Andrzej Siewior wrote:
-> On 12/02/2013 02:35 PM, Roger Quadros wrote:
->>> It refers to "Errata Id:i660" why it is required. Once you figured what
->>> why it has been added you could have an idea if it is okay to remove it
->>> and if the reset you do here might lead to it (I dunno).
->>>
->>
->> Keshava no longer works @TI. I have no other means to check why it was added
->> other than doing dome tests and making sure nothing breaks if we remove it.
->>
->> So far, things are going fine for about 50 or so boots divided between OMAP3 and 4
->> platforms. If more people can test and give feedback it'd be great.
+Hi,
+
+On Mon, Dec 02, 2013 at 03:46:22PM +0400, Sergei Ianovich wrote:
+> On Mon, 2013-12-02 at 10:48 +0200, Heikki Krogerus wrote:
+> > On Sun, Dec 01, 2013 at 10:26:18AM +0400, Sergei Ianovich wrote:
+> > > +static int request_and_remap(int i)
+> > > +{
+> > > +	if (!request_mem_region(extra_mem[i], 1, "serial"))
+> > > +		return -EBUSY;
+> > > +
+> > > +	lp8x4x_data[i].private_data = ioremap(extra_mem[i], 1);
+> > > +	if (lp8x4x_data[i].private_data)
+> > > +		return 0;
+> > > +
+> > > +	release_mem_region(extra_mem[i], 1);
+> > > +	return -ENODEV;
 > 
-> Hmm. Can't you lookup the errata he revers to?
+> > Instead of registering a platform device for serial8250 here, you need
+> > to simply register a platform driver for something like lp8x4x_serial.
+> > The platform code will to registers the platform devices for it. You
+> > will use serial8250_register_8250_port() in your probe to register a
+> > new port. Use 8250_em.c and 8250_dw.c under drivers/tty/serial/8250/
+> > as an example.
+> > 
+> > You don't need to introduce plat_serial8250_port so you won't need
+> > the QUIRK_PORT stuff. You deliver the iomem and the irq as normal
+> > resources that the driver uses when you create the platform device.
+> > That of course also means the driver does not need to care about the
+> > instances. The platform code will generate a platform device for as
+> > many ports you have and set to resources accordingly.
 > 
+> 8250_core.c doesn't use platform infrastructure to request and map IO
+> memory. There will be a conflict (and an error in
+> serial8250_request_std_resource()), if main IO memory is requested by
+> the platform device, won't it?
 
-Sure, but it was not making sense why RESET was avoided.
-It doesn't say anything about not using RESET. In fact it says that RESET _is_ the
-recovery procedure.
+You don't need to request the mem region in your probe driver.
 
-Pasting the errata description below for easy reference.
+You can still map it. You have the flag UPF_IOREMAP that you can use
+to tell 8250_code.c to map the region. If you don't set the flag,
+8250_core.c will in practice expect that port->membase is already set
+by the probe driver.
 
-"Errata id: i660
-DESCRIPTION
-In the following configuration :
-• USBHOST module is set to smart-idle mode
-• PRCM asserts idle_req to the USBHOST module. (This typically happens when the system is going to
-a low power mode : all ports have been suspended, the master part of the USBHOST module has
-entered the standby state, and SW has cut the functional clocks.)
-• an USBHOST interrupt occurs before the module is able to answer idle_ack, typically a remote wakeup
-IRQ.
-Then the USB HOST module will enter a deadlock situation where it is no more accessible nor functional.
-The only way to recover will be to perform a software reset of the module.
+Check 8250_dw.c. It does the mapping on it's own and simply doesn't
+set the flag.
 
-WORKAROUND
-The best workaround consists in switching the module to force idle mode right before cutting the
-module's FCLK.
-• the bus has reached the suspend state.
-• write SYSCONFIG:Idlemode= ForceIdle and read it back to ensure the write has been taken into
-account in case of posted writes.
-• cut the FCLK
-• Idle_req will be asserted and idle_ack answered within one L3 clock cycle.
-Upon resume or remote wakeup, switch back the module to smart-idle.
-This workaround reduces the failure window to only one L3 clock cycle. The probability for an interrupt to
-fire at this exact time is considered extremely low, and the case has never been hit on board."
+Br,
 
-Based on this, I don't see anything wrong in Resetting the module at probe or at boot.
-
-cheers,
--roger
+-- 
+heikki
