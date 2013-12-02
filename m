@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab3LBUFM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:05:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39152 "EHLO
+	id S932108Ab3LBUFF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:05:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39329 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753568Ab3LBTRs (ORCPT
+	with ESMTP id S1753830Ab3LBTRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:48 -0500
+	Mon, 2 Dec 2013 14:17:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shiva Krishna Merla <shivakrishna.merla@netapp.com>,
-        Krishnasamy Somasundaram <somasundaram.krishnasamy@netapp.com>,
-        Speagle Andy <Andy.Speagle@netapp.com>,
-        Junichi Nomura <j-nomura@ce.jp.nec.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.12 086/212] dm mpath: fix race condition between multipath_dtr and pg_init_done
-Date: Mon,  2 Dec 2013 11:14:37 -0800
-Message-Id: <20131202191257.244827795@linuxfoundation.org>
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.12 088/212] dm cache: fix a race condition between queuing new migrations and quiescing for a shutdown
+Date: Mon,  2 Dec 2013 11:14:39 -0800
+Message-Id: <20131202191257.431475735@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -30,105 +26,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shiva Krishna Merla <shivakrishna.merla@netapp.com>
+From: Joe Thornber <ejt@redhat.com>
 
-commit 954a73d5d3073df2231820c718fdd2f18b0fe4c9 upstream.
+commit 66cb1910df17b38334153462ec8166e48058035f upstream.
 
-Whenever multipath_dtr() is happening we must prevent queueing any
-further path activation work.  Implement this by adding a new
-'pg_init_disabled' flag to the multipath structure that denotes future
-path activation work should be skipped if it is set.  By disabling
-pg_init and then re-enabling in flush_multipath_work() we also avoid the
-potential for pg_init to be initiated while suspending an mpath device.
+The code that was trying to do this was inadequate.  The postsuspend
+method (in ioctl context), needs to wait for the worker thread to
+acknowledge the request to quiesce.  Otherwise the migration count may
+drop to zero temporarily before the worker thread realises we're
+quiescing.  In this case the target will be taken down, but the worker
+thread may have issued a new migration, which will cause an oops when
+it completes.
 
-Without this patch a race condition exists that may result in a kernel
-panic:
-
-1) If after pg_init_done() decrements pg_init_in_progress to 0, a call
-   to wait_for_pg_init_completion() assumes there are no more pending path
-   management commands.
-2) If pg_init_required is set by pg_init_done(), due to retryable
-   mode_select errors, then process_queued_ios() will again queue the
-   path activation work.
-3) If free_multipath() completes before activate_path() work is called a
-   NULL pointer dereference like the following can be seen when
-   accessing members of the recently destructed multipath:
-
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000090
-RIP: 0010:[<ffffffffa003db1b>]  [<ffffffffa003db1b>] activate_path+0x1b/0x30 [dm_multipath]
-[<ffffffff81090ac0>] worker_thread+0x170/0x2a0
-[<ffffffff81096c80>] ? autoremove_wake_function+0x0/0x40
-
-[switch to disabling pg_init in flush_multipath_work & header edits by Mike Snitzer]
-Signed-off-by: Shiva Krishna Merla <shivakrishna.merla@netapp.com>
-Reviewed-by: Krishnasamy Somasundaram <somasundaram.krishnasamy@netapp.com>
-Tested-by: Speagle Andy <Andy.Speagle@netapp.com>
-Acked-by: Junichi Nomura <j-nomura@ce.jp.nec.com>
+Signed-off-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-mpath.c |   18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+ drivers/md/dm-cache-target.c |   54 +++++++++++++++++++++++++++++++------------
+ 1 file changed, 40 insertions(+), 14 deletions(-)
 
---- a/drivers/md/dm-mpath.c
-+++ b/drivers/md/dm-mpath.c
-@@ -87,6 +87,7 @@ struct multipath {
- 	unsigned queue_if_no_path:1;	/* Queue I/O if last path fails? */
- 	unsigned saved_queue_if_no_path:1; /* Saved state during suspension */
- 	unsigned retain_attached_hw_handler:1; /* If there's already a hw_handler present, don't change it. */
-+	unsigned pg_init_disabled:1;	/* pg_init is not currently allowed */
+--- a/drivers/md/dm-cache-target.c
++++ b/drivers/md/dm-cache-target.c
+@@ -148,6 +148,9 @@ struct cache {
+ 	wait_queue_head_t migration_wait;
+ 	atomic_t nr_migrations;
  
- 	unsigned pg_init_retries;	/* Number of times to retry pg_init */
- 	unsigned pg_init_count;		/* Number of times pg_init called */
-@@ -497,7 +498,8 @@ static void process_queued_ios(struct wo
- 	    (!pgpath && !m->queue_if_no_path))
- 		must_queue = 0;
++	wait_queue_head_t quiescing_wait;
++	atomic_t quiescing_ack;
++
+ 	/*
+ 	 * cache_size entries, dirty if set
+ 	 */
+@@ -748,8 +751,9 @@ static void cell_defer(struct cache *cac
  
--	if (m->pg_init_required && !m->pg_init_in_progress && pgpath)
-+	if (m->pg_init_required && !m->pg_init_in_progress && pgpath &&
-+	    !m->pg_init_disabled)
- 		__pg_init_all_paths(m);
- 
- 	spin_unlock_irqrestore(&m->lock, flags);
-@@ -942,10 +944,20 @@ static void multipath_wait_for_pg_init_c
- 
- static void flush_multipath_work(struct multipath *m)
+ static void cleanup_migration(struct dm_cache_migration *mg)
  {
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&m->lock, flags);
-+	m->pg_init_disabled = 1;
-+	spin_unlock_irqrestore(&m->lock, flags);
-+
- 	flush_workqueue(kmpath_handlerd);
- 	multipath_wait_for_pg_init_completion(m);
- 	flush_workqueue(kmultipathd);
- 	flush_work(&m->trigger_event);
-+
-+	spin_lock_irqsave(&m->lock, flags);
-+	m->pg_init_disabled = 0;
-+	spin_unlock_irqrestore(&m->lock, flags);
+-	dec_nr_migrations(mg->cache);
++	struct cache *cache = mg->cache;
+ 	free_migration(mg);
++	dec_nr_migrations(cache);
  }
  
- static void multipath_dtr(struct dm_target *ti)
-@@ -1164,7 +1176,7 @@ static int pg_init_limit_reached(struct
+ static void migration_failure(struct dm_cache_migration *mg)
+@@ -1346,34 +1350,51 @@ static void writeback_some_dirty_blocks(
+ /*----------------------------------------------------------------
+  * Main worker loop
+  *--------------------------------------------------------------*/
+-static void start_quiescing(struct cache *cache)
++static bool is_quiescing(struct cache *cache)
+ {
++	int r;
+ 	unsigned long flags;
  
- 	spin_lock_irqsave(&m->lock, flags);
+ 	spin_lock_irqsave(&cache->lock, flags);
+-	cache->quiescing = 1;
++	r = cache->quiescing;
+ 	spin_unlock_irqrestore(&cache->lock, flags);
++
++	return r;
+ }
  
--	if (m->pg_init_count <= m->pg_init_retries)
-+	if (m->pg_init_count <= m->pg_init_retries && !m->pg_init_disabled)
- 		m->pg_init_required = 1;
- 	else
- 		limit_reached = 1;
-@@ -1714,7 +1726,7 @@ out:
-  *---------------------------------------------------------------*/
- static struct target_type multipath_target = {
- 	.name = "multipath",
--	.version = {1, 5, 1},
-+	.version = {1, 6, 0},
- 	.module = THIS_MODULE,
- 	.ctr = multipath_ctr,
- 	.dtr = multipath_dtr,
+-static void stop_quiescing(struct cache *cache)
++static void ack_quiescing(struct cache *cache)
++{
++	if (is_quiescing(cache)) {
++		atomic_inc(&cache->quiescing_ack);
++		wake_up(&cache->quiescing_wait);
++	}
++}
++
++static void wait_for_quiescing_ack(struct cache *cache)
++{
++	wait_event(cache->quiescing_wait, atomic_read(&cache->quiescing_ack));
++}
++
++static void start_quiescing(struct cache *cache)
+ {
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&cache->lock, flags);
+-	cache->quiescing = 0;
++	cache->quiescing = true;
+ 	spin_unlock_irqrestore(&cache->lock, flags);
++
++	wait_for_quiescing_ack(cache);
+ }
+ 
+-static bool is_quiescing(struct cache *cache)
++static void stop_quiescing(struct cache *cache)
+ {
+-	int r;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&cache->lock, flags);
+-	r = cache->quiescing;
++	cache->quiescing = false;
+ 	spin_unlock_irqrestore(&cache->lock, flags);
+ 
+-	return r;
++	atomic_set(&cache->quiescing_ack, 0);
+ }
+ 
+ static void wait_for_migrations(struct cache *cache)
+@@ -1420,16 +1441,15 @@ static void do_worker(struct work_struct
+ 	struct cache *cache = container_of(ws, struct cache, worker);
+ 
+ 	do {
+-		if (!is_quiescing(cache))
++		if (!is_quiescing(cache)) {
++			writeback_some_dirty_blocks(cache);
++			process_deferred_writethrough_bios(cache);
+ 			process_deferred_bios(cache);
++		}
+ 
+ 		process_migrations(cache, &cache->quiesced_migrations, issue_copy);
+ 		process_migrations(cache, &cache->completed_migrations, complete_migration);
+ 
+-		writeback_some_dirty_blocks(cache);
+-
+-		process_deferred_writethrough_bios(cache);
+-
+ 		if (commit_if_needed(cache)) {
+ 			process_deferred_flush_bios(cache, false);
+ 
+@@ -1442,6 +1462,9 @@ static void do_worker(struct work_struct
+ 			process_migrations(cache, &cache->need_commit_migrations,
+ 					   migration_success_post_commit);
+ 		}
++
++		ack_quiescing(cache);
++
+ 	} while (more_work(cache));
+ }
+ 
+@@ -2005,6 +2028,9 @@ static int cache_create(struct cache_arg
+ 	atomic_set(&cache->nr_migrations, 0);
+ 	init_waitqueue_head(&cache->migration_wait);
+ 
++	init_waitqueue_head(&cache->quiescing_wait);
++	atomic_set(&cache->quiescing_ack, 0);
++
+ 	r = -ENOMEM;
+ 	cache->nr_dirty = 0;
+ 	cache->dirty_bitset = alloc_bitset(from_cblock(cache->cache_size));
 
 
