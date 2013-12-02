@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab3LBUXN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:23:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39080 "EHLO
+	id S1757562Ab3LBUXL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:23:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39083 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752878Ab3LBTRH (ORCPT
+	with ESMTP id S1753580Ab3LBTRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:17:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.12 040/212] cfg80211: fix scheduled scan pointer access
-Date: Mon,  2 Dec 2013 11:13:51 -0800
-Message-Id: <20131202191252.886645860@linuxfoundation.org>
+        Roel Kluin <roel.kluin@gmail.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.12 030/212] pinctrl: dove: unset twsi option3 for gconfig as well
+Date: Mon,  2 Dec 2013 11:13:41 -0800
+Message-Id: <20131202191251.943811900@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,37 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Roel Kluin <roel.kluin@gmail.com>
 
-commit 79845c662eeb95c9a180b9bd0d3ad848ee65b94c upstream.
+commit 6d0a4ed2b90a12e1403d3e7d9d8c2cc7fdc301b5 upstream.
 
-Since rdev->sched_scan_req is dereferenced outside the
-lock protecting it, this might be done at the wrong
-time, causing crashes. Move the dereference to where
-it should be - inside the RTNL locked section.
+This fixes a typo which left twsi config3 option enabled.
 
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/scan.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/pinctrl/mvebu/pinctrl-dove.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/wireless/scan.c
-+++ b/net/wireless/scan.c
-@@ -254,10 +254,10 @@ void __cfg80211_sched_scan_results(struc
- 	rdev = container_of(wk, struct cfg80211_registered_device,
- 			    sched_scan_results_wk);
+--- a/drivers/pinctrl/mvebu/pinctrl-dove.c
++++ b/drivers/pinctrl/mvebu/pinctrl-dove.c
+@@ -335,7 +335,7 @@ static int dove_twsi_ctrl_set(struct mve
+ 	unsigned long gcfg2 = readl(DOVE_GLOBAL_CONFIG_2);
  
--	request = rdev->sched_scan_req;
--
- 	rtnl_lock();
+ 	gcfg1 &= ~DOVE_TWSI_ENABLE_OPTION1;
+-	gcfg2 &= ~(DOVE_TWSI_ENABLE_OPTION2 | DOVE_TWSI_ENABLE_OPTION2);
++	gcfg2 &= ~(DOVE_TWSI_ENABLE_OPTION2 | DOVE_TWSI_ENABLE_OPTION3);
  
-+	request = rdev->sched_scan_req;
-+
- 	/* we don't have sched_scan_req anymore if the scan is stopping */
- 	if (request) {
- 		if (request->flags & NL80211_SCAN_FLAG_FLUSH) {
+ 	switch (config) {
+ 	case 1:
 
 
