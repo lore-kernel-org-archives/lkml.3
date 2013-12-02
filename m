@@ -1,47 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab3LBMpN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 07:45:13 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:35414 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752494Ab3LBMpK (ORCPT
+	id S1753264Ab3LBMpf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 07:45:35 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:55322 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab3LBMpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 07:45:10 -0500
-Message-ID: <529C80D3.3090200@hurleysoftware.com>
-Date: Mon, 02 Dec 2013 07:45:07 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Mon, 2 Dec 2013 07:45:31 -0500
+Date: Mon, 2 Dec 2013 13:45:27 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>, Stephane Eranian <eranian@google.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Pekka Enberg <penberg@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 1/3] perf tools: Record total sampling time
+Message-ID: <20131202124527.GB22212@gmail.com>
+References: <1385967199-3759-1-git-send-email-namhyung@kernel.org>
+ <1385967199-3759-2-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] perf Makefile: Correct the message in feature-libnuma
- checking.
-References: <529C9DFD.6040707@cn.fujitsu.com> <1385998008-6851-1-git-send-email-yangds.fnst@cn.fujitsu.com> <529BF100.2080504@hurleysoftware.com> <20131202122620.GA2371@ghostprotocols.net>
-In-Reply-To: <20131202122620.GA2371@ghostprotocols.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385967199-3759-2-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2013 07:26 AM, Arnaldo Carvalho de Melo wrote:
-> Em Sun, Dec 01, 2013 at 09:31:28PM -0500, Peter Hurley escreveu:
->> On 12/02/2013 10:26 AM, Dongsheng Yang wrote:
->>> The package required for numa is named numactl-devel in Fedora or RHEL,
->>> and libnuma-devel in OpenSuSE, and libnuma-dev in Ubuntu. This patch
->>> corrects the package name in warning message in feature-libnuma checking.
->>
->> Thanks (and thanks for correcting the other lib names).
->
-> I'll take this as an:
->
-> Acked-by: Peter Hurley <peter@hurleysoftware.com>
->
-> Ok?
 
-Yes, ok.
+* Namhyung Kim <namhyung@kernel.org> wrote:
 
-Regards,
-Peter Hurley
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> It's sometimes useful to see total sampling or elapsed time with
+> normal performance result.  To do that, record first and last sample
+> time for each evsel and to display it in the header (--stdio only for
+> now).
+> 
+>   $ perf record -a sleep 1
+>   $ perf report --stdio
+>   ...
+>   # Samples: 4K of event 'cycles'
+>   # Event count (approx.): 4087481688
+>   # Total sampling time  : 1.001260 (sec)
 
+Btw., would it make sense to output it using the 'perf stat' print-out 
+machinery?
+
+If the 'count' of every event sampled is saved in the perf.data, 
+including elapsed time, at the beginning and at the end, then all 
+information is there to output things in perf stat style.
+
+( It might even make sense to save two more timestamps: rusage stime
+  and utime - that way the output could be made /usr/bin/time-alike. )
+
+Also I think there is some related existing functionality, I think 
+Stephane added a way to essentially do non-sampling 'perf stat' via 
+perf record - but the details escape me, I think it was related to the 
+-n option?
+
+So what we want here is in essence a sampling mode that can record and 
+report all the absolute counts as well.
+
+Thanks,
+
+	Ingo
