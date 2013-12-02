@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296Ab3LBTHE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:07:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38203 "EHLO
+	id S1753372Ab3LBTHP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:07:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38186 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753158Ab3LBTGx (ORCPT
+	with ESMTP id S1753279Ab3LBTHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:06:53 -0500
+	Mon, 2 Dec 2013 14:07:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolin Chen <b42378@freescale.com>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.4 06/60] ASoC: wm8962: Turn on regcache_cache_only before disabling regulator
-Date: Mon,  2 Dec 2013 11:05:47 -0800
-Message-Id: <20131202190331.603831023@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Matthieu Baerts <matttbe@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.4 29/60] rtlwifi: rtl8192se: Fix incorrect signal strength for unassociated AP
+Date: Mon,  2 Dec 2013 11:06:10 -0800
+Message-Id: <20131202190336.631757422@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
 References: <20131202190330.152596462@linuxfoundation.org>
@@ -26,34 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolin Chen <b42378@freescale.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 50bfcf2df2fadf77e143d6099150e6fa7ef4d78c upstream.
+commit b4ade797668e33b4e8353c2701ce01d7084dfafa upstream.
 
-It's safer to turn on regcache_cache_only before disabling regulator since
-the driver will turn off the regcache_cache_only after enabling regulator.
+The routine that processes received frames was returning the RSSI value for the
+signal strength; however, that value is available only for associated APs. As
+a result, the strength was the absurd value of 10 dBm. As a result, scans
+return incorrect values for the strength, which causes unwanted attempts to roam.
 
-If we remain cache_only false, some command like 'amixer cset' would get
-failure if being run before wm8962_resume().
+This patch fixes https://bugzilla.kernel.org/show_bug.cgi?id=63881.
 
-Signed-off-by: Nicolin Chen <b42378@freescale.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: Matthieu Baerts <matttbe@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8962.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/wireless/rtlwifi/rtl8192se/trx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -3675,6 +3675,8 @@ static __devinit int wm8962_i2c_probe(st
- 	if (ret < 0)
- 		goto err_regmap;
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
+@@ -582,7 +582,7 @@ bool rtl92se_rx_query_desc(struct ieee80
+ 	}
  
-+	regcache_cache_only(wm8962->regmap, true);
-+
- 	/* The drivers should power up as needed */
- 	regulator_bulk_disable(ARRAY_SIZE(wm8962->supplies), wm8962->supplies);
+ 	/*rx_status->qual = stats->signal; */
+-	rx_status->signal = stats->rssi + 10;
++	rx_status->signal = stats->recvsignalpower + 10;
+ 	/*rx_status->noise = -stats->noise; */
  
+ 	return true;
 
 
