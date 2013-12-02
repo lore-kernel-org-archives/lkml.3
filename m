@@ -1,143 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375Ab3LBOkn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 09:40:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46593 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752789Ab3LBOia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 09:38:30 -0500
-From: Takashi Iwai <tiwai@suse.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v4 1/4] firmware: Introduce request_firmware_direct()
-Date: Mon,  2 Dec 2013 15:38:16 +0100
-Message-Id: <1385995099-11901-2-git-send-email-tiwai@suse.de>
-X-Mailer: git-send-email 1.8.4.4
-In-Reply-To: <1385995099-11901-1-git-send-email-tiwai@suse.de>
-References: <1385995099-11901-1-git-send-email-tiwai@suse.de>
+	id S1752753Ab3LBOiV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 09:38:21 -0500
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:41238 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752123Ab3LBOiF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 09:38:05 -0500
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: linux-kernel@vger.kernel.org
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@ghostprotocols.net, stfomichev@yandex-team.ru,
+        namhyung@kernel.org, artagnon@gmail.com, jolsa@redhat.com
+Subject: [PATCH 1/5] perf timechart: add backtrace support to CPU info
+Date: Mon,  2 Dec 2013 18:37:33 +0400
+Message-Id: <1385995056-20158-2-git-send-email-stfomichev@yandex-team.ru>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1385995056-20158-1-git-send-email-stfomichev@yandex-team.ru>
+References: <1385995056-20158-1-git-send-email-stfomichev@yandex-team.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_FW_LOADER_USER_HELPER is set, request_firmware() falls
-back to the usermode helper for loading via udev when the direct
-loading fails.  But the recent udev takes way too long timeout (60
-seconds) for non-existing firmware.  This is unacceptable for the
-drivers like microcode loader where they load firmwares optionally,
-i.e. it's no error even if no requested file exists.
+Add backtrace info to the CPU usage timechart.
 
-This patch provides a new helper function, request_firmware_direct().
-It behaves as same as request_firmware() except for that it doesn't
-fall back to usermode helper but returns an error immediately if the
-f/w can't be loaded directly in kernel.
-
-Without CONFIG_FW_LOADER_USER_HELPER=y, request_firmware_direct() is
-just an alias of request_firmware(), due to obvious reason.
-
-Tested-by: Prarit Bhargava <prarit@redhat.com>
-Acked-by: Ming Lei <ming.lei@canonical.com>
-Acked-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
 ---
- drivers/base/firmware_class.c | 41 ++++++++++++++++++++++++++++++++++-------
- include/linux/firmware.h      |  7 +++++++
- 2 files changed, 41 insertions(+), 7 deletions(-)
+ tools/perf/builtin-timechart.c | 10 ++++++++--
+ tools/perf/util/svghelper.c    |  4 +++-
+ tools/perf/util/svghelper.h    |  2 +-
+ 3 files changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index eb8fb94ae2c5..1af03648daf8 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -1061,7 +1061,7 @@ static int assign_firmware_buf(struct firmware *fw, struct device *device,
- /* called from request_firmware() and request_firmware_work_func() */
- static int
- _request_firmware(const struct firmware **firmware_p, const char *name,
--		  struct device *device, bool uevent, bool nowait)
-+		  struct device *device, bool uevent, bool nowait, bool fallback)
- {
- 	struct firmware *fw;
- 	long timeout;
-@@ -1095,11 +1095,14 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index 0bda620a717d..d955095b6d63 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -837,8 +837,14 @@ static void draw_cpu_usage(struct timechart *tchart)
+ 		while (c) {
+ 			sample = c->samples;
+ 			while (sample) {
+-				if (sample->type == TYPE_RUNNING)
+-					svg_process(sample->cpu, sample->start_time, sample->end_time, "sample", c->comm);
++				if (sample->type == TYPE_RUNNING) {
++					svg_process(sample->cpu,
++						    sample->start_time,
++						    sample->end_time,
++						    "sample",
++						    c->comm,
++						    sample->backtrace);
++				}
  
- 	ret = fw_get_filesystem_firmware(device, fw->priv);
- 	if (ret) {
--		dev_warn(device, "Direct firmware load failed with error %d\n",
--			 ret);
--		dev_warn(device, "Falling back to user helper\n");
--		ret = fw_load_from_user_helper(fw, name, device,
-+		if (fallback) {
-+			dev_warn(device,
-+				 "Direct firmware load failed with error %d\n",
-+				 ret);
-+			dev_warn(device, "Falling back to user helper\n");
-+			ret = fw_load_from_user_helper(fw, name, device,
- 					       uevent, nowait, timeout);
-+		}
- 	}
- 
- 	/* don't cache firmware handled without uevent */
-@@ -1146,12 +1149,36 @@ request_firmware(const struct firmware **firmware_p, const char *name,
- 
- 	/* Need to pin this module until return */
- 	__module_get(THIS_MODULE);
--	ret = _request_firmware(firmware_p, name, device, true, false);
-+	ret = _request_firmware(firmware_p, name, device, true, false, true);
- 	module_put(THIS_MODULE);
- 	return ret;
+ 				sample = sample->next;
+ 			}
+diff --git a/tools/perf/util/svghelper.c b/tools/perf/util/svghelper.c
+index 8b79d3ad1246..740f0328fc13 100644
+--- a/tools/perf/util/svghelper.c
++++ b/tools/perf/util/svghelper.c
+@@ -285,7 +285,7 @@ void svg_cpu_box(int cpu, u64 __max_freq, u64 __turbo_freq)
+ 	fprintf(svgfile, "</g>\n");
  }
- EXPORT_SYMBOL(request_firmware);
  
-+#ifdef CONFIG_FW_LOADER_USER_HELPER
-+/**
-+ * request_firmware: - load firmware directly without usermode helper
-+ * @firmware_p: pointer to firmware image
-+ * @name: name of firmware file
-+ * @device: device for which firmware is being loaded
-+ *
-+ * This function works pretty much like request_firmware(), but this doesn't
-+ * fall back to usermode helper even if the firmware couldn't be loaded
-+ * directly from fs.  Hence it's useful for loading optional firmwares, which
-+ * aren't always present, without extra long timeouts of udev.
-+ **/
-+int request_firmware_direct(const struct firmware **firmware_p,
-+			    const char *name, struct device *device)
-+{
-+	int ret;
-+	__module_get(THIS_MODULE);
-+	ret = _request_firmware(firmware_p, name, device, true, false, false);
-+	module_put(THIS_MODULE);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(request_firmware_direct);
-+#endif
-+
- /**
-  * release_firmware: - release the resource associated with a firmware image
-  * @fw: firmware resource to release
-@@ -1185,7 +1212,7 @@ static void request_firmware_work_func(struct work_struct *work)
- 	fw_work = container_of(work, struct firmware_work, work);
+-void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name)
++void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name, const char *backtrace)
+ {
+ 	double width;
  
- 	_request_firmware(&fw, fw_work->name, fw_work->device,
--			  fw_work->uevent, true);
-+			  fw_work->uevent, true, true);
- 	fw_work->cont(fw, fw_work->context);
- 	put_device(fw_work->device); /* taken in request_firmware_nowait() */
+@@ -295,6 +295,8 @@ void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name
  
-diff --git a/include/linux/firmware.h b/include/linux/firmware.h
-index e154c1005cd1..59529330efd6 100644
---- a/include/linux/firmware.h
-+++ b/include/linux/firmware.h
-@@ -68,4 +68,11 @@ static inline void release_firmware(const struct firmware *fw)
+ 	fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\">\n", time2pixels(start), cpu2y(cpu));
+ 	fprintf(svgfile, "<title>%s %s</title>\n", name, time_to_string(end - start));
++	if (backtrace)
++		fprintf(svgfile, "<desc>Switched because:\n%s</desc>\n", backtrace);
+ 	fprintf(svgfile, "<rect x=\"0\" width=\"%4.8f\" y=\"0\" height=\"%4.1f\" class=\"%s\"/>\n",
+ 		time2pixels(end)-time2pixels(start), SLOT_MULT+SLOT_HEIGHT, type);
+ 	width = time2pixels(end)-time2pixels(start);
+diff --git a/tools/perf/util/svghelper.h b/tools/perf/util/svghelper.h
+index fad79ceeac1a..7db6ae98bf2c 100644
+--- a/tools/perf/util/svghelper.h
++++ b/tools/perf/util/svghelper.h
+@@ -11,7 +11,7 @@ extern void svg_waiting(int Yslot, int cpu, u64 start, u64 end, const char *back
+ extern void svg_cpu_box(int cpu, u64 max_frequency, u64 turbo_frequency);
  
- #endif
  
-+#ifdef CONFIG_FW_LOADER_USER_HELPER
-+int request_firmware_direct(const struct firmware **fw, const char *name,
-+			    struct device *device);
-+#else
-+#define request_firmware_direct	request_firmware
-+#endif
-+
- #endif
+-extern void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name);
++extern void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name, const char *backtrace);
+ extern void svg_cstate(int cpu, u64 start, u64 end, int type);
+ extern void svg_pstate(int cpu, u64 start, u64 end, u64 freq);
+ 
 -- 
-1.8.4.4
+1.8.3.2
 
