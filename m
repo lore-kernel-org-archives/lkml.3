@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516Ab3LBXES (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 18:04:18 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:10148 "EHLO
+	id S1753619Ab3LBXFf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 18:05:35 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:10505 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190Ab3LBXEQ (ORCPT
+	with ESMTP id S1751530Ab3LBXFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 18:04:16 -0500
-X-AuditID: cbfee68e-b7f7e6d00000477d-a3-529d11eff6c4
+	Mon, 2 Dec 2013 18:05:33 -0500
+X-AuditID: cbfee68f-b7f336d00000481b-e6-529d123b1829
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Rafael J. Wysocki'" <rafael.j.wysocki@intel.com>
+        "'Vinod Koul'" <vinod.koul@intel.com>,
+        "'Dan Williams'" <dan.j.williams@intel.com>, dmaengine@vger.kernel.org
 References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
 In-reply-to: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
-Subject: [PATCH 05/39] cpufreq: nforce2: remove DEFINE_PCI_DEVICE_TABLE macro
-Date: Tue, 03 Dec 2013 08:04:14 +0900
-Message-id: <001a01ceefb2$d21c4bd0$7654e370$%han@samsung.com>
+Subject: [PATCH 06/39] dma: remove DEFINE_PCI_DEVICE_TABLE macro
+Date: Tue, 03 Dec 2013 08:05:31 +0900
+Message-id: <001b01ceefb2$ffd995f0$ff8cc1d0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7vsUc6neA2wWIVTNSB4ceFa5FjuwAAW00Q
+Thread-index: Ac7vsUc6neA2wWIVTNSB4ceFa5FjuwAAY4nQ
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsVy+t8zY933gnODDO6dYrFoXryezeLywkus
-	Fpd3zWGzeLziLbsDi8fiPS+ZPPbPXcPu0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBlPPv5k
-	KzjNWnF+/3GWBsZbLF2MHBwSAiYSfas5uhg5gUwxiQv31rN1MXJxCAksY5Q4cms3K0zN63NO
-	EPHpjBJTbx1lhXB+MUoc/fmJEaSbTUBN4suXw+wgtoiAqcTG91MYQZqZBaokbk8SAQkLCdhK
-	TH+xmQkkzClgJ9H3qRYkLCzgK/Hl7zOwVSwCqhILXruDhHmBqqftbWSGsAUlfky+xwJiMwto
-	SazfeZwJwpaX2LzmLTPEleoSj/7qQuw3kvh7bBY7RImIxL4X7xhBDpYQuMQuce7iAbAEi4CA
-	xLfJh6ChICux6QAzJBQkJQ6uuMEygVFiFpLNs5BsnoVk8ywkKxYwsqxiFE0tSC4oTkovMtIr
-	TswtLs1L10vOz93ECInGvh2MNw9YH2JMBlo/kVlKNDkfGM15JfGGxmZGFqYmpsZG5pZmpAkr
-	ifMuepgUJCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoGRK/jDC/2m9R9vnBaPyOnjnavp9GG7
-	2+HVjDGzPmj+OTdx5sxtOatdEjK5ZN/+2dP9d3OXrNHdNxM2SV3p7Pg+/fLL0yY6U8KVz9+J
-	5Gf1SKpqyZ2wa8uVmE8+oc0GTLuCuqtPf114IItB7+WhiX5/dfV1mZ+5XhDpurv36b+G7aUZ
-	YcKdn0q0lViKMxINtZiLihMBrwroTNwCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsVy+t9jQd33gnODDL6WWzQvXs9mcXnhJVaL
-	y7vmsFk8XvGW3YHFY/Gel0we++euYffo27KK0ePzJrkAlqgGRpuM1MSU1CKF1Lzk/JTMvHRb
-	Je/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoJVKCmWJOaVAoYDE4mIlfTtME0JD3HQt
-	YBojdH1DguB6jAzQQMI6xownH3+yFZxmrTi//zhLA+Mtli5GDg4JAROJ1+ecuhg5gUwxiQv3
-	1rN1MXJxCAlMZ5SYeusoK4Tzi1Hi6M9PjCBVbAJqEl++HGYHsUUETCU2vp/CCDKIWaBK4vYk
-	EZCwkICtxPQXm5lAwpwCdhJ9n2pBwsICvhJf/j5jBQmzCKhKLHjtDhLmBaqetreRGcIWlPgx
-	+R4LiM0soCWxfudxJghbXmLzmrfMEBerSzz6qwux30ji77FZ7BAlIhL7XrxjnMAoNAvJpFlI
-	Js1CMmkWkpYFjCyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYJj/Zn0DsZVDRaHGAU4GJV4
-	eB9snxMkxJpYVlyZe4hRgoNZSYS3k2dukBBvSmJlVWpRfnxRaU5q8SHGZKA/JzJLiSbnA9NQ
-	Xkm8obGJmZGlkZmFkYm5OWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUwaulOCAtiWLTr
-	mM9f5eC2M8Wr3C5HFOwNyjZqcuXe0X5cgT/8RsaEz8aLN7wQc7vWsXf6m7LmtH0nN7QlOD+f
-	Uvbyo1PNvT01O3kETnyNvqF7c82r9eV3fbOi9F/uesH6+/VP1bXcjw9tc3h1Wdnlz7wli96f
-	kC41DNvcElw1ZXcP4y+en5KfjyuxFGckGmoxFxUnAgDmN46tOQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t8zQ11roblBBqemGFlMn3qB0WL11L+s
+	Fs2L17NZXF54idXi8q45bBYv+/azOLB5LN7zkslj/9w17B59W1YxenzeJBfAEsVlk5Kak1mW
+	WqRvl8CVceHOBZaCJdwVO/b/Ym5gPM/ZxcjJISFgItF5ZCsThC0mceHeejYQW0hgGaPEgXU6
+	MDUrF51h7WLkAopPZ5Q4+/IfVNEvRonH0zxBbDYBNYkvXw6zg9giAqYSG99PYQRpYBbYzCjR
+	vmg9C0SDrcT0F5uBtnFwcArYSfR9qgUJCws4SDzumgDWyyKgKvHy4G12kBJeoPK1E31BwrwC
+	ghI/Jt8Dm8IsoCWxfudxJghbXmLzmrfMIOUSAuoSj/7qQlxgJDHv+Q82iBIRiX0v3oFdIyHw
+	iF3idsd9VohVAhLfJh9igeiVldh0gBniXUmJgytusExglJiFZPMsJJtnIdk8C8mKBYwsqxhF
+	UwuSC4qT0ouM9YoTc4tL89L1kvNzNzFCorR/B+PdA9aHGJOB1k9klhJNzgdGeV5JvKGxmZGF
+	qYmpsZG5pRlpwkrivPcfJgUJCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYDQK0d600vR+0Kzz
+	v5XvSP3pvs12VfuNB4fbxk+v/kR/PP/qWe20oIOXLi92aHljzvb7pVmIR/nHpshTvGs1FJxZ
+	/58TWyxSVS23zur246TH+y42TjLyDLV+Iyh7VTPS0sMocrmIrYjMxsWdhWdd08+1r67+JWES
+	uvTV8duKE5iNolftMlXo5FNiKc5INNRiLipOBACuFMkf6AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsVy+t9jQV1roblBBg0T9CymT73AaLF66l9W
+	i+bF69ksLi+8xGpxedccNouXfftZHNg8Fu95yeSxf+4ado++LasYPT5vkgtgiWpgtMlITUxJ
+	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
+	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzLhw5wJLwRLuih37fzE3MJ7n7GLk5JAQMJFY
+	uegMK4QtJnHh3nq2LkYuDiGB6YwSZ1/+YwNJCAn8YpR4PM0TxGYTUJP48uUwO4gtImAqsfH9
+	FEaQBmaBzYwS7YvWs0A02EpMf7GZqYuRg4NTwE6i71MtSFhYwEHicdcEsF4WAVWJlwdvs4OU
+	8AKVr53oCxLmFRCU+DH5HtgUZgEtifU7jzNB2PISm9e8ZQYplxBQl3j0VxfiAiOJec9/sEGU
+	iEjse/GOcQKj0Cwkk2YhmTQLyaRZSFoWMLKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAhO
+	As+kdjCubLA4xCjAwajEw/tg+5wgIdbEsuLK3EOMEhzMSiK8nTxzg4R4UxIrq1KL8uOLSnNS
+	iw8xJgP9OZFZSjQ5H5ig8kriDY1NzIwsjcwsjEzMzUkTVhLnPdBqHSgkkJ5YkpqdmlqQWgSz
+	hYmDU6qBUeLgRKlrjk0TbJLv/8184/p6xqMTP3eINvXKuvtm308KVN3/bfFKNU0/gcm3Ba2n
+	/z50uXvxE5+pQe/fJh6WkrSRO5t0ULBp/c9LLEdVjrU87N3l1H7y+dlHTa/1a5ZsKIru115e
+	0Xih5EIGR17/ZJUDDFHNxzjm6k9OS1g9rU6kcKPuaZmgOCWW4oxEQy3mouJEALjsvchGAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,22 +61,36 @@ is not preferred.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/cpufreq/cpufreq-nforce2.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/dma/dw/pci.c  |    2 +-
+ drivers/dma/pch_dma.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq-nforce2.c b/drivers/cpufreq/cpufreq-nforce2.c
-index a05b876..353ccfa 100644
---- a/drivers/cpufreq/cpufreq-nforce2.c
-+++ b/drivers/cpufreq/cpufreq-nforce2.c
-@@ -379,7 +379,7 @@ static struct cpufreq_driver nforce2_driver = {
- };
+diff --git a/drivers/dma/dw/pci.c b/drivers/dma/dw/pci.c
+index e89fc24..fc3aea1 100644
+--- a/drivers/dma/dw/pci.c
++++ b/drivers/dma/dw/pci.c
+@@ -75,7 +75,7 @@ static void dw_pci_remove(struct pci_dev *pdev)
+ 		dev_warn(&pdev->dev, "can't remove device properly: %d\n", ret);
+ }
  
- #ifdef MODULE
--static DEFINE_PCI_DEVICE_TABLE(nforce2_ids) = {
-+static const struct pci_device_id nforce2_ids[] = {
- 	{ PCI_VENDOR_ID_NVIDIA, PCI_DEVICE_ID_NVIDIA_NFORCE2 },
- 	{}
- };
+-static DEFINE_PCI_DEVICE_TABLE(dw_pci_id_table) = {
++static const struct pci_device_id dw_pci_id_table[] = {
+ 	/* Medfield */
+ 	{ PCI_VDEVICE(INTEL, 0x0827), (kernel_ulong_t)&dw_pci_pdata },
+ 	{ PCI_VDEVICE(INTEL, 0x0830), (kernel_ulong_t)&dw_pci_pdata },
+diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
+index 61fdc54..9f0cdb1 100644
+--- a/drivers/dma/pch_dma.c
++++ b/drivers/dma/pch_dma.c
+@@ -996,7 +996,7 @@ static void pch_dma_remove(struct pci_dev *pdev)
+ #define PCI_DEVICE_ID_ML7831_DMA1_8CH	0x8810
+ #define PCI_DEVICE_ID_ML7831_DMA2_4CH	0x8815
+ 
+-DEFINE_PCI_DEVICE_TABLE(pch_dma_id_table) = {
++const struct pci_device_id pch_dma_id_table[] = {
+ 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_EG20T_PCH_DMA_8CH), 8 },
+ 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_EG20T_PCH_DMA_4CH), 4 },
+ 	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ML7213_DMA1_8CH), 8}, /* UART Video */
 -- 
 1.7.10.4
 
