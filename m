@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758165Ab3LBVds (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:33:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4843 "EHLO mx1.redhat.com"
+	id S1758220Ab3LBVeB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:34:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22849 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754595Ab3LBVdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 16:33:46 -0500
-Message-ID: <1386020016.25738.240.camel@ul30vt.home>
-Subject: Re: [PATCH 2/3 v2] iommu/fsl: Enable default DMA window for PCIe
- devices
+	id S1754595Ab3LBVd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 16:33:56 -0500
+Message-ID: <1386020030.25738.241.camel@ul30vt.home>
+Subject: Re: [PATCH 1/3 v2] iommu/fsl: Factor out PCI specific code.
 From: Alex Williamson <alex.williamson@redhat.com>
 To: Varun Sethi <Varun.Sethi@freescale.com>
 Cc: joro@8bytes.org, iommu@lists.linux-foundation.org,
         linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         stuart.yoder@freescale.com, scottwood@freescale.com,
         r65777@freescale.com
-Date: Mon, 02 Dec 2013 14:33:36 -0700
-In-Reply-To: <1381922582-28724-3-git-send-email-Varun.Sethi@freescale.com>
+Date: Mon, 02 Dec 2013 14:33:50 -0700
+In-Reply-To: <1381922582-28724-2-git-send-email-Varun.Sethi@freescale.com>
 References: <1381922582-28724-1-git-send-email-Varun.Sethi@freescale.com>
-	 <1381922582-28724-3-git-send-email-Varun.Sethi@freescale.com>
+	 <1381922582-28724-2-git-send-email-Varun.Sethi@freescale.com>
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
@@ -27,183 +26,203 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, 2013-10-16 at 16:53 +0530, Varun Sethi wrote:
-> Once the PCIe device assigned to a guest VM (via VFIO) gets detached from the iommu domain
-> (when guest terminates), its PAMU table entry is disabled. So, this would prevent the device
-> from being used once it's assigned back to the host.
-> 
-> This patch allows for creation of a default DMA window corresponding to the device
-> and subsequently enabling the PAMU table entry. Before we enable the entry, we ensure that
-> the device's bus master capability is disabled (device quiesced).
+> Factor out PCI specific code in the PAMU driver.
 > 
 > Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
 > ---
->  drivers/iommu/fsl_pamu.c        |   43 ++++++++++++++++++++++++++++--------
->  drivers/iommu/fsl_pamu.h        |    1 +
->  drivers/iommu/fsl_pamu_domain.c |   46 ++++++++++++++++++++++++++++++++++++---
->  3 files changed, 78 insertions(+), 12 deletions(-)
+>  drivers/iommu/fsl_pamu_domain.c |   88 +++++++++++++++++++--------------------
+>  1 file changed, 43 insertions(+), 45 deletions(-)
 > 
-> diff --git a/drivers/iommu/fsl_pamu.c b/drivers/iommu/fsl_pamu.c
-> index cba0498..fb4a031 100644
-> --- a/drivers/iommu/fsl_pamu.c
-> +++ b/drivers/iommu/fsl_pamu.c
-> @@ -225,6 +225,21 @@ static struct paace *pamu_get_spaace(struct paace *paace, u32 wnum)
->  	return spaace;
->  }
->  
-> +/*
-> + * Defaul PPAACE settings for an LIODN.
-> + */
-> +static void setup_default_ppaace(struct paace *ppaace)
-> +{
-> +	pamu_init_ppaace(ppaace);
-> +	/* window size is 2^(WSE+1) bytes */
-> +	set_bf(ppaace->addr_bitfields, PPAACE_AF_WSE, 35);
-> +	ppaace->wbah = 0;
-> +	set_bf(ppaace->addr_bitfields, PPAACE_AF_WBAL, 0);
-> +	set_bf(ppaace->impl_attr, PAACE_IA_ATM,
-> +		PAACE_ATM_NO_XLATE);
-> +	set_bf(ppaace->addr_bitfields, PAACE_AF_AP,
-> +		PAACE_AP_PERMS_ALL);
-> +}
->  /**
->   * pamu_get_fspi_and_allocate() - Allocates fspi index and reserves subwindows
->   *                                required for primary PAACE in the secondary
-> @@ -253,6 +268,24 @@ static unsigned long pamu_get_fspi_and_allocate(u32 subwin_cnt)
->  	return (spaace_addr - (unsigned long)spaact) / (sizeof(struct paace));
->  }
->  
-> +/* Reset the PAACE entry to the default state */
-> +void enable_default_dma_window(int liodn)
-> +{
-> +	struct paace *ppaace;
-> +
-> +	ppaace = pamu_get_ppaace(liodn);
-> +	if (!ppaace) {
-> +		pr_debug("Invalid liodn entry\n");
-> +		return;
-> +	}
-> +
-> +	memset(ppaace, 0, sizeof(struct paace));
-> +
-> +	setup_default_ppaace(ppaace);
-> +	mb();
-> +	pamu_enable_liodn(liodn);
-> +}
-> +
->  /* Release the subwindows reserved for a particular LIODN */
->  void pamu_free_subwins(int liodn)
->  {
-> @@ -752,15 +785,7 @@ static void __init setup_liodns(void)
->  				continue;
->  			}
->  			ppaace = pamu_get_ppaace(liodn);
-> -			pamu_init_ppaace(ppaace);
-> -			/* window size is 2^(WSE+1) bytes */
-> -			set_bf(ppaace->addr_bitfields, PPAACE_AF_WSE, 35);
-> -			ppaace->wbah = 0;
-> -			set_bf(ppaace->addr_bitfields, PPAACE_AF_WBAL, 0);
-> -			set_bf(ppaace->impl_attr, PAACE_IA_ATM,
-> -				PAACE_ATM_NO_XLATE);
-> -			set_bf(ppaace->addr_bitfields, PAACE_AF_AP,
-> -				PAACE_AP_PERMS_ALL);
-> +			setup_default_ppaace(ppaace);
->  			if (of_device_is_compatible(node, "fsl,qman-portal"))
->  				setup_qbman_paace(ppaace, QMAN_PORTAL_PAACE);
->  			if (of_device_is_compatible(node, "fsl,qman"))
-> diff --git a/drivers/iommu/fsl_pamu.h b/drivers/iommu/fsl_pamu.h
-> index 8fc1a12..0edcbbbb 100644
-> --- a/drivers/iommu/fsl_pamu.h
-> +++ b/drivers/iommu/fsl_pamu.h
-> @@ -406,5 +406,6 @@ void get_ome_index(u32 *omi_index, struct device *dev);
->  int  pamu_update_paace_stash(int liodn, u32 subwin, u32 value);
->  int pamu_disable_spaace(int liodn, u32 subwin);
->  u32 pamu_get_max_subwin_cnt(void);
-> +void enable_default_dma_window(int liodn);
->  
->  #endif  /* __FSL_PAMU_H */
 > diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
-> index 966ae70..dd6cafc 100644
+> index c857c30..966ae70 100644
 > --- a/drivers/iommu/fsl_pamu_domain.c
 > +++ b/drivers/iommu/fsl_pamu_domain.c
-> @@ -340,17 +340,57 @@ static inline struct device_domain_info *find_domain(struct device *dev)
->  	return dev->archdata.iommu_domain;
+> @@ -677,21 +677,15 @@ static int handle_attach_device(struct fsl_dma_domain *dma_domain,
+>  	return ret;
 >  }
 >  
-> +/* Disable device DMA capability and enable default DMA window */
-> +static void disable_device_dma(struct device_domain_info *info,
-> +				int enable_dma_window)
-
-nit, bool?
-
-> +{
+> -static int fsl_pamu_attach_device(struct iommu_domain *domain,
+> -				  struct device *dev)
+> +static struct device *get_dma_device(struct device *dev)
+>  {
+> -	struct fsl_dma_domain *dma_domain = domain->priv;
+> -	const u32 *liodn;
+> -	u32 liodn_cnt;
+> -	int len, ret = 0;
+> -	struct pci_dev *pdev = NULL;
+> -	struct pci_controller *pci_ctl;
+> +	struct device *dma_dev = dev;
 > +#ifdef CONFIG_PCI
-> +	if (info->dev->bus == &pci_bus_type) {
-> +		struct pci_dev *pdev = NULL;
+>  
+> -	/*
+> -	 * Use LIODN of the PCI controller while attaching a
+> -	 * PCI device.
+> -	 */
+>  	if (dev->bus == &pci_bus_type) {
+> +		struct pci_controller *pci_ctl;
+> +		struct pci_dev *pdev;
+> +
+>  		pdev = to_pci_dev(dev);
+>  		pci_ctl = pci_bus_to_host(pdev->bus);
+>  		/*
+> @@ -699,17 +693,31 @@ static int fsl_pamu_attach_device(struct iommu_domain *domain,
+>  		 * so we can get the LIODN programmed by
+>  		 * u-boot.
+>  		 */
+> -		dev = pci_ctl->parent;
+> +		dma_dev = pci_ctl->parent;
+>  	}
+> +#endif
+> +	return dma_dev;
+> +}
+> +
+> +static int fsl_pamu_attach_device(struct iommu_domain *domain,
+> +				  struct device *dev)
+> +{
+> +	struct fsl_dma_domain *dma_domain = domain->priv;
+> +	struct device *dma_dev;
+> +	const u32 *liodn;
+> +	u32 liodn_cnt;
+> +	int len, ret = 0;
+> +
+> +	dma_dev = get_dma_device(dev);
+>  
+> -	liodn = of_get_property(dev->of_node, "fsl,liodn", &len);
+> +	liodn = of_get_property(dma_dev->of_node, "fsl,liodn", &len);
+>  	if (liodn) {
+>  		liodn_cnt = len / sizeof(u32);
+>  		ret = handle_attach_device(dma_domain, dev,
+>  					 liodn, liodn_cnt);
+>  	} else {
+>  		pr_debug("missing fsl,liodn property at %s\n",
+> -		          dev->of_node->full_name);
+> +		          dma_dev->of_node->full_name);
+>  			ret = -EINVAL;
+>  	}
+>  
+> @@ -720,32 +728,18 @@ static void fsl_pamu_detach_device(struct iommu_domain *domain,
+>  				      struct device *dev)
+>  {
+>  	struct fsl_dma_domain *dma_domain = domain->priv;
+> +	struct device *dma_dev;
+>  	const u32 *prop;
+>  	int len;
+> -	struct pci_dev *pdev = NULL;
+> -	struct pci_controller *pci_ctl;
+>  
+> -	/*
+> -	 * Use LIODN of the PCI controller while detaching a
+> -	 * PCI device.
+> -	 */
+> -	if (dev->bus == &pci_bus_type) {
+> -		pdev = to_pci_dev(dev);
+> -		pci_ctl = pci_bus_to_host(pdev->bus);
+> -		/*
+> -		 * make dev point to pci controller device
+> -		 * so we can get the LIODN programmed by
+> -		 * u-boot.
+> -		 */
+> -		dev = pci_ctl->parent;
+> -	}
+> +	dma_dev = get_dma_device(dev);
+>  
+> -	prop = of_get_property(dev->of_node, "fsl,liodn", &len);
+> +	prop = of_get_property(dma_dev->of_node, "fsl,liodn", &len);
+>  	if (prop)
+>  		detach_device(dev, dma_domain);
+>  	else
+>  		pr_debug("missing fsl,liodn property at %s\n",
+> -		          dev->of_node->full_name);
+> +		          dma_dev->of_node->full_name);
+>  }
+>  
+>  static  int configure_domain_geometry(struct iommu_domain *domain, void *data)
+> @@ -905,6 +899,7 @@ static struct iommu_group *get_device_iommu_group(struct device *dev)
+>  	return group;
+>  }
+>  
+> +#ifdef CONFIG_PCI
+>  static  bool check_pci_ctl_endpt_part(struct pci_controller *pci_ctl)
+>  {
+>  	u32 version;
+> @@ -945,13 +940,18 @@ static struct iommu_group *get_shared_pci_device_group(struct pci_dev *pdev)
+>  	return NULL;
+>  }
+>  
+> -static struct iommu_group *get_pci_device_group(struct pci_dev *pdev)
+> +static struct iommu_group *get_pci_device_group(struct device *dev)
+>  {
+>  	struct pci_controller *pci_ctl;
+>  	bool pci_endpt_partioning;
+>  	struct iommu_group *group = NULL;
+> -	struct pci_dev *bridge, *dma_pdev = NULL;
+> +	struct pci_dev *bridge, *pdev;
+> +	struct pci_dev *dma_pdev = NULL;
+>  
+> +	pdev = to_pci_dev(dev);
+> +	/* Don't create device groups for virtual PCI bridges */
+> +	if (pdev->subordinate)
+> +		return NULL;
+>  	pci_ctl = pci_bus_to_host(pdev->bus);
+>  	pci_endpt_partioning = check_pci_ctl_endpt_part(pci_ctl);
+>  	/* We can partition PCIe devices so assign device group to the device */
+> @@ -1044,11 +1044,11 @@ root_bus:
+>  
+>  	return group;
+>  }
+> +#endif
+>  
+>  static int fsl_pamu_add_device(struct device *dev)
+>  {
+>  	struct iommu_group *group = NULL;
+> -	struct pci_dev *pdev;
+>  	const u32 *prop;
+>  	int ret, len;
+>  
+> @@ -1056,19 +1056,15 @@ static int fsl_pamu_add_device(struct device *dev)
+>  	 * For platform devices we allocate a separate group for
+>  	 * each of the devices.
+>  	 */
+> -	if (dev->bus == &pci_bus_type) {
+> -		pdev = to_pci_dev(dev);
+> -		/* Don't create device groups for virtual PCI bridges */
+> -		if (pdev->subordinate)
+> -			return 0;
+> -
+> -		group = get_pci_device_group(pdev);
+> -
+> -	} else {
+> +	if (dev->bus == &platform_bus_type) {
+>  		prop = of_get_property(dev->of_node, "fsl,liodn", &len);
+>  		if (prop)
+>  			group = get_device_iommu_group(dev);
+>  	}
+> +#ifdef CONFIG_PCI
+> +	else
+> +		group = get_pci_device_group(dev);
+> +#endif
+>  
+>  	if (!group || IS_ERR(group))
+>  		return PTR_ERR(group);
 
-nit, unnecessary initialization
-
-> +		pdev = to_pci_dev(info->dev);
-> +		if (pci_is_enabled(pdev))
-> +			pci_disable_device(pdev);
-
-This looks suspicious.  What's the case where you're finding devices
-where this is needed?  Logically the driver that called
-pci_enable_device() should also call pci_disabled_device() when it's
-done.  Maybe there's a case to be made that we can't rely on the driver,
-but then maybe there should be a pr_debug/info here to notify that
-somebody left the device running.  There might also be the question of
-whether you should test the busmaster bit in the command register rather
-than trusting these indirect paths if it's really for cleanup.  Thanks,
+It feels like there's a bug here that group is initialized to NULL and
+there are a few ways for it to remain NULL through the above code, then
+we get here and return PTR_ERR(NULL), which is indistinguishable from a
+successful return below.  Perhaps !group is ok, but if so I'd suggest a
+separate return block for it.  Thanks,
 
 Alex
 
-> +	}
-> +#endif
-> +
-> +	if (enable_dma_window)
-> +		enable_default_dma_window(info->liodn);
-> +}
-> +
-> +static int check_for_shared_liodn(struct device_domain_info *info)
-> +{
-> +	struct device_domain_info *tmp;
-> +
-> +	/*
-> +	 * Sanity check, to ensure that this is not a
-> +	 * shared LIODN. In case of a PCIe controller
-> +	 * it's possible that all PCIe devices share
-> +	 * the same LIODN.
-> +	 */
-> +	list_for_each_entry(tmp, &info->domain->devices, link) {
-> +		if (info->liodn == tmp->liodn)
-> +			return 1;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  static void remove_device_ref(struct device_domain_info *info, u32 win_cnt)
->  {
->  	unsigned long flags;
-> +	int enable_dma_window = 0;
+> @@ -1166,7 +1162,9 @@ int pamu_domain_init()
+>  		return ret;
 >  
->  	list_del(&info->link);
->  	spin_lock_irqsave(&iommu_lock, flags);
-> -	if (win_cnt > 1)
-> -		pamu_free_subwins(info->liodn);
-> -	pamu_disable_liodn(info->liodn);
-> +	if (!check_for_shared_liodn(info)) {
-> +		if (win_cnt > 1)
-> +			pamu_free_subwins(info->liodn);
-> +		pamu_disable_liodn(info->liodn);
-> +		enable_dma_window = 1;
-> +	}
->  	spin_unlock_irqrestore(&iommu_lock, flags);
->  	spin_lock_irqsave(&device_domain_lock, flags);
-> +	disable_device_dma(info, enable_dma_window);
->  	info->dev->archdata.iommu_domain = NULL;
->  	kmem_cache_free(iommu_devinfo_cache, info);
->  	spin_unlock_irqrestore(&device_domain_lock, flags);
+>  	bus_set_iommu(&platform_bus_type, &fsl_pamu_ops);
+> +#ifdef CONFIG_PCI
+>  	bus_set_iommu(&pci_bus_type, &fsl_pamu_ops);
+> +#endif
+>  
+>  	return ret;
+>  }
 
 
 
