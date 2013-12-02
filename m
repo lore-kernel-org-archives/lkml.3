@@ -1,78 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab3LBTnd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:43:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39583 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754872Ab3LBTSn (ORCPT
+	id S1755509Ab3LBToA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:44:00 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:33452 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753838Ab3LBTn4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:43 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 162/212] ALSA: hda - Initialize missing bass speaker pin for ASUS AIO ET2700
-Date: Mon,  2 Dec 2013 11:15:53 -0800
-Message-Id: <20131202191305.912809422@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
-References: <20131202191248.517975703@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	Mon, 2 Dec 2013 14:43:56 -0500
+MIME-Version: 1.0
+In-Reply-To: <1385014474-6487-1-git-send-email-milo.kim@ti.com>
+References: <1385014474-6487-1-git-send-email-milo.kim@ti.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Mon, 2 Dec 2013 11:43:34 -0800
+Message-ID: <CAK5ve-KYMoqVikDKLiXp0uoyRPc4uKZicM2he3wcM1W528XRCw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] leds: lp5523: Support LED MUX configuration on
+ running a pattern
+To: Milo Kim <milo.kim@ti.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Nov 20, 2013 at 10:14 PM, Milo Kim <milo.kim@ti.com> wrote:
+> There are two ways to run a pattern in LP5523.
+> One is using legacy sysfs files such as 'enginex_mode','enginex_load' and
+> 'enginex_leds'. ('x' is from 1 to 3).
+> Among them, 'enginex_leds' are used for selecting specific LED channel MUX.
+> (MUX means which LEDs are used for running a pattern from LED 1 to 9.)
+>
+> The other way is using the firmware interface.
+> In this mode, the default LED MUX strings are used.
+> In other words, LED MUX is not configurable on the fly.
+>
+> This patch enables dynamic LED MUX configuration when the firmware is loaded.
+> By accessing the sysfs file 'enginex_leds', the LED channels can be configured.
+> To synchronize the operation mode, each engine mode should be set to 'LOAD'.
+>
+> The documentation is updated as well.
+>
 
-------------------
+Thanks, I will merge this one.
 
-From: Takashi Iwai <tiwai@suse.de>
+-Bryan
 
-commit 1f0bbf03cb829162ec8e6d03c98aaaed88c6f534 upstream.
-
-Add a fixup entry for the missing bass speaker pin 0x16 on ASUS ET2700
-AiO desktop.  The channel map will be added in the next patch, so that
-this can be backported easily to stable kernels.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=65961
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/pci/hda/patch_realtek.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
-
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -1771,6 +1771,7 @@ enum {
- 	ALC889_FIXUP_IMAC91_VREF,
- 	ALC882_FIXUP_INV_DMIC,
- 	ALC882_FIXUP_NO_PRIMARY_HP,
-+	ALC887_FIXUP_ASUS_BASS,
- };
- 
- static void alc889_fixup_coef(struct hda_codec *codec,
-@@ -2094,6 +2095,13 @@ static const struct hda_fixup alc882_fix
- 		.type = HDA_FIXUP_FUNC,
- 		.v.func = alc882_fixup_no_primary_hp,
- 	},
-+	[ALC887_FIXUP_ASUS_BASS] = {
-+		.type = HDA_FIXUP_PINS,
-+		.v.pins = (const struct hda_pintbl[]) {
-+			{0x16, 0x99130130}, /* bass speaker */
-+			{}
-+		},
-+	},
- };
- 
- static const struct snd_pci_quirk alc882_fixup_tbl[] = {
-@@ -2127,6 +2135,7 @@ static const struct snd_pci_quirk alc882
- 	SND_PCI_QUIRK(0x1043, 0x1873, "ASUS W90V", ALC882_FIXUP_ASUS_W90V),
- 	SND_PCI_QUIRK(0x1043, 0x1971, "Asus W2JC", ALC882_FIXUP_ASUS_W2JC),
- 	SND_PCI_QUIRK(0x1043, 0x835f, "Asus Eee 1601", ALC888_FIXUP_EEE1601),
-+	SND_PCI_QUIRK(0x1043, 0x84bc, "ASUS ET2700", ALC887_FIXUP_ASUS_BASS),
- 	SND_PCI_QUIRK(0x104d, 0x9047, "Sony Vaio TT", ALC889_FIXUP_VAIO_TT),
- 	SND_PCI_QUIRK(0x104d, 0x905a, "Sony Vaio Z", ALC882_FIXUP_NO_PRIMARY_HP),
- 	SND_PCI_QUIRK(0x104d, 0x9043, "Sony Vaio VGC-LN51JGB", ALC882_FIXUP_NO_PRIMARY_HP),
-
-
+> Cc: Pali Rohár <pali.rohar@gmail.com>
+> Signed-off-by: Milo Kim <milo.kim@ti.com>
+> ---
+>  Documentation/leds/leds-lp55xx.txt |   10 +++++++++-
+>  drivers/leds/leds-lp55xx-common.c  |    2 ++
+>  2 files changed, 11 insertions(+), 1 deletion(-)
+>
+> diff --git a/Documentation/leds/leds-lp55xx.txt b/Documentation/leds/leds-lp55xx.txt
+> index 82713ff..bcea12a 100644
+> --- a/Documentation/leds/leds-lp55xx.txt
+> +++ b/Documentation/leds/leds-lp55xx.txt
+> @@ -73,6 +73,10 @@ select_engine : Select which engine is used for running program
+>  run_engine    : Start program which is loaded via the firmware interface
+>  firmware      : Load program data
+>
+> +In case of LP5523, one more command is required, 'enginex_leds'.
+> +It is used for selecting LED output(s) at each engine number.
+> +In more details, please refer to 'leds-lp5523.txt'.
+> +
+>  For example, run blinking pattern in engine #1 of LP5521
+>  echo 1 > /sys/bus/i2c/devices/xxxx/select_engine
+>  echo 1 > /sys/class/firmware/lp5521/loading
+> @@ -81,10 +85,12 @@ echo 0 > /sys/class/firmware/lp5521/loading
+>  echo 1 > /sys/bus/i2c/devices/xxxx/run_engine
+>
+>  For example, run blinking pattern in engine #3 of LP55231
+> +Two LEDs are configured as pattern output channels.
+>  echo 3 > /sys/bus/i2c/devices/xxxx/select_engine
+>  echo 1 > /sys/class/firmware/lp55231/loading
+>  echo "9d0740ff7e0040007e00a0010000" > /sys/class/firmware/lp55231/data
+>  echo 0 > /sys/class/firmware/lp55231/loading
+> +echo "000001100" > /sys/bus/i2c/devices/xxxx/engine3_leds
+>  echo 1 > /sys/bus/i2c/devices/xxxx/run_engine
+>
+>  To start blinking patterns in engine #2 and #3 simultaneously,
+> @@ -99,17 +105,19 @@ done
+>  echo 1 > /sys/class/leds/red/device/run_engine
+>
+>  Here is another example for LP5523.
+> +Full LED strings are selected by 'engine2_leds'.
+>  echo 2 > /sys/bus/i2c/devices/xxxx/select_engine
+>  echo 1 > /sys/class/firmware/lp5523/loading
+>  echo "9d80400004ff05ff437f0000" > /sys/class/firmware/lp5523/data
+>  echo 0 > /sys/class/firmware/lp5523/loading
+> +echo "111111111" > /sys/bus/i2c/devices/xxxx/engine2_leds
+>  echo 1 > /sys/bus/i2c/devices/xxxx/run_engine
+>
+>  As soon as 'loading' is set to 0, registered callback is called.
+>  Inside the callback, the selected engine is loaded and memory is updated.
+>  To run programmed pattern, 'run_engine' attribute should be enabled.
+>
+> -The pattern sqeuence of LP8501 is same as LP5523.
+> +The pattern sqeuence of LP8501 is similar to LP5523.
+>  However pattern data is specific.
+>  Ex 1) Engine 1 is used
+>  echo 1 > /sys/bus/i2c/devices/xxxx/select_engine
+> diff --git a/drivers/leds/leds-lp55xx-common.c b/drivers/leds/leds-lp55xx-common.c
+> index 9acc6bb..88317b4 100644
+> --- a/drivers/leds/leds-lp55xx-common.c
+> +++ b/drivers/leds/leds-lp55xx-common.c
+> @@ -210,6 +210,7 @@ static void lp55xx_firmware_loaded(const struct firmware *fw, void *context)
+>  {
+>         struct lp55xx_chip *chip = context;
+>         struct device *dev = &chip->cl->dev;
+> +       enum lp55xx_engine_index idx = chip->engine_idx;
+>
+>         if (!fw) {
+>                 dev_err(dev, "firmware request failed\n");
+> @@ -219,6 +220,7 @@ static void lp55xx_firmware_loaded(const struct firmware *fw, void *context)
+>         /* handling firmware data is chip dependent */
+>         mutex_lock(&chip->lock);
+>
+> +       chip->engines[idx - 1].mode = LP55XX_ENGINE_LOAD;
+>         chip->fw = fw;
+>         if (chip->cfg->firmware_cb)
+>                 chip->cfg->firmware_cb(chip);
+> --
+> 1.7.9.5
+>
