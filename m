@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180Ab3LBTUj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:20:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39780 "EHLO
+	id S1755202Ab3LBTVT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:21:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39772 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755114Ab3LBTTT (ORCPT
+	with ESMTP id S1755095Ab3LBTTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:19:19 -0500
+	Mon, 2 Dec 2013 14:19:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH 3.12 201/212] media: stv0367: Dont use dynamic static allocation
-Date: Mon,  2 Dec 2013 11:16:32 -0800
-Message-Id: <20131202191311.445138476@linuxfoundation.org>
+        Stefan Achatz <erazor_de@users.sourceforge.net>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.12 209/212] HID: roccat: add missing special driver declarations
+Date: Mon,  2 Dec 2013 11:16:40 -0800
+Message-Id: <20131202191312.784275741@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,66 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+From: Stefan Achatz <erazor_de@users.sourceforge.net>
 
-commit 9aca4fb0571ce9cfef680ceb08d19dd008015307 upstream.
+commit e078809df5611600965f4d3420c3256260fc3e3d upstream.
 
-Dynamic static allocation is evil, as Kernel stack is too low, and
-compilation complains about it on some archs:
-	drivers/media/dvb-frontends/stv0367.c:791:1: warning: 'stv0367_writeregs.constprop.4' uses dynamic stack allocation [enabled by default]
-Instead, let's enforce a limit for the buffer. Considering that I2C
-transfers are generally limited, and that devices used on USB has a
-max data length of 64 bytes for	the control URBs.
-So, it seem safe to use 64 bytes as the hard limit for all those devices.
- On most cases, the limit is a way lower than that, but	this limit
-is small enough to not affect the Kernel stack, and it is a no brain
-limit, as using smaller ones would require to either carefully each
-driver or to take a look on each datasheet.
+Forgot two special driver declarations and sorted the list.
 
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-frontends/stv0367.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/hid/hid-core.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/media/dvb-frontends/stv0367.c
-+++ b/drivers/media/dvb-frontends/stv0367.c
-@@ -33,6 +33,9 @@
- #include "stv0367_regs.h"
- #include "stv0367_priv.h"
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- static int stvdebug;
- module_param_named(debug, stvdebug, int, 0644);
- 
-@@ -767,7 +770,7 @@ static struct st_register def0367cab[STV
- static
- int stv0367_writeregs(struct stv0367_state *state, u16 reg, u8 *data, int len)
- {
--	u8 buf[len + 2];
-+	u8 buf[MAX_XFER_SIZE];
- 	struct i2c_msg msg = {
- 		.addr = state->config->demod_address,
- 		.flags = 0,
-@@ -776,6 +779,14 @@ int stv0367_writeregs(struct stv0367_sta
- 	};
- 	int ret;
- 
-+	if (2 + len > sizeof(buf)) {
-+		printk(KERN_WARNING
-+		       "%s: i2c wr reg=%04x: len=%d is too big!\n",
-+		       KBUILD_MODNAME, reg, len);
-+		return -EINVAL;
-+	}
-+
-+
- 	buf[0] = MSB(reg);
- 	buf[1] = LSB(reg);
- 	memcpy(buf + 2, data, len);
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1802,12 +1802,14 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX, USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_PRIMAX, USB_DEVICE_ID_PRIMAX_KEYBOARD) },
+ #if IS_ENABLED(CONFIG_HID_ROCCAT)
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_ARVO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_ISKU) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_ISKUFX) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEPLUS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEPURE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEPURE_OPTICAL) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEXTD) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KOVAPLUS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_LUA) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_PYRA_WIRED) },
 
 
