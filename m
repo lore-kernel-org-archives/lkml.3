@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760144Ab3LBVeK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:34:10 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:55097 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754595Ab3LBVeG (ORCPT
+	id S1760152Ab3LBVem (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:34:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38178 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326Ab3LBTGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 16:34:06 -0500
-X-Originating-IP: 173.246.103.110
-Date: Mon, 2 Dec 2013 13:33:58 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Joe Perches <joe@perches.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>
-Subject: Re: checkpatch not warning for some split strings
-Message-ID: <20131202213358.GA15802@jtriplet-mobl1>
-References: <1386019438.2680.32.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386019438.2680.32.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 2 Dec 2013 14:06:54 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Vit Ondruch <v.ondruch@tiscali.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 3.4 08/60] alarmtimer: return EINVAL instead of ENOTSUPP if rtcdev doesnt exist
+Date: Mon,  2 Dec 2013 11:05:49 -0800
+Message-Id: <20131202190331.998718437@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
+References: <20131202190330.152596462@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 01:23:58PM -0800, Joe Perches wrote:
-> Hey Josh.
-> 
-> Back when you added commit ca56dc098ca
-> ("checkpatch: check for quoted strings broken across lines")
-> 
-> You added this test case:
-> 
->     Test case:
->     
->     void context(void)
->     {
->         struct { unsigned magic; const char *strdata; } foo[] = {
->                 { 42, "these strings"
->                       "do not produce warnings" },
->                 { 256, "though perhaps"
->                        "they should" },
->         };
-> 
-> which avoids emitting a warning on split strings across
-> multiple lines without a function-call like '(' use on
-> the line above.
-> 
-> Perhaps the "\(" test should be removed as checkpatch
-> doesn't emit a warning for some uses like:
-> 
-> diff --git a/drivers/net/wireless/iwlwifi/mvm/rs.c b/drivers/net/wireless/iwlwifi/mvm/rs.c
-> []
-> @@ -1868,7 +1865,8 @@ static void rs_rate_scale_perform(struct iwl_mvm *mvm,
->                 /* Else poor success; go back to mode in "active" table */
->                 } else {
->                         IWL_DEBUG_RATE(mvm,
-> -                                      "LQ: GOING BACK TO THE OLD TABLE suc=%d cur-tpt=%d old-tpt=%d\n",
-> +                                      "GOING BACK TO THE OLD TABLE: SR %d "
-> +                                      "cur-tpt %d old-tpt %d\n",
->                                        window->success_ratio,
->                                        window->average_tpt,
->                                        lq_sta->last_tpt);
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-That one should definitely emit a warning.  However, removing the \(
-test entirely will introduce warnings on many other strings embedded in
-data structures; only drop that test if you've diffed the checkpatch
-output for the kernel with and without it and you're comfortable with
-the *huge* number of additional warnings it'll introduce.
+------------------
 
-- Josh Triplett
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+commit 98d6f4dd84a134d942827584a3c5f67ffd8ec35f upstream.
+
+Fedora Ruby maintainer reported latest Ruby doesn't work on Fedora Rawhide
+on ARM. (http://bugs.ruby-lang.org/issues/9008)
+
+Because of, commit 1c6b39ad3f (alarmtimers: Return -ENOTSUPP if no
+RTC device is present) intruduced to return ENOTSUPP when
+clock_get{time,res} can't find a RTC device. However this is incorrect.
+
+First, ENOTSUPP isn't exported to userland (ENOTSUP or EOPNOTSUP are the
+closest userland equivlents).
+
+Second, Posix and Linux man pages agree that clock_gettime and
+clock_getres should return EINVAL if clk_id argument is invalid.
+While the arugment that the clockid is valid, but just not supported
+on this hardware could be made, this is just a technicality that
+doesn't help userspace applicaitons, and only complicates error
+handling.
+
+Thus, this patch changes the code to use EINVAL.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Reported-by: Vit Ondruch <v.ondruch@tiscali.cz>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+[jstultz: Tweaks to commit message to include full rational]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/time/alarmtimer.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -474,7 +474,7 @@ static int alarm_clock_getres(const cloc
+ 	clockid_t baseid = alarm_bases[clock2alarm(which_clock)].base_clockid;
+ 
+ 	if (!alarmtimer_get_rtcdev())
+-		return -ENOTSUPP;
++		return -EINVAL;
+ 
+ 	return hrtimer_get_res(baseid, tp);
+ }
+@@ -491,7 +491,7 @@ static int alarm_clock_get(clockid_t whi
+ 	struct alarm_base *base = &alarm_bases[clock2alarm(which_clock)];
+ 
+ 	if (!alarmtimer_get_rtcdev())
+-		return -ENOTSUPP;
++		return -EINVAL;
+ 
+ 	*tp = ktime_to_timespec(base->gettime());
+ 	return 0;
+
+
