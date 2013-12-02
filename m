@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413Ab3LBTw5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:52:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39448 "EHLO
+	id S1754244Ab3LBTxR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:53:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39165 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754751Ab3LBTSR (ORCPT
+	with ESMTP id S1754745Ab3LBTSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:17 -0500
+	Mon, 2 Dec 2013 14:18:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Karol Babioch <karol@babioch.de>, Mattia Dongili <malattia@linux.it>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 122/212] sony-laptop: do not scribble keyboard backlight registers on resume
-Date: Mon,  2 Dec 2013 11:15:13 -0800
-Message-Id: <20131202191300.723043296@linuxfoundation.org>
+        Tim Harvey <tharvey@gateworks.com>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.12 121/212] regulator: pfuze100: allow misprogrammed ID
+Date: Mon,  2 Dec 2013 11:15:12 -0800
+Message-Id: <20131202191300.626967701@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,74 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mattia Dongili <malattia@linux.it>
+From: Tim Harvey <tharvey@gateworks.com>
 
-commit b975dc3689fc6a3718ad288ce080924f9cb7e176 upstream.
+commit 88baf7148e899db7e0b676e4363647f50e48eaed upstream.
 
-Follow-up to commit 294d31e8227c ("sony-laptop: don't change keyboard
-backlight settings"): avoid messing up the state on resume.  Leave it to
-what was before suspending as it's anyway likely that we still don't
-know what value we should write to the EC registers.  This fix is also
-required in 3.12
+prior to week 08 of 2013 Freescale misprogrammed between 1 and 3% of
+PFUZE1000 parts with a ID=0x8 instead of the expected ID=0x0
 
-Tested-by: Karol Babioch <karol@babioch.de>
-Signed-off-by: Mattia Dongili <malattia@linux.it>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Tim Harvey <tharvey@gateworks.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/platform/x86/sony-laptop.c |   27 ---------------------------
- 1 file changed, 27 deletions(-)
+ drivers/regulator/pfuze100-regulator.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/drivers/platform/x86/sony-laptop.c
-+++ b/drivers/platform/x86/sony-laptop.c
-@@ -140,7 +140,6 @@ MODULE_PARM_DESC(kbd_backlight_timeout,
- 		 "on the model (default: no change from current value)");
+--- a/drivers/regulator/pfuze100-regulator.c
++++ b/drivers/regulator/pfuze100-regulator.c
+@@ -308,9 +308,15 @@ static int pfuze_identify(struct pfuze_c
+ 	if (ret)
+ 		return ret;
  
- #ifdef CONFIG_PM_SLEEP
--static void sony_nc_kbd_backlight_resume(void);
- static void sony_nc_thermal_resume(void);
- #endif
- static int sony_nc_kbd_backlight_setup(struct platform_device *pd,
-@@ -1486,13 +1485,6 @@ static void sony_nc_function_resume(void
- 		case 0x0135:
- 			sony_nc_rfkill_update();
- 			break;
--		case 0x0137:
--		case 0x0143:
--		case 0x014b:
--		case 0x014c:
--		case 0x0163:
--			sony_nc_kbd_backlight_resume();
--			break;
- 		default:
- 			continue;
- 		}
-@@ -1894,25 +1886,6 @@ static void sony_nc_kbd_backlight_cleanu
+-	if (value & 0x0f) {
+-		dev_warn(pfuze_chip->dev, "Illegal ID: %x\n", value);
+-		return -ENODEV;
++	switch (value & 0x0f) {
++		/* Freescale misprogrammed 1-3% of parts prior to week 8 of 2013 as ID=8 */
++		case 0x8:
++			dev_info(pfuze_chip->dev, "Assuming misprogrammed ID=0x8");
++		case 0x0:
++			break;
++		default:
++			dev_warn(pfuze_chip->dev, "Illegal ID: %x\n", value);
++			return -ENODEV;
  	}
- }
  
--#ifdef CONFIG_PM_SLEEP
--static void sony_nc_kbd_backlight_resume(void)
--{
--	int ignore = 0;
--
--	if (!kbdbl_ctl)
--		return;
--
--	if (kbdbl_ctl->mode == 0)
--		sony_call_snc_handle(kbdbl_ctl->handle, kbdbl_ctl->base,
--				&ignore);
--
--	if (kbdbl_ctl->timeout != 0)
--		sony_call_snc_handle(kbdbl_ctl->handle,
--				(kbdbl_ctl->base + 0x200) |
--				(kbdbl_ctl->timeout << 0x10), &ignore);
--}
--#endif
--
- struct battery_care_control {
- 	struct device_attribute attrs[2];
- 	unsigned int handle;
+ 	ret = regmap_read(pfuze_chip->regmap, PFUZE100_REVID, &value);
 
 
