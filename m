@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755873Ab3LBTth (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:49:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39507 "EHLO
+	id S1752739Ab3LBTuB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:50:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39500 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754803Ab3LBTS3 (ORCPT
+	with ESMTP id S1753769Ab3LBTS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:29 -0500
+	Mon, 2 Dec 2013 14:18:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Samuel Li <samuel.li@amd.com>,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.12 138/212] drm/radeon: hook up backlight functions for CI and KV family.
-Date: Mon,  2 Dec 2013 11:15:29 -0800
-Message-Id: <20131202191302.479163676@linuxfoundation.org>
+Subject: [PATCH 3.12 136/212] drm/radeon: dont share PPLLs on DCE4.1
+Date: Mon,  2 Dec 2013 11:15:27 -0800
+Message-Id: <20131202191302.183749905@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,40 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Samuel Li <samuel.li@amd.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 7272c9d2286525d4c6bce788243cf2b6f306d15c upstream.
+commit 70471860ff9f335c60c004d42ebd48945bfa5403 upstream.
 
-Fixes crashes when handling atif events due to the lack of a
-callback being registered.
+Sharing PPLLs seems to cause problems on some boards.
 
-Signed-off-by: Samuel Li <samuel.li@amd.com>
+Bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=45334
+
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_asic.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/radeon/atombios_crtc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_asic.c
-+++ b/drivers/gpu/drm/radeon/radeon_asic.c
-@@ -2019,6 +2019,8 @@ static struct radeon_asic ci_asic = {
- 		.bandwidth_update = &dce8_bandwidth_update,
- 		.get_vblank_counter = &evergreen_get_vblank_counter,
- 		.wait_for_vblank = &dce4_wait_for_vblank,
-+		.set_backlight_level = &atombios_set_backlight_level,
-+		.get_backlight_level = &atombios_get_backlight_level,
- 		.hdmi_enable = &evergreen_hdmi_enable,
- 		.hdmi_setmode = &evergreen_hdmi_setmode,
- 	},
-@@ -2119,6 +2121,8 @@ static struct radeon_asic kv_asic = {
- 		.bandwidth_update = &dce8_bandwidth_update,
- 		.get_vblank_counter = &evergreen_get_vblank_counter,
- 		.wait_for_vblank = &dce4_wait_for_vblank,
-+		.set_backlight_level = &atombios_set_backlight_level,
-+		.get_backlight_level = &atombios_get_backlight_level,
- 		.hdmi_enable = &evergreen_hdmi_enable,
- 		.hdmi_setmode = &evergreen_hdmi_setmode,
- 	},
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -1753,7 +1753,7 @@ static int radeon_atom_pick_pll(struct d
+ 				if (pll != ATOM_PPLL_INVALID)
+ 					return pll;
+ 			}
+-		} else {
++		} else if (!ASIC_IS_DCE41(rdev)) { /* Don't share PLLs on DCE4.1 chips */
+ 			/* use the same PPLL for all monitors with the same clock */
+ 			pll = radeon_get_shared_nondp_ppll(crtc);
+ 			if (pll != ATOM_PPLL_INVALID)
 
 
