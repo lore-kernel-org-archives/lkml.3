@@ -1,170 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893Ab3LBQia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 11:38:30 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:8968 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752727Ab3LBQi0 (ORCPT
+	id S1752933Ab3LBQkr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 11:40:47 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41221 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751964Ab3LBQkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 11:38:26 -0500
-Date: Mon, 2 Dec 2013 11:38:25 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [ANNOUNCE] 3.2.52-rt74
-Message-ID: <20131202113825.773fe9dd@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Mon, 2 Dec 2013 11:40:42 -0500
+X-Sasl-enc: BjMA7wkryL30Es6V92yXzRhATJ0pjveGkfzDGZk1Zhbk 1386002441
+Date: Mon, 2 Dec 2013 08:40:39 -0800
+From: Greg KH <greg@kroah.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Patrick McHardy <kaber@trash.net>, kadlec@blackhole.kfki.hu,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: netfilter: active obj WARN when cleaning up
+Message-ID: <20131202164039.GA19937@kroah.com>
+References: <5294F27D.4000108@oracle.com>
+ <20131126230709.GA10948@localhost>
+ <alpine.DEB.2.02.1311271106090.30673@ionos.tec.linutronix.de>
+ <20131127113939.GL16735@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.02.1311271409280.30673@ionos.tec.linutronix.de>
+ <20131127133231.GO16735@n2100.arm.linux.org.uk>
+ <20131127134015.GA6011@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.02.1311271443580.30673@ionos.tec.linutronix.de>
+ <20131127233415.GB19270@kroah.com>
+ <00000142b4282aaf-913f5e4c-314c-4351-9d24-615e66928157-000000@email.amazonses.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <00000142b4282aaf-913f5e4c-314c-4351-9d24-615e66928157-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 02, 2013 at 04:33:20PM +0000, Christoph Lameter wrote:
+> On Wed, 27 Nov 2013, Greg KH wrote:
+> 
+> > Just make the kobject "dynamic" instead of embedded in struct kmem_cache
+> > and all will be fine.  I can't believe this code has been broken for
+> > this long.
+> 
+> The slub code is was designed to use an embedded structure since we
+> only get the kobj  pointer passed to us from sysfs. If kobj is not
+> embedded then how can we get from the sysfs object to the kmem_cache
+> structure from the sysfs callbacks? Sysfs was designed to have embedded
+> objects as far as I can recall.
 
-Dear RT Folks,
+Yes, it's designed to have embedded objects, so then use it that way and
+clean up the structure when the kobject goes away.  Don't use a
+different reference count for your structure than the one in the kobject
+and think that all will be fine.
 
-I'm pleased to announce the 3.2.52-rt74 stable release.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  branch: v3.2-rt
-  Head SHA1: 0d68db4a4e26e478739458720e4970b9824f47a2
-
-
-Or to build 3.2.52-rt74 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.52.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.52-rt74.patch.xz
-
-
-
-You can also build from 3.2.52-rt73 by applying the incremental patch:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/incr/patch-3.2.52-rt73-rt74.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-Changes from v3.2.52-rt73:
-
----
-
-Mike Galbraith (1):
-      hwlat-detector: Don't ignore threshold module parameter
-
-Sebastian Andrzej Siewior (1):
-      drm: remove preempt_disable() from drm_calc_vbltimestamp_from_scanoutpos()
-
-Steven Rostedt (Red Hat) (1):
-      Linux 3.2.52-rt74
-
-Thomas Pfaff (1):
-      genirq: Set the irq thread policy without checking CAP_SYS_NICE
-
-Yang Shi (1):
-      mm/memcontrol: Don't call schedule_work_on in preemption disabled context
-
-----
- drivers/gpu/drm/drm_irq.c     | 7 -------
- drivers/misc/hwlat_detector.c | 2 +-
- kernel/irq/manage.c           | 2 +-
- localversion-rt               | 2 +-
- mm/memcontrol.c               | 4 ++--
- 5 files changed, 5 insertions(+), 12 deletions(-)
----------------------------
-diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
-index 73af885..2b13224 100644
---- a/drivers/gpu/drm/drm_irq.c
-+++ b/drivers/gpu/drm/drm_irq.c
-@@ -619,11 +619,6 @@ int drm_calc_vbltimestamp_from_scanoutpos(struct drm_device *dev, int crtc,
- 	 * code gets preempted or delayed for some reason.
- 	 */
- 	for (i = 0; i < DRM_TIMESTAMP_MAXRETRIES; i++) {
--		/* Disable preemption to make it very likely to
--		 * succeed in the first iteration even on PREEMPT_RT kernel.
--		 */
--		preempt_disable();
--
- 		/* Get system timestamp before query. */
- 		do_gettimeofday(&stime);
- 
-@@ -633,8 +628,6 @@ int drm_calc_vbltimestamp_from_scanoutpos(struct drm_device *dev, int crtc,
- 		/* Get system timestamp after query. */
- 		do_gettimeofday(&raw_time);
- 
--		preempt_enable();
--
- 		/* Return as no-op if scanout query unsupported or failed. */
- 		if (!(vbl_status & DRM_SCANOUTPOS_VALID)) {
- 			DRM_DEBUG("crtc %d : scanoutpos query failed [%d].\n",
-diff --git a/drivers/misc/hwlat_detector.c b/drivers/misc/hwlat_detector.c
-index 6f61d5f..d2676b8 100644
---- a/drivers/misc/hwlat_detector.c
-+++ b/drivers/misc/hwlat_detector.c
-@@ -413,7 +413,7 @@ static int init_stats(void)
- 		goto out;
- 
- 	__reset_stats();
--	data.threshold = DEFAULT_LAT_THRESHOLD;	    /* threshold us */
-+	data.threshold = threshold ?: DEFAULT_LAT_THRESHOLD;	    /* threshold us */
- 	data.sample_window = DEFAULT_SAMPLE_WINDOW; /* window us */
- 	data.sample_width = DEFAULT_SAMPLE_WIDTH;   /* width us */
- 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 88a4ff5..5b51ba7 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -1041,7 +1041,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 			goto out_mput;
- 		}
- 
--		sched_setscheduler(t, SCHED_FIFO, &param);
-+		sched_setscheduler_nocheck(t, SCHED_FIFO, &param);
- 
- 		/*
- 		 * We keep the reference to the task struct even if
-diff --git a/localversion-rt b/localversion-rt
-index e8ada8c..7d028f4 100644
---- a/localversion-rt
-+++ b/localversion-rt
-@@ -1 +1 @@
---rt73
-+-rt74
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index f8bdd8d..df84f45 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2077,7 +2077,7 @@ static void drain_all_stock(struct mem_cgroup *root_memcg, bool sync)
- 
- 	/* Notify other cpus that system-wide "drain" is running */
- 	get_online_cpus();
--	curcpu = get_cpu();
-+	curcpu = get_cpu_light();
- 	for_each_online_cpu(cpu) {
- 		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
- 		struct mem_cgroup *memcg;
-@@ -2094,7 +2094,7 @@ static void drain_all_stock(struct mem_cgroup *root_memcg, bool sync)
- 				schedule_work_on(cpu, &stock->work);
- 		}
- 	}
--	put_cpu();
-+	put_cpu_light();
- 
- 	if (!sync)
- 		goto out;
+greg k-h
