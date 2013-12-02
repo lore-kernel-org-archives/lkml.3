@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab3LBTkA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:40:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39583 "EHLO
+	id S1755487Ab3LBTj4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:39:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39603 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754760Ab3LBTSr (ORCPT
+	with ESMTP id S1753811Ab3LBTSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:47 -0500
+	Mon, 2 Dec 2013 14:18:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 158/212] ALSA: hda/realtek - Set pcbeep amp for ALC668
-Date: Mon,  2 Dec 2013 11:15:49 -0800
-Message-Id: <20131202191305.276653948@linuxfoundation.org>
+        Forest Bond <forest.bond@rapidrollout.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.12 178/212] HID: hid-multitouch: add support for SiS panels
+Date: Mon,  2 Dec 2013 11:16:09 -0800
+Message-Id: <20131202191308.224757122@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,29 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kailang Yang <kailang@realtek.com>
+From: Forest Bond <forest.bond@rapidrollout.com>
 
-commit 9ad54547cf6f4410eba83bb95dfd2a0966718d6d upstream.
+commit a6802e008e19845fd9669511b895f7515ef9c48b upstream.
 
-Set the missing pcbeep default amp for ALC668.
+Add support for SiS multitouch panels.
 
-Signed-off-by: Kailang Yang <kailang@realtek.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Forest Bond <forest.bond@rapidrollout.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/hid/Kconfig             |    1 +
+ drivers/hid/hid-core.c          |    2 ++
+ drivers/hid/hid-ids.h           |    4 ++++
+ drivers/hid/hid-multitouch.c    |    8 ++++++++
+ drivers/hid/usbhid/hid-quirks.c |    2 ++
+ 5 files changed, 17 insertions(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4864,6 +4864,7 @@ static int patch_alc662(struct hda_codec
- 		case 0x10ec0272:
- 		case 0x10ec0663:
- 		case 0x10ec0665:
-+		case 0x10ec0668:
- 			set_beep_amp(spec, 0x0b, 0x04, HDA_INPUT);
- 			break;
- 		case 0x10ec0273:
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -455,6 +455,7 @@ config HID_MULTITOUCH
+ 	  - Pixcir dual touch panels
+ 	  - Quanta panels
+ 	  - eGalax dual-touch panels, including the Joojoo and Wetab tablets
++	  - SiS multitouch panels
+ 	  - Stantum multitouch panels
+ 	  - Touch International Panels
+ 	  - Unitec Panels
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1817,6 +1817,8 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAITEK, USB_DEVICE_ID_SAITEK_PS1000) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_IR_REMOTE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_WIRELESS_KBD_MOUSE) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_SIS2_TOUCH, USB_DEVICE_ID_SIS9200_TOUCH) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_SIS2_TOUCH, USB_DEVICE_ID_SIS817_TOUCH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SKYCABLE, USB_DEVICE_ID_SKYCABLE_WIRELESS_PRESENTER) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_BUZZ_CONTROLLER) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_WIRELESS_BUZZ_CONTROLLER) },
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -751,6 +751,10 @@
+ #define USB_VENDOR_ID_SIGMATEL		0x066F
+ #define USB_DEVICE_ID_SIGMATEL_STMP3780	0x3780
+ 
++#define USB_VENDOR_ID_SIS2_TOUCH	0x0457
++#define USB_DEVICE_ID_SIS9200_TOUCH	0x9200
++#define USB_DEVICE_ID_SIS817_TOUCH	0x0817
++
+ #define USB_VENDOR_ID_SKYCABLE			0x1223
+ #define	USB_DEVICE_ID_SKYCABLE_WIRELESS_PRESENTER	0x3F07
+ 
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -1299,6 +1299,14 @@ static const struct hid_device_id mt_dev
+ 		MT_USB_DEVICE(USB_VENDOR_ID_QUANTA,
+ 			USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3008) },
+ 
++	/* SiS panels */
++	{ .driver_data = MT_CLS_DEFAULT,
++		HID_USB_DEVICE(USB_VENDOR_ID_SIS2_TOUCH,
++		USB_DEVICE_ID_SIS9200_TOUCH) },
++	{ .driver_data = MT_CLS_DEFAULT,
++		HID_USB_DEVICE(USB_VENDOR_ID_SIS2_TOUCH,
++		USB_DEVICE_ID_SIS817_TOUCH) },
++
+ 	/* Stantum panels */
+ 	{ .driver_data = MT_CLS_CONFIDENCE,
+ 		MT_USB_DEVICE(USB_VENDOR_ID_STANTUM,
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -84,6 +84,8 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_REALTEK, USB_DEVICE_ID_REALTEK_READER, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_SENNHEISER, USB_DEVICE_ID_SENNHEISER_BTD500USB, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_SIGMATEL, USB_DEVICE_ID_SIGMATEL_STMP3780, HID_QUIRK_NOGET },
++	{ USB_VENDOR_ID_SIS2_TOUCH, USB_DEVICE_ID_SIS9200_TOUCH, HID_QUIRK_NOGET },
++	{ USB_VENDOR_ID_SIS2_TOUCH, USB_DEVICE_ID_SIS817_TOUCH, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_SUN, USB_DEVICE_ID_RARITAN_KVM_DONGLE, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_1, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_2, HID_QUIRK_NOGET },
 
 
