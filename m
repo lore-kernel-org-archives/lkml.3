@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759424Ab3LBVOI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:14:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38422 "EHLO
+	id S932161Ab3LBVOQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:14:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38421 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753523Ab3LBTNC (ORCPT
+	with ESMTP id S1753967Ab3LBTNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:02 -0500
+	Mon, 2 Dec 2013 14:13:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Magnus Damm <damm@opensource.se>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.10 033/173] gpio: rcar: NULL dereference on error in probe()
-Date: Mon,  2 Dec 2013 11:10:16 -0800
-Message-Id: <20131202191146.538255462@linuxfoundation.org>
+        Doug Anderson <dianders@chromium.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, Olof Johansson <olof@lixom.net>
+Subject: [PATCH 3.10 029/173] ARM: dts: Add max77686 RTC interrupt to cros5250-common
+Date: Mon,  2 Dec 2013 11:10:12 -0800
+Message-Id: <20131202191146.107641341@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -28,34 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Doug Anderson <dianders@chromium.org>
 
-commit 0c8aab8e65e450f2bfea494c1b6a86ded653f88c upstream.
+commit c61248afa8190ae3f47ee67f46e3c9b584a73d31 upstream.
 
-It's not obvious from the label name but "err1" tries to release
-"p->irq_domain" which leads to a NULL dereference.
+Without the interrupt you'll get problems if you enable
+CONFIG_RTC_DRV_MAX77686.  Setup the interrupt properly in the device
+tree.
 
-Fixes: 119f5e448d32 ('gpio: Renesas R-Car GPIO driver V3')
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Magnus Damm <damm@opensource.se>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Tested-by: Marc Zyngier <marc.zyngier@arm.com>
+Signed-off-by: Olof Johansson <olof@lixom.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpio-rcar.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/boot/dts/cros5250-common.dtsi |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/drivers/gpio/gpio-rcar.c
-+++ b/drivers/gpio/gpio-rcar.c
-@@ -329,7 +329,7 @@ static int gpio_rcar_probe(struct platfo
- 	if (!p->irq_domain) {
- 		ret = -ENXIO;
- 		dev_err(&pdev->dev, "cannot initialize irq domain\n");
--		goto err1;
-+		goto err0;
- 	}
+--- a/arch/arm/boot/dts/cros5250-common.dtsi
++++ b/arch/arm/boot/dts/cros5250-common.dtsi
+@@ -27,6 +27,13 @@
+ 		i2c2_bus: i2c2-bus {
+ 			samsung,pin-pud = <0>;
+ 		};
++
++		max77686_irq: max77686-irq {
++			samsung,pins = "gpx3-2";
++			samsung,pin-function = <0>;
++			samsung,pin-pud = <0>;
++			samsung,pin-drv = <0>;
++		};
+ 	};
  
- 	if (devm_request_irq(&pdev->dev, irq->start,
+ 	i2c@12C60000 {
+@@ -35,6 +42,11 @@
+ 
+ 		max77686@09 {
+ 			compatible = "maxim,max77686";
++			interrupt-parent = <&gpx3>;
++			interrupts = <2 0>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&max77686_irq>;
++			wakeup-source;
+ 			reg = <0x09>;
+ 
+ 			voltage-regulators {
 
 
