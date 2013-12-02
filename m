@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474Ab3LBO6G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 09:58:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47456 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752217Ab3LBO6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 09:58:03 -0500
-Message-ID: <529C9FF7.3040005@suse.cz>
-Date: Mon, 02 Dec 2013 15:57:59 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752104Ab3LBPAI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 10:00:08 -0500
+Received: from utopia.booyaka.com ([74.50.51.50]:45844 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736Ab3LBPAF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 10:00:05 -0500
+Date: Mon, 2 Dec 2013 15:00:03 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Roger Quadros <rogerq@ti.com>
+cc: Michael Trimarchi <michael@amarulasolutions.com>,
+        Lee Jones <lee.jones@linaro.org>, sameo@linux.intel.com,
+        tomi.valkeinen@ti.com, Felipe Balbi <balbi@ti.com>,
+        Stefan Roese <sr@denx.de>, ljkenny.mailinglists@gmail.com,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Benoit Cousson <bcousson@baylibre.com>,
+        "tony@atomide.com" <tony@atomide.com>
+Subject: Re: [PATCH 1/1] mfd: omap-usb-host: Fix USB device detection problems
+ on OMAP4 Panda
+In-Reply-To: <529C5537.3080300@ti.com>
+Message-ID: <alpine.DEB.2.02.1312021444530.18363@utopia.booyaka.com>
+References: <1385730118-26402-1-git-send-email-rogerq@ti.com> <1385730118-26402-2-git-send-email-rogerq@ti.com> <CAOf5uwnttvOQ26USuDK1naq1nNtVbHo4c0UAfdep64bK2wyvBA@mail.gmail.com> <529C5537.3080300@ti.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Franck Bui-Huu <fbuihuu@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix detectition of kernel git repository in setlocalversion
- script
-References: <1385990497-11805-1-git-send-email-fbuihuu@gmail.com>
-In-Reply-To: <1385990497-11805-1-git-send-email-fbuihuu@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2.12.2013 14:21, Franck Bui-Huu wrote:
-> diff --git a/scripts/setlocalversion b/scripts/setlocalversion
-> index 0b5ccf3..c16e65d 100755
-> --- a/scripts/setlocalversion
-> +++ b/scripts/setlocalversion
-> @@ -43,7 +43,8 @@ scm_version()
->  	fi
->  
->  	# Check for git and a git repo.
-> -	if test -d .git && head=`git rev-parse --verify --short HEAD 2>/dev/null`; then
-> +	if topdir=$(git rev-parse --show-cdup 2>/dev/null) && test -z "$topdir" &&
-> +	   head=`git rev-parse --verify --short HEAD 2>/dev/null`; then
+On Mon, 2 Dec 2013, Roger Quadros wrote:
 
-You can do test -z "$(git rev-parse --show-cdup 2>/dev/null)" without
-the $topdir variable.
+> It won't be done by omap_hwmod as we set HWMOD_INIT_NO_RESET flag in the 
+> hwmod data [1].
+> 
+> Question is do we do it in the driver of leave it to hwmod?
 
-Michal
+It should be done by hwmod (or more broadly, some OMAP bus code).  That 
+way the device can be brought to a known state even if there's no driver 
+present (e.g., if the driver was built as a module).
+
+> The other concern about i660 is in this comment [1]
+> 
+> 	/*
+> 	 * During system boot; If the hwmod framework resets the module
+> 	 * the module will have smart idle settings; which can lead to deadlock
+> 	 * (above Errata Id:i660); so, dont reset the module during boot;
+> 	 * Use HWMOD_INIT_NO_RESET.
+> 	 */
+> 
+> But if you look at the errata document [2], Advisory 1.108, it doesn't 
+> say that we can't be in smart-idle, but only that we should put the 
+> module in force-idle, before cutting the module's functional clock.
+
+Yes, that looks to be correct.  There shouldn't be any problem with the 
+module being in smart-idle mode if the PRCM doesn't try to put it into a 
+low-power mode.  It already has the HWMOD_SWSUP_SIDLE flag set, so seems 
+to me it should work fine without HWMOD_INIT_NO_RESET, if i660 is the only 
+issue.
+
+Most of the IP blocks that are marked with HWMOD_INIT_NO_RESET are only 
+that way due to laziness, or lack of time, etc., and should be closely 
+reviewed.
+
+
+- Paul
