@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758078Ab3LBUhF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:37:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38892 "EHLO
+	id S1754361Ab3LBTOX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:14:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38475 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627Ab3LBTOY (ORCPT
+	with ESMTP id S1754253Ab3LBTON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:14:24 -0500
+	Mon, 2 Dec 2013 14:14:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Achatz <erazor_de@users.sourceforge.net>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.10 159/173] HID: roccat: add new device return value
-Date: Mon,  2 Dec 2013 11:12:22 -0800
-Message-Id: <20131202191201.503486405@linuxfoundation.org>
+        Elias Vanderstuyft <elias.vds@gmail.com>,
+        Simon Wood <simon@mungewell.org>, Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.10 132/173] HID:hid-lg4ff: Scale autocentering force properly on Logitech wheel
+Date: Mon,  2 Dec 2013 11:11:55 -0800
+Message-Id: <20131202191158.587026690@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,53 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
+From: Simon Wood <simon@mungewell.org>
 
-commit 14fc4290df2fb94a28f39dab9ed32feaa5527bef upstream.
+commit f8c231569a7a455dfa1907294a46ba52b3aa8859 upstream.
 
-Ryos uses a new return value for critical errors, others have been
-confirmed.
+Adjust the scaling and lineartity to match that of the Windows
+driver (from MOMO testing).
 
-Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+Reported-by: Elias Vanderstuyft <elias.vds@gmail.com>
+Signed-off-by: Simon Wood <simon@mungewell.org>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-roccat-common.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/hid/hid-lg4ff.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
---- a/drivers/hid/hid-roccat-common.c
-+++ b/drivers/hid/hid-roccat-common.c
-@@ -65,10 +65,11 @@ int roccat_common2_send(struct usb_devic
- EXPORT_SYMBOL_GPL(roccat_common2_send);
+--- a/drivers/hid/hid-lg4ff.c
++++ b/drivers/hid/hid-lg4ff.c
+@@ -218,12 +218,21 @@ static void hid_lg4ff_set_autocenter_def
+ 	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
+ 	struct hid_report *report = list_entry(report_list->next, struct hid_report, list);
+ 	__s32 *value = report->field[0]->value;
++	__u32 expand_a, expand_b;
++
++	if (magnitude <= 0xaaaa) {
++		expand_a = 0x0c * magnitude;
++		expand_b = 0x80 * magnitude;
++	} else {
++		expand_a = (0x0c * 0xaaaa) + 0x06 * (magnitude - 0xaaaa);
++		expand_b = (0x80 * 0xaaaa) + 0xff * (magnitude - 0xaaaa);
++	}
  
- enum roccat_common2_control_states {
--	ROCCAT_COMMON_CONTROL_STATUS_OVERLOAD = 0,
-+	ROCCAT_COMMON_CONTROL_STATUS_CRITICAL = 0,
- 	ROCCAT_COMMON_CONTROL_STATUS_OK = 1,
- 	ROCCAT_COMMON_CONTROL_STATUS_INVALID = 2,
--	ROCCAT_COMMON_CONTROL_STATUS_WAIT = 3,
-+	ROCCAT_COMMON_CONTROL_STATUS_BUSY = 3,
-+	ROCCAT_COMMON_CONTROL_STATUS_CRITICAL_NEW = 4,
- };
+ 	value[0] = 0xfe;
+ 	value[1] = 0x0d;
+-	value[2] = magnitude >> 13;
+-	value[3] = magnitude >> 13;
+-	value[4] = magnitude >> 8;
++	value[2] = expand_a / 0xaaaa;
++	value[3] = expand_a / 0xaaaa;
++	value[4] = expand_b / 0xaaaa;
+ 	value[5] = 0x00;
+ 	value[6] = 0x00;
  
- static int roccat_common2_receive_control_status(struct usb_device *usb_dev)
-@@ -88,13 +89,12 @@ static int roccat_common2_receive_contro
- 		switch (control.value) {
- 		case ROCCAT_COMMON_CONTROL_STATUS_OK:
- 			return 0;
--		case ROCCAT_COMMON_CONTROL_STATUS_WAIT:
-+		case ROCCAT_COMMON_CONTROL_STATUS_BUSY:
- 			msleep(500);
- 			continue;
- 		case ROCCAT_COMMON_CONTROL_STATUS_INVALID:
--
--		case ROCCAT_COMMON_CONTROL_STATUS_OVERLOAD:
--			/* seems to be critical - replug necessary */
-+		case ROCCAT_COMMON_CONTROL_STATUS_CRITICAL:
-+		case ROCCAT_COMMON_CONTROL_STATUS_CRITICAL_NEW:
- 			return -EINVAL;
- 		default:
- 			dev_err(&usb_dev->dev,
 
 
