@@ -1,64 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144Ab3LBO27 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 09:28:59 -0500
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:40948 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751961Ab3LBO2m (ORCPT
+	id S1751912Ab3LBObq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 09:31:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35748 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751383Ab3LBObp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 09:28:42 -0500
+	Mon, 2 Dec 2013 09:31:45 -0500
+Date: Mon, 2 Dec 2013 06:32:45 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Prarit Bhargava <prarit@redhat.com>, Ming Lei <ming.lei@canonical.com>,
+        Borislav Petkov <bp@suse.de>, x86@kernel.org,
+        amd64-microcode@amd64.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/4] Add request_firmware_direct() for microcode loader
+Message-ID: <20131202143245.GA32266@kroah.com>
+References: <1384257736-3647-1-git-send-email-tiwai@suse.de>
+ <s5hk3g97k7i.wl%tiwai@suse.de>
+ <20131115212455.GA14897@kroah.com>
+ <s5h38mbabhe.wl%tiwai@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <20131130175903.GL24171@order.stressinduktion.org>
-References: <20131128190411.GD24171@order.stressinduktion.org>
-	<20131129.163930.203685593163996122.davem@davemloft.net>
-	<20131130174635.GK24171@order.stressinduktion.org>
-	<20131130.125110.248139896351909341.davem@davemloft.net>
-	<20131130175903.GL24171@order.stressinduktion.org>
-Date: Mon, 2 Dec 2013 19:58:41 +0530
-Message-ID: <CAP8BHkHqNbyEjTUZiKdJ+qz7USGy39t-15b55VfzCu88rnZpjQ@mail.gmail.com>
-Subject: Re: [PATCH] ipv6: ip6_pkt_prohibit(_out) should not depend on CONFIG_IPV6_MULTIPLE_TABLES
-From: Kamala R <kamala@aristanetworks.com>
-To: David Miller <davem@davemloft.net>, Kamala R <kamala@aristanetworks.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5h38mbabhe.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Dec 02, 2013 at 09:44:13AM +0100, Takashi Iwai wrote:
+> At Sat, 16 Nov 2013 06:24:55 +0900,
+> Greg Kroah-Hartman wrote:
+> > 
+> > On Fri, Nov 15, 2013 at 04:34:09PM +0100, Takashi Iwai wrote:
+> > > At Tue, 12 Nov 2013 13:02:12 +0100,
+> > > Takashi Iwai wrote:
+> > > > 
+> > > > Hi,
+> > > > 
+> > > > this is a revised patch series to introduce request_firmware_direct()
+> > > > helper for avoiding the lengthy udev issue on microcode loader.
+> > > > The original problem was stated in Prarit's post:
+> > > >    https://lkml.org/lkml/2013/10/28/221
+> > > > 
+> > > > In short, microcode loader probes non-existing firmware files (which
+> > > > are cases with every new chip), and each probe takes 60 seconds,
+> > > > resulting in too long time until completed.
+> > > > 
+> > > > This solution is simply avoiding the udev fallback in
+> > > > request_firmware() explicitly for drivers like microcode.
+> > > > 
+> > > > Of course, this doesn't mean to throw away further optimizations like
+> > > > Prarit's patch.  It can be implemented in parallel with this.
+> > > > 
+> > > > 
+> > > >  [PATCH v3 1/4] firmware: Introduce request_firmware_direct()
+> > > >  [PATCH v3 2/4] microcode: Use request_firmware_direct()
+> > > >  [PATCH v3 3/4] firmware: Use bit flags instead of boolean combos
+> > > >  [PATCH v3 4/4] firmware: Suppress fallback warnings when CONFIG_FW_LOADER_USER_HELPER=n
+> > > > 
+> > > > v1->v2: Rebased on linux-next, add a fix for a bogus warning message
+> > > > v2->v3: Convert to bit flags, fix warning message differently
+> > > > 
+> > > > 
+> > > > Greg, could you take these patches through your driver tree, as
+> > > > most of fixes are about the firmware loader itself.
+> > > 
+> > > Greg, any chance to take a look at these patches?
+> > 
+> > I'm traveling at the moment, in Korea this week.  I'll take a look at
+> > them after 3.13-rc1 is out, as I can't do anything with patches until
+> > then.  Don't worry, they aren't lost.
+> 
+> They seem lost in Korea in the end :)
 
-I have submitted a version 4 of my patch that squashes the above
-changes into it as well. Is that the right way to do it ?
+No, not lost:
+	$ mdfrm -c ~/mail/todo/
+	2485 messages in /home/gregkh/mail/todo/
 
-Regards,
-Kamala
+Just burried :(
 
-On Sat, Nov 30, 2013 at 11:29 PM, Hannes Frederic Sowa
-<hannes@stressinduktion.org> wrote:
-> On Sat, Nov 30, 2013 at 12:51:10PM -0500, David Miller wrote:
->> From: Hannes Frederic Sowa <hannes@stressinduktion.org>
->> Date: Sat, 30 Nov 2013 18:46:35 +0100
->>
->> > On Fri, Nov 29, 2013 at 04:39:30PM -0500, David Miller wrote:
->> >> From: Hannes Frederic Sowa <hannes@stressinduktion.org>
->> >> Date: Thu, 28 Nov 2013 20:04:11 +0100
->> >>
->> >> > Since patch "IPv6: Fixed support for blackhole and prohibit routes" we
->> >> > need ip6_pkt_prohibit(_out) available without CONFIG_IPV6_MULTIPLE_TABLES
->> >> > defined.
->> >> >
->> >> > Cc: Kamala R <kamala@aristanetworks.com>
->> >> > Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
->> >>
->> >> Please reference the SHA1 ID of the change as well as it's commit
->> >> header text, thank you.
->> >
->> > This patch is a follow-up patch for the first one in this thread which is not
->> > committed, yet. Either Kamala can squash them into one or I'll repost it
->> > later.
->>
->> I think they need to be combined, otherwise bisection is broken.
->
-> Kamala, as your patch is the main one, can you squash my patch into yours?
->
+> Could you catch up if still OK?
+
+I'll get to them soon...
+
+> One of the patches seems slightly conflicting with the latest Linus
+> tree.  I can send a rebased one if needed, or you can take it from
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-unstable.git test/fw-direct
+
+Yes please, an update would be good to have, can you just send this in
+email form?
+
+thanks,
+
+greg k-h
