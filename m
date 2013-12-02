@@ -1,103 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672Ab3LBS1O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 13:27:14 -0500
-Received: from mga11.intel.com ([192.55.52.93]:2934 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752030Ab3LBS1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 13:27:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,812,1378882800"; 
-   d="asc'?scan'208";a="443322664"
-Message-ID: <529CD206.5080605@linux.intel.com>
-Date: Mon, 02 Dec 2013 10:31:34 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+	id S1752754Ab3LBSaF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 13:30:05 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:47372 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965Ab3LBSaD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 13:30:03 -0500
+Message-ID: <529CD1A8.7080408@gmail.com>
+Date: Mon, 02 Dec 2013 11:30:00 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: gregkh@linuxfoundation.org, stern@rowland.harvard.edu, mina86@mina86.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 5/5] usb: dwc3: implement gadget's quirk ep_out_align_size
-References: <1384290286-21432-1-git-send-email-david.a.cohen@linux.intel.com> <1384290286-21432-6-git-send-email-david.a.cohen@linux.intel.com> <20131125210614.GP18046@saruman.home>
-In-Reply-To: <20131125210614.GP18046@saruman.home>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="ixuSVaweQ2X3KuIQT16v6TKitot8Bitjk"
+To: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+CC: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH] perf tools: Make trace command to follow -m option
+References: <1385657842-8914-1-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1385657842-8914-1-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---ixuSVaweQ2X3KuIQT16v6TKitot8Bitjk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 11/28/13, 9:57 AM, Jiri Olsa wrote:
+> Currently trace command supports '-m' option, but
+> does not follow its value and keeps the default.
+>
+> Changing the perf_evlist__mmap function call to use
+> the '-m' configured value.
+>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> ---
+>   tools/perf/builtin-trace.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+> index e9f345e2..9f2a242 100644
+> --- a/tools/perf/builtin-trace.c
+> +++ b/tools/perf/builtin-trace.c
+> @@ -1890,7 +1890,7 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
+>   	if (err < 0)
+>   		goto out_error_open;
+>
+> -	err = perf_evlist__mmap(evlist, UINT_MAX, false);
+> +	err = perf_evlist__mmap(evlist, trace->opts.mmap_pages, false);
+>   	if (err < 0) {
+>   		fprintf(trace->output, "Couldn't mmap the events: %s\n", strerror(errno));
+>   		goto out_close_evlist;
+>
 
-On 11/25/2013 01:06 PM, Felipe Balbi wrote:
-> Hi,
->=20
-> On Tue, Nov 12, 2013 at 01:04:46PM -0800, David Cohen wrote:
->> diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
->> index 5452c0fce360..7c2d36f6ad4b 100644
->> --- a/drivers/usb/dwc3/gadget.c
->> +++ b/drivers/usb/dwc3/gadget.c
->> @@ -1130,6 +1130,14 @@ static int dwc3_gadget_ep_queue(struct usb_ep *=
-ep, struct usb_request *request,
->>  	dev_vdbg(dwc->dev, "queing request %p to %s length %d\n",
->>  			request, ep->name, request->length);
->> =20
->> +	/* If ep out, roundup request->length to epout maxpacketsize */
->> +	if (!(dep->number & 1)) {
->=20
-> we have a direction field in the dep structure, please use that.
->=20
->> +		unsigned int aligned =3D roundup(request->length,
->> +					       ep->desc->wMaxPacketSize);
->> +		req->pad =3D aligned - request->length;
->> +		request->length =3D aligned;
->=20
-> this is quite dangerous. You really don't know the size that gadget
-> driver allocated. What if we're using SLOB and gadget driver allocated
-> exactly 31 bytes (think MSC's CBW) ? Then you change request->length to=
+Acked-by: David Ahern <dsahern@gmail.com>
 
-> 512-bytes (or 1024 if USB SS), and host happens to be buggy (or
-> exploited somehow) and sends more than 31-bytes ? You told dwc3 you
-> could receive more than 31-bytes even though you don't know what follow=
-s
-> your 31-byte buffer.
->=20
-> This is why I have been saying that gadget driver *must* be the one
-> hadnling this issue based on the quirk flag.
-
-Thanks. I've seen different point of views in this thread. Since you're
-the maintainer, I'll resend the patch following your directions.
-
-Br, David
-
-
-
---ixuSVaweQ2X3KuIQT16v6TKitot8Bitjk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJSnNIIAAoJEGU5KLu7JjjxsioP/jpEUtl1MJRNR2fzBigrMWCW
-lpN4QGGhfT6S7vRw2dVGhUVGu73v1WOjmAXKLyQFxW2Sh9dlcn+MKT4YpVo8WkHG
-Wv6DasjmDd49GWUc4b0RnnVu1KmNzVn2LnDyts5x6sQw77eBT7FWAKnhyGJ3Vf3b
-evcB+xGMURalr4oTXvw6UQACMuUvxWLo5voX8XCukR8/I0jakCUbVBSjuT6bKvfn
-XpxOy6wks/DB5tJnEmnQ1/zWs6ma2SRgBCbAfrUd8aUauin0/QG9EM47v1vJKOwn
-8kYsZd1xFCo9p+MPRy9spO7GEigBUQl6nFQvAPQ/szjtBWdIItHQZMrAfoFO31nk
-kg/GYKXprVL9UoZV7BYtaP0UBeYuiNcC8+iGgbAxTuw9m1bcsT1THBXcXFLpKwpL
-M7KfQQBMYveUai6wWSsZeFiStTjCqv+bp4Qs48UBwquRhbFIvm2/42tVzylkvqBf
-s4jJMmR78nRsN3eq4QaSvVTaxZL/5//7U6Bi8q/4Ga1pGDQIp4kq8puhJxDJJR9y
-N+3j5tpql0uc6u/RcFEvSWdsfrQhfLGgE8GKGtuzIZP1ktENpWvpxJGYCnyFwSCg
-juFE8lo06tXDzRIT9wdEBeX3tujJFiVrG8ZvDGXlSK18+vmfwIkvybJ4Whaee/o5
-prO9yx/cF4SqK9zgCVL+
-=sj9E
------END PGP SIGNATURE-----
-
---ixuSVaweQ2X3KuIQT16v6TKitot8Bitjk--
