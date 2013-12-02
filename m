@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108Ab3LBUFF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:05:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39329 "EHLO
+	id S1755310Ab3LBUFA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:05:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39150 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753830Ab3LBTRu (ORCPT
+	with ESMTP id S1753920Ab3LBTRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:17:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.12 088/212] dm cache: fix a race condition between queuing new migrations and quiescing for a shutdown
-Date: Mon,  2 Dec 2013 11:14:39 -0800
-Message-Id: <20131202191257.431475735@linuxfoundation.org>
+        Thomas Huehn <thomas@net.t-labs.tu-berlin.de>,
+        Benjamin Vahl <bvahl@net.t-labs.tu-berlin.de>,
+        Ben West <ben@gowasabi.net>, Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.12 079/212] ath5k: fix regression in tx status processing
+Date: Mon,  2 Dec 2013 11:14:30 -0800
+Message-Id: <20131202191256.584735994@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,149 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 66cb1910df17b38334153462ec8166e48058035f upstream.
+commit 7ede612fd615abcda0cc30e5bef2a70f4cf4f75c upstream.
 
-The code that was trying to do this was inadequate.  The postsuspend
-method (in ioctl context), needs to wait for the worker thread to
-acknowledge the request to quiesce.  Otherwise the migration count may
-drop to zero temporarily before the worker thread realises we're
-quiescing.  In this case the target will be taken down, but the worker
-thread may have issued a new migration, which will cause an oops when
-it completes.
+The regression was introduced in the following commit:
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+0967e01e8e713ed2982fb4eba8ba13794e9a6e89
+"ath5k: make use of the new rate control API"
+
+ath5k_tx_frame_completed saves the intended per-rate retry counts before
+they are cleared by ieee80211_tx_info_clear_status, however at this
+point the information in info->status.rates is incomplete.
+
+This causes significant throughput degradation and excessive packet loss
+on links where high bit rates don't work properly.
+
+Move the copy from bf->rates a few lines up to ensure that the saved
+retry counts are updated, and that they are really cleared in
+info->status.rates after the call to ieee80211_tx_info_clear_status.
+
+Cc: Thomas Huehn <thomas@net.t-labs.tu-berlin.de>
+Cc: Benjamin Vahl <bvahl@net.t-labs.tu-berlin.de>
+Reported-by: Ben West <ben@gowasabi.net>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Acked-by: Thomas Huehn <thomas@net.t-labs.tu-berlin.de>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-cache-target.c |   54 +++++++++++++++++++++++++++++++------------
- 1 file changed, 40 insertions(+), 14 deletions(-)
+ drivers/net/wireless/ath/ath5k/base.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -148,6 +148,9 @@ struct cache {
- 	wait_queue_head_t migration_wait;
- 	atomic_t nr_migrations;
+--- a/drivers/net/wireless/ath/ath5k/base.c
++++ b/drivers/net/wireless/ath/ath5k/base.c
+@@ -1663,15 +1663,15 @@ ath5k_tx_frame_completed(struct ath5k_hw
+ 	ah->stats.tx_bytes_count += skb->len;
+ 	info = IEEE80211_SKB_CB(skb);
  
-+	wait_queue_head_t quiescing_wait;
-+	atomic_t quiescing_ack;
++	size = min_t(int, sizeof(info->status.rates), sizeof(bf->rates));
++	memcpy(info->status.rates, bf->rates, size);
 +
- 	/*
- 	 * cache_size entries, dirty if set
- 	 */
-@@ -748,8 +751,9 @@ static void cell_defer(struct cache *cac
+ 	tries[0] = info->status.rates[0].count;
+ 	tries[1] = info->status.rates[1].count;
+ 	tries[2] = info->status.rates[2].count;
  
- static void cleanup_migration(struct dm_cache_migration *mg)
- {
--	dec_nr_migrations(mg->cache);
-+	struct cache *cache = mg->cache;
- 	free_migration(mg);
-+	dec_nr_migrations(cache);
- }
+ 	ieee80211_tx_info_clear_status(info);
  
- static void migration_failure(struct dm_cache_migration *mg)
-@@ -1346,34 +1350,51 @@ static void writeback_some_dirty_blocks(
- /*----------------------------------------------------------------
-  * Main worker loop
-  *--------------------------------------------------------------*/
--static void start_quiescing(struct cache *cache)
-+static bool is_quiescing(struct cache *cache)
- {
-+	int r;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&cache->lock, flags);
--	cache->quiescing = 1;
-+	r = cache->quiescing;
- 	spin_unlock_irqrestore(&cache->lock, flags);
-+
-+	return r;
- }
- 
--static void stop_quiescing(struct cache *cache)
-+static void ack_quiescing(struct cache *cache)
-+{
-+	if (is_quiescing(cache)) {
-+		atomic_inc(&cache->quiescing_ack);
-+		wake_up(&cache->quiescing_wait);
-+	}
-+}
-+
-+static void wait_for_quiescing_ack(struct cache *cache)
-+{
-+	wait_event(cache->quiescing_wait, atomic_read(&cache->quiescing_ack));
-+}
-+
-+static void start_quiescing(struct cache *cache)
- {
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&cache->lock, flags);
--	cache->quiescing = 0;
-+	cache->quiescing = true;
- 	spin_unlock_irqrestore(&cache->lock, flags);
-+
-+	wait_for_quiescing_ack(cache);
- }
- 
--static bool is_quiescing(struct cache *cache)
-+static void stop_quiescing(struct cache *cache)
- {
--	int r;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&cache->lock, flags);
--	r = cache->quiescing;
-+	cache->quiescing = false;
- 	spin_unlock_irqrestore(&cache->lock, flags);
- 
--	return r;
-+	atomic_set(&cache->quiescing_ack, 0);
- }
- 
- static void wait_for_migrations(struct cache *cache)
-@@ -1420,16 +1441,15 @@ static void do_worker(struct work_struct
- 	struct cache *cache = container_of(ws, struct cache, worker);
- 
- 	do {
--		if (!is_quiescing(cache))
-+		if (!is_quiescing(cache)) {
-+			writeback_some_dirty_blocks(cache);
-+			process_deferred_writethrough_bios(cache);
- 			process_deferred_bios(cache);
-+		}
- 
- 		process_migrations(cache, &cache->quiesced_migrations, issue_copy);
- 		process_migrations(cache, &cache->completed_migrations, complete_migration);
- 
--		writeback_some_dirty_blocks(cache);
+-	size = min_t(int, sizeof(info->status.rates), sizeof(bf->rates));
+-	memcpy(info->status.rates, bf->rates, size);
 -
--		process_deferred_writethrough_bios(cache);
--
- 		if (commit_if_needed(cache)) {
- 			process_deferred_flush_bios(cache, false);
- 
-@@ -1442,6 +1462,9 @@ static void do_worker(struct work_struct
- 			process_migrations(cache, &cache->need_commit_migrations,
- 					   migration_success_post_commit);
- 		}
-+
-+		ack_quiescing(cache);
-+
- 	} while (more_work(cache));
- }
- 
-@@ -2005,6 +2028,9 @@ static int cache_create(struct cache_arg
- 	atomic_set(&cache->nr_migrations, 0);
- 	init_waitqueue_head(&cache->migration_wait);
- 
-+	init_waitqueue_head(&cache->quiescing_wait);
-+	atomic_set(&cache->quiescing_ack, 0);
-+
- 	r = -ENOMEM;
- 	cache->nr_dirty = 0;
- 	cache->dirty_bitset = alloc_bitset(from_cblock(cache->cache_size));
+ 	for (i = 0; i < ts->ts_final_idx; i++) {
+ 		struct ieee80211_tx_rate *r =
+ 			&info->status.rates[i];
 
 
