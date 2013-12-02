@@ -1,107 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119Ab3LBJDN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 04:03:13 -0500
-Received: from mga01.intel.com ([192.55.52.88]:15840 "EHLO mga01.intel.com"
+	id S1753194Ab3LBJEO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 04:04:14 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49722 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751232Ab3LBJDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 04:03:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,809,1378882800"; 
-   d="scan'208";a="443027897"
-Date: Mon, 2 Dec 2013 11:02:53 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Sergei Ianovich <ynvich@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        "open list:SERIAL DRIVERS" <linux-serial@vger.kernel.org>
-Subject: Re: [PATCH 01/11] resolve PXA<->8250 serial device address conflict
-Message-ID: <20131202090253.GE3942@xps8300>
-References: <1385879185-22455-1-git-send-email-ynvich@gmail.com>
- <1385879185-22455-2-git-send-email-ynvich@gmail.com>
+	id S1751170Ab3LBJEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 04:04:11 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <dan.carpenter@oracle.com>, <linux-kernel@vger.kernel.org>,
+        <kishon@ti.com>
+CC: <gregkh@linuxfoundation.org>, <kernel-janitors@vger.kernel.org>,
+        <t.figa@samsung.com>, <balbi@ti.com>, <s.nawrocki@samsung.com>
+Subject: [PATCH v2] drivers: phy: tweaks to phy_create()
+Date: Mon, 2 Dec 2013 14:33:59 +0530
+Message-ID: <1385975039-31835-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385879185-22455-2-git-send-email-ynvich@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-On Sun, Dec 01, 2013 at 10:26:14AM +0400, Sergei Ianovich wrote:
-> PXA serial ports have "standard" UART names (ttyS[0-3]), major
-> device number (4) and first minor device number (64) by default.
-> 
-> If the system has extra 8250 serial port hardware in addition
-> to onboard PXA serial ports, default settings produce a device
-> allocation conflict.
-> 
-> The patch provides a configuration option which can move onboard
-> ports out of the way of 8250_core by assigning a different (204)
-> major number and corresponding device names (ttySA[0-3]).
-> 
-> Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
-> ---
->  drivers/tty/serial/Kconfig | 19 +++++++++++++++++++
->  drivers/tty/serial/pxa.c   | 22 ++++++++++++++++++----
->  2 files changed, 37 insertions(+), 4 deletions(-)
-> diff --git a/drivers/tty/serial/pxa.c b/drivers/tty/serial/pxa.c
+If this was called with a NULL "dev" then it lead to a NULL dereference
+when we called dev_WARN().  I have changed it to WARN_ON() so that we
+get a stack dump and can fix the caller.
 
-<snip>
+The rest of this patch is just cleanup like returning directly instead
+of having do-nothing gotos.  Using descriptive labels instead of
+GW-BASIC style "err0" and "err1".  I also flipped the order of
+put_device() and ida_remove() so they are a mirror reflection of the
+order they were allocated.
 
-> --- a/drivers/tty/serial/pxa.c
-> +++ b/drivers/tty/serial/pxa.c
-> @@ -593,6 +593,20 @@ serial_pxa_type(struct uart_port *port)
->  static struct uart_pxa_port *serial_pxa_ports[4];
->  static struct uart_driver serial_pxa_reg;
->  
-> +#ifndef CONFIG_SERIAL_PXA_AS_TTYSA
-> +
-> +#define PXA_TTY_NAME	"ttyS"
-> +#define PXA_TTY_MAJOR	TTY_MAJOR
-> +#define PXA_TTY_MINOR	64
-> +
-> +#else
-> +
-> +#define PXA_TTY_NAME	"ttySA"
-> +#define PXA_TTY_MAJOR	204
-> +#define PXA_TTY_MINOR	5
-> +
-> +#endif
-> +
->  #ifdef CONFIG_SERIAL_PXA_CONSOLE
->  
->  #define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
-> @@ -751,7 +765,7 @@ serial_pxa_console_setup(struct console *co, char *options)
->  }
->  
->  static struct console serial_pxa_console = {
-> -	.name		= "ttyS",
-> +	.name		= PXA_TTY_NAME,
->  	.write		= serial_pxa_console_write,
->  	.device		= uart_console_device,
->  	.setup		= serial_pxa_console_setup,
-> @@ -792,9 +806,9 @@ static struct uart_ops serial_pxa_pops = {
->  static struct uart_driver serial_pxa_reg = {
->  	.owner		= THIS_MODULE,
->  	.driver_name	= "PXA serial",
-> -	.dev_name	= "ttyS",
-> -	.major		= TTY_MAJOR,
-> -	.minor		= 64,
-> +	.dev_name	= PXA_TTY_NAME,
-> +	.major		= PXA_TTY_MAJOR,
-> +	.minor		= PXA_TTY_MINOR,
->  	.nr		= 4,
->  	.cons		= PXA_CONSOLE,
->  };
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+Changes from v1:
+rebased to git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git fixes
+since the original patch contains a fix which was already fixed.
 
-If drivers/tty/serial/pxa.c was converted to an other probe driver for
-the 8250, this would not be an issue.
+ drivers/phy/phy-core.c |   26 ++++++++++----------------
+ 1 file changed, 10 insertions(+), 16 deletions(-)
 
-Br,
-
+diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+index 712b358..58e0e97 100644
+--- a/drivers/phy/phy-core.c
++++ b/drivers/phy/phy-core.c
+@@ -437,23 +437,18 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+ 	int id;
+ 	struct phy *phy;
+ 
+-	if (!dev) {
+-		dev_WARN(dev, "no device provided for PHY\n");
+-		ret = -EINVAL;
+-		goto err0;
+-	}
++	if (WARN_ON(!dev))
++		return ERR_PTR(-EINVAL);
+ 
+ 	phy = kzalloc(sizeof(*phy), GFP_KERNEL);
+-	if (!phy) {
+-		ret = -ENOMEM;
+-		goto err0;
+-	}
++	if (!phy)
++		return ERR_PTR(-ENOMEM);
+ 
+ 	id = ida_simple_get(&phy_ida, 0, 0, GFP_KERNEL);
+ 	if (id < 0) {
+ 		dev_err(dev, "unable to get id\n");
+ 		ret = id;
+-		goto err1;
++		goto free_phy;
+ 	}
+ 
+ 	device_initialize(&phy->dev);
+@@ -468,11 +463,11 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+ 
+ 	ret = dev_set_name(&phy->dev, "phy-%s.%d", dev_name(dev), id);
+ 	if (ret)
+-		goto err2;
++		goto put_dev;
+ 
+ 	ret = device_add(&phy->dev);
+ 	if (ret)
+-		goto err2;
++		goto put_dev;
+ 
+ 	if (pm_runtime_enabled(dev)) {
+ 		pm_runtime_enable(&phy->dev);
+@@ -481,12 +476,11 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+ 
+ 	return phy;
+ 
+-err2:
+-	ida_remove(&phy_ida, phy->id);
++put_dev:
+ 	put_device(&phy->dev);
+-err1:
++	ida_remove(&phy_ida, phy->id);
++free_phy:
+ 	kfree(phy);
+-err0:
+ 	return ERR_PTR(ret);
+ }
+ EXPORT_SYMBOL_GPL(phy_create);
 -- 
-heikki
+1.7.10.4
+
