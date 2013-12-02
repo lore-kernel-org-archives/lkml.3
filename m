@@ -1,181 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab3LBTlY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:41:24 -0500
-Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:39669 "EHLO
-	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755517Ab3LBTlS (ORCPT
+	id S1755502Ab3LBTlL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:41:11 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:41522 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754979Ab3LBTkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:41:18 -0500
-Date: Mon, 2 Dec 2013 19:41:15 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Greg KH <greg@kroah.com>
-cc: Thomas Gleixner <tglx@linutronix.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Patrick McHardy <kaber@trash.net>, kadlec@blackhole.kfki.hu,
-        "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: netfilter: active obj WARN when cleaning up
-In-Reply-To: <20131202190814.GA2267@kroah.com>
-Message-ID: <00000142b4d4360c-5755af87-b9b0-4847-b5fa-7a9dd13b49c5-000000@email.amazonses.com>
-References: <alpine.DEB.2.02.1311271409280.30673@ionos.tec.linutronix.de> <20131127133231.GO16735@n2100.arm.linux.org.uk> <20131127134015.GA6011@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1311271443580.30673@ionos.tec.linutronix.de> <20131127233415.GB19270@kroah.com>
- <00000142b4282aaf-913f5e4c-314c-4351-9d24-615e66928157-000000@email.amazonses.com> <20131202164039.GA19937@kroah.com> <00000142b4514eb5-2e8f675d-0ecc-423b-9906-58c5f383089b-000000@email.amazonses.com> <20131202172615.GA4722@kroah.com>
- <00000142b4aeca89-186fc179-92b8-492f-956c-38a7c196d187-000000@email.amazonses.com> <20131202190814.GA2267@kroah.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 2 Dec 2013 14:40:33 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.12.02-54.240.9.70
+Date: Mon, 2 Dec 2013 14:40:33 -0500
+X-Google-Sender-Auth: 0l0BDnDLksJzuHkGdpX5XUJbwRk
+Message-ID: <CA+5PVA6Mh=tRM5h=TCbg5yjkkFUg2OncJmHBdtBhG7jqf377rg@mail.gmail.com>
+Subject: Nov. Fedora Kernel Patch Report
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Kernel Fedora <kernel@lists.fedoraproject.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Dec 2013, Greg KH wrote:
+A couple days late due to the holidays.  Here are the patches we
+currently have on top of 3.12.2:
 
-> No, the release callback is in the kobj_type, not the kobject itself.
+md-test-mddev-flags-more-safely-in-md_check_recovery.patch (rhbz 1033971)
+- In 3.13, should already be CC'd to stable
 
-Ahh... Ok. Patch follows:
+inet-prevent-leakage-of-uninitialized-memory-to-user.patch
+inet-fix-addr_len-msg_namelen-assignment-in-recv_error-and-rxpmtu-functions.patch
+(rhbz 1035875)
+- Should be heading to 3.13.  Fixes CVE-2013-6405
 
+usbnet-fix-status-interrupt-urb-handling.patch (rhbz 998342)
+- In 3.13
 
-Subject: slub: use sysfs'es release mechanism for kmem_cache
+via-velocity-fix-netif_receive_skb-use-in-irq-disable.patch (rhbz 1022733)
+- Submitted for 3.13 and CC'd to 3.12 stable
 
-Sysfs has a release mechanism. Use that to release the
-kmem_cache structure if CONFIG_SYSFS is enabled.
+xfs-underflow-bug-in-xfs_attrlist_by_handle.patch (rhbz 1033603)
+- Submitted and acked, but not queued
+http://thread.gmane.org/gmane.comp.file-systems.xfs.general/57654
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
+sunrpc-create-a-new-dummy-pipe-for-gssd-to-hold-open.patch
+sunrpc-replace-gssd_running-with-more-reliable-check.patch
+nfs-check-gssd-running-before-krb5i-auth.patch
+- These fix a 15 second NFS mount delay.  Should be headed upstream
+soonish (I think)
 
-Index: linux/include/linux/slub_def.h
-===================================================================
---- linux.orig/include/linux/slub_def.h	2013-12-02 13:31:07.395905824 -0600
-+++ linux/include/linux/slub_def.h	2013-12-02 13:31:07.385906101 -0600
-@@ -98,4 +98,8 @@ struct kmem_cache {
- 	struct kmem_cache_node *node[MAX_NUMNODES];
- };
+drm-radeon-24hz-audio-fixes.patch (rhbz 1010679)
+- Should be in 3.13
 
-+#ifdef CONFIG_SYSFS
-+#define SLAB_SUPPORTS_SYSFS
-+#endif
-+
- #endif /* _LINUX_SLUB_DEF_H */
-Index: linux/mm/slab.h
-===================================================================
---- linux.orig/mm/slab.h	2013-12-02 13:31:07.395905824 -0600
-+++ linux/mm/slab.h	2013-12-02 13:39:46.671476284 -0600
-@@ -57,6 +57,7 @@ struct mem_cgroup;
- struct kmem_cache *
- __kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
- 		   size_t align, unsigned long flags, void (*ctor)(void *));
-+void sysfs_slab_remove(struct kmem_cache *);
- #else
- static inline struct kmem_cache *
- __kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
-@@ -91,6 +92,7 @@ __kmem_cache_alias(struct mem_cgroup *me
- #define CACHE_CREATE_MASK (SLAB_CORE_FLAGS | SLAB_DEBUG_FLAGS | SLAB_CACHE_FLAGS)
+alx-Reset-phy-speed-after-resume.patch (rhbz 1011362)
+- In 3.13
 
- int __kmem_cache_shutdown(struct kmem_cache *);
-+void slab_kmem_cache_release(struct kmem_cache *);
+ip6_output-fragment-outgoing-reassembled-skb-properl.patch
+netfilter-push-reasm-skb-through-instead-of-original.patch (rhbz 1015905)
+- 3.13 and CC'd to stable
 
- struct seq_file;
- struct file;
-Index: linux/mm/slab_common.c
-===================================================================
---- linux.orig/mm/slab_common.c	2013-12-02 13:31:07.395905824 -0600
-+++ linux/mm/slab_common.c	2013-12-02 13:33:57.221186749 -0600
-@@ -251,6 +251,12 @@ kmem_cache_create(const char *name, size
- }
- EXPORT_SYMBOL(kmem_cache_create);
+ipv6-fix-headroom-calculation-in-udp6_ufo_fragment.patch (rhbz 1030015)
+- 3.13.  Fixes CVE-2013-4563
 
-+void slab_kmem_cache_release(struct kmem_cache *s)
-+{
-+		kfree(s->name);
-+		kmem_cache_free(kmem_cache, s);
-+}
-+
- void kmem_cache_destroy(struct kmem_cache *s)
- {
- 	/* Destroy all the children caches if we aren't a memcg cache */
-@@ -268,8 +274,12 @@ void kmem_cache_destroy(struct kmem_cach
- 				rcu_barrier();
+Input-evdev-fall-back-to-vmalloc-for-client-event-buffer.patch
+- Fixes high order allocations.  In 3.13
 
- 			memcg_release_cache(s);
--			kfree(s->name);
--			kmem_cache_free(kmem_cache, s);
-+#ifdef SLAB_SUPPORTS_SYSFS
-+			sysfs_slab_remove(s);
-+#else
-+			slab_kmem_cache_release();
-+
-+#endif
- 		} else {
- 			list_add(&s->list, &slab_caches);
- 			mutex_unlock(&slab_mutex);
-Index: linux/mm/slub.c
-===================================================================
---- linux.orig/mm/slub.c	2013-12-02 13:31:07.395905824 -0600
-+++ linux/mm/slub.c	2013-12-02 13:35:44.208213810 -0600
-@@ -210,7 +210,6 @@ enum track_item { TRACK_ALLOC, TRACK_FRE
- #ifdef CONFIG_SYSFS
- static int sysfs_slab_add(struct kmem_cache *);
- static int sysfs_slab_alias(struct kmem_cache *, const char *);
--static void sysfs_slab_remove(struct kmem_cache *);
- static void memcg_propagate_slab_attrs(struct kmem_cache *s);
- #else
- static inline int sysfs_slab_add(struct kmem_cache *s) { return 0; }
-@@ -3208,23 +3207,7 @@ static inline int kmem_cache_close(struc
+drm-qxl-backport-fixes-for-Fedora.patch
+drm-qxl-fix-memory-leak-in-release-list-handling.patch
+- Various QXL fixes Dave Airlied thought would be good to have.  In 3.13
 
- int __kmem_cache_shutdown(struct kmem_cache *s)
- {
--	int rc = kmem_cache_close(s);
--
--	if (!rc) {
--		/*
--		 * We do the same lock strategy around sysfs_slab_add, see
--		 * __kmem_cache_create. Because this is pretty much the last
--		 * operation we do and the lock will be released shortly after
--		 * that in slab_common.c, we could just move sysfs_slab_remove
--		 * to a later point in common code. We should do that when we
--		 * have a common sysfs framework for all allocators.
--		 */
--		mutex_unlock(&slab_mutex);
--		sysfs_slab_remove(s);
--		mutex_lock(&slab_mutex);
--	}
--
--	return rc;
-+	return kmem_cache_close(s);
- }
+cpupower-Fix-segfault-due-to-incorrect-getopt_long-a.patch (rhbz 1000439)
+- Queued for next upstream release I believe.  Fixes a segfault in cpupower
 
- /********************************************************************
-@@ -5073,6 +5056,11 @@ static void memcg_propagate_slab_attrs(s
- #endif
- }
+dm-cache-policy-mq_fix-large-scale-table-allocation-bug.patch (rhbz 993744)
+- Still pending upstream
 
-+static void kmem_cache_release(struct kobject *k)
-+{
-+	slab_kmem_cache_release(to_slab(k));
-+}
-+
- static const struct sysfs_ops slab_sysfs_ops = {
- 	.show = slab_attr_show,
- 	.store = slab_attr_store,
-@@ -5080,6 +5068,7 @@ static const struct sysfs_ops slab_sysfs
+0002-iwlwifi-don-t-WARN-on-bad-firmware-state.patch (rhbz 896695)
+- Still pending upstream
 
- static struct kobj_type slab_ktype = {
- 	.sysfs_ops = &slab_sysfs_ops,
-+	.release = kmem_cache_release,
- };
+vfio-iommu-Fixed-interaction-of-VFIO_IOMMU_MAP_DMA.patch (rhbz 998732)
+- In 3.13
 
- static int uevent_filter(struct kset *kset, struct kobject *kobj)
-@@ -5184,7 +5173,7 @@ static int sysfs_slab_add(struct kmem_ca
- 	return 0;
- }
+iommu-Remove-stack-trace-from-broken-irq-remapping-warning.patch (rhbz 982153)
+- In 3.13
 
--static void sysfs_slab_remove(struct kmem_cache *s)
-+void sysfs_slab_remove(struct kmem_cache *s)
- {
- 	if (slab_state < FULL)
- 		/*
+rt2800-add-support-for-rf3070.patch (rhbz 974072)
+- In 3.13
+
+elevator-Fix-a-race-in-elevator-switching-and-md.patch
+elevator-acquire-q-sysfs_lock-in-elevator_change.patch (rhbz 902012)
+- In 3.13
+
+ntp-Make-periodic-RTC-update-more-reliable.patch (rhbz 985522)
+- In 3.13
+
+secure-modules.patch
+modsign-uefi.patch
+sb-hibernate.patch
+sysrq-secure-boot.patch
+  - Fedora secure boot support.
+  - Dear Matthew, this is your fault.  Run sed already and get a new set out.
+
+keys-expand-keyring.patch
+keys-krb-support.patch
+keys-x509-improv.patch
+keyring-quota.patch
+- These are all in 3.13 now.  Yay.
