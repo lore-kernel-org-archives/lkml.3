@@ -1,21 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757562Ab3LBUXL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:23:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39083 "EHLO
+	id S1757530Ab3LBUXA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:23:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39102 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753580Ab3LBTRH (ORCPT
+	with ESMTP id S1753605Ab3LBTRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:07 -0500
+	Mon, 2 Dec 2013 14:17:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roel Kluin <roel.kluin@gmail.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.12 030/212] pinctrl: dove: unset twsi option3 for gconfig as well
-Date: Mon,  2 Dec 2013 11:13:41 -0800
-Message-Id: <20131202191251.943811900@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Michel Lespinasse <walken@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>, Paul Mundt <lethal@linux-sh.org>,
+        Theodore Tso <tytso@mit.edu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 032/212] rbtree: fix rbtree_postorder_for_each_entry_safe() iterator
+Date: Mon,  2 Dec 2013 11:13:43 -0800
+Message-Id: <20131202191252.134198880@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -28,31 +37,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roel Kluin <roel.kluin@gmail.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 6d0a4ed2b90a12e1403d3e7d9d8c2cc7fdc301b5 upstream.
+commit 1310a5a99d900ee30b9f171146406bde0c6c2bd4 upstream.
 
-This fixes a typo which left twsi config3 option enabled.
+The iterator rbtree_postorder_for_each_entry_safe() relies on pointer
+underflow behavior when testing for loop termination.  In particular it
+expects that
 
-Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
-Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+  &rb_entry(NULL, type, field)->field
+
+is NULL.  But the result of this expression is not defined by a C standard
+and some gcc versions (e.g.  4.3.4) assume the above expression can never
+be equal to NULL.  The net result is an oops because the iteration is not
+properly terminated.
+
+Fix the problem by modifying the iterator to avoid pointer underflows.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pinctrl/mvebu/pinctrl-dove.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/rbtree.h |   16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
---- a/drivers/pinctrl/mvebu/pinctrl-dove.c
-+++ b/drivers/pinctrl/mvebu/pinctrl-dove.c
-@@ -335,7 +335,7 @@ static int dove_twsi_ctrl_set(struct mve
- 	unsigned long gcfg2 = readl(DOVE_GLOBAL_CONFIG_2);
+--- a/include/linux/rbtree.h
++++ b/include/linux/rbtree.h
+@@ -85,6 +85,11 @@ static inline void rb_link_node(struct r
+ 	*rb_link = node;
+ }
  
- 	gcfg1 &= ~DOVE_TWSI_ENABLE_OPTION1;
--	gcfg2 &= ~(DOVE_TWSI_ENABLE_OPTION2 | DOVE_TWSI_ENABLE_OPTION2);
-+	gcfg2 &= ~(DOVE_TWSI_ENABLE_OPTION2 | DOVE_TWSI_ENABLE_OPTION3);
++#define rb_entry_safe(ptr, type, member) \
++	({ typeof(ptr) ____ptr = (ptr); \
++	   ____ptr ? rb_entry(____ptr, type, member) : NULL; \
++	})
++
+ /**
+  * rbtree_postorder_for_each_entry_safe - iterate over rb_root in post order of
+  * given type safe against removal of rb_node entry
+@@ -95,12 +100,9 @@ static inline void rb_link_node(struct r
+  * @field:	the name of the rb_node field within 'type'.
+  */
+ #define rbtree_postorder_for_each_entry_safe(pos, n, root, field) \
+-	for (pos = rb_entry(rb_first_postorder(root), typeof(*pos), field),\
+-		n = rb_entry(rb_next_postorder(&pos->field), \
+-			typeof(*pos), field); \
+-	     &pos->field; \
+-	     pos = n, \
+-		n = rb_entry(rb_next_postorder(&pos->field), \
+-			typeof(*pos), field))
++	for (pos = rb_entry_safe(rb_first_postorder(root), typeof(*pos), field); \
++	     pos && ({ n = rb_entry_safe(rb_next_postorder(&pos->field), \
++			typeof(*pos), field); 1; }); \
++	     pos = n)
  
- 	switch (config) {
- 	case 1:
+ #endif	/* _LINUX_RBTREE_H */
 
 
