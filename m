@@ -1,105 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736Ab3LBPGD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 10:06:03 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:54300 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041Ab3LBPGA (ORCPT
+	id S1752050Ab3LBPKi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 10:10:38 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:53406 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab3LBPKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 10:06:00 -0500
-Subject: Re: [PATCH 1/3] perf tools: Record total sampling time
-From: Namhyung Kim <namhyung@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <20131202124527.GB22212@gmail.com>
-References: <1385967199-3759-1-git-send-email-namhyung@kernel.org>
-	 <1385967199-3759-2-git-send-email-namhyung@kernel.org>
-	 <20131202124527.GB22212@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 03 Dec 2013 00:05:49 +0900
-Message-ID: <1385996749.1710.34.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-Content-Transfer-Encoding: 8bit
+	Mon, 2 Dec 2013 10:10:33 -0500
+Message-ID: <529CA219.20109@linux.vnet.ibm.com>
+Date: Mon, 02 Dec 2013 20:37:05 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: fweisbec@gmail.com, paul.gortmaker@windriver.com, paulus@samba.org,
+        shangw@linux.vnet.ibm.com, rjw@sisk.pl, paulmck@linux.vnet.ibm.com,
+        arnd@arndb.de, linux-pm@vger.kernel.org, rostedt@goodmis.org,
+        michael@ellerman.id.au, john.stultz@linaro.org,
+        chenhui.zhao@freescale.com, deepthi@linux.vnet.ibm.com,
+        r58472@freescale.com, geoff@infradead.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH V4 7/9] cpuidle/powernv: Add "Fast-Sleep" CPU idle state
+References: <20131129104010.651.23117.stgit@preeti.in.ibm.com> <20131129104319.651.29563.stgit@preeti.in.ibm.com> <alpine.DEB.2.02.1311291301300.30673@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1311291301300.30673@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120215-1542-0000-0000-000003CE9702
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+Hi Thomas,
 
-2013-12-02 (월), 13:45 +0100, Ingo Molnar:
-> * Namhyung Kim <namhyung@kernel.org> wrote:
+On 11/29/2013 08:09 PM, Thomas Gleixner wrote:
+> On Fri, 29 Nov 2013, Preeti U Murthy wrote:
+>> +static enum hrtimer_restart handle_broadcast(struct hrtimer *hrtimer)
+>> +{
+>> +	struct clock_event_device *bc_evt = &bc_timer;
+>> +	ktime_t interval, next_bc_tick, now;
+>> +
+>> +	now = ktime_get();
+>> +
+>> +	if (!restart_broadcast(bc_evt))
+>> +		return HRTIMER_NORESTART;
+>> +
+>> +	interval = ktime_sub(bc_evt->next_event, now);
+>> +	next_bc_tick = get_next_bc_tick();
 > 
-> > From: Namhyung Kim <namhyung.kim@lge.com>
-> > 
-> > It's sometimes useful to see total sampling or elapsed time with
-> > normal performance result.  To do that, record first and last sample
-> > time for each evsel and to display it in the header (--stdio only for
-> > now).
-> > 
-> >   $ perf record -a sleep 1
-> >   $ perf report --stdio
-> >   ...
-> >   # Samples: 4K of event 'cycles'
-> >   # Event count (approx.): 4087481688
-> >   # Total sampling time  : 1.001260 (sec)
+> So you're seriously using a hrtimer to poll in HZ frequency for
+> updates of bc->next_event?
 > 
-> Btw., would it make sense to output it using the 'perf stat' print-out 
-> machinery?
+> To be honest, this design sucks.
 > 
-> If the 'count' of every event sampled is saved in the perf.data, 
-> including elapsed time, at the beginning and at the end, then all 
-> information is there to output things in perf stat style.
-
-Yeah, it'd be great if we can share same code in the end.
-
+> First of all, why is this a PPC specific feature? There are probably
+> other architectures which could make use of this. So this should be
+> implemented in the core code to begin with.
 > 
-> ( It might even make sense to save two more timestamps: rusage stime
->   and utime - that way the output could be made /usr/bin/time-alike. )
-
-Hmm.. I think I can do it by adding time info according to a cpumode in
-a sample.
-
+> And a lot of the things you need for this are already available in the
+> core in one form or the other.
 > 
-> Also I think there is some related existing functionality, I think 
-> Stephane added a way to essentially do non-sampling 'perf stat' via 
-> perf record - but the details escape me, I think it was related to the 
-> -n option?
-
-I have no idea about the perf record -n/--no-samples option.  It looks
-like something related to task stat?
-
-  commit 649c48a9e7fafcc72bfcc99471d9dea98d789d59
-  Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-  Date:   Wed Jun 24 21:12:48 2009 +0200
-  
-      perf-report: Add modes for inherited stats and no-samples
-      
-      Now that we can collect per task statistics, add modes that
-      make use of that facility.
-      
-      Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-      LKML-Reference: <new-submission>
-      Signed-off-by: Ingo Molnar <mingo@elte.hu>
-
-
-But everytime I tried to use it, perf report always complained about the
-file has no samples.. :-/
-
+> For a start you can stick the broadcast hrtimer to the cpu which does
+> the timekeeping. The handover in the hotplug case is handled there as
+> well as is the handover for the NOHZ case.
 > 
-> So what we want here is in essence a sampling mode that can record and 
-> report all the absolute counts as well.
+> This needs to be extended for this hrtimer broadcast thingy to work,
+> but it shouldn't be that hard to do so.
+> 
+> Now for the polling. That's a complete trainwreck.
+> 
+> This can be solved via the broadcast IPI as well. When a CPU which
+> goes down into deep idle sets the broadcast to expire earlier than the
+> active value it can denote that and send the timer broadcast IPI over
+> to the CPU which has the honour of dealing with this.
+> 
+> This supports HIGHRES and NO_HZ if done right, without polling at
+> all. So you can even let the last CPU which handles the broadcast
+> hrtimer go for a long sleep, just not in the deepest idle state.
 
-Agreed.
+Thank you for the review. The above points are all valid. I will rework
+the design to:
 
-Thanks,
-Namhyung
+1. Eliminate the concept of a broadcast CPU and integrate its
+functionality in the timekeeping CPU.
 
+2. Avoid polling by using IPIs to communicate the next wakeup of the
+CPUs in deep idle state so as to reprogram the broadcast hrtimer.
+
+3. Make this feature generic and not arch-specific.
+
+Regards
+Preeti U Murthy
+> 
+> Thanks,
+> 
+> 	tglx
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+> 
 
