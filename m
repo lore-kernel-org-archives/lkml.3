@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab3LBCw3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 21:52:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59984 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552Ab3LBCw1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752872Ab3LBCwf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 21:52:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65511 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752828Ab3LBCw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 1 Dec 2013 21:52:27 -0500
-Date: Sun, 1 Dec 2013 18:53:25 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-usb <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v1 1/2] lib/scatterlist: export sg_miter_skip()
-Message-ID: <20131202025325.GA14274@kroah.com>
-References: <1385441017-5773-1-git-send-email-ming.lei@canonical.com>
- <20131129222327.GK21755@mtj.dyndns.org>
- <CACVXFVMHsZO670rjMNcbWfutLSQv=YwkfN6_vc2WO8v2ie1t6w@mail.gmail.com>
+Date: Mon, 2 Dec 2013 10:51:41 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.infradead.org, greg@kroah.com, toshi.kani@hp.com
+Subject: Re: [PATCH v4 06/12] efi: export efi runtime memory mapping to sysfs
+Message-ID: <20131202025141.GE3999@dhcp-16-126.nay.redhat.com>
+References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
+ <1385445477-9665-7-git-send-email-dyoung@redhat.com>
+ <20131127114402.GB32267@pd.tnic>
+ <20131129094034.GI4186@dhcp-16-126.nay.redhat.com>
+ <20131129115029.GB4266@pd.tnic>
+ <20131129115953.GD11775@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACVXFVMHsZO670rjMNcbWfutLSQv=YwkfN6_vc2WO8v2ie1t6w@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20131129115953.GD11775@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 10:11:21AM +0800, Ming Lei wrote:
-> On Sat, Nov 30, 2013 at 6:23 AM, Tejun Heo <tj@kernel.org> wrote:
-> > On Tue, Nov 26, 2013 at 12:43:37PM +0800, Ming Lei wrote:
-> >> sg_copy_buffer() can't meet demand for some drrivers(such usb
-> >> mass storage), so we have to use the sg_miter_* APIs to access
-> >> sg buffer, then need export sg_miter_skip() for these drivers.
-> >>
-> >> The API is needed for converting to sg_miter_* APIs in USB storage
-> >> driver for accessing sg buffer.
-> >>
-> >> Acked-by: Andrew Morton <akpm@linux-foundation.org>
-> >> Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> >> Cc: Tejun Heo <tj@kernel.org>
-> >> Cc: Jens Axboe <axboe@kernel.dk>
-> >> Signed-off-by: Ming Lei <ming.lei@canonical.com>
-> >
-> > Reviewed-by: Tejun Heo <tj@kernel.org>
-> 
-> Thanks.
-> 
-> > I suppose this should go through -mm?
-> 
-> Last round, Andrew said it can be though whatever tree, so
-> given dependency reason, it is better to merge via greg's tree.
-> 
-> Greg, could you merge these two patches via your usb-next tree?
+On 11/29/13 at 11:59am, Matt Fleming wrote:
+> On Fri, 29 Nov, at 12:50:29PM, Borislav Petkov wrote:
+> > > I did not add KEXEC because I thought it can be used for debugging
+> > > purpose.
+> > 
+> > mfleming is thinking about it :)
+>  
+> I finally finished my thought. The sysfs code should be automatically
+> enabled only if CONFIG_KEXEC is enabled, and not on my default because
+> it is a debug interface. While it's true that the code may be useful for
+> debugging the memory mappings of EFI systems, it doesn't make sense to
+> always turn it on just for CONFIG_X86 and CONFIG_EFI.
 
-Yes, will do.
+Ok, will enable it only for CONFIG_X86 and CONFIG_EFI and CONFIG_KEXEC
+
+> 
+> -- 
+> Matt Fleming, Intel Open Source Technology Center
