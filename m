@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab3LBTRY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:17:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39017 "EHLO
+	id S1756495Ab3LBUS5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:18:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39148 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518Ab3LBTQ7 (ORCPT
+	with ESMTP id S1753114Ab3LBTRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:16:59 -0500
+	Mon, 2 Dec 2013 14:17:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Phil Edworthy <phil.edworthy@renesas.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.12 019/212] ASoC: ak4642: prevent un-necessary changes to SG_SL1
-Date: Mon,  2 Dec 2013 11:13:30 -0800
-Message-Id: <20131202191250.832802261@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.12 043/212] gpio: msm: make msm_gpio.summary_irq signed for error handling
+Date: Mon,  2 Dec 2013 11:13:54 -0800
+Message-Id: <20131202191253.158714828@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -28,34 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Phil Edworthy <phil.edworthy@renesas.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 7b5bfb82882b9b1c8423ce0ed6852ca3762d967a upstream.
+commit bfea603bc54c0a736d45bc60b188a8cdae9aaaa3 upstream.
 
-If you record the sound during playback,
-the playback sound becomes silent.
-Modify so that the codec driver does not clear
-SG_SL1::DACL bit which is controlled under widget
+There is a bug in msm_gpio_probe() where we do:
 
-Signed-off-by: Phil Edworthy <phil.edworthy@renesas.com>
-Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+	msm_gpio.summary_irq = platform_get_irq(pdev, 0);
+	if (msm_gpio.summary_irq < 0) {
+
+The problem is that "msm_gpio.summary_irq" is unsigned so the error
+handling doesn't work.  I've fixed it by making it signed.
+
+Fixes: 43f68444bce7 ('gpio: msm: Add device tree and irqdomain support for gpio-msm-v2')
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/ak4642.c |    2 +-
+ drivers/gpio/gpio-msm-v2.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/ak4642.c
-+++ b/sound/soc/codecs/ak4642.c
-@@ -257,7 +257,7 @@ static int ak4642_dai_startup(struct snd
- 		 * This operation came from example code of
- 		 * "ASAHI KASEI AK4642" (japanese) manual p94.
- 		 */
--		snd_soc_write(codec, SG_SL1, PMMP | MGAIN0);
-+		snd_soc_update_bits(codec, SG_SL1, PMMP | MGAIN0, PMMP | MGAIN0);
- 		snd_soc_write(codec, TIMER, ZTM(0x3) | WTM(0x3));
- 		snd_soc_write(codec, ALC_CTL1, ALC | LMTH0);
- 		snd_soc_update_bits(codec, PW_MGMT1, PMADL, PMADL);
+--- a/drivers/gpio/gpio-msm-v2.c
++++ b/drivers/gpio/gpio-msm-v2.c
+@@ -102,7 +102,7 @@ struct msm_gpio_dev {
+ 	DECLARE_BITMAP(wake_irqs, MAX_NR_GPIO);
+ 	DECLARE_BITMAP(dual_edge_irqs, MAX_NR_GPIO);
+ 	struct irq_domain *domain;
+-	unsigned int summary_irq;
++	int summary_irq;
+ 	void __iomem *msm_tlmm_base;
+ };
+ 
 
 
