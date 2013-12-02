@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755952Ab3LBTiS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:38:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39609 "EHLO
+	id S1755966Ab3LBTiV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:38:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39577 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754918Ab3LBTSu (ORCPT
+	with ESMTP id S1754904Ab3LBTSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:50 -0500
+	Mon, 2 Dec 2013 14:18:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Forest Bond <forest.bond@rapidrollout.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
         Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.12 169/212] HID: dont ignore eGalax/D-Wav/EETI HIDs
-Date: Mon,  2 Dec 2013 11:16:00 -0800
-Message-Id: <20131202191306.882625573@linuxfoundation.org>
+Subject: [PATCH 3.12 179/212] HID: hid-sensor-hub: fix report size
+Date: Mon,  2 Dec 2013 11:16:10 -0800
+Message-Id: <20131202191308.387638867@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,77 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Forest Bond <forest.bond@rapidrollout.com>
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 
-commit 95d50b6c5e18ff7351c5f2a6ff53afaed5f7e664 upstream.
+commit d4b1bba76171cb783e32441b28462fe841073ed8 upstream.
 
-Certain devices with class HID, protocol None did not work with the HID
-driver at one point, and as a result were bound to usbtouchscreen
-instead as of commit 139ebe8 ("Input: usbtouchscreen - fix eGalax HID
-ignoring").  This change was prompted by the following report:
+Most of the hid sensor field size is reported in report_size field
+in the report descriptor. For rotation fusion sensor the quaternion
+data is 16 byte field, the report size was set to 4 and report
+count field is set to 4. So the total size is 16 bytes. But the current
+driver has a bug and not taking account for report count field. This
+causes user space to see only 4 bytes of data sent via IIO interface.
+The number of bytes in a field needs to take account of report_count
+field. Need to multiply report_size and report_count to get total
+number of bytes.
 
-https://lkml.org/lkml/2009/1/25/127
-
-Unfortunately, the device mentioned in this report is no longer
-available for testing.
-
-We've recently discovered that some devices with class HID, protocol
-None do not work with usbtouchscreen, but do work with usbhid.  Here is
-the report that made this evident:
-
-http://comments.gmane.org/gmane.linux.kernel.input/31710
-
-Driver binding for these devices has flip-flopped a few times, so both
-of the above reports were regressions.
-
-This situation would appear to leave us with no easy way to bind every
-device to the right driver.  However, in my own testing with several
-devices I have not found a device with class HID that does not work with
-the current HID driver.  It is my belief that changes to the HID driver
-since the original report have likely fixed the issue(s) that made it
-unsuitable at the time, and that we should prefer it over usbtouchscreen
-for these devices.  In particular, HID quirks affecting these devices
-were added/removed in the following commits since then:
-
-fe6065d HID: add multi-input quirk for eGalax Touchcontroller
-77933c3 Merge branch 'egalax' into for-linus
-ebd11fe HID: Add quirk for eGalax touch controler.
-d34c4aa HID: add no-get quirk for eGalax touch controller
-
-This patch makes the HID driver no longer ignore eGalax/D-Wav/EETI
-devices with class HID.  If there are in fact devices with class HID
-that still do not work with the HID driver, we will see another round of
-regressions.  In that case I propose we investigate why the device is
-not working with the HID driver rather than re-introduce regressions for
-functioning HID devices by again binding them to usbtouchscreen.
-
-The corresponding change to usbtouchscreen will be made separately.
-
-Signed-off-by: Forest Bond <forest.bond@rapidrollout.com>
+Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-core.c |    9 ---------
- 1 file changed, 9 deletions(-)
+ drivers/hid/hid-sensor-hub.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -2376,15 +2376,6 @@ bool hid_ignore(struct hid_device *hdev)
- 				hdev->type == HID_TYPE_USBNONE)
- 			return true;
- 		break;
--	case USB_VENDOR_ID_DWAV:
--		/* These are handled by usbtouchscreen. hdev->type is probably
--		 * HID_TYPE_USBNONE, but we say !HID_TYPE_USBMOUSE to match
--		 * usbtouchscreen. */
--		if ((hdev->product == USB_DEVICE_ID_EGALAX_TOUCHCONTROLLER ||
--		     hdev->product == USB_DEVICE_ID_DWAV_TOUCHCONTROLLER) &&
--		    hdev->type != HID_TYPE_USBMOUSE)
--			return true;
--		break;
- 	case USB_VENDOR_ID_VELLEMAN:
- 		/* These are not HID devices.  They are handled by comedi. */
- 		if ((hdev->product >= USB_DEVICE_ID_VELLEMAN_K8055_FIRST &&
+--- a/drivers/hid/hid-sensor-hub.c
++++ b/drivers/hid/hid-sensor-hub.c
+@@ -326,7 +326,8 @@ int sensor_hub_input_get_attribute_info(
+ 				field->logical == attr_usage_id) {
+ 				sensor_hub_fill_attr_info(info, i, report->id,
+ 					field->unit, field->unit_exponent,
+-					field->report_size);
++					field->report_size *
++							field->report_count);
+ 				ret = 0;
+ 			} else {
+ 				for (j = 0; j < field->maxusage; ++j) {
+@@ -338,7 +339,8 @@ int sensor_hub_input_get_attribute_info(
+ 							i, report->id,
+ 							field->unit,
+ 							field->unit_exponent,
+-							field->report_size);
++							field->report_size *
++							field->report_count);
+ 						ret = 0;
+ 						break;
+ 					}
+@@ -425,9 +427,10 @@ static int sensor_hub_raw_event(struct h
+ 		hid_dbg(hdev, "%d collection_index:%x hid:%x sz:%x\n",
+ 				i, report->field[i]->usage->collection_index,
+ 				report->field[i]->usage->hid,
+-				report->field[i]->report_size/8);
+-
+-		sz = report->field[i]->report_size/8;
++				(report->field[i]->report_size *
++					report->field[i]->report_count)/8);
++		sz = (report->field[i]->report_size *
++					report->field[i]->report_count)/8;
+ 		if (pdata->pending.status && pdata->pending.attr_usage_id ==
+ 				report->field[i]->usage->hid) {
+ 			hid_dbg(hdev, "data was pending ...\n");
 
 
