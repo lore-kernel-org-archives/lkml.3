@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab3LBT0s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:26:48 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:64273 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755420Ab3LBT0I (ORCPT
+	id S1755460Ab3LBT1E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:27:04 -0500
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:41536 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754478Ab3LBT06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:26:08 -0500
-Date: Mon, 2 Dec 2013 20:26:03 +0100
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: backports@vger.kernel.or
-Cc: linux-kernel@vger.kernel.org
-Subject: [ANN] New central Linux backports tree for development
-Message-ID: <20131202192603.GA15791@cerro.do-not-panic.com>
+	Mon, 2 Dec 2013 14:26:58 -0500
+Date: Mon, 2 Dec 2013 16:26:51 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 06/29] tools lib traceevent: Add jbd2 plugin
+Message-ID: <20131202192651.GB17149@ghostprotocols.net>
+References: <1385638408-23519-1-git-send-email-jolsa@redhat.com>
+ <1385638408-23519-7-git-send-email-jolsa@redhat.com>
+ <20131129184235.GA12850@ghostprotocols.net>
+ <20131129193113.GA13490@ghostprotocols.net>
+ <20131130164921.GC1228@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ew6BAiZeqk4r7MaW"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20131130164921.GC1228@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Sat, Nov 30, 2013 at 05:49:21PM +0100, Jiri Olsa escreveu:
+> On Fri, Nov 29, 2013 at 04:31:13PM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Fri, Nov 29, 2013 at 03:42:35PM -0300, Arnaldo Carvalho de Melo escreveu:
+> > Also I just tried:
 
---ew6BAiZeqk4r7MaW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> > [acme@ssdandy linux]$ git log --oneline | head -7
+> > b0496b02fcea tools lib traceevent: Add hrtimer plugin
+> > 1ec7a71e0b2c tools lib traceevent: Add jbd2 plugin
+> > c63100c95c6e tools lib traceevent: Add traceevent_host_bigendian function
+> > d54b335656b7 tools lib traceevent: Add plugin build support
+> > e796a0d73bcc tools lib traceevent: Add plugin support
+> > 28c803842250 perf tools: Include test-stackprotector-all.c in test-all
+> > 1a69f6ce513d perf timechart: Move wake_events list to 'struct timechart'
+> > [acme@ssdandy linux]$ 
 
-First, thanks *tons* to Hauke for taking over the tree maintenance
-while I was shackled. I'm back now though and ready to help
-out again, so keep 'em patches 'comin.
+> > [acme@ssdandy linux]$ time make O=/tmp/build/perf -C tools/perf/ install
+> > <SNIP successful build>
 
-It was convenient to switch maintenance between me and Hauke but
-it was an *inconvenience* to tell developers about a different repo
-switch during development, as such we now have a central repository
-which you should use and update your trees *one last time*:
+> > [acme@ssdandy linux]$ ls -la ~/.traceevent
+> > ls: cannot access /home/acme/.traceevent: No such file or directory
+> > [acme@ssdandy linux]$
 
-git://git.kernel.org/pub/scm/linux/kernel/git/backports/backports.git
+> > Where did the plugins go? At least two should be there by now, no?
+ 
+> At this stage (patches applied) you'd need to run the make for
+> traceevent directory.
+ 
+> The perf installation link is done within this patch:
+>     perf tools: Add build and install plugins targets
+ 
+> which I presume you haven't applied yet? 
 
-Please use this moving forward, if we ever need to switch who is
-maintaining the trees this should hopefully be fully transparent to
-development.
+No I haven't, and I expected that I could test it straight away, so I
+suggest you reorder the patches so that, right after the first plugin is
+introduced a:
 
-  Luis
+  make -C tools/perf install
 
---ew6BAiZeqk4r7MaW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+in all its variants (in place, with O=, etc) allows one to test it.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSnN7LAAoJELt3oFG5aZ5Lb/oP/2trpgwJ7o5z61KdVC84uR9X
-XWr39Oqs7Xew36eLhKF140f2q6xkr12dAcsvVYKAX6UYpkoKNOrW9TfmnqnLUAE+
-Nvv/euVZrI9Q8pbq5ENFc4w5EstDBJH6EwSAxjV9onH0JLKGX/WjisCopB/YxLtQ
-j+O5X44G6xV/csIbYoy1yohmUsQKrSeMog+gCxEHujyaWVAQoxgXTucoUVUzr8tx
-H7rrlEoqq/AeZ6WfnTdIrSArdmPNksOqg6FIGiXB8X3bEdi65RWcXPRu3FszwQwC
-y/3M6HIWgQNJwZCk/FWxV+dQtHXBgSC+B0iQY98/1/uE+nTD2gKOSflYGD8KYTsy
-+Un4V3BKg17rrJ65dRoATvzXOwCSf63o++EDTeH9luvJKFWT5cFlWh0+yBAHO0KJ
-sXFthwOfpKwFbMU/L4OCiuCURbHBMd1zVwzumzEhJ0zvOItfnglguqONE9Dqj9X/
-OKyA+e2I2jIqDYSetllcOUCbJWUKiL8ROsaN11bg+cmL93hVdAc5zKWi4X1aYVQ3
-AwNe3QsI45jU1QfiMID7iNGp45vR+Mxie8frfibyea5aUKGyaBHanNAaPDzl1H5v
-T9bOzQnuARSo40ThWf37dRzaAfnneOS5hnKAcnXTD/t+diIopwYLKs9QY6kHeTM2
-OOT0hZgSDD2gSrrnN0Ji
-=gbm0
------END PGP SIGNATURE-----
-
---ew6BAiZeqk4r7MaW--
+- Arnaldo
