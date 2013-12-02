@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756246Ab3LBTtC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:49:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39510 "EHLO
+	id S1754799Ab3LBTS2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:18:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39464 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753702Ab3LBTSa (ORCPT
+	with ESMTP id S1753470Ab3LBTSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:30 -0500
+	Mon, 2 Dec 2013 14:18:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.12 139/212] drm/radeon: adjust TN dpm parameters for stability (v2)
-Date: Mon,  2 Dec 2013 11:15:30 -0800
-Message-Id: <20131202191302.587322685@linuxfoundation.org>
+        Roel Kluin <roel.kluin@gmail.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 3.12 116/212] tty: incorrect test of echo_buf() result for ECHO_OP_START
+Date: Mon,  2 Dec 2013 11:15:07 -0800
+Message-Id: <20131202191300.149346497@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,40 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Roel Kluin <roel.kluin@gmail.com>
 
-commit 958b84fb3bef193198538b5c5902fa687cc8363f upstream.
+commit c476f6584b0011741b4f0316f1ac4aa3a99403e1 upstream.
 
-Adjust some of the TN dpm settings for stability.  Enabling
-these features causes hangs and other stability problems
-on certain boards.
+test echo_buf() result for ECHO_OP_START
 
-v2: leave uvd dpm enabled
-
-Bug:
-https://bugzilla.kernel.org/show_bug.cgi?id=63101
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+Acked-by: Peter Hurley <peter@hurleysoftware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/trinity_dpm.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/tty/n_tty.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/trinity_dpm.c
-+++ b/drivers/gpu/drm/radeon/trinity_dpm.c
-@@ -1873,9 +1873,9 @@ int trinity_dpm_init(struct radeon_devic
- 	pi->enable_sclk_ds = true;
- 	pi->enable_gfx_power_gating = true;
- 	pi->enable_gfx_clock_gating = true;
--	pi->enable_mg_clock_gating = true;
--	pi->enable_gfx_dynamic_mgpg = true; /* ??? */
--	pi->override_dynamic_mgpg = true;
-+	pi->enable_mg_clock_gating = false;
-+	pi->enable_gfx_dynamic_mgpg = false;
-+	pi->override_dynamic_mgpg = false;
- 	pi->enable_auto_thermal_throttling = true;
- 	pi->voltage_drop_in_dce = false; /* need to restructure dpm/modeset interaction */
- 	pi->uvd_dpm = true; /* ??? */
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -767,7 +767,7 @@ static size_t __process_echoes(struct tt
+ 	 * of echo overrun before the next commit), then discard enough
+ 	 * data at the tail to prevent a subsequent overrun */
+ 	while (ldata->echo_commit - tail >= ECHO_DISCARD_WATERMARK) {
+-		if (echo_buf(ldata, tail == ECHO_OP_START)) {
++		if (echo_buf(ldata, tail) == ECHO_OP_START) {
+ 			if (echo_buf(ldata, tail) == ECHO_OP_ERASE_TAB)
+ 				tail += 3;
+ 			else
 
 
