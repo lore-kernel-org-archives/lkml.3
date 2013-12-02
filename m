@@ -1,94 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758601Ab3LBUvQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:51:16 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34510 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755755Ab3LBUvL (ORCPT
+	id S1758619Ab3LBUvu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:51:50 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54081 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758552Ab3LBUtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 15:51:11 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: [PATCH] media: Add BCM2048 radio driver
-Date: Mon, 2 Dec 2013 21:51:07 +0100
-User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.3; x86_64; ; )
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org,
-        Eero Nurkkala <ext-eero.nurkkala@nokia.com>,
-        Nils Faerber <nils.faerber@kernelconcepts.de>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        =?utf-8?q?=D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE?=
-	 =?utf-8?q?_=D0=94=D0=B8=D0=BC=D0=B8=D1=82=D1=80=D0=BE=D0=B2?= 
-	<freemangordon@abv.bg>
-References: <1381847218-8408-1-git-send-email-pali.rohar@gmail.com> <201310262245.03279@pali> <52778780.6060802@xs4all.nl>
-In-Reply-To: <52778780.6060802@xs4all.nl>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart86654926.erhikFO6YK";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312022151.07599@pali>
+	Mon, 2 Dec 2013 15:49:22 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 05/12] perf tools: Add perf_data_file__write interface
+Date: Mon,  2 Dec 2013 17:49:02 -0300
+Message-Id: <1386017349-24486-6-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1386017349-24486-1-git-send-email-acme@infradead.org>
+References: <1386017349-24486-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart86654926.erhikFO6YK
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+From: Jiri Olsa <jolsa@redhat.com>
 
-On Monday 04 November 2013 12:39:44 Hans Verkuil wrote:
-> Hi Pali,
->=20
-> On 10/26/2013 10:45 PM, Pali Roh=C3=A1r wrote:
-> > On Saturday 26 October 2013 22:22:09 Hans Verkuil wrote:
-> >>> Hans, so can it be added to drivers/staging/media tree?
-> >>=20
-> >> Yes, that is an option. It's up to you to decide what you
-> >> want. Note that if no cleanup work is done on the staging
-> >> driver for a long time, then it can be removed again.
-> >>=20
-> >> Regards,
-> >>=20
-> >>     Hans
-> >=20
-> > Ok, so if you can add it to staging tree. When driver will
-> > be in mainline other developers can look at it too. Now
-> > when driver is hidden, nobody know where to find it... You
-> > can see how upstream development for Nokia N900 HW going
-> > on: http://elinux.org/N900
->=20
-> Please check my tree:
->=20
-> http://git.linuxtv.org/hverkuil/media_tree.git/shortlog/refs/h
-> eads/bcm
->=20
-> If you're OK, then I'll queue it for 3.14 (it's too late for
-> 3.13).
->=20
-> Regards,
->=20
-> 	Hans
+Adding perf_data_file__write interface to centralize output to files.
+The function prototype is:
 
-Hi, sorry for late reply. I looked into your tree and difference=20
-is that you only removed "linux/slab.h" include. So it it is not=20
-needed, then it is OK.
+  ssize_t perf_data_file__write(struct perf_data_file *file,
+                                void *buf, size_t size);
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+Returns number of bytes written or -1 in case of error.
 
---nextPart86654926.erhikFO6YK
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+NOTE: Also indenting 'struct perf_data_file' members, no functional
+      change done.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1385634619-8129-6-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/data.c |  6 ++++++
+ tools/perf/util/data.h | 14 ++++++++------
+ 2 files changed, 14 insertions(+), 6 deletions(-)
 
-iEYEABECAAYFAlKc8rsACgkQi/DJPQPkQ1KZYACfe6LqwqpLIcqHjek+R6MeIELl
-21YAnRX+QZzH/U8QdK0DS+HGHj92cPXp
-=ot2P
------END PGP SIGNATURE-----
+diff --git a/tools/perf/util/data.c b/tools/perf/util/data.c
+index 7d09faf85cf1..1fbcd8bdc11b 100644
+--- a/tools/perf/util/data.c
++++ b/tools/perf/util/data.c
+@@ -118,3 +118,9 @@ void perf_data_file__close(struct perf_data_file *file)
+ {
+ 	close(file->fd);
+ }
++
++ssize_t perf_data_file__write(struct perf_data_file *file,
++			      void *buf, size_t size)
++{
++	return writen(file->fd, buf, size);
++}
+diff --git a/tools/perf/util/data.h b/tools/perf/util/data.h
+index 8c2df80152a5..2b15d0c95c7f 100644
+--- a/tools/perf/util/data.h
++++ b/tools/perf/util/data.h
+@@ -9,12 +9,12 @@ enum perf_data_mode {
+ };
+ 
+ struct perf_data_file {
+-	const char *path;
+-	int fd;
+-	bool is_pipe;
+-	bool force;
+-	unsigned long size;
+-	enum perf_data_mode mode;
++	const char		*path;
++	int			 fd;
++	bool			 is_pipe;
++	bool			 force;
++	unsigned long		 size;
++	enum perf_data_mode	 mode;
+ };
+ 
+ static inline bool perf_data_file__is_read(struct perf_data_file *file)
+@@ -44,5 +44,7 @@ static inline unsigned long perf_data_file__size(struct perf_data_file *file)
+ 
+ int perf_data_file__open(struct perf_data_file *file);
+ void perf_data_file__close(struct perf_data_file *file);
++ssize_t perf_data_file__write(struct perf_data_file *file,
++			      void *buf, size_t size);
+ 
+ #endif /* __PERF_DATA_H */
+-- 
+1.8.1.4
 
---nextPart86654926.erhikFO6YK--
