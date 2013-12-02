@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657Ab3LBMMY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 07:12:24 -0500
-Received: from mga09.intel.com ([134.134.136.24]:25573 "EHLO mga09.intel.com"
+	id S1753839Ab3LBMMi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 07:12:38 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56518 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753233Ab3LBMMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 07:12:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,810,1378882800"; 
-   d="scan'208";a="417897544"
-Date: Mon, 2 Dec 2013 14:12:19 +0200
-From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: intel-gfx@lists.freedesktop.org, Daniel Vetter <daniel@ffwll.ch>,
-        Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] drm/i915: Take modeset locks around
- intel_modeset_setup_hw_state()
-Message-ID: <20131202121219.GN10036@intel.com>
-References: <CAKMK7uE_L8cqyYk6mQ4paXeh2m7tmoMXRv_KxoAeBq9MEAnFqw@mail.gmail.com>
- <1385975286-25392-1-git-send-email-ville.syrjala@linux.intel.com>
- <1385978429.2972.8.camel@x41.thuisdomein>
+	id S1753781Ab3LBMMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 07:12:37 -0500
+Message-ID: <529C7922.5000601@ti.com>
+Date: Mon, 2 Dec 2013 14:12:18 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1385978429.2972.8.camel@x41.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: Michael Trimarchi <michael@amarulasolutions.com>,
+        Felipe Balbi <balbi@ti.com>, <lee.jones@linaro.org>,
+        <sameo@linux.intel.com>, <tomi.valkeinen@ti.com>,
+        Stefan Roese <sr@denx.de>, <ljkenny.mailinglists@gmail.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] mfd: omap-usb-host: Fix USB device detection problems
+ on OMAP4 Panda
+References: <1385730118-26402-1-git-send-email-rogerq@ti.com>	<1385730118-26402-2-git-send-email-rogerq@ti.com> <CAOf5uwmEkzFd=e3j8m8=qdTCAMkk_-DPw0fTm=7Vzy0PbE2oDQ@mail.gmail.com> <529C55DF.3000808@ti.com> <529C76AF.10106@linutronix.de>
+In-Reply-To: <529C76AF.10106@linutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 11:00:29AM +0100, Paul Bolle wrote:
-> On Mon, 2013-12-02 at 11:08 +0200, ville.syrjala@linux.intel.com wrote:
-> > From: Ville Syrjälä <ville.syrjala@linux.intel.com>
-> > 
-> > Some lower level things get angry if we don't have modeset locks
-> > during intel_modeset_setup_hw_state(). Actually the resume and
-> > lid_notify codepaths alreday hold the locks, but the init codepath
-> > doesn't, so fix that.
-> > 
-> > Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-> > ---
-> > Totally untested, but looks correct to me.
+On 12/02/2013 02:01 PM, Sebastian Andrzej Siewior wrote:
+> - stable@vger.kernel.org since they probably don't care about this
+>   unless the patch is merged.
 > 
-> I assume I need to test this, on top of 7c063c725987 ("drm/i915: take
-> mode config lock around crtc disable at suspend"), to see if this makes
-> the WARNING that I currently see at boot go away?
-
-Yeah that would be nice.
-
-> Paul Bolle
+> On 12/02/2013 10:41 AM, Roger Quadros wrote:
+>> Michael,
+>>
+>> On 11/29/2013 05:32 PM, Michael Trimarchi wrote:
+>>> Hi Roger
+>>>
+>>> On Fri, Nov 29, 2013 at 2:01 PM, Roger Quadros <rogerq@ti.com> wrote:
+>>>> With u-boot 2013.10, USB devices are sometimes not detected
+>>>> on OMAP4 Panda. To make us independent of what bootloader does
+>>>> with the USB Host module, we must RESET it to get it to a known
+>>>> good state. This patch Soft RESETs the USB Host module.
+>>>>
+>>>
+>>> Do you think that we need something similar of usb musb?
+>>> I have seen the OTG_SYSCONFIG is touched in uboot and
+>>> only readed in omap2430.c.
+>>
+>> I'm not sure about musb. Maybe Sebastian/Felipe have better idea.
+>> In general I believe that all modules must be reset by the kernel.
+>>
 > 
-> >  drivers/gpu/drm/i915/intel_display.c | 2 ++
-> >  1 file changed, 2 insertions(+)
-> > 
-> > diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-> > index 080f6fd..114db51 100644
-> > --- a/drivers/gpu/drm/i915/intel_display.c
-> > +++ b/drivers/gpu/drm/i915/intel_display.c
-> > @@ -11046,7 +11046,9 @@ void intel_modeset_gem_init(struct drm_device *dev)
-> >  
-> >  	intel_setup_overlay(dev);
-> >  
-> > +	drm_modeset_lock_all(dev);
-> >  	intel_modeset_setup_hw_state(dev, false);
-> > +	drm_modeset_unlock_all(dev);
-> >  }
-> >  
-> >  void intel_modeset_cleanup(struct drm_device *dev)
+> based on the code at the bottom it touches the first few register(s)
+> sysconfig. Isn't hwmod actually doing this idle stuff and resting the
+> device during boot?
+> 
 
--- 
-Ville Syrjälä
-Intel OTC
+You are right. The musb hwmod data doesn't have the HWMOD_INIT_NO_RESET
+flag, so hwmod should reset it during boot.
+
+Maybe I too should just remove HWMOD_INIT_NO_RESET flag from the USB Host
+hwmod data, then we don't need to change this driver at all.
+
+Benoit, Tony any comments?
+
+cheers,
+-roger
