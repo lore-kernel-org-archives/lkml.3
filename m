@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757387Ab3LBUT0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:19:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39171 "EHLO
+	id S1757436Ab3LBUUj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:20:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39156 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753837Ab3LBTRU (ORCPT
+	with ESMTP id S1753765Ab3LBTRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:20 -0500
+	Mon, 2 Dec 2013 14:17:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Ralston <james.d.ralston@intel.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.12 053/212] ahci: Add Device IDs for Intel Wildcat Point-LP
-Date: Mon,  2 Dec 2013 11:14:04 -0800
-Message-Id: <20131202191254.110454174@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Vit Ondruch <v.ondruch@tiscali.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 3.12 029/212] alarmtimer: return EINVAL instead of ENOTSUPP if rtcdev doesnt exist
+Date: Mon,  2 Dec 2013 11:13:40 -0800
+Message-Id: <20131202191251.849859580@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,32 +30,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Ralston <james.d.ralston@intel.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit 9f961a5f6efc87a79571d7166257b36af28ffcfe upstream.
+commit 98d6f4dd84a134d942827584a3c5f67ffd8ec35f upstream.
 
-This patch adds the AHCI-mode SATA Device IDs for the Intel Wildcat Point-LP PCH.
+Fedora Ruby maintainer reported latest Ruby doesn't work on Fedora Rawhide
+on ARM. (http://bugs.ruby-lang.org/issues/9008)
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Because of, commit 1c6b39ad3f (alarmtimers: Return -ENOTSUPP if no
+RTC device is present) intruduced to return ENOTSUPP when
+clock_get{time,res} can't find a RTC device. However this is incorrect.
+
+First, ENOTSUPP isn't exported to userland (ENOTSUP or EOPNOTSUP are the
+closest userland equivlents).
+
+Second, Posix and Linux man pages agree that clock_gettime and
+clock_getres should return EINVAL if clk_id argument is invalid.
+While the arugment that the clockid is valid, but just not supported
+on this hardware could be made, this is just a technicality that
+doesn't help userspace applicaitons, and only complicates error
+handling.
+
+Thus, this patch changes the code to use EINVAL.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Reported-by: Vit Ondruch <v.ondruch@tiscali.cz>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+[jstultz: Tweaks to commit message to include full rational]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ kernel/time/alarmtimer.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -292,6 +292,10 @@ static const struct pci_device_id ahci_p
- 	{ PCI_VDEVICE(INTEL, 0x8d66), board_ahci }, /* Wellsburg RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8d6e), board_ahci }, /* Wellsburg RAID */
- 	{ PCI_VDEVICE(INTEL, 0x23a3), board_ahci }, /* Coleto Creek AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x9c83), board_ahci }, /* Wildcat Point-LP AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x9c85), board_ahci }, /* Wildcat Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x9c87), board_ahci }, /* Wildcat Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x9c8f), board_ahci }, /* Wildcat Point-LP RAID */
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -490,7 +490,7 @@ static int alarm_clock_getres(const cloc
+ 	clockid_t baseid = alarm_bases[clock2alarm(which_clock)].base_clockid;
  
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+ 	if (!alarmtimer_get_rtcdev())
+-		return -ENOTSUPP;
++		return -EINVAL;
+ 
+ 	return hrtimer_get_res(baseid, tp);
+ }
+@@ -507,7 +507,7 @@ static int alarm_clock_get(clockid_t whi
+ 	struct alarm_base *base = &alarm_bases[clock2alarm(which_clock)];
+ 
+ 	if (!alarmtimer_get_rtcdev())
+-		return -ENOTSUPP;
++		return -EINVAL;
+ 
+ 	*tp = ktime_to_timespec(base->gettime());
+ 	return 0;
 
 
