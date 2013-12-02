@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab3LBO2g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 09:28:36 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:57350 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668Ab3LBO2e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 09:28:34 -0500
-Message-ID: <529C990E.8000303@gmail.com>
-Date: Mon, 02 Dec 2013 07:28:30 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1752111Ab3LBO2o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 09:28:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61541 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751729Ab3LBO2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 09:28:39 -0500
+Date: Mon, 2 Dec 2013 09:28:29 -0500
+From: Dave Jones <davej@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Subject: Re: HID: kye: Add report fixup for Genius Manticore Keyboard
+Message-ID: <20131202142829.GA2411@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Jiri Kosina <jkosina@suse.cz>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Benjamin Tissoires <benjamin.tissoires@redhat.com>
+References: <20131128051223.28802660D26@gitolite.kernel.org>
+ <20131130214211.GA16854@redhat.com>
+ <alpine.LNX.2.00.1312021515300.24931@pobox.suse.cz>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>, acme@ghostprotocols.net,
-        Ingo Molnar <mingo@kernel.org>
-CC: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH 1/2] perf sched: Introduce timehist command - v2
-References: <1385943795-11761-1-git-send-email-dsahern@gmail.com>	<1385943795-11761-2-git-send-email-dsahern@gmail.com> <871u1vptty.fsf@sejong.aot.lge.com>
-In-Reply-To: <871u1vptty.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1312021515300.24931@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/2/13, 12:58 AM, Namhyung Kim wrote:
->>             time cpu  task name[tid/pid]    b/n time sch delay  run time
->>    ------------- ---- -------------------- --------- --------- ---------
->>     79371.874569 [11] gcc[31949]               0.014     0.000     1.148
->>     79371.874591 [10] gcc[31951]               0.000     0.000     0.024
->>     79371.874603 [10] migration/10[59]         3.350     0.004     0.011
->>     79371.874604 [11] <idle>                   1.148     0.000     0.035
->>     79371.874723 [05] <idle>                   0.016     0.000     1.383
->>     79371.874746 [05] gcc[31949]               0.153     0.078     0.022
->> ...
->>
->> Times are in msec.usec.
->
-> Hmm.. I'm not sure this is right.  It probably confuse users since
-> timehist_time_str() still uses "sec.usec" format and it looks not
-> natural for me to use "msec".
->
-> Yeah, I see perf stat uses "msec.usec" for result of clock events but
-> AFAICT it also shows the unit explicitly.  And perf stat -I uses
-> "sec.nsec" format and perf script also uses "sec.usec" format so there's
-> a little consistency here.
->
-> I think this "msec.usec" format fits well for the scheduling events but
-> in general "sec.usec" format looks better IMHO.
+On Mon, Dec 02, 2013 at 03:16:24PM +0100, Jiri Kosina wrote:
+ > On Sat, 30 Nov 2013, Dave Jones wrote:
+ > 
+ > >  > Commit:     4a2c94c9b6c03af61b04993340bd9559e2277de4
+ > >  > Author:     Benjamin Tissoires <benjamin.tissoires@redhat.com>
+ > >  > AuthorDate: Wed Nov 20 09:49:41 2013 -0500
+ > >  > Committer:  Jiri Kosina <jkosina@suse.cz>
+ > >  > CommitDate: Thu Nov 21 10:28:58 2013 +0100
+ > >  > 
+ > >  >     HID: kye: Add report fixup for Genius Manticore Keyboard
+ > >  >     
+ > >  >     Genius Manticore Keyboard presents the same problem in its report
+ > >  >     descriptors than Genius Gila Gaming Mouse and Genius Imperator Keyboard.
+ > >  >     Use the same fixup.
+ > > 
+ > > ..
+ > > 
+ > >  > diff --git a/drivers/hid/hid-kye.c b/drivers/hid/hid-kye.c
+ > >  > index 7384512..35a4f9c 100644
+ > >  > --- a/drivers/hid/hid-kye.c
+ > >  > +++ b/drivers/hid/hid-kye.c
+ > >  > @@ -341,6 +341,9 @@ static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ > >  >  	case USB_DEVICE_ID_GENIUS_GX_IMPERATOR:
+ > >  >  		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 83,
+ > >  >  					"Genius Gx Imperator Keyboard");
+ > >  > +	case USB_DEVICE_ID_GENIUS_MANTICORE:
+ > >  > +		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 104,
+ > >  > +					"Genius Manticore Keyboard");
+ > >  >  		break;
+ > > 
+ > > 
+ > > Is the IMPERATOR case supposed to fall-through to MANTICORE here, or is there a missing break ?
+ > > The commit text describes using the same fixup, but has this alternative case.
+ > 
+ > I am almost certain that the missing break is a mistake, and the offsets 
+ > in both report descriptors are just different, and there is no need for 
+ > two fixups.
+ > 
+ > I am queuing this for 3.13 still, but having final confirmation from 
+ > Benjamin would of course be nice.
 
-Arnaldo / Ingo: any thoughts on the units here? sec.usec versus msec.usec?
+If that is the case..
 
-David
+-- 
+
+
+Commit 4a2c94c9b6 inadvertantly removed a break from the GENIUS_GX_IMPERATOR case.
+Spotted by Coverity.
+
+Signed-off-by: Dave Jones <davej@fedoraproject.org>
+
+diff --git a/drivers/hid/hid-kye.c b/drivers/hid/hid-kye.c
+index ecb5ca669e97..e77696367591 100644
+--- a/drivers/hid/hid-kye.c
++++ b/drivers/hid/hid-kye.c
+@@ -341,6 +341,7 @@ static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 	case USB_DEVICE_ID_GENIUS_GX_IMPERATOR:
+ 		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 83,
+ 					"Genius Gx Imperator Keyboard");
++		break;
+ 	case USB_DEVICE_ID_GENIUS_MANTICORE:
+ 		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 104,
+ 					"Genius Manticore Keyboard");
 
