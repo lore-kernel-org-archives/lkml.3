@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756317Ab3LBUMn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:12:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26314 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754585Ab3LBUJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 15:09:16 -0500
-Date: Mon, 02 Dec 2013 15:09:02 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Hillf Danton <dhillf@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Joonsoo Kim <js1304@gmail.com>
-Message-ID: <1386014942-zgaujzhz-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1385624926-28883-2-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1385624926-28883-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1385624926-28883-2-git-send-email-iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH 1/9] mm/rmap: recompute pgoff for huge page
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1756882Ab3LBUJN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:09:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39152 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754584Ab3LBTRf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 14:17:35 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.12 078/212] rtlwifi: rtl8192cu: Fix incorrect signal strength for unassociated AP
+Date: Mon,  2 Dec 2013 11:14:29 -0800
+Message-Id: <20131202191256.486656973@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
+References: <20131202191248.517975703@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 04:48:38PM +0900, Joonsoo Kim wrote:
-> We have to recompute pgoff if the given page is huge, since result based
-> on HPAGE_SIZE is not approapriate for scanning the vma interval tree, as
-> shown by commit 36e4f20af833 ("hugetlb: do not use vma_hugecache_offset()
-> for vma_prio_tree_foreach") and commit 369a713e ("rmap: recompute pgoff
-> for unmapping huge page").
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+------------------
+
+From: Larry Finger <Larry.Finger@lwfinger.net>
+
+commit 78dbfecb95be4635b995af3bd29fa10013409fcd upstream.
+
+The routine that processes received frames was returning the RSSI value for the
+signal strength; however, that value is available only for associated APs. As
+a result, the strength was the absurd value of 10 dBm. As a result, scans
+return incorrect values for the strength, which causes unwanted attempts to roam.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/rtlwifi/rtl8192cu/trx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
+@@ -349,7 +349,7 @@ bool rtl92cu_rx_query_desc(struct ieee80
+ 						 p_drvinfo);
+ 	}
+ 	/*rx_status->qual = stats->signal; */
+-	rx_status->signal = stats->rssi + 10;
++	rx_status->signal = stats->recvsignalpower + 10;
+ 	/*rx_status->noise = -stats->noise; */
+ 	return true;
+ }
+
+
