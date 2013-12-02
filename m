@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579Ab3LBTNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:13:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38395 "EHLO
+	id S1754218Ab3LBTNy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:13:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38402 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753994Ab3LBTN0 (ORCPT
+	with ESMTP id S1754075Ab3LBTN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:26 -0500
+	Mon, 2 Dec 2013 14:13:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <stf_xl@wp.pl>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 065/173] rt2400pci: fix RSSI read
-Date: Mon,  2 Dec 2013 11:10:48 -0800
-Message-Id: <20131202191150.057906397@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Mathias Krause <minipli@googlemail.com>,
+        Richard Guy Briggs <rgb@redhat.com>
+Subject: [PATCH 3.10 082/173] audit: use nlmsg_len() to get message payload length
+Date: Mon,  2 Dec 2013 11:11:05 -0800
+Message-Id: <20131202191152.878795933@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,30 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <stf_xl@wp.pl>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 2bf127a5cc372b9319afcbae10b090663b621c8b upstream.
+commit 4d8fe7376a12bf4524783dd95cbc00f1fece6232 upstream.
 
-RSSI value is provided on word3 not on word2.
+Using the nlmsg_len member of the netlink header to test if the message
+is valid is wrong as it includes the size of the netlink header itself.
+Thereby allowing to send short netlink messages that pass those checks.
 
-Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Use nlmsg_len() instead to test for the right message length. The result
+of nlmsg_len() is guaranteed to be non-negative as the netlink message
+already passed the checks of nlmsg_ok().
+
+Also switch to min_t() to please checkpatch.pl.
+
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2400pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/audit.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2400pci.c
-+++ b/drivers/net/wireless/rt2x00/rt2400pci.c
-@@ -1261,7 +1261,7 @@ static void rt2400pci_fill_rxdone(struct
- 	 */
- 	rxdesc->timestamp = ((u64)rx_high << 32) | rx_low;
- 	rxdesc->signal = rt2x00_get_field32(word2, RXD_W2_SIGNAL) & ~0x08;
--	rxdesc->rssi = rt2x00_get_field32(word2, RXD_W3_RSSI) -
-+	rxdesc->rssi = rt2x00_get_field32(word3, RXD_W3_RSSI) -
- 	    entry->queue->rt2x00dev->rssi_offset;
- 	rxdesc->size = rt2x00_get_field32(word0, RXD_W0_DATABYTE_COUNT);
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -670,7 +670,7 @@ static int audit_receive_msg(struct sk_b
+ 				 &status_set, sizeof(status_set));
+ 		break;
+ 	case AUDIT_SET:
+-		if (nlh->nlmsg_len < sizeof(struct audit_status))
++		if (nlmsg_len(nlh) < sizeof(struct audit_status))
+ 			return -EINVAL;
+ 		status_get   = (struct audit_status *)data;
+ 		if (status_get->mask & AUDIT_STATUS_ENABLED) {
+@@ -832,7 +832,7 @@ static int audit_receive_msg(struct sk_b
  
+ 		memset(&s, 0, sizeof(s));
+ 		/* guard against past and future API changes */
+-		memcpy(&s, data, min(sizeof(s), (size_t)nlh->nlmsg_len));
++		memcpy(&s, data, min_t(size_t, sizeof(s), nlmsg_len(nlh)));
+ 		if ((s.enabled != 0 && s.enabled != 1) ||
+ 		    (s.log_passwd != 0 && s.log_passwd != 1))
+ 			return -EINVAL;
 
 
