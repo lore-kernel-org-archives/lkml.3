@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753427Ab3LBLL7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 06:11:59 -0500
-Received: from mga02.intel.com ([134.134.136.20]:25735 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753288Ab3LBLL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 06:11:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,810,1378882800"; 
-   d="scan'208";a="445232321"
-Date: Mon, 2 Dec 2013 13:11:24 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio: better lookup method for platform GPIOs
-Message-ID: <20131202111124.GG3942@xps8300>
-References: <1385628388-23827-1-git-send-email-acourbot@nvidia.com>
- <20131129115748.GB3942@xps8300>
- <529C61FF.4020802@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <529C61FF.4020802@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753460Ab3LBLPT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 06:15:19 -0500
+Received: from fallback5.mail.ru ([94.100.176.59]:35886 "EHLO
+	fallback5.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753283Ab3LBLPQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 06:15:16 -0500
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?TGVlIEpvbmVz?= <lee.jones@linaro.org>
+Cc: =?UTF-8?B?U2FtdWVsIE9ydGl6?= <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?B?TWljaGFlbCBHcnplc2NoaWs=?= <mgr@pengutronix.de>,
+        =?UTF-8?B?U2FzY2hhIEhhdWVy?= <kernel@pengutronix.de>,
+        =?UTF-8?B?U2hhd24gR3Vv?= <shawn.guo@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: =?UTF-8?B?UmU6IFtQQVRDSCBSRVNFTkRdIG1mZDogbWMxM3h4eDogRml4IG51bGwgcG9p?=
+ =?UTF-8?B?bnRlciBkZXJlZmVyZW5jZSBpbiBtYzEzeHh4X2NvbW1vbl9pbml0?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [217.119.30.118]
+Date: Mon, 02 Dec 2013 15:11:03 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1385982663.209903201@f198.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+X-Spam: undefined
+In-Reply-To: <20131202105650.GD29373@lee--X1>
+References: <1385787337-5296-1-git-send-email-shc_work@mail.ru>
+ <1385805125.304293643@f433.i.mail.ru>
+ <20131202105650.GD29373@lee--X1>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rB2BFQB1012346
 
-Hi,
 
-On Mon, Dec 02, 2013 at 07:33:35PM +0900, Alex Courbot wrote:
-> On 11/29/2013 08:57 PM, Heikki Krogerus wrote:
-> >Hi,
-> >
-> >On Thu, Nov 28, 2013 at 05:46:28PM +0900, Alexandre Courbot wrote:
-> >>@@ -88,16 +89,20 @@ Note that GPIO_LOOKUP() is just a shortcut to GPIO_LOOKUP_IDX() where idx = 0.
-> >>
-> >>  A lookup table can then be defined as follows:
-> >>
-> >>-	struct gpiod_lookup gpios_table[] = {
-> >>-	GPIO_LOOKUP_IDX("gpio.0", 15, "foo.0", "led", 0, GPIO_ACTIVE_HIGH),
-> >>-	GPIO_LOOKUP_IDX("gpio.0", 16, "foo.0", "led", 1, GPIO_ACTIVE_HIGH),
-> >>-	GPIO_LOOKUP_IDX("gpio.0", 17, "foo.0", "led", 2, GPIO_ACTIVE_HIGH),
-> >>-	GPIO_LOOKUP("gpio.0", 1, "foo.0", "power", GPIO_ACTIVE_LOW),
-> >>-	};
-> >>+struct gpiod_lookup_table gpios_table = {
-> >>+	.dev_id = "foo.0",
-> >>+	.size = 4,
-> >>+	.table = {
-> >>+	GPIO_LOOKUP_IDX("gpio.0", 15, "led", 0, GPIO_ACTIVE_HIGH),
-> >>+	GPIO_LOOKUP_IDX("gpio.0", 16, "led", 1, GPIO_ACTIVE_HIGH),
-> >>+	GPIO_LOOKUP_IDX("gpio.0", 17, "led", 2, GPIO_ACTIVE_HIGH),
-> >>+	GPIO_LOOKUP("gpio.0", 1, "power", GPIO_ACTIVE_LOW),
-> >>+	},
-> >>+};
-> >
-> >Instead of using the size variable, wouldn't it be more clear to
-> >expect the array to be null terminated?
+
+
+ĞŸĞ¾Ğ½ĞµĞ´ĞµĞ»ÑŒĞ½Ğ¸Ğº,  2 Ğ´ĞµĞºĞ°Ğ±Ñ€Ñ 2013, 10:56 UTC Ğ¾Ñ‚ Lee Jones <lee.jones@linaro.org>:
+> On Sat, 30 Nov 2013, Alexander Shiyan wrote:
 > 
-> This is a zero-length array, its entries are not pointers but
-> flattened lookup entries. Thus you cannot simply null-terminate it.
-> It would be possible to use { NULL } as a terminator, but this would
-> expand into a whole gpiod_lookup and is not very pleasant
-> esthetically-speaking. So I think the size member is maybe better
-> suited here.
+> > > On Sat, Nov 30, 2013 at 08:55:37AM +0400, Alexander Shiyan wrote:
+> > > > If this driver being loaded from devicetree, the pdata is NULL.
+> > > > This cause kernel Oops when "fsl,mc13xxx-uses-codec" and/or
+> > > > "fsl,mc13xxx-uses-touch" properties is specified.
+> > > > 
+> > > > mc13xxx spi0.0: mc13783: rev: 3.3, fin: 0, fab: 0, icid: 2/0
+> > > > Unable to handle kernel NULL pointer dereference at virtual address 00000018
+> > ...
+> > > > -	if (mc13xxx->flags & MC13XXX_USE_TOUCHSCREEN)
+> > > > +	if ((mc13xxx->flags & MC13XXX_USE_CODEC) && pdata)
+> > > 
+> > > Why do we check for CODEC if the Touchscreen should be used?
+> > 
+> > Oops, my fault, copy/paste bug.
+> > I'll send the corrected version.
+> 
+> No, please don't.
+> 
+> Just provide proper Device Tree support.
 
-The gpio_loopup_table would look like this, which IMO is more nicer
-looking compared to the extra size variable:
+I still have two incomplete MC13XXX DT-related patches.
+http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/175099.html
+http://lists.infradead.org/pipermail/linux-arm-kernel/2013-July/182116.html
 
-struct gpiod_lookup_table gpios_table = {
-	.dev_id = "foo.0",
-	.table = {
-        	GPIO_LOOKUP_IDX("gpio.0", 15, "led", 0, GPIO_ACTIVE_HIGH),
-	        GPIO_LOOKUP_IDX("gpio.0", 16, "led", 1, GPIO_ACTIVE_HIGH),
-        	GPIO_LOOKUP_IDX("gpio.0", 17, "led", 2, GPIO_ACTIVE_HIGH),
-	        GPIO_LOOKUP("gpio.0", 1, "power", GPIO_ACTIVE_LOW),
-                { },
-	},
-};
+I'll resume to work on this (and CODEC & TS too).
+Thanks.
 
-That would also make it more straight forward to handle in gbiolib.c:
-
-struct gpiod_lookup *p;
-...
-for (p = table->table; p->chip_label; p++) {
-...
-
-Thanks,
-
--- 
-heikki
+---
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
