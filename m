@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538Ab3LBOhY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 09:37:24 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:56956 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751927Ab3LBOhS (ORCPT
+	id S1752595Ab3LBOhs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 09:37:48 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:34770 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752555Ab3LBOho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 09:37:18 -0500
-Date: Mon, 2 Dec 2013 09:37:13 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org, fweisbec@gmail.com,
-        mingo@redhat.com, linux-kernel@vger.kernel.org,
-        Jiri Kosina <trivial@kernel.org>
-Subject: Re: [PATCH] tracepoint: Spell Fix: Write "binay" as "binary"
-Message-ID: <20131202093713.662881e7@gandalf.local.home>
-In-Reply-To: <32a55f133a8138560044ecdac34f0e5aef97ddc3.1385977486.git.viresh.kumar@linaro.org>
-References: <32a55f133a8138560044ecdac34f0e5aef97ddc3.1385977486.git.viresh.kumar@linaro.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 2 Dec 2013 09:37:44 -0500
+Message-ID: <529C9B35.1060607@gmail.com>
+Date: Mon, 02 Dec 2013 07:37:41 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Jiri Olsa <jolsa@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH 2/2] perf sched: Add documentation for timehist options
+References: <1385943795-11761-1-git-send-email-dsahern@gmail.com>	<1385943795-11761-3-git-send-email-dsahern@gmail.com> <8761r7pumh.fsf@sejong.aot.lge.com>
+In-Reply-To: <8761r7pumh.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  2 Dec 2013 15:15:37 +0530
-Viresh Kumar <viresh.kumar@linaro.org> wrote:
+On 12/2/13, 12:41 AM, Namhyung Kim wrote:
+> Hi David,
+>
+> On Sun,  1 Dec 2013 17:23:15 -0700, David Ahern wrote:
+>> Add entry to perf-sched documentation for timehist command and its
+>> options.
+>
+> [SNIP]
+>> +--max-stack::
+>> +    Set the stack depth limit when showing the callchains. Default: 127
+>
+> Isn't it 5 instead of 127?
 
-> Binary was written as binay, probably by mistake. Fix it.
+drat. missed that one.
 
-This can go through the trivial tree.
-
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
-
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  include/linux/tracepoint.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-> index ebeab36..f0c3e4c 100644
-> --- a/include/linux/tracepoint.h
-> +++ b/include/linux/tracepoint.h
-> @@ -274,7 +274,7 @@ static inline void tracepoint_synchronize_unregister(void)
->   * For use with the TRACE_EVENT macro:
->   *
->   * We define a tracepoint, its arguments, its printk format
-> - * and its 'fast binay record' layout.
-> + * and its 'fast binary record' layout.
->   *
->   * Firstly, name your tracepoint via TRACE_EVENT(name : the
->   * 'subsystem_event' notation is fine.
+David
 
