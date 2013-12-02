@@ -1,76 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab3LBMVq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 07:21:46 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59837 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822Ab3LBMVk (ORCPT
+	id S1754053Ab3LBMWD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 07:22:03 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:37593 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753812Ab3LBMTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 07:21:40 -0500
-Date: Mon, 2 Dec 2013 12:21:13 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Stefan Agner <stefan@agner.ch>
-Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com, dev@lynxeye.de,
-        lee.jones@linaro.org, lgirdwood@gmail.com,
-        kai.poggensee@avionic-design.de, sameo@linux.intel.com,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20131202122113.GY27568@sirena.org.uk>
-References: <cover.1385913227.git.stefan@agner.ch>
- <2d5282f031a16d2ff227694daaabc977440fbd2e.1385913228.git.stefan@agner.ch>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="O2v8LnVIcZ+EDjcF"
-Content-Disposition: inline
-In-Reply-To: <2d5282f031a16d2ff227694daaabc977440fbd2e.1385913228.git.stefan@agner.ch>
-X-Cookie: Boycott meat -- suck your thumb.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 1/3] mfd: tps6586x: add version detection
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Mon, 2 Dec 2013 07:19:43 -0500
+X-AuditID: cbfee61a-b7f316d000007e34-a8-529c7ade73dd
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com,
+        linux-samsung-soc@vger.kernel.org
+Subject: [PATCH RESEND v10 2/7] cpufreq:acpi:x86: Adjust the acpi-cpufreq.c
+ code to work with common boost solution
+Date: Mon, 02 Dec 2013 13:19:16 +0100
+Message-id: <1385986761-17934-3-git-send-email-l.majewski@samsung.com>
+X-Mailer: git-send-email 1.7.10
+In-reply-to: <1385986761-17934-1-git-send-email-l.majewski@samsung.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1385986761-17934-1-git-send-email-l.majewski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t9jQd17VXOCDBo/cVpsnLGe1eJp0w92
+	i76fV5gt1uz/yWTRefYJs8WbR9wWbx5uZrS4vGsOm8Xn3iOMFjPO72OyuN24gs3izOlLrBZP
+	HvaxWWz86uHA57F4z0smjzvX9rB5rJv2ltljy9V2Fo++LasYPY7f2M7k8XmTXAB7FJdNSmpO
+	Zllqkb5dAlfGjosdbAXLjCrOHdjP1MDYpdnFyMkhIWAiMbl1DSuELSZx4d56ti5GLg4hgemM
+	Ei+/7WSHcLqYJKYffs8GUsUmoCfx+e5TJpCEiMASRonXTQtYQRxmgY3MEjtnvgWrEhYolWg+
+	18DSxcjBwSKgKrHpqhVImFfATWL2hC1MEOvkJZ7e7wMr5xRwl+h7/YQRYlsTo8TmxXuZJjDy
+	LmBkWMUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHLDPpHYwrmywOMQowMGoxMN7UXhOkBBr
+	YllxZe4hRgkOZiUR3peJQCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8B1qtA4UE0hNLUrNTUwtS
+	i2CyTBycUg2MgfufReWFXvT9ue7zqttWhjemG6vo6Z3ikuD4GOb64k7a9m+MLxSz5/BtXSLY
+	nNvQuZeX5aN+oyq/YcWJ0F06dleut5aeqTpr9HDej8ynl1y3ah+6dL6+qTRh/YeLKc2v5ny7
+	/a4szZi/uThB0Va36KGhyHezqzun2ptbiohFbT3Q5Mg1Y+VmJZbijERDLeai4kQA6hgglVQC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The Intel's hardware based boost solution driver has been changed to cooperate with
+common cpufreq boost framework.
 
---O2v8LnVIcZ+EDjcF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The global sysfs boost attribute entry code (/sys/devices/system/cpu/cpufreq/boost)
+has been moved to a core cpufreq code. This attribute is now only visible,
+when cpufreq driver supports it.
 
-On Sun, Dec 01, 2013 at 04:59:13PM +0100, Stefan Agner wrote:
+The _store_boost() function has been redesigned to be used as set_boost
+callback.
 
-> +int tps6586x_get_version(struct device *dev)
-> +{
-> +	struct tps6586x *tps6586x = dev_get_drvdata(dev);
-> +
-> +	return tps6586x->version;
-> +}
-> +EXPORT_SYMBOL_GPL(tps6586x_get_version);
+Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-May as well make this a static inline in the header.
+---
+Changes for v10:
+- None
 
---O2v8LnVIcZ+EDjcF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Changes for v9:
+- None
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Changes for v8:
+- None
 
-iQIcBAEBAgAGBQJSnHs2AAoJELSic+t+oim97FcP+wTzTbJMrzwNnxGbgu0hyLT7
-HwpyhAUmbD+CL1L+l1hYRGpwsztVacrTtX2HfPp9/XEs+5wo5GtlLMSpL+TwWto2
-0NHZAVxYzJO9eMC/3+AjJYyGfXlK8XEYaEt3FoBUB6SOMhxataVLVolAl44M9iBG
-+MF7Zb4EkdfGlIRgHEf4xxiKizCYBmF8LDppDp50fmmNp3DFrCedyb2Vs6NBD2PX
-7rbAEIKWwyNt4DfrXEwrN1oYVe/8o/qmxtTw4cEqYIyw0nuwJOf1l7SZGOkPe63C
-XxAbFBekeW9erTsZviwWMmZYR46Oo/DURygXQdN4PT6UD+sGVVPohgXz9h++U8l7
-QsiON4WPwAY+YjPAFX0g7k1eBLNEUcMqH5emT58rjETdZWNTmbJ4+qAUpbVFDGQr
-bXVJDljSljvt2qB9Wp4FrFjLulHdnTyf9xdkqOK1E9vA9bilWneUxXKMqgRNIzCd
-8YDHUC4ZFj2yJFJRurrTh0xDAOUxpkY83MA64GV/8MTpt3+CHfu+vhmXUbup17og
-J8Fl/pmBi2gdJDcpDhq8nEIUsrSnkDX6zGai+2El73GYP18lrrGxxNRfeYE0FTdU
-wyzH5osNE1GDsuEStJMzv42X9Fm3+7ZxhneG82ugSoRBD9A1jp1EVEQ83r7ggmcS
-TQ3AzCbo1Y2UKtd+w7u6
-=4lxs
------END PGP SIGNATURE-----
+Changes for v7:
+- Remove superfluous acpi_cpufreq_driver.boost_supported = false at
+  acpi_cpufreq_boost_init()
 
---O2v8LnVIcZ+EDjcF--
+Changes for v6:
+- Perform acpi_cpufreq_boost_init initialization before cpufreq_driver
+  registration
+- Compile store_boost() only when CONFIG_X86_ACPI_CPUFREQ_CPB defined
+- Use boost_enabled flag defined at acpi_cpufreq_driver to store information
+  about boost state
+- Instead of using cpufreq_set_boost_enabled(), modify the boost_enable in
+  the acpi driver code
+
+Changes for v5:
+- Remove acpi-cpufreq's boost_enabled global flag and reuse one defined at
+  cpufreq core
+
+Changes for v4:
+- add _store_boost to acpi_cpufreq_driver structure
+
+Changes for v3:
+- Bring back boost_enabled as a global flag
+- Move boost_supported to cpufreq_driver structure
+
+Changes for v2:
+- Replace boost_enabled and boost_supported global flags with proper entries
+  at struct cpufreq_driver.
+- Removal of struct cpufreq_boost
+
+ drivers/cpufreq/acpi-cpufreq.c |   86 ++++++++++++++--------------------------
+ 1 file changed, 29 insertions(+), 57 deletions(-)
+
+diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
+index caf41eb..79e5608 100644
+--- a/drivers/cpufreq/acpi-cpufreq.c
++++ b/drivers/cpufreq/acpi-cpufreq.c
+@@ -80,7 +80,6 @@ static struct acpi_processor_performance __percpu *acpi_perf_data;
+ static struct cpufreq_driver acpi_cpufreq_driver;
+ 
+ static unsigned int acpi_pstate_strict;
+-static bool boost_enabled, boost_supported;
+ static struct msr __percpu *msrs;
+ 
+ static bool boost_state(unsigned int cpu)
+@@ -133,49 +132,16 @@ static void boost_set_msrs(bool enable, const struct cpumask *cpumask)
+ 	wrmsr_on_cpus(cpumask, msr_addr, msrs);
+ }
+ 
+-static ssize_t _store_boost(const char *buf, size_t count)
++static int _store_boost(int val)
+ {
+-	int ret;
+-	unsigned long val = 0;
+-
+-	if (!boost_supported)
+-		return -EINVAL;
+-
+-	ret = kstrtoul(buf, 10, &val);
+-	if (ret || (val > 1))
+-		return -EINVAL;
+-
+-	if ((val && boost_enabled) || (!val && !boost_enabled))
+-		return count;
+-
+ 	get_online_cpus();
+-
+ 	boost_set_msrs(val, cpu_online_mask);
+-
+ 	put_online_cpus();
+-
+-	boost_enabled = val;
+ 	pr_debug("Core Boosting %sabled.\n", val ? "en" : "dis");
+ 
+-	return count;
+-}
+-
+-static ssize_t store_global_boost(struct kobject *kobj, struct attribute *attr,
+-				  const char *buf, size_t count)
+-{
+-	return _store_boost(buf, count);
+-}
+-
+-static ssize_t show_global_boost(struct kobject *kobj,
+-				 struct attribute *attr, char *buf)
+-{
+-	return sprintf(buf, "%u\n", boost_enabled);
++	return 0;
+ }
+ 
+-static struct global_attr global_boost = __ATTR(boost, 0644,
+-						show_global_boost,
+-						store_global_boost);
+-
+ static ssize_t show_freqdomain_cpus(struct cpufreq_policy *policy, char *buf)
+ {
+ 	struct acpi_cpufreq_data *data = per_cpu(acfreq_data, policy->cpu);
+@@ -186,15 +152,32 @@ static ssize_t show_freqdomain_cpus(struct cpufreq_policy *policy, char *buf)
+ cpufreq_freq_attr_ro(freqdomain_cpus);
+ 
+ #ifdef CONFIG_X86_ACPI_CPUFREQ_CPB
++static ssize_t store_boost(const char *buf, size_t count)
++{
++	int ret;
++	unsigned long val = 0;
++
++	if (!acpi_cpufreq_driver.boost_supported)
++		return -EINVAL;
++
++	ret = kstrtoul(buf, 10, &val);
++	if (ret || (val > 1))
++		return -EINVAL;
++
++	_store_boost((int) val);
++
++	return count;
++}
++
+ static ssize_t store_cpb(struct cpufreq_policy *policy, const char *buf,
+ 			 size_t count)
+ {
+-	return _store_boost(buf, count);
++	return store_boost(buf, count);
+ }
+ 
+ static ssize_t show_cpb(struct cpufreq_policy *policy, char *buf)
+ {
+-	return sprintf(buf, "%u\n", boost_enabled);
++	return sprintf(buf, "%u\n", acpi_cpufreq_driver.boost_enabled);
+ }
+ 
+ cpufreq_freq_attr_rw(cpb);
+@@ -554,7 +537,7 @@ static int boost_notify(struct notifier_block *nb, unsigned long action,
+ 	switch (action) {
+ 	case CPU_UP_PREPARE:
+ 	case CPU_UP_PREPARE_FROZEN:
+-		boost_set_msrs(boost_enabled, cpumask);
++		boost_set_msrs(acpi_cpufreq_driver.boost_enabled, cpumask);
+ 		break;
+ 
+ 	case CPU_DOWN_PREPARE:
+@@ -911,6 +894,7 @@ static struct cpufreq_driver acpi_cpufreq_driver = {
+ 	.resume		= acpi_cpufreq_resume,
+ 	.name		= "acpi-cpufreq",
+ 	.attr		= acpi_cpufreq_attr,
++	.set_boost      = _store_boost,
+ };
+ 
+ static void __init acpi_cpufreq_boost_init(void)
+@@ -921,33 +905,22 @@ static void __init acpi_cpufreq_boost_init(void)
+ 		if (!msrs)
+ 			return;
+ 
+-		boost_supported = true;
+-		boost_enabled = boost_state(0);
+-
++		acpi_cpufreq_driver.boost_supported = true;
++		acpi_cpufreq_driver.boost_enabled = boost_state(0);
+ 		get_online_cpus();
+ 
+ 		/* Force all MSRs to the same value */
+-		boost_set_msrs(boost_enabled, cpu_online_mask);
++		boost_set_msrs(acpi_cpufreq_driver.boost_enabled,
++			       cpu_online_mask);
+ 
+ 		register_cpu_notifier(&boost_nb);
+ 
+ 		put_online_cpus();
+-	} else
+-		global_boost.attr.mode = 0444;
+-
+-	/* We create the boost file in any case, though for systems without
+-	 * hardware support it will be read-only and hardwired to return 0.
+-	 */
+-	if (cpufreq_sysfs_create_file(&(global_boost.attr)))
+-		pr_warn(PFX "could not register global boost sysfs file\n");
+-	else
+-		pr_debug("registered global boost sysfs file\n");
++	}
+ }
+ 
+ static void __exit acpi_cpufreq_boost_exit(void)
+ {
+-	cpufreq_sysfs_remove_file(&(global_boost.attr));
+-
+ 	if (msrs) {
+ 		unregister_cpu_notifier(&boost_nb);
+ 
+@@ -993,12 +966,11 @@ static int __init acpi_cpufreq_init(void)
+ 			*iter = &cpb;
+ 	}
+ #endif
++	acpi_cpufreq_boost_init();
+ 
+ 	ret = cpufreq_register_driver(&acpi_cpufreq_driver);
+ 	if (ret)
+ 		free_acpi_perf_data();
+-	else
+-		acpi_cpufreq_boost_init();
+ 
+ 	return ret;
+ }
+-- 
+1.7.10.4
+
