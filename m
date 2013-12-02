@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab3LBTHX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:07:23 -0500
+	id S1753538Ab3LBTHg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:07:36 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:38285 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753330Ab3LBTHK (ORCPT
+	with ESMTP id S1753407Ab3LBTHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:07:10 -0500
+	Mon, 2 Dec 2013 14:07:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.4 35/60] mwifiex: correct packet length for packets from SDIO interface
-Date: Mon,  2 Dec 2013 11:06:16 -0800
-Message-Id: <20131202190337.980788036@linuxfoundation.org>
+        David Bulkow <David.Bulkow@stratus.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.4 39/60] PCI: Remove duplicate pci_disable_device() from pcie_portdrv_remove()
+Date: Mon,  2 Dec 2013 11:06:20 -0800
+Message-Id: <20131202190338.721249149@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
 References: <20131202190330.152596462@linuxfoundation.org>
@@ -27,35 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avinash Patil <patila@marvell.com>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit d03b4aa77e1187b77dfe37d14a923547f00baa66 upstream.
+commit e7cc5cf74544d97d7b69e2701595037474db1f96 upstream.
 
-While receiving a packet on SDIO interface, we allocate skb with
-size multiple of SDIO block size. We need to resize this skb
-after RX using packet length from RX header.
+The pcie_portdrv .probe() method calls pci_enable_device() once, in
+pcie_port_device_register(), but the .remove() method calls
+pci_disable_device() twice, in pcie_port_device_remove() and in
+pcie_portdrv_remove().
 
-Signed-off-by: Avinash Patil <patila@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+That causes a "disabling already-disabled device" warning when removing a
+PCIe port device.  This happens all the time when removing Thunderbolt
+devices, but is also easy to reproduce with, e.g.,
+"echo 0000:00:1c.3 > /sys/bus/pci/drivers/pcieport/unbind"
+
+This patch removes the disable from pcie_portdrv_remove().
+
+[bhelgaas: changelog, tag for stable]
+Reported-by: David Bulkow <David.Bulkow@stratus.com>
+Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/sdio.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/pci/pcie/portdrv_pci.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/net/wireless/mwifiex/sdio.c
-+++ b/drivers/net/wireless/mwifiex/sdio.c
-@@ -938,7 +938,10 @@ static int mwifiex_decode_rx_packet(stru
- 				    struct sk_buff *skb, u32 upld_typ)
+--- a/drivers/pci/pcie/portdrv_pci.c
++++ b/drivers/pci/pcie/portdrv_pci.c
+@@ -151,7 +151,6 @@ static int __devinit pcie_portdrv_probe(
+ static void pcie_portdrv_remove(struct pci_dev *dev)
  {
- 	u8 *cmd_buf;
-+	__le16 *curr_ptr = (__le16 *)skb->data;
-+	u16 pkt_len = le16_to_cpu(*curr_ptr);
+ 	pcie_port_device_remove(dev);
+-	pci_disable_device(dev);
+ }
  
-+	skb_trim(skb, pkt_len);
- 	skb_pull(skb, INTF_HEADER_LEN);
- 
- 	switch (upld_typ) {
+ static int error_detected_iter(struct device *device, void *data)
 
 
