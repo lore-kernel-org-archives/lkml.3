@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab3LBTRR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:17:17 -0500
+	id S1754568Ab3LBTR3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:17:29 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:38990 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab3LBTRB (ORCPT
+	with ESMTP id S1752764Ab3LBTRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:01 -0500
+	Mon, 2 Dec 2013 14:17:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.12 022/212] ASoC: blackfin: Fix missing break
-Date: Mon,  2 Dec 2013 11:13:33 -0800
-Message-Id: <20131202191251.155678483@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 017/212] backlight: atmel-pwm-bl: fix reported brightness
+Date: Mon,  2 Dec 2013 11:13:28 -0800
+Message-Id: <20131202191250.558876794@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,29 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit afed4dbe3a043dbd833a53b6b4951e155708afd2 upstream.
+commit 185d91442550110db67a7dc794a32efcea455a36 upstream.
 
-Fixes: 4b2ffc205cb9 ('ASoC: Blackfin I2S: add 8-bit sample support')
-Reported-by: David Binderman
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+The driver supports 16-bit brightness values, but the value returned
+from get_brightness was truncated to eight bits.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Cc: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/blackfin/bf5xx-i2s.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/video/backlight/atmel-pwm-bl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/soc/blackfin/bf5xx-i2s.c
-+++ b/sound/soc/blackfin/bf5xx-i2s.c
-@@ -121,6 +121,7 @@ static int bf5xx_i2s_hw_params(struct sn
- 		bf5xx_i2s->tcr2 |= 7;
- 		bf5xx_i2s->rcr2 |= 7;
- 		sport_handle->wdsize = 1;
-+		break;
- 	case SNDRV_PCM_FORMAT_S16_LE:
- 		bf5xx_i2s->tcr2 |= 15;
- 		bf5xx_i2s->rcr2 |= 15;
+--- a/drivers/video/backlight/atmel-pwm-bl.c
++++ b/drivers/video/backlight/atmel-pwm-bl.c
+@@ -70,7 +70,7 @@ static int atmel_pwm_bl_set_intensity(st
+ static int atmel_pwm_bl_get_intensity(struct backlight_device *bd)
+ {
+ 	struct atmel_pwm_bl *pwmbl = bl_get_data(bd);
+-	u8 intensity;
++	u32 intensity;
+ 
+ 	if (pwmbl->pdata->pwm_active_low) {
+ 		intensity = pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY) -
+@@ -80,7 +80,7 @@ static int atmel_pwm_bl_get_intensity(st
+ 			pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY);
+ 	}
+ 
+-	return intensity;
++	return intensity & 0xffff;
+ }
+ 
+ static int atmel_pwm_bl_init_pwm(struct atmel_pwm_bl *pwmbl)
 
 
