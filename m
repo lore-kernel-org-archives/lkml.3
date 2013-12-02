@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758225Ab3LBUl2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:41:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38751 "EHLO
+	id S1758188Ab3LBUlS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:41:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38743 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754270Ab3LBTOI (ORCPT
+	with ESMTP id S1754278Ab3LBTOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:14:08 -0500
+	Mon, 2 Dec 2013 14:14:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robherring2@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Baruch Siach <baruch@tkos.co.il>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.10 136/173] gpio: pl061: move irqdomain initialization
-Date: Mon,  2 Dec 2013 11:11:59 -0800
-Message-Id: <20131202191159.038637062@linuxfoundation.org>
+        Luosong <android@generaltouch.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.10 127/173] HID: multitouch: Fix GeneralTouch products and add more PIDs
+Date: Mon,  2 Dec 2013 11:11:50 -0800
+Message-Id: <20131202191158.086686103@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -30,102 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Luosong <android@generaltouch.com>
 
-commit 2ba3154d9cb13697b97723cce75633b48adfe826 upstream.
+commit 7b2262920db2b98fe2cd32cde52141f02fd9eecf upstream.
 
-The PL061 driver had the irqdomain initialization in an unfortunate
-place: when used with device tree (and thus passing the base IRQ
-0) the driver would work, as this registers an irqdomain and waits
-for mappings to be done dynamically as the devices request their
-IRQs, whereas when booting using platform data the irqdomain core
-would attempt to allocate IRQ descriptors dynamically (which works
-fine) but also to associate the irq_domain_associate_many() on all
-IRQs, which in turn will call the mapping function which at this
-point will try to set the type of the IRQ and then tries to acquire
-a non-initialized spinlock yielding a backtrace like this:
+GeneralTouch products should use the quirk SLOT_IS_CONTACTID
+instead of SLOT_IS_CONTACTNUMBER.
 
-CPU: 0 PID: 1 Comm: swapper Not tainted 3.13.0-rc1+ #652
-Backtrace:
-[<c0016f0c>] (dump_backtrace) from [<c00172ac>] (show_stack+0x18/0x1c)
- r6:c798ace0 r5:00000000 r4:c78257e0 r3:00200140
-[<c0017294>] (show_stack) from [<c0329ea0>] (dump_stack+0x20/0x28)
-[<c0329e80>] (dump_stack) from [<c004fa80>] (__lock_acquire+0x1c0/0x1b80)
-[<c004f8c0>] (__lock_acquire) from [<c0051970>] (lock_acquire+0x6c/0x80)
- r10:00000000 r9:c0455234 r8:00000060 r7:c047d798 r6:600000d3 r5:00000000
- r4:c782c000
-[<c0051904>] (lock_acquire) from [<c032e484>] (_raw_spin_lock_irqsave+0x60/0x74)
- r6:c01a1100 r5:800000d3 r4:c798acd0
-[<c032e424>] (_raw_spin_lock_irqsave) from [<c01a1100>] (pl061_irq_type+0x28/0x)
- r6:00000000 r5:00000000 r4:c798acd0
-[<c01a10d8>] (pl061_irq_type) from [<c0059ef4>] (__irq_set_trigger+0x70/0x104)
- r6:00000000 r5:c01a10d8 r4:c046da1c r3:c01a10d8
-[<c0059e84>] (__irq_set_trigger) from [<c005b348>] (irq_set_irq_type+0x40/0x60)
- r10:c043240c r8:00000060 r7:00000000 r6:c046da1c r5:00000060 r4:00000000
-[<c005b308>] (irq_set_irq_type) from [<c01a1208>] (pl061_irq_map+0x40/0x54)
- r6:c79693c0 r5:c798acd0 r4:00000060
-[<c01a11c8>] (pl061_irq_map) from [<c005d27c>] (irq_domain_associate+0xc0/0x190)
- r5:00000060 r4:c046da1c
-[<c005d1bc>] (irq_domain_associate) from [<c005d604>] (irq_domain_associate_man)
- r8:00000008 r7:00000000 r6:c79693c0 r5:00000060 r4:00000000
-[<c005d5d0>] (irq_domain_associate_many) from [<c005d864>] (irq_domain_add_simp)
- r8:c046578c r7:c035b72c r6:c79693c0 r5:00000060 r4:00000008 r3:00000008
-[<c005d814>] (irq_domain_add_simple) from [<c01a1380>] (pl061_probe+0xc4/0x22c)
- r6:00000060 r5:c0464380 r4:c798acd0
-[<c01a12bc>] (pl061_probe) from [<c01c0450>] (amba_probe+0x74/0xe0)
- r10:c043240c r9:c0455234 r8:00000000 r7:c047d7f8 r6:c047d744 r5:00000000
- r4:c0464380
+Adding PIDs 0101,e100,0102,0106,010a from the new products.
 
-This moves the irqdomain initialization to a point where the spinlock
-and GPIO chip are both fully propulated, so the callbacks can be used
-without crashes.
+Tested on new and older products by GeneralTouch engineers.
 
-I had some problem reproducing the crash, as the devm_kzalloc():ed
-zeroed memory would seemingly mask the spinlock as something OK,
-but by poisoning the lock like this:
-
-u32 *dum;
-dum = (u32 *) &chip->lock;
-*dum = 0xaaaaaaaaU;
-
-I could reproduce, fix and test the patch.
-
-Reported-by: Russell King <linux@arm.linux.org.uk>
-Cc: Rob Herring <robherring2@gmail.com>
-Cc: Haojian Zhuang <haojian.zhuang@linaro.org>
-Cc: Baruch Siach <baruch@tkos.co.il>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Luosong <android@generaltouch.com>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpio-pl061.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/hid/hid-ids.h        |    5 +++++
+ drivers/hid/hid-multitouch.c |   19 +++++++++++++++++--
+ 2 files changed, 22 insertions(+), 2 deletions(-)
 
---- a/drivers/gpio/gpio-pl061.c
-+++ b/drivers/gpio/gpio-pl061.c
-@@ -286,11 +286,6 @@ static int pl061_probe(struct amba_devic
- 	if (!chip->base)
- 		return -ENOMEM;
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -330,6 +330,11 @@
+ #define USB_VENDOR_ID_GENERAL_TOUCH	0x0dfc
+ #define USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS 0x0003
+ #define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS 0x0100
++#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0101 0x0101
++#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0102 0x0102
++#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0106 0x0106
++#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_010A 0x010a
++#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_E100 0xe100
  
--	chip->domain = irq_domain_add_simple(adev->dev.of_node, PL061_GPIO_NR,
--					     irq_base, &pl061_domain_ops, chip);
--	if (!chip->domain)
--		return -ENODEV;
--
- 	spin_lock_init(&chip->lock);
+ #define USB_VENDOR_ID_GLAB		0x06c2
+ #define USB_DEVICE_ID_4_PHIDGETSERVO_30	0x0038
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -244,12 +244,12 @@ static struct mt_class mt_classes[] = {
+ 	{ .name	= MT_CLS_GENERALTOUCH_TWOFINGERS,
+ 		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
+ 			MT_QUIRK_VALID_IS_INRANGE |
+-			MT_QUIRK_SLOT_IS_CONTACTNUMBER,
++			MT_QUIRK_SLOT_IS_CONTACTID,
+ 		.maxcontacts = 2
+ 	},
+ 	{ .name	= MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
+ 		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
+-			MT_QUIRK_SLOT_IS_CONTACTNUMBER
++			MT_QUIRK_SLOT_IS_CONTACTID
+ 	},
  
- 	chip->gc.request = pl061_gpio_request;
-@@ -320,6 +315,11 @@ static int pl061_probe(struct amba_devic
- 	irq_set_chained_handler(irq, pl061_irq_handler);
- 	irq_set_handler_data(irq, chip);
+ 	{ .name = MT_CLS_FLATFROG,
+@@ -1191,6 +1191,21 @@ static const struct hid_device_id mt_dev
+ 	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
+ 		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
+ 			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS) },
++	{ .driver_data = MT_CLS_GENERALTOUCH_TWOFINGERS,
++		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
++			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0101) },
++	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
++		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
++			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0102) },
++	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
++		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
++			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0106) },
++	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
++		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
++			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_010A) },
++	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
++		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
++			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_E100) },
  
-+	chip->domain = irq_domain_add_simple(adev->dev.of_node, PL061_GPIO_NR,
-+					     irq_base, &pl061_domain_ops, chip);
-+	if (!chip->domain)
-+		return -ENODEV;
-+
- 	for (i = 0; i < PL061_GPIO_NR; i++) {
- 		if (pdata) {
- 			if (pdata->directions & (1 << i))
+ 	/* Gametel game controller */
+ 	{ .driver_data = MT_CLS_NSMU,
 
 
