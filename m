@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965Ab3LBSvb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 13:51:31 -0500
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:34529 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752028Ab3LBSv0 (ORCPT
+	id S1752873Ab3LBSyQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 13:54:16 -0500
+Received: from 6.mo4.mail-out.ovh.net ([188.165.36.253]:49561 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752266Ab3LBSyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 13:51:26 -0500
-Date: Mon, 2 Dec 2013 15:51:16 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 1/3] perf tools: Record total sampling time
-Message-ID: <20131202185116.GB14254@ghostprotocols.net>
-References: <1385967199-3759-1-git-send-email-namhyung@kernel.org>
- <1385967199-3759-2-git-send-email-namhyung@kernel.org>
- <20131202124527.GB22212@gmail.com>
- <1385996749.1710.34.camel@leonhard>
+	Mon, 2 Dec 2013 13:54:13 -0500
+X-Greylist: delayed 21493 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Dec 2013 13:54:13 EST
+Message-ID: <529CD751.3020704@overkiz.com>
+Date: Mon, 02 Dec 2013 19:54:09 +0100
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1385996749.1710.34.camel@leonhard>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: at91: add i2c2 pinctrl speficifation to sama5d3
+ DT
+References: <1386001128-29147-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <1386001128-29147-1-git-send-email-nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 15515463667742046316
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Dec 03, 2013 at 12:05:49AM +0900, Namhyung Kim escreveu:
-> Hi Ingo,
-> 
-> 2013-12-02 (월), 13:45 +0100, Ingo Molnar:
-> > * Namhyung Kim <namhyung@kernel.org> wrote:
-> > 
-> > > From: Namhyung Kim <namhyung.kim@lge.com>
-> > > 
-> > > It's sometimes useful to see total sampling or elapsed time with
-> > > normal performance result.  To do that, record first and last sample
-> > > time for each evsel and to display it in the header (--stdio only for
-> > > now).
-> > > 
-> > >   $ perf record -a sleep 1
-> > >   $ perf report --stdio
-> > >   ...
-> > >   # Samples: 4K of event 'cycles'
-> > >   # Event count (approx.): 4087481688
-> > >   # Total sampling time  : 1.001260 (sec)
-> > 
-> > Btw., would it make sense to output it using the 'perf stat' print-out 
-> > machinery?
-> > 
-> > If the 'count' of every event sampled is saved in the perf.data, 
-> > including elapsed time, at the beginning and at the end, then all 
-> > information is there to output things in perf stat style.
-> 
-> Yeah, it'd be great if we can share same code in the end.
+On 02/12/2013 17:18, Nicolas Ferre wrote:
 
-I guess we'll basically just process all samples, accumulating stuff
-where the builtin-stat code finds them, in struct perf_evsel, then just
-hand it to that code.
 
-- Arnaldo
+Acked-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+>   arch/arm/boot/dts/sama5d3.dtsi | 10 ++++++++++
+>   1 file changed, 10 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
+> index f520b0236671..f5fd111b5ee6 100644
+> --- a/arch/arm/boot/dts/sama5d3.dtsi
+> +++ b/arch/arm/boot/dts/sama5d3.dtsi
+> @@ -304,6 +304,8 @@
+>   				dmas = <&dma1 2 AT91_DMA_CFG_PER_ID(11)>,
+>   				       <&dma1 2 AT91_DMA_CFG_PER_ID(12)>;
+>   				dma-names = "tx", "rx";
+> +				pinctrl-names = "default";
+> +				pinctrl-0 = <&pinctrl_i2c2>;
+>   				#address-cells = <1>;
+>   				#size-cells = <0>;
+>   				clocks = <&twi2_clk>;
+> @@ -494,6 +496,14 @@
+>   					};
+>   				};
+>   
+> +				i2c2 {
+> +					pinctrl_i2c2: i2c2-0 {
+> +						atmel,pins =
+> +							<AT91_PIOA 18 AT91_PERIPH_B AT91_PINCTRL_NONE	/* TWD2 pin, conflicts with LCDDAT18, ISI_D2 */
+> +							 AT91_PIOA 19 AT91_PERIPH_B AT91_PINCTRL_NONE>; /* TWCK2 pin, conflicts with LCDDAT19, ISI_D3 */
+> +					};
+> +				};
+> +
+>   				isi {
+>   					pinctrl_isi: isi-0 {
+>   						atmel,pins =
+
