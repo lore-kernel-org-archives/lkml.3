@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab3LBOvI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 09:51:08 -0500
-Received: from fieldses.org ([174.143.236.118]:53656 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751432Ab3LBOvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 09:51:05 -0500
-Date: Mon, 2 Dec 2013 09:51:01 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Weng Meiling <wengmeiling.weng@huawei.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Trond.Myklebust@netapp.com,
-        davem@davemloft.net, Li Zefan <lizefan@huawei.com>,
-        Huang Qiang <h.huangqiang@huawei.com>
-Subject: Re: [PATCH] sunrpc: fix some typos
-Message-ID: <20131202145101.GE1960@fieldses.org>
-References: <5299B65C.4070700@huawei.com>
+	id S1752164Ab3LBOwx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 09:52:53 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:56309 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691Ab3LBOwv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 09:52:51 -0500
+Message-ID: <529C9EC0.70607@gmail.com>
+Date: Mon, 02 Dec 2013 07:52:48 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5299B65C.4070700@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH 1/2] perf probe: Improve error message when function not
+ found
+References: <1385942827-11637-1-git-send-email-dsahern@gmail.com> <529C21C5.3030007@hitachi.com>
+In-Reply-To: <529C21C5.3030007@hitachi.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, applying.--b.
+On 12/1/13, 10:59 PM, Masami Hiramatsu wrote:
+> (2013/12/02 9:07), David Ahern wrote:
+>> When requesting a function from a userspace library the error message to
+>> the user is less than helpful. e.g.,
+>>
+>>      perf probe -x /lib64/libpthread-2.14.90.so -a 'lock_full=__pthread_mutex_lock_full'
+>>      no symbols found in /lib64/libpthread-2.14.90.so, maybe install a debug package?
+>>      Failed to load map.
+>>         Error: Failed to add events. (-22)
+>>
+>> In this cae the symbol really does exist but is a local symbol which is
+>> filtered:
+>>
+>>      nm /lib64/libpthread-2.14.90.so | grep __pthread_mutex_lock_full
+>>      0000000000005700 t __pthread_mutex_lock_full
+>>
+>> With this patch:
+>>      perf probe -x /lib64/libpthread-2.14.90.so -a 'lock_full=__pthread_mutex_lock_full'
+>>
+>>      no symbols found in /lib64/libpthread-2.14.90.so, maybe install a debug package?
+>>      Failed to find function in /lib64/libpthread-2.14.90.so. Perhaps it is a local variable?
+> 
+> Hmm, indeed current message is too less information, but your message looks
+> wired. I think just showing "Failed to find requested symbol in %s" is enough. :)
 
-On Sat, Nov 30, 2013 at 05:56:44PM +0800, Weng Meiling wrote:
-> 
-> From: Weng Meiling <wengmeiling.weng@huawei.com>
-> 
-> Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
-> ---
->  include/linux/sunrpc/svc.h | 2 +-
->  net/sunrpc/xprtsock.c      | 7 +++----
->  2 files changed, 4 insertions(+), 5 deletions(-)
-> 
-> diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
-> index 6eecfc2..b6316423 100644
-> --- a/include/linux/sunrpc/svc.h
-> +++ b/include/linux/sunrpc/svc.h
-> @@ -368,7 +368,7 @@ struct svc_program {
->  	struct svc_program *	pg_next;	/* other programs (same xprt) */
->  	u32			pg_prog;	/* program number */
->  	unsigned int		pg_lovers;	/* lowest version */
-> -	unsigned int		pg_hivers;	/* lowest version */
-> +	unsigned int		pg_hivers;	/* highest version */
->  	unsigned int		pg_nvers;	/* number of versions */
->  	struct svc_version **	pg_vers;	/* version array */
->  	char *			pg_name;	/* service name */
-> diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-> index dd9d295..0f4f391 100644
-> --- a/net/sunrpc/xprtsock.c
-> +++ b/net/sunrpc/xprtsock.c
-> @@ -2932,10 +2932,9 @@ static struct rpc_xprt *xs_setup_bc_tcp(struct xprt_create *args)
-> 
->  	/*
->  	 * Once we've associated a backchannel xprt with a connection,
-> -	 * we want to keep it around as long as long as the connection
-> -	 * lasts, in case we need to start using it for a backchannel
-> -	 * again; this reference won't be dropped until bc_xprt is
-> -	 * destroyed.
-> +	 * we want to keep it around as long as the connection lasts,
-> +	 * in case we need to start using it for a backchannel again;
-> +	 * this reference won't be dropped until bc_xprt is destroyed.
->  	 */
->  	xprt_get(xprt);
->  	args->bc_xprt->xpt_bc_xprt = xprt;
-> -- 
-> 1.8.3
-> 
-> 
+I disagree. perf-probe filters non-global variables:
+
+    if (sym->binding == STB_GLOBAL &&
+        strfilter__compare(available_func_filter, sym->name))
+        return 0;
+
+That needs to be explicitly stated in the error message -- only global
+symbols may be given.
+
+Between the 2 original error messages I wasted 2 hours strace'ing perf
+looking at files -- including all the debuginfo variants -- that perf
+opens. nm/objdump and every other tool sees the symbols yet perf throws
+out bizarre error messages -- "no symbols found in ..." and "Failed to
+load map". Let's fix those messages with something meaningful.
+
+David
