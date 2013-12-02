@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756941Ab3LBUJY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:09:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39200 "EHLO
+	id S1756910Ab3LBUJS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:09:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39252 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754580Ab3LBTRe (ORCPT
+	with ESMTP id S1754583Ab3LBTRf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:34 -0500
+	Mon, 2 Dec 2013 14:17:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xiangliang Yu <yuxiangl@marvell.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.12 054/212] ahci: disabled FBS prior to issuing software reset
-Date: Mon,  2 Dec 2013 11:14:05 -0800
-Message-Id: <20131202191254.199382441@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.12 076/212] rtlwifi: rtl8192de: Fix incorrect signal strength for unassociated AP
+Date: Mon,  2 Dec 2013 11:14:27 -0800
+Message-Id: <20131202191256.305656507@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,127 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: xiangliang yu <yxlraid@gmail.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 89dafa20f3daab5b3e0c13d0068a28e8e64e2102 upstream.
+commit 3545f3d5f4af715c914394123ce7725a9cf0a1c4 upstream.
 
-Tested with Marvell 88se9125, attached with one port mulitplier(5 ports)
-and one disk, we will get following boot log messages if using current
-code:
+The routine that processes received frames was returning the RSSI value for the
+signal strength; however, that value is available only for associated APs. As
+a result, the strength was the absurd value of 10 dBm. As a result, scans
+return incorrect values for the strength, which causes unwanted attempts to roam.
 
-  ata8: SATA link up 6.0 Gbps (SStatus 133 SControl 330)
-  ata8.15: Port Multiplier 1.2, 0x1b4b:0x9715 r160, 5 ports, feat 0x1/0x1f
-  ahci 0000:03:00.0: FBS is enabled
-  ata8.00: hard resetting link
-  ata8.00: SATA link down (SStatus 0 SControl 330)
-  ata8.01: hard resetting link
-  ata8.01: SATA link down (SStatus 0 SControl 330)
-  ata8.02: hard resetting link
-  ata8.02: SATA link down (SStatus 0 SControl 330)
-  ata8.03: hard resetting link
-  ata8.03: SATA link up 6.0 Gbps (SStatus 133 SControl 133)
-  ata8.04: hard resetting link
-  ata8.04: failed to resume link (SControl 133)
-  ata8.04: failed to read SCR 0 (Emask=0x40)
-  ata8.04: failed to read SCR 0 (Emask=0x40)
-  ata8.04: failed to read SCR 1 (Emask=0x40)
-  ata8.04: failed to read SCR 0 (Emask=0x40)
-  ata8.03: native sectors (2) is smaller than sectors (976773168)
-  ata8.03: ATA-8: ST3500413AS, JC4B, max UDMA/133
-  ata8.03: 976773168 sectors, multi 0: LBA48 NCQ (depth 31/32)
-  ata8.03: configured for UDMA/133
-  ata8.04: failed to IDENTIFY (I/O error, err_mask=0x100)
-  ata8.15: hard resetting link
-  ata8.15: SATA link up 6.0 Gbps (SStatus 133 SControl 330)
-  ata8.15: Port Multiplier vendor mismatch '0x1b4b' != '0x133'
-  ata8.15: PMP revalidation failed (errno=-19)
-  ata8.15: hard resetting link
-  ata8.15: SATA link up 6.0 Gbps (SStatus 133 SControl 330)
-  ata8.15: Port Multiplier vendor mismatch '0x1b4b' != '0x133'
-  ata8.15: PMP revalidation failed (errno=-19)
-  ata8.15: limiting SATA link speed to 3.0 Gbps
-  ata8.15: hard resetting link
-  ata8.15: SATA link up 3.0 Gbps (SStatus 123 SControl 320)
-  ata8.15: Port Multiplier vendor mismatch '0x1b4b' != '0x133'
-  ata8.15: PMP revalidation failed (errno=-19)
-  ata8.15: failed to recover PMP after 5 tries, giving up
-  ata8.15: Port Multiplier detaching
-  ata8.03: disabled
-  ata8.00: disabled
-  ata8: EH complete
-
-The reason is that current detection code doesn't follow AHCI spec:
-
-First,the port multiplier detection process look like this:
-
-	ahci_hardreset(link, class, deadline)
-	if (class == ATA_DEV_PMP) {
-		sata_pmp_attach(dev)	/* will enable FBS */
-		sata_pmp_init_links(ap, nr_ports);
-		ata_for_each_link(link, ap, EDGE) {
-			sata_std_hardreset(link, class, deadline);
-			if (link_is_online)	/* do soft reset */
-				ahci_softreset(link, class, deadline);
-		}
-	}
-But, according to chapter 9.3.9 in AHCI spec: Prior to issuing software
-reset, software shall clear PxCMD.ST to '0' and then clear PxFBS.EN to
-'0'.
-
-The patch test ok with kernel 3.11.1.
-
-tj: Patch white space contaminated, applied manually with trivial
-    updates.
-
-Signed-off-by: Xiangliang Yu <yuxiangl@marvell.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libahci.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ drivers/net/wireless/rtlwifi/rtl8192de/trx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -1275,9 +1275,11 @@ int ahci_do_softreset(struct ata_link *l
- {
- 	struct ata_port *ap = link->ap;
- 	struct ahci_host_priv *hpriv = ap->host->private_data;
-+	struct ahci_port_priv *pp = ap->private_data;
- 	const char *reason = NULL;
- 	unsigned long now, msecs;
- 	struct ata_taskfile tf;
-+	bool fbs_disabled = false;
- 	int rc;
- 
- 	DPRINTK("ENTER\n");
-@@ -1287,6 +1289,16 @@ int ahci_do_softreset(struct ata_link *l
- 	if (rc && rc != -EOPNOTSUPP)
- 		ata_link_warn(link, "failed to reset engine (errno=%d)\n", rc);
- 
-+	/*
-+	 * According to AHCI-1.2 9.3.9: if FBS is enable, software shall
-+	 * clear PxFBS.EN to '0' prior to issuing software reset to devices
-+	 * that is attached to port multiplier.
-+	 */
-+	if (!ata_is_host_link(link) && pp->fbs_enabled) {
-+		ahci_disable_fbs(ap);
-+		fbs_disabled = true;
-+	}
-+
- 	ata_tf_init(link->device, &tf);
- 
- 	/* issue the first D2H Register FIS */
-@@ -1327,6 +1339,10 @@ int ahci_do_softreset(struct ata_link *l
- 	} else
- 		*class = ahci_dev_classify(ap);
- 
-+	/* re-enable FBS if disabled before */
-+	if (fbs_disabled)
-+		ahci_enable_fbs(ap);
-+
- 	DPRINTK("EXIT, class=%u\n", *class);
- 	return 0;
- 
+--- a/drivers/net/wireless/rtlwifi/rtl8192de/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192de/trx.c
+@@ -525,7 +525,7 @@ bool rtl92de_rx_query_desc(struct ieee80
+ 						   p_drvinfo);
+ 	}
+ 	/*rx_status->qual = stats->signal; */
+-	rx_status->signal = stats->rssi + 10;
++	rx_status->signal = stats->recvsignalpower + 10;
+ 	/*rx_status->noise = -stats->noise; */
+ 	return true;
+ }
 
 
