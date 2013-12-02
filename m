@@ -1,124 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab3LBSDK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 13:03:10 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:51852 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753020Ab3LBSCw (ORCPT
+	id S1753172Ab3LBSF2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 13:05:28 -0500
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:64115 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751181Ab3LBSF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 13:02:52 -0500
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Chris Ball <cjb@laptop.org>, Michal Simek <michal.simek@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org, Tomasz Figa <tomasz.figa@gmail.com>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH v3 2/2] arm: dt: zynq: Add SDHCI nodes
-Date: Mon,  2 Dec 2013 10:02:37 -0800
-Message-Id: <1386007357-11956-2-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.4.4
-In-Reply-To: <1386007357-11956-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1386007357-11956-1-git-send-email-soren.brinkmann@xilinx.com>
+	Mon, 2 Dec 2013 13:05:27 -0500
+Message-ID: <1386007525.9830.4.camel@x41.thuisdomein>
+Subject: Re: [i915] WARNING: [...] drivers/gpu/drm/i915/intel_display.c:9948
+ intel_get_pipe_from_connector
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Ville =?ISO-8859-1?Q?Syrj=E4l=E4?= 
+	<ville.syrjala@linux.intel.com>,
+        David Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Mon, 02 Dec 2013 19:05:25 +0100
+In-Reply-To: <CAKMK7uE=Wr95XM85XVS1nT_8cV4e1Z_SubSVjQyP8BuLz-bTQg@mail.gmail.com>
+References: <1385843936.10971.5.camel@x41.thuisdomein>
+	 <CAKMK7uHRW-1OiMY44s2G9dwbbQLMUxZ4fHf=Eaf9gJ_WASpvLQ@mail.gmail.com>
+	 <1385917025.7199.4.camel@x41.thuisdomein>
+	 <CAKMK7uE_L8cqyYk6mQ4paXeh2m7tmoMXRv_KxoAeBq9MEAnFqw@mail.gmail.com>
+	 <1385978027.2972.3.camel@x41.thuisdomein>
+	 <CAKMK7uE=Wr95XM85XVS1nT_8cV4e1Z_SubSVjQyP8BuLz-bTQg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 02 Dec 2013 18:05:25.0475 (UTC) FILETIME=[135D1B30:01CEEF89]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add nodes for the Arasan SDHCI controller to Zynq dts files.
+On Mon, 2013-12-02 at 15:23 +0100, Daniel Vetter wrote:
+> On Mon, Dec 2, 2013 at 10:53 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> > This generated quite a bit of debug messages so I only copied the
+> > WARNING and the drm (related) messages immediately preceding it. Please
+> > feel free to prod again if that's insufficient.
+> 
+> Yeah, the beginning of the drm message would are wanted since I need
+> to know what exactly your hardware claims to support ;-)
+> 
+> But the backtrace confirms my first hunch for now ... Just want to
+> confirm before sending out a patch with commit message.
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
-v2:
- - update compatibilty string according to changes in 1/2 (append
-   '-8.9a' IP version string)
----
- arch/arm/boot/dts/zynq-7000.dtsi | 20 ++++++++++++++++++++
- arch/arm/boot/dts/zynq-zc702.dts |  4 ++++
- arch/arm/boot/dts/zynq-zc706.dts |  4 ++++
- arch/arm/boot/dts/zynq-zed.dts   |  4 ++++
- 4 files changed, 32 insertions(+)
+It seems Ville's patch ( https://lkml.org/lkml/2013/12/2/77 ) does the
+trick. Do you still need the additional info?
 
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index e7f73b2e4550..4aecd1baf435 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -65,6 +65,26 @@
- 			interrupts = <0 50 4>;
- 		};
- 
-+		sdhci0: ps7-sdhci@e0100000 {
-+			compatible = "arasan,sdhci-8.9a";
-+			status = "disabled";
-+			clock-names = "clk_xin", "clk_ahb";
-+			clocks = <&clkc 21>, <&clkc 32>;
-+			interrupt-parent = <&intc>;
-+			interrupts = <0 24 4>;
-+			reg = <0xe0100000 0x1000>;
-+		} ;
-+
-+		sdhci1: ps7-sdhci@e0101000 {
-+			compatible = "arasan,sdhci-8.9a";
-+			status = "disabled";
-+			clock-names = "clk_xin", "clk_ahb";
-+			clocks = <&clkc 22>, <&clkc 33>;
-+			interrupt-parent = <&intc>;
-+			interrupts = <0 47 4>;
-+			reg = <0xe0101000 0x1000>;
-+		} ;
-+
- 		slcr: slcr@f8000000 {
- 			compatible = "xlnx,zynq-slcr";
- 			reg = <0xF8000000 0x1000>;
-diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
-index 21aea99a067b..454394453e9c 100644
---- a/arch/arm/boot/dts/zynq-zc702.dts
-+++ b/arch/arm/boot/dts/zynq-zc702.dts
-@@ -29,6 +29,10 @@
- 
- };
- 
-+&sdhci0 {
-+	status = "okay";
-+};
-+
- &uart1 {
- 	status = "okay";
- };
-diff --git a/arch/arm/boot/dts/zynq-zc706.dts b/arch/arm/boot/dts/zynq-zc706.dts
-index 79009e0b74b9..d734d5411760 100644
---- a/arch/arm/boot/dts/zynq-zc706.dts
-+++ b/arch/arm/boot/dts/zynq-zc706.dts
-@@ -30,6 +30,10 @@
- 
- };
- 
-+&sdhci0 {
-+	status = "okay";
-+};
-+
- &uart1 {
- 	status = "okay";
- };
-diff --git a/arch/arm/boot/dts/zynq-zed.dts b/arch/arm/boot/dts/zynq-zed.dts
-index d6acf2b1cdf4..cd259dd13cdc 100644
---- a/arch/arm/boot/dts/zynq-zed.dts
-+++ b/arch/arm/boot/dts/zynq-zed.dts
-@@ -30,6 +30,10 @@
- 
- };
- 
-+&sdhci0 {
-+	status = "okay";
-+};
-+
- &uart1 {
- 	status = "okay";
- };
--- 
-1.8.4.4
+
+Paul Bolle
 
