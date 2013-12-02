@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759089Ab3LBVGz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:06:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38395 "EHLO
+	id S1759295Ab3LBVJT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:09:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38475 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753033Ab3LBTNP (ORCPT
+	with ESMTP id S1753993Ab3LBTNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:15 -0500
+	Mon, 2 Dec 2013 14:13:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Seppanen <eric@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 050/173] iscsi-target: chap auth shouldnt match username with trailing garbage
-Date: Mon,  2 Dec 2013 11:10:33 -0800
-Message-Id: <20131202191148.404413034@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 040/173] rtlwifi: rtl8192cu: Fix more pointer arithmetic errors
+Date: Mon,  2 Dec 2013 11:10:23 -0800
+Message-Id: <20131202191147.295088134@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,46 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Seppanen <eric@purestorage.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 86784c6bdeeef78eed94d298be7a8879f6a97ee2 upstream.
+commit eafbdde9c5629bea58df07275c5917eb42afbbe7 upstream.
 
-In iSCSI negotiations with initiator CHAP enabled, usernames with
-trailing garbage are permitted, because the string comparison only
-checks the strlen of the configured username.
+This driver uses a number of macros to get and set various fields in the
+RX and TX descriptors. To work correctly, a u8 pointer to the descriptor
+must be used; however, in some cases a descriptor structure pointer is used
+instead. In addition, a duplicated statement is removed.
 
-e.g. "usernameXXXXX" will be permitted to match "username".
-
-Just check one more byte so the trailing null char is also matched.
-
-Signed-off-by: Eric Seppanen <eric@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target_auth.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/mac.c |    6 +++---
+ drivers/net/wireless/rtlwifi/rtl8192cu/trx.c |    6 +++---
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target_auth.c
-+++ b/drivers/target/iscsi/iscsi_target_auth.c
-@@ -148,6 +148,7 @@ static int chap_server_compute_md5(
- 	unsigned char client_digest[MD5_SIGNATURE_SIZE];
- 	unsigned char server_digest[MD5_SIGNATURE_SIZE];
- 	unsigned char chap_n[MAX_CHAP_N_SIZE], chap_r[MAX_RESPONSE_LENGTH];
-+	size_t compare_len;
- 	struct iscsi_chap *chap = conn->auth_protocol;
- 	struct crypto_hash *tfm;
- 	struct hash_desc desc;
-@@ -186,7 +187,9 @@ static int chap_server_compute_md5(
- 		goto out;
- 	}
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
+@@ -778,7 +778,7 @@ static long _rtl92c_signal_scale_mapping
  
--	if (memcmp(chap_n, auth->userid, strlen(auth->userid)) != 0) {
-+	/* Include the terminating NULL in the compare */
-+	compare_len = strlen(auth->userid) + 1;
-+	if (strncmp(chap_n, auth->userid, compare_len) != 0) {
- 		pr_err("CHAP_N values do not match!\n");
- 		goto out;
+ static void _rtl92c_query_rxphystatus(struct ieee80211_hw *hw,
+ 				      struct rtl_stats *pstats,
+-				      struct rx_desc_92c *pdesc,
++				      struct rx_desc_92c *p_desc,
+ 				      struct rx_fwinfo_92c *p_drvinfo,
+ 				      bool packet_match_bssid,
+ 				      bool packet_toself,
+@@ -793,11 +793,11 @@ static void _rtl92c_query_rxphystatus(st
+ 	u32 rssi, total_rssi = 0;
+ 	bool in_powersavemode = false;
+ 	bool is_cck_rate;
++	u8 *pdesc = (u8 *)p_desc;
+ 
+-	is_cck_rate = RX_HAL_IS_CCK_RATE(pdesc);
++	is_cck_rate = RX_HAL_IS_CCK_RATE(p_desc);
+ 	pstats->packet_matchbssid = packet_match_bssid;
+ 	pstats->packet_toself = packet_toself;
+-	pstats->is_cck = is_cck_rate;
+ 	pstats->packet_beacon = packet_beacon;
+ 	pstats->is_cck = is_cck_rate;
+ 	pstats->RX_SIGQ[0] = -1;
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
+@@ -303,10 +303,10 @@ out:
+ bool rtl92cu_rx_query_desc(struct ieee80211_hw *hw,
+ 			   struct rtl_stats *stats,
+ 			   struct ieee80211_rx_status *rx_status,
+-			   u8 *p_desc, struct sk_buff *skb)
++			   u8 *pdesc, struct sk_buff *skb)
+ {
+ 	struct rx_fwinfo_92c *p_drvinfo;
+-	struct rx_desc_92c *pdesc = (struct rx_desc_92c *)p_desc;
++	struct rx_desc_92c *p_desc = (struct rx_desc_92c *)pdesc;
+ 	u32 phystatus = GET_RX_DESC_PHY_STATUS(pdesc);
+ 
+ 	stats->length = (u16) GET_RX_DESC_PKT_LEN(pdesc);
+@@ -345,7 +345,7 @@ bool rtl92cu_rx_query_desc(struct ieee80
+ 	if (phystatus) {
+ 		p_drvinfo = (struct rx_fwinfo_92c *)(skb->data +
+ 						     stats->rx_bufshift);
+-		rtl92c_translate_rx_signal_stuff(hw, skb, stats, pdesc,
++		rtl92c_translate_rx_signal_stuff(hw, skb, stats, p_desc,
+ 						 p_drvinfo);
  	}
+ 	/*rx_status->qual = stats->signal; */
 
 
