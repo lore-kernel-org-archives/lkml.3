@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409Ab3LBKdm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 05:33:42 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:2564 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753071Ab3LBKdj (ORCPT
+	id S1753393Ab3LBKfo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 05:35:44 -0500
+Received: from fallback4.mail.ru ([94.100.176.42]:52239 "EHLO
+	fallback4.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753087Ab3LBKfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 05:33:39 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 02 Dec 2013 02:27:06 -0800
-Message-ID: <529C61FF.4020802@nvidia.com>
-Date: Mon, 2 Dec 2013 19:33:35 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio: better lookup method for platform GPIOs
-References: <1385628388-23827-1-git-send-email-acourbot@nvidia.com> <20131129115748.GB3942@xps8300>
-In-Reply-To: <20131129115748.GB3942@xps8300>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Dec 2013 05:35:43 -0500
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?UGhpbGlwcGUgUsOpdG9ybmF6?= <philippe.retornaz@gmail.com>
+Cc: =?UTF-8?B?U2FtdWVsIE9ydGl6?= <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?B?U2FzY2hhIEhhdWVy?= <kernel@pengutronix.de>,
+        =?UTF-8?B?U2hhd24gR3Vv?= <shawn.guo@linaro.org>,
+        =?UTF-8?B?TGVlIEpvbmVz?= <lee.jones@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: =?UTF-8?B?UmU6IFtQQVRDSCBSRVNFTkRdIG1mZDogbWMxM3h4eDogUmVtb3ZlIHVubmVl?=
+ =?UTF-8?B?ZGVkIG1jMTN4eHhfbG9jay91bmxvY2s=?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [217.119.30.118]
+Date: Mon, 02 Dec 2013 14:33:29 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1385980409.843563145@f327.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+X-Spam: undefined
+In-Reply-To: <529C5804.2020501@gmail.com>
+References: <1385787681-7736-1-git-send-email-shc_work@mail.ru>
+ <529C5804.2020501@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rB2AZmrg012110
 
-On 11/29/2013 08:57 PM, Heikki Krogerus wrote:
-> Hi,
->
-> On Thu, Nov 28, 2013 at 05:46:28PM +0900, Alexandre Courbot wrote:
->> @@ -88,16 +89,20 @@ Note that GPIO_LOOKUP() is just a shortcut to GPIO_LOOKUP_IDX() where idx = 0.
->>
->>   A lookup table can then be defined as follows:
->>
->> -	struct gpiod_lookup gpios_table[] = {
->> -	GPIO_LOOKUP_IDX("gpio.0", 15, "foo.0", "led", 0, GPIO_ACTIVE_HIGH),
->> -	GPIO_LOOKUP_IDX("gpio.0", 16, "foo.0", "led", 1, GPIO_ACTIVE_HIGH),
->> -	GPIO_LOOKUP_IDX("gpio.0", 17, "foo.0", "led", 2, GPIO_ACTIVE_HIGH),
->> -	GPIO_LOOKUP("gpio.0", 1, "foo.0", "power", GPIO_ACTIVE_LOW),
->> -	};
->> +struct gpiod_lookup_table gpios_table = {
->> +	.dev_id = "foo.0",
->> +	.size = 4,
->> +	.table = {
->> +	GPIO_LOOKUP_IDX("gpio.0", 15, "led", 0, GPIO_ACTIVE_HIGH),
->> +	GPIO_LOOKUP_IDX("gpio.0", 16, "led", 1, GPIO_ACTIVE_HIGH),
->> +	GPIO_LOOKUP_IDX("gpio.0", 17, "led", 2, GPIO_ACTIVE_HIGH),
->> +	GPIO_LOOKUP("gpio.0", 1, "power", GPIO_ACTIVE_LOW),
->> +	},
->> +};
->
-> Instead of using the size variable, wouldn't it be more clear to
-> expect the array to be null terminated?
+Hello.
 
-This is a zero-length array, its entries are not pointers but flattened 
-lookup entries. Thus you cannot simply null-terminate it. It would be 
-possible to use { NULL } as a terminator, but this would expand into a 
-whole gpiod_lookup and is not very pleasant esthetically-speaking. So I 
-think the size member is maybe better suited here.
+> Le 30/11/2013 06:01, Alexander Shiyan a Ã©crit :
+> > Locking is performed by regmap API so no additional locking is
+> > needed. Nevertheless, keep locking in the ADC conversion routine.
+> > This need for keep proper read ADC sequence when calling from adc &
+> > touchscreen drivers.
+> 
+> You can't do that so easily !
+> Regmap only protect against concurrent access to the SPI/I2C bus, but do
+> not protect the driver's internal data.
+> And it does not protect against a race between concurrent access at a
+> higher level :
+...
+> It's OK to do this if you are protected by a mutex, but as soon as you
+> remove it you will have concurrency between two irq_unmask/irq_mask.
+
+irq_unmask/irq_mask and some other functions can be converted to use
+mc13xxx_reg_rmw. So I'll make a patch for this first.
+Thanks.
+
+---
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
