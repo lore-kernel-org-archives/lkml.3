@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851Ab3LBOQd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 09:16:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45524 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751026Ab3LBOQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 09:16:30 -0500
-Date: Mon, 2 Dec 2013 15:16:24 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Subject: Re: HID: kye: Add report fixup for Genius Manticore Keyboard
-In-Reply-To: <20131130214211.GA16854@redhat.com>
-Message-ID: <alpine.LNX.2.00.1312021515300.24931@pobox.suse.cz>
-References: <20131128051223.28802660D26@gitolite.kernel.org> <20131130214211.GA16854@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751726Ab3LBOXc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 09:23:32 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:64030 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab3LBOXb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 09:23:31 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <1385978027.2972.3.camel@x41.thuisdomein>
+References: <1385843936.10971.5.camel@x41.thuisdomein>
+	<CAKMK7uHRW-1OiMY44s2G9dwbbQLMUxZ4fHf=Eaf9gJ_WASpvLQ@mail.gmail.com>
+	<1385917025.7199.4.camel@x41.thuisdomein>
+	<CAKMK7uE_L8cqyYk6mQ4paXeh2m7tmoMXRv_KxoAeBq9MEAnFqw@mail.gmail.com>
+	<1385978027.2972.3.camel@x41.thuisdomein>
+Date: Mon, 2 Dec 2013 15:23:30 +0100
+Message-ID: <CAKMK7uE=Wr95XM85XVS1nT_8cV4e1Z_SubSVjQyP8BuLz-bTQg@mail.gmail.com>
+Subject: Re: [i915] WARNING: [...] drivers/gpu/drm/i915/intel_display.c:9948 intel_get_pipe_from_connector
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: David Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 30 Nov 2013, Dave Jones wrote:
+On Mon, Dec 2, 2013 at 10:53 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> On Mon, 2013-12-02 at 08:33 +0100, Daniel Vetter wrote:
+>> On Sun, Dec 1, 2013 at 5:57 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+>> > The WARNING is now gone during suspend and resume (having tested that
+>> > thoroughly - ie, twice). But I still see it at boot. Is there a related
+>> > fix for that WARNING during boot?
+>>
+>> Hm, I've never seen it during boot. Can you please boot with
+>> drm.debug=0xe and attach the dmesg with the WARN?
+>
+> Sure.
+>
+> This generated quite a bit of debug messages so I only copied the
+> WARNING and the drm (related) messages immediately preceding it. Please
+> feel free to prod again if that's insufficient.
 
->  > Commit:     4a2c94c9b6c03af61b04993340bd9559e2277de4
->  > Author:     Benjamin Tissoires <benjamin.tissoires@redhat.com>
->  > AuthorDate: Wed Nov 20 09:49:41 2013 -0500
->  > Committer:  Jiri Kosina <jkosina@suse.cz>
->  > CommitDate: Thu Nov 21 10:28:58 2013 +0100
->  > 
->  >     HID: kye: Add report fixup for Genius Manticore Keyboard
->  >     
->  >     Genius Manticore Keyboard presents the same problem in its report
->  >     descriptors than Genius Gila Gaming Mouse and Genius Imperator Keyboard.
->  >     Use the same fixup.
-> 
-> ..
-> 
->  > diff --git a/drivers/hid/hid-kye.c b/drivers/hid/hid-kye.c
->  > index 7384512..35a4f9c 100644
->  > --- a/drivers/hid/hid-kye.c
->  > +++ b/drivers/hid/hid-kye.c
->  > @@ -341,6 +341,9 @@ static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
->  >  	case USB_DEVICE_ID_GENIUS_GX_IMPERATOR:
->  >  		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 83,
->  >  					"Genius Gx Imperator Keyboard");
->  > +	case USB_DEVICE_ID_GENIUS_MANTICORE:
->  > +		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 104,
->  > +					"Genius Manticore Keyboard");
->  >  		break;
-> 
-> 
-> Is the IMPERATOR case supposed to fall-through to MANTICORE here, or is there a missing break ?
-> The commit text describes using the same fixup, but has this alternative case.
+Yeah, the beginning of the drm message would are wanted since I need
+to know what exactly your hardware claims to support ;-)
 
-I am almost certain that the missing break is a mistake, and the offsets 
-in both report descriptors are just different, and there is no need for 
-two fixups.
-
-I am queuing this for 3.13 still, but having final confirmation from 
-Benjamin would of course be nice.
-
-Thanks,
-
+But the backtrace confirms my first hunch for now ... Just want to
+confirm before sending out a patch with commit message.
+-Daniel
 -- 
-Jiri Kosina
-SUSE Labs
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
