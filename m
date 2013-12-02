@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758188Ab3LBUlS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:41:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38743 "EHLO
+	id S1757096Ab3LBUnR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:43:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38475 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754278Ab3LBTOK (ORCPT
+	with ESMTP id S1753732Ab3LBTOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:14:10 -0500
+	Mon, 2 Dec 2013 14:14:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Luosong <android@generaltouch.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.10 127/173] HID: multitouch: Fix GeneralTouch products and add more PIDs
-Date: Mon,  2 Dec 2013 11:11:50 -0800
-Message-Id: <20131202191158.086686103@linuxfoundation.org>
+        Shuah Khan <shuah.kh@samsung.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.10 118/173] tracing: Allow events to have NULL strings
+Date: Mon,  2 Dec 2013 11:11:41 -0800
+Message-Id: <20131202191157.270347211@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -28,79 +28,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luosong <android@generaltouch.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 7b2262920db2b98fe2cd32cde52141f02fd9eecf upstream.
+commit 4e58e54754dc1fec21c3a9e824bc108b05fdf46e upstream.
 
-GeneralTouch products should use the quirk SLOT_IS_CONTACTID
-instead of SLOT_IS_CONTACTNUMBER.
+If an TRACE_EVENT() uses __assign_str() or __get_str on a NULL pointer
+then the following oops will happen:
 
-Adding PIDs 0101,e100,0102,0106,010a from the new products.
+BUG: unable to handle kernel NULL pointer dereference at   (null)
+IP: [<c127a17b>] strlen+0x10/0x1a
+*pde = 00000000 ^M
+Oops: 0000 [#1] PREEMPT SMP
+Modules linked in:
+CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.13.0-rc1-test+ #2
+Hardware name:                  /DG965MQ, BIOS MQ96510J.86A.0372.2006.0605.1717 06/05/2006^M
+task: f5cde9f0 ti: f5e5e000 task.ti: f5e5e000
+EIP: 0060:[<c127a17b>] EFLAGS: 00210046 CPU: 1
+EIP is at strlen+0x10/0x1a
+EAX: 00000000 EBX: c2472da8 ECX: ffffffff EDX: c2472da8
+ESI: c1c5e5fc EDI: 00000000 EBP: f5e5fe84 ESP: f5e5fe80
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+CR0: 8005003b CR2: 00000000 CR3: 01f32000 CR4: 000007d0
+Stack:
+ f5f18b90 f5e5feb8 c10687a8 0759004f 00000005 00000005 00000005 00200046
+ 00000002 00000000 c1082a93 f56c7e28 c2472da8 c1082a93 f5e5fee4 c106bc61^M
+ 00000000 c1082a93 00000000 00000000 00000001 00200046 00200082 00000000
+Call Trace:
+ [<c10687a8>] ftrace_raw_event_lock+0x39/0xc0
+ [<c1082a93>] ? ktime_get+0x29/0x69
+ [<c1082a93>] ? ktime_get+0x29/0x69
+ [<c106bc61>] lock_release+0x57/0x1a5
+ [<c1082a93>] ? ktime_get+0x29/0x69
+ [<c10824dd>] read_seqcount_begin.constprop.7+0x4d/0x75
+ [<c1082a93>] ? ktime_get+0x29/0x69^M
+ [<c1082a93>] ktime_get+0x29/0x69
+ [<c108a46a>] __tick_nohz_idle_enter+0x1e/0x426
+ [<c10690e8>] ? lock_release_holdtime.part.19+0x48/0x4d
+ [<c10bc184>] ? time_hardirqs_off+0xe/0x28
+ [<c1068c82>] ? trace_hardirqs_off_caller+0x3f/0xaf
+ [<c108a8cb>] tick_nohz_idle_enter+0x59/0x62
+ [<c1079242>] cpu_startup_entry+0x64/0x192
+ [<c102299c>] start_secondary+0x277/0x27c
+Code: 90 89 c6 89 d0 88 c4 ac 38 e0 74 09 84 c0 75 f7 be 01 00 00 00 89 f0 48 5e 5d c3 55 89 e5 57 66 66 66 66 90 83 c9 ff 89 c7 31 c0 <f2> ae f7 d1 8d 41 ff 5f 5d c3 55 89 e5 57 66 66 66 66 90 31 ff
+EIP: [<c127a17b>] strlen+0x10/0x1a SS:ESP 0068:f5e5fe80
+CR2: 0000000000000000
+---[ end trace 01bc47bf519ec1b2 ]---
 
-Tested on new and older products by GeneralTouch engineers.
+New tracepoints have been added that have allowed for NULL pointers
+being assigned to strings. To fix this, change the TRACE_EVENT() code
+to check for NULL and if it is, it will assign "(null)" to it instead
+(similar to what glibc printf does).
 
-Signed-off-by: Luosong <android@generaltouch.com>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Reported-by: Shuah Khan <shuah.kh@samsung.com>
+Reported-by: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+Link: http://lkml.kernel.org/r/CAGdX0WFeEuy+DtpsJzyzn0343qEEjLX97+o1VREFkUEhndC+5Q@mail.gmail.com
+Link: http://lkml.kernel.org/r/528D6972.9010702@samsung.com
+Fixes: 9cbf117662e2 ("tracing/events: provide string with undefined size support")
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-ids.h        |    5 +++++
- drivers/hid/hid-multitouch.c |   19 +++++++++++++++++--
- 2 files changed, 22 insertions(+), 2 deletions(-)
+ include/trace/ftrace.h |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -330,6 +330,11 @@
- #define USB_VENDOR_ID_GENERAL_TOUCH	0x0dfc
- #define USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS 0x0003
- #define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS 0x0100
-+#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0101 0x0101
-+#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0102 0x0102
-+#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0106 0x0106
-+#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_010A 0x010a
-+#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_E100 0xe100
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -368,7 +368,8 @@ ftrace_define_fields_##call(struct ftrac
+ 	__data_size += (len) * sizeof(type);
  
- #define USB_VENDOR_ID_GLAB		0x06c2
- #define USB_DEVICE_ID_4_PHIDGETSERVO_30	0x0038
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -244,12 +244,12 @@ static struct mt_class mt_classes[] = {
- 	{ .name	= MT_CLS_GENERALTOUCH_TWOFINGERS,
- 		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
- 			MT_QUIRK_VALID_IS_INRANGE |
--			MT_QUIRK_SLOT_IS_CONTACTNUMBER,
-+			MT_QUIRK_SLOT_IS_CONTACTID,
- 		.maxcontacts = 2
- 	},
- 	{ .name	= MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
- 		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
--			MT_QUIRK_SLOT_IS_CONTACTNUMBER
-+			MT_QUIRK_SLOT_IS_CONTACTID
- 	},
+ #undef __string
+-#define __string(item, src) __dynamic_array(char, item, strlen(src) + 1)
++#define __string(item, src) __dynamic_array(char, item,			\
++		    strlen((src) ? (const char *)(src) : "(null)") + 1)
  
- 	{ .name = MT_CLS_FLATFROG,
-@@ -1191,6 +1191,21 @@ static const struct hid_device_id mt_dev
- 	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
- 		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
- 			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS) },
-+	{ .driver_data = MT_CLS_GENERALTOUCH_TWOFINGERS,
-+		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-+			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0101) },
-+	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-+		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-+			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0102) },
-+	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-+		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-+			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0106) },
-+	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-+		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-+			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_010A) },
-+	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-+		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-+			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_E100) },
+ #undef DECLARE_EVENT_CLASS
+ #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
+@@ -498,7 +499,7 @@ static inline notrace int ftrace_get_off
  
- 	/* Gametel game controller */
- 	{ .driver_data = MT_CLS_NSMU,
+ #undef __assign_str
+ #define __assign_str(dst, src)						\
+-	strcpy(__get_str(dst), src);
++	strcpy(__get_str(dst), (src) ? (const char *)(src) : "(null)");
+ 
+ #undef TP_fast_assign
+ #define TP_fast_assign(args...) args
 
 
