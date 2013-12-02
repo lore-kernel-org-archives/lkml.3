@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758780Ab3LBU46 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:56:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38468 "EHLO
+	id S1758757Ab3LBU4u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:56:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38477 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754124Ab3LBTNj (ORCPT
+	with ESMTP id S1754139Ab3LBTNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:39 -0500
+	Mon, 2 Dec 2013 14:13:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Jakob Bornecrantz <jakob@vmware.com>
-Subject: [PATCH 3.10 096/173] drm/ttm: Fix ttm_bo_move_memcpy
-Date: Mon,  2 Dec 2013 11:11:19 -0800
-Message-Id: <20131202191154.992659466@linuxfoundation.org>
+        Jeff Layton <jlayton@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Richard Guy Briggs <rgb@redhat.com>
+Subject: [PATCH 3.10 086/173] audit: log the audit_names record type
+Date: Mon,  2 Dec 2013 11:11:09 -0800
+Message-Id: <20131202191153.440613725@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,82 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit da95c788ef0c645378ffccb7060a0df1a33aee38 upstream.
+commit d3aea84a4ace5ff9ce7fb7714cee07bebef681c2 upstream.
 
-All error paths will want to keep the mm node, so handle this at the
-function exit. This fixes an ioremap failure error path.
-Also add some comments to make the function a bit easier to understand.
+...to make it clear what the intent behind each record's operation was.
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+In many cases you can infer this, based on the context of the syscall
+and the result. In other cases it's not so obvious. For instance, in
+the case where you have a file being renamed over another, you'll have
+two different records with the same filename but different inode info.
+By logging this information we can clearly tell which one was created
+and which was deleted.
+
+This fixes what was broken in commit bfcec708.
+Commit 79f6530c should also be backported to stable v3.7+.
+
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/ttm/ttm_bo_util.c |   28 +++++++++++++++++-----------
- 1 file changed, 17 insertions(+), 11 deletions(-)
+ kernel/audit.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
---- a/drivers/gpu/drm/ttm/ttm_bo_util.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
-@@ -342,21 +342,25 @@ int ttm_bo_move_memcpy(struct ttm_buffer
- 	if (ret)
- 		goto out;
- 
-+	/*
-+	 * Single TTM move. NOP.
-+	 */
- 	if (old_iomap == NULL && new_iomap == NULL)
- 		goto out2;
-+
-+	/*
-+	 * Move nonexistent data. NOP.
-+	 */
- 	if (old_iomap == NULL && ttm == NULL)
- 		goto out2;
- 
--	/* TTM might be null for moves within the same region.
-+	/*
-+	 * TTM might be null for moves within the same region.
- 	 */
- 	if (ttm && ttm->state == tt_unpopulated) {
- 		ret = ttm->bdev->driver->ttm_tt_populate(ttm);
--		if (ret) {
--			/* if we fail here don't nuke the mm node
--			 * as the bo still owns it */
--			old_copy.mm_node = NULL;
-+		if (ret)
- 			goto out1;
--		}
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1537,6 +1537,26 @@ void audit_log_name(struct audit_context
+ 		}
  	}
  
- 	add = 0;
-@@ -382,11 +386,8 @@ int ttm_bo_move_memcpy(struct ttm_buffer
- 						   prot);
- 		} else
- 			ret = ttm_copy_io_page(new_iomap, old_iomap, page);
--		if (ret) {
--			/* failing here, means keep old copy as-is */
--			old_copy.mm_node = NULL;
-+		if (ret)
- 			goto out1;
--		}
- 	}
- 	mb();
- out2:
-@@ -404,7 +405,12 @@ out1:
- 	ttm_mem_reg_iounmap(bdev, old_mem, new_iomap);
- out:
- 	ttm_mem_reg_iounmap(bdev, &old_copy, old_iomap);
--	ttm_bo_mem_put(bo, &old_copy);
++	/* log the audit_names record type */
++	audit_log_format(ab, " nametype=");
++	switch(n->type) {
++	case AUDIT_TYPE_NORMAL:
++		audit_log_format(ab, "NORMAL");
++		break;
++	case AUDIT_TYPE_PARENT:
++		audit_log_format(ab, "PARENT");
++		break;
++	case AUDIT_TYPE_CHILD_DELETE:
++		audit_log_format(ab, "DELETE");
++		break;
++	case AUDIT_TYPE_CHILD_CREATE:
++		audit_log_format(ab, "CREATE");
++		break;
++	default:
++		audit_log_format(ab, "UNKNOWN");
++		break;
++	}
 +
-+	/*
-+	 * On error, keep the mm node!
-+	 */
-+	if (!ret)
-+		ttm_bo_mem_put(bo, &old_copy);
- 	return ret;
+ 	audit_log_fcaps(ab, n);
+ 	audit_log_end(ab);
  }
- EXPORT_SYMBOL(ttm_bo_move_memcpy);
 
 
