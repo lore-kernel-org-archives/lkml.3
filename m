@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758051Ab3LBUgW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:36:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38899 "EHLO
+	id S1758078Ab3LBUhF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:37:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38892 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754378Ab3LBTOZ (ORCPT
+	with ESMTP id S1753627Ab3LBTOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:14:25 -0500
+	Mon, 2 Dec 2013 14:14:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Stefan Achatz <erazor_de@users.sourceforge.net>,
         Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.10 161/173] HID: roccat: add missing special driver declarations
-Date: Mon,  2 Dec 2013 11:12:24 -0800
-Message-Id: <20131202191201.679344510@linuxfoundation.org>
+Subject: [PATCH 3.10 159/173] HID: roccat: add new device return value
+Date: Mon,  2 Dec 2013 11:12:22 -0800
+Message-Id: <20131202191201.503486405@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -29,35 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stefan Achatz <erazor_de@users.sourceforge.net>
 
-commit e078809df5611600965f4d3420c3256260fc3e3d upstream.
+commit 14fc4290df2fb94a28f39dab9ed32feaa5527bef upstream.
 
-Forgot two special driver declarations and sorted the list.
+Ryos uses a new return value for critical errors, others have been
+confirmed.
 
 Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-core.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/hid/hid-roccat-common.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1751,12 +1751,14 @@ static const struct hid_device_id hid_ha
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX, USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_PRIMAX, USB_DEVICE_ID_PRIMAX_KEYBOARD) },
- #if IS_ENABLED(CONFIG_HID_ROCCAT)
--	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_ARVO) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_ISKU) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_ISKUFX) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEPLUS) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEPURE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEPURE_OPTICAL) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEXTD) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KOVAPLUS) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_LUA) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_PYRA_WIRED) },
+--- a/drivers/hid/hid-roccat-common.c
++++ b/drivers/hid/hid-roccat-common.c
+@@ -65,10 +65,11 @@ int roccat_common2_send(struct usb_devic
+ EXPORT_SYMBOL_GPL(roccat_common2_send);
+ 
+ enum roccat_common2_control_states {
+-	ROCCAT_COMMON_CONTROL_STATUS_OVERLOAD = 0,
++	ROCCAT_COMMON_CONTROL_STATUS_CRITICAL = 0,
+ 	ROCCAT_COMMON_CONTROL_STATUS_OK = 1,
+ 	ROCCAT_COMMON_CONTROL_STATUS_INVALID = 2,
+-	ROCCAT_COMMON_CONTROL_STATUS_WAIT = 3,
++	ROCCAT_COMMON_CONTROL_STATUS_BUSY = 3,
++	ROCCAT_COMMON_CONTROL_STATUS_CRITICAL_NEW = 4,
+ };
+ 
+ static int roccat_common2_receive_control_status(struct usb_device *usb_dev)
+@@ -88,13 +89,12 @@ static int roccat_common2_receive_contro
+ 		switch (control.value) {
+ 		case ROCCAT_COMMON_CONTROL_STATUS_OK:
+ 			return 0;
+-		case ROCCAT_COMMON_CONTROL_STATUS_WAIT:
++		case ROCCAT_COMMON_CONTROL_STATUS_BUSY:
+ 			msleep(500);
+ 			continue;
+ 		case ROCCAT_COMMON_CONTROL_STATUS_INVALID:
+-
+-		case ROCCAT_COMMON_CONTROL_STATUS_OVERLOAD:
+-			/* seems to be critical - replug necessary */
++		case ROCCAT_COMMON_CONTROL_STATUS_CRITICAL:
++		case ROCCAT_COMMON_CONTROL_STATUS_CRITICAL_NEW:
+ 			return -EINVAL;
+ 		default:
+ 			dev_err(&usb_dev->dev,
 
 
