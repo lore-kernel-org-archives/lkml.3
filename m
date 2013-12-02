@@ -1,68 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab3LBPAI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 10:00:08 -0500
-Received: from utopia.booyaka.com ([74.50.51.50]:45844 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab3LBPAF (ORCPT
+	id S1752089Ab3LBPFK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 10:05:10 -0500
+Received: from www.linutronix.de ([62.245.132.108]:45145 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753Ab3LBPFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 10:00:05 -0500
-Date: Mon, 2 Dec 2013 15:00:03 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Roger Quadros <rogerq@ti.com>
-cc: Michael Trimarchi <michael@amarulasolutions.com>,
-        Lee Jones <lee.jones@linaro.org>, sameo@linux.intel.com,
-        tomi.valkeinen@ti.com, Felipe Balbi <balbi@ti.com>,
-        Stefan Roese <sr@denx.de>, ljkenny.mailinglists@gmail.com,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Benoit Cousson <bcousson@baylibre.com>,
-        "tony@atomide.com" <tony@atomide.com>
-Subject: Re: [PATCH 1/1] mfd: omap-usb-host: Fix USB device detection problems
- on OMAP4 Panda
-In-Reply-To: <529C5537.3080300@ti.com>
-Message-ID: <alpine.DEB.2.02.1312021444530.18363@utopia.booyaka.com>
-References: <1385730118-26402-1-git-send-email-rogerq@ti.com> <1385730118-26402-2-git-send-email-rogerq@ti.com> <CAOf5uwnttvOQ26USuDK1naq1nNtVbHo4c0UAfdep64bK2wyvBA@mail.gmail.com> <529C5537.3080300@ti.com>
+	Mon, 2 Dec 2013 10:05:07 -0500
+Date: Mon, 2 Dec 2013 16:05:04 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [GIT pull] irq fixes for 3.13
+Message-ID: <alpine.DEB.2.02.1312021548220.30673@ionos.tec.linutronix.de>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Dec 2013, Roger Quadros wrote:
+Linus,
 
-> It won't be done by omap_hwmod as we set HWMOD_INIT_NO_RESET flag in the 
-> hwmod data [1].
-> 
-> Question is do we do it in the driver of leave it to hwmod?
+please pull the latest irq-urgent-for-linus git tree from:
 
-It should be done by hwmod (or more broadly, some OMAP bus code).  That 
-way the device can be brought to a known state even if there's no driver 
-present (e.g., if the driver was built as a module).
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq-urgent-for-linus
 
-> The other concern about i660 is in this comment [1]
-> 
-> 	/*
-> 	 * During system boot; If the hwmod framework resets the module
-> 	 * the module will have smart idle settings; which can lead to deadlock
-> 	 * (above Errata Id:i660); so, dont reset the module during boot;
-> 	 * Use HWMOD_INIT_NO_RESET.
-> 	 */
-> 
-> But if you look at the errata document [2], Advisory 1.108, it doesn't 
-> say that we can't be in smart-idle, but only that we should put the 
-> module in force-idle, before cutting the module's functional clock.
+ * Correction of fuzzy and fragile IRQ_RETVAL macro
+ * IRQ related resume fix affecting only XEN
+ * ARM/GIC fix for chained GIC controllers
 
-Yes, that looks to be correct.  There shouldn't be any problem with the 
-module being in smart-idle mode if the PRCM doesn't try to put it into a 
-low-power mode.  It already has the HWMOD_SWSUP_SIDLE flag set, so seems 
-to me it should work fine without HWMOD_INIT_NO_RESET, if i660 is the only 
-issue.
+Thanks,
 
-Most of the IP blocks that are marked with HWMOD_INIT_NO_RESET are only 
-that way due to laziness, or lack of time, etc., and should be closely 
-reviewed.
+	tglx
+
+------------------>
+Geert Uytterhoeven (1):
+      genirq: Correct fuzzy and fragile IRQ_RETVAL() definition
+
+Laxman Dewangan (1):
+      irq: Enable all irqs unconditionally in irq_resume
+
+Mark Rutland (1):
+      irqchip: Gic: fix boot for chained gics
 
 
-- Paul
+ drivers/irqchip/irq-gic.c |    9 +++++----
+ include/linux/irqreturn.h |    2 +-
+ kernel/irq/pm.c           |    2 +-
+ 3 files changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index d0e9480..e219a5bf 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -814,12 +814,13 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+ 	if (WARN_ON(!gic->domain))
+ 		return;
+ 
++	if (gic_nr == 0) {
+ #ifdef CONFIG_SMP
+-	set_smp_cross_call(gic_raise_softirq);
+-	register_cpu_notifier(&gic_cpu_notifier);
++		set_smp_cross_call(gic_raise_softirq);
++		register_cpu_notifier(&gic_cpu_notifier);
+ #endif
+-
+-	set_handle_irq(gic_handle_irq);
++		set_handle_irq(gic_handle_irq);
++	}
+ 
+ 	gic_chip.flags |= gic_arch_extn.flags;
+ 	gic_dist_init(gic);
+diff --git a/include/linux/irqreturn.h b/include/linux/irqreturn.h
+index 714ba08..e374e36 100644
+--- a/include/linux/irqreturn.h
++++ b/include/linux/irqreturn.h
+@@ -14,6 +14,6 @@ enum irqreturn {
+ };
+ 
+ typedef enum irqreturn irqreturn_t;
+-#define IRQ_RETVAL(x)	((x) != IRQ_NONE)
++#define IRQ_RETVAL(x)	((x) ? IRQ_HANDLED : IRQ_NONE)
+ 
+ #endif
+diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
+index cb228bf..abcd6ca 100644
+--- a/kernel/irq/pm.c
++++ b/kernel/irq/pm.c
+@@ -50,7 +50,7 @@ static void resume_irqs(bool want_early)
+ 		bool is_early = desc->action &&
+ 			desc->action->flags & IRQF_EARLY_RESUME;
+ 
+-		if (is_early != want_early)
++		if (!is_early && want_early)
+ 			continue;
+ 
+ 		raw_spin_lock_irqsave(&desc->lock, flags);
