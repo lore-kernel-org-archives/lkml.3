@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727Ab3LBTKj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:10:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38285 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753472Ab3LBTH1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753477Ab3LBTH1 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 2 Dec 2013 14:07:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38280 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753294Ab3LBTHL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 14:07:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Achatz <erazor_de@users.sourceforge.net>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.4 59/60] HID: roccat: fix Coverity CID 141438
-Date: Mon,  2 Dec 2013 11:06:40 -0800
-Message-Id: <20131202190343.380771194@linuxfoundation.org>
+        Tyler Hicks <tyhicks@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Eric Paris <eparis@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com
+Subject: [PATCH 3.4 36/60] audit: printk USER_AVC messages when audit isnt enabled
+Date: Mon,  2 Dec 2013 11:06:17 -0800
+Message-Id: <20131202190338.170709471@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
 References: <20131202190330.152596462@linuxfoundation.org>
@@ -27,35 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
+From: Tyler Hicks <tyhicks@canonical.com>
 
-commit 7be63f20b00840a6f1c718dcee00855688d64acd upstream.
+commit 0868a5e150bc4c47e7a003367cd755811eb41e0b upstream.
 
-Add missing switch breaks.
+When the audit=1 kernel parameter is absent and auditd is not running,
+AUDIT_USER_AVC messages are being silently discarded.
 
-Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+AUDIT_USER_AVC messages should be sent to userspace using printk(), as
+mentioned in the commit message of 4a4cd633 ("AUDIT: Optimise the
+audit-disabled case for discarding user messages").
+
+When audit_enabled is 0, audit_receive_msg() discards all user messages
+except for AUDIT_USER_AVC messages. However, audit_log_common_recv_msg()
+refuses to allocate an audit_buffer if audit_enabled is 0. The fix is to
+special case AUDIT_USER_AVC messages in both functions.
+
+It looks like commit 50397bd1 ("[AUDIT] clean up audit_receive_msg()")
+introduced this bug.
+
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: linux-audit@redhat.com
+Acked-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-roccat-kovaplus.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ kernel/audit.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hid/hid-roccat-kovaplus.c
-+++ b/drivers/hid/hid-roccat-kovaplus.c
-@@ -623,9 +623,13 @@ static void kovaplus_keep_values_up_to_d
- 		break;
- 	case KOVAPLUS_MOUSE_REPORT_BUTTON_TYPE_CPI:
- 		kovaplus->actual_cpi = kovaplus_convert_event_cpi(button_report->data1);
-+		break;
- 	case KOVAPLUS_MOUSE_REPORT_BUTTON_TYPE_SENSITIVITY:
- 		kovaplus->actual_x_sensitivity = button_report->data1;
- 		kovaplus->actual_y_sensitivity = button_report->data2;
-+		break;
-+	default:
-+		break;
- 	}
- }
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -625,7 +625,7 @@ static int audit_log_common_recv_msg(str
+ 	char *ctx = NULL;
+ 	u32 len;
  
+-	if (!audit_enabled) {
++	if (!audit_enabled && msg_type != AUDIT_USER_AVC) {
+ 		*ab = NULL;
+ 		return rc;
+ 	}
 
 
