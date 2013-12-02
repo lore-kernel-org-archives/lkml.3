@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab3LBLT6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 06:19:58 -0500
-Received: from relay.parallels.com ([195.214.232.42]:47366 "EHLO
+	id S1753571Ab3LBLUI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 06:20:08 -0500
+Received: from relay.parallels.com ([195.214.232.42]:47392 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753014Ab3LBLTz (ORCPT
+	with ESMTP id S1753014Ab3LBLT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 06:19:55 -0500
+	Mon, 2 Dec 2013 06:19:58 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <dchinner@redhat.com>,
         <akpm@linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
-        <vdavydov@parallels.com>
-Subject: [PATCH v12 00/18] kmemcg shrinkers
-Date: Mon, 2 Dec 2013 15:19:35 +0400
-Message-ID: <cover.1385974612.git.vdavydov@parallels.com>
+        <vdavydov@parallels.com>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH v12 02/18] memcg: consolidate callers of memcg_cache_id
+Date: Mon, 2 Dec 2013 15:19:37 +0400
+Message-ID: <1fc239729f563958c3200920af4e7845e2a6c798.1385974612.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1385974612.git.vdavydov@parallels.com>
+References: <cover.1385974612.git.vdavydov@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.30.16.96]
@@ -24,98 +27,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Glauber Costa <glommer@openvz.org>
 
-This is the 12th iteration of Glauber Costa's patchset implementing targeted
-shrinking for memory cgroups when kmem limits are present. So far, we've been
-accounting kernel objects but failing allocations when short of memory. This is
-because our only option would be to call the global shrinker, depleting objects
-from all caches and breaking isolation.
+Each caller of memcg_cache_id ends up sanitizing its parameters in its own way.
+Now that the memcg_cache_id itself is more robust, we can consolidate this.
 
-The main idea is to make LRU lists used by FS slab shrinkers per-memcg. When
-adding or removing an element from from the LRU, we use the page information to
-figure out which memory cgroup it belongs to and relay it to the appropriate
-list. This allows scanning kmem objects accounted to different memory cgroups
-independently.
+Also, as suggested by Michal, a special helper memcg_cache_idx is used when the
+result is expected to be used directly as an array index to make sure we never
+accesses in a negative index.
 
-The patchset is based on top of Linux 3.13-rc2 and organized as follows:
+Signed-off-by: Glauber Costa <glommer@openvz.org>
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |   49 +++++++++++++++++++++++++++++--------------------
+ 1 file changed, 29 insertions(+), 20 deletions(-)
 
- * patches 1-8 are for cleanup/preparation;
- * patch 9 introduces infrastructure for memcg-aware shrinkers;
- * patches 10 and 11 implement the per-memcg LRU list structure;
- * patch 12 uses per-memcg LRU lists to make dcache and icache shrinkers
-   memcg-aware;
- * patch 13 implements kmem-only shrinking;
- * patches 14-18 issue kmem shrinking on limit resize, global pressure.
-
-Known issues:
-
- * Since FS shrinkers can't be executed on __GFP_FS allocations, such
-   allocations will fail if memcg kmem limit is less than the user limit and
-   the memcg kmem usage is close to its limit. Glauber proposed to schedule a
-   worker which would shrink kmem in the background on such allocations.
-   However, this approach does not eliminate failures completely, it just makes
-   them rarer. I'm thinking on implementing soft limits for memcg kmem so that
-   striking the soft limit will trigger the reclaimer, but won't fail the
-   allocation. I would appreciate any other proposals on how this can be fixed.
-
- * Only dcache and icache are reclaimed on memcg pressure. Other FS objects are
-   left for global pressure only. However, it should not be a serious problem
-   to make them reclaimable too by passing on memcg to the FS-layer and letting
-   each FS decide if its internal objects are shrinkable on memcg pressure.
-
-Changelog:
-
-Changes in v12:
- * Do not prune all slabs on kmem-only pressure.
- * Count all on-LRU pages eligible for reclaim to pass to shrink_slab().
- * Fix isolation issue due to using shrinker->nr_deferred on memcg pressure.
- * Add comments to memcg_list_lru functions.
- * Code cleanup/refactoring.
-
-Changes in v11:
- * Rework per-memcg list_lru infrastructure.
-
-Glauber Costa (7):
-  memcg: make cache index determination more robust
-  memcg: consolidate callers of memcg_cache_id
-  memcg: move initialization to memcg creation
-  memcg: allow kmem limit to be resized down
-  vmpressure: in-kernel notifications
-  memcg: reap dead memcgs upon global memory pressure
-  memcg: flush memcg items upon memcg destruction
-
-Vladimir Davydov (11):
-  memcg: move several kmemcg functions upper
-  fs: do not use destroy_super() in alloc_super() fail path
-  vmscan: rename shrink_slab() args to make it more generic
-  vmscan: move call to shrink_slab() to shrink_zones()
-  vmscan: do_try_to_free_pages(): remove shrink_control argument
-  vmscan: shrink slab on memcg pressure
-  memcg,list_lru: add per-memcg LRU list infrastructure
-  memcg,list_lru: add function walking over all lists of a per-memcg
-    LRU
-  fs: make icache, dcache shrinkers memcg-aware
-  memcg: per-memcg kmem shrinking
-  vmscan: take at least one pass with shrinkers
-
- fs/dcache.c                   |   25 +-
- fs/inode.c                    |   16 +-
- fs/internal.h                 |    9 +-
- fs/super.c                    |   48 ++-
- include/linux/fs.h            |    4 +-
- include/linux/list_lru.h      |   83 +++++
- include/linux/memcontrol.h    |   22 ++
- include/linux/mm.h            |    3 +-
- include/linux/shrinker.h      |   10 +-
- include/linux/swap.h          |    2 +
- include/linux/vmpressure.h    |    5 +
- include/trace/events/vmscan.h |   20 +-
- mm/memcontrol.c               |  728 ++++++++++++++++++++++++++++++++++++-----
- mm/vmpressure.c               |   53 ++-
- mm/vmscan.c                   |  249 +++++++++-----
- 15 files changed, 1054 insertions(+), 223 deletions(-)
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 02b5176..144cb4c 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2960,6 +2960,30 @@ static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
+ }
+ 
+ /*
++ * helper for acessing a memcg's index. It will be used as an index in the
++ * child cache array in kmem_cache, and also to derive its name. This function
++ * will return -1 when this is not a kmem-limited memcg.
++ */
++int memcg_cache_id(struct mem_cgroup *memcg)
++{
++	if (!memcg || !memcg_can_account_kmem(memcg))
++		return -1;
++	return memcg->kmemcg_id;
++}
++
++/*
++ * This helper around memcg_cache_id is not intented for use outside memcg
++ * core. It is meant for places where the cache id is used directly as an array
++ * index
++ */
++static int memcg_cache_idx(struct mem_cgroup *memcg)
++{
++	int ret = memcg_cache_id(memcg);
++	BUG_ON(ret < 0);
++	return ret;
++}
++
++/*
+  * This is a bit cumbersome, but it is rarely used and avoids a backpointer
+  * in the memcg_cache_params struct.
+  */
+@@ -2969,7 +2993,7 @@ static struct kmem_cache *memcg_params_to_cache(struct memcg_cache_params *p)
+ 
+ 	VM_BUG_ON(p->is_root_cache);
+ 	cachep = p->root_cache;
+-	return cache_from_memcg_idx(cachep, memcg_cache_id(p->memcg));
++	return cache_from_memcg_idx(cachep, memcg_cache_idx(p->memcg));
+ }
+ 
+ #ifdef CONFIG_SLABINFO
+@@ -3067,18 +3091,6 @@ void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep)
+ }
+ 
+ /*
+- * helper for acessing a memcg's index. It will be used as an index in the
+- * child cache array in kmem_cache, and also to derive its name. This function
+- * will return -1 when this is not a kmem-limited memcg.
+- */
+-int memcg_cache_id(struct mem_cgroup *memcg)
+-{
+-	if (!memcg || !memcg_can_account_kmem(memcg))
+-		return -1;
+-	return memcg->kmemcg_id;
+-}
+-
+-/*
+  * This ends up being protected by the set_limit mutex, during normal
+  * operation, because that is its main call site.
+  *
+@@ -3240,7 +3252,7 @@ void memcg_release_cache(struct kmem_cache *s)
+ 		goto out;
+ 
+ 	memcg = s->memcg_params->memcg;
+-	id  = memcg_cache_id(memcg);
++	id = memcg_cache_idx(memcg);
+ 
+ 	root = s->memcg_params->root_cache;
+ 	root->memcg_params->memcg_caches[id] = NULL;
+@@ -3403,9 +3415,7 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+ 	struct kmem_cache *new_cachep;
+ 	int idx;
+ 
+-	BUG_ON(!memcg_can_account_kmem(memcg));
+-
+-	idx = memcg_cache_id(memcg);
++	idx = memcg_cache_idx(memcg);
+ 
+ 	mutex_lock(&memcg_cache_mutex);
+ 	new_cachep = cache_from_memcg_idx(cachep, idx);
+@@ -3578,10 +3588,9 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
+ 	rcu_read_lock();
+ 	memcg = mem_cgroup_from_task(rcu_dereference(current->mm->owner));
+ 
+-	if (!memcg_can_account_kmem(memcg))
+-		goto out;
+-
+ 	idx = memcg_cache_id(memcg);
++	if (idx < 0)
++		goto out;
+ 
+ 	/*
+ 	 * barrier to mare sure we're always seeing the up to date value.  The
 -- 
 1.7.10.4
 
