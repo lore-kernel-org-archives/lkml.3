@@ -1,199 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab3LBJel (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 04:34:41 -0500
-Received: from exprod5og110.obsmtp.com ([64.18.0.20]:46410 "HELO
-	exprod5og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753134Ab3LBJeg (ORCPT
+	id S1753259Ab3LBJfK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 04:35:10 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49525 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753239Ab3LBJfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 04:34:36 -0500
-From: Vinayak Kale <vkale@apm.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: tglx@linutronix.de, will.deacon@arm.com, patches@apm.com, jcm@redhat.com,
-        sboyd@codeaurora.org, marc.zyngier@arm.com,
-        Vinayak Kale <vkale@apm.com>, Tuan Phan <tphan@apm.com>
-Subject: [PATCH V6 2/2] arm64: perf: add support for percpu pmu interrupt
-Date: Mon,  2 Dec 2013 15:04:03 +0530
-Message-Id: <1385976843-13280-3-git-send-email-vkale@apm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1385976843-13280-1-git-send-email-vkale@apm.com>
-References: <1385976843-13280-1-git-send-email-vkale@apm.com>
+	Mon, 2 Dec 2013 04:35:07 -0500
+X-Sasl-enc: AasgxjSrHc5vEjdx8Om92XhoainrE9S7CUI8gITRKJ1U 1385976906
+Message-ID: <529C5448.7090902@iki.fi>
+Date: Mon, 02 Dec 2013 11:35:04 +0200
+From: Pekka Enberg <penberg@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Pekka Enberg <penberg@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC 0/3] perf tools: Show time info (v1)
+References: <1385967199-3759-1-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1385967199-3759-1-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for irq registration when pmu interrupt is percpu.
+On 12/02/2013 08:53 AM, Namhyung Kim wrote:
+> Sometimes users might want to see time information along with the
+> performance result but the perf cannot provide it currently.
+>
+> In this patchset, I added such feature using sample->time.  When the
+> perf processes sample events, it calculate time info and update last
+> timestamp.  It keeps the last timestamp for each evsel (and for each
+> cpu if it's a per-cpu session).
+>
+> It guesses whether a session is per-cpu if it found PERF_SAMPLE_CPU in
+> a evsel->attr.sample_type since I couldn't find a better way.  However
+> it'll have a trouble if used with tracepoint events since they require
+> the cpu info in the sample_type even for the per-thread sessions.
+>
+> The sample time will usually be proportional to the overhead but
+> sometimes it show a different result especially in idle state.
+>
+> With this patch, perf report can show time information in the header
+> (on --stdio output only for now) and a new column which can be enabled
+> by --show-time-info option.
+>
+>    $ perf record -- perf bench sched messaging
+>    $ perf report --stdio --show-time-info
+>
+>    # Samples: 10K of event 'cycles'
+>    # Event count (approx.): 5168954556
+>    # Total sampling time  : 0.179102 (sec)       <--- here
+>    #
+>    # Overhead        Time          Command       Shared Object                        Symbol
+>    # ........  ..........  ...............  ..................  ............................
+>    #
+>         6.59%    0.006093  sched-messaging  [unknown]           [.] 0x0000003153ebc7ed
+>         4.81%    0.005354  sched-messaging  [kernel.kallsyms]   [k] copy_user_generic_string
+>         3.89%    0.004098  sched-messaging  [kernel.kallsyms]   [k] avc_has_perm_flags
+>         3.77%    0.003630  sched-messaging  [kernel.kallsyms]   [k] unix_stream_recvmsg
+>         3.37%    0.003733  sched-messaging  [kernel.kallsyms]   [k] _raw_spin_lock
+>         2.97%    0.003489  sched-messaging  [kernel.kallsyms]   [k] _raw_spin_lock_irqsave
+>         2.73%    0.002615  sched-messaging  [kernel.kallsyms]   [k] __slab_free
+>         2.56%    0.002392  sched-messaging  [kernel.kallsyms]   [k] page_fault
+>         2.45%    0.002572  sched-messaging  [kernel.kallsyms]   [k] sock_alloc_send_pskb
+>
+> I put the series on 'perf/time-sample-v1' branch in my tree:
+>
+>    git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+>
+> Any comments are welcome, thanks
 
-Signed-off-by: Vinayak Kale <vkale@apm.com>
-Signed-off-by: Tuan Phan <tphan@apm.com>
----
- arch/arm64/kernel/perf_event.c |  116 +++++++++++++++++++++++++++++-----------
- 1 file changed, 86 insertions(+), 30 deletions(-)
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
 
-diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
-index cea1594..d2d562f 100644
---- a/arch/arm64/kernel/perf_event.c
-+++ b/arch/arm64/kernel/perf_event.c
-@@ -22,6 +22,7 @@
- 
- #include <linux/bitmap.h>
- #include <linux/interrupt.h>
-+#include <linux/irq.h>
- #include <linux/kernel.h>
- #include <linux/export.h>
- #include <linux/perf_event.h>
-@@ -363,26 +364,61 @@ validate_group(struct perf_event *event)
- }
- 
- static void
-+armpmu_disable_percpu_irq(void *data)
-+{
-+	struct arm_pmu *armpmu = data;
-+	struct platform_device *pmu_device = armpmu->plat_device;
-+	int irq = platform_get_irq(pmu_device, 0);
-+
-+	cpumask_test_and_clear_cpu(smp_processor_id(), &armpmu->active_irqs);
-+	disable_percpu_irq(irq);
-+}
-+
-+static void
- armpmu_release_hardware(struct arm_pmu *armpmu)
- {
--	int i, irq, irqs;
-+	int irq;
-+	unsigned int i, irqs;
- 	struct platform_device *pmu_device = armpmu->plat_device;
- 
- 	irqs = min(pmu_device->num_resources, num_possible_cpus());
-+	if (!irqs)
-+		return;
- 
--	for (i = 0; i < irqs; ++i) {
--		if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
--			continue;
--		irq = platform_get_irq(pmu_device, i);
--		if (irq >= 0)
--			free_irq(irq, armpmu);
-+	irq = platform_get_irq(pmu_device, 0);
-+	if (irq <= 0)
-+		return;
-+
-+	if (irq_is_percpu(irq)) {
-+		on_each_cpu(armpmu_disable_percpu_irq, armpmu, 1);
-+		free_percpu_irq(irq, &cpu_hw_events);
-+	} else {
-+		for (i = 0; i < irqs; ++i) {
-+			if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
-+				continue;
-+			irq = platform_get_irq(pmu_device, i);
-+			if (irq > 0)
-+				free_irq(irq, armpmu);
-+		}
- 	}
- }
- 
-+static void
-+armpmu_enable_percpu_irq(void *data)
-+{
-+	struct arm_pmu *armpmu = data;
-+	struct platform_device *pmu_device = armpmu->plat_device;
-+	int irq = platform_get_irq(pmu_device, 0);
-+
-+	enable_percpu_irq(irq, IRQ_TYPE_NONE);
-+	cpumask_set_cpu(smp_processor_id(), &armpmu->active_irqs);
-+}
-+
- static int
- armpmu_reserve_hardware(struct arm_pmu *armpmu)
- {
--	int i, err, irq, irqs;
-+	int err, irq;
-+	unsigned int i, irqs;
- 	struct platform_device *pmu_device = armpmu->plat_device;
- 
- 	if (!pmu_device) {
-@@ -391,39 +427,59 @@ armpmu_reserve_hardware(struct arm_pmu *armpmu)
- 	}
- 
- 	irqs = min(pmu_device->num_resources, num_possible_cpus());
--	if (irqs < 1) {
-+	if (!irqs) {
- 		pr_err("no irqs for PMUs defined\n");
- 		return -ENODEV;
- 	}
- 
--	for (i = 0; i < irqs; ++i) {
--		err = 0;
--		irq = platform_get_irq(pmu_device, i);
--		if (irq < 0)
--			continue;
-+	irq = platform_get_irq(pmu_device, 0);
-+	if (irq <= 0) {
-+		pr_err("failed to get valid irq for PMU device\n");
-+		return -ENODEV;
-+	}
- 
--		/*
--		 * If we have a single PMU interrupt that we can't shift,
--		 * assume that we're running on a uniprocessor machine and
--		 * continue. Otherwise, continue without this interrupt.
--		 */
--		if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
--			pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
--				    irq, i);
--			continue;
--		}
-+	if (irq_is_percpu(irq)) {
-+		err = request_percpu_irq(irq, armpmu->handle_irq,
-+				"arm-pmu", &cpu_hw_events);
- 
--		err = request_irq(irq, armpmu->handle_irq,
--				  IRQF_NOBALANCING,
--				  "arm-pmu", armpmu);
- 		if (err) {
--			pr_err("unable to request IRQ%d for ARM PMU counters\n",
--				irq);
-+			pr_err("unable to request percpu IRQ%d for ARM PMU counters\n",
-+					irq);
- 			armpmu_release_hardware(armpmu);
- 			return err;
- 		}
- 
--		cpumask_set_cpu(i, &armpmu->active_irqs);
-+		on_each_cpu(armpmu_enable_percpu_irq, armpmu, 1);
-+	} else {
-+		for (i = 0; i < irqs; ++i) {
-+			err = 0;
-+			irq = platform_get_irq(pmu_device, i);
-+			if (irq <= 0)
-+				continue;
-+
-+			/*
-+			 * If we have a single PMU interrupt that we can't shift,
-+			 * assume that we're running on a uniprocessor machine and
-+			 * continue. Otherwise, continue without this interrupt.
-+			 */
-+			if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
-+				pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
-+						irq, i);
-+				continue;
-+			}
-+
-+			err = request_irq(irq, armpmu->handle_irq,
-+					IRQF_NOBALANCING,
-+					"arm-pmu", armpmu);
-+			if (err) {
-+				pr_err("unable to request IRQ%d for ARM PMU counters\n",
-+						irq);
-+				armpmu_release_hardware(armpmu);
-+				return err;
-+			}
-+
-+			cpumask_set_cpu(i, &armpmu->active_irqs);
-+		}
- 	}
- 
- 	return 0;
--- 
-1.7.9.5
-
+for the whole series.
