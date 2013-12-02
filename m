@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756470Ab3LBTxm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:53:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39379 "EHLO
+	id S1756439Ab3LBTxf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:53:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39419 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754742Ab3LBTSO (ORCPT
+	with ESMTP id S1754743Ab3LBTSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:14 -0500
+	Mon, 2 Dec 2013 14:18:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heorhi Valakhanovich <valahanovich@tut.by>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 3.12 118/212] tty: Reset hupped state on open
-Date: Mon,  2 Dec 2013 11:15:09 -0800
-Message-Id: <20131202191300.339003023@linuxfoundation.org>
+        Dan Williams <dcbw@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.12 120/212] prism54: set netdev type to "wlan"
+Date: Mon,  2 Dec 2013 11:15:11 -0800
+Message-Id: <20131202191300.522875309@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,37 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Hurley <peter@hurleysoftware.com>
+From: Dan Williams <dcbw@redhat.com>
 
-commit d4855e1fc03c2bb32dd64badf51cec5a2a26ab2a upstream.
+commit 8e3ffa471091c560deb6738ed9ab7445b7a5fd04 upstream.
 
-A common security idiom is to hangup the current tty (via vhangup())
-after forking but before execing a root shell. This hangs up any
-existing opens which other processes may have and ensures subsequent
-opens have the necessary permissions to open the root shell tty/pty.
+Userspace uses the netdev devtype for stuff like device naming and type
+detection.  Be nice and set it.  Remove the pointless #if/#endif around
+SET_NETDEV_DEV too.
 
-Reset the TTY_HUPPED state after the driver has successfully
-returned the opened tty (perform the reset while the tty is locked
-to avoid racing with concurrent hangups).
-
-Reported-by: Heorhi Valakhanovich <valahanovich@tut.by>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-Tested-by: Heorhi Valakhanovich <valahanovich@tut.by>
+Signed-off-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/tty_io.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/prism54/islpci_dev.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -2086,6 +2086,7 @@ retry_open:
- 			filp->f_op = &tty_fops;
- 		goto retry_open;
- 	}
-+	clear_bit(TTY_HUPPED, &tty->flags);
- 	tty_unlock(tty);
+--- a/drivers/net/wireless/prism54/islpci_dev.c
++++ b/drivers/net/wireless/prism54/islpci_dev.c
+@@ -811,6 +811,10 @@ static const struct net_device_ops islpc
+ 	.ndo_validate_addr	= eth_validate_addr,
+ };
  
++static struct device_type wlan_type = {
++	.name	= "wlan",
++};
++
+ struct net_device *
+ islpci_setup(struct pci_dev *pdev)
+ {
+@@ -821,9 +825,8 @@ islpci_setup(struct pci_dev *pdev)
+ 		return ndev;
  
+ 	pci_set_drvdata(pdev, ndev);
+-#if defined(SET_NETDEV_DEV)
+ 	SET_NETDEV_DEV(ndev, &pdev->dev);
+-#endif
++	SET_NETDEV_DEVTYPE(ndev, &wlan_type);
+ 
+ 	/* setup the structure members */
+ 	ndev->base_addr = pci_resource_start(pdev, 0);
 
 
