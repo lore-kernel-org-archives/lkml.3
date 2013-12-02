@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757474Ab3LBUVO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:21:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39152 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747Ab3LBTRS (ORCPT
+	id S1756572Ab3LBUWT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:22:19 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:47453 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753784Ab3LBUWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:18 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>,
-        Peter Korsgaard <peter.korsgaard@barco.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.12 037/212] i2c: mux: gpio: use gpio_set_value_cansleep()
-Date: Mon,  2 Dec 2013 11:13:48 -0800
-Message-Id: <20131202191252.614932988@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
-References: <20131202191248.517975703@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	Mon, 2 Dec 2013 15:22:14 -0500
+Message-ID: <529CEBF1.4050004@gmail.com>
+Date: Mon, 02 Dec 2013 13:22:09 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Pekka Enberg <penberg@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 3/3] perf report: Add --show-time-info option
+References: <20131202192315.GA17149@ghostprotocols.net> <529CDEA6.8000807@gmail.com> <20131202193850.GC17149@ghostprotocols.net> <529CE66B.5070209@gmail.com> <20131202201705.GE17149@ghostprotocols.net>
+In-Reply-To: <20131202201705.GE17149@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On 12/2/13, 1:17 PM, Arnaldo Carvalho de Melo wrote:
+> Probably, yeah, Ingo made some point about using --show- for some reason,
+> Ingo?
+>
+> One I can think of is that, in general, plain --feature can mean, at
+> least, one of --enable-feature and --show-feature, so perhaps that is
+> the point.
+>
+> But then, perhaps that may be implied by the context, i.e.  when
+> recording, --feature means enable it, while when reporting, what we're
+> doing is basically_showing_  things, so --feature means just that.
 
-------------------
+exactly. perf has just --call-graph for both record and report, not 
+enable-call-graph and show-call-graph.
 
-From: Ionut Nicu <ioan.nicu.ext@nsn.com>
-
-commit 250ad590d6f12d93f4d85be305b0a598d609232e upstream.
-
-Some gpio chips may have get/set operations that
-can sleep. gpio_set_value() only works for chips
-which do not sleep, for the others we will get a
-kernel warning. Using gpio_set_value_cansleep()
-will work for both chips that do sleep and those
-who don't.
-
-Signed-off-by: Ionut Nicu <ioan.nicu.ext@nsn.com>
-Acked-by: Peter Korsgaard <peter.korsgaard@barco.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/i2c/muxes/i2c-mux-gpio.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/i2c/muxes/i2c-mux-gpio.c
-+++ b/drivers/i2c/muxes/i2c-mux-gpio.c
-@@ -30,8 +30,8 @@ static void i2c_mux_gpio_set(const struc
- 	int i;
- 
- 	for (i = 0; i < mux->data.n_gpios; i++)
--		gpio_set_value(mux->gpio_base + mux->data.gpios[i],
--			       val & (1 << i));
-+		gpio_set_value_cansleep(mux->gpio_base + mux->data.gpios[i],
-+					val & (1 << i));
- }
- 
- static int i2c_mux_gpio_select(struct i2c_adapter *adap, void *data, u32 chan)
-
-
+David
