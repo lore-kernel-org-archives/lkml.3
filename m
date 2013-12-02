@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752990Ab3LBUja (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:39:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38822 "EHLO
+	id S1752524Ab3LBUj2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:39:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38746 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754306Ab3LBTOP (ORCPT
+	with ESMTP id S1754311Ab3LBTOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:14:15 -0500
+	Mon, 2 Dec 2013 14:14:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH 3.10 147/173] media: cimax2: Dont use dynamic static allocation
-Date: Mon,  2 Dec 2013 11:12:10 -0800
-Message-Id: <20131202191200.236922911@linuxfoundation.org>
+Subject: [PATCH 3.10 148/173] media: cx18: struct i2c_client is too big for stack
+Date: Mon,  2 Dec 2013 11:12:11 -0800
+Message-Id: <20131202191200.388805325@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -29,19 +29,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit 278ba83a3a1932805be726bdd7dfb3156286d33a upstream.
+commit 1d212cf0c2d89adf3d0a6d62d729076f49f087dc upstream.
 
-Dynamic static allocation is evil, as Kernel stack is too low, and
-compilation complains about it on some archs:
-        drivers/media/pci/cx23885/cimax2.c:149:1: warning: 'netup_write_i2c' uses dynamic stack allocation [enabled by default]
-Instead, let's enforce a limit for the buffer. Considering that I2C
-transfers are generally limited, and that devices used on USB has a
-max data length of 64 bytes for the control URBs.
-So, it seem safe to use 64 bytes as the hard limit for all those devices.
-On most cases, the limit is a way lower than that, but this limit
-is small enough to not affect the Kernel stack, and it is a no brain
-limit, as using smaller ones would require to either carefully each
-driver or to take a look on each datasheet.
+	drivers/media/pci/cx18/cx18-driver.c: In function 'cx18_read_eeprom':
+	drivers/media/pci/cx18/cx18-driver.c:357:1: warning: the frame size of 1072 bytes is larger than 1024 bytes [-Wframe-larger-than=]
+That happens because the routine allocates 256 bytes for an eeprom buffer, plus
+the size of struct i2c_client, with is big.
+Change the logic to dynamically allocate/deallocate space for struct i2c_client,
+instead of  using the stack.
 
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
@@ -49,44 +44,53 @@ Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/pci/cx23885/cimax2.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/media/pci/cx18/cx18-driver.c |   20 ++++++++++++--------
+ 1 file changed, 12 insertions(+), 8 deletions(-)
 
---- a/drivers/media/pci/cx23885/cimax2.c
-+++ b/drivers/media/pci/cx23885/cimax2.c
-@@ -26,6 +26,10 @@
- #include "cx23885.h"
- #include "cimax2.h"
- #include "dvb_ca_en50221.h"
-+
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- /**** Bit definitions for MC417_RWD and MC417_OEN registers  ***
-   bits 31-16
- +-----------+
-@@ -125,7 +129,7 @@ static int netup_write_i2c(struct i2c_ad
- 						u8 *buf, int len)
+--- a/drivers/media/pci/cx18/cx18-driver.c
++++ b/drivers/media/pci/cx18/cx18-driver.c
+@@ -324,23 +324,24 @@ static void cx18_eeprom_dump(struct cx18
+ /* Hauppauge card? get values from tveeprom */
+ void cx18_read_eeprom(struct cx18 *cx, struct tveeprom *tv)
  {
- 	int ret;
--	u8 buffer[len + 1];
-+	u8 buffer[MAX_XFER_SIZE];
+-	struct i2c_client c;
++	struct i2c_client *c;
+ 	u8 eedata[256];
  
- 	struct i2c_msg msg = {
- 		.addr	= addr,
-@@ -134,6 +138,13 @@ static int netup_write_i2c(struct i2c_ad
- 		.len	= len + 1
- 	};
- 
-+	if (1 + len > sizeof(buffer)) {
-+		printk(KERN_WARNING
-+		       "%s: i2c wr reg=%04x: len=%d is too big!\n",
-+		       KBUILD_MODNAME, reg, len);
-+		return -EINVAL;
-+	}
+-	memset(&c, 0, sizeof(c));
+-	strlcpy(c.name, "cx18 tveeprom tmp", sizeof(c.name));
+-	c.adapter = &cx->i2c_adap[0];
+-	c.addr = 0xA0 >> 1;
++	c = kzalloc(sizeof(*c), GFP_KERNEL);
 +
- 	buffer[0] = reg;
- 	memcpy(&buffer[1], buf, len);
++	strlcpy(c->name, "cx18 tveeprom tmp", sizeof(c->name));
++	c->adapter = &cx->i2c_adap[0];
++	c->addr = 0xa0 >> 1;
  
+ 	memset(tv, 0, sizeof(*tv));
+-	if (tveeprom_read(&c, eedata, sizeof(eedata)))
+-		return;
++	if (tveeprom_read(c, eedata, sizeof(eedata)))
++		goto ret;
+ 
+ 	switch (cx->card->type) {
+ 	case CX18_CARD_HVR_1600_ESMT:
+ 	case CX18_CARD_HVR_1600_SAMSUNG:
+ 	case CX18_CARD_HVR_1600_S5H1411:
+-		tveeprom_hauppauge_analog(&c, tv, eedata);
++		tveeprom_hauppauge_analog(c, tv, eedata);
+ 		break;
+ 	case CX18_CARD_YUAN_MPC718:
+ 	case CX18_CARD_GOTVIEW_PCI_DVD3:
+@@ -354,6 +355,9 @@ void cx18_read_eeprom(struct cx18 *cx, s
+ 		cx18_eeprom_dump(cx, eedata, sizeof(eedata));
+ 		break;
+ 	}
++
++ret:
++	kfree(c);
+ }
+ 
+ static void cx18_process_eeprom(struct cx18 *cx)
 
 
