@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab3LBUSF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:18:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39151 "EHLO
+	id S1756473Ab3LBUSK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:18:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39200 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749Ab3LBTR0 (ORCPT
+	with ESMTP id S1753518Ab3LBTRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:26 -0500
+	Mon, 2 Dec 2013 14:17:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gwendal Grignou <gwendal@google.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.12 045/212] libata: Fix display of sata speed
-Date: Mon,  2 Dec 2013 11:13:56 -0800
-Message-Id: <20131202191253.344812740@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Magnus Damm <damm@opensource.se>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.12 044/212] gpio: rcar: NULL dereference on error in probe()
+Date: Mon,  2 Dec 2013 11:13:55 -0800
+Message-Id: <20131202191253.248957041@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,67 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gwendal Grignou <gwendal@google.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 3e85c3ecbc520751324a191d23bb94873ed01b10 upstream.
+commit 0c8aab8e65e450f2bfea494c1b6a86ded653f88c upstream.
 
-6.0 Gbps link speed was not decoded properly:
-speed was reported at 3.0 Gbps only.
+It's not obvious from the label name but "err1" tries to release
+"p->irq_domain" which leads to a NULL dereference.
 
-Tested: On a machine where libata reports 6.0 Gbps in
-        /var/log/messages:
-    ata1: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
+Fixes: 119f5e448d32 ('gpio: Renesas R-Car GPIO driver V3')
 
-    Before:
-    	cat /sys/class/ata_link/link1/sata_spd
-    	3.0 Gbps
-    After:
-    	cat /sys/class/ata_link/link1/sata_spd
-    	6.0 Gbps
-
-Signed-off-by: Gwendal Grignou <gwendal@google.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Magnus Damm <damm@opensource.se>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-transport.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/gpio/gpio-rcar.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/ata/libata-transport.c
-+++ b/drivers/ata/libata-transport.c
-@@ -321,25 +321,25 @@ int ata_tport_add(struct device *parent,
- /*
-  * ATA link attributes
-  */
-+static int noop(int x) { return x; }
+--- a/drivers/gpio/gpio-rcar.c
++++ b/drivers/gpio/gpio-rcar.c
+@@ -380,7 +380,7 @@ static int gpio_rcar_probe(struct platfo
+ 	if (!p->irq_domain) {
+ 		ret = -ENXIO;
+ 		dev_err(&pdev->dev, "cannot initialize irq domain\n");
+-		goto err1;
++		goto err0;
+ 	}
  
--
--#define ata_link_show_linkspeed(field)					\
-+#define ata_link_show_linkspeed(field, format)			        \
- static ssize_t								\
- show_ata_link_##field(struct device *dev,				\
- 		      struct device_attribute *attr, char *buf)		\
- {									\
- 	struct ata_link *link = transport_class_to_link(dev);		\
- 									\
--	return sprintf(buf,"%s\n", sata_spd_string(fls(link->field)));	\
-+	return sprintf(buf, "%s\n", sata_spd_string(format(link->field))); \
- }
- 
--#define ata_link_linkspeed_attr(field)					\
--	ata_link_show_linkspeed(field)					\
-+#define ata_link_linkspeed_attr(field, format)				\
-+	ata_link_show_linkspeed(field, format)				\
- static DEVICE_ATTR(field, S_IRUGO, show_ata_link_##field, NULL)
- 
--ata_link_linkspeed_attr(hw_sata_spd_limit);
--ata_link_linkspeed_attr(sata_spd_limit);
--ata_link_linkspeed_attr(sata_spd);
-+ata_link_linkspeed_attr(hw_sata_spd_limit, fls);
-+ata_link_linkspeed_attr(sata_spd_limit, fls);
-+ata_link_linkspeed_attr(sata_spd, noop);
- 
- 
- static DECLARE_TRANSPORT_CLASS(ata_link_class,
+ 	if (devm_request_irq(&pdev->dev, irq->start,
 
 
