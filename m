@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758833Ab3LBVAb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:00:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38468 "EHLO
+	id S1758842Ab3LBVAw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:00:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38395 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab3LBTNe (ORCPT
+	with ESMTP id S1754083Ab3LBTNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:34 -0500
+	Mon, 2 Dec 2013 14:13:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 3.10 075/173] blk-core: Fix memory corruption if blkcg_init_queue fails
-Date: Mon,  2 Dec 2013 11:10:58 -0800
-Message-Id: <20131202191151.893196775@linuxfoundation.org>
+        Dave Jiang <dave.jiang@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [PATCH 3.10 074/173] ioatdma: fix selection of 16 vs 8 source path
+Date: Mon,  2 Dec 2013 11:10:57 -0800
+Message-Id: <20131202191151.711013001@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,76 +27,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit fff4996b7db7955414ac74386efa5e07fd766b50 upstream.
+commit 21e96c7313486390c694919522a76dfea0a86c59 upstream.
 
-If blkcg_init_queue fails, blk_alloc_queue_node doesn't call bdi_destroy
-to clean up structures allocated by the backing dev.
+When performing continuations there are implied sources that need to be
+added to the source count. Quoting dma_set_maxpq:
 
-------------[ cut here ]------------
-WARNING: at lib/debugobjects.c:260 debug_print_object+0x85/0xa0()
-ODEBUG: free active (active state 0) object type: percpu_counter hint:           (null)
-Modules linked in: dm_loop dm_mod ip6table_filter ip6_tables uvesafb cfbcopyarea cfbimgblt cfbfillrect fbcon font bitblit fbcon_rotate fbcon_cw fbcon_ud fbcon_ccw softcursor fb fbdev ipt_MASQUERADE iptable_nat nf_nat_ipv4 msr nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc tun ipv6 cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_ondemand cpufreq_conservative spadfs fuse hid_generic usbhid hid raid0 md_mod dmi_sysfs nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack lm85 hwmon_vid snd_usb_audio snd_pcm_oss snd_mixer_oss snd_pcm snd_timer snd_page_alloc snd_hwdep snd_usbmidi_lib snd_rawmidi snd soundcore acpi_cpufreq freq_table mperf sata_svw serverworks kvm_amd ide_core ehci_pci ohci_hcd libata ehci_hcd kvm usbcore tg3 usb_common libphy k10temp pcspkr ptp i2c_piix4 i2c_core evdev microcode hwmon rtc_cmos pps_core e100 skge floppy mii processor button unix
-CPU: 0 PID: 2739 Comm: lvchange Tainted: G        W
-3.10.15-devel #14
-Hardware name: empty empty/S3992-E, BIOS 'V1.06   ' 06/09/2009
- 0000000000000009 ffff88023c3c1ae8 ffffffff813c8fd4 ffff88023c3c1b20
- ffffffff810399eb ffff88043d35cd58 ffffffff81651940 ffff88023c3c1bf8
- ffffffff82479d90 0000000000000005 ffff88023c3c1b80 ffffffff81039a67
-Call Trace:
- [<ffffffff813c8fd4>] dump_stack+0x19/0x1b
- [<ffffffff810399eb>] warn_slowpath_common+0x6b/0xa0
- [<ffffffff81039a67>] warn_slowpath_fmt+0x47/0x50
- [<ffffffff8122aaaf>] ? debug_check_no_obj_freed+0xcf/0x250
- [<ffffffff81229a15>] debug_print_object+0x85/0xa0
- [<ffffffff8122abe3>] debug_check_no_obj_freed+0x203/0x250
- [<ffffffff8113c4ac>] kmem_cache_free+0x20c/0x3a0
- [<ffffffff811f6709>] blk_alloc_queue_node+0x2a9/0x2c0
- [<ffffffff811f672e>] blk_alloc_queue+0xe/0x10
- [<ffffffffa04c0093>] dm_create+0x1a3/0x530 [dm_mod]
- [<ffffffffa04c6bb0>] ? list_version_get_info+0xe0/0xe0 [dm_mod]
- [<ffffffffa04c6c07>] dev_create+0x57/0x2b0 [dm_mod]
- [<ffffffffa04c6bb0>] ? list_version_get_info+0xe0/0xe0 [dm_mod]
- [<ffffffffa04c6bb0>] ? list_version_get_info+0xe0/0xe0 [dm_mod]
- [<ffffffffa04c6528>] ctl_ioctl+0x268/0x500 [dm_mod]
- [<ffffffff81097662>] ? get_lock_stats+0x22/0x70
- [<ffffffffa04c67ce>] dm_ctl_ioctl+0xe/0x20 [dm_mod]
- [<ffffffff81161aad>] do_vfs_ioctl+0x2ed/0x520
- [<ffffffff8116cfc7>] ? fget_light+0x377/0x4e0
- [<ffffffff81161d2b>] SyS_ioctl+0x4b/0x90
- [<ffffffff813cff16>] system_call_fastpath+0x1a/0x1f
----[ end trace 4b5ff0d55673d986 ]---
-------------[ cut here ]------------
+/* dma_maxpq - reduce maxpq in the face of continued operations
+ * @dma - dma device with PQ capability
+ * @flags - to check if DMA_PREP_CONTINUE and DMA_PREP_PQ_DISABLE_P are set
+ *
+ * When an engine does not support native continuation we need 3 extra
+ * source slots to reuse P and Q with the following coefficients:
+ * 1/ {00} * P : remove P from Q', but use it as a source for P'
+ * 2/ {01} * Q : use Q to continue Q' calculation
+ * 3/ {00} * Q : subtract Q from P' to cancel (2)
+ *
+ * In the case where P is disabled we only need 1 extra source:
+ * 1/ {01} * Q : use Q to continue Q' calculation
+ */
 
-This fix should be backported to stable kernels starting with 2.6.37. Note
-that in the kernels prior to 3.5 the affected code is different, but the
-bug is still there - bdi_init is called and bdi_destroy isn't.
+...fix the selection of the 16 source path to take these implied sources
+into account.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Note this also kills the BUG_ON(src_cnt < 9) check in
+__ioat3_prep_pq16_lock().  Besides not accounting for implied sources
+the check is redundant given we already made the path selection.
+
+Cc: Dave Jiang <dave.jiang@intel.com>
+Acked-by: Dave Jiang <dave.jiang@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/blk-core.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/dma/ioat/dma_v3.c |   30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
 
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -645,10 +645,12 @@ struct request_queue *blk_alloc_queue_no
- 	__set_bit(QUEUE_FLAG_BYPASS, &q->queue_flags);
+--- a/drivers/dma/ioat/dma_v3.c
++++ b/drivers/dma/ioat/dma_v3.c
+@@ -1169,9 +1169,6 @@ __ioat3_prep_pq16_lock(struct dma_chan *
+ 	u8 op;
+ 	int i, s, idx, num_descs;
  
- 	if (blkcg_init_queue(q))
--		goto fail_id;
-+		goto fail_bdi;
+-	/* this function only handles src_cnt 9 - 16 */
+-	BUG_ON(src_cnt < 9);
+-
+ 	/* this function is only called with 9-16 sources */
+ 	op = result ? IOAT_OP_PQ_VAL_16S : IOAT_OP_PQ_16S;
  
- 	return q;
+@@ -1257,13 +1254,21 @@ __ioat3_prep_pq16_lock(struct dma_chan *
+ 	return &desc->txd;
+ }
  
-+fail_bdi:
-+	bdi_destroy(&q->backing_dev_info);
- fail_id:
- 	ida_simple_remove(&blk_queue_ida, q->id);
- fail_q:
++static int src_cnt_flags(unsigned int src_cnt, unsigned long flags)
++{
++	if (dmaf_p_disabled_continue(flags))
++		return src_cnt + 1;
++	else if (dmaf_continue(flags))
++		return src_cnt + 3;
++	else
++		return src_cnt;
++}
++
+ static struct dma_async_tx_descriptor *
+ ioat3_prep_pq(struct dma_chan *chan, dma_addr_t *dst, dma_addr_t *src,
+ 	      unsigned int src_cnt, const unsigned char *scf, size_t len,
+ 	      unsigned long flags)
+ {
+-	struct dma_device *dma = chan->device;
+-
+ 	/* specify valid address for disabled result */
+ 	if (flags & DMA_PREP_PQ_DISABLE_P)
+ 		dst[0] = dst[1];
+@@ -1283,7 +1288,7 @@ ioat3_prep_pq(struct dma_chan *chan, dma
+ 		single_source_coef[0] = scf[0];
+ 		single_source_coef[1] = 0;
+ 
+-		return (src_cnt > 8) && (dma->max_pq > 8) ?
++		return src_cnt_flags(src_cnt, flags) > 8 ?
+ 			__ioat3_prep_pq16_lock(chan, NULL, dst, single_source,
+ 					       2, single_source_coef, len,
+ 					       flags) :
+@@ -1291,7 +1296,7 @@ ioat3_prep_pq(struct dma_chan *chan, dma
+ 					     single_source_coef, len, flags);
+ 
+ 	} else {
+-		return (src_cnt > 8) && (dma->max_pq > 8) ?
++		return src_cnt_flags(src_cnt, flags) > 8 ?
+ 			__ioat3_prep_pq16_lock(chan, NULL, dst, src, src_cnt,
+ 					       scf, len, flags) :
+ 			__ioat3_prep_pq_lock(chan, NULL, dst, src, src_cnt,
+@@ -1304,8 +1309,6 @@ ioat3_prep_pq_val(struct dma_chan *chan,
+ 		  unsigned int src_cnt, const unsigned char *scf, size_t len,
+ 		  enum sum_check_flags *pqres, unsigned long flags)
+ {
+-	struct dma_device *dma = chan->device;
+-
+ 	/* specify valid address for disabled result */
+ 	if (flags & DMA_PREP_PQ_DISABLE_P)
+ 		pq[0] = pq[1];
+@@ -1317,7 +1320,7 @@ ioat3_prep_pq_val(struct dma_chan *chan,
+ 	 */
+ 	*pqres = 0;
+ 
+-	return (src_cnt > 8) && (dma->max_pq > 8) ?
++	return src_cnt_flags(src_cnt, flags) > 8 ?
+ 		__ioat3_prep_pq16_lock(chan, pqres, pq, src, src_cnt, scf, len,
+ 				       flags) :
+ 		__ioat3_prep_pq_lock(chan, pqres, pq, src, src_cnt, scf, len,
+@@ -1328,7 +1331,6 @@ static struct dma_async_tx_descriptor *
+ ioat3_prep_pqxor(struct dma_chan *chan, dma_addr_t dst, dma_addr_t *src,
+ 		 unsigned int src_cnt, size_t len, unsigned long flags)
+ {
+-	struct dma_device *dma = chan->device;
+ 	unsigned char scf[src_cnt];
+ 	dma_addr_t pq[2];
+ 
+@@ -1337,7 +1339,7 @@ ioat3_prep_pqxor(struct dma_chan *chan,
+ 	flags |= DMA_PREP_PQ_DISABLE_Q;
+ 	pq[1] = dst; /* specify valid address for disabled result */
+ 
+-	return (src_cnt > 8) && (dma->max_pq > 8) ?
++	return src_cnt_flags(src_cnt, flags) > 8 ?
+ 		__ioat3_prep_pq16_lock(chan, NULL, pq, src, src_cnt, scf, len,
+ 				       flags) :
+ 		__ioat3_prep_pq_lock(chan, NULL, pq, src, src_cnt, scf, len,
+@@ -1349,7 +1351,6 @@ ioat3_prep_pqxor_val(struct dma_chan *ch
+ 		     unsigned int src_cnt, size_t len,
+ 		     enum sum_check_flags *result, unsigned long flags)
+ {
+-	struct dma_device *dma = chan->device;
+ 	unsigned char scf[src_cnt];
+ 	dma_addr_t pq[2];
+ 
+@@ -1363,8 +1364,7 @@ ioat3_prep_pqxor_val(struct dma_chan *ch
+ 	flags |= DMA_PREP_PQ_DISABLE_Q;
+ 	pq[1] = pq[0]; /* specify valid address for disabled result */
+ 
+-
+-	return (src_cnt > 8) && (dma->max_pq > 8) ?
++	return src_cnt_flags(src_cnt, flags) > 8 ?
+ 		__ioat3_prep_pq16_lock(chan, result, pq, &src[1], src_cnt - 1,
+ 				       scf, len, flags) :
+ 		__ioat3_prep_pq_lock(chan, result, pq, &src[1], src_cnt - 1,
 
 
