@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759976Ab3LBV23 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:28:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38285 "EHLO
+	id S1759983Ab3LBV2r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:28:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38280 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753336Ab3LBTHL (ORCPT
+	with ESMTP id S1753321Ab3LBTHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:07:11 -0500
+	Mon, 2 Dec 2013 14:07:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Mathias Krause <minipli@googlemail.com>,
-        Richard Guy Briggs <rgb@redhat.com>
-Subject: [PATCH 3.4 37/60] audit: use nlmsg_len() to get message payload length
-Date: Mon,  2 Dec 2013 11:06:18 -0800
-Message-Id: <20131202190338.344090372@linuxfoundation.org>
+        Aaron Lu <aaron.lu@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.4 34/60] PM / hibernate: Avoid overflow in hibernate_preallocate_memory()
+Date: Mon,  2 Dec 2013 11:06:15 -0800
+Message-Id: <20131202190337.751647828@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
 References: <20131202190330.152596462@linuxfoundation.org>
@@ -28,41 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Aaron Lu <aaron.lu@intel.com>
 
-commit 4d8fe7376a12bf4524783dd95cbc00f1fece6232 upstream.
+commit fd432b9f8c7c88428a4635b9f5a9c6e174df6e36 upstream.
 
-Using the nlmsg_len member of the netlink header to test if the message
-is valid is wrong as it includes the size of the netlink header itself.
-Thereby allowing to send short netlink messages that pass those checks.
+When system has a lot of highmem (e.g. 16GiB using a 32 bits kernel),
+the code to calculate how much memory we need to preallocate in
+normal zone may cause overflow. As Leon has analysed:
 
-Use nlmsg_len() instead to test for the right message length. The result
-of nlmsg_len() is guaranteed to be non-negative as the netlink message
-already passed the checks of nlmsg_ok().
+ It looks that during computing 'alloc' variable there is overflow:
+ alloc = (3943404 - 1970542) - 1978280 = -5418 (signed)
+ And this function goes to err_out.
 
-Also switch to min_t() to please checkpatch.pl.
+Fix this by avoiding that overflow.
 
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=60817
+Reported-and-tested-by: Leon Drugi <eyak@wp.pl>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/audit.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/power/snapshot.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -695,7 +695,7 @@ static int audit_receive_msg(struct sk_b
- 				 &status_set, sizeof(status_set));
- 		break;
- 	case AUDIT_SET:
--		if (nlh->nlmsg_len < sizeof(struct audit_status))
-+		if (nlmsg_len(nlh) < sizeof(struct audit_status))
- 			return -EINVAL;
- 		status_get   = (struct audit_status *)data;
- 		if (status_get->mask & AUDIT_STATUS_ENABLED) {
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -1398,7 +1398,11 @@ int hibernate_preallocate_memory(void)
+ 	 * highmem and non-highmem zones separately.
+ 	 */
+ 	pages_highmem = preallocate_image_highmem(highmem / 2);
+-	alloc = (count - max_size) - pages_highmem;
++	alloc = count - max_size;
++	if (alloc > pages_highmem)
++		alloc -= pages_highmem;
++	else
++		alloc = 0;
+ 	pages = preallocate_image_memory(alloc, avail_normal);
+ 	if (pages < alloc) {
+ 		/* We have exhausted non-highmem pages, try highmem. */
 
 
