@@ -1,103 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758370Ab3LBUp4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:45:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38751 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754222Ab3LBTN6 (ORCPT
+	id S1757172Ab3LBUr0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:47:26 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:48186 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757210Ab3LBUrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:58 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Forest Bond <forest.bond@rapidrollout.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.10 122/173] HID: dont ignore eGalax/D-Wav/EETI HIDs
-Date: Mon,  2 Dec 2013 11:11:45 -0800
-Message-Id: <20131202191157.645975985@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
-References: <20131202191142.873808297@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	Mon, 2 Dec 2013 15:47:20 -0500
+Message-ID: <529CF1D5.6010406@linaro.org>
+Date: Mon, 02 Dec 2013 12:47:17 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Brecht Machiels <brecht@mos6581.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
+        Jonathan Nieder <jrnieder@gmail.com>,
+        Heinz Wiesinger <HMWiesinger@gmx.at>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [REGRESSION] 41c7f74 rtc: Disable the alarm in the hardware (v2)
+References: <20131201220343.2285b12ee1c1e54252dc7dd9@mos6581.org>
+In-Reply-To: <20131201220343.2285b12ee1c1e54252dc7dd9@mos6581.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On 12/01/2013 01:03 PM, Brecht Machiels wrote:
+> Hi,
+>
+> I recently installed (Arch x86_64) Linux with the 3.12.1 kernel on a Toshiba Satellite L300 laptop. After shutting down Linux, the laptop will spontaneously boot up after about five minutes. This seems to be consistent. There are no options in the BIOS for en/disabling or configuring the RTC wakeup alarm. After 'shudown --halt' and shutting down the laptop manually (pressing the power button for 3 seconds), it will not spontaneously boot up. I understand Linux is configuring the RTC alarm on shutdown? 
+>
+> After finding some other reports of similar problems, I have built a custom 3.12.1 kernel after reverting commit 41c7f74 (rtc: Disable the alarm in the hardware (v2)) [1]. This seems to solve the problem for me.
+>
+> Related discussions and bug reports:
+> * http://thread.gmane.org/gmane.linux.kernel/1527538
+>   refers to: https://bugzilla.novell.com/show_bug.cgi?id=812592
+>              https://bugzilla.novell.com/show_bug.cgi?id=805740
+> * http://thread.gmane.org/gmane.linux.kernel/1275165/focus=1388471
+>   refers to: http://bugs.debian.org/691902
+>
+> Both LKML threads seem to have died without any action being taken.
+>
+> Setting the RTC alarm time way in the future, as suggested in [2] didn't work for me.
+>
+> Output of dmidecode is attached. Please let me know if any other information could be useful.
+>
+> [1] https://github.com/torvalds/linux/commit/41c7f74
+> [2] https://forums.computers.toshiba-europe.com/forums/thread.jspa?messageID=256816
 
-------------------
+Ok, sorry about this. I've been hoping we'd get some better insight into
+what's actually happening on these strange BIOSes where disabling the
+irq seems to cause it to scream (powering the system back on when its
+shutdown), in the hopes of having a proper workaround. But despite
+Borislav's efforts, he didn't seem to be able to root cause the issue.
 
-From: Forest Bond <forest.bond@rapidrollout.com>
+So sadly at this point I guess having the dmi based quirk is the only
+reasonable approach. The downside is it will end up killing alarm
+functionality on the hardware.
 
-commit 95d50b6c5e18ff7351c5f2a6ff53afaed5f7e664 upstream.
+Let me know if the following functions for you (I think I've added the
+quirk properly for your system, but am not sure).
 
-Certain devices with class HID, protocol None did not work with the HID
-driver at one point, and as a result were bound to usbtouchscreen
-instead as of commit 139ebe8 ("Input: usbtouchscreen - fix eGalax HID
-ignoring").  This change was prompted by the following report:
+Borislav, could you double check this patch still works on your hardware
+as well?
 
-https://lkml.org/lkml/2009/1/25/127
+thanks
+-john
 
-Unfortunately, the device mentioned in this report is no longer
-available for testing.
 
-We've recently discovered that some devices with class HID, protocol
-None do not work with usbtouchscreen, but do work with usbhid.  Here is
-the report that made this evident:
+>From 7dd7346bf06fbc4df626d7fc7e241d80165a40c4 Mon Sep 17 00:00:00 2001
+From: Borislav Petkov <bp@alien8.de>
+Date: Sat, 20 Jul 2013 19:00:23 +0200
+Subject: [PATCH] rtc-cmos: Add an alarm disable quirk
 
-http://comments.gmane.org/gmane.linux.kernel.input/31710
+41c7f7424259f ("rtc: Disable the alarm in the hardware (v2)") added the
+functionality to disable the RTC wake alarm when shutting down the box.
 
-Driver binding for these devices has flip-flopped a few times, so both
-of the above reports were regressions.
+However, there are at least two b0rked BIOSes we know about:
 
-This situation would appear to leave us with no easy way to bind every
-device to the right driver.  However, in my own testing with several
-devices I have not found a device with class HID that does not work with
-the current HID driver.  It is my belief that changes to the HID driver
-since the original report have likely fixed the issue(s) that made it
-unsuitable at the time, and that we should prefer it over usbtouchscreen
-for these devices.  In particular, HID quirks affecting these devices
-were added/removed in the following commits since then:
+https://bugzilla.novell.com/show_bug.cgi?id=812592
+https://bugzilla.novell.com/show_bug.cgi?id=805740
 
-fe6065d HID: add multi-input quirk for eGalax Touchcontroller
-77933c3 Merge branch 'egalax' into for-linus
-ebd11fe HID: Add quirk for eGalax touch controler.
-d34c4aa HID: add no-get quirk for eGalax touch controller
+where, when wakeup alarm is enabled in the BIOS, the machine reboots
+automatically right after shutdown, regardless of what wakeup time is
+programmed.
 
-This patch makes the HID driver no longer ignore eGalax/D-Wav/EETI
-devices with class HID.  If there are in fact devices with class HID
-that still do not work with the HID driver, we will see another round of
-regressions.  In that case I propose we investigate why the device is
-not working with the HID driver rather than re-introduce regressions for
-functioning HID devices by again binding them to usbtouchscreen.
+Bisecting the issue lead to this patch so disable its functionality with
+a DMI quirk only for those boxes.
 
-The corresponding change to usbtouchscreen will be made separately.
-
-Signed-off-by: Forest Bond <forest.bond@rapidrollout.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Rabin Vincent <rabin.vincent@stericsson.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+[Changed variable name for clarity, added extra dmi entry]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/hid/hid-core.c |    9 ---------
- 1 file changed, 9 deletions(-)
+ drivers/rtc/rtc-cmos.c | 52 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 51 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -2317,15 +2317,6 @@ bool hid_ignore(struct hid_device *hdev)
- 				hdev->type == HID_TYPE_USBNONE)
- 			return true;
- 		break;
--	case USB_VENDOR_ID_DWAV:
--		/* These are handled by usbtouchscreen. hdev->type is probably
--		 * HID_TYPE_USBNONE, but we say !HID_TYPE_USBMOUSE to match
--		 * usbtouchscreen. */
--		if ((hdev->product == USB_DEVICE_ID_EGALAX_TOUCHCONTROLLER ||
--		     hdev->product == USB_DEVICE_ID_DWAV_TOUCHCONTROLLER) &&
--		    hdev->type != HID_TYPE_USBMOUSE)
--			return true;
--		break;
- 	case USB_VENDOR_ID_VELLEMAN:
- 		/* These are not HID devices.  They are handled by comedi. */
- 		if ((hdev->product >= USB_DEVICE_ID_VELLEMAN_K8055_FIRST &&
+diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
+index f148762..a2325bc 100644
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -34,11 +34,11 @@
+ #include <linux/interrupt.h>
+ #include <linux/spinlock.h>
+ #include <linux/platform_device.h>
+-#include <linux/mod_devicetable.h>
+ #include <linux/log2.h>
+ #include <linux/pm.h>
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
++#include <linux/dmi.h>
+ 
+ /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
+ #include <asm-generic/rtc.h>
+@@ -377,6 +377,51 @@ static int cmos_set_alarm(struct device *dev, struct rtc_wkalrm *t)
+ 	return 0;
+ }
+ 
++/*
++ * Do not disable RTC alarm on shutdown - workaround for b0rked BIOSes.
++ */
++static bool alarm_disable_quirk;
++
++static int __init set_alarm_disable_quirk(const struct dmi_system_id *id)
++{
++	alarm_disable_quirk = true;
++	pr_info("rtc-cmos: BIOS has alarm-disable quirk. ");
++	pr_info("RTC alarms disabled\n");
++	return 0;
++}
++
++static const struct dmi_system_id rtc_quirks[] __initconst = {
++	/* https://bugzilla.novell.com/show_bug.cgi?id=805740 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "IBM Truman",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "4852570"),
++		},
++	},
++	/* https://bugzilla.novell.com/show_bug.cgi?id=812592 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "Gigabyte GA-990XA-UD3",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"Gigabyte Technology Co., Ltd."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "GA-990XA-UD3"),
++		},
++	},
++	/* http://permalink.gmane.org/gmane.linux.kernel/1604474 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "Toshiba Satellite L300",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Satellite L300"),
++		},
++	},
++	{}
++};
++
+ static int cmos_alarm_irq_enable(struct device *dev, unsigned int enabled)
+ {
+ 	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
+@@ -385,6 +430,9 @@ static int cmos_alarm_irq_enable(struct device *dev, unsigned int enabled)
+ 	if (!is_valid_irq(cmos->irq))
+ 		return -EINVAL;
+ 
++	if (alarm_disable_quirk)
++		return 0;
++
+ 	spin_lock_irqsave(&rtc_lock, flags);
+ 
+ 	if (enabled)
+@@ -1157,6 +1205,8 @@ static int __init cmos_init(void)
+ 			platform_driver_registered = true;
+ 	}
+ 
++	dmi_check_system(rtc_quirks);
++
+ 	if (retval == 0)
+ 		return 0;
+ 
+-- 
+1.8.3.2
+
+
+
+
 
 
