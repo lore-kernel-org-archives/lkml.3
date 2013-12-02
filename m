@@ -1,29 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab3LBTL6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:11:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38353 "EHLO
+	id S1753911Ab3LBTL4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:11:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38356 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431Ab3LBTHX (ORCPT
+	with ESMTP id S1753447Ab3LBTHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:07:23 -0500
+	Mon, 2 Dec 2013 14:07:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Richter <thor@math.tu-berlin.de>,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.4 45/60] drm/i915: flush cursors harder
-Date: Mon,  2 Dec 2013 11:06:26 -0800
-Message-Id: <20131202190340.061730854@linuxfoundation.org>
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [PATCH 3.4 46/60] drm/nouveau: when bailing out of a pushbuf ioctl, do not remove previous fence
+Date: Mon,  2 Dec 2013 11:06:27 -0800
+Message-Id: <20131202190340.267750009@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
 References: <20131202190330.152596462@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,50 +26,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Ben Skeggs <bskeggs@redhat.com>
 
-commit b2ea8ef559b4d94190009f3651b5b3ab7c05afd3 upstream.
+commit 9360bd1112d8874d21942e2ae74f5416b00a8db6 upstream.
 
-Apparently they need the same treatment as primary planes. This fixes
-modesetting failures because of stuck cursors (!) on Thomas' i830M
-machine.
-
-I've figured while at it I'll also roll it out for the ivb 3 pipe
-version of this function. I didn't do this for i845/i865 since Bspec
-says the update mechanism works differently, and there's some
-additional rules about what can be updated in which order.
-
-Tested-by: Thomas Richter <thor@math.tu-berlin.de>
-Cc:  Thomas Richter <thor@math.tu-berlin.de>
-Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/nouveau/nouveau_gem.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -6377,7 +6377,9 @@ static void i9xx_update_cursor(struct dr
- 		intel_crtc->cursor_visible = visible;
- 	}
- 	/* and commit changes on next vblank */
-+	POSTING_READ(CURCNTR(pipe));
- 	I915_WRITE(CURBASE(pipe), base);
-+	POSTING_READ(CURBASE(pipe));
- }
+--- a/drivers/gpu/drm/nouveau/nouveau_gem.c
++++ b/drivers/gpu/drm/nouveau/nouveau_gem.c
+@@ -281,7 +281,8 @@ validate_fini_list(struct list_head *lis
+ 	list_for_each_safe(entry, tmp, list) {
+ 		nvbo = list_entry(entry, struct nouveau_bo, entry);
  
- static void ivb_update_cursor(struct drm_crtc *crtc, u32 base)
-@@ -6402,7 +6404,9 @@ static void ivb_update_cursor(struct drm
- 		intel_crtc->cursor_visible = visible;
- 	}
- 	/* and commit changes on next vblank */
-+	POSTING_READ(CURCNTR_IVB(pipe));
- 	I915_WRITE(CURBASE_IVB(pipe), base);
-+	POSTING_READ(CURBASE_IVB(pipe));
- }
+-		nouveau_bo_fence(nvbo, fence);
++		if (likely(fence))
++			nouveau_bo_fence(nvbo, fence);
  
- /* If no-part of the cursor is visible on the framebuffer, then the GPU may hang... */
+ 		if (unlikely(nvbo->validate_mapped)) {
+ 			ttm_bo_kunmap(&nvbo->kmap);
 
 
