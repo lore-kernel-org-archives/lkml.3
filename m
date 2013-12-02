@@ -1,179 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759919Ab3LBVZM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:25:12 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:43885 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754376Ab3LBVZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 16:25:08 -0500
-Date: Mon, 2 Dec 2013 16:25:00 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
- access to memory reserves
-Message-ID: <20131202212500.GN22729@cmpxchg.org>
-References: <alpine.DEB.2.02.1311131649110.6735@chino.kir.corp.google.com>
- <20131114032508.GL707@cmpxchg.org>
- <alpine.DEB.2.02.1311141447160.21413@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1311141525440.30112@chino.kir.corp.google.com>
- <20131118154115.GA3556@cmpxchg.org>
- <20131118165110.GE32623@dhcp22.suse.cz>
- <20131122165100.GN3556@cmpxchg.org>
- <alpine.DEB.2.02.1311261648570.21003@chino.kir.corp.google.com>
- <20131127163435.GA3556@cmpxchg.org>
- <20131202200221.GC5524@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131202200221.GC5524@dhcp22.suse.cz>
+	id S1753408Ab3LBTHT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:07:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38277 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753314Ab3LBTHJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 14:07:09 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.4 33/60] dm: allocate buffer for messages with small number of arguments using GFP_NOIO
+Date: Mon,  2 Dec 2013 11:06:14 -0800
+Message-Id: <20131202190337.549713370@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
+References: <20131202190330.152596462@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 09:02:21PM +0100, Michal Hocko wrote:
-> On Wed 27-11-13 11:34:36, Johannes Weiner wrote:
-> > On Tue, Nov 26, 2013 at 04:53:47PM -0800, David Rientjes wrote:
-> > > On Fri, 22 Nov 2013, Johannes Weiner wrote:
-> > > 
-> > > > But userspace in all likeliness DOES need to take action.
-> > > > 
-> > > > Reclaim is a really long process.  If 5 times doing 12 priority cycles
-> > > > and scanning thousands of pages is not enough to reclaim a single
-> > > > page, what does that say about the health of the memcg?
-> > > > 
-> > > > But more importantly, OOM handling is just inherently racy.  A task
-> > > > might receive the kill signal a split second *after* userspace was
-> > > > notified.  Or a task may exit voluntarily a split second after a
-> > > > victim was chosen and killed.
-> > > > 
-> > > 
-> > > That's not true even today without the userspace oom handling proposal 
-> > > currently being discussed if you have a memcg oom handler attached to a 
-> > > parent memcg with access to more memory than an oom child memcg.  The oom 
-> > > handler can disable the child memcg's oom killer with memory.oom_control 
-> > > and implement its own policy to deal with any notification of oom.
-> > 
-> > I was never implying the kernel handler.  All the races exist with
-> > userspace handling as well.
-> > 
-> > > This patch is required to ensure that in such a scenario that the oom 
-> > > handler sitting in the parent memcg only wakes up when it's required to 
-> > > intervene.
-> > 
-> > A task could receive an unrelated kill between the OOM notification
-> > and going to sleep to wait for userspace OOM handling.  Or another
-> > task could exit voluntarily between the notification and waitqueue
-> > entry, which would again be short-cut by the oom_recover of the exit
-> > uncharges.
-> > 
-> > oom:                           other tasks:
-> > check signal/exiting
-> >                                could exit or get killed here
-> > mem_cgroup_oom_trylock()
-> >                                could exit or get killed here
-> > mem_cgroup_oom_notify()
-> >                                could exit or get killed here
-> > if (userspace_handler)
-> >   sleep()                      could exit or get killed here
-> > else
-> >   oom_kill()
-> >                                could exit or get killed here
-> > 
-> > It does not matter where your signal/exiting check is, OOM
-> > notification can never be race free because OOM is just an arbitrary
-> > line we draw.  We have no idea what all the tasks are up to and how
-> > close they are to releasing memory.  Even if we freeze the whole group
-> > to handle tasks, it does not change the fact that the userspace OOM
-> > handler might kill one task and after the unfreeze another task
-> > immediately exits voluntarily or got a kill signal a split second
-> > after it was frozen.
-> > 
-> > You can't fix this.  We just have to draw the line somewhere and
-> > accept that in rare situations the OOM kill was unnecessary.
-> 
-> But we are not talking just about races here. What if the OOM is a
-> result of an OOM action itself. E.g. a killed task faults a memory in
-> while exiting and it hasn't freed its memory yet. Should we notify in
-> such a case? What would an userspace OOM handler do (the in-kernel
-> implementation has an advantage because it can check the tasks flags)?
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-We don't notify in such a case.  Every charge from a TIF_MEMDIE or
-exiting task is bypassing the limit immediately.  Not even reclaim.
+------------------
 
-> > So again, I don't see this patch is doing anything but blur the
-> > current line and make notification less predictable. And, as someone
-> > else in this thread already said, it's a uservisible change in
-> > behavior and would break known tuning usecases.
-> 
-> I would like to understand how would such a tuning usecase work and how
-> it would break with this change.
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-I would do test runs and with every run increase the size of the
-workload until I get OOM notifications to know when the kernel has
-been pushed beyond its limits and available memory + reclaim
-capability can't keep up with the workload anymore.
+commit f36afb3957353d2529cb2b00f78fdccd14fc5e9c upstream.
 
-Not informing me just because due to timing variance a random process
-exits in the last moment would be flat out lying.  The machine is OOM.
-Many reclaim cycles failing is a good predictor.  Last minute exit of
-random task is not, it's happenstance and I don't want to rely on a
-fluke like this to size my workload.
+dm-mpath and dm-thin must process messages even if some device is
+suspended, so we allocate argv buffer with GFP_NOIO. These messages have
+a small fixed number of arguments.
 
-> Consider the above example. You would get 2 notification for the very
-> same OOM condition.
-> On the other hand if the encountered exiting task was just a race then
-> we have two options basically. Either there are more tasks racing (and
-> not all of them are exiting) or there is only one (all are exiting).
-> We will not loose any notification in the first case because the flags
-> are checked before mem_cgroup_oom_trylock and so one of tasks would lock
-> and notify.
-> The second case is more interesting. Userspace won't get notification
-> but we also know that no action is required as the OOM will be resolved
-> by itself. And now we should consider whether notification would do more
-> good than harm. The tuning usecase would loose one event. Would such a
-> rare situation skew the statistics so much? On the other hand a real OOM
-> killer would do something which means something will be killed. I find
-> the later much worse.
+On the other hand, dm-switch needs to process bulk data using messages
+so excessive use of GFP_NOIO could cause trouble.
 
-We already check in various places (sigh) for whether reclaim and
-killing is still necessary.  What is the end game here?  An endless
-loop right before the kill where we check if the kill is still
-necessary?
+The patch also lowers the default number of arguments from 64 to 8, so
+that there is smaller load on GFP_NOIO allocations.
 
-You're not fixing this problem, so why make the notifications less
-reliable?
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Acked-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-> So all in all. I do agree with you that this path will never be race
-> free and without pointless OOM actions. I also agree that drawing the
-> line is hard. But I am more inclined to prevent from notification when
-> we already know that _no action_ is required because IMHO the vast
-> majority of oom listeners are there to _do_ an action which is mostly
-> deadly.
+---
+ drivers/md/dm-table.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-If you want to push the machine so hard that active measures like
-reclaim can't keep up and you rely on stupid timing like this to save
-your sorry butt, then you'll just have to live with the
-unpredictability of it.  You're going to eat kills that might have
-been avoided last minute either way.  It's no excuse to plaster the MM
-with TIF_MEMDIE checks and last-minute cgroup margin checks in the
-weirdest locations.
+--- a/drivers/md/dm-table.c
++++ b/drivers/md/dm-table.c
+@@ -581,14 +581,28 @@ static int adjoin(struct dm_table *table
+ 
+ /*
+  * Used to dynamically allocate the arg array.
++ *
++ * We do first allocation with GFP_NOIO because dm-mpath and dm-thin must
++ * process messages even if some device is suspended. These messages have a
++ * small fixed number of arguments.
++ *
++ * On the other hand, dm-switch needs to process bulk data using messages and
++ * excessive use of GFP_NOIO could cause trouble.
+  */
+ static char **realloc_argv(unsigned *array_size, char **old_argv)
+ {
+ 	char **argv;
+ 	unsigned new_size;
++	gfp_t gfp;
+ 
+-	new_size = *array_size ? *array_size * 2 : 64;
+-	argv = kmalloc(new_size * sizeof(*argv), GFP_KERNEL);
++	if (*array_size) {
++		new_size = *array_size * 2;
++		gfp = GFP_KERNEL;
++	} else {
++		new_size = 8;
++		gfp = GFP_NOIO;
++	}
++	argv = kmalloc(new_size * sizeof(*argv), gfp);
+ 	if (argv) {
+ 		memcpy(argv, old_argv, *array_size * sizeof(*argv));
+ 		*array_size = new_size;
 
-Again, how likely is it anyway that the kill was truly skipped and not
-just deferred?  Reclaim failing is a good indicator that you're in
-trouble, a random task exiting in an ongoing workload does not say
-much.  The machine could still be in trouble, so you just deferred the
-inevitable, you didn't really avoid a kill.
 
-At this point we are talking about OOM kill frequency and statistical
-probability during apparently normal operations.  The OOM killer was
-never written for that, it was supposed to be a last minute resort
-that should not occur during normal operations and only if all SANE
-measures to avoid it have failed.  99% of all users have no interest
-in these micro-optimizations and we shouldn't clutter the code and
-have unpredictable behavior without even a trace of data to show that
-this is anything more than a placebo measure for one use case.
