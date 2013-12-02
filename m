@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756945Ab3LBUpV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:45:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38798 "EHLO
+	id S1758400Ab3LBUqA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:46:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38746 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754225Ab3LBTN7 (ORCPT
+	with ESMTP id S1754221Ab3LBTN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:59 -0500
+	Mon, 2 Dec 2013 14:13:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 112/173] ALSA: hda/realtek - Set pcbeep amp for ALC668
-Date: Mon,  2 Dec 2013 11:11:35 -0800
-Message-Id: <20131202191156.739378475@linuxfoundation.org>
+        Tom Gundersen <teg@jklm.no>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.10 121/173] Input: i8042 - add PNP modaliases
+Date: Mon,  2 Dec 2013 11:11:44 -0800
+Message-Id: <20131202191157.554555305@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -26,29 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kailang Yang <kailang@realtek.com>
+From: Tom Gundersen <teg@jklm.no>
 
-commit 9ad54547cf6f4410eba83bb95dfd2a0966718d6d upstream.
+commit 78551277e4df57864b0b0e7f85c23ede2be2edb8 upstream.
 
-Set the missing pcbeep default amp for ALC668.
+This allows the module to be autoloaded in the common case.
 
-Signed-off-by: Kailang Yang <kailang@realtek.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+In order to work on non-PnP systems the module should be compiled in or
+loaded unconditionally at boot (c.f. modules-load.d(5)), as before.
+
+Signed-off-by: Tom Gundersen <teg@jklm.no>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/input/serio/i8042-x86ia64io.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4494,6 +4494,7 @@ static int patch_alc662(struct hda_codec
- 		case 0x10ec0272:
- 		case 0x10ec0663:
- 		case 0x10ec0665:
-+		case 0x10ec0668:
- 			set_beep_amp(spec, 0x0b, 0x04, HDA_INPUT);
- 			break;
- 		case 0x10ec0273:
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -765,6 +765,7 @@ static struct pnp_device_id pnp_kbd_devi
+ 	{ .id = "CPQA0D7", .driver_data = 0 },
+ 	{ .id = "", },
+ };
++MODULE_DEVICE_TABLE(pnp, pnp_kbd_devids);
+ 
+ static struct pnp_driver i8042_pnp_kbd_driver = {
+ 	.name           = "i8042 kbd",
+@@ -786,6 +787,7 @@ static struct pnp_device_id pnp_aux_devi
+ 	{ .id = "SYN0801", .driver_data = 0 },
+ 	{ .id = "", },
+ };
++MODULE_DEVICE_TABLE(pnp, pnp_aux_devids);
+ 
+ static struct pnp_driver i8042_pnp_aux_driver = {
+ 	.name           = "i8042 aux",
 
 
