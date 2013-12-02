@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107Ab3LBOtL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 09:49:11 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:50582 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751961Ab3LBOtH (ORCPT
+	id S1752182Ab3LBOtY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 09:49:24 -0500
+Received: from s3.sipsolutions.net ([144.76.43.152]:39146 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075Ab3LBOtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 09:49:07 -0500
-Message-ID: <529C9DDF.1080401@gmail.com>
-Date: Mon, 02 Dec 2013 07:49:03 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, namhyung@kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH 2/2] perf probe: Allow user to specify address within
- executable
-References: <1385942827-11637-1-git-send-email-dsahern@gmail.com> <1385942827-11637-2-git-send-email-dsahern@gmail.com> <529C259D.8010901@hitachi.com>
-In-Reply-To: <529C259D.8010901@hitachi.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+	Mon, 2 Dec 2013 09:49:10 -0500
+Message-ID: <1385995738.20277.4.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH] net: mac80211: tx.c: be sure of 'sdata->vif.type' must
+ be NL80211_IFTYPE_AP when be in NL80211_IFTYPE_AP case
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Joe Perches <joe@perches.com>
+Cc: Chen Gang <gang.chen.5i5j@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        rkuo <rkuo@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, linux-wireless@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Date: Mon, 02 Dec 2013 15:48:58 +0100
+In-Reply-To: <1385937499.2664.21.camel@joe-AO722>
+References: <528AEFB7.4060301@gmail.com>
+	 <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com>
+	 <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com>
+	 <52957ADA.2080704@gmail.com>
+	 (sfid-20131127_055211_558798_A7DF5684) <1385739487.8656.1.camel@jlt4.sipsolutions.net>
+	 <5299D306.7070701@gmail.com>
+	 (sfid-20131130_125901_519610_EDA4068E) <1385816013.4327.1.camel@jlt4.sipsolutions.net>
+	 <5299ED38.4090509@gmail.com> <5299EFDD.6060405@gmail.com>
+	 (sfid-20131130_150205_984535_068F14A9) <1385842134.6108.4.camel@jlt4.sipsolutions.net>
+	 <1385843940.2664.4.camel@joe-AO722>
+	 <1385890523.4171.1.camel@jlt4.sipsolutions.net>
+	 <1385937499.2664.21.camel@joe-AO722>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/1/13, 11:15 PM, Masami Hiramatsu wrote:
-> (2013/12/02 9:07), David Ahern wrote:
->> Allow user to specify an address within an executable. This is useful, for
->> example, in probing local functions. If the function name begins with 0x
->> then try to convert the supplied name to an address. If succuessful then
->> treat the function name as the address within the executable to be probed.
+On Sun, 2013-12-01 at 14:38 -0800, Joe Perches wrote:
+> On Sun, 2013-12-01 at 10:35 +0100, Johannes Berg wrote:
+> > Good try, but no, now ap_sdata isn't even assigned. :)
 > 
-> Hmm, IMHO, this kind of functionality is only good for debugging.
+> Right.  Oh well.  There's no improving this without
+> significant rewrite.  Even then, there may not be much
+> overall improvement.
 
-Why? perf-probe takes the function name, looks up the address in the
-executable, adds an offset and then pushes that address to the kernel.
-Why can't I have an option to jump straight to the desired address?
+I could see an improvement if we were to actually make changes to assign
+the pointer based on the iftype, when that changes, so that each
+function only has to handle the right type and we don't need the switch
+statement at all...
 
-A few use cases that come to mind:
+But that's tricky to get right and I'm between vacations and holidays
+and all that ...
 
-1. Allows manual creation of return probes in kernels which do not have
-that support.
+johannes
 
-2. probing static functions
-
-3. probing versioned addresses in libc -- something the current syntax
-does not allow because '@' is used as a field separator:
-
-$ nm /lib64/libc-2.14.90.so | grep pthread_cond_timedwait
-00000000000fe6c0 t __pthread_cond_timedwait
-000000000012d920 t __pthread_cond_timedwait_2_0
-00000000000fe6c0 T pthread_cond_timedwait@@GLIBC_2.3.2
-000000000012d920 T pthread_cond_timedwait@GLIBC_2.2.5
-
-$ perf probe -x /lib64/libc-2.14.90.so -a
-'cond_timewait=pthread_cond_timedwait'
-no symbols found in /lib64/libc-2.14.90.so, maybe install a debug package?
-Failed to load map.
-  Error: Failed to add events. (-22)
-
-$ perf probe -x /lib64/libc-2.14.90.so -a
-'cond_timewait=pthread_cond_timedwait@@GLIBC_2.3.2'
-Semantic error :SRC@SRC is not allowed.
-
-
-4. A workaround for any other shortcomings in the interface that require
-patches to fix and backports to be done. backports which take time if
-even possible.
-
-> In that case, you should use uprobe_events interface directly.
-
-How do I do that within the context of perf?
-
-> 
-> I recommend you to try enabing dwarf support in user space.
-> Perf probe is a user-friendly interface of dynamic events.
-
-I do have dwarf support enabled in perf. Are you referring to other
-components of userspace (like system libraries)?
-
-David
