@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756272Ab3LBUNk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:13:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39246 "EHLO
+	id S1756392Ab3LBUQm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:16:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39216 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754577Ab3LBTRe (ORCPT
+	with ESMTP id S1754565Ab3LBTR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:34 -0500
+	Mon, 2 Dec 2013 14:17:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.12 060/212] IB/ipath: Convert ipath_user_sdma_pin_pages() to use get_user_pages_fast()
-Date: Mon,  2 Dec 2013 11:14:11 -0800
-Message-Id: <20131202191254.767308964@linuxfoundation.org>
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tony Lindgren <tony@atomide.com>, linux-gpio@vger.kernel.org
+Subject: [PATCH 3.12 041/212] gpio: twl4030: Fix regression for twl gpio output
+Date: Mon,  2 Dec 2013 11:13:52 -0800
+Message-Id: <20131202191252.976838459@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,58 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Tony Lindgren <tony@atomide.com>
 
-commit 4adcf7fb6783e354aab38824d803fa8c4f8e8a27 upstream.
+commit 0b2aa8bed3e13892fcac77e4f50ec6e80125469d upstream.
 
-ipath_user_sdma_queue_pkts() gets called with mmap_sem held for
-writing.  Except for get_user_pages() deep down in
-ipath_user_sdma_pin_pages() we don't seem to need mmap_sem at all.
+Commit c111feabe2e2 (gpio: twl4030: Cache the direction and output
+states in private data) improved things in general, but caused a
+regression for setting the GPIO output direction.
 
-Even more interestingly the function ipath_user_sdma_queue_pkts() (and
-also ipath_user_sdma_coalesce() called somewhat later) call
-copy_from_user() which can hit a page fault and we deadlock on trying
-to get mmap_sem when handling that fault.  So just make
-ipath_user_sdma_pin_pages() use get_user_pages_fast() and leave
-mmap_sem locking for mm.
+The change reorganized twl_direction_out() and twl_set() and swapped
+the function names around in the process. While doing that, a bug got
+introduced that's not obvious while reading the patch as it appears
+as no change to the code.
 
-This deadlock has actually been observed in the wild when the node
-is under memory pressure.
+The bug is we now call function twl4030_set_gpio_dataout() twice in
+both twl_direction_out() and twl_set(). Instead, we should first
+call twl_direction_out() in twl_direction_out() followed by
+twl4030_set_gpio_dataout() in twl_set().
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-[ Merged in fix for call to get_user_pages_fast from Tetsuo Handa
-  <penguin-kernel@I-love.SAKURA.ne.jp>.  - Roland ]
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+This regression probably has gone unnoticed for a long time as the
+bootloader may have set the GPIO direction properly in many cases.
+This fixes at least the LCD panel not turning on omap3 LDP for
+example.
+
+Cc: linux-gpio@vger.kernel.org
+Reviewed-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/ipath/ipath_user_sdma.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ drivers/gpio/gpio-twl4030.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/infiniband/hw/ipath/ipath_user_sdma.c
-+++ b/drivers/infiniband/hw/ipath/ipath_user_sdma.c
-@@ -280,9 +280,7 @@ static int ipath_user_sdma_pin_pages(con
- 	int j;
- 	int ret;
+--- a/drivers/gpio/gpio-twl4030.c
++++ b/drivers/gpio/gpio-twl4030.c
+@@ -354,17 +354,18 @@ static void twl_set(struct gpio_chip *ch
+ static int twl_direction_out(struct gpio_chip *chip, unsigned offset, int value)
+ {
+ 	struct gpio_twl4030_priv *priv = to_gpio_twl4030(chip);
++	int ret = -EINVAL;
  
--	ret = get_user_pages(current, current->mm, addr,
--			     npages, 0, 1, pages, NULL);
--
-+	ret = get_user_pages_fast(addr, npages, 0, pages);
- 	if (ret != npages) {
- 		int i;
+ 	mutex_lock(&priv->mutex);
+ 	if (offset < TWL4030_GPIO_MAX)
+-		twl4030_set_gpio_dataout(offset, value);
++		ret = twl4030_set_gpio_direction(offset, 0);
  
-@@ -811,10 +809,7 @@ int ipath_user_sdma_writev(struct ipath_
- 	while (dim) {
- 		const int mxp = 8;
+ 	priv->direction |= BIT(offset);
+ 	mutex_unlock(&priv->mutex);
  
--		down_write(&current->mm->mmap_sem);
- 		ret = ipath_user_sdma_queue_pkts(dd, pq, &list, iov, dim, mxp);
--		up_write(&current->mm->mmap_sem);
--
- 		if (ret <= 0)
- 			goto done_unlock;
- 		else {
+ 	twl_set(chip, offset, value);
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static int twl_to_irq(struct gpio_chip *chip, unsigned offset)
 
 
