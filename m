@@ -1,191 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806Ab3LBLVp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 06:21:45 -0500
-Received: from relay.parallels.com ([195.214.232.42]:47483 "EHLO
+	id S1753862Ab3LBLW0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 06:22:26 -0500
+Received: from relay.parallels.com ([195.214.232.42]:48190 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753532Ab3LBLUD (ORCPT
+	with ESMTP id S1753198Ab3LBLWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 06:20:03 -0500
+	Mon, 2 Dec 2013 06:22:20 -0500
+Message-ID: <529C6D6A.3060307@parallels.com>
+Date: Mon, 2 Dec 2013 15:22:18 +0400
 From: Vladimir Davydov <vdavydov@parallels.com>
-To: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <dchinner@redhat.com>,
-        <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
-        <vdavydov@parallels.com>, Anton Vorontsov <anton@enomsg.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v12 17/18] memcg: reap dead memcgs upon global memory pressure
-Date: Mon, 2 Dec 2013 15:19:52 +0400
-Message-ID: <dcbf3fd6336bc44948c89d0abc8f9aff27888f81.1385974612.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1385974612.git.vdavydov@parallels.com>
-References: <cover.1385974612.git.vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain
+To: <hannes@cmpxchg.org>
+CC: Vladimir Davydov <vdavydov@parallels.com>, <mhocko@suse.cz>,
+        <dchinner@redhat.com>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>
+Subject: Re: [PATCH v12 00/18] kmemcg shrinkers
+References: <cover.1385974612.git.vdavydov@parallels.com>
+In-Reply-To: <cover.1385974612.git.vdavydov@parallels.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@openvz.org>
+Hi, Johannes
 
-When we delete kmem-enabled memcgs, they can still be zombieing
-around for a while. The reason is that the objects may still be alive,
-and we won't be able to delete them at destruction time.
+I tried to fix the patchset according to your comments, but there were a 
+couple of places that after a bit of thinking I found impossible to 
+amend exactly the way you proposed. Here they go:
 
-The only entry point for that, though, are the shrinkers. The
-shrinker interface, however, is not exactly tailored to our needs. It
-could be a little bit better by using the API Dave Chinner proposed, but
-it is still not ideal since we aren't really a count-and-scan event, but
-more a one-off flush-all-you-can event that would have to abuse that
-somehow.
+>> +static unsigned long
+>> +zone_nr_reclaimable_pages(struct scan_control *sc, struct zone *zone)
+>> +{
+>> +	if (global_reclaim(sc))
+>> +		return zone_reclaimable_pages(zone);
+>> +	return memcg_zone_reclaimable_pages(sc->target_mem_cgroup, zone);
+>> +}
+> So we have zone_reclaimable_pages() and zone_nr_reclaimable_pages()
+> with completely different signatures and usecases.  Not good.
+>
+> The intersection between a zone and a memcg is called an lruvec,
+> please use that.  Look up an lruvec as early as possible, then
+> implement lruvec_reclaimable_pages() etc. for use during reclaim.
 
-Signed-off-by: Glauber Costa <glommer@openvz.org>
-Cc: Anton Vorontsov <anton@enomsg.org>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c |   80 ++++++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 77 insertions(+), 3 deletions(-)
+We iterate over lruvecs in shrink_zone() so AFAIU I should have put the 
+lru_pages counting there. However, we're not guaranteed to iterate over 
+all lruvecs eligible for current allocations if the zone is being shrunk 
+concurrently. One way to fix this would be rewriting memcg iteration 
+interface to always iterate over all memcgs returning in a flag in the 
+cookie if the current memcg should be reclaimed, but I found this 
+somewhat obfuscating and preferred simply fix the function name.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index a0b22d7..72db892 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -287,8 +287,16 @@ struct mem_cgroup {
- 	/* thresholds for mem+swap usage. RCU-protected */
- 	struct mem_cgroup_thresholds memsw_thresholds;
- 
--	/* For oom notifier event fd */
--	struct list_head oom_notify;
-+	union {
-+		/* For oom notifier event fd */
-+		struct list_head oom_notify;
-+		/*
-+		 * we can only trigger an oom event if the memcg is alive.
-+		 * so we will reuse this field to hook the memcg in the list
-+		 * of dead memcgs.
-+		 */
-+		struct list_head dead;
-+	};
- 
- 	/*
- 	 * Should we move charges of a task when a task is moved into this
-@@ -338,6 +346,29 @@ struct mem_cgroup {
- 	/* WARNING: nodeinfo must be the last member here */
- };
- 
-+#if defined(CONFIG_MEMCG_KMEM) || defined(CONFIG_MEMCG_SWAP)
-+static LIST_HEAD(dangling_memcgs);
-+static DEFINE_MUTEX(dangling_memcgs_mutex);
-+
-+static inline void memcg_dangling_del(struct mem_cgroup *memcg)
-+{
-+	mutex_lock(&dangling_memcgs_mutex);
-+	list_del(&memcg->dead);
-+	mutex_unlock(&dangling_memcgs_mutex);
-+}
-+
-+static inline void memcg_dangling_add(struct mem_cgroup *memcg)
-+{
-+	INIT_LIST_HEAD(&memcg->dead);
-+	mutex_lock(&dangling_memcgs_mutex);
-+	list_add(&memcg->dead, &dangling_memcgs);
-+	mutex_unlock(&dangling_memcgs_mutex);
-+}
-+#else
-+static inline void memcg_dangling_del(struct mem_cgroup *memcg) {}
-+static inline void memcg_dangling_add(struct mem_cgroup *memcg) {}
-+#endif
-+
- static size_t memcg_size(void)
- {
- 	return sizeof(struct mem_cgroup) +
-@@ -6363,6 +6394,41 @@ static int mem_cgroup_oom_control_write(struct cgroup_subsys_state *css,
- }
- 
- #ifdef CONFIG_MEMCG_KMEM
-+static void memcg_vmpressure_shrink_dead(void)
-+{
-+	struct memcg_cache_params *params, *tmp;
-+	struct kmem_cache *cachep;
-+	struct mem_cgroup *memcg;
-+
-+	mutex_lock(&dangling_memcgs_mutex);
-+	list_for_each_entry(memcg, &dangling_memcgs, dead) {
-+		mutex_lock(&memcg->slab_caches_mutex);
-+		/* The element may go away as an indirect result of shrink */
-+		list_for_each_entry_safe(params, tmp,
-+					 &memcg->memcg_slab_caches, list) {
-+			cachep = memcg_params_to_cache(params);
-+			/*
-+			 * the cpu_hotplug lock is taken in kmem_cache_create
-+			 * outside the slab_caches_mutex manipulation. It will
-+			 * be taken by kmem_cache_shrink to flush the cache.
-+			 * So we need to drop the lock. It is all right because
-+			 * the lock only protects elements moving in and out the
-+			 * list.
-+			 */
-+			mutex_unlock(&memcg->slab_caches_mutex);
-+			kmem_cache_shrink(cachep);
-+			mutex_lock(&memcg->slab_caches_mutex);
-+		}
-+		mutex_unlock(&memcg->slab_caches_mutex);
-+	}
-+	mutex_unlock(&dangling_memcgs_mutex);
-+}
-+
-+static void memcg_register_kmem_events(struct cgroup_subsys_state *css)
-+{
-+	vmpressure_register_kernel_event(css, memcg_vmpressure_shrink_dead);
-+}
-+
- static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- {
- 	int ret;
-@@ -6420,6 +6486,10 @@ static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
- 		css_put(&memcg->css);
- }
- #else
-+static inline void memcg_register_kmem_events(struct cgroup *cont)
-+{
-+}
-+
- static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- {
- 	return 0;
-@@ -6758,8 +6828,10 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
- 	if (css->cgroup->id > MEM_CGROUP_ID_MAX)
- 		return -ENOSPC;
- 
--	if (!parent)
-+	if (!parent) {
-+		memcg_register_kmem_events(css);
- 		return 0;
-+	}
- 
- 	mutex_lock(&memcg_create_mutex);
- 
-@@ -6821,6 +6893,7 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
- 	mem_cgroup_invalidate_reclaim_iterators(memcg);
- 	mem_cgroup_reparent_charges(memcg);
- 	mem_cgroup_destroy_all_caches(memcg);
-+	memcg_dangling_add(memcg);
- 	vmpressure_cleanup(&memcg->vmpressure);
- }
- 
-@@ -6829,6 +6902,7 @@ static void mem_cgroup_css_free(struct cgroup_subsys_state *css)
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
- 
- 	memcg_destroy_kmem(memcg);
-+	memcg_dangling_del(memcg);
- 	__mem_cgroup_free(memcg);
- }
- 
--- 
-1.7.10.4
+> -		for_each_node_mask(shrinkctl->nid, shrinkctl->nodes_to_scan) {
+> -			if (!node_online(shrinkctl->nid))
+> -				continue;
+> -
+> -			if (!(shrinker->flags & SHRINKER_NUMA_AWARE) &&
+> -			    (shrinkctl->nid != 0))
+> +			if (!memcg || memcg_kmem_is_active(memcg))
+> +				freed += shrink_slab_one(shrinkctl, shrinker,
+> +					 nr_pages_scanned, lru_pages);
+> +			/*
+> +			 * For non-memcg aware shrinkers, we will arrive here
+> +			 * at first pass because we need to scan the root
+> +			 * memcg.  We need to bail out, since exactly because
+> +			 * they are not memcg aware, instead of noticing they
+> +			 * have nothing to shrink, they will just shrink again,
+> +			 * and deplete too many objects.
+> +			 */
+> I actually found the code easier to understand without this comment.
+>
+>> +			if (!(shrinker->flags & SHRINKER_MEMCG_AWARE))
+>>   				break;
+>> +			shrinkctl->target_mem_cgroup =
+>> +				mem_cgroup_iter(root, memcg, NULL);
+> The target memcg is always the same, don't change this.  Look at the
+> lru scan code for reference.  Iterate zones (nodes in this case)
+> first, then iterate the memcgs in each zone (node), look up the lruvec
+> and then call shrink_slab_lruvec(lruvec, ...).
+
+They are somewhat different: shrink_zone() calls shrink_lruvec() for 
+each memcg's lruvec, but for shrink_slab() we don't have lruvecs. We do 
+have memcg_list_lru though, but it's up to the shrinker to use it. In 
+other words, in contrast to page cache reclaim, kmem shrinkers are 
+opaque to vmscan.
+
+Anyway, I can't help agreeing with you that changing target_mem_cgroup 
+while iterating over memcgs looks ugly. So I rewrote it a bit to 
+resemble the way per-node shrinking is implemented. For per-node 
+shrinking we have shrink_control::nodemask, which is set by the 
+shrink_slab() caller, and shrink_control::nid, which is initialized by 
+shrink_slab() while iterating over online NUMA nodes and actually used 
+by the shrinker. Similarly, for memory cgroups I added two fields to the 
+shrink_control struct, target_mem_cgroup and memcg, the former is set by 
+the shrink_slab() caller and specifies the memory cgroup tree to scan, 
+and the latter is used as the iterator by shrink_slab() and as the 
+target memcg by a particular memcg-aware shrinker.
+
+I would appreciate if you could look at the new version and share your 
+attitude toward it.
+
+Thank you.
+
+On 12/02/2013 03:19 PM, Vladimir Davydov wrote:
+> Hi,
+>
+> This is the 12th iteration of Glauber Costa's patchset implementing targeted
+> shrinking for memory cgroups when kmem limits are present. So far, we've been
+> accounting kernel objects but failing allocations when short of memory. This is
+> because our only option would be to call the global shrinker, depleting objects
+> from all caches and breaking isolation.
+>
+> The main idea is to make LRU lists used by FS slab shrinkers per-memcg. When
+> adding or removing an element from from the LRU, we use the page information to
+> figure out which memory cgroup it belongs to and relay it to the appropriate
+> list. This allows scanning kmem objects accounted to different memory cgroups
+> independently.
+>
+> The patchset is based on top of Linux 3.13-rc2 and organized as follows:
+>
+>   * patches 1-8 are for cleanup/preparation;
+>   * patch 9 introduces infrastructure for memcg-aware shrinkers;
+>   * patches 10 and 11 implement the per-memcg LRU list structure;
+>   * patch 12 uses per-memcg LRU lists to make dcache and icache shrinkers
+>     memcg-aware;
+>   * patch 13 implements kmem-only shrinking;
+>   * patches 14-18 issue kmem shrinking on limit resize, global pressure.
+>
+> Known issues:
+>
+>   * Since FS shrinkers can't be executed on __GFP_FS allocations, such
+>     allocations will fail if memcg kmem limit is less than the user limit and
+>     the memcg kmem usage is close to its limit. Glauber proposed to schedule a
+>     worker which would shrink kmem in the background on such allocations.
+>     However, this approach does not eliminate failures completely, it just makes
+>     them rarer. I'm thinking on implementing soft limits for memcg kmem so that
+>     striking the soft limit will trigger the reclaimer, but won't fail the
+>     allocation. I would appreciate any other proposals on how this can be fixed.
+>
+>   * Only dcache and icache are reclaimed on memcg pressure. Other FS objects are
+>     left for global pressure only. However, it should not be a serious problem
+>     to make them reclaimable too by passing on memcg to the FS-layer and letting
+>     each FS decide if its internal objects are shrinkable on memcg pressure.
+>
+> Changelog:
+>
+> Changes in v12:
+>   * Do not prune all slabs on kmem-only pressure.
+>   * Count all on-LRU pages eligible for reclaim to pass to shrink_slab().
+>   * Fix isolation issue due to using shrinker->nr_deferred on memcg pressure.
+>   * Add comments to memcg_list_lru functions.
+>   * Code cleanup/refactoring.
+>
+> Changes in v11:
+>   * Rework per-memcg list_lru infrastructure.
+>
+> Glauber Costa (7):
+>    memcg: make cache index determination more robust
+>    memcg: consolidate callers of memcg_cache_id
+>    memcg: move initialization to memcg creation
+>    memcg: allow kmem limit to be resized down
+>    vmpressure: in-kernel notifications
+>    memcg: reap dead memcgs upon global memory pressure
+>    memcg: flush memcg items upon memcg destruction
+>
+> Vladimir Davydov (11):
+>    memcg: move several kmemcg functions upper
+>    fs: do not use destroy_super() in alloc_super() fail path
+>    vmscan: rename shrink_slab() args to make it more generic
+>    vmscan: move call to shrink_slab() to shrink_zones()
+>    vmscan: do_try_to_free_pages(): remove shrink_control argument
+>    vmscan: shrink slab on memcg pressure
+>    memcg,list_lru: add per-memcg LRU list infrastructure
+>    memcg,list_lru: add function walking over all lists of a per-memcg
+>      LRU
+>    fs: make icache, dcache shrinkers memcg-aware
+>    memcg: per-memcg kmem shrinking
+>    vmscan: take at least one pass with shrinkers
+>
+>   fs/dcache.c                   |   25 +-
+>   fs/inode.c                    |   16 +-
+>   fs/internal.h                 |    9 +-
+>   fs/super.c                    |   48 ++-
+>   include/linux/fs.h            |    4 +-
+>   include/linux/list_lru.h      |   83 +++++
+>   include/linux/memcontrol.h    |   22 ++
+>   include/linux/mm.h            |    3 +-
+>   include/linux/shrinker.h      |   10 +-
+>   include/linux/swap.h          |    2 +
+>   include/linux/vmpressure.h    |    5 +
+>   include/trace/events/vmscan.h |   20 +-
+>   mm/memcontrol.c               |  728 ++++++++++++++++++++++++++++++++++++-----
+>   mm/vmpressure.c               |   53 ++-
+>   mm/vmscan.c                   |  249 +++++++++-----
+>   15 files changed, 1054 insertions(+), 223 deletions(-)
+>
 
