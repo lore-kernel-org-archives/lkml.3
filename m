@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239Ab3LBR7j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 12:59:39 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:46075 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753214Ab3LBR7d (ORCPT
+	id S1753267Ab3LBSAc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 13:00:32 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:33043 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752999Ab3LBSA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 12:59:33 -0500
-Message-ID: <529CD892.5010601@cogentembedded.com>
-Date: Mon, 02 Dec 2013 21:59:30 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Chris Ruehl <chris.ruehl@gtsys.com.hk>, balbi@ti.com,
-        gregkh@linuxfoundation.org
-CC: linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] usb: phy-ulpi: Add EXTVBUSIND,CHRGVBUS flag support
-References: <1385967919-13258-1-git-send-email-chris.ruehl@gtsys.com.hk> <1385967919-13258-3-git-send-email-chris.ruehl@gtsys.com.hk>
-In-Reply-To: <1385967919-13258-3-git-send-email-chris.ruehl@gtsys.com.hk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Dec 2013 13:00:29 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: linus.walleij@linaro.org, broonie@kernel.org,
+        Lee Jones <lee.jones@linaro.org>, alsa-devel@alsa-project.org
+Subject: [PATCH 1/3] ASoC: ux500_pcm: Stop pretending that we support varying address widths
+Date: Mon,  2 Dec 2013 18:00:20 +0000
+Message-Id: <1386007222-10081-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2013 10:05 AM, Chris Ruehl wrote:
+The Slave Config's addr_width attribute is populated by data_width of
+dma_cfg, which in turn is derived from dma_params' data_size attribute
+and that comes from the slot_width which is always 16 bits (2 Bytes).
+We're cutting out the middle man here and just setting the DMA Slave
+Config directly.
 
-> usb: phy-ulpi: Add EXTVBUSIND,CHRGVBUS flag support
+Cc: alsa-devel@alsa-project.org
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ sound/soc/ux500/ux500_pcm.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-> ULPI like ISP1504 support external vbus power indication
-> used in combination with vbus switches mic2075.
-
-> Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-> ---
->   drivers/usb/phy/phy-ulpi.c |   11 ++++++++++-
->   1 file changed, 10 insertions(+), 1 deletion(-)
-
-> diff --git a/drivers/usb/phy/phy-ulpi.c b/drivers/usb/phy/phy-ulpi.c
-> index 217339d..e2f15c4 100644
-> --- a/drivers/usb/phy/phy-ulpi.c
-> +++ b/drivers/usb/phy/phy-ulpi.c
-> @@ -180,6 +180,8 @@ static int ulpi_init(struct usb_phy *phy)
->   	int i, vid, pid, ret;
->   	u32 ulpi_id = 0;
->
-> +	pr_info("ULPI Viewport 0x%p\n",phy->io_priv);
-> +
-
-    You forgot space after comma.
-
-WBR, Sergei
+diff --git a/sound/soc/ux500/ux500_pcm.c b/sound/soc/ux500/ux500_pcm.c
+index 6162f70..2f1bdb7 100644
+--- a/sound/soc/ux500/ux500_pcm.c
++++ b/sound/soc/ux500/ux500_pcm.c
+@@ -104,26 +104,25 @@ static int ux500_pcm_prepare_slave_config(struct snd_pcm_substream *substream,
+ 		struct dma_slave_config *slave_config)
+ {
+ 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+-	struct ux500_msp_dma_params *dma_params;
+-	struct stedma40_chan_cfg *dma_cfg;
++	struct snd_dmaengine_dai_dma_data *dma_params;
+ 	int ret;
+ 
+ 	dma_params = snd_soc_dai_get_dma_data(rtd->cpu_dai, substream);
+-	dma_cfg = dma_params->dma_cfg;
+ 
+ 	ret = snd_hwparams_to_dma_slave_config(substream, params, slave_config);
+ 	if (ret)
+ 		return ret;
+ 
+ 	slave_config->dst_maxburst = 4;
+-	slave_config->dst_addr_width = dma_cfg->dst_info.data_width;
+ 	slave_config->src_maxburst = 4;
+-	slave_config->src_addr_width = dma_cfg->src_info.data_width;
++
++	slave_config->src_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
++	slave_config->dst_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
+ 
+ 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+-		slave_config->dst_addr = dma_params->tx_rx_addr;
++		slave_config->dst_addr = dma_params->addr;
+ 	else
+-		slave_config->src_addr = dma_params->tx_rx_addr;
++		slave_config->src_addr = dma_params->addr;
+ 
+ 	return 0;
+ }
+-- 
+1.8.3.2
 
