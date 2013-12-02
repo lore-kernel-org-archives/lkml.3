@@ -1,82 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab3LBJfK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 04:35:10 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49525 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753239Ab3LBJfH (ORCPT
+	id S1753279Ab3LBJhW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 04:37:22 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:61132 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752562Ab3LBJhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 04:35:07 -0500
-X-Sasl-enc: AasgxjSrHc5vEjdx8Om92XhoainrE9S7CUI8gITRKJ1U 1385976906
-Message-ID: <529C5448.7090902@iki.fi>
-Date: Mon, 02 Dec 2013 11:35:04 +0200
-From: Pekka Enberg <penberg@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 2 Dec 2013 04:37:18 -0500
+Date: Mon, 2 Dec 2013 10:36:23 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Stefan Agner <stefan@agner.ch>
+Cc: swarren@wwwdotorg.org, dev@lynxeye.de, lee.jones@linaro.org,
+        lgirdwood@gmail.com, broonie@kernel.org,
+        kai.poggensee@avionic-design.de, sameo@linux.intel.com,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] regulator: tps6586x: add and use correct voltage
+ table
+Message-ID: <20131202093622.GF17834@ulmo.nvidia.com>
+References: <cover.1385913227.git.stefan@agner.ch>
+ <77c960e6e3a91cf39bc866ccb9cd578ccc5acc95.1385913228.git.stefan@agner.ch>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Pekka Enberg <penberg@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC 0/3] perf tools: Show time info (v1)
-References: <1385967199-3759-1-git-send-email-namhyung@kernel.org>
-In-Reply-To: <1385967199-3759-1-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="27ZtN5FSuKKSZcBU"
+Content-Disposition: inline
+In-Reply-To: <77c960e6e3a91cf39bc866ccb9cd578ccc5acc95.1385913228.git.stefan@agner.ch>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2013 08:53 AM, Namhyung Kim wrote:
-> Sometimes users might want to see time information along with the
-> performance result but the perf cannot provide it currently.
->
-> In this patchset, I added such feature using sample->time.  When the
-> perf processes sample events, it calculate time info and update last
-> timestamp.  It keeps the last timestamp for each evsel (and for each
-> cpu if it's a per-cpu session).
->
-> It guesses whether a session is per-cpu if it found PERF_SAMPLE_CPU in
-> a evsel->attr.sample_type since I couldn't find a better way.  However
-> it'll have a trouble if used with tracepoint events since they require
-> the cpu info in the sample_type even for the per-thread sessions.
->
-> The sample time will usually be proportional to the overhead but
-> sometimes it show a different result especially in idle state.
->
-> With this patch, perf report can show time information in the header
-> (on --stdio output only for now) and a new column which can be enabled
-> by --show-time-info option.
->
->    $ perf record -- perf bench sched messaging
->    $ perf report --stdio --show-time-info
->
->    # Samples: 10K of event 'cycles'
->    # Event count (approx.): 5168954556
->    # Total sampling time  : 0.179102 (sec)       <--- here
->    #
->    # Overhead        Time          Command       Shared Object                        Symbol
->    # ........  ..........  ...............  ..................  ............................
->    #
->         6.59%    0.006093  sched-messaging  [unknown]           [.] 0x0000003153ebc7ed
->         4.81%    0.005354  sched-messaging  [kernel.kallsyms]   [k] copy_user_generic_string
->         3.89%    0.004098  sched-messaging  [kernel.kallsyms]   [k] avc_has_perm_flags
->         3.77%    0.003630  sched-messaging  [kernel.kallsyms]   [k] unix_stream_recvmsg
->         3.37%    0.003733  sched-messaging  [kernel.kallsyms]   [k] _raw_spin_lock
->         2.97%    0.003489  sched-messaging  [kernel.kallsyms]   [k] _raw_spin_lock_irqsave
->         2.73%    0.002615  sched-messaging  [kernel.kallsyms]   [k] __slab_free
->         2.56%    0.002392  sched-messaging  [kernel.kallsyms]   [k] page_fault
->         2.45%    0.002572  sched-messaging  [kernel.kallsyms]   [k] sock_alloc_send_pskb
->
-> I put the series on 'perf/time-sample-v1' branch in my tree:
->
->    git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
->
-> Any comments are welcome, thanks
 
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
+--27ZtN5FSuKKSZcBU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-for the whole series.
+On Sun, Dec 01, 2013 at 04:59:14PM +0100, Stefan Agner wrote:
+[...]
+
+This looks pretty good generally. A few minor nits below...
+
+> diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/t=
+ps6586x-regulator.c
+[...]
+> +#define tps658623_sm2_voltages tps6586x_ldo4_voltages
+>  static const unsigned int tps6586x_ldo4_voltages[] =3D {
+>  	1700000, 1725000, 1750000, 1775000, 1800000, 1825000, 1850000, 1875000,
+>  	1900000, 1925000, 1950000, 1975000, 2000000, 2025000, 2050000, 2075000,
+
+I'd put the #define below the ldo4 table. This doesn't actually matter
+for the preprocessor, but it makes it easier to read the code. Also an
+additional blank line would help with readability.
+
+> +	TPS6586X_LDO(LDO_0, "vinldo01", tps6586x_ldo0, SUPPLYV1, 5, 3, ENC, 0,
+> +					END, 0),
+
+Perhaps reduce the indentation here so there's more room in case this
+ever needs to be extended?
+
+> @@ -351,6 +380,7 @@ static int tps6586x_regulator_probe(struct platform_d=
+evice *pdev)
+>  	struct regulator_init_data *reg_data;
+>  	struct tps6586x_platform_data *pdata;
+>  	struct of_regulator_match *tps6586x_reg_matches =3D NULL;
+> +	int reg_version;
+
+Why the prefix "reg_"?
+
+> @@ -373,10 +403,27 @@ static int tps6586x_regulator_probe(struct platform=
+_device *pdev)
+>  		return -ENOMEM;
+>  	}
+> =20
+> +	reg_version =3D tps6586x_get_version(pdev->dev.parent);
+> +
+>  	for (id =3D 0; id < TPS6586X_ID_MAX_REGULATOR; ++id) {
+>  		reg_data =3D pdata->reg_init_data[id];
+> =20
+> -		ri =3D find_regulator_info(id);
+> +		switch(reg_version) {
+> +		case TPS658623:
+> +			ri =3D find_regulator_info(id, tps658623_regulator,
+> +					ARRAY_SIZE(tps658623_regulator));
+> +			break;
+> +		case TPS658643:
+> +			ri =3D find_regulator_info(id, tps658643_regulator,
+> +					ARRAY_SIZE(tps658643_regulator));
+> +			break;
+> +		}
+
+Perhaps instead of repeating the function calls this could be:
+
+		switch (version) {
+		case TPS6586XYZ:
+			num =3D ARRAY_SIZE(tps6586xyz_regulator);
+			table =3D tps6586xys_regulator;
+			break;
+
+		...
+		}
+
+		if (table)
+			ri =3D find_regulator_info(id, table, num);
+
+That's slightly longer, but I find that to be more intuitive. Perhaps
+a bit more future-proof since you only have a single call. But that's
+perhaps subjective, so I'm fine with your alternative, too.
+
+Thierry
+
+--27ZtN5FSuKKSZcBU
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSnFSWAAoJEN0jrNd/PrOhrEQP/3uNWtcMpj9OCU/q1L8dm+fX
+KWnlPOobRJ3HQ32D3dtBaMi2WDoKFvobEy2PkkPImuAPccqA1cYQcBucyicwjq0f
+QjEtLw1Pyp4rHhCSUVhNIftAdDCS9Uouxg69TdBwl4JlW3XDIQ0AUkppbSjZJ8Xd
+gLx2b7tW9K1Cy2jniiLnNh2lg6+Hg4L8PMqqCGUSv5wXYCkpj+EE1CjKrgcHFI0J
+AMoVwxFV0sJXw65m69Qrre1gM9s8O6C3lP3aZ3U7FXG2jn1iXJE1978MBT6Jpv+S
+0tAv57QSFlXCuPJJdPVHjQkYjWYrP3QPSctOew+d5Hal4dJvbSZPNKiPoCVze3oB
+nP+BI+5oyZDG0s8nvFKXr/Awnb9tPTQR0PDJTey0Q1vaD6rgH6mmW1b6fHrQGANe
+28Gr/FIjxKWUnY3f943JGIGp3metbn1OlDppnX6QlPaif6rIEf/f1qbFFE/ZkhnV
+p79ve8ufOT2Us3HpJ1bD56KZWTcwXyPao295a/SuwU+sQXmq4Hfibg72GV/L+DWI
+GmiVOPoINfxzysqt7S1gEKuMOg4Q3Z+nmbagEagpwZdnirsiLeMkCygpGpm150wA
+oOHDTVu5qBWktjfUmy7+AbCSTZQWtAJqAtQgmCEpNuzxezg14Blarv69VdZM/2lB
+nI/fXMQyUaPfSD6JOhpp
+=zza/
+-----END PGP SIGNATURE-----
+
+--27ZtN5FSuKKSZcBU--
