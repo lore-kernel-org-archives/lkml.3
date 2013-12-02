@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab3LBUYd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:24:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39012 "EHLO
+	id S932149Ab3LBUYa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:24:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38999 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642Ab3LBTRE (ORCPT
+	with ESMTP id S1752930Ab3LBTRC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:04 -0500
+	Mon, 2 Dec 2013 14:17:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.12 025/212] ASoC: wm5110: Add post SYSCLK register patch for rev D chip
-Date: Mon,  2 Dec 2013 11:13:36 -0800
-Message-Id: <20131202191251.452533806@linuxfoundation.org>
+        Oskar Schirmer <oskar@scara.com>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.12 023/212] ASoC: fsl: imx-pcm-fiq: omit fiq counter to avoid harm in unbalanced situations
+Date: Mon,  2 Dec 2013 11:13:34 -0800
+Message-Id: <20131202191251.256810858@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,79 +26,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+From: Oskar Schirmer <oskar@scara.com>
 
-commit f69f86b1ba6493126a7f093a65a8952bcb183de2 upstream.
+commit fc7dc61d9a87011aaf8a6eb3144ebf9552adf5d2 upstream.
 
-Certain registers require patching after the SYSCLK has been brought up
-add support for this into the CODEC driver.
+Unbalanced calls to snd_imx_pcm_trigger() may result in endless
+FIQ activity and thus provoke eternal sound. While on the first glance,
+the switch statement looks pretty symmetric, the SUSPEND/RESUME
+pair is not: the suspend case comes along snd_pcm_suspend_all(),
+which for fsl/imx-pcm-fiq is called only at snd_soc_suspend(),
+but the resume case originates straight from the SNDRV_PCM_IOCTL_RESUME.
+This way userland may provoke an unbalanced resume, which might cause
+the fiq_enable counter to increase and never return to zero again,
+so eventually imx_pcm_fiq is never disabled.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Simply removing the fiq_enable will solve the problem, as long as
+one never goes play and capture game simultaneously, but beware
+trying both at once, the early TRIGGER_STOP will cut off the other
+activity prematurely. So now playing and capturing is scrutinized
+separately, instead of by counting.
+
+Signed-off-by: Oskar Schirmer <oskar@scara.com>
 Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm5110.c |   43 ++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 42 insertions(+), 1 deletion(-)
+ sound/soc/fsl/imx-pcm-fiq.c |   29 +++++++++++++++++------------
+ 1 file changed, 17 insertions(+), 12 deletions(-)
 
---- a/sound/soc/codecs/wm5110.c
-+++ b/sound/soc/codecs/wm5110.c
-@@ -37,6 +37,47 @@ struct wm5110_priv {
- 	struct arizona_fll fll[2];
+--- a/sound/soc/fsl/imx-pcm-fiq.c
++++ b/sound/soc/fsl/imx-pcm-fiq.c
+@@ -44,7 +44,8 @@ struct imx_pcm_runtime_data {
+ 	struct hrtimer hrt;
+ 	int poll_time_ns;
+ 	struct snd_pcm_substream *substream;
+-	atomic_t running;
++	atomic_t playing;
++	atomic_t capturing;
  };
  
-+static const struct reg_default wm5110_sysclk_revd_patch[] = {
-+	{ 0x3093, 0x1001 },
-+	{ 0x30E3, 0x1301 },
-+	{ 0x3133, 0x1201 },
-+	{ 0x3183, 0x1501 },
-+	{ 0x31D3, 0x1401 },
-+};
-+
-+static int wm5110_sysclk_ev(struct snd_soc_dapm_widget *w,
-+			    struct snd_kcontrol *kcontrol, int event)
-+{
-+	struct snd_soc_codec *codec = w->codec;
-+	struct arizona *arizona = dev_get_drvdata(codec->dev->parent);
-+	struct regmap *regmap = codec->control_data;
-+	const struct reg_default *patch = NULL;
-+	int i, patch_size;
-+
-+	switch (arizona->rev) {
-+	case 3:
-+		patch = wm5110_sysclk_revd_patch;
-+		patch_size = ARRAY_SIZE(wm5110_sysclk_revd_patch);
-+		break;
-+	default:
-+		return 0;
-+	}
-+
-+	switch (event) {
-+	case SND_SOC_DAPM_POST_PMU:
-+		if (patch)
-+			for (i = 0; i < patch_size; i++)
-+				regmap_write(regmap, patch[i].reg,
-+					     patch[i].def);
-+		break;
-+
-+	default:
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
- static DECLARE_TLV_DB_SCALE(ana_tlv, 0, 100, 0);
- static DECLARE_TLV_DB_SCALE(eq_tlv, -1200, 100, 0);
- static DECLARE_TLV_DB_SCALE(digital_tlv, -6400, 50, 0);
-@@ -400,7 +441,7 @@ static const struct snd_kcontrol_new wm5
+ static enum hrtimer_restart snd_hrtimer_callback(struct hrtimer *hrt)
+@@ -56,7 +57,7 @@ static enum hrtimer_restart snd_hrtimer_
+ 	struct pt_regs regs;
+ 	unsigned long delta;
  
- static const struct snd_soc_dapm_widget wm5110_dapm_widgets[] = {
- SND_SOC_DAPM_SUPPLY("SYSCLK", ARIZONA_SYSTEM_CLOCK_1, ARIZONA_SYSCLK_ENA_SHIFT,
--		    0, NULL, 0),
-+		    0, wm5110_sysclk_ev, SND_SOC_DAPM_POST_PMU),
- SND_SOC_DAPM_SUPPLY("ASYNCCLK", ARIZONA_ASYNC_CLOCK_1,
- 		    ARIZONA_ASYNC_CLK_ENA_SHIFT, 0, NULL, 0),
- SND_SOC_DAPM_SUPPLY("OPCLK", ARIZONA_OUTPUT_SYSTEM_CLOCK,
+-	if (!atomic_read(&iprtd->running))
++	if (!atomic_read(&iprtd->playing) && !atomic_read(&iprtd->capturing))
+ 		return HRTIMER_NORESTART;
+ 
+ 	get_fiq_regs(&regs);
+@@ -124,7 +125,6 @@ static int snd_imx_pcm_prepare(struct sn
+ 	return 0;
+ }
+ 
+-static int fiq_enable;
+ static int imx_pcm_fiq;
+ 
+ static int snd_imx_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
+@@ -136,23 +136,27 @@ static int snd_imx_pcm_trigger(struct sn
+ 	case SNDRV_PCM_TRIGGER_START:
+ 	case SNDRV_PCM_TRIGGER_RESUME:
+ 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+-		atomic_set(&iprtd->running, 1);
++		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
++			atomic_set(&iprtd->playing, 1);
++		else
++			atomic_set(&iprtd->capturing, 1);
+ 		hrtimer_start(&iprtd->hrt, ns_to_ktime(iprtd->poll_time_ns),
+ 		      HRTIMER_MODE_REL);
+-		if (++fiq_enable == 1)
+-			enable_fiq(imx_pcm_fiq);
+-
++		enable_fiq(imx_pcm_fiq);
+ 		break;
+ 
+ 	case SNDRV_PCM_TRIGGER_STOP:
+ 	case SNDRV_PCM_TRIGGER_SUSPEND:
+ 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+-		atomic_set(&iprtd->running, 0);
+-
+-		if (--fiq_enable == 0)
++		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
++			atomic_set(&iprtd->playing, 0);
++		else
++			atomic_set(&iprtd->capturing, 0);
++		if (!atomic_read(&iprtd->playing) &&
++				!atomic_read(&iprtd->capturing))
+ 			disable_fiq(imx_pcm_fiq);
+-
+ 		break;
++
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -200,7 +204,8 @@ static int snd_imx_open(struct snd_pcm_s
+ 
+ 	iprtd->substream = substream;
+ 
+-	atomic_set(&iprtd->running, 0);
++	atomic_set(&iprtd->playing, 0);
++	atomic_set(&iprtd->capturing, 0);
+ 	hrtimer_init(&iprtd->hrt, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	iprtd->hrt.function = snd_hrtimer_callback;
+ 
 
 
