@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756484Ab3LBTxo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:53:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39373 "EHLO
+	id S1756470Ab3LBTxm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:53:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39379 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754738Ab3LBTSO (ORCPT
+	with ESMTP id S1754742Ab3LBTSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:18:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Heorhi Valakhanovich <valahanovich@tut.by>,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 3.12 117/212] n_tty: Fix echo overrun tail computation
-Date: Mon,  2 Dec 2013 11:15:08 -0800
-Message-Id: <20131202191300.248356199@linuxfoundation.org>
+Subject: [PATCH 3.12 118/212] tty: Reset hupped state on open
+Date: Mon,  2 Dec 2013 11:15:09 -0800
+Message-Id: <20131202191300.339003023@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -28,33 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Hurley <peter@hurleysoftware.com>
 
-commit 6f2225363c205e186c1465c2c7c84f17c1635504 upstream.
+commit d4855e1fc03c2bb32dd64badf51cec5a2a26ab2a upstream.
 
-Commit cbfd0340ae1993378fd47179db949e050e16e697,
-'n_tty: Process echoes in blocks', introduced an error when
-consuming the echo buffer tail to prevent buffer overrun, where
-the incorrect operation code byte is checked to determine how
-far to advance the tail to the next echo byte.
+A common security idiom is to hangup the current tty (via vhangup())
+after forking but before execing a root shell. This hangs up any
+existing opens which other processes may have and ensures subsequent
+opens have the necessary permissions to open the root shell tty/pty.
 
-Check the correct byte for the echo operation code byte.
+Reset the TTY_HUPPED state after the driver has successfully
+returned the opened tty (perform the reset while the tty is locked
+to avoid racing with concurrent hangups).
 
+Reported-by: Heorhi Valakhanovich <valahanovich@tut.by>
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Tested-by: Heorhi Valakhanovich <valahanovich@tut.by>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_tty.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/tty_io.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -768,7 +768,7 @@ static size_t __process_echoes(struct tt
- 	 * data at the tail to prevent a subsequent overrun */
- 	while (ldata->echo_commit - tail >= ECHO_DISCARD_WATERMARK) {
- 		if (echo_buf(ldata, tail) == ECHO_OP_START) {
--			if (echo_buf(ldata, tail) == ECHO_OP_ERASE_TAB)
-+			if (echo_buf(ldata, tail + 1) == ECHO_OP_ERASE_TAB)
- 				tail += 3;
- 			else
- 				tail += 2;
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -2086,6 +2086,7 @@ retry_open:
+ 			filp->f_op = &tty_fops;
+ 		goto retry_open;
+ 	}
++	clear_bit(TTY_HUPPED, &tty->flags);
+ 	tty_unlock(tty);
+ 
+ 
 
 
