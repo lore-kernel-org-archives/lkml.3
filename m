@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab3LBLVu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 06:21:50 -0500
-Received: from relay.parallels.com ([195.214.232.42]:47453 "EHLO
+	id S1753843Ab3LBLVx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 06:21:53 -0500
+Received: from relay.parallels.com ([195.214.232.42]:47472 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753524Ab3LBLUC (ORCPT
+	with ESMTP id S1753530Ab3LBLUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 06:20:02 -0500
+	Mon, 2 Dec 2013 06:20:03 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <dchinner@redhat.com>,
         <akpm@linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
-        <vdavydov@parallels.com>, Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v12 15/18] memcg: allow kmem limit to be resized down
-Date: Mon, 2 Dec 2013 15:19:50 +0400
-Message-ID: <442e8d847aa930cabff1fb520bd65b56559cae6e.1385974612.git.vdavydov@parallels.com>
+        <vdavydov@parallels.com>, John Stultz <john.stultz@linaro.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH v12 16/18] vmpressure: in-kernel notifications
+Date: Mon, 2 Dec 2013 15:19:51 +0400
+Message-ID: <c182f4056545ff83b97640432216494e76e37b8a.1385974612.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1385974612.git.vdavydov@parallels.com>
 References: <cover.1385974612.git.vdavydov@parallels.com>
@@ -29,106 +30,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Glauber Costa <glommer@openvz.org>
 
-The userspace memory limit can be freely resized down. Upon attempt,
-reclaim will be called to flush the pages away until we either reach the
-limit we want or give up.
+During the past weeks, it became clear to us that the shrinker interface
+we have right now works very well for some particular types of users,
+but not that well for others. The latter are usually people interested in
+one-shot notifications, that were forced to adapt themselves to the
+count+scan behavior of shrinkers. To do so, they had no choice than to
+greatly abuse the shrinker interface producing little monsters all over.
 
-It wasn't possible so far with the kmem limit, since we had no way to
-shrink the kmem buffers other than using the big hammer of shrink_slab,
-that effectively frees data around the whole system.
+During LSF/MM, one of the proposals that popped out during our session
+was to reuse Anton Voronstsov's vmpressure for this. They are designed
+for userspace consumption, but also provide a well-stablished,
+cgroup-aware entry point for notifications.
 
-The situation flips now that we have a per-memcg shrinker
-infrastructure. We will proceed analogously to our user memory
-counterpart and try to shrink our buffers until we either reach the
-limit we want or give up.
+This patch extends that to also support in-kernel users. Events that
+should be generated for in-kernel consumption will be marked as such,
+and for those, we will call a registered function instead of triggering
+an eventfd notification.
+
+Please note that due to my lack of understanding of each shrinker user,
+I will stay away from converting the actual users, you are all welcome
+to do so.
 
 Signed-off-by: Glauber Costa <glommer@openvz.org>
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Anton Vorontsov <anton@enomsg.org>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Reviewed-by: Greg Thelen <gthelen@google.com>
+Cc: Dave Chinner <dchinner@redhat.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
 ---
- mm/memcontrol.c |   43 ++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 38 insertions(+), 5 deletions(-)
+ include/linux/vmpressure.h |    5 +++++
+ mm/vmpressure.c            |   53 +++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 55 insertions(+), 3 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 3679acb..a0b22d7 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5582,10 +5582,39 @@ static ssize_t mem_cgroup_read(struct cgroup_subsys_state *css,
- 	return simple_read_from_buffer(buf, nbytes, ppos, str, len);
+diff --git a/include/linux/vmpressure.h b/include/linux/vmpressure.h
+index 3f3788d..9102e53 100644
+--- a/include/linux/vmpressure.h
++++ b/include/linux/vmpressure.h
+@@ -19,6 +19,9 @@ struct vmpressure {
+ 	/* Have to grab the lock on events traversal or modifications. */
+ 	struct mutex events_lock;
+ 
++	/* False if only kernel users want to be notified, true otherwise. */
++	bool notify_userspace;
++
+ 	struct work_struct work;
+ };
+ 
+@@ -38,6 +41,8 @@ extern int vmpressure_register_event(struct cgroup_subsys_state *css,
+ 				     struct cftype *cft,
+ 				     struct eventfd_ctx *eventfd,
+ 				     const char *args);
++extern int vmpressure_register_kernel_event(struct cgroup_subsys_state *css,
++					    void (*fn)(void));
+ extern void vmpressure_unregister_event(struct cgroup_subsys_state *css,
+ 					struct cftype *cft,
+ 					struct eventfd_ctx *eventfd);
+diff --git a/mm/vmpressure.c b/mm/vmpressure.c
+index e0f6283..730e7c1 100644
+--- a/mm/vmpressure.c
++++ b/mm/vmpressure.c
+@@ -130,8 +130,12 @@ static enum vmpressure_levels vmpressure_calc_level(unsigned long scanned,
  }
  
-+#ifdef CONFIG_MEMCG_KMEM
-+/*
-+ * This is slightly different than res or memsw reclaim.  We already have
-+ * vmscan behind us to drive the reclaim, so we can basically keep trying until
-+ * all buffers that can be flushed are flushed. We have a very clear signal
-+ * about it in the form of the return value of try_to_free_mem_cgroup_kmem.
-+ */
-+static int mem_cgroup_resize_kmem_limit(struct mem_cgroup *memcg,
-+					unsigned long long val)
-+{
-+	int ret = -EBUSY;
-+
-+	for (;;) {
-+		if (signal_pending(current)) {
-+			ret = -EINTR;
-+			break;
-+		}
-+
-+		ret = res_counter_set_limit(&memcg->kmem, val);
-+		if (!ret)
-+			break;
-+
-+		/* Can't free anything, pointless to continue */
-+		if (!try_to_free_mem_cgroup_kmem(memcg, GFP_KERNEL))
-+			break;
-+	}
-+
-+	return ret;
-+}
-+
- static int memcg_update_kmem_limit(struct cgroup_subsys_state *css, u64 val)
- {
- 	int ret = -EINVAL;
--#ifdef CONFIG_MEMCG_KMEM
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+ struct vmpressure_event {
+-	struct eventfd_ctx *efd;
++	union {
++		struct eventfd_ctx *efd;
++		void (*fn)(void);
++	};
+ 	enum vmpressure_levels level;
++	bool kernel_event;
+ 	struct list_head node;
+ };
+ 
+@@ -147,12 +151,15 @@ static bool vmpressure_event(struct vmpressure *vmpr,
+ 	mutex_lock(&vmpr->events_lock);
+ 
+ 	list_for_each_entry(ev, &vmpr->events, node) {
+-		if (level >= ev->level) {
++		if (ev->kernel_event) {
++			ev->fn();
++		} else if (vmpr->notify_userspace && level >= ev->level) {
+ 			eventfd_signal(ev->efd, 1);
+ 			signalled = true;
+ 		}
+ 	}
+ 
++	vmpr->notify_userspace = false;
+ 	mutex_unlock(&vmpr->events_lock);
+ 
+ 	return signalled;
+@@ -222,7 +229,7 @@ void vmpressure(gfp_t gfp, struct mem_cgroup *memcg,
+ 	 * we account it too.
+ 	 */
+ 	if (!(gfp & (__GFP_HIGHMEM | __GFP_MOVABLE | __GFP_IO | __GFP_FS)))
+-		return;
++		goto schedule;
+ 
  	/*
- 	 * For simplicity, we won't allow this to be disabled.  It also can't
-@@ -5620,16 +5649,15 @@ static int memcg_update_kmem_limit(struct cgroup_subsys_state *css, u64 val)
- 		 * starts accounting before all call sites are patched
- 		 */
- 		memcg_kmem_set_active(memcg);
--	} else
--		ret = res_counter_set_limit(&memcg->kmem, val);
-+	} else {
-+		ret = mem_cgroup_resize_kmem_limit(memcg, val);
-+	}
- out:
- 	mutex_unlock(&set_limit_mutex);
- 	mutex_unlock(&memcg_create_mutex);
--#endif
- 	return ret;
+ 	 * If we got here with no pages scanned, then that is an indicator
+@@ -239,8 +246,15 @@ void vmpressure(gfp_t gfp, struct mem_cgroup *memcg,
+ 	vmpr->scanned += scanned;
+ 	vmpr->reclaimed += reclaimed;
+ 	scanned = vmpr->scanned;
++	/*
++	 * If we didn't reach this point, only kernel events will be triggered.
++	 * It is the job of the worker thread to clean this up once the
++	 * notifications are all delivered.
++	 */
++	vmpr->notify_userspace = true;
+ 	spin_unlock(&vmpr->sr_lock);
+ 
++schedule:
+ 	if (scanned < vmpressure_win)
+ 		return;
+ 	schedule_work(&vmpr->work);
+@@ -324,6 +338,39 @@ int vmpressure_register_event(struct cgroup_subsys_state *css,
  }
  
--#ifdef CONFIG_MEMCG_KMEM
- static int memcg_propagate_kmem(struct mem_cgroup *memcg)
- {
- 	int ret = 0;
-@@ -5666,6 +5694,11 @@ static int memcg_propagate_kmem(struct mem_cgroup *memcg)
- out:
- 	return ret;
- }
-+#else
-+static int memcg_update_kmem_limit(struct cgroup *cont, u64 val)
+ /**
++ * vmpressure_register_kernel_event() - Register kernel-side notification
++ * @css:	css that is interested in vmpressure notifications
++ * @fn:		function to be called when pressure happens
++ *
++ * This function register in-kernel users interested in receiving notifications
++ * about pressure conditions. Pressure notifications will be triggered at the
++ * same time as userspace notifications (with no particular ordering relative
++ * to it).
++ *
++ * Pressure notifications are a alternative method to shrinkers and will serve
++ * well users that are interested in a one-shot notification, with a
++ * well-defined cgroup aware interface.
++ */
++int vmpressure_register_kernel_event(struct cgroup_subsys_state *css,
++				      void (*fn)(void))
 +{
-+	return -EINVAL;
++	struct vmpressure *vmpr = css_to_vmpressure(css);
++	struct vmpressure_event *ev;
++
++	ev = kzalloc(sizeof(*ev), GFP_KERNEL);
++	if (!ev)
++		return -ENOMEM;
++
++	ev->kernel_event = true;
++	ev->fn = fn;
++
++	mutex_lock(&vmpr->events_lock);
++	list_add(&ev->node, &vmpr->events);
++	mutex_unlock(&vmpr->events_lock);
++	return 0;
 +}
- #endif /* CONFIG_MEMCG_KMEM */
- 
- /*
++
++/**
+  * vmpressure_unregister_event() - Unbind eventfd from vmpressure
+  * @css:	css handle
+  * @cft:	cgroup control files handle
 -- 
 1.7.10.4
 
