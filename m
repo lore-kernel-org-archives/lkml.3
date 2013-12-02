@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759740Ab3LBVVw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:21:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38422 "EHLO
+	id S1759725Ab3LBVVt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:21:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38395 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753562Ab3LBTMp (ORCPT
+	with ESMTP id S1753564Ab3LBTMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:12:45 -0500
+	Mon, 2 Dec 2013 14:12:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 017/173] ASoC: blackfin: Fix missing break
-Date: Mon,  2 Dec 2013 11:10:00 -0800
-Message-Id: <20131202191144.827733347@linuxfoundation.org>
+        Richard Fitzgerald <rf@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.10 019/173] ASoC: arizona: Set FLL to free-run before disabling
+Date: Mon,  2 Dec 2013 11:10:02 -0800
+Message-Id: <20131202191145.041949824@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -26,29 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
 
-commit afed4dbe3a043dbd833a53b6b4951e155708afd2 upstream.
+commit 3e68ce1bc72e5d6615677ec5a8b0a9bcb6c7a490 upstream.
 
-Fixes: 4b2ffc205cb9 ('ASoC: Blackfin I2S: add 8-bit sample support')
-Reported-by: David Binderman
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+The FLL must be placed into free-run mode before disabling
+to allow it to entirely shut down.
+
+Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
 Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/blackfin/bf5xx-i2s.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/soc/codecs/arizona.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/sound/soc/blackfin/bf5xx-i2s.c
-+++ b/sound/soc/blackfin/bf5xx-i2s.c
-@@ -111,6 +111,7 @@ static int bf5xx_i2s_hw_params(struct sn
- 		bf5xx_i2s->tcr2 |= 7;
- 		bf5xx_i2s->rcr2 |= 7;
- 		sport_handle->wdsize = 1;
-+		break;
- 	case SNDRV_PCM_FORMAT_S16_LE:
- 		bf5xx_i2s->tcr2 |= 15;
- 		bf5xx_i2s->rcr2 |= 15;
+--- a/sound/soc/codecs/arizona.c
++++ b/sound/soc/codecs/arizona.c
+@@ -1455,6 +1455,8 @@ static void arizona_enable_fll(struct ar
+ 	try_wait_for_completion(&fll->ok);
+ 
+ 	regmap_update_bits(arizona->regmap, fll->base + 1,
++			   ARIZONA_FLL1_FREERUN, 0);
++	regmap_update_bits(arizona->regmap, fll->base + 1,
+ 			   ARIZONA_FLL1_ENA, ARIZONA_FLL1_ENA);
+ 	if (fll->ref_src >= 0 && fll->sync_src >= 0 &&
+ 	    fll->ref_src != fll->sync_src)
+@@ -1473,6 +1475,8 @@ static void arizona_disable_fll(struct a
+ 	struct arizona *arizona = fll->arizona;
+ 	bool change;
+ 
++	regmap_update_bits(arizona->regmap, fll->base + 1,
++			   ARIZONA_FLL1_FREERUN, ARIZONA_FLL1_FREERUN);
+ 	regmap_update_bits_check(arizona->regmap, fll->base + 1,
+ 				 ARIZONA_FLL1_ENA, 0, &change);
+ 	regmap_update_bits(arizona->regmap, fll->base + 0x11,
 
 
