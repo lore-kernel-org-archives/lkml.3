@@ -1,368 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755117Ab3LBT3N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:29:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39742 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755005Ab3LBTTO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:19:14 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH 3.12 204/212] media: dvb-frontends: again, Dont use dynamic static allocation
-Date: Mon,  2 Dec 2013 11:16:35 -0800
-Message-Id: <20131202191311.867601970@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
-References: <20131202191248.517975703@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	id S1755499Ab3LBT3I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:29:08 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:43846 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753779Ab3LBTWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 14:22:43 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Metin Doslu <metin@citusdata.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ozgun Erdogan <ozgun@citusdata.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 0/9] mm: thrash detection-based file cache sizing v7
+Date: Mon,  2 Dec 2013 14:21:39 -0500
+Message-Id: <1386012108-21006-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+	Changes in this revision
 
-------------------
+o truncate_inode_pages_final(): instead of cluttering inode teardown
+  code with VM synchronization, provide a dedicated final truncate
+  function to take care of this and convert all filesystems over.
+  Suggested by Dave Chinner.  [ Dave, I did not add the AS_EXITING
+  check to the inode sanity checks after all simply because a couple
+  filesystems don't use pagecache and they would have no reason to
+  call truncate_inode_pages() so we probably shouldn't make them for
+  debugging purposes.  A race from not using it when you should will
+  trigger BUG_ON(inode->i_data.nrshadows) in evict(), should do it. ]
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+o Unlocked setting of AS_EXITING: in a lot of cases, no truncation is
+  at all necessary.  With ordered updates to mapping->nrpages and
+  mapping->nrshadows these cases can be reliably detected and we can
+  avoid the IRQ-safe mapping->tree_lock on empty inodes.  Suggested by
+  Dave Chinner.
 
-commit 8393796dfa4cf5dffcceec464c7789bec3a2f471 upstream.
+o Ditched lockdep workarounds. there is no other technical reason to
+  make the lru_lock IRQ-safe.  Suggested by Dave Chinner.
 
-Dynamic static allocation is evil, as Kernel stack is too low, and
-compilation complains about it on some archs:
-	drivers/media/dvb-frontends/bcm3510.c:230:1: warning: 'bcm3510_do_hab_cmd' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/itd1000.c:69:1: warning: 'itd1000_write_regs.constprop.0' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/mt312.c:126:1: warning: 'mt312_write' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/nxt200x.c:111:1: warning: 'nxt200x_writebytes' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/stb6100.c:216:1: warning: 'stb6100_write_reg_range.constprop.3' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/stv6110.c:98:1: warning: 'stv6110_write_regs' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/stv6110x.c:85:1: warning: 'stv6110x_write_regs' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/tda18271c2dd.c:147:1: warning: 'WriteRegs' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/zl10039.c:119:1: warning: 'zl10039_write' uses dynamic stack allocation [enabled by default]
-Instead, let's enforce a limit for the buffer. Considering that I2C
-transfers are generally limited, and that devices used on USB has a
-max data length of 64 bytes for the control URBs.
-So, it seem safe to use 64 bytes as the hard limit for all those devices.
- On most cases, the limit is a way lower than that, but this limit
-is small enough to not affect the Kernel stack, and it is a no brain
-limit, as using smaller ones would require to either carefully each
-driver or to take a look on each datasheet.
+o Shorten lru_lock hold time: take radix tree nodes off the LRU
+  completely before reclaiming them.  Suggested by Dave Chinner.
 
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+o Document radix tree node lifetime management during node reclaim.
+  Suggested by Andrew Morton.
 
----
- drivers/media/dvb-frontends/bcm3510.c      |   15 ++++++++++++++-
- drivers/media/dvb-frontends/itd1000.c      |   13 ++++++++++++-
- drivers/media/dvb-frontends/mt312.c        |   10 +++++++++-
- drivers/media/dvb-frontends/nxt200x.c      |   11 ++++++++++-
- drivers/media/dvb-frontends/stb6100.c      |   11 ++++++++++-
- drivers/media/dvb-frontends/stv6110.c      |   12 +++++++++++-
- drivers/media/dvb-frontends/stv6110x.c     |   13 ++++++++++++-
- drivers/media/dvb-frontends/tda18271c2dd.c |   14 ++++++++++++--
- drivers/media/dvb-frontends/zl10039.c      |   12 +++++++++++-
- 9 files changed, 101 insertions(+), 10 deletions(-)
+o Naming and typo fixes.  Suggested by Andrew Morton and Ryan Mallon.
 
---- a/drivers/media/dvb-frontends/bcm3510.c
-+++ b/drivers/media/dvb-frontends/bcm3510.c
-@@ -44,6 +44,9 @@
- #include "bcm3510.h"
- #include "bcm3510_priv.h"
- 
-+/* Max transfer size done by bcm3510_do_hab_cmd() function */
-+#define MAX_XFER_SIZE	128
-+
- struct bcm3510_state {
- 
- 	struct i2c_adapter* i2c;
-@@ -201,9 +204,19 @@ static int bcm3510_hab_send_request(stru
- 
- static int bcm3510_do_hab_cmd(struct bcm3510_state *st, u8 cmd, u8 msgid, u8 *obuf, u8 olen, u8 *ibuf, u8 ilen)
- {
--	u8 ob[olen+2],ib[ilen+2];
-+	u8 ob[MAX_XFER_SIZE], ib[MAX_XFER_SIZE];
- 	int ret = 0;
- 
-+	if (ilen + 2 > sizeof(ib)) {
-+		deb_hab("do_hab_cmd: ilen=%d is too big!\n", ilen);
-+		return -EINVAL;
-+	}
-+
-+	if (olen + 2 > sizeof(ob)) {
-+		deb_hab("do_hab_cmd: olen=%d is too big!\n", olen);
-+		return -EINVAL;
-+	}
-+
- 	ob[0] = cmd;
- 	ob[1] = msgid;
- 	memcpy(&ob[2],obuf,olen);
---- a/drivers/media/dvb-frontends/itd1000.c
-+++ b/drivers/media/dvb-frontends/itd1000.c
-@@ -31,6 +31,9 @@
- #include "itd1000.h"
- #include "itd1000_priv.h"
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- static int debug;
- module_param(debug, int, 0644);
- MODULE_PARM_DESC(debug, "Turn on/off debugging (default:off).");
-@@ -52,10 +55,18 @@ MODULE_PARM_DESC(debug, "Turn on/off deb
- /* don't write more than one byte with flexcop behind */
- static int itd1000_write_regs(struct itd1000_state *state, u8 reg, u8 v[], u8 len)
- {
--	u8 buf[1+len];
-+	u8 buf[MAX_XFER_SIZE];
- 	struct i2c_msg msg = {
- 		.addr = state->cfg->i2c_address, .flags = 0, .buf = buf, .len = len+1
- 	};
-+
-+	if (1 + len > sizeof(buf)) {
-+		printk(KERN_WARNING
-+		       "itd1000: i2c wr reg=%04x: len=%d is too big!\n",
-+		       reg, len);
-+		return -EINVAL;
-+	}
-+
- 	buf[0] = reg;
- 	memcpy(&buf[1], v, len);
- 
---- a/drivers/media/dvb-frontends/mt312.c
-+++ b/drivers/media/dvb-frontends/mt312.c
-@@ -36,6 +36,8 @@
- #include "mt312_priv.h"
- #include "mt312.h"
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
- 
- struct mt312_state {
- 	struct i2c_adapter *i2c;
-@@ -96,9 +98,15 @@ static int mt312_write(struct mt312_stat
- 		       const u8 *src, const size_t count)
- {
- 	int ret;
--	u8 buf[count + 1];
-+	u8 buf[MAX_XFER_SIZE];
- 	struct i2c_msg msg;
- 
-+	if (1 + count > sizeof(buf)) {
-+		printk(KERN_WARNING
-+		       "mt312: write: len=%zd is too big!\n", count);
-+		return -EINVAL;
-+	}
-+
- 	if (debug) {
- 		int i;
- 		dprintk("W(%d):", reg & 0x7f);
---- a/drivers/media/dvb-frontends/nxt200x.c
-+++ b/drivers/media/dvb-frontends/nxt200x.c
-@@ -39,6 +39,9 @@
-  */
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- #define NXT2002_DEFAULT_FIRMWARE "dvb-fe-nxt2002.fw"
- #define NXT2004_DEFAULT_FIRMWARE "dvb-fe-nxt2004.fw"
- #define CRC_CCIT_MASK 0x1021
-@@ -95,10 +98,16 @@ static int i2c_readbytes(struct nxt200x_
- static int nxt200x_writebytes (struct nxt200x_state* state, u8 reg,
- 			       const u8 *buf, u8 len)
- {
--	u8 buf2 [len+1];
-+	u8 buf2[MAX_XFER_SIZE];
- 	int err;
- 	struct i2c_msg msg = { .addr = state->config->demod_address, .flags = 0, .buf = buf2, .len = len + 1 };
- 
-+	if (1 + len > sizeof(buf2)) {
-+		pr_warn("%s: i2c wr reg=%04x: len=%d is too big!\n",
-+			 __func__, reg, len);
-+		return -EINVAL;
-+	}
-+
- 	buf2[0] = reg;
- 	memcpy(&buf2[1], buf, len);
- 
---- a/drivers/media/dvb-frontends/stb6100.c
-+++ b/drivers/media/dvb-frontends/stb6100.c
-@@ -31,6 +31,8 @@
- static unsigned int verbose;
- module_param(verbose, int, 0644);
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
- 
- #define FE_ERROR		0
- #define FE_NOTICE		1
-@@ -183,7 +185,7 @@ static int stb6100_read_reg(struct stb61
- static int stb6100_write_reg_range(struct stb6100_state *state, u8 buf[], int start, int len)
- {
- 	int rc;
--	u8 cmdbuf[len + 1];
-+	u8 cmdbuf[MAX_XFER_SIZE];
- 	struct i2c_msg msg = {
- 		.addr	= state->config->tuner_address,
- 		.flags	= 0,
-@@ -191,6 +193,13 @@ static int stb6100_write_reg_range(struc
- 		.len	= len + 1
- 	};
- 
-+	if (1 + len > sizeof(buf)) {
-+		printk(KERN_WARNING
-+		       "%s: i2c wr: len=%d is too big!\n",
-+		       KBUILD_MODNAME, len);
-+		return -EINVAL;
-+	}
-+
- 	if (unlikely(start < 1 || start + len > STB6100_NUMREGS)) {
- 		dprintk(verbose, FE_ERROR, 1, "Invalid register range %d:%d",
- 			start, len);
---- a/drivers/media/dvb-frontends/stv6110.c
-+++ b/drivers/media/dvb-frontends/stv6110.c
-@@ -30,6 +30,9 @@
- 
- #include "stv6110.h"
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- static int debug;
- 
- struct stv6110_priv {
-@@ -68,7 +71,7 @@ static int stv6110_write_regs(struct dvb
- {
- 	struct stv6110_priv *priv = fe->tuner_priv;
- 	int rc;
--	u8 cmdbuf[len + 1];
-+	u8 cmdbuf[MAX_XFER_SIZE];
- 	struct i2c_msg msg = {
- 		.addr	= priv->i2c_address,
- 		.flags	= 0,
-@@ -78,6 +81,13 @@ static int stv6110_write_regs(struct dvb
- 
- 	dprintk("%s\n", __func__);
- 
-+	if (1 + len > sizeof(cmdbuf)) {
-+		printk(KERN_WARNING
-+		       "%s: i2c wr: len=%d is too big!\n",
-+		       KBUILD_MODNAME, len);
-+		return -EINVAL;
-+	}
-+
- 	if (start + len > 8)
- 		return -EINVAL;
- 
---- a/drivers/media/dvb-frontends/stv6110x.c
-+++ b/drivers/media/dvb-frontends/stv6110x.c
-@@ -32,6 +32,9 @@
- #include "stv6110x.h"
- #include "stv6110x_priv.h"
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- static unsigned int verbose;
- module_param(verbose, int, 0644);
- MODULE_PARM_DESC(verbose, "Set Verbosity level");
-@@ -61,7 +64,8 @@ static int stv6110x_write_regs(struct st
- {
- 	int ret;
- 	const struct stv6110x_config *config = stv6110x->config;
--	u8 buf[len + 1];
-+	u8 buf[MAX_XFER_SIZE];
-+
- 	struct i2c_msg msg = {
- 		.addr = config->addr,
- 		.flags = 0,
-@@ -69,6 +73,13 @@ static int stv6110x_write_regs(struct st
- 		.len = len + 1
- 	};
- 
-+	if (1 + len > sizeof(buf)) {
-+		printk(KERN_WARNING
-+		       "%s: i2c wr: len=%d is too big!\n",
-+		       KBUILD_MODNAME, len);
-+		return -EINVAL;
-+	}
-+
- 	if (start + len > 8)
- 		return -EINVAL;
- 
---- a/drivers/media/dvb-frontends/tda18271c2dd.c
-+++ b/drivers/media/dvb-frontends/tda18271c2dd.c
-@@ -34,6 +34,9 @@
- #include "dvb_frontend.h"
- #include "tda18271c2dd.h"
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- struct SStandardParam {
- 	s32   m_IFFrequency;
- 	u32   m_BandWidth;
-@@ -139,11 +142,18 @@ static int i2c_write(struct i2c_adapter
- static int WriteRegs(struct tda_state *state,
- 		     u8 SubAddr, u8 *Regs, u16 nRegs)
- {
--	u8 data[nRegs+1];
-+	u8 data[MAX_XFER_SIZE];
-+
-+	if (1 + nRegs > sizeof(data)) {
-+		printk(KERN_WARNING
-+		       "%s: i2c wr: len=%d is too big!\n",
-+		       KBUILD_MODNAME, nRegs);
-+		return -EINVAL;
-+	}
- 
- 	data[0] = SubAddr;
- 	memcpy(data + 1, Regs, nRegs);
--	return i2c_write(state->i2c, state->adr, data, nRegs+1);
-+	return i2c_write(state->i2c, state->adr, data, nRegs + 1);
- }
- 
- static int WriteReg(struct tda_state *state, u8 SubAddr, u8 Reg)
---- a/drivers/media/dvb-frontends/zl10039.c
-+++ b/drivers/media/dvb-frontends/zl10039.c
-@@ -30,6 +30,9 @@
- 
- static int debug;
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- #define dprintk(args...) \
- 	do { \
- 		if (debug) \
-@@ -98,7 +101,7 @@ static int zl10039_write(struct zl10039_
- 			const enum zl10039_reg_addr reg, const u8 *src,
- 			const size_t count)
- {
--	u8 buf[count + 1];
-+	u8 buf[MAX_XFER_SIZE];
- 	struct i2c_msg msg = {
- 		.addr = state->i2c_addr,
- 		.flags = 0,
-@@ -106,6 +109,13 @@ static int zl10039_write(struct zl10039_
- 		.len = count + 1,
- 	};
- 
-+	if (1 + count > sizeof(buf)) {
-+		printk(KERN_WARNING
-+		       "%s: i2c wr reg=%04x: len=%zd is too big!\n",
-+		       KBUILD_MODNAME, reg, count);
-+		return -EINVAL;
-+	}
-+
- 	dprintk("%s\n", __func__);
- 	/* Write register address and data in one go */
- 	buf[0] = reg;
+o Clarified changelogs.  Suggested by Andrew Morton.
 
+	Summary
+
+The VM maintains cached filesystem pages on two types of lists.  One
+list holds the pages recently faulted into the cache, the other list
+holds pages that have been referenced repeatedly on that first list.
+The idea is to prefer reclaiming young pages over those that have
+shown to benefit from caching in the past.  We call the recently used
+list "inactive list" and the frequently used list "active list".
+    
+Currently, the VM aims for a 1:1 ratio between the lists, which is the
+"perfect" trade-off between the ability to *protect* frequently used
+pages and the ability to *detect* frequently used pages.  This means
+that working set changes bigger than half of cache memory go
+undetected and thrash indefinitely, whereas working sets bigger than
+half of cache memory are unprotected against used-once streams that
+don't even need caching.
+
+This happens on file servers and media streaming servers, where the
+popular files and file sections change over time.  Even though the
+individual files might be smaller than half of memory, concurrent
+access to many of them may still result in their inter-reference
+distance being greater than half of memory.  It's also been reported
+as a problem on database workloads that switch back and forth between
+tables that are bigger than half of memory.  In these cases the VM
+never recognizes the new working set and will for the remainder of the
+workload thrash disk data which could easily live in memory.
+    
+Historically, every reclaim scan of the inactive list also took a
+smaller number of pages from the tail of the active list and moved
+them to the head of the inactive list.  This model gave established
+working sets more gracetime in the face of temporary use-once streams,
+but ultimately was not significantly better than a FIFO policy and
+still thrashed cache based on eviction speed, rather than actual
+demand for cache.
+    
+This series solves the problem by maintaining a history of pages
+evicted from the inactive list, enabling the VM to detect frequently
+used pages regardless of inactive list size and facilitate working set
+transitions.
+
+	Tests
+
+The reported database workload is easily demonstrated on a 8G machine
+with two filesets a 6G.  This fio workload operates on one set first,
+then switches to the other.  The VM should obviously always cache the
+set that the workload is currently using.
+
+unpatched:
+db1: READ: io=98304MB, aggrb=885559KB/s, minb=885559KB/s, maxb=885559KB/s, mint= 113672msec, maxt= 113672msec
+db2: READ: io=98304MB, aggrb= 66169KB/s, minb= 66169KB/s, maxb= 66169KB/s, mint=1521302msec, maxt=1521302msec
+sdb: ios=835750/4, merge=2/1, ticks=4659739/60016, in_queue=4719203, util=98.92%
+
+real    27m15.541s
+user    0m19.059s
+sys     0m51.459s
+
+patched:
+db1: READ: io=98304MB, aggrb=877783KB/s, minb=877783KB/s, maxb=877783KB/s, mint=114679msec, maxt=114679msec
+db2: READ: io=98304MB, aggrb=397449KB/s, minb=397449KB/s, maxb=397449KB/s, mint=253273msec, maxt=253273msec
+sdb: ios=170587/4, merge=2/1, ticks=954910/61123, in_queue=1015923, util=90.40%
+
+real    6m8.630s
+user    0m14.714s
+sys     0m31.233s
+
+As can be seen, the unpatched kernel simply never adapts to the
+workingset change and db2 is stuck indefinitely with secondary storage
+speed.  The patched kernel needs 2-3 iterations over db2 before it
+replaces db1 and reaches full memory speed.  Given the unbounded
+negative affect of the existing VM behavior, these patches should be
+considered correctness fixes rather than performance optimizations.
+
+Another test resembles a fileserver or streaming server workload,
+where data in excess of memory size is accessed at different
+frequencies.  There is very hot data accessed at a high frequency.
+Machines should be fitted so that the hot set of such a workload can
+be fully cached or all bets are off.  Then there is a very big
+(compared to available memory) set of data that is used-once or at a
+very low frequency; this is what drives the inactive list and does not
+really benefit from caching.  Lastly, there is a big set of warm data
+in between that is accessed at medium frequencies and benefits from
+caching the pages between the first and last streamer of each burst.
+
+unpatched:
+ hot: READ: io=128000MB, aggrb=160693KB/s, minb=160693KB/s, maxb=160693KB/s, mint=815665msec, maxt=815665msec
+warm: READ: io= 81920MB, aggrb=109853KB/s, minb= 27463KB/s, maxb= 29244KB/s, mint=717110msec, maxt=763617msec
+cold: READ: io= 30720MB, aggrb= 35245KB/s, minb= 35245KB/s, maxb= 35245KB/s, mint=892530msec, maxt=892530msec
+ sdb: ios=797960/4, merge=11763/1, ticks=4307910/796, in_queue=4308380, util=100.00%
+
+patched:
+ hot: READ: io=128000MB, aggrb=160678KB/s, minb=160678KB/s, maxb=160678KB/s, mint=815740msec, maxt=815740msec
+warm: READ: io= 81920MB, aggrb=147747KB/s, minb= 36936KB/s, maxb= 40960KB/s, mint=512000msec, maxt=567767msec
+cold: READ: io= 30720MB, aggrb= 40960KB/s, minb= 40960KB/s, maxb= 40960KB/s, mint=768000msec, maxt=768000msec
+ sdb: ios=596514/4, merge=9341/1, ticks=2395362/997, in_queue=2396484, util=79.18%
+
+In both kernels, the hot set is propagated to the active list and then
+served from cache.
+
+In both kernels, the beginning of the warm set is propagated to the
+active list as well, but in the unpatched case the active list
+eventually takes up half of memory and no new pages from the warm set
+get activated, despite repeated access, and despite most of the active
+list soon being stale.  The patched kernel on the other hand detects
+the thrashing and manages to keep this cache window rolling through
+the data set.  This frees up enough IO bandwidth that the cold set is
+served at full speed as well and disk utilization even drops by 20%.
+
+For reference, this same test was performed with the traditional
+demotion mechanism, where deactivation is coupled to inactive list
+reclaim.  However, this had the same outcome as the unpatched kernel:
+while the warm set does indeed get activated continuously, it is
+forced out of the active list by inactive list pressure, which is
+dictated primarily by the unrelated cold set.  The warm set is evicted
+before subsequent streamers can benefit from it, even though there
+would be enough space available to cache the pages of interest.
+
+	Costs
+
+Page reclaim used to shrink the radix trees but now the tree nodes are
+reused for shadow entries, where the cost depends heavily on the page
+cache access patterns.  However, with workloads that maintain spatial
+or temporal locality, the shadow entries are either refaulted quickly
+or reclaimed along with the inode object itself.  Workloads that will
+experience a memory cost increase are those that don't really benefit
+from caching in the first place.
+
+A more predictable alternative would be a fixed-cost separate pool of
+shadow entries, but this would incur relatively higher memory cost for
+well-behaved workloads at the benefit of cornercases.  It would also
+make the shadow entry lookup more costly compared to storing them
+directly in the cache structure.
+
+	Future
+
+Right now we have a fixed ratio (50:50) between inactive and active
+list but we already have complaints about working sets exceeding half
+of memory being pushed out of the cache by simple streaming in the
+background.  Ultimately, we want to adjust this ratio and allow for a
+much smaller inactive list.  These patches are an essential step in
+this direction because they decouple the VMs ability to detect working
+set changes from the inactive list size.  This would allow us to base
+the inactive list size on the combined readahead window size for
+example and potentially protect a much bigger working set.
+
+Another possibility of having thrashing information would be to
+revisit the idea of local reclaim in the form of zero-config memory
+control groups.  Instead of having allocating tasks go straight to
+global reclaim, they could try to reclaim the pages in the memcg they
+are part of first as long as the group is not thrashing.  This would
+allow a user to drop e.g. a back-up job in an otherwise unconfigured
+memcg and it would only inflate (and possibly do global reclaim) until
+it has enough memory to do proper readahead.  But once it reaches that
+point and stops thrashing it would just recycle its own used-once
+pages without kicking out the cache of any other tasks in the system
+more than necessary.
+
+To simplify the merging process, this patch set is implementing thrash
+detection on a global per-zone level only for now, but the design is
+such that it can be extended to memory cgroups as well.  All we need
+to do is store the unique cgroup ID along the node and zone identifier
+inside the eviction cookie to identify the lruvec.
+
+ Documentation/filesystems/porting               |   6 +-
+ drivers/staging/lustre/lustre/llite/llite_lib.c |   2 +-
+ fs/9p/vfs_inode.c                               |   2 +-
+ fs/affs/inode.c                                 |   2 +-
+ fs/afs/inode.c                                  |   2 +-
+ fs/bfs/inode.c                                  |   2 +-
+ fs/block_dev.c                                  |   4 +-
+ fs/btrfs/compression.c                          |   2 +-
+ fs/btrfs/inode.c                                |   2 +-
+ fs/cachefiles/rdwr.c                            |  33 +-
+ fs/cifs/cifsfs.c                                |   2 +-
+ fs/coda/inode.c                                 |   2 +-
+ fs/ecryptfs/super.c                             |   2 +-
+ fs/exofs/inode.c                                |   2 +-
+ fs/ext2/inode.c                                 |   2 +-
+ fs/ext3/inode.c                                 |   2 +-
+ fs/ext4/inode.c                                 |   4 +-
+ fs/f2fs/inode.c                                 |   2 +-
+ fs/fat/inode.c                                  |   2 +-
+ fs/freevxfs/vxfs_inode.c                        |   2 +-
+ fs/fuse/inode.c                                 |   2 +-
+ fs/gfs2/super.c                                 |   2 +-
+ fs/hfs/inode.c                                  |   2 +-
+ fs/hfsplus/super.c                              |   2 +-
+ fs/hostfs/hostfs_kern.c                         |   2 +-
+ fs/hpfs/inode.c                                 |   2 +-
+ fs/inode.c                                      |   4 +-
+ fs/jffs2/fs.c                                   |   2 +-
+ fs/jfs/inode.c                                  |   4 +-
+ fs/logfs/readwrite.c                            |   2 +-
+ fs/minix/inode.c                                |   2 +-
+ fs/ncpfs/inode.c                                |   2 +-
+ fs/nfs/blocklayout/blocklayout.c                |   2 +-
+ fs/nfs/inode.c                                  |   2 +-
+ fs/nfs/nfs4super.c                              |   2 +-
+ fs/nilfs2/inode.c                               |   6 +-
+ fs/ntfs/inode.c                                 |   2 +-
+ fs/ocfs2/inode.c                                |   4 +-
+ fs/omfs/inode.c                                 |   2 +-
+ fs/proc/inode.c                                 |   2 +-
+ fs/reiserfs/inode.c                             |   2 +-
+ fs/sysfs/inode.c                                |   2 +-
+ fs/sysv/inode.c                                 |   2 +-
+ fs/ubifs/super.c                                |   2 +-
+ fs/udf/inode.c                                  |   4 +-
+ fs/ufs/inode.c                                  |   2 +-
+ fs/xfs/xfs_super.c                              |   2 +-
+ include/linux/fs.h                              |   1 +
+ include/linux/list_lru.h                        |  21 ++
+ include/linux/mm.h                              |   9 +
+ include/linux/mmzone.h                          |   6 +
+ include/linux/pagemap.h                         |  33 +-
+ include/linux/pagevec.h                         |   3 +
+ include/linux/radix-tree.h                      |  55 ++-
+ include/linux/shmem_fs.h                        |   1 +
+ include/linux/swap.h                            |   6 +
+ include/linux/vm_event_item.h                   |   1 +
+ lib/radix-tree.c                                | 383 ++++++++++----------
+ mm/Makefile                                     |   2 +-
+ mm/filemap.c                                    | 403 +++++++++++++++++++---
+ mm/list_lru.c                                   |  26 ++
+ mm/mincore.c                                    |  20 +-
+ mm/readahead.c                                  |   6 +-
+ mm/shmem.c                                      | 122 ++-----
+ mm/swap.c                                       |  49 +++
+ mm/truncate.c                                   | 141 +++++++-
+ mm/vmscan.c                                     |  24 +-
+ mm/vmstat.c                                     |   3 +
+ mm/workingset.c                                 | 371 ++++++++++++++++++++
+ 69 files changed, 1383 insertions(+), 448 deletions(-)
 
