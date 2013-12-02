@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab3LBTb2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:31:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39717 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754993Ab3LBTTH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:19:07 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH 3.12 196/212] media: lirc_zilog: Dont use dynamic static allocation
-Date: Mon,  2 Dec 2013 11:16:27 -0800
-Message-Id: <20131202191310.859519122@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
-References: <20131202191248.517975703@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	id S1755639Ab3LBTbw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:31:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30263 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755620Ab3LBTbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 14:31:48 -0500
+Date: Mon, 2 Dec 2013 20:31:19 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 06/29] tools lib traceevent: Add jbd2 plugin
+Message-ID: <20131202193119.GC1366@krava.brq.redhat.com>
+References: <1385638408-23519-1-git-send-email-jolsa@redhat.com>
+ <1385638408-23519-7-git-send-email-jolsa@redhat.com>
+ <20131129184235.GA12850@ghostprotocols.net>
+ <20131129193113.GA13490@ghostprotocols.net>
+ <20131130164921.GC1228@krava.brq.redhat.com>
+ <20131202192651.GB17149@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131202192651.GB17149@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Dec 02, 2013 at 04:26:51PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Sat, Nov 30, 2013 at 05:49:21PM +0100, Jiri Olsa escreveu:
+> > On Fri, Nov 29, 2013 at 04:31:13PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > Em Fri, Nov 29, 2013 at 03:42:35PM -0300, Arnaldo Carvalho de Melo escreveu:
+> > > Also I just tried:
+> 
+> > > [acme@ssdandy linux]$ git log --oneline | head -7
+> > > b0496b02fcea tools lib traceevent: Add hrtimer plugin
+> > > 1ec7a71e0b2c tools lib traceevent: Add jbd2 plugin
+> > > c63100c95c6e tools lib traceevent: Add traceevent_host_bigendian function
+> > > d54b335656b7 tools lib traceevent: Add plugin build support
+> > > e796a0d73bcc tools lib traceevent: Add plugin support
+> > > 28c803842250 perf tools: Include test-stackprotector-all.c in test-all
+> > > 1a69f6ce513d perf timechart: Move wake_events list to 'struct timechart'
+> > > [acme@ssdandy linux]$ 
+> 
+> > > [acme@ssdandy linux]$ time make O=/tmp/build/perf -C tools/perf/ install
+> > > <SNIP successful build>
+> 
+> > > [acme@ssdandy linux]$ ls -la ~/.traceevent
+> > > ls: cannot access /home/acme/.traceevent: No such file or directory
+> > > [acme@ssdandy linux]$
+> 
+> > > Where did the plugins go? At least two should be there by now, no?
+>  
+> > At this stage (patches applied) you'd need to run the make for
+> > traceevent directory.
+>  
+> > The perf installation link is done within this patch:
+> >     perf tools: Add build and install plugins targets
+>  
+> > which I presume you haven't applied yet? 
+> 
+> No I haven't, and I expected that I could test it straight away, so I
+> suggest you reorder the patches so that, right after the first plugin is
+> introduced a:
+> 
+>   make -C tools/perf install
+> 
+> in all its variants (in place, with O=, etc) allows one to test it.
 
-------------------
+ok, I will send v3
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-
-commit ac5b4b6bf0c84c48d7e2e3fce22e35b04282ba76 upstream.
-
-Dynamic static allocation is evil, as Kernel stack is too low, and
-ompilation complains about it on some archs:
-	drivers/staging/media/lirc/lirc_zilog.c:967:1: warning: 'read' uses dynamic stack allocation [enabled by default]
-Instead, let's enforce a limit for the buffer to be 64. That should
-be more than enough.
-
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/staging/media/lirc/lirc_zilog.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
-
---- a/drivers/staging/media/lirc/lirc_zilog.c
-+++ b/drivers/staging/media/lirc/lirc_zilog.c
-@@ -61,6 +61,9 @@
- #include <media/lirc_dev.h>
- #include <media/lirc.h>
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- struct IR;
- 
- struct IR_rx {
-@@ -941,7 +944,14 @@ static ssize_t read(struct file *filep,
- 			schedule();
- 			set_current_state(TASK_INTERRUPTIBLE);
- 		} else {
--			unsigned char buf[rbuf->chunk_size];
-+			unsigned char buf[MAX_XFER_SIZE];
-+
-+			if (rbuf->chunk_size > sizeof(buf)) {
-+				zilog_error("chunk_size is too big (%d)!\n",
-+					    rbuf->chunk_size);
-+				ret = -EINVAL;
-+				break;
-+			}
- 			m = lirc_buffer_read(rbuf, buf);
- 			if (m == rbuf->chunk_size) {
- 				ret = copy_to_user((void *)outbuf+written, buf,
-
-
+jirka
