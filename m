@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516Ab3LBTHc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:07:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38308 "EHLO
+	id S1753497Ab3LBTHa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:07:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38280 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279Ab3LBTHP (ORCPT
+	with ESMTP id S1753345Ab3LBTHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:07:15 -0500
+	Mon, 2 Dec 2013 14:07:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>, Mel Gorman <mgorman@suse.de>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Li Zefan <lizefan@huawei.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.4 51/60] cpuset: Fix memory allocator deadlock
-Date: Mon,  2 Dec 2013 11:06:32 -0800
-Message-Id: <20131202190341.438467330@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.4 30/60] rtlwifi: rtl8192cu: Fix incorrect signal strength for unassociated AP
+Date: Mon,  2 Dec 2013 11:06:11 -0800
+Message-Id: <20131202190336.914793855@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
 References: <20131202190330.152596462@linuxfoundation.org>
@@ -29,91 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 0fc0287c9ed1ffd3706f8b4d9b314aa102ef1245 upstream.
+commit 78dbfecb95be4635b995af3bd29fa10013409fcd upstream.
 
-Juri hit the below lockdep report:
+The routine that processes received frames was returning the RSSI value for the
+signal strength; however, that value is available only for associated APs. As
+a result, the strength was the absurd value of 10 dBm. As a result, scans
+return incorrect values for the strength, which causes unwanted attempts to roam.
 
-[    4.303391] ======================================================
-[    4.303392] [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
-[    4.303394] 3.12.0-dl-peterz+ #144 Not tainted
-[    4.303395] ------------------------------------------------------
-[    4.303397] kworker/u4:3/689 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
-[    4.303399]  (&p->mems_allowed_seq){+.+...}, at: [<ffffffff8114e63c>] new_slab+0x6c/0x290
-[    4.303417]
-[    4.303417] and this task is already holding:
-[    4.303418]  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff812d2dfb>] blk_execute_rq_nowait+0x5b/0x100
-[    4.303431] which would create a new lock dependency:
-[    4.303432]  (&(&q->__queue_lock)->rlock){..-...} -> (&p->mems_allowed_seq){+.+...}
-[    4.303436]
-
-[    4.303898] the dependencies between the lock to be acquired and SOFTIRQ-irq-unsafe lock:
-[    4.303918] -> (&p->mems_allowed_seq){+.+...} ops: 2762 {
-[    4.303922]    HARDIRQ-ON-W at:
-[    4.303923]                     [<ffffffff8108ab9a>] __lock_acquire+0x65a/0x1ff0
-[    4.303926]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
-[    4.303929]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
-[    4.303931]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
-[    4.303933]    SOFTIRQ-ON-W at:
-[    4.303933]                     [<ffffffff8108abcc>] __lock_acquire+0x68c/0x1ff0
-[    4.303935]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
-[    4.303940]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
-[    4.303955]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
-[    4.303959]    INITIAL USE at:
-[    4.303960]                    [<ffffffff8108a884>] __lock_acquire+0x344/0x1ff0
-[    4.303963]                    [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
-[    4.303966]                    [<ffffffff81063dd6>] kthreadd+0x86/0x180
-[    4.303969]                    [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
-[    4.303972]  }
-
-Which reports that we take mems_allowed_seq with interrupts enabled. A
-little digging found that this can only be from
-cpuset_change_task_nodemask().
-
-This is an actual deadlock because an interrupt doing an allocation will
-hit get_mems_allowed()->...->__read_seqcount_begin(), which will spin
-forever waiting for the write side to complete.
-
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Reported-by: Juri Lelli <juri.lelli@gmail.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Tested-by: Juri Lelli <juri.lelli@gmail.com>
-Acked-by: Li Zefan <lizefan@huawei.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/cpuset.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/trx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -983,8 +983,10 @@ static void cpuset_change_task_nodemask(
- 	need_loop = task_has_mempolicy(tsk) ||
- 			!nodes_intersects(*newmems, tsk->mems_allowed);
- 
--	if (need_loop)
-+	if (need_loop) {
-+		local_irq_disable();
- 		write_seqcount_begin(&tsk->mems_allowed_seq);
-+	}
- 
- 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
- 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
-@@ -992,8 +994,10 @@ static void cpuset_change_task_nodemask(
- 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP2);
- 	tsk->mems_allowed = *newmems;
- 
--	if (need_loop)
-+	if (need_loop) {
- 		write_seqcount_end(&tsk->mems_allowed_seq);
-+		local_irq_enable();
-+	}
- 
- 	task_unlock(tsk);
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
+@@ -349,7 +349,7 @@ bool rtl92cu_rx_query_desc(struct ieee80
+ 						 p_drvinfo);
+ 	}
+ 	/*rx_status->qual = stats->signal; */
+-	rx_status->signal = stats->rssi + 10;
++	rx_status->signal = stats->recvsignalpower + 10;
+ 	/*rx_status->noise = -stats->noise; */
+ 	return true;
  }
 
 
