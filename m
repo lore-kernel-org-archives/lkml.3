@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888Ab3LBTgt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:36:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39603 "EHLO
+	id S1754943Ab3LBTSx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:18:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39533 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753487Ab3LBTSy (ORCPT
+	with ESMTP id S1754821Ab3LBTSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:54 -0500
+	Mon, 2 Dec 2013 14:18:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 3.12 175/212] GFS2: Fix ref count bug relating to atomic_open
-Date: Mon,  2 Dec 2013 11:16:06 -0800
-Message-Id: <20131202191307.752864365@linuxfoundation.org>
+        Jianpeng Ma <majianpeng@gmail.com>, NeilBrown <neilb@suse.de>,
+        Shaohua Li <shli@kernel.org>
+Subject: [PATCH 3.12 147/212] md/raid5: Before freeing old multi-thread worker, it should flush them.
+Date: Mon,  2 Dec 2013 11:15:38 -0800
+Message-Id: <20131202191303.664780832@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,36 +27,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Whitehouse <swhiteho@redhat.com>
+From: majianpeng <majianpeng@gmail.com>
 
-commit ea0341e071527d5cec350917b01ab901af09d758 upstream.
+commit d206dcfa9809ec3409483e93b5e362f801fa0c27 upstream.
 
-In the case that atomic_open calls finish_no_open() with
-the dentry that was supplied to gfs2_atomic_open() an
-extra reference count is required. This patch fixes that
-issue preventing a bug trap triggering at umount time.
+When changing group_thread_cnt from sysfs entry, the kernel can oops.
 
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+The kernel messages are:
+[  740.961389] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+[  740.961444] IP: [<ffffffff81062570>] process_one_work+0x30/0x500
+[  740.961476] PGD b9013067 PUD b651e067 PMD 0
+[  740.961503] Oops: 0000 [#1] SMP
+[  740.961525] Modules linked in: netconsole e1000e ptp pps_core
+[  740.961577] CPU: 0 PID: 3683 Comm: kworker/u8:5 Not tainted 3.12.0+ #23
+[  740.961602] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS 080015  11/09/2011
+[  740.961646] task: ffff88013abe0000 ti: ffff88013a246000 task.ti: ffff88013a246000
+[  740.961673] RIP: 0010:[<ffffffff81062570>]  [<ffffffff81062570>] process_one_work+0x30/0x500
+[  740.961708] RSP: 0018:ffff88013a247e08  EFLAGS: 00010086
+[  740.961730] RAX: ffff8800b912b400 RBX: ffff88013a61e680 RCX: ffff8800b912b400
+[  740.961757] RDX: ffff8800b912b600 RSI: ffff8800b912b600 RDI: ffff88013a61e680
+[  740.961782] RBP: ffff88013a247e48 R08: ffff88013a246000 R09: 000000000002c09d
+[  740.961808] R10: 000000000000010f R11: 0000000000000000 R12: ffff88013b00cc00
+[  740.961833] R13: 0000000000000000 R14: ffff88013b00cf80 R15: ffff88013a61e6b0
+[  740.961861] FS:  0000000000000000(0000) GS:ffff88013fc00000(0000) knlGS:0000000000000000
+[  740.961893] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  740.962001] CR2: 00000000000000b8 CR3: 00000000b24fe000 CR4: 00000000000407f0
+[  740.962001] Stack:
+[  740.962001]  0000000000000008 ffff8800b912b600 ffff88013b00cc00 ffff88013a61e680
+[  740.962001]  ffff88013b00cc00 ffff88013b00cc18 ffff88013b00cf80 ffff88013a61e6b0
+[  740.962001]  ffff88013a247eb8 ffffffff810639c6 0000000000012a80 ffff88013a247fd8
+[  740.962001] Call Trace:
+[  740.962001]  [<ffffffff810639c6>] worker_thread+0x206/0x3f0
+[  740.962001]  [<ffffffff810637c0>] ? manage_workers+0x2c0/0x2c0
+[  740.962001]  [<ffffffff81069656>] kthread+0xc6/0xd0
+[  740.962001]  [<ffffffff81069590>] ? kthread_freezable_should_stop+0x70/0x70
+[  740.962001]  [<ffffffff81722ffc>] ret_from_fork+0x7c/0xb0
+[  740.962001]  [<ffffffff81069590>] ? kthread_freezable_should_stop+0x70/0x70
+[  740.962001] Code: 89 e5 41 57 41 56 41 55 45 31 ed 41 54 53 48 89 fb 48 83 ec 18 48 8b 06 4c 8b 67 48 48 89 c1 30 c9 a8 04 4c 0f 45 e9 80 7f 58 00 <49> 8b 45 08 44 8b b0 00 01 00 00 78 0c 41 f6 44 24 10 04 0f 84
+[  740.962001] RIP  [<ffffffff81062570>] process_one_work+0x30/0x500
+[  740.962001]  RSP <ffff88013a247e08>
+[  740.962001] CR2: 0000000000000008
+[  740.962001] ---[ end trace 39181460000748de ]---
+[  740.962001] Kernel panic - not syncing: Fatal exception
+
+This can happen if there are some stripes left, fewer than MAX_STRIPE_BATCH.
+A worker is queued to handle them.
+But before calling raid5_do_work, raid5d handles those
+stripes making conf->active_stripe = 0.
+So mddev_suspend() can return.
+We might then free old worker resources before the queued
+raid5_do_work() handled them.  When it runs, it crashes.
+
+	raid5d()		raid5_store_group_thread_cnt()
+	queue_work		mddev_suspend()
+				handle_strips
+				active_stripe=0
+				free(old worker resources)
+	process_one_work
+	raid5_do_work
+
+To avoid this, we should only flush the worker resources before freeing them.
+
+This fixes a bug introduced in 3.12 so is suitable for the 3.12.x
+stable series.
+
+Fixes: b721420e8719131896b009b11edbbd27
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Reviewed-by: Shaohua Li <shli@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/gfs2/inode.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/md/raid5.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/fs/gfs2/inode.c
-+++ b/fs/gfs2/inode.c
-@@ -1168,8 +1168,11 @@ static int gfs2_atomic_open(struct inode
- 	if (d != NULL)
- 		dentry = d;
- 	if (dentry->d_inode) {
--		if (!(*opened & FILE_OPENED))
-+		if (!(*opened & FILE_OPENED)) {
-+			if (d == NULL)
-+				dget(dentry);
- 			return finish_no_open(file, dentry);
-+		}
- 		dput(d);
- 		return 0;
- 	}
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -5240,6 +5240,9 @@ raid5_store_group_thread_cnt(struct mdde
+ 	old_groups = conf->worker_groups;
+ 	old_group_cnt = conf->worker_cnt_per_group;
+ 
++	if (old_groups)
++		flush_workqueue(raid5_wq);
++
+ 	conf->worker_groups = NULL;
+ 	err = alloc_thread_groups(conf, new);
+ 	if (err) {
 
 
