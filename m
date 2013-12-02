@@ -1,77 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093Ab3LBPnf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 10:43:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44644 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751432Ab3LBPnd (ORCPT
+	id S1752232Ab3LBPnx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 10:43:53 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:46867 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752150Ab3LBPni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 10:43:33 -0500
-Date: Mon, 2 Dec 2013 15:43:29 +0000
-From: Luis Henriques <luis.henriques@canonical.com>
-To: stable@vger.kernel.org, kernel-team@lists.ubuntu.com
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [ANNOUNCE] Linux 3.11.y.z extended stable support
-Message-ID: <20131202154329.GC1799@hercules.my.domain>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
-Content-Disposition: inline
+	Mon, 2 Dec 2013 10:43:38 -0500
+Subject: Re: [PATCH 1/3] perf tools: Record total sampling time
+From: Namhyung Kim <namhyung@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Pekka Enberg <penberg@iki.fi>
+In-Reply-To: <20131202125709.GA22404@gmail.com>
+References: <1385967199-3759-1-git-send-email-namhyung@kernel.org>
+	 <1385967199-3759-2-git-send-email-namhyung@kernel.org>
+	 <20131202124527.GB22212@gmail.com>  <20131202125709.GA22404@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 03 Dec 2013 00:43:29 +0900
+Message-ID: <1385999009.1710.72.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2013-12-02 (월), 13:57 +0100, Ingo Molnar:
+> So basically, in the end I think it should be possible to have the 
+> following behavior:
+> 
+>    perf record -a -e cycles sleep 1
+> 
+>    perf report stat              # Reports as if we ran: 'perf stat -a -e cycles sleep 1'
+>    perf report                   # Reports the usual histogram
+> 
+>    perf report --stat            # Reports the perf stat output and the histogram
+> 
+> or so.
 
---G4iJoqBmSsgzjUCe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I don't think we need both of 'perf report stat' and 'perf report
+--stat'.  At least it looks somewhat confusing to users IMHO.
 
-Since Ubuntu 13.10 "Saucy Salamander" uses the 3.11 kernel, the Ubuntu
-kernel team will pick up stable maintenance where Greg KH left off[1]
-with 3.11.10 (thanks a lot, Greg!).
+For perf report stat usage, I think there's not much thing we can do for
+a single event - the most case.  We can simple show total count and
+elapsed (or sampled time) for the event, but it's already in the header
+with this patch.
 
-The Ubuntu kernel team is pleased to announce that we will be
-providing extended stable support for the Linux 3.11 kernel until
-August 2014 as a third party effort maintained on our infrastructure.
+      # Samples: 4K of event 'cycles'
+      # Event count (approx.): 4087481688
+      # Total sampling time  : 1.001260 (sec)
 
-Our linux-3.11.y{-queue,-review} stable branches will fork from
-3.11.10 and will be published here:
 
-    git://kernel.ubuntu.com/ubuntu/linux.git
+If an user really want to see perf stat-like output (without the usual
+histogram) for a recorded session, it'd be better to have 'perf record
+--stat' do the job (like git diff --stat) IMHO.
 
-We will use the same stable request/review workflow and follow the
-standard upstream stable kernel rules.  More details are available at
-http://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
+> 
+> i.e. a perf.data file would by default always carry enough information 
+> to enable the extraction of the 'perf stat' data.
+> 
+> At that point visualizing it is purely report-time logic, it does not 
+> need any record-time options.
+> 
+> This would work for multi-event sampling as well, if we do:
+> 
+>    perf record -a -e cycles -e branches sleep 1
+> 
+> then 'perf report stat' would output the same as:
+> 
+>  $ perf stat -e cycles -e branches -a sleep 1
+> 
+>  Performance counter stats for 'system wide':
+> 
+>         34,174,518      cycles                    [100.00%]
+>          3,155,677      branches                                                    
+> 
+>        1.000802852 seconds time elapsed
+> 
 
-We welcome any feedback and contribution to this effort.  We will be
-posting the first review cycle patch set in a week or two.
+Yeah, it'd be good to have same output both for perf stat and perf
+report --stat (or stat if you want).  But I don't think it's possible to
+determine multiplexed counter values like perf stat does unless we use
+PERF_SAMPLE_READ for recoding.
 
-[1] https://lkml.org/lkml/2013/11/29/327
 
---
-Luis Henriques
-Ubuntu Kernel Team, Canonical Ltd.
+> Another neat feature this kind of workflo enables is the integration 
+> of --repeat to perf record, so something like:
+> 
+>     perf record --repeat 3 -a -e cycles -e branches sleep 1
+> 
+> would save 3 samples after each other, and would allow extraction of 
+> the statistical stability of the measurement, and 'perf report stat' 
+> would print the same result as a raw perf stat run would:
+> 
+>  $ perf stat --repeat 3 -e cycles -e branches -e instructions -a sleep 1
+> 
+>  Performance counter stats for 'system wide' (3 runs):
+> 
+>     28,975,150,642      cycles                     ( +-  0.43% ) [100.00%]
+>     10,740,235,371      branches                                                      ( +-  0.47% ) [100.00%]
+>     44,535,464,754      instructions              #    1.54  insns per cycle          ( +-  0.47% )
+> 
+>        1.005718027 seconds time elapsed                                          ( +-  0.43% )
 
---G4iJoqBmSsgzjUCe
-Content-Type: application/pgp-signature
+Yeah, but it can be used only for a new forked workload.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
+> 
+> Or something like that. At that point we share reporting between perf 
+> stat and perf report, no special ad-hoc options are needed to just 
+> measure and report timestamps, it would all be a 'natural' side effect 
+> of having perf stat.
+> 
+> What do you think?
 
-iQIcBAEBAgAGBQJSnKqhAAoJENt0rrj9ziT8lDIP/3EL75nrtOrPbynUxPhphYdH
-sBOZySm79AZ3x9FYscejuGx0FC2d2UxUws+2NQ0JnqmUXLOlQJTI6OJtc/KM4/Eu
-Tkr00Cy05gM45EXkPh1mpHH0NR+eForQjlbitLkgdp0mt7Lv+TYd76KG+l+j7EoM
-/9iQKoky3cfcGEuPK+1ZTEzlwaibgSObeQXNgoszkyMOb+aXhaNPup66p7ujzwzz
-VUeoIo5fka3tzEe+l00FrKgiPEovIxtEXn3tFDLTpulwuvI0wHDX/ceocsNcHUcT
-P4HC3Mm9A5kK80K/JzvE6dfuVfZSBdu4gqrUqy1yCyKfeXV57P2Hzk7VNJNQxADY
-HquvnubXeL/eEYuSgWNTd3QsaUe4bGWCE15Xrkdr/0b0dJmjOBigubDAz9N//DX2
-uAIdWmjCLDk1pmK+rQB8UK7wowo2S1vX+5rLkVwdIJwvV8mR1osV8ylWfKzjudaq
-VHIszCswkiKx4nbK2rt1GEGn1hx5pFgcc5cdtWACRCHRTV/TKIDpecPKyqK8kk96
-fmnwTC2vC100pPZysMnFhNBTrKEKG2vH2sntW6jtuzmzJf/VHOTmokDEwnpg6tF6
-mYN0N3o5qzEtjwQhxHvTIvQ/uNs6LO8fYw5M/R8Hf7/umzZnv43rdfwkXjSge2Lx
-Bzkf8ATyHD1HXqEfrpBI
-=I1lu
------END PGP SIGNATURE-----
+I think it'd be better if we can share code as much as possible.  And
+it'd much better if we can forget about the difference in options. :)
 
---G4iJoqBmSsgzjUCe--
+Thanks,
+Namhyung
+
+
+
