@@ -1,136 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619Ab3LBNIW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 08:08:22 -0500
-Received: from relay.parallels.com ([195.214.232.42]:44167 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696Ab3LBNIU (ORCPT
+	id S1752694Ab3LBNJl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 08:09:41 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:39746 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752556Ab3LBNJi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 08:08:20 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <devel@openvz.org>, <vdavydov@parallels.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH] memcg: remove KMEM_ACCOUNTED_ACTIVATED
-Date: Mon, 2 Dec 2013 17:08:13 +0400
-Message-ID: <1385989693-28788-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 2 Dec 2013 08:09:38 -0500
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Peter Stuge <peter@stuge.se>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Eugene Krasnikov <k.eugene.e@gmail.com>, ath9k-devel@venema.h4ckr.net,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCHv2] net: wireless: wcn36xx: fix potential NULL pointer dereference
+In-Reply-To: <20131201004715.11125.qmail@stuge.se>
+Organization: http://mina86.com/
+References: <1385744870-10164-1-git-send-email-mpn@google.com> <20131201004715.11125.qmail@stuge.se>
+User-Agent: Notmuch/0.15.2+55~geb6e9d8 (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+X-Hashcash: 1:20:131202:linux-wireless@vger.kernel.org::fPOaWaFLuszLroLQ:00000000000000000000000000000000g84
+X-Hashcash: 1:20:131202:k.eugene.e@gmail.com::ZYeQteAweS3n4tSx:000000000000000000000000000000000000000002gbi
+X-Hashcash: 1:20:131202:linux-kernel@vger.kernel.org::YHj6NoqBdWTjQ0jp:0000000000000000000000000000000002YRA
+X-Hashcash: 1:20:131202:peter@stuge.se::RG3unx/5EAyVhF0B:0004SxM
+X-Hashcash: 1:20:131202:ath9k-devel@lists.ath9k.org::NJ7Dy7lMEVV1T9j9:00000000000000000000000000000000007NxH
+X-Hashcash: 1:20:131202:linville@tuxdriver.com::u6QrCTDW3ezLwDHn:000000000000000000000000000000000000000B0mE
+Date: Mon, 02 Dec 2013 14:09:34 +0100
+Message-ID: <xa1tiov78kmp.fsf@mina86.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The KMEM_ACCOUNTED_ACTIVATED was introduced by commit a8964b9b ("memcg:
-use static branches when code not in use") in order to guarantee that
-static_key_slow_inc(&memcg_kmem_enabled_key) will be called only once
-for each memory cgroup when its kmem limit is set. The point is that at
-that time the memcg_update_kmem_limit() function's workflow looked like
-this:
 
-	bool must_inc_static_branch = false;
+If kmalloc fails wcn36xx_smd_rsp_process will attempt to dereference
+a NULL pointer.  There might be a better error recovery then just
+printing an error, but printing an error message is better then the
+current behaviour.
 
-	cgroup_lock();
-	mutex_lock(&set_limit_mutex);
-	if (!memcg->kmem_account_flags && val != RESOURCE_MAX) {
-		/* The kmem limit is set for the first time */
-		ret = res_counter_set_limit(&memcg->kmem, val);
-
-		memcg_kmem_set_activated(memcg);
-		must_inc_static_branch = true;
-	} else
-		ret = res_counter_set_limit(&memcg->kmem, val);
-	mutex_unlock(&set_limit_mutex);
-	cgroup_unlock();
-
-	if (must_inc_static_branch) {
-		/* We can't do this under cgroup_lock */
-		static_key_slow_inc(&memcg_kmem_enabled_key);
-		memcg_kmem_set_active(memcg);
-	}
-
-Today, we don't use cgroup_lock in memcg_update_kmem_limit(), and
-static_key_slow_inc() is called under the set_limit_mutex, but the
-leftover from the above-mentioned commit is still here. Let's remove it.
-
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 ---
- mm/memcontrol.c |   26 +-------------------------
- 1 file changed, 1 insertion(+), 25 deletions(-)
+ drivers/net/wireless/ath/wcn36xx/smd.c | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index f1a0ae6..f78661f 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -344,14 +344,9 @@ static size_t memcg_size(void)
- /* internal only representation about the status of kmem accounting. */
- enum {
- 	KMEM_ACCOUNTED_ACTIVE = 0, /* accounted by this cgroup itself */
--	KMEM_ACCOUNTED_ACTIVATED, /* static key enabled. */
- 	KMEM_ACCOUNTED_DEAD, /* dead memcg with pending kmem charges */
- };
- 
--/* We account when limit is on, but only after call sites are patched */
--#define KMEM_ACCOUNTED_MASK \
--		((1 << KMEM_ACCOUNTED_ACTIVE) | (1 << KMEM_ACCOUNTED_ACTIVATED))
--
- #ifdef CONFIG_MEMCG_KMEM
- static inline void memcg_kmem_set_active(struct mem_cgroup *memcg)
- {
-@@ -363,16 +358,6 @@ static bool memcg_kmem_is_active(struct mem_cgroup *memcg)
- 	return test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags);
- }
- 
--static void memcg_kmem_set_activated(struct mem_cgroup *memcg)
--{
--	set_bit(KMEM_ACCOUNTED_ACTIVATED, &memcg->kmem_account_flags);
--}
--
--static void memcg_kmem_clear_activated(struct mem_cgroup *memcg)
--{
--	clear_bit(KMEM_ACCOUNTED_ACTIVATED, &memcg->kmem_account_flags);
--}
--
- static void memcg_kmem_mark_dead(struct mem_cgroup *memcg)
- {
- 	/*
-@@ -2956,7 +2941,7 @@ static DEFINE_MUTEX(set_limit_mutex);
- static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
- {
- 	return !mem_cgroup_disabled() && !mem_cgroup_is_root(memcg) &&
--		(memcg->kmem_account_flags & KMEM_ACCOUNTED_MASK);
-+		memcg_kmem_is_active(memcg);
- }
- 
- /*
-@@ -3091,19 +3076,10 @@ int memcg_update_cache_sizes(struct mem_cgroup *memcg)
- 				0, MEMCG_CACHES_MAX_SIZE, GFP_KERNEL);
- 	if (num < 0)
- 		return num;
--	/*
--	 * After this point, kmem_accounted (that we test atomically in
--	 * the beginning of this conditional), is no longer 0. This
--	 * guarantees only one process will set the following boolean
--	 * to true. We don't need test_and_set because we're protected
--	 * by the set_limit_mutex anyway.
--	 */
--	memcg_kmem_set_activated(memcg);
- 
- 	ret = memcg_update_all_caches(num+1);
- 	if (ret) {
- 		ida_simple_remove(&kmem_limited_groups, num);
--		memcg_kmem_clear_activated(memcg);
- 		return ret;
- 	}
- 
+On Sun, Dec 01 2013, Peter Stuge wrote:
+> Michal Nazarewicz wrote:
+>> +			wcn36xx_err("Run out of memory while hnadling SMD_EVENT (%d)\n",
+>> +				    msg_header->msg_type);
+>
+> Typo hnadling.
+
+Fixed.
+
+diff --git a/drivers/net/wireless/ath/wcn36xx/smd.c b/drivers/net/wireless/ath/wcn36xx/smd.c
+index de9eb2c..3663394 100644
+--- a/drivers/net/wireless/ath/wcn36xx/smd.c
++++ b/drivers/net/wireless/ath/wcn36xx/smd.c
+@@ -2041,13 +2041,20 @@ static void wcn36xx_smd_rsp_process(struct wcn36xx *wcn, void *buf, size_t len)
+ 	case WCN36XX_HAL_DELETE_STA_CONTEXT_IND:
+ 		mutex_lock(&wcn->hal_ind_mutex);
+ 		msg_ind = kmalloc(sizeof(*msg_ind), GFP_KERNEL);
+-		msg_ind->msg_len = len;
+-		msg_ind->msg = kmalloc(len, GFP_KERNEL);
+-		memcpy(msg_ind->msg, buf, len);
+-		list_add_tail(&msg_ind->list, &wcn->hal_ind_queue);
+-		queue_work(wcn->hal_ind_wq, &wcn->hal_ind_work);
+-		wcn36xx_dbg(WCN36XX_DBG_HAL, "indication arrived\n");
++		if (msg_ind) {
++			msg_ind->msg_len = len;
++			msg_ind->msg = kmalloc(len, GFP_KERNEL);
++			memcpy(msg_ind->msg, buf, len);
++			list_add_tail(&msg_ind->list, &wcn->hal_ind_queue);
++			queue_work(wcn->hal_ind_wq, &wcn->hal_ind_work);
++			wcn36xx_dbg(WCN36XX_DBG_HAL, "indication arrived\n");
++		}
+ 		mutex_unlock(&wcn->hal_ind_mutex);
++		if (msg_ind)
++			break;
++		/* FIXME: Do something smarter then just printing an error. */
++		wcn36xx_err("Run out of memory while handling SMD_EVENT (%d)\n",
++			    msg_header->msg_type);
+ 		break;
+ 	default:
+ 		wcn36xx_err("SMD_EVENT (%d) not supported\n",
 -- 
-1.7.10.4
+1.8.4.1
 
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
