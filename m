@@ -1,81 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173Ab3LBOc7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 09:32:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40052 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751696Ab3LBOc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 09:32:56 -0500
-Message-ID: <529C9A15.4030000@redhat.com>
-Date: Mon, 02 Dec 2013 09:32:53 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752188Ab3LBOeH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 09:34:07 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:47353 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751863Ab3LBOeD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 09:34:03 -0500
+Message-ID: <529C9A56.4050306@gmail.com>
+Date: Mon, 02 Dec 2013 07:33:58 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: HID: kye: Add report fixup for Genius Manticore Keyboard
-References: <20131128051223.28802660D26@gitolite.kernel.org> <20131130214211.GA16854@redhat.com> <alpine.LNX.2.00.1312021515300.24931@pobox.suse.cz> <20131202142829.GA2411@redhat.com>
-In-Reply-To: <20131202142829.GA2411@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Pekka Enberg <penberg@iki.fi>, acme@ghostprotocols.net,
+        linux-kernel@vger.kernel.org
+CC: namhyung@kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Jiri Olsa <jolsa@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH 1/2] perf sched: Introduce timehist command - v2
+References: <1385943795-11761-1-git-send-email-dsahern@gmail.com> <1385943795-11761-2-git-send-email-dsahern@gmail.com> <529C53D2.8020203@iki.fi>
+In-Reply-To: <529C53D2.8020203@iki.fi>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/13 09:28, Dave Jones wrote:
-> On Mon, Dec 02, 2013 at 03:16:24PM +0100, Jiri Kosina wrote:
->  > On Sat, 30 Nov 2013, Dave Jones wrote:
->  > 
->  > >  > Commit:     4a2c94c9b6c03af61b04993340bd9559e2277de4
->  > >  > Author:     Benjamin Tissoires <benjamin.tissoires@redhat.com>
->  > >  > AuthorDate: Wed Nov 20 09:49:41 2013 -0500
->  > >  > Committer:  Jiri Kosina <jkosina@suse.cz>
->  > >  > CommitDate: Thu Nov 21 10:28:58 2013 +0100
->  > >  > 
->  > >  >     HID: kye: Add report fixup for Genius Manticore Keyboard
->  > >  >     
->  > >  >     Genius Manticore Keyboard presents the same problem in its report
->  > >  >     descriptors than Genius Gila Gaming Mouse and Genius Imperator Keyboard.
->  > >  >     Use the same fixup.
->  > > 
->  > > ..
->  > > 
->  > >  > diff --git a/drivers/hid/hid-kye.c b/drivers/hid/hid-kye.c
->  > >  > index 7384512..35a4f9c 100644
->  > >  > --- a/drivers/hid/hid-kye.c
->  > >  > +++ b/drivers/hid/hid-kye.c
->  > >  > @@ -341,6 +341,9 @@ static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
->  > >  >  	case USB_DEVICE_ID_GENIUS_GX_IMPERATOR:
->  > >  >  		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 83,
->  > >  >  					"Genius Gx Imperator Keyboard");
->  > >  > +	case USB_DEVICE_ID_GENIUS_MANTICORE:
->  > >  > +		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 104,
->  > >  > +					"Genius Manticore Keyboard");
->  > >  >  		break;
->  > > 
->  > > 
->  > > Is the IMPERATOR case supposed to fall-through to MANTICORE here, or is there a missing break ?
->  > > The commit text describes using the same fixup, but has this alternative case.
->  > 
->  > I am almost certain that the missing break is a mistake, and the offsets 
->  > in both report descriptors are just different, and there is no need for 
->  > two fixups.
->  > 
->  > I am queuing this for 3.13 still, but having final confirmation from 
->  > Benjamin would of course be nice.
-> 
-> If that is the case..
-> 
+On 12/2/13, 2:33 AM, Pekka Enberg wrote:
+> On 12/02/2013 02:23 AM, David Ahern wrote:
+>> 'perf sched timehist' provides an analysis of scheduling events.
+>>
+>> Example usage:
+>>      perf sched record -- sleep 1
+>>      perf sched timehist
+>>
+>> By default it shows the individual schedule events, including the time
+>> between
+>> sched-in events for the task, the task scheduling delay (time between
+>> wakeup
+>> and actually running) and run time for the task:
+>>
+>>             time cpu  task name[tid/pid]    b/n time sch delay  run time
+>>    ------------- ---- -------------------- --------- --------- ---------
+>>     79371.874569 [11] gcc[31949]               0.014     0.000     1.148
+>>     79371.874591 [10] gcc[31951]               0.000     0.000     0.024
+>>     79371.874603 [10] migration/10[59]         3.350     0.004     0.011
+>>     79371.874604 [11] <idle>                   1.148     0.000     0.035
+>>     79371.874723 [05] <idle>                   0.016     0.000     1.383
+>>     79371.874746 [05] gcc[31949]               0.153     0.078     0.022
+>
+> What does "b/n time" mean?
 
-Hi guys,
+Time between schedule-in events.
 
-(sorry for the late answer, last week was Thanksgiving, and I was
-enjoying US public holidays)
+>
+> I'm seeing rather large "sch delay" numbers on Fedora 19's default
+> kernel that seem like a data error of some sort:
+>
+>      4500.663117 [02] fix_client[7216]         0.007
+> 18446744073708.033     1.786
 
-Definitively, this is my mistake. Thanks Dave for spotting it.
+hmm.... it means tprev < t_ready-to-run and both are non-zero. ie., 
+wakeup time is after the time of the schedule event prior to fix_client 
+getting scheduled. Is this a multi-socket box? I can add a sanity check 
+and set to 0 if it happens.
 
-Jiri, I'll try to hold on the 3.12 stable queue on this one too (or ask
-to add Dave's patch).
+>
+> Scheduling delays don't seem to be part of "-s" summary output. Why?
 
-Cheers,
-Benjamin
+Recently added feature to show the scheduling delay. At this point I 
+have too many features locally and need to get the basic command into 
+perf before adding more -- like stats for scheduling delay.
+
+David
