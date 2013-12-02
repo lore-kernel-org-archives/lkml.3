@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab3LBTTe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:19:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39784 "EHLO
+	id S1755145Ab3LBTT2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:19:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39737 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab3LBTTU (ORCPT
+	with ESMTP id S1755061Ab3LBTTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:19:20 -0500
+	Mon, 2 Dec 2013 14:19:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nanno Langstraat <langstr@gmail.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.12 212/212] HID: apple: option to swap the Option ("Alt") and Command ("Flag") keys.
-Date: Mon,  2 Dec 2013 11:16:43 -0800
-Message-Id: <20131202191313.236626507@linuxfoundation.org>
+        Tristan Rice <rice@outerearth.net>, Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.12 211/212] HID: enable Mayflash USB Gamecube Adapter
+Date: Mon,  2 Dec 2013 11:16:42 -0800
+Message-Id: <20131202191313.087069018@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,68 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nanno Langstraat <langstr@gmail.com>
+From: Tristan Rice <rice@outerearth.net>
 
-commit 43c831468b3d26dbe8f2e061ccaf1abaf9cc1b8b upstream.
+commit e17f5d7667c5414b8f12a93ef14aae0824bd2beb upstream.
 
-Use case: people who use both Apple and PC keyboards regularly, and desire to
-keep&use their PC muscle memory.
+This is a patch that adds the new Mayflash Gamecube Controller to USB adapter
+(ID 1a34:f705 ACRUX) to the ACRUX driver (drivers/hid/hid-axff.c) with full
+force feedback support.
 
-A particular use case: an Apple compact external keyboard connected to a PC
-laptop. (This use case can't be covered well by X.org key remappings etc.)
-
-Signed-off-by: Nanno Langstraat <langstr@gmail.com>
+Signed-off-by: Tristan Rice <rice@outerearth.net>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-apple.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ drivers/hid/hid-axff.c |    3 ++-
+ drivers/hid/hid-core.c |    1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-apple.c
-+++ b/drivers/hid/hid-apple.c
-@@ -46,6 +46,12 @@ module_param(iso_layout, uint, 0644);
- MODULE_PARM_DESC(iso_layout, "Enable/Disable hardcoded ISO-layout of the keyboard. "
- 		"(0 = disabled, [1] = enabled)");
- 
-+static unsigned int swap_opt_cmd = 0;
-+module_param(swap_opt_cmd, uint, 0644);
-+MODULE_PARM_DESC(swap_opt_cmd, "Swap the Option (\"Alt\") and Command (\"Flag\") keys. "
-+		"(For people who want to keep Windows PC keyboard muscle memory. "
-+		"[0] = as-is, Mac layout. 1 = swapped, Windows layout.)");
-+
- struct apple_sc {
- 	unsigned long quirks;
- 	unsigned int fn_on;
-@@ -150,6 +156,14 @@ static const struct apple_key_translatio
- 	{ }
- };
- 
-+static const struct apple_key_translation swapped_option_cmd_keys[] = {
-+	{ KEY_LEFTALT,	KEY_LEFTMETA },
-+	{ KEY_LEFTMETA,	KEY_LEFTALT },
-+	{ KEY_RIGHTALT,	KEY_RIGHTMETA },
-+	{ KEY_RIGHTMETA,KEY_RIGHTALT },
-+	{ }
-+};
-+
- static const struct apple_key_translation *apple_find_translation(
- 		const struct apple_key_translation *table, u16 from)
- {
-@@ -242,6 +256,14 @@ static int hidinput_apple_event(struct h
+--- a/drivers/hid/hid-axff.c
++++ b/drivers/hid/hid-axff.c
+@@ -95,7 +95,7 @@ static int axff_init(struct hid_device *
  		}
  	}
  
-+	if (swap_opt_cmd) {
-+		trans = apple_find_translation(swapped_option_cmd_keys, usage->code);
-+		if (trans) {
-+			input_event(input, usage->type, trans->to, value);
-+			return 1;
-+		}
-+	}
-+
- 	return 0;
- }
+-	if (field_count < 4) {
++	if (field_count < 4 && hid->product != 0xf705) {
+ 		hid_err(hid, "not enough fields in the report: %d\n",
+ 			field_count);
+ 		return -ENODEV;
+@@ -180,6 +180,7 @@ static void ax_remove(struct hid_device
  
+ static const struct hid_device_id ax_devices[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ACRUX, 0x0802), },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ACRUX, 0xf705), },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(hid, ax_devices);
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1605,6 +1605,7 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_X5_005D) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_RP_649) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ACRUX, 0x0802) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ACRUX, 0xf705) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_MIGHTYMOUSE) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_MAGICMOUSE) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_MAGICTRACKPAD) },
 
 
