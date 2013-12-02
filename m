@@ -1,103 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672Ab3LBOiJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 09:38:09 -0500
-Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:41250 "EHLO
-	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752636Ab3LBOiF (ORCPT
+	id S1751709Ab3LBOnd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 09:43:33 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:30448 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982Ab3LBOnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 09:38:05 -0500
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
-To: linux-kernel@vger.kernel.org
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@ghostprotocols.net, stfomichev@yandex-team.ru,
-        namhyung@kernel.org, artagnon@gmail.com, jolsa@redhat.com
-Subject: [PATCH 3/5] perf timechart: get number of CPUs from perf header
-Date: Mon,  2 Dec 2013 18:37:35 +0400
-Message-Id: <1385995056-20158-4-git-send-email-stfomichev@yandex-team.ru>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1385995056-20158-1-git-send-email-stfomichev@yandex-team.ru>
-References: <1385995056-20158-1-git-send-email-stfomichev@yandex-team.ru>
+	Mon, 2 Dec 2013 09:43:31 -0500
+Date: Mon, 2 Dec 2013 09:43:22 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: [GIT PULL] (xen) stable/for-linus-3.13-rc2-tag
+Message-ID: <20131202144322.GA22648@phenom.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jI8keyz6grp/JLjh"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Print all CPUs, even if there were no events (use perf header to get number
-of CPUs).
-This is required to support topology in the next patch.
 
-Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
----
- tools/perf/builtin-timechart.c | 32 ++++++++++++++++++++++++++------
- 1 file changed, 26 insertions(+), 6 deletions(-)
+--jI8keyz6grp/JLjh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 99fe363f1de8..db9c4c172587 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -531,12 +531,10 @@ static int process_sample_event(struct perf_tool *tool,
- 			tchart->last_time = sample->time;
- 	}
- 
--	if (sample->cpu > tchart->numcpus)
--		tchart->numcpus = sample->cpu;
--
- 	if (evsel->handler != NULL) {
- 		tracepoint_handler f = evsel->handler;
--		return f(tchart, evsel, sample, cat_backtrace(event, sample, machine));
-+		return f(tchart, evsel, sample,
-+			 cat_backtrace(event, sample, machine));
- 	}
- 
- 	return 0;
-@@ -1038,8 +1036,6 @@ static void write_svg_file(struct timechart *tchart, const char *filename)
- 	int count;
- 	int thresh = TIME_THRESH;
- 
--	tchart->numcpus++;
--
- 	if (tchart->power_only)
- 		tchart->proc_num = 0;
- 
-@@ -1069,6 +1065,25 @@ static void write_svg_file(struct timechart *tchart, const char *filename)
- 	svg_close();
- }
- 
-+static int process_header(struct perf_file_section *section __maybe_unused,
-+			  struct perf_header *ph,
-+			  int feat,
-+			  int fd __maybe_unused,
-+			  void *data)
-+{
-+	struct timechart *tchart = data;
-+
-+	switch (feat) {
-+	case HEADER_NRCPUS:
-+		tchart->numcpus = ph->env.nr_cpus_avail;
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
- static int __cmd_timechart(struct timechart *tchart, const char *output_name)
- {
- 	const struct perf_evsel_str_handler power_tracepoints[] = {
-@@ -1094,6 +1109,11 @@ static int __cmd_timechart(struct timechart *tchart, const char *output_name)
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-+	(void)perf_header__process_sections(&session->header,
-+					    perf_data_file__fd(session->file),
-+					    tchart,
-+					    process_header);
-+
- 	if (!perf_session__has_traces(session, "timechart record"))
- 		goto out_delete;
- 
--- 
-1.8.3.2
+Hey Linus,
 
+Please git pull the following tag:
+
+git pull git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-linus-3.13-rc2-tag
+
+which has three fixes. The signed tag has the details - but it is just
+fixes to patches that went in this merge window along with a latent
+bug.
+
+
+ arch/arm/xen/p2m.c        | 5 +++--
+ drivers/xen/grant-table.c | 6 ++++--
+ drivers/xen/swiotlb-xen.c | 5 +++++
+ 3 files changed, 12 insertions(+), 4 deletions(-)
+
+Josh Boyer (1):
+      arm/xen: Export phys_to_mach to fix Xen module link errors
+
+Matt Wilson (1):
+      xen/gnttab: leave lazy MMU mode in the case of a m2p override failure
+
+Stefano Stabellini (2):
+      swiotlb-xen: add missing xen_dma_map_page call
+      xen/arm: p2m_init and p2m_lock should be static
+
+
+--jI8keyz6grp/JLjh
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQEcBAEBAgAGBQJSnJyGAAoJEFjIrFwIi8fJwV0H/jih22c/FZhAwjxr2VkghNlX
+KsCVwST03OGtrdCbxtJyWCa1SD8CdGY8q+U5vprVAWym0YSE3q7ySCgKbhZUjqFW
+eta+9bgD8EarJGF15E2YhLbXwsWTMu2NpyoGQOr45DnaCaZWJJ+z/3A8FYGj1jYS
+NgRkeM6mB/Xd2CxoSiDZX4gGSq+RB9EmXPU17IU9Tzcos2YqL2ykZGWfUG1k8Beo
+Zf45XtjAZUM4R6ymgdm632NSELHk2dTVPajSVWHPsCnyeo+VElSxcPyEnNyCkHyl
+lxMgWezmH6HndJZ4W+bsJu4Vux5SEd+XrI0lQ+YHOIZoX3ULdNIaz6XPlD/+Tyw=
+=yZO1
+-----END PGP SIGNATURE-----
+
+--jI8keyz6grp/JLjh--
