@@ -1,94 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756021Ab3LBTkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:40:42 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:39750 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754484Ab3LBTkc convert rfc822-to-8bit (ORCPT
+	id S1756046Ab3LBTlM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:41:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39577 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753808Ab3LBTSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:40:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <1385014460-6443-1-git-send-email-milo.kim@ti.com>
-References: <1385014460-6443-1-git-send-email-milo.kim@ti.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Mon, 2 Dec 2013 11:40:10 -0800
-Message-ID: <CAK5ve-JEsBy6gd+oVwpnzkQe7eTmW6qkK-Rb4cM-JkKHPdiC9g@mail.gmail.com>
-Subject: Re: [PATCH 2/3] leds: lp5521/5523: Remove duplicate mutex
-To: Milo Kim <milo.kim@ti.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 2 Dec 2013 14:18:46 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Daniel Stone <daniels@collabora.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.12 166/212] Input: evdev - fall back to vmalloc for client event buffer
+Date: Mon,  2 Dec 2013 11:15:57 -0800
+Message-Id: <20131202191306.458708326@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
+References: <20131202191248.517975703@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 10:14 PM, Milo Kim <milo.kim@ti.com> wrote:
-> It can be a problem when a pattern is loaded via the firmware interface.
-> LP55xx common driver has already locked the mutex in 'lp55xx_firmware_loaded()'.
-> So it should be deleted.
->
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Looks like lp5521_update_program_memory() will be called by
-store_engine_load() without holding a lock after this change, is this
-correct? I think you need also update store_engine_load() to hold the
-lock when calling lp5521_update_program_memory().
+------------------
 
-Thanks,
--Bryan
+From: Daniel Stone <daniel@fooishbar.org>
 
-> Cc: Pali Rohár <pali.rohar@gmail.com>
-> Signed-off-by: Milo Kim <milo.kim@ti.com>
-> ---
->  drivers/leds/leds-lp5521.c |    4 ----
->  drivers/leds/leds-lp5523.c |    4 ----
->  2 files changed, 8 deletions(-)
->
-> diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
-> index 26f89ac..4c45ed9 100644
-> --- a/drivers/leds/leds-lp5521.c
-> +++ b/drivers/leds/leds-lp5521.c
-> @@ -258,8 +258,6 @@ static int lp5521_update_program_memory(struct lp55xx_chip *chip,
->         if (i % 2)
->                 goto err;
->
-> -       mutex_lock(&chip->lock);
-> -
->         for (i = 0; i < LP5521_PROGRAM_LENGTH; i++) {
->                 ret = lp55xx_write(chip, addr[idx] + i, pattern[i]);
->                 if (ret) {
-> @@ -268,8 +266,6 @@ static int lp5521_update_program_memory(struct lp55xx_chip *chip,
->                 }
->         }
->
-> -       mutex_unlock(&chip->lock);
-> -
->         return size;
->
->  err:
-> diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
-> index 2ce1723..7a3b369 100644
-> --- a/drivers/leds/leds-lp5523.c
-> +++ b/drivers/leds/leds-lp5523.c
-> @@ -351,8 +351,6 @@ static int lp5523_update_program_memory(struct lp55xx_chip *chip,
->         if (i % 2)
->                 goto err;
->
-> -       mutex_lock(&chip->lock);
-> -
->         for (i = 0; i < LP5523_PROGRAM_LENGTH; i++) {
->                 ret = lp55xx_write(chip, LP5523_REG_PROG_MEM + i, pattern[i]);
->                 if (ret) {
-> @@ -361,8 +359,6 @@ static int lp5523_update_program_memory(struct lp55xx_chip *chip,
->                 }
->         }
->
-> -       mutex_unlock(&chip->lock);
-> -
->         return size;
->
->  err:
-> --
-> 1.7.9.5
->
+commit 92eb77d0ffbaa71b501a0a8dabf09a351bf4267f upstream.
+
+evdev always tries to allocate the event buffer for clients using
+kzalloc rather than vmalloc, presumably to avoid mapping overhead where
+possible.  However, drivers like bcm5974, which claims support for
+reporting 16 fingers simultaneously, can have an extraordinarily large
+buffer.  The resultant contiguous order-4 allocation attempt fails due
+to fragmentation, and the device is thus unusable until reboot.
+
+Try kzalloc if we can to avoid the mapping overhead, but if that fails,
+fall back to vzalloc.
+
+Signed-off-by: Daniel Stone <daniels@collabora.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/input/evdev.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
+
+--- a/drivers/input/evdev.c
++++ b/drivers/input/evdev.c
+@@ -18,6 +18,8 @@
+ #include <linux/poll.h>
+ #include <linux/sched.h>
+ #include <linux/slab.h>
++#include <linux/vmalloc.h>
++#include <linux/mm.h>
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/input/mt.h>
+@@ -369,7 +371,11 @@ static int evdev_release(struct inode *i
+ 	mutex_unlock(&evdev->mutex);
+ 
+ 	evdev_detach_client(evdev, client);
+-	kfree(client);
++
++	if (is_vmalloc_addr(client))
++		vfree(client);
++	else
++		kfree(client);
+ 
+ 	evdev_close_device(evdev);
+ 
+@@ -389,12 +395,14 @@ static int evdev_open(struct inode *inod
+ {
+ 	struct evdev *evdev = container_of(inode->i_cdev, struct evdev, cdev);
+ 	unsigned int bufsize = evdev_compute_buffer_size(evdev->handle.dev);
++	unsigned int size = sizeof(struct evdev_client) +
++					bufsize * sizeof(struct input_event);
+ 	struct evdev_client *client;
+ 	int error;
+ 
+-	client = kzalloc(sizeof(struct evdev_client) +
+-				bufsize * sizeof(struct input_event),
+-			 GFP_KERNEL);
++	client = kzalloc(size, GFP_KERNEL | __GFP_NOWARN);
++	if (!client)
++		client = vzalloc(size);
+ 	if (!client)
+ 		return -ENOMEM;
+ 
+
+
