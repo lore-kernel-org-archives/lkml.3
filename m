@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754361Ab3LBTOX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:14:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38475 "EHLO
+	id S1756157Ab3LBUhZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:37:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38887 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754253Ab3LBTON (ORCPT
+	with ESMTP id S1754307Ab3LBTOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:14:13 -0500
+	Mon, 2 Dec 2013 14:14:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Elias Vanderstuyft <elias.vds@gmail.com>,
-        Simon Wood <simon@mungewell.org>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.10 132/173] HID:hid-lg4ff: Scale autocentering force properly on Logitech wheel
-Date: Mon,  2 Dec 2013 11:11:55 -0800
-Message-Id: <20131202191158.587026690@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Shawn Bohrer <shawn.bohrer@gmail.com>
+Subject: [PATCH 3.10 137/173] cgroup: use a dedicated workqueue for cgroup destruction
+Date: Mon,  2 Dec 2013 11:12:00 -0800
+Message-Id: <20131202191159.145080347@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,48 +27,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Wood <simon@mungewell.org>
+From: Tejun Heo <tj@kernel.org>
 
-commit f8c231569a7a455dfa1907294a46ba52b3aa8859 upstream.
+commit e5fca243abae1445afbfceebda5f08462ef869d3 upstream.
 
-Adjust the scaling and lineartity to match that of the Windows
-driver (from MOMO testing).
+Since be44562613851 ("cgroup: remove synchronize_rcu() from
+cgroup_diput()"), cgroup destruction path makes use of workqueue.  css
+freeing is performed from a work item from that point on and a later
+commit, ea15f8ccdb430 ("cgroup: split cgroup destruction into two
+steps"), moves css offlining to workqueue too.
 
-Reported-by: Elias Vanderstuyft <elias.vds@gmail.com>
-Signed-off-by: Simon Wood <simon@mungewell.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+As cgroup destruction isn't depended upon for memory reclaim, the
+destruction work items were put on the system_wq; unfortunately, some
+controller may block in the destruction path for considerable duration
+while holding cgroup_mutex.  As large part of destruction path is
+synchronized through cgroup_mutex, when combined with high rate of
+cgroup removals, this has potential to fill up system_wq's max_active
+of 256.
+
+Also, it turns out that memcg's css destruction path ends up queueing
+and waiting for work items on system_wq through work_on_cpu().  If
+such operation happens while system_wq is fully occupied by cgroup
+destruction work items, work_on_cpu() can't make forward progress
+because system_wq is full and other destruction work items on
+system_wq can't make forward progress because the work item waiting
+for work_on_cpu() is holding cgroup_mutex, leading to deadlock.
+
+This can be fixed by queueing destruction work items on a separate
+workqueue.  This patch creates a dedicated workqueue -
+cgroup_destroy_wq - for this purpose.  As these work items shouldn't
+have inter-dependencies and mostly serialized by cgroup_mutex anyway,
+giving high concurrency level doesn't buy anything and the workqueue's
+@max_active is set to 1 so that destruction work items are executed
+one by one on each CPU.
+
+Hugh Dickins: Because cgroup_init() is run before init_workqueues(),
+cgroup_destroy_wq can't be allocated from cgroup_init().  Do it from a
+separate core_initcall().  In the future, we probably want to reorder
+so that workqueue init happens before cgroup_init().
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Hugh Dickins <hughd@google.com>
+Reported-by: Shawn Bohrer <shawn.bohrer@gmail.com>
+Link: http://lkml.kernel.org/r/20131111220626.GA7509@sbohrermbp13-local.rgmadvisors.com
+Link: http://lkml.kernel.org/g/alpine.LNX.2.00.1310301606080.2333@eggly.anvils
+Cc: stable@vger.kernel.org # v3.9+
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-lg4ff.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ kernel/cgroup.c |   28 ++++++++++++++++++++++++++--
+ 1 file changed, 26 insertions(+), 2 deletions(-)
 
---- a/drivers/hid/hid-lg4ff.c
-+++ b/drivers/hid/hid-lg4ff.c
-@@ -218,12 +218,21 @@ static void hid_lg4ff_set_autocenter_def
- 	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct hid_report *report = list_entry(report_list->next, struct hid_report, list);
- 	__s32 *value = report->field[0]->value;
-+	__u32 expand_a, expand_b;
-+
-+	if (magnitude <= 0xaaaa) {
-+		expand_a = 0x0c * magnitude;
-+		expand_b = 0x80 * magnitude;
-+	} else {
-+		expand_a = (0x0c * 0xaaaa) + 0x06 * (magnitude - 0xaaaa);
-+		expand_b = (0x80 * 0xaaaa) + 0xff * (magnitude - 0xaaaa);
-+	}
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -92,6 +92,14 @@ static DEFINE_MUTEX(cgroup_mutex);
+ static DEFINE_MUTEX(cgroup_root_mutex);
  
- 	value[0] = 0xfe;
- 	value[1] = 0x0d;
--	value[2] = magnitude >> 13;
--	value[3] = magnitude >> 13;
--	value[4] = magnitude >> 8;
-+	value[2] = expand_a / 0xaaaa;
-+	value[3] = expand_a / 0xaaaa;
-+	value[4] = expand_b / 0xaaaa;
- 	value[5] = 0x00;
- 	value[6] = 0x00;
+ /*
++ * cgroup destruction makes heavy use of work items and there can be a lot
++ * of concurrent destructions.  Use a separate workqueue so that cgroup
++ * destruction work items don't end up filling up max_active of system_wq
++ * which may lead to deadlock.
++ */
++static struct workqueue_struct *cgroup_destroy_wq;
++
++/*
+  * Generate an array of cgroup subsystem pointers. At boot time, this is
+  * populated with the built in subsystems, and modular subsystems are
+  * registered after that. The mutable section of this array is protected by
+@@ -873,7 +881,7 @@ static void cgroup_free_rcu(struct rcu_h
+ {
+ 	struct cgroup *cgrp = container_of(head, struct cgroup, rcu_head);
+ 
+-	schedule_work(&cgrp->free_work);
++	queue_work(cgroup_destroy_wq, &cgrp->free_work);
+ }
+ 
+ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
+@@ -4686,6 +4694,22 @@ out:
+ 	return err;
+ }
+ 
++static int __init cgroup_wq_init(void)
++{
++	/*
++	 * There isn't much point in executing destruction path in
++	 * parallel.  Good chunk is serialized with cgroup_mutex anyway.
++	 * Use 1 for @max_active.
++	 *
++	 * We would prefer to do this in cgroup_init() above, but that
++	 * is called before init_workqueues(): so leave this until after.
++	 */
++	cgroup_destroy_wq = alloc_workqueue("cgroup_destroy", 0, 1);
++	BUG_ON(!cgroup_destroy_wq);
++	return 0;
++}
++core_initcall(cgroup_wq_init);
++
+ /*
+  * proc_cgroup_show()
+  *  - Print task's cgroup paths into seq_file, one line for each hierarchy
+@@ -4996,7 +5020,7 @@ void __css_put(struct cgroup_subsys_stat
+ 
+ 	v = css_unbias_refcnt(atomic_dec_return(&css->refcnt));
+ 	if (v == 0)
+-		schedule_work(&css->dput_work);
++		queue_work(cgroup_destroy_wq, &css->dput_work);
+ }
+ EXPORT_SYMBOL_GPL(__css_put);
  
 
 
