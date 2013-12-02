@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758791Ab3LBU6k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:58:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38421 "EHLO
+	id S1758800Ab3LBU6z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:58:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38623 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754108Ab3LBTNh (ORCPT
+	with ESMTP id S1754102Ab3LBTNg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:37 -0500
+	Mon, 2 Dec 2013 14:13:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 079/173] mwifiex: correct packet length for packets from SDIO interface
-Date: Mon,  2 Dec 2013 11:11:02 -0800
-Message-Id: <20131202191152.462686329@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.10 078/173] qxl: avoid an oops in the deferred io code.
+Date: Mon,  2 Dec 2013 11:11:01 -0800
+Message-Id: <20131202191152.325946939@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,35 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avinash Patil <patila@marvell.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit d03b4aa77e1187b77dfe37d14a923547f00baa66 upstream.
+commit cc87509d87696d7cd393882f5dedea01e03e41a9 upstream.
 
-While receiving a packet on SDIO interface, we allocate skb with
-size multiple of SDIO block size. We need to resize this skb
-after RX using packet length from RX header.
+If we are using deferred io due to plymouth or X.org fbdev driver
+we will oops in memcpy due to this pointless multiply here,
 
-Signed-off-by: Avinash Patil <patila@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+removing it fixes fbdev to start and not oops.
+
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/sdio.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/qxl/qxl_fb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/mwifiex/sdio.c
-+++ b/drivers/net/wireless/mwifiex/sdio.c
-@@ -930,7 +930,10 @@ static int mwifiex_decode_rx_packet(stru
- 				    struct sk_buff *skb, u32 upld_typ)
- {
- 	u8 *cmd_buf;
-+	__le16 *curr_ptr = (__le16 *)skb->data;
-+	u16 pkt_len = le16_to_cpu(*curr_ptr);
+--- a/drivers/gpu/drm/qxl/qxl_fb.c
++++ b/drivers/gpu/drm/qxl/qxl_fb.c
+@@ -91,7 +91,7 @@ static void qxl_fb_dirty_flush(struct fb
+ 	u32 x1, x2, y1, y2;
  
-+	skb_trim(skb, pkt_len);
- 	skb_pull(skb, INTF_HEADER_LEN);
+ 	/* TODO: hard coding 32 bpp */
+-	int stride = qfbdev->qfb.base.pitches[0] * 4;
++	int stride = qfbdev->qfb.base.pitches[0];
  
- 	switch (upld_typ) {
+ 	x1 = qfbdev->dirty.x1;
+ 	x2 = qfbdev->dirty.x2;
 
 
