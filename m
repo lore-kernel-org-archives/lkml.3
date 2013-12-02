@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501Ab3LBUyY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:54:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38746 "EHLO
+	id S932256Ab3LBUyS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:54:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38468 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754164Ab3LBTNq (ORCPT
+	with ESMTP id S1754170Ab3LBTNq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:13:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Jakob Bornecrantz <jakob@vmware.com>
-Subject: [PATCH 3.10 094/173] drm/ttm: Fix memory type compatibility check
-Date: Mon,  2 Dec 2013 11:11:17 -0800
-Message-Id: <20131202191154.726876755@linuxfoundation.org>
+        Jeff Layton <jlayton@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Richard Guy Briggs <rgb@redhat.com>
+Subject: [PATCH 3.10 085/173] audit: add child record before the create to handle case where create fails
+Date: Mon,  2 Dec 2013 11:11:08 -0800
+Message-Id: <20131202191153.293634915@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,92 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 59c8e66378fb78adbcd05f0d09783dde6fef282b upstream.
+commit 14e972b4517128ac8e30e3de2ee4fbd995084223 upstream.
 
-Also check the busy placements before deciding to move a buffer object.
-Failing to do this may result in a completely unneccessary move within a
-single memory type.
+Historically, when a syscall that creates a dentry fails, you get an audit
+record that looks something like this (when trying to create a file named
+"new" in "/tmp/tmp.SxiLnCcv63"):
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+    type=PATH msg=audit(1366128956.279:965): item=0 name="/tmp/tmp.SxiLnCcv63/new" inode=2138308 dev=fd:02 mode=040700 ouid=0 ogid=0 rdev=00:00 obj=staff_u:object_r:user_tmp_t:s15:c0.c1023
+
+This record makes no sense since it's associating the inode information for
+"/tmp/tmp.SxiLnCcv63" with the path "/tmp/tmp.SxiLnCcv63/new". The recent
+patch I posted to fix the audit_inode call in do_last fixes this, by making it
+look more like this:
+
+    type=PATH msg=audit(1366128765.989:13875): item=0 name="/tmp/tmp.DJ1O8V3e4f/" inode=141 dev=fd:02 mode=040700 ouid=0 ogid=0 rdev=00:00 obj=staff_u:object_r:user_tmp_t:s15:c0.c1023
+
+While this is more correct, if the creation of the file fails, then we
+have no record of the filename that the user tried to create.
+
+This patch adds a call to audit_inode_child to may_create. This creates
+an AUDIT_TYPE_CHILD_CREATE record that will sit in place until the
+create succeeds. When and if the create does succeed, then this record
+will be updated with the correct inode info from the create.
+
+This fixes what was broken in commit bfcec708.
+Commit 79f6530c should also be backported to stable v3.7+.
+
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/ttm/ttm_bo.c |   32 ++++++++++++++++++++------------
- 1 file changed, 20 insertions(+), 12 deletions(-)
+ fs/namei.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/ttm/ttm_bo.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo.c
-@@ -1153,24 +1153,32 @@ out_unlock:
- 	return ret;
- }
- 
--static int ttm_bo_mem_compat(struct ttm_placement *placement,
--			     struct ttm_mem_reg *mem)
-+static bool ttm_bo_mem_compat(struct ttm_placement *placement,
-+			      struct ttm_mem_reg *mem,
-+			      uint32_t *new_flags)
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2263,6 +2263,7 @@ static int may_delete(struct inode *dir,
+  */
+ static inline int may_create(struct inode *dir, struct dentry *child)
  {
- 	int i;
- 
- 	if (mem->mm_node && placement->lpfn != 0 &&
- 	    (mem->start < placement->fpfn ||
- 	     mem->start + mem->num_pages > placement->lpfn))
--		return -1;
-+		return false;
- 
- 	for (i = 0; i < placement->num_placement; i++) {
--		if ((placement->placement[i] & mem->placement &
--			TTM_PL_MASK_CACHING) &&
--			(placement->placement[i] & mem->placement &
--			TTM_PL_MASK_MEM))
--			return i;
-+		*new_flags = placement->placement[i];
-+		if ((*new_flags & mem->placement & TTM_PL_MASK_CACHING) &&
-+		    (*new_flags & mem->placement & TTM_PL_MASK_MEM))
-+			return true;
- 	}
--	return -1;
-+
-+	for (i = 0; i < placement->num_busy_placement; i++) {
-+		*new_flags = placement->busy_placement[i];
-+		if ((*new_flags & mem->placement & TTM_PL_MASK_CACHING) &&
-+		    (*new_flags & mem->placement & TTM_PL_MASK_MEM))
-+			return true;
-+	}
-+
-+	return false;
- }
- 
- int ttm_bo_validate(struct ttm_buffer_object *bo,
-@@ -1179,6 +1187,7 @@ int ttm_bo_validate(struct ttm_buffer_ob
- 			bool no_wait_gpu)
- {
- 	int ret;
-+	uint32_t new_flags;
- 
- 	BUG_ON(!ttm_bo_is_reserved(bo));
- 	/* Check that range is valid */
-@@ -1189,8 +1198,7 @@ int ttm_bo_validate(struct ttm_buffer_ob
- 	/*
- 	 * Check whether we need to move buffer.
- 	 */
--	ret = ttm_bo_mem_compat(placement, &bo->mem);
--	if (ret < 0) {
-+	if (!ttm_bo_mem_compat(placement, &bo->mem, &new_flags)) {
- 		ret = ttm_bo_move_buffer(bo, placement, interruptible,
- 					 no_wait_gpu);
- 		if (ret)
-@@ -1200,7 +1208,7 @@ int ttm_bo_validate(struct ttm_buffer_ob
- 		 * Use the access and other non-mapping-related flag bits from
- 		 * the compatible memory placement flags to the active flags
- 		 */
--		ttm_flag_masked(&bo->mem.placement, placement->placement[ret],
-+		ttm_flag_masked(&bo->mem.placement, new_flags,
- 				~TTM_PL_MASK_MEMTYPE);
- 	}
- 	/*
++	audit_inode_child(dir, child, AUDIT_TYPE_CHILD_CREATE);
+ 	if (child->d_inode)
+ 		return -EEXIST;
+ 	if (IS_DEADDIR(dir))
 
 
