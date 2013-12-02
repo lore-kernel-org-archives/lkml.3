@@ -1,189 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab3LBTIe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:08:34 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:55087 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752935Ab3LBTI3 (ORCPT
+	id S1753516Ab3LBTHc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:07:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38308 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753279Ab3LBTHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:08:29 -0500
-Date: Mon, 2 Dec 2013 11:08:24 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: Manuel Krause <manuelkrause@netscape.net>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>, linux-input@vger.kernel.org,
-        linux-serial <linux-serial@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: 3.12.x looses serial mouse over hibernate + resume
-Message-ID: <20131202190824.GB5245@core.coreip.homeip.net>
-References: <52951E69.7090602@netscape.net>
- <529B591F.1020909@hurleysoftware.com>
- <529CB07C.2040609@netscape.net>
- <19253701.sgP3OieFUq@dtor-d630.eng.vmware.com>
- <20131202164525.GA32406@core.coreip.homeip.net>
- <529CD303.4040103@netscape.net>
- <529CD528.9000709@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <529CD528.9000709@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 2 Dec 2013 14:07:15 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>, Mel Gorman <mgorman@suse.de>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Li Zefan <lizefan@huawei.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.4 51/60] cpuset: Fix memory allocator deadlock
+Date: Mon,  2 Dec 2013 11:06:32 -0800
+Message-Id: <20131202190341.438467330@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
+References: <20131202190330.152596462@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 11:44:56AM -0700, Shuah Khan wrote:
-> On 12/02/2013 11:35 AM, Manuel Krause wrote:
-> >On 2013-12-02 17:45, Dmitry Torokhov wrote:
-> >>On Mon, Dec 02, 2013 at 08:38:16AM -0800, Dmitry Torokhov wrote:
-> >>>On Monday, December 02, 2013 05:08:28 PM Manuel Krause wrote:
-> >>>>On 2013-12-01 16:43, Peter Hurley wrote:
-> >>>>>[ +cc Dmitry Torokhov, Greg Kroah-Hartman, linux-input,
-> >>>>>linux-serial ]
-> >>>>>
-> >>>>>On 11/26/2013 05:19 PM, Manuel Krause wrote:
-> >>>>>>Since kernel 3.12.0 I have a problem with hibernate+resume
-> >>>>>>not reactivating my serial mouse (trackball) with my HP notebook.
-> >>>>>>Kernels 3.11.0 til 9 don't show this behaviour.
-> >>>>>>
-> >>>>>>Machine:           HP Notebook with Core2Duo CPU (Penryn)
-> >>>>>>Distro:            openSUSE 12.3, 64bit, continuously updated
-> >>>>>>Desktop:           KDE 4.11.3
-> >>>>>>MESA & drm & Xorg: most recent ones from:
-> >>>>>>
-> >>>>>>http://download.opensuse.org/repositories/home:/pontostroy:/X11/openSUSE_
-> >>>>>>
-> >>>>>>12.3/x86_64/
-> >>>>>>
-> >>>>>>Current kernel:    3.12.1 vanilla from openSUSE repos, with
-> >>>>>>
-> >>>>>>                     -ck1 and BFQ patches
-> >>>>>>
-> >>>>>>The Logitech Trackman Marble FX is a PS/2 device and connected
-> >>>>>>via an original Logitech
-> >>>>>>PS/2-COM-port adapter and manually configured via my xorg.conf.
-> >>>>>>
-> >>>>>>At first, I blamed the -ck1 patches from Con Kolivas for this
-> >>>>>>behaviour that I use in
-> >>>>>>addition  to the BFQ patches, what has showed up as not right:
-> >>>>>>This happens with the
-> >>>>>>normal vanilla kernel
-> >>>>>>schedulers for CPU and disk I/O, too.
-> >>>>>>
-> >>>>>>By coincidence I found a weird(!) way to reactivate the serial
-> >>>>>>mouse:
-> >>>>>>(1) call Hibernate (suspend-to-disk) from KDE desktop as normal
-> >>>>>>(2) resume --> the PS/2 touchpad is working, the serial
-> >>>>>>trackball NOT
-> >>>>>>(3) call suspend-to-RAM (Sleep) from KDE, serial trackball
-> >>>>>>still dead
-> >>>>>>(4) execute `setserial -a /dev/ttyS0` in a konsole window or a
-> >>>>>>tty* console
-> >>>>>>(5) ==> serial trackball is back with all configuration from
-> >>>>>>xorg.conf
-> >>>>>>
-> >>>>>>It's fully reproducible over multiple hibernations. This also
-> >>>>>>happens when calling
-> >>>>>>`pm-hibernate` (to-disk) and `pm-suspend` (to-RAM) and the
-> >>>>>>setserial from a root shell
-> >>>>>>in KDE or any tty*.
-> >>>>>>
-> >>>>>>Please, _always_CC_me_ -- as I'm not on the kernel mailing list.
-> >>>>>
-> >>>>>Manuel,
-> >>>>>
-> >>>>>Please attach complete dmesgs (zipped, if necessary) of a
-> >>>>>suspend/resume cycle
-> >>>>>on a vanilla 3.12.x (where resume fails) _and_ a vanilla 3.11.x
-> >>>>>(where resume succeeds).
-> >>>>>
-> >>>>>For the test configurations, please do not apply patches.
-> >>>>>
-> >>>>>Regards,
-> >>>>>Peter Hurley
-> >>>>
-> >>>>Thank you very much for your reply!
-> >>>>Attached you'll find a zip file with the two edited dmesg logs of
-> >>>>plain vanilla kernel runs.
-> >>>>
-> >>>>I have to add, that the resumes _do_ succeed in both cases, only
-> >>>>the serial mouse doesn't get activated after hibernate in 3.12.x
-> >>>>automatically. Just scan for and compare the lines indicating
-> >>>>"serial 00:08: disabled" or "serial 00:08: activated". In 3.12.x
-> >>>>the activation doesn't happen after hibernate, but after
-> >>>>suspend-to-ram (sleep). That only after STR and not before a
-> >>>>setserial gets my mouse back... a miracle. ;-)
-> >>>
-> >>>I do not see
-> >>>
-> >>>>[  206.577370] serial 00:08: activated
-> >>>
-> >>>in the restore from hibernation log of 3.12 which shoudl come from PNP
-> >>>layer.
-> >>>
-> >>>[dtor@dtor-d630 work]$ git log --oneline v3.11..v3.12 -- drivers/pnp/
-> >>>729377d pnp: change pnp bus pm_ops to invoke pnp driver dev_pm_ops if
-> >>>specified
-> >>>ce63e18 Merge branch 'pnp'
-> >>>8ad928d ACPI / PM: Use ACPI_STATE_D3_COLD instead of ACPI_STATE_D3
-> >>>everywhere
-> >>>eaf140b PNP: convert PNP driver bus legacy pm_ops to dev_pm_ops
-> >>>
-> >>>I'd start looking into these commits.
-> >>>
-> >>
-> >>Does the following patch fixes the issue?
-> >>
-> >
-> >PNP: fix restoring devices after hibernation
-> >
-> >From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> >
-> >On returning from hibernation 'restore; callback is called, not 'resume'.
-> >This fixes breakage introduced by commit
-> >eaf140b60ec961252083ab8adaf67aef29a362dd
-> >
-> >Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> >---
-> >  drivers/pnp/driver.c |    3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> >
-> >diff --git a/drivers/pnp/driver.c b/drivers/pnp/driver.c
-> >index a39ee38..185a24a 100644
-> >--- a/drivers/pnp/driver.c
-> >+++ b/drivers/pnp/driver.c
-> >@@ -235,8 +235,9 @@ static int pnp_bus_resume(struct device *dev)
-> >
-> >  static const struct dev_pm_ops pnp_bus_dev_pm_ops = {
-> >      .suspend = pnp_bus_suspend,
-> >-    .freeze = pnp_bus_freeze,
-> >      .resume = pnp_bus_resume,
-> >+    .freeze = pnp_bus_freeze,
-> >+    .restore = pnp_bus_resume,
-> >  };
-> >
-> >  struct bus_type pnp_bus_type = {
-> >
-> >
-> >YES! This patch fixes the issue!!! (Even if compiled with a patched
-> >kernel.)   ;-)
-> >
-> >Many thanks for your work!
-> >
-> >Manuel Krause
-> >
-> 
-> I am glad the problem is fixed. But I am puzzled. pnp_bus_resume()
-> didn't handle restore prior to this change. state doesn't get passed
-> in to legacy resume routines. I had to add freeze to handle
-> PMSG_FREEZE case, sounds like restore is needed as well, however I
-> don't see where how restore is handled prior to this change.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Take a look at drivers/base/platform.c::platform_pm_restore()
+------------------
 
-Thanks.
+From: Peter Zijlstra <peterz@infradead.org>
 
--- 
-Dmitry
+commit 0fc0287c9ed1ffd3706f8b4d9b314aa102ef1245 upstream.
+
+Juri hit the below lockdep report:
+
+[    4.303391] ======================================================
+[    4.303392] [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
+[    4.303394] 3.12.0-dl-peterz+ #144 Not tainted
+[    4.303395] ------------------------------------------------------
+[    4.303397] kworker/u4:3/689 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+[    4.303399]  (&p->mems_allowed_seq){+.+...}, at: [<ffffffff8114e63c>] new_slab+0x6c/0x290
+[    4.303417]
+[    4.303417] and this task is already holding:
+[    4.303418]  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff812d2dfb>] blk_execute_rq_nowait+0x5b/0x100
+[    4.303431] which would create a new lock dependency:
+[    4.303432]  (&(&q->__queue_lock)->rlock){..-...} -> (&p->mems_allowed_seq){+.+...}
+[    4.303436]
+
+[    4.303898] the dependencies between the lock to be acquired and SOFTIRQ-irq-unsafe lock:
+[    4.303918] -> (&p->mems_allowed_seq){+.+...} ops: 2762 {
+[    4.303922]    HARDIRQ-ON-W at:
+[    4.303923]                     [<ffffffff8108ab9a>] __lock_acquire+0x65a/0x1ff0
+[    4.303926]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+[    4.303929]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
+[    4.303931]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+[    4.303933]    SOFTIRQ-ON-W at:
+[    4.303933]                     [<ffffffff8108abcc>] __lock_acquire+0x68c/0x1ff0
+[    4.303935]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+[    4.303940]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
+[    4.303955]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+[    4.303959]    INITIAL USE at:
+[    4.303960]                    [<ffffffff8108a884>] __lock_acquire+0x344/0x1ff0
+[    4.303963]                    [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+[    4.303966]                    [<ffffffff81063dd6>] kthreadd+0x86/0x180
+[    4.303969]                    [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+[    4.303972]  }
+
+Which reports that we take mems_allowed_seq with interrupts enabled. A
+little digging found that this can only be from
+cpuset_change_task_nodemask().
+
+This is an actual deadlock because an interrupt doing an allocation will
+hit get_mems_allowed()->...->__read_seqcount_begin(), which will spin
+forever waiting for the write side to complete.
+
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Reported-by: Juri Lelli <juri.lelli@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Tested-by: Juri Lelli <juri.lelli@gmail.com>
+Acked-by: Li Zefan <lizefan@huawei.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/cpuset.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -983,8 +983,10 @@ static void cpuset_change_task_nodemask(
+ 	need_loop = task_has_mempolicy(tsk) ||
+ 			!nodes_intersects(*newmems, tsk->mems_allowed);
+ 
+-	if (need_loop)
++	if (need_loop) {
++		local_irq_disable();
+ 		write_seqcount_begin(&tsk->mems_allowed_seq);
++	}
+ 
+ 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
+ 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
+@@ -992,8 +994,10 @@ static void cpuset_change_task_nodemask(
+ 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP2);
+ 	tsk->mems_allowed = *newmems;
+ 
+-	if (need_loop)
++	if (need_loop) {
+ 		write_seqcount_end(&tsk->mems_allowed_seq);
++		local_irq_enable();
++	}
+ 
+ 	task_unlock(tsk);
+ }
+
+
