@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab3LBX2m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 18:28:42 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:36142 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752751Ab3LBX2k (ORCPT
+	id S1753740Ab3LBX3P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 18:29:15 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:16386 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766Ab3LBX3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 18:28:40 -0500
-X-AuditID: cbfee68d-b7f1a6d0000055a7-bc-529d17a23f47
+	Mon, 2 Dec 2013 18:29:14 -0500
+X-AuditID: cbfee691-b7f666d0000048b0-82-529d17c84f84
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
-        linux-fbdev@vger.kernel.org
+        "'Rusty Russell'" <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org
 References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
 In-reply-to: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
-Subject: [PATCH 32/39] video: remove DEFINE_PCI_DEVICE_TABLE macro
-Date: Tue, 03 Dec 2013 08:28:33 +0900
-Message-id: <003501ceefb6$37ba5dd0$a72f1970$%han@samsung.com>
+Subject: [PATCH 33/39] virtio: pci: remove DEFINE_PCI_DEVICE_TABLE macro
+Date: Tue, 03 Dec 2013 08:29:12 +0900
+Message-id: <003601ceefb6$4ef0e6e0$ecd2b4a0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7vsUc6neA2wWIVTNSB4ceFa5FjuwABNyQw
+Thread-index: Ac7vsUc6neA2wWIVTNSB4ceFa5FjuwABPFrw
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAIsWRmVeSWpSXmKPExsVy+t8zQ91F4nODDNZ1Mls0L17PZnF54SVW
-	ixN9H1gtLu+aw2axfv4tNgdWj/1z17B79G1Zxehx/MZ2Jo/Pm+QCWKK4bFJSczLLUov07RK4
-	Mh7fWsxYsJOzYt6Xf8wNjG/Zuxg5OCQETCTO9vt1MXICmWISF+6tZ+ti5OIQEljGKNF5aioj
-	RMJE4vbtSVCJ6YwSN97MZ4FwfjFKvPx3nQWkik1ATeLLl8PsILaIgKnExvdTGEGKmAV6GSWe
-	rj7DBpIQErCVmP5iMxPIak4BO4m+T7UgprCAk8TXhnwQk0VAVeLQ9SKQYl6g4omz7rFB2IIS
-	PybfA9vELKAlsX7ncSYIW15i85q3zBC/qEs8+qsLcYCRxIu3L6HKRST2vXgHdoyEwDV2idf9
-	k8H+YhEQkPg2+RALRK+sxKYDzBDvSkocXHGDZQKjxCwkm2ch2TwLyeZZSFYsYGRZxSiaWpBc
-	UJyUXmSoV5yYW1yal66XnJ+7iRESm707GG8fsD7EmAy0fiKzlGhyPjC280riDY3NjCxMTUyN
-	jcwtzUgTVhLnTXqYFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBceUesa0Tn/v+XS54cxGP
-	Me+mnlucadk+N5meZcpf3lxnaRCnfOzr1Alft5gf+3Tec0J0sdjU2Z+2p0YU2jBwb0t+et90
-	bppZcug5B0bz5a+X6LkH/Do2vU1/xumblt8UfTk4NaO17S8eOizHzDqbs2JTTLYdz3KOrbUW
-	tf/XSR1dOfW7hK1rrhJLcUaioRZzUXEiAGUOzKjjAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHKsWRmVeSWpSXmKPExsVy+t9jQd2F4nODDGZOs7FoXryezeLywkus
-	Fif6PrBaXN41h81i/fxbbA6sHvvnrmH36NuyitHj+I3tTB6fN8kFsEQ1MNpkpCampBYppOYl
-	56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXmAC1WUihLzCkFCgUkFhcr6dth
-	mhAa4qZrAdMYoesbEgTXY2SABhLWMWY8vrWYsWAnZ8W8L/+YGxjfsncxcnJICJhI3L49iQ3C
-	FpO4cG89kM3FISQwnVHixpv5LBDOL0aJl/+us4BUsQmoSXz5chisW0TAVGLj+ymMIEXMAr2M
-	Ek9XnwEbJSRgKzH9xWamLkYODk4BO4m+T7UgprCAk8TXhnwQk0VAVeLQ9SKQYl6g4omz7rFB
-	2IISPybfA9vELKAlsX7ncSYIW15i85q3zCCtEgLqEo/+6kIcYCTx4u1LqHIRiX0v3jFOYBSa
-	hWTSLCSTZiGZNAtJywJGllWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwbH/THoH46oGi0OM
-	AhyMSjy8D7bPCRJiTSwrrsw9xCjBwawkwtvJMzdIiDclsbIqtSg/vqg0J7X4EGMy0J8TmaVE
-	k/OBaSmvJN7Q2MTMyNLIzMLIxNycNGElcd6DrdaBQgLpiSWp2ampBalFMFuYODilGhh5tVVy
-	+IqF+lbZzXL8c/jrpl+CBQzezCeq72rXfP97nOm34LELhvbZkuw5m6LbC9uit1rPMrq6cv4n
-	l5LZFuUxk5/vdpkSdTgw6abco9BTNj8nWbDl/tvKtazkVtDzG+lrlI5rT1LqV7Vb2nnlbqnJ
-	qYCdJYdmrpILbUh4E5OpoPhOyFriVK8SS3FGoqEWc1FxIgAZGAqQQQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zA90T4nODDM7/tbFoXryezeLywkus
+	Fpd3zWGzuDntAovF8rPz2BxYPfbPXcPuMfnGckaPFRtOMHv0bVnF6PF5k1wAaxSXTUpqTmZZ
+	apG+XQJXxtcjz9kKzrJWzPv7j6mB8QpLFyMnh4SAicTU7ZeYIGwxiQv31rN1MXJxCAksY5SY
+	OvMkI0zR0489UIlFjBKNH1exgySEBH4xSkzsLgGx2QTUJL58OQwWFxEwldj4fgojSAOzwBxG
+	iWVtuxkhGmwlpr/YDLSOg4NTwE6i71MtSFhYwENi68TZYFewCKhKzHl3Cew6XqDylid7mCBs
+	QYkfk++BxZkFtCTW7zzOBGHLS2xe85YZZKSEgLrEo7+6IKaIgJHEjNdWEBUiEvtevAO7RkLg
+	HrvE5J4NjBCrBCS+TT7EAtEqK7HpADPEu5ISB1fcYJnAKDELyeJZSBbPQrJ4FpIVCxhZVjGK
+	phYkFxQnpReZ6hUn5haX5qXrJefnbmKExOnEHYz3D1gfYkwGWj+RWUo0OR8Y53kl8YbGZkYW
+	piamxkbmlmakCSuJ86Y/SgoSEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwFh67uaNGXGGc6wu
+	1Pi/ZKp4/TVr+dMZ2Yd5d3LMSDeYfa9zC4PfedNCvVrBoIOXrs6wKxPJNdnKGuZozmfAv4fr
+	dEpN1KaJC+weWc/O25xfPe+30d7a63r9Eor2bUJmAhM7xS5nXV2Vuy4v8H6T79SJu9qd13qe
+	10jrr2LXUF/K+FjrXFrnYSWW4oxEQy3mouJEAO5drVXpAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsVy+t9jAd0T4nODDLYtt7RoXryezeLywkus
+	Fpd3zWGzuDntAovF8rPz2BxYPfbPXcPuMfnGckaPFRtOMHv0bVnF6PF5k1wAa1QDo01GamJK
+	apFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0HYlhbLEnFKgUEBi
+	cbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEdY8bXI8/ZCs6yVsz7+4+pgfEKSxcjJ4eEgInE
+	0489bBC2mMSFe+uBbC4OIYFFjBKNH1exgySEBH4xSkzsLgGx2QTUJL58OQwWFxEwldj4fgoj
+	SAOzwBxGiWVtuxkhGmwlpr/YzNTFyMHBKWAn0fepFiQsLOAhsXXibCYQm0VAVWLOu0tgR/AC
+	lbc82cMEYQtK/Jh8DyzOLKAlsX7ncSYIW15i85q3zCAjJQTUJR791QUxRQSMJGa8toKoEJHY
+	9+Id4wRGoVlIBs1CMmgWkkGzkLQsYGRZxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iRGcBJ5J
+	72Bc1WBxiFGAg1GJh/fB9jlBQqyJZcWVuYcYJTiYlUR4O3nmBgnxpiRWVqUW5ccXleakFh9i
+	TAb6cyKzlGhyPjBB5ZXEGxqbmBlZGplZGJmYm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMH
+	p1QDI/vbHrO1X46WPzP5ke2uWnyqSPLvAh7dx7V7H3p9PFo0d8pGM/aZP7krxD8vdj/P+3Sv
+	0DmRIxsOrj3zKNrUtk2np11MV0Jj4uEbgtpFSfcZik+2J26/HhatfbP3sGRle+V34aVhmmrf
+	9108JqMTJum/+/rGfWkJ3qlihbaFZZb92Yk/O26WK7EUZyQaajEXFScCAMkoGwlGAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,36 +61,22 @@ is not preferred.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/hyperv_fb.c |    2 +-
- drivers/video/i740fb.c    |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/virtio/virtio_pci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/video/hyperv_fb.c b/drivers/video/hyperv_fb.c
-index 130708f..8254ed7 100644
---- a/drivers/video/hyperv_fb.c
-+++ b/drivers/video/hyperv_fb.c
-@@ -800,7 +800,7 @@ static int hvfb_remove(struct hv_device *hdev)
- }
+diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+index a37c699..a4a1f7c 100644
+--- a/drivers/virtio/virtio_pci.c
++++ b/drivers/virtio/virtio_pci.c
+@@ -91,7 +91,7 @@ struct virtio_pci_vq_info
+ };
  
- 
--static DEFINE_PCI_DEVICE_TABLE(pci_stub_id_table) = {
-+static const struct pci_device_id pci_stub_id_table[] = {
- 	{
- 		.vendor      = PCI_VENDOR_ID_MICROSOFT,
- 		.device      = PCI_DEVICE_ID_HYPERV_VIDEO,
-diff --git a/drivers/video/i740fb.c b/drivers/video/i740fb.c
-index ca7c9df..a2b4204 100644
---- a/drivers/video/i740fb.c
-+++ b/drivers/video/i740fb.c
-@@ -1260,7 +1260,7 @@ fail:
- #define I740_ID_PCI 0x00d1
- #define I740_ID_AGP 0x7800
- 
--static DEFINE_PCI_DEVICE_TABLE(i740fb_id_table) = {
-+static const struct pci_device_id i740fb_id_table[] = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, I740_ID_PCI) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, I740_ID_AGP) },
+ /* Qumranet donated their vendor ID for devices 0x1000 thru 0x10FF. */
+-static DEFINE_PCI_DEVICE_TABLE(virtio_pci_id_table) = {
++static const struct pci_device_id virtio_pci_id_table[] = {
+ 	{ PCI_DEVICE(0x1af4, PCI_ANY_ID) },
  	{ 0 }
+ };
 -- 
 1.7.10.4
 
