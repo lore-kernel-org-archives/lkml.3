@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753820Ab3LBTKU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:10:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38323 "EHLO
+	id S1752727Ab3LBTKj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:10:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38285 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294Ab3LBTH2 (ORCPT
+	with ESMTP id S1753472Ab3LBTH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:07:28 -0500
+	Mon, 2 Dec 2013 14:07:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nanno Langstraat <langstr@gmail.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.4 60/60] HID: apple: option to swap the Option ("Alt") and Command ("Flag") keys.
-Date: Mon,  2 Dec 2013 11:06:41 -0800
-Message-Id: <20131202190343.588734156@linuxfoundation.org>
+        Stefan Achatz <erazor_de@users.sourceforge.net>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.4 59/60] HID: roccat: fix Coverity CID 141438
+Date: Mon,  2 Dec 2013 11:06:40 -0800
+Message-Id: <20131202190343.380771194@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
 References: <20131202190330.152596462@linuxfoundation.org>
@@ -26,67 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nanno Langstraat <langstr@gmail.com>
+From: Stefan Achatz <erazor_de@users.sourceforge.net>
 
-commit 43c831468b3d26dbe8f2e061ccaf1abaf9cc1b8b upstream.
+commit 7be63f20b00840a6f1c718dcee00855688d64acd upstream.
 
-Use case: people who use both Apple and PC keyboards regularly, and desire to
-keep&use their PC muscle memory.
+Add missing switch breaks.
 
-A particular use case: an Apple compact external keyboard connected to a PC
-laptop. (This use case can't be covered well by X.org key remappings etc.)
-
-Signed-off-by: Nanno Langstraat <langstr@gmail.com>
+Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-apple.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ drivers/hid/hid-roccat-kovaplus.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/hid/hid-apple.c
-+++ b/drivers/hid/hid-apple.c
-@@ -48,6 +48,12 @@ module_param(iso_layout, uint, 0644);
- MODULE_PARM_DESC(iso_layout, "Enable/Disable hardcoded ISO-layout of the keyboard. "
- 		"(0 = disabled, [1] = enabled)");
- 
-+static unsigned int swap_opt_cmd = 0;
-+module_param(swap_opt_cmd, uint, 0644);
-+MODULE_PARM_DESC(swap_opt_cmd, "Swap the Option (\"Alt\") and Command (\"Flag\") keys. "
-+		"(For people who want to keep Windows PC keyboard muscle memory. "
-+		"[0] = as-is, Mac layout. 1 = swapped, Windows layout.)");
-+
- struct apple_sc {
- 	unsigned long quirks;
- 	unsigned int fn_on;
-@@ -152,6 +158,14 @@ static const struct apple_key_translatio
- 	{ }
- };
- 
-+static const struct apple_key_translation swapped_option_cmd_keys[] = {
-+	{ KEY_LEFTALT,	KEY_LEFTMETA },
-+	{ KEY_LEFTMETA,	KEY_LEFTALT },
-+	{ KEY_RIGHTALT,	KEY_RIGHTMETA },
-+	{ KEY_RIGHTMETA,KEY_RIGHTALT },
-+	{ }
-+};
-+
- static const struct apple_key_translation *apple_find_translation(
- 		const struct apple_key_translation *table, u16 from)
- {
-@@ -244,6 +258,14 @@ static int hidinput_apple_event(struct h
- 		}
+--- a/drivers/hid/hid-roccat-kovaplus.c
++++ b/drivers/hid/hid-roccat-kovaplus.c
+@@ -623,9 +623,13 @@ static void kovaplus_keep_values_up_to_d
+ 		break;
+ 	case KOVAPLUS_MOUSE_REPORT_BUTTON_TYPE_CPI:
+ 		kovaplus->actual_cpi = kovaplus_convert_event_cpi(button_report->data1);
++		break;
+ 	case KOVAPLUS_MOUSE_REPORT_BUTTON_TYPE_SENSITIVITY:
+ 		kovaplus->actual_x_sensitivity = button_report->data1;
+ 		kovaplus->actual_y_sensitivity = button_report->data2;
++		break;
++	default:
++		break;
  	}
- 
-+	if (swap_opt_cmd) {
-+		trans = apple_find_translation(swapped_option_cmd_keys, usage->code);
-+		if (trans) {
-+			input_event(input, usage->type, trans->to, value);
-+			return 1;
-+		}
-+	}
-+
- 	return 0;
  }
  
 
