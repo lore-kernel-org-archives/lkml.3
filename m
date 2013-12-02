@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641Ab3LBTOe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:14:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38798 "EHLO
+	id S1754298Ab3LBTON (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:14:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38743 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754327Ab3LBTOT (ORCPT
+	with ESMTP id S1754253Ab3LBTOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:14:19 -0500
+	Mon, 2 Dec 2013 14:14:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>, Antti Palosaari <crope@iki.fi>
-Subject: [PATCH 3.10 141/173] media: af9035: Dont use dynamic static allocation
-Date: Mon,  2 Dec 2013 11:12:04 -0800
-Message-Id: <20131202191159.581312456@linuxfoundation.org>
+        John Stultz <john.stultz@linaro.org>, Mel Gorman <mgorman@suse.de>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Li Zefan <lizefan@huawei.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 111/173] cpuset: Fix memory allocator deadlock
+Date: Mon,  2 Dec 2013 11:11:34 -0800
+Message-Id: <20131202191156.655515158@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,92 +29,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 7760e148350bf6df95662bc0db3734e9d991cb03 upstream.
+commit 0fc0287c9ed1ffd3706f8b4d9b314aa102ef1245 upstream.
 
-Dynamic static allocation is evil, as Kernel stack is too low, and
-compilation complains about it on some archs:
-	drivers/media/usb/dvb-usb-v2/af9035.c:142:1: warning: 'af9035_wr_regs' uses dynamic stack allocation [enabled by default]
-	drivers/media/usb/dvb-usb-v2/af9035.c:305:1: warning: 'af9035_i2c_master_xfer' uses dynamic stack allocation [enabled by default]
-Instead, let's enforce a limit for the buffer to be the max size of
-a control URB payload data (64 bytes).
+Juri hit the below lockdep report:
 
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
-Reviewed-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+[    4.303391] ======================================================
+[    4.303392] [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
+[    4.303394] 3.12.0-dl-peterz+ #144 Not tainted
+[    4.303395] ------------------------------------------------------
+[    4.303397] kworker/u4:3/689 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+[    4.303399]  (&p->mems_allowed_seq){+.+...}, at: [<ffffffff8114e63c>] new_slab+0x6c/0x290
+[    4.303417]
+[    4.303417] and this task is already holding:
+[    4.303418]  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff812d2dfb>] blk_execute_rq_nowait+0x5b/0x100
+[    4.303431] which would create a new lock dependency:
+[    4.303432]  (&(&q->__queue_lock)->rlock){..-...} -> (&p->mems_allowed_seq){+.+...}
+[    4.303436]
+
+[    4.303898] the dependencies between the lock to be acquired and SOFTIRQ-irq-unsafe lock:
+[    4.303918] -> (&p->mems_allowed_seq){+.+...} ops: 2762 {
+[    4.303922]    HARDIRQ-ON-W at:
+[    4.303923]                     [<ffffffff8108ab9a>] __lock_acquire+0x65a/0x1ff0
+[    4.303926]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+[    4.303929]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
+[    4.303931]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+[    4.303933]    SOFTIRQ-ON-W at:
+[    4.303933]                     [<ffffffff8108abcc>] __lock_acquire+0x68c/0x1ff0
+[    4.303935]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+[    4.303940]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
+[    4.303955]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+[    4.303959]    INITIAL USE at:
+[    4.303960]                    [<ffffffff8108a884>] __lock_acquire+0x344/0x1ff0
+[    4.303963]                    [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+[    4.303966]                    [<ffffffff81063dd6>] kthreadd+0x86/0x180
+[    4.303969]                    [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+[    4.303972]  }
+
+Which reports that we take mems_allowed_seq with interrupts enabled. A
+little digging found that this can only be from
+cpuset_change_task_nodemask().
+
+This is an actual deadlock because an interrupt doing an allocation will
+hit get_mems_allowed()->...->__read_seqcount_begin(), which will spin
+forever waiting for the write side to complete.
+
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Reported-by: Juri Lelli <juri.lelli@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Tested-by: Juri Lelli <juri.lelli@gmail.com>
+Acked-by: Li Zefan <lizefan@huawei.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/dvb-usb-v2/af9035.c |   29 ++++++++++++++++++++++++++---
- 1 file changed, 26 insertions(+), 3 deletions(-)
+ kernel/cpuset.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/media/usb/dvb-usb-v2/af9035.c
-+++ b/drivers/media/usb/dvb-usb-v2/af9035.c
-@@ -21,6 +21,9 @@
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -984,8 +984,10 @@ static void cpuset_change_task_nodemask(
+ 	need_loop = task_has_mempolicy(tsk) ||
+ 			!nodes_intersects(*newmems, tsk->mems_allowed);
  
- #include "af9035.h"
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
- 
- static u16 af9035_checksum(const u8 *buf, size_t len)
-@@ -125,10 +128,16 @@ exit:
- /* write multiple registers */
- static int af9035_wr_regs(struct dvb_usb_device *d, u32 reg, u8 *val, int len)
- {
--	u8 wbuf[6 + len];
-+	u8 wbuf[MAX_XFER_SIZE];
- 	u8 mbox = (reg >> 16) & 0xff;
- 	struct usb_req req = { CMD_MEM_WR, mbox, sizeof(wbuf), wbuf, 0, NULL };
- 
-+	if (6 + len > sizeof(wbuf)) {
-+		dev_warn(&d->udev->dev, "%s: i2c wr: len=%d is too big!\n",
-+			 KBUILD_MODNAME, len);
-+		return -EOPNOTSUPP;
+-	if (need_loop)
++	if (need_loop) {
++		local_irq_disable();
+ 		write_seqcount_begin(&tsk->mems_allowed_seq);
 +	}
-+
- 	wbuf[0] = len;
- 	wbuf[1] = 2;
- 	wbuf[2] = 0;
-@@ -227,9 +236,16 @@ static int af9035_i2c_master_xfer(struct
- 					msg[1].len);
- 		} else {
- 			/* I2C */
--			u8 buf[5 + msg[0].len];
-+			u8 buf[MAX_XFER_SIZE];
- 			struct usb_req req = { CMD_I2C_RD, 0, sizeof(buf),
- 					buf, msg[1].len, msg[1].buf };
-+
-+			if (5 + msg[0].len > sizeof(buf)) {
-+				dev_warn(&d->udev->dev,
-+					 "%s: i2c xfer: len=%d is too big!\n",
-+					 KBUILD_MODNAME, msg[0].len);
-+				return -EOPNOTSUPP;
-+			}
- 			req.mbox |= ((msg[0].addr & 0x80)  >>  3);
- 			buf[0] = msg[1].len;
- 			buf[1] = msg[0].addr << 1;
-@@ -256,9 +272,16 @@ static int af9035_i2c_master_xfer(struct
- 					msg[0].len - 3);
- 		} else {
- 			/* I2C */
--			u8 buf[5 + msg[0].len];
-+			u8 buf[MAX_XFER_SIZE];
- 			struct usb_req req = { CMD_I2C_WR, 0, sizeof(buf), buf,
- 					0, NULL };
-+
-+			if (5 + msg[0].len > sizeof(buf)) {
-+				dev_warn(&d->udev->dev,
-+					 "%s: i2c xfer: len=%d is too big!\n",
-+					 KBUILD_MODNAME, msg[0].len);
-+				return -EOPNOTSUPP;
-+			}
- 			req.mbox |= ((msg[0].addr & 0x80)  >>  3);
- 			buf[0] = msg[0].len;
- 			buf[1] = msg[0].addr << 1;
+ 
+ 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
+ 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
+@@ -993,8 +995,10 @@ static void cpuset_change_task_nodemask(
+ 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP2);
+ 	tsk->mems_allowed = *newmems;
+ 
+-	if (need_loop)
++	if (need_loop) {
+ 		write_seqcount_end(&tsk->mems_allowed_seq);
++		local_irq_enable();
++	}
+ 
+ 	task_unlock(tsk);
+ }
 
 
