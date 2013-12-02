@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631Ab3LBT6f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:58:35 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:64228 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755971Ab3LBT6b (ORCPT
+	id S1756643Ab3LBT6o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:58:44 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:36927 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754722Ab3LBT6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:58:31 -0500
+	Mon, 2 Dec 2013 14:58:40 -0500
+Message-ID: <529CE66B.5070209@gmail.com>
+Date: Mon, 02 Dec 2013 12:58:35 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-In-Reply-To: <20131202154329.GC1799@hercules.my.domain>
-References: <20131202154329.GC1799@hercules.my.domain>
-Date: Mon, 2 Dec 2013 14:58:31 -0500
-X-Google-Sender-Auth: 8EiumkxZ0GJF3aIE5VV_Bv9Kh0M
-Message-ID: <CA+5PVA4X+OV3L5oKL1XoPQ4=9pi_wd6MwMaSuqjyy57pAapxxw@mail.gmail.com>
-Subject: Re: [ANNOUNCE] Linux 3.11.y.z extended stable support
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Ubuntu kernel team <kernel-team@lists.ubuntu.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Pekka Enberg <penberg@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 3/3] perf report: Add --show-time-info option
+References: <20131202192315.GA17149@ghostprotocols.net> <529CDEA6.8000807@gmail.com> <20131202193850.GC17149@ghostprotocols.net>
+In-Reply-To: <20131202193850.GC17149@ghostprotocols.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 2, 2013 at 10:43 AM, Luis Henriques
-<luis.henriques@canonical.com> wrote:
-> Since Ubuntu 13.10 "Saucy Salamander" uses the 3.11 kernel, the Ubuntu
-> kernel team will pick up stable maintenance where Greg KH left off[1]
-> with 3.11.10 (thanks a lot, Greg!).
+On 12/2/13, 12:38 PM, Arnaldo Carvalho de Melo wrote:
+> Can you suggest a better name for the option being discussed?
 >
-> The Ubuntu kernel team is pleased to announce that we will be
-> providing extended stable support for the Linux 3.11 kernel until
-> August 2014 as a third party effort maintained on our infrastructure.
+> Perhaps one of:
 >
-> Our linux-3.11.y{-queue,-review} stable branches will fork from
-> 3.11.10 and will be published here:
+> --show-event-time
+> --event-time
 >
->     git://kernel.ubuntu.com/ubuntu/linux.git
->
-> We will use the same stable request/review workflow and follow the
-> standard upstream stable kernel rules.  More details are available at
-> http://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
->
-> We welcome any feedback and contribution to this effort.  We will be
-> posting the first review cycle patch set in a week or two.
+> ?
 
-I might have asked this already before, but if I did I've forgotten
-the answer.  Apologies if so.
+Why not just --event-time?
 
-Why not do this on the kernel.org infrastructure and treat it like all
-the other kernel.org stable releases?  I'm confused why it needs to be
-"forked" when it's following the same rules.  It seems like it could
-just pick up with 3.11.11 and carry on.
+Really should have dropped the 'show' from the recent perf-script change 
+(just --task-events and --mmap-events).
 
-josh
+>
+> As a policy I think we should go on adding just long options and only
+> after there is a really strong case we should use a short option for
+> really, really popular options.
+
+And adding options to .perfconfig. Need to use that more.
+
+David
