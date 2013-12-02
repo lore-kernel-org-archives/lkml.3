@@ -1,120 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759337Ab3LBVLJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:11:09 -0500
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:61462 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755271Ab3LBVKt (ORCPT
+	id S1759324Ab3LBVLF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:11:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38531 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753976Ab3LBTNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 16:10:49 -0500
-From: William Roberts <bill.c.roberts@gmail.com>
-To: linux-audit@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        rgb@redhat.com, viro@zeniv.linux.org.uk
-Cc: sds@tycho.nsa.gov, William Roberts <wroberts@tresys.com>
-Subject: [PATCH 1/3] mm: Create utility functions for accessing a tasks commandline value
-Date: Mon,  2 Dec 2013 13:10:37 -0800
-Message-Id: <1386018639-18916-2-git-send-email-wroberts@tresys.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386018639-18916-1-git-send-email-wroberts@tresys.com>
-References: <1386018639-18916-1-git-send-email-wroberts@tresys.com>
+	Mon, 2 Dec 2013 14:13:04 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Shan Hai <shan.hai@windriver.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 035/173] drivers/libata: Set max sector to 65535 for Slimtype DVD A DS8A9SH drive
+Date: Mon,  2 Dec 2013 11:10:18 -0800
+Message-Id: <20131202191146.756600501@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
+References: <20131202191142.873808297@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add two new functions to mm.h:
-* copy_cmdline()
-* get_cmdline_length()
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: William Roberts <wroberts@tresys.com>
+------------------
+
+From: Shan Hai <shan.hai@windriver.com>
+
+commit 0523f037f65dba10191b0fa9c51266f90ba64630 upstream.
+
+The "Slimtype DVD A  DS8A9SH" drive locks up with following backtrace when
+the max sector is smaller than 65535 bytes, fix it by adding a quirk to set
+the max sector to 65535 bytes.
+
+INFO: task flush-11:0:663 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+flush-11:0    D 00000000ffff5ceb     0   663      2 0x00000000
+ ffff88026d3b1710 0000000000000046 0000000000000001 0000000000000000
+ ffff88026f2530c0 ffff88026d365860 ffff88026d3b16e0 ffffffff812ffd52
+ ffff88026d4fd3d0 0000000100000001 ffff88026d3b16f0 ffff88026d3b1fd8
+Call Trace:
+ [<ffffffff812ffd52>] ? cfq_may_queue+0x52/0xf0
+ [<ffffffff81604338>] schedule+0x18/0x30
+ [<ffffffff81604392>] io_schedule+0x42/0x60
+ [<ffffffff812f22bb>] get_request_wait+0xeb/0x1f0
+ [<ffffffff81065660>] ? autoremove_wake_function+0x0/0x40
+ [<ffffffff812eb382>] ? elv_merge+0x42/0x210
+ [<ffffffff812f26ae>] __make_request+0x8e/0x4e0
+ [<ffffffff812f068e>] generic_make_request+0x21e/0x5e0
+ [<ffffffff812f0aad>] submit_bio+0x5d/0xd0
+ [<ffffffff81141422>] submit_bh+0xf2/0x130
+ [<ffffffff8114474c>] __block_write_full_page+0x1dc/0x3a0
+ [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
+ [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
+ [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
+ [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
+ [<ffffffff811449ee>] block_write_full_page_endio+0xde/0x100
+ [<ffffffff81144a20>] block_write_full_page+0x10/0x20
+ [<ffffffff81148703>] blkdev_writepage+0x13/0x20
+ [<ffffffff810d7525>] __writepage+0x15/0x40
+ [<ffffffff810d7c0f>] write_cache_pages+0x1cf/0x3e0
+ [<ffffffff810d7510>] ? __writepage+0x0/0x40
+ [<ffffffff810d7e42>] generic_writepages+0x22/0x30
+ [<ffffffff810d7e6f>] do_writepages+0x1f/0x40
+ [<ffffffff8113ae67>] writeback_single_inode+0xe7/0x3b0
+ [<ffffffff8113b574>] writeback_sb_inodes+0x184/0x280
+ [<ffffffff8113bedb>] writeback_inodes_wb+0x6b/0x1a0
+ [<ffffffff8113c24b>] wb_writeback+0x23b/0x2a0
+ [<ffffffff8113c42d>] wb_do_writeback+0x17d/0x190
+ [<ffffffff8113c48b>] bdi_writeback_task+0x4b/0xe0
+ [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
+ [<ffffffff810e8321>] bdi_start_fn+0x81/0x100
+ [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
+ [<ffffffff8106522e>] kthread+0x8e/0xa0
+ [<ffffffff81039274>] ? finish_task_switch+0x54/0xc0
+ [<ffffffff81003334>] kernel_thread_helper+0x4/0x10
+ [<ffffffff810651a0>] ? kthread+0x0/0xa0
+ [<ffffffff81003330>] ? kernel_thread_helper+0x0/0x10
+
+ The above trace was triggered by
+   "dd if=/dev/zero of=/dev/sr0 bs=2048 count=32768"
+
+Signed-off-by: Shan Hai <shan.hai@windriver.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- include/linux/mm.h |    7 +++++++
- mm/util.c          |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 55 insertions(+)
+ drivers/ata/libata-core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 1cedd00..b4d7c26 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1135,6 +1135,13 @@ int set_page_dirty(struct page *page);
- int set_page_dirty_lock(struct page *page);
- int clear_page_dirty_for_io(struct page *page);
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4110,6 +4110,7 @@ static const struct ata_blacklist_entry
+ 	{ "TORiSAN DVD-ROM DRD-N216", NULL,	ATA_HORKAGE_MAX_SEC_128 },
+ 	{ "QUANTUM DAT    DAT72-000", NULL,	ATA_HORKAGE_ATAPI_MOD16_DMA },
+ 	{ "Slimtype DVD A  DS8A8SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
++	{ "Slimtype DVD A  DS8A9SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
  
-+extern int copy_cmdline(struct task_struct *task, struct mm_struct *mm,
-+			char *buf, unsigned int buflen);
-+static inline unsigned int get_cmdline_length(struct mm_struct *mm)
-+{
-+	return mm->arg_end ? mm->arg_end - mm->arg_start : 0;
-+}
-+
- /* Is the vma a continuation of the stack vma above it? */
- static inline int vma_growsdown(struct vm_area_struct *vma, unsigned long addr)
- {
-diff --git a/mm/util.c b/mm/util.c
-index f7bc209..c8cad32 100644
---- a/mm/util.c
-+++ b/mm/util.c
-@@ -9,6 +9,7 @@
- #include <linux/swapops.h>
- #include <linux/mman.h>
- #include <linux/hugetlb.h>
-+#include <linux/mm.h>
+ 	/* Devices we expect to fail diagnostics */
  
- #include <asm/uaccess.h>
- 
-@@ -410,6 +411,53 @@ unsigned long vm_commit_limit(void)
- 		* sysctl_overcommit_ratio / 100) + total_swap_pages;
- }
- 
-+/**
-+ * copy_cmdline - Copy's the tasks commandline value to a buffer
-+ * @task: The task whose command line to copy
-+ * @mm: The mm struct refering to task with proper semaphores held
-+ * @buf: The buffer to copy the value into
-+ * @buflen: The length og the buffer. It trucates the value to
-+ *           buflen.
-+ * @return: The number of chars copied.
-+ */
-+int copy_cmdline(struct task_struct *task, struct mm_struct *mm,
-+		 char *buf, unsigned int buflen)
-+{
-+	int res = 0;
-+	unsigned int len;
-+
-+	if (!task || !mm || !buf)
-+		return -1;
-+
-+	res = access_process_vm(task, mm->arg_start, buf, buflen, 0);
-+	if (res <= 0)
-+		return 0;
-+
-+	if (res > buflen)
-+		res = buflen;
-+	/*
-+	 * If the nul at the end of args had been overwritten, then
-+	 * assume application is using setproctitle(3).
-+	 */
-+	if (buf[res-1] != '\0') {
-+		/* Nul between start and end of vm space?
-+		   If so then truncate */
-+		len = strnlen(buf, res);
-+		if (len < res) {
-+			res = len;
-+		} else {
-+			/* No nul, truncate buflen if to big */
-+			len = mm->env_end - mm->env_start;
-+			if (len > buflen - res)
-+				len = buflen - res;
-+			/* Copy any remaining data */
-+			res += access_process_vm(task, mm->env_start, buf+res,
-+						 len, 0);
-+			res = strnlen(buf, res);
-+		}
-+	}
-+	return res;
-+}
- 
- /* Tracepoints definitions. */
- EXPORT_TRACEPOINT_SYMBOL(kmalloc);
--- 
-1.7.9.5
+
 
