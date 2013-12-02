@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab3LBTO0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:14:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38798 "EHLO
+	id S1758039Ab3LBUft (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:35:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38901 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754301Ab3LBTOO (ORCPT
+	with ESMTP id S1754384Ab3LBTO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:14:14 -0500
+	Mon, 2 Dec 2013 14:14:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Elias Vanderstuyft <elias.vds@gmail.com>,
-        Simon Wood <simon@mungewell.org>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.10 133/173] HID:hid-lg4ff: Switch autocentering off when strength is set to zero.
-Date: Mon,  2 Dec 2013 11:11:56 -0800
-Message-Id: <20131202191158.687866018@linuxfoundation.org>
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: [PATCH 3.10 150/173] media: tuner-xc2028: Dont use dynamic static allocation
+Date: Mon,  2 Dec 2013 11:12:13 -0800
+Message-Id: <20131202191200.570380348@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,63 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Wood <simon@mungewell.org>
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit d2c02da549b468bbb28e67d269bd3c9e10683ff5 upstream.
+commit 56ac033725ec93a45170caf3979eb2b1211a59a8 upstream.
 
-When the autocenter is set to zero, this patch issues a command to
-totally disable the autocenter - this results in less resistance
-in the wheel.
+Dynamic static allocation is evil, as Kernel stack is too low, and
+compilation complains about it on some archs:
+	drivers/media/tuners/tuner-xc2028.c:651:1: warning: 'load_firmware' uses dynamic stack allocation [enabled by default]
+Instead, let's enforce a limit for the buffer.
+In the specific case of this driver, the maximum limit is 80, used only
+on tm6000 driver. This limit is due to the size of the USB control URBs.
+Ok, it would be theoretically possible to use a bigger size on PCI
+devices, but the firmware load time is already good enough. Anyway,
+if some usage requires more, it is just a matter of also increasing
+the buffer size at load_firmware().
 
-Reported-by: Elias Vanderstuyft <elias.vds@gmail.com>
-Signed-off-by: Simon Wood <simon@mungewell.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-lg4ff.c |   25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ drivers/media/tuners/tuner-xc2028.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-lg4ff.c
-+++ b/drivers/hid/hid-lg4ff.c
-@@ -220,6 +220,20 @@ static void hid_lg4ff_set_autocenter_def
- 	__s32 *value = report->field[0]->value;
- 	__u32 expand_a, expand_b;
+--- a/drivers/media/tuners/tuner-xc2028.c
++++ b/drivers/media/tuners/tuner-xc2028.c
+@@ -24,6 +24,9 @@
+ #include <linux/dvb/frontend.h>
+ #include "dvb_frontend.h"
  
-+	/* De-activate Auto-Center */
-+	if (magnitude == 0) {
-+		value[0] = 0xf5;
-+		value[1] = 0x00;
-+		value[2] = 0x00;
-+		value[3] = 0x00;
-+		value[4] = 0x00;
-+		value[5] = 0x00;
-+		value[6] = 0x00;
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  80
 +
-+		hid_hw_request(hid, report, HID_REQ_SET_REPORT);
-+		return;
-+	}
+ /* Registers (Write-only) */
+ #define XREG_INIT         0x00
+ #define XREG_RF_FREQ      0x02
+@@ -547,7 +550,10 @@ static int load_firmware(struct dvb_fron
+ {
+ 	struct xc2028_data *priv = fe->tuner_priv;
+ 	int                pos, rc;
+-	unsigned char      *p, *endp, buf[priv->ctrl.max_len];
++	unsigned char      *p, *endp, buf[MAX_XFER_SIZE];
 +
- 	if (magnitude <= 0xaaaa) {
- 		expand_a = 0x0c * magnitude;
- 		expand_b = 0x80 * magnitude;
-@@ -236,6 +250,17 @@ static void hid_lg4ff_set_autocenter_def
- 	value[5] = 0x00;
- 	value[6] = 0x00;
++	if (priv->ctrl.max_len > sizeof(buf))
++		priv->ctrl.max_len = sizeof(buf);
  
-+	hid_hw_request(hid, report, HID_REQ_SET_REPORT);
-+
-+	/* Activate Auto-Center */
-+	value[0] = 0x14;
-+	value[1] = 0x00;
-+	value[2] = 0x00;
-+	value[3] = 0x00;
-+	value[4] = 0x00;
-+	value[5] = 0x00;
-+	value[6] = 0x00;
-+
- 	hid_hw_request(hid, report, HID_REQ_SET_REPORT);
- }
+ 	tuner_dbg("%s called\n", __func__);
  
 
 
