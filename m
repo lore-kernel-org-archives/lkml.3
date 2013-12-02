@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab3LBTSd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:18:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39469 "EHLO
+	id S1754916Ab3LBTSt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:18:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39504 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754620Ab3LBTSV (ORCPT
+	with ESMTP id S1753470Ab3LBTS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:21 -0500
+	Mon, 2 Dec 2013 14:18:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Moussa Ba <moussaba@micron.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.12 141/212] ib_isert: Avoid duplicate iscsit_increment_maxcmdsn call
-Date: Mon,  2 Dec 2013 11:15:32 -0800
-Message-Id: <20131202191302.840082638@linuxfoundation.org>
+        Jerome Glisse <jglisse@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.12 137/212] radeon/i2c: do not count reg index in number of i2c byte we are writing.
+Date: Mon,  2 Dec 2013 11:15:28 -0800
+Message-Id: <20131202191302.349684822@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,55 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit 04d9cd1224e5bc9d6146bab2866cdc81deb9b509 upstream.
+commit fae009d15a44e5f1d938340facf4b8bc7dc69a09 upstream.
 
-This patch avoids a duplicate iscsit_increment_maxcmdsn() call for
-ISER_IB_RDMA_WRITE within isert_map_rdma() + isert_reg_rdma_frwr(),
-which will already be occuring once during isert_put_datain() ->
-iscsit_build_rsp_pdu() operation.
+Useless to count the register index in number of bytes we are writing.
 
-It also removes the local conn->stat_sn assignment + increment,
-and changes the third parameter to iscsit_build_rsp_pdu() to
-signal this should be done by iscsi_target_mode code.
+Fixes a regression with hw i2c enabled.
 
-Tested-by: Moussa Ba <moussaba@micron.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ drivers/gpu/drm/radeon/atombios_i2c.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -1991,8 +1991,6 @@ isert_map_rdma(struct iscsi_conn *conn,
- 
- 	if (wr->iser_ib_op == ISER_IB_RDMA_WRITE) {
- 		data_left = se_cmd->data_length;
--		iscsit_increment_maxcmdsn(cmd, conn->sess);
--		cmd->stat_sn = conn->stat_sn++;
+--- a/drivers/gpu/drm/radeon/atombios_i2c.c
++++ b/drivers/gpu/drm/radeon/atombios_i2c.c
+@@ -56,8 +56,10 @@ static int radeon_process_i2c_ch(struct
+ 			return -EINVAL;
+ 		}
+ 		args.ucRegIndex = buf[0];
+-		if (num > 1)
+-			memcpy(&out, &buf[1], num - 1);
++		if (num > 1) {
++			num--;
++			memcpy(&out, &buf[1], num);
++		}
+ 		args.lpI2CDataOut = cpu_to_le16(out);
  	} else {
- 		sg_off = cmd->write_data_done / PAGE_SIZE;
- 		data_left = se_cmd->data_length - cmd->write_data_done;
-@@ -2204,8 +2202,6 @@ isert_reg_rdma_frwr(struct iscsi_conn *c
- 
- 	if (wr->iser_ib_op == ISER_IB_RDMA_WRITE) {
- 		data_left = se_cmd->data_length;
--		iscsit_increment_maxcmdsn(cmd, conn->sess);
--		cmd->stat_sn = conn->stat_sn++;
- 	} else {
- 		sg_off = cmd->write_data_done / PAGE_SIZE;
- 		data_left = se_cmd->data_length - cmd->write_data_done;
-@@ -2314,7 +2310,7 @@ isert_put_datain(struct iscsi_conn *conn
- 	 * Build isert_conn->tx_desc for iSCSI response PDU and attach
- 	 */
- 	isert_create_send_desc(isert_conn, isert_cmd, &isert_cmd->tx_desc);
--	iscsit_build_rsp_pdu(cmd, conn, false, (struct iscsi_scsi_rsp *)
-+	iscsit_build_rsp_pdu(cmd, conn, true, (struct iscsi_scsi_rsp *)
- 			     &isert_cmd->tx_desc.iscsi_header);
- 	isert_init_tx_hdrs(isert_conn, &isert_cmd->tx_desc);
- 	isert_init_send_wr(isert_cmd, &isert_cmd->tx_desc.send_wr);
+ 		if (num > ATOM_MAX_HW_I2C_READ) {
 
 
