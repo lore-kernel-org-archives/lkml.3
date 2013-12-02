@@ -1,50 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab3LBXwT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 18:52:19 -0500
-Received: from smtprelay0032.hostedemail.com ([216.40.44.32]:50911 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750938Ab3LBXwP (ORCPT
+	id S1752250Ab3LBX40 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 18:56:26 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:57071 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914Ab3LBX4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 18:52:15 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:967:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3770:3865:3866:3868:3870:3871:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:4423:5007:7652:9025:9388:10004:10049:10400:10848:11026:11232:11473:11658:11914:12043:12114:12438:12517:12519:12679:12740:13069:13161:13200:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: glass27_3058e7ee4fe05
-X-Filterd-Recvd-Size: 1489
-Message-ID: <1386028330.15309.13.camel@joe-AO722>
-Subject: Re: [PATCH 38/39] PCI: remove DEFINE_PCI_DEVICE_TABLE macro
-From: Joe Perches <joe@perches.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        linux-pci@vger.kernel.org
-Date: Mon, 02 Dec 2013 15:52:10 -0800
-In-Reply-To: <003b01ceefb6$bca43ed0$35ecbc70$%han@samsung.com>
-References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
-	 <003b01ceefb6$bca43ed0$35ecbc70$%han@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Dec 2013 18:56:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+5PVA6Mh=tRM5h=TCbg5yjkkFUg2OncJmHBdtBhG7jqf377rg@mail.gmail.com>
+References: <CA+5PVA6Mh=tRM5h=TCbg5yjkkFUg2OncJmHBdtBhG7jqf377rg@mail.gmail.com>
+Date: Mon, 2 Dec 2013 18:56:24 -0500
+X-Google-Sender-Auth: 4dFPzIn2V9ctRvNkcOJI0TeKQDQ
+Message-ID: <CA+5PVA4pXtXHWzeSnx7d9eGEiOQ-jtL2RtBEyqxmz2DemT--jw@mail.gmail.com>
+Subject: Re: Nov. Fedora Kernel Patch Report
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Kernel Fedora <kernel@lists.fedoraproject.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-03 at 08:32 +0900, Jingoo Han wrote:
-> Don't use DEFINE_PCI_DEVICE_TABLE macro, because this macro
-> is not preferred. Also, the definition of DEFINE_PCI_DEVICE_TABLE
-> macro is removed.
+On Mon, Dec 2, 2013 at 2:40 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+> A couple days late due to the holidays.  Here are the patches we
+> currently have on top of 3.12.2:
 
-These sorts of treewide conversions are almost never
-applied wholesale.
+Forgot the upstream commit sha1s where relevant.  Sigh.  That's what I
+get for rushing.
 
-This patch is not appropriate until there are no more
-uses of DEFINE_PCI_DEVICE_TABLE in Linus' tree.
+> md-test-mddev-flags-more-safely-in-md_check_recovery.patch (rhbz 1033971)
+> - In 3.13, should already be CC'd to stable
 
-Just marking the function as deprecated in the
-documentation and the pci.h file is probably good
-enough for now.
+commit 142d44c310819e1965ca70b4d55d7679f5797e25
 
-see:  http://lkml.org/lkml/2013/12/2/400
+> inet-prevent-leakage-of-uninitialized-memory-to-user.patch
+> inet-fix-addr_len-msg_namelen-assignment-in-recv_error-and-rxpmtu-functions.patch
+> (rhbz 1035875)
+> - Should be heading to 3.13.  Fixes CVE-2013-6405
 
+Commits bceaa90240b6 and 85fbaa75037d
 
+> usbnet-fix-status-interrupt-urb-handling.patch (rhbz 998342)
+> - In 3.13
+
+commit 52f48d0d9aaa621ffa5e08d79da99a3f8c93b848
+
+> via-velocity-fix-netif_receive_skb-use-in-irq-disable.patch (rhbz 1022733)
+> - Submitted for 3.13 and CC'd to 3.12 stable
+
+commit bc9627e7e918a85e906c1a3f6d01d9b8ef911a96
+
+> drm-radeon-24hz-audio-fixes.patch (rhbz 1010679)
+> - Should be in 3.13
+
+Commits 908171aa738b5bbcc6241cec46f73fcd57dd00d4 and
+05e4776357fe7217e531cbaaa163e24f688d10ce
+
+> alx-Reset-phy-speed-after-resume.patch (rhbz 1011362)
+> - In 3.13
+
+commit b54629e226d196e802abdd30c5e34f2a47cddcf2
+
+> ip6_output-fragment-outgoing-reassembled-skb-properl.patch
+> netfilter-push-reasm-skb-through-instead-of-original.patch (rhbz 1015905)
+> - 3.13 and CC'd to stable
+
+commit 9037c3579a277f3a23ba476664629fda8c35f7c4 and
+6aafeef03b9d9ecf255f3a80ed85ee070260e1ae
+
+> ipv6-fix-headroom-calculation-in-udp6_ufo_fragment.patch (rhbz 1030015)
+> - 3.13.  Fixes CVE-2013-4563
+
+commit 0e033e04c2678dbbe74a46b23fffb7bb918c288e
+
+> Input-evdev-fall-back-to-vmalloc-for-client-event-buffer.patch
+> - Fixes high order allocations.  In 3.13
+
+commit 92eb77d0ffbaa71b501a0a8dabf09a351bf4267f
+
+> vfio-iommu-Fixed-interaction-of-VFIO_IOMMU_MAP_DMA.patch (rhbz 998732)
+> - In 3.13
+
+commit f9423606ade08653dd8a43334f0a7fb45504c5cc
+
+> iommu-Remove-stack-trace-from-broken-irq-remapping-warning.patch (rhbz 982153)
+> - In 3.13
+
+commit 05104a4e8713b27291c7bb49c1e7e68b4e243571
+
+> rt2800-add-support-for-rf3070.patch (rhbz 974072)
+> - In 3.13
+
+commit 3b9b74baa1af2952d719735b4a4a34706a593948
+
+> elevator-Fix-a-race-in-elevator-switching-and-md.patch
+> elevator-acquire-q-sysfs_lock-in-elevator_change.patch (rhbz 902012)
+> - In 3.13
+
+commit eb1c160b22655fd4ec44be732d6594fd1b1e44f4 and
+7c8a3679e3d8e9d92d58f282161760a0e247df97
+
+> ntp-Make-periodic-RTC-update-more-reliable.patch (rhbz 985522)
+> - In 3.13
+
+commit a97ad0c4b447a132a322cedc3a5f7fa4cab4b304
+
+josh
