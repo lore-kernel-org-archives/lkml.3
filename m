@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758962Ab3LBVDf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:03:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38421 "EHLO
+	id S932271Ab3LBVDa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:03:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38531 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753981Ab3LBTNW (ORCPT
+	with ESMTP id S1754056Ab3LBTNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:22 -0500
+	Mon, 2 Dec 2013 14:13:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Beulich <JBeulich@suse.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Vegard Nossum <vegard.nossum@oracle.com>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 3.10 060/173] xen/blkback: fix reference counting
-Date: Mon,  2 Dec 2013 11:10:43 -0800
-Message-Id: <20131202191149.485990345@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Matthieu Baerts <matttbe@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 062/173] rtlwifi: rtl8192se: Fix incorrect signal strength for unassociated AP
+Date: Mon,  2 Dec 2013 11:10:45 -0800
+Message-Id: <20131202191149.692500083@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -28,44 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vegard Nossum <vegard.nossum@oracle.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit ea5ec76d76da9279d12027c1828544c5ccbe7932 upstream.
+commit b4ade797668e33b4e8353c2701ce01d7084dfafa upstream.
 
-If the permission check fails, we drop a reference to the blkif without
-having taken it in the first place. The bug was introduced in commit
-604c499cbbcc3d5fe5fb8d53306aa0fae1990109 (xen/blkback: Check device
-permissions before allowing OP_DISCARD).
+The routine that processes received frames was returning the RSSI value for the
+signal strength; however, that value is available only for associated APs. As
+a result, the strength was the absurd value of 10 dBm. As a result, scans
+return incorrect values for the strength, which causes unwanted attempts to roam.
 
-Cc: Jan Beulich <JBeulich@suse.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+This patch fixes https://bugzilla.kernel.org/show_bug.cgi?id=63881.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: Matthieu Baerts <matttbe@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/xen-blkback/blkback.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/rtl8192se/trx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -649,6 +649,8 @@ static int dispatch_discard_io(struct xe
- 	unsigned long secure;
- 	struct phys_req preq;
- 
-+	xen_blkif_get(blkif);
-+
- 	preq.sector_number = req->u.discard.sector_number;
- 	preq.nr_sects      = req->u.discard.nr_sectors;
- 
-@@ -661,7 +663,6 @@ static int dispatch_discard_io(struct xe
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
+@@ -329,7 +329,7 @@ bool rtl92se_rx_query_desc(struct ieee80
  	}
- 	blkif->st_ds_req++;
  
--	xen_blkif_get(blkif);
- 	secure = (blkif->vbd.discard_secure &&
- 		 (req->u.discard.flag & BLKIF_DISCARD_SECURE)) ?
- 		 BLKDEV_DISCARD_SECURE : 0;
+ 	/*rx_status->qual = stats->signal; */
+-	rx_status->signal = stats->rssi + 10;
++	rx_status->signal = stats->recvsignalpower + 10;
+ 	/*rx_status->noise = -stats->noise; */
+ 
+ 	return true;
 
 
