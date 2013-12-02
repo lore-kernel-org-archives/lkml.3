@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108Ab3LBTTT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:19:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39723 "EHLO
+	id S1755164Ab3LBTTa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:19:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39769 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755049Ab3LBTTK (ORCPT
+	with ESMTP id S1754066Ab3LBTTR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:19:10 -0500
+	Mon, 2 Dec 2013 14:19:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH 3.12 200/212] media: stv090x: Dont use dynamic static allocation
-Date: Mon,  2 Dec 2013 11:16:31 -0800
-Message-Id: <20131202191311.336577066@linuxfoundation.org>
+        Stefan Achatz <erazor_de@users.sourceforge.net>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.12 208/212] HID: roccat: fix Coverity CID 141438
+Date: Mon,  2 Dec 2013 11:16:39 -0800
+Message-Id: <20131202191312.634225688@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,60 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+From: Stefan Achatz <erazor_de@users.sourceforge.net>
 
-commit f7a35df15b1f7de7823946aebc9164854e66ea07 upstream.
+commit 7be63f20b00840a6f1c718dcee00855688d64acd upstream.
 
-Dynamic static allocation is evil, as Kernel stack is too low, and
-compilation complains about it on some archs:
-       drivers/media/dvb-frontends/stv090x.c:750:1: warning: 'stv090x_write_regs.constprop.6' uses dynamic stack allocation [enabled by default]
-Instead, let's enforce a limit for the buffer. Considering that I2C
-transfers are generally limited, and that devices used on USB has a
-max data length of 64 bytes for	the control URBs.
-So, it seem safe to use 64 bytes as the hard limit for all those devices.
- On most cases, the limit is a way lower than that, but	this limit
-is small enough to not affect the Kernel stack, and it is a no brain
-limit, as using smaller ones would require to either carefully each
-driver or to take a look on each datasheet.
+Add missing switch breaks.
 
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-frontends/stv090x.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/hid/hid-roccat-kovaplus.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/media/dvb-frontends/stv090x.c
-+++ b/drivers/media/dvb-frontends/stv090x.c
-@@ -35,6 +35,9 @@
- #include "stv090x.h"
- #include "stv090x_priv.h"
+--- a/drivers/hid/hid-roccat-kovaplus.c
++++ b/drivers/hid/hid-roccat-kovaplus.c
+@@ -554,9 +554,13 @@ static void kovaplus_keep_values_up_to_d
+ 		break;
+ 	case KOVAPLUS_MOUSE_REPORT_BUTTON_TYPE_CPI:
+ 		kovaplus->actual_cpi = kovaplus_convert_event_cpi(button_report->data1);
++		break;
+ 	case KOVAPLUS_MOUSE_REPORT_BUTTON_TYPE_SENSITIVITY:
+ 		kovaplus->actual_x_sensitivity = button_report->data1;
+ 		kovaplus->actual_y_sensitivity = button_report->data2;
++		break;
++	default:
++		break;
+ 	}
+ }
  
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- static unsigned int verbose;
- module_param(verbose, int, 0644);
- 
-@@ -722,9 +725,16 @@ static int stv090x_write_regs(struct stv
- {
- 	const struct stv090x_config *config = state->config;
- 	int ret;
--	u8 buf[2 + count];
-+	u8 buf[MAX_XFER_SIZE];
- 	struct i2c_msg i2c_msg = { .addr = config->address, .flags = 0, .buf = buf, .len = 2 + count };
- 
-+	if (2 + count > sizeof(buf)) {
-+		printk(KERN_WARNING
-+		       "%s: i2c wr reg=%04x: len=%d is too big!\n",
-+		       KBUILD_MODNAME, reg, count);
-+		return -EINVAL;
-+	}
-+
- 	buf[0] = reg >> 8;
- 	buf[1] = reg & 0xff;
- 	memcpy(&buf[2], data, count);
 
 
