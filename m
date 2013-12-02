@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751982Ab3LBOMm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 09:12:42 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:9146 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab3LBOMj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 09:12:39 -0500
-X-AuditID: cbfec7f4-b7fea6d0000026ac-75-529c9555e59f
-Message-id: <1385993555.5573.3.camel@AMDC1943>
-Subject: Re: [PATCH v5 1/2] regulator: max14577: Add regulator driver for Maxim
- 14577
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Date: Mon, 02 Dec 2013 15:12:35 +0100
-In-reply-to: <20131127162859.GD14725@sirena.org.uk>
-References: <1385559982-32039-1-git-send-email-k.kozlowski@samsung.com>
- <20131127152042.GY14725@sirena.org.uk> <20131127152358.GP3296@lee--X1>
- <20131127154221.GZ14725@sirena.org.uk> <20131127161323.GS3296@lee--X1>
- <20131127162859.GD14725@sirena.org.uk>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42I5/e/4Zd3QqXOCDHad0LbYOGM9q8XUh0/Y
-	LOYfOcdqce7VSkaLs01v2C3ufz3KaPHtSgeTxcK2JSwWl3fNYbNYe+Quu8XS6xeZLCZMX8ti
-	cXjFASaLdS+ns1ic7ma1eHWwjcVBwGPNvDWMHgs+X2H32DnrLrvHyuVf2Dw2repk83i1eiar
-	x51re9g85p0M9OjbsorR4/MmOY+Nc0MDuKO4bFJSczLLUov07RK4Mrq3HGQteMRe0TV9NlsD
-	YwNbFyMnh4SAicTsz7uYIWwxiQv31gPFuTiEBJYyStw40sUO4XxmlJhx5zITSBWvgJ7EsYM3
-	GEFsYYFwiSlvZ7CD2GwCxhKbly8BmyoioCxx9fteFhCbWeAIi8TbeUYgNouAqsTaiZvAtnEC
-	1e/8+YMJYkETk8S6n6uhGtQlJs1bBHWSksTu9k52iLi8xOY1b5khjhCU+DH5HssERoFZSFpm
-	ISmbhaRsASPzKkbR1NLkguKk9FxDveLE3OLSvHS95PzcTYyQyPuyg3HxMatDjAIcjEo8vBdO
-	zA4SYk0sK67MPcQowcGsJMK7Y9KcICHelMTKqtSi/Pii0pzU4kOMTBycUg2Mmp/Ond5UP+On
-	9f2TewIn+b/OEox9t+3/gn8BDys2W9XMj9/+OJuP2fbI4eW7ub/9/r7xxbtlLxtYC3dPPqYU
-	5HLwy/F9Z1q7npdNO6anYDg/8XpW94Jj6g58t4JfB1pu2r3D5E/46ozVvMxy2jP3cv900Fm3
-	er6iXmGBtNaeDX0el/h+uUr0bVBiKc5INNRiLipOBAA0GY3TmgIAAA==
+	id S1752062Ab3LBONK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 09:13:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45400 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752000Ab3LBONH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 09:13:07 -0500
+Date: Mon, 2 Dec 2013 15:13:03 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Zawullon <zawullon@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hid: add NOGET quirk and device id for Logitech Dual
+ Action gamepads support
+In-Reply-To: <5299B520.9060200@gmail.com>
+Message-ID: <alpine.LNX.2.00.1312021512460.24931@pobox.suse.cz>
+References: <5299B520.9060200@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Sat, 30 Nov 2013, Zawullon wrote:
 
-On Wed, 2013-11-27 at 16:28 +0000, Mark Brown wrote:
-> On Wed, Nov 27, 2013 at 04:13:23PM +0000, Lee Jones wrote:
-> > On Wed, 27 Nov 2013, Mark Brown wrote:
+> Issue description: I have two Logitech Dual Action gamepads, both have
+> same Vendor/Device id pair. Newest gamepad (A) can switch between old mode (HID)
+> and XBox gamepad emulation mode. Old gamepad (B) can only work in HID mode.
+> In HID mode gamepad A sends many EPIPE errors during initialization and was
+> disconnected immediately after connect  to usb port. It works fine in Win and
+> Mac. After adding NOGET quirk in driver, it was working properly.
+> Gamepad B works fine before and after changes. I tested both gamepads
+> with 3.8.0 and 3.11.6 kernels  with modified driver. Follow patch can apply
+> for current git kernel version. I can send pcap log from usb bus with both
+> gamepads or any other additional information if it is needed
 > 
-> > > The usual thing to do is of_get_child_by_name() on the parent to get the
-> > > container to search in.
+
+Please provide your Signed-off-by: line so that I could apply the patch. 
+Thanks.
+
+> diff -uprN -X linux-git/Documentation/dontdiff linux-git/drivers/hid/hid-ids.h linux-my/drivers/hid/hid-ids.h
+> --- linux-git/drivers/hid/hid-ids.h	2013-11-30 13:29:27.937351968 +0400
+> +++ linux-my/drivers/hid/hid-ids.h	2013-11-30 13:46:05.201378674 +0400
+> @@ -552,6 +552,7 @@
+>  #define USB_DEVICE_ID_LOGITECH_RUMBLEPAD_CORD	0xc20a
+>  #define USB_DEVICE_ID_LOGITECH_RUMBLEPAD	0xc211
+>  #define USB_DEVICE_ID_LOGITECH_EXTREME_3D	0xc215
+> +#define USB_DEVICE_ID_LOGITECH_DUAL_ACTION	0xc216
+>  #define USB_DEVICE_ID_LOGITECH_RUMBLEPAD2	0xc218
+>  #define USB_DEVICE_ID_LOGITECH_RUMBLEPAD2_2	0xc219
+>  #define USB_DEVICE_ID_LOGITECH_WINGMAN_F3D	0xc283
+> diff -uprN -X linux-git/Documentation/dontdiff linux-git/drivers/hid/hid-lg.c linux-my/drivers/hid/hid-lg.c
+> --- linux-git/drivers/hid/hid-lg.c	2013-11-30 13:29:27.937351968 +0400
+> +++ linux-my/drivers/hid/hid-lg.c	2013-11-30 13:46:05.201378674 +0400
+> @@ -758,6 +758,8 @@ static const struct hid_device_id lg_dev
+>  
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_EXTREME_3D),
+>  		.driver_data = LG_NOGET },
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_DUAL_ACTION),
+> +		.driver_data = LG_NOGET },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_WHEEL),
+>  		.driver_data = LG_NOGET | LG_FF4 },
+>  
 > 
-> > What do you mean when you say 'usual thing'? Only the max8998 does
-> > this currently. IMHO the better way to do it for MFD devices is
-> > provide a compatible string and let the framework does the rest for
-> > you.
-> 
-> No, as3722, Palmas and three of the TPS chips do the same thing.  If it
-> were a purely Linux-internal thing I'd probably agree with you but as it
-> is we'd just be adding compatible strings in everyone's DTs to save one
-> line of code in the kernel.
 
-Lee applied the MFD part of max14577, including the "of_compatible" of
-max14577-regulator.
-
-Do you wish me to change the patch to previous version using
-of_get_child_by_name()?
-
-Best regards,
-Krzysztof
-
-
-
+-- 
+Jiri Kosina
+SUSE Labs
