@@ -1,70 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab3LBMMi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 07:12:38 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56518 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753781Ab3LBMMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 07:12:37 -0500
-Message-ID: <529C7922.5000601@ti.com>
-Date: Mon, 2 Dec 2013 14:12:18 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1753663Ab3LBMSO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 07:18:14 -0500
+Received: from 13.mo4.mail-out.ovh.net ([178.33.251.8]:43638 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753421Ab3LBMSM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 07:18:12 -0500
+X-Greylist: delayed 2091 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Dec 2013 07:18:12 EST
+Message-ID: <529C7A46.2070401@overkiz.com>
+Date: Mon, 02 Dec 2013 13:17:10 +0100
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Michael Trimarchi <michael@amarulasolutions.com>,
-        Felipe Balbi <balbi@ti.com>, <lee.jones@linaro.org>,
-        <sameo@linux.intel.com>, <tomi.valkeinen@ti.com>,
-        Stefan Roese <sr@denx.de>, <ljkenny.mailinglists@gmail.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] mfd: omap-usb-host: Fix USB device detection problems
- on OMAP4 Panda
-References: <1385730118-26402-1-git-send-email-rogerq@ti.com>	<1385730118-26402-2-git-send-email-rogerq@ti.com> <CAOf5uwmEkzFd=e3j8m8=qdTCAMkk_-DPw0fTm=7Vzy0PbE2oDQ@mail.gmail.com> <529C55DF.3000808@ti.com> <529C76AF.10106@linutronix.de>
-In-Reply-To: <529C76AF.10106@linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Rob Landley <rob@landley.net>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/2] clk: add clk accuracy retrieval support
+References: <1385556285-19180-1-git-send-email-b.brezillon@overkiz.com> <1385556285-19180-2-git-send-email-b.brezillon@overkiz.com> <20131202075043.GB29721@pengutronix.de>
+In-Reply-To: <20131202075043.GB29721@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 8811574147497490528
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2013 02:01 PM, Sebastian Andrzej Siewior wrote:
-> - stable@vger.kernel.org since they probably don't care about this
->   unless the patch is merged.
-> 
-> On 12/02/2013 10:41 AM, Roger Quadros wrote:
->> Michael,
+Hello Uwe,
+
+Le 02/12/2013 08:50, Uwe Kleine-König a écrit :
+> Hello,
+>
+> On Wed, Nov 27, 2013 at 01:44:44PM +0100, Boris BREZILLON wrote:
+>> The clock accuracy is expressed in ppb (parts per billion) and represents
+>> the possible clock drift.
+>> Say you have a clock (e.g. an oscillator) which provides a fixed clock of
+>> 20MHz with an accuracy of +- 20Hz. This accuracy expressed in ppb is
+>> 20Hz/20MHz = 1000 ppb (or 1 ppm).
 >>
->> On 11/29/2013 05:32 PM, Michael Trimarchi wrote:
->>> Hi Roger
->>>
->>> On Fri, Nov 29, 2013 at 2:01 PM, Roger Quadros <rogerq@ti.com> wrote:
->>>> With u-boot 2013.10, USB devices are sometimes not detected
->>>> on OMAP4 Panda. To make us independent of what bootloader does
->>>> with the USB Host module, we must RESET it to get it to a known
->>>> good state. This patch Soft RESETs the USB Host module.
->>>>
->>>
->>> Do you think that we need something similar of usb musb?
->>> I have seen the OTG_SYSCONFIG is touched in uboot and
->>> only readed in omap2430.c.
+>> Clock users may need the clock accuracy information in order to choose
+>> the best clock (the one with the best accuracy) across several available
+>> clocks.
 >>
->> I'm not sure about musb. Maybe Sebastian/Felipe have better idea.
->> In general I believe that all modules must be reset by the kernel.
+>> This patch adds clk accuracy retrieval support for common clk framework by
+>> means of a new function called clk_get_accuracy.
+>> This function returns the given clock accuracy expressed in ppb.
 >>
-> 
-> based on the code at the bottom it touches the first few register(s)
-> sysconfig. Isn't hwmod actually doing this idle stuff and resting the
-> device during boot?
-> 
+>> In order to get the clock accuracy, this implementation adds one callback
+>> called recalc_accuracy to the clk_ops structure.
+>> This callback is given the parent clock accuracy (if the clock is not a
+>> root clock) and should recalculate the given clock accuracy.
+>>
+>> This callback is optional and may be implemented if the clock is not
+>> a perfect clock (accuracy != 0 ppb).
+>>
+>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+>> ---
+>>   Documentation/clk.txt        |    4 ++
+>>   drivers/clk/clk.c            |  109 ++++++++++++++++++++++++++++++++++++++++--
+>>   include/linux/clk-private.h  |    1 +
+>>   include/linux/clk-provider.h |   11 +++++
+>>   include/linux/clk.h          |   17 +++++++
+>>   5 files changed, 138 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/Documentation/clk.txt b/Documentation/clk.txt
+>> index 3aeb5c4..eb20198 100644
+>> --- a/Documentation/clk.txt
+>> +++ b/Documentation/clk.txt
+>> @@ -77,6 +77,8 @@ the operations defined in clk.h:
+>>   		int		(*set_parent)(struct clk_hw *hw, u8 index);
+>>   		u8		(*get_parent)(struct clk_hw *hw);
+>>   		int		(*set_rate)(struct clk_hw *hw, unsigned long);
+>> +		unsigned long	(*recalc_accuracy)(struct clk_hw *hw,
+>> +						   unsigned long parent_accuracy);
+>>   		void		(*init)(struct clk_hw *hw);
+>>   	};
+>>   
+>> @@ -202,6 +204,8 @@ optional or must be evaluated on a case-by-case basis.
+>>   .set_parent     |      |             | n             | y           | n    |
+>>   .get_parent     |      |             | n             | y           | n    |
+>>                   |      |             |               |             |      |
+>> +.recalc_accuracy|      |             |               |             |      |
+>> +                |      |             |               |             |      |
+>>   .init           |      |             |               |             |      |
+>>                   -----------------------------------------------------------
+>>   [1] either one of round_rate or determine_rate is required.
+>> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+>> index 2cf2ea6..4b0c1bc 100644
+>> --- a/drivers/clk/clk.c
+>> +++ b/drivers/clk/clk.c
+>> @@ -104,10 +104,11 @@ static void clk_summary_show_one(struct seq_file *s, struct clk *c, int level)
+>>   	if (!c)
+>>   		return;
+>>   
+>> -	seq_printf(s, "%*s%-*s %-11d %-12d %-10lu",
+>> +	seq_printf(s, "%*s%-*s %-11d %-12d %-10lu %-11lu",
+>>   		   level * 3 + 1, "",
+>>   		   30 - level * 3, c->name,
+>> -		   c->enable_count, c->prepare_count, clk_get_rate(c));
+>> +		   c->enable_count, c->prepare_count, clk_get_rate(c),
+>> +		   clk_get_accuracy(c));
+>>   	seq_printf(s, "\n");
+>>   }
+>>   
+>> @@ -129,8 +130,8 @@ static int clk_summary_show(struct seq_file *s, void *data)
+>>   {
+>>   	struct clk *c;
+>>   
+>> -	seq_printf(s, "   clock                        enable_cnt  prepare_cnt  rate\n");
+>> -	seq_printf(s, "---------------------------------------------------------------------\n");
+>> +	seq_printf(s, "   clock                        enable_cnt  prepare_cnt  rate        accuracy\n");
+>> +	seq_printf(s, "---------------------------------------------------------------------------------\n");
+>>   
+>>   	clk_prepare_lock();
+>>   
+>> @@ -167,6 +168,7 @@ static void clk_dump_one(struct seq_file *s, struct clk *c, int level)
+>>   	seq_printf(s, "\"enable_count\": %d,", c->enable_count);
+>>   	seq_printf(s, "\"prepare_count\": %d,", c->prepare_count);
+>>   	seq_printf(s, "\"rate\": %lu", clk_get_rate(c));
+>> +	seq_printf(s, "\"accuracy\": %lu", clk_get_accuracy(c));
+>>   }
+>>   
+>>   static void clk_dump_subtree(struct seq_file *s, struct clk *c, int level)
+>> @@ -248,6 +250,11 @@ static int clk_debug_create_one(struct clk *clk, struct dentry *pdentry)
+>>   	if (!d)
+>>   		goto err_out;
+>>   
+>> +	d = debugfs_create_u32("clk_accuracy", S_IRUGO, clk->dentry,
+>> +			(u32 *)&clk->accuracy);
+>> +	if (!d)
+>> +		goto err_out;
+>> +
+>>   	d = debugfs_create_x32("clk_flags", S_IRUGO, clk->dentry,
+>>   			(u32 *)&clk->flags);
+>>   	if (!d)
+>> @@ -602,6 +609,28 @@ out:
+>>   	return ret;
+>>   }
+>>   
+>> +unsigned long __clk_get_accuracy(struct clk *clk)
+>> +{
+>> +	unsigned long ret;
+>> +
+>> +	if (!clk) {
+>> +		ret = 0;
+>> +		goto out;
+>> +	}
+>> +
+>> +	ret = clk->accuracy;
+>> +
+>> +	if (clk->flags & CLK_IS_ROOT)
+>> +		goto out;
+>> +
+>> +	if (!clk->parent)
+>> +		ret = 0;
+> Why do you need this? Wouldn't it be enough to assert clk->accuracy
+> being 0 in this case?
 
-You are right. The musb hwmod data doesn't have the HWMOD_INIT_NO_RESET
-flag, so hwmod should reset it during boot.
+I'm not sure.
+I did this because it was done this way for __clk_get_rate (which is
+not a valid argument ;)).
 
-Maybe I too should just remove HWMOD_INIT_NO_RESET flag from the USB Host
-hwmod data, then we don't need to change this driver at all.
+Now that I think about it I don't find any good reason for not directly
+returning the clk->accuracy (even if the clk is orphan).
 
-Benoit, Tony any comments?
+I mean, if we consider the parent_clk as perfect (which is the case if
+the clk is orphan), then the child clk might still introduce some 
+inaccuracy.
+And I think it's better to return the maximum clk accuracy instead of
+considering the clk is perfect.
 
-cheers,
--roger
+I'll fix this in the next version.
+
+>> +out:
+>> +	return ret;
+>> +}
+>> +EXPORT_SYMBOL_GPL(__clk_get_accuracy);
+>> +
+>>   unsigned long __clk_get_flags(struct clk *clk)
+>>   {
+>>   	return !clk ? 0 : clk->flags;
+>> @@ -1016,6 +1045,59 @@ static int __clk_notify(struct clk *clk, unsigned long msg,
+>>   }
+>>   
+>>   /**
+>> + * __clk_recalc_accuracies
+>> + * @clk: first clk in the subtree
+>> + * @msg: notification type (see include/linux/clk.h)
+> There is no msg parameter in this function.
+
+I'll fix the comment.
+
+>
+>> + * Walks the subtree of clks starting with clk and recalculates accuracies as
+>> + * it goes.  Note that if a clk does not implement the .recalc_rate callback
+>> + * then it is assumed that the clock will take on the rate of it's parent.
+>> + *
+>> + * Caller must hold prepare_lock.
+>> + */
+>> +static void __clk_recalc_accuracies(struct clk *clk)
+>> +{
+>> +	unsigned long parent_accuracy = 0;
+>> +	struct clk *child;
+>> +
+>> +	if (clk->parent)
+>> +		parent_accuracy = clk->parent->accuracy;
+>> +
+>> +	if (clk->ops->recalc_accuracy)
+>> +		clk->accuracy = clk->ops->recalc_accuracy(clk->hw,
+>> +							  parent_accuracy);
+>> +	else
+>> +		clk->accuracy = parent_accuracy;
+>> +
+>> +	hlist_for_each_entry(child, &clk->children, child_node)
+>> +		__clk_recalc_accuracies(child);
+>> +}
+>> +
+>> +/**
+>> + * clk_get_accuracy - return the accuracy of clk
+>> + * @clk: the clk whose accuracy is being returned
+>> + *
+>> + * Simply returns the cached accuracy of the clk, unless
+>> + * CLK_GET_ACCURACY_NOCACHE flag is set, which means a recalc_rate will be
+>> + * issued.
+>> + * If clk is NULL then returns 0.
+>> + */
+>> +long clk_get_accuracy(struct clk *clk)
+>> +{
+>> +	unsigned long accuracy;
+>> +
+>> +	clk_prepare_lock();
+>> +	if (clk && (clk->flags & CLK_GET_ACCURACY_NOCACHE))
+>> +		__clk_recalc_accuracies(clk);
+>> +
+>> +	accuracy = __clk_get_accuracy(clk);
+>> +	clk_prepare_unlock();
+>> +
+>> +	return accuracy;
+>> +}
+>> +EXPORT_SYMBOL_GPL(clk_get_accuracy);
+>> +
+>> +/**
+>>    * __clk_recalc_rates
+>>    * @clk: first clk in the subtree
+>>    * @msg: notification type (see include/linux/clk.h)
+>> @@ -1551,6 +1633,7 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
+>>   {
+>>   	clk_reparent(clk, new_parent);
+>>   	clk_debug_reparent(clk, new_parent);
+>> +	__clk_recalc_accuracies(clk);
+>>   	__clk_recalc_rates(clk, POST_RATE_CHANGE);
+>>   }
+>>   
+>> @@ -1621,6 +1704,9 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
+>>   	/* do the re-parent */
+>>   	ret = __clk_set_parent(clk, parent, p_index);
+>>   
+>> +	/* propagate accuracy recalculation */
+>> +	__clk_recalc_accuracies(clk);
+>> +
+> Would it make sense to move this call into the if (ret) below? The rate
+> is only recalculated there, too.
+You mean only if __clk_set_parent returns 0.
+Yes it makes sense: the accuracy should not change if the parent hasn't 
+changed
+(is this case, if we fail to change the parent).
+
+BTW, the rate is recalculated anyway, the only thing that changes is the 
+notification
+message.
+
+I'll fix this if no ones finds a good reason to recalculate the accuracy 
+when we fail
+to change the parent.
+
+Thanks for your review
+
+Best Regars,
+
+Boris
+>>   	/* propagate rate recalculation accordingly */
+>>   	if (ret)
+>>   		__clk_recalc_rates(clk, ABORT_RATE_CHANGE);
+> Best regards
+> Uwe
+>
+
