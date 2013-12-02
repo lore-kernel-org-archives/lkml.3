@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465Ab3LBAYu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 19:24:50 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:54619 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752428Ab3LBAYs (ORCPT
+	id S1752173Ab3LBAeW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 19:34:22 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:52026 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412Ab3LBAeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 19:24:48 -0500
-Date: Sun, 1 Dec 2013 16:24:44 -0800
-From: Anton Vorontsov <anton@enomsg.org>
-To: Michael Trimarchi <michael@amarulasolutions.com>
-Cc: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        freemangordon@abv.bg, aaro.koskinen@iki.fi, pavel@ucw.cz
-Subject: Re: [PATCH v2 2/3] bq2415x_charger: Use power_supply notifier for
- automode
-Message-ID: <20131202002444.GA22418@teo>
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
- <1384856285-19593-3-git-send-email-pali.rohar@gmail.com>
- <CAOf5uwkrep0PhOn67+9PHmP2A2Jxrp9DNK3BRp9D_sYu_PYvvw@mail.gmail.com>
- <201311242001.23126@pali>
- <CAOf5uw=-cy2QoDxjecxYTYsrQRD=LtN0N7DcYJHZ6HSbexzPRw@mail.gmail.com>
- <20131201223730.GD6271@lizard>
- <CAOf5uwnkQwkS7_fsLtC5nzdXyS1Rzw2SkxaziUuJrO9SKXh3yw@mail.gmail.com>
+	Sun, 1 Dec 2013 19:34:21 -0500
+Message-ID: <529BD584.7060504@gmail.com>
+Date: Mon, 02 Dec 2013 08:34:12 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAOf5uwnkQwkS7_fsLtC5nzdXyS1Rzw2SkxaziUuJrO9SKXh3yw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bart Van Assche <bvanassche@acm.org>
+CC: Bottomley@parallels.com, linux-scsi@vger.kernel.org,
+        rkuo <rkuo@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers: scsi: scsi_lib.c: add prefix "SCSILIB_" to macro
+ "SP"
+References: <528AEFB7.4060301@gmail.com> <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com> <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com> <52955913.3060809@gmail.com> <529B60FF.7030601@acm.org>
+In-Reply-To: <529B60FF.7030601@acm.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 01:02:40AM +0100, Michael Trimarchi wrote:
-> On Sun, Dec 1, 2013 at 11:37 PM, Anton Vorontsov <anton@enomsg.org> wrote:
-> > On Mon, Nov 25, 2013 at 08:16:34PM +0100, Michael Trimarchi wrote:
-> > ...
-> >> >> So you can read this value without any type of synchronization
-> >> >> with the power_supply_core
-> >> >> and sysfs implementation?
-> > ...
-> >> https://lists.ubuntu.com/archives/kernel-team/2013-January/025206.html
-> >>
-> >> I found and equivalent scenario that I was trying to said
-> >
-> > That's a good question, actually. Even though in Pali's case the notifier
-> > is atomic (so that we are pretty confident that the object won't be
-> > unregistered), there is still a possiblity of a dead lock, for example. So
+On 12/02/2013 12:17 AM, Bart Van Assche wrote:
+> On 11/27/13 03:29, Chen Gang wrote:
+>> the macro "SP" is too common to make conflict with some architectures,
+>> so recommend to add prefix for it.
+>>
+>> The related warning (with allmodconfig for hexagon):
+>>
+>>     CC [M]  drivers/scsi/scsi_lib.o
+>>   drivers/scsi/scsi_lib.c:46:0: warning: "SP" redefined [enabled by default]
+>>   arch/hexagon/include/uapi/asm/registers.h:9:0: note: this is the location of the previous definition
+>>
+>>
+>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>> ---
+>>  drivers/scsi/scsi_lib.c |   16 ++++++++--------
+>>  1 files changed, 8 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+>> index 7bd7f0d..f78e21b 100644
+>> --- a/drivers/scsi/scsi_lib.c
+>> +++ b/drivers/scsi/scsi_lib.c
+>> @@ -43,28 +43,28 @@ struct scsi_host_sg_pool {
+>>  	mempool_t	*pool;
+>>  };
+>>  
+>> -#define SP(x) { x, "sgpool-" __stringify(x) }
+>> +#define SCSILIB_SP(x) { x, "sgpool-" __stringify(x) }
+>>  #if (SCSI_MAX_SG_SEGMENTS < 32)
+>>  #error SCSI_MAX_SG_SEGMENTS is too small (must be 32 or greater)
+>>  #endif
+>>  static struct scsi_host_sg_pool scsi_sg_pools[] = {
+>> -	SP(8),
+>> -	SP(16),
+>> +	SCSILIB_SP(8),
+>> +	SCSILIB_SP(16),
+>>  #if (SCSI_MAX_SG_SEGMENTS > 32)
+>> -	SP(32),
+>> +	SCSILIB_SP(32),
+>>  #if (SCSI_MAX_SG_SEGMENTS > 64)
+>> -	SP(64),
+>> +	SCSILIB_SP(64),
+>>  #if (SCSI_MAX_SG_SEGMENTS > 128)
+>> -	SP(128),
+>> +	SCSILIB_SP(128),
+>>  #if (SCSI_MAX_SG_SEGMENTS > 256)
+>>  #error SCSI_MAX_SG_SEGMENTS is too large (256 MAX)
+>>  #endif
+>>  #endif
+>>  #endif
+>>  #endif
+>> -	SP(SCSI_MAX_SG_SEGMENTS)
+>> +	SCSILIB_SP(SCSI_MAX_SG_SEGMENTS)
+>>  };
+>> -#undef SP
+>> +#undef SCSILIB_SP
+>>  
+>>  struct kmem_cache *scsi_sdb_cache;
 > 
-> So if the get_property is a sleeping function it will be a deadlock. Right?
+> Sorry but the "SCSILIB_SP" name doesn't look very descriptive to me.
+> There are probably better choices possible. How about using e.g.
+> SG_POOL() instead ?
+> 
 
-All kind of bad things might happen, yes. But before that I would expect a
-bunch of warnings from might_sleep() stuff.
+That sounds good to me, I will send patch v2, tomorrow (today I have
+to do some another urgent things, if this patch is also urgent, please
+help send). :-)
 
-I would recommend to test the patches using preempt/smp kernels + various
-DEBUG_ kernel options set.
-
-Thanks,
-
-Anton
+Thanks.
+-- 
+Chen Gang
