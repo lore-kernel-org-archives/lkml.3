@@ -1,54 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003Ab3LBRUV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 12:20:21 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:55198 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752886Ab3LBRUR (ORCPT
+	id S1753107Ab3LBR0V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 12:26:21 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37628 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752957Ab3LBR0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 12:20:17 -0500
+	Mon, 2 Dec 2013 12:26:18 -0500
+X-Sasl-enc: 72u8k/g11ukpwBt48p5YXjdw8aUTRunF/ZZZ915pbx8e 1386005176
+Date: Mon, 2 Dec 2013 09:26:15 -0800
+From: Greg KH <greg@kroah.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Patrick McHardy <kaber@trash.net>, kadlec@blackhole.kfki.hu,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: netfilter: active obj WARN when cleaning up
+Message-ID: <20131202172615.GA4722@kroah.com>
+References: <alpine.DEB.2.02.1311271106090.30673@ionos.tec.linutronix.de>
+ <20131127113939.GL16735@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.02.1311271409280.30673@ionos.tec.linutronix.de>
+ <20131127133231.GO16735@n2100.arm.linux.org.uk>
+ <20131127134015.GA6011@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.02.1311271443580.30673@ionos.tec.linutronix.de>
+ <20131127233415.GB19270@kroah.com>
+ <00000142b4282aaf-913f5e4c-314c-4351-9d24-615e66928157-000000@email.amazonses.com>
+ <20131202164039.GA19937@kroah.com>
+ <00000142b4514eb5-2e8f675d-0ecc-423b-9906-58c5f383089b-000000@email.amazonses.com>
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <1385991521-3934-1-git-send-email-nicolas.ferre@atmel.com>
-References: <1385991521-3934-1-git-send-email-nicolas.ferre@atmel.com>
-Date: Mon, 2 Dec 2013 09:20:15 -0800
-Message-ID: <CAOesGMjbj6kRosx_ToQ64nkaz_XNUs53Q9ScZeGk0BO6wWw1Hg@mail.gmail.com>
-Subject: Re: [GIT PULL] at91: fixes 3.13 #2
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>, "arm@kernel.org" <arm@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>, motobud@gmail.com,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <00000142b4514eb5-2e8f675d-0ecc-423b-9906-58c5f383089b-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 2, 2013 at 5:38 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
-> Arnd, Olof, Kevin,
->
-> A second round of fixes for 3.13 on top of 3.13-rc1. The main fix of this
-> series is the one that reduces the frequency of the i2c IP and avoid to hit
-> some nasty hardware bugs. It actually allows to save a little power as well...
->
-> Thanks, best regards,
->
-> The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
->
->   Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
->
-> are available in the git repository at:
->
->   git://github.com/at91linux/linux-at91.git tags/at91-fixes
->
-> for you to fetch changes up to 7093bf2b7195541281cb711e31c027a8d826c6df:
->
->   ARM: at91: fixed unresolved symbol "at91_pm_set_standby" when built without CONFIG_PM (2013-12-02 14:24:40 +0100)
+On Mon, Dec 02, 2013 at 05:18:16PM +0000, Christoph Lameter wrote:
+> On Mon, 2 Dec 2013, Greg KH wrote:
+> 
+> > On Mon, Dec 02, 2013 at 04:33:20PM +0000, Christoph Lameter wrote:
+> > > On Wed, 27 Nov 2013, Greg KH wrote:
+> > >
+> > > > Just make the kobject "dynamic" instead of embedded in struct kmem_cache
+> > > > and all will be fine.  I can't believe this code has been broken for
+> > > > this long.
+> > >
+> > > The slub code is was designed to use an embedded structure since we
+> > > only get the kobj  pointer passed to us from sysfs. If kobj is not
+> > > embedded then how can we get from the sysfs object to the kmem_cache
+> > > structure from the sysfs callbacks? Sysfs was designed to have embedded
+> > > objects as far as I can recall.
+> >
+> > Yes, it's designed to have embedded objects, so then use it that way and
+> > clean up the structure when the kobject goes away.  Don't use a
+> > different reference count for your structure than the one in the kobject
+> > and think that all will be fine.
+> 
+> We need our own reference count. So we just have to defer the
+> release of the kmem_cache struct until the ->release callback is
+> triggered. The put of the embedded kobject must be the last action on the
+> kmem_cache  structure which will then trigger release and that will
+> trigger the kmem_cache_free().
+> 
 
-Pulled. Thanks for making sure the patch descriptions are good.
+Ok, that sounds reasonable, or you can just create a "tiny" structure
+for the kobject that has a pointer back to your kmem_cache structure
+that you can then reference from the show/store functions.  Either is
+fine with me.
 
+thanks,
 
--Olof
+greg k-h
