@@ -1,182 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab3LBKut (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 05:50:49 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:3365 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753198Ab3LBKup (ORCPT
+	id S1753464Ab3LBKxP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 05:53:15 -0500
+Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:35334 "EHLO
+	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753267Ab3LBKxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 05:50:45 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 02 Dec 2013 02:47:55 -0800
-Message-ID: <529C6601.8050105@nvidia.com>
-Date: Mon, 2 Dec 2013 19:50:41 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Mon, 2 Dec 2013 05:53:13 -0500
+Message-ID: <529C6580.1020304@st.com>
+Date: Mon, 2 Dec 2013 10:48:32 +0000
+From: srinivas kandagatla <srinivas.kandagatla@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio: better lookup method for platform GPIOs
-References: <1385628388-23827-1-git-send-email-acourbot@nvidia.com> <CAHp75VcHa7cxAt_utwMVp7j+YeKcqa0_N5B=7-ZmTMD_6AV1Lw@mail.gmail.com>
-In-Reply-To: <CAHp75VcHa7cxAt_utwMVp7j+YeKcqa0_N5B=7-ZmTMD_6AV1Lw@mail.gmail.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+Cc: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+Subject: Re: [PATCH RFC 0/9]net: stmmac PM related fixes.
+References: <1384774256-10039-1-git-send-email-srinivas.kandagatla@st.com> <528AF617.70802@st.com>
+In-Reply-To: <528AF617.70802@st.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.65.51.59]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2013 12:54 AM, Andy Shevchenko wrote:
-> On Thu, Nov 28, 2013 at 10:46 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
->> Change the format of the platform GPIO lookup tables to make them less
->> confusing and improve lookup efficiency.
->>
->> The previous format was a single linked-list that required to compare
->> the device name and function ID of every single GPIO defined for each
->> lookup. Switch that to a list of per-device tables, so that the lookup
->> can be done in two steps, omitting the GPIOs that are not relevant for a
->> particular device.
->>
->> The matching rules are now defined as follows:
->> - The device name must match *exactly*, and can be NULL for GPIOs not
->>    assigned to a particular device,
->> - If the function ID in the lookup table is NULL, the con_id argument of
->>    gpiod_get() will not be used for lookup. However, if it is defined, it
->>    must match exactly.
->> - The index must always match.
->
-> Thanks for that, since I'm also was a bit confused of those dev_id/con_id stuff.
-> Few comments below (mostly about style).
->
->
->> --- a/Documentation/gpio/board.txt
->> +++ b/Documentation/gpio/board.txt
->
->> @@ -88,16 +89,20 @@ Note that GPIO_LOOKUP() is just a shortcut to GPIO_LOOKUP_IDX() where idx = 0.
->>
->>   A lookup table can then be defined as follows:
->>
->> -       struct gpiod_lookup gpios_table[] = {
->> -       GPIO_LOOKUP_IDX("gpio.0", 15, "foo.0", "led", 0, GPIO_ACTIVE_HIGH),
->> -       GPIO_LOOKUP_IDX("gpio.0", 16, "foo.0", "led", 1, GPIO_ACTIVE_HIGH),
->> -       GPIO_LOOKUP_IDX("gpio.0", 17, "foo.0", "led", 2, GPIO_ACTIVE_HIGH),
->> -       GPIO_LOOKUP("gpio.0", 1, "foo.0", "power", GPIO_ACTIVE_LOW),
->> -       };
->> +struct gpiod_lookup_table gpios_table = {
->> +       .dev_id = "foo.0",
->> +       .size = 4,
->> +       .table = {
->> +       GPIO_LOOKUP_IDX("gpio.0", 15, "led", 0, GPIO_ACTIVE_HIGH),
->> +       GPIO_LOOKUP_IDX("gpio.0", 16, "led", 1, GPIO_ACTIVE_HIGH),
->> +       GPIO_LOOKUP_IDX("gpio.0", 17, "led", 2, GPIO_ACTIVE_HIGH),
->> +       GPIO_LOOKUP("gpio.0", 1, "power", GPIO_ACTIVE_LOW),
->
-> Can you use deeper indentation for GPIO_* lines here?
+Hi Dave,
+Do you have any plans to take this series?
 
-Fixed.
+Peppe already Acked these series
 
->> --- a/drivers/gpio/gpiolib.c
->> +++ b/drivers/gpio/gpiolib.c
->
->> @@ -2326,72 +2322,77 @@ static struct gpio_desc *acpi_find_gpio(struct device *dev, const char *con_id,
->>          return desc;
->>   }
->>
->> -static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
->> -                                   unsigned int idx,
->> -                                   enum gpio_lookup_flags *flags)
->> +static struct gpiod_lookup_table *gpiod_find_lookup_table(struct device *dev)
->>   {
->>          const char *dev_id = dev ? dev_name(dev) : NULL;
->> -       struct gpio_desc *desc = ERR_PTR(-ENODEV);
->> -       unsigned int match, best = 0;
->> -       struct gpiod_lookup *p;
->> +       struct gpiod_lookup_table *table;
->>
->>          mutex_lock(&gpio_lookup_lock);
->>
->> -       list_for_each_entry(p, &gpio_lookup_list, list) {
->> -               match = 0;
->> +       list_for_each_entry(table, &gpio_lookup_list, list) {
->> +               if (table->dev_id && dev_id && strcmp(table->dev_id, dev_id))
->
-> Maybe check !dev_id outside of loop?
+Please let me know if you want me to rebase these patches on any
+particular branch.
 
-And create two loops, one for each case? Might complicate the code for 
-little benefit IMHO, but please elaborate if I missed your point.
+Thanks,
+srini
 
->
->> +                       continue;
+On 19/11/13 05:24, Giuseppe CAVALLARO wrote:
+> On 11/18/2013 12:30 PM, srinivas.kandagatla@st.com wrote:
+>> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 >>
->> -               if (p->dev_id) {
->> -                       if (!dev_id || strcmp(p->dev_id, dev_id))
->> -                               continue;
->> +               if (dev_id != table->dev_id)
->> +                       continue;
+>> Hi Peppe,
 >>
->> -                       match += 2;
->> -               }
->> +               return table;
->
-> What  about
->
-> if (dev_id == table->dev_id)
->   return table;
->
-> ?
-
-Actually my algorithm is broken to start with - and dangerous, as the 
-missed mutex_unlock() you spotted later testifies. I will rewrite it in 
-a (hopefully) sounder way.
-
->> +static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
->> +                                   unsigned int idx,
->> +                                   enum gpio_lookup_flags *flags)
->> +{
->> +       struct gpio_desc *desc = ERR_PTR(-ENODEV);
->> +       struct gpiod_lookup_table *table;
->> +       int i;
+>> During PM_SUSPEND_FREEZE testing, I have noticed that PM support in
+>> STMMAC is
+>> partly broken. I had to re-arrange the code to do PM correctly. There
+>> were lot
+>> of things I did not like personally and some bits did not work in the
+>> first
+>> place. I thought this is the nice opportunity to clean the mess up.
 >>
->> -               if (match > best) {
->> -                       struct gpio_chip *chip;
+>> Here is what I did:
 >>
->
-> Looks like redundant empty line.
-
-Fixed.
-
->
->> -                       chip = find_chip_by_name(p->chip_label);
->> +       table = gpiod_find_lookup_table(dev);
->> +       if (!table)
->> +               return desc;
+>> 1> Test PM suspend freeeze via pm_test
+>> It did not work for following reasons.
+>>   - If the power to gmac is removed when it enters in low power state.
+>> stmmac_resume could not cope up with such behaviour, it was expecting
+>> the ip
+>> register contents to be still same as before entering low power, This
+>> assumption is wrong. So I started to add some code to do Hardware
+>> initialization, thats when I started to re-arrange the code. stmmac_open
+>> contains both resource and memory allocations and hardware
+>> initialization. I
+>> had to separate these two things in two different functions.
 >>
->> -                       if (!chip) {
->> -                               dev_warn(dev, "cannot find GPIO chip %s\n",
->> -                                        p->chip_label);
->> -                               continue;
->> -                       }
->> +       for (i = 0; i < table->size; i++) {
->> +               struct gpio_chip *chip;
->> +               struct gpiod_lookup *p = &table->table[i];
+>> These two patches do that
+>>    net: stmmac: move dma allocation to new function
+>>    net: stmmac: move hardware setup for stmmac_open to new function
 >>
->> -                       if (chip->ngpio <= p->chip_hwnum) {
->> -                               dev_warn(dev, "GPIO chip %s has %d GPIOs\n",
->> -                                        chip->label, chip->ngpio);
->> +               if (p->idx != idx)
->> +                       continue;
->> +
->> +               if (p->con_id) {
->> +                       if (!con_id || strcmp(p->con_id, con_id))
->
-> Could be one 'if' and moreover !con_id check might be outside a loop.
-
-Again, wouldn't that require two separate loops?
-
+>> And rest of the other patches are fixing the loose ends, things like mdio
+>> reset, which might be necessary in cases likes hibernation(I did not
+>> test).
+>>
+>> In hibernation cases the driver was just unregistering with subsystems
+>> and
+>> releasing resources which I did not like and its not necessary to do
+>> this as
+>> part of PM. So using the same stmmac_suspend/resume made more sense for
+>> hibernation cases than using stmmac_open/release.
+>> Also fixed a NULL pointer dereference bug too.
+>>
+>> 2> Test WOL via PM_SUSPEND_FREEZE
+>> Did get an wakeup interrupt, but could not wakeup a freeze system.
+>> So I had to add pm_wakeup_event to the driver.
+>> net: stmmac: notify the PM core of a wakeup event. patch.
+>>
+>> Also few patches like
+>>    net: stmmac: make stmmac_mdio_reset non-static
+>>    net: stmmac: restore pinstate in pm resume.
+>> helps the resume function to reset the phy and put back the pins in
+>> default
+>> state.
+>>
+>> Comments?
+> 
+> Srini, as we had internally discussed before sending the patches to the
+> net ML, I agreed with your work. Some parts of the PM stuff was fully
+> tested on our product kernels (where the PM was a bit different
+> especially on HoM) and nobody raised issues to me for this code.
+> Also some rework you did, for example to move the dma allocation in
+> a new function is fine for me.
+> 
+> So you continue to have my Acked-by for all.
+> 
+> peppe
+> 
+>>
+>> Thanks,
+>> srini
+>>
+>> Srinivas Kandagatla (9):
+>>    net: stmmac: support max-speed device tree property
+>>    net: stmmac: mdio: remove reset gpio free
+>>    net: stmmac: move dma allocation to new function
+>>    net: stmmac: move hardware setup for stmmac_open to new function
+>>    net: stmmac: make stmmac_mdio_reset non-static
+>>    net: stmmac: fix power mangement suspend-resume case
+>>    net: stmmac: use suspend functions for hibernation
+>>    net: stmmac: restore pinstate in pm resume.
+>>    net: stmmac: notify the PM core of a wakeup event.
+>>
+>>   drivers/net/ethernet/stmicro/stmmac/stmmac.h       |    4 +-
+>>   drivers/net/ethernet/stmicro/stmmac/stmmac_main.c  |  360
+>> ++++++++++----------
+>>   drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c  |    3 +-
+>>   .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |   51 +--
+>>   include/linux/stmmac.h                             |    1 +
+>>   5 files changed, 209 insertions(+), 210 deletions(-)
+>>
+> 
+> 
+> 
 
