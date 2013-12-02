@@ -1,87 +1,372 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab3LBSCQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 13:02:16 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56387 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753142Ab3LBSCK (ORCPT
+	id S1753424Ab3LBSC4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 13:02:56 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:47496 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942Ab3LBSCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 13:02:10 -0500
-From: Will Deacon <will.deacon@arm.com>
-To: dmaengine@vger.kernel.org
+	Mon, 2 Dec 2013 13:02:50 -0500
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Chris Ball <cjb@laptop.org>, Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Will Deacon <will.deacon@arm.com>,
-        Andriy Shevchenko <andriy.shevchenko@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v2] dma: pl330: ensure DMA descriptors are zero-initialised
-Date: Mon,  2 Dec 2013 18:01:30 +0000
-Message-Id: <1386007290-13987-1-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.8.2.2
+        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree@vger.kernel.org, Tomasz Figa <tomasz.figa@gmail.com>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH v3 1/2] mmc: arasan: Add driver for Arasan SDHCI
+Date: Mon,  2 Dec 2013 10:02:36 -0800
+Message-Id: <1386007357-11956-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.8.4.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I see the following splat with 3.13-rc1 when attempting to perform DMA:
+Add a driver for Arasan's SDHCI controller core.
 
-[  253.004516] Alignment trap: not handling instruction e1902f9f at [<c0204b40>]
-[  253.004583] Unhandled fault: alignment exception (0x221) at 0xdfdfdfd7
-[  253.004646] Internal error: : 221 [#1] PREEMPT SMP ARM
-[  253.004691] Modules linked in: dmatest(+) [last unloaded: dmatest]
-[  253.004798] CPU: 0 PID: 671 Comm: kthreadd Not tainted 3.13.0-rc1+ #2
-[  253.004864] task: df9b0900 ti: df03e000 task.ti: df03e000
-[  253.004937] PC is at dmaengine_unmap_put+0x14/0x34
-[  253.005010] LR is at pl330_tasklet+0x3c8/0x550
-[  253.005087] pc : [<c0204b44>]    lr : [<c0207478>]    psr: a00e0193
-[  253.005087] sp : df03fe48  ip : 00000000  fp : df03bf18
-[  253.005178] r10: bf00e108  r9 : 00000001  r8 : 00000000
-[  253.005245] r7 : df837040  r6 : dfb41800  r5 : df837048  r4 : df837000
-[  253.005316] r3 : dfdfdfcf  r2 : dfb41f80  r1 : df837048  r0 : dfdfdfd7
-[  253.005384] Flags: NzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-[  253.005459] Control: 30c5387d  Table: 9fb9ba80  DAC: fffffffd
-[  253.005520] Process kthreadd (pid: 671, stack limit = 0xdf03e248)
-
-This is due to desc->txd.unmap containing garbage (uninitialised memory).
-
-Rather than add another dummy initialisation to _init_desc, instead
-ensure that the descriptors are zero-initialised during allocation and
-remove the dummy, per-field initialisation.
-
-Cc: Andriy Shevchenko <andriy.shevchenko@intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>
-Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Acked-by: Rob Herring <rob.herring@calxeda.com> [binding]
 ---
- drivers/dma/pl330.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+As discussed, I left binding and license header as is and fixed the typos.
 
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index 98641eaca080..769f865b71db 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2492,12 +2492,9 @@ static dma_cookie_t pl330_tx_submit(struct dma_async_tx_descriptor *tx)
+v3:
+ - fix typo in binding documentation
+ - add missing '>' in MODULE_AUTHOR string
+v2:
+ - document 'interrupts' and 'interrupt-parent' properties in the driver
+   bindings
+ - append '-8.9a' IP version specifier to comaptibility string
+
+   	Thanks,
+	Sören
+
+ .../devicetree/bindings/mmc/arasan,sdhci.txt       |  27 +++
+ MAINTAINERS                                        |   1 +
+ drivers/mmc/host/Kconfig                           |  12 ++
+ drivers/mmc/host/Makefile                          |   1 +
+ drivers/mmc/host/sdhci-of-arasan.c                 | 224 +++++++++++++++++++++
+ 5 files changed, 265 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
+ create mode 100644 drivers/mmc/host/sdhci-of-arasan.c
+
+diff --git a/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt b/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
+new file mode 100644
+index 000000000000..98ee2abbe138
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
+@@ -0,0 +1,27 @@
++Device Tree Bindings for the Arasan SDHCI Controller
++
++  The bindings follow the mmc[1], clock[2] and interrupt[3] bindings. Only
++  deviations are documented here.
++
++  [1] Documentation/devicetree/bindings/mmc/mmc.txt
++  [2] Documentation/devicetree/bindings/clock/clock-bindings.txt
++  [3] Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
++
++Required Properties:
++  - compatible: Compatibility string. Must be 'arasan,sdhci-8.9a'
++  - reg: From mmc bindings: Register location and length.
++  - clocks: From clock bindings: Handles to clock inputs.
++  - clock-names: From clock bindings: Tuple including "clk_xin" and "clk_ahb"
++  - interrupts: Interrupt specifier
++  - interrupt-parent: Phandle for the interrupt controller that services
++		      interrupts for this device.
++
++Example:
++	sdhci@e0100000 {
++		compatible = "arasan,sdhci-8.9a";
++		reg = <0xe0100000 0x1000>;
++		clock-names = "clk_xin", "clk_ahb";
++		clocks = <&clkc 21>, <&clkc 32>;
++		interrupt-parent = <&gic>;
++		interrupts = <0 24 4>;
++	} ;
+diff --git a/MAINTAINERS b/MAINTAINERS
+index f216db847022..9c98792335d9 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1371,6 +1371,7 @@ T:	git git://git.xilinx.com/linux-xlnx.git
+ S:	Supported
+ F:	arch/arm/mach-zynq/
+ F:	drivers/cpuidle/cpuidle-zynq.c
++F:	drivers/mmc/host/sdhci-of-arasan.c
  
- static inline void _init_desc(struct dma_pl330_desc *desc)
- {
--	desc->pchan = NULL;
- 	desc->req.x = &desc->px;
- 	desc->req.token = desc;
- 	desc->rqcfg.swap = SWAP_NO;
--	desc->rqcfg.privileged = 0;
--	desc->rqcfg.insnaccess = 0;
- 	desc->rqcfg.scctl = SCCTRL0;
- 	desc->rqcfg.dcctl = DCCTRL0;
- 	desc->req.cfg = &desc->rqcfg;
-@@ -2517,7 +2514,7 @@ static int add_desc(struct dma_pl330_dmac *pdmac, gfp_t flg, int count)
- 	if (!pdmac)
- 		return 0;
+ ARM SMMU DRIVER
+ M:	Will Deacon <will.deacon@arm.com>
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index 7fc5099e44b2..1eb090c187bb 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -104,6 +104,18 @@ config MMC_SDHCI_PLTFM
  
--	desc = kmalloc(count * sizeof(*desc), flg);
-+	desc = kcalloc(count, sizeof(*desc), flg);
- 	if (!desc)
- 		return 0;
+ 	  If unsure, say N.
  
++config MMC_SDHCI_OF_ARASAN
++	tristate "SDHCI OF support for the Arasan SDHCI controllers"
++	depends on MMC_SDHCI_PLTFM
++	depends on OF
++	help
++	  This selects the Arasan Secure Digital Host Controller Interface
++	  (SDHCI). This hardware is found e.g. in Xilinx' Zynq SoC.
++
++	  If you have a controller with this interface, say Y or M here.
++
++	  If unsure, say N.
++
+ config MMC_SDHCI_OF_ESDHC
+ 	tristate "SDHCI OF support for the Freescale eSDHC controller"
+ 	depends on MMC_SDHCI_PLTFM
+diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
+index c41d0c364509..f93617ec6548 100644
+--- a/drivers/mmc/host/Makefile
++++ b/drivers/mmc/host/Makefile
+@@ -57,6 +57,7 @@ obj-$(CONFIG_MMC_SDHCI_CNS3XXX)		+= sdhci-cns3xxx.o
+ obj-$(CONFIG_MMC_SDHCI_ESDHC_IMX)	+= sdhci-esdhc-imx.o
+ obj-$(CONFIG_MMC_SDHCI_DOVE)		+= sdhci-dove.o
+ obj-$(CONFIG_MMC_SDHCI_TEGRA)		+= sdhci-tegra.o
++obj-$(CONFIG_MMC_SDHCI_OF_ARASAN)	+= sdhci-of-arasan.o
+ obj-$(CONFIG_MMC_SDHCI_OF_ESDHC)	+= sdhci-of-esdhc.o
+ obj-$(CONFIG_MMC_SDHCI_OF_HLWD)		+= sdhci-of-hlwd.o
+ obj-$(CONFIG_MMC_SDHCI_BCM_KONA)	+= sdhci-bcm-kona.o
+diff --git a/drivers/mmc/host/sdhci-of-arasan.c b/drivers/mmc/host/sdhci-of-arasan.c
+new file mode 100644
+index 000000000000..f7c7cf62437d
+--- /dev/null
++++ b/drivers/mmc/host/sdhci-of-arasan.c
+@@ -0,0 +1,224 @@
++/*
++ * Arasan Secure Digital Host Controller Interface.
++ * Copyright (C) 2011 - 2012 Michal Simek <monstr@monstr.eu>
++ * Copyright (c) 2012 Wind River Systems, Inc.
++ * Copyright (C) 2013 Pengutronix e.K.
++ * Copyright (C) 2013 Xilinx Inc.
++ *
++ * Based on sdhci-of-esdhc.c
++ *
++ * Copyright (c) 2007 Freescale Semiconductor, Inc.
++ * Copyright (c) 2009 MontaVista Software, Inc.
++ *
++ * Authors: Xiaobo Xie <X.Xie@freescale.com>
++ *	    Anton Vorontsov <avorontsov@ru.mvista.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or (at
++ * your option) any later version.
++ */
++
++#include <linux/module.h>
++#include "sdhci-pltfm.h"
++
++#define SDHCI_ARASAN_CLK_CTRL_OFFSET	0x2c
++
++#define CLK_CTRL_TIMEOUT_SHIFT		16
++#define CLK_CTRL_TIMEOUT_MASK		(0xf << CLK_CTRL_TIMEOUT_SHIFT)
++#define CLK_CTRL_TIMEOUT_MIN_EXP	13
++
++/**
++ * struct sdhci_arasan_data
++ * @clk_ahb:	Pointer to the AHB clock
++ */
++struct sdhci_arasan_data {
++	struct clk	*clk_ahb;
++};
++
++static unsigned int sdhci_arasan_get_timeout_clock(struct sdhci_host *host)
++{
++	u32 div;
++	unsigned long freq;
++	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++
++	div = readl(host->ioaddr + SDHCI_ARASAN_CLK_CTRL_OFFSET);
++	div = (div & CLK_CTRL_TIMEOUT_MASK) >> CLK_CTRL_TIMEOUT_SHIFT;
++
++	freq = clk_get_rate(pltfm_host->clk);
++	freq /= 1 << (CLK_CTRL_TIMEOUT_MIN_EXP + div);
++
++	return freq;
++}
++
++static struct sdhci_ops sdhci_arasan_ops = {
++	.get_max_clock = sdhci_pltfm_clk_get_max_clock,
++	.get_timeout_clock = sdhci_arasan_get_timeout_clock,
++};
++
++static struct sdhci_pltfm_data sdhci_arasan_pdata = {
++	.ops = &sdhci_arasan_ops,
++};
++
++#ifdef CONFIG_PM_SLEEP
++/**
++ * sdhci_arasan_suspend - Suspend method for the driver
++ * @dev:	Address of the device structure
++ * Returns 0 on success and error value on error
++ *
++ * Put the device in a low power state.
++ */
++static int sdhci_arasan_suspend(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct sdhci_host *host = platform_get_drvdata(pdev);
++	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++	struct sdhci_arasan_data *sdhci_arasan = pltfm_host->priv;
++	int ret;
++
++	ret = sdhci_suspend_host(host);
++	if (ret)
++		return ret;
++
++	clk_disable(pltfm_host->clk);
++	clk_disable(sdhci_arasan->clk_ahb);
++
++	return 0;
++}
++
++/**
++ * sdhci_arasan_resume - Resume method for the driver
++ * @dev:	Address of the device structure
++ * Returns 0 on success and error value on error
++ *
++ * Resume operation after suspend
++ */
++static int sdhci_arasan_resume(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct sdhci_host *host = platform_get_drvdata(pdev);
++	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++	struct sdhci_arasan_data *sdhci_arasan = pltfm_host->priv;
++	int ret;
++
++	ret = clk_enable(sdhci_arasan->clk_ahb);
++	if (ret) {
++		dev_err(dev, "Cannot enable AHB clock.\n");
++		return ret;
++	}
++
++	ret = clk_enable(pltfm_host->clk);
++	if (ret) {
++		dev_err(dev, "Cannot enable SD clock.\n");
++		clk_disable(sdhci_arasan->clk_ahb);
++		return ret;
++	}
++
++	return sdhci_resume_host(host);
++}
++#endif /* ! CONFIG_PM_SLEEP */
++
++static SIMPLE_DEV_PM_OPS(sdhci_arasan_dev_pm_ops, sdhci_arasan_suspend,
++			 sdhci_arasan_resume);
++
++static int sdhci_arasan_probe(struct platform_device *pdev)
++{
++	int ret;
++	struct clk *clk_xin;
++	struct sdhci_host *host;
++	struct sdhci_pltfm_host *pltfm_host;
++	struct sdhci_arasan_data *sdhci_arasan;
++
++	sdhci_arasan = devm_kzalloc(&pdev->dev, sizeof(*sdhci_arasan),
++			GFP_KERNEL);
++	if (!sdhci_arasan)
++		return -ENOMEM;
++
++	sdhci_arasan->clk_ahb = devm_clk_get(&pdev->dev, "clk_ahb");
++	if (IS_ERR(sdhci_arasan->clk_ahb)) {
++		dev_err(&pdev->dev, "clk_ahb clock not found.\n");
++		return PTR_ERR(sdhci_arasan->clk_ahb);
++	}
++
++	clk_xin = devm_clk_get(&pdev->dev, "clk_xin");
++	if (IS_ERR(clk_xin)) {
++		dev_err(&pdev->dev, "clk_xin clock not found.\n");
++		return PTR_ERR(clk_xin);
++	}
++
++	ret = clk_prepare_enable(sdhci_arasan->clk_ahb);
++	if (ret) {
++		dev_err(&pdev->dev, "Unable to enable AHB clock.\n");
++		return ret;
++	}
++
++	ret = clk_prepare_enable(clk_xin);
++	if (ret) {
++		dev_err(&pdev->dev, "Unable to enable SD clock.\n");
++		goto clk_dis_ahb;
++	}
++
++	host = sdhci_pltfm_init(pdev, &sdhci_arasan_pdata, 0);
++	if (IS_ERR(host)) {
++		ret = PTR_ERR(host);
++		dev_err(&pdev->dev, "platform init failed (%u)\n", ret);
++		goto clk_disable_all;
++	}
++
++	sdhci_get_of_property(pdev);
++	pltfm_host = sdhci_priv(host);
++	pltfm_host->priv = sdhci_arasan;
++	pltfm_host->clk = clk_xin;
++
++	ret = sdhci_add_host(host);
++	if (ret) {
++		dev_err(&pdev->dev, "platform register failed (%u)\n", ret);
++		goto err_pltfm_free;
++	}
++
++	return 0;
++
++err_pltfm_free:
++	sdhci_pltfm_free(pdev);
++clk_disable_all:
++	clk_disable_unprepare(clk_xin);
++clk_dis_ahb:
++	clk_disable_unprepare(sdhci_arasan->clk_ahb);
++
++	return ret;
++}
++
++static int sdhci_arasan_remove(struct platform_device *pdev)
++{
++	struct sdhci_host *host = platform_get_drvdata(pdev);
++	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++	struct sdhci_arasan_data *sdhci_arasan = pltfm_host->priv;
++
++	clk_disable_unprepare(pltfm_host->clk);
++	clk_disable_unprepare(sdhci_arasan->clk_ahb);
++
++	return sdhci_pltfm_unregister(pdev);
++}
++
++static const struct of_device_id sdhci_arasan_of_match[] = {
++	{ .compatible = "arasan,sdhci-8.9a" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, sdhci_arasan_of_match);
++
++static struct platform_driver sdhci_arasan_driver = {
++	.driver = {
++		.name = "sdhci-arasan",
++		.owner = THIS_MODULE,
++		.of_match_table = sdhci_arasan_of_match,
++		.pm = &sdhci_arasan_dev_pm_ops,
++	},
++	.probe = sdhci_arasan_probe,
++	.remove = sdhci_arasan_remove,
++};
++
++module_platform_driver(sdhci_arasan_driver);
++
++MODULE_DESCRIPTION("Driver for the Arasan SDHCI Controller");
++MODULE_AUTHOR("Soeren Brinkmann <soren.brinkmann@xilinx.com>");
++MODULE_LICENSE("GPL");
 -- 
-1.8.2.2
+1.8.4.4
 
