@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233Ab3LBUNu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:13:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39149 "EHLO
+	id S1757313Ab3LBUOK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:14:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39157 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754573Ab3LBTRd (ORCPT
+	with ESMTP id S1754570Ab3LBTR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:33 -0500
+	Mon, 2 Dec 2013 14:17:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Seppanen <eric@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.12 059/212] iscsi-target: chap auth shouldnt match username with trailing garbage
-Date: Mon,  2 Dec 2013 11:14:10 -0800
-Message-Id: <20131202191254.663440163@linuxfoundation.org>
+        Bart Van Assche <bvanassche@acm.org>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.12 065/212] IB/srp: Report receive errors correctly
+Date: Mon,  2 Dec 2013 11:14:16 -0800
+Message-Id: <20131202191255.272267694@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,46 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Seppanen <eric@purestorage.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit 86784c6bdeeef78eed94d298be7a8879f6a97ee2 upstream.
+commit cd4e38542a5c2cab94e5410fb17c1cc004a60792 upstream.
 
-In iSCSI negotiations with initiator CHAP enabled, usernames with
-trailing garbage are permitted, because the string comparison only
-checks the strlen of the configured username.
+The IB spec does not guarantee that the opcode is available in error
+completions.  Hence do not rely on it.  See also commit 948d1e889e5b
+("IB/srp: Introduce srp_handle_qp_err()").
 
-e.g. "usernameXXXXX" will be permitted to match "username".
-
-Just check one more byte so the trailing null char is also matched.
-
-Signed-off-by: Eric Seppanen <eric@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target_auth.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/infiniband/ulp/srp/ib_srp.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target_auth.c
-+++ b/drivers/target/iscsi/iscsi_target_auth.c
-@@ -146,6 +146,7 @@ static int chap_server_compute_md5(
- 	unsigned char client_digest[MD5_SIGNATURE_SIZE];
- 	unsigned char server_digest[MD5_SIGNATURE_SIZE];
- 	unsigned char chap_n[MAX_CHAP_N_SIZE], chap_r[MAX_RESPONSE_LENGTH];
-+	size_t compare_len;
- 	struct iscsi_chap *chap = conn->auth_protocol;
- 	struct crypto_hash *tfm;
- 	struct hash_desc desc;
-@@ -184,7 +185,9 @@ static int chap_server_compute_md5(
- 		goto out;
- 	}
+--- a/drivers/infiniband/ulp/srp/ib_srp.c
++++ b/drivers/infiniband/ulp/srp/ib_srp.c
+@@ -1303,14 +1303,13 @@ static void srp_handle_recv(struct srp_t
+ 			     PFX "Recv failed with error code %d\n", res);
+ }
  
--	if (memcmp(chap_n, auth->userid, strlen(auth->userid)) != 0) {
-+	/* Include the terminating NULL in the compare */
-+	compare_len = strlen(auth->userid) + 1;
-+	if (strncmp(chap_n, auth->userid, compare_len) != 0) {
- 		pr_err("CHAP_N values do not match!\n");
- 		goto out;
+-static void srp_handle_qp_err(enum ib_wc_status wc_status,
+-			      enum ib_wc_opcode wc_opcode,
++static void srp_handle_qp_err(enum ib_wc_status wc_status, bool send_err,
+ 			      struct srp_target_port *target)
+ {
+ 	if (target->connected && !target->qp_in_error) {
+ 		shost_printk(KERN_ERR, target->scsi_host,
+ 			     PFX "failed %s status %d\n",
+-			     wc_opcode & IB_WC_RECV ? "receive" : "send",
++			     send_err ? "send" : "receive",
+ 			     wc_status);
  	}
+ 	target->qp_in_error = true;
+@@ -1326,7 +1325,7 @@ static void srp_recv_completion(struct i
+ 		if (likely(wc.status == IB_WC_SUCCESS)) {
+ 			srp_handle_recv(target, &wc);
+ 		} else {
+-			srp_handle_qp_err(wc.status, wc.opcode, target);
++			srp_handle_qp_err(wc.status, false, target);
+ 		}
+ 	}
+ }
+@@ -1342,7 +1341,7 @@ static void srp_send_completion(struct i
+ 			iu = (struct srp_iu *) (uintptr_t) wc.wr_id;
+ 			list_add(&iu->list, &target->free_tx);
+ 		} else {
+-			srp_handle_qp_err(wc.status, wc.opcode, target);
++			srp_handle_qp_err(wc.status, true, target);
+ 		}
+ 	}
+ }
 
 
