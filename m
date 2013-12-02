@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab3LBLYV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 06:24:21 -0500
-Received: from relay.parallels.com ([195.214.232.42]:47382 "EHLO
+	id S1754014Ab3LBLY1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 06:24:27 -0500
+Received: from relay.parallels.com ([195.214.232.42]:47400 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753490Ab3LBLT5 (ORCPT
+	with ESMTP id S1753507Ab3LBLT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 06:19:57 -0500
+	Mon, 2 Dec 2013 06:19:58 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <dchinner@redhat.com>,
         <akpm@linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
-        <vdavydov@parallels.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>
-Subject: [PATCH v12 07/18] vmscan: move call to shrink_slab() to shrink_zones()
-Date: Mon, 2 Dec 2013 15:19:42 +0400
-Message-ID: <852be876efc790ff8ed271d3d2e82cd85d0fb6d6.1385974612.git.vdavydov@parallels.com>
+        <vdavydov@parallels.com>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH v12 01/18] memcg: make cache index determination more robust
+Date: Mon, 2 Dec 2013 15:19:36 +0400
+Message-ID: <a35230f1d3fd31dfadfdf34f49c643cba3c75904.1385974612.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1385974612.git.vdavydov@parallels.com>
 References: <cover.1385974612.git.vdavydov@parallels.com>
@@ -27,129 +27,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reduces the indentation level of do_try_to_free_pages() and removes
-extra loop over all eligible zones counting the number of on-LRU pages.
+From: Glauber Costa <glommer@openvz.org>
 
+I caught myself doing something like the following outside memcg core:
+
+	memcg_id = -1;
+	if (memcg && memcg_kmem_is_active(memcg))
+		memcg_id = memcg_cache_id(memcg);
+
+to be able to handle all possible memcgs in a sane manner. In particular, the
+root cache will have kmemcg_id = -1 (just because we don't call memcg_kmem_init
+to the root cache since it is not limitable). We have always coped with that by
+making sure we sanitize which cache is passed to memcg_cache_id. Although this
+example is given for root, what we really need to know is whether or not a
+cache is kmem active.
+
+But outside the memcg core testing for root, for instance, is not trivial since
+we don't export mem_cgroup_is_root. I ended up realizing that this tests really
+belong inside memcg_cache_id. This patch moves a similar but stronger test
+inside memcg_cache_id and make sure it always return a meaningful value.
+
+Signed-off-by: Glauber Costa <glommer@openvz.org>
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/vmscan.c |   57 ++++++++++++++++++++++++++-------------------------------
- 1 file changed, 26 insertions(+), 31 deletions(-)
+ mm/memcontrol.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 6946997..ba1ad6e 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2273,13 +2273,17 @@ static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
-  * the caller that it should consider retrying the allocation instead of
-  * further reclaim.
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index f1a0ae6..02b5176 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3073,7 +3073,9 @@ void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep)
   */
--static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
-+static bool shrink_zones(struct zonelist *zonelist,
-+			 struct scan_control *sc,
-+			 struct shrink_control *shrink)
+ int memcg_cache_id(struct mem_cgroup *memcg)
  {
- 	struct zoneref *z;
- 	struct zone *zone;
- 	unsigned long nr_soft_reclaimed;
- 	unsigned long nr_soft_scanned;
-+	unsigned long lru_pages = 0;
- 	bool aborted_reclaim = false;
-+	struct reclaim_state *reclaim_state = current->reclaim_state;
- 
- 	/*
- 	 * If the number of buffer_heads in the machine exceeds the maximum
-@@ -2289,6 +2293,8 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
- 	if (buffer_heads_over_limit)
- 		sc->gfp_mask |= __GFP_HIGHMEM;
- 
-+	nodes_clear(shrink->nodes_to_scan);
-+
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
- 					gfp_zone(sc->gfp_mask), sc->nodemask) {
- 		if (!populated_zone(zone))
-@@ -2300,6 +2306,10 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
- 		if (global_reclaim(sc)) {
- 			if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
- 				continue;
-+
-+			lru_pages += zone_reclaimable_pages(zone);
-+			node_set(zone_to_nid(zone), shrink->nodes_to_scan);
-+
- 			if (sc->priority != DEF_PRIORITY &&
- 			    !zone_reclaimable(zone))
- 				continue;	/* Let kswapd poll it */
-@@ -2336,6 +2346,20 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
- 		shrink_zone(zone, sc);
- 	}
- 
-+	/*
-+	 * Don't shrink slabs when reclaiming memory from over limit
-+	 * cgroups but do shrink slab at least once when aborting
-+	 * reclaim for compaction to avoid unevenly scanning file/anon
-+	 * LRU pages over slab pages.
-+	 */
-+	if (global_reclaim(sc)) {
-+		shrink_slab(shrink, sc->nr_scanned, lru_pages);
-+		if (reclaim_state) {
-+			sc->nr_reclaimed += reclaim_state->reclaimed_slab;
-+			reclaim_state->reclaimed_slab = 0;
-+		}
-+	}
-+
- 	return aborted_reclaim;
+-	return memcg ? memcg->kmemcg_id : -1;
++	if (!memcg || !memcg_can_account_kmem(memcg))
++		return -1;
++	return memcg->kmemcg_id;
  }
  
-@@ -2380,9 +2404,6 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 					struct shrink_control *shrink)
- {
- 	unsigned long total_scanned = 0;
--	struct reclaim_state *reclaim_state = current->reclaim_state;
--	struct zoneref *z;
--	struct zone *zone;
- 	unsigned long writeback_threshold;
- 	bool aborted_reclaim;
- 
-@@ -2395,34 +2416,8 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 		vmpressure_prio(sc->gfp_mask, sc->target_mem_cgroup,
- 				sc->priority);
- 		sc->nr_scanned = 0;
--		aborted_reclaim = shrink_zones(zonelist, sc);
--
--		/*
--		 * Don't shrink slabs when reclaiming memory from over limit
--		 * cgroups but do shrink slab at least once when aborting
--		 * reclaim for compaction to avoid unevenly scanning file/anon
--		 * LRU pages over slab pages.
--		 */
--		if (global_reclaim(sc)) {
--			unsigned long lru_pages = 0;
-+		aborted_reclaim = shrink_zones(zonelist, sc, shrink);
- 
--			nodes_clear(shrink->nodes_to_scan);
--			for_each_zone_zonelist(zone, z, zonelist,
--					gfp_zone(sc->gfp_mask)) {
--				if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
--					continue;
--
--				lru_pages += zone_reclaimable_pages(zone);
--				node_set(zone_to_nid(zone),
--					 shrink->nodes_to_scan);
--			}
--
--			shrink_slab(shrink, sc->nr_scanned, lru_pages);
--			if (reclaim_state) {
--				sc->nr_reclaimed += reclaim_state->reclaimed_slab;
--				reclaim_state->reclaimed_slab = 0;
--			}
--		}
- 		total_scanned += sc->nr_scanned;
- 		if (sc->nr_reclaimed >= sc->nr_to_reclaim)
- 			goto out;
+ /*
 -- 
 1.7.10.4
 
