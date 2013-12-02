@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759277Ab3LBVJK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:09:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38489 "EHLO
+	id S1759262Ab3LBVJH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:09:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38406 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753995Ab3LBTNJ (ORCPT
+	with ESMTP id S1753998Ab3LBTNK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:09 -0500
+	Mon, 2 Dec 2013 14:13:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 3.10 054/173] loop: fix crash if blk_alloc_queue fails
-Date: Mon,  2 Dec 2013 11:10:37 -0800
-Message-Id: <20131202191148.832931434@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH 3.10 055/173] loop: fix crash when using unassigned loop device
+Date: Mon,  2 Dec 2013 11:10:38 -0800
+Message-Id: <20131202191148.930612929@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -29,86 +28,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 3ec981e30fae1f3c8728a05c730acaa1f627bcfb upstream.
+commit ef7e7c82e02b602f29c2b87f42dcd6143a6777da upstream.
 
-loop: fix crash if blk_alloc_queue fails
+When the loop module is loaded, it creates 8 loop devices /dev/loop[0-7].
+The devices have no request routine and thus, when they are used without
+being assigned, a crash happens.
 
-If blk_alloc_queue fails, loop_add cleans up, but it doesn't clean up the
-identifier allocated with idr_alloc. That causes crash on module unload in
-idr_for_each(&loop_index_idr, &loop_exit_cb, NULL); where we attempt to
-remove non-existed device with that id.
+For example, these commands cause crash (assuming there are no used loop
+devices):
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000380
-IP: [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
-PGD 43d399067 PUD 43d0ad067 PMD 0
-Oops: 0000 [#1] PREEMPT SMP
-Modules linked in: loop(-) dm_snapshot dm_zero dm_mirror dm_region_hash dm_log dm_loop dm_mod ip6table_filter ip6_tables uvesafb cfbcopyarea cfbimgblt cfbfillrect fbcon font bitblit fbcon_rotate fbcon_cw fbcon_ud fbcon_ccw softcursor fb fbdev msr ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc tun ipv6 cpufreq_userspace cpufreq_stats cpufreq_ondemand cpufreq_conservative cpufreq_powersave spadfs fuse hid_generic usbhid hid raid0 md_mod dmi_sysfs nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack snd_usb_audio snd_pcm_oss snd_mixer_oss snd_pcm snd_timer snd_page_alloc lm85 hwmon_vid snd_hwdep snd_usbmidi_lib snd_rawmidi snd soundcore acpi_cpufreq ohci_hcd freq_table tg3 ehci_pci mperf ehci_hcd kvm_amd kvm sata_svw serverworks libphy libata ide_core k10temp usbcore hwmon microcode ptp pcspkr pps_core e100 skge mii usb_common i2c_piix4 floppy evdev rtc_cmos i2c_core processor but!
- ton unix
-CPU: 7 PID: 2735 Comm: rmmod Tainted: G        W    3.10.15-devel #15
-Hardware name: empty empty/S3992-E, BIOS 'V1.06   ' 06/09/2009
-task: ffff88043d38e780 ti: ffff88043d21e000 task.ti: ffff88043d21e000
-RIP: 0010:[<ffffffff812057c9>]  [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
-RSP: 0018:ffff88043d21fe10  EFLAGS: 00010282
-RAX: ffffffffa05102e0 RBX: 0000000000000000 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: ffff88043ea82800 RDI: 0000000000000000
-RBP: ffff88043d21fe48 R08: 0000000000000000 R09: 0000000000000001
-R10: 0000000000000001 R11: 0000000000000000 R12: 00000000000000ff
-R13: 0000000000000080 R14: 0000000000000000 R15: ffff88043ea82800
-FS:  00007ff646534700(0000) GS:ffff880447000000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000380 CR3: 000000043e9bf000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Stack:
- ffffffff8100aba4 0000000000000092 ffff88043d21fe48 ffff88043ea82800
- 00000000000000ff ffff88043d21fe98 0000000000000000 ffff88043d21fe60
- ffffffffa05102b4 0000000000000000 ffff88043d21fe70 ffffffffa05102ec
-Call Trace:
- [<ffffffff8100aba4>] ? native_sched_clock+0x24/0x80
- [<ffffffffa05102b4>] loop_remove+0x14/0x40 [loop]
- [<ffffffffa05102ec>] loop_exit_cb+0xc/0x10 [loop]
- [<ffffffff81217b74>] idr_for_each+0x104/0x190
- [<ffffffffa05102e0>] ? loop_remove+0x40/0x40 [loop]
- [<ffffffff8109adc5>] ? trace_hardirqs_on_caller+0x105/0x1d0
- [<ffffffffa05135dc>] loop_exit+0x34/0xa58 [loop]
- [<ffffffff810a98ea>] SyS_delete_module+0x13a/0x260
- [<ffffffff81221d5e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff813cff16>] system_call_fastpath+0x1a/0x1f
-Code: f0 4c 8b 6d f8 c9 c3 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 41 56 41 55 4c 8d af 80 00 00 00 41 54 53 48 89 fb 48 83 ec 18 <48> 83 bf 80 03 00
-00 00 74 4d e8 98 fe ff ff 31 f6 48 c7 c7 20
-RIP  [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
- RSP <ffff88043d21fe10>
-CR2: 0000000000000380
----[ end trace 64ec069ec70f1309 ]---
+Kernel Fault: Code=26 regs=000000007f420980 (Addr=0000000000000010)
+CPU: 1 PID: 50 Comm: kworker/1:1 Not tainted 3.11.0 #1
+Workqueue: ksnaphd do_metadata [dm_snapshot]
+task: 000000007fcf4078 ti: 000000007f420000 task.ti: 000000007f420000
+[  116.319988]
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001001111111100001111 Not tainted
+r00-03  000000ff0804ff0f 00000000408bf5d0 00000000402d8204 000000007b7ff6c0
+r04-07  00000000408a95d0 000000007f420950 000000007b7ff6c0 000000007d06c930
+r08-11  000000007f4205c0 0000000000000001 000000007f4205c0 000000007f4204b8
+r12-15  0000000000000010 0000000000000000 0000000000000000 0000000000000000
+r16-19  000000001108dd48 000000004061cd7c 000000007d859800 000000000800000f
+r20-23  0000000000000000 0000000000000008 0000000000000000 0000000000000000
+r24-27  00000000ffffffff 000000007b7ff6c0 000000007d859800 00000000408a95d0
+r28-31  0000000000000000 000000007f420950 000000007f420980 000000007f4208e8
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000303000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+[  117.549988]
+IASQ: 0000000000000000 0000000000000000 IAOQ: 00000000402d82fc 00000000402d8300
+ IIR: 53820020    ISR: 0000000000000000  IOR: 0000000000000010
+ CPU:        1   CR30: 000000007f420000 CR31: ffffffffffffffff
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: generic_make_request+0x11c/0x1a0
+ IAOQ[1]: generic_make_request+0x120/0x1a0
+ RP(r2): generic_make_request+0x24/0x1a0
+Backtrace:
+ [<00000000402d83f0>] submit_bio+0x70/0x140
+ [<0000000011087c4c>] dispatch_io+0x234/0x478 [dm_mod]
+ [<0000000011087f44>] sync_io+0xb4/0x190 [dm_mod]
+ [<00000000110883bc>] dm_io+0x2c4/0x310 [dm_mod]
+ [<00000000110bfcd0>] do_metadata+0x28/0xb0 [dm_snapshot]
+ [<00000000401591d8>] process_one_work+0x160/0x460
+ [<0000000040159bc0>] worker_thread+0x300/0x478
+ [<0000000040161a70>] kthread+0x118/0x128
+ [<0000000040104020>] end_fault_vector+0x20/0x28
+ [<0000000040177220>] task_tick_fair+0x420/0x4d0
+ [<00000000401aa048>] invoke_rcu_core+0x50/0x60
+ [<00000000401ad5b8>] rcu_check_callbacks+0x210/0x8d8
+ [<000000004014aaa0>] update_process_times+0xa8/0xc0
+ [<00000000401ab86c>] rcu_process_callbacks+0x4b4/0x598
+ [<0000000040142408>] __do_softirq+0x250/0x2c0
+ [<00000000401789d0>] find_busiest_group+0x3c0/0xc70
+[  119.379988]
+Kernel panic - not syncing: Kernel Fault
+Rebooting in 1 seconds..
 
 Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/loop.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/block/loop.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
 --- a/drivers/block/loop.c
 +++ b/drivers/block/loop.c
-@@ -1633,7 +1633,7 @@ static int loop_add(struct loop_device *
- 	err = -ENOMEM;
- 	lo->lo_queue = blk_alloc_queue(GFP_KERNEL);
- 	if (!lo->lo_queue)
--		goto out_free_dev;
-+		goto out_free_idr;
+@@ -894,13 +894,6 @@ static int loop_set_fd(struct loop_devic
  
+ 	bio_list_init(&lo->lo_bio_list);
+ 
+-	/*
+-	 * set queue make_request_fn, and add limits based on lower level
+-	 * device
+-	 */
+-	blk_queue_make_request(lo->lo_queue, loop_make_request);
+-	lo->lo_queue->queuedata = lo;
+-
+ 	if (!(lo_flags & LO_FLAGS_READ_ONLY) && file->f_op->fsync)
+ 		blk_queue_flush(lo->lo_queue, REQ_FLUSH);
+ 
+@@ -1618,6 +1611,8 @@ static int loop_add(struct loop_device *
+ 	if (!lo)
+ 		goto out;
+ 
++	lo->lo_state = Lo_unbound;
++
+ 	/* allocate id, if @id >= 0, we're requesting that specific id */
+ 	if (i >= 0) {
+ 		err = idr_alloc(&loop_index_idr, lo, i, i + 1, GFP_KERNEL);
+@@ -1635,6 +1630,12 @@ static int loop_add(struct loop_device *
+ 	if (!lo->lo_queue)
+ 		goto out_free_idr;
+ 
++	/*
++	 * set queue make_request_fn
++	 */
++	blk_queue_make_request(lo->lo_queue, loop_make_request);
++	lo->lo_queue->queuedata = lo;
++
  	disk = lo->lo_disk = alloc_disk(1 << part_shift);
  	if (!disk)
-@@ -1678,6 +1678,8 @@ static int loop_add(struct loop_device *
- 
- out_free_queue:
- 	blk_cleanup_queue(lo->lo_queue);
-+out_free_idr:
-+	idr_remove(&loop_index_idr, i);
- out_free_dev:
- 	kfree(lo);
- out:
+ 		goto out_free_queue;
 
 
