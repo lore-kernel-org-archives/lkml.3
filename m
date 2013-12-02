@@ -1,77 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755639Ab3LBTbw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:31:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30263 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755620Ab3LBTbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:31:48 -0500
-Date: Mon, 2 Dec 2013 20:31:19 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 06/29] tools lib traceevent: Add jbd2 plugin
-Message-ID: <20131202193119.GC1366@krava.brq.redhat.com>
-References: <1385638408-23519-1-git-send-email-jolsa@redhat.com>
- <1385638408-23519-7-git-send-email-jolsa@redhat.com>
- <20131129184235.GA12850@ghostprotocols.net>
- <20131129193113.GA13490@ghostprotocols.net>
- <20131130164921.GC1228@krava.brq.redhat.com>
- <20131202192651.GB17149@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131202192651.GB17149@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755582Ab3LBTb0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:31:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39719 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755035Ab3LBTTI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 14:19:08 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: [PATCH 3.12 197/212] media: v4l2-async: Dont use dynamic static allocation
+Date: Mon,  2 Dec 2013 11:16:28 -0800
+Message-Id: <20131202191310.962280316@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
+References: <20131202191248.517975703@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 04:26:51PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Sat, Nov 30, 2013 at 05:49:21PM +0100, Jiri Olsa escreveu:
-> > On Fri, Nov 29, 2013 at 04:31:13PM -0300, Arnaldo Carvalho de Melo wrote:
-> > > Em Fri, Nov 29, 2013 at 03:42:35PM -0300, Arnaldo Carvalho de Melo escreveu:
-> > > Also I just tried:
-> 
-> > > [acme@ssdandy linux]$ git log --oneline | head -7
-> > > b0496b02fcea tools lib traceevent: Add hrtimer plugin
-> > > 1ec7a71e0b2c tools lib traceevent: Add jbd2 plugin
-> > > c63100c95c6e tools lib traceevent: Add traceevent_host_bigendian function
-> > > d54b335656b7 tools lib traceevent: Add plugin build support
-> > > e796a0d73bcc tools lib traceevent: Add plugin support
-> > > 28c803842250 perf tools: Include test-stackprotector-all.c in test-all
-> > > 1a69f6ce513d perf timechart: Move wake_events list to 'struct timechart'
-> > > [acme@ssdandy linux]$ 
-> 
-> > > [acme@ssdandy linux]$ time make O=/tmp/build/perf -C tools/perf/ install
-> > > <SNIP successful build>
-> 
-> > > [acme@ssdandy linux]$ ls -la ~/.traceevent
-> > > ls: cannot access /home/acme/.traceevent: No such file or directory
-> > > [acme@ssdandy linux]$
-> 
-> > > Where did the plugins go? At least two should be there by now, no?
->  
-> > At this stage (patches applied) you'd need to run the make for
-> > traceevent directory.
->  
-> > The perf installation link is done within this patch:
-> >     perf tools: Add build and install plugins targets
->  
-> > which I presume you haven't applied yet? 
-> 
-> No I haven't, and I expected that I could test it straight away, so I
-> suggest you reorder the patches so that, right after the first plugin is
-> introduced a:
-> 
->   make -C tools/perf install
-> 
-> in all its variants (in place, with O=, etc) allows one to test it.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-ok, I will send v3
+------------------
 
-jirka
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+
+commit 24e9a47e14f0a97ee97abc3dd86b2ef254448a17 upstream.
+
+Dynamic static allocation is evil, as Kernel stack is too low, and
+compilation complains about it on some archs:
+	drivers/media/v4l2-core/v4l2-async.c:238:1: warning: 'v4l2_async_notifier_unregister' uses dynamic stack allocation [enabled by default]
+Instead, let's enforce a limit for the buffer.
+In this specific case, there's a hard limit imposed by V4L2_MAX_SUBDEVS,
+with is currently 128. That means that the buffer size can be up to
+128x8 = 1024 bytes (on a 64bits kernel), with is too big for stack.
+Worse than that, someone could increase it and cause real troubles.
+So, let's use dynamically allocated data, instead.
+
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/media/v4l2-core/v4l2-async.c |   30 +++++++++++++++++++++++++++---
+ 1 file changed, 27 insertions(+), 3 deletions(-)
+
+--- a/drivers/media/v4l2-core/v4l2-async.c
++++ b/drivers/media/v4l2-core/v4l2-async.c
+@@ -189,30 +189,53 @@ void v4l2_async_notifier_unregister(stru
+ 	struct v4l2_subdev *sd, *tmp;
+ 	unsigned int notif_n_subdev = notifier->num_subdevs;
+ 	unsigned int n_subdev = min(notif_n_subdev, V4L2_MAX_SUBDEVS);
+-	struct device *dev[n_subdev];
++	struct device **dev;
+ 	int i = 0;
+ 
+ 	if (!notifier->v4l2_dev)
+ 		return;
+ 
++	dev = kmalloc(n_subdev * sizeof(*dev), GFP_KERNEL);
++	if (!dev) {
++		dev_err(notifier->v4l2_dev->dev,
++			"Failed to allocate device cache!\n");
++	}
++
+ 	mutex_lock(&list_lock);
+ 
+ 	list_del(&notifier->list);
+ 
+ 	list_for_each_entry_safe(sd, tmp, &notifier->done, async_list) {
+-		dev[i] = get_device(sd->dev);
++		struct device *d;
++
++		d = get_device(sd->dev);
+ 
+ 		v4l2_async_cleanup(sd);
+ 
+ 		/* If we handled USB devices, we'd have to lock the parent too */
+-		device_release_driver(dev[i++]);
++		device_release_driver(d);
+ 
+ 		if (notifier->unbind)
+ 			notifier->unbind(notifier, sd, sd->asd);
++
++		/*
++		 * Store device at the device cache, in order to call
++		 * put_device() on the final step
++		 */
++		if (dev)
++			dev[i++] = d;
++		else
++			put_device(d);
+ 	}
+ 
+ 	mutex_unlock(&list_lock);
+ 
++	/*
++	 * Call device_attach() to reprobe devices
++	 *
++	 * NOTE: If dev allocation fails, i is 0, and the whole loop won't be
++	 * executed.
++	 */
+ 	while (i--) {
+ 		struct device *d = dev[i];
+ 
+@@ -228,6 +251,7 @@ void v4l2_async_notifier_unregister(stru
+ 		}
+ 		put_device(d);
+ 	}
++	kfree(dev);
+ 
+ 	notifier->v4l2_dev = NULL;
+ 
+
+
