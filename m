@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab3LBTgQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:36:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39577 "EHLO
+	id S1755312Ab3LBTgO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:36:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39619 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754949Ab3LBTSz (ORCPT
+	with ESMTP id S1754968Ab3LBTSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:18:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Luosong <android@generaltouch.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Elias Vanderstuyft <Elias.vds@gmail.com>,
+        Anssi Hannula <anssi.hannula@iki.fi>, Simon Wood <simon@mungewell.org>,
         Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.12 176/212] HID: multitouch: Fix GeneralTouch products and add more PIDs
-Date: Mon,  2 Dec 2013 11:16:07 -0800
-Message-Id: <20131202191307.896444710@linuxfoundation.org>
+Subject: [PATCH 3.12 177/212] HID: logitech - lg2ff: Add IDs for Formula Vibration Feedback Wheel
+Date: Mon,  2 Dec 2013 11:16:08 -0800
+Message-Id: <20131202191308.068246575@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -28,79 +28,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luosong <android@generaltouch.com>
+From: Elias Vanderstuyft <Elias.vds@gmail.com>
 
-commit 7b2262920db2b98fe2cd32cde52141f02fd9eecf upstream.
+commit bd04363d3990c0727b7512a79a08c68436878bb0 upstream.
 
-GeneralTouch products should use the quirk SLOT_IS_CONTACTID
-instead of SLOT_IS_CONTACTNUMBER.
+Add USB IDs for Logitech Formula Vibration Feedback Wheel (046d:ca04).
 
-Adding PIDs 0101,e100,0102,0106,010a from the new products.
+The lg2ff force feedback subdriver is used for vibration and
+HID_GD_MULTIAXIS is set to avoid deadzone like other Logitech wheels.
 
-Tested on new and older products by GeneralTouch engineers.
+Kconfig description etc are also updated accordingly.
 
-Signed-off-by: Luosong <android@generaltouch.com>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Elias Vanderstuyft <Elias.vds@gmail.com>
+[anssi.hannula@iki.fi: added description and CCs]
+Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Signed-off-by: Simon Wood <simon@mungewell.org>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-ids.h        |    5 +++++
- drivers/hid/hid-multitouch.c |   19 +++++++++++++++++--
- 2 files changed, 22 insertions(+), 2 deletions(-)
+ drivers/hid/Kconfig     |    8 +++++---
+ drivers/hid/hid-core.c  |    1 +
+ drivers/hid/hid-ids.h   |    1 +
+ drivers/hid/hid-lg.c    |    3 +++
+ drivers/hid/hid-lg2ff.c |    2 +-
+ 5 files changed, 11 insertions(+), 4 deletions(-)
 
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -369,12 +369,14 @@ config LOGITECH_FF
+ 	  force feedback.
+ 
+ config LOGIRUMBLEPAD2_FF
+-	bool "Logitech RumblePad/Rumblepad 2 force feedback support"
++	bool "Logitech force feedback support (variant 2)"
+ 	depends on HID_LOGITECH
+ 	select INPUT_FF_MEMLESS
+ 	help
+-	  Say Y here if you want to enable force feedback support for Logitech
+-	  RumblePad and Rumblepad 2 devices.
++	  Say Y here if you want to enable force feedback support for:
++	  - Logitech RumblePad
++	  - Logitech Rumblepad 2
++	  - Logitech Formula Vibration Feedback Wheel
+ 
+ config LOGIG940_FF
+ 	bool "Logitech Flight System G940 force feedback support"
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1754,6 +1754,7 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_FLIGHT_SYSTEM_G940) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_MOMO_WHEEL) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_VIBRATION_WHEEL) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_DFP_WHEEL) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_DFGT_WHEEL) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_G25_WHEEL) },
 --- a/drivers/hid/hid-ids.h
 +++ b/drivers/hid/hid-ids.h
-@@ -332,6 +332,11 @@
- #define USB_VENDOR_ID_GENERAL_TOUCH	0x0dfc
- #define USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS 0x0003
- #define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS 0x0100
-+#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0101 0x0101
-+#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0102 0x0102
-+#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0106 0x0106
-+#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_010A 0x010a
-+#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_E100 0xe100
+@@ -576,6 +576,7 @@
+ #define USB_DEVICE_ID_DINOVO_EDGE	0xc714
+ #define USB_DEVICE_ID_DINOVO_MINI	0xc71f
+ #define USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2	0xca03
++#define USB_DEVICE_ID_LOGITECH_VIBRATION_WHEEL	0xca04
  
- #define USB_VENDOR_ID_GLAB		0x06c2
- #define USB_DEVICE_ID_4_PHIDGETSERVO_30	0x0038
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -250,12 +250,12 @@ static struct mt_class mt_classes[] = {
- 	{ .name	= MT_CLS_GENERALTOUCH_TWOFINGERS,
- 		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
- 			MT_QUIRK_VALID_IS_INRANGE |
--			MT_QUIRK_SLOT_IS_CONTACTNUMBER,
-+			MT_QUIRK_SLOT_IS_CONTACTID,
- 		.maxcontacts = 2
- 	},
- 	{ .name	= MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
- 		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
--			MT_QUIRK_SLOT_IS_CONTACTNUMBER
-+			MT_QUIRK_SLOT_IS_CONTACTID
- 	},
+ #define USB_VENDOR_ID_LUMIO		0x202e
+ #define USB_DEVICE_ID_CRYSTALTOUCH	0x0006
+--- a/drivers/hid/hid-lg.c
++++ b/drivers/hid/hid-lg.c
+@@ -492,6 +492,7 @@ static int lg_input_mapped(struct hid_de
+ 		case USB_DEVICE_ID_LOGITECH_G27_WHEEL:
+ 		case USB_DEVICE_ID_LOGITECH_WII_WHEEL:
+ 		case USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2:
++		case USB_DEVICE_ID_LOGITECH_VIBRATION_WHEEL:
+ 			field->application = HID_GD_MULTIAXIS;
+ 			break;
+ 		default:
+@@ -639,6 +640,8 @@ static const struct hid_device_id lg_dev
+ 		.driver_data = LG_NOGET | LG_FF4 },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2),
+ 		.driver_data = LG_FF4 },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_VIBRATION_WHEEL),
++		.driver_data = LG_FF2 },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_G25_WHEEL),
+ 		.driver_data = LG_FF4 },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_DFGT_WHEEL),
+--- a/drivers/hid/hid-lg2ff.c
++++ b/drivers/hid/hid-lg2ff.c
+@@ -95,7 +95,7 @@ int lg2ff_init(struct hid_device *hid)
  
- 	{ .name = MT_CLS_FLATFROG,
-@@ -1173,6 +1173,21 @@ static const struct hid_device_id mt_dev
- 	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
- 		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
- 			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS) },
-+	{ .driver_data = MT_CLS_GENERALTOUCH_TWOFINGERS,
-+		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-+			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0101) },
-+	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-+		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-+			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0102) },
-+	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-+		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-+			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0106) },
-+	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-+		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-+			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_010A) },
-+	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-+		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-+			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_E100) },
+ 	hid_hw_request(hid, report, HID_REQ_SET_REPORT);
  
- 	/* Gametel game controller */
- 	{ .driver_data = MT_CLS_NSMU,
+-	hid_info(hid, "Force feedback for Logitech RumblePad/Rumblepad 2 by Anssi Hannula <anssi.hannula@gmail.com>\n");
++	hid_info(hid, "Force feedback for Logitech variant 2 rumble devices by Anssi Hannula <anssi.hannula@gmail.com>\n");
+ 
+ 	return 0;
+ }
 
 
