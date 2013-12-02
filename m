@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab3LBTNj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:13:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38539 "EHLO
+	id S1753579Ab3LBTNs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:13:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38395 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754072Ab3LBTNZ (ORCPT
+	with ESMTP id S1753994Ab3LBTN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:25 -0500
+	Mon, 2 Dec 2013 14:13:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ursula Braun <ursula.braun@de.ibm.com>,
-        Frank Blaschka <frank.blaschka@de.ibm.com>,
-        Heiko Carstens <heicars2@linux.vnet.ibm.com>,
-        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 064/173] qeth: avoid buffer overflow in snmp ioctl
-Date: Mon,  2 Dec 2013 11:10:47 -0800
-Message-Id: <20131202191149.909286478@linuxfoundation.org>
+        Stanislaw Gruszka <stf_xl@wp.pl>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 065/173] rt2400pci: fix RSSI read
+Date: Mon,  2 Dec 2013 11:10:48 -0800
+Message-Id: <20131202191150.057906397@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -30,46 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ursula Braun <ursula.braun@de.ibm.com>
+From: Stanislaw Gruszka <stf_xl@wp.pl>
 
-commit 6fb392b1a63ae36c31f62bc3fc8630b49d602b62 upstream.
+commit 2bf127a5cc372b9319afcbae10b090663b621c8b upstream.
 
-Check user-defined length in snmp ioctl request and allow request
-only if it fits into a qeth command buffer.
+RSSI value is provided on word3 not on word2.
 
-Signed-off-by: Ursula Braun <ursula.braun@de.ibm.com>
-Signed-off-by: Frank Blaschka <frank.blaschka@de.ibm.com>
-Reviewed-by: Heiko Carstens <heicars2@linux.vnet.ibm.com>
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/net/qeth_core_main.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2400pci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/s390/net/qeth_core_main.c
-+++ b/drivers/s390/net/qeth_core_main.c
-@@ -4448,7 +4448,7 @@ int qeth_snmp_command(struct qeth_card *
- 	struct qeth_cmd_buffer *iob;
- 	struct qeth_ipa_cmd *cmd;
- 	struct qeth_snmp_ureq *ureq;
--	int req_len;
-+	unsigned int req_len;
- 	struct qeth_arp_query_info qinfo = {0, };
- 	int rc = 0;
+--- a/drivers/net/wireless/rt2x00/rt2400pci.c
++++ b/drivers/net/wireless/rt2x00/rt2400pci.c
+@@ -1261,7 +1261,7 @@ static void rt2400pci_fill_rxdone(struct
+ 	 */
+ 	rxdesc->timestamp = ((u64)rx_high << 32) | rx_low;
+ 	rxdesc->signal = rt2x00_get_field32(word2, RXD_W2_SIGNAL) & ~0x08;
+-	rxdesc->rssi = rt2x00_get_field32(word2, RXD_W3_RSSI) -
++	rxdesc->rssi = rt2x00_get_field32(word3, RXD_W3_RSSI) -
+ 	    entry->queue->rt2x00dev->rssi_offset;
+ 	rxdesc->size = rt2x00_get_field32(word0, RXD_W0_DATABYTE_COUNT);
  
-@@ -4464,6 +4464,10 @@ int qeth_snmp_command(struct qeth_card *
- 	/* skip 4 bytes (data_len struct member) to get req_len */
- 	if (copy_from_user(&req_len, udata + sizeof(int), sizeof(int)))
- 		return -EFAULT;
-+	if (req_len > (QETH_BUFSIZE - IPA_PDU_HEADER_SIZE -
-+		       sizeof(struct qeth_ipacmd_hdr) -
-+		       sizeof(struct qeth_ipacmd_setadpparms_hdr)))
-+		return -EINVAL;
- 	ureq = memdup_user(udata, req_len + sizeof(struct qeth_snmp_ureq_hdr));
- 	if (IS_ERR(ureq)) {
- 		QETH_CARD_TEXT(card, 2, "snmpnome");
 
 
