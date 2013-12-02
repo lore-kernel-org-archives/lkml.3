@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab3LBTNW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:13:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38549 "EHLO
+	id S1754069Ab3LBTNZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:13:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38402 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753981Ab3LBTNG (ORCPT
+	with ESMTP id S1753994Ab3LBTNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:06 -0500
+	Mon, 2 Dec 2013 14:13:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 038/173] rtlwifi: Fix endian error in extracting packet type
-Date: Mon,  2 Dec 2013 11:10:21 -0800
-Message-Id: <20131202191147.065736951@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.10 032/173] gpio: mvebu: make mvchip->irqbase signed for error handling
+Date: Mon,  2 Dec 2013 11:10:15 -0800
+Message-Id: <20131202191146.432254273@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -28,163 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 0c5d63f0ab6728f05ddefa25aff55e31297f95e6 upstream.
+commit d535922691fc026479fcc03e78ac3d931a54e75a upstream.
 
-All of the rtlwifi drivers have an error in the routine that tests if
-the data is "special". If it is, the subsequant transmission will be
-at the lowest rate to enhance reliability. The 16-bit quantity is
-big-endian, but was being extracted in native CPU mode. One of the
-effects of this bug is to inhibit association under some conditions
-as the TX rate is too high.
+There is a bug in mvebu_gpio_probe() where we do:
 
-Based on suggestions by Joe Perches, the entire routine is rewritten.
+	mvchip->irqbase = irq_alloc_descs(-1, 0, ngpios, -1);
+	if (mvchip->irqbase < 0) {
 
-One of the local headers contained duplicates of some of the ETH_P_XXX
-definitions. These are deleted.
+The problem is that mvchip->irqbase is unsigned so the error handling
+doesn't work.  I have changed it to be a regular int.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/base.c |   97 +++++++++++++++---------------------
- drivers/net/wireless/rtlwifi/wifi.h |    6 --
- 2 files changed, 44 insertions(+), 59 deletions(-)
+ drivers/gpio/gpio-mvebu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/base.c
-+++ b/drivers/net/wireless/rtlwifi/base.c
-@@ -37,6 +37,7 @@
- 
- #include <linux/ip.h>
- #include <linux/module.h>
-+#include <linux/udp.h>
- 
- /*
-  *NOTICE!!!: This file will be very big, we should
-@@ -1066,64 +1067,52 @@ u8 rtl_is_special_data(struct ieee80211_
- 	if (!ieee80211_is_data(fc))
- 		return false;
- 
-+	ip = (const struct iphdr *)(skb->data + mac_hdr_len +
-+				    SNAP_SIZE + PROTOC_TYPE_SIZE);
-+	ether_type = be16_to_cpup((__be16 *)
-+				  (skb->data + mac_hdr_len + SNAP_SIZE));
-+
-+	switch (ether_type) {
-+	case ETH_P_IP: {
-+		struct udphdr *udp;
-+		u16 src;
-+		u16 dst;
-+
-+		if (ip->protocol != IPPROTO_UDP)
-+			return false;
-+		udp = (struct udphdr *)((u8 *)ip + (ip->ihl << 2));
-+		src = be16_to_cpu(udp->source);
-+		dst = be16_to_cpu(udp->dest);
-+
-+		/* If this case involves port 68 (UDP BOOTP client) connecting
-+		 * with port 67 (UDP BOOTP server), then return true so that
-+		 * the lowest speed is used.
-+		 */
-+		if (!((src == 68 && dst == 67) || (src == 67 && dst == 68)))
-+			return false;
- 
--	ip = (struct iphdr *)((u8 *) skb->data + mac_hdr_len +
--			      SNAP_SIZE + PROTOC_TYPE_SIZE);
--	ether_type = *(u16 *) ((u8 *) skb->data + mac_hdr_len + SNAP_SIZE);
--	/*	ether_type = ntohs(ether_type); */
--
--	if (ETH_P_IP == ether_type) {
--		if (IPPROTO_UDP == ip->protocol) {
--			struct udphdr *udp = (struct udphdr *)((u8 *) ip +
--							       (ip->ihl << 2));
--			if (((((u8 *) udp)[1] == 68) &&
--			     (((u8 *) udp)[3] == 67)) ||
--			    ((((u8 *) udp)[1] == 67) &&
--			     (((u8 *) udp)[3] == 68))) {
--				/*
--				 * 68 : UDP BOOTP client
--				 * 67 : UDP BOOTP server
--				 */
--				RT_TRACE(rtlpriv, (COMP_SEND | COMP_RECV),
--					 DBG_DMESG, "dhcp %s !!\n",
--					 is_tx ? "Tx" : "Rx");
--
--				if (is_tx) {
--					rtlpriv->enter_ps = false;
--					schedule_work(&rtlpriv->
--						      works.lps_change_work);
--					ppsc->last_delaylps_stamp_jiffies =
--					    jiffies;
--				}
--
--				return true;
--			}
--		}
--	} else if (ETH_P_ARP == ether_type) {
--		if (is_tx) {
--			rtlpriv->enter_ps = false;
--			schedule_work(&rtlpriv->works.lps_change_work);
--			ppsc->last_delaylps_stamp_jiffies = jiffies;
--		}
--
--		return true;
--	} else if (ETH_P_PAE == ether_type) {
-+		RT_TRACE(rtlpriv, (COMP_SEND | COMP_RECV), DBG_DMESG,
-+			 "dhcp %s !!\n", is_tx ? "Tx" : "Rx");
-+		break;
-+	}
-+	case ETH_P_ARP:
-+		break;
-+	case ETH_P_PAE:
- 		RT_TRACE(rtlpriv, (COMP_SEND | COMP_RECV), DBG_DMESG,
- 			 "802.1X %s EAPOL pkt!!\n", is_tx ? "Tx" : "Rx");
--
--		if (is_tx) {
--			rtlpriv->enter_ps = false;
--			schedule_work(&rtlpriv->works.lps_change_work);
--			ppsc->last_delaylps_stamp_jiffies = jiffies;
--		}
--
--		return true;
--	} else if (ETH_P_IPV6 == ether_type) {
--		/* IPv6 */
--		return true;
-+		break;
-+	case ETH_P_IPV6:
-+		/* TODO: Is this right? */
-+		return false;
-+	default:
-+		return false;
- 	}
--
--	return false;
-+	if (is_tx) {
-+		rtlpriv->enter_ps = false;
-+		schedule_work(&rtlpriv->works.lps_change_work);
-+		ppsc->last_delaylps_stamp_jiffies = jiffies;
-+	}
-+	return true;
- }
- 
- /*********************************************************
---- a/drivers/net/wireless/rtlwifi/wifi.h
-+++ b/drivers/net/wireless/rtlwifi/wifi.h
-@@ -77,11 +77,7 @@
- #define RTL_SLOT_TIME_9				9
- #define RTL_SLOT_TIME_20			20
- 
--/*related with tcp/ip. */
--/*if_ehther.h*/
--#define ETH_P_PAE		0x888E	/*Port Access Entity (IEEE 802.1X) */
--#define ETH_P_IP		0x0800	/*Internet Protocol packet */
--#define ETH_P_ARP		0x0806	/*Address Resolution packet */
-+/*related to tcp/ip. */
- #define SNAP_SIZE		6
- #define PROTOC_TYPE_SIZE	2
- 
+--- a/drivers/gpio/gpio-mvebu.c
++++ b/drivers/gpio/gpio-mvebu.c
+@@ -79,7 +79,7 @@ struct mvebu_gpio_chip {
+ 	spinlock_t	   lock;
+ 	void __iomem	  *membase;
+ 	void __iomem	  *percpu_membase;
+-	unsigned int       irqbase;
++	int		   irqbase;
+ 	struct irq_domain *domain;
+ 	int                soc_variant;
+ };
 
 
