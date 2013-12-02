@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759484Ab3LBVOa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:14:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38406 "EHLO
+	id S1759470Ab3LBVO0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:14:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38505 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753962Ab3LBTM7 (ORCPT
+	with ESMTP id S1753964Ab3LBTM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:12:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.10 026/173] can: flexcan: fix flexcan_chip_start() on imx6
-Date: Mon,  2 Dec 2013 11:10:09 -0800
-Message-Id: <20131202191145.802742057@linuxfoundation.org>
+        Ionut Nicu <ioan.nicu.ext@nsn.com>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH 3.10 027/173] i2c: mux: gpio: use reg value for i2c_add_mux_adapter
+Date: Mon,  2 Dec 2013 11:10:10 -0800
+Message-Id: <20131202191145.908691599@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,54 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: Ionut Nicu <ioan.nicu.ext@nsn.com>
 
-commit 0d1862ea1a5bb876cf05555a7307080cb75bf379 upstream.
+commit 8c0ec2500eeb89749341884a972860d7f9e56f9c upstream.
 
-In the flexcan_chip_start() function first the flexcan core is going through
-the soft reset sequence, then the RX FIFO is enabled.
+The i2c-mux driver requires that the chan_id parameter
+passed to the i2c_add_mux_adapter() function is equal
+to the reg value for that adapter:
 
-With the hardware is put into FIFO mode, message buffers 1...7 are reserved by
-the FIFO engine. The remaining message buffers are in reset default values.
-This patch removes the bogus initialization of the message buffers, as it
-causes an imprecise external abort on imx6.
+for_each_child_of_node(mux_dev->of_node, child) {
+	ret = of_property_read_u32(child, "reg", &reg);
+	if (ret)
+		continue;
+	if (chan_id == reg) {
+		priv->adap.dev.of_node = child;
+		break;
+	}
+}
 
-Reported-by: Lothar Waßmann <LW@KARO-electronics.de>
-Tested-by: Lothar Waßmann <LW@KARO-electronics.de>
-[mkl: adjusted context for stable]
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+The i2c-mux-gpio driver uses an internal logical index
+for chan_id when calling i2c_add_mux_adapter() instead
+of using the reg value.
+
+Because of this, there will problems in selecting the
+right adapter when the i2c-mux-gpio's index into
+mux->data.values doesn't match the reg value.
+
+An example of such a case:
+
+mux->data.values = { 1, 0 }
+
+For chan_id = 0, i2c-mux will bind the adapter to the
+of_node with reg = <0>, but when it will call the
+select() callback with chan_id set to 0, the i2c-mux-gpio
+will use it as an index into mux->data.values and it will
+actually select the bus with reg = <1>.
+
+Signed-off-by: Ionut Nicu <ioan.nicu.ext@nsn.com>
+Acked-by: Alexander Sverdlin <alexander.sverdlin@nsn.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/can/flexcan.c |   12 ------------
- 1 file changed, 12 deletions(-)
 
---- a/drivers/net/can/flexcan.c
-+++ b/drivers/net/can/flexcan.c
-@@ -711,7 +711,6 @@ static int flexcan_chip_start(struct net
+---
+ drivers/i2c/muxes/i2c-mux-gpio.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/i2c/muxes/i2c-mux-gpio.c
++++ b/drivers/i2c/muxes/i2c-mux-gpio.c
+@@ -39,7 +39,7 @@ static int i2c_mux_gpio_select(struct i2
  {
- 	struct flexcan_priv *priv = netdev_priv(dev);
- 	struct flexcan_regs __iomem *regs = priv->base;
--	unsigned int i;
- 	int err;
- 	u32 reg_mcr, reg_ctrl;
+ 	struct gpiomux *mux = data;
  
-@@ -783,17 +782,6 @@ static int flexcan_chip_start(struct net
- 	netdev_dbg(dev, "%s: writing ctrl=0x%08x", __func__, reg_ctrl);
- 	flexcan_write(reg_ctrl, &regs->ctrl);
+-	i2c_mux_gpio_set(mux, mux->data.values[chan]);
++	i2c_mux_gpio_set(mux, chan);
  
--	for (i = 0; i < ARRAY_SIZE(regs->cantxfg); i++) {
--		flexcan_write(0, &regs->cantxfg[i].can_ctrl);
--		flexcan_write(0, &regs->cantxfg[i].can_id);
--		flexcan_write(0, &regs->cantxfg[i].data[0]);
--		flexcan_write(0, &regs->cantxfg[i].data[1]);
--
--		/* put MB into rx queue */
--		flexcan_write(FLEXCAN_MB_CNT_CODE(0x4),
--			&regs->cantxfg[i].can_ctrl);
--	}
--
- 	/* Abort any pending TX, mark Mailbox as INACTIVE */
- 	flexcan_write(FLEXCAN_MB_CNT_CODE(0x4),
- 		      &regs->cantxfg[FLEXCAN_TX_BUF_ID].can_ctrl);
+ 	return 0;
+ }
+@@ -223,7 +223,7 @@ static int i2c_mux_gpio_probe(struct pla
+ 		unsigned int class = mux->data.classes ? mux->data.classes[i] : 0;
+ 
+ 		mux->adap[i] = i2c_add_mux_adapter(parent, &pdev->dev, mux, nr,
+-						   i, class,
++						   mux->data.values[i], class,
+ 						   i2c_mux_gpio_select, deselect);
+ 		if (!mux->adap[i]) {
+ 			ret = -ENODEV;
 
 
