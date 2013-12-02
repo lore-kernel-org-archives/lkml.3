@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386Ab3LBKte (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 05:49:34 -0500
-Received: from 0106ds1-hvi.0.fullrate.dk ([90.184.84.98]:19610 "EHLO
-	mail.knielsen-hq.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753198Ab3LBKtb (ORCPT
+	id S1753427Ab3LBKts (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 05:49:48 -0500
+Received: from www.linutronix.de ([62.245.132.108]:43431 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198Ab3LBKtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 05:49:31 -0500
-From: Kristian Nielsen <knielsen@knielsen-hq.org>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: Dave Jones <davej@redhat.com>, Benjamin LaHaise <bcrl@kvack.org>,
-        Kent Overstreet <kmo@daterainc.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: GPF in aio_migratepage
-References: <20131126032645.GA32301@redhat.com>
-	<20131126060132.GA6400@redhat.com> <20131126071953.GE9244@kmo-pixel>
-	<20131126152337.GL15489@kvack.org>
-	<87d2lh6h92.fsf@frigg.knielsen-hq.org>
-	<529C5CA6.6090708@cn.fujitsu.com>
-Date: Mon, 02 Dec 2013 11:49:24 +0100
-In-Reply-To: <529C5CA6.6090708@cn.fujitsu.com> (Gu Zheng's message of "Mon, 02
-	Dec 2013 18:10:46 +0800")
-Message-ID: <877gbnplxn.fsf@frigg.knielsen-hq.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Mon, 2 Dec 2013 05:49:46 -0500
+Date: Mon, 2 Dec 2013 11:49:21 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Francis Moreau <francis.moro@gmail.com>
+cc: Jingoo Han <jg1.han@samsung.com>, "'Wei WANG'" <wei_wang@realsil.com.cn>,
+        "'Samuel Ortiz'" <sameo@linux.intel.com>,
+        "'Chris Ball'" <cjb@laptop.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "'Borislav Petkov'" <bp@alien8.de>,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
+In-Reply-To: <5299FF38.7060203@gmail.com>
+Message-ID: <alpine.DEB.2.02.1312021145190.30673@ionos.tec.linutronix.de>
+References: <20131117195358.GO27323@pd.tnic> <4523614.I5MBhorHFt@vostro.rjw.lan> <5292FF5D.1050304@gmail.com> <1821758.2MoNI3h1Mv@vostro.rjw.lan> <52985041.5050000@gmail.com> <alpine.DEB.2.02.1311290958560.30673@ionos.tec.linutronix.de>
+ <5299FF38.7060203@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gu Zheng <guz.fnst@cn.fujitsu.com> writes:
+On Sat, 30 Nov 2013, Francis Moreau wrote:
+> Hello Thomas,
+> 
+> Sorry for the delay.
+> 
+> On 11/29/2013 10:02 AM, Thomas Gleixner wrote:
+> > On Fri, 29 Nov 2013, Francis Moreau wrote:
+> >> Since it seems to be related to rtsx driver or its upper layer, could
+> >> the folks involved in this area have a look to this issue please ?
+> > 
+> > I'm not involved, but looking at the debug objects backtrace it's
+> > related to the delayed work in rtsx.
+> > 
+> > Does the untested patch below cure the issue?
+> > 
+> 
+> It seems it does since I can't see the debug object trace anymore
+> however Ican see this now:
 
-> Hi Kristian, Dave,
->
-> Could you please help to check whether the following patch can fix this issue?
+<SNIP>
+ 
+> So I don't think it completely solve the problem but it's a good start.
 
-> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> ---
->  fs/aio.c |   28 ++++++++++------------------
->  1 files changed, 10 insertions(+), 18 deletions(-)
->
+I kinda expected that, but I wanted to confirm my suspicion, that the
+interrupt hits after the delayed work is canceled and just requeues it
+again, which then leads to an armed timer being freed further down.
 
-Ok. I've applied the patch to 3.13-rc2 and will give it a spin. I will let you
-know if I encounter the failure again with the patch.
+I'm not familiar with that driver and I leave the final fixup to the
+driver maintainers. It's enough data for them to figure out the real
+solution.
 
 Thanks,
 
- - Kristian.
+	tglx
+
+
