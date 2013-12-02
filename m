@@ -1,38 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658Ab3LBVvL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:51:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34099 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753589Ab3LBVvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 16:51:07 -0500
-Date: Mon, 2 Dec 2013 22:51:03 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Zawullon <zawullon@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hid: add NOGET quirk and device id for Logitech Dual
- Action gamepads support
-In-Reply-To: <529CCA03.8090602@gmail.com>
-Message-ID: <alpine.LNX.2.00.1312022249510.24931@pobox.suse.cz>
-References: <5299B520.9060200@gmail.com> <alpine.LNX.2.00.1312021512460.24931@pobox.suse.cz> <529CCA03.8090602@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753531Ab3LBWLB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 17:11:01 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:24221 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752266Ab3LBWK7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 17:10:59 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ao4IADwEnVJ5LHyk/2dsb2JhbABZgwe0JIVOgSUXdIIlAQEFJxMcIxAIAw4KCQwZDwUlAyETiADAIxaODmQHCoQpA4xZizqHQYpTgz0ogSw
+Date: Tue, 3 Dec 2013 09:10:52 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Metin Doslu <metin@citusdata.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ozgun Erdogan <ozgun@citusdata.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 9/9] mm: keep page cache radix tree nodes in check
+Message-ID: <20131202221052.GT8803@dastard>
+References: <1386012108-21006-1-git-send-email-hannes@cmpxchg.org>
+ <1386012108-21006-10-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386012108-21006-10-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Dec 2013, Zawullon wrote:
-
-> > Please provide your Signed-off-by: line so that I could apply the patch. 
-> > Thanks.
+On Mon, Dec 02, 2013 at 02:21:48PM -0500, Johannes Weiner wrote:
+> Previously, page cache radix tree nodes were freed after reclaim
+> emptied out their page pointers.  But now reclaim stores shadow
+> entries in their place, which are only reclaimed when the inodes
+> themselves are reclaimed.  This is problematic for bigger files that
+> are still in use after they have a significant amount of their cache
+> reclaimed, without any of those pages actually refaulting.  The shadow
+> entries will just sit there and waste memory.  In the worst case, the
+> shadow entries will accumulate until the machine runs out of memory.
 > 
-> Oh, of course. Sorry.
+> To get this under control, the VM will track radix tree nodes
+> exclusively containing shadow entries on a per-NUMA node list.
+> Per-NUMA rather than global because we expect the radix tree nodes
+> themselves to be allocated node-locally and we want to reduce
+> cross-node references of otherwise independent cache workloads.  A
+> simple shrinker will then reclaim these nodes on memory pressure.
 > 
-> Signed-off-by: Vitaly Katraew <zawullon@gmail.com>
+> A few things need to be stored in the radix tree node to implement the
+> shadow node LRU and allow tree deletions coming from the list:
+> 
+> 1. There is no index available that would describe the reverse path
+>    from the node up to the tree root, which is needed to perform a
+>    deletion.  To solve this, encode in each node its offset inside the
+>    parent.  This can be stored in the unused upper bits of the same
+>    member that stores the node's height at no extra space cost.
+> 
+> 2. The number of shadow entries needs to be counted in addition to the
+>    regular entries, to quickly detect when the node is ready to go to
+>    the shadow node LRU list.  The current entry count is an unsigned
+>    int but the maximum number of entries is 64, so a shadow counter
+>    can easily be stored in the unused upper bits.
+> 
+> 3. Tree modification needs tree lock and tree root, which are located
+>    in the address space, so store an address_space backpointer in the
+>    node.  The parent pointer of the node is in a union with the 2-word
+>    rcu_head, so the backpointer comes at no extra cost as well.
+> 
+> 4. The node needs to be linked to an LRU list, which requires a list
+>    head inside the node.  This does increase the size of the node, but
+>    it does not change the number of objects that fit into a slab page.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Now applied (with the name above as authorship as well). Thanks,
+Mostly looks ok, though there is no need to expose the internals of
+list_lru_add/del. The reason for the different return values was so
+that the isolate callback could simply use list_del_init() and not
+have to worry about all the internal accounting stuff. We can drop
+the lock and then do the accounting after regaining it because it
+won't result in the count of objects going negative and triggering
+warnings.
 
+Hence I think that all we need to do is add a new isolate return
+value "LRU_REMOVED_RETRY" and add it to list_lru_walk_node() like
+so:
+
+ 		switch (ret) {
++		case LRU_REMOVED_RETRY:
++			/*
++			 * object was removed from the list so we need to
++			 * account for it just like LRU_REMOVED hence the
++			 * fallthrough.  However, the list lock was also
++			 * dropped so we need to restart the list walk.
++			 */
+ 		case LRU_REMOVED:
+ 			if (--nlru->nr_items == 0)
+ 				node_clear(nid, lru->active_nodes);
+ 			WARN_ON_ONCE(nlru->nr_items < 0);
+ 			isolated++;
++			if (ret == LRU_REMOVED_RETRY)
++				goto restart;
+ 			break;
+
+> +static unsigned long scan_shadow_nodes(struct shrinker *shrinker,
+> +				       struct shrink_control *sc)
+> +{
+> +	unsigned long nr_reclaimed = 0;
+> +
+> +	list_lru_walk_node(&workingset_shadow_nodes, sc->nid,
+> +			   shadow_lru_isolate, &nr_reclaimed, &sc->nr_to_scan);
+> +
+> +	return nr_reclaimed;
+> +}
+
+Do we need check against GFP_NOFS here? I don't think so, but I just
+wanted to check...
+
+Cheers,
+
+Dave.
 -- 
-Jiri Kosina
-SUSE Labs
+Dave Chinner
+david@fromorbit.com
