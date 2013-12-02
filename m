@@ -1,86 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab3LBXIT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 18:08:19 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:39641 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753767Ab3LBXIQ (ORCPT
+	id S1753940Ab3LBXIt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 18:08:49 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:33059 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753237Ab3LBXIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 18:08:16 -0500
-Message-ID: <529D12DC.2000303@linaro.org>
-Date: Mon, 02 Dec 2013 15:08:12 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Magnus Damm <magnus.damm@gmail.com>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v2 01/03] clocksource: Add Kconfig entries for CMT, MTU2,
- TMU and STI
-References: <20131106110508.6806.48070.sendpatchset@w520>	<20131106110518.6806.79333.sendpatchset@w520>	<527B790B.4040200@linaro.org>	<CANqRtoSn7=NeY2bSpacCXn6tKatn1S+CP3r-+mka91b0neJ4kw@mail.gmail.com>	<527D2EA0.7060605@linaro.org>	<CANqRtoQJYqBmDh1e-kA9_3ea-pp0J1Cx9Pr87HieYYfr7y435A@mail.gmail.com>	<CALAqxLVZdAs0V9ghA43VdP02+Rn=t4COZw_PRkZnWC=Q=OWLWA@mail.gmail.com> <CANqRtoSC7EcJqjL9ockoHUS+vwVrurSD-EhnK1tV8SSr_baJSg@mail.gmail.com>
-In-Reply-To: <CANqRtoSC7EcJqjL9ockoHUS+vwVrurSD-EhnK1tV8SSr_baJSg@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Dec 2013 18:08:46 -0500
+X-AuditID: cbfee690-b7f126d00000418c-d0-529d12fd562a
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Linus Walleij'" <linus.walleij@linaro.org>,
+        linux-gpio@vger.kernel.org
+References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
+In-reply-to: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
+Subject: [PATCH 08/39] gpio: remove DEFINE_PCI_DEVICE_TABLE macro
+Date: Tue, 03 Dec 2013 08:08:45 +0900
+Message-id: <001d01ceefb3$733b8cb0$59b2a610$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7vsUc6neA2wWIVTNSB4ceFa5FjuwAAhD1w
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEIsWRmVeSWpSXmKPExsVy+t8zA92/QnODDD6fkrRoXryezeLywkus
+	FlP+LGey2Dz/D6PF5V1z2BxYPe5c28PmsX/uGnaPvi2rGD0+b5ILYInisklJzcksSy3St0vg
+	ypjacZ+p4Kl0xdeL7xgbGA+KdzFyckgImEicXrKQCcIWk7hwbz0biC0ksIxR4sqTSJiaW0sv
+	sncxcgHFpzNK3Pj7iA3C+cUocfn3DLBuNgE1iS9fDrOD2CICphIb309hBCliFuhjlJh04xgL
+	xFhbiekvNgM1cHBwCthJ9H2qBQkLCzhK7H/QxwpiswioSqyaPxNsJi9Q+Z0b/1ghbEGJH5Pv
+	gY1hFtCSWL/zOBOELS+xec1bZpCREgLqEo/+6kKcYCSxZcouVogSEYl9L96BnSMhcI1d4vT6
+	n4wQuwQkvk0+xALRKyux6QAzxMOSEgdX3GCZwCgxC8nmWUg2z0KyeRaSFQsYWVYxiqYWJBcU
+	J6UXmegVJ+YWl+al6yXn525ihMTnhB2M9w5YH2JMBlo/kVlKNDkfGN95JfGGxmZGFqYmpsZG
+	5pZmpAkrifOqPUoKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cDo4izry23deI99u/LSpw6b
+	9q+4afOY9eysnUUyVYWzvQV6qo8GP2J8kiEyKcAu4ONOpRP7lz2+vI/hw5GUrrmVz37wX855
+	339pX38G+6eQG+/slOI03/7a+FBB7LqiFt/7JZeq6s3NNzJKrxapl2t/tEB4UrLUh3CGp2cO
+	unAZKT8LLs88Ne2iEktxRqKhFnNRcSIAoESAA+UCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAKsWRmVeSWpSXmKPExsVy+t9jQd2/QnODDP51i1o0L17PZnF54SVW
+	iyl/ljNZbJ7/h9Hi8q45bA6sHneu7WHz2D93DbtH35ZVjB6fN8kFsEQ1MNpkpCampBYppOYl
+	56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXmAC1WUihLzCkFCgUkFhcr6dth
+	mhAa4qZrAdMYoesbEgTXY2SABhLWMWZM7bjPVPBUuuLrxXeMDYwHxbsYOTkkBEwkbi29yA5h
+	i0lcuLeerYuRi0NIYDqjxI2/j6CcX4wSl3/PYAKpYhNQk/jy5TBYh4iAqcTG91MYQYqYBfoY
+	JSbdOMYCkhASsJWY/mIzUAMHB6eAnUTfp1qQsLCAo8T+B32sIDaLgKrEqvkzwWbyApXfufGP
+	FcIWlPgx+R7YGGYBLYn1O48zQdjyEpvXvGUGGSkhoC7x6K8uxAlGElum7GKFKBGR2PfiHeME
+	RqFZSCbNQjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHP/PpHYwrmyw
+	OMQowMGoxMP7YPucICHWxLLiytxDjBIczEoivJ08c4OEeFMSK6tSi/Lji0pzUosPMSYDPTqR
+	WUo0OR+YmvJK4g2NTcyMLI3MLIxMzM1JE1YS5z3Qah0oJJCeWJKanZpakFoEs4WJg1OqgZHV
+	cOEckzOXNHM5HgSfqHRhjgl/mbHgmNYfnwmfo1VnvVd/x5Ugfb0yKaZjgfpfnR7tGQnR5/cy
+	7LpayHw/SV/PzjIxfZG23tbNa/lusitJWhn3frcL+FC3jPVj+Sodg7icpfYM06+/644X9rfZ
+	2iF/8fHdpVvV5oVG5yzME27vX39a/ZB/jRJLcUaioRZzUXEiAAzcuSRDAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2013 09:42 PM, Magnus Damm wrote:
-> Hi John, everyone,
->
-> Let me get back to you all in a little while together with some code,
-> but before that let me just clarify this:
->
-> On Wed, Nov 13, 2013 at 5:47 AM, John Stultz <john.stultz@linaro.org> wrote:
->> On Tue, Nov 12, 2013 at 4:26 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
->>> On Sat, Nov 9, 2013 at 3:34 AM, John Stultz <john.stultz@linaro.org> wrote:
->>> Let me get back to the kernel configuration. Of course, it would be
->>> really nice if the kernel configuration was 100% fool proof, but what
->>> happens if the user doesn't compile-in certain parts? That hardware
->>> won't be used. What happens if wrong console device is passed on the
->>> kernel command line? The friendly answer is usually "don't do that".
->>>
->>> So in case of the serial console, no driver - no output. You can still
->>> use the network. If you have no timer then there won't be any timer
->>> ticks. You can still get to user space though, but don't try to rely
->>> on the timer. This CONFIG_TIMER=y/n case is pretty clear, but isn't
->>> there a grey zone too?
->> And on every new board, I have to fumble around with exactly those
->> sorts of no-serial output issues. Its never something I consider a
->> great use of my time :)
->>
->> And your example is a little flawed have no timer ticks, you're not
->> getting to userspace. The system won't boot.
-> Correct me if I'm wrong here but I don't think so!
->
-> On some platforms that may very well be the case, but on mach-shmobile
-> we get to user space without any timers. If the timers are enabled
-> then they are regular platform devices these days. From my experience
-> the main blocker for going to user space without timer is on ARM
-> usually the udelay() calculation and/or the TWD delay, but those can
-> be handled with preset worst-case values for udelay() and getting the
-> rate via CCF for the TWD.
->
-> Also it of course depends on if some compiled-in driver needs to use
-> the timer. If we just enable the serial console then all our platforms
-> make it to initramfs-based user space without any clock source or
-> clock event.
-So something still triggers basic HZ timer functionality, and you get by
-with the jiffies clocksource?
+Don't use DEFINE_PCI_DEVICE_TABLE macro, because this macro
+is not preferred.
 
-Ok, so thanks for the correction. But I still think booting in a
-degraded mode isn't ideal when the user has already provided enough info
-via config options that we could have sorted it out for them.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/gpio/gpio-amd8111.c   |    2 +-
+ drivers/gpio/gpio-bt8xx.c     |    2 +-
+ drivers/gpio/gpio-intel-mid.c |    2 +-
+ drivers/gpio/gpio-ml-ioh.c    |    2 +-
+ drivers/gpio/gpio-pch.c       |    2 +-
+ drivers/gpio/gpio-sodaville.c |    2 +-
+ 6 files changed, 6 insertions(+), 6 deletions(-)
 
-But yea, I look forward to your next patch so we can discuss things more
-concretely, rather then in my more abstract handwaving rants ;)
-
-thanks
--john
+diff --git a/drivers/gpio/gpio-amd8111.c b/drivers/gpio/gpio-amd8111.c
+index 710fafc..94e9992 100644
+--- a/drivers/gpio/gpio-amd8111.c
++++ b/drivers/gpio/gpio-amd8111.c
+@@ -60,7 +60,7 @@
+  * register a pci_driver, because someone else might one day
+  * want to register another driver on the same PCI id.
+  */
+-static DEFINE_PCI_DEVICE_TABLE(pci_tbl) = {
++static const struct pci_device_id pci_tbl[] = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_8111_SMBUS), 0 },
+ 	{ 0, },	/* terminate list */
+ };
+diff --git a/drivers/gpio/gpio-bt8xx.c b/drivers/gpio/gpio-bt8xx.c
+index 9dfe36f..c5c356b 100644
+--- a/drivers/gpio/gpio-bt8xx.c
++++ b/drivers/gpio/gpio-bt8xx.c
+@@ -308,7 +308,7 @@ static int bt8xxgpio_resume(struct pci_dev *pdev)
+ #define bt8xxgpio_resume NULL
+ #endif /* CONFIG_PM */
+ 
+-static DEFINE_PCI_DEVICE_TABLE(bt8xxgpio_pci_tbl) = {
++static const struct pci_device_id bt8xxgpio_pci_tbl[] = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_BROOKTREE, PCI_DEVICE_ID_BT848) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_BROOKTREE, PCI_DEVICE_ID_BT849) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_BROOKTREE, PCI_DEVICE_ID_BT878) },
+diff --git a/drivers/gpio/gpio-intel-mid.c b/drivers/gpio/gpio-intel-mid.c
+index be803af..24c2f61 100644
+--- a/drivers/gpio/gpio-intel-mid.c
++++ b/drivers/gpio/gpio-intel-mid.c
+@@ -275,7 +275,7 @@ static const struct intel_mid_gpio_ddata gpio_tangier = {
+ 	.chip_irq_type = INTEL_MID_IRQ_TYPE_EDGE,
+ };
+ 
+-static DEFINE_PCI_DEVICE_TABLE(intel_gpio_ids) = {
++static const struct pci_device_id intel_gpio_ids[] = {
+ 	{
+ 		/* Lincroft */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x080f),
+diff --git a/drivers/gpio/gpio-ml-ioh.c b/drivers/gpio/gpio-ml-ioh.c
+index 6da6d76..5c94af3 100644
+--- a/drivers/gpio/gpio-ml-ioh.c
++++ b/drivers/gpio/gpio-ml-ioh.c
+@@ -596,7 +596,7 @@ static int ioh_gpio_resume(struct pci_dev *pdev)
+ #define ioh_gpio_resume NULL
+ #endif
+ 
+-static DEFINE_PCI_DEVICE_TABLE(ioh_gpio_pcidev_id) = {
++static const struct pci_device_id ioh_gpio_pcidev_id[] = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x802E) },
+ 	{ 0, }
+ };
+diff --git a/drivers/gpio/gpio-pch.c b/drivers/gpio/gpio-pch.c
+index 0fec097..ef7a756 100644
+--- a/drivers/gpio/gpio-pch.c
++++ b/drivers/gpio/gpio-pch.c
+@@ -518,7 +518,7 @@ static int pch_gpio_resume(struct pci_dev *pdev)
+ #endif
+ 
+ #define PCI_VENDOR_ID_ROHM             0x10DB
+-static DEFINE_PCI_DEVICE_TABLE(pch_gpio_pcidev_id) = {
++static const struct pci_device_id pch_gpio_pcidev_id[] = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x8803) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x8014) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x8043) },
+diff --git a/drivers/gpio/gpio-sodaville.c b/drivers/gpio/gpio-sodaville.c
+index 88f374a..5d171e0 100644
+--- a/drivers/gpio/gpio-sodaville.c
++++ b/drivers/gpio/gpio-sodaville.c
+@@ -270,7 +270,7 @@ static void sdv_gpio_remove(struct pci_dev *pdev)
+ 	kfree(sd);
+ }
+ 
+-static DEFINE_PCI_DEVICE_TABLE(sdv_gpio_pci_ids) = {
++static const struct pci_device_id sdv_gpio_pci_ids[] = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_SDV_GPIO) },
+ 	{ 0, },
+ };
+-- 
+1.7.10.4
 
 
