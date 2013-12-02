@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760024Ab3LBVam (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:30:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38171 "EHLO
+	id S1758129Ab3LBVbq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:31:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38178 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753259Ab3LBTHB (ORCPT
+	with ESMTP id S1753225Ab3LBTG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:07:01 -0500
+	Mon, 2 Dec 2013 14:06:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Beulich <JBeulich@suse.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Vegard Nossum <vegard.nossum@oracle.com>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 3.4 26/60] xen/blkback: fix reference counting
-Date: Mon,  2 Dec 2013 11:06:07 -0800
-Message-Id: <20131202190335.958917242@linuxfoundation.org>
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [PATCH 3.4 22/60] mtd: nand: hack ONFI for non-power-of-2 dimensions
+Date: Mon,  2 Dec 2013 11:06:03 -0800
+Message-Id: <20131202190335.111645184@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
 References: <20131202190330.152596462@linuxfoundation.org>
@@ -28,44 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vegard Nossum <vegard.nossum@oracle.com>
+From: Brian Norris <computersforpeace@gmail.com>
 
-commit ea5ec76d76da9279d12027c1828544c5ccbe7932 upstream.
+commit 4355b70cf48363c50a9de450b01178c83aba8f6a upstream.
 
-If the permission check fails, we drop a reference to the blkif without
-having taken it in the first place. The bug was introduced in commit
-604c499cbbcc3d5fe5fb8d53306aa0fae1990109 (xen/blkback: Check device
-permissions before allowing OP_DISCARD).
+Some bright specification writers decided to write this in the ONFI spec
+(from ONFI 3.0, Section 3.1):
 
-Cc: Jan Beulich <JBeulich@suse.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+  "The number of blocks and number of pages per block is not required to
+  be a power of two. In the case where one of these values is not a
+  power of two, the corresponding address shall be rounded to an
+  integral number of bits such that it addresses a range up to the
+  subsequent power of two value. The host shall not access upper
+  addresses in a range that is shown as not supported."
+
+This breaks every assumption MTD makes about NAND block/chip-size
+dimensions -- they *must* be a power of two!
+
+And of course, an enterprising manufacturer has made use of this lovely
+freedom. Exhibit A: Micron MT29F32G08CBADAWP
+
+  "- Plane size: 2 planes x 1064 blocks per plane
+   - Device size: 32Gb: 2128 blockss [sic]"
+
+This quickly hits a BUG() in nand_base.c, since the extra dimensions
+overflow so we think it's a second chip (on my single-chip setup):
+
+    ONFI param page 0 valid
+    ONFI flash detected
+    NAND device: Manufacturer ID: 0x2c, Chip ID: 0x44 (Micron MT29F32G08CBADAWP), 4256MiB, page size: 8192, OOB size: 744
+    ------------[ cut here ]------------
+    kernel BUG at drivers/mtd/nand/nand_base.c:203!
+    Internal error: Oops - BUG: 0 [#1] SMP ARM
+    [... trim ...]
+    [<c02cf3e4>] (nand_select_chip+0x18/0x2c) from [<c02d25c0>] (nand_do_read_ops+0x90/0x424)
+    [<c02d25c0>] (nand_do_read_ops+0x90/0x424) from [<c02d2dd8>] (nand_read+0x54/0x78)
+    [<c02d2dd8>] (nand_read+0x54/0x78) from [<c02ad2c8>] (mtd_read+0x84/0xbc)
+    [<c02ad2c8>] (mtd_read+0x84/0xbc) from [<c02d4b28>] (scan_read.clone.4+0x4c/0x64)
+    [<c02d4b28>] (scan_read.clone.4+0x4c/0x64) from [<c02d4c88>] (search_bbt+0x148/0x290)
+    [<c02d4c88>] (search_bbt+0x148/0x290) from [<c02d4ea4>] (nand_scan_bbt+0xd4/0x5c0)
+    [... trim ...]
+    ---[ end trace 0c9363860d865ff2 ]---
+
+So to fix this, just truncate these dimensions down to the greatest
+power-of-2 dimension that is less than or equal to the specified
+dimension.
+
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/xen-blkback/blkback.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/mtd/nand/nand_base.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -401,6 +401,8 @@ static int dispatch_discard_io(struct xe
- 	unsigned long secure;
- 	struct phys_req preq;
- 
-+	xen_blkif_get(blkif);
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -2888,10 +2888,21 @@ static int nand_flash_detect_onfi(struct
+ 	sanitize_string(p->model, sizeof(p->model));
+ 	if (!mtd->name)
+ 		mtd->name = p->model;
 +
- 	preq.sector_number = req->u.discard.sector_number;
- 	preq.nr_sects      = req->u.discard.nr_sectors;
- 
-@@ -413,7 +415,6 @@ static int dispatch_discard_io(struct xe
- 	}
- 	blkif->st_ds_req++;
- 
--	xen_blkif_get(blkif);
- 	secure = (blkif->vbd.discard_secure &&
- 		 (req->u.discard.flag & BLKIF_DISCARD_SECURE)) ?
- 		 BLKDEV_DISCARD_SECURE : 0;
+ 	mtd->writesize = le32_to_cpu(p->byte_per_page);
+-	mtd->erasesize = le32_to_cpu(p->pages_per_block) * mtd->writesize;
++
++	/*
++	 * pages_per_block and blocks_per_lun may not be a power-of-2 size
++	 * (don't ask me who thought of this...). MTD assumes that these
++	 * dimensions will be power-of-2, so just truncate the remaining area.
++	 */
++	mtd->erasesize = 1 << (fls(le32_to_cpu(p->pages_per_block)) - 1);
++	mtd->erasesize *= mtd->writesize;
++
+ 	mtd->oobsize = le16_to_cpu(p->spare_bytes_per_page);
+-	chip->chipsize = le32_to_cpu(p->blocks_per_lun);
++
++	/* See erasesize comment */
++	chip->chipsize = 1 << (fls(le32_to_cpu(p->blocks_per_lun)) - 1);
+ 	chip->chipsize *= (uint64_t)mtd->erasesize * p->lun_count;
+ 	*busw = 0;
+ 	if (le16_to_cpu(p->features) & 1)
 
 
