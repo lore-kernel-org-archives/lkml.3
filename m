@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014Ab3LBLY1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 06:24:27 -0500
-Received: from relay.parallels.com ([195.214.232.42]:47400 "EHLO
+	id S1753993Ab3LBLYY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 06:24:24 -0500
+Received: from relay.parallels.com ([195.214.232.42]:47375 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753507Ab3LBLT6 (ORCPT
+	with ESMTP id S1753477Ab3LBLT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 06:19:58 -0500
+	Mon, 2 Dec 2013 06:19:57 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <dchinner@redhat.com>,
         <akpm@linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
-        <vdavydov@parallels.com>, Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v12 01/18] memcg: make cache index determination more robust
-Date: Mon, 2 Dec 2013 15:19:36 +0400
-Message-ID: <a35230f1d3fd31dfadfdf34f49c643cba3c75904.1385974612.git.vdavydov@parallels.com>
+        <vdavydov@parallels.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>
+Subject: [PATCH v12 06/18] vmscan: rename shrink_slab() args to make it more generic
+Date: Mon, 2 Dec 2013 15:19:41 +0400
+Message-ID: <6fbe648a707331e0716cc7a4fc6366ca83a97f6a.1385974612.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1385974612.git.vdavydov@parallels.com>
 References: <cover.1385974612.git.vdavydov@parallels.com>
@@ -27,51 +27,176 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@openvz.org>
+Currently in addition to a shrink_control struct shrink_slab() takes two
+arguments, nr_pages_scanned and lru_pages, which are used for balancing
+slab reclaim versus page reclaim - roughly speaking, shrink_slab() will
+try to scan nr_pages_scanned/lru_pages fraction of all slab objects.
+However, shrink_slab() is not always called after page cache reclaim.
+For example, drop_slab() uses shrink_slab() to drop as many slab objects
+as possible and thus has to pass phony values 1000/1000 to it, which do
+not make sense for nr_pages_scanned/lru_pages. Moreover, as soon as
+kmemcg reclaim is introduced, we will have to make up phony values for
+nr_pages_scanned and lru_pages again when doing kmem-only reclaim for a
+memory cgroup, which is possible if the cgroup has its kmem limit less
+than the total memory limit.
 
-I caught myself doing something like the following outside memcg core:
-
-	memcg_id = -1;
-	if (memcg && memcg_kmem_is_active(memcg))
-		memcg_id = memcg_cache_id(memcg);
-
-to be able to handle all possible memcgs in a sane manner. In particular, the
-root cache will have kmemcg_id = -1 (just because we don't call memcg_kmem_init
-to the root cache since it is not limitable). We have always coped with that by
-making sure we sanitize which cache is passed to memcg_cache_id. Although this
-example is given for root, what we really need to know is whether or not a
-cache is kmem active.
-
-But outside the memcg core testing for root, for instance, is not trivial since
-we don't export mem_cgroup_is_root. I ended up realizing that this tests really
-belong inside memcg_cache_id. This patch moves a similar but stronger test
-inside memcg_cache_id and make sure it always return a meaningful value.
-
-Signed-off-by: Glauber Costa <glommer@openvz.org>
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
 ---
- mm/memcontrol.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ include/linux/mm.h            |    3 +--
+ include/trace/events/vmscan.h |   20 ++++++++++----------
+ mm/vmscan.c                   |   26 +++++++++++++-------------
+ 3 files changed, 24 insertions(+), 25 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index f1a0ae6..02b5176 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3073,7 +3073,9 @@ void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep)
-  */
- int memcg_cache_id(struct mem_cgroup *memcg)
- {
--	return memcg ? memcg->kmemcg_id : -1;
-+	if (!memcg || !memcg_can_account_kmem(memcg))
-+		return -1;
-+	return memcg->kmemcg_id;
- }
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 1cedd00..71c7f50 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1926,8 +1926,7 @@ int drop_caches_sysctl_handler(struct ctl_table *, int,
+ #endif
  
- /*
+ unsigned long shrink_slab(struct shrink_control *shrink,
+-			  unsigned long nr_pages_scanned,
+-			  unsigned long lru_pages);
++			  unsigned long fraction, unsigned long denominator);
+ 
+ #ifndef CONFIG_MMU
+ #define randomize_va_space 0
+diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
+index 132a985..6bed4ab 100644
+--- a/include/trace/events/vmscan.h
++++ b/include/trace/events/vmscan.h
+@@ -181,11 +181,11 @@ DEFINE_EVENT(mm_vmscan_direct_reclaim_end_template, mm_vmscan_memcg_softlimit_re
+ 
+ TRACE_EVENT(mm_shrink_slab_start,
+ 	TP_PROTO(struct shrinker *shr, struct shrink_control *sc,
+-		long nr_objects_to_shrink, unsigned long pgs_scanned,
+-		unsigned long lru_pgs, unsigned long cache_items,
++		long nr_objects_to_shrink, unsigned long frac,
++		unsigned long denom, unsigned long cache_items,
+ 		unsigned long long delta, unsigned long total_scan),
+ 
+-	TP_ARGS(shr, sc, nr_objects_to_shrink, pgs_scanned, lru_pgs,
++	TP_ARGS(shr, sc, nr_objects_to_shrink, frac, denom,
+ 		cache_items, delta, total_scan),
+ 
+ 	TP_STRUCT__entry(
+@@ -193,8 +193,8 @@ TRACE_EVENT(mm_shrink_slab_start,
+ 		__field(void *, shrink)
+ 		__field(long, nr_objects_to_shrink)
+ 		__field(gfp_t, gfp_flags)
+-		__field(unsigned long, pgs_scanned)
+-		__field(unsigned long, lru_pgs)
++		__field(unsigned long, frac)
++		__field(unsigned long, denom)
+ 		__field(unsigned long, cache_items)
+ 		__field(unsigned long long, delta)
+ 		__field(unsigned long, total_scan)
+@@ -205,20 +205,20 @@ TRACE_EVENT(mm_shrink_slab_start,
+ 		__entry->shrink = shr->scan_objects;
+ 		__entry->nr_objects_to_shrink = nr_objects_to_shrink;
+ 		__entry->gfp_flags = sc->gfp_mask;
+-		__entry->pgs_scanned = pgs_scanned;
+-		__entry->lru_pgs = lru_pgs;
++		__entry->frac = frac;
++		__entry->denom = denom;
+ 		__entry->cache_items = cache_items;
+ 		__entry->delta = delta;
+ 		__entry->total_scan = total_scan;
+ 	),
+ 
+-	TP_printk("%pF %p: objects to shrink %ld gfp_flags %s pgs_scanned %ld lru_pgs %ld cache items %ld delta %lld total_scan %ld",
++	TP_printk("%pF %p: objects to shrink %ld gfp_flags %s frac %ld denom %ld cache items %ld delta %lld total_scan %ld",
+ 		__entry->shrink,
+ 		__entry->shr,
+ 		__entry->nr_objects_to_shrink,
+ 		show_gfp_flags(__entry->gfp_flags),
+-		__entry->pgs_scanned,
+-		__entry->lru_pgs,
++		__entry->frac,
++		__entry->denom,
+ 		__entry->cache_items,
+ 		__entry->delta,
+ 		__entry->total_scan)
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index eea668d..6946997 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -219,7 +219,7 @@ EXPORT_SYMBOL(unregister_shrinker);
+ 
+ static unsigned long
+ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+-		 unsigned long nr_pages_scanned, unsigned long lru_pages)
++		 unsigned long fraction, unsigned long denominator)
+ {
+ 	unsigned long freed = 0;
+ 	unsigned long long delta;
+@@ -243,9 +243,9 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+ 	nr = atomic_long_xchg(&shrinker->nr_deferred[nid], 0);
+ 
+ 	total_scan = nr;
+-	delta = (4 * nr_pages_scanned) / shrinker->seeks;
++	delta = (4 * fraction) / shrinker->seeks;
+ 	delta *= max_pass;
+-	do_div(delta, lru_pages + 1);
++	do_div(delta, denominator + 1);
+ 	total_scan += delta;
+ 	if (total_scan < 0) {
+ 		printk(KERN_ERR
+@@ -278,7 +278,7 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+ 		total_scan = max_pass * 2;
+ 
+ 	trace_mm_shrink_slab_start(shrinker, shrinkctl, nr,
+-				nr_pages_scanned, lru_pages,
++				fraction, denominator,
+ 				max_pass, delta, total_scan);
+ 
+ 	while (total_scan >= batch_size) {
+@@ -322,23 +322,23 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+  * If the vm encountered mapped pages on the LRU it increase the pressure on
+  * slab to avoid swapping.
+  *
+- * We do weird things to avoid (scanned*seeks*entries) overflowing 32 bits.
++ * We do weird things to avoid (fraction*seeks*entries) overflowing 32 bits.
+  *
+- * `lru_pages' represents the number of on-LRU pages in all the zones which
+- * are eligible for the caller's allocation attempt.  It is used for balancing
+- * slab reclaim versus page reclaim.
++ * `fraction' and `denominator' are used for balancing slab reclaim versus page
++ * reclaim. To scan slab objects proportionally to page cache, pass the number
++ * of pages scanned and the total number of on-LRU pages in all the zones which
++ * are eligible for the caller's allocation attempt respectively.
+  *
+  * Returns the number of slab objects which we shrunk.
+  */
+ unsigned long shrink_slab(struct shrink_control *shrinkctl,
+-			  unsigned long nr_pages_scanned,
+-			  unsigned long lru_pages)
++			  unsigned long fraction, unsigned long denominator)
+ {
+ 	struct shrinker *shrinker;
+ 	unsigned long freed = 0;
+ 
+-	if (nr_pages_scanned == 0)
+-		nr_pages_scanned = SWAP_CLUSTER_MAX;
++	if (fraction == 0)
++		fraction = SWAP_CLUSTER_MAX;
+ 
+ 	if (!down_read_trylock(&shrinker_rwsem)) {
+ 		/*
+@@ -361,7 +361,7 @@ unsigned long shrink_slab(struct shrink_control *shrinkctl,
+ 				break;
+ 
+ 			freed += shrink_slab_node(shrinkctl, shrinker,
+-				 nr_pages_scanned, lru_pages);
++						  fraction, denominator);
+ 
+ 		}
+ 	}
 -- 
 1.7.10.4
 
