@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758842Ab3LBVAw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:00:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38395 "EHLO
+	id S1758859Ab3LBVA4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:00:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38421 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754083Ab3LBTNd (ORCPT
+	with ESMTP id S1754079Ab3LBTNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:33 -0500
+	Mon, 2 Dec 2013 14:13:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jiang <dave.jiang@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH 3.10 074/173] ioatdma: fix selection of 16 vs 8 source path
-Date: Mon,  2 Dec 2013 11:10:57 -0800
-Message-Id: <20131202191151.711013001@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.10 072/173] dm: allocate buffer for messages with small number of arguments using GFP_NOIO
+Date: Mon,  2 Dec 2013 11:10:55 -0800
+Message-Id: <20131202191151.321798776@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,149 +27,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 21e96c7313486390c694919522a76dfea0a86c59 upstream.
+commit f36afb3957353d2529cb2b00f78fdccd14fc5e9c upstream.
 
-When performing continuations there are implied sources that need to be
-added to the source count. Quoting dma_set_maxpq:
+dm-mpath and dm-thin must process messages even if some device is
+suspended, so we allocate argv buffer with GFP_NOIO. These messages have
+a small fixed number of arguments.
 
-/* dma_maxpq - reduce maxpq in the face of continued operations
- * @dma - dma device with PQ capability
- * @flags - to check if DMA_PREP_CONTINUE and DMA_PREP_PQ_DISABLE_P are set
- *
- * When an engine does not support native continuation we need 3 extra
- * source slots to reuse P and Q with the following coefficients:
- * 1/ {00} * P : remove P from Q', but use it as a source for P'
- * 2/ {01} * Q : use Q to continue Q' calculation
- * 3/ {00} * Q : subtract Q from P' to cancel (2)
- *
- * In the case where P is disabled we only need 1 extra source:
- * 1/ {01} * Q : use Q to continue Q' calculation
- */
+On the other hand, dm-switch needs to process bulk data using messages
+so excessive use of GFP_NOIO could cause trouble.
 
-...fix the selection of the 16 source path to take these implied sources
-into account.
+The patch also lowers the default number of arguments from 64 to 8, so
+that there is smaller load on GFP_NOIO allocations.
 
-Note this also kills the BUG_ON(src_cnt < 9) check in
-__ioat3_prep_pq16_lock().  Besides not accounting for implied sources
-the check is redundant given we already made the path selection.
-
-Cc: Dave Jiang <dave.jiang@intel.com>
-Acked-by: Dave Jiang <dave.jiang@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Acked-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/ioat/dma_v3.c |   30 +++++++++++++++---------------
- 1 file changed, 15 insertions(+), 15 deletions(-)
+ drivers/md/dm-table.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -1169,9 +1169,6 @@ __ioat3_prep_pq16_lock(struct dma_chan *
- 	u8 op;
- 	int i, s, idx, num_descs;
+--- a/drivers/md/dm-table.c
++++ b/drivers/md/dm-table.c
+@@ -580,14 +580,28 @@ static int adjoin(struct dm_table *table
  
--	/* this function only handles src_cnt 9 - 16 */
--	BUG_ON(src_cnt < 9);
--
- 	/* this function is only called with 9-16 sources */
- 	op = result ? IOAT_OP_PQ_VAL_16S : IOAT_OP_PQ_16S;
- 
-@@ -1257,13 +1254,21 @@ __ioat3_prep_pq16_lock(struct dma_chan *
- 	return &desc->txd;
- }
- 
-+static int src_cnt_flags(unsigned int src_cnt, unsigned long flags)
-+{
-+	if (dmaf_p_disabled_continue(flags))
-+		return src_cnt + 1;
-+	else if (dmaf_continue(flags))
-+		return src_cnt + 3;
-+	else
-+		return src_cnt;
-+}
-+
- static struct dma_async_tx_descriptor *
- ioat3_prep_pq(struct dma_chan *chan, dma_addr_t *dst, dma_addr_t *src,
- 	      unsigned int src_cnt, const unsigned char *scf, size_t len,
- 	      unsigned long flags)
+ /*
+  * Used to dynamically allocate the arg array.
++ *
++ * We do first allocation with GFP_NOIO because dm-mpath and dm-thin must
++ * process messages even if some device is suspended. These messages have a
++ * small fixed number of arguments.
++ *
++ * On the other hand, dm-switch needs to process bulk data using messages and
++ * excessive use of GFP_NOIO could cause trouble.
+  */
+ static char **realloc_argv(unsigned *array_size, char **old_argv)
  {
--	struct dma_device *dma = chan->device;
--
- 	/* specify valid address for disabled result */
- 	if (flags & DMA_PREP_PQ_DISABLE_P)
- 		dst[0] = dst[1];
-@@ -1283,7 +1288,7 @@ ioat3_prep_pq(struct dma_chan *chan, dma
- 		single_source_coef[0] = scf[0];
- 		single_source_coef[1] = 0;
+ 	char **argv;
+ 	unsigned new_size;
++	gfp_t gfp;
  
--		return (src_cnt > 8) && (dma->max_pq > 8) ?
-+		return src_cnt_flags(src_cnt, flags) > 8 ?
- 			__ioat3_prep_pq16_lock(chan, NULL, dst, single_source,
- 					       2, single_source_coef, len,
- 					       flags) :
-@@ -1291,7 +1296,7 @@ ioat3_prep_pq(struct dma_chan *chan, dma
- 					     single_source_coef, len, flags);
- 
- 	} else {
--		return (src_cnt > 8) && (dma->max_pq > 8) ?
-+		return src_cnt_flags(src_cnt, flags) > 8 ?
- 			__ioat3_prep_pq16_lock(chan, NULL, dst, src, src_cnt,
- 					       scf, len, flags) :
- 			__ioat3_prep_pq_lock(chan, NULL, dst, src, src_cnt,
-@@ -1304,8 +1309,6 @@ ioat3_prep_pq_val(struct dma_chan *chan,
- 		  unsigned int src_cnt, const unsigned char *scf, size_t len,
- 		  enum sum_check_flags *pqres, unsigned long flags)
- {
--	struct dma_device *dma = chan->device;
--
- 	/* specify valid address for disabled result */
- 	if (flags & DMA_PREP_PQ_DISABLE_P)
- 		pq[0] = pq[1];
-@@ -1317,7 +1320,7 @@ ioat3_prep_pq_val(struct dma_chan *chan,
- 	 */
- 	*pqres = 0;
- 
--	return (src_cnt > 8) && (dma->max_pq > 8) ?
-+	return src_cnt_flags(src_cnt, flags) > 8 ?
- 		__ioat3_prep_pq16_lock(chan, pqres, pq, src, src_cnt, scf, len,
- 				       flags) :
- 		__ioat3_prep_pq_lock(chan, pqres, pq, src, src_cnt, scf, len,
-@@ -1328,7 +1331,6 @@ static struct dma_async_tx_descriptor *
- ioat3_prep_pqxor(struct dma_chan *chan, dma_addr_t dst, dma_addr_t *src,
- 		 unsigned int src_cnt, size_t len, unsigned long flags)
- {
--	struct dma_device *dma = chan->device;
- 	unsigned char scf[src_cnt];
- 	dma_addr_t pq[2];
- 
-@@ -1337,7 +1339,7 @@ ioat3_prep_pqxor(struct dma_chan *chan,
- 	flags |= DMA_PREP_PQ_DISABLE_Q;
- 	pq[1] = dst; /* specify valid address for disabled result */
- 
--	return (src_cnt > 8) && (dma->max_pq > 8) ?
-+	return src_cnt_flags(src_cnt, flags) > 8 ?
- 		__ioat3_prep_pq16_lock(chan, NULL, pq, src, src_cnt, scf, len,
- 				       flags) :
- 		__ioat3_prep_pq_lock(chan, NULL, pq, src, src_cnt, scf, len,
-@@ -1349,7 +1351,6 @@ ioat3_prep_pqxor_val(struct dma_chan *ch
- 		     unsigned int src_cnt, size_t len,
- 		     enum sum_check_flags *result, unsigned long flags)
- {
--	struct dma_device *dma = chan->device;
- 	unsigned char scf[src_cnt];
- 	dma_addr_t pq[2];
- 
-@@ -1363,8 +1364,7 @@ ioat3_prep_pqxor_val(struct dma_chan *ch
- 	flags |= DMA_PREP_PQ_DISABLE_Q;
- 	pq[1] = pq[0]; /* specify valid address for disabled result */
- 
--
--	return (src_cnt > 8) && (dma->max_pq > 8) ?
-+	return src_cnt_flags(src_cnt, flags) > 8 ?
- 		__ioat3_prep_pq16_lock(chan, result, pq, &src[1], src_cnt - 1,
- 				       scf, len, flags) :
- 		__ioat3_prep_pq_lock(chan, result, pq, &src[1], src_cnt - 1,
+-	new_size = *array_size ? *array_size * 2 : 64;
+-	argv = kmalloc(new_size * sizeof(*argv), GFP_KERNEL);
++	if (*array_size) {
++		new_size = *array_size * 2;
++		gfp = GFP_KERNEL;
++	} else {
++		new_size = 8;
++		gfp = GFP_NOIO;
++	}
++	argv = kmalloc(new_size * sizeof(*argv), gfp);
+ 	if (argv) {
+ 		memcpy(argv, old_argv, *array_size * sizeof(*argv));
+ 		*array_size = new_size;
 
 
