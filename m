@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760152Ab3LBVem (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:34:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38178 "EHLO
+	id S1758232Ab3LBVfA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:35:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38197 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752326Ab3LBTGy (ORCPT
+	with ESMTP id S1753140Ab3LBTGw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:06:54 -0500
+	Mon, 2 Dec 2013 14:06:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Vit Ondruch <v.ondruch@tiscali.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.4 08/60] alarmtimer: return EINVAL instead of ENOTSUPP if rtcdev doesnt exist
-Date: Mon,  2 Dec 2013 11:05:49 -0800
-Message-Id: <20131202190331.998718437@linuxfoundation.org>
+        Phil Edworthy <phil.edworthy@renesas.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.4 05/60] ASoC: ak4642: prevent un-necessary changes to SG_SL1
+Date: Mon,  2 Dec 2013 11:05:46 -0800
+Message-Id: <20131202190331.378588706@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
 References: <20131202190330.152596462@linuxfoundation.org>
@@ -30,60 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Phil Edworthy <phil.edworthy@renesas.com>
 
-commit 98d6f4dd84a134d942827584a3c5f67ffd8ec35f upstream.
+commit 7b5bfb82882b9b1c8423ce0ed6852ca3762d967a upstream.
 
-Fedora Ruby maintainer reported latest Ruby doesn't work on Fedora Rawhide
-on ARM. (http://bugs.ruby-lang.org/issues/9008)
+If you record the sound during playback,
+the playback sound becomes silent.
+Modify so that the codec driver does not clear
+SG_SL1::DACL bit which is controlled under widget
 
-Because of, commit 1c6b39ad3f (alarmtimers: Return -ENOTSUPP if no
-RTC device is present) intruduced to return ENOTSUPP when
-clock_get{time,res} can't find a RTC device. However this is incorrect.
-
-First, ENOTSUPP isn't exported to userland (ENOTSUP or EOPNOTSUP are the
-closest userland equivlents).
-
-Second, Posix and Linux man pages agree that clock_gettime and
-clock_getres should return EINVAL if clk_id argument is invalid.
-While the arugment that the clockid is valid, but just not supported
-on this hardware could be made, this is just a technicality that
-doesn't help userspace applicaitons, and only complicates error
-handling.
-
-Thus, this patch changes the code to use EINVAL.
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Reported-by: Vit Ondruch <v.ondruch@tiscali.cz>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-[jstultz: Tweaks to commit message to include full rational]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Phil Edworthy <phil.edworthy@renesas.com>
+Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/alarmtimer.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/soc/codecs/ak4642.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/time/alarmtimer.c
-+++ b/kernel/time/alarmtimer.c
-@@ -474,7 +474,7 @@ static int alarm_clock_getres(const cloc
- 	clockid_t baseid = alarm_bases[clock2alarm(which_clock)].base_clockid;
- 
- 	if (!alarmtimer_get_rtcdev())
--		return -ENOTSUPP;
-+		return -EINVAL;
- 
- 	return hrtimer_get_res(baseid, tp);
- }
-@@ -491,7 +491,7 @@ static int alarm_clock_get(clockid_t whi
- 	struct alarm_base *base = &alarm_bases[clock2alarm(which_clock)];
- 
- 	if (!alarmtimer_get_rtcdev())
--		return -ENOTSUPP;
-+		return -EINVAL;
- 
- 	*tp = ktime_to_timespec(base->gettime());
- 	return 0;
+--- a/sound/soc/codecs/ak4642.c
++++ b/sound/soc/codecs/ak4642.c
+@@ -262,7 +262,7 @@ static int ak4642_dai_startup(struct snd
+ 		 * This operation came from example code of
+ 		 * "ASAHI KASEI AK4642" (japanese) manual p94.
+ 		 */
+-		snd_soc_write(codec, SG_SL1, PMMP | MGAIN0);
++		snd_soc_update_bits(codec, SG_SL1, PMMP | MGAIN0, PMMP | MGAIN0);
+ 		snd_soc_write(codec, TIMER, ZTM(0x3) | WTM(0x3));
+ 		snd_soc_write(codec, ALC_CTL1, ALC | LMTH0);
+ 		snd_soc_update_bits(codec, PW_MGMT1, PMADL, PMADL);
 
 
