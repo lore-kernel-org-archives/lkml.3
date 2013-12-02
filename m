@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759071Ab3LBVGw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:06:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38475 "EHLO
+	id S1756603Ab3LBVHI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:07:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38531 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754005Ab3LBTNQ (ORCPT
+	with ESMTP id S1754001Ab3LBTNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:16 -0500
+	Mon, 2 Dec 2013 14:13:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.10 052/173] IB/qib: Fix txselect regression
-Date: Mon,  2 Dec 2013 11:10:35 -0800
-Message-Id: <20131202191148.625524288@linuxfoundation.org>
+        Moussa Ba <moussaba@micron.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 048/173] iscsi-target: Fix mutex_trylock usage in iscsit_increment_maxcmdsn
+Date: Mon,  2 Dec 2013 11:10:31 -0800
+Message-Id: <20131202191148.165675508@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,52 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Marciniszyn <mike.marciniszyn@intel.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 2fadd83184d58701f1116ca578465b5a75f9417c upstream.
+commit 5e8e6b4b3adebf01a9d97056cbbfd8c44330df99 upstream.
 
-Commit 7fac33014f54("IB/qib: checkpatch fixes") was overzealous in
-removing a simple_strtoul for a parse routine, setup_txselect().  That
-routine is required to handle a multi-value string.
+This patch fixes a >= v3.10 regression bug with mutex_trylock() usage
+within iscsit_increment_maxcmdsn(), that was originally added to allow
+for a special case where ->cmdsn_mutex was already held from the
+iscsit_execute_cmd() exception path for ib_isert.
 
-Unwind that aspect of the fix.
+When !mutex_trylock() was occuring under contention during normal RX/TX
+process context codepaths, the bug was manifesting itself as the following
+protocol error:
 
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+  Received CmdSN: 0x000fcbb7 is greater than MaxCmdSN: 0x000fcbb6, protocol error.
+  Received CmdSN: 0x000fcbb8 is greater than MaxCmdSN: 0x000fcbb6, protocol error.
+
+This patch simply avoids the direct ib_isert callback in lio_queue_status()
+for the special iscsi_execute_cmd() exception cases, that allows the problematic
+mutex_trylock() usage in iscsit_increment_maxcmdsn() to go away.
+
+Reported-by: Moussa Ba <moussaba@micron.com>
+Tested-by: Moussa Ba <moussaba@micron.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/qib/qib_iba7322.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/target/iscsi/iscsi_target_configfs.c |    5 +++++
+ drivers/target/iscsi/iscsi_target_device.c   |    6 +-----
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/infiniband/hw/qib/qib_iba7322.c
-+++ b/drivers/infiniband/hw/qib/qib_iba7322.c
-@@ -5853,21 +5853,20 @@ static int setup_txselect(const char *st
- {
- 	struct qib_devdata *dd;
- 	unsigned long val;
--	int ret;
--
-+	char *n;
- 	if (strlen(str) >= MAX_ATTEN_LEN) {
- 		pr_info("txselect_values string too long\n");
- 		return -ENOSPC;
- 	}
--	ret = kstrtoul(str, 0, &val);
--	if (ret || val >= (TXDDS_TABLE_SZ + TXDDS_EXTRA_SZ +
-+	val = simple_strtoul(str, &n, 0);
-+	if (n == str || val >= (TXDDS_TABLE_SZ + TXDDS_EXTRA_SZ +
- 				TXDDS_MFG_SZ)) {
- 		pr_info("txselect_values must start with a number < %d\n",
- 			TXDDS_TABLE_SZ + TXDDS_EXTRA_SZ + TXDDS_MFG_SZ);
--		return ret ? ret : -EINVAL;
-+		return -EINVAL;
- 	}
--
- 	strcpy(txselect_list, str);
+--- a/drivers/target/iscsi/iscsi_target_configfs.c
++++ b/drivers/target/iscsi/iscsi_target_configfs.c
+@@ -1650,6 +1650,11 @@ static int lio_queue_status(struct se_cm
+ 	struct iscsi_cmd *cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
+ 
+ 	cmd->i_state = ISTATE_SEND_STATUS;
 +
- 	list_for_each_entry(dd, &qib_dev_list, list)
- 		if (dd->deviceid == PCI_DEVICE_ID_QLOGIC_IB_7322)
- 			set_no_qsfp_atten(dd, 1);
++	if (cmd->se_cmd.scsi_status || cmd->sense_reason) {
++		iscsit_add_cmd_to_response_queue(cmd, cmd->conn, cmd->i_state);
++		return 0;
++	}
+ 	cmd->conn->conn_transport->iscsit_queue_status(cmd->conn, cmd);
+ 
+ 	return 0;
+--- a/drivers/target/iscsi/iscsi_target_device.c
++++ b/drivers/target/iscsi/iscsi_target_device.c
+@@ -60,11 +60,7 @@ void iscsit_increment_maxcmdsn(struct is
+ 
+ 	cmd->maxcmdsn_inc = 1;
+ 
+-	if (!mutex_trylock(&sess->cmdsn_mutex)) {
+-		sess->max_cmd_sn += 1;
+-		pr_debug("Updated MaxCmdSN to 0x%08x\n", sess->max_cmd_sn);
+-		return;
+-	}
++	mutex_lock(&sess->cmdsn_mutex);
+ 	sess->max_cmd_sn += 1;
+ 	pr_debug("Updated MaxCmdSN to 0x%08x\n", sess->max_cmd_sn);
+ 	mutex_unlock(&sess->cmdsn_mutex);
 
 
