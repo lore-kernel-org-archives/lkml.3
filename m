@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756670Ab3LBUAy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:00:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39211 "EHLO
+	id S1755519Ab3LBUAu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:00:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39216 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754654Ab3LBTR7 (ORCPT
+	with ESMTP id S1752764Ab3LBTSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:59 -0500
+	Mon, 2 Dec 2013 14:18:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Stapleton <matthew4196@gmail.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.12 100/212] drm/qxl: fix memory leak in release list handling
-Date: Mon,  2 Dec 2013 11:14:51 -0800
-Message-Id: <20131202191258.553616801@linuxfoundation.org>
+        Dave Jiang <dave.jiang@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [PATCH 3.12 091/212] ioatdma: fix sed pool selection
+Date: Mon,  2 Dec 2013 11:14:42 -0800
+Message-Id: <20131202191257.707057392@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,31 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit 1b28c3e628315ac0d9ef2d3fac0403f05ae692db upstream.
+commit 5d48b9b5d80e3aa38a5161565398b1e48a650573 upstream.
 
-wow no idea how I got this far without seeing this,
-leaking the entries in the list makes kmalloc-64 slab grow.
+The array to lookup the sed pool based on the number of sources
+(pq16_idx_to_sedi) is 16 entries and expects a max source index.
+However, we pass the total source count which runs off the end of the
+array when src_cnt == 16.  The minimal fix is to just pass src_cnt-1,
+but given we know the source count is > 8 we can just calculate the sed
+pool by (src_cnt - 2) >> 3.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=65121
-Reported-by: Matthew Stapleton <matthew4196@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Cc: Dave Jiang <dave.jiang@intel.com>
+Acked-by: Dave Jiang <dave.jiang@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/qxl/qxl_release.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/dma/ioat/dma_v3.c |   16 +---------------
+ 1 file changed, 1 insertion(+), 15 deletions(-)
 
---- a/drivers/gpu/drm/qxl/qxl_release.c
-+++ b/drivers/gpu/drm/qxl/qxl_release.c
-@@ -92,6 +92,7 @@ qxl_release_free(struct qxl_device *qdev
- 						- DRM_FILE_OFFSET);
- 		qxl_fence_remove_release(&bo->fence, release->id);
- 		qxl_bo_unref(&bo);
-+		kfree(entry);
- 	}
- 	spin_lock(&qdev->release_idr_lock);
- 	idr_remove(&qdev->release_idr, release->id);
+--- a/drivers/dma/ioat/dma_v3.c
++++ b/drivers/dma/ioat/dma_v3.c
+@@ -87,13 +87,6 @@ static const u8 pq_idx_to_field[] = { 1,
+ static const u8 pq16_idx_to_field[] = { 1, 4, 1, 2, 3, 4, 5, 6, 7,
+ 					0, 1, 2, 3, 4, 5, 6 };
+ 
+-/*
+- * technically sources 1 and 2 do not require SED, but the op will have
+- * at least 9 descriptors so that's irrelevant.
+- */
+-static const u8 pq16_idx_to_sed[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-				      1, 1, 1, 1, 1, 1, 1 };
+-
+ static void ioat3_eh(struct ioat2_dma_chan *ioat);
+ 
+ static dma_addr_t xor_get_src(struct ioat_raw_descriptor *descs[2], int idx)
+@@ -135,12 +128,6 @@ static void pq_set_src(struct ioat_raw_d
+ 	pq->coef[idx] = coef;
+ }
+ 
+-static int sed_get_pq16_pool_idx(int src_cnt)
+-{
+-
+-	return pq16_idx_to_sed[src_cnt];
+-}
+-
+ static bool is_jf_ioat(struct pci_dev *pdev)
+ {
+ 	switch (pdev->device) {
+@@ -1159,8 +1146,7 @@ __ioat3_prep_pq16_lock(struct dma_chan *
+ 
+ 		descs[0] = (struct ioat_raw_descriptor *) pq;
+ 
+-		desc->sed = ioat3_alloc_sed(device,
+-					    sed_get_pq16_pool_idx(src_cnt));
++		desc->sed = ioat3_alloc_sed(device, (src_cnt-2) >> 3);
+ 		if (!desc->sed) {
+ 			dev_err(to_dev(chan),
+ 				"%s: no free sed entries\n", __func__);
 
 
