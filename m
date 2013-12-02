@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756124Ab3LBTo3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:44:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39572 "EHLO
+	id S1756112Ab3LBTo0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:44:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39577 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754859Ab3LBTSl (ORCPT
+	with ESMTP id S1754865Ab3LBTSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:41 -0500
+	Mon, 2 Dec 2013 14:18:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 159/212] ALSA: hda/realtek - Add support of ALC231 codec
-Date: Mon,  2 Dec 2013 11:15:50 -0800
-Message-Id: <20131202191305.449003907@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 160/212] ALSA: hda - Fix hp-mic mode without VREF bits
+Date: Mon,  2 Dec 2013 11:15:51 -0800
+Message-Id: <20131202191305.584064000@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,29 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kailang Yang <kailang@realtek.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit ba4c4d0a9021ab034554d532a98133d668b87599 upstream.
+commit 16c0cefe8951b2c4b824fd06011ac1b359b1ab3b upstream.
 
-It's compatible with ALC269.
+When the hp mic pin has no VREF bits, the driver forgot to set PIN_IN
+bit.  Spotted during debugging old MacBook Airs.
 
-Signed-off-by: Kailang Yang <kailang@realtek.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=65681
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/hda_generic.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4922,6 +4922,7 @@ static int patch_alc680(struct hda_codec
-  */
- static const struct hda_codec_preset snd_hda_preset_realtek[] = {
- 	{ .id = 0x10ec0221, .name = "ALC221", .patch = patch_alc269 },
-+	{ .id = 0x10ec0231, .name = "ALC231", .patch = patch_alc269 },
- 	{ .id = 0x10ec0233, .name = "ALC233", .patch = patch_alc269 },
- 	{ .id = 0x10ec0255, .name = "ALC255", .patch = patch_alc269 },
- 	{ .id = 0x10ec0260, .name = "ALC260", .patch = patch_alc260 },
+--- a/sound/pci/hda/hda_generic.c
++++ b/sound/pci/hda/hda_generic.c
+@@ -2764,7 +2764,7 @@ static int hp_mic_jack_mode_put(struct s
+ 			val &= ~(AC_PINCTL_VREFEN | PIN_HP);
+ 			val |= get_vref_idx(vref_caps, idx) | PIN_IN;
+ 		} else
+-			val = snd_hda_get_default_vref(codec, nid);
++			val = snd_hda_get_default_vref(codec, nid) | PIN_IN;
+ 	}
+ 	snd_hda_set_pin_ctl_cache(codec, nid, val);
+ 	call_hp_automute(codec, NULL);
 
 
