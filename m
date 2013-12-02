@@ -1,96 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab3LBLUv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 06:20:51 -0500
-Received: from www.linutronix.de ([62.245.132.108]:43705 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658Ab3LBLUq (ORCPT
+	id S1753738Ab3LBLVM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 06:21:12 -0500
+Received: from relay.parallels.com ([195.214.232.42]:47531 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753553Ab3LBLUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 06:20:46 -0500
-Date: Mon, 2 Dec 2013 12:20:36 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Francis Moreau <francis.moro@gmail.com>
-cc: Jingoo Han <jg1.han@samsung.com>, "'Wei WANG'" <wei_wang@realsil.com.cn>,
-        "'Samuel Ortiz'" <sameo@linux.intel.com>,
-        "'Chris Ball'" <cjb@laptop.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "'Borislav Petkov'" <bp@alien8.de>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-In-Reply-To: <alpine.DEB.2.02.1312021145190.30673@ionos.tec.linutronix.de>
-Message-ID: <alpine.DEB.2.02.1312021219090.30673@ionos.tec.linutronix.de>
-References: <20131117195358.GO27323@pd.tnic> <4523614.I5MBhorHFt@vostro.rjw.lan> <5292FF5D.1050304@gmail.com> <1821758.2MoNI3h1Mv@vostro.rjw.lan> <52985041.5050000@gmail.com> <alpine.DEB.2.02.1311290958560.30673@ionos.tec.linutronix.de> <5299FF38.7060203@gmail.com>
- <alpine.DEB.2.02.1312021145190.30673@ionos.tec.linutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 2 Dec 2013 06:20:07 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <dchinner@redhat.com>,
+        <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
+        <vdavydov@parallels.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH v12 13/18] memcg: per-memcg kmem shrinking
+Date: Mon, 2 Dec 2013 15:19:48 +0400
+Message-ID: <6a255c838dd290844d6ea437612e9671a88e6f31.1385974612.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1385974612.git.vdavydov@parallels.com>
+References: <cover.1385974612.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Dec 2013, Thomas Gleixner wrote:
-> On Sat, 30 Nov 2013, Francis Moreau wrote:
-> > Hello Thomas,
-> > 
-> > Sorry for the delay.
-> > 
-> > On 11/29/2013 10:02 AM, Thomas Gleixner wrote:
-> > > On Fri, 29 Nov 2013, Francis Moreau wrote:
-> > >> Since it seems to be related to rtsx driver or its upper layer, could
-> > >> the folks involved in this area have a look to this issue please ?
-> > > 
-> > > I'm not involved, but looking at the debug objects backtrace it's
-> > > related to the delayed work in rtsx.
-> > > 
-> > > Does the untested patch below cure the issue?
-> > > 
-> > 
-> > It seems it does since I can't see the debug object trace anymore
-> > however Ican see this now:
-> 
-> <SNIP>
->  
-> > So I don't think it completely solve the problem but it's a good start.
-> 
-> I kinda expected that, but I wanted to confirm my suspicion, that the
-> interrupt hits after the delayed work is canceled and just requeues it
-> again, which then leads to an armed timer being freed further down.
-> 
-> I'm not familiar with that driver and I leave the final fixup to the
-> driver maintainers. It's enough data for them to figure out the real
-> solution.
+If a memory cgroup's kmem limit is less than its user memory limit, we
+can run into a situation where our allocation fail, but freeing user
+pages will buy us nothing. In such scenarios we would like to call a
+specialized reclaimer that only frees kernel memory. This patch adds it.
+All the magic lies behind the previous patches that made slab shrinkers
+memcg-aware, this patch only employs the shrink_slab() facility to scan
+slab objects accounted to a specific memory cgroup, however, there is
+one thing that is worth noticing.
 
-Just had a quick look and the obvious solution is to disable the
-interrupts at the device level _BEFORE_ doing anything else in the
-teardown path. Updated patch below. That should avoid the nobody cared
-splat on the other irq line.
+The point is that since all memcg-aware shrinkers are FS-dependent, we
+have no option rather than failing all GFP_NOFS allocations when we are
+close to the kmem limit. The best thing we can do in such a situation is
+to spawn the reclaimer in a background process hoping next allocations
+will succeed.
 
-Thanks,
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/swap.h |    2 ++
+ mm/memcontrol.c      |   51 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ mm/vmscan.c          |   38 ++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 89 insertions(+), 2 deletions(-)
 
-	tglx
-
-Index: linux-2.6/drivers/mfd/rtsx_pcr.c
-===================================================================
---- linux-2.6.orig/drivers/mfd/rtsx_pcr.c
-+++ linux-2.6/drivers/mfd/rtsx_pcr.c
-@@ -1228,8 +1228,14 @@ static void rtsx_pci_remove(struct pci_d
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 46ba0c6..367a773 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -309,6 +309,8 @@ extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ extern int __isolate_lru_page(struct page *page, isolate_mode_t mode);
+ extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
+ 						  gfp_t gfp_mask, bool noswap);
++extern unsigned long try_to_free_mem_cgroup_kmem(struct mem_cgroup *mem,
++						 gfp_t gfp_mask);
+ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+ 						gfp_t gfp_mask, bool noswap,
+ 						struct zone *zone,
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index da06f91..3679acb 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -323,6 +323,8 @@ struct mem_cgroup {
+ 	struct mutex slab_caches_mutex;
+         /* Index in the kmem_cache->memcg_params->memcg_caches array */
+ 	int kmemcg_id;
++	/* when kmem shrinkers cannot proceed due to context */
++	struct work_struct kmem_shrink_work;
+ #endif
  
- 	pcr->remove_pci = true;
+ 	int last_scanned_node;
+@@ -3431,13 +3433,57 @@ static int mem_cgroup_slabinfo_read(struct cgroup_subsys_state *css,
+ }
+ #endif
  
--	cancel_delayed_work(&pcr->carddet_work);
--	cancel_delayed_work(&pcr->idle_work);
-+	/* Disable interrupts at the pcr level */
-+	spin_lock_irq(&pcr->lock);
-+	rtsx_pci_writel(pcr, RTSX_BIER, 0);
-+	pcr->bier = 0;
-+	spin_unlock_irq(&pcr->lock);
++static void kmem_shrink_work_func(struct work_struct *w)
++{
++	struct mem_cgroup *memcg;
 +
-+	cancel_delayed_work_sync(&pcr->carddet_work);
-+	cancel_delayed_work_sync(&pcr->idle_work);
++	memcg = container_of(w, struct mem_cgroup, kmem_shrink_work);
++	try_to_free_mem_cgroup_kmem(memcg, GFP_KERNEL);
++}
++
++static int memcg_try_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
++{
++	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
++	struct mem_cgroup *mem_over_limit;
++	struct res_counter *fail_res;
++	int ret;
++
++	do {
++		ret = res_counter_charge(&memcg->kmem, size, &fail_res);
++		if (!ret)
++			break;
++
++		mem_over_limit = mem_cgroup_from_res_counter(fail_res, kmem);
++
++		/*
++		 * Now we are going to shrink kernel memory present in caches.
++		 * If we cannot wait, we will have no option rather than fail
++		 * the current allocation and make room in the background
++		 * hoping the next one will succeed.
++		 *
++		 * If we are in FS context, then although we can wait, we
++		 * cannot call the shrinkers, because most FS shrinkers will
++		 * not run without __GFP_FS to avoid deadlock.
++		 */
++		if (!(gfp & __GFP_WAIT) || !(gfp & __GFP_FS)) {
++			schedule_work(&mem_over_limit->kmem_shrink_work);
++			break;
++		}
++
++		if (!try_to_free_mem_cgroup_kmem(mem_over_limit, gfp))
++			break;
++	} while (--nr_retries > 0);
++
++	return ret;
++}
++
+ static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
+ {
+ 	struct res_counter *fail_res;
+ 	struct mem_cgroup *_memcg;
+ 	int ret = 0;
  
- 	mfd_remove_devices(&pcidev->dev);
+-	ret = res_counter_charge(&memcg->kmem, size, &fail_res);
++	ret = memcg_try_charge_kmem(memcg, gfp, size);
+ 	if (ret)
+ 		return ret;
  
+@@ -6289,6 +6335,7 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+ 	int ret;
+ 
+ 	INIT_LIST_HEAD(&memcg->memcg_slab_caches);
++	INIT_WORK(&memcg->kmem_shrink_work, kmem_shrink_work_func);
+ 	mutex_init(&memcg->slab_caches_mutex);
+ 	memcg->kmemcg_id = -1;
+ 	ret = memcg_propagate_kmem(memcg);
+@@ -6309,6 +6356,8 @@ static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
+ 	if (!memcg_kmem_is_active(memcg))
+ 		return;
+ 
++	cancel_work_sync(&memcg->kmem_shrink_work);
++
+ 	/*
+ 	 * kmem charges can outlive the cgroup. In the case of slab
+ 	 * pages, for instance, a page contain objects from various
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 04df967..10e6b2f 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2729,7 +2729,43 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
+ 
+ 	return nr_reclaimed;
+ }
+-#endif
++
++#ifdef CONFIG_MEMCG_KMEM
++unsigned long try_to_free_mem_cgroup_kmem(struct mem_cgroup *memcg,
++					  gfp_t gfp_mask)
++{
++	struct reclaim_state reclaim_state;
++	struct shrink_control shrink = {
++		.gfp_mask = gfp_mask,
++		.target_mem_cgroup = memcg,
++	};
++	int priority = DEF_PRIORITY;
++	unsigned long nr_to_reclaim = SWAP_CLUSTER_MAX;
++	unsigned long freed, total_freed = 0;
++
++	nodes_setall(shrink.nodes_to_scan);
++
++	lockdep_set_current_reclaim_state(sc.gfp_mask);
++	reclaim_state.reclaimed_slab = 0;
++	current->reclaim_state = &reclaim_state;
++
++	do {
++		freed = shrink_slab(&shrink, 1000, 1000 << priority);
++		if (!freed)
++			congestion_wait(BLK_RW_ASYNC, HZ/10);
++		total_freed += freed;
++		if (current->reclaim_state->reclaimed_slab >= nr_to_reclaim)
++			break;
++	} while (--priority >= 0);
++
++	current->reclaim_state = NULL;
++	lockdep_clear_current_reclaim_state();
++
++	return total_freed;
++}
++#endif /* CONFIG_MEMCG_KMEM */
++
++#endif /* CONFIG_MEMCG */
+ 
+ static void age_active_anon(struct zone *zone, struct scan_control *sc)
+ {
+-- 
+1.7.10.4
 
