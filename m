@@ -1,85 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851Ab3LBXAg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 18:00:36 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:32071 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130Ab3LBXAe (ORCPT
+	id S1754460Ab3LBXBC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 18:01:02 -0500
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:38556 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752602Ab3LBXA5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 18:00:34 -0500
-X-AuditID: cbfee68d-b7f1a6d0000055a7-d6-529d110cdaac
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'John W. Linville'" <linville@tuxdriver.com>,
-        "=?iso-8859-2?Q?'Rafa=B3_Mi=B3ecki'?=" <zajec5@gmail.com>,
-        linux-wireless@vger.kernel.org
-References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
-In-reply-to: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
-Subject: [PATCH 02/39] bcma: pci: remove DEFINE_PCI_DEVICE_TABLE macro
-Date: Tue, 03 Dec 2013 08:00:27 +0900
-Message-id: <001701ceefb2$4ad65260$e082f720$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=iso-8859-2
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7vsUc6neA2wWIVTNSB4ceFa5FjuwAALlRw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t8zY10ewblBBq9fsVs0L17PZnF54SVW
-	i8u75rBZvFlxh91ia4+ExZqTqQ5sHjtn3WX32D93DbtH35ZVjB5Xvq9m9Pi8SS6ANYrLJiU1
-	J7MstUjfLoErY8mxdawFU9kqfr7sZ29gnMfaxcjBISFgIvFtu3kXIyeQKSZx4d56ti5GLg4h
-	gWWMEo1fmpggEiYS9y6uY4VILGKUmHb7ClTVL0aJfZ0zmUGq2ATUJL58OcwOYosImEpsfD+F
-	EaSIWeASo8SUxl0sIAkhAVuJ6S82M4Gs5hSwk+j7VAsSFhZwk+j/dQ9sG4uAqsTGw9MZQWxe
-	oPITnf+ZIWxBiR+T77GAtDIL6Eh8nRQBEmYWkJfYvOYtM8Qz6hKP/upCXGAksWDaA2aIEhGJ
-	fS/eMUL88pZd4s3SBIhNAhLfJh9igWiVldh0gBmiRFLi4IobLBMYJWYh2TsLYe8sJHtnIVmw
-	gJFlFaNoakFyQXFSepGhXnFibnFpXrpecn7uJkZIpPbuYLx9wPoQYzLQ9onMUqLJ+cBIzyuJ
-	NzQ2M7IwNTE1NjK3NCNNWEmcN+lhUpCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGRudufv6H
-	1zsKjaRaJ81i+N071e3/csuPPPraW987iqzOE3+18OWULWITRPT8lpzXtj9TsfOy47Ozm66L
-	v4+dofn/E5+beo1eyNIEDakwvlU8PBMWb+RlatFceW/fl0+nWo+V2W60+f41m8F71epXJR+2
-	yU3hVH7R6DC96u+027IJz6qEv208vFyJpTgj0VCLuag4EQDEqlkM6gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGKsWRmVeSWpSXmKPExsVy+t9jAV0ewblBBqcOM1s0L17PZnF54SVW
-	i8u75rBZvFlxh91ia4+ExZqTqQ5sHjtn3WX32D93DbtH35ZVjB5Xvq9m9Pi8SS6ANaqB0SYj
-	NTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6AAlhbLEnFKg
-	UEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEdY8aSY+tYC6ayVfx82c/ewDiPtYuRk0NC
-	wETi3sV1ULaYxIV769m6GLk4hAQWMUpMu30FyvnFKLGvcyYzSBWbgJrEly+H2UFsEQFTiY3v
-	pzCCFDELXGKUmNK4iwUkISRgKzH9xWamLkYODk4BO4m+T7UgYWEBN4n+X/eYQGwWAVWJjYen
-	M4LYvEDlJzr/M0PYghI/Jt9jAWllFtCR+DopAiTMLCAvsXnNW2aQsISAusSjv7oQFxhJLJj2
-	gBmiRERi34t3jBMYhWYhGTQLYdAsJINmIelYwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93
-	EyM4FTyT2sG4ssHiEKMAB6MSD++D7XOChFgTy4orcw8xSnAwK4nwdvLMDRLiTUmsrEotyo8v
-	Ks1JLT7EmAz05kRmKdHkfGCayiuJNzQ2MTOyNDKzMDIxNydNWEmc90CrdaCQQHpiSWp2ampB
-	ahHMFiYOTqkGRl9+b/0X2eurDqz4EHai753uv+Cts22q7ffsS5w7ZbH//awq1dY7xnNfvjug
-	xTFf2kXi7d/b2i0Wk92bzv3lmSBdnLKloX93w5f+PKXJVq8kvyQteTA9+Od0FtmVfYvvHjY+
-	fXbSMWvH//O+ZUhm2awQ2KO7zN/m6vHbupUzS12n1D+fselNoowSS3FGoqEWc1FxIgA9tZWW
-	SQMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 2 Dec 2013 18:00:57 -0500
+MIME-Version: 1.0
+In-Reply-To: <5298C932.60709@ti.com>
+References: <1385506004-14943-1-git-send-email-caesarxuchao@gmail.com>
+	<5298C932.60709@ti.com>
+Date: Mon, 2 Dec 2013 17:00:56 -0600
+Message-ID: <CAKZq+rd2yVOzRhcf2_dGudaYR7EqZ4vk7nv-GX2OKKxwdWKjUg@mail.gmail.com>
+Subject: Re: [PATCH V2] gpio: omap: refresh patch "be more aggressive with
+ pm_runtime" against v3.12-rc5
+From: Chao Xu <caesarxuchao@gmail.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: linux-omap@vger.kernel.org, Kevin Hilman <khilman@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        balbi@ti.com, Nishanth Menon <nm@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't use DEFINE_PCI_DEVICE_TABLE macro, because this macro
-is not preferred.
+Sorry for the late reply.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/bcma/host_pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Fri, Nov 29, 2013 at 11:04 AM, Santosh Shilimkar
+<santosh.shilimkar@ti.com> wrote:
+> Adding Kevin's Linaro id, + Nishant,
+>
+> On Tuesday 26 November 2013 05:46 PM, Chao Xu wrote:
+>> From: Felipe Balbi <balbi@ti.com>
+>>
+>> try to keep gpio block suspended as much as possible.
+>>
+>> Tested with pandaboard and a sysfs exported gpio.
+>>
+>> Signed-off-by: Felipe Balbi <balbi at ti.com>
+>>
+>> [caesarxuchao@gmail.com : Refreshed against v3.12-rc5, and added revision check to enable aggressive pm_runtime on OMAP4-only. Because am33xx_gpio_sysc.idlemodes seems to be wrongly marked as SIDLE_SMART_WKUP, which might cause missed interrupts with this patch. Tested on Pandaboard rev A2.]
+>>
+> Please format the text and limit it to 80 char rule.
+>
+Sorry. It's my first time submitting a patch. I will fix it and resubmit.
+>> Signed-off-by: Chao Xu <caesarxuchao@gmail.com>
+>> ---
+>> According to Mr. Felipe Balbi, the original patch was not accepted because interrupts would be missed when GPIO was used as IRQ source. But in my tests with pandaboard, interrupts were not missed. This is because _idle_sysc() sets the idlemode of gpio module to smart-idle-wakeup, and according to OMAP4430 TRM, under this idlemode, the gpio can generate an asynchronous wakeup request to the PRCM. And after GPIO is awake, the wake-up request is reflected into the interrupt status registers.
+>>
+>> A change made on the original patch is only applying the aggressive runtime pm scheme on OMAP4, because I don’t have HW to test OMAP3 or am33xx devices. According to the respective TRMs, their GPIO modules also can generate wake-up request if the idlemode is set to smart-idle or smart-idle-wakeup. So the patch should work for them, too. But I suspect a potential SW bug may cause missed interrupts: the am33xx_gpio_sysc.idlemodes is marked as capable of SIDLE_SMART_WKUP in omap_hwmod_33xx.c. But according to AM335x TRM, _only_ gpio0 is capable of this mode. This may make GPIO stuck in force-idle mode and unable to generate wakeup request. And thus interrupt will be missed. Again, I don’t have the HW to verify whether this is a bug or not :(
+>>
+> In general I am not against this idea but patch has many assumptions which
+> are not entirely correct.
+>
+> - SMART_WAKEUP will take care of waking IP etc not always true to power
+> domain getting into idle.
+>
+I agree that if the power domain goes to idle, SMART_WAKEUP
+won't be effective. But, correct me if i'm wrong, even if we don't call
+runtime_put(), the power domain can still go to idle. Because the
+modulemode of GPIO is set to HW_AUTO in this case, which won't
+prevent the power domain goes to retention. So this patch doesn't
+make the situation worse.
+> - If we want to go on this path then I would like to see we address
+> omap2_gpio_[prepare/resumne]_for_idle()
+>
+I did a quick google search but didn't find the problem with the two
+functions. Could you give me a pointer here?
+> - GPIO though sound simple is one of the most notorious IP block
+> on PM front so this needs lot of testing. This patch not seems be
+> tested at all so I would have much liked it to be in RFC/RFT
+> state.
+I tested using a gpio pin as interrupt source after applying the patch.
+What are the other tests that I should do? Is there a formal way of
+reporting test results here?
+>
+>>  drivers/gpio/gpio-omap.c                |  103 ++++++++++++++++++++++++++-----
+>>  include/linux/platform_data/gpio-omap.h |    1 +
+>>  2 files changed, 87 insertions(+), 17 deletions(-)
+>>
+>> diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
+>> index 89675f8..90661f2 100644
+>> --- a/drivers/gpio/gpio-omap.c
+>> +++ b/drivers/gpio/gpio-omap.c
+>> @@ -76,6 +76,7 @@ struct gpio_bank {
+>>       int context_loss_count;
+>>       int power_mode;
+>>       bool workaround_enabled;
+>> +     bool is_aggressive_pm;
+>>
+>>       void (*set_dataout)(struct gpio_bank *bank, int gpio, int enable);
+>>       int (*get_context_loss_count)(struct device *dev);
+>> @@ -473,8 +474,15 @@ static void _disable_gpio_module(struct gpio_bank *bank, unsigned offset)
+>>  static int gpio_is_input(struct gpio_bank *bank, int mask)
+>>  {
+>>       void __iomem *reg = bank->base + bank->regs->direction;
+>> +     u32 val;
+>>
+>> -     return __raw_readl(reg) & mask;
+>> +     if (bank->is_aggressive_pm)
+>> +             pm_runtime_get_sync(bank->dev);
+>> +     val = __raw_readl(reg) & mask;
+>> +     if (bank->is_aggressive_pm)
+>> +             pm_runtime_put(bank->dev);
+>> +
+> Move above in some wrapper instead of sprinkling the
+> 'is_aggressive_pm' check everywhere.
+>
+Will do.
+>> @@ -1585,18 +1651,21 @@ static const struct omap_gpio_platform_data omap2_pdata = {
+>>       .regs = &omap2_gpio_regs,
+>>       .bank_width = 32,
+>>       .dbck_flag = false,
+>> +     .is_aggressive_pm = false,
+>>  };
+>>
+>>  static const struct omap_gpio_platform_data omap3_pdata = {
+>>       .regs = &omap2_gpio_regs,
+>>       .bank_width = 32,
+>>       .dbck_flag = true,
+>> +     .is_aggressive_pm = false,
+>>  };
+>>
+>>  static const struct omap_gpio_platform_data omap4_pdata = {
+>>       .regs = &omap4_gpio_regs,
+>>       .bank_width = 32,
+>>       .dbck_flag = true,
+>> +     .is_aggressive_pm = true,
+>>  };
+>>
+> Well OMAP IP shouldn't have different behavior on OMAP3 and
+> OMAP4 at least so something you can enable for OMAP4, you
+> should be able to do it for OMAP3 as well.
+>
+the am33xx_gpio_sysc.idlemodes is marked as capable of
+SMART_WKUP in omap_hwmod_33xx.c. But according to TRM,
+only gpio0 is capable of this. So i suspect the patch won't work
+for omap3. I don't have the hardware to verify this. Could someone
+verify it? Thank you.
+> Kevin might have some more concerns to add.
+>
+> Regards,
+> Santosh
+>
 
-diff --git a/drivers/bcma/host_pci.c b/drivers/bcma/host_pci.c
-index 6fb98b5..6fe0909 100644
---- a/drivers/bcma/host_pci.c
-+++ b/drivers/bcma/host_pci.c
-@@ -270,7 +270,7 @@ static SIMPLE_DEV_PM_OPS(bcma_pm_ops, bcma_host_pci_suspend,
- 
- #endif /* CONFIG_PM_SLEEP */
- 
--static DEFINE_PCI_DEVICE_TABLE(bcma_pci_bridge_tbl) = {
-+static const struct pci_device_id bcma_pci_bridge_tbl[] = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x0576) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4313) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 43224) },
+
+
 -- 
-1.7.10.4
-
-
+Regards,
+Chao Xu
