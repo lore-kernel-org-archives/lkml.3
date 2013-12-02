@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298Ab3LBTON (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:14:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38743 "EHLO
+	id S1754472Ab3LBTOm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:14:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38879 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754253Ab3LBTOG (ORCPT
+	with ESMTP id S1754339Ab3LBTOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:14:06 -0500
+	Mon, 2 Dec 2013 14:14:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>, Mel Gorman <mgorman@suse.de>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Li Zefan <lizefan@huawei.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.10 111/173] cpuset: Fix memory allocator deadlock
-Date: Mon,  2 Dec 2013 11:11:34 -0800
-Message-Id: <20131202191156.655515158@linuxfoundation.org>
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: [PATCH 3.10 143/173] media: dw2102: Dont use dynamic static allocation
+Date: Mon,  2 Dec 2013 11:12:06 -0800
+Message-Id: <20131202191159.818814782@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -29,91 +27,196 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit 0fc0287c9ed1ffd3706f8b4d9b314aa102ef1245 upstream.
+commit 0065a79a8698a953e4b201c5fce8db8940530578 upstream.
 
-Juri hit the below lockdep report:
+Dynamic static allocation is evil, as Kernel stack is too low, and
+compilation complains about it on some archs:
+	drivers/media/usb/dvb-usb/dw2102.c:368:1: warning: 'dw2102_earda_i2c_transfer' uses dynamic stack allocation [enabled by default]
+	drivers/media/usb/dvb-usb/dw2102.c:449:1: warning: 'dw2104_i2c_transfer' uses dynamic stack allocation [enabled by default]
+	drivers/media/usb/dvb-usb/dw2102.c:512:1: warning: 'dw3101_i2c_transfer' uses dynamic stack allocation [enabled by default]
+	drivers/media/usb/dvb-usb/dw2102.c:621:1: warning: 's6x0_i2c_transfer' uses dynamic stack allocation [enabled by default]
+Instead, let's enforce a limit for the buffer to be the max size of
+a control URB payload data (64 bytes).
 
-[    4.303391] ======================================================
-[    4.303392] [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
-[    4.303394] 3.12.0-dl-peterz+ #144 Not tainted
-[    4.303395] ------------------------------------------------------
-[    4.303397] kworker/u4:3/689 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
-[    4.303399]  (&p->mems_allowed_seq){+.+...}, at: [<ffffffff8114e63c>] new_slab+0x6c/0x290
-[    4.303417]
-[    4.303417] and this task is already holding:
-[    4.303418]  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff812d2dfb>] blk_execute_rq_nowait+0x5b/0x100
-[    4.303431] which would create a new lock dependency:
-[    4.303432]  (&(&q->__queue_lock)->rlock){..-...} -> (&p->mems_allowed_seq){+.+...}
-[    4.303436]
-
-[    4.303898] the dependencies between the lock to be acquired and SOFTIRQ-irq-unsafe lock:
-[    4.303918] -> (&p->mems_allowed_seq){+.+...} ops: 2762 {
-[    4.303922]    HARDIRQ-ON-W at:
-[    4.303923]                     [<ffffffff8108ab9a>] __lock_acquire+0x65a/0x1ff0
-[    4.303926]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
-[    4.303929]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
-[    4.303931]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
-[    4.303933]    SOFTIRQ-ON-W at:
-[    4.303933]                     [<ffffffff8108abcc>] __lock_acquire+0x68c/0x1ff0
-[    4.303935]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
-[    4.303940]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
-[    4.303955]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
-[    4.303959]    INITIAL USE at:
-[    4.303960]                    [<ffffffff8108a884>] __lock_acquire+0x344/0x1ff0
-[    4.303963]                    [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
-[    4.303966]                    [<ffffffff81063dd6>] kthreadd+0x86/0x180
-[    4.303969]                    [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
-[    4.303972]  }
-
-Which reports that we take mems_allowed_seq with interrupts enabled. A
-little digging found that this can only be from
-cpuset_change_task_nodemask().
-
-This is an actual deadlock because an interrupt doing an allocation will
-hit get_mems_allowed()->...->__read_seqcount_begin(), which will spin
-forever waiting for the write side to complete.
-
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Reported-by: Juri Lelli <juri.lelli@gmail.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Tested-by: Juri Lelli <juri.lelli@gmail.com>
-Acked-by: Li Zefan <lizefan@huawei.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/cpuset.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/media/usb/dvb-usb/dw2102.c |   90 ++++++++++++++++++++++++++++++++-----
+ 1 file changed, 80 insertions(+), 10 deletions(-)
 
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -984,8 +984,10 @@ static void cpuset_change_task_nodemask(
- 	need_loop = task_has_mempolicy(tsk) ||
- 			!nodes_intersects(*newmems, tsk->mems_allowed);
+--- a/drivers/media/usb/dvb-usb/dw2102.c
++++ b/drivers/media/usb/dvb-usb/dw2102.c
+@@ -30,6 +30,9 @@
+ #include "stb6100_proc.h"
+ #include "m88rs2000.h"
  
--	if (need_loop)
-+	if (need_loop) {
-+		local_irq_disable();
- 		write_seqcount_begin(&tsk->mems_allowed_seq);
-+	}
- 
- 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
- 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
-@@ -993,8 +995,10 @@ static void cpuset_change_task_nodemask(
- 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP2);
- 	tsk->mems_allowed = *newmems;
- 
--	if (need_loop)
-+	if (need_loop) {
- 		write_seqcount_end(&tsk->mems_allowed_seq);
-+		local_irq_enable();
-+	}
- 
- 	task_unlock(tsk);
- }
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
++
+ #ifndef USB_PID_DW2102
+ #define USB_PID_DW2102 0x2102
+ #endif
+@@ -308,7 +311,14 @@ static int dw2102_earda_i2c_transfer(str
+ 	case 2: {
+ 		/* read */
+ 		/* first write first register number */
+-		u8 ibuf[msg[1].len + 2], obuf[3];
++		u8 ibuf[MAX_XFER_SIZE], obuf[3];
++
++		if (2 + msg[1].len > sizeof(ibuf)) {
++			warn("i2c rd: len=%d is too big!\n",
++			     msg[1].len);
++			return -EOPNOTSUPP;
++		}
++
+ 		obuf[0] = msg[0].addr << 1;
+ 		obuf[1] = msg[0].len;
+ 		obuf[2] = msg[0].buf[0];
+@@ -325,7 +335,14 @@ static int dw2102_earda_i2c_transfer(str
+ 		switch (msg[0].addr) {
+ 		case 0x68: {
+ 			/* write to register */
+-			u8 obuf[msg[0].len + 2];
++			u8 obuf[MAX_XFER_SIZE];
++
++			if (2 + msg[0].len > sizeof(obuf)) {
++				warn("i2c wr: len=%d is too big!\n",
++				     msg[1].len);
++				return -EOPNOTSUPP;
++			}
++
+ 			obuf[0] = msg[0].addr << 1;
+ 			obuf[1] = msg[0].len;
+ 			memcpy(obuf + 2, msg[0].buf, msg[0].len);
+@@ -335,7 +352,14 @@ static int dw2102_earda_i2c_transfer(str
+ 		}
+ 		case 0x61: {
+ 			/* write to tuner */
+-			u8 obuf[msg[0].len + 2];
++			u8 obuf[MAX_XFER_SIZE];
++
++			if (2 + msg[0].len > sizeof(obuf)) {
++				warn("i2c wr: len=%d is too big!\n",
++				     msg[1].len);
++				return -EOPNOTSUPP;
++			}
++
+ 			obuf[0] = msg[0].addr << 1;
+ 			obuf[1] = msg[0].len;
+ 			memcpy(obuf + 2, msg[0].buf, msg[0].len);
+@@ -401,7 +425,14 @@ static int dw2104_i2c_transfer(struct i2
+ 		default: {
+ 			if (msg[j].flags == I2C_M_RD) {
+ 				/* read registers */
+-				u8  ibuf[msg[j].len + 2];
++				u8  ibuf[MAX_XFER_SIZE];
++
++				if (2 + msg[j].len > sizeof(ibuf)) {
++					warn("i2c rd: len=%d is too big!\n",
++					     msg[j].len);
++					return -EOPNOTSUPP;
++				}
++
+ 				dw210x_op_rw(d->udev, 0xc3,
+ 						(msg[j].addr << 1) + 1, 0,
+ 						ibuf, msg[j].len + 2,
+@@ -430,7 +461,14 @@ static int dw2104_i2c_transfer(struct i2
+ 				} while (len > 0);
+ 			} else {
+ 				/* write registers */
+-				u8 obuf[msg[j].len + 2];
++				u8 obuf[MAX_XFER_SIZE];
++
++				if (2 + msg[j].len > sizeof(obuf)) {
++					warn("i2c wr: len=%d is too big!\n",
++					     msg[j].len);
++					return -EOPNOTSUPP;
++				}
++
+ 				obuf[0] = msg[j].addr << 1;
+ 				obuf[1] = msg[j].len;
+ 				memcpy(obuf + 2, msg[j].buf, msg[j].len);
+@@ -463,7 +501,13 @@ static int dw3101_i2c_transfer(struct i2
+ 	case 2: {
+ 		/* read */
+ 		/* first write first register number */
+-		u8 ibuf[msg[1].len + 2], obuf[3];
++		u8 ibuf[MAX_XFER_SIZE], obuf[3];
++
++		if (2 + msg[1].len > sizeof(ibuf)) {
++			warn("i2c rd: len=%d is too big!\n",
++			     msg[1].len);
++			return -EOPNOTSUPP;
++		}
+ 		obuf[0] = msg[0].addr << 1;
+ 		obuf[1] = msg[0].len;
+ 		obuf[2] = msg[0].buf[0];
+@@ -481,7 +525,13 @@ static int dw3101_i2c_transfer(struct i2
+ 		case 0x60:
+ 		case 0x0c: {
+ 			/* write to register */
+-			u8 obuf[msg[0].len + 2];
++			u8 obuf[MAX_XFER_SIZE];
++
++			if (2 + msg[0].len > sizeof(obuf)) {
++				warn("i2c wr: len=%d is too big!\n",
++				     msg[0].len);
++				return -EOPNOTSUPP;
++			}
+ 			obuf[0] = msg[0].addr << 1;
+ 			obuf[1] = msg[0].len;
+ 			memcpy(obuf + 2, msg[0].buf, msg[0].len);
+@@ -563,7 +613,14 @@ static int s6x0_i2c_transfer(struct i2c_
+ 		default: {
+ 			if (msg[j].flags == I2C_M_RD) {
+ 				/* read registers */
+-				u8 ibuf[msg[j].len];
++				u8 ibuf[MAX_XFER_SIZE];
++
++				if (msg[j].len > sizeof(ibuf)) {
++					warn("i2c rd: len=%d is too big!\n",
++					     msg[j].len);
++					return -EOPNOTSUPP;
++				}
++
+ 				dw210x_op_rw(d->udev, 0x91, 0, 0,
+ 						ibuf, msg[j].len,
+ 						DW210X_READ_MSG);
+@@ -590,7 +647,14 @@ static int s6x0_i2c_transfer(struct i2c_
+ 				} while (len > 0);
+ 			} else if (j < (num - 1)) {
+ 				/* write register addr before read */
+-				u8 obuf[msg[j].len + 2];
++				u8 obuf[MAX_XFER_SIZE];
++
++				if (2 + msg[j].len > sizeof(obuf)) {
++					warn("i2c wr: len=%d is too big!\n",
++					     msg[j].len);
++					return -EOPNOTSUPP;
++				}
++
+ 				obuf[0] = msg[j + 1].len;
+ 				obuf[1] = (msg[j].addr << 1);
+ 				memcpy(obuf + 2, msg[j].buf, msg[j].len);
+@@ -602,7 +666,13 @@ static int s6x0_i2c_transfer(struct i2c_
+ 				break;
+ 			} else {
+ 				/* write registers */
+-				u8 obuf[msg[j].len + 2];
++				u8 obuf[MAX_XFER_SIZE];
++
++				if (2 + msg[j].len > sizeof(obuf)) {
++					warn("i2c wr: len=%d is too big!\n",
++					     msg[j].len);
++					return -EOPNOTSUPP;
++				}
+ 				obuf[0] = msg[j].len + 1;
+ 				obuf[1] = (msg[j].addr << 1);
+ 				memcpy(obuf + 2, msg[j].buf, msg[j].len);
 
 
