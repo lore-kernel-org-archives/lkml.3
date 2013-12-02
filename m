@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756136Ab3LBTpE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:45:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39564 "EHLO
+	id S1756127Ab3LBTpB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:45:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39570 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754847Ab3LBTSk (ORCPT
+	with ESMTP id S1754851Ab3LBTSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:18:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Shawn Bohrer <shawn.bohrer@gmail.com>
-Subject: [PATCH 3.12 155/212] cgroup: use a dedicated workqueue for cgroup destruction
-Date: Mon,  2 Dec 2013 11:15:46 -0800
-Message-Id: <20131202191304.815873941@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.12 146/212] md: fix calculation of stacking limits on level change.
+Date: Mon,  2 Dec 2013 11:15:37 -0800
+Message-Id: <20131202191303.508985880@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,122 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: NeilBrown <neilb@suse.de>
 
-commit e5fca243abae1445afbfceebda5f08462ef869d3 upstream.
+commit 02e5f5c0a0f726e66e3d8506ea1691e344277969 upstream.
 
-Since be44562613851 ("cgroup: remove synchronize_rcu() from
-cgroup_diput()"), cgroup destruction path makes use of workqueue.  css
-freeing is performed from a work item from that point on and a later
-commit, ea15f8ccdb430 ("cgroup: split cgroup destruction into two
-steps"), moves css offlining to workqueue too.
+The various ->run routines of md personalities assume that the 'queue'
+has been initialised by the blk_set_stacking_limits() call in
+md_alloc().
 
-As cgroup destruction isn't depended upon for memory reclaim, the
-destruction work items were put on the system_wq; unfortunately, some
-controller may block in the destruction path for considerable duration
-while holding cgroup_mutex.  As large part of destruction path is
-synchronized through cgroup_mutex, when combined with high rate of
-cgroup removals, this has potential to fill up system_wq's max_active
-of 256.
+However when the level is changed (by level_store()) the ->run routine
+for the new level is called for an array which has already had the
+stacking limits modified.  This can result in incorrect final
+settings.
 
-Also, it turns out that memcg's css destruction path ends up queueing
-and waiting for work items on system_wq through work_on_cpu().  If
-such operation happens while system_wq is fully occupied by cgroup
-destruction work items, work_on_cpu() can't make forward progress
-because system_wq is full and other destruction work items on
-system_wq can't make forward progress because the work item waiting
-for work_on_cpu() is holding cgroup_mutex, leading to deadlock.
+So call blk_set_stacking_limits() before ->run in level_store().
 
-This can be fixed by queueing destruction work items on a separate
-workqueue.  This patch creates a dedicated workqueue -
-cgroup_destroy_wq - for this purpose.  As these work items shouldn't
-have inter-dependencies and mostly serialized by cgroup_mutex anyway,
-giving high concurrency level doesn't buy anything and the workqueue's
-@max_active is set to 1 so that destruction work items are executed
-one by one on each CPU.
+A specific consequence of this bug is that it causes
+discard_granularity to be set incorrectly when reshaping a RAID4 to a
+RAID0.
 
-Hugh Dickins: Because cgroup_init() is run before init_workqueues(),
-cgroup_destroy_wq can't be allocated from cgroup_init().  Do it from a
-separate core_initcall().  In the future, we probably want to reorder
-so that workqueue init happens before cgroup_init().
+This is suitable for any -stable kernel since 3.3 in which
+blk_set_stacking_limits() was introduced.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Hugh Dickins <hughd@google.com>
-Reported-by: Shawn Bohrer <shawn.bohrer@gmail.com>
-Link: http://lkml.kernel.org/r/20131111220626.GA7509@sbohrermbp13-local.rgmadvisors.com
-Link: http://lkml.kernel.org/g/alpine.LNX.2.00.1310301606080.2333@eggly.anvils
+Reported-and-tested-by: "Baldysiak, Pawel" <pawel.baldysiak@intel.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/cgroup.c |   30 +++++++++++++++++++++++++++---
- 1 file changed, 27 insertions(+), 3 deletions(-)
+ drivers/md/md.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -90,6 +90,14 @@ static DEFINE_MUTEX(cgroup_mutex);
- static DEFINE_MUTEX(cgroup_root_mutex);
- 
- /*
-+ * cgroup destruction makes heavy use of work items and there can be a lot
-+ * of concurrent destructions.  Use a separate workqueue so that cgroup
-+ * destruction work items don't end up filling up max_active of system_wq
-+ * which may lead to deadlock.
-+ */
-+static struct workqueue_struct *cgroup_destroy_wq;
-+
-+/*
-  * Generate an array of cgroup subsystem pointers. At boot time, this is
-  * populated with the built in subsystems, and modular subsystems are
-  * registered after that. The mutable section of this array is protected by
-@@ -908,7 +916,7 @@ static void cgroup_free_rcu(struct rcu_h
- 	struct cgroup *cgrp = container_of(head, struct cgroup, rcu_head);
- 
- 	INIT_WORK(&cgrp->destroy_work, cgroup_free_fn);
--	schedule_work(&cgrp->destroy_work);
-+	queue_work(cgroup_destroy_wq, &cgrp->destroy_work);
- }
- 
- static void cgroup_diput(struct dentry *dentry, struct inode *inode)
-@@ -4306,7 +4314,7 @@ static void css_free_rcu_fn(struct rcu_h
- 	 * css_put().  dput() requires process context which we don't have.
- 	 */
- 	INIT_WORK(&css->destroy_work, css_free_work_fn);
--	schedule_work(&css->destroy_work);
-+	queue_work(cgroup_destroy_wq, &css->destroy_work);
- }
- 
- static void css_release(struct percpu_ref *ref)
-@@ -4603,7 +4611,7 @@ static void css_killed_ref_fn(struct per
- 		container_of(ref, struct cgroup_subsys_state, refcnt);
- 
- 	INIT_WORK(&css->destroy_work, css_killed_work_fn);
--	schedule_work(&css->destroy_work);
-+	queue_work(cgroup_destroy_wq, &css->destroy_work);
- }
- 
- /**
-@@ -5139,6 +5147,22 @@ out:
- 	return err;
- }
- 
-+static int __init cgroup_wq_init(void)
-+{
-+	/*
-+	 * There isn't much point in executing destruction path in
-+	 * parallel.  Good chunk is serialized with cgroup_mutex anyway.
-+	 * Use 1 for @max_active.
-+	 *
-+	 * We would prefer to do this in cgroup_init() above, but that
-+	 * is called before init_workqueues(): so leave this until after.
-+	 */
-+	cgroup_destroy_wq = alloc_workqueue("cgroup_destroy", 0, 1);
-+	BUG_ON(!cgroup_destroy_wq);
-+	return 0;
-+}
-+core_initcall(cgroup_wq_init);
-+
- /*
-  * proc_cgroup_show()
-  *  - Print task's cgroup paths into seq_file, one line for each hierarchy
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -3620,6 +3620,7 @@ level_store(struct mddev *mddev, const c
+ 		mddev->in_sync = 1;
+ 		del_timer_sync(&mddev->safemode_timer);
+ 	}
++	blk_set_stacking_limits(&mddev->queue->limits);
+ 	pers->run(mddev);
+ 	set_bit(MD_CHANGE_DEVS, &mddev->flags);
+ 	mddev_resume(mddev);
 
 
