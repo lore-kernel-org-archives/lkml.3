@@ -1,501 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585Ab3LBIDd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 03:03:33 -0500
-Received: from nasmtp02.atmel.com ([204.2.163.16]:28804 "EHLO
-	SJOEDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751049Ab3LBIDb (ORCPT
+	id S1752606Ab3LBIQA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 03:16:00 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:18709 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190Ab3LBIP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 03:03:31 -0500
-Message-ID: <529C3E69.1080902@atmel.com>
-Date: Mon, 2 Dec 2013 16:01:45 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: <linux-pwm@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <nicolas.ferre@atmel.com>, <linux-kernel@vger.kernel.org>,
-        <alexandre.belloni@free-electrons.com>, <galak@codeaurora.org>,
-        <plagnioj@jcrosoft.com>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 1/2] PWM: atmel-pwm: add PWM controller driver
-References: <1384766002-2852-1-git-send-email-voice.shen@atmel.com>
-In-Reply-To: <1384766002-2852-1-git-send-email-voice.shen@atmel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+	Mon, 2 Dec 2013 03:15:56 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee68e-b7f7e6d00000477d-30-529c41b7a39d
+Content-transfer-encoding: 8BIT
+Message-id: <1385972094.2417.104.camel@kjgkr>
+Subject: RE: [f2fs-dev] [PATCH] f2fs: remove the own bi_private allocation
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?UTF-8?Q?=E8=B0=AD=E5=A7=9D?= <shu.tan@samsung.com>
+Date: Mon, 02 Dec 2013 17:14:54 +0900
+In-reply-to: <000201ceef25$e145cec0$a3d16c40$@samsung.com>
+References: <1385776085-21163-1-git-send-email-jaegeuk.kim@samsung.com>
+ <000201ceef25$e145cec0$a3d16c40$@samsung.com>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zQ90djnOCDD79ZLT43/SRzeLSIneL
+	PXtPslhc3jWHzaJ14XlmB1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxpPec+wF
+	twQqVvRcZ25gPMTbxcjJISFgInF0YhM7hC0mceHeerYuRi4OIYFljBIHz3xmhCnqefSfCSIx
+	nVHi4YnrzCAJXgFBiR+T77F0MXJwMAvISxy5lA0SZhZQl5g0bxFYiZDAK0aJpkVBEOW6Es9n
+	3GMDsYUFvCQaTr1jB2llE9CW2LzfAKJcUeLt/rusILaIgJLEr/mLWEHWMgssBLpnwU2wXhYB
+	VYnVc66C3cYpYCXR8m0iE0RzuUTn2Xdgz/ALiEocXridGeJ+JYnd7Z3sIIMkBC6xS/zZ+Rlq
+	kIDEt8mHwO6XEJCV2HQAql5S4uCKGywTGCVmIflyFsKXs5B8uYCReRWjaGpBckFxUnqRkV5x
+	Ym5xaV66XnJ+7iZGSOT17WC8ecD6EGMy0MaJzFKiyfnAyM0riTc0NjOyMDUxNTYytzQjTVhJ
+	nHfRw6QgIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYyOZ7jrOHW9W+INO3bmr09KPrGpZkpo
+	pc7VnfuU1T3PCt3tuVXqwXZnocjUwDqjhP0Rd3JrNJg9FTYwOrauW3b+wX65d29ZMs/f6no9
+	9VhId73Pp3uNWSvfmB1Y/m/KV+slhR+yH0tMCp1y3ae6Zld19NoGqyDRpvju6/senV6QpN/+
+	re6fxVolluKMREMt5qLiRAAGDtIu0gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDKsWRmVeSWpSXmKPExsVy+t9jQd3tjnOCDFaftbL43/SRzeLSIneL
+	PXtPslhc3jWHzaJ14XlmB1aP3Qs+M3n0bVnF6PF5k1wAc1QDo01GamJKapFCal5yfkpmXrqt
+	kndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0EolhbLEnFKgUEBicbGSvh2mCaEhbroW
+	MI0Rur4hQXA9RgZoIGEdY8aT3nPsBbcEKlb0XGduYDzE28XIySEhYCLR8+g/E4QtJnHh3nq2
+	LkYuDiGB6YwSD09cZwZJ8AoISvyYfI+li5GDg1lAXuLIpWyQMLOAusSkeYvASoQEXjFKNC0K
+	gijXlXg+4x4biC0s4CXRcOodO0grm4C2xOb9BhDlihJv999lBbFFBJQkfs1fxAqylllgIaPE
+	wQU3wXpZBFQlVs+5yghicwpYSbR8m8gE0Vwu0XkWZCYnB7+AqMThhduZIe5Xktjd3sk+gVFo
+	FpKrZyFcPQvJ1QsYmVcxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBMf1M6kdjCsbLA4xCnAw
+	KvHwXhSeEyTEmlhWXJl7iFGCg1lJhJfl7+wgId6UxMqq1KL8+KLSnNTiQ4zJQIdPZJYSTc4H
+	ppy8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtFoHCgmkJ5akZqemFqQWwWxh4uCUamCcdfvxL4Vk
+	rS2sbUGSe5fp7tm/p/jWXY7JKnxnpC2kGlPWeby1S5jveqT2X2b8Dd37E/8cLb/Rma57umSV
+	qU+2/rSwQ04z7008+IjJJb9/39FZZ79xy6ukFoUXJJrmT8vxnc2lF+6z7+Iu73vSocpLDuUJ
+	PoyxWXDyHM9u34J5Z3xj1gmJ781WYinOSDTUYi4qTgQAZbc3Ii8DAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
+2013-12-02 (월), 14:14 +0800, Chao Yu:
+> Hi Kim,
+> 
+> > -----Original Message-----
+> > From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> > Sent: Saturday, November 30, 2013 9:48 AM
+> > Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net
+> > Subject: [f2fs-dev] [PATCH] f2fs: remove the own bi_private allocation
+> > 
+> > Previously f2fs allocates its own bi_private data structure all the time even
+> > though we don't use it. But, can we remove this bi_private allocation?
+> > 
+> > This patch removes such the additional bi_private allocation.
+> > 
+> > 1. Retrieve f2fs_sb_info from its page->mapping->host->i_sb.
+> >  - This removes the usecases of bi_private in end_io.
+> > 
+> > 2. Use bi_private only when we really need it.
+> >  - The bi_private is used only when the checkpoint procedure is conducted.
+> >  - When conducting the checkpoint, f2fs submits a META_FLUSH bio to wait its bio
+> > completion.
+> >  - Since we have no dependancies to remove bi_private now, let's just use
+> >  bi_private pointer as the completion pointer.
+> > 
+> > Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> > ---
+> >  fs/f2fs/segment.c | 43 ++++++++++++++++---------------------------
+> >  fs/f2fs/segment.h |  7 -------
+> >  2 files changed, 16 insertions(+), 34 deletions(-)
+> > 
+> > diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+> > index 0387863..0db4027 100644
+> > --- a/fs/f2fs/segment.c
+> > +++ b/fs/f2fs/segment.c
+> > @@ -791,7 +791,7 @@ static void f2fs_end_io_write(struct bio *bio, int err)
+> >  {
+> >  	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+> >  	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
+> > -	struct bio_private *p = bio->bi_private;
+> > +	struct f2fs_sb_info *sbi = F2FS_SB(bvec->bv_page->mapping->host->i_sb);
+> 
+> I'm not sure whether bvec->bv_page->mapping will be set to NULL in the flow
+> where may not check WRITEBACK flag of page. Is it possible?
 
-On 11/18/2013 05:13 PM, Bo Shen wrote:
-> Add Atmel PWM controller driver based on PWM framework.
->
-> This is the basic function implementation of Atmel PWM controller.
-> It can work with PWM based led and backlight.
->
-> Signed-off-by: Bo Shen <voice.shen@atmel.com>
->
-> Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> ---
-> Changes in v8:
->    - replace pr_err by dev_err
->
-> Changes in v7:
->    - fix issue for none device tree issues.
->
-> Changes in v6:
->    - using relaxed version for writel and readl
->    - add none device tree support
->    - change some define from lower case to upper case
->    - split device tree binding document as a separate patch
->
-> Changes in v5:
->    - call clk_disable directly, if so, it won't cause more than one channel
->      enabled, the clock can not be disabled.
->
-> Changes in v4:
->    - check the return value of clk_prepare()
->    - change channel register size as constant
->
-> Changes in v3:
->    - change compatible string from "atmel,sama5-pwm" to "atmel,sama5d3-pwm"
->    - Add PWM led example in binding documentation
->    - Using micro replace hard code
->
-> Changes in v2:
->    - Address the comments from Thierry Reding
->
->   drivers/pwm/Kconfig     |    9 ++
->   drivers/pwm/Makefile    |    1 +
->   drivers/pwm/pwm-atmel.c |  380 +++++++++++++++++++++++++++++++++++++++++++++++
->   3 files changed, 390 insertions(+)
->   create mode 100644 drivers/pwm/pwm-atmel.c
+The mapping should be not NULL cause it is a writebacking page.
+Otherwise, it's a bug.
+Thanks,
 
-Any new comments on this patch series?
-
-Best Regards,
-Bo Shen
-
-> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-> index eece329..5043572 100644
-> --- a/drivers/pwm/Kconfig
-> +++ b/drivers/pwm/Kconfig
-> @@ -41,6 +41,15 @@ config PWM_AB8500
->   	  To compile this driver as a module, choose M here: the module
->   	  will be called pwm-ab8500.
->
-> +config PWM_ATMEL
-> +	tristate "Atmel PWM support"
-> +	depends on ARCH_AT91
-> +	help
-> +	  Generic PWM framework driver for Atmel SoC.
-> +
-> +	  To compile this driver as a module, choose M here: the module
-> +	  will be called pwm-atmel.
-> +
->   config PWM_ATMEL_TCB
->   	tristate "Atmel TC Block PWM support"
->   	depends on ATMEL_TCLIB && OF
-> diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-> index 8b754e4..1b99cfb 100644
-> --- a/drivers/pwm/Makefile
-> +++ b/drivers/pwm/Makefile
-> @@ -1,6 +1,7 @@
->   obj-$(CONFIG_PWM)		+= core.o
->   obj-$(CONFIG_PWM_SYSFS)		+= sysfs.o
->   obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
-> +obj-$(CONFIG_PWM_ATMEL)		+= pwm-atmel.o
->   obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
->   obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
->   obj-$(CONFIG_PWM_EP93XX)	+= pwm-ep93xx.o
-> diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
-> new file mode 100644
-> index 0000000..67cbac2
-> --- /dev/null
-> +++ b/drivers/pwm/pwm-atmel.c
-> @@ -0,0 +1,380 @@
-> +/*
-> + * Driver for Atmel Pulse Width Modulation Controller
-> + *
-> + * Copyright (C) 2013 Atmel Corporation
-> + *		 Bo Shen <voice.shen@atmel.com>
-> + *
-> + * Licensed under GPLv2.
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/err.h>
-> +#include <linux/io.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/pwm.h>
-> +#include <linux/slab.h>
-> +
-> +/* The following is global registers for PWM controller */
-> +#define PWM_ENA			0x04
-> +#define PWM_DIS			0x08
-> +#define PWM_SR			0x0C
-> +/* Bit field in SR */
-> +#define PWM_SR_ALL_CH_ON	0x0F
-> +
-> +/* The following register is PWM channel related registers */
-> +#define PWM_CH_REG_OFFSET	0x200
-> +#define PWM_CH_REG_SIZE		0x20
-> +
-> +#define PWM_CMR			0x0
-> +/* Bit field in CMR */
-> +#define PWM_CMR_CPOL		(1 << 9)
-> +#define PWM_CMR_UPD_CDTY	(1 << 10)
-> +
-> +/* The following registers for PWM v1 */
-> +#define PWMV1_CDTY		0x04
-> +#define PWMV1_CPRD		0x08
-> +#define PWMV1_CUPD		0x10
-> +
-> +/* The following registers for PWM v2 */
-> +#define PWMV2_CDTY		0x04
-> +#define PWMV2_CDTYUPD		0x08
-> +#define PWMV2_CPRD		0x0C
-> +#define PWMV2_CPRDUPD		0x10
-> +
-> +/* Max value for duty and period
-> + *
-> + * Although the duty and period register is 32 bit,
-> + * however only the LSB 16 bits are significant.
-> + */
-> +#define PWM_MAX_DTY		0xFFFF
-> +#define PWM_MAX_PRD		0xFFFF
-> +#define PRD_MAX_PRES		10
-> +
-> +struct atmel_pwm_chip {
-> +	struct pwm_chip chip;
-> +	struct clk *clk;
-> +	void __iomem *base;
-> +
-> +	void (*config)(struct pwm_chip *chip, struct pwm_device *pwm,
-> +		       int dty, int prd);
-> +};
-> +
-> +static inline struct atmel_pwm_chip *to_atmel_pwm_chip(struct pwm_chip *chip)
-> +{
-> +	return container_of(chip, struct atmel_pwm_chip, chip);
-> +}
-> +
-> +static inline u32 atmel_pwm_readl(struct atmel_pwm_chip *chip,
-> +				  unsigned long offset)
-> +{
-> +	return readl_relaxed(chip->base + offset);
-> +}
-> +
-> +static inline void atmel_pwm_writel(struct atmel_pwm_chip *chip,
-> +				    unsigned long offset, unsigned long val)
-> +{
-> +	writel_relaxed(val, chip->base + offset);
-> +}
-> +
-> +static inline u32 atmel_pwm_ch_readl(struct atmel_pwm_chip *chip,
-> +				     unsigned int ch, unsigned long offset)
-> +{
-> +	return readl_relaxed(chip->base + PWM_CH_REG_OFFSET +
-> +			ch * PWM_CH_REG_SIZE + offset);
-> +}
-> +
-> +static inline void atmel_pwm_ch_writel(struct atmel_pwm_chip *chip,
-> +				       unsigned int ch, unsigned long offset,
-> +				       unsigned long val)
-> +{
-> +	writel_relaxed(val, chip->base + PWM_CH_REG_OFFSET +
-> +			ch * PWM_CH_REG_SIZE + offset);
-> +}
-> +
-> +static int atmel_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
-> +		int duty_ns, int period_ns)
-> +{
-> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
-> +	unsigned long clk_rate, prd, dty;
-> +	unsigned long long div;
-> +	int ret, pres = 0;
-> +
-> +	clk_rate = clk_get_rate(atmel_pwm->clk);
-> +	div = clk_rate;
-> +
-> +	/* Calculate the period cycles */
-> +	while (div > PWM_MAX_PRD) {
-> +		div = clk_rate / (1 << pres);
-> +		div = div * period_ns;
-> +		/* 1/Hz = 100000000 ns */
-> +		do_div(div, 1000000000);
-> +
-> +		if (pres++ > PRD_MAX_PRES) {
-> +			dev_err(chip->dev, "pres exceed the maximum value\n");
-> +			return -EINVAL;
-> +		}
-> +	}
-> +
-> +	/* Calculate the duty cycles */
-> +	prd = div;
-> +	div *= duty_ns;
-> +	do_div(div, period_ns);
-> +	dty = div;
-> +
-> +	ret = clk_enable(atmel_pwm->clk);
-> +	if (ret) {
-> +		dev_err(chip->dev, "failed to enable pwm clock\n");
-> +		return ret;
-> +	}
-> +
-> +	atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, pres);
-> +	atmel_pwm->config(chip, pwm, dty, prd);
-> +
-> +	clk_disable(atmel_pwm->clk);
-> +
-> +	return 0;
-> +}
-> +
-> +static void atmel_pwm_config_v1(struct pwm_chip *chip, struct pwm_device *pwm,
-> +				int dty, int prd)
-> +{
-> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
-> +	unsigned int val;
-> +
-> +	/*
-> +	 * If the PWM channel is disabled, write value to duty and period
-> +	 * registers directly.
-> +	 * If the PWM channel is enabled, using the update register, it needs
-> +	 * to set bit 10 of CMR to 0
-> +	 */
-> +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
-> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CUPD, dty);
-> +
-> +		val = atmel_pwm_ch_readl(atmel_pwm, pwm->hwpwm, PWM_CMR);
-> +		val &= ~PWM_CMR_UPD_CDTY;
-> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, val);
-> +	} else {
-> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CDTY, dty);
-> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CPRD, prd);
-> +	}
-> +}
-> +
-> +static void atmel_pwm_config_v2(struct pwm_chip *chip, struct pwm_device *pwm,
-> +				int dty, int prd)
-> +{
-> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
-> +
-> +	/*
-> +	 * If the PWM channel is disabled, write value to duty and period
-> +	 * registers directly.
-> +	 * If the PWM channel is enabled, using the duty update register to
-> +	 * update the value.
-> +	 */
-> +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
-> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CDTYUPD, dty);
-> +	} else {
-> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CDTY, dty);
-> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CPRD, prd);
-> +	}
-> +}
-> +
-> +static int atmel_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
-> +		enum pwm_polarity polarity)
-> +{
-> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
-> +	u32 val = 0;
-> +	int ret;
-> +
-> +	if (polarity == PWM_POLARITY_NORMAL)
-> +		val &= ~PWM_CMR_CPOL;
-> +	else
-> +		val |= PWM_CMR_CPOL;
-> +
-> +	ret = clk_enable(atmel_pwm->clk);
-> +	if (ret) {
-> +		dev_err(chip->dev, "failed to enable pwm clock\n");
-> +		return ret;
-> +	}
-> +
-> +	atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, val);
-> +
-> +	clk_disable(atmel_pwm->clk);
-> +
-> +	return 0;
-> +}
-> +
-> +static int atmel_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-> +{
-> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
-> +	int ret;
-> +
-> +	ret = clk_enable(atmel_pwm->clk);
-> +	if (ret) {
-> +		dev_err(chip->dev, "failed to enable pwm clock\n");
-> +		return ret;
-> +	}
-> +
-> +	atmel_pwm_writel(atmel_pwm, PWM_ENA, 1 << pwm->hwpwm);
-> +
-> +	return 0;
-> +}
-> +
-> +static void atmel_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
-> +{
-> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
-> +
-> +	atmel_pwm_writel(atmel_pwm, PWM_DIS, 1 << pwm->hwpwm);
-> +
-> +	clk_disable(atmel_pwm->clk);
-> +}
-> +
-> +static const struct pwm_ops atmel_pwm_ops = {
-> +	.config = atmel_pwm_config,
-> +	.set_polarity = atmel_pwm_set_polarity,
-> +	.enable = atmel_pwm_enable,
-> +	.disable = atmel_pwm_disable,
-> +	.owner = THIS_MODULE,
-> +};
-> +
-> +struct atmel_pwm_data {
-> +	void (*config)(struct pwm_chip *chip, struct pwm_device *pwm,
-> +		       int dty, int prd);
-> +};
-> +
-> +static const struct atmel_pwm_data atmel_pwm_data_v1 = {
-> +	.config = atmel_pwm_config_v1,
-> +};
-> +
-> +static const struct atmel_pwm_data atmel_pwm_data_v2 = {
-> +	.config = atmel_pwm_config_v2,
-> +};
-> +
-> +static const struct platform_device_id atmel_pwm_devtypes[] = {
-> +	{
-> +		.name = "at91sam9rl-pwm",
-> +		.driver_data = (kernel_ulong_t)&atmel_pwm_data_v1,
-> +	}, {
-> +		.name = "sama5d3-pwm",
-> +		.driver_data = (kernel_ulong_t)&atmel_pwm_data_v2,
-> +	}, {
-> +		/* sentinel */
-> +	},
-> +};
-> +MODULE_DEVICE_TABLE(platform, atmel_pwm_devtypes);
-> +
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id atmel_pwm_dt_ids[] = {
-> +	{
-> +		.compatible = "atmel,at91sam9rl-pwm",
-> +		.data = &atmel_pwm_data_v1,
-> +	}, {
-> +		.compatible = "atmel,sama5d3-pwm",
-> +		.data = &atmel_pwm_data_v2,
-> +	}, {
-> +		/* sentinel */
-> +	},
-> +};
-> +MODULE_DEVICE_TABLE(of, atmel_pwm_dt_ids);
-> +#endif
-> +
-> +static inline const struct atmel_pwm_data * __init
-> +	atmel_pwm_get_driver_data(struct platform_device *pdev)
-> +{
-> +	if (pdev->dev.of_node) {
-> +		const struct of_device_id *match;
-> +		match = of_match_device(atmel_pwm_dt_ids, &pdev->dev);
-> +		if (match == NULL)
-> +			return NULL;
-> +		return match->data;
-> +	}
-> +
-> +	return (struct atmel_pwm_data *)
-> +		platform_get_device_id(pdev)->driver_data;
-> +}
-> +
-> +static int atmel_pwm_probe(struct platform_device *pdev)
-> +{
-> +	const struct atmel_pwm_data *data;
-> +	struct atmel_pwm_chip *atmel_pwm;
-> +	struct resource *res;
-> +	int ret;
-> +
-> +	atmel_pwm = devm_kzalloc(&pdev->dev, sizeof(*atmel_pwm), GFP_KERNEL);
-> +	if (!atmel_pwm)
-> +		return -ENOMEM;
-> +
-> +	data = atmel_pwm_get_driver_data(pdev);
-> +	if (!data)
-> +		return -ENODEV;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (!res)
-> +		return -ENODEV;
-> +
-> +	atmel_pwm->base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(atmel_pwm->base))
-> +		return PTR_ERR(atmel_pwm->base);
-> +
-> +	atmel_pwm->clk = devm_clk_get(&pdev->dev, NULL);
-> +	if (IS_ERR(atmel_pwm->clk))
-> +		return PTR_ERR(atmel_pwm->clk);
-> +
-> +	ret = clk_prepare(atmel_pwm->clk);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed to prepare pwm clock\n");
-> +		return ret;
-> +	}
-> +
-> +	atmel_pwm->chip.dev = &pdev->dev;
-> +	atmel_pwm->chip.ops = &atmel_pwm_ops;
-> +	if (pdev->dev.of_node) {
-> +		atmel_pwm->chip.of_xlate = of_pwm_xlate_with_flags;
-> +		atmel_pwm->chip.of_pwm_n_cells = 3;
-> +		atmel_pwm->chip.base = -1;
-> +	} else {
-> +		atmel_pwm->chip.base = pdev->id;
-> +	}
-> +	atmel_pwm->chip.npwm = 4;
-> +
-> +	atmel_pwm->config = data->config;
-> +
-> +	ret = pwmchip_add(&atmel_pwm->chip);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "failed to add pwm chip %d\n", ret);
-> +		goto unprepare_clk;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, atmel_pwm);
-> +
-> +unprepare_clk:
-> +	clk_unprepare(atmel_pwm->clk);
-> +	return ret;
-> +}
-> +
-> +static int atmel_pwm_remove(struct platform_device *pdev)
-> +{
-> +	struct atmel_pwm_chip *atmel_pwm = platform_get_drvdata(pdev);
-> +
-> +	clk_unprepare(atmel_pwm->clk);
-> +
-> +	return pwmchip_remove(&atmel_pwm->chip);
-> +}
-> +
-> +static struct platform_driver atmel_pwm_driver = {
-> +	.driver = {
-> +		.name = "atmel-pwm",
-> +		.of_match_table = of_match_ptr(atmel_pwm_dt_ids),
-> +	},
-> +	.id_table = atmel_pwm_devtypes,
-> +	.probe = atmel_pwm_probe,
-> +	.remove = atmel_pwm_remove,
-> +};
-> +module_platform_driver(atmel_pwm_driver);
-> +
-> +MODULE_ALIAS("platform:atmel-pwm");
-> +MODULE_AUTHOR("Bo Shen <voice.shen@atmel.com>");
-> +MODULE_DESCRIPTION("Atmel PWM driver");
-> +MODULE_LICENSE("GPL v2");
->
+-- 
+Jaegeuk Kim
+Samsung
 
