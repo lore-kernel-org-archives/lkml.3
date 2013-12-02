@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab3LBNNh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 08:13:37 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:53530 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752577Ab3LBNNf (ORCPT
+	id S1752676Ab3LBNPG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 08:15:06 -0500
+Received: from 8.mo4.mail-out.ovh.net ([188.165.33.112]:33122 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751515Ab3LBNPB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 08:13:35 -0500
-Date: Mon, 2 Dec 2013 13:13:31 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Ruslan Ruslichenko <ruslan.ruslichenko@globallogic.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] mfd: twl-core: Clean up module by removing twl603x pdata
- handling
-Message-ID: <20131202131331.GE31626@lee--X1>
-References: <1385036008-1727-1-git-send-email-ruslan.ruslichenko@globallogic.com>
+	Mon, 2 Dec 2013 08:15:01 -0500
+Message-ID: <529C835B.7050908@overkiz.com>
+Date: Mon, 02 Dec 2013 13:55:55 +0100
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1385036008-1727-1-git-send-email-ruslan.ruslichenko@globallogic.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: linux-kernel@vger.kernel.org, jiri.prchal@aksignal.cz
+Subject: Re: [PATCH v2] ARM: at91: add usart3 alias to dtsi
+References: <1385979186-29447-1-git-send-email-nicolas.ferre@atmel.com> <1385988793-1787-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <1385988793-1787-1-git-send-email-nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 9465159041998944364
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Nov 2013, Ruslan Ruslichenko wrote:
-
-> Since currently nobody uses TWL603x platform data and all new
-> users will supply it through device tree, handling of these
-> data within twl-core will never be used, so remove it.
-> 
-> Signed-off-by: Ruslan Ruslichenko <ruslan.ruslichenko@globallogic.com>
+On 02/12/2013 13:53, Nicolas Ferre wrote:
+> Alias was missing for SoC of the at91sam9x5 familly that embed USART3.
+Acked-by: Boris BREZILLON <b.brezillon@overkiz.com>
+>
+> Reported-by: Jiri Prchal <jiri.prchal@aksignal.cz>
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Cc: Boris Brezillon <b.brezillon@overkiz.com>
 > ---
-> 
-> Tested on TI SDP/Tablet OMAP4460 board
-> Based on:
-> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-> commit 5e01dc7 Linux 3.12
-> 
->  drivers/mfd/twl-core.c | 198 -------------------------------------------------
->  1 file changed, 198 deletions(-)
+>   arch/arm/boot/dts/at91sam9x5_usart3.dtsi | 4 ++++
+>   1 file changed, 4 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/at91sam9x5_usart3.dtsi b/arch/arm/boot/dts/at91sam9x5_usart3.dtsi
+> index 2347e9563cef..6801106fa1f8 100644
+> --- a/arch/arm/boot/dts/at91sam9x5_usart3.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9x5_usart3.dtsi
+> @@ -11,6 +11,10 @@
+>   #include <dt-bindings/interrupt-controller/irq.h>
+>   
+>   / {
+> +	aliases {
+> +		serial4 = &usart3;
+> +	};
+> +
+>   	ahb {
+>   		apb {
+>   			pinctrl@fffff400 {
 
-Okay, I'm suitably happy with yours and Tony's responses.
-
-Patch applied, thanks.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
