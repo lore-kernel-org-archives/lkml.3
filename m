@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab3LBTrp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:47:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39521 "EHLO
+	id S1752357Ab3LBTrl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:47:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39525 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754817Ab3LBTSd (ORCPT
+	with ESMTP id S1753843Ab3LBTSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:18:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>, Mel Gorman <mgorman@suse.de>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Li Zefan <lizefan@huawei.com>,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.12 156/212] cgroup: fix cgroup_subsys_state leak for seq_files
-Date: Mon,  2 Dec 2013 11:15:47 -0800
-Message-Id: <20131202191304.947380202@linuxfoundation.org>
+Subject: [PATCH 3.12 157/212] cpuset: Fix memory allocator deadlock
+Date: Mon,  2 Dec 2013 11:15:48 -0800
+Message-Id: <20131202191305.107793644@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,59 +29,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit e605b36575e896edd8161534550c9ea021b03bc0 upstream.
+commit 0fc0287c9ed1ffd3706f8b4d9b314aa102ef1245 upstream.
 
-If a cgroup file implements either read_map() or read_seq_string(),
-such file is served using seq_file by overriding file->f_op to
-cgroup_seqfile_operations, which also overrides the release method to
-single_release() from cgroup_file_release().
+Juri hit the below lockdep report:
 
-Because cgroup_file_open() didn't use to acquire any resources, this
-used to be fine, but since f7d58818ba42 ("cgroup: pin
-cgroup_subsys_state when opening a cgroupfs file"), cgroup_file_open()
-pins the css (cgroup_subsys_state) which is put by
-cgroup_file_release().  The patch forgot to update the release path
-for seq_files and each open/release cycle leaks a css reference.
+[    4.303391] ======================================================
+[    4.303392] [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
+[    4.303394] 3.12.0-dl-peterz+ #144 Not tainted
+[    4.303395] ------------------------------------------------------
+[    4.303397] kworker/u4:3/689 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+[    4.303399]  (&p->mems_allowed_seq){+.+...}, at: [<ffffffff8114e63c>] new_slab+0x6c/0x290
+[    4.303417]
+[    4.303417] and this task is already holding:
+[    4.303418]  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff812d2dfb>] blk_execute_rq_nowait+0x5b/0x100
+[    4.303431] which would create a new lock dependency:
+[    4.303432]  (&(&q->__queue_lock)->rlock){..-...} -> (&p->mems_allowed_seq){+.+...}
+[    4.303436]
 
-Fix it by updating cgroup_file_release() to also handle seq_files and
-using it for seq_file release path too.
+[    4.303898] the dependencies between the lock to be acquired and SOFTIRQ-irq-unsafe lock:
+[    4.303918] -> (&p->mems_allowed_seq){+.+...} ops: 2762 {
+[    4.303922]    HARDIRQ-ON-W at:
+[    4.303923]                     [<ffffffff8108ab9a>] __lock_acquire+0x65a/0x1ff0
+[    4.303926]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+[    4.303929]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
+[    4.303931]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+[    4.303933]    SOFTIRQ-ON-W at:
+[    4.303933]                     [<ffffffff8108abcc>] __lock_acquire+0x68c/0x1ff0
+[    4.303935]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+[    4.303940]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
+[    4.303955]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+[    4.303959]    INITIAL USE at:
+[    4.303960]                    [<ffffffff8108a884>] __lock_acquire+0x344/0x1ff0
+[    4.303963]                    [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+[    4.303966]                    [<ffffffff81063dd6>] kthreadd+0x86/0x180
+[    4.303969]                    [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+[    4.303972]  }
 
+Which reports that we take mems_allowed_seq with interrupts enabled. A
+little digging found that this can only be from
+cpuset_change_task_nodemask().
+
+This is an actual deadlock because an interrupt doing an allocation will
+hit get_mems_allowed()->...->__read_seqcount_begin(), which will spin
+forever waiting for the write side to complete.
+
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Reported-by: Juri Lelli <juri.lelli@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Tested-by: Juri Lelli <juri.lelli@gmail.com>
+Acked-by: Li Zefan <lizefan@huawei.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/cgroup.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ kernel/cpuset.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -231,6 +231,7 @@ static void cgroup_destroy_css_killed(st
- static int cgroup_destroy_locked(struct cgroup *cgrp);
- static int cgroup_addrm_files(struct cgroup *cgrp, struct cftype cfts[],
- 			      bool is_add);
-+static int cgroup_file_release(struct inode *inode, struct file *file);
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1033,8 +1033,10 @@ static void cpuset_change_task_nodemask(
+ 	need_loop = task_has_mempolicy(tsk) ||
+ 			!nodes_intersects(*newmems, tsk->mems_allowed);
  
- /**
-  * cgroup_css - obtain a cgroup's css for the specified subsystem
-@@ -2471,7 +2472,7 @@ static const struct file_operations cgro
- 	.read = seq_read,
- 	.write = cgroup_file_write,
- 	.llseek = seq_lseek,
--	.release = single_release,
-+	.release = cgroup_file_release,
- };
+-	if (need_loop)
++	if (need_loop) {
++		local_irq_disable();
+ 		write_seqcount_begin(&tsk->mems_allowed_seq);
++	}
  
- static int cgroup_file_open(struct inode *inode, struct file *file)
-@@ -2532,6 +2533,8 @@ static int cgroup_file_release(struct in
- 		ret = cft->release(inode, file);
- 	if (css->ss)
- 		css_put(css);
-+	if (file->f_op == &cgroup_seqfile_operations)
-+		single_release(inode, file);
- 	return ret;
+ 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
+ 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
+@@ -1042,8 +1044,10 @@ static void cpuset_change_task_nodemask(
+ 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP2);
+ 	tsk->mems_allowed = *newmems;
+ 
+-	if (need_loop)
++	if (need_loop) {
+ 		write_seqcount_end(&tsk->mems_allowed_seq);
++		local_irq_enable();
++	}
+ 
+ 	task_unlock(tsk);
  }
- 
 
 
