@@ -1,54 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760070Ab3LBVb6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:31:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40967 "EHLO
+	id S1760080Ab3LBVcY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:32:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38171 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389Ab3LBVbx (ORCPT
+	with ESMTP id S1753214Ab3LBTG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 16:31:53 -0500
-Date: Mon, 2 Dec 2013 13:31:52 -0800
+	Mon, 2 Dec 2013 14:06:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Alistair Popple <alistair@popple.id.au>
-Subject: Re: [PATCH 3.12 056/212] ahci: add support for IBM Akebono platform
- device
-Message-ID: <20131202213152.GA1932@kroah.com>
-References: <20131202191248.517975703@linuxfoundation.org>
- <20131202191254.396768627@linuxfoundation.org>
- <CA+5PVA4Hzon9Kcc0aDeGbbwUuvzx08n62UTYL11LsaY8FUUBRA@mail.gmail.com>
- <CAOS58YMZaC87HMMr9huOZT2BHhg5JNNC+NedrdNmwhO=V_TgWQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOS58YMZaC87HMMr9huOZT2BHhg5JNNC+NedrdNmwhO=V_TgWQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Nico Golde <nico@ngolde.de>, Dan Carpenter <dan.carpenter@oracle.com>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        "Kanigeri, Hari" <h-kanigeri2@ti.com>,
+        Ameya Palande <ameya.palande@nokia.com>,
+        "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
+        "Hebbar, Shivananda" <x0hebbar@ti.com>,
+        "Ramos Falcon, Ernesto" <ernesto@ti.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        "Anna, Suman" <s-anna@ti.com>, "Gupta, Ramesh" <grgupta@ti.com>,
+        "Gomez Castellanos, Ivan" <ivan.gomez@ti.com>,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+        Armando Uribe De Leon <x0095078@ti.com>,
+        Deepak Chitriki <deepak.chitriki@ti.com>,
+        "Menon, Nishanth" <nm@ti.com>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [PATCH 3.4 03/60] Staging: tidspbridge: disable driver
+Date: Mon,  2 Dec 2013 11:05:44 -0800
+Message-Id: <20131202190330.951937420@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
+References: <20131202190330.152596462@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 03:53:06PM -0500, Tejun Heo wrote:
-> Hello,
-> 
-> On Mon, Dec 2, 2013 at 3:50 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
-> >> Signed-off-by: Alistair Popple <alistair@popple.id.au>
-> >> Signed-off-by: Tejun Heo <tj@kernel.org>
-> >> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >
-> > This one is a little funny.  There's really nothing wrong with the
-> > patch itself, nor adding it to 3.12.y, but it seems pretty pointless.
-> > The support for the Akebono board hasn't even landed in 3.13-rcX yet,
-> > and I really doubt it's going to show up in 3.12.y.  Seems kind of
-> > superfluous.
-> 
-> I generally automatically cc stable for patches which simply add
-> device IDs because they're low risk and distros / whoever is
-> maintaining older kernel wants to see them. Didn't know it wouldn't
-> work at all in earlier kernels. Please feel free to drop.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Ok, now dropped, thanks.
+------------------
 
-greg k-h
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+commit 930ba4a374b96560ef9fde2145cdc454a164ddcc upstream.
+
+There seems to be no active maintainer for the driver, and there is an
+unfixed security bug, so disable the driver for now.
+
+Hopefully someone steps up to be the maintainer, and works to get this
+out of staging, otherwise it will be deleted soon.
+
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Omar Ramirez Luna <omar.ramirez@copitl.com>
+Cc: Omar Ramirez Luna <omar.ramirez@ti.com>
+Cc: Kanigeri, Hari <h-kanigeri2@ti.com>
+Cc: Ameya Palande <ameya.palande@nokia.com>
+Cc: Guzman Lugo, Fernando <fernando.lugo@ti.com>
+Cc: Hebbar, Shivananda <x0hebbar@ti.com>
+Cc: Ramos Falcon, Ernesto <ernesto@ti.com>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Anna, Suman <s-anna@ti.com>
+Cc: Gupta, Ramesh <grgupta@ti.com>
+Cc: Gomez Castellanos, Ivan <ivan.gomez@ti.com>
+Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Cc: Armando Uribe De Leon <x0095078@ti.com>
+Cc: Deepak Chitriki <deepak.chitriki@ti.com>
+Cc: Menon, Nishanth <nm@ti.com>
+Cc: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/staging/tidspbridge/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/staging/tidspbridge/Kconfig
++++ b/drivers/staging/tidspbridge/Kconfig
+@@ -4,7 +4,7 @@
+ 
+ menuconfig TIDSPBRIDGE
+ 	tristate "DSP Bridge driver"
+-	depends on ARCH_OMAP3
++	depends on ARCH_OMAP3 && BROKEN
+ 	select OMAP_MBOX_FWK
+ 	help
+ 	  DSP/BIOS Bridge is designed for platforms that contain a GPP and
+
+
