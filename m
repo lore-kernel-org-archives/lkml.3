@@ -1,96 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912Ab3LBObq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 09:31:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35748 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab3LBObp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 09:31:45 -0500
-Date: Mon, 2 Dec 2013 06:32:45 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Prarit Bhargava <prarit@redhat.com>, Ming Lei <ming.lei@canonical.com>,
-        Borislav Petkov <bp@suse.de>, x86@kernel.org,
-        amd64-microcode@amd64.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/4] Add request_firmware_direct() for microcode loader
-Message-ID: <20131202143245.GA32266@kroah.com>
-References: <1384257736-3647-1-git-send-email-tiwai@suse.de>
- <s5hk3g97k7i.wl%tiwai@suse.de>
- <20131115212455.GA14897@kroah.com>
- <s5h38mbabhe.wl%tiwai@suse.de>
+	id S1752164Ab3LBOcH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 09:32:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46269 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751863Ab3LBOcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 09:32:04 -0500
+Date: Mon, 2 Dec 2013 15:31:59 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Subject: Re: HID: kye: Add report fixup for Genius Manticore Keyboard
+In-Reply-To: <20131202142829.GA2411@redhat.com>
+Message-ID: <alpine.LNX.2.00.1312021531340.24931@pobox.suse.cz>
+References: <20131128051223.28802660D26@gitolite.kernel.org> <20131130214211.GA16854@redhat.com> <alpine.LNX.2.00.1312021515300.24931@pobox.suse.cz> <20131202142829.GA2411@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5h38mbabhe.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 09:44:13AM +0100, Takashi Iwai wrote:
-> At Sat, 16 Nov 2013 06:24:55 +0900,
-> Greg Kroah-Hartman wrote:
-> > 
-> > On Fri, Nov 15, 2013 at 04:34:09PM +0100, Takashi Iwai wrote:
-> > > At Tue, 12 Nov 2013 13:02:12 +0100,
-> > > Takashi Iwai wrote:
-> > > > 
-> > > > Hi,
-> > > > 
-> > > > this is a revised patch series to introduce request_firmware_direct()
-> > > > helper for avoiding the lengthy udev issue on microcode loader.
-> > > > The original problem was stated in Prarit's post:
-> > > >    https://lkml.org/lkml/2013/10/28/221
-> > > > 
-> > > > In short, microcode loader probes non-existing firmware files (which
-> > > > are cases with every new chip), and each probe takes 60 seconds,
-> > > > resulting in too long time until completed.
-> > > > 
-> > > > This solution is simply avoiding the udev fallback in
-> > > > request_firmware() explicitly for drivers like microcode.
-> > > > 
-> > > > Of course, this doesn't mean to throw away further optimizations like
-> > > > Prarit's patch.  It can be implemented in parallel with this.
-> > > > 
-> > > > 
-> > > >  [PATCH v3 1/4] firmware: Introduce request_firmware_direct()
-> > > >  [PATCH v3 2/4] microcode: Use request_firmware_direct()
-> > > >  [PATCH v3 3/4] firmware: Use bit flags instead of boolean combos
-> > > >  [PATCH v3 4/4] firmware: Suppress fallback warnings when CONFIG_FW_LOADER_USER_HELPER=n
-> > > > 
-> > > > v1->v2: Rebased on linux-next, add a fix for a bogus warning message
-> > > > v2->v3: Convert to bit flags, fix warning message differently
-> > > > 
-> > > > 
-> > > > Greg, could you take these patches through your driver tree, as
-> > > > most of fixes are about the firmware loader itself.
-> > > 
-> > > Greg, any chance to take a look at these patches?
-> > 
-> > I'm traveling at the moment, in Korea this week.  I'll take a look at
-> > them after 3.13-rc1 is out, as I can't do anything with patches until
-> > then.  Don't worry, they aren't lost.
+On Mon, 2 Dec 2013, Dave Jones wrote:
+
+> Commit 4a2c94c9b6 inadvertantly removed a break from the GENIUS_GX_IMPERATOR case.
+> Spotted by Coverity.
 > 
-> They seem lost in Korea in the end :)
+> Signed-off-by: Dave Jones <davej@fedoraproject.org>
+> 
+> diff --git a/drivers/hid/hid-kye.c b/drivers/hid/hid-kye.c
+> index ecb5ca669e97..e77696367591 100644
+> --- a/drivers/hid/hid-kye.c
+> +++ b/drivers/hid/hid-kye.c
+> @@ -341,6 +341,7 @@ static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+>  	case USB_DEVICE_ID_GENIUS_GX_IMPERATOR:
+>  		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 83,
+>  					"Genius Gx Imperator Keyboard");
+> +		break;
+>  	case USB_DEVICE_ID_GENIUS_MANTICORE:
+>  		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 104,
 
-No, not lost:
-	$ mdfrm -c ~/mail/todo/
-	2485 messages in /home/gregkh/mail/todo/
+I've already taken Ben's original patch:
 
-Just burried :(
+	https://git.kernel.org/cgit/linux/kernel/git/jikos/hid.git/commit/?h=for-3.13/upstream-fixes
 
-> Could you catch up if still OK?
-
-I'll get to them soon...
-
-> One of the patches seems slightly conflicting with the latest Linus
-> tree.  I can send a rebased one if needed, or you can take it from
->   git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-unstable.git test/fw-direct
-
-Yes please, an update would be good to have, can you just send this in
-email form?
-
-thanks,
-
-greg k-h
+-- 
+Jiri Kosina
+SUSE Labs
