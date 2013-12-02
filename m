@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab3LBTdB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:33:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39697 "EHLO
+	id S1755779Ab3LBTdi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:33:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39679 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755017Ab3LBTTE (ORCPT
+	with ESMTP id S1755003Ab3LBTTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:19:04 -0500
+	Mon, 2 Dec 2013 14:19:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        KaiChung Cheng <kenny_cheng@wistron.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.12 180/212] HID: multicouh: add PID VID to support 1 new Wistron optical touch device
-Date: Mon,  2 Dec 2013 11:16:11 -0800
-Message-Id: <20131202191308.541328573@linuxfoundation.org>
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.12 186/212] drm/radeon/vm: dont attempt to update ptes if ib allocation fails
+Date: Mon,  2 Dec 2013 11:16:17 -0800
+Message-Id: <20131202191309.492202233@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,58 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KaiChung Cheng <kenny_cheng@wistron.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit bf9d121efc18c30caa2caad85358cf9408eca117 upstream.
+commit 4cc948b94a222c310ae089c36718aac7a03aec90 upstream.
 
-This patch adds PID VID to support for the Wistron Inc. Optical touch panel.
+If we fail to allocate an indirect buffer (ib) when updating
+the ptes, return an error instead of trying to use the ib.
+Avoids a null pointer dereference.
 
-Signed-off-by: KaiChung Cheng <kenny_cheng@wistron.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=58621
+
+v2 (chk): rebased on drm-fixes-3.12 for stable inclusion
+
+Reviewed-by: Christian König <christian.koenig@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/Kconfig          |    1 +
- drivers/hid/hid-ids.h        |    3 +++
- drivers/hid/hid-multitouch.c |    6 ++++++
- 3 files changed, 10 insertions(+)
+ drivers/gpu/drm/radeon/radeon_gart.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -459,6 +459,7 @@ config HID_MULTITOUCH
- 	  - Stantum multitouch panels
- 	  - Touch International Panels
- 	  - Unitec Panels
-+	  - Wistron optical touch panels
- 	  - XAT optical touch panels
- 	  - Xiroku optical touch panels
- 	  - Zytronic touch panels
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -898,6 +898,9 @@
- #define USB_DEVICE_ID_SUPER_DUAL_BOX_PRO 0x8802
- #define USB_DEVICE_ID_SUPER_JOY_BOX_5_PRO 0x8804
+--- a/drivers/gpu/drm/radeon/radeon_gart.c
++++ b/drivers/gpu/drm/radeon/radeon_gart.c
+@@ -1156,6 +1156,8 @@ int radeon_vm_bo_update_pte(struct radeo
+ 		return -ENOMEM;
  
-+#define USB_VENDOR_ID_WISTRON		0x0fb8
-+#define USB_DEVICE_ID_WISTRON_OPTICAL_TOUCH		0x1109
-+
- #define USB_VENDOR_ID_X_TENSIONS               0x1ae7
- #define USB_DEVICE_ID_SPEEDLINK_VAD_CEZANNE    0x9001
+ 	r = radeon_ib_get(rdev, ridx, &ib, NULL, ndw * 4);
++	if (r)
++		return r;
+ 	ib.length_dw = 0;
  
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -1335,6 +1335,12 @@ static const struct hid_device_id mt_dev
- 	{ .driver_data = MT_CLS_NSMU,
- 		MT_USB_DEVICE(USB_VENDOR_ID_UNITEC,
- 			USB_DEVICE_ID_UNITEC_USB_TOUCH_0A19) },
-+
-+	/* Wistron panels */
-+	{ .driver_data = MT_CLS_NSMU,
-+		MT_USB_DEVICE(USB_VENDOR_ID_WISTRON,
-+			USB_DEVICE_ID_WISTRON_OPTICAL_TOUCH) },
-+
- 	/* XAT */
- 	{ .driver_data = MT_CLS_NSMU,
- 		MT_USB_DEVICE(USB_VENDOR_ID_XAT,
+ 	r = radeon_vm_update_pdes(rdev, vm, &ib, bo_va->soffset, bo_va->eoffset);
 
 
