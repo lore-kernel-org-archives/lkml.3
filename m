@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823Ab3LBUH0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:07:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39220 "EHLO
+	id S1756808Ab3LBUHX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:07:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39165 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754589Ab3LBTRk (ORCPT
+	with ESMTP id S1754594Ab3LBTRk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:17:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Huang Shijie <b32955@freescale.com>,
-        Fabio Estevam <festevam@gmail.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.12 073/212] mtd: gpmi: fix the NULL pointer
-Date: Mon,  2 Dec 2013 11:14:24 -0800
-Message-Id: <20131202191256.016807485@linuxfoundation.org>
+        Dave Jones <davej@redhat.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [PATCH 3.12 074/212] ext4: avoid bh leak in retry path of ext4_expand_extra_isize_ea()
+Date: Mon,  2 Dec 2013 11:14:25 -0800
+Message-Id: <20131202191256.109000697@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -29,93 +26,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huang Shijie <b32955@freescale.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 885d71e5838f68d5dbee92ab952cc90ad6c1dc6b upstream.
+commit dcb9917ba041866686fe152850364826c4622a36 upstream.
 
-The imx23 board will check the fingerprint, so it will call the
-mx23_check_transcription_stamp. This function will use @chip->buffers->databuf
-as its buffer which is allocated in the nand_scan_tail().
-
-Unfortunately, the mx23_check_transcription_stamp is called before the
-nand_scan_tail(). So we will meet a NULL pointer bug:
-
---------------------------------------------------------------------
-[    1.150000] NAND device: Manufacturer ID: 0xec, Chip ID: 0xd7 (Samsung NAND 4GiB 3,3V 8-bit), 4096MiB, page size: 4096, OOB size: 8
-[    1.160000] Unable to handle kernel NULL pointer dereference at virtual address 000005d0
-[    1.170000] pgd = c0004000
-[    1.170000] [000005d0] *pgd=00000000
-[    1.180000] Internal error: Oops: 5 [#1] ARM
-[    1.180000] Modules linked in:
-[    1.180000] CPU: 0 PID: 1 Comm: swapper Not tainted 3.12.0 #89
-[    1.180000] task: c7440000 ti: c743a000 task.ti: c743a000
-[    1.180000] PC is at memcmp+0x10/0x54
-[    1.180000] LR is at gpmi_nand_probe+0x42c/0x894
-[    1.180000] pc : [<c025fcb0>]    lr : [<c02f6a68>]    psr: 20000053
-[    1.180000] sp : c743be2c  ip : 600000d3  fp : ffffffff
-[    1.180000] r10: 000005d0  r9 : c02f5f08  r8 : 00000000
-[    1.180000] r7 : c75858a8  r6 : c75858a8  r5 : c7585b18  r4 : c7585800
-[    1.180000] r3 : 000005d0  r2 : 00000004  r1 : c05c33e4  r0 : 000005d0
-[    1.180000] Flags: nzCv  IRQs on  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
-[    1.180000] Control: 0005317f  Table: 40004000  DAC: 00000017
-[    1.180000] Process swapper (pid: 1, stack limit = 0xc743a1c0)
---------------------------------------------------------------------
-
-This patch rearrange the init procedure:
-   Set the NAND_SKIP_BBTSCAN to skip the nand scan firstly, and after we
-   set the proper settings, we will call the chip->scan_bbt() manually.
-
-Signed-off-by: Huang Shijie <b32955@freescale.com>
-Reported-by: Fabio Estevam <festevam@gmail.com>
-Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/gpmi-nand/gpmi-nand.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ fs/ext4/xattr.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-@@ -1568,8 +1568,6 @@ static int gpmi_set_geometry(struct gpmi
- 
- static int gpmi_pre_bbt_scan(struct gpmi_nand_data  *this)
- {
--	int ret;
--
- 	/* Set up swap_block_mark, must be set before the gpmi_set_geometry() */
- 	if (GPMI_IS_MX23(this))
- 		this->swap_block_mark = false;
-@@ -1577,12 +1575,8 @@ static int gpmi_pre_bbt_scan(struct gpmi
- 		this->swap_block_mark = true;
- 
- 	/* Set up the medium geometry */
--	ret = gpmi_set_geometry(this);
--	if (ret)
--		return ret;
-+	return gpmi_set_geometry(this);
- 
--	/* NAND boot init, depends on the gpmi_set_geometry(). */
--	return nand_boot_init(this);
- }
- 
- static void gpmi_nfc_exit(struct gpmi_nand_data *this)
-@@ -1672,10 +1666,16 @@ static int gpmi_nfc_init(struct gpmi_nan
- 	if (ret)
- 		goto err_out;
- 
-+	chip->options |= NAND_SKIP_BBTSCAN;
- 	ret = nand_scan_tail(mtd);
- 	if (ret)
- 		goto err_out;
- 
-+	ret = nand_boot_init(this);
-+	if (ret)
-+		goto err_out;
-+	chip->scan_bbt(mtd);
-+
- 	ppdata.of_node = this->pdev->dev.of_node;
- 	ret = mtd_device_parse_register(mtd, NULL, &ppdata, NULL, 0);
- 	if (ret)
+--- a/fs/ext4/xattr.c
++++ b/fs/ext4/xattr.c
+@@ -1352,6 +1352,7 @@ retry:
+ 					new_extra_isize = s_min_extra_isize;
+ 					kfree(is); is = NULL;
+ 					kfree(bs); bs = NULL;
++					brelse(bh);
+ 					goto retry;
+ 				}
+ 				error = -1;
 
 
