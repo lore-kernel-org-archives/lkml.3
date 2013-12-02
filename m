@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789Ab3LBTJr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:09:47 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51331 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753769Ab3LBTJn (ORCPT
+	id S1753820Ab3LBTKU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:10:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38323 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753294Ab3LBTH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:09:43 -0500
-Date: Mon, 2 Dec 2013 19:09:13 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, alsa-devel@alsa-project.org
-Message-ID: <20131202190913.GQ27568@sirena.org.uk>
-References: <1386007222-10081-1-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EVx8OOgYiG4KXJJB"
-Content-Disposition: inline
-In-Reply-To: <1386007222-10081-1-git-send-email-lee.jones@linaro.org>
-X-Cookie: Boycott meat -- suck your thumb.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/3] ASoC: ux500_pcm: Stop pretending that we support
- varying address widths
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Mon, 2 Dec 2013 14:07:28 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Nanno Langstraat <langstr@gmail.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.4 60/60] HID: apple: option to swap the Option ("Alt") and Command ("Flag") keys.
+Date: Mon,  2 Dec 2013 11:06:41 -0800
+Message-Id: <20131202190343.588734156@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
+References: <20131202190330.152596462@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
---EVx8OOgYiG4KXJJB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+------------------
 
-On Mon, Dec 02, 2013 at 06:00:20PM +0000, Lee Jones wrote:
-> The Slave Config's addr_width attribute is populated by data_width of
-> dma_cfg, which in turn is derived from dma_params' data_size attribute
-> and that comes from the slot_width which is always 16 bits (2 Bytes).
-> We're cutting out the middle man here and just setting the DMA Slave
-> Config directly.
+From: Nanno Langstraat <langstr@gmail.com>
 
-Applied, thanks.
+commit 43c831468b3d26dbe8f2e061ccaf1abaf9cc1b8b upstream.
 
---EVx8OOgYiG4KXJJB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Use case: people who use both Apple and PC keyboards regularly, and desire to
+keep&use their PC muscle memory.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+A particular use case: an Apple compact external keyboard connected to a PC
+laptop. (This use case can't be covered well by X.org key remappings etc.)
 
-iQIcBAEBAgAGBQJSnNrWAAoJELSic+t+oim97PcP/0undSbMLAciSYvyApxYDOlJ
-IZI4GunVbKWjWLW1zI86N1KhPmdXk7ncaRlocolD4DWq7unP4BsLL/G4C0dtDYNm
-brPDrs4gP70nvmEPrRbfMb3rjJA2Ia/InVbomCNJKGXcIFhYhEQeijUrcnumAjJX
-v84S+nKrlQxSnwMEC7IhS2eqjDW2oomHer7ZHAHPKX3mY5AnfEU0HlfpPdOQuPf3
-wHIN5ke2pLbWDkGWCBVPooymqwdLU2yPrdZ5PRlACJ0Z5xqgUY2cRzfMs3PJm+uO
-XW/o+0LUeI8et+K7AlPUyeas4MUTiueDBokUJakngVR4JypIHXFE7n07g2f2dsuE
-kTNqZzlF9skf8uWJQdfsfKxWLCtNQR1rf7CMnCecXODkQ5rMU8Yuj/bWJ18xBIFK
-i6/Hds8bi7rO4nYlWOKIdztOEc0J84H7Zl5rdgpMBug47PKkvQZGxCenwfSAMVlK
-6WJjK4rk1smJ2jSo9iiGgwyEMfabPHe+y6k0OT+g34636LZhHl0bV2wedECnwJH3
-pQVJhAcsO+NtiJ+6vnpbXct7V8czF3I0mo9VEpEgpXkFRxvbbfVR9yPeK4O4iJj+
-mVq3nXRvSDNT3YJPhqeB+/gMOjKlNm7i9wwrz3Dplytw5Mw/URtj8581dWH/fENz
-GNKLYa+uuctDIXd9n85q
-=loza
------END PGP SIGNATURE-----
+Signed-off-by: Nanno Langstraat <langstr@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
---EVx8OOgYiG4KXJJB--
+---
+ drivers/hid/hid-apple.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+--- a/drivers/hid/hid-apple.c
++++ b/drivers/hid/hid-apple.c
+@@ -48,6 +48,12 @@ module_param(iso_layout, uint, 0644);
+ MODULE_PARM_DESC(iso_layout, "Enable/Disable hardcoded ISO-layout of the keyboard. "
+ 		"(0 = disabled, [1] = enabled)");
+ 
++static unsigned int swap_opt_cmd = 0;
++module_param(swap_opt_cmd, uint, 0644);
++MODULE_PARM_DESC(swap_opt_cmd, "Swap the Option (\"Alt\") and Command (\"Flag\") keys. "
++		"(For people who want to keep Windows PC keyboard muscle memory. "
++		"[0] = as-is, Mac layout. 1 = swapped, Windows layout.)");
++
+ struct apple_sc {
+ 	unsigned long quirks;
+ 	unsigned int fn_on;
+@@ -152,6 +158,14 @@ static const struct apple_key_translatio
+ 	{ }
+ };
+ 
++static const struct apple_key_translation swapped_option_cmd_keys[] = {
++	{ KEY_LEFTALT,	KEY_LEFTMETA },
++	{ KEY_LEFTMETA,	KEY_LEFTALT },
++	{ KEY_RIGHTALT,	KEY_RIGHTMETA },
++	{ KEY_RIGHTMETA,KEY_RIGHTALT },
++	{ }
++};
++
+ static const struct apple_key_translation *apple_find_translation(
+ 		const struct apple_key_translation *table, u16 from)
+ {
+@@ -244,6 +258,14 @@ static int hidinput_apple_event(struct h
+ 		}
+ 	}
+ 
++	if (swap_opt_cmd) {
++		trans = apple_find_translation(swapped_option_cmd_keys, usage->code);
++		if (trans) {
++			input_event(input, usage->type, trans->to, value);
++			return 1;
++		}
++	}
++
+ 	return 0;
+ }
+ 
+
+
