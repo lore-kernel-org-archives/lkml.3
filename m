@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759324Ab3LBVLF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:11:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38531 "EHLO
+	id S1759316Ab3LBVLA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:11:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38539 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753976Ab3LBTNE (ORCPT
+	with ESMTP id S1752632Ab3LBTNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:04 -0500
+	Mon, 2 Dec 2013 14:13:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shan Hai <shan.hai@windriver.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.10 035/173] drivers/libata: Set max sector to 65535 for Slimtype DVD A DS8A9SH drive
-Date: Mon,  2 Dec 2013 11:10:18 -0800
-Message-Id: <20131202191146.756600501@linuxfoundation.org>
+        Ryan Mallon <rmallon@gmail.com>, Kees Cook <keescook@chromium.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Joe Perches <joe@perches.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 036/173] vsprintf: check real user/group id for %pK
+Date: Mon,  2 Dec 2013 11:10:19 -0800
+Message-Id: <20131202191146.851025060@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -26,79 +31,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shan Hai <shan.hai@windriver.com>
+From: Ryan Mallon <rmallon@gmail.com>
 
-commit 0523f037f65dba10191b0fa9c51266f90ba64630 upstream.
+commit 312b4e226951f707e120b95b118cbc14f3d162b2 upstream.
 
-The "Slimtype DVD A  DS8A9SH" drive locks up with following backtrace when
-the max sector is smaller than 65535 bytes, fix it by adding a quirk to set
-the max sector to 65535 bytes.
+Some setuid binaries will allow reading of files which have read
+permission by the real user id.  This is problematic with files which
+use %pK because the file access permission is checked at open() time,
+but the kptr_restrict setting is checked at read() time.  If a setuid
+binary opens a %pK file as an unprivileged user, and then elevates
+permissions before reading the file, then kernel pointer values may be
+leaked.
 
-INFO: task flush-11:0:663 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-flush-11:0    D 00000000ffff5ceb     0   663      2 0x00000000
- ffff88026d3b1710 0000000000000046 0000000000000001 0000000000000000
- ffff88026f2530c0 ffff88026d365860 ffff88026d3b16e0 ffffffff812ffd52
- ffff88026d4fd3d0 0000000100000001 ffff88026d3b16f0 ffff88026d3b1fd8
-Call Trace:
- [<ffffffff812ffd52>] ? cfq_may_queue+0x52/0xf0
- [<ffffffff81604338>] schedule+0x18/0x30
- [<ffffffff81604392>] io_schedule+0x42/0x60
- [<ffffffff812f22bb>] get_request_wait+0xeb/0x1f0
- [<ffffffff81065660>] ? autoremove_wake_function+0x0/0x40
- [<ffffffff812eb382>] ? elv_merge+0x42/0x210
- [<ffffffff812f26ae>] __make_request+0x8e/0x4e0
- [<ffffffff812f068e>] generic_make_request+0x21e/0x5e0
- [<ffffffff812f0aad>] submit_bio+0x5d/0xd0
- [<ffffffff81141422>] submit_bh+0xf2/0x130
- [<ffffffff8114474c>] __block_write_full_page+0x1dc/0x3a0
- [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
- [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
- [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
- [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
- [<ffffffff811449ee>] block_write_full_page_endio+0xde/0x100
- [<ffffffff81144a20>] block_write_full_page+0x10/0x20
- [<ffffffff81148703>] blkdev_writepage+0x13/0x20
- [<ffffffff810d7525>] __writepage+0x15/0x40
- [<ffffffff810d7c0f>] write_cache_pages+0x1cf/0x3e0
- [<ffffffff810d7510>] ? __writepage+0x0/0x40
- [<ffffffff810d7e42>] generic_writepages+0x22/0x30
- [<ffffffff810d7e6f>] do_writepages+0x1f/0x40
- [<ffffffff8113ae67>] writeback_single_inode+0xe7/0x3b0
- [<ffffffff8113b574>] writeback_sb_inodes+0x184/0x280
- [<ffffffff8113bedb>] writeback_inodes_wb+0x6b/0x1a0
- [<ffffffff8113c24b>] wb_writeback+0x23b/0x2a0
- [<ffffffff8113c42d>] wb_do_writeback+0x17d/0x190
- [<ffffffff8113c48b>] bdi_writeback_task+0x4b/0xe0
- [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
- [<ffffffff810e8321>] bdi_start_fn+0x81/0x100
- [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
- [<ffffffff8106522e>] kthread+0x8e/0xa0
- [<ffffffff81039274>] ? finish_task_switch+0x54/0xc0
- [<ffffffff81003334>] kernel_thread_helper+0x4/0x10
- [<ffffffff810651a0>] ? kthread+0x0/0xa0
- [<ffffffff81003330>] ? kernel_thread_helper+0x0/0x10
+This happens for example with the setuid pppd application on Ubuntu 12.04:
 
- The above trace was triggered by
-   "dd if=/dev/zero of=/dev/sr0 bs=2048 count=32768"
+  $ head -1 /proc/kallsyms
+  00000000 T startup_32
 
-Signed-off-by: Shan Hai <shan.hai@windriver.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+  $ pppd file /proc/kallsyms
+  pppd: In file /proc/kallsyms: unrecognized option 'c1000000'
+
+This will only leak the pointer value from the first line, but other
+setuid binaries may leak more information.
+
+Fix this by adding a check that in addition to the current process having
+CAP_SYSLOG, that effective user and group ids are equal to the real ids.
+If a setuid binary reads the contents of a file which uses %pK then the
+pointer values will be printed as NULL if the real user is unprivileged.
+
+Update the sysctl documentation to reflect the changes, and also correct
+the documentation to state the kptr_restrict=0 is the default.
+
+This is a only temporary solution to the issue.  The correct solution is
+to do the permission check at open() time on files, and to replace %pK
+with a function which checks the open() time permission.  %pK uses in
+printk should be removed since no sane permission check can be done, and
+instead protected by using dmesg_restrict.
+
+Signed-off-by: Ryan Mallon <rmallon@gmail.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Joe Perches <joe@perches.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-core.c |    1 +
- 1 file changed, 1 insertion(+)
+ Documentation/sysctl/kernel.txt |   25 ++++++++++++++++++-------
+ lib/vsprintf.c                  |   33 ++++++++++++++++++++++++++++++---
+ 2 files changed, 48 insertions(+), 10 deletions(-)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4110,6 +4110,7 @@ static const struct ata_blacklist_entry
- 	{ "TORiSAN DVD-ROM DRD-N216", NULL,	ATA_HORKAGE_MAX_SEC_128 },
- 	{ "QUANTUM DAT    DAT72-000", NULL,	ATA_HORKAGE_ATAPI_MOD16_DMA },
- 	{ "Slimtype DVD A  DS8A8SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
-+	{ "Slimtype DVD A  DS8A9SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -289,13 +289,24 @@ Default value is "/sbin/hotplug".
+ kptr_restrict:
  
- 	/* Devices we expect to fail diagnostics */
+ This toggle indicates whether restrictions are placed on
+-exposing kernel addresses via /proc and other interfaces.  When
+-kptr_restrict is set to (0), there are no restrictions.  When
+-kptr_restrict is set to (1), the default, kernel pointers
+-printed using the %pK format specifier will be replaced with 0's
+-unless the user has CAP_SYSLOG.  When kptr_restrict is set to
+-(2), kernel pointers printed using %pK will be replaced with 0's
+-regardless of privileges.
++exposing kernel addresses via /proc and other interfaces.
++
++When kptr_restrict is set to (0), the default, there are no restrictions.
++
++When kptr_restrict is set to (1), kernel pointers printed using the %pK
++format specifier will be replaced with 0's unless the user has CAP_SYSLOG
++and effective user and group ids are equal to the real ids. This is
++because %pK checks are done at read() time rather than open() time, so
++if permissions are elevated between the open() and the read() (e.g via
++a setuid binary) then %pK will not leak kernel pointers to unprivileged
++users. Note, this is a temporary solution only. The correct long-term
++solution is to do the permission checks at open() time. Consider removing
++world read permissions from files that use %pK, and using dmesg_restrict
++to protect against uses of %pK in dmesg(8) if leaking kernel pointer
++values to unprivileged users is a concern.
++
++When kptr_restrict is set to (2), kernel pointers printed using
++%pK will be replaced with 0's regardless of privileges.
  
+ ==============================================================
+ 
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -26,6 +26,7 @@
+ #include <linux/math64.h>
+ #include <linux/uaccess.h>
+ #include <linux/ioport.h>
++#include <linux/cred.h>
+ #include <net/addrconf.h>
+ 
+ #include <asm/page.h>		/* for PAGE_SIZE */
+@@ -1118,11 +1119,37 @@ char *pointer(const char *fmt, char *buf
+ 				spec.field_width = default_width;
+ 			return string(buf, end, "pK-error", spec);
+ 		}
+-		if (!((kptr_restrict == 0) ||
+-		      (kptr_restrict == 1 &&
+-		       has_capability_noaudit(current, CAP_SYSLOG))))
++
++		switch (kptr_restrict) {
++		case 0:
++			/* Always print %pK values */
++			break;
++		case 1: {
++			/*
++			 * Only print the real pointer value if the current
++			 * process has CAP_SYSLOG and is running with the
++			 * same credentials it started with. This is because
++			 * access to files is checked at open() time, but %pK
++			 * checks permission at read() time. We don't want to
++			 * leak pointer values if a binary opens a file using
++			 * %pK and then elevates privileges before reading it.
++			 */
++			const struct cred *cred = current_cred();
++
++			if (!has_capability_noaudit(current, CAP_SYSLOG) ||
++			    !uid_eq(cred->euid, cred->uid) ||
++			    !gid_eq(cred->egid, cred->gid))
++				ptr = NULL;
++			break;
++		}
++		case 2:
++		default:
++			/* Always print 0's for %pK */
+ 			ptr = NULL;
++			break;
++		}
+ 		break;
++
+ 	case 'N':
+ 		switch (fmt[1]) {
+ 		case 'F':
 
 
