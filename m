@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932169Ab3LBUlh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:41:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38779 "EHLO
+	id S1758252Ab3LBUle (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:41:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38822 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754260Ab3LBTOF (ORCPT
+	with ESMTP id S1754204Ab3LBTOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:14:05 -0500
+	Mon, 2 Dec 2013 14:14:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.10 120/173] Input: cypress_ps2 - do not consider data bad if palm is detected
-Date: Mon,  2 Dec 2013 11:11:43 -0800
-Message-Id: <20131202191157.460082714@linuxfoundation.org>
+        =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@prifuk.cz>,
+        Simon Wood <simon@mungewell.org>, Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.10 134/173] HID:hid-lg4ff: Initialize device properties before we touch autocentering.
+Date: Mon,  2 Dec 2013 11:11:57 -0800
+Message-Id: <20131202191158.796066095@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,79 +30,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
+From: Simon Wood <simon@mungewell.org>
 
-commit 5df682b297f6b23ec35615ed7bb50cbb25d25869 upstream.
+commit 114a55cf9dd1576e7ac56189832cd4d7dc56c218 upstream.
 
-If hardware (or firmware) detects palm on the surface of the device it does
-not mean that the data packet is bad from the protocol standpoint. Instead
-of reporting PSMOUSE_BAD_DATA in this case simply threat it as if nothing
-touches the surface.
+Re-arrange code slightly to ensure that device properties are configured
+before calling auto-center command.
 
-BugLink: http://bugs.launchpad.net/bugs/1229361
-
-Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
-Tested-by: Kamal Mostafa <kamal@canonical.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Reported-by: Michal Malý <madcatxster@prifuk.cz>
+Signed-off-by: Simon Wood <simon@mungewell.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/cypress_ps2.c |   19 +++----------------
- 1 file changed, 3 insertions(+), 16 deletions(-)
+ drivers/hid/hid-lg4ff.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
---- a/drivers/input/mouse/cypress_ps2.c
-+++ b/drivers/input/mouse/cypress_ps2.c
-@@ -439,7 +439,7 @@ static int cypress_get_finger_count(unsi
- 			case 2: return 5;
- 			default:
- 				/* Invalid contact (e.g. palm). Ignore it. */
--				return -1;
-+				return 0;
- 		}
- 	}
+--- a/drivers/hid/hid-lg4ff.c
++++ b/drivers/hid/hid-lg4ff.c
+@@ -574,17 +574,6 @@ int lg4ff_init(struct hid_device *hid)
+ 	if (error)
+ 		return error;
  
-@@ -452,17 +452,10 @@ static int cypress_parse_packet(struct p
- {
- 	unsigned char *packet = psmouse->packet;
- 	unsigned char header_byte = packet[0];
--	int contact_cnt;
- 
- 	memset(report_data, 0, sizeof(struct cytp_report_data));
- 
--	contact_cnt = cypress_get_finger_count(header_byte);
+-	/* Check if autocentering is available and
+-	 * set the centering force to zero by default */
+-	if (test_bit(FF_AUTOCENTER, dev->ffbit)) {
+-		if (rev_maj == FFEX_REV_MAJ && rev_min == FFEX_REV_MIN)	/* Formula Force EX expects different autocentering command */
+-			dev->ff->set_autocenter = hid_lg4ff_set_autocenter_ffex;
+-		else
+-			dev->ff->set_autocenter = hid_lg4ff_set_autocenter_default;
 -
--	if (contact_cnt < 0) /* e.g. palm detect */
--		return -EINVAL;
+-		dev->ff->set_autocenter(dev, 0);
+-	}
 -
--	report_data->contact_cnt = contact_cnt;
--
-+	report_data->contact_cnt = cypress_get_finger_count(header_byte);
- 	report_data->tap = (header_byte & ABS_MULTIFINGER_TAP) ? 1 : 0;
+ 	/* Get private driver data */
+ 	drv_data = hid_get_drvdata(hid);
+ 	if (!drv_data) {
+@@ -605,6 +594,17 @@ int lg4ff_init(struct hid_device *hid)
+ 	entry->max_range = lg4ff_devices[i].max_range;
+ 	entry->set_range = lg4ff_devices[i].set_range;
  
- 	if (report_data->contact_cnt == 1) {
-@@ -535,11 +528,9 @@ static void cypress_process_packet(struc
- 	int slots[CYTP_MAX_MT_SLOTS];
- 	int n;
- 
--	if (cypress_parse_packet(psmouse, cytp, &report_data))
--		return;
-+	cypress_parse_packet(psmouse, cytp, &report_data);
- 
- 	n = report_data.contact_cnt;
--
- 	if (n > CYTP_MAX_MT_SLOTS)
- 		n = CYTP_MAX_MT_SLOTS;
- 
-@@ -605,10 +596,6 @@ static psmouse_ret_t cypress_validate_by
- 		return PSMOUSE_BAD_DATA;
- 
- 	contact_cnt = cypress_get_finger_count(packet[0]);
--
--	if (contact_cnt < 0)
--		return PSMOUSE_BAD_DATA;
--
- 	if (cytp->mode & CYTP_BIT_ABS_NO_PRESSURE)
- 		cypress_set_packet_size(psmouse, contact_cnt == 2 ? 7 : 4);
- 	else
++	/* Check if autocentering is available and
++	 * set the centering force to zero by default */
++	if (test_bit(FF_AUTOCENTER, dev->ffbit)) {
++		if (rev_maj == FFEX_REV_MAJ && rev_min == FFEX_REV_MIN)	/* Formula Force EX expects different autocentering command */
++			dev->ff->set_autocenter = hid_lg4ff_set_autocenter_ffex;
++		else
++			dev->ff->set_autocenter = hid_lg4ff_set_autocenter_default;
++
++		dev->ff->set_autocenter(dev, 0);
++	}
++
+ 	/* Create sysfs interface */
+ 	error = device_create_file(&hid->dev, &dev_attr_range);
+ 	if (error)
 
 
