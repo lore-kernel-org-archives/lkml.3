@@ -1,95 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052Ab3LBTGW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:06:22 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:38461 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752028Ab3LBTGV (ORCPT
+	id S1753110Ab3LBTGq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:06:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38142 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752788Ab3LBTGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:06:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131202185112.GB5524@dhcp22.suse.cz>
-References: <1385989693-28788-1-git-send-email-vdavydov@parallels.com>
-	<20131202181501.GA5524@dhcp22.suse.cz>
-	<CAA6-i6rWsZNQmFY5L-=yc6TaTGyg4hP4qn9gMZVsu8wWJ=1ywg@mail.gmail.com>
-	<20131202185112.GB5524@dhcp22.suse.cz>
-Date: Mon, 2 Dec 2013 23:06:20 +0400
-Message-ID: <CAA6-i6redyQxTvbNxebMvO2ZRsSOKdAT57RJ6N2MCKoZmK6xaQ@mail.gmail.com>
-Subject: Re: [PATCH] memcg: remove KMEM_ACCOUNTED_ACTIVATED
-From: Glauber Costa <glommer@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Vladimir Davydov <vdavydov@parallels.com>,
-        LKML <linux-kernel@vger.kernel.org>, cgroups@vger.kernel.org,
-        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 2 Dec 2013 14:06:44 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.4 01/60] ARM: sa11x0/assabet: ensure CS2 is configured appropriately
+Date: Mon,  2 Dec 2013 11:05:42 -0800
+Message-Id: <20131202190330.517522901@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
+References: <20131202190330.152596462@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 2, 2013 at 10:51 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Mon 02-12-13 22:26:48, Glauber Costa wrote:
->> On Mon, Dec 2, 2013 at 10:15 PM, Michal Hocko <mhocko@suse.cz> wrote:
->> > [CCing Glauber - please do so in other posts for kmem related changes]
->> >
->> > On Mon 02-12-13 17:08:13, Vladimir Davydov wrote:
->> >> The KMEM_ACCOUNTED_ACTIVATED was introduced by commit a8964b9b ("memcg:
->> >> use static branches when code not in use") in order to guarantee that
->> >> static_key_slow_inc(&memcg_kmem_enabled_key) will be called only once
->> >> for each memory cgroup when its kmem limit is set. The point is that at
->> >> that time the memcg_update_kmem_limit() function's workflow looked like
->> >> this:
->> >>
->> >>       bool must_inc_static_branch = false;
->> >>
->> >>       cgroup_lock();
->> >>       mutex_lock(&set_limit_mutex);
->> >>       if (!memcg->kmem_account_flags && val != RESOURCE_MAX) {
->> >>               /* The kmem limit is set for the first time */
->> >>               ret = res_counter_set_limit(&memcg->kmem, val);
->> >>
->> >>               memcg_kmem_set_activated(memcg);
->> >>               must_inc_static_branch = true;
->> >>       } else
->> >>               ret = res_counter_set_limit(&memcg->kmem, val);
->> >>       mutex_unlock(&set_limit_mutex);
->> >>       cgroup_unlock();
->> >>
->> >>       if (must_inc_static_branch) {
->> >>               /* We can't do this under cgroup_lock */
->> >>               static_key_slow_inc(&memcg_kmem_enabled_key);
->> >>               memcg_kmem_set_active(memcg);
->> >>       }
->> >>
->> >> Today, we don't use cgroup_lock in memcg_update_kmem_limit(), and
->> >> static_key_slow_inc() is called under the set_limit_mutex, but the
->> >> leftover from the above-mentioned commit is still here. Let's remove it.
->> >
->> > OK, so I have looked there again and 692e89abd154b (memcg: increment
->> > static branch right after limit set) which went in after cgroup_mutex
->> > has been removed. It came along with the following comment.
->> >                 /*
->> >                  * setting the active bit after the inc will guarantee no one
->> >                  * starts accounting before all call sites are patched
->> >                  */
->> >
->> > This suggests that the flag is needed after all because we have
->> > to be sure that _all_ the places have to be patched. AFAIU
->> > memcg_kmem_newpage_charge might see the static key already patched so
->> > it would do a charge but memcg_kmem_commit_charge would still see it
->> > unpatched and so the charge won't be committed.
->> >
->> > Or am I missing something?
->>
->> You are correct. This flag is there due to the way we are using static branches.
->> The patching of one call site is atomic, but the patching of all of
->> them are not.
->> Therefore we need to use a two-flag scheme to guarantee that in the first time
->> we turn the static branches on, there will be a clear point after
->> which we're going
->> to start accounting.
->
-> So http://lkml.org/lkml/2013/11/27/314 is correct then, right?
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-It looks correct.
+------------------
+
+From: Russell King <rmk+kernel@arm.linux.org.uk>
+
+commit f3964fe1c9d9a887d65faf594669852e4dec46e0 upstream.
+
+The CS2 region contains the Assabet board configuration and status
+registers, which are 32-bit.  Unfortunately, some boot loaders do not
+configure this region correctly, leaving it setup as a 16-bit region.
+Fix this.
+
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/arm/mach-sa1100/assabet.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/arch/arm/mach-sa1100/assabet.c
++++ b/arch/arm/mach-sa1100/assabet.c
+@@ -509,6 +509,9 @@ static void __init assabet_map_io(void)
+ 	 * Its called GPCLKR0 in my SA1110 manual.
+ 	 */
+ 	Ser1SDCR0 |= SDCR0_SUS;
++	MSC1 = (MSC1 & ~0xffff) |
++		MSC_NonBrst | MSC_32BitStMem |
++		MSC_RdAcc(2) | MSC_WrAcc(2) | MSC_Rec(0);
+ 
+ 	if (!machine_has_neponset())
+ 		sa1100_register_uart_fns(&assabet_port_fns);
+
+
