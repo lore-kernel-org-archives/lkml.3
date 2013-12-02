@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682Ab3LBTNo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:13:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38646 "EHLO
+	id S1758706Ab3LBUzR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:55:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38395 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754068Ab3LBTNZ (ORCPT
+	with ESMTP id S1753626Ab3LBTNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:25 -0500
+	Mon, 2 Dec 2013 14:13:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
+        Dan Williams <dcbw@redhat.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 063/173] rtlwifi: rtl8192cu: Fix incorrect signal strength for unassociated AP
-Date: Mon,  2 Dec 2013 11:10:46 -0800
-Message-Id: <20131202191149.793680807@linuxfoundation.org>
+Subject: [PATCH 3.10 092/173] prism54: set netdev type to "wlan"
+Date: Mon,  2 Dec 2013 11:11:15 -0800
+Message-Id: <20131202191154.334858589@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,33 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Dan Williams <dcbw@redhat.com>
 
-commit 78dbfecb95be4635b995af3bd29fa10013409fcd upstream.
+commit 8e3ffa471091c560deb6738ed9ab7445b7a5fd04 upstream.
 
-The routine that processes received frames was returning the RSSI value for the
-signal strength; however, that value is available only for associated APs. As
-a result, the strength was the absurd value of 10 dBm. As a result, scans
-return incorrect values for the strength, which causes unwanted attempts to roam.
+Userspace uses the netdev devtype for stuff like device naming and type
+detection.  Be nice and set it.  Remove the pointless #if/#endif around
+SET_NETDEV_DEV too.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Dan Williams <dcbw@redhat.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/trx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/prism54/islpci_dev.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
-@@ -349,7 +349,7 @@ bool rtl92cu_rx_query_desc(struct ieee80
- 						 p_drvinfo);
- 	}
- 	/*rx_status->qual = stats->signal; */
--	rx_status->signal = stats->rssi + 10;
-+	rx_status->signal = stats->recvsignalpower + 10;
- 	/*rx_status->noise = -stats->noise; */
- 	return true;
- }
+--- a/drivers/net/wireless/prism54/islpci_dev.c
++++ b/drivers/net/wireless/prism54/islpci_dev.c
+@@ -811,6 +811,10 @@ static const struct net_device_ops islpc
+ 	.ndo_validate_addr	= eth_validate_addr,
+ };
+ 
++static struct device_type wlan_type = {
++	.name	= "wlan",
++};
++
+ struct net_device *
+ islpci_setup(struct pci_dev *pdev)
+ {
+@@ -821,9 +825,8 @@ islpci_setup(struct pci_dev *pdev)
+ 		return ndev;
+ 
+ 	pci_set_drvdata(pdev, ndev);
+-#if defined(SET_NETDEV_DEV)
+ 	SET_NETDEV_DEV(ndev, &pdev->dev);
+-#endif
++	SET_NETDEV_DEVTYPE(ndev, &wlan_type);
+ 
+ 	/* setup the structure members */
+ 	ndev->base_addr = pci_resource_start(pdev, 0);
 
 
