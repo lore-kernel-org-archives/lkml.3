@@ -1,134 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab3LBKxP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 05:53:15 -0500
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:35334 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753267Ab3LBKxN (ORCPT
+	id S1753472Ab3LBKyk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 05:54:40 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:43070 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753288Ab3LBKyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 05:53:13 -0500
-Message-ID: <529C6580.1020304@st.com>
-Date: Mon, 2 Dec 2013 10:48:32 +0000
-From: srinivas kandagatla <srinivas.kandagatla@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Mon, 2 Dec 2013 05:54:37 -0500
+Date: Mon, 2 Dec 2013 10:54:32 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Alexander Shiyan <shc_work@mail.ru>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>
+Subject: Re: [PATCH RESEND] mfd: mc13xxx: Fix null pointer dereference in
+ mc13xxx_common_init
+Message-ID: <20131202105432.GC29373@lee--X1>
+References: <1385805188-5597-1-git-send-email-shc_work@mail.ru>
 MIME-Version: 1.0
-To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-Cc: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [PATCH RFC 0/9]net: stmmac PM related fixes.
-References: <1384774256-10039-1-git-send-email-srinivas.kandagatla@st.com> <528AF617.70802@st.com>
-In-Reply-To: <528AF617.70802@st.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.65.51.59]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1385805188-5597-1-git-send-email-shc_work@mail.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
-Do you have any plans to take this series?
+On Sat, 30 Nov 2013, Alexander Shiyan wrote:
 
-Peppe already Acked these series
+> If this driver being loaded from devicetree, the pdata is NULL.
+> This cause kernel Oops when "fsl,mc13xxx-uses-codec" and/or
+> "fsl,mc13xxx-uses-touch" properties is specified.
 
-Please let me know if you want me to rebase these patches on any
-particular branch.
+<snip>
 
-Thanks,
-srini
+The original code is pretty gross. This stuff shouldn't be identifying
+_support_ in Device Tree, then dragging in configuration from platform
+code.
 
-On 19/11/13 05:24, Giuseppe CAVALLARO wrote:
-> On 11/18/2013 12:30 PM, srinivas.kandagatla@st.com wrote:
->> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->>
->> Hi Peppe,
->>
->> During PM_SUSPEND_FREEZE testing, I have noticed that PM support in
->> STMMAC is
->> partly broken. I had to re-arrange the code to do PM correctly. There
->> were lot
->> of things I did not like personally and some bits did not work in the
->> first
->> place. I thought this is the nice opportunity to clean the mess up.
->>
->> Here is what I did:
->>
->> 1> Test PM suspend freeeze via pm_test
->> It did not work for following reasons.
->>   - If the power to gmac is removed when it enters in low power state.
->> stmmac_resume could not cope up with such behaviour, it was expecting
->> the ip
->> register contents to be still same as before entering low power, This
->> assumption is wrong. So I started to add some code to do Hardware
->> initialization, thats when I started to re-arrange the code. stmmac_open
->> contains both resource and memory allocations and hardware
->> initialization. I
->> had to separate these two things in two different functions.
->>
->> These two patches do that
->>    net: stmmac: move dma allocation to new function
->>    net: stmmac: move hardware setup for stmmac_open to new function
->>
->> And rest of the other patches are fixing the loose ends, things like mdio
->> reset, which might be necessary in cases likes hibernation(I did not
->> test).
->>
->> In hibernation cases the driver was just unregistering with subsystems
->> and
->> releasing resources which I did not like and its not necessary to do
->> this as
->> part of PM. So using the same stmmac_suspend/resume made more sense for
->> hibernation cases than using stmmac_open/release.
->> Also fixed a NULL pointer dereference bug too.
->>
->> 2> Test WOL via PM_SUSPEND_FREEZE
->> Did get an wakeup interrupt, but could not wakeup a freeze system.
->> So I had to add pm_wakeup_event to the driver.
->> net: stmmac: notify the PM core of a wakeup event. patch.
->>
->> Also few patches like
->>    net: stmmac: make stmmac_mdio_reset non-static
->>    net: stmmac: restore pinstate in pm resume.
->> helps the resume function to reset the phy and put back the pins in
->> default
->> state.
->>
->> Comments?
-> 
-> Srini, as we had internally discussed before sending the patches to the
-> net ML, I agreed with your work. Some parts of the PM stuff was fully
-> tested on our product kernels (where the PM was a bit different
-> especially on HoM) and nobody raised issues to me for this code.
-> Also some rework you did, for example to move the dma allocation in
-> a new function is fine for me.
-> 
-> So you continue to have my Acked-by for all.
-> 
-> peppe
-> 
->>
->> Thanks,
->> srini
->>
->> Srinivas Kandagatla (9):
->>    net: stmmac: support max-speed device tree property
->>    net: stmmac: mdio: remove reset gpio free
->>    net: stmmac: move dma allocation to new function
->>    net: stmmac: move hardware setup for stmmac_open to new function
->>    net: stmmac: make stmmac_mdio_reset non-static
->>    net: stmmac: fix power mangement suspend-resume case
->>    net: stmmac: use suspend functions for hibernation
->>    net: stmmac: restore pinstate in pm resume.
->>    net: stmmac: notify the PM core of a wakeup event.
->>
->>   drivers/net/ethernet/stmicro/stmmac/stmmac.h       |    4 +-
->>   drivers/net/ethernet/stmicro/stmmac/stmmac_main.c  |  360
->> ++++++++++----------
->>   drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c  |    3 +-
->>   .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |   51 +--
->>   include/linux/stmmac.h                             |    1 +
->>   5 files changed, 209 insertions(+), 210 deletions(-)
->>
-> 
-> 
-> 
+Rather than patch it up with little plasters (band aids), can we fix
+it properly please?
 
+> Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+> 
+> Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+> ---
+>  drivers/mfd/mc13xxx-core.c | 8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
+> index dbbf8ee..625633a 100644
+> --- a/drivers/mfd/mc13xxx-core.c
+> +++ b/drivers/mfd/mc13xxx-core.c
+> @@ -682,14 +682,14 @@ err_revision:
+>  	if (mc13xxx->flags & MC13XXX_USE_ADC)
+>  		mc13xxx_add_subdevice(mc13xxx, "%s-adc");
+>  
+> -	if (mc13xxx->flags & MC13XXX_USE_CODEC)
+> +	if ((mc13xxx->flags & MC13XXX_USE_CODEC) && pdata)
+>  		mc13xxx_add_subdevice_pdata(mc13xxx, "%s-codec",
+>  					pdata->codec, sizeof(*pdata->codec));
+>  
+>  	if (mc13xxx->flags & MC13XXX_USE_RTC)
+>  		mc13xxx_add_subdevice(mc13xxx, "%s-rtc");
+>  
+> -	if (mc13xxx->flags & MC13XXX_USE_TOUCHSCREEN)
+> +	if ((mc13xxx->flags & MC13XXX_USE_TOUCHSCREEN) && pdata)
+>  		mc13xxx_add_subdevice_pdata(mc13xxx, "%s-ts",
+>  				&pdata->touch, sizeof(pdata->touch));
+>  
+> @@ -701,6 +701,10 @@ err_revision:
+>  		mc13xxx_add_subdevice_pdata(mc13xxx, "%s-pwrbutton",
+>  				pdata->buttons, sizeof(*pdata->buttons));
+>  	} else {
+> +		if (mc13xxx->flags & MC13XXX_USE_CODEC)
+> +			mc13xxx_add_subdevice(mc13xxx, "%s-codec");
+> +		if (mc13xxx->flags & MC13XXX_USE_TOUCHSCREEN)
+> +			mc13xxx_add_subdevice(mc13xxx, "%s-ts");
+>  		mc13xxx_add_subdevice(mc13xxx, "%s-regulator");
+>  		mc13xxx_add_subdevice(mc13xxx, "%s-led");
+>  		mc13xxx_add_subdevice(mc13xxx, "%s-pwrbutton");
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
