@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759262Ab3LBVJH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:09:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38406 "EHLO
+	id S1759248Ab3LBVJF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:09:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38411 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753998Ab3LBTNK (ORCPT
+	with ESMTP id S1753999Ab3LBTNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:10 -0500
+	Mon, 2 Dec 2013 14:13:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 3.10 055/173] loop: fix crash when using unassigned loop device
-Date: Mon,  2 Dec 2013 11:10:38 -0800
-Message-Id: <20131202191148.930612929@linuxfoundation.org>
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [PATCH 3.10 056/173] mtd: nand: hack ONFI for non-power-of-2 dimensions
+Date: Mon,  2 Dec 2013 11:10:39 -0800
+Message-Id: <20131202191149.044729596@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -26,108 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Brian Norris <computersforpeace@gmail.com>
 
-commit ef7e7c82e02b602f29c2b87f42dcd6143a6777da upstream.
+commit 4355b70cf48363c50a9de450b01178c83aba8f6a upstream.
 
-When the loop module is loaded, it creates 8 loop devices /dev/loop[0-7].
-The devices have no request routine and thus, when they are used without
-being assigned, a crash happens.
+Some bright specification writers decided to write this in the ONFI spec
+(from ONFI 3.0, Section 3.1):
 
-For example, these commands cause crash (assuming there are no used loop
-devices):
+  "The number of blocks and number of pages per block is not required to
+  be a power of two. In the case where one of these values is not a
+  power of two, the corresponding address shall be rounded to an
+  integral number of bits such that it addresses a range up to the
+  subsequent power of two value. The host shall not access upper
+  addresses in a range that is shown as not supported."
 
-Kernel Fault: Code=26 regs=000000007f420980 (Addr=0000000000000010)
-CPU: 1 PID: 50 Comm: kworker/1:1 Not tainted 3.11.0 #1
-Workqueue: ksnaphd do_metadata [dm_snapshot]
-task: 000000007fcf4078 ti: 000000007f420000 task.ti: 000000007f420000
-[  116.319988]
-     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
-PSW: 00001000000001001111111100001111 Not tainted
-r00-03  000000ff0804ff0f 00000000408bf5d0 00000000402d8204 000000007b7ff6c0
-r04-07  00000000408a95d0 000000007f420950 000000007b7ff6c0 000000007d06c930
-r08-11  000000007f4205c0 0000000000000001 000000007f4205c0 000000007f4204b8
-r12-15  0000000000000010 0000000000000000 0000000000000000 0000000000000000
-r16-19  000000001108dd48 000000004061cd7c 000000007d859800 000000000800000f
-r20-23  0000000000000000 0000000000000008 0000000000000000 0000000000000000
-r24-27  00000000ffffffff 000000007b7ff6c0 000000007d859800 00000000408a95d0
-r28-31  0000000000000000 000000007f420950 000000007f420980 000000007f4208e8
-sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000303000
-sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
-[  117.549988]
-IASQ: 0000000000000000 0000000000000000 IAOQ: 00000000402d82fc 00000000402d8300
- IIR: 53820020    ISR: 0000000000000000  IOR: 0000000000000010
- CPU:        1   CR30: 000000007f420000 CR31: ffffffffffffffff
- ORIG_R28: 0000000000000001
- IAOQ[0]: generic_make_request+0x11c/0x1a0
- IAOQ[1]: generic_make_request+0x120/0x1a0
- RP(r2): generic_make_request+0x24/0x1a0
-Backtrace:
- [<00000000402d83f0>] submit_bio+0x70/0x140
- [<0000000011087c4c>] dispatch_io+0x234/0x478 [dm_mod]
- [<0000000011087f44>] sync_io+0xb4/0x190 [dm_mod]
- [<00000000110883bc>] dm_io+0x2c4/0x310 [dm_mod]
- [<00000000110bfcd0>] do_metadata+0x28/0xb0 [dm_snapshot]
- [<00000000401591d8>] process_one_work+0x160/0x460
- [<0000000040159bc0>] worker_thread+0x300/0x478
- [<0000000040161a70>] kthread+0x118/0x128
- [<0000000040104020>] end_fault_vector+0x20/0x28
- [<0000000040177220>] task_tick_fair+0x420/0x4d0
- [<00000000401aa048>] invoke_rcu_core+0x50/0x60
- [<00000000401ad5b8>] rcu_check_callbacks+0x210/0x8d8
- [<000000004014aaa0>] update_process_times+0xa8/0xc0
- [<00000000401ab86c>] rcu_process_callbacks+0x4b4/0x598
- [<0000000040142408>] __do_softirq+0x250/0x2c0
- [<00000000401789d0>] find_busiest_group+0x3c0/0xc70
-[  119.379988]
-Kernel panic - not syncing: Kernel Fault
-Rebooting in 1 seconds..
+This breaks every assumption MTD makes about NAND block/chip-size
+dimensions -- they *must* be a power of two!
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+And of course, an enterprising manufacturer has made use of this lovely
+freedom. Exhibit A: Micron MT29F32G08CBADAWP
+
+  "- Plane size: 2 planes x 1064 blocks per plane
+   - Device size: 32Gb: 2128 blockss [sic]"
+
+This quickly hits a BUG() in nand_base.c, since the extra dimensions
+overflow so we think it's a second chip (on my single-chip setup):
+
+    ONFI param page 0 valid
+    ONFI flash detected
+    NAND device: Manufacturer ID: 0x2c, Chip ID: 0x44 (Micron MT29F32G08CBADAWP), 4256MiB, page size: 8192, OOB size: 744
+    ------------[ cut here ]------------
+    kernel BUG at drivers/mtd/nand/nand_base.c:203!
+    Internal error: Oops - BUG: 0 [#1] SMP ARM
+    [... trim ...]
+    [<c02cf3e4>] (nand_select_chip+0x18/0x2c) from [<c02d25c0>] (nand_do_read_ops+0x90/0x424)
+    [<c02d25c0>] (nand_do_read_ops+0x90/0x424) from [<c02d2dd8>] (nand_read+0x54/0x78)
+    [<c02d2dd8>] (nand_read+0x54/0x78) from [<c02ad2c8>] (mtd_read+0x84/0xbc)
+    [<c02ad2c8>] (mtd_read+0x84/0xbc) from [<c02d4b28>] (scan_read.clone.4+0x4c/0x64)
+    [<c02d4b28>] (scan_read.clone.4+0x4c/0x64) from [<c02d4c88>] (search_bbt+0x148/0x290)
+    [<c02d4c88>] (search_bbt+0x148/0x290) from [<c02d4ea4>] (nand_scan_bbt+0xd4/0x5c0)
+    [... trim ...]
+    ---[ end trace 0c9363860d865ff2 ]---
+
+So to fix this, just truncate these dimensions down to the greatest
+power-of-2 dimension that is less than or equal to the specified
+dimension.
+
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/loop.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ drivers/mtd/nand/nand_base.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -894,13 +894,6 @@ static int loop_set_fd(struct loop_devic
- 
- 	bio_list_init(&lo->lo_bio_list);
- 
--	/*
--	 * set queue make_request_fn, and add limits based on lower level
--	 * device
--	 */
--	blk_queue_make_request(lo->lo_queue, loop_make_request);
--	lo->lo_queue->queuedata = lo;
--
- 	if (!(lo_flags & LO_FLAGS_READ_ONLY) && file->f_op->fsync)
- 		blk_queue_flush(lo->lo_queue, REQ_FLUSH);
- 
-@@ -1618,6 +1611,8 @@ static int loop_add(struct loop_device *
- 	if (!lo)
- 		goto out;
- 
-+	lo->lo_state = Lo_unbound;
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -2904,10 +2904,21 @@ static int nand_flash_detect_onfi(struct
+ 	sanitize_string(p->model, sizeof(p->model));
+ 	if (!mtd->name)
+ 		mtd->name = p->model;
 +
- 	/* allocate id, if @id >= 0, we're requesting that specific id */
- 	if (i >= 0) {
- 		err = idr_alloc(&loop_index_idr, lo, i, i + 1, GFP_KERNEL);
-@@ -1635,6 +1630,12 @@ static int loop_add(struct loop_device *
- 	if (!lo->lo_queue)
- 		goto out_free_idr;
- 
+ 	mtd->writesize = le32_to_cpu(p->byte_per_page);
+-	mtd->erasesize = le32_to_cpu(p->pages_per_block) * mtd->writesize;
++
 +	/*
-+	 * set queue make_request_fn
++	 * pages_per_block and blocks_per_lun may not be a power-of-2 size
++	 * (don't ask me who thought of this...). MTD assumes that these
++	 * dimensions will be power-of-2, so just truncate the remaining area.
 +	 */
-+	blk_queue_make_request(lo->lo_queue, loop_make_request);
-+	lo->lo_queue->queuedata = lo;
++	mtd->erasesize = 1 << (fls(le32_to_cpu(p->pages_per_block)) - 1);
++	mtd->erasesize *= mtd->writesize;
 +
- 	disk = lo->lo_disk = alloc_disk(1 << part_shift);
- 	if (!disk)
- 		goto out_free_queue;
+ 	mtd->oobsize = le16_to_cpu(p->spare_bytes_per_page);
+-	chip->chipsize = le32_to_cpu(p->blocks_per_lun);
++
++	/* See erasesize comment */
++	chip->chipsize = 1 << (fls(le32_to_cpu(p->blocks_per_lun)) - 1);
+ 	chip->chipsize *= (uint64_t)mtd->erasesize * p->lun_count;
+ 	*busw = 0;
+ 	if (le16_to_cpu(p->features) & 1)
 
 
