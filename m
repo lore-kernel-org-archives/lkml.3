@@ -1,57 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726Ab3LBOXc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 09:23:32 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:64030 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab3LBOXb (ORCPT
+	id S1751957Ab3LBOZz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 09:25:55 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:36391 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab3LBOZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 09:23:31 -0500
-MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <1385978027.2972.3.camel@x41.thuisdomein>
-References: <1385843936.10971.5.camel@x41.thuisdomein>
-	<CAKMK7uHRW-1OiMY44s2G9dwbbQLMUxZ4fHf=Eaf9gJ_WASpvLQ@mail.gmail.com>
-	<1385917025.7199.4.camel@x41.thuisdomein>
-	<CAKMK7uE_L8cqyYk6mQ4paXeh2m7tmoMXRv_KxoAeBq9MEAnFqw@mail.gmail.com>
-	<1385978027.2972.3.camel@x41.thuisdomein>
-Date: Mon, 2 Dec 2013 15:23:30 +0100
-Message-ID: <CAKMK7uE=Wr95XM85XVS1nT_8cV4e1Z_SubSVjQyP8BuLz-bTQg@mail.gmail.com>
-Subject: Re: [i915] WARNING: [...] drivers/gpu/drm/i915/intel_display.c:9948 intel_get_pipe_from_connector
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 2 Dec 2013 09:25:52 -0500
+From: Kamala R <kamala@aristanetworks.com>
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>, netdev@vger.kernel.org,
+        David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, Kamala R <kamala@aristanetworks.com>
+Subject: [Patch v4] IPv6: Fixed support for blackhole and prohibit routes
+Date: Mon,  2 Dec 2013 19:55:21 +0530
+Message-Id: <1385994322-23117-1-git-send-email-kamala@aristanetworks.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 2, 2013 at 10:53 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> On Mon, 2013-12-02 at 08:33 +0100, Daniel Vetter wrote:
->> On Sun, Dec 1, 2013 at 5:57 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
->> > The WARNING is now gone during suspend and resume (having tested that
->> > thoroughly - ie, twice). But I still see it at boot. Is there a related
->> > fix for that WARNING during boot?
->>
->> Hm, I've never seen it during boot. Can you please boot with
->> drm.debug=0xe and attach the dmesg with the WARN?
->
-> Sure.
->
-> This generated quite a bit of debug messages so I only copied the
-> WARNING and the drm (related) messages immediately preceding it. Please
-> feel free to prod again if that's insufficient.
+The behaviour of blackhole and prohibit routes has been corrected by setting
+the input and output pointers of the dst variable appropriately. For
+blackhole routes, they are set to dst_discard and to ip6_pkt_discard and
+ip6_pkt_discard_out respectively for prohibit routes.
 
-Yeah, the beginning of the drm message would are wanted since I need
-to know what exactly your hardware claims to support ;-)
+ipv6: ip6_pkt_prohibit(_out) should not depend on
+CONFIG_IPV6_MULTIPLE_TABLES
 
-But the backtrace confirms my first hunch for now ... Just want to
-confirm before sending out a patch with commit message.
--Daniel
+We need ip6_pkt_prohibit(_out) available without
+CONFIG_IPV6_MULTIPLE_TABLES
+
+Signed-off-by: Kamala R <kamala@aristanetworks.com>
+---
+ net/ipv6/route.c |   22 ++++++++++------------
+ 1 file changed, 10 insertions(+), 12 deletions(-)
+
+diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+index 7faa9d5..ddb9d41 100644
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -84,6 +84,8 @@ static int		 ip6_dst_gc(struct dst_ops *ops);
+ 
+ static int		ip6_pkt_discard(struct sk_buff *skb);
+ static int		ip6_pkt_discard_out(struct sk_buff *skb);
++static int		ip6_pkt_prohibit(struct sk_buff *skb);
++static int		ip6_pkt_prohibit_out(struct sk_buff *skb);
+ static void		ip6_link_failure(struct sk_buff *skb);
+ static void		ip6_rt_update_pmtu(struct dst_entry *dst, struct sock *sk,
+ 					   struct sk_buff *skb, u32 mtu);
+@@ -234,9 +236,6 @@ static const struct rt6_info ip6_null_entry_template = {
+ 
+ #ifdef CONFIG_IPV6_MULTIPLE_TABLES
+ 
+-static int ip6_pkt_prohibit(struct sk_buff *skb);
+-static int ip6_pkt_prohibit_out(struct sk_buff *skb);
+-
+ static const struct rt6_info ip6_prohibit_entry_template = {
+ 	.dst = {
+ 		.__refcnt	= ATOMIC_INIT(1),
+@@ -1565,21 +1564,24 @@ int ip6_route_add(struct fib6_config *cfg)
+ 				goto out;
+ 			}
+ 		}
+-		rt->dst.output = ip6_pkt_discard_out;
+-		rt->dst.input = ip6_pkt_discard;
+ 		rt->rt6i_flags = RTF_REJECT|RTF_NONEXTHOP;
+ 		switch (cfg->fc_type) {
+ 		case RTN_BLACKHOLE:
+ 			rt->dst.error = -EINVAL;
++			rt->dst.output = dst_discard;
++			rt->dst.input = dst_discard;
+ 			break;
+ 		case RTN_PROHIBIT:
+ 			rt->dst.error = -EACCES;
++			rt->dst.output = ip6_pkt_prohibit_out;
++			rt->dst.input = ip6_pkt_prohibit;
+ 			break;
+ 		case RTN_THROW:
+-			rt->dst.error = -EAGAIN;
+-			break;
+ 		default:
+-			rt->dst.error = -ENETUNREACH;
++			rt->dst.error = (cfg->fc_type == RTN_THROW) ? -EAGAIN
++					: -ENETUNREACH;
++			rt->dst.output = ip6_pkt_discard_out;
++			rt->dst.input = ip6_pkt_discard;
+ 			break;
+ 		}
+ 		goto install_route;
+@@ -2144,8 +2146,6 @@ static int ip6_pkt_discard_out(struct sk_buff *skb)
+ 	return ip6_pkt_drop(skb, ICMPV6_NOROUTE, IPSTATS_MIB_OUTNOROUTES);
+ }
+ 
+-#ifdef CONFIG_IPV6_MULTIPLE_TABLES
+-
+ static int ip6_pkt_prohibit(struct sk_buff *skb)
+ {
+ 	return ip6_pkt_drop(skb, ICMPV6_ADM_PROHIBITED, IPSTATS_MIB_INNOROUTES);
+@@ -2157,8 +2157,6 @@ static int ip6_pkt_prohibit_out(struct sk_buff *skb)
+ 	return ip6_pkt_drop(skb, ICMPV6_ADM_PROHIBITED, IPSTATS_MIB_OUTNOROUTES);
+ }
+ 
+-#endif
+-
+ /*
+  *	Allocate a dst for local (unicast / anycast) address.
+  */
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.7.9.5
+
