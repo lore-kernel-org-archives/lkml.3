@@ -1,105 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920Ab3LBJAq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 04:00:46 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:6801 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752690Ab3LBJAd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 04:00:33 -0500
-From: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>
-To: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: [PATCH 1/1] support new huawei devices in option.c
-Thread-Topic: [PATCH 1/1] support new huawei devices in option.c
-Thread-Index: Ac7vPOhUezE2roBuQiq2U6NyxnwPGA==
-Date: Mon, 2 Dec 2013 09:00:11 +0000
-Message-ID: <910F9D9E13B84F4C8FA771DC9BDE99F35E2E98E4@szxema506-mbs.china.huawei.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.11.34.157]
-Content-Type: text/plain; charset="utf-8"
+	id S1753119Ab3LBJDN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 04:03:13 -0500
+Received: from mga01.intel.com ([192.55.52.88]:15840 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751232Ab3LBJDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 04:03:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,809,1378882800"; 
+   d="scan'208";a="443027897"
+Date: Mon, 2 Dec 2013 11:02:53 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Sergei Ianovich <ynvich@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        "open list:SERIAL DRIVERS" <linux-serial@vger.kernel.org>
+Subject: Re: [PATCH 01/11] resolve PXA<->8250 serial device address conflict
+Message-ID: <20131202090253.GE3942@xps8300>
+References: <1385879185-22455-1-git-send-email-ynvich@gmail.com>
+ <1385879185-22455-2-git-send-email-ynvich@gmail.com>
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385879185-22455-2-git-send-email-ynvich@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rB2915pI011574
 
-1. Add new supporting declarations to option.c, to support Huawei new devices with new bInterfaceProtocol value.
-Signed-off-by: fangxiaozhi <huananhu@huawei.com>
---------------------------------
+Hi,
 
---- linux-3.12.1/drivers/usb/serial/option.bk	2013-11-29 14:49:44.528970754 +0800
-+++ linux-3.12.1/drivers/usb/serial/option.c	2013-11-29 15:22:01.000000000 +0800
-@@ -634,6 +634,10 @@
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x01, 0x6D) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x01, 0x6E) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x01, 0x6F) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x01, 0x72) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x01, 0x73) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x01, 0x74) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x01, 0x75) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x01, 0x78) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x01, 0x79) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x01, 0x7A) },
-@@ -688,6 +692,10 @@
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x02, 0x6D) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x02, 0x6E) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x02, 0x6F) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x02, 0x72) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x02, 0x73) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x02, 0x74) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x02, 0x75) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x02, 0x78) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x02, 0x79) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x02, 0x7A) },
-@@ -742,6 +750,10 @@
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x03, 0x6D) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x03, 0x6E) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x03, 0x6F) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x03, 0x72) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x03, 0x73) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x03, 0x74) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x03, 0x75) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x03, 0x78) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x03, 0x79) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x03, 0x7A) },
-@@ -796,6 +808,10 @@
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x04, 0x6D) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x04, 0x6E) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x04, 0x6F) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x04, 0x72) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x04, 0x73) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x04, 0x74) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x04, 0x75) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x04, 0x78) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x04, 0x79) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x04, 0x7A) },
-@@ -850,6 +866,10 @@
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x05, 0x6D) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x05, 0x6E) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x05, 0x6F) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x05, 0x72) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x05, 0x73) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x05, 0x74) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x05, 0x75) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x05, 0x78) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x05, 0x79) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x05, 0x7A) },
-@@ -904,6 +924,10 @@
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x06, 0x6D) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x06, 0x6E) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x06, 0x6F) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x06, 0x72) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x06, 0x73) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x06, 0x74) },
-+	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x06, 0x75) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x06, 0x78) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x06, 0x79) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x06, 0x7A) },
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On Sun, Dec 01, 2013 at 10:26:14AM +0400, Sergei Ianovich wrote:
+> PXA serial ports have "standard" UART names (ttyS[0-3]), major
+> device number (4) and first minor device number (64) by default.
+> 
+> If the system has extra 8250 serial port hardware in addition
+> to onboard PXA serial ports, default settings produce a device
+> allocation conflict.
+> 
+> The patch provides a configuration option which can move onboard
+> ports out of the way of 8250_core by assigning a different (204)
+> major number and corresponding device names (ttySA[0-3]).
+> 
+> Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
+> ---
+>  drivers/tty/serial/Kconfig | 19 +++++++++++++++++++
+>  drivers/tty/serial/pxa.c   | 22 ++++++++++++++++++----
+>  2 files changed, 37 insertions(+), 4 deletions(-)
+> diff --git a/drivers/tty/serial/pxa.c b/drivers/tty/serial/pxa.c
+
+<snip>
+
+> --- a/drivers/tty/serial/pxa.c
+> +++ b/drivers/tty/serial/pxa.c
+> @@ -593,6 +593,20 @@ serial_pxa_type(struct uart_port *port)
+>  static struct uart_pxa_port *serial_pxa_ports[4];
+>  static struct uart_driver serial_pxa_reg;
+>  
+> +#ifndef CONFIG_SERIAL_PXA_AS_TTYSA
+> +
+> +#define PXA_TTY_NAME	"ttyS"
+> +#define PXA_TTY_MAJOR	TTY_MAJOR
+> +#define PXA_TTY_MINOR	64
+> +
+> +#else
+> +
+> +#define PXA_TTY_NAME	"ttySA"
+> +#define PXA_TTY_MAJOR	204
+> +#define PXA_TTY_MINOR	5
+> +
+> +#endif
+> +
+>  #ifdef CONFIG_SERIAL_PXA_CONSOLE
+>  
+>  #define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
+> @@ -751,7 +765,7 @@ serial_pxa_console_setup(struct console *co, char *options)
+>  }
+>  
+>  static struct console serial_pxa_console = {
+> -	.name		= "ttyS",
+> +	.name		= PXA_TTY_NAME,
+>  	.write		= serial_pxa_console_write,
+>  	.device		= uart_console_device,
+>  	.setup		= serial_pxa_console_setup,
+> @@ -792,9 +806,9 @@ static struct uart_ops serial_pxa_pops = {
+>  static struct uart_driver serial_pxa_reg = {
+>  	.owner		= THIS_MODULE,
+>  	.driver_name	= "PXA serial",
+> -	.dev_name	= "ttyS",
+> -	.major		= TTY_MAJOR,
+> -	.minor		= 64,
+> +	.dev_name	= PXA_TTY_NAME,
+> +	.major		= PXA_TTY_MAJOR,
+> +	.minor		= PXA_TTY_MINOR,
+>  	.nr		= 4,
+>  	.cons		= PXA_CONSOLE,
+>  };
+
+If drivers/tty/serial/pxa.c was converted to an other probe driver for
+the 8250, this would not be an issue.
+
+Br,
+
+-- 
+heikki
