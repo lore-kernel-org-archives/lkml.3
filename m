@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753408Ab3LBTHT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:07:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38277 "EHLO
+	id S1758081Ab3LBVZu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:25:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38338 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753314Ab3LBTHJ (ORCPT
+	with ESMTP id S1753411Ab3LBTHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:07:09 -0500
+	Mon, 2 Dec 2013 14:07:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.4 33/60] dm: allocate buffer for messages with small number of arguments using GFP_NOIO
-Date: Mon,  2 Dec 2013 11:06:14 -0800
-Message-Id: <20131202190337.549713370@linuxfoundation.org>
+        =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>
+Subject: [PATCH 3.4 41/60] avr32: setup crt for early panic()
+Date: Mon,  2 Dec 2013 11:06:22 -0800
+Message-Id: <20131202190339.154446716@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
 References: <20131202190330.152596462@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,61 +31,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Andreas Bießmann <andreas@biessmann.de>
 
-commit f36afb3957353d2529cb2b00f78fdccd14fc5e9c upstream.
+commit 7a2a74f4b856993218aa7cdeeb6c3103101340db upstream.
 
-dm-mpath and dm-thin must process messages even if some device is
-suspended, so we allocate argv buffer with GFP_NOIO. These messages have
-a small fixed number of arguments.
+Before the CRT was (fully) set up in kernel_entry (bss cleared before in
+_start, but also not before jump to panic() in no_tag_table case).
 
-On the other hand, dm-switch needs to process bulk data using messages
-so excessive use of GFP_NOIO could cause trouble.
+This patch fixes this up to have a fully working CRT when branching to panic()
+in no_tag_table.
 
-The patch also lowers the default number of arguments from 64 to 8, so
-that there is smaller load on GFP_NOIO allocations.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Alasdair G Kergon <agk@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-table.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ arch/avr32/boot/u-boot/head.S |   30 +++++++++++++++++++++++++-----
+ arch/avr32/kernel/head.S      |   20 --------------------
+ 2 files changed, 25 insertions(+), 25 deletions(-)
 
---- a/drivers/md/dm-table.c
-+++ b/drivers/md/dm-table.c
-@@ -581,14 +581,28 @@ static int adjoin(struct dm_table *table
- 
- /*
-  * Used to dynamically allocate the arg array.
-+ *
-+ * We do first allocation with GFP_NOIO because dm-mpath and dm-thin must
-+ * process messages even if some device is suspended. These messages have a
-+ * small fixed number of arguments.
-+ *
-+ * On the other hand, dm-switch needs to process bulk data using messages and
-+ * excessive use of GFP_NOIO could cause trouble.
+--- a/arch/avr32/boot/u-boot/head.S
++++ b/arch/avr32/boot/u-boot/head.S
+@@ -8,6 +8,8 @@
+  * published by the Free Software Foundation.
   */
- static char **realloc_argv(unsigned *array_size, char **old_argv)
- {
- 	char **argv;
- 	unsigned new_size;
-+	gfp_t gfp;
+ #include <asm/setup.h>
++#include <asm/thread_info.h>
++#include <asm/sysreg.h>
  
--	new_size = *array_size ? *array_size * 2 : 64;
--	argv = kmalloc(new_size * sizeof(*argv), GFP_KERNEL);
-+	if (*array_size) {
-+		new_size = *array_size * 2;
-+		gfp = GFP_KERNEL;
-+	} else {
-+		new_size = 8;
-+		gfp = GFP_NOIO;
-+	}
-+	argv = kmalloc(new_size * sizeof(*argv), gfp);
- 	if (argv) {
- 		memcpy(argv, old_argv, *array_size * sizeof(*argv));
- 		*array_size = new_size;
+ 	/*
+ 	 * The kernel is loaded where we want it to be and all caches
+@@ -20,11 +22,6 @@
+ 	.section .init.text,"ax"
+ 	.global _start
+ _start:
+-	/* Check if the boot loader actually provided a tag table */
+-	lddpc	r0, magic_number
+-	cp.w	r12, r0
+-	brne	no_tag_table
+-
+ 	/* Initialize .bss */
+ 	lddpc	r2, bss_start_addr
+ 	lddpc   r3, end_addr
+@@ -34,6 +31,25 @@ _start:
+ 	cp      r2, r3
+ 	brlo    1b
+ 
++	/* Initialize status register */
++	lddpc	r0, init_sr
++	mtsr	SYSREG_SR, r0
++
++	/* Set initial stack pointer */
++	lddpc	sp, stack_addr
++	sub	sp, -THREAD_SIZE
++
++#ifdef CONFIG_FRAME_POINTER
++	/* Mark last stack frame */
++	mov	lr, 0
++	mov	r7, 0
++#endif
++
++	/* Check if the boot loader actually provided a tag table */
++	lddpc	r0, magic_number
++	cp.w	r12, r0
++	brne	no_tag_table
++
+ 	/*
+ 	 * Save the tag table address for later use. This must be done
+ 	 * _after_ .bss has been initialized...
+@@ -53,6 +69,10 @@ bss_start_addr:
+ 	.long   __bss_start
+ end_addr:
+ 	.long   _end
++init_sr:
++	.long	0x007f0000	/* Supervisor mode, everything masked */
++stack_addr:
++	.long	init_thread_union
+ 
+ no_tag_table:
+ 	sub	r12, pc, (. - 2f)
+--- a/arch/avr32/kernel/head.S
++++ b/arch/avr32/kernel/head.S
+@@ -10,33 +10,13 @@
+ #include <linux/linkage.h>
+ 
+ #include <asm/page.h>
+-#include <asm/thread_info.h>
+-#include <asm/sysreg.h>
+ 
+ 	.section .init.text,"ax"
+ 	.global kernel_entry
+ kernel_entry:
+-	/* Initialize status register */
+-	lddpc   r0, init_sr
+-	mtsr	SYSREG_SR, r0
+-
+-	/* Set initial stack pointer */
+-	lddpc   sp, stack_addr
+-	sub	sp, -THREAD_SIZE
+-
+-#ifdef CONFIG_FRAME_POINTER
+-	/* Mark last stack frame */
+-	mov	lr, 0
+-	mov	r7, 0
+-#endif
+-
+ 	/* Start the show */
+ 	lddpc   pc, kernel_start_addr
+ 
+ 	.align  2
+-init_sr:
+-	.long   0x007f0000	/* Supervisor mode, everything masked */
+-stack_addr:
+-	.long   init_thread_union
+ kernel_start_addr:
+ 	.long   start_kernel
 
 
