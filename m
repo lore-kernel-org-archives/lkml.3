@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942Ab3LBNhN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 08:37:13 -0500
-Received: from nm16-vm6.bullet.mail.ne1.yahoo.com ([98.138.91.109]:38284 "HELO
-	nm16-vm6.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751515Ab3LBNhI (ORCPT
+	id S1753037Ab3LBNis (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 08:38:48 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:46319 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752410Ab3LBNio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 08:37:08 -0500
-X-Greylist: delayed 388 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Dec 2013 08:37:08 EST
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 342666.54328.bm@omp1041.mail.ne1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
-  b=tTLpYlKnAH7xSYNtGNl1YDc+MN6WMLhZ8TECMNxjL7OANo8yZ8iruEKxGRuPlpx4A5CeteWr9Pvx2nDNp+EkhL+nuwqyVuUmHIMN6rtlm252GXAilvfCdek5Ytx5pPGBFyIqviw8THGi3+z7Osc1xePY4ivbV121i+iTA2/BINQ=;
-X-YMail-OSG: 63vu_4MVM1m36gwareLD3I9QkM7Oqde7yku4CjYG5XEW95p
- nRRvoNNvWyiY5oAd_yLx2DUehj948o_Q7BtLChmeIuAqGJru1WkTHZUgcO1s
- iEpFxyDMzNsOG_aRz7EhhmNMhCsfew8YzrgOvorYHV7gL1i7RD6fNxfgb7eB
- BYDQcPoXGhtiIPCrrGwJKH82rKhkGl8O71OSwYqOphpp8l_3rR.Z0tilPgfv
- wVDEaX2VUGDwarzreE9WpwiUDp1RdLHYR1egLl_AwQRJIoXB.pF2w_uFEKDP
- bWEqpgDBRZ3DYJQTGhEa0rcQkptR.idopg2FNOP6Fd2nUB0QWDum75AJdd0y
- rYxNQJLhghCayc0ZMNiYlLmEKShppXTiF5AVet1mm2WaKfZV9WsSfZUEdt3y
- KwjWx67uZ2oUZy9WmprNvn2EsO_qlU3JbYMZwvXzoXjT1oVeIsVxsr_PqIxc
- gEZ2Sv7kPgS4N2SG8_AqY1ASb3hsDDSFDvgxF6bsNASZg13oRvSKzj7sWgRD
- 6Tou1fvwxi5wMnl6kp.pgZxTFYBLJ1rUuEEYp2v5j8l9WM2cK4dNWKvQhmLO
- W36F2KentR2zEfKemCXxp8PwAXwybAtY0PIY-
-X-Rocket-MIMEInfo: 002.001,CgoKPk9uIFN1bmRheSwgRGVjZW1iZXIgMSwgMjAxMyA4OjQzIFBNLCBBbGV4IERhdmlzIDxhbGV4MTQ2NDFAeWFob28uY29tPiB3cm90ZToKPkkgaGF2ZSBhIERlbGwgSW5zcGlyb24gTjcwMTAgTGFwdG9wIHdpdGggSW50ZWwgZ3JhcGhpY3MuIFdoZW4gdGhlIGRlbGwtbGFwdG9wIG1vZHVsZSBpcyA.bG9hZGVkLAo.dHdvIGJhY2tsaWdodCBkZXZpY2UgZGV2aWNlcyBhcmUgY3JlYXRlZDsgZGVsbF9iYWNrbGlnaHQsIGFuZCBpbnRlbF9iYWNrbGlnaHQgZnJvbSB0aGUgPkludGVsCj5ncmFwaGljcyBkcml2ZXIBMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.167.602
-References: <1385948627.51494.YahooMailNeo@web160404.mail.bf1.yahoo.com>
-Message-ID: <1385991037.32894.YahooMailNeo@web160406.mail.bf1.yahoo.com>
-Date: Mon, 2 Dec 2013 05:30:37 -0800 (PST)
-From: Alex Davis <alex14641@yahoo.com>
-Reply-To: Alex Davis <alex14641@yahoo.com>
-Subject: Re: [PATCH 1/1] dell_laptop: add disable_backlight module parameter
-To: "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1385948627.51494.YahooMailNeo@web160404.mail.bf1.yahoo.com>
+	Mon, 2 Dec 2013 08:38:44 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, <arm@kernel.org>
+CC: <linux-kernel@vger.kernel.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>, <motobud@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: [GIT PULL] at91: fixes 3.13 #2
+Date: Mon, 2 Dec 2013 14:38:41 +0100
+Message-ID: <1385991521-3934-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Arnd, Olof, Kevin,
 
+A second round of fixes for 3.13 on top of 3.13-rc1. The main fix of this
+series is the one that reduces the frequency of the i2c IP and avoid to hit
+some nasty hardware bugs. It actually allows to save a little power as well...
 
+Thanks, best regards,
 
->On Sunday, December 1, 2013 8:43 PM, Alex Davis <alex14641@yahoo.com> wrote:
->I have a Dell Inspiron N7010 Laptop with Intel graphics. When the dell-laptop module is >loaded,
->two backlight device devices are created; dell_backlight, and intel_backlight from the >Intel
->graphics driver. The dell_backlight device is non-functional, but the graphics subsystem >uses
->it instead of the functioning intel_backlight device. The result is that, when running >KDE,
->screen dimming does not work. I've added a module parameter, disable_backlight, which when 
->true will disable the dell_backlight device, and leave only the intel_backlight: with >this,
->screen dimming works.
->
->Signed-off-by: Alex Davis <alex14641@yahoo.com>
+The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
 
-This patch is against 3.10.
+  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
 
+are available in the git repository at:
+
+  git://github.com/at91linux/linux-at91.git tags/at91-fixes
+
+for you to fetch changes up to 7093bf2b7195541281cb711e31c027a8d826c6df:
+
+  ARM: at91: fixed unresolved symbol "at91_pm_set_standby" when built without CONFIG_PM (2013-12-02 14:24:40 +0100)
+
+----------------------------------------------------------------
+AT91: second round of fixes for 3.13
+- reduce IP frequency for I2C on sama5d3
+- missing aliases directive for USART3 on 9x5 family
+- a PM symbol is missing if !CONFIG_PM
+
+----------------------------------------------------------------
+Brent Taylor (1):
+      ARM: at91: fixed unresolved symbol "at91_pm_set_standby" when built without CONFIG_PM
+
+Ludovic Desroches (1):
+      ARM: at91: sama5d3: reduce TWI internal clock frequency
+
+Nicolas Ferre (1):
+      ARM: at91: add usart3 alias to dtsi
+
+ arch/arm/boot/dts/at91sam9x5_usart3.dtsi | 4 ++++
+ arch/arm/mach-at91/pm.h                  | 4 ++++
+ arch/arm/mach-at91/sama5d3.c             | 6 +++---
+ 3 files changed, 11 insertions(+), 3 deletions(-)
+
+-- 
+Nicolas Ferre
