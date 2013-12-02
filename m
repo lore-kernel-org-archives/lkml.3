@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782Ab3LBUDW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:03:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39220 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754628Ab3LBTRx (ORCPT
+	id S1756787Ab3LBUDv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:03:51 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:49199 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756780Ab3LBUDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:53 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.12 103/212] mwifiex: correct packet length for packets from SDIO interface
-Date: Mon,  2 Dec 2013 11:14:54 -0800
-Message-Id: <20131202191258.831726426@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
-References: <20131202191248.517975703@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	Mon, 2 Dec 2013 15:03:23 -0500
+MIME-Version: 1.0
+From: Bryan Wu <cooloney@gmail.com>
+Date: Mon, 2 Dec 2013 12:03:01 -0800
+Message-ID: <CAK5ve-Jf=rEBaS0MDfk9DCXEeRa16ddKtF1fseW=c_8q7tm0Vg@mail.gmail.com>
+Subject: [GIT PULL] leds fixes for 3.13-rc2
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Hi Linus,
 
-------------------
+Please consider the following bug fix since commit
+dc1ccc48159d63eca5089e507c82c7d22ef60839:
 
-From: Avinash Patil <patila@marvell.com>
+  Linux 3.13-rc2 (2013-11-29 12:57:14 -0800)
 
-commit d03b4aa77e1187b77dfe37d14a923547f00baa66 upstream.
+are available in the git repository at:
 
-While receiving a packet on SDIO interface, we allocate skb with
-size multiple of SDIO block size. We need to resize this skb
-after RX using packet length from RX header.
+  git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git
+leds-fixes-for-3.13
 
-Signed-off-by: Avinash Patil <patila@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+for you to fetch changes up to aa1a6d6d74fff31060e08f6007037e6d807c8130:
 
----
- drivers/net/wireless/mwifiex/sdio.c |    3 +++
- 1 file changed, 3 insertions(+)
+  leds: pwm: Fix for deferred probe in DT booted mode (2013-12-02
+11:53:17 -0800)
 
---- a/drivers/net/wireless/mwifiex/sdio.c
-+++ b/drivers/net/wireless/mwifiex/sdio.c
-@@ -1029,7 +1029,10 @@ static int mwifiex_decode_rx_packet(stru
- 				    struct sk_buff *skb, u32 upld_typ)
- {
- 	u8 *cmd_buf;
-+	__le16 *curr_ptr = (__le16 *)skb->data;
-+	u16 pkt_len = le16_to_cpu(*curr_ptr);
- 
-+	skb_trim(skb, pkt_len);
- 	skb_pull(skb, INTF_HEADER_LEN);
- 
- 	switch (upld_typ) {
+----------------------------------------------------------------
+Peter Ujfalusi (1):
+      leds: pwm: Fix for deferred probe in DT booted mode
 
-
+ drivers/leds/leds-pwm.c | 53 ++++++++++++++++++++++++-------------------------
+ 1 file changed, 26 insertions(+), 27 deletions(-)
