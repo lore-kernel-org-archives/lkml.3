@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab3LBLYS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 06:24:18 -0500
-Received: from relay.parallels.com ([195.214.232.42]:47398 "EHLO
+	id S1753588Ab3LBLZg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 06:25:36 -0500
+Received: from relay.parallels.com ([195.214.232.42]:47370 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753505Ab3LBLT6 (ORCPT
+	with ESMTP id S1753438Ab3LBLT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 06:19:58 -0500
+	Mon, 2 Dec 2013 06:19:56 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <dchinner@redhat.com>,
         <akpm@linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
-        <vdavydov@parallels.com>, Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v12 04/18] memcg: move several kmemcg functions upper
-Date: Mon, 2 Dec 2013 15:19:39 +0400
-Message-ID: <55258317799fe5c825f5fa783a4e582b1b6f0f00.1385974612.git.vdavydov@parallels.com>
+        <vdavydov@parallels.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH v12 05/18] fs: do not use destroy_super() in alloc_super() fail path
+Date: Mon, 2 Dec 2013 15:19:40 +0400
+Message-ID: <af90b79aebe9cd9f6e1d35513f2618f4e9888e9b.1385974612.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1385974612.git.vdavydov@parallels.com>
 References: <cover.1385974612.git.vdavydov@parallels.com>
@@ -27,138 +26,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I need to move memcg_{stop,resume}_kmem_account() and
-memcg_caches_array_size() upper since I am going to use them in
-per-memcg lrus implementation introduced by the following patches.
-These functions are very simple and do not depend on other kmemcg
-bits so it is better to keep them on top anyway.
+Using destroy_super() in alloc_super() fail path is bad, because:
+
+* It will trigger WARN_ON(!list_empty(&s->s_mounts)) since s_mounts is
+  initialized after several 'goto fail's.
+* It will call kfree_rcu() to free the super block although kfree() is
+  obviously enough there.
+* The list_lru structure was initially implemented without the ability
+  to destroy an uninitialized object in mind.
+
+I'm going to replace the conventional list_lru with per-memcg lru to
+implement per-memcg slab reclaim. This new structure will fail
+destruction of objects that haven't been properly initialized so let's
+inline appropriate snippets from destroy_super() to alloc_super() fail
+path instead of using the whole function there.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 ---
- mm/memcontrol.c |   92 +++++++++++++++++++++++++++----------------------------
- 1 file changed, 46 insertions(+), 46 deletions(-)
+ fs/super.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 3a4e2f8..3a92ab3 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2983,6 +2983,52 @@ static int memcg_cache_idx(struct mem_cgroup *memcg)
- 	return ret;
+diff --git a/fs/super.c b/fs/super.c
+index e5f6c2c..cece164 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -185,8 +185,10 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
+ 
+ 	if (list_lru_init(&s->s_dentry_lru))
+ 		goto fail;
+-	if (list_lru_init(&s->s_inode_lru))
++	if (list_lru_init(&s->s_inode_lru)) {
++		list_lru_destroy(&s->s_dentry_lru);
+ 		goto fail;
++	}
+ 
+ 	INIT_LIST_HEAD(&s->s_mounts);
+ 	init_rwsem(&s->s_umount);
+@@ -227,7 +229,10 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
+ 	return s;
+ 
+ fail:
+-	destroy_super(s);
++	for (i = 0; i < SB_FREEZE_LEVELS; i++)
++		percpu_counter_destroy(&s->s_writers.counter[i]);
++	security_sb_free(s);
++	kfree(s);
+ 	return NULL;
  }
  
-+static size_t memcg_caches_array_size(int num_groups)
-+{
-+	ssize_t size;
-+	if (num_groups <= 0)
-+		return 0;
-+
-+	size = 2 * num_groups;
-+	if (size < MEMCG_CACHES_MIN_SIZE)
-+		size = MEMCG_CACHES_MIN_SIZE;
-+	else if (size > MEMCG_CACHES_MAX_SIZE)
-+		size = MEMCG_CACHES_MAX_SIZE;
-+
-+	return size;
-+}
-+
-+/*
-+ * During the creation a new cache, we need to disable our accounting mechanism
-+ * altogether. This is true even if we are not creating, but rather just
-+ * enqueing new caches to be created.
-+ *
-+ * This is because that process will trigger allocations; some visible, like
-+ * explicit kmallocs to auxiliary data structures, name strings and internal
-+ * cache structures; some well concealed, like INIT_WORK() that can allocate
-+ * objects during debug.
-+ *
-+ * If any allocation happens during memcg_kmem_get_cache, we will recurse back
-+ * to it. This may not be a bounded recursion: since the first cache creation
-+ * failed to complete (waiting on the allocation), we'll just try to create the
-+ * cache again, failing at the same point.
-+ *
-+ * memcg_kmem_get_cache is prepared to abort after seeing a positive count of
-+ * memcg_kmem_skip_account. So we enclose anything that might allocate memory
-+ * inside the following two functions.
-+ */
-+static inline void memcg_stop_kmem_account(void)
-+{
-+	VM_BUG_ON(!current->mm);
-+	current->memcg_kmem_skip_account++;
-+}
-+
-+static inline void memcg_resume_kmem_account(void)
-+{
-+	VM_BUG_ON(!current->mm);
-+	current->memcg_kmem_skip_account--;
-+}
-+
- /*
-  * This is a bit cumbersome, but it is rarely used and avoids a backpointer
-  * in the memcg_cache_params struct.
-@@ -3125,21 +3171,6 @@ int memcg_update_cache_sizes(struct mem_cgroup *memcg)
- 	return 0;
- }
- 
--static size_t memcg_caches_array_size(int num_groups)
--{
--	ssize_t size;
--	if (num_groups <= 0)
--		return 0;
--
--	size = 2 * num_groups;
--	if (size < MEMCG_CACHES_MIN_SIZE)
--		size = MEMCG_CACHES_MIN_SIZE;
--	else if (size > MEMCG_CACHES_MAX_SIZE)
--		size = MEMCG_CACHES_MAX_SIZE;
--
--	return size;
--}
--
- /*
-  * We should update the current array size iff all caches updates succeed. This
-  * can only be done from the slab side. The slab mutex needs to be held when
-@@ -3264,37 +3295,6 @@ out:
- 	kfree(s->memcg_params);
- }
- 
--/*
-- * During the creation a new cache, we need to disable our accounting mechanism
-- * altogether. This is true even if we are not creating, but rather just
-- * enqueing new caches to be created.
-- *
-- * This is because that process will trigger allocations; some visible, like
-- * explicit kmallocs to auxiliary data structures, name strings and internal
-- * cache structures; some well concealed, like INIT_WORK() that can allocate
-- * objects during debug.
-- *
-- * If any allocation happens during memcg_kmem_get_cache, we will recurse back
-- * to it. This may not be a bounded recursion: since the first cache creation
-- * failed to complete (waiting on the allocation), we'll just try to create the
-- * cache again, failing at the same point.
-- *
-- * memcg_kmem_get_cache is prepared to abort after seeing a positive count of
-- * memcg_kmem_skip_account. So we enclose anything that might allocate memory
-- * inside the following two functions.
-- */
--static inline void memcg_stop_kmem_account(void)
--{
--	VM_BUG_ON(!current->mm);
--	current->memcg_kmem_skip_account++;
--}
--
--static inline void memcg_resume_kmem_account(void)
--{
--	VM_BUG_ON(!current->mm);
--	current->memcg_kmem_skip_account--;
--}
--
- static void kmem_cache_destroy_work_func(struct work_struct *w)
- {
- 	struct kmem_cache *cachep;
 -- 
 1.7.10.4
 
