@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932346Ab3LBVHB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:07:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38468 "EHLO
+	id S1759103Ab3LBVG5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:06:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38539 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754003Ab3LBTNQ (ORCPT
+	with ESMTP id S1752762Ab3LBTNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:16 -0500
+	Mon, 2 Dec 2013 14:13:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.10 051/173] IB/ipath: Convert ipath_user_sdma_pin_pages() to use get_user_pages_fast()
-Date: Mon,  2 Dec 2013 11:10:34 -0800
-Message-Id: <20131202191148.528928265@linuxfoundation.org>
+        Eric Seppanen <eric@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 049/173] iscsi-target: fix extract_param to handle buffer length corner case
+Date: Mon,  2 Dec 2013 11:10:32 -0800
+Message-Id: <20131202191148.281637207@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,58 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Eric Seppanen <eric@purestorage.com>
 
-commit 4adcf7fb6783e354aab38824d803fa8c4f8e8a27 upstream.
+commit 369653e4fb511928511b0ce81f41c812ff1f28b6 upstream.
 
-ipath_user_sdma_queue_pkts() gets called with mmap_sem held for
-writing.  Except for get_user_pages() deep down in
-ipath_user_sdma_pin_pages() we don't seem to need mmap_sem at all.
+extract_param() is called with max_length set to the total size of the
+output buffer.  It's not safe to allow a parameter length equal to the
+buffer size as the terminating null would be written one byte past the
+end of the output buffer.
 
-Even more interestingly the function ipath_user_sdma_queue_pkts() (and
-also ipath_user_sdma_coalesce() called somewhat later) call
-copy_from_user() which can hit a page fault and we deadlock on trying
-to get mmap_sem when handling that fault.  So just make
-ipath_user_sdma_pin_pages() use get_user_pages_fast() and leave
-mmap_sem locking for mm.
-
-This deadlock has actually been observed in the wild when the node
-is under memory pressure.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-[ Merged in fix for call to get_user_pages_fast from Tetsuo Handa
-  <penguin-kernel@I-love.SAKURA.ne.jp>.  - Roland ]
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Eric Seppanen <eric@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/ipath/ipath_user_sdma.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ drivers/target/iscsi/iscsi_target_nego.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/infiniband/hw/ipath/ipath_user_sdma.c
-+++ b/drivers/infiniband/hw/ipath/ipath_user_sdma.c
-@@ -280,9 +280,7 @@ static int ipath_user_sdma_pin_pages(con
- 	int j;
- 	int ret;
+--- a/drivers/target/iscsi/iscsi_target_nego.c
++++ b/drivers/target/iscsi/iscsi_target_nego.c
+@@ -90,7 +90,7 @@ int extract_param(
+ 	if (len < 0)
+ 		return -1;
  
--	ret = get_user_pages(current, current->mm, addr,
--			     npages, 0, 1, pages, NULL);
--
-+	ret = get_user_pages_fast(addr, npages, 0, pages);
- 	if (ret != npages) {
- 		int i;
- 
-@@ -811,10 +809,7 @@ int ipath_user_sdma_writev(struct ipath_
- 	while (dim) {
- 		const int mxp = 8;
- 
--		down_write(&current->mm->mmap_sem);
- 		ret = ipath_user_sdma_queue_pkts(dd, pq, &list, iov, dim, mxp);
--		up_write(&current->mm->mmap_sem);
--
- 		if (ret <= 0)
- 			goto done_unlock;
- 		else {
+-	if (len > max_length) {
++	if (len >= max_length) {
+ 		pr_err("Length of input: %d exceeds max_length:"
+ 			" %d\n", len, max_length);
+ 		return -1;
 
 
