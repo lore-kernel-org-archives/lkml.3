@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab3LBUfZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:35:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38908 "EHLO
+	id S1754382Ab3LBTO0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:14:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38798 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754391Ab3LBTO2 (ORCPT
+	with ESMTP id S1754301Ab3LBTOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:14:28 -0500
+	Mon, 2 Dec 2013 14:14:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH 3.10 152/173] media: stv090x: Dont use dynamic static allocation
-Date: Mon,  2 Dec 2013 11:12:15 -0800
-Message-Id: <20131202191200.789340389@linuxfoundation.org>
+        Elias Vanderstuyft <elias.vds@gmail.com>,
+        Simon Wood <simon@mungewell.org>, Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.10 133/173] HID:hid-lg4ff: Switch autocentering off when strength is set to zero.
+Date: Mon,  2 Dec 2013 11:11:56 -0800
+Message-Id: <20131202191158.687866018@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -27,60 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+From: Simon Wood <simon@mungewell.org>
 
-commit f7a35df15b1f7de7823946aebc9164854e66ea07 upstream.
+commit d2c02da549b468bbb28e67d269bd3c9e10683ff5 upstream.
 
-Dynamic static allocation is evil, as Kernel stack is too low, and
-compilation complains about it on some archs:
-       drivers/media/dvb-frontends/stv090x.c:750:1: warning: 'stv090x_write_regs.constprop.6' uses dynamic stack allocation [enabled by default]
-Instead, let's enforce a limit for the buffer. Considering that I2C
-transfers are generally limited, and that devices used on USB has a
-max data length of 64 bytes for	the control URBs.
-So, it seem safe to use 64 bytes as the hard limit for all those devices.
- On most cases, the limit is a way lower than that, but	this limit
-is small enough to not affect the Kernel stack, and it is a no brain
-limit, as using smaller ones would require to either carefully each
-driver or to take a look on each datasheet.
+When the autocenter is set to zero, this patch issues a command to
+totally disable the autocenter - this results in less resistance
+in the wheel.
 
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reported-by: Elias Vanderstuyft <elias.vds@gmail.com>
+Signed-off-by: Simon Wood <simon@mungewell.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-frontends/stv090x.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/hid/hid-lg4ff.c |   25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
---- a/drivers/media/dvb-frontends/stv090x.c
-+++ b/drivers/media/dvb-frontends/stv090x.c
-@@ -35,6 +35,9 @@
- #include "stv090x.h"
- #include "stv090x_priv.h"
+--- a/drivers/hid/hid-lg4ff.c
++++ b/drivers/hid/hid-lg4ff.c
+@@ -220,6 +220,20 @@ static void hid_lg4ff_set_autocenter_def
+ 	__s32 *value = report->field[0]->value;
+ 	__u32 expand_a, expand_b;
  
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
++	/* De-activate Auto-Center */
++	if (magnitude == 0) {
++		value[0] = 0xf5;
++		value[1] = 0x00;
++		value[2] = 0x00;
++		value[3] = 0x00;
++		value[4] = 0x00;
++		value[5] = 0x00;
++		value[6] = 0x00;
 +
- static unsigned int verbose;
- module_param(verbose, int, 0644);
- 
-@@ -722,9 +725,16 @@ static int stv090x_write_regs(struct stv
- {
- 	const struct stv090x_config *config = state->config;
- 	int ret;
--	u8 buf[2 + count];
-+	u8 buf[MAX_XFER_SIZE];
- 	struct i2c_msg i2c_msg = { .addr = config->address, .flags = 0, .buf = buf, .len = 2 + count };
- 
-+	if (2 + count > sizeof(buf)) {
-+		printk(KERN_WARNING
-+		       "%s: i2c wr reg=%04x: len=%d is too big!\n",
-+		       KBUILD_MODNAME, reg, count);
-+		return -EINVAL;
++		hid_hw_request(hid, report, HID_REQ_SET_REPORT);
++		return;
 +	}
 +
- 	buf[0] = reg >> 8;
- 	buf[1] = reg & 0xff;
- 	memcpy(&buf[2], data, count);
+ 	if (magnitude <= 0xaaaa) {
+ 		expand_a = 0x0c * magnitude;
+ 		expand_b = 0x80 * magnitude;
+@@ -236,6 +250,17 @@ static void hid_lg4ff_set_autocenter_def
+ 	value[5] = 0x00;
+ 	value[6] = 0x00;
+ 
++	hid_hw_request(hid, report, HID_REQ_SET_REPORT);
++
++	/* Activate Auto-Center */
++	value[0] = 0x14;
++	value[1] = 0x00;
++	value[2] = 0x00;
++	value[3] = 0x00;
++	value[4] = 0x00;
++	value[5] = 0x00;
++	value[6] = 0x00;
++
+ 	hid_hw_request(hid, report, HID_REQ_SET_REPORT);
+ }
+ 
 
 
