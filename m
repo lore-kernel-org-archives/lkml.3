@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760129Ab3LBVcg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:32:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38180 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753072Ab3LBTGz (ORCPT
+	id S1760139Ab3LBVcw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:32:52 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:49446 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752192Ab3LBVcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:06:55 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ilija Hadzic <ihadzic@research.bell-labs.com>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 09/60] devpts: plug the memory leak in kill_sb
-Date: Mon,  2 Dec 2013 11:05:50 -0800
-Message-Id: <20131202190332.218746775@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
-References: <20131202190330.152596462@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	Mon, 2 Dec 2013 16:32:47 -0500
+Date: Mon, 2 Dec 2013 15:32:43 -0600
+From: rkuo <rkuo@codeaurora.org>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Bart Van Assche <bvanassche@acm.org>, Bottomley@parallels.com,
+        linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers: scsi: scsi_lib.c: add prefix "SCSILIB_" to
+ macro "SP"
+Message-ID: <20131202213243.GA20646@codeaurora.org>
+References: <528AEFB7.4060301@gmail.com>
+ <20131125011938.GB18921@codeaurora.org>
+ <5292B845.3010404@gmail.com>
+ <5292B8A0.7020409@gmail.com>
+ <5294255E.7040105@gmail.com>
+ <52955913.3060809@gmail.com>
+ <529B60FF.7030601@acm.org>
+ <529BD584.7060504@gmail.com>
+ <1385945387.20150.2.camel@dabdike.int.hansenpartnership.com>
+ <529C5D89.8050809@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <529C5D89.8050809@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Dec 02, 2013 at 06:14:33PM +0800, Chen Gang wrote:
+> If one issue occurs, normally, both sides need improvement.
+> 
+> For our issue:
+> 
+>  - need try to keep uapi no touch ("arch/hexagon/uapi/asm/registers.h").
+> 
+>  - improving our module is much easier than improving hexagon.
+> 
+>  - for 'SP', it is really short enough to like a register name.
+>    SG_POOL seems more suitable for our 'sgpool' related operations.
+> 
+> 
+> It will be better to improve hexagon too, but it is not quit easy (maybe
+> have to bear it), it is uapi :-(
 
-------------------
-
-From: Ilija Hadzic <ihadzic@research.bell-labs.com>
-
-commit 66da0e1f9034140ae2f571ef96e254a25083906c upstream.
-
-When devpts is unmounted, there may be a no-longer-used IDR tree hanging
-off the superblock we are about to kill.  This needs to be cleaned up
-before destroying the SB.
-
-The leak is usually not a big deal because unmounting devpts is typically
-done when shutting down the whole machine.  However, shutting down an LXC
-container instead of a physical machine exposes the problem (the garbage
-is detectable with kmemleak).
-
-Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/devpts/inode.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/fs/devpts/inode.c
-+++ b/fs/devpts/inode.c
-@@ -475,6 +475,7 @@ static void devpts_kill_sb(struct super_
- {
- 	struct pts_fs_info *fsi = DEVPTS_SB(sb);
- 
-+	ida_destroy(&fsi->allocated_ptys);
- 	kfree(fsi);
- 	kill_litter_super(sb);
- }
+I can't speak for SCSI, but that define in Hexagon isn't really used outside
+of that file anyways (the two SP macros themselves).  I'm also pretty sure
+the userspace isn't currently using it anyways.  Seeing as it's not really
+buying us anything, I'm fine with just removing it and continuing to review
+the other defines.  I'll make that change and test it locally.
 
 
+Thanks,
+Richard Kuo
+
+
+-- 
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
