@@ -1,93 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab3LBWoj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 17:44:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41343 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752751Ab3LBWog (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 17:44:36 -0500
-Date: Mon, 2 Dec 2013 14:44:34 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH 1/9] mm/rmap: recompute pgoff for huge page
-Message-Id: <20131202144434.2afc2b5bb69f2b4b45608e4e@linux-foundation.org>
-In-Reply-To: <1385624926-28883-2-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1385624926-28883-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<1385624926-28883-2-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753323Ab3LBWrb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 17:47:31 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:43914 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751781Ab3LBWr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 17:47:29 -0500
+Date: Mon, 2 Dec 2013 17:46:50 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Metin Doslu <metin@citusdata.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ozgun Erdogan <ozgun@citusdata.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 9/9] mm: keep page cache radix tree nodes in check
+Message-ID: <20131202224650.GQ3556@cmpxchg.org>
+References: <1386012108-21006-1-git-send-email-hannes@cmpxchg.org>
+ <1386012108-21006-10-git-send-email-hannes@cmpxchg.org>
+ <20131202221052.GT8803@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131202221052.GT8803@dastard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Nov 2013 16:48:38 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-
-> We have to recompute pgoff if the given page is huge, since result based
-> on HPAGE_SIZE is not approapriate for scanning the vma interval tree, as
-> shown by commit 36e4f20af833 ("hugetlb: do not use vma_hugecache_offset()
-> for vma_prio_tree_foreach") and commit 369a713e ("rmap: recompute pgoff
-> for unmapping huge page").
+On Tue, Dec 03, 2013 at 09:10:52AM +1100, Dave Chinner wrote:
+> On Mon, Dec 02, 2013 at 02:21:48PM -0500, Johannes Weiner wrote:
+> > Previously, page cache radix tree nodes were freed after reclaim
+> > emptied out their page pointers.  But now reclaim stores shadow
+> > entries in their place, which are only reclaimed when the inodes
+> > themselves are reclaimed.  This is problematic for bigger files that
+> > are still in use after they have a significant amount of their cache
+> > reclaimed, without any of those pages actually refaulting.  The shadow
+> > entries will just sit there and waste memory.  In the worst case, the
+> > shadow entries will accumulate until the machine runs out of memory.
+> > 
+> > To get this under control, the VM will track radix tree nodes
+> > exclusively containing shadow entries on a per-NUMA node list.
+> > Per-NUMA rather than global because we expect the radix tree nodes
+> > themselves to be allocated node-locally and we want to reduce
+> > cross-node references of otherwise independent cache workloads.  A
+> > simple shrinker will then reclaim these nodes on memory pressure.
+> > 
+> > A few things need to be stored in the radix tree node to implement the
+> > shadow node LRU and allow tree deletions coming from the list:
+> > 
+> > 1. There is no index available that would describe the reverse path
+> >    from the node up to the tree root, which is needed to perform a
+> >    deletion.  To solve this, encode in each node its offset inside the
+> >    parent.  This can be stored in the unused upper bits of the same
+> >    member that stores the node's height at no extra space cost.
+> > 
+> > 2. The number of shadow entries needs to be counted in addition to the
+> >    regular entries, to quickly detect when the node is ready to go to
+> >    the shadow node LRU list.  The current entry count is an unsigned
+> >    int but the maximum number of entries is 64, so a shadow counter
+> >    can easily be stored in the unused upper bits.
+> > 
+> > 3. Tree modification needs tree lock and tree root, which are located
+> >    in the address space, so store an address_space backpointer in the
+> >    node.  The parent pointer of the node is in a union with the 2-word
+> >    rcu_head, so the backpointer comes at no extra cost as well.
+> > 
+> > 4. The node needs to be linked to an LRU list, which requires a list
+> >    head inside the node.  This does increase the size of the node, but
+> >    it does not change the number of objects that fit into a slab page.
+> > 
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 > 
-> ...
->
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -1714,6 +1714,10 @@ static int rmap_walk_file(struct page *page, int (*rmap_one)(struct page *,
->  
->  	if (!mapping)
->  		return ret;
-> +
-> +	if (PageHuge(page))
-> +		pgoff = page->index << compound_order(page);
-> +
->  	mutex_lock(&mapping->i_mmap_mutex);
->  	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
->  		unsigned long address = vma_address(page, vma);
+> Mostly looks ok, though there is no need to expose the internals of
+> list_lru_add/del. The reason for the different return values was so
+> that the isolate callback could simply use list_del_init() and not
+> have to worry about all the internal accounting stuff. We can drop
+> the lock and then do the accounting after regaining it because it
+> won't result in the count of objects going negative and triggering
+> warnings.
+> 
+> Hence I think that all we need to do is add a new isolate return
+> value "LRU_REMOVED_RETRY" and add it to list_lru_walk_node() like
+> so:
+> 
+>  		switch (ret) {
+> +		case LRU_REMOVED_RETRY:
+> +			/*
+> +			 * object was removed from the list so we need to
+> +			 * account for it just like LRU_REMOVED hence the
+> +			 * fallthrough.  However, the list lock was also
+> +			 * dropped so we need to restart the list walk.
+> +			 */
+>  		case LRU_REMOVED:
+>  			if (--nlru->nr_items == 0)
+>  				node_clear(nid, lru->active_nodes);
+>  			WARN_ON_ONCE(nlru->nr_items < 0);
+>  			isolated++;
+> +			if (ret == LRU_REMOVED_RETRY)
+> +				goto restart;
+>  			break;
 
-a)  Can't we just do this?
+Ha, that is actually exactly what I did when I first implemented it
+but decided to change it towards giving the walker callback a bit more
+flexibility rather than hardcoding a certain behavior like this (they
+might want to put it back if the item can't be shrunk, would that mean
+LRU_ROTATE_RETRY?).  That and I wasn't too thrilled with taking the
+item off the list without accounting for it before dropping the lock;
+just didn't seem right.
 
---- a/mm/rmap.c~mm-rmap-recompute-pgoff-for-huge-page-fix
-+++ a/mm/rmap.c
-@@ -1708,16 +1708,13 @@ static int rmap_walk_file(struct page *p
- 		struct vm_area_struct *, unsigned long, void *), void *arg)
- {
- 	struct address_space *mapping = page->mapping;
--	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
-+	pgoff_t pgoff = page->index << compound_order(page);
- 	struct vm_area_struct *vma;
- 	int ret = SWAP_AGAIN;
- 
- 	if (!mapping)
- 		return ret;
- 
--	if (PageHuge(page))
--		pgoff = page->index << compound_order(page);
--
- 	mutex_lock(&mapping->i_mmap_mutex);
- 	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
- 		unsigned long address = vma_address(page, vma);
+But I don't feel strongly about it and we might not want to make the
+interface more flexible than we have to at this point.  I'll change
+this in the next revision or send a delta to akpm, depending on how
+things go from here.
 
-compound_order() does the right thing for all styles of page, yes?
+> > +static unsigned long scan_shadow_nodes(struct shrinker *shrinker,
+> > +				       struct shrink_control *sc)
+> > +{
+> > +	unsigned long nr_reclaimed = 0;
+> > +
+> > +	list_lru_walk_node(&workingset_shadow_nodes, sc->nid,
+> > +			   shadow_lru_isolate, &nr_reclaimed, &sc->nr_to_scan);
+> > +
+> > +	return nr_reclaimed;
+> > +}
+> 
+> Do we need check against GFP_NOFS here? I don't think so, but I just
+> wanted to check...
 
-b) If that PageHuge() test you added the correct thing to use?
-
-/*
- * PageHuge() only returns true for hugetlbfs pages, but not for normal or
- * transparent huge pages.  See the PageTransHuge() documentation for more
- * details.
- */
-
-   Obviously we won't be encountering transparent huge pages here,
-   but what's the best future-safe approach?
-
-
-I hate that PageHuge() oddity with a passion!  Maybe it would be better
-if it was called PageHugetlbfs.
+No, that should be okay.  We do the same radix tree modifications that
+GFP_NOFS reclaim does and don't call into the filesystem.
