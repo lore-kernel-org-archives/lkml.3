@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756744Ab3LBUDL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:03:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39171 "EHLO
+	id S1756780Ab3LBUFK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:05:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39204 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753423Ab3LBTRz (ORCPT
+	with ESMTP id S1753593Ab3LBTRt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:55 -0500
+	Mon, 2 Dec 2013 14:17:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.12 094/212] target: Fix delayed Task Aborted Status (TAS) handling bug
-Date: Mon,  2 Dec 2013 11:14:45 -0800
-Message-Id: <20131202191257.986652043@linuxfoundation.org>
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.12 087/212] dm array: fix bug in growing array
+Date: Mon,  2 Dec 2013 11:14:38 -0800
+Message-Id: <20131202191257.342833495@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,45 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Joe Thornber <ejt@redhat.com>
 
-commit 29f4c090079f442ea2723d292e4e64f0b6ac1f27 upstream.
+commit 9c1d4de56066e4d6abc66ec188faafd7b303fb08 upstream.
 
-This patch fixes a bug in delayed Task Aborted Status (TAS) handling,
-where transport_send_task_abort() was not returning for the case
-when the se_tfo->write_pending() callback indicated that last fabric
-specific WRITE PDU had not yet been received.
+Entries would be lost if the old tail block was partially filled.
 
-It also adds an explicit cmd->scsi_status = SAM_STAT_TASK_ABORTED
-assignment within transport_check_aborted_status() to avoid the case
-where se_tfo->queue_status() is called when the SAM_STAT_TASK_ABORTED
-assignment + ->queue_status() in transport_send_task_abort() does not
-occur once SCF_SENT_DELAYED_TAS has been set.
-
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_transport.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/md/persistent-data/dm-array.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -2910,6 +2910,7 @@ int transport_check_aborted_status(struc
- 		 cmd->t_task_cdb[0], cmd->se_tfo->get_task_tag(cmd));
+--- a/drivers/md/persistent-data/dm-array.c
++++ b/drivers/md/persistent-data/dm-array.c
+@@ -509,15 +509,18 @@ static int grow_add_tail_block(struct re
+ static int grow_needs_more_blocks(struct resize *resize)
+ {
+ 	int r;
++	unsigned old_nr_blocks = resize->old_nr_full_blocks;
  
- 	cmd->se_cmd_flags |= SCF_SENT_DELAYED_TAS;
-+	cmd->scsi_status = SAM_STAT_TASK_ABORTED;
- 	trace_target_cmd_complete(cmd);
- 	cmd->se_tfo->queue_status(cmd);
- 
-@@ -2938,6 +2939,7 @@ void transport_send_task_abort(struct se
- 		if (cmd->se_tfo->write_pending_status(cmd) != 0) {
- 			cmd->transport_state |= CMD_T_ABORTED;
- 			smp_mb__after_atomic_inc();
-+			return;
- 		}
+ 	if (resize->old_nr_entries_in_last_block > 0) {
++		old_nr_blocks++;
++
+ 		r = grow_extend_tail_block(resize, resize->max_entries);
+ 		if (r)
+ 			return r;
  	}
- 	cmd->scsi_status = SAM_STAT_TASK_ABORTED;
+ 
+ 	r = insert_full_ablocks(resize->info, resize->size_of_block,
+-				resize->old_nr_full_blocks,
++				old_nr_blocks,
+ 				resize->new_nr_full_blocks,
+ 				resize->max_entries, resize->value,
+ 				&resize->root);
 
 
