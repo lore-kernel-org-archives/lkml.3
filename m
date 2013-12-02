@@ -1,101 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518Ab3LBXCR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 18:02:17 -0500
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:40077 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837Ab3LBXCM (ORCPT
+	id S1752850Ab3LBXD1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 18:03:27 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:9962 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043Ab3LBXDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 18:02:12 -0500
-Date: Mon, 2 Dec 2013 15:02:09 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Hocko <mhocko@suse.cz>
-cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcg: do not declare OOM from __GFP_NOFAIL
- allocations
-In-Reply-To: <20131202132201.GC18838@dhcp22.suse.cz>
-Message-ID: <alpine.DEB.2.02.1312021452510.13465@chino.kir.corp.google.com>
-References: <1385140676-5677-1-git-send-email-hannes@cmpxchg.org> <alpine.DEB.2.02.1311261658170.21003@chino.kir.corp.google.com> <alpine.DEB.2.02.1311261931210.5973@chino.kir.corp.google.com> <20131127163916.GB3556@cmpxchg.org>
- <alpine.DEB.2.02.1311271336220.9222@chino.kir.corp.google.com> <20131127225340.GE3556@cmpxchg.org> <alpine.DEB.2.02.1311271526080.22848@chino.kir.corp.google.com> <20131128102049.GF2761@dhcp22.suse.cz> <alpine.DEB.2.02.1311291543400.22413@chino.kir.corp.google.com>
- <20131202132201.GC18838@dhcp22.suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 2 Dec 2013 18:03:24 -0500
+X-AuditID: cbfee68e-b7f7e6d00000477d-e0-529d11bb22e9
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Dave Airlie'" <airlied@redhat.com>
+References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
+In-reply-to: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
+Subject: [PATCH 04/39] char: amd64-agp: remove DEFINE_PCI_DEVICE_TABLE macro
+Date: Tue, 03 Dec 2013 08:03:23 +0900
+Message-id: <001901ceefb2$b35a2690$1a0e73b0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7vsUc6neA2wWIVTNSB4ceFa5FjuwAATB/g
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsVy+t8zY93dgnODDN6e0bC4emsBk0Xz4vVs
+	FpcXXmK1uLxrDpsDi8f+uWvYPd7vu8rm0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBmPX+1k
+	LrjDWjF3zyLWBsZXLF2MnBwSAiYS7SsPMUHYYhIX7q1n62Lk4hASWMYo0fb+GCNM0f7ly5gh
+	EtMZJW6v2wFV9YtR4v+ea2wgVWwCahJfvhxmB7FFBEwlNr6fAtbNLJAlcb3/MlhcSMBWYvqL
+	zUDrODg4Bewk+j7VgoSFBXwkfu+YCVbOIqAqcXv6fjCbF6j8zeI3TBC2oMSPyfdYIEZqSazf
+	eZwJwpaX2LzmLTPISAkBdYlHf3UhLjCSmHJoD1SJiMS+F+8YQU6WEDjHLvHj7yt2iF0CEt8m
+	H2KB6JWV2HSAGeJfSYmDK26wTGCUmIVk8ywkm2ch2TwLyYoFjCyrGEVTC5ILipPSi4z0ihNz
+	i0vz0vWS83M3MUKism8H480D1ocYk4HWT2SWEk3OB0Z1Xkm8obGZkYWpiamxkbmlGWnCSuK8
+	ix4mBQkJpCeWpGanphakFsUXleakFh9iZOLglGpgLN/w2zB82e35M42eR2wI+/hh5crlk6oS
+	Nkbtq532aEv+Ak6JI+sTko7t3f1sdv/aP5GhZgG+vm/MX1h9L12/dEt9k3bhLJ7AO3OXLb69
+	2a9o5QXWif19SfbnZGulZp25sZVDWqOzPLViWzHvkjqri1+tza4vOe7xZVXHlpoZmQ+3Vj5N
+	+fjK6pkSS3FGoqEWc1FxIgB8Gk7U4AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t9jQd3dgnODDE79ULG4emsBk0Xz4vVs
+	FpcXXmK1uLxrDpsDi8f+uWvYPd7vu8rm0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
+	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
+	WsA0Ruj6hgTB9RgZoIGEdYwZj1/tZC64w1oxd88i1gbGVyxdjJwcEgImEvuXL2OGsMUkLtxb
+	z9bFyMUhJDCdUeL2uh1Qzi9Gif97rrGBVLEJqEl8+XKYHcQWETCV2Ph+CiOIzSyQJXG9/zJY
+	XEjAVmL6i81MXYwcHJwCdhJ9n2pBwsICPhK/d8wEK2cRUJW4PX0/mM0LVP5m8RsmCFtQ4sfk
+	eywQI7Uk1u88zgRhy0tsXvOWGWSkhIC6xKO/uhAXGElMObQHqkREYt+Ld4wTGIVmIZk0C8mk
+	WUgmzULSsoCRZRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcMw/k9rBuLLB4hCjAAejEg/v
+	g+1zgoRYE8uKK3MPMUpwMCuJ8HbyzA0S4k1JrKxKLcqPLyrNSS0+xJgM9OhEZinR5HxgOsor
+	iTc0NjEzsjQyszAyMTcnTVhJnPdAq3WgkEB6YklqdmpqQWoRzBYmDk6pBkZrLb6vaz0ffe83
+	DO+f18d77M+EplPJ2S+uK1kK7HvXeY5tevKkPfeDdrSYztL9zb57zZGsrx4bu57dWHihas/T
+	+XMmzuEzefbL8N71J/sy9y3yO/x8Ps+h2th7ZccvG25d7cW97cildMOjqorOi43VZp/m0wlc
+	FbN58sqLVkfWRogu45iz8HJRvxJLcUaioRZzUXEiAIFL6+I9AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Dec 2013, Michal Hocko wrote:
+Don't use DEFINE_PCI_DEVICE_TABLE macro, because this macro
+is not preferred.
 
-> > > What if the callers simply cannot deal with the allocation failure?
-> > > 84235de394d97 (fs: buffer: move allocation failure loop into the
-> > > allocator) describes one such case when __getblk_slow tries desperately
-> > > to grow buffers relying on the reclaim to free something. As there might
-> > > be no reclaim going on we are screwed.
-> > > 
-> > 
-> > My suggestion is to spin, not return NULL. 
-> 
-> Spin on which level? The whole point of this change was to not spin for
-> ever because the caller might sit on top of other locks which might
-> prevent somebody else to die although it has been killed.
-> 
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/char/agp/amd64-agp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-See my question about the non-memcg page allocator behavior below.
+diff --git a/drivers/char/agp/amd64-agp.c b/drivers/char/agp/amd64-agp.c
+index d79d692..896413b 100644
+--- a/drivers/char/agp/amd64-agp.c
++++ b/drivers/char/agp/amd64-agp.c
+@@ -735,7 +735,7 @@ static struct pci_device_id agp_amd64_pci_table[] = {
+ 
+ MODULE_DEVICE_TABLE(pci, agp_amd64_pci_table);
+ 
+-static DEFINE_PCI_DEVICE_TABLE(agp_amd64_pci_promisc_table) = {
++static const struct pci_device_id agp_amd64_pci_promisc_table[] = {
+ 	{ PCI_DEVICE_CLASS(0, 0) },
+ 	{ }
+ };
+-- 
+1.7.10.4
 
-> > Bypassing to the root memcg 
-> > can lead to a system oom condition whereas if memcg weren't involved at 
-> > all the page allocator would just spin (because of !__GFP_FS).
-> 
-> I am confused now. The page allocation has already happened at the time
-> we are doing the charge. So the global OOM would have happened already.
-> 
 
-That's precisely the point, the successful charges can allow additional 
-page allocations to occur and cause system oom conditions if you don't 
-have memcg isolation.  Some customers, including us, use memcg to ensure 
-that a set of processes cannot use more resources than allowed.  Any 
-bypass opens up the possibility of additional memory allocations that 
-cause the system to be oom and then we end up requiring a userspace oom 
-handler because our policy is complex enough that it cannot be effected 
-simply by /proc/pid/oom_score_adj.
-
-I'm not quite sure how significant of a point this is, though, because it 
-depends on the caller doing the __GFP_NOFAIL allocations that allow the 
-bypass.  If you're doing
-
-	for (i = 0; i < 1 << 20; i++)
-		page[i] = alloc_page(GFP_NOFS | __GFP_NOFAIL);
-
-it can become significant, but I'm unsure of how much memory all callers 
-end up allocating in this context.
-
-> > > That being said, while I do agree with you that we should strive for
-> > > isolation as much as possible there are certain cases when this is
-> > > impossible to achieve without seeing much worse consequences. For now,
-> > > we hope that __GFP_NOFAIL is used very scarcely.
-> > 
-> > If that's true, why not bypass the per-zone min watermarks in the page 
-> > allocator as well to allow these allocations to succeed?
-> 
-> Allocations are already done. We simply cannot charge that allocation
-> because we have reached the hard limit. And the said allocation might
-> prevent OOM action to proceed due to held locks.
-
-I'm referring to the generic non-memcg page allocator behavior.  Forget 
-memcg for a moment.  What is the behavior in the _page_allocator_ for 
-GFP_NOFS | __GFP_NOFAIL?  Do we spin forever if reclaim fails or do we 
-bypas the per-zone min watermarks to allow it to allocate because "it 
-needs to succeed, it may be holding filesystem locks"?
-
-It's already been acknowledged in this thread that no bypassing is done 
-in the page allocator and it just spins.  There's some handwaving saying 
-that since the entire system is oom that there is a greater chance that 
-memory will be freed by something else, but that's just handwaving and is 
-certainly no guaranteed.
-
-So, my question again: why not bypass the per-zone min watermarks in the 
-page allocator?
