@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759295Ab3LBVJT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:09:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38475 "EHLO
+	id S1759283Ab3LBVJQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:09:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38477 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753993Ab3LBTNH (ORCPT
+	with ESMTP id S1753938Ab3LBTNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:07 -0500
+	Mon, 2 Dec 2013 14:13:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 040/173] rtlwifi: rtl8192cu: Fix more pointer arithmetic errors
-Date: Mon,  2 Dec 2013 11:10:23 -0800
-Message-Id: <20131202191147.295088134@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>,
+        Pax Team <pageexec@freemail.hu>, Davidlohr Bueso <davidlohr@hp.com>,
+        Brad Spengler <spender@grsecurity.net>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 041/173] ipc, msg: fix message length check for negative values
+Date: Mon,  2 Dec 2013 11:10:24 -0800
+Message-Id: <20131202191147.403518282@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -28,73 +31,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit eafbdde9c5629bea58df07275c5917eb42afbbe7 upstream.
+commit 4e9b45a19241354daec281d7a785739829b52359 upstream.
 
-This driver uses a number of macros to get and set various fields in the
-RX and TX descriptors. To work correctly, a u8 pointer to the descriptor
-must be used; however, in some cases a descriptor structure pointer is used
-instead. In addition, a duplicated statement is removed.
+On 64 bit systems the test for negative message sizes is bogus as the
+size, which may be positive when evaluated as a long, will get truncated
+to an int when passed to load_msg().  So a long might very well contain a
+positive value but when truncated to an int it would become negative.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Reported-by: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+That in combination with a small negative value of msg_ctlmax (which will
+be promoted to an unsigned type for the comparison against msgsz, making
+it a big positive value and therefore make it pass the check) will lead to
+two problems: 1/ The kmalloc() call in alloc_msg() will allocate a too
+small buffer as the addition of alen is effectively a subtraction.  2/ The
+copy_from_user() call in load_msg() will first overflow the buffer with
+userland data and then, when the userland access generates an access
+violation, the fixup handler copy_user_handle_tail() will try to fill the
+remainder with zeros -- roughly 4GB.  That almost instantly results in a
+system crash or reset.
+
+  ,-[ Reproducer (needs to be run as root) ]--
+  | #include <sys/stat.h>
+  | #include <sys/msg.h>
+  | #include <unistd.h>
+  | #include <fcntl.h>
+  |
+  | int main(void) {
+  |     long msg = 1;
+  |     int fd;
+  |
+  |     fd = open("/proc/sys/kernel/msgmax", O_WRONLY);
+  |     write(fd, "-1", 2);
+  |     close(fd);
+  |
+  |     msgsnd(0, &msg, 0xfffffff0, IPC_NOWAIT);
+  |
+  |     return 0;
+  | }
+  '---
+
+Fix the issue by preventing msgsz from getting truncated by consistently
+using size_t for the message length.  This way the size checks in
+do_msgsnd() could still be passed with a negative value for msg_ctlmax but
+we would fail on the buffer allocation in that case and error out.
+
+Also change the type of m_ts from int to size_t to avoid similar nastiness
+in other code paths -- it is used in similar constructs, i.e.  signed vs.
+unsigned checks.  It should never become negative under normal
+circumstances, though.
+
+Setting msg_ctlmax to a negative value is an odd configuration and should
+be prevented.  As that might break existing userland, it will be handled
+in a separate commit so it could easily be reverted and reworked without
+reintroducing the above described bug.
+
+Hardening mechanisms for user copy operations would have catched that bug
+early -- e.g.  checking slab object sizes on user copy operations as the
+usercopy feature of the PaX patch does.  Or, for that matter, detect the
+long vs.  int sign change due to truncation, as the size overflow plugin
+of the very same patch does.
+
+[akpm@linux-foundation.org: fix i386 min() warnings]
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Pax Team <pageexec@freemail.hu>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Brad Spengler <spender@grsecurity.net>
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/mac.c |    6 +++---
- drivers/net/wireless/rtlwifi/rtl8192cu/trx.c |    6 +++---
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ include/linux/msg.h |    6 +++---
+ ipc/msgutil.c       |   20 ++++++++++----------
+ ipc/util.h          |    4 ++--
+ 3 files changed, 15 insertions(+), 15 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
-@@ -778,7 +778,7 @@ static long _rtl92c_signal_scale_mapping
+--- a/include/linux/msg.h
++++ b/include/linux/msg.h
+@@ -6,9 +6,9 @@
  
- static void _rtl92c_query_rxphystatus(struct ieee80211_hw *hw,
- 				      struct rtl_stats *pstats,
--				      struct rx_desc_92c *pdesc,
-+				      struct rx_desc_92c *p_desc,
- 				      struct rx_fwinfo_92c *p_drvinfo,
- 				      bool packet_match_bssid,
- 				      bool packet_toself,
-@@ -793,11 +793,11 @@ static void _rtl92c_query_rxphystatus(st
- 	u32 rssi, total_rssi = 0;
- 	bool in_powersavemode = false;
- 	bool is_cck_rate;
-+	u8 *pdesc = (u8 *)p_desc;
+ /* one msg_msg structure for each message */
+ struct msg_msg {
+-	struct list_head m_list; 
+-	long  m_type;          
+-	int m_ts;           /* message text size */
++	struct list_head m_list;
++	long m_type;
++	size_t m_ts;		/* message text size */
+ 	struct msg_msgseg* next;
+ 	void *security;
+ 	/* the actual message follows immediately */
+--- a/ipc/msgutil.c
++++ b/ipc/msgutil.c
+@@ -41,15 +41,15 @@ struct msg_msgseg {
+ 	/* the next part of the message follows immediately */
+ };
  
--	is_cck_rate = RX_HAL_IS_CCK_RATE(pdesc);
-+	is_cck_rate = RX_HAL_IS_CCK_RATE(p_desc);
- 	pstats->packet_matchbssid = packet_match_bssid;
- 	pstats->packet_toself = packet_toself;
--	pstats->is_cck = is_cck_rate;
- 	pstats->packet_beacon = packet_beacon;
- 	pstats->is_cck = is_cck_rate;
- 	pstats->RX_SIGQ[0] = -1;
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
-@@ -303,10 +303,10 @@ out:
- bool rtl92cu_rx_query_desc(struct ieee80211_hw *hw,
- 			   struct rtl_stats *stats,
- 			   struct ieee80211_rx_status *rx_status,
--			   u8 *p_desc, struct sk_buff *skb)
-+			   u8 *pdesc, struct sk_buff *skb)
+-#define DATALEN_MSG	(int)(PAGE_SIZE-sizeof(struct msg_msg))
+-#define DATALEN_SEG	(int)(PAGE_SIZE-sizeof(struct msg_msgseg))
++#define DATALEN_MSG	((size_t)PAGE_SIZE-sizeof(struct msg_msg))
++#define DATALEN_SEG	((size_t)PAGE_SIZE-sizeof(struct msg_msgseg))
+ 
+ 
+-static struct msg_msg *alloc_msg(int len)
++static struct msg_msg *alloc_msg(size_t len)
  {
- 	struct rx_fwinfo_92c *p_drvinfo;
--	struct rx_desc_92c *pdesc = (struct rx_desc_92c *)p_desc;
-+	struct rx_desc_92c *p_desc = (struct rx_desc_92c *)pdesc;
- 	u32 phystatus = GET_RX_DESC_PHY_STATUS(pdesc);
+ 	struct msg_msg *msg;
+ 	struct msg_msgseg **pseg;
+-	int alen;
++	size_t alen;
  
- 	stats->length = (u16) GET_RX_DESC_PKT_LEN(pdesc);
-@@ -345,7 +345,7 @@ bool rtl92cu_rx_query_desc(struct ieee80
- 	if (phystatus) {
- 		p_drvinfo = (struct rx_fwinfo_92c *)(skb->data +
- 						     stats->rx_bufshift);
--		rtl92c_translate_rx_signal_stuff(hw, skb, stats, pdesc,
-+		rtl92c_translate_rx_signal_stuff(hw, skb, stats, p_desc,
- 						 p_drvinfo);
- 	}
- 	/*rx_status->qual = stats->signal; */
+ 	alen = min(len, DATALEN_MSG);
+ 	msg = kmalloc(sizeof(*msg) + alen, GFP_KERNEL);
+@@ -80,12 +80,12 @@ out_err:
+ 	return NULL;
+ }
+ 
+-struct msg_msg *load_msg(const void __user *src, int len)
++struct msg_msg *load_msg(const void __user *src, size_t len)
+ {
+ 	struct msg_msg *msg;
+ 	struct msg_msgseg *seg;
+ 	int err = -EFAULT;
+-	int alen;
++	size_t alen;
+ 
+ 	msg = alloc_msg(len);
+ 	if (msg == NULL)
+@@ -117,8 +117,8 @@ out_err:
+ struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst)
+ {
+ 	struct msg_msgseg *dst_pseg, *src_pseg;
+-	int len = src->m_ts;
+-	int alen;
++	size_t len = src->m_ts;
++	size_t alen;
+ 
+ 	BUG_ON(dst == NULL);
+ 	if (src->m_ts > dst->m_ts)
+@@ -147,9 +147,9 @@ struct msg_msg *copy_msg(struct msg_msg
+ 	return ERR_PTR(-ENOSYS);
+ }
+ #endif
+-int store_msg(void __user *dest, struct msg_msg *msg, int len)
++int store_msg(void __user *dest, struct msg_msg *msg, size_t len)
+ {
+-	int alen;
++	size_t alen;
+ 	struct msg_msgseg *seg;
+ 
+ 	alen = min(len, DATALEN_MSG);
+--- a/ipc/util.h
++++ b/ipc/util.h
+@@ -148,9 +148,9 @@ int ipc_parse_version (int *cmd);
+ #endif
+ 
+ extern void free_msg(struct msg_msg *msg);
+-extern struct msg_msg *load_msg(const void __user *src, int len);
++extern struct msg_msg *load_msg(const void __user *src, size_t len);
+ extern struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst);
+-extern int store_msg(void __user *dest, struct msg_msg *msg, int len);
++extern int store_msg(void __user *dest, struct msg_msg *msg, size_t len);
+ 
+ extern void recompute_msgmni(struct ipc_namespace *);
+ 
 
 
