@@ -1,140 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931Ab3LBMya (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 07:54:30 -0500
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:36011 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751087Ab3LBMyZ (ORCPT
+	id S1752941Ab3LBM5M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 07:57:12 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:39306 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752250Ab3LBM5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 07:54:25 -0500
-Message-ID: <529C8198.7000106@st.com>
-Date: Mon, 2 Dec 2013 12:48:24 +0000
-From: srinivas kandagatla <srinivas.kandagatla@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Mon, 2 Dec 2013 07:57:10 -0500
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: <linux-arm-kernel@lists.infradead.org>, <netdev@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Stuart Menefy <stuart.menefy@st.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, <stephen.gallimore@st.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <kernel@stlinux.com>, <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH RFC 08/10] net: stmmac:sti: Add STi SOC glue driver.
-References: <1384264311-7308-1-git-send-email-srinivas.kandagatla@st.com> <1384264383-7653-1-git-send-email-srinivas.kandagatla@st.com> <20131129193715.GA3441@lukather>
-In-Reply-To: <20131129193715.GA3441@lukather>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.65.51.59]
+In-Reply-To: <20131202114638.GH16735@n2100.arm.linux.org.uk>
+References: <1385983731-13196-1-git-send-email-panchaxari.prasannamurthy@linaro.org>
+	<1385983731-13196-2-git-send-email-panchaxari.prasannamurthy@linaro.org>
+	<20131202114638.GH16735@n2100.arm.linux.org.uk>
+Date: Mon, 2 Dec 2013 13:57:10 +0100
+Message-ID: <CACRpkdZv9cZekBfJ2P1G4pMYOyAobmA2mszF=kN0Db5TC6_5+Q@mail.gmail.com>
+Subject: Re: [PATCH] ARM:INTEGRATOR: Default enable ARM_PATCH_PHYS_VIRT, AUTO_ZRELADDR
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: panchaxari <panchaxari.prasannamurthy@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Michal Simek <monstr@monstr.eu>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
+On Mon, Dec 2, 2013 at 12:46 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Mon, Dec 02, 2013 at 04:58:51PM +0530, panchaxari wrote:
+>>
+>> Requesting maintainers of Integrator platform to evaluate the changes on the
+>> board and comment, as I dont have the board for testing and also requesting
+>> an ACK.
+>
+> This is _exactly_ the kind of patches I don't want to see - people
+> running around changing platforms with no way to test them.
 
-Thankyou for the comments.
+Actually, blame me for this. I asked Pancham to send the patch
+to the mail list so I would be able to pick it and test it ... I guess
+it would have been less confusing if I had just taken the patch
+in private and tested it and then sent it out instead...
 
-On 29/11/13 19:37, Maxime Ripard wrote:
->> +
->> > +ethernet0: ethernet0{
->> > +	#address-cells = <1>;
->> > +	#size-cells = <1>;
->> > +	compatible		= "st,stih415-dwmac";
->> > +	reg			= <0x148 0x4>;
->> > +	resets			= <&softreset STIH415_ETH0_SOFTRESET>;
->> > +	st,syscon		= <&syscfg_rear>;
->> > +	st,tx-retime-src	= "clk_125";
->> > +	ranges;
->> > +
->> > +	dwmac0:dwmac@fe810000 {
->> > +		device_type 	= "network";
->> > +		compatible	= "snps,dwmac", "snps,dwmac-3.610";
->> > +		reg 		= <0xfe810000 0x8000>;
->> > +		interrupts 	= <0 147 0>;
->> > +		interrupt-names = "macirq";
->> > +		...
->> > +	};
->> > +};
-> Sorry for stepping up so late, but I dont' think this is the right way
-> to do it.
-> 
-Not a issue.
+> If you want to do such work, send the patches with "[CFT]" in the
+> subject line - call for testing.
 
-> DT is to describe how the hardware is laid out in a system agnostic
-> way, hence, it should not be impacted by the implementation details.
-> 
-If "hardware is laid out" means at SoC level? Then I attempted to do
-describe it in system agnostic way.
+Good point, I've also seen "[RFT]" (request for testing) in some
+cases.
 
-On ST SoCs "snps,dwmac" IP always has a hw glue layer on top of it.
+Anyway, I'll just go test this thing now and see if it works as
+intended.
 
-> The fact that you use a glue to the dwmac driver *is* an
-> implementation detail.
-
-Glue layer described here is actually a hardware glue on ST SoCs.
-
-> 
-> I think you'd rather have something like:
-> 
-> dwmac0: ethernet@fe810000 {
-> 	compatible		= "st,stih415-dwmac";
-> 	reg 			= <0xfe810000 0x8000 0x148 0x4>;
-> 	resets			= <&softreset STIH415_ETH0_SOFTRESET>;
-> 	st,syscon		= <&syscfg_rear>;
-> 	st,tx-retime-src	= "clk_125";
-> 	interrupts 		= <0 147 0>;
-> 	interrupt-names 	= "macirq";Am happy to go with 
-> 	...
-> };
-> 
-> Then, the driver can have its init functions associated to the
-> compatible you're using, through the .data field of the of_device_id
-> structure, and you just call it in the generic driver at probe's time.
-
-This is changing the device tree bindings for the generic driver.
-Is this something Acceptable?
-
-Peppe, are you Ok with such intrusive changes to the driver?
-
-I did try few things before I sent this patch,
-
-1> Doing it via AUXDATA which was discouraged by Arnd.
-
-2> Doing it the way you suggested which did not fit in very neatly,
-which looked like lot of SOC specific changes are added to generic driver.
-
-3> Doing it as this patch, influenced by dwc3 code drivers/usb/dwc3/,
-Which fitted in very neatly without touching the existing generic driver.
-
-stmmac driver is a generic synopsis driver which ST has written the
-driver, so I did not want to pollute this driver with ST specific glue
-logic bindings.
-
-Again, this could be irrelevant/confusing to other people who are using
-this driver in there SoCs.
-
-Only thing that bothers me with your suggestion is the changes to
-generic driver.
-
-
-> 
-> I don't really know what this syscon thing is either, but I think the
-> reg <0x148 0x4> is related to that.
-Yes, it is related to that.
-
-> 
-> Why don't you pass it directly in the st,syscon property, to have
-> something like <&syscfg_rear 0x148>?
-This style was once discouraged by Arnd when I first sent pinctrl driver
-for reasons that dt should not specify the offsets to registers.
-
-> 
-> Maxime
-
+Yours,
+Linus Walleij
