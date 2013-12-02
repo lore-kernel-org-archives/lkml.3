@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab3LBLZg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 06:25:36 -0500
-Received: from relay.parallels.com ([195.214.232.42]:47370 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438Ab3LBLT4 (ORCPT
+	id S1753614Ab3LBL1s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 06:27:48 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:53729 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198Ab3LBL1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 06:19:56 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <dchinner@redhat.com>,
-        <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
-        <vdavydov@parallels.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH v12 05/18] fs: do not use destroy_super() in alloc_super() fail path
-Date: Mon, 2 Dec 2013 15:19:40 +0400
-Message-ID: <af90b79aebe9cd9f6e1d35513f2618f4e9888e9b.1385974612.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1385974612.git.vdavydov@parallels.com>
-References: <cover.1385974612.git.vdavydov@parallels.com>
+	Mon, 2 Dec 2013 06:27:45 -0500
+X-IronPort-AV: E=Sophos;i="4.93,810,1378857600"; 
+   d="scan'208";a="77271418"
+Message-ID: <529C6EAC.4030408@citrix.com>
+Date: Mon, 2 Dec 2013 11:27:40 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <Ian.Campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <linux-kernel@vger.kernel.org>, <JBeulich@suse.com>,
+        <boris.ostrovsky@oracle.com>
+Subject: Re: [PATCH 3/4] xen/manage: Guard against user-space initiated poweroff
+ and XenBus.
+References: <1383932286-25080-1-git-send-email-konrad.wilk@oracle.com> <1383932286-25080-4-git-send-email-konrad.wilk@oracle.com> <528DEA00.7070505@citrix.com> <20131126164552.GF2959@phenom.dumpdata.com>
+In-Reply-To: <20131126164552.GF2959@phenom.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using destroy_super() in alloc_super() fail path is bad, because:
+On 26/11/13 16:45, Konrad Rzeszutek Wilk wrote:
+> On Thu, Nov 21, 2013 at 11:09:52AM +0000, David Vrabel wrote:
+>> On 08/11/13 17:38, Konrad Rzeszutek Wilk wrote:
+>>> There is a race case where the user does 'poweroff'
+>>> and at the same time the system admin does 'xl shutdown'.
+>>
+>> This isn't a Xen-specific problem is it?  Wouldn't it be better to fix
+>> this in generic code?
+> 
+> Possibly. I believe the reason for the reboot_notifier to exist is
+> to provide a means to fix the race.
+> 
+>>
+>> Especially since I don't think this patch actually fixes the race
+>> completely.
+>>
+>>> --- a/drivers/xen/manage.c
+>>> +++ b/drivers/xen/manage.c
+>> [...]
+>>> @@ -222,7 +230,7 @@ static void shutdown_handler(struct xenbus_watch *watch,
+>>>  	};
+>>>  	static struct shutdown_handler *handler;
+>>>  
+>>> -	if (shutting_down != SHUTDOWN_INVALID)
+>>> +	if (atomic_read(&shutting_down) != SHUTDOWN_INVALID)
+>>>  		return;
+>>
+>> In guest initiated poweroff at this time will still race with this
+>> toolstack initiated poweroff.
+> 
+> No, b/c the reboot notifier would have set 'shutting_down' already.
 
-* It will trigger WARN_ON(!list_empty(&s->s_mounts)) since s_mounts is
-  initialized after several 'goto fail's.
-* It will call kfree_rcu() to free the super block although kfree() is
-  obviously enough there.
-* The list_lru structure was initially implemented without the ability
-  to destroy an uninitialized object in mind.
+If the guest initiated power off is started here, the reboot notifier
+won't have run yet.
 
-I'm going to replace the conventional list_lru with per-memcg lru to
-implement per-memcg slab reclaim. This new structure will fail
-destruction of objects that haven't been properly initialized so let's
-inline appropriate snippets from destroy_super() to alloc_super() fail
-path instead of using the whole function there.
-
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
----
- fs/super.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/fs/super.c b/fs/super.c
-index e5f6c2c..cece164 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -185,8 +185,10 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
- 
- 	if (list_lru_init(&s->s_dentry_lru))
- 		goto fail;
--	if (list_lru_init(&s->s_inode_lru))
-+	if (list_lru_init(&s->s_inode_lru)) {
-+		list_lru_destroy(&s->s_dentry_lru);
- 		goto fail;
-+	}
- 
- 	INIT_LIST_HEAD(&s->s_mounts);
- 	init_rwsem(&s->s_umount);
-@@ -227,7 +229,10 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
- 	return s;
- 
- fail:
--	destroy_super(s);
-+	for (i = 0; i < SB_FREEZE_LEVELS; i++)
-+		percpu_counter_destroy(&s->s_writers.counter[i]);
-+	security_sb_free(s);
-+	kfree(s);
- 	return NULL;
- }
- 
--- 
-1.7.10.4
-
+David
