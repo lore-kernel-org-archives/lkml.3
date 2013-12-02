@@ -1,24 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758739Ab3LBU4W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:56:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38395 "EHLO
+	id S1758771Ab3LBU4w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:56:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38475 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753679Ab3LBTNm (ORCPT
+	with ESMTP id S1754072Ab3LBTNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:42 -0500
+	Mon, 2 Dec 2013 14:13:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Toshi Kani <toshi.kani@hp.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.10 088/173] ACPI / hotplug: Fix conflicted PCI bridge notify handlers
-Date: Mon,  2 Dec 2013 11:11:11 -0800
-Message-Id: <20131202191153.721768103@linuxfoundation.org>
+        Thomas Richter <thor@math.tu-berlin.de>,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.10 097/173] drm/i915: flush cursors harder
+Date: Mon,  2 Dec 2013 11:11:20 -0800
+Message-Id: <20131202191155.148666905@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,65 +32,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Toshi Kani <toshi.kani@hp.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit ca499fc87ed945094d952da0eb7eea7dbeb1feec upstream.
+commit b2ea8ef559b4d94190009f3651b5b3ab7c05afd3 upstream.
 
-The PCI host bridge scan handler installs its own notify handler,
-handle_hotplug_event_root(), by itself.  Nevertheless, the ACPI
-hotplug framework also installs the common notify handler,
-acpi_hotplug_notify_cb(), for PCI root bridges.  This causes
-acpi_hotplug_notify_cb() to call _OST method with unsupported
-error as hotplug.enabled is not set.
+Apparently they need the same treatment as primary planes. This fixes
+modesetting failures because of stuck cursors (!) on Thomas' i830M
+machine.
 
-To address this issue, introduce hotplug.ignore flag, which
-indicates that the scan handler installs its own notify handler by
-itself.  The ACPI hotplug framework does not install the common
-notify handler when this flag is set.
+I've figured while at it I'll also roll it out for the ivb 3 pipe
+version of this function. I didn't do this for i845/i865 since Bspec
+says the update mechanism works differently, and there's some
+additional rules about what can be updated in which order.
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-[rjw: Changed the name of the new flag]
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Tested-by: Thomas Richter <thor@math.tu-berlin.de>
+Cc:  Thomas Richter <thor@math.tu-berlin.de>
+Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/pci_root.c |    3 +++
- drivers/acpi/scan.c     |    2 +-
- include/acpi/acpi_bus.h |    1 +
- 3 files changed, 5 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_display.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -63,6 +63,9 @@ static struct acpi_scan_handler pci_root
- 	.ids = root_device_ids,
- 	.attach = acpi_pci_root_add,
- 	.detach = acpi_pci_root_remove,
-+	.hotplug = {
-+		.ignore = true,
-+	},
- };
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -6262,7 +6262,9 @@ static void i9xx_update_cursor(struct dr
+ 		intel_crtc->cursor_visible = visible;
+ 	}
+ 	/* and commit changes on next vblank */
++	POSTING_READ(CURCNTR(pipe));
+ 	I915_WRITE(CURBASE(pipe), base);
++	POSTING_READ(CURBASE(pipe));
+ }
  
- /* Lock to protect both acpi_pci_roots lists */
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -1790,7 +1790,7 @@ static void acpi_scan_init_hotplug(acpi_
- 	 */
- 	list_for_each_entry(hwid, &pnp.ids, list) {
- 		handler = acpi_scan_match_handler(hwid->id, NULL);
--		if (handler) {
-+		if (handler && !handler->hotplug.ignore) {
- 			acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
- 					acpi_hotplug_notify_cb, handler);
- 			break;
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -97,6 +97,7 @@ enum acpi_hotplug_mode {
- struct acpi_hotplug_profile {
- 	struct kobject kobj;
- 	bool enabled:1;
-+	bool ignore:1;
- 	enum acpi_hotplug_mode mode;
- };
+ static void ivb_update_cursor(struct drm_crtc *crtc, u32 base)
+@@ -6289,7 +6291,9 @@ static void ivb_update_cursor(struct drm
+ 		intel_crtc->cursor_visible = visible;
+ 	}
+ 	/* and commit changes on next vblank */
++	POSTING_READ(CURCNTR_IVB(pipe));
+ 	I915_WRITE(CURBASE_IVB(pipe), base);
++	POSTING_READ(CURBASE_IVB(pipe));
+ }
  
+ /* If no-part of the cursor is visible on the framebuffer, then the GPU may hang... */
 
 
