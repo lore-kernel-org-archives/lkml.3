@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883Ab3LBFwq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 00:52:46 -0500
-Received: from mail-qe0-f45.google.com ([209.85.128.45]:42889 "EHLO
-	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751478Ab3LBFwl (ORCPT
+	id S1752935Ab3LBFww (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 00:52:52 -0500
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:61022 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752850Ab3LBFwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 00:52:41 -0500
+	Mon, 2 Dec 2013 00:52:46 -0500
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@rjwysocki.net
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
@@ -15,51 +15,74 @@ Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         kgene.kim@samsung.com, linux-samsung-soc@vger.kernel.org,
         linux-tegra@vger.kernel.org, tianyu.lan@intel.com,
         jhbird.choi@samsung.com, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V4 0/6] cpufreq: suspend early/resume late: dpm_{suspend|resume}()
-Date: Mon,  2 Dec 2013 11:22:30 +0530
-Message-Id: <cover.1385962528.git.viresh.kumar@linaro.org>
+Subject: [PATCH V4 1/6] cpufreq: suspend governors from dpm_{suspend|resume}()
+Date: Mon,  2 Dec 2013 11:22:31 +0530
+Message-Id: <6b3eed450097f1c3309b26a3b9c319385559314b.1385962528.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1385962528.git.viresh.kumar@linaro.org>
+References: <cover.1385962528.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1385962528.git.viresh.kumar@linaro.org>
+References: <cover.1385962528.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset moves cpufreq callbacks to dpm_{suspend|resume}() from
-dpm_{suspend|resume}_noirq() for handling suspend/resume of cpufreq governors
-and core. This is required for early suspend and late resume of governors as
-there are drivers which want to change cpu frequency before suspending governors
-and they want to do it before devices get suspended, as some of them might be
-required to change frequency.
+Recently support for suspending governors has been added in cpufreq and
+callbacks are called from dpm_{suspend|resume}_noirq(). The problem here is that
+most of the devices (i.e. devices with ->suspend() callbacks) have already been
+suspended by now and so if drivers want to change frequency before suspending,
+then it might not be possible for many platforms (which depend on other
+peripherals like i2c, regulators, etc).
 
-Following patch is already pushed for v3.13 as it was required for fixing some
-bugs in there. And the remaining was decided to be pushed for v3.14.
+So, we actually need to do this from dpm_{suspend|resume}() instead. This patch
+does it.
 
-commit 5a87182aa21d6d5d306840feab9321818dd3e2a3
-Author: Viresh Kumar <viresh.kumar@linaro.org>
-Date:   Wed Nov 27 09:09:42 2013 +0530
+Tested-by: Lan Tianyu <tianyu.lan@intel.com>
+Tested-by: Nishanth Menon <nm@ti.com>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/base/power/main.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-    cpufreq: suspend governors on system suspend/hibernate
-
-This is already tested by few people and so incorporating their Tested-by as
-well.
-
-For: v3.14.
-
-Viresh Kumar (6):
-  cpufreq: suspend governors from dpm_{suspend|resume}()
-  cpufreq: call driver's suspend/resume for each policy
-  cpufreq: Implement cpufreq_generic_suspend()
-  cpufreq: exynos: Use cpufreq_generic_suspend()
-  cpufreq: s5pv210: Use cpufreq_generic_suspend()
-  cpufreq: Tegra: Use cpufreq_generic_suspend()
-
- drivers/base/power/main.c         |   6 +-
- drivers/cpufreq/cpufreq.c         | 137 ++++++++++++++++----------------------
- drivers/cpufreq/exynos-cpufreq.c  |  96 ++------------------------
- drivers/cpufreq/s5pv210-cpufreq.c |  49 +-------------
- drivers/cpufreq/tegra-cpufreq.c   |  46 ++-----------
- include/linux/cpufreq.h           |   3 +
- 6 files changed, 79 insertions(+), 258 deletions(-)
-
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index e3219df..c9fbb9d 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -541,7 +541,6 @@ static void dpm_resume_noirq(pm_message_t state)
+ 	dpm_show_time(starttime, state, "noirq");
+ 	resume_device_irqs();
+ 	cpuidle_resume();
+-	cpufreq_resume();
+ }
+ 
+ /**
+@@ -791,6 +790,8 @@ void dpm_resume(pm_message_t state)
+ 	mutex_unlock(&dpm_list_mtx);
+ 	async_synchronize_full();
+ 	dpm_show_time(starttime, state, NULL);
++
++	cpufreq_resume();
+ }
+ 
+ /**
+@@ -957,7 +958,6 @@ static int dpm_suspend_noirq(pm_message_t state)
+ 	ktime_t starttime = ktime_get();
+ 	int error = 0;
+ 
+-	cpufreq_suspend();
+ 	cpuidle_pause();
+ 	suspend_device_irqs();
+ 	mutex_lock(&dpm_list_mtx);
+@@ -1262,6 +1262,8 @@ int dpm_suspend(pm_message_t state)
+ 
+ 	might_sleep();
+ 
++	cpufreq_suspend();
++
+ 	mutex_lock(&dpm_list_mtx);
+ 	pm_transition = state;
+ 	async_error = 0;
 -- 
 1.7.12.rc2.18.g61b472e
 
