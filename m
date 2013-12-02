@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab3LBTHK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:07:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38203 "EHLO
+	id S1759976Ab3LBV23 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:28:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38285 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294Ab3LBTHE (ORCPT
+	with ESMTP id S1753336Ab3LBTHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:07:04 -0500
+	Mon, 2 Dec 2013 14:07:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 3.4 21/60] loop: fix crash if blk_alloc_queue fails
-Date: Mon,  2 Dec 2013 11:06:02 -0800
-Message-Id: <20131202190334.913533429@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Mathias Krause <minipli@googlemail.com>,
+        Richard Guy Briggs <rgb@redhat.com>
+Subject: [PATCH 3.4 37/60] audit: use nlmsg_len() to get message payload length
+Date: Mon,  2 Dec 2013 11:06:18 -0800
+Message-Id: <20131202190338.344090372@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
 References: <20131202190330.152596462@linuxfoundation.org>
@@ -27,88 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 3ec981e30fae1f3c8728a05c730acaa1f627bcfb upstream.
+commit 4d8fe7376a12bf4524783dd95cbc00f1fece6232 upstream.
 
-loop: fix crash if blk_alloc_queue fails
+Using the nlmsg_len member of the netlink header to test if the message
+is valid is wrong as it includes the size of the netlink header itself.
+Thereby allowing to send short netlink messages that pass those checks.
 
-If blk_alloc_queue fails, loop_add cleans up, but it doesn't clean up the
-identifier allocated with idr_alloc. That causes crash on module unload in
-idr_for_each(&loop_index_idr, &loop_exit_cb, NULL); where we attempt to
-remove non-existed device with that id.
+Use nlmsg_len() instead to test for the right message length. The result
+of nlmsg_len() is guaranteed to be non-negative as the netlink message
+already passed the checks of nlmsg_ok().
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000380
-IP: [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
-PGD 43d399067 PUD 43d0ad067 PMD 0
-Oops: 0000 [#1] PREEMPT SMP
-Modules linked in: loop(-) dm_snapshot dm_zero dm_mirror dm_region_hash dm_log dm_loop dm_mod ip6table_filter ip6_tables uvesafb cfbcopyarea cfbimgblt cfbfillrect fbcon font bitblit fbcon_rotate fbcon_cw fbcon_ud fbcon_ccw softcursor fb fbdev msr ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc tun ipv6 cpufreq_userspace cpufreq_stats cpufreq_ondemand cpufreq_conservative cpufreq_powersave spadfs fuse hid_generic usbhid hid raid0 md_mod dmi_sysfs nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack snd_usb_audio snd_pcm_oss snd_mixer_oss snd_pcm snd_timer snd_page_alloc lm85 hwmon_vid snd_hwdep snd_usbmidi_lib snd_rawmidi snd soundcore acpi_cpufreq ohci_hcd freq_table tg3 ehci_pci mperf ehci_hcd kvm_amd kvm sata_svw serverworks libphy libata ide_core k10temp usbcore hwmon microcode ptp pcspkr pps_core e100 skge mii usb_common i2c_piix4 floppy evdev rtc_cmos i2c_core processor but!
- ton unix
-CPU: 7 PID: 2735 Comm: rmmod Tainted: G        W    3.10.15-devel #15
-Hardware name: empty empty/S3992-E, BIOS 'V1.06   ' 06/09/2009
-task: ffff88043d38e780 ti: ffff88043d21e000 task.ti: ffff88043d21e000
-RIP: 0010:[<ffffffff812057c9>]  [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
-RSP: 0018:ffff88043d21fe10  EFLAGS: 00010282
-RAX: ffffffffa05102e0 RBX: 0000000000000000 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: ffff88043ea82800 RDI: 0000000000000000
-RBP: ffff88043d21fe48 R08: 0000000000000000 R09: 0000000000000001
-R10: 0000000000000001 R11: 0000000000000000 R12: 00000000000000ff
-R13: 0000000000000080 R14: 0000000000000000 R15: ffff88043ea82800
-FS:  00007ff646534700(0000) GS:ffff880447000000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000380 CR3: 000000043e9bf000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Stack:
- ffffffff8100aba4 0000000000000092 ffff88043d21fe48 ffff88043ea82800
- 00000000000000ff ffff88043d21fe98 0000000000000000 ffff88043d21fe60
- ffffffffa05102b4 0000000000000000 ffff88043d21fe70 ffffffffa05102ec
-Call Trace:
- [<ffffffff8100aba4>] ? native_sched_clock+0x24/0x80
- [<ffffffffa05102b4>] loop_remove+0x14/0x40 [loop]
- [<ffffffffa05102ec>] loop_exit_cb+0xc/0x10 [loop]
- [<ffffffff81217b74>] idr_for_each+0x104/0x190
- [<ffffffffa05102e0>] ? loop_remove+0x40/0x40 [loop]
- [<ffffffff8109adc5>] ? trace_hardirqs_on_caller+0x105/0x1d0
- [<ffffffffa05135dc>] loop_exit+0x34/0xa58 [loop]
- [<ffffffff810a98ea>] SyS_delete_module+0x13a/0x260
- [<ffffffff81221d5e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff813cff16>] system_call_fastpath+0x1a/0x1f
-Code: f0 4c 8b 6d f8 c9 c3 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 41 56 41 55 4c 8d af 80 00 00 00 41 54 53 48 89 fb 48 83 ec 18 <48> 83 bf 80 03 00
-00 00 74 4d e8 98 fe ff ff 31 f6 48 c7 c7 20
-RIP  [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
- RSP <ffff88043d21fe10>
-CR2: 0000000000000380
----[ end trace 64ec069ec70f1309 ]---
+Also switch to min_t() to please checkpatch.pl.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/loop.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ kernel/audit.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -1636,7 +1636,7 @@ static int loop_add(struct loop_device *
- 
- 	lo->lo_queue = blk_alloc_queue(GFP_KERNEL);
- 	if (!lo->lo_queue)
--		goto out_free_dev;
-+		goto out_free_idr;
- 
- 	disk = lo->lo_disk = alloc_disk(1 << part_shift);
- 	if (!disk)
-@@ -1680,6 +1680,8 @@ static int loop_add(struct loop_device *
- 
- out_free_queue:
- 	blk_cleanup_queue(lo->lo_queue);
-+out_free_idr:
-+	idr_remove(&loop_index_idr, i);
- out_free_dev:
- 	kfree(lo);
- out:
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -695,7 +695,7 @@ static int audit_receive_msg(struct sk_b
+ 				 &status_set, sizeof(status_set));
+ 		break;
+ 	case AUDIT_SET:
+-		if (nlh->nlmsg_len < sizeof(struct audit_status))
++		if (nlmsg_len(nlh) < sizeof(struct audit_status))
+ 			return -EINVAL;
+ 		status_get   = (struct audit_status *)data;
+ 		if (status_get->mask & AUDIT_STATUS_ENABLED) {
 
 
