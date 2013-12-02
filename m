@@ -1,35 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760080Ab3LBVcY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:32:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38171 "EHLO
+	id S1760102Ab3LBVca (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:32:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38192 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753214Ab3LBTG5 (ORCPT
+	with ESMTP id S1753206Ab3LBTG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:06:57 -0500
+	Mon, 2 Dec 2013 14:06:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nico Golde <nico@ngolde.de>, Dan Carpenter <dan.carpenter@oracle.com>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
-        "Kanigeri, Hari" <h-kanigeri2@ti.com>,
-        Ameya Palande <ameya.palande@nokia.com>,
-        "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
-        "Hebbar, Shivananda" <x0hebbar@ti.com>,
-        "Ramos Falcon, Ernesto" <ernesto@ti.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        "Anna, Suman" <s-anna@ti.com>, "Gupta, Ramesh" <grgupta@ti.com>,
-        "Gomez Castellanos, Ivan" <ivan.gomez@ti.com>,
-        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
-        Armando Uribe De Leon <x0095078@ti.com>,
-        Deepak Chitriki <deepak.chitriki@ti.com>,
-        "Menon, Nishanth" <nm@ti.com>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [PATCH 3.4 03/60] Staging: tidspbridge: disable driver
-Date: Mon,  2 Dec 2013 11:05:44 -0800
-Message-Id: <20131202190330.951937420@linuxfoundation.org>
+        Gwendal Grignou <gwendal@google.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.4 11/60] libata: Fix display of sata speed
+Date: Mon,  2 Dec 2013 11:05:52 -0800
+Message-Id: <20131202190332.708724774@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
 References: <20131202190330.152596462@linuxfoundation.org>
@@ -42,52 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Gwendal Grignou <gwendal@google.com>
 
-commit 930ba4a374b96560ef9fde2145cdc454a164ddcc upstream.
+commit 3e85c3ecbc520751324a191d23bb94873ed01b10 upstream.
 
-There seems to be no active maintainer for the driver, and there is an
-unfixed security bug, so disable the driver for now.
+6.0 Gbps link speed was not decoded properly:
+speed was reported at 3.0 Gbps only.
 
-Hopefully someone steps up to be the maintainer, and works to get this
-out of staging, otherwise it will be deleted soon.
+Tested: On a machine where libata reports 6.0 Gbps in
+        /var/log/messages:
+    ata1: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
 
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Omar Ramirez Luna <omar.ramirez@copitl.com>
-Cc: Omar Ramirez Luna <omar.ramirez@ti.com>
-Cc: Kanigeri, Hari <h-kanigeri2@ti.com>
-Cc: Ameya Palande <ameya.palande@nokia.com>
-Cc: Guzman Lugo, Fernando <fernando.lugo@ti.com>
-Cc: Hebbar, Shivananda <x0hebbar@ti.com>
-Cc: Ramos Falcon, Ernesto <ernesto@ti.com>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Anna, Suman <s-anna@ti.com>
-Cc: Gupta, Ramesh <grgupta@ti.com>
-Cc: Gomez Castellanos, Ivan <ivan.gomez@ti.com>
-Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-Cc: Armando Uribe De Leon <x0095078@ti.com>
-Cc: Deepak Chitriki <deepak.chitriki@ti.com>
-Cc: Menon, Nishanth <nm@ti.com>
-Cc: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: stable <stable@vger.kernel.org>
+    Before:
+    	cat /sys/class/ata_link/link1/sata_spd
+    	3.0 Gbps
+    After:
+    	cat /sys/class/ata_link/link1/sata_spd
+    	6.0 Gbps
+
+Signed-off-by: Gwendal Grignou <gwendal@google.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/tidspbridge/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/libata-transport.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/staging/tidspbridge/Kconfig
-+++ b/drivers/staging/tidspbridge/Kconfig
-@@ -4,7 +4,7 @@
+--- a/drivers/ata/libata-transport.c
++++ b/drivers/ata/libata-transport.c
+@@ -319,25 +319,25 @@ int ata_tport_add(struct device *parent,
+ /*
+  * ATA link attributes
+  */
++static int noop(int x) { return x; }
  
- menuconfig TIDSPBRIDGE
- 	tristate "DSP Bridge driver"
--	depends on ARCH_OMAP3
-+	depends on ARCH_OMAP3 && BROKEN
- 	select OMAP_MBOX_FWK
- 	help
- 	  DSP/BIOS Bridge is designed for platforms that contain a GPP and
+-
+-#define ata_link_show_linkspeed(field)					\
++#define ata_link_show_linkspeed(field, format)			        \
+ static ssize_t								\
+ show_ata_link_##field(struct device *dev,				\
+ 		      struct device_attribute *attr, char *buf)		\
+ {									\
+ 	struct ata_link *link = transport_class_to_link(dev);		\
+ 									\
+-	return sprintf(buf,"%s\n", sata_spd_string(fls(link->field)));	\
++	return sprintf(buf, "%s\n", sata_spd_string(format(link->field))); \
+ }
+ 
+-#define ata_link_linkspeed_attr(field)					\
+-	ata_link_show_linkspeed(field)					\
++#define ata_link_linkspeed_attr(field, format)				\
++	ata_link_show_linkspeed(field, format)				\
+ static DEVICE_ATTR(field, S_IRUGO, show_ata_link_##field, NULL)
+ 
+-ata_link_linkspeed_attr(hw_sata_spd_limit);
+-ata_link_linkspeed_attr(sata_spd_limit);
+-ata_link_linkspeed_attr(sata_spd);
++ata_link_linkspeed_attr(hw_sata_spd_limit, fls);
++ata_link_linkspeed_attr(sata_spd_limit, fls);
++ata_link_linkspeed_attr(sata_spd, noop);
+ 
+ 
+ static DECLARE_TRANSPORT_CLASS(ata_link_class,
 
 
