@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563Ab3LBBpL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 20:45:11 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:37402 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab3LBBpH (ORCPT
+	id S1752726Ab3LBBr1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 20:47:27 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:61406 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752488Ab3LBBrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 20:45:07 -0500
+	Sun, 1 Dec 2013 20:47:24 -0500
+Message-ID: <529BE5EF.7040706@huawei.com>
+Date: Mon, 2 Dec 2013 09:44:15 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <20131202002444.GA22418@teo>
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
-	<1384856285-19593-3-git-send-email-pali.rohar@gmail.com>
-	<CAOf5uwkrep0PhOn67+9PHmP2A2Jxrp9DNK3BRp9D_sYu_PYvvw@mail.gmail.com>
-	<201311242001.23126@pali>
-	<CAOf5uw=-cy2QoDxjecxYTYsrQRD=LtN0N7DcYJHZ6HSbexzPRw@mail.gmail.com>
-	<20131201223730.GD6271@lizard>
-	<CAOf5uwnkQwkS7_fsLtC5nzdXyS1Rzw2SkxaziUuJrO9SKXh3yw@mail.gmail.com>
-	<20131202002444.GA22418@teo>
-Date: Mon, 2 Dec 2013 02:45:06 +0100
-Message-ID: <CAOf5uwnz6SfeEsbGq62QFgRHJ2ys++VV1+VrULxyR4uH2Z_vJQ@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] bq2415x_charger: Use power_supply notifier for automode
-From: Michael Trimarchi <michael@amarulasolutions.com>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        freemangordon@abv.bg, aaro.koskinen@iki.fi, pavel@ucw.cz
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jiang Liu <jiang.liu@linux.intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
+        "Dan Williams" <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Ashok Raj <ashok.raj@intel.com>
+CC: <iommu@lists.linux-foundation.org>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <dmaengine@vger.kernel.org>
+Subject: Re: [Patch Part1 V2 07/17] iommu/vt-d, trivial: check suitable flag
+ in function detect_intel_iommu()
+References: <1385715030-20553-1-git-send-email-jiang.liu@linux.intel.com> <1385715030-20553-8-git-send-email-jiang.liu@linux.intel.com>
+In-Reply-To: <1385715030-20553-8-git-send-email-jiang.liu@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On 2013/11/29 16:50, Jiang Liu wrote:
+> Flag irq_remapping_enabled is only set by intel_enable_irq_remapping(),
+> which is called after detect_intel_iommu(). So we should check flag
+> disable_irq_remap instead of irq_remapping_enabled in function
+> detect_intel_iommu().
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> ---
+>  drivers/iommu/dmar.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+> index f3043a2..77a066b 100644
+> --- a/drivers/iommu/dmar.c
+> +++ b/drivers/iommu/dmar.c
+> @@ -561,7 +561,7 @@ int __init detect_intel_iommu(void)
+>  
+>  		dmar = (struct acpi_table_dmar *) dmar_tbl;
+>  
+> -		if (ret && irq_remapping_enabled && cpu_has_x2apic &&
+> +		if (ret && !disable_irq_remap && cpu_has_x2apic &&
+>  		    dmar->flags & 0x1)
+>  			pr_info("Queued invalidation will be enabled to support x2apic and Intr-remapping.\n");
+>  
+> 
 
-On Mon, Dec 2, 2013 at 1:24 AM, Anton Vorontsov <anton@enomsg.org> wrote:
-> On Mon, Dec 02, 2013 at 01:02:40AM +0100, Michael Trimarchi wrote:
->> On Sun, Dec 1, 2013 at 11:37 PM, Anton Vorontsov <anton@enomsg.org> wrote:
->> > On Mon, Nov 25, 2013 at 08:16:34PM +0100, Michael Trimarchi wrote:
->> > ...
->> >> >> So you can read this value without any type of synchronization
->> >> >> with the power_supply_core
->> >> >> and sysfs implementation?
->> > ...
->> >> https://lists.ubuntu.com/archives/kernel-team/2013-January/025206.html
->> >>
->> >> I found and equivalent scenario that I was trying to said
->> >
->> > That's a good question, actually. Even though in Pali's case the notifier
->> > is atomic (so that we are pretty confident that the object won't be
->> > unregistered), there is still a possiblity of a dead lock, for example. So
->>
->> So if the get_property is a sleeping function it will be a deadlock. Right?
->
-> All kind of bad things might happen, yes. But before that I would expect a
-> bunch of warnings from might_sleep() stuff.
->
-> I would recommend to test the patches using preempt/smp kernels + various
-> DEBUG_ kernel options set.
->
+Reviewed-by: Yijing Wang <wangyijing@huawei.com>
 
-Is it more simple to make it not atomic and use a mutex in get_property?
+-- 
+Thanks!
+Yijing
 
-Michael
-
-> Thanks,
->
-> Anton
