@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab3LBTVu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:21:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39760 "EHLO
+	id S1755224Ab3LBTVs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:21:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39764 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755087Ab3LBTTQ (ORCPT
+	with ESMTP id S1755029Ab3LBTTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:19:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Howells <dhowells@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Josh Boyer <jwboyer@redhat.com>,
-        Alexander Holler <holler@ahsoftware.de>
-Subject: [PATCH 3.12 206/212] X.509: Remove certificate date checks
-Date: Mon,  2 Dec 2013 11:16:37 -0800
-Message-Id: <20131202191312.268881801@linuxfoundation.org>
+        Stefan Achatz <erazor_de@users.sourceforge.net>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.12 207/212] HID: roccat: add new device return value
+Date: Mon,  2 Dec 2013 11:16:38 -0800
+Message-Id: <20131202191312.471773914@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -29,80 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: Stefan Achatz <erazor_de@users.sourceforge.net>
 
-commit 124df926090b32a998483f6e43ebeccdbe5b5302 upstream.
+commit 14fc4290df2fb94a28f39dab9ed32feaa5527bef upstream.
 
-Remove the certificate date checks that are performed when a certificate is
-parsed.  There are two checks: a valid from and a valid to.  The first check is
-causing a lot of problems with system clocks that don't keep good time and the
-second places an implicit expiry date upon the kernel when used for module
-signing, so do we really need them?
+Ryos uses a new return value for critical errors, others have been
+confirmed.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: David Woodhouse <dwmw2@infradead.org>
-cc: Rusty Russell <rusty@rustcorp.com.au>
-cc: Josh Boyer <jwboyer@redhat.com>
-cc: Alexander Holler <holler@ahsoftware.de>
+Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/asymmetric_keys/x509_public_key.c |   38 -------------------------------
- 1 file changed, 38 deletions(-)
+ drivers/hid/hid-roccat-common.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/crypto/asymmetric_keys/x509_public_key.c
-+++ b/crypto/asymmetric_keys/x509_public_key.c
-@@ -106,7 +106,6 @@ error_no_sig:
- static int x509_key_preparse(struct key_preparsed_payload *prep)
- {
- 	struct x509_certificate *cert;
--	struct tm now;
- 	size_t srlen, sulen;
- 	char *desc = NULL;
- 	int ret;
-@@ -137,43 +136,6 @@ static int x509_key_preparse(struct key_
- 		goto error_free_cert;
- 	}
+--- a/drivers/hid/hid-roccat-common.c
++++ b/drivers/hid/hid-roccat-common.c
+@@ -65,10 +65,11 @@ int roccat_common2_send(struct usb_devic
+ EXPORT_SYMBOL_GPL(roccat_common2_send);
  
--	time_to_tm(CURRENT_TIME.tv_sec, 0, &now);
--	pr_devel("Now: %04ld-%02d-%02d %02d:%02d:%02d\n",
--		 now.tm_year + 1900, now.tm_mon + 1, now.tm_mday,
--		 now.tm_hour, now.tm_min,  now.tm_sec);
--	if (now.tm_year < cert->valid_from.tm_year ||
--	    (now.tm_year == cert->valid_from.tm_year &&
--	     (now.tm_mon < cert->valid_from.tm_mon ||
--	      (now.tm_mon == cert->valid_from.tm_mon &&
--	       (now.tm_mday < cert->valid_from.tm_mday ||
--		(now.tm_mday == cert->valid_from.tm_mday &&
--		 (now.tm_hour < cert->valid_from.tm_hour ||
--		  (now.tm_hour == cert->valid_from.tm_hour &&
--		   (now.tm_min < cert->valid_from.tm_min ||
--		    (now.tm_min == cert->valid_from.tm_min &&
--		     (now.tm_sec < cert->valid_from.tm_sec
--		      ))))))))))) {
--		pr_warn("Cert %s is not yet valid\n", cert->fingerprint);
--		ret = -EKEYREJECTED;
--		goto error_free_cert;
--	}
--	if (now.tm_year > cert->valid_to.tm_year ||
--	    (now.tm_year == cert->valid_to.tm_year &&
--	     (now.tm_mon > cert->valid_to.tm_mon ||
--	      (now.tm_mon == cert->valid_to.tm_mon &&
--	       (now.tm_mday > cert->valid_to.tm_mday ||
--		(now.tm_mday == cert->valid_to.tm_mday &&
--		 (now.tm_hour > cert->valid_to.tm_hour ||
--		  (now.tm_hour == cert->valid_to.tm_hour &&
--		   (now.tm_min > cert->valid_to.tm_min ||
--		    (now.tm_min == cert->valid_to.tm_min &&
--		     (now.tm_sec > cert->valid_to.tm_sec
--		      ))))))))))) {
--		pr_warn("Cert %s has expired\n", cert->fingerprint);
--		ret = -EKEYEXPIRED;
--		goto error_free_cert;
--	}
+ enum roccat_common2_control_states {
+-	ROCCAT_COMMON_CONTROL_STATUS_OVERLOAD = 0,
++	ROCCAT_COMMON_CONTROL_STATUS_CRITICAL = 0,
+ 	ROCCAT_COMMON_CONTROL_STATUS_OK = 1,
+ 	ROCCAT_COMMON_CONTROL_STATUS_INVALID = 2,
+-	ROCCAT_COMMON_CONTROL_STATUS_WAIT = 3,
++	ROCCAT_COMMON_CONTROL_STATUS_BUSY = 3,
++	ROCCAT_COMMON_CONTROL_STATUS_CRITICAL_NEW = 4,
+ };
+ 
+ static int roccat_common2_receive_control_status(struct usb_device *usb_dev)
+@@ -88,13 +89,12 @@ static int roccat_common2_receive_contro
+ 		switch (control.value) {
+ 		case ROCCAT_COMMON_CONTROL_STATUS_OK:
+ 			return 0;
+-		case ROCCAT_COMMON_CONTROL_STATUS_WAIT:
++		case ROCCAT_COMMON_CONTROL_STATUS_BUSY:
+ 			msleep(500);
+ 			continue;
+ 		case ROCCAT_COMMON_CONTROL_STATUS_INVALID:
 -
- 	cert->pub->algo = x509_public_key_algorithms[cert->pkey_algo];
- 	cert->pub->id_type = PKEY_ID_X509;
- 
+-		case ROCCAT_COMMON_CONTROL_STATUS_OVERLOAD:
+-			/* seems to be critical - replug necessary */
++		case ROCCAT_COMMON_CONTROL_STATUS_CRITICAL:
++		case ROCCAT_COMMON_CONTROL_STATUS_CRITICAL_NEW:
+ 			return -EINVAL;
+ 		default:
+ 			dev_err(&usb_dev->dev,
 
 
