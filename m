@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932070Ab3LBTzY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:55:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39149 "EHLO
+	id S1755912Ab3LBT40 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:56:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39383 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754723Ab3LBTSL (ORCPT
+	with ESMTP id S1754714Ab3LBTSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:11 -0500
+	Mon, 2 Dec 2013 14:18:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Richter <thor@math.tu-berlin.de>,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.12 129/212] drm/i915: flush cursors harder
-Date: Mon,  2 Dec 2013 11:15:20 -0800
-Message-Id: <20131202191301.403017452@linuxfoundation.org>
+        Jakob Bornecrantz <jakob@vmware.com>,
+        =?UTF-8?q?Thomas=20Hellstr=C3=B6m?= <thellstrom@vmware.com>
+Subject: [PATCH 3.12 126/212] drm/ttm: Handle in-memory region copies
+Date: Mon,  2 Dec 2013 11:15:17 -0800
+Message-Id: <20131202191301.109466996@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -32,50 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Jakob Bornecrantz <jakob@vmware.com>
 
-commit b2ea8ef559b4d94190009f3651b5b3ab7c05afd3 upstream.
+commit 9a0599ddeae012a771bba5e23393fc52d8a59d89 upstream.
 
-Apparently they need the same treatment as primary planes. This fixes
-modesetting failures because of stuck cursors (!) on Thomas' i830M
-machine.
+Fix the case where the ttm pointer may be NULL causing
+a NULL pointer dereference.
 
-I've figured while at it I'll also roll it out for the ivb 3 pipe
-version of this function. I didn't do this for i845/i865 since Bspec
-says the update mechanism works differently, and there's some
-additional rules about what can be updated in which order.
-
-Tested-by: Thomas Richter <thor@math.tu-berlin.de>
-Cc:  Thomas Richter <thor@math.tu-berlin.de>
-Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Jakob Bornecrantz <jakob@vmware.com>
+Signed-off-by: Thomas Hellström <thellstrom@vmware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/ttm/ttm_bo_util.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -6770,7 +6770,9 @@ static void i9xx_update_cursor(struct dr
- 		intel_crtc->cursor_visible = visible;
- 	}
- 	/* and commit changes on next vblank */
-+	POSTING_READ(CURCNTR(pipe));
- 	I915_WRITE(CURBASE(pipe), base);
-+	POSTING_READ(CURBASE(pipe));
- }
+--- a/drivers/gpu/drm/ttm/ttm_bo_util.c
++++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
+@@ -348,7 +348,9 @@ int ttm_bo_move_memcpy(struct ttm_buffer
+ 	if (old_iomap == NULL && ttm == NULL)
+ 		goto out2;
  
- static void ivb_update_cursor(struct drm_crtc *crtc, u32 base)
-@@ -6799,7 +6801,9 @@ static void ivb_update_cursor(struct drm
- 		intel_crtc->cursor_visible = visible;
- 	}
- 	/* and commit changes on next vblank */
-+	POSTING_READ(CURCNTR_IVB(pipe));
- 	I915_WRITE(CURBASE_IVB(pipe), base);
-+	POSTING_READ(CURBASE_IVB(pipe));
- }
- 
- /* If no-part of the cursor is visible on the framebuffer, then the GPU may hang... */
+-	if (ttm->state == tt_unpopulated) {
++	/* TTM might be null for moves within the same region.
++	 */
++	if (ttm && ttm->state == tt_unpopulated) {
+ 		ret = ttm->bdev->driver->ttm_tt_populate(ttm);
+ 		if (ret) {
+ 			/* if we fail here don't nuke the mm node
 
 
