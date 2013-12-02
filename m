@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab3LBK37 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 05:29:59 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:61190 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752844Ab3LBK34 (ORCPT
+	id S1753365Ab3LBKcR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 05:32:17 -0500
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:44220 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753071Ab3LBKcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 05:29:56 -0500
-From: Zhouyi Zhou <zhouzhouyi@gmail.com>
-To: <joro@8bytes.org>, <iommu@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-Subject: [PATCH 1/1] NULL return of kmem_cache_zalloc should be handled
-Date: Mon,  2 Dec 2013 18:29:41 +0800
-Message-Id: <1385980181-26381-1-git-send-email-yizhouzhou@ict.ac.cn>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 2 Dec 2013 05:32:13 -0500
+MIME-Version: 1.0
+In-Reply-To: <5292A5EA.1030501@huawei.com>
+References: <20131111220626.GA7509@sbohrermbp13-local.rgmadvisors.com>
+ <52820030.6000806@huawei.com> <20131112143147.GB6049@dhcp22.suse.cz>
+ <20131112155530.GA2860@sbohrermbp13-local.rgmadvisors.com>
+ <20131112165504.GF6049@dhcp22.suse.cz> <20131114225649.GA16725@sbohrermbp13-local.rgmadvisors.com>
+ <20131115062458.GA9755@mtj.dyndns.org> <20131115075401.GB9755@mtj.dyndns.org>
+ <alpine.LNX.2.00.1311171746160.15789@eggly.anvils> <CAJ75kXZYjKwV_XiEB493jNyGRqS395JZyY-S9xQBQJLyaCSOEQ@mail.gmail.com>
+ <20131122221839.GD8981@mtj.dyndns.org> <CAJ75kXabrnxqdtb5SXqm_pYTrSih9yvP38DApF+_P+YZCepTMw@mail.gmail.com>
+ <5292A5EA.1030501@huawei.com>
+From: William Dauchy <wdauchy@gmail.com>
+Date: Mon, 2 Dec 2013 11:31:53 +0100
+Message-ID: <CAJ75kXYKx67VaGYRs1nwataE2ra216qTB9Yks=MRGFN-c_b3uA@mail.gmail.com>
+Subject: Re: 3.10.16 cgroup_mutex deadlock
+To: Li Zefan <lizefan@huawei.com>
+Cc: Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Shawn Bohrer <shawn.bohrer@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        cgroups@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Markus Blank-Burian <burian@muenster.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-if iopte is NULL, iopte_free should not be called.
+Hi Li,
 
-Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
----
- drivers/iommu/omap-iommu.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+On Mon, Nov 25, 2013 at 2:20 AM, Li Zefan <lizefan@huawei.com> wrote:
+> I'll do this after the patch hits mainline, if Tejun doesn't plan to.
 
-diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
-index bcd78a7..5155714 100644
---- a/drivers/iommu/omap-iommu.c
-+++ b/drivers/iommu/omap-iommu.c
-@@ -551,7 +551,8 @@ static u32 *iopte_alloc(struct omap_iommu *obj, u32 *iopgd, u32 da)
- 		dev_vdbg(obj->dev, "%s: a new pte:%p\n", __func__, iopte);
- 	} else {
- 		/* We raced, free the reduniovant table */
--		iopte_free(iopte);
-+		if (iopte)
-+			iopte_free(iopte);
- 	}
- 
- pte_ready:
+Do you have some news about it?
 -- 
-1.7.10.4
-
+William
