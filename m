@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab3LBJxq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 04:53:46 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45574 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751232Ab3LBJxn (ORCPT
+	id S1753351Ab3LBJxu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 04:53:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60794 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752724Ab3LBJxo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 04:53:43 -0500
-Date: Mon, 2 Dec 2013 09:52:53 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Alex Ling <kasimling@gmail.com>
-Cc: "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] ARM: dts: Add missing clock names for exynos4412
- dwmmc node
-Message-ID: <20131202095253.GC12952@e106331-lin.cambridge.arm.com>
-References: <1385892707-25063-1-git-send-email-kasimling@gmail.com>
-MIME-Version: 1.0
+	Mon, 2 Dec 2013 04:53:44 -0500
+Subject: Re: ping: re: [PATCH 1/1] kernel code that do not handle NULL return of kmem_cache_zalloc
+Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1812\))
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385892707-25063-1-git-send-email-kasimling@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Alexander Graf <agraf@suse.de>
+X-Priority: 3
+In-Reply-To: <e9c283.a967.142b14600da.Coremail.yizhouzhou@ict.ac.cn>
+Date: Mon, 2 Dec 2013 10:54:51 +0100
+Cc: Zhouyi Zhou <zhouzhouyi@gmail.com>,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        linuxppc-dev@lists.ozlabs.org, kvm-ppc@vger.kernel.org,
+        "kvm@vger.kernel.org mailing list" <kvm@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>, Joerg Roedel <joro@8bytes.org>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <65B0AD57-F44C-4360-916C-16D26884B09C@suse.de>
+References: <1385549465-15945-1-git-send-email-yizhouzhou@ict.ac.cn> <e9c283.a967.142b14600da.Coremail.yizhouzhou@ict.ac.cn>
+To: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+X-Mailer: Apple Mail (2.1812)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 01, 2013 at 10:11:47AM +0000, Alex Ling wrote:
-> This patch adds "biu" and "ciu" clock names for exynos4412 dwmmc
-> node. Without this patch, dwmmc host driver will skip enabling the
-> two clocks and it will break dwmmc host function on exynos4412.
-> Tested on FriendlyARM TINY4412 board.
 
-The patch description is a little off; this patch adds the clocks as
-well as the clock-names.
+On 02.12.2013, at 04:07, Zhouyi Zhou <yizhouzhou@ict.ac.cn> wrote:
 
-The patch itself looks fine to me.
+> ping
+>>  I do a grep for kmem_cache_zalloc and kmem_cache_alloc
+>>  in kernel tree, and find some code do not handle NULL
+>>  return of kmem_cache_zalloc correctly
+>>  
+>>  
+>>  Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
 
-Mark.
+Thanks a lot for the patch. I'd assume we want something slightly more clever even, similar to Paul's d78bca729.
 
-> 
-> Signed-off-by: Alex Ling <kasimling@gmail.com>
-> ---
->  arch/arm/boot/dts/exynos4412.dtsi |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/exynos4412.dtsi b/arch/arm/boot/dts/exynos4412.dtsi
-> index e743e67..67bef99 100644
-> --- a/arch/arm/boot/dts/exynos4412.dtsi
-> +++ b/arch/arm/boot/dts/exynos4412.dtsi
-> @@ -67,5 +67,7 @@
->  		interrupts = <0 77 0>;
->  		#address-cells = <1>;
->  		#size-cells = <0>;
-> +		clocks = <&clock 301>, <&clock 149>;
-> +		clock-names = "biu", "ciu";
->  	};
->  };
-> -- 
-> 1.7.9.5
-> 
-> 
+Please beware that it's usually not a good idea to post patches that span multiple subtrees. I don't want to apply a patch to my kvm tree that touches jffs2 for example, as that's out of my scope. It usually makes a maintainer's life easier if you split up a patch like this according to tree responsibilities.
+
+
+Alex
+
