@@ -1,51 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757139Ab3LBUKw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:10:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41979 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757076Ab3LBUKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 15:10:18 -0500
-Date: Mon, 02 Dec 2013 15:10:00 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Hillf Danton <dhillf@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Joonsoo Kim <js1304@gmail.com>
-Message-ID: <1386015000-duz3i1h4-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1385624926-28883-9-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1385624926-28883-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1385624926-28883-9-git-send-email-iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH 8/9] mm/rmap: use rmap_walk() in page_referenced()
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1756974Ab3LBUJa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:09:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39148 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754578Ab3LBTRe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 14:17:34 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Vu Pham <vuhuong@mellanox.com>, Bart Van Assche <bvanassche@acm.org>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.12 063/212] IB/srp: Remove target from list before freeing Scsi_Host structure
+Date: Mon,  2 Dec 2013 11:14:14 -0800
+Message-Id: <20131202191255.084733210@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
+References: <20131202191248.517975703@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 28, 2013 at 04:48:45PM +0900, Joonsoo Kim wrote:
-> Now, we have an infrastructure in rmap_walk() to handle difference
-> from variants of rmap traversing functions.
-> 
-> So, just use it in page_referenced().
-> 
-> In this patch, I change following things.
-> 
-> 1. remove some variants of rmap traversing functions.
-> 	cf> page_referenced_ksm, page_referenced_anon,
-> 	page_referenced_file
-> 2. introduce new struct page_referenced_arg and pass it to
-> page_referenced_one(), main function of rmap_walk, in order to
-> count reference, to store vm_flags and to check finish condition.
-> 3. mechanical change to use rmap_walk() in page_referenced().
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+------------------
+
+From: Vu Pham <vuhuong@mellanox.com>
+
+commit 65d7dd2f3479ef5aec1d9ddd1481cb7851c11af6 upstream.
+
+Remove an SRP target from the SRP target list before invoking the last
+scsi_host_put() call.  This change is necessary because that last put
+frees the memory that holds the srp_target_port structure.
+
+This patch prevents the following kernel oops:
+
+    RIP: 0010:[<ffffffff810b00d0>] __lock_acquire+0x500/0x1570
+    Call Trace:
+     [<ffffffff810b11e4>] lock_acquire+0xa4/0x120
+     [<ffffffff81531206>] _spin_lock+0x36/0x70
+     [<ffffffffa01b6d8f>] srp_remove_work+0xef/0x180 [ib_srp]
+     [<ffffffff8109125c>] worker_thread+0x21c/0x3d0
+     [<ffffffff81096e86>] kthread+0x96/0xa0
+     [<ffffffff8100c20a>] child_rip+0xa/0x20
+
+Signed-off-by: Vu Pham <vuhuong@mellanox.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+[ bvanassche - Modified path description and CC'ed stable. ]
+
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+
+---
+ drivers/infiniband/ulp/srp/ib_srp.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+--- a/drivers/infiniband/ulp/srp/ib_srp.c
++++ b/drivers/infiniband/ulp/srp/ib_srp.c
+@@ -534,6 +534,11 @@ static void srp_remove_target(struct srp
+ 	ib_destroy_cm_id(target->cm_id);
+ 	srp_free_target_ib(target);
+ 	srp_free_req_data(target);
++
++	spin_lock(&target->srp_host->target_lock);
++	list_del(&target->list);
++	spin_unlock(&target->srp_host->target_lock);
++
+ 	scsi_host_put(target->scsi_host);
+ }
+ 
+@@ -545,10 +550,6 @@ static void srp_remove_work(struct work_
+ 	WARN_ON_ONCE(target->state != SRP_TARGET_REMOVED);
+ 
+ 	srp_remove_target(target);
+-
+-	spin_lock(&target->srp_host->target_lock);
+-	list_del(&target->list);
+-	spin_unlock(&target->srp_host->target_lock);
+ }
+ 
+ static void srp_rport_delete(struct srp_rport *rport)
+
+
