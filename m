@@ -1,107 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502Ab3LBTlL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:41:11 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:41522 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754979Ab3LBTkd (ORCPT
+	id S1754888Ab3LBTSp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:18:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39419 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754759Ab3LBTSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:40:33 -0500
-MIME-Version: 1.0
-Date: Mon, 2 Dec 2013 14:40:33 -0500
-X-Google-Sender-Auth: 0l0BDnDLksJzuHkGdpX5XUJbwRk
-Message-ID: <CA+5PVA6Mh=tRM5h=TCbg5yjkkFUg2OncJmHBdtBhG7jqf377rg@mail.gmail.com>
-Subject: Nov. Fedora Kernel Patch Report
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Kernel Fedora <kernel@lists.fedoraproject.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 2 Dec 2013 14:18:21 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Robert Richter <robert.richter@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Robert Richter <rric@kernel.org>
+Subject: [PATCH 3.12 142/212] edac, highbank: Fix interrupt setup of mem and l2 controller
+Date: Mon,  2 Dec 2013 11:15:33 -0800
+Message-Id: <20131202191303.000324803@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
+References: <20131202191248.517975703@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A couple days late due to the holidays.  Here are the patches we
-currently have on top of 3.12.2:
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-md-test-mddev-flags-more-safely-in-md_check_recovery.patch (rhbz 1033971)
-- In 3.13, should already be CC'd to stable
+------------------
 
-inet-prevent-leakage-of-uninitialized-memory-to-user.patch
-inet-fix-addr_len-msg_namelen-assignment-in-recv_error-and-rxpmtu-functions.patch
-(rhbz 1035875)
-- Should be heading to 3.13.  Fixes CVE-2013-6405
+From: Robert Richter <robert.richter@linaro.org>
 
-usbnet-fix-status-interrupt-urb-handling.patch (rhbz 998342)
-- In 3.13
+commit a72b8859fd3941cc1d2940d5c43026d2c6fb959e upstream.
 
-via-velocity-fix-netif_receive_skb-use-in-irq-disable.patch (rhbz 1022733)
-- Submitted for 3.13 and CC'd to 3.12 stable
+Register and enable interrupts after the edac registration. Otherwise
+incomming ecc error interrupts lead to crashes during device setup.
 
-xfs-underflow-bug-in-xfs_attrlist_by_handle.patch (rhbz 1033603)
-- Submitted and acked, but not queued
-http://thread.gmane.org/gmane.comp.file-systems.xfs.general/57654
+Fixing this in drivers for mc and l2.
 
-sunrpc-create-a-new-dummy-pipe-for-gssd-to-hold-open.patch
-sunrpc-replace-gssd_running-with-more-reliable-check.patch
-nfs-check-gssd-running-before-krb5i-auth.patch
-- These fix a 15 second NFS mount delay.  Should be headed upstream
-soonish (I think)
+Signed-off-by: Robert Richter <robert.richter@linaro.org>
+Acked-by: Rob Herring <rob.herring@calxeda.com>
+Signed-off-by: Robert Richter <rric@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-drm-radeon-24hz-audio-fixes.patch (rhbz 1010679)
-- Should be in 3.13
+---
+ drivers/edac/highbank_l2_edac.c |   18 ++++++++++--------
+ drivers/edac/highbank_mc_edac.c |   18 ++++++++++--------
+ 2 files changed, 20 insertions(+), 16 deletions(-)
 
-alx-Reset-phy-speed-after-resume.patch (rhbz 1011362)
-- In 3.13
+--- a/drivers/edac/highbank_l2_edac.c
++++ b/drivers/edac/highbank_l2_edac.c
+@@ -90,28 +90,30 @@ static int highbank_l2_err_probe(struct
+ 		goto err;
+ 	}
+ 
++	dci->mod_name = dev_name(&pdev->dev);
++	dci->dev_name = dev_name(&pdev->dev);
++
++	if (edac_device_add_device(dci))
++		goto err;
++
+ 	drvdata->db_irq = platform_get_irq(pdev, 0);
+ 	res = devm_request_irq(&pdev->dev, drvdata->db_irq,
+ 			       highbank_l2_err_handler,
+ 			       0, dev_name(&pdev->dev), dci);
+ 	if (res < 0)
+-		goto err;
++		goto err2;
+ 
+ 	drvdata->sb_irq = platform_get_irq(pdev, 1);
+ 	res = devm_request_irq(&pdev->dev, drvdata->sb_irq,
+ 			       highbank_l2_err_handler,
+ 			       0, dev_name(&pdev->dev), dci);
+ 	if (res < 0)
+-		goto err;
+-
+-	dci->mod_name = dev_name(&pdev->dev);
+-	dci->dev_name = dev_name(&pdev->dev);
+-
+-	if (edac_device_add_device(dci))
+-		goto err;
++		goto err2;
+ 
+ 	devres_close_group(&pdev->dev, NULL);
+ 	return 0;
++err2:
++	edac_device_del_device(&pdev->dev);
+ err:
+ 	devres_release_group(&pdev->dev, NULL);
+ 	edac_device_free_ctl_info(dci);
+--- a/drivers/edac/highbank_mc_edac.c
++++ b/drivers/edac/highbank_mc_edac.c
+@@ -189,14 +189,6 @@ static int highbank_mc_probe(struct plat
+ 		goto err;
+ 	}
+ 
+-	irq = platform_get_irq(pdev, 0);
+-	res = devm_request_irq(&pdev->dev, irq, highbank_mc_err_handler,
+-			       0, dev_name(&pdev->dev), mci);
+-	if (res < 0) {
+-		dev_err(&pdev->dev, "Unable to request irq %d\n", irq);
+-		goto err;
+-	}
+-
+ 	mci->mtype_cap = MEM_FLAG_DDR3;
+ 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
+ 	mci->edac_cap = EDAC_FLAG_SECDED;
+@@ -217,10 +209,20 @@ static int highbank_mc_probe(struct plat
+ 	if (res < 0)
+ 		goto err;
+ 
++	irq = platform_get_irq(pdev, 0);
++	res = devm_request_irq(&pdev->dev, irq, highbank_mc_err_handler,
++			       0, dev_name(&pdev->dev), mci);
++	if (res < 0) {
++		dev_err(&pdev->dev, "Unable to request irq %d\n", irq);
++		goto err2;
++	}
++
+ 	highbank_mc_create_debugfs_nodes(mci);
+ 
+ 	devres_close_group(&pdev->dev, NULL);
+ 	return 0;
++err2:
++	edac_mc_del_mc(&pdev->dev);
+ err:
+ 	devres_release_group(&pdev->dev, NULL);
+ 	edac_mc_free(mci);
 
-ip6_output-fragment-outgoing-reassembled-skb-properl.patch
-netfilter-push-reasm-skb-through-instead-of-original.patch (rhbz 1015905)
-- 3.13 and CC'd to stable
 
-ipv6-fix-headroom-calculation-in-udp6_ufo_fragment.patch (rhbz 1030015)
-- 3.13.  Fixes CVE-2013-4563
-
-Input-evdev-fall-back-to-vmalloc-for-client-event-buffer.patch
-- Fixes high order allocations.  In 3.13
-
-drm-qxl-backport-fixes-for-Fedora.patch
-drm-qxl-fix-memory-leak-in-release-list-handling.patch
-- Various QXL fixes Dave Airlied thought would be good to have.  In 3.13
-
-cpupower-Fix-segfault-due-to-incorrect-getopt_long-a.patch (rhbz 1000439)
-- Queued for next upstream release I believe.  Fixes a segfault in cpupower
-
-dm-cache-policy-mq_fix-large-scale-table-allocation-bug.patch (rhbz 993744)
-- Still pending upstream
-
-0002-iwlwifi-don-t-WARN-on-bad-firmware-state.patch (rhbz 896695)
-- Still pending upstream
-
-vfio-iommu-Fixed-interaction-of-VFIO_IOMMU_MAP_DMA.patch (rhbz 998732)
-- In 3.13
-
-iommu-Remove-stack-trace-from-broken-irq-remapping-warning.patch (rhbz 982153)
-- In 3.13
-
-rt2800-add-support-for-rf3070.patch (rhbz 974072)
-- In 3.13
-
-elevator-Fix-a-race-in-elevator-switching-and-md.patch
-elevator-acquire-q-sysfs_lock-in-elevator_change.patch (rhbz 902012)
-- In 3.13
-
-ntp-Make-periodic-RTC-update-more-reliable.patch (rhbz 985522)
-- In 3.13
-
-secure-modules.patch
-modsign-uefi.patch
-sb-hibernate.patch
-sysrq-secure-boot.patch
-  - Fedora secure boot support.
-  - Dear Matthew, this is your fault.  Run sed already and get a new set out.
-
-keys-expand-keyring.patch
-keys-krb-support.patch
-keys-x509-improv.patch
-keyring-quota.patch
-- These are all in 3.13 now.  Yay.
