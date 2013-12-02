@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090Ab3LBTTQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:19:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39710 "EHLO
+	id S1755239Ab3LBTVu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:21:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39760 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755029Ab3LBTTG (ORCPT
+	with ESMTP id S1755087Ab3LBTTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:19:06 -0500
+	Mon, 2 Dec 2013 14:19:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH 3.12 194/212] media: cimax2: Dont use dynamic static allocation
-Date: Mon,  2 Dec 2013 11:16:25 -0800
-Message-Id: <20131202191310.604245854@linuxfoundation.org>
+        David Howells <dhowells@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Josh Boyer <jwboyer@redhat.com>,
+        Alexander Holler <holler@ahsoftware.de>
+Subject: [PATCH 3.12 206/212] X.509: Remove certificate date checks
+Date: Mon,  2 Dec 2013 11:16:37 -0800
+Message-Id: <20131202191312.268881801@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,66 +29,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+From: David Howells <dhowells@redhat.com>
 
-commit 278ba83a3a1932805be726bdd7dfb3156286d33a upstream.
+commit 124df926090b32a998483f6e43ebeccdbe5b5302 upstream.
 
-Dynamic static allocation is evil, as Kernel stack is too low, and
-compilation complains about it on some archs:
-        drivers/media/pci/cx23885/cimax2.c:149:1: warning: 'netup_write_i2c' uses dynamic stack allocation [enabled by default]
-Instead, let's enforce a limit for the buffer. Considering that I2C
-transfers are generally limited, and that devices used on USB has a
-max data length of 64 bytes for the control URBs.
-So, it seem safe to use 64 bytes as the hard limit for all those devices.
-On most cases, the limit is a way lower than that, but this limit
-is small enough to not affect the Kernel stack, and it is a no brain
-limit, as using smaller ones would require to either carefully each
-driver or to take a look on each datasheet.
+Remove the certificate date checks that are performed when a certificate is
+parsed.  There are two checks: a valid from and a valid to.  The first check is
+causing a lot of problems with system clocks that don't keep good time and the
+second places an implicit expiry date upon the kernel when used for module
+signing, so do we really need them?
 
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: David Woodhouse <dwmw2@infradead.org>
+cc: Rusty Russell <rusty@rustcorp.com.au>
+cc: Josh Boyer <jwboyer@redhat.com>
+cc: Alexander Holler <holler@ahsoftware.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/pci/cx23885/cimax2.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ crypto/asymmetric_keys/x509_public_key.c |   38 -------------------------------
+ 1 file changed, 38 deletions(-)
 
---- a/drivers/media/pci/cx23885/cimax2.c
-+++ b/drivers/media/pci/cx23885/cimax2.c
-@@ -26,6 +26,10 @@
- #include "cx23885.h"
- #include "cimax2.h"
- #include "dvb_ca_en50221.h"
-+
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- /**** Bit definitions for MC417_RWD and MC417_OEN registers  ***
-   bits 31-16
- +-----------+
-@@ -125,7 +129,7 @@ static int netup_write_i2c(struct i2c_ad
- 						u8 *buf, int len)
+--- a/crypto/asymmetric_keys/x509_public_key.c
++++ b/crypto/asymmetric_keys/x509_public_key.c
+@@ -106,7 +106,6 @@ error_no_sig:
+ static int x509_key_preparse(struct key_preparsed_payload *prep)
  {
+ 	struct x509_certificate *cert;
+-	struct tm now;
+ 	size_t srlen, sulen;
+ 	char *desc = NULL;
  	int ret;
--	u8 buffer[len + 1];
-+	u8 buffer[MAX_XFER_SIZE];
+@@ -137,43 +136,6 @@ static int x509_key_preparse(struct key_
+ 		goto error_free_cert;
+ 	}
  
- 	struct i2c_msg msg = {
- 		.addr	= addr,
-@@ -134,6 +138,13 @@ static int netup_write_i2c(struct i2c_ad
- 		.len	= len + 1
- 	};
- 
-+	if (1 + len > sizeof(buffer)) {
-+		printk(KERN_WARNING
-+		       "%s: i2c wr reg=%04x: len=%d is too big!\n",
-+		       KBUILD_MODNAME, reg, len);
-+		return -EINVAL;
-+	}
-+
- 	buffer[0] = reg;
- 	memcpy(&buffer[1], buf, len);
+-	time_to_tm(CURRENT_TIME.tv_sec, 0, &now);
+-	pr_devel("Now: %04ld-%02d-%02d %02d:%02d:%02d\n",
+-		 now.tm_year + 1900, now.tm_mon + 1, now.tm_mday,
+-		 now.tm_hour, now.tm_min,  now.tm_sec);
+-	if (now.tm_year < cert->valid_from.tm_year ||
+-	    (now.tm_year == cert->valid_from.tm_year &&
+-	     (now.tm_mon < cert->valid_from.tm_mon ||
+-	      (now.tm_mon == cert->valid_from.tm_mon &&
+-	       (now.tm_mday < cert->valid_from.tm_mday ||
+-		(now.tm_mday == cert->valid_from.tm_mday &&
+-		 (now.tm_hour < cert->valid_from.tm_hour ||
+-		  (now.tm_hour == cert->valid_from.tm_hour &&
+-		   (now.tm_min < cert->valid_from.tm_min ||
+-		    (now.tm_min == cert->valid_from.tm_min &&
+-		     (now.tm_sec < cert->valid_from.tm_sec
+-		      ))))))))))) {
+-		pr_warn("Cert %s is not yet valid\n", cert->fingerprint);
+-		ret = -EKEYREJECTED;
+-		goto error_free_cert;
+-	}
+-	if (now.tm_year > cert->valid_to.tm_year ||
+-	    (now.tm_year == cert->valid_to.tm_year &&
+-	     (now.tm_mon > cert->valid_to.tm_mon ||
+-	      (now.tm_mon == cert->valid_to.tm_mon &&
+-	       (now.tm_mday > cert->valid_to.tm_mday ||
+-		(now.tm_mday == cert->valid_to.tm_mday &&
+-		 (now.tm_hour > cert->valid_to.tm_hour ||
+-		  (now.tm_hour == cert->valid_to.tm_hour &&
+-		   (now.tm_min > cert->valid_to.tm_min ||
+-		    (now.tm_min == cert->valid_to.tm_min &&
+-		     (now.tm_sec > cert->valid_to.tm_sec
+-		      ))))))))))) {
+-		pr_warn("Cert %s has expired\n", cert->fingerprint);
+-		ret = -EKEYEXPIRED;
+-		goto error_free_cert;
+-	}
+-
+ 	cert->pub->algo = x509_public_key_algorithms[cert->pkey_algo];
+ 	cert->pub->id_type = PKEY_ID_X509;
  
 
 
