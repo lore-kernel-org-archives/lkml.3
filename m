@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab3LBSAh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 13:00:37 -0500
-Received: from www.linutronix.de ([62.245.132.108]:46054 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753269Ab3LBSAe (ORCPT
+	id S1753337Ab3LBSBF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 13:01:05 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:48245 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753254Ab3LBSAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 13:00:34 -0500
-Date: Mon, 2 Dec 2013 19:00:20 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-cc: fweisbec@gmail.com, paul.gortmaker@windriver.com, paulus@samba.org,
-        shangw@linux.vnet.ibm.com, rjw@sisk.pl, paulmck@linux.vnet.ibm.com,
-        arnd@arndb.de, linux-pm@vger.kernel.org, rostedt@goodmis.org,
-        michael@ellerman.id.au, john.stultz@linaro.org,
-        chenhui.zhao@freescale.com, deepthi@linux.vnet.ibm.com,
-        r58472@freescale.com, geoff@infradead.org,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH V4 7/9] cpuidle/powernv: Add "Fast-Sleep" CPU idle
- state
-In-Reply-To: <529CA219.20109@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.02.1312021859440.30673@ionos.tec.linutronix.de>
-References: <20131129104010.651.23117.stgit@preeti.in.ibm.com> <20131129104319.651.29563.stgit@preeti.in.ibm.com> <alpine.DEB.2.02.1311291301300.30673@ionos.tec.linutronix.de> <529CA219.20109@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 2 Dec 2013 13:00:31 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: linus.walleij@linaro.org, broonie@kernel.org,
+        Lee Jones <lee.jones@linaro.org>, alsa-devel@alsa-project.org
+Subject: [PATCH 2/3] ASoC: ux500_pcm: Differentiate between pdata and DT initialisation
+Date: Mon,  2 Dec 2013 18:00:21 +0000
+Message-Id: <1386007222-10081-2-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386007222-10081-1-git-send-email-lee.jones@linaro.org>
+References: <1386007222-10081-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Dec 2013, Preeti U Murthy wrote:
-> On 11/29/2013 08:09 PM, Thomas Gleixner wrote:
-> > This supports HIGHRES and NO_HZ if done right, without polling at
-> > all. So you can even let the last CPU which handles the broadcast
-> > hrtimer go for a long sleep, just not in the deepest idle state.
-> 
-> Thank you for the review. The above points are all valid. I will rework
-> the design to:
-> 
-> 1. Eliminate the concept of a broadcast CPU and integrate its
-> functionality in the timekeeping CPU.
-> 
-> 2. Avoid polling by using IPIs to communicate the next wakeup of the
-> CPUs in deep idle state so as to reprogram the broadcast hrtimer.
-> 
-> 3. Make this feature generic and not arch-specific.
+If booting with full DT support (i.e. DMA too, the last piece of the
+puzzle), then we don't need to use the compatible request channel call
+back. We also require slightly different flags to inform the core that
+we are booting with DT.
 
-Great. If you need help with the generic bits, please let me know.
+Cc: alsa-devel@alsa-project.org
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ sound/soc/ux500/ux500_pcm.c | 26 +++++++++++++++++++++-----
+ 1 file changed, 21 insertions(+), 5 deletions(-)
 
-Thanks,
+diff --git a/sound/soc/ux500/ux500_pcm.c b/sound/soc/ux500/ux500_pcm.c
+index 2f1bdb7..00cdd7b 100644
+--- a/sound/soc/ux500/ux500_pcm.c
++++ b/sound/soc/ux500/ux500_pcm.c
+@@ -134,15 +134,31 @@ static const struct snd_dmaengine_pcm_config ux500_dmaengine_pcm_config = {
+ 	.prepare_slave_config = ux500_pcm_prepare_slave_config,
+ };
+ 
++static const struct snd_dmaengine_pcm_config ux500_dmaengine_of_pcm_config = {
++	.prepare_slave_config = ux500_pcm_prepare_slave_config,
++};
++
+ int ux500_pcm_register_platform(struct platform_device *pdev)
+ {
++	const struct snd_dmaengine_pcm_config *pcm_config;
++	struct device_node *np = pdev->dev.of_node;
++	unsigned int pcm_flags;
+ 	int ret;
+ 
+-	ret = snd_dmaengine_pcm_register(&pdev->dev,
+-			&ux500_dmaengine_pcm_config,
+-			SND_DMAENGINE_PCM_FLAG_NO_RESIDUE |
+-			SND_DMAENGINE_PCM_FLAG_COMPAT |
+-			SND_DMAENGINE_PCM_FLAG_NO_DT);
++	if (np) {
++		pcm_config = &ux500_dmaengine_of_pcm_config;
++
++		pcm_flags = SND_DMAENGINE_PCM_FLAG_NO_RESIDUE |
++			SND_DMAENGINE_PCM_FLAG_COMPAT;
++	} else {
++		pcm_config = &ux500_dmaengine_pcm_config;
++
++		pcm_flags = SND_DMAENGINE_PCM_FLAG_NO_RESIDUE |
++			SND_DMAENGINE_PCM_FLAG_NO_DT |
++			SND_DMAENGINE_PCM_FLAG_COMPAT;
++	}
++
++	ret = snd_dmaengine_pcm_register(&pdev->dev, pcm_config, pcm_flags);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev,
+ 			"%s: ERROR: Failed to register platform '%s' (%d)!\n",
+-- 
+1.8.3.2
 
-	tglx
