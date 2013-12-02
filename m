@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab3LBTmO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:42:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39583 "EHLO
+	id S1755566Ab3LBTmv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:42:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39577 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753258Ab3LBTSp (ORCPT
+	with ESMTP id S1754876Ab3LBTSo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:45 -0500
+	Mon, 2 Dec 2013 14:18:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org
-Subject: [PATCH 3.12 165/212] Revert "Input: ALPS - add support for model found on Dell XT2"
-Date: Mon,  2 Dec 2013 11:15:56 -0800
-Message-Id: <20131202191306.295690254@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 163/212] ALSA: hda - Check leaf nodes to find aamix amps
+Date: Mon,  2 Dec 2013 11:15:54 -0800
+Message-Id: <20131202191306.029756327@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -25,28 +26,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 936816161978ca716a56c5e553c68f25972b1e3a upstream.
+commit 2ded3e5b61d61d0bc90bebb8004db6184c7db6eb upstream.
 
-This reverts commit 5beea882e64121dfe3b33145767d3302afa784d5 as it
-breaks trackpoint operation on XT2.
+The current generic parser assumes blindly that the volume and mute
+amps are found in the aamix node itself.  But on some codecs,
+typically Analog Devices ones, the aamix amps are separately
+implemented in each leaf node of the aamix node, and the current
+driver can't establish the correct amp controls.  This is a regression
+compared with the previous static quirks.
 
+This patch extends the search for the amps to the leaf nodes for
+allowing the aamix controls again on such codecs.
+In this implementation, I didn't code to loop through the whole paths,
+since usually one depth should suffice, and we can't search too
+deeply, as it may result in the conflicting control assignments.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=65641
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/alps.c |    1 -
- 1 file changed, 1 deletion(-)
+ sound/pci/hda/hda_generic.c |   57 ++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 45 insertions(+), 12 deletions(-)
 
---- a/drivers/input/mouse/alps.c
-+++ b/drivers/input/mouse/alps.c
-@@ -103,7 +103,6 @@ static const struct alps_model_info alps
- 	/* Dell Latitude E5500, E6400, E6500, Precision M4400 */
- 	{ { 0x62, 0x02, 0x14 }, 0x00, ALPS_PROTO_V2, 0xcf, 0xcf,
- 		ALPS_PASS | ALPS_DUALPOINT | ALPS_PS2_INTERLEAVED },
--	{ { 0x73, 0x00, 0x14 }, 0x00, ALPS_PROTO_V2, 0xcf, 0xcf, ALPS_DUALPOINT },		/* Dell XT2 */
- 	{ { 0x73, 0x02, 0x50 }, 0x00, ALPS_PROTO_V2, 0xcf, 0xcf, ALPS_FOUR_BUTTONS },		/* Dell Vostro 1400 */
- 	{ { 0x52, 0x01, 0x14 }, 0x00, ALPS_PROTO_V2, 0xff, 0xff,
- 		ALPS_PASS | ALPS_DUALPOINT | ALPS_PS2_INTERLEAVED },				/* Toshiba Tecra A11-11L */
+--- a/sound/pci/hda/hda_generic.c
++++ b/sound/pci/hda/hda_generic.c
+@@ -2808,6 +2808,42 @@ static int add_loopback_list(struct hda_
+ 	return 0;
+ }
+ 
++/* return true if either a volume or a mute amp is found for the given
++ * aamix path; the amp has to be either in the mixer node or its direct leaf
++ */
++static bool look_for_mix_leaf_ctls(struct hda_codec *codec, hda_nid_t mix_nid,
++				   hda_nid_t pin, unsigned int *mix_val,
++				   unsigned int *mute_val)
++{
++	int idx, num_conns;
++	const hda_nid_t *list;
++	hda_nid_t nid;
++
++	idx = snd_hda_get_conn_index(codec, mix_nid, pin, true);
++	if (idx < 0)
++		return false;
++
++	*mix_val = *mute_val = 0;
++	if (nid_has_volume(codec, mix_nid, HDA_INPUT))
++		*mix_val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
++	if (nid_has_mute(codec, mix_nid, HDA_INPUT))
++		*mute_val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
++	if (*mix_val && *mute_val)
++		return true;
++
++	/* check leaf node */
++	num_conns = snd_hda_get_conn_list(codec, mix_nid, &list);
++	if (num_conns < idx)
++		return false;
++	nid = list[idx];
++	if (!*mix_val && nid_has_volume(codec, nid, HDA_OUTPUT))
++		*mix_val = HDA_COMPOSE_AMP_VAL(nid, 3, 0, HDA_OUTPUT);
++	if (!*mute_val && nid_has_mute(codec, nid, HDA_OUTPUT))
++		*mute_val = HDA_COMPOSE_AMP_VAL(nid, 3, 0, HDA_OUTPUT);
++
++	return *mix_val || *mute_val;
++}
++
+ /* create input playback/capture controls for the given pin */
+ static int new_analog_input(struct hda_codec *codec, int input_idx,
+ 			    hda_nid_t pin, const char *ctlname, int ctlidx,
+@@ -2815,12 +2851,11 @@ static int new_analog_input(struct hda_c
+ {
+ 	struct hda_gen_spec *spec = codec->spec;
+ 	struct nid_path *path;
+-	unsigned int val;
++	unsigned int mix_val, mute_val;
+ 	int err, idx;
+ 
+-	if (!nid_has_volume(codec, mix_nid, HDA_INPUT) &&
+-	    !nid_has_mute(codec, mix_nid, HDA_INPUT))
+-		return 0; /* no need for analog loopback */
++	if (!look_for_mix_leaf_ctls(codec, mix_nid, pin, &mix_val, &mute_val))
++		return 0;
+ 
+ 	path = snd_hda_add_new_path(codec, pin, mix_nid, 0);
+ 	if (!path)
+@@ -2829,20 +2864,18 @@ static int new_analog_input(struct hda_c
+ 	spec->loopback_paths[input_idx] = snd_hda_get_path_idx(codec, path);
+ 
+ 	idx = path->idx[path->depth - 1];
+-	if (nid_has_volume(codec, mix_nid, HDA_INPUT)) {
+-		val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
+-		err = __add_pb_vol_ctrl(spec, HDA_CTL_WIDGET_VOL, ctlname, ctlidx, val);
++	if (mix_val) {
++		err = __add_pb_vol_ctrl(spec, HDA_CTL_WIDGET_VOL, ctlname, ctlidx, mix_val);
+ 		if (err < 0)
+ 			return err;
+-		path->ctls[NID_PATH_VOL_CTL] = val;
++		path->ctls[NID_PATH_VOL_CTL] = mix_val;
+ 	}
+ 
+-	if (nid_has_mute(codec, mix_nid, HDA_INPUT)) {
+-		val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
+-		err = __add_pb_sw_ctrl(spec, HDA_CTL_WIDGET_MUTE, ctlname, ctlidx, val);
++	if (mute_val) {
++		err = __add_pb_sw_ctrl(spec, HDA_CTL_WIDGET_MUTE, ctlname, ctlidx, mute_val);
+ 		if (err < 0)
+ 			return err;
+-		path->ctls[NID_PATH_MUTE_CTL] = val;
++		path->ctls[NID_PATH_MUTE_CTL] = mute_val;
+ 	}
+ 
+ 	path->active = true;
 
 
