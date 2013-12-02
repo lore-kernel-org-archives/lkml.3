@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757628Ab3LBU0r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:26:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38990 "EHLO
+	id S1757646Ab3LBU1P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:27:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39027 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753219Ab3LBTQ4 (ORCPT
+	with ESMTP id S1752964Ab3LBTQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:16:56 -0500
+	Mon, 2 Dec 2013 14:16:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>
-Subject: [PATCH 3.12 013/212] Staging: zram: Fix memory leak by refcount mismatch
-Date: Mon,  2 Dec 2013 11:13:24 -0800
-Message-Id: <20131202191250.122965760@linuxfoundation.org>
+        Olav Haugan <ohaugan@codeaurora.org>
+Subject: [PATCH 3.12 012/212] staging: zsmalloc: Ensure handle is never 0 on success
+Date: Mon,  2 Dec 2013 11:13:23 -0800
+Message-Id: <20131202191250.003870958@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -28,63 +26,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rashika Kheria <rashika.kheria@gmail.com>
+From: Olav Haugan <ohaugan@codeaurora.org>
 
-commit 1b672224d128ec2570eb37572ff803cfe452b4f7 upstream.
+commit 67296874eb1cc80317bf2a8fba22b494e21eb29b upstream.
 
-As suggested by Minchan Kim and Jerome Marchand "The code in reset_store
-get the block device (bdget_disk()) but it does not put it (bdput()) when
-it's done using it. The usage count is therefore incremented but never
-decremented."
+zsmalloc encodes a handle using the pfn and an object
+index. On hardware platforms with physical memory starting
+at 0x0 the pfn can be 0. This causes the encoded handle to be
+0 and is incorrectly interpreted as an allocation failure.
 
-This patch also puts bdput() for all error cases.
+This issue affects all current and future SoCs with physical
+memory starting at 0x0. All MSM8974 SoCs which includes
+Google Nexus 5 devices are affected.
 
-Acked-by: Minchan Kim <minchan@kernel.org>
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+To prevent this false error we ensure that the encoded handle
+will not be 0 when allocation succeeds.
+
+Signed-off-by: Olav Haugan <ohaugan@codeaurora.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/zram/zram_drv.c |   19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
+ drivers/staging/zsmalloc/zsmalloc-main.c |   17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
 
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -652,21 +652,30 @@ static ssize_t reset_store(struct device
- 		return -ENOMEM;
- 
- 	/* Do not reset an active device! */
--	if (bdev->bd_holders)
--		return -EBUSY;
-+	if (bdev->bd_holders) {
-+		ret = -EBUSY;
-+		goto out;
-+	}
- 
- 	ret = kstrtou16(buf, 10, &do_reset);
- 	if (ret)
--		return ret;
-+		goto out;
- 
--	if (!do_reset)
--		return -EINVAL;
-+	if (!do_reset) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
- 
- 	/* Make sure all pending I/O is finished */
- 	fsync_bdev(bdev);
-+	bdput(bdev);
- 
- 	zram_reset_device(zram, true);
- 	return len;
-+
-+out:
-+	bdput(bdev);
-+	return ret;
+--- a/drivers/staging/zsmalloc/zsmalloc-main.c
++++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+@@ -430,7 +430,12 @@ static struct page *get_next_page(struct
+ 	return next;
  }
  
- static void __zram_make_request(struct zram *zram, struct bio *bio, int rw)
+-/* Encode <page, obj_idx> as a single handle value */
++/*
++ * Encode <page, obj_idx> as a single handle value.
++ * On hardware platforms with physical memory starting at 0x0 the pfn
++ * could be 0 so we ensure that the handle will never be 0 by adjusting the
++ * encoded obj_idx value before encoding.
++ */
+ static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
+ {
+ 	unsigned long handle;
+@@ -441,17 +446,21 @@ static void *obj_location_to_handle(stru
+ 	}
+ 
+ 	handle = page_to_pfn(page) << OBJ_INDEX_BITS;
+-	handle |= (obj_idx & OBJ_INDEX_MASK);
++	handle |= ((obj_idx + 1) & OBJ_INDEX_MASK);
+ 
+ 	return (void *)handle;
+ }
+ 
+-/* Decode <page, obj_idx> pair from the given object handle */
++/*
++ * Decode <page, obj_idx> pair from the given object handle. We adjust the
++ * decoded obj_idx back to its original value since it was adjusted in
++ * obj_location_to_handle().
++ */
+ static void obj_handle_to_location(unsigned long handle, struct page **page,
+ 				unsigned long *obj_idx)
+ {
+ 	*page = pfn_to_page(handle >> OBJ_INDEX_BITS);
+-	*obj_idx = handle & OBJ_INDEX_MASK;
++	*obj_idx = (handle & OBJ_INDEX_MASK) - 1;
+ }
+ 
+ static unsigned long obj_idx_to_offset(struct page *page,
 
 
