@@ -1,90 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535Ab3LBS0J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 13:26:09 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:33857 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752098Ab3LBS0G (ORCPT
+	id S1752847Ab3LBS0w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 13:26:52 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:43037 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752700Ab3LBS0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 13:26:06 -0500
-Date: Mon, 2 Dec 2013 13:26:03 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ktest: Make the signal to terminate the console
- configurable.
-Message-ID: <20131202132603.7dd7c0a6@gandalf.local.home>
-In-Reply-To: <87zjol8pl5.wl%satoru.takeuchi@gmail.com>
-References: <87zjol8pl5.wl%satoru.takeuchi@gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Mon, 2 Dec 2013 13:26:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131202181501.GA5524@dhcp22.suse.cz>
+References: <1385989693-28788-1-git-send-email-vdavydov@parallels.com>
+	<20131202181501.GA5524@dhcp22.suse.cz>
+Date: Mon, 2 Dec 2013 22:26:48 +0400
+Message-ID: <CAA6-i6rWsZNQmFY5L-=yc6TaTGyg4hP4qn9gMZVsu8wWJ=1ywg@mail.gmail.com>
+Subject: Re: [PATCH] memcg: remove KMEM_ACCOUNTED_ACTIVATED
+From: Glauber Costa <glommer@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Vladimir Davydov <vdavydov@parallels.com>,
+        LKML <linux-kernel@vger.kernel.org>, cgroups@vger.kernel.org,
+        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 01 Dec 2013 07:57:58 +0900
-Satoru Takeuchi <satoru.takeuchi@gmail.com> wrote:
+On Mon, Dec 2, 2013 at 10:15 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> [CCing Glauber - please do so in other posts for kmem related changes]
+>
+> On Mon 02-12-13 17:08:13, Vladimir Davydov wrote:
+>> The KMEM_ACCOUNTED_ACTIVATED was introduced by commit a8964b9b ("memcg:
+>> use static branches when code not in use") in order to guarantee that
+>> static_key_slow_inc(&memcg_kmem_enabled_key) will be called only once
+>> for each memory cgroup when its kmem limit is set. The point is that at
+>> that time the memcg_update_kmem_limit() function's workflow looked like
+>> this:
+>>
+>>       bool must_inc_static_branch = false;
+>>
+>>       cgroup_lock();
+>>       mutex_lock(&set_limit_mutex);
+>>       if (!memcg->kmem_account_flags && val != RESOURCE_MAX) {
+>>               /* The kmem limit is set for the first time */
+>>               ret = res_counter_set_limit(&memcg->kmem, val);
+>>
+>>               memcg_kmem_set_activated(memcg);
+>>               must_inc_static_branch = true;
+>>       } else
+>>               ret = res_counter_set_limit(&memcg->kmem, val);
+>>       mutex_unlock(&set_limit_mutex);
+>>       cgroup_unlock();
+>>
+>>       if (must_inc_static_branch) {
+>>               /* We can't do this under cgroup_lock */
+>>               static_key_slow_inc(&memcg_kmem_enabled_key);
+>>               memcg_kmem_set_active(memcg);
+>>       }
+>>
+>> Today, we don't use cgroup_lock in memcg_update_kmem_limit(), and
+>> static_key_slow_inc() is called under the set_limit_mutex, but the
+>> leftover from the above-mentioned commit is still here. Let's remove it.
+>
+> OK, so I have looked there again and 692e89abd154b (memcg: increment
+> static branch right after limit set) which went in after cgroup_mutex
+> has been removed. It came along with the following comment.
+>                 /*
+>                  * setting the active bit after the inc will guarantee no one
+>                  * starts accounting before all call sites are patched
+>                  */
+>
+> This suggests that the flag is needed after all because we have
+> to be sure that _all_ the places have to be patched. AFAIU
+> memcg_kmem_newpage_charge might see the static key already patched so
+> it would do a charge but memcg_kmem_commit_charge would still see it
+> unpatched and so the charge won't be committed.
+>
+> Or am I missing something?
 
->  Currently ktest send SIGINT to terminate the console.
->  However, there are consoles which doesn't exit by this signal, for example,
->  in my case, "virsh console <guest OS>". In such case, ktest is blocked in
->  close_console(). It prevents to automate tests.
-> 
-> This patch adds new option CLOSE_CONSOLE_SIGNAL which mean the
-> signal to terminate the console. Since its default value is "INT",
-> the original behavior isn't changed.
+You are correct. This flag is there due to the way we are using static branches.
+The patching of one call site is atomic, but the patching of all of
+them are not.
+Therefore we need to use a two-flag scheme to guarantee that in the first time
+we turn the static branches on, there will be a clear point after
+which we're going
+to start accounting.
 
-Thanks! I'll add this to my 3.14 queue
 
--- Steve
 
-> 
-> Signed-off-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> 
-> ---
->  tools/testing/ktest/ktest.pl | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-> index 999eab1..4e5ee67 100755
-> --- a/tools/testing/ktest/ktest.pl
-> +++ b/tools/testing/ktest/ktest.pl
-> @@ -25,6 +25,7 @@ my %default = (
->      "TEST_TYPE"			=> "build",
->      "BUILD_TYPE"		=> "randconfig",
->      "MAKE_CMD"			=> "make",
-> +    "CLOSE_CONSOLE_SIGNAL"	=> "INT",
->      "TIMEOUT"			=> 120,
->      "TMP_DIR"			=> "/tmp/ktest/\${MACHINE}",
->      "SLEEP_TIME"		=> 60,	# sleep time between tests
-> @@ -163,6 +164,7 @@ my $timeout;
->  my $booted_timeout;
->  my $detect_triplefault;
->  my $console;
-> +my $close_console_signal;
->  my $reboot_success_line;
->  my $success_line;
->  my $stop_after_success;
-> @@ -285,6 +287,7 @@ my %option_map = (
->      "TIMEOUT"			=> \$timeout,
->      "BOOTED_TIMEOUT"		=> \$booted_timeout,
->      "CONSOLE"			=> \$console,
-> +    "CLOSE_CONSOLE_SIGNAL"	=> \$close_console_signal,
->      "DETECT_TRIPLE_FAULT"	=> \$detect_triplefault,
->      "SUCCESS_LINE"		=> \$success_line,
->      "REBOOT_SUCCESS_LINE"	=> \$reboot_success_line,
-> @@ -1296,7 +1299,7 @@ sub close_console {
->      my ($fp, $pid) = @_;
->  
->      doprint "kill child process $pid\n";
-> -    kill 2, $pid;
-> +    kill $close_console_signal, $pid;
->  
->      print "closing!\n";
->      close($fp);
 
+
+-- 
+E Mare, Libertas
