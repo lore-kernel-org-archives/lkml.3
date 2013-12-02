@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758285Ab3LBUoY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:44:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38779 "EHLO
+	id S1757165Ab3LBUoV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:44:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38743 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234Ab3LBTOB (ORCPT
+	with ESMTP id S1754243Ab3LBTOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:14:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 114/173] ALSA: hda - Fix hp-mic mode without VREF bits
-Date: Mon,  2 Dec 2013 11:11:37 -0800
-Message-Id: <20131202191156.918722083@linuxfoundation.org>
+Subject: [PATCH 3.10 115/173] ALSA: hda - Create Headhpone Mic Jack Mode when really needed
+Date: Mon,  2 Dec 2013 11:11:38 -0800
+Message-Id: <20131202191157.005089120@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -28,29 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit 16c0cefe8951b2c4b824fd06011ac1b359b1ab3b upstream.
+commit ced4cefc75fdb8be95eaee325ad0f6b2fc0a484b upstream.
 
-When the hp mic pin has no VREF bits, the driver forgot to set PIN_IN
-bit.  Spotted during debugging old MacBook Airs.
+When a headphone jack is configurable as input, the generic parser
+tries to make it retaskable as Headphone Mic.  The switching can be
+done smoothly if Capture Source control exists (i.e. there is another
+input source).  Or when user explicitly enables the creation of jack
+mode controls, "Headhpone Mic Jack Mode" will be created accordingly.
+
+However, if the headphone mic is the only input source, we have to
+create "Headphone Mic Jack Mode" control because there is no capture
+source selection.  Otherwise, the generic parser assumes that the
+input is constantly enabled, thus the headphone is permanently set
+as input.  This situation happens on the old MacBook Airs where no
+input is supported properly, for example.
+
+This patch fixes the problem: now "Headphone Mic Jack Mode" is created
+when such an input selection isn't possible.
 
 Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=65681
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_generic.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/hda_generic.c |   20 ++++++++++++--------
+ 1 file changed, 12 insertions(+), 8 deletions(-)
 
 --- a/sound/pci/hda/hda_generic.c
 +++ b/sound/pci/hda/hda_generic.c
-@@ -2703,7 +2703,7 @@ static int hp_mic_jack_mode_put(struct s
- 			val &= ~(AC_PINCTL_VREFEN | PIN_HP);
- 			val |= get_vref_idx(vref_caps, idx) | PIN_IN;
- 		} else
--			val = snd_hda_get_default_vref(codec, nid);
-+			val = snd_hda_get_default_vref(codec, nid) | PIN_IN;
- 	}
- 	snd_hda_set_pin_ctl_cache(codec, nid, val);
- 	call_hp_automute(codec, NULL);
+@@ -2445,12 +2445,8 @@ static int create_out_jack_modes(struct
+ 
+ 	for (i = 0; i < num_pins; i++) {
+ 		hda_nid_t pin = pins[i];
+-		if (pin == spec->hp_mic_pin) {
+-			int ret = create_hp_mic_jack_mode(codec, pin);
+-			if (ret < 0)
+-				return ret;
++		if (pin == spec->hp_mic_pin)
+ 			continue;
+-		}
+ 		if (get_out_jack_num_items(codec, pin) > 1) {
+ 			struct snd_kcontrol_new *knew;
+ 			char name[44];
+@@ -2723,9 +2719,6 @@ static int create_hp_mic_jack_mode(struc
+ 	struct hda_gen_spec *spec = codec->spec;
+ 	struct snd_kcontrol_new *knew;
+ 
+-	if (get_out_jack_num_items(codec, pin) <= 1 &&
+-	    get_in_jack_num_items(codec, pin) <= 1)
+-		return 0; /* no need */
+ 	knew = snd_hda_gen_add_kctl(spec, "Headphone Mic Jack Mode",
+ 				    &hp_mic_jack_mode_enum);
+ 	if (!knew)
+@@ -4287,6 +4280,17 @@ int snd_hda_gen_parse_auto_config(struct
+ 	if (err < 0)
+ 		return err;
+ 
++	/* create "Headphone Mic Jack Mode" if no input selection is
++	 * available (or user specifies add_jack_modes hint)
++	 */
++	if (spec->hp_mic_pin &&
++	    (spec->auto_mic || spec->input_mux.num_items == 1 ||
++	     spec->add_jack_modes)) {
++		err = create_hp_mic_jack_mode(codec, spec->hp_mic_pin);
++		if (err < 0)
++			return err;
++	}
++
+ 	if (spec->add_jack_modes) {
+ 		if (cfg->line_out_type != AUTO_PIN_SPEAKER_OUT) {
+ 			err = create_out_jack_modes(codec, cfg->line_outs,
 
 
