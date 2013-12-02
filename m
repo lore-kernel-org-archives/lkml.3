@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195Ab3LBTrg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:47:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39541 "EHLO
+	id S1756223Ab3LBTrp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:47:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39521 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753816Ab3LBTSf (ORCPT
+	with ESMTP id S1754817Ab3LBTSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:35 -0500
+	Mon, 2 Dec 2013 14:18:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.12 149/212] HID: uhid: fix leak for 64/32 UHID_CREATE
-Date: Mon,  2 Dec 2013 11:15:40 -0800
-Message-Id: <20131202191303.968721793@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.12 156/212] cgroup: fix cgroup_subsys_state leak for seq_files
+Date: Mon,  2 Dec 2013 11:15:47 -0800
+Message-Id: <20131202191304.947380202@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,36 +26,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Herrmann <dh.herrmann@gmail.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 80897aa787ecd58eabb29deab7cbec9249c9b7e6 upstream.
+commit e605b36575e896edd8161534550c9ea021b03bc0 upstream.
 
-UHID allows short writes so user-space can omit unused fields. We
-automatically set them to 0 in the kernel. However, the 64/32 bit
-compat-handler didn't do that in the UHID_CREATE fallback. This will
-reveal random kernel heap data (of random size, even) to user-space.
+If a cgroup file implements either read_map() or read_seq_string(),
+such file is served using seq_file by overriding file->f_op to
+cgroup_seqfile_operations, which also overrides the release method to
+single_release() from cgroup_file_release().
 
-Fixes: befde0226a59 ('HID: uhid: make creating devices work on 64/32 systems')
+Because cgroup_file_open() didn't use to acquire any resources, this
+used to be fine, but since f7d58818ba42 ("cgroup: pin
+cgroup_subsys_state when opening a cgroupfs file"), cgroup_file_open()
+pins the css (cgroup_subsys_state) which is put by
+cgroup_file_release().  The patch forgot to update the release path
+for seq_files and each open/release cycle leaks a css reference.
 
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Fix it by updating cgroup_file_release() to also handle seq_files and
+using it for seq_file release path too.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/uhid.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/cgroup.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/uhid.c
-+++ b/drivers/hid/uhid.c
-@@ -287,7 +287,7 @@ static int uhid_event_from_user(const ch
- 			 */
- 			struct uhid_create_req_compat *compat;
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -231,6 +231,7 @@ static void cgroup_destroy_css_killed(st
+ static int cgroup_destroy_locked(struct cgroup *cgrp);
+ static int cgroup_addrm_files(struct cgroup *cgrp, struct cftype cfts[],
+ 			      bool is_add);
++static int cgroup_file_release(struct inode *inode, struct file *file);
  
--			compat = kmalloc(sizeof(*compat), GFP_KERNEL);
-+			compat = kzalloc(sizeof(*compat), GFP_KERNEL);
- 			if (!compat)
- 				return -ENOMEM;
+ /**
+  * cgroup_css - obtain a cgroup's css for the specified subsystem
+@@ -2471,7 +2472,7 @@ static const struct file_operations cgro
+ 	.read = seq_read,
+ 	.write = cgroup_file_write,
+ 	.llseek = seq_lseek,
+-	.release = single_release,
++	.release = cgroup_file_release,
+ };
+ 
+ static int cgroup_file_open(struct inode *inode, struct file *file)
+@@ -2532,6 +2533,8 @@ static int cgroup_file_release(struct in
+ 		ret = cft->release(inode, file);
+ 	if (css->ss)
+ 		css_put(css);
++	if (file->f_op == &cgroup_seqfile_operations)
++		single_release(inode, file);
+ 	return ret;
+ }
  
 
 
