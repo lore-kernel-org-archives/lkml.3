@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755133Ab3LBTTY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:19:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39734 "EHLO
+	id S1755178Ab3LBTTe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:19:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39784 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755057Ab3LBTTL (ORCPT
+	with ESMTP id S1753047Ab3LBTTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:19:11 -0500
+	Mon, 2 Dec 2013 14:19:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH 3.12 191/212] media: dibusb-common: Dont use dynamic static allocation
-Date: Mon,  2 Dec 2013 11:16:22 -0800
-Message-Id: <20131202191310.180548843@linuxfoundation.org>
+        Nanno Langstraat <langstr@gmail.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.12 212/212] HID: apple: option to swap the Option ("Alt") and Command ("Flag") keys.
+Date: Mon,  2 Dec 2013 11:16:43 -0800
+Message-Id: <20131202191313.236626507@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,54 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+From: Nanno Langstraat <langstr@gmail.com>
 
-commit 1d7fa359d4c0fbb2756fa01cc47212908d90b7b0 upstream.
+commit 43c831468b3d26dbe8f2e061ccaf1abaf9cc1b8b upstream.
 
-Dynamic static allocation is evil, as Kernel stack is too low, and
-compilation complains about it on some archs:
-	drivers/media/usb/dvb-usb/dibusb-common.c:124:1: warning: 'dibusb_i2c_msg' uses dynamic stack allocation [enabled by default]
-Instead, let's enforce a limit for the buffer to be the max size of
-a control URB payload data (64 bytes).
+Use case: people who use both Apple and PC keyboards regularly, and desire to
+keep&use their PC muscle memory.
 
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+A particular use case: an Apple compact external keyboard connected to a PC
+laptop. (This use case can't be covered well by X.org key remappings etc.)
+
+Signed-off-by: Nanno Langstraat <langstr@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/dvb-usb/dibusb-common.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/hid/hid-apple.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
---- a/drivers/media/usb/dvb-usb/dibusb-common.c
-+++ b/drivers/media/usb/dvb-usb/dibusb-common.c
-@@ -12,6 +12,9 @@
- #include <linux/kconfig.h>
- #include "dibusb.h"
+--- a/drivers/hid/hid-apple.c
++++ b/drivers/hid/hid-apple.c
+@@ -46,6 +46,12 @@ module_param(iso_layout, uint, 0644);
+ MODULE_PARM_DESC(iso_layout, "Enable/Disable hardcoded ISO-layout of the keyboard. "
+ 		"(0 = disabled, [1] = enabled)");
  
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
++static unsigned int swap_opt_cmd = 0;
++module_param(swap_opt_cmd, uint, 0644);
++MODULE_PARM_DESC(swap_opt_cmd, "Swap the Option (\"Alt\") and Command (\"Flag\") keys. "
++		"(For people who want to keep Windows PC keyboard muscle memory. "
++		"[0] = as-is, Mac layout. 1 = swapped, Windows layout.)");
 +
- static int debug;
- module_param(debug, int, 0644);
- MODULE_PARM_DESC(debug, "set debugging level (1=info (|-able))." DVB_USB_DEBUG_STATUS);
-@@ -105,11 +108,16 @@ EXPORT_SYMBOL(dibusb2_0_power_ctrl);
- static int dibusb_i2c_msg(struct dvb_usb_device *d, u8 addr,
- 			  u8 *wbuf, u16 wlen, u8 *rbuf, u16 rlen)
- {
--	u8 sndbuf[wlen+4]; /* lead(1) devaddr,direction(1) addr(2) data(wlen) (len(2) (when reading)) */
-+	u8 sndbuf[MAX_XFER_SIZE]; /* lead(1) devaddr,direction(1) addr(2) data(wlen) (len(2) (when reading)) */
- 	/* write only ? */
- 	int wo = (rbuf == NULL || rlen == 0),
- 		len = 2 + wlen + (wo ? 0 : 2);
+ struct apple_sc {
+ 	unsigned long quirks;
+ 	unsigned int fn_on;
+@@ -150,6 +156,14 @@ static const struct apple_key_translatio
+ 	{ }
+ };
  
-+	if (4 + wlen > sizeof(sndbuf)) {
-+		warn("i2c wr: len=%d is too big!\n", wlen);
-+		return -EOPNOTSUPP;
++static const struct apple_key_translation swapped_option_cmd_keys[] = {
++	{ KEY_LEFTALT,	KEY_LEFTMETA },
++	{ KEY_LEFTMETA,	KEY_LEFTALT },
++	{ KEY_RIGHTALT,	KEY_RIGHTMETA },
++	{ KEY_RIGHTMETA,KEY_RIGHTALT },
++	{ }
++};
++
+ static const struct apple_key_translation *apple_find_translation(
+ 		const struct apple_key_translation *table, u16 from)
+ {
+@@ -242,6 +256,14 @@ static int hidinput_apple_event(struct h
+ 		}
+ 	}
+ 
++	if (swap_opt_cmd) {
++		trans = apple_find_translation(swapped_option_cmd_keys, usage->code);
++		if (trans) {
++			input_event(input, usage->type, trans->to, value);
++			return 1;
++		}
 +	}
 +
- 	sndbuf[0] = wo ? DIBUSB_REQ_I2C_WRITE : DIBUSB_REQ_I2C_READ;
- 	sndbuf[1] = (addr << 1) | (wo ? 0 : 1);
+ 	return 0;
+ }
  
 
 
