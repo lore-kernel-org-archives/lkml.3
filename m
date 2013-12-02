@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab3LBLYY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 06:24:24 -0500
-Received: from relay.parallels.com ([195.214.232.42]:47375 "EHLO
+	id S1753964Ab3LBLYS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 06:24:18 -0500
+Received: from relay.parallels.com ([195.214.232.42]:47398 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753477Ab3LBLT5 (ORCPT
+	with ESMTP id S1753505Ab3LBLT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 06:19:57 -0500
+	Mon, 2 Dec 2013 06:19:58 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <dchinner@redhat.com>,
         <akpm@linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
-        <vdavydov@parallels.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>
-Subject: [PATCH v12 06/18] vmscan: rename shrink_slab() args to make it more generic
-Date: Mon, 2 Dec 2013 15:19:41 +0400
-Message-ID: <6fbe648a707331e0716cc7a4fc6366ca83a97f6a.1385974612.git.vdavydov@parallels.com>
+        <vdavydov@parallels.com>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH v12 04/18] memcg: move several kmemcg functions upper
+Date: Mon, 2 Dec 2013 15:19:39 +0400
+Message-ID: <55258317799fe5c825f5fa783a4e582b1b6f0f00.1385974612.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1385974612.git.vdavydov@parallels.com>
 References: <cover.1385974612.git.vdavydov@parallels.com>
@@ -27,176 +27,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently in addition to a shrink_control struct shrink_slab() takes two
-arguments, nr_pages_scanned and lru_pages, which are used for balancing
-slab reclaim versus page reclaim - roughly speaking, shrink_slab() will
-try to scan nr_pages_scanned/lru_pages fraction of all slab objects.
-However, shrink_slab() is not always called after page cache reclaim.
-For example, drop_slab() uses shrink_slab() to drop as many slab objects
-as possible and thus has to pass phony values 1000/1000 to it, which do
-not make sense for nr_pages_scanned/lru_pages. Moreover, as soon as
-kmemcg reclaim is introduced, we will have to make up phony values for
-nr_pages_scanned and lru_pages again when doing kmem-only reclaim for a
-memory cgroup, which is possible if the cgroup has its kmem limit less
-than the total memory limit.
+I need to move memcg_{stop,resume}_kmem_account() and
+memcg_caches_array_size() upper since I am going to use them in
+per-memcg lrus implementation introduced by the following patches.
+These functions are very simple and do not depend on other kmemcg
+bits so it is better to keep them on top anyway.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- include/linux/mm.h            |    3 +--
- include/trace/events/vmscan.h |   20 ++++++++++----------
- mm/vmscan.c                   |   26 +++++++++++++-------------
- 3 files changed, 24 insertions(+), 25 deletions(-)
+ mm/memcontrol.c |   92 +++++++++++++++++++++++++++----------------------------
+ 1 file changed, 46 insertions(+), 46 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 1cedd00..71c7f50 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1926,8 +1926,7 @@ int drop_caches_sysctl_handler(struct ctl_table *, int,
- #endif
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 3a4e2f8..3a92ab3 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2983,6 +2983,52 @@ static int memcg_cache_idx(struct mem_cgroup *memcg)
+ 	return ret;
+ }
  
- unsigned long shrink_slab(struct shrink_control *shrink,
--			  unsigned long nr_pages_scanned,
--			  unsigned long lru_pages);
-+			  unsigned long fraction, unsigned long denominator);
++static size_t memcg_caches_array_size(int num_groups)
++{
++	ssize_t size;
++	if (num_groups <= 0)
++		return 0;
++
++	size = 2 * num_groups;
++	if (size < MEMCG_CACHES_MIN_SIZE)
++		size = MEMCG_CACHES_MIN_SIZE;
++	else if (size > MEMCG_CACHES_MAX_SIZE)
++		size = MEMCG_CACHES_MAX_SIZE;
++
++	return size;
++}
++
++/*
++ * During the creation a new cache, we need to disable our accounting mechanism
++ * altogether. This is true even if we are not creating, but rather just
++ * enqueing new caches to be created.
++ *
++ * This is because that process will trigger allocations; some visible, like
++ * explicit kmallocs to auxiliary data structures, name strings and internal
++ * cache structures; some well concealed, like INIT_WORK() that can allocate
++ * objects during debug.
++ *
++ * If any allocation happens during memcg_kmem_get_cache, we will recurse back
++ * to it. This may not be a bounded recursion: since the first cache creation
++ * failed to complete (waiting on the allocation), we'll just try to create the
++ * cache again, failing at the same point.
++ *
++ * memcg_kmem_get_cache is prepared to abort after seeing a positive count of
++ * memcg_kmem_skip_account. So we enclose anything that might allocate memory
++ * inside the following two functions.
++ */
++static inline void memcg_stop_kmem_account(void)
++{
++	VM_BUG_ON(!current->mm);
++	current->memcg_kmem_skip_account++;
++}
++
++static inline void memcg_resume_kmem_account(void)
++{
++	VM_BUG_ON(!current->mm);
++	current->memcg_kmem_skip_account--;
++}
++
+ /*
+  * This is a bit cumbersome, but it is rarely used and avoids a backpointer
+  * in the memcg_cache_params struct.
+@@ -3125,21 +3171,6 @@ int memcg_update_cache_sizes(struct mem_cgroup *memcg)
+ 	return 0;
+ }
  
- #ifndef CONFIG_MMU
- #define randomize_va_space 0
-diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
-index 132a985..6bed4ab 100644
---- a/include/trace/events/vmscan.h
-+++ b/include/trace/events/vmscan.h
-@@ -181,11 +181,11 @@ DEFINE_EVENT(mm_vmscan_direct_reclaim_end_template, mm_vmscan_memcg_softlimit_re
+-static size_t memcg_caches_array_size(int num_groups)
+-{
+-	ssize_t size;
+-	if (num_groups <= 0)
+-		return 0;
+-
+-	size = 2 * num_groups;
+-	if (size < MEMCG_CACHES_MIN_SIZE)
+-		size = MEMCG_CACHES_MIN_SIZE;
+-	else if (size > MEMCG_CACHES_MAX_SIZE)
+-		size = MEMCG_CACHES_MAX_SIZE;
+-
+-	return size;
+-}
+-
+ /*
+  * We should update the current array size iff all caches updates succeed. This
+  * can only be done from the slab side. The slab mutex needs to be held when
+@@ -3264,37 +3295,6 @@ out:
+ 	kfree(s->memcg_params);
+ }
  
- TRACE_EVENT(mm_shrink_slab_start,
- 	TP_PROTO(struct shrinker *shr, struct shrink_control *sc,
--		long nr_objects_to_shrink, unsigned long pgs_scanned,
--		unsigned long lru_pgs, unsigned long cache_items,
-+		long nr_objects_to_shrink, unsigned long frac,
-+		unsigned long denom, unsigned long cache_items,
- 		unsigned long long delta, unsigned long total_scan),
- 
--	TP_ARGS(shr, sc, nr_objects_to_shrink, pgs_scanned, lru_pgs,
-+	TP_ARGS(shr, sc, nr_objects_to_shrink, frac, denom,
- 		cache_items, delta, total_scan),
- 
- 	TP_STRUCT__entry(
-@@ -193,8 +193,8 @@ TRACE_EVENT(mm_shrink_slab_start,
- 		__field(void *, shrink)
- 		__field(long, nr_objects_to_shrink)
- 		__field(gfp_t, gfp_flags)
--		__field(unsigned long, pgs_scanned)
--		__field(unsigned long, lru_pgs)
-+		__field(unsigned long, frac)
-+		__field(unsigned long, denom)
- 		__field(unsigned long, cache_items)
- 		__field(unsigned long long, delta)
- 		__field(unsigned long, total_scan)
-@@ -205,20 +205,20 @@ TRACE_EVENT(mm_shrink_slab_start,
- 		__entry->shrink = shr->scan_objects;
- 		__entry->nr_objects_to_shrink = nr_objects_to_shrink;
- 		__entry->gfp_flags = sc->gfp_mask;
--		__entry->pgs_scanned = pgs_scanned;
--		__entry->lru_pgs = lru_pgs;
-+		__entry->frac = frac;
-+		__entry->denom = denom;
- 		__entry->cache_items = cache_items;
- 		__entry->delta = delta;
- 		__entry->total_scan = total_scan;
- 	),
- 
--	TP_printk("%pF %p: objects to shrink %ld gfp_flags %s pgs_scanned %ld lru_pgs %ld cache items %ld delta %lld total_scan %ld",
-+	TP_printk("%pF %p: objects to shrink %ld gfp_flags %s frac %ld denom %ld cache items %ld delta %lld total_scan %ld",
- 		__entry->shrink,
- 		__entry->shr,
- 		__entry->nr_objects_to_shrink,
- 		show_gfp_flags(__entry->gfp_flags),
--		__entry->pgs_scanned,
--		__entry->lru_pgs,
-+		__entry->frac,
-+		__entry->denom,
- 		__entry->cache_items,
- 		__entry->delta,
- 		__entry->total_scan)
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index eea668d..6946997 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -219,7 +219,7 @@ EXPORT_SYMBOL(unregister_shrinker);
- 
- static unsigned long
- shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
--		 unsigned long nr_pages_scanned, unsigned long lru_pages)
-+		 unsigned long fraction, unsigned long denominator)
+-/*
+- * During the creation a new cache, we need to disable our accounting mechanism
+- * altogether. This is true even if we are not creating, but rather just
+- * enqueing new caches to be created.
+- *
+- * This is because that process will trigger allocations; some visible, like
+- * explicit kmallocs to auxiliary data structures, name strings and internal
+- * cache structures; some well concealed, like INIT_WORK() that can allocate
+- * objects during debug.
+- *
+- * If any allocation happens during memcg_kmem_get_cache, we will recurse back
+- * to it. This may not be a bounded recursion: since the first cache creation
+- * failed to complete (waiting on the allocation), we'll just try to create the
+- * cache again, failing at the same point.
+- *
+- * memcg_kmem_get_cache is prepared to abort after seeing a positive count of
+- * memcg_kmem_skip_account. So we enclose anything that might allocate memory
+- * inside the following two functions.
+- */
+-static inline void memcg_stop_kmem_account(void)
+-{
+-	VM_BUG_ON(!current->mm);
+-	current->memcg_kmem_skip_account++;
+-}
+-
+-static inline void memcg_resume_kmem_account(void)
+-{
+-	VM_BUG_ON(!current->mm);
+-	current->memcg_kmem_skip_account--;
+-}
+-
+ static void kmem_cache_destroy_work_func(struct work_struct *w)
  {
- 	unsigned long freed = 0;
- 	unsigned long long delta;
-@@ -243,9 +243,9 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
- 	nr = atomic_long_xchg(&shrinker->nr_deferred[nid], 0);
- 
- 	total_scan = nr;
--	delta = (4 * nr_pages_scanned) / shrinker->seeks;
-+	delta = (4 * fraction) / shrinker->seeks;
- 	delta *= max_pass;
--	do_div(delta, lru_pages + 1);
-+	do_div(delta, denominator + 1);
- 	total_scan += delta;
- 	if (total_scan < 0) {
- 		printk(KERN_ERR
-@@ -278,7 +278,7 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
- 		total_scan = max_pass * 2;
- 
- 	trace_mm_shrink_slab_start(shrinker, shrinkctl, nr,
--				nr_pages_scanned, lru_pages,
-+				fraction, denominator,
- 				max_pass, delta, total_scan);
- 
- 	while (total_scan >= batch_size) {
-@@ -322,23 +322,23 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
-  * If the vm encountered mapped pages on the LRU it increase the pressure on
-  * slab to avoid swapping.
-  *
-- * We do weird things to avoid (scanned*seeks*entries) overflowing 32 bits.
-+ * We do weird things to avoid (fraction*seeks*entries) overflowing 32 bits.
-  *
-- * `lru_pages' represents the number of on-LRU pages in all the zones which
-- * are eligible for the caller's allocation attempt.  It is used for balancing
-- * slab reclaim versus page reclaim.
-+ * `fraction' and `denominator' are used for balancing slab reclaim versus page
-+ * reclaim. To scan slab objects proportionally to page cache, pass the number
-+ * of pages scanned and the total number of on-LRU pages in all the zones which
-+ * are eligible for the caller's allocation attempt respectively.
-  *
-  * Returns the number of slab objects which we shrunk.
-  */
- unsigned long shrink_slab(struct shrink_control *shrinkctl,
--			  unsigned long nr_pages_scanned,
--			  unsigned long lru_pages)
-+			  unsigned long fraction, unsigned long denominator)
- {
- 	struct shrinker *shrinker;
- 	unsigned long freed = 0;
- 
--	if (nr_pages_scanned == 0)
--		nr_pages_scanned = SWAP_CLUSTER_MAX;
-+	if (fraction == 0)
-+		fraction = SWAP_CLUSTER_MAX;
- 
- 	if (!down_read_trylock(&shrinker_rwsem)) {
- 		/*
-@@ -361,7 +361,7 @@ unsigned long shrink_slab(struct shrink_control *shrinkctl,
- 				break;
- 
- 			freed += shrink_slab_node(shrinkctl, shrinker,
--				 nr_pages_scanned, lru_pages);
-+						  fraction, denominator);
- 
- 		}
- 	}
+ 	struct kmem_cache *cachep;
 -- 
 1.7.10.4
 
