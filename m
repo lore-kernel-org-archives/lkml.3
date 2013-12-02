@@ -1,299 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab3LBXO4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 18:14:56 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:47844 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753124Ab3LBXOw convert rfc822-to-8bit (ORCPT
+	id S1754360Ab3LBXPM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 18:15:12 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:34070 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752888Ab3LBXPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 18:14:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+r1ZhiKj_0HXb7s1oDc-Pgm6n63rYNpxzqXfxKDgdKZU27LcQ@mail.gmail.com>
-References: <CA+r1ZhiKj_0HXb7s1oDc-Pgm6n63rYNpxzqXfxKDgdKZU27LcQ@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 2 Dec 2013 16:14:32 -0700
-Message-ID: <CAErSpo4a2CcEpt6okjTS-wyGCgc7JsHWnGPn7FXrhRfwXqj=oA@mail.gmail.com>
-Subject: Re: randconfig build error with next-20131202, in arch/x86/pci
-To: Jim Davis <jim.epost@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next list <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        Lv Zheng <lv.zheng@intel.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Mon, 2 Dec 2013 18:15:05 -0500
+X-AuditID: cbfee68e-b7f7e6d00000477d-2d-529d1478dfab
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Mauro Carvalho Chehab'" <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org
+References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
+In-reply-to: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
+Subject: [PATCH 15/39] media: pci: remove DEFINE_PCI_DEVICE_TABLE macro
+Date: Tue, 03 Dec 2013 08:15:04 +0900
+Message-id: <002401ceefb4$55175fb0$ff461f10$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7vsUc6neA2wWIVTNSB4ceFa5FjuwAAudXw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsVy+t8zA90KkblBBkvXilg0L17PZnF54SVW
+	i8u75rBZ9GzYympxcZ28A6vH/rlr2D36tqxi9Pi8SS6AOYrLJiU1J7MstUjfLoEr49HuX4wF
+	0/grDj59ytLA2MLbxcjJISFgIvFn6i52CFtM4sK99WxdjFwcQgLLGCX+dV9hhSlafv8wM0Ri
+	OqPEoVN3WSGcX4wSy9+sZAapYhNQk/jy5TDYKBEBU4mN76cwghQxC0xmlDixciUbSEJIwFZi
+	+ovNTF2MHBycAnYSfZ9qQcLCAu4SV7ong81hEVCV+LvjCiOIzQtUfvP+BCYIW1Dix+R7LCA2
+	s4CWxPqdx5kgbHmJzWveMoOMlBBQl3j0VxfiBCOJyR/esUGUiEjse/EO7BwJgUvsEtMWPGaH
+	2CUg8W3yIRaIXlmJTQeYIR6WlDi44gbLBEaJWUg2z0KyeRaSzbOQrFjAyLKKUTS1ILmgOCm9
+	yEivODG3uDQvXS85P3cTIyQq+3Yw3jxgfYgxGWj9RGYp0eR8YFTnlcQbGpsZWZiamBobmVua
+	kSasJM676GFSkJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQbG/r1LLr2rbr1Tk2lzTG/lxE93
+	ypJrFC95b29zUfklxHPq2SI5naDugwwPAz9PuHblbfSv2l3yDq/VJr+qmsQXcUQ+2Vci6/vc
+	d+9Onbt5LEVipnhGxbW3vw7dWHd8tmu5YLt+l8qi0NsbqoJPickafmh9kPpTisXxan7Sk3e1
+	RrPvPehztg6drcRSnJFoqMVcVJwIAIuhL9zgAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t9jQd0KkblBBgvnCFg0L17PZnF54SVW
+	i8u75rBZ9GzYympxcZ28A6vH/rlr2D36tqxi9Pi8SS6AOaqB0SYjNTEltUghNS85PyUzL91W
+	yTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaKWSQlliTilQKCCxuFhJ3w7ThNAQN10L
+	mMYIXd+QILgeIwM0kLCOMePR7l+MBdP4Kw4+fcrSwNjC28XIySEhYCKx/P5hZghbTOLCvfVs
+	XYxcHEIC0xklDp26ywrh/GKUWP5mJVgVm4CaxJcvh9lBbBEBU4mN76cwghQxC0xmlDixciUb
+	SEJIwFZi+ovNTF2MHBycAnYSfZ9qQcLCAu4SV7ong81hEVCV+LvjCiOIzQtUfvP+BCYIW1Di
+	x+R7LCA2s4CWxPqdx5kgbHmJzWveMoOMlBBQl3j0VxfiBCOJyR/esUGUiEjse/GOcQKj0Cwk
+	k2YhmTQLyaRZSFoWMLKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAiO+WfSOxhXNVgcYhTg
+	YFTi4X2wfU6QEGtiWXFl7iFGCQ5mJRHeTp65QUK8KYmVValF+fFFpTmpxYcYk4EencgsJZqc
+	D0xHeSXxhsYmZkaWRmYWRibm5qQJK4nzHmy1DhQSSE8sSc1OTS1ILYLZwsTBKdXAaHGnfHrz
+	was3D3AEZdtPut0ld/TK22zvx0yKQuJ5zNOvGoqZL/PvPNfX9iXnfY8ly8YlZrKal14eL1is
+	FmvFIRWnef1q9f2CRkeu72uPBHW3X962+n/423uWXOuyZ848UfRe2ilVkn3BXQ9vPpPJLa+5
+	Z71nClyqe/WPhvrEWbeVD5x8wD/zuhJLcUaioRZzUXEiACpvHmo9AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Lv, Rafael, linux-acpi]
+Don't use DEFINE_PCI_DEVICE_TABLE macro, because this macro
+is not preferred.
 
-Is this fallout related to "ACPI: Cleanup <acpi/acpi.h>,
-<acpi/acpi_bus.h> and <acpi/acpi_drivers.h> inclusions"?
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/media/pci/cx25821/cx25821-alsa.c |    2 +-
+ drivers/media/pci/cx25821/cx25821-core.c |    2 +-
+ drivers/media/pci/sta2x11/sta2x11_vip.c  |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-On Mon, Dec 2, 2013 at 7:57 AM, Jim Davis <jim.epost@gmail.com> wrote:
-> Building with the attached random configuration file,
->
-> arch/x86/pci/mmconfig-shared.c:373:1: error: unknown type name ‘acpi_status’
->  static acpi_status check_mcfg_resource(struct acpi_resource *res, void *data)
->  ^
-> arch/x86/pci/mmconfig-shared.c:373:47: warning: ‘struct acpi_resource’
-> declared inside parameter list [enabled by default]
->  static acpi_status check_mcfg_resource(struct acpi_resource *res, void *data)
->                                                ^
-> arch/x86/pci/mmconfig-shared.c:373:47: warning: its scope is only this
-> definition or declaration, which is probably not what you want
-> [enabled by default]
-> arch/x86/pci/mmconfig-shared.c: In function ‘check_mcfg_resource’:
-> arch/x86/pci/mmconfig-shared.c:376:33: error: storage size of
-> ‘address’ isn’t known
->   struct acpi_resource_address64 address;
->                                  ^
-> arch/x86/pci/mmconfig-shared.c:377:2: error: unknown type name ‘acpi_status’
->   acpi_status status;
->   ^
-> arch/x86/pci/mmconfig-shared.c:379:9: error: dereferencing pointer to
-> incomplete type
->   if (res->type == ACPI_RESOURCE_TYPE_FIXED_MEMORY32) {
->          ^
-> arch/x86/pci/mmconfig-shared.c:379:19: error:
-> ‘ACPI_RESOURCE_TYPE_FIXED_MEMORY32’ undeclared (first use in this
-> function)
->   if (res->type == ACPI_RESOURCE_TYPE_FIXED_MEMORY32) {
->                    ^
-> arch/x86/pci/mmconfig-shared.c:379:19: note: each undeclared
-> identifier is reported only once for each function it appears in
-> arch/x86/pci/mmconfig-shared.c:381:8: error: dereferencing pointer to
-> incomplete type
->     &res->data.fixed_memory32;
->         ^
-> arch/x86/pci/mmconfig-shared.c:383:11: error: ‘AE_OK’ undeclared
-> (first use in this function)
->     return AE_OK;
->            ^
-> arch/x86/pci/mmconfig-shared.c:384:35: error: dereferencing pointer to
-> incomplete type
->    if ((mcfg_res->start >= fixmem32->address) &&
->                                    ^
-> arch/x86/pci/mmconfig-shared.c:385:33: error: dereferencing pointer to
-> incomplete type
->        (mcfg_res->end < (fixmem32->address +
->                                  ^
-> arch/x86/pci/mmconfig-shared.c:386:19: error: dereferencing pointer to
-> incomplete type
->            fixmem32->address_length))) {
->                    ^
-> arch/x86/pci/mmconfig-shared.c:388:11: error: ‘AE_CTRL_TERMINATE’
-> undeclared (first use in this function)
->     return AE_CTRL_TERMINATE;
->            ^
-> arch/x86/pci/mmconfig-shared.c:391:10: error: dereferencing pointer to
-> incomplete type
->   if ((res->type != ACPI_RESOURCE_TYPE_ADDRESS32) &&
->           ^
-> arch/x86/pci/mmconfig-shared.c:391:20: error:
-> ‘ACPI_RESOURCE_TYPE_ADDRESS32’ undeclared (first use in this function)
->   if ((res->type != ACPI_RESOURCE_TYPE_ADDRESS32) &&
->                     ^
-> arch/x86/pci/mmconfig-shared.c:392:10: error: dereferencing pointer to
-> incomplete type
->       (res->type != ACPI_RESOURCE_TYPE_ADDRESS64))
->           ^
-> arch/x86/pci/mmconfig-shared.c:392:20: error:
-> ‘ACPI_RESOURCE_TYPE_ADDRESS64’ undeclared (first use in this function)
->       (res->type != ACPI_RESOURCE_TYPE_ADDRESS64))
->                     ^
-> arch/x86/pci/mmconfig-shared.c:395:2: error: implicit declaration of
-> function ‘acpi_resource_to_address64’
-> [-Werror=implicit-function-declaration]
->   status = acpi_resource_to_address64(res, &address);
->   ^
-> arch/x86/pci/mmconfig-shared.c:396:2: error: implicit declaration of
-> function ‘ACPI_FAILURE’ [-Werror=implicit-function-declaration]
->   if (ACPI_FAILURE(status) ||
->   ^
-> arch/x86/pci/mmconfig-shared.c:398:31: error: ‘ACPI_MEMORY_RANGE’
-> undeclared (first use in this function)
->      (address.resource_type != ACPI_MEMORY_RANGE))
->                                ^
-> arch/x86/pci/mmconfig-shared.c:376:33: warning: unused variable
-> ‘address’ [-Wunused-variable]
->   struct acpi_resource_address64 address;
->                                  ^
-> arch/x86/pci/mmconfig-shared.c: At top level:
-> arch/x86/pci/mmconfig-shared.c:409:1: error: unknown type name ‘acpi_status’
->  static acpi_status find_mboard_resource(acpi_handle handle, u32 lvl,
->  ^
-> arch/x86/pci/mmconfig-shared.c:409:41: error: unknown type name ‘acpi_handle’
->  static acpi_status find_mboard_resource(acpi_handle handle, u32 lvl,
->                                          ^
-> arch/x86/pci/mmconfig-shared.c: In function ‘is_acpi_reserved’:
-> arch/x86/pci/mmconfig-shared.c:431:2: error: implicit declaration of
-> function ‘acpi_get_devices’ [-Werror=implicit-function-declaration]
->   acpi_get_devices("PNP0C01", find_mboard_resource, &mcfg_res, NULL);
->   ^
-> arch/x86/pci/mmconfig-shared.c:431:30: error: ‘find_mboard_resource’
-> undeclared            ^
-> jim@krebstar:~$ more errs
-> jim@krebstar:~$ cat errs
-> arch/x86/pci/mmconfig-shared.c:373:1: error: unknown type name ‘acpi_status’
->  static acpi_status check_mcfg_resource(struct acpi_resource *res, void *data)
->  ^
-> arch/x86/pci/mmconfig-shared.c:373:47: warning: ‘struct acpi_resource’
-> declared inside parameter list [enabled by default]
->  static acpi_status check_mcfg_resource(struct acpi_resource *res, void *data)
->                                                ^
-> arch/x86/pci/mmconfig-shared.c:373:47: warning: its scope is only this
-> definition or declaration, which is probably not what you want
-> [enabled by default]
-> arch/x86/pci/mmconfig-shared.c: In function ‘check_mcfg_resource’:
-> arch/x86/pci/mmconfig-shared.c:376:33: error: storage size of
-> ‘address’ isn’t known
->   struct acpi_resource_address64 address;
->                                  ^
-> arch/x86/pci/mmconfig-shared.c:377:2: error: unknown type name ‘acpi_status’
->   acpi_status status;
->   ^
-> arch/x86/pci/mmconfig-shared.c:379:9: error: dereferencing pointer to
-> incomplete type
->   if (res->type == ACPI_RESOURCE_TYPE_FIXED_MEMORY32) {
->          ^
-> arch/x86/pci/mmconfig-shared.c:379:19: error:
-> ‘ACPI_RESOURCE_TYPE_FIXED_MEMORY32’ undeclared (first use in this
-> function)
->   if (res->type == ACPI_RESOURCE_TYPE_FIXED_MEMORY32) {
->                    ^
-> arch/x86/pci/mmconfig-shared.c:379:19: note: each undeclared
-> identifier is reported only once for each function it appears in
-> arch/x86/pci/mmconfig-shared.c:381:8: error: dereferencing pointer to
-> incomplete type
->     &res->data.fixed_memory32;
->         ^
-> arch/x86/pci/mmconfig-shared.c:383:11: error: ‘AE_OK’ undeclared
-> (first use in this function)
->     return AE_OK;
->            ^
-> arch/x86/pci/mmconfig-shared.c:384:35: error: dereferencing pointer to
-> incomplete type
->    if ((mcfg_res->start >= fixmem32->address) &&
->                                    ^
-> arch/x86/pci/mmconfig-shared.c:385:33: error: dereferencing pointer to
-> incomplete type
->        (mcfg_res->end < (fixmem32->address +
->                                  ^
-> arch/x86/pci/mmconfig-shared.c:386:19: error: dereferencing pointer to
-> incomplete type
->            fixmem32->address_length))) {
->                    ^
-> arch/x86/pci/mmconfig-shared.c:388:11: error: ‘AE_CTRL_TERMINATE’
-> undeclared (first use in this function)
->     return AE_CTRL_TERMINATE;
->            ^
-> arch/x86/pci/mmconfig-shared.c:391:10: error: dereferencing pointer to
-> incomplete type
->   if ((res->type != ACPI_RESOURCE_TYPE_ADDRESS32) &&
->           ^
-> arch/x86/pci/mmconfig-shared.c:391:20: error:
-> ‘ACPI_RESOURCE_TYPE_ADDRESS32’ undeclared (first use in this function)
->   if ((res->type != ACPI_RESOURCE_TYPE_ADDRESS32) &&
->                     ^
-> arch/x86/pci/mmconfig-shared.c:392:10: error: dereferencing pointer to
-> incomplete type
->       (res->type != ACPI_RESOURCE_TYPE_ADDRESS64))
->           ^
-> arch/x86/pci/mmconfig-shared.c:392:20: error:
-> ‘ACPI_RESOURCE_TYPE_ADDRESS64’ undeclared (first use in this function)
->       (res->type != ACPI_RESOURCE_TYPE_ADDRESS64))
->                     ^
-> arch/x86/pci/mmconfig-shared.c:395:2: error: implicit declaration of
-> function ‘acpi_resource_to_address64’
-> [-Werror=implicit-function-declaration]
->   status = acpi_resource_to_address64(res, &address);
->   ^
-> arch/x86/pci/mmconfig-shared.c:396:2: error: implicit declaration of
-> function ‘ACPI_FAILURE’ [-Werror=implicit-function-declaration]
->   if (ACPI_FAILURE(status) ||
->   ^
-> arch/x86/pci/mmconfig-shared.c:398:31: error: ‘ACPI_MEMORY_RANGE’
-> undeclared (first use in this function)
->      (address.resource_type != ACPI_MEMORY_RANGE))
->                                ^
-> arch/x86/pci/mmconfig-shared.c:376:33: warning: unused variable
-> ‘address’ [-Wunused-variable]
->   struct acpi_resource_address64 address;
->                                  ^
-> arch/x86/pci/mmconfig-shared.c: At top level:
-> arch/x86/pci/mmconfig-shared.c:409:1: error: unknown type name ‘acpi_status’
->  static acpi_status find_mboard_resource(acpi_handle handle, u32 lvl,
->  ^
-> arch/x86/pci/mmconfig-shared.c:409:41: error: unknown type name ‘acpi_handle’
->  static acpi_status find_mboard_resource(acpi_handle handle, u32 lvl,
->                                          ^
-> arch/x86/pci/mmconfig-shared.c: In function ‘is_acpi_reserved’:
-> arch/x86/pci/mmconfig-shared.c:431:2: error: implicit declaration of
-> function ‘acpi_get_devices’ [-Werror=implicit-function-declaration]
->   acpi_get_devices("PNP0C01", find_mboard_resource, &mcfg_res, NULL);
->   ^
-> arch/x86/pci/mmconfig-shared.c:431:30: error: ‘find_mboard_resource’
-> undeclared (first use in this function)
->   acpi_get_devices("PNP0C01", find_mboard_resource, &mcfg_res, NULL);
->                               ^
-> arch/x86/pci/mmconfig-shared.c: At top level:
-> arch/x86/pci/mmconfig-shared.c:544:13: warning: ‘struct
-> acpi_mcfg_allocation’ declared inside parameter list [enabled by
-> default]
->       struct acpi_mcfg_allocation *cfg)
->              ^
-> arch/x86/pci/mmconfig-shared.c:544:13: warning: ‘struct
-> acpi_table_mcfg’ declared inside parameter list [enabled by default]
-> arch/x86/pci/mmconfig-shared.c: In function ‘acpi_mcfg_check_entry’:
-> arch/x86/pci/mmconfig-shared.c:548:9: error: dereferencing pointer to
-> incomplete type
->   if (cfg->address < 0xFFFFFFFF)
->          ^
-> arch/x86/pci/mmconfig-shared.c:551:19: error: dereferencing pointer to
-> incomplete type
->   if (!strncmp(mcfg->header.oem_id, "SGI", 3))
->                    ^
-> arch/x86/pci/mmconfig-shared.c:554:10: error: dereferencing pointer to
-> incomplete type
->   if (mcfg->header.revision >= 1) {
->           ^
-> In file included from include/linux/kernel.h:13:0,
->                  from include/linux/kernfs.h:10,
->                  from include/linux/sysfs.h:15,
->                  from include/linux/kobject.h:21,
->                  from include/linux/pci.h:28,
->                  from arch/x86/pci/mmconfig-shared.c:13:
-> arch/x86/pci/mmconfig-shared.c:561:39: error: dereferencing pointer to
-> incomplete type
->          "is above 4GB, ignored\n", cfg->pci_segment,
->                                        ^
-> include/linux/printk.h:217:33: note: in definition of macro ‘pr_err’
->   printk(KERN_ERR pr_fmt(fmt), ##__VA_ARGS__)
->                                  ^
->            ^
-> arch/x86/pci/mmconfig-shared.c:600:32: error: dereferencing pointer to
-> incomplete type
->         cfg->end_bus_number, cfg->address) == NULL) {
->                                 ^
-> arch/x86/pci/mmconfig-shared.c: In function ‘pci_mmcfg_early_init’:
-> arch/x86/pci/mmconfig-shared.c:642:25: error: ‘ACPI_SIG_MCFG’
-> undeclared (first use in this function)
->     acpi_sfi_table_parse(ACPI_SIG_MCFG, pci_parse_mcfg);
->                          ^
-> arch/x86/pci/mmconfig-shared.c: In function ‘pci_mmcfg_late_init’:
-> arch/x86/pci/mmconfig-shared.c:658:24: error: ‘ACPI_SIG_MCFG’
-> undeclared (first use in this function)
->    acpi_sfi_table_parse(ACPI_SIG_MCFG, pci_parse_mcfg);
->                         ^
-> arch/x86/pci/mmconfig-shared.c: At top level:
-> arch/x86/pci/mmconfig-shared.c:373:20: warning: ‘check_mcfg_resource’
-> defined but not used [-Wunused-function]
->  static acpi_status check_mcfg_resource(struct acpi_resource *res, void *data)
->                     ^
-> cc1: some warnings being treated as errors
-> make[1]: *** [arch/x86/pci/mmconfig-shared.o] Error 1
+diff --git a/drivers/media/pci/cx25821/cx25821-alsa.c b/drivers/media/pci/cx25821/cx25821-alsa.c
+index 6e91e84..b1e08c3 100644
+--- a/drivers/media/pci/cx25821/cx25821-alsa.c
++++ b/drivers/media/pci/cx25821/cx25821-alsa.c
+@@ -618,7 +618,7 @@ static int snd_cx25821_pcm(struct cx25821_audio_dev *chip, int device,
+  * Only boards with eeprom and byte 1 at eeprom=1 have it
+  */
+ 
+-static DEFINE_PCI_DEVICE_TABLE(cx25821_audio_pci_tbl) = {
++static const struct pci_device_id cx25821_audio_pci_tbl[] = {
+ 	{0x14f1, 0x0920, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+ 	{0,}
+ };
+diff --git a/drivers/media/pci/cx25821/cx25821-core.c b/drivers/media/pci/cx25821/cx25821-core.c
+index b762c5b..e81173c 100644
+--- a/drivers/media/pci/cx25821/cx25821-core.c
++++ b/drivers/media/pci/cx25821/cx25821-core.c
+@@ -1361,7 +1361,7 @@ static void cx25821_finidev(struct pci_dev *pci_dev)
+ 	kfree(dev);
+ }
+ 
+-static DEFINE_PCI_DEVICE_TABLE(cx25821_pci_tbl) = {
++static const struct pci_device_id cx25821_pci_tbl[] = {
+ 	{
+ 		/* CX25821 Athena */
+ 		.vendor = 0x14f1,
+diff --git a/drivers/media/pci/sta2x11/sta2x11_vip.c b/drivers/media/pci/sta2x11/sta2x11_vip.c
+index 77edc11..e5cfb6c 100644
+--- a/drivers/media/pci/sta2x11/sta2x11_vip.c
++++ b/drivers/media/pci/sta2x11/sta2x11_vip.c
+@@ -1303,7 +1303,7 @@ static int sta2x11_vip_resume(struct pci_dev *pdev)
+ 
+ #endif
+ 
+-static DEFINE_PCI_DEVICE_TABLE(sta2x11_vip_pci_tbl) = {
++static const struct pci_device_id sta2x11_vip_pci_tbl[] = {
+ 	{PCI_DEVICE(PCI_VENDOR_ID_STMICRO, PCI_DEVICE_ID_STMICRO_VIP)},
+ 	{0,}
+ };
+-- 
+1.7.10.4
+
+
