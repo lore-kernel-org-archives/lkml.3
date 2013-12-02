@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757939Ab3LBUcO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:32:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38926 "EHLO
+	id S1757926Ab3LBUcN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:32:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38931 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754438Ab3LBTOf (ORCPT
+	with ESMTP id S1754327Ab3LBTOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:14:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nanno Langstraat <langstr@gmail.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.10 163/173] HID: apple: option to swap the Option ("Alt") and Command ("Flag") keys.
-Date: Mon,  2 Dec 2013 11:12:26 -0800
-Message-Id: <20131202191201.855682009@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.10 164/173] drm/radeon: use 64-bit math to calculate CTS values for audio (v2)
+Date: Mon,  2 Dec 2013 11:12:27 -0800
+Message-Id: <20131202191201.954672369@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -26,68 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nanno Langstraat <langstr@gmail.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 43c831468b3d26dbe8f2e061ccaf1abaf9cc1b8b upstream.
+commit 062c2e4363451d49ef840232fe65e8bff0dde2a5 upstream.
 
-Use case: people who use both Apple and PC keyboards regularly, and desire to
-keep&use their PC muscle memory.
+Avoid losing precision.  See bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=69675
 
-A particular use case: an Apple compact external keyboard connected to a PC
-laptop. (This use case can't be covered well by X.org key remappings etc.)
+v2: fix math as per Anssi's comments.
 
-Signed-off-by: Nanno Langstraat <langstr@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-apple.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ drivers/gpu/drm/radeon/r600_hdmi.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/drivers/hid/hid-apple.c
-+++ b/drivers/hid/hid-apple.c
-@@ -46,6 +46,12 @@ module_param(iso_layout, uint, 0644);
- MODULE_PARM_DESC(iso_layout, "Enable/Disable hardcoded ISO-layout of the keyboard. "
- 		"(0 = disabled, [1] = enabled)");
- 
-+static unsigned int swap_opt_cmd = 0;
-+module_param(swap_opt_cmd, uint, 0644);
-+MODULE_PARM_DESC(swap_opt_cmd, "Swap the Option (\"Alt\") and Command (\"Flag\") keys. "
-+		"(For people who want to keep Windows PC keyboard muscle memory. "
-+		"[0] = as-is, Mac layout. 1 = swapped, Windows layout.)");
-+
- struct apple_sc {
- 	unsigned long quirks;
- 	unsigned int fn_on;
-@@ -150,6 +156,14 @@ static const struct apple_key_translatio
- 	{ }
- };
- 
-+static const struct apple_key_translation swapped_option_cmd_keys[] = {
-+	{ KEY_LEFTALT,	KEY_LEFTMETA },
-+	{ KEY_LEFTMETA,	KEY_LEFTALT },
-+	{ KEY_RIGHTALT,	KEY_RIGHTMETA },
-+	{ KEY_RIGHTMETA,KEY_RIGHTALT },
-+	{ }
-+};
-+
- static const struct apple_key_translation *apple_find_translation(
- 		const struct apple_key_translation *table, u16 from)
+--- a/drivers/gpu/drm/radeon/r600_hdmi.c
++++ b/drivers/gpu/drm/radeon/r600_hdmi.c
+@@ -75,8 +75,15 @@ static const struct radeon_hdmi_acr r600
+  */
+ static void r600_hdmi_calc_cts(uint32_t clock, int *CTS, int N, int freq)
  {
-@@ -242,6 +256,14 @@ static int hidinput_apple_event(struct h
- 		}
- 	}
- 
-+	if (swap_opt_cmd) {
-+		trans = apple_find_translation(swapped_option_cmd_keys, usage->code);
-+		if (trans) {
-+			input_event(input, usage->type, trans->to, value);
-+			return 1;
-+		}
-+	}
+-	if (*CTS == 0)
+-		*CTS = clock * N / (128 * freq) * 1000;
++	u64 n;
++	u32 d;
 +
- 	return 0;
++	if (*CTS == 0) {
++		n = (u64)clock * (u64)N * 1000ULL;
++		d = 128 * freq;
++		do_div(n, d);
++		*CTS = n;
++	}
+ 	DRM_DEBUG("Using ACR timing N=%d CTS=%d for frequency %d\n",
+ 		  N, *CTS, freq);
  }
- 
 
 
