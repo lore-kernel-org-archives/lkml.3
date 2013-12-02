@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756522Ab3LBTy4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:54:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39246 "EHLO
+	id S1756556Ab3LBTzb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:55:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39419 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754729Ab3LBTSN (ORCPT
+	with ESMTP id S1753621Ab3LBTSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:13 -0500
+	Mon, 2 Dec 2013 14:18:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mika Kuoppala <mika.kuoppala@linux.intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        =?UTF-8?q?J=C3=B6rg=20Otte?= <jrg.otte@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.12 130/212] drm/i915: restore the early forcewake cleanup
-Date: Mon,  2 Dec 2013 11:15:21 -0800
-Message-Id: <20131202191301.503176805@linuxfoundation.org>
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Jakob Bornecrantz <jakob@vmware.com>
+Subject: [PATCH 3.12 127/212] drm/ttm: Fix ttm_bo_move_memcpy
+Date: Mon,  2 Dec 2013 11:15:18 -0800
+Message-Id: <20131202191301.211591156@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,82 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit ef46e0d247da0a7a408573aa15870e231bbd4af2 upstream.
+commit da95c788ef0c645378ffccb7060a0df1a33aee38 upstream.
 
-Some BIOS just leak the forcewak bits, which we clean up.
-Unfortunately this has been broken in
+All error paths will want to keep the mm node, so handle this at the
+function exit. This fixes an ioremap failure error path.
+Also add some comments to make the function a bit easier to understand.
 
-commit 521198a2e7095c8c7daa8d7d3a76a110c346be6f
-Author: Mika Kuoppala <mika.kuoppala@linux.intel.com>
-Date:   Fri Aug 23 16:52:30 2013 +0300
-
-    drm/i915: sanitize forcewake registers on reset
-
-To make this work both for resets and for BIOS takeover just add the
-forcewake clearing call back to intel_uncore_early_sanitize.
-
-We need to clear the forcewake in early sanitize so that the forcewak
-dance in intel_uncore_init (to figure out whether we have mt or legacy
-forcewake on ivb) works. That cleanup fits in nicely with the general
-topic of early_sanitize to prepare for the very first mmio ops.
-
-Cc: Mika Kuoppala <mika.kuoppala@linux.intel.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Reported-by: Jörg Otte <jrg.otte@gmail.com>
-Cc: Jörg Otte <jrg.otte@gmail.com>
-References: https://lkml.org/lkml/2013/11/16/40
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_uncore.c |   26 ++++++++++++++------------
- 1 file changed, 14 insertions(+), 12 deletions(-)
+ drivers/gpu/drm/ttm/ttm_bo_util.c |   28 +++++++++++++++++-----------
+ 1 file changed, 17 insertions(+), 11 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_uncore.c
-+++ b/drivers/gpu/drm/i915/intel_uncore.c
-@@ -204,6 +204,19 @@ static void vlv_force_wake_put(struct dr
- 	gen6_gt_check_fifodbg(dev_priv);
- }
+--- a/drivers/gpu/drm/ttm/ttm_bo_util.c
++++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
+@@ -343,21 +343,25 @@ int ttm_bo_move_memcpy(struct ttm_buffer
+ 	if (ret)
+ 		goto out;
  
-+static void intel_uncore_forcewake_reset(struct drm_device *dev)
-+{
-+	struct drm_i915_private *dev_priv = dev->dev_private;
++	/*
++	 * Single TTM move. NOP.
++	 */
+ 	if (old_iomap == NULL && new_iomap == NULL)
+ 		goto out2;
 +
-+	if (IS_VALLEYVIEW(dev)) {
-+		vlv_force_wake_reset(dev_priv);
-+	} else if (INTEL_INFO(dev)->gen >= 6) {
-+		__gen6_gt_force_wake_reset(dev_priv);
-+		if (IS_IVYBRIDGE(dev) || IS_HASWELL(dev))
-+			__gen6_gt_force_wake_mt_reset(dev_priv);
-+	}
-+}
-+
- void intel_uncore_early_sanitize(struct drm_device *dev)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
-@@ -259,19 +272,8 @@ void intel_uncore_init(struct drm_device
- 		dev_priv->uncore.funcs.force_wake_put =
- 			__gen6_gt_force_wake_put;
++	/*
++	 * Move nonexistent data. NOP.
++	 */
+ 	if (old_iomap == NULL && ttm == NULL)
+ 		goto out2;
+ 
+-	/* TTM might be null for moves within the same region.
++	/*
++	 * TTM might be null for moves within the same region.
+ 	 */
+ 	if (ttm && ttm->state == tt_unpopulated) {
+ 		ret = ttm->bdev->driver->ttm_tt_populate(ttm);
+-		if (ret) {
+-			/* if we fail here don't nuke the mm node
+-			 * as the bo still owns it */
+-			old_copy.mm_node = NULL;
++		if (ret)
+ 			goto out1;
+-		}
  	}
--}
--
--static void intel_uncore_forcewake_reset(struct drm_device *dev)
--{
--	struct drm_i915_private *dev_priv = dev->dev_private;
  
--	if (IS_VALLEYVIEW(dev)) {
--		vlv_force_wake_reset(dev_priv);
--	} else if (INTEL_INFO(dev)->gen >= 6) {
--		__gen6_gt_force_wake_reset(dev_priv);
--		if (IS_IVYBRIDGE(dev) || IS_HASWELL(dev))
--			__gen6_gt_force_wake_mt_reset(dev_priv);
--	}
-+	intel_uncore_forcewake_reset(dev);
+ 	add = 0;
+@@ -383,11 +387,8 @@ int ttm_bo_move_memcpy(struct ttm_buffer
+ 						   prot);
+ 		} else
+ 			ret = ttm_copy_io_page(new_iomap, old_iomap, page);
+-		if (ret) {
+-			/* failing here, means keep old copy as-is */
+-			old_copy.mm_node = NULL;
++		if (ret)
+ 			goto out1;
+-		}
+ 	}
+ 	mb();
+ out2:
+@@ -405,7 +406,12 @@ out1:
+ 	ttm_mem_reg_iounmap(bdev, old_mem, new_iomap);
+ out:
+ 	ttm_mem_reg_iounmap(bdev, &old_copy, old_iomap);
+-	ttm_bo_mem_put(bo, &old_copy);
++
++	/*
++	 * On error, keep the mm node!
++	 */
++	if (!ret)
++		ttm_bo_mem_put(bo, &old_copy);
+ 	return ret;
  }
- 
- void intel_uncore_sanitize(struct drm_device *dev)
+ EXPORT_SYMBOL(ttm_bo_move_memcpy);
 
 
