@@ -1,104 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756837Ab3LBVc0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 16:32:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38203 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753210Ab3LBTG5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:06:57 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shan Hai <shan.hai@windriver.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.4 12/60] drivers/libata: Set max sector to 65535 for Slimtype DVD A DS8A9SH drive
-Date: Mon,  2 Dec 2013 11:05:53 -0800
-Message-Id: <20131202190332.911845373@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
-References: <20131202190330.152596462@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	id S1758165Ab3LBVds (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 16:33:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4843 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754595Ab3LBVdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 16:33:46 -0500
+Message-ID: <1386020016.25738.240.camel@ul30vt.home>
+Subject: Re: [PATCH 2/3 v2] iommu/fsl: Enable default DMA window for PCIe
+ devices
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Varun Sethi <Varun.Sethi@freescale.com>
+Cc: joro@8bytes.org, iommu@lists.linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        stuart.yoder@freescale.com, scottwood@freescale.com,
+        r65777@freescale.com
+Date: Mon, 02 Dec 2013 14:33:36 -0700
+In-Reply-To: <1381922582-28724-3-git-send-email-Varun.Sethi@freescale.com>
+References: <1381922582-28724-1-git-send-email-Varun.Sethi@freescale.com>
+	 <1381922582-28724-3-git-send-email-Varun.Sethi@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 2013-10-16 at 16:53 +0530, Varun Sethi wrote:
+> Once the PCIe device assigned to a guest VM (via VFIO) gets detached from the iommu domain
+> (when guest terminates), its PAMU table entry is disabled. So, this would prevent the device
+> from being used once it's assigned back to the host.
+> 
+> This patch allows for creation of a default DMA window corresponding to the device
+> and subsequently enabling the PAMU table entry. Before we enable the entry, we ensure that
+> the device's bus master capability is disabled (device quiesced).
+> 
+> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
+> ---
+>  drivers/iommu/fsl_pamu.c        |   43 ++++++++++++++++++++++++++++--------
+>  drivers/iommu/fsl_pamu.h        |    1 +
+>  drivers/iommu/fsl_pamu_domain.c |   46 ++++++++++++++++++++++++++++++++++++---
+>  3 files changed, 78 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/iommu/fsl_pamu.c b/drivers/iommu/fsl_pamu.c
+> index cba0498..fb4a031 100644
+> --- a/drivers/iommu/fsl_pamu.c
+> +++ b/drivers/iommu/fsl_pamu.c
+> @@ -225,6 +225,21 @@ static struct paace *pamu_get_spaace(struct paace *paace, u32 wnum)
+>  	return spaace;
+>  }
+>  
+> +/*
+> + * Defaul PPAACE settings for an LIODN.
+> + */
+> +static void setup_default_ppaace(struct paace *ppaace)
+> +{
+> +	pamu_init_ppaace(ppaace);
+> +	/* window size is 2^(WSE+1) bytes */
+> +	set_bf(ppaace->addr_bitfields, PPAACE_AF_WSE, 35);
+> +	ppaace->wbah = 0;
+> +	set_bf(ppaace->addr_bitfields, PPAACE_AF_WBAL, 0);
+> +	set_bf(ppaace->impl_attr, PAACE_IA_ATM,
+> +		PAACE_ATM_NO_XLATE);
+> +	set_bf(ppaace->addr_bitfields, PAACE_AF_AP,
+> +		PAACE_AP_PERMS_ALL);
+> +}
+>  /**
+>   * pamu_get_fspi_and_allocate() - Allocates fspi index and reserves subwindows
+>   *                                required for primary PAACE in the secondary
+> @@ -253,6 +268,24 @@ static unsigned long pamu_get_fspi_and_allocate(u32 subwin_cnt)
+>  	return (spaace_addr - (unsigned long)spaact) / (sizeof(struct paace));
+>  }
+>  
+> +/* Reset the PAACE entry to the default state */
+> +void enable_default_dma_window(int liodn)
+> +{
+> +	struct paace *ppaace;
+> +
+> +	ppaace = pamu_get_ppaace(liodn);
+> +	if (!ppaace) {
+> +		pr_debug("Invalid liodn entry\n");
+> +		return;
+> +	}
+> +
+> +	memset(ppaace, 0, sizeof(struct paace));
+> +
+> +	setup_default_ppaace(ppaace);
+> +	mb();
+> +	pamu_enable_liodn(liodn);
+> +}
+> +
+>  /* Release the subwindows reserved for a particular LIODN */
+>  void pamu_free_subwins(int liodn)
+>  {
+> @@ -752,15 +785,7 @@ static void __init setup_liodns(void)
+>  				continue;
+>  			}
+>  			ppaace = pamu_get_ppaace(liodn);
+> -			pamu_init_ppaace(ppaace);
+> -			/* window size is 2^(WSE+1) bytes */
+> -			set_bf(ppaace->addr_bitfields, PPAACE_AF_WSE, 35);
+> -			ppaace->wbah = 0;
+> -			set_bf(ppaace->addr_bitfields, PPAACE_AF_WBAL, 0);
+> -			set_bf(ppaace->impl_attr, PAACE_IA_ATM,
+> -				PAACE_ATM_NO_XLATE);
+> -			set_bf(ppaace->addr_bitfields, PAACE_AF_AP,
+> -				PAACE_AP_PERMS_ALL);
+> +			setup_default_ppaace(ppaace);
+>  			if (of_device_is_compatible(node, "fsl,qman-portal"))
+>  				setup_qbman_paace(ppaace, QMAN_PORTAL_PAACE);
+>  			if (of_device_is_compatible(node, "fsl,qman"))
+> diff --git a/drivers/iommu/fsl_pamu.h b/drivers/iommu/fsl_pamu.h
+> index 8fc1a12..0edcbbbb 100644
+> --- a/drivers/iommu/fsl_pamu.h
+> +++ b/drivers/iommu/fsl_pamu.h
+> @@ -406,5 +406,6 @@ void get_ome_index(u32 *omi_index, struct device *dev);
+>  int  pamu_update_paace_stash(int liodn, u32 subwin, u32 value);
+>  int pamu_disable_spaace(int liodn, u32 subwin);
+>  u32 pamu_get_max_subwin_cnt(void);
+> +void enable_default_dma_window(int liodn);
+>  
+>  #endif  /* __FSL_PAMU_H */
+> diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
+> index 966ae70..dd6cafc 100644
+> --- a/drivers/iommu/fsl_pamu_domain.c
+> +++ b/drivers/iommu/fsl_pamu_domain.c
+> @@ -340,17 +340,57 @@ static inline struct device_domain_info *find_domain(struct device *dev)
+>  	return dev->archdata.iommu_domain;
+>  }
+>  
+> +/* Disable device DMA capability and enable default DMA window */
+> +static void disable_device_dma(struct device_domain_info *info,
+> +				int enable_dma_window)
 
-------------------
+nit, bool?
 
-From: Shan Hai <shan.hai@windriver.com>
+> +{
+> +#ifdef CONFIG_PCI
+> +	if (info->dev->bus == &pci_bus_type) {
+> +		struct pci_dev *pdev = NULL;
 
-commit 0523f037f65dba10191b0fa9c51266f90ba64630 upstream.
+nit, unnecessary initialization
 
-The "Slimtype DVD A  DS8A9SH" drive locks up with following backtrace when
-the max sector is smaller than 65535 bytes, fix it by adding a quirk to set
-the max sector to 65535 bytes.
+> +		pdev = to_pci_dev(info->dev);
+> +		if (pci_is_enabled(pdev))
+> +			pci_disable_device(pdev);
 
-INFO: task flush-11:0:663 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-flush-11:0    D 00000000ffff5ceb     0   663      2 0x00000000
- ffff88026d3b1710 0000000000000046 0000000000000001 0000000000000000
- ffff88026f2530c0 ffff88026d365860 ffff88026d3b16e0 ffffffff812ffd52
- ffff88026d4fd3d0 0000000100000001 ffff88026d3b16f0 ffff88026d3b1fd8
-Call Trace:
- [<ffffffff812ffd52>] ? cfq_may_queue+0x52/0xf0
- [<ffffffff81604338>] schedule+0x18/0x30
- [<ffffffff81604392>] io_schedule+0x42/0x60
- [<ffffffff812f22bb>] get_request_wait+0xeb/0x1f0
- [<ffffffff81065660>] ? autoremove_wake_function+0x0/0x40
- [<ffffffff812eb382>] ? elv_merge+0x42/0x210
- [<ffffffff812f26ae>] __make_request+0x8e/0x4e0
- [<ffffffff812f068e>] generic_make_request+0x21e/0x5e0
- [<ffffffff812f0aad>] submit_bio+0x5d/0xd0
- [<ffffffff81141422>] submit_bh+0xf2/0x130
- [<ffffffff8114474c>] __block_write_full_page+0x1dc/0x3a0
- [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
- [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
- [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
- [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
- [<ffffffff811449ee>] block_write_full_page_endio+0xde/0x100
- [<ffffffff81144a20>] block_write_full_page+0x10/0x20
- [<ffffffff81148703>] blkdev_writepage+0x13/0x20
- [<ffffffff810d7525>] __writepage+0x15/0x40
- [<ffffffff810d7c0f>] write_cache_pages+0x1cf/0x3e0
- [<ffffffff810d7510>] ? __writepage+0x0/0x40
- [<ffffffff810d7e42>] generic_writepages+0x22/0x30
- [<ffffffff810d7e6f>] do_writepages+0x1f/0x40
- [<ffffffff8113ae67>] writeback_single_inode+0xe7/0x3b0
- [<ffffffff8113b574>] writeback_sb_inodes+0x184/0x280
- [<ffffffff8113bedb>] writeback_inodes_wb+0x6b/0x1a0
- [<ffffffff8113c24b>] wb_writeback+0x23b/0x2a0
- [<ffffffff8113c42d>] wb_do_writeback+0x17d/0x190
- [<ffffffff8113c48b>] bdi_writeback_task+0x4b/0xe0
- [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
- [<ffffffff810e8321>] bdi_start_fn+0x81/0x100
- [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
- [<ffffffff8106522e>] kthread+0x8e/0xa0
- [<ffffffff81039274>] ? finish_task_switch+0x54/0xc0
- [<ffffffff81003334>] kernel_thread_helper+0x4/0x10
- [<ffffffff810651a0>] ? kthread+0x0/0xa0
- [<ffffffff81003330>] ? kernel_thread_helper+0x0/0x10
+This looks suspicious.  What's the case where you're finding devices
+where this is needed?  Logically the driver that called
+pci_enable_device() should also call pci_disabled_device() when it's
+done.  Maybe there's a case to be made that we can't rely on the driver,
+but then maybe there should be a pr_debug/info here to notify that
+somebody left the device running.  There might also be the question of
+whether you should test the busmaster bit in the command register rather
+than trusting these indirect paths if it's really for cleanup.  Thanks,
 
- The above trace was triggered by
-   "dd if=/dev/zero of=/dev/sr0 bs=2048 count=32768"
+Alex
 
-Signed-off-by: Shan Hai <shan.hai@windriver.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> +	}
+> +#endif
+> +
+> +	if (enable_dma_window)
+> +		enable_default_dma_window(info->liodn);
+> +}
+> +
+> +static int check_for_shared_liodn(struct device_domain_info *info)
+> +{
+> +	struct device_domain_info *tmp;
+> +
+> +	/*
+> +	 * Sanity check, to ensure that this is not a
+> +	 * shared LIODN. In case of a PCIe controller
+> +	 * it's possible that all PCIe devices share
+> +	 * the same LIODN.
+> +	 */
+> +	list_for_each_entry(tmp, &info->domain->devices, link) {
+> +		if (info->liodn == tmp->liodn)
+> +			return 1;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>  static void remove_device_ref(struct device_domain_info *info, u32 win_cnt)
+>  {
+>  	unsigned long flags;
+> +	int enable_dma_window = 0;
+>  
+>  	list_del(&info->link);
+>  	spin_lock_irqsave(&iommu_lock, flags);
+> -	if (win_cnt > 1)
+> -		pamu_free_subwins(info->liodn);
+> -	pamu_disable_liodn(info->liodn);
+> +	if (!check_for_shared_liodn(info)) {
+> +		if (win_cnt > 1)
+> +			pamu_free_subwins(info->liodn);
+> +		pamu_disable_liodn(info->liodn);
+> +		enable_dma_window = 1;
+> +	}
+>  	spin_unlock_irqrestore(&iommu_lock, flags);
+>  	spin_lock_irqsave(&device_domain_lock, flags);
+> +	disable_device_dma(info, enable_dma_window);
+>  	info->dev->archdata.iommu_domain = NULL;
+>  	kmem_cache_free(iommu_devinfo_cache, info);
+>  	spin_unlock_irqrestore(&device_domain_lock, flags);
 
----
- drivers/ata/libata-core.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4074,6 +4074,7 @@ static const struct ata_blacklist_entry
- 	{ "TORiSAN DVD-ROM DRD-N216", NULL,	ATA_HORKAGE_MAX_SEC_128 },
- 	{ "QUANTUM DAT    DAT72-000", NULL,	ATA_HORKAGE_ATAPI_MOD16_DMA },
- 	{ "Slimtype DVD A  DS8A8SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
-+	{ "Slimtype DVD A  DS8A9SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
- 
- 	/* Devices we expect to fail diagnostics */
- 
 
 
