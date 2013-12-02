@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752908Ab3LBGHk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 01:07:40 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:46760 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751179Ab3LBGHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 01:07:38 -0500
-Date: Mon, 2 Dec 2013 11:37:29 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org, namhyung@kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH 2/2] perf sched: Add documentation for timehist options
-Message-ID: <20131202060729.GA28684@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1385943795-11761-1-git-send-email-dsahern@gmail.com>
- <1385943795-11761-3-git-send-email-dsahern@gmail.com>
+	id S1752936Ab3LBGOZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 01:14:25 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:42709 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179Ab3LBGOX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 01:14:23 -0500
+X-Auth-Info: Qg7j/7oJp9XJjFxK15kPu3oh7CUqrkDboxrF3uMfqz8=
+To: Guenter Roeck <linux@roeck-us.net>
+cc: Christophe Leroy <christophe.leroy@c-s.fr>,
+        Wim Van Sebroeck <wim@iguana.be>, scottwood@freescale.com,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org
+From: Wolfgang Denk <wd@denx.de>
+Subject: Re: [PATCH] watchdog: mpc8xxx_wdt: MPC8xx is HW enabled
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1385943795-11761-3-git-send-email-dsahern@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120206-5806-0000-0000-000023904BB8
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8bit
+In-reply-to: <529B9152.9090106@roeck-us.net>
+References: <20131130154540.E83D743E15@localhost.localdomain> <529B9152.9090106@roeck-us.net>
+Comments: In-reply-to Guenter Roeck <linux@roeck-us.net>
+   message dated "Sun, 01 Dec 2013 11:43:14 -0800."
+Date: Mon, 02 Dec 2013 07:14:17 +0100
+Message-Id: <20131202061418.05A11380BFE@gemini.denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* David Ahern <dsahern@gmail.com> [2013-12-01 17:23:15]:
+Dear Guenter,
 
-> Add entry to perf-sched documentation for timehist command and its
-> options.
+In message <529B9152.9090106@roeck-us.net> you wrote:
+> On 11/30/2013 07:45 AM, Christophe Leroy wrote:
+> > MPC8xx watchdog is enabled at startup by HW.
+> > If the bootloader disables it, it cannot be reenabled.
 > 
-> v2: Addressed comments by Namhyung
-> 
-> Signed-off-by: David Ahern <dsahern@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Stephane Eranian <eranian@google.com>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> ---
->  tools/perf/Documentation/perf-sched.txt | 61 ++++++++++++++++++++++++++++++++-
->  1 file changed, 60 insertions(+), 1 deletion(-)
-> 
-> diff --git a/tools/perf/Documentation/perf-sched.txt b/tools/perf/Documentation/perf-sched.txt
-> index 8ff4df956951..e7bb19fcdbff 100644
-> --- a/tools/perf/Documentation/perf-sched.txt
-> +++ b/tools/perf/Documentation/perf-sched.txt
-> @@ -8,7 +8,7 @@ perf-sched - Tool to trace/measure scheduler properties (latencies)
->  SYNOPSIS
->  --------
->  [verse]
-> -'perf sched' {record|latency|map|replay|script}
-> +'perf sched' {record|latency|map|replay|script|timehist}
->  
->  DESCRIPTION
->  -----------
-> @@ -36,6 +36,11 @@ There are five variants of perf sched:
+> Is that true for all variants of 8xx, especially for 823 ? I am a bit concerned
+> about breaking compatibility with some chips ... assuming there was a reason
+> for not setting this flag originally.
 
-Nit: There are six variants now.
+This is correct, and applies for all variants of the MPC8xx, including
+the MPC823 / MPC823E.  From the UM:
+
+	"The software watchdog timer can be disabled or its timeout
+	period can be changed in the SYPCR. Once the SYPCR is written,
+	it cannot be written again until a system reset."
+
+Actually this is the only correct behaviour.  Any watchdog that can be
+disabled by software is not worth it's name, and unsuitable for any
+kind of aplications where security / reliability are required.
+
+Best regards,
+
+Wolfgang Denk
 
 -- 
-Thanks and Regards
-Srikar Dronamraju
-
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+Phone: (+49)-8142-66989-10 Fax: (+49)-8142-66989-80 Email: wd@denx.de
+Ninety-Ninety Rule of Project Schedules:
+        The first ninety percent of the task takes ninety percent of
+the time, and the last ten percent takes the other ninety percent.
