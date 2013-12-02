@@ -1,52 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821Ab3LBQuN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 11:50:13 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:47457 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab3LBQuJ (ORCPT
+	id S1752903Ab3LBQvw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 11:51:52 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:34093 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221Ab3LBQvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 11:50:09 -0500
-Message-ID: <529CBA0A.8020703@kernel.dk>
-Date: Mon, 02 Dec 2013 09:49:14 -0700
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>, Ming Lei <tom.leiming@gmail.com>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] block: fix mq request allocation
-References: <1385890077-30873-1-git-send-email-tom.leiming@gmail.com> <x49ob4z700n.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49ob4z700n.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 2 Dec 2013 11:51:49 -0500
+Message-ID: <1386003073.5352.58.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: [PATCH] net: do not pretend FRAGLIST support
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: David.Laight@ACULAB.COM, puzman@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        Anirudha Sarangi <anirudh@xilinx.com>
+Date: Mon, 02 Dec 2013 08:51:13 -0800
+In-Reply-To: <1386001999.5352.51.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1385631882-12827-2-git-send-email-puzman@gmail.com>
+	 <20131129.164229.2292905485668904870.davem@davemloft.net>
+	 <AE90C24D6B3A694183C094C60CF0A2F6026B744F@saturn3.aculab.com>
+	 <20131202.111600.1622488165507147936.davem@davemloft.net>
+	 <1386001999.5352.51.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2013 08:20 AM, Jeff Moyer wrote:
-> Ming Lei <tom.leiming@gmail.com> writes:
-> 
->> blk_mq_alloc_request_pinned() may return NULL request in case of
->> !__GFP_WAIT, so cause its callers to derefence NULL pointer for
->> releasing current context.
->>
->> This patch introduces two flags to address the issue.
-> 
-> Hi, Ming,
-> 
-> 
-> Good catch, but your patch seems overly complicated.  How about
-> something like the following (compile-tested only), instead?  Note that
-> I did not touch blk_make_request, as the put_ctx there seems to
-> correlate to a get_ctx earlier in the function (not a leaked reference
-> from __blk_mq_alloc_request).
+From: Eric Dumazet <edumazet@google.com>
 
-I would tend to agree, it's overly complicated. The bug is real, however.
+Few network drivers really supports frag_list : virtual drivers.
 
-> p.s. Jens, every time I see GFP_ATOMIC|__GFP_WAIT, my head explodes.  Just sayin'.
+Some drivers wrongly advertise NETIF_F_FRAGLIST feature.
 
-It's perfectly fine :-)
+If skb with a frag_list is given to them, packet on the wire will be
+corrupt.
 
--- 
-Jens Axboe
+Remove this flag, as core networking stack will make sure to
+provide packets that can be sent without corruption.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Cc: Anirudha Sarangi <anirudh@xilinx.com>
+---
+ drivers/net/ethernet/ibm/ehea/ehea_main.c         |    2 +-
+ drivers/net/ethernet/tehuti/tehuti.c              |    1 -
+ drivers/net/ethernet/xilinx/ll_temac_main.c       |    2 +-
+ drivers/net/ethernet/xilinx/xilinx_axienet_main.c |    2 +-
+ 4 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/ethernet/ibm/ehea/ehea_main.c b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+index 2d1c6bdd3618..7628e0fd8455 100644
+--- a/drivers/net/ethernet/ibm/ehea/ehea_main.c
++++ b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+@@ -3033,7 +3033,7 @@ static struct ehea_port *ehea_setup_single_port(struct ehea_adapter *adapter,
+ 
+ 	dev->hw_features = NETIF_F_SG | NETIF_F_TSO |
+ 		      NETIF_F_IP_CSUM | NETIF_F_HW_VLAN_CTAG_TX;
+-	dev->features = NETIF_F_SG | NETIF_F_FRAGLIST | NETIF_F_TSO |
++	dev->features = NETIF_F_SG | NETIF_F_TSO |
+ 		      NETIF_F_HIGHDMA | NETIF_F_IP_CSUM |
+ 		      NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_HW_VLAN_CTAG_RX |
+ 		      NETIF_F_HW_VLAN_CTAG_FILTER | NETIF_F_RXCSUM;
+diff --git a/drivers/net/ethernet/tehuti/tehuti.c b/drivers/net/ethernet/tehuti/tehuti.c
+index dd0dd6279b4e..4f1d2549130e 100644
+--- a/drivers/net/ethernet/tehuti/tehuti.c
++++ b/drivers/net/ethernet/tehuti/tehuti.c
+@@ -2019,7 +2019,6 @@ bdx_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 		ndev->features = NETIF_F_IP_CSUM | NETIF_F_SG | NETIF_F_TSO
+ 		    | NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_HW_VLAN_CTAG_RX |
+ 		    NETIF_F_HW_VLAN_CTAG_FILTER | NETIF_F_RXCSUM
+-		    /*| NETIF_F_FRAGLIST */
+ 		    ;
+ 		ndev->hw_features = NETIF_F_IP_CSUM | NETIF_F_SG |
+ 			NETIF_F_TSO | NETIF_F_HW_VLAN_CTAG_TX;
+diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
+index 1f2364126323..2166e879a096 100644
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -1017,7 +1017,7 @@ static int temac_of_probe(struct platform_device *op)
+ 	platform_set_drvdata(op, ndev);
+ 	SET_NETDEV_DEV(ndev, &op->dev);
+ 	ndev->flags &= ~IFF_MULTICAST;  /* clear multicast */
+-	ndev->features = NETIF_F_SG | NETIF_F_FRAGLIST;
++	ndev->features = NETIF_F_SG;
+ 	ndev->netdev_ops = &temac_netdev_ops;
+ 	ndev->ethtool_ops = &temac_ethtool_ops;
+ #if 0
+diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
+index b2ff038d6d20..f9293da19e26 100644
+--- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
++++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
+@@ -1486,7 +1486,7 @@ static int axienet_of_probe(struct platform_device *op)
+ 
+ 	SET_NETDEV_DEV(ndev, &op->dev);
+ 	ndev->flags &= ~IFF_MULTICAST;  /* clear multicast */
+-	ndev->features = NETIF_F_SG | NETIF_F_FRAGLIST;
++	ndev->features = NETIF_F_SG;
+ 	ndev->netdev_ops = &axienet_netdev_ops;
+ 	ndev->ethtool_ops = &axienet_ethtool_ops;
+ 
+
 
