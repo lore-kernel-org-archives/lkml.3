@@ -1,42 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab3LBReK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 12:34:10 -0500
-Received: from smtprelay0211.hostedemail.com ([216.40.44.211]:34296 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752837Ab3LBReG (ORCPT
+	id S1753144Ab3LBRgU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 12:36:20 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:33464 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752886Ab3LBRgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 12:34:06 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:5007:7652:10004:10400:10848:11232:11658:11914:12296:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: kite47_5dbf5b7a6fd5b
-X-Filterd-Recvd-Size: 1449
-Message-ID: <1386005643.2680.7.camel@joe-AO722>
-Subject: Re: [PATCH 0/3] Add Firmware Info, Warn, and Bug messages
-From: Joe Perches <joe@perches.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Mon, 02 Dec 2013 09:34:03 -0800
-In-Reply-To: <1385997579-22240-1-git-send-email-prarit@redhat.com>
-References: <1385997579-22240-1-git-send-email-prarit@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Dec 2013 12:36:18 -0500
+Date: Mon, 2 Dec 2013 17:36:12 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Michal Nazarewicz <mpn@google.com>
+Cc: Jingoo Han <jg1.han@samsung.com>, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20131202173612.GL27568@sirena.org.uk>
+References: <1385744947-10283-1-git-send-email-mpn@google.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hun9kSK4g7A5t+iU"
+Content-Disposition: inline
+In-Reply-To: <1385744947-10283-1-git-send-email-mpn@google.com>
+X-Cookie: Boycott meat -- suck your thumb.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi: omap-100k: remove pointless _remove function
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-02 at 10:19 -0500, Prarit Bhargava wrote:
-> Logging and tracking firmware bugs in the kernel has long been an issue
-> for system administrators.  The current kernel does not have a good
-> uniform method of reporting firmware bugs and the code in the kernel is a
-> mix of printk's and WARN_ONs.  This causes problems for both system
-> administrators and QA engineers who attempt to diagnose problems within
-> the kernel.
 
-It'd be simpler if you introduced the macros in one patch
-and then added patches that used them separately.
+--hun9kSK4g7A5t+iU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Fri, Nov 29, 2013 at 06:09:07PM +0100, Michal Nazarewicz wrote:
+> From: Michal Nazarewicz <mina86@mina86.com>
+>=20
+> Commit [8074cf06: use devm_spi_register_master()] removed the last
+> bit of omap1_spi100k_remove function that had side effects.  After
+> call to spi_unregister_master was removed, the function consisted
+> of:
+
+Applied, thanks.
+
+--hun9kSK4g7A5t+iU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSnMUJAAoJELSic+t+oim9huAP/jOSBU9eTdhgqx4MocERlJH9
+EmND7C7i8z+vDkueW70g4iNDHx4PvGSojCtmPVKhOw8EIf/K1OMzO0qwOdvIlaiJ
+2h0soCqf21FsaxqGcH0GnT8ejQv4ryX7ghHJh7Wyu5r0dzKXLFKo9t0JdIsWAppd
+mLasQFj18BiywJ+WyiSCE+Sq9dmxIATbaSHTodnDeibZkjCg62b/y3zCjmCX5lvb
++dHnMBGT1N9Mpjq66KIuRFNvQDCTYwgu/VvdV/KefyYoKQhloTdeh4wfBBgrj+sH
+B4fJLyroWGbOu1daxCbuclFJfASgkp+ug+dj8Dz0ZntTCeMuU/lhnLOgzqVMecYO
+4uHgxuj1/JVgYAQz8Dm06cZq6cA+Y/ZStJwbW1gzb30+hV9S37vXSbpeJDPszju+
+Am7j6hIUKZTte5mC41rw2CJquBvzbyiMrmdgbOFqDzexwnLmWzMO5dyzvQd41h4z
+2K0uRyWu+j0UXYa1kECirdCEP8piahrNNR+TT80UIZ3G2Ii5VJsp8eyFACxQ56Ex
+RFPzacGwGBf7f3w+pzVMMw9D2eoQMJSafRi7A+QRwNJ+YXLTiD/O7vQCABEw5v2v
+EJHDPozx8nXhXu+yJGGzY1HyZyd+cmZelPnlSVXSFTdHk9/LEisYU7mrhmJ8Cura
+Oz2Yhm6fxah7UD3I48SU
+=zNyN
+-----END PGP SIGNATURE-----
+
+--hun9kSK4g7A5t+iU--
