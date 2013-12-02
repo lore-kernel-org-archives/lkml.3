@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149Ab3LBUYa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:24:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38999 "EHLO
+	id S1757595Ab3LBUY3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:24:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39000 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930Ab3LBTRC (ORCPT
+	with ESMTP id S1752672Ab3LBTRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:02 -0500
+	Mon, 2 Dec 2013 14:17:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oskar Schirmer <oskar@scara.com>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.12 023/212] ASoC: fsl: imx-pcm-fiq: omit fiq counter to avoid harm in unbalanced situations
-Date: Mon,  2 Dec 2013 11:13:34 -0800
-Message-Id: <20131202191251.256810858@linuxfoundation.org>
+        Richard Fitzgerald <rf@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.12 024/212] ASoC: arizona: Set FLL to free-run before disabling
+Date: Mon,  2 Dec 2013 11:13:35 -0800
+Message-Id: <20131202191251.358384912@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,108 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oskar Schirmer <oskar@scara.com>
+From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
 
-commit fc7dc61d9a87011aaf8a6eb3144ebf9552adf5d2 upstream.
+commit 3e68ce1bc72e5d6615677ec5a8b0a9bcb6c7a490 upstream.
 
-Unbalanced calls to snd_imx_pcm_trigger() may result in endless
-FIQ activity and thus provoke eternal sound. While on the first glance,
-the switch statement looks pretty symmetric, the SUSPEND/RESUME
-pair is not: the suspend case comes along snd_pcm_suspend_all(),
-which for fsl/imx-pcm-fiq is called only at snd_soc_suspend(),
-but the resume case originates straight from the SNDRV_PCM_IOCTL_RESUME.
-This way userland may provoke an unbalanced resume, which might cause
-the fiq_enable counter to increase and never return to zero again,
-so eventually imx_pcm_fiq is never disabled.
+The FLL must be placed into free-run mode before disabling
+to allow it to entirely shut down.
 
-Simply removing the fiq_enable will solve the problem, as long as
-one never goes play and capture game simultaneously, but beware
-trying both at once, the early TRIGGER_STOP will cut off the other
-activity prematurely. So now playing and capturing is scrutinized
-separately, instead of by counting.
-
-Signed-off-by: Oskar Schirmer <oskar@scara.com>
+Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
 Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/fsl/imx-pcm-fiq.c |   29 +++++++++++++++++------------
- 1 file changed, 17 insertions(+), 12 deletions(-)
+ sound/soc/codecs/arizona.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/sound/soc/fsl/imx-pcm-fiq.c
-+++ b/sound/soc/fsl/imx-pcm-fiq.c
-@@ -44,7 +44,8 @@ struct imx_pcm_runtime_data {
- 	struct hrtimer hrt;
- 	int poll_time_ns;
- 	struct snd_pcm_substream *substream;
--	atomic_t running;
-+	atomic_t playing;
-+	atomic_t capturing;
- };
+--- a/sound/soc/codecs/arizona.c
++++ b/sound/soc/codecs/arizona.c
+@@ -1525,6 +1525,8 @@ static void arizona_enable_fll(struct ar
+ 	try_wait_for_completion(&fll->ok);
  
- static enum hrtimer_restart snd_hrtimer_callback(struct hrtimer *hrt)
-@@ -56,7 +57,7 @@ static enum hrtimer_restart snd_hrtimer_
- 	struct pt_regs regs;
- 	unsigned long delta;
+ 	regmap_update_bits(arizona->regmap, fll->base + 1,
++			   ARIZONA_FLL1_FREERUN, 0);
++	regmap_update_bits(arizona->regmap, fll->base + 1,
+ 			   ARIZONA_FLL1_ENA, ARIZONA_FLL1_ENA);
+ 	if (fll->ref_src >= 0 && fll->sync_src >= 0 &&
+ 	    fll->ref_src != fll->sync_src)
+@@ -1543,6 +1545,8 @@ static void arizona_disable_fll(struct a
+ 	struct arizona *arizona = fll->arizona;
+ 	bool change;
  
--	if (!atomic_read(&iprtd->running))
-+	if (!atomic_read(&iprtd->playing) && !atomic_read(&iprtd->capturing))
- 		return HRTIMER_NORESTART;
- 
- 	get_fiq_regs(&regs);
-@@ -124,7 +125,6 @@ static int snd_imx_pcm_prepare(struct sn
- 	return 0;
- }
- 
--static int fiq_enable;
- static int imx_pcm_fiq;
- 
- static int snd_imx_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
-@@ -136,23 +136,27 @@ static int snd_imx_pcm_trigger(struct sn
- 	case SNDRV_PCM_TRIGGER_START:
- 	case SNDRV_PCM_TRIGGER_RESUME:
- 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
--		atomic_set(&iprtd->running, 1);
-+		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-+			atomic_set(&iprtd->playing, 1);
-+		else
-+			atomic_set(&iprtd->capturing, 1);
- 		hrtimer_start(&iprtd->hrt, ns_to_ktime(iprtd->poll_time_ns),
- 		      HRTIMER_MODE_REL);
--		if (++fiq_enable == 1)
--			enable_fiq(imx_pcm_fiq);
--
-+		enable_fiq(imx_pcm_fiq);
- 		break;
- 
- 	case SNDRV_PCM_TRIGGER_STOP:
- 	case SNDRV_PCM_TRIGGER_SUSPEND:
- 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
--		atomic_set(&iprtd->running, 0);
--
--		if (--fiq_enable == 0)
-+		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-+			atomic_set(&iprtd->playing, 0);
-+		else
-+			atomic_set(&iprtd->capturing, 0);
-+		if (!atomic_read(&iprtd->playing) &&
-+				!atomic_read(&iprtd->capturing))
- 			disable_fiq(imx_pcm_fiq);
--
- 		break;
-+
- 	default:
- 		return -EINVAL;
- 	}
-@@ -200,7 +204,8 @@ static int snd_imx_open(struct snd_pcm_s
- 
- 	iprtd->substream = substream;
- 
--	atomic_set(&iprtd->running, 0);
-+	atomic_set(&iprtd->playing, 0);
-+	atomic_set(&iprtd->capturing, 0);
- 	hrtimer_init(&iprtd->hrt, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
- 	iprtd->hrt.function = snd_hrtimer_callback;
- 
++	regmap_update_bits(arizona->regmap, fll->base + 1,
++			   ARIZONA_FLL1_FREERUN, ARIZONA_FLL1_FREERUN);
+ 	regmap_update_bits_check(arizona->regmap, fll->base + 1,
+ 				 ARIZONA_FLL1_ENA, 0, &change);
+ 	regmap_update_bits(arizona->regmap, fll->base + 0x11,
 
 
