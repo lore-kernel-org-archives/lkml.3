@@ -1,113 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab3LBDPm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Dec 2013 22:15:42 -0500
-Received: from smtp25.cstnet.cn ([159.226.251.25]:43562 "EHLO cstnet.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752773Ab3LBDPk convert rfc822-to-8bit (ORCPT
+	id S1752921Ab3LBDQf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Dec 2013 22:16:35 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:20506 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752891Ab3LBDQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Dec 2013 22:15:40 -0500
-X-Greylist: delayed 419 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 Dec 2013 22:15:39 EST
-Date: Mon, 2 Dec 2013 11:07:04 +0800 (GMT+08:00)
-From: "Zhouyi Zhou" <yizhouzhou@ict.ac.cn>
-To: "Zhouyi Zhou" <zhouzhouyi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        kvm-ppc@vger.kernel.org, kvm@vger.kernel.org,
-        "David Woodhouse" <dwmw2@infradead.org>,
-        "Joerg Roedel" <joro@8bytes.org>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
-Message-ID: <e9c283.a967.142b14600da.Coremail.yizhouzhou@ict.ac.cn>
-In-Reply-To: <1385549465-15945-1-git-send-email-yizhouzhou@ict.ac.cn>
-References: <1385549465-15945-1-git-send-email-yizhouzhou@ict.ac.cn>
-Subject: ping: re: [PATCH 1/1] kernel code that do not handle NULL return of
- kmem_cache_zalloc
+	Sun, 1 Dec 2013 22:16:33 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+yBJSM/ZAxfqMTZ6RXbfC59MWYEG7KBYI=
+Date: Sun, 1 Dec 2013 22:15:58 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: boris brezillon <b.brezillon@overkiz.com>
+Cc: Mike Turquette <mturquette@linaro.org>, Rob Landley <rob@landley.net>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 2/2] clk: add accuracy support for fixed clock
+Message-ID: <20131202031558.GB29282@titan.lakedaemon.net>
+References: <1385556285-19180-1-git-send-email-b.brezillon@overkiz.com>
+ <1385556285-19180-3-git-send-email-b.brezillon@overkiz.com>
+ <20131127145620.GR2879@titan.lakedaemon.net>
+ <5296298C.9040300@overkiz.com>
+ <20131127181042.16819.36364@quantum>
+ <5296F8B2.9080807@overkiz.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [159.226.43.61]
-X-Priority: 3
-X-Mailer: Coremail Webmail Server Version XT2.1.10 dev build
- 20130508(22118.5358.5168) Copyright (c) 2002-2013 www.mailtech.cn cstnet
-X-SendMailWithSms: false
-X-CM-CTRLDATA: jf6zwWZvb3Rlcl90eHQ9MjI4MTo2
-X-CM-TRANSID: SwCowJD7P+1Y+ZtSVsgHAA--.25170W
-X-CM-SenderInfo: x1l2x05x2k03g6lf3hldfou0/1tbiBAQBAFEVMghC9gAAsL
-X-Coremail-Antispam: 1Ur529EdanIXcx71UUUUU7IcSsGvfJ3iIAIbVAYjsxI4VWxJw
-	CS07vEb4IE77IF4wCS07vE1I0E4x80FVAKz4kxMIAIbVAFxVCaYxvI4VCIwcAKzIAtYxBI
-	daVFxhVjvjDU=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5296F8B2.9080807@overkiz.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping
-> I do a grep for kmem_cache_zalloc and kmem_cache_alloc
-> in kernel tree, and find some code do not handle NULL
-> return of kmem_cache_zalloc correctly
-> 
-> 
-> Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-> ---
->  arch/powerpc/kvm/book3s_32_mmu_host.c |    5 +++++
->  drivers/iommu/omap-iommu.c            |    3 ++-
->  fs/jffs2/malloc.c                     |    4 ++++
->  3 files changed, 11 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/powerpc/kvm/book3s_32_mmu_host.c b/arch/powerpc/kvm/book3s_32_mmu_host.c
-> index 3a0abd2..5fac89d 100644
-> --- a/arch/powerpc/kvm/book3s_32_mmu_host.c
-> +++ b/arch/powerpc/kvm/book3s_32_mmu_host.c
-> @@ -243,6 +243,11 @@ next_pteg:
->  	/* Now tell our Shadow PTE code about the new page */
->  
->  	pte = kvmppc_mmu_hpte_cache_next(vcpu);
-> +	if (!pte) {
-> +		kvm_release_pfn_clean(hpaddr >> PAGE_SHIFT);
-> +		r = -EAGAIN;
-> +		goto out;
-> +	}
->  
->  	dprintk_mmu("KVM: %c%c Map 0x%llx: [%lx] 0x%llx (0x%llx) -> %lx\n",
->  		    orig_pte->may_write ? 'w' : '-',
-> diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
-> index bcd78a7..5155714 100644
-> --- a/drivers/iommu/omap-iommu.c
-> +++ b/drivers/iommu/omap-iommu.c
-> @@ -551,7 +551,8 @@ static u32 *iopte_alloc(struct omap_iommu *obj, u32 *iopgd, u32 da)
->  		dev_vdbg(obj->dev, "%s: a new pte:%p\n", __func__, iopte);
->  	} else {
->  		/* We raced, free the reduniovant table */
-> -		iopte_free(iopte);
-> +		if (iopte)
-> +			iopte_free(iopte);
->  	}
->  
->  pte_ready:
-> diff --git a/fs/jffs2/malloc.c b/fs/jffs2/malloc.c
-> index 4f47aa2..58e2336 100644
-> --- a/fs/jffs2/malloc.c
-> +++ b/fs/jffs2/malloc.c
-> @@ -287,6 +287,8 @@ struct jffs2_xattr_datum *jffs2_alloc_xattr_datum(void)
->  {
->  	struct jffs2_xattr_datum *xd;
->  	xd = kmem_cache_zalloc(xattr_datum_cache, GFP_KERNEL);
-> +	if (!xd)
-> +		return NULL;
->  	dbg_memalloc("%p\n", xd);
->  
->  	xd->class = RAWNODE_CLASS_XATTR_DATUM;
-> @@ -305,6 +307,8 @@ struct jffs2_xattr_ref *jffs2_alloc_xattr_ref(void)
->  {
->  	struct jffs2_xattr_ref *ref;
->  	ref = kmem_cache_zalloc(xattr_ref_cache, GFP_KERNEL);
-> +	if (!ref)
-> +		return NULL;
->  	dbg_memalloc("%p\n", ref);
->  
->  	ref->class = RAWNODE_CLASS_XATTR_REF;
-> -- 
-> 1.7.10.4
-> 
+On Thu, Nov 28, 2013 at 09:02:58AM +0100, boris brezillon wrote:
+> On 27/11/2013 19:10, Mike Turquette wrote:
+> >Quoting boris brezillon (2013-11-27 09:19:08)
+> >>>On Wed, Nov 27, 2013 at 01:44:45PM +0100, Boris BREZILLON wrote:
+...
+> >>>I would also prefer to see an unknown accuracy be -1.
+> >>I decided to keep 0 as a default value for unimplemented recalc_accuracy
+> >>(or unspecified fixed accuracy) to keep existing implementation coherent.
+> >>
+> >>0 means the clk is perfect, and I thought it would be easier to handle a
+> >>perfect clk (even if this is not really the case) than handling an error
+> >>case.
+> >>
+> >>Another aspect is the propagation of the clk accuracy accross the clk tree.
+> >>Returning -1 in the middle of the clk chain will drop the previous clk
+> >>accuracy
+> >>calculation.
+> >>
+> >>Anyway, I can change this if you think this is more appropriate.
+> >What about the absence of the property?
+> >Instead of requiring a -1 value
+> >can we simply detect that the property does not exist? This is nicer for
+> >backwards compatibility with existing DTS.
+> 
+> I already handle the absence of the clock-accuracy property.
+> In this case the clock is considered perfect (accuracy = 0 ppb).
 
+Yeah, in order to calculate the theoretical accuracy of a leaf node, a
+missing accuracy in the middle of the chain really derails things.
+Since my previous concern (modelling the real accuracy of the clocks) is
+not an issue here, I think assuming the absent accuracy is 0 is fine.
+Especially since all Boris is trying to do is avoid the RC clocks.
 
+thx,
 
-
+Jason.
