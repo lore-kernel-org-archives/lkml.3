@@ -1,183 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620Ab3LBFFX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 00:05:23 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39544 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874Ab3LBFFS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 00:05:18 -0500
+	id S1751817Ab3LBFKL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 00:10:11 -0500
+Received: from mail-db9lp0250.outbound.messaging.microsoft.com ([213.199.154.250]:43551
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750967Ab3LBFKI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 00:10:08 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VS2(z579eh6cdkzdb82h1102I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de097hz2dh109h2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2184h21a6h2216h22d0h2336hbe9i1155h)
+From: Peter Chen <Peter.Chen@freescale.com>
+To: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+CC: "alexander.shishkin@linux.intel.com" 
+	<alexander.shishkin@linux.intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/3 v3] usb: chipidea: Fix Internal error: : 808 [#1]
+ ARM related to STS flag
+Thread-Topic: [PATCH 2/3 v3] usb: chipidea: Fix Internal error: : 808 [#1]
+ ARM related to STS flag
+Thread-Index: AQHO7X+Nm+SsIvgQf0Gz6GYyRX43tZo9j3TQgAKXCgCAADPVkA==
+Date: Mon, 2 Dec 2013 05:10:04 +0000
+Message-ID: <F281D0F91ED19E4D8E63A7504E8A64980413D5A8@039-SN2MPN1-021.039d.mgd.msft.net>
+References: <1385783513-22502-1-git-send-email-chris.ruehl@gtsys.com.hk>
+ <F281D0F91ED19E4D8E63A7504E8A64980413B204@039-SN2MPN1-021.039d.mgd.msft.net>
+ <529BE72C.9030805@gtsys.com.hk>
+In-Reply-To: <529BE72C.9030805@gtsys.com.hk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [114.86.20.54]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20130116235102.16015.77379.stgit@grignak.americas.hpqcorp.net>
-References: <20130116235102.16015.77379.stgit@grignak.americas.hpqcorp.net>
-Date: Mon, 2 Dec 2013 13:05:16 +0800
-Message-ID: <CANVTcTaP18CiGOSEcX5Ch_wPw9mEhkgokfp+d+ZOMFD+Ce4juA@mail.gmail.com>
-Subject: Re: [PATCH v10 1/3] aerdrv: Trace Event for AER
-From: rui wang <ruiv.wang@gmail.com>
-To: Lance Ortiz <lance.ortiz@hp.com>
-Cc: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@intel.com,
-        tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
-        mchehab@redhat.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gong.chen@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/17/13, Lance Ortiz <lance.ortiz@hp.com> wrote:
-> This header file will define a new trace event that will be triggered when
-> a AER event occurs.  The following data will be provided to the trace
-> event.
->
-> char * dev_name - The name of the slot where the device resides
->                   ([domain:]bus:device.function).
->
-> u32 status - Either the correctable or uncorrectable register
->              indicating what error or errors have been see.
->
-> u8 severity - error severity 0:NONFATAL 1:FATAL 2:CORRECTED
->
-> The trace event will also provide a trace string that may look like:
->
-> "0000:05:00.0 PCIe Bus Error:severity=Uncorrected (Non-Fatal), Poisoned
-> TLP"
->
-> v1-v2 Move header from include/ras/aer_event.h to
-> include/trace/events/ras.h
-> v3-v4 Cleaned up comments and commit header
-> v4-v5 More cleanup remove () from if statement in print.
->       Renamed string define to be more specific.
-> v5-v6 change TRACE_SYSTEM define to be ras and not aer.
->
-> Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
-> Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Acked-by: Tony Luck <tony.luck@intel.com>
-> ---
->
->  include/trace/events/ras.h |   77
-> ++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 77 insertions(+), 0 deletions(-)
->  create mode 100644 include/trace/events/ras.h
->
-> diff --git a/include/trace/events/ras.h b/include/trace/events/ras.h
-> new file mode 100644
-> index 0000000..88b8783
-> --- /dev/null
-> +++ b/include/trace/events/ras.h
-> @@ -0,0 +1,77 @@
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM ras
-> +
-> +#if !defined(_TRACE_AER_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_AER_H
-> +
-> +#include <linux/tracepoint.h>
-> +#include <linux/edac.h>
-> +
-> +
-> +/*
-> + * PCIe AER Trace event
-> + *
-> + * These events are generated when hardware detects a corrected or
-> + * uncorrected event on a PCIe device. The event report has
-> + * the following structure:
-> + *
-> + * char * dev_name -	The name of the slot where the device resides
-> + *			([domain:]bus:device.function).
-> + * u32 status -		Either the correctable or uncorrectable register
-> + *			indicating what error or errors have been seen
-> + * u8 severity -	error severity 0:NONFATAL 1:FATAL 2:CORRECTED
-> + */
-> +
-> +#define aer_correctable_errors		\
-> +	{BIT(0),	"Receiver Error"},		\
-> +	{BIT(6),	"Bad TLP"},			\
-> +	{BIT(7),	"Bad DLLP"},			\
-> +	{BIT(8),	"RELAY_NUM Rollover"},		\
-> +	{BIT(12),	"Replay Timer Timeout"},	\
-> +	{BIT(13),	"Advisory Non-Fatal"}
-> +
-> +#define aer_uncorrectable_errors		\
-> +	{BIT(4),	"Data Link Protocol"},		\
-> +	{BIT(12),	"Poisoned TLP"},		\
-> +	{BIT(13),	"Flow Control Protocol"},	\
-> +	{BIT(14),	"Completion Timeout"},		\
-> +	{BIT(15),	"Completer Abort"},		\
-> +	{BIT(16),	"Unexpected Completion"},	\
-> +	{BIT(17),	"Receiver Overflow"},		\
-> +	{BIT(18),	"Malformed TLP"},		\
-> +	{BIT(19),	"ECRC"},			\
-> +	{BIT(20),	"Unsupported Request"}
-> +
-> +TRACE_EVENT(aer_event,
-> +	TP_PROTO(const char *dev_name,
-> +		 const u32 status,
-> +		 const u8 severity),
-> +
-> +	TP_ARGS(dev_name, status, severity),
-> +
-> +	TP_STRUCT__entry(
-> +		__string(	dev_name,	dev_name	)
-> +		__field(	u32,		status		)
-> +		__field(	u8,		severity	)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__assign_str(dev_name, dev_name);
-> +		__entry->status		= status;
-> +		__entry->severity	= severity;
-> +	),
-> +
-> +	TP_printk("%s PCIe Bus Error: severity=%s, %s\n",
-> +		__get_str(dev_name),
-> +		__entry->severity == HW_EVENT_ERR_CORRECTED ? "Corrected" :
-> +			__entry->severity == HW_EVENT_ERR_FATAL ?
-> +			"Fatal" : "Uncorrected",
-> +		__entry->severity == HW_EVENT_ERR_CORRECTED ?
-> +		__print_flags(__entry->status, "|", aer_correctable_errors) :
-> +		__print_flags(__entry->status, "|", aer_uncorrectable_errors))
-> +);
+ 
+> 
+> If you have a look into the function hw_write() you will see that there
+> is no
+> effect if hw_write(...,sts) is called with sts=0/1, because the mask will
+> cut
+> off all bits beside BIT(29).
 
-This causes inconsistency between dmesg and the trace event output.
-When dmesg says "severity=Corrected", the trace event says
-"severity=Fatal". What happens is that HW_EVENT_ERR_CORRECTED is
-defined in edac.h:
+Yes, it is my careless. I thought sts is PORTCS_STS.
 
-enum hw_event_mc_err_type {
-        HW_EVENT_ERR_CORRECTED,
-        HW_EVENT_ERR_UNCORRECTED,
-        HW_EVENT_ERR_FATAL,
-        HW_EVENT_ERR_INFO,
-};
+> I used BIT(29) rather then PORTCS_STS to make it more clear what going on.
 
-while aer_print_error() uses aer_error_severity_string[] defined as:
+It is not a good coding style, you do need use MACRO to instead of raw number directly.
 
-static const char *aer_error_severity_string[] = {
-        "Uncorrected (Non-Fatal)",
-        "Uncorrected (Fatal)",
-        "Corrected"
-};
-
-In this case dmesg is correct because info->severity is assigned in
-aer_isr_one_error() using the definitions in include/linux/ras.h:
-#define AER_NONFATAL                    0
-#define AER_FATAL                       1
-#define AER_CORRECTABLE                 2
-
-So which one is the standard? Is there a plan to unify all these names?
-
-Thanks
-Rui Wang
-> +
-> +#endif /* _TRACE_AER_H */
-> +
-> +/* This part must be outside protection */
-> +#include <trace/define_trace.h>
+> A write to PORTCS will always be "0" for the STS Register no matter if
+> sts is 1
+> or 0 within Patch v2. Patch v3 will take care of the registers bit
+> position and
+> set 1 or 0 to PORTCS_STS.
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+
+My suggestion like below:
+
+	if (ci->hw_bank.lpm) {
+ 		hw_write(ci, OP_DEVLC, DEVLC_PTS(7) | DEVLC_PTW, lpm);
+-		hw_write(ci, OP_DEVLC, DEVLC_STS, sts);
++		if (sts)
++			hw_write(ci, OP_DEVLC, DEVLC_STS, DEVLC_STS);
+ 	} else {
+ 		hw_write(ci, OP_PORTSC, PORTSC_PTS(7) | PORTSC_PTW, portsc);
+-		hw_write(ci, OP_PORTSC, PORTSC_STS, sts);
++		if (sts)
++			hw_write(ci, OP_PORTSC, PORTSC_STS, PORTSC_STS);
+ 	}
+
+
+I think we just need to fix the original bug, and do not add any new fixes
+since we don't know which one is correct for every platform. My proposal is 
+just set PORTSC_STS (DEVLC_STS is lpm) if it is serial PHY. For any other PHYS, just keep
+the reset value.
+
+Peter
+ 
+> I used the imx27 reference manual Capital 30.8.1.5.12 PORTSCx.
+> 
+
+
+
+
