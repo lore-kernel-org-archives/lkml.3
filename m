@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab3LBTRV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:17:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38991 "EHLO
+	id S1757403Ab3LBUT2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:19:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39149 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752535Ab3LBTRA (ORCPT
+	with ESMTP id S1753828Ab3LBTRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:00 -0500
+	Mon, 2 Dec 2013 14:17:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brian Austin <brian.austin@cirrus.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.12 020/212] ASoC: cs42l52: Correct MIC CTL mask
-Date: Mon,  2 Dec 2013 11:13:31 -0800
-Message-Id: <20131202191250.939308511@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.12 042/212] gpio: mvebu: make mvchip->irqbase signed for error handling
+Date: Mon,  2 Dec 2013 11:13:53 -0800
+Message-Id: <20131202191253.067139399@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,31 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Austin <brian.austin@cirrus.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 3d800c6d75b8c92fa928a0bcaf95cd7ac5fd1ce5 upstream.
+commit d535922691fc026479fcc03e78ac3d931a54e75a upstream.
 
-The mask for CS42L52_MIC_CTL_TYPE_MASK was wrong keeping the mic config
-from being set correctly.
+There is a bug in mvebu_gpio_probe() where we do:
 
-Signed-off-by: Brian Austin <brian.austin@cirrus.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+	mvchip->irqbase = irq_alloc_descs(-1, 0, ngpios, -1);
+	if (mvchip->irqbase < 0) {
+
+The problem is that mvchip->irqbase is unsigned so the error handling
+doesn't work.  I have changed it to be a regular int.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/cs42l52.h |    2 +-
+ drivers/gpio/gpio-mvebu.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/cs42l52.h
-+++ b/sound/soc/codecs/cs42l52.h
-@@ -179,7 +179,7 @@
- #define CS42L52_MICB_CTL			0x11
- #define	CS42L52_MIC_CTL_MIC_SEL_MASK		0xBF
- #define	CS42L52_MIC_CTL_MIC_SEL_SHIFT		6
--#define CS42L52_MIC_CTL_TYPE_MASK		0xDF
-+#define CS42L52_MIC_CTL_TYPE_MASK		0x20
- #define CS42L52_MIC_CTL_TYPE_SHIFT		5
- 
- 
+--- a/drivers/gpio/gpio-mvebu.c
++++ b/drivers/gpio/gpio-mvebu.c
+@@ -79,7 +79,7 @@ struct mvebu_gpio_chip {
+ 	spinlock_t	   lock;
+ 	void __iomem	  *membase;
+ 	void __iomem	  *percpu_membase;
+-	unsigned int       irqbase;
++	int		   irqbase;
+ 	struct irq_domain *domain;
+ 	int                soc_variant;
+ };
 
 
