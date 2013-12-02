@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab3LBTTG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:19:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39667 "EHLO
+	id S1755064Ab3LBTTM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:19:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39684 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754993Ab3LBTS7 (ORCPT
+	with ESMTP id S1755005Ab3LBTTC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:59 -0500
+	Mon, 2 Dec 2013 14:19:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@prifuk.cz>,
-        Simon Wood <simon@mungewell.org>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.12 183/212] HID:hid-lg4ff: Initialize device properties before we touch autocentering.
-Date: Mon,  2 Dec 2013 11:16:14 -0800
-Message-Id: <20131202191308.999613931@linuxfoundation.org>
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: [PATCH 3.12 187/212] media: mxl111sf: Dont use dynamic static allocation
+Date: Mon,  2 Dec 2013 11:16:18 -0800
+Message-Id: <20131202191309.603502736@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,59 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Wood <simon@mungewell.org>
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit 114a55cf9dd1576e7ac56189832cd4d7dc56c218 upstream.
+commit c98300a0e8cf160aaea60bc05d2cd156a7666173 upstream.
 
-Re-arrange code slightly to ensure that device properties are configured
-before calling auto-center command.
+Dynamic static allocation is evil, as Kernel stack is too low, and
+compilation complains about it on some archs:
+	drivers/media/usb/dvb-usb-v2/mxl111sf.c:74:1: warning: 'mxl111sf_ctrl_msg' uses dynamic stack allocation [enabled by default]
+Instead, let's enforce a limit for the buffer to be the max size of
+a control URB payload data (64 bytes).
 
-Reported-by: Michal Malý <madcatxster@prifuk.cz>
-Signed-off-by: Simon Wood <simon@mungewell.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-lg4ff.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ drivers/media/usb/dvb-usb-v2/mxl111sf.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-lg4ff.c
-+++ b/drivers/hid/hid-lg4ff.c
-@@ -574,17 +574,6 @@ int lg4ff_init(struct hid_device *hid)
- 	if (error)
- 		return error;
+--- a/drivers/media/usb/dvb-usb-v2/mxl111sf.c
++++ b/drivers/media/usb/dvb-usb-v2/mxl111sf.c
+@@ -23,6 +23,9 @@
+ #include "lgdt3305.h"
+ #include "lg2160.h"
  
--	/* Check if autocentering is available and
--	 * set the centering force to zero by default */
--	if (test_bit(FF_AUTOCENTER, dev->ffbit)) {
--		if (rev_maj == FFEX_REV_MAJ && rev_min == FFEX_REV_MIN)	/* Formula Force EX expects different autocentering command */
--			dev->ff->set_autocenter = hid_lg4ff_set_autocenter_ffex;
--		else
--			dev->ff->set_autocenter = hid_lg4ff_set_autocenter_default;
--
--		dev->ff->set_autocenter(dev, 0);
--	}
--
- 	/* Get private driver data */
- 	drv_data = hid_get_drvdata(hid);
- 	if (!drv_data) {
-@@ -605,6 +594,17 @@ int lg4ff_init(struct hid_device *hid)
- 	entry->max_range = lg4ff_devices[i].max_range;
- 	entry->set_range = lg4ff_devices[i].set_range;
- 
-+	/* Check if autocentering is available and
-+	 * set the centering force to zero by default */
-+	if (test_bit(FF_AUTOCENTER, dev->ffbit)) {
-+		if (rev_maj == FFEX_REV_MAJ && rev_min == FFEX_REV_MIN)	/* Formula Force EX expects different autocentering command */
-+			dev->ff->set_autocenter = hid_lg4ff_set_autocenter_ffex;
-+		else
-+			dev->ff->set_autocenter = hid_lg4ff_set_autocenter_default;
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
 +
-+		dev->ff->set_autocenter(dev, 0);
+ int dvb_usb_mxl111sf_debug;
+ module_param_named(debug, dvb_usb_mxl111sf_debug, int, 0644);
+ MODULE_PARM_DESC(debug, "set debugging level "
+@@ -57,7 +60,12 @@ int mxl111sf_ctrl_msg(struct dvb_usb_dev
+ {
+ 	int wo = (rbuf == NULL || rlen == 0); /* write-only */
+ 	int ret;
+-	u8 sndbuf[1+wlen];
++	u8 sndbuf[MAX_XFER_SIZE];
++
++	if (1 + wlen > sizeof(sndbuf)) {
++		pr_warn("%s: len=%d is too big!\n", __func__, wlen);
++		return -EOPNOTSUPP;
 +	}
-+
- 	/* Create sysfs interface */
- 	error = device_create_file(&hid->dev, &dev_attr_range);
- 	if (error)
+ 
+ 	pr_debug("%s(wlen = %d, rlen = %d)\n", __func__, wlen, rlen);
+ 
 
 
