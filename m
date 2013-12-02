@@ -1,115 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab3LBNgt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 08:36:49 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:41879 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515Ab3LBNgq (ORCPT
+	id S1752942Ab3LBNhN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 08:37:13 -0500
+Received: from nm16-vm6.bullet.mail.ne1.yahoo.com ([98.138.91.109]:38284 "HELO
+	nm16-vm6.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751515Ab3LBNhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 08:36:46 -0500
-Date: Mon, 2 Dec 2013 13:36:23 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org
-Message-ID: <20131202133623.GG27568@sirena.org.uk>
+	Mon, 2 Dec 2013 08:37:08 -0500
+X-Greylist: delayed 388 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Dec 2013 08:37:08 EST
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 342666.54328.bm@omp1041.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=tTLpYlKnAH7xSYNtGNl1YDc+MN6WMLhZ8TECMNxjL7OANo8yZ8iruEKxGRuPlpx4A5CeteWr9Pvx2nDNp+EkhL+nuwqyVuUmHIMN6rtlm252GXAilvfCdek5Ytx5pPGBFyIqviw8THGi3+z7Osc1xePY4ivbV121i+iTA2/BINQ=;
+X-YMail-OSG: 63vu_4MVM1m36gwareLD3I9QkM7Oqde7yku4CjYG5XEW95p
+ nRRvoNNvWyiY5oAd_yLx2DUehj948o_Q7BtLChmeIuAqGJru1WkTHZUgcO1s
+ iEpFxyDMzNsOG_aRz7EhhmNMhCsfew8YzrgOvorYHV7gL1i7RD6fNxfgb7eB
+ BYDQcPoXGhtiIPCrrGwJKH82rKhkGl8O71OSwYqOphpp8l_3rR.Z0tilPgfv
+ wVDEaX2VUGDwarzreE9WpwiUDp1RdLHYR1egLl_AwQRJIoXB.pF2w_uFEKDP
+ bWEqpgDBRZ3DYJQTGhEa0rcQkptR.idopg2FNOP6Fd2nUB0QWDum75AJdd0y
+ rYxNQJLhghCayc0ZMNiYlLmEKShppXTiF5AVet1mm2WaKfZV9WsSfZUEdt3y
+ KwjWx67uZ2oUZy9WmprNvn2EsO_qlU3JbYMZwvXzoXjT1oVeIsVxsr_PqIxc
+ gEZ2Sv7kPgS4N2SG8_AqY1ASb3hsDDSFDvgxF6bsNASZg13oRvSKzj7sWgRD
+ 6Tou1fvwxi5wMnl6kp.pgZxTFYBLJ1rUuEEYp2v5j8l9WM2cK4dNWKvQhmLO
+ W36F2KentR2zEfKemCXxp8PwAXwybAtY0PIY-
+X-Rocket-MIMEInfo: 002.001,CgoKPk9uIFN1bmRheSwgRGVjZW1iZXIgMSwgMjAxMyA4OjQzIFBNLCBBbGV4IERhdmlzIDxhbGV4MTQ2NDFAeWFob28uY29tPiB3cm90ZToKPkkgaGF2ZSBhIERlbGwgSW5zcGlyb24gTjcwMTAgTGFwdG9wIHdpdGggSW50ZWwgZ3JhcGhpY3MuIFdoZW4gdGhlIGRlbGwtbGFwdG9wIG1vZHVsZSBpcyA.bG9hZGVkLAo.dHdvIGJhY2tsaWdodCBkZXZpY2UgZGV2aWNlcyBhcmUgY3JlYXRlZDsgZGVsbF9iYWNrbGlnaHQsIGFuZCBpbnRlbF9iYWNrbGlnaHQgZnJvbSB0aGUgPkludGVsCj5ncmFwaGljcyBkcml2ZXIBMAEBAQE-
+X-Mailer: YahooMailWebService/0.8.167.602
+References: <1385948627.51494.YahooMailNeo@web160404.mail.bf1.yahoo.com>
+Message-ID: <1385991037.32894.YahooMailNeo@web160406.mail.bf1.yahoo.com>
+Date: Mon, 2 Dec 2013 05:30:37 -0800 (PST)
+From: Alex Davis <alex14641@yahoo.com>
+Reply-To: Alex Davis <alex14641@yahoo.com>
+Subject: Re: [PATCH 1/1] dell_laptop: add disable_backlight module parameter
+To: "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1385948627.51494.YahooMailNeo@web160404.mail.bf1.yahoo.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GuLbEtPckrXUekoe"
-Content-Disposition: inline
-X-Cookie: Boycott meat -- suck your thumb.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [GIT PULL] SPI updates for v3.13
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---GuLbEtPckrXUekoe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
 
-  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+>On Sunday, December 1, 2013 8:43 PM, Alex Davis <alex14641@yahoo.com> wrote:
+>I have a Dell Inspiron N7010 Laptop with Intel graphics. When the dell-laptop module is >loaded,
+>two backlight device devices are created; dell_backlight, and intel_backlight from the >Intel
+>graphics driver. The dell_backlight device is non-functional, but the graphics subsystem >uses
+>it instead of the functioning intel_backlight device. The result is that, when running >KDE,
+>screen dimming does not work. I've added a module parameter, disable_backlight, which when 
+>true will disable the dell_backlight device, and leave only the intel_backlight: with >this,
+>screen dimming works.
+>
+>Signed-off-by: Alex Davis <alex14641@yahoo.com>
 
-are available in the git repository at:
+This patch is against 3.10.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git tags/spi-v3.13-rc2
-
-for you to fetch changes up to c18158f1fdad0de6be5386291189580484e459cf:
-
-  Merge remote-tracking branches 'spi/fix/bcm2835', 'spi/fix/bcm63xx', 'spi/fix/mpc512x-psc', 'spi/fix/mxs', 'spi/fix/pxa2xx', 'spi/fix/qspi', 'spi/fix/rspi' and 'spi/fix/txx9' into spi-linus (2013-11-28 11:31:35 +0000)
-
-----------------------------------------------------------------
-
-spi: Fixes for v3.13
-
-A smattering of driver specific fixes here, including a bunch for a
-long standing common pattern in the error handling paths, and a fix for
-an embarrassing thinko in the new devm master registration code.
-
-----------------------------------------------------------------
-Chew, Chiau Ee (1):
-      spi/pxa2xx: Restore private register bits.
-
-Mark Brown (2):
-      Merge remote-tracking branch 'spi/fix/core' into spi-linus
-      Merge remote-tracking branches 'spi/fix/bcm2835', 'spi/fix/bcm63xx', 'spi/fix/mpc512x-psc', 'spi/fix/mxs', 'spi/fix/pxa2xx', 'spi/fix/qspi', 'spi/fix/rspi' and 'spi/fix/txx9' into spi-linus
-
-Mika Westerberg (1):
-      spi/pxa2xx: add new ACPI IDs
-
-Sourav Poddar (2):
-      spi/qspi: cleanup pm_runtime error check.
-      spi/qspi: Fix qspi remove path.
-
-Stephen Warren (1):
-      spi: core: invert success test in devm_spi_register_master
-
-Wei Yongjun (7):
-      spi: bcm2835: fix reference leak to master in bcm2835_spi_remove()
-      spi: rspi: use platform drvdata correctly in rspi_remove()
-      spi: mpc512x: fix reference leak to master in mpc512x_psc_spi_do_remove()
-      spi: txx9: fix reference leak to master in txx9spi_remove()
-      spi: bcm63xx: fix reference leak to master in bcm63xx_spi_remove()
-      spi: spi-mxs: fix reference leak to master in mxs_spi_remove()
-      spi/qspi: set correct platform drvdata in ti_qspi_probe()
-
- drivers/spi/spi-bcm2835.c     |  2 +-
- drivers/spi/spi-bcm63xx.c     |  2 +-
- drivers/spi/spi-mpc512x-psc.c |  2 +-
- drivers/spi/spi-mxs.c         |  2 +-
- drivers/spi/spi-pxa2xx.c      |  5 +++++
- drivers/spi/spi-rspi.c        |  3 +--
- drivers/spi/spi-ti-qspi.c     | 23 +++++++++++++++++++----
- drivers/spi/spi-txx9.c        |  2 +-
- drivers/spi/spi.c             |  2 +-
- 9 files changed, 31 insertions(+), 12 deletions(-)
-
---GuLbEtPckrXUekoe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSnIzUAAoJELSic+t+oim9PTkP/j8NUO2+LYh5AIb5mPTDFBOe
-ZMedJ1XYSvX47KI/ut8U5wox5A2XALdzA1/cfUnYgxZb3Ua1PCeXJNNf3Ry5bFsU
-KdfptYa0kZ5/eKRvpiaeBH3GEWsUlhpD8oLySo2YmbNe9dDQpYm3utmxFtiJgzP4
-AC5xEO30yK5LEwrEy5pAkLB3DGQMo7IdHaQsBTj89wzkEpy5Fpds8Z3XIRoJIMju
-W6rhzN+49rUzk+3RxW3VQuvYrJR3w83DSQc038J3rMlHRU82tCHBCsuFSx+d4ynH
-B789y7bOBpxlbHD/VlIW4o8YuTLHipGgsTnBZTdCzNOnu4WaVquoG789R6dN39KW
-qrMWQW/czJkim6AjeHaB9bghYNhxAAlUGAkqeN3ZsdhafltXfCz8+iq5cFRWw7zH
-vvfxnaDOM7rNfmxRJpfBeWNTds1fCF1qyGjz2ABCSHXAAWS6ZcH7UtDJB83iCdqm
-JeNx8fBz7yggbnnzcFJlW/Afugu2qa7s5MDiI7HxTPHGTsd6QVVElTuKgT9fDCZ/
-/sLaDZPVxBN9evRGETClpr46MpcVdq5V07EQ0iic+YO5d/dumm9cI5QzkmnmVG3u
-0oNNClRRUuFznh0RV9jN/VFmKsvO4zPb0prXBu7gUQJPB0rmVEKDHw8BvlT9p7FQ
-eslBi5wPwJiU8Ox+OR0c
-=Id4e
------END PGP SIGNATURE-----
-
---GuLbEtPckrXUekoe--
