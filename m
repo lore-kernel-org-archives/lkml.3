@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab3LBTOG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:14:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38751 "EHLO
+	id S1754411Ab3LBTOa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:14:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38844 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754204Ab3LBTNx (ORCPT
+	with ESMTP id S1754302Ab3LBTOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:13:53 -0500
+	Mon, 2 Dec 2013 14:14:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robert Richter <robert.richter@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Robert Richter <rric@kernel.org>
-Subject: [PATCH 3.10 103/173] edac, highbank: Fix interrupt setup of mem and l2 controller
-Date: Mon,  2 Dec 2013 11:11:26 -0800
-Message-Id: <20131202191155.827008452@linuxfoundation.org>
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10 124/173] cpufreq: highbank-cpufreq: Enable Midway/ECX-2000
+Date: Mon,  2 Dec 2013 11:11:47 -0800
+Message-Id: <20131202191157.829760248@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -28,103 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Richter <robert.richter@linaro.org>
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
 
-commit a72b8859fd3941cc1d2940d5c43026d2c6fb959e upstream.
+commit fbbc5bfb44a22e7a8ef753a1c8dfb448d7ac8b85 upstream.
 
-Register and enable interrupts after the edac registration. Otherwise
-incomming ecc error interrupts lead to crashes during device setup.
+Calxeda's new ECX-2000 part uses the same cpufreq interface as highbank,
+so add it to the driver's compatibility list.
 
-Fixing this in drivers for mc and l2.
+This is a minor change that can safely be applied to the 3.10 and 3.11
+stable trees.
 
-Signed-off-by: Robert Richter <robert.richter@linaro.org>
-Acked-by: Rob Herring <rob.herring@calxeda.com>
-Signed-off-by: Robert Richter <rric@kernel.org>
+Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/highbank_l2_edac.c |   18 ++++++++++--------
- drivers/edac/highbank_mc_edac.c |   18 ++++++++++--------
- 2 files changed, 20 insertions(+), 16 deletions(-)
+ drivers/cpufreq/highbank-cpufreq.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/edac/highbank_l2_edac.c
-+++ b/drivers/edac/highbank_l2_edac.c
-@@ -90,28 +90,30 @@ static int highbank_l2_err_probe(struct
- 		goto err;
- 	}
+--- a/drivers/cpufreq/highbank-cpufreq.c
++++ b/drivers/cpufreq/highbank-cpufreq.c
+@@ -66,7 +66,8 @@ static int hb_cpufreq_driver_init(void)
+ 	struct device_node *np;
+ 	int ret;
  
-+	dci->mod_name = dev_name(&pdev->dev);
-+	dci->dev_name = dev_name(&pdev->dev);
-+
-+	if (edac_device_add_device(dci))
-+		goto err;
-+
- 	drvdata->db_irq = platform_get_irq(pdev, 0);
- 	res = devm_request_irq(&pdev->dev, drvdata->db_irq,
- 			       highbank_l2_err_handler,
- 			       0, dev_name(&pdev->dev), dci);
- 	if (res < 0)
--		goto err;
-+		goto err2;
+-	if (!of_machine_is_compatible("calxeda,highbank"))
++	if ((!of_machine_is_compatible("calxeda,highbank")) &&
++		(!of_machine_is_compatible("calxeda,ecx-2000")))
+ 		return -ENODEV;
  
- 	drvdata->sb_irq = platform_get_irq(pdev, 1);
- 	res = devm_request_irq(&pdev->dev, drvdata->sb_irq,
- 			       highbank_l2_err_handler,
- 			       0, dev_name(&pdev->dev), dci);
- 	if (res < 0)
--		goto err;
--
--	dci->mod_name = dev_name(&pdev->dev);
--	dci->dev_name = dev_name(&pdev->dev);
--
--	if (edac_device_add_device(dci))
--		goto err;
-+		goto err2;
- 
- 	devres_close_group(&pdev->dev, NULL);
- 	return 0;
-+err2:
-+	edac_device_del_device(&pdev->dev);
- err:
- 	devres_release_group(&pdev->dev, NULL);
- 	edac_device_free_ctl_info(dci);
---- a/drivers/edac/highbank_mc_edac.c
-+++ b/drivers/edac/highbank_mc_edac.c
-@@ -189,14 +189,6 @@ static int highbank_mc_probe(struct plat
- 		goto err;
- 	}
- 
--	irq = platform_get_irq(pdev, 0);
--	res = devm_request_irq(&pdev->dev, irq, highbank_mc_err_handler,
--			       0, dev_name(&pdev->dev), mci);
--	if (res < 0) {
--		dev_err(&pdev->dev, "Unable to request irq %d\n", irq);
--		goto err;
--	}
--
- 	mci->mtype_cap = MEM_FLAG_DDR3;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
- 	mci->edac_cap = EDAC_FLAG_SECDED;
-@@ -217,10 +209,20 @@ static int highbank_mc_probe(struct plat
- 	if (res < 0)
- 		goto err;
- 
-+	irq = platform_get_irq(pdev, 0);
-+	res = devm_request_irq(&pdev->dev, irq, highbank_mc_err_handler,
-+			       0, dev_name(&pdev->dev), mci);
-+	if (res < 0) {
-+		dev_err(&pdev->dev, "Unable to request irq %d\n", irq);
-+		goto err2;
-+	}
-+
- 	highbank_mc_create_debugfs_nodes(mci);
- 
- 	devres_close_group(&pdev->dev, NULL);
- 	return 0;
-+err2:
-+	edac_mc_del_mc(&pdev->dev);
- err:
- 	devres_release_group(&pdev->dev, NULL);
- 	edac_mc_free(mci);
+ 	for_each_child_of_node(of_find_node_by_path("/cpus"), np)
 
 
