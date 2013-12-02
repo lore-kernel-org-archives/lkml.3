@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab3LBLUE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 06:20:04 -0500
-Received: from relay.parallels.com ([195.214.232.42]:47385 "EHLO
+	id S1753827Ab3LBLVu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 06:21:50 -0500
+Received: from relay.parallels.com ([195.214.232.42]:47453 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496Ab3LBLT6 (ORCPT
+	with ESMTP id S1753524Ab3LBLUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 06:19:58 -0500
+	Mon, 2 Dec 2013 06:20:02 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <dchinner@redhat.com>,
         <akpm@linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
-        <vdavydov@parallels.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>
-Subject: [PATCH v12 08/18] vmscan: do_try_to_free_pages(): remove shrink_control argument
-Date: Mon, 2 Dec 2013 15:19:43 +0400
-Message-ID: <cf461ed10d3e9ed7100ae38ec2e3a9011b90cd05.1385974612.git.vdavydov@parallels.com>
+        <vdavydov@parallels.com>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH v12 15/18] memcg: allow kmem limit to be resized down
+Date: Mon, 2 Dec 2013 15:19:50 +0400
+Message-ID: <442e8d847aa930cabff1fb520bd65b56559cae6e.1385974612.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1385974612.git.vdavydov@parallels.com>
 References: <cover.1385974612.git.vdavydov@parallels.com>
@@ -27,150 +27,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need passing on a shrink_control struct from
-try_to_free_pages() and friends to do_try_to_free_pages() and then to
-shrink_zones(), because it is only used in shrink_zones() and the only
-fields initialized on the top level is gfp_mask, which always equals to
-scan_control.gfp_mask known to shrink_zones(). So let's move
-shrink_control initialization to shrink_zones().
+From: Glauber Costa <glommer@openvz.org>
 
+The userspace memory limit can be freely resized down. Upon attempt,
+reclaim will be called to flush the pages away until we either reach the
+limit we want or give up.
+
+It wasn't possible so far with the kmem limit, since we had no way to
+shrink the kmem buffers other than using the big hammer of shrink_slab,
+that effectively frees data around the whole system.
+
+The situation flips now that we have a per-memcg shrinker
+infrastructure. We will proceed analogously to our user memory
+counterpart and try to shrink our buffers until we either reach the
+limit we want or give up.
+
+Signed-off-by: Glauber Costa <glommer@openvz.org>
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/vmscan.c |   32 ++++++++++++--------------------
- 1 file changed, 12 insertions(+), 20 deletions(-)
+ mm/memcontrol.c |   43 ++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 38 insertions(+), 5 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index ba1ad6e..7601b95 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2274,8 +2274,7 @@ static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
-  * further reclaim.
-  */
- static bool shrink_zones(struct zonelist *zonelist,
--			 struct scan_control *sc,
--			 struct shrink_control *shrink)
-+			 struct scan_control *sc)
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 3679acb..a0b22d7 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -5582,10 +5582,39 @@ static ssize_t mem_cgroup_read(struct cgroup_subsys_state *css,
+ 	return simple_read_from_buffer(buf, nbytes, ppos, str, len);
+ }
+ 
++#ifdef CONFIG_MEMCG_KMEM
++/*
++ * This is slightly different than res or memsw reclaim.  We already have
++ * vmscan behind us to drive the reclaim, so we can basically keep trying until
++ * all buffers that can be flushed are flushed. We have a very clear signal
++ * about it in the form of the return value of try_to_free_mem_cgroup_kmem.
++ */
++static int mem_cgroup_resize_kmem_limit(struct mem_cgroup *memcg,
++					unsigned long long val)
++{
++	int ret = -EBUSY;
++
++	for (;;) {
++		if (signal_pending(current)) {
++			ret = -EINTR;
++			break;
++		}
++
++		ret = res_counter_set_limit(&memcg->kmem, val);
++		if (!ret)
++			break;
++
++		/* Can't free anything, pointless to continue */
++		if (!try_to_free_mem_cgroup_kmem(memcg, GFP_KERNEL))
++			break;
++	}
++
++	return ret;
++}
++
+ static int memcg_update_kmem_limit(struct cgroup_subsys_state *css, u64 val)
  {
- 	struct zoneref *z;
- 	struct zone *zone;
-@@ -2284,6 +2283,9 @@ static bool shrink_zones(struct zonelist *zonelist,
- 	unsigned long lru_pages = 0;
- 	bool aborted_reclaim = false;
- 	struct reclaim_state *reclaim_state = current->reclaim_state;
-+	struct shrink_control shrink = {
-+		.gfp_mask = sc->gfp_mask,
-+	};
- 
+ 	int ret = -EINVAL;
+-#ifdef CONFIG_MEMCG_KMEM
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
  	/*
- 	 * If the number of buffer_heads in the machine exceeds the maximum
-@@ -2293,7 +2295,7 @@ static bool shrink_zones(struct zonelist *zonelist,
- 	if (buffer_heads_over_limit)
- 		sc->gfp_mask |= __GFP_HIGHMEM;
+ 	 * For simplicity, we won't allow this to be disabled.  It also can't
+@@ -5620,16 +5649,15 @@ static int memcg_update_kmem_limit(struct cgroup_subsys_state *css, u64 val)
+ 		 * starts accounting before all call sites are patched
+ 		 */
+ 		memcg_kmem_set_active(memcg);
+-	} else
+-		ret = res_counter_set_limit(&memcg->kmem, val);
++	} else {
++		ret = mem_cgroup_resize_kmem_limit(memcg, val);
++	}
+ out:
+ 	mutex_unlock(&set_limit_mutex);
+ 	mutex_unlock(&memcg_create_mutex);
+-#endif
+ 	return ret;
+ }
  
--	nodes_clear(shrink->nodes_to_scan);
-+	nodes_clear(shrink.nodes_to_scan);
- 
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
- 					gfp_zone(sc->gfp_mask), sc->nodemask) {
-@@ -2308,7 +2310,7 @@ static bool shrink_zones(struct zonelist *zonelist,
- 				continue;
- 
- 			lru_pages += zone_reclaimable_pages(zone);
--			node_set(zone_to_nid(zone), shrink->nodes_to_scan);
-+			node_set(zone_to_nid(zone), shrink.nodes_to_scan);
- 
- 			if (sc->priority != DEF_PRIORITY &&
- 			    !zone_reclaimable(zone))
-@@ -2353,7 +2355,7 @@ static bool shrink_zones(struct zonelist *zonelist,
- 	 * LRU pages over slab pages.
- 	 */
- 	if (global_reclaim(sc)) {
--		shrink_slab(shrink, sc->nr_scanned, lru_pages);
-+		shrink_slab(&shrink, sc->nr_scanned, lru_pages);
- 		if (reclaim_state) {
- 			sc->nr_reclaimed += reclaim_state->reclaimed_slab;
- 			reclaim_state->reclaimed_slab = 0;
-@@ -2400,8 +2402,7 @@ static bool all_unreclaimable(struct zonelist *zonelist,
-  * 		else, the number of pages reclaimed
-  */
- static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
--					struct scan_control *sc,
--					struct shrink_control *shrink)
-+					  struct scan_control *sc)
+-#ifdef CONFIG_MEMCG_KMEM
+ static int memcg_propagate_kmem(struct mem_cgroup *memcg)
  {
- 	unsigned long total_scanned = 0;
- 	unsigned long writeback_threshold;
-@@ -2416,7 +2417,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 		vmpressure_prio(sc->gfp_mask, sc->target_mem_cgroup,
- 				sc->priority);
- 		sc->nr_scanned = 0;
--		aborted_reclaim = shrink_zones(zonelist, sc, shrink);
-+		aborted_reclaim = shrink_zones(zonelist, sc);
+ 	int ret = 0;
+@@ -5666,6 +5694,11 @@ static int memcg_propagate_kmem(struct mem_cgroup *memcg)
+ out:
+ 	return ret;
+ }
++#else
++static int memcg_update_kmem_limit(struct cgroup *cont, u64 val)
++{
++	return -EINVAL;
++}
+ #endif /* CONFIG_MEMCG_KMEM */
  
- 		total_scanned += sc->nr_scanned;
- 		if (sc->nr_reclaimed >= sc->nr_to_reclaim)
-@@ -2579,9 +2580,6 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 		.target_mem_cgroup = NULL,
- 		.nodemask = nodemask,
- 	};
--	struct shrink_control shrink = {
--		.gfp_mask = sc.gfp_mask,
--	};
- 
- 	/*
- 	 * Do not enter reclaim if fatal signal was delivered while throttled.
-@@ -2595,7 +2593,7 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 				sc.may_writepage,
- 				gfp_mask);
- 
--	nr_reclaimed = do_try_to_free_pages(zonelist, &sc, &shrink);
-+	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
- 
- 	trace_mm_vmscan_direct_reclaim_end(nr_reclaimed);
- 
-@@ -2662,9 +2660,6 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
- 		.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
- 				(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK),
- 	};
--	struct shrink_control shrink = {
--		.gfp_mask = sc.gfp_mask,
--	};
- 
- 	/*
- 	 * Unlike direct reclaim via alloc_pages(), memcg's reclaim doesn't
-@@ -2679,7 +2674,7 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
- 					    sc.may_writepage,
- 					    sc.gfp_mask);
- 
--	nr_reclaimed = do_try_to_free_pages(zonelist, &sc, &shrink);
-+	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
- 
- 	trace_mm_vmscan_memcg_reclaim_end(nr_reclaimed);
- 
-@@ -3335,9 +3330,6 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
- 		.order = 0,
- 		.priority = DEF_PRIORITY,
- 	};
--	struct shrink_control shrink = {
--		.gfp_mask = sc.gfp_mask,
--	};
- 	struct zonelist *zonelist = node_zonelist(numa_node_id(), sc.gfp_mask);
- 	struct task_struct *p = current;
- 	unsigned long nr_reclaimed;
-@@ -3347,7 +3339,7 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
- 	reclaim_state.reclaimed_slab = 0;
- 	p->reclaim_state = &reclaim_state;
- 
--	nr_reclaimed = do_try_to_free_pages(zonelist, &sc, &shrink);
-+	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
- 
- 	p->reclaim_state = NULL;
- 	lockdep_clear_current_reclaim_state();
+ /*
 -- 
 1.7.10.4
 
