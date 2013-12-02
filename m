@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687Ab3LBTrN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:47:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39550 "EHLO
+	id S1756195Ab3LBTrg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:47:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39541 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827Ab3LBTSh (ORCPT
+	with ESMTP id S1753816Ab3LBTSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:37 -0500
+	Mon, 2 Dec 2013 14:18:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Frank Zago <frank@zago.net>, Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.12 151/212] iio:accel:kxsd9 fix missing mutex unlock
-Date: Mon,  2 Dec 2013 11:15:42 -0800
-Message-Id: <20131202191304.266995123@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.12 149/212] HID: uhid: fix leak for 64/32 UHID_CREATE
+Date: Mon,  2 Dec 2013 11:15:40 -0800
+Message-Id: <20131202191303.968721793@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,36 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frank Zago <frank@zago.net>
+From: David Herrmann <dh.herrmann@gmail.com>
 
-commit 0ee005c7dc2803125275e24598f0fb37775a6af3 upstream.
+commit 80897aa787ecd58eabb29deab7cbec9249c9b7e6 upstream.
 
-This will leave a lock held after reading from the device, preventing
-any further reads.
+UHID allows short writes so user-space can omit unused fields. We
+automatically set them to 0 in the kernel. However, the 64/32 bit
+compat-handler didn't do that in the UHID_CREATE fallback. This will
+reveal random kernel heap data (of random size, even) to user-space.
 
-Signed-off-by: Frank Zago <frank@zago.net>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Fixes: befde0226a59 ('HID: uhid: make creating devices work on 64/32 systems')
+
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/accel/kxsd9.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/hid/uhid.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/iio/accel/kxsd9.c
-+++ b/drivers/iio/accel/kxsd9.c
-@@ -112,9 +112,10 @@ static int kxsd9_read(struct iio_dev *in
- 	mutex_lock(&st->buf_lock);
- 	st->tx[0] = KXSD9_READ(address);
- 	ret = spi_sync_transfer(st->us, xfers, ARRAY_SIZE(xfers));
--	if (ret)
--		return ret;
--	return (((u16)(st->rx[0])) << 8) | (st->rx[1] & 0xF0);
-+	if (!ret)
-+		ret = (((u16)(st->rx[0])) << 8) | (st->rx[1] & 0xF0);
-+	mutex_unlock(&st->buf_lock);
-+	return ret;
- }
+--- a/drivers/hid/uhid.c
++++ b/drivers/hid/uhid.c
+@@ -287,7 +287,7 @@ static int uhid_event_from_user(const ch
+ 			 */
+ 			struct uhid_create_req_compat *compat;
  
- static IIO_CONST_ATTR(accel_scale_available,
+-			compat = kmalloc(sizeof(*compat), GFP_KERNEL);
++			compat = kzalloc(sizeof(*compat), GFP_KERNEL);
+ 			if (!compat)
+ 				return -ENOMEM;
+ 
 
 
