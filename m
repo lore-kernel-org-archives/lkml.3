@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990Ab3LBTNH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:13:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38422 "EHLO
+	id S1754031Ab3LBTNT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:13:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38468 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938Ab3LBTMv (ORCPT
+	with ESMTP id S1753985Ab3LBTNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:12:51 -0500
+	Mon, 2 Dec 2013 14:13:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Phil Edworthy <phil.edworthy@renesas.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 014/173] ASoC: ak4642: prevent un-necessary changes to SG_SL1
-Date: Mon,  2 Dec 2013 11:09:57 -0800
-Message-Id: <20131202191144.525903955@linuxfoundation.org>
+        Felipe Pena <felipensp@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 039/173] rtlwifi: rtl8192se: Fix wrong assignment
+Date: Mon,  2 Dec 2013 11:10:22 -0800
+Message-Id: <20131202191147.172118960@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -28,34 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Phil Edworthy <phil.edworthy@renesas.com>
+From: Felipe Pena <felipensp@gmail.com>
 
-commit 7b5bfb82882b9b1c8423ce0ed6852ca3762d967a upstream.
+commit 3aef7dde8dcf09e0124f0a2665845a507331972b upstream.
 
-If you record the sound during playback,
-the playback sound becomes silent.
-Modify so that the codec driver does not clear
-SG_SL1::DACL bit which is controlled under widget
+There is a typo in the struct member name on assignment when checking
+rtlphy->current_chan_bw == HT_CHANNEL_WIDTH_20_40, the check uses pwrgroup_ht40
+for bound limit and uses pwrgroup_ht20 when assigning instead.
 
-Signed-off-by: Phil Edworthy <phil.edworthy@renesas.com>
-Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Felipe Pena <felipensp@gmail.com>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/ak4642.c |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8192se/rf.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/ak4642.c
-+++ b/sound/soc/codecs/ak4642.c
-@@ -257,7 +257,7 @@ static int ak4642_dai_startup(struct snd
- 		 * This operation came from example code of
- 		 * "ASAHI KASEI AK4642" (japanese) manual p94.
- 		 */
--		snd_soc_write(codec, SG_SL1, PMMP | MGAIN0);
-+		snd_soc_update_bits(codec, SG_SL1, PMMP | MGAIN0, PMMP | MGAIN0);
- 		snd_soc_write(codec, TIMER, ZTM(0x3) | WTM(0x3));
- 		snd_soc_write(codec, ALC_CTL1, ALC | LMTH0);
- 		snd_soc_update_bits(codec, PW_MGMT1, PMADL, PMADL);
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/rf.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/rf.c
+@@ -265,7 +265,7 @@ static void _rtl92s_get_txpower_writeval
+ 				    rtlefuse->pwrgroup_ht40
+ 				    [RF90_PATH_A][chnl - 1]) {
+ 					pwrdiff_limit[i] =
+-					  rtlefuse->pwrgroup_ht20
++					  rtlefuse->pwrgroup_ht40
+ 					  [RF90_PATH_A][chnl - 1];
+ 				}
+ 			} else {
 
 
