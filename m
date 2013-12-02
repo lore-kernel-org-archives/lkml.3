@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab3LBUIE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:08:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39157 "EHLO
+	id S1756865Ab3LBUIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:08:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39211 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753503Ab3LBTRj (ORCPT
+	with ESMTP id S1754586Ab3LBTRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:39 -0500
+	Mon, 2 Dec 2013 14:17:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Huang Shijie <b32955@freescale.com>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.12 072/212] mtd: gpmi: fix kernel BUG due to racing DMA operations
-Date: Mon,  2 Dec 2013 11:14:23 -0800
-Message-Id: <20131202191255.912324739@linuxfoundation.org>
+        Brian Norris <computersforpeace@gmail.com>,
+        Yuhang Wang <wangyuhang2014@gmail.com>,
+        Sourav Poddar <sourav.poddar@ti.com>
+Subject: [PATCH 3.12 069/212] mtd: m25p80: fix allocation size
+Date: Mon,  2 Dec 2013 11:14:20 -0800
+Message-Id: <20131202191255.637787419@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,110 +28,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huang Shijie <b32955@freescale.com>
+From: Brian Norris <computersforpeace@gmail.com>
 
-commit 7b3d2fb92067bcb29f0f085a9fa9fa64920a6646 upstream.
+commit 778d226a1462572b51d6777cdb1d611543410cb4 upstream.
 
-[1] The gpmi uses the nand_command_lp to issue the commands to NAND chips.
-    The gpmi issues a DMA operation with gpmi_cmd_ctrl when it handles
-    a NAND_CMD_NONE control command. So when we read a page(NAND_CMD_READ0)
-    from the NAND, we may send two DMA operations back-to-back.
+This patch fixes two memory errors:
 
-    If we do not serialize the two DMA operations, we will meet a bug when
+1. During a probe failure (in mtd_device_parse_register?) the command
+   buffer would not be freed.
 
-    1.1) we enable CONFIG_DMA_API_DEBUG, CONFIG_DMADEVICES_DEBUG,
-         and CONFIG_DEBUG_SG.
+2. The command buffer's size is determined based on the 'fast_read'
+   boolean, but the assignment of fast_read is made after this
+   allocation. Thus, the buffer may be allocated "too small".
 
-    1.2) Use the following commands in an UART console and a SSH console:
-         cmd 1: while true;do dd if=/dev/mtd0 of=/dev/null;done
-         cmd 1: while true;do dd if=/dev/mmcblk0 of=/dev/null;done
+To fix the first, just switch to the devres version of kzalloc.
 
-    The kernel log shows below:
-    -----------------------------------------------------------------
-    kernel BUG at lib/scatterlist.c:28!
-    Unable to handle kernel NULL pointer dereference at virtual address 00000000
-      .........................
-    [<80044a0c>] (__bug+0x18/0x24) from [<80249b74>] (sg_next+0x48/0x4c)
-    [<80249b74>] (sg_next+0x48/0x4c) from [<80255398>] (debug_dma_unmap_sg+0x170/0x1a4)
-    [<80255398>] (debug_dma_unmap_sg+0x170/0x1a4) from [<8004af58>] (dma_unmap_sg+0x14/0x6c)
-    [<8004af58>] (dma_unmap_sg+0x14/0x6c) from [<8027e594>] (mxs_dma_tasklet+0x18/0x1c)
-    [<8027e594>] (mxs_dma_tasklet+0x18/0x1c) from [<8007d444>] (tasklet_action+0x114/0x164)
-    -----------------------------------------------------------------
+To fix the second, increase MAX_CMD_SIZE unconditionally. It's not worth
+saving a byte to fiddle around with the conditions here.
 
-    1.3) Assume the two DMA operations is X (first) and Y (second).
+This problem was reported by Yuhang Wang a while back.
 
-         The root cause of the bug:
-	   Assume process P issues DMA X, and sleep on the completion
-	 @this->dma_done. X's tasklet callback is dma_irq_callback. It firstly
-	 wake up the process sleeping on the completion @this->dma_done,
-	 and then trid to unmap the scatterlist S. The waked process P will
-	 issue Y in another ARM core. Y initializes S->sg_magic to zero
-	 with sg_init_one(), while dma_irq_callback is unmapping S at the same
-	 time.
-
-	 See the diagram:
-
-                   ARM core 0              |         ARM core 1
-	 -------------------------------------------------------------
-         (P issues DMA X, then sleep)  --> |
-                                           |
-         (X's tasklet wakes P)         --> |
-                                           |
-                                           | <-- (P begin to issue DMA Y)
-                                           |
-         (X's tasklet unmap the            |
-      scatterlist S with dma_unmap_sg) --> | <-- (Y calls sg_init_one() to init
-                                           |      scatterlist S)
-                                           |
-
-[2] This patch serialize both the X and Y in the following way:
-     Unmap the DMA scatterlist S firstly, and wake up the process at the end
-     of the DMA callback, in such a way, Y will be executed after X.
-
-     After this patch:
-
-                   ARM core 0              |         ARM core 1
-	 -------------------------------------------------------------
-         (P issues DMA X, then sleep)  --> |
-                                           |
-         (X's tasklet unmap the            |
-      scatterlist S with dma_unmap_sg) --> |
-                                           |
-         (X's tasklet wakes P)         --> |
-                                           |
-                                           | <-- (P begin to issue DMA Y)
-                                           |
-                                           | <-- (Y calls sg_init_one() to init
-                                           |     scatterlist S)
-                                           |
-
-Signed-off-by: Huang Shijie <b32955@freescale.com>
 Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Reported-by: Yuhang Wang <wangyuhang2014@gmail.com>
+Reviewed-by: Sourav Poddar <sourav.poddar@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/gpmi-nand/gpmi-nand.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mtd/devices/m25p80.c |   20 +++++++-------------
+ 1 file changed, 7 insertions(+), 13 deletions(-)
 
---- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-@@ -392,8 +392,6 @@ static void dma_irq_callback(void *param
- 	struct gpmi_nand_data *this = param;
- 	struct completion *dma_c = &this->dma_done;
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -78,7 +78,7 @@
  
--	complete(dma_c);
--
- 	switch (this->dma_type) {
- 	case DMA_FOR_COMMAND:
- 		dma_unmap_sg(this->dev, &this->cmd_sgl, 1, DMA_TO_DEVICE);
-@@ -418,6 +416,8 @@ static void dma_irq_callback(void *param
- 	default:
- 		pr_err("in wrong DMA operation.\n");
+ /* Define max times to check status register before we give up. */
+ #define	MAX_READY_WAIT_JIFFIES	(40 * HZ)	/* M25P16 specs 40s max chip erase */
+-#define	MAX_CMD_SIZE		5
++#define	MAX_CMD_SIZE		6
+ 
+ #define JEDEC_MFR(_jedec_id)	((_jedec_id) >> 16)
+ 
+@@ -992,15 +992,13 @@ static int m25p_probe(struct spi_device
+ 		}
  	}
+ 
+-	flash = kzalloc(sizeof *flash, GFP_KERNEL);
++	flash = devm_kzalloc(&spi->dev, sizeof(*flash), GFP_KERNEL);
+ 	if (!flash)
+ 		return -ENOMEM;
+-	flash->command = kmalloc(MAX_CMD_SIZE + (flash->fast_read ? 1 : 0),
+-					GFP_KERNEL);
+-	if (!flash->command) {
+-		kfree(flash);
 +
-+	complete(dma_c);
++	flash->command = devm_kzalloc(&spi->dev, MAX_CMD_SIZE, GFP_KERNEL);
++	if (!flash->command)
+ 		return -ENOMEM;
+-	}
+ 
+ 	flash->spi = spi;
+ 	mutex_init(&flash->lock);
+@@ -1133,14 +1131,10 @@ static int m25p_probe(struct spi_device
+ static int m25p_remove(struct spi_device *spi)
+ {
+ 	struct m25p	*flash = spi_get_drvdata(spi);
+-	int		status;
+ 
+ 	/* Clean up MTD stuff. */
+-	status = mtd_device_unregister(&flash->mtd);
+-	if (status == 0) {
+-		kfree(flash->command);
+-		kfree(flash);
+-	}
++	mtd_device_unregister(&flash->mtd);
++
+ 	return 0;
  }
  
- int start_dma_without_bch_irq(struct gpmi_nand_data *this,
 
 
