@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab3LBTSi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:18:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39419 "EHLO
+	id S1756154Ab3LBTp7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:45:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39560 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754758Ab3LBTST (ORCPT
+	with ESMTP id S1754845Ab3LBTSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:19 -0500
+	Mon, 2 Dec 2013 14:18:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Jakob Bornecrantz <jakob@vmware.com>
-Subject: [PATCH 3.12 124/212] drm/vmwgfx: Resource evict fixes
-Date: Mon,  2 Dec 2013 11:15:15 -0800
-Message-Id: <20131202191300.909482761@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Libin <huawei.libin@huawei.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH 3.12 154/212] workqueue: fix ordered workqueues in NUMA setups
+Date: Mon,  2 Dec 2013 11:15:45 -0800
+Message-Id: <20131202191304.629279916@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,131 +27,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit ea029c28deadc33d2af4baf26810dd5fc44d4926 upstream.
+commit 8a2b75384444488fc4f2cbb9f0921b6a0794838f upstream.
 
-Fix an error message that was incorrectly blaming device resource id
-shortage.
+An ordered workqueue implements execution ordering by using single
+pool_workqueue with max_active == 1.  On a given pool_workqueue, work
+items are processed in FIFO order and limiting max_active to 1
+enforces the queued work items to be processed one by one.
 
-Also make sure we correctly catch resource eviction errors, that
-could otherwise lead to evictable resources temporarily not being on the
-LRU list.
+Unfortunately, 4c16bd327c ("workqueue: implement NUMA affinity for
+unbound workqueues") accidentally broke this guarantee by applying
+NUMA affinity to ordered workqueues too.  On NUMA setups, an ordered
+workqueue would end up with separate pool_workqueues for different
+nodes.  Each pool_workqueue still limits max_active to 1 but multiple
+work items may be executed concurrently and out of order depending on
+which node they are queued to.
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Fix it by using dedicated ordered_wq_attrs[] when creating ordered
+workqueues.  The new attrs match the unbound ones except that no_numa
+is always set thus forcing all NUMA nodes to share the default
+pool_workqueue.
+
+While at it, add sanity check in workqueue creation path which
+verifies that an ordered workqueues has only the default
+pool_workqueue.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Libin <huawei.libin@huawei.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_resource.c |   42 ++++++++++++++++++++++++++-----
- 1 file changed, 36 insertions(+), 6 deletions(-)
+ kernel/workqueue.c |   24 ++++++++++++++++++++++--
+ 1 file changed, 22 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
-@@ -32,6 +32,8 @@
- #include <drm/drmP.h>
- #include "vmwgfx_resource_priv.h"
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -305,6 +305,9 @@ static DEFINE_HASHTABLE(unbound_pool_has
+ /* I: attributes used when instantiating standard unbound pools on demand */
+ static struct workqueue_attrs *unbound_std_wq_attrs[NR_STD_WORKER_POOLS];
  
-+#define VMW_RES_EVICT_ERR_COUNT 10
++/* I: attributes used when instantiating ordered pools on demand */
++static struct workqueue_attrs *ordered_wq_attrs[NR_STD_WORKER_POOLS];
 +
- struct vmw_user_dma_buffer {
- 	struct ttm_base_object base;
- 	struct vmw_dma_buffer dma;
-@@ -1091,8 +1093,9 @@ vmw_resource_backoff_reservation(struct
-  *                         to a backup buffer.
-  *
-  * @res:            The resource to evict.
-+ * @interruptible:  Whether to wait interruptible.
-  */
--int vmw_resource_do_evict(struct vmw_resource *res)
-+int vmw_resource_do_evict(struct vmw_resource *res, bool interruptible)
+ struct workqueue_struct *system_wq __read_mostly;
+ EXPORT_SYMBOL(system_wq);
+ struct workqueue_struct *system_highpri_wq __read_mostly;
+@@ -4106,7 +4109,7 @@ out_unlock:
+ static int alloc_and_link_pwqs(struct workqueue_struct *wq)
  {
- 	struct ttm_validate_buffer val_buf;
- 	const struct vmw_res_func *func = res->func;
-@@ -1102,7 +1105,8 @@ int vmw_resource_do_evict(struct vmw_res
- 	BUG_ON(!func->may_evict);
+ 	bool highpri = wq->flags & WQ_HIGHPRI;
+-	int cpu;
++	int cpu, ret;
  
- 	val_buf.bo = NULL;
--	ret = vmw_resource_check_buffer(res, &ticket, true, &val_buf);
-+	ret = vmw_resource_check_buffer(res, &ticket, interruptible,
-+					&val_buf);
- 	if (unlikely(ret != 0))
- 		return ret;
- 
-@@ -1141,6 +1145,7 @@ int vmw_resource_validate(struct vmw_res
- 	struct vmw_private *dev_priv = res->dev_priv;
- 	struct list_head *lru_list = &dev_priv->res_lru[res->func->res_type];
- 	struct ttm_validate_buffer val_buf;
-+	unsigned err_count = 0;
- 
- 	if (likely(!res->func->may_evict))
+ 	if (!(wq->flags & WQ_UNBOUND)) {
+ 		wq->cpu_pwqs = alloc_percpu(struct pool_workqueue);
+@@ -4126,6 +4129,13 @@ static int alloc_and_link_pwqs(struct wo
+ 			mutex_unlock(&wq->mutex);
+ 		}
  		return 0;
-@@ -1155,7 +1160,7 @@ int vmw_resource_validate(struct vmw_res
++	} else if (wq->flags & __WQ_ORDERED) {
++		ret = apply_workqueue_attrs(wq, ordered_wq_attrs[highpri]);
++		/* there should only be single pwq for ordering guarantee */
++		WARN(!ret && (wq->pwqs.next != &wq->dfl_pwq->pwqs_node ||
++			      wq->pwqs.prev != &wq->dfl_pwq->pwqs_node),
++		     "ordering guarantee broken for workqueue %s\n", wq->name);
++		return ret;
+ 	} else {
+ 		return apply_workqueue_attrs(wq, unbound_std_wq_attrs[highpri]);
+ 	}
+@@ -5051,13 +5061,23 @@ static int __init init_workqueues(void)
+ 		}
+ 	}
  
- 		write_lock(&dev_priv->resource_lock);
- 		if (list_empty(lru_list) || !res->func->may_evict) {
--			DRM_ERROR("Out of device device id entries "
-+			DRM_ERROR("Out of device device resources "
- 				  "for %s.\n", res->func->type_name);
- 			ret = -EBUSY;
- 			write_unlock(&dev_priv->resource_lock);
-@@ -1168,7 +1173,19 @@ int vmw_resource_validate(struct vmw_res
- 		list_del_init(&evict_res->lru_head);
+-	/* create default unbound wq attrs */
++	/* create default unbound and ordered wq attrs */
+ 	for (i = 0; i < NR_STD_WORKER_POOLS; i++) {
+ 		struct workqueue_attrs *attrs;
  
- 		write_unlock(&dev_priv->resource_lock);
--		vmw_resource_do_evict(evict_res);
+ 		BUG_ON(!(attrs = alloc_workqueue_attrs(GFP_KERNEL)));
+ 		attrs->nice = std_nice[i];
+ 		unbound_std_wq_attrs[i] = attrs;
 +
-+		ret = vmw_resource_do_evict(evict_res, true);
-+		if (unlikely(ret != 0)) {
-+			write_lock(&dev_priv->resource_lock);
-+			list_add_tail(&evict_res->lru_head, lru_list);
-+			write_unlock(&dev_priv->resource_lock);
-+			if (ret == -ERESTARTSYS ||
-+			    ++err_count > VMW_RES_EVICT_ERR_COUNT) {
-+				vmw_resource_unreference(&evict_res);
-+				goto out_no_validate;
-+			}
-+		}
-+
- 		vmw_resource_unreference(&evict_res);
- 	} while (1);
++		/*
++		 * An ordered wq should have only one pwq as ordering is
++		 * guaranteed by max_active which is enforced by pwqs.
++		 * Turn off NUMA so that dfl_pwq is used for all nodes.
++		 */
++		BUG_ON(!(attrs = alloc_workqueue_attrs(GFP_KERNEL)));
++		attrs->nice = std_nice[i];
++		attrs->no_numa = true;
++		ordered_wq_attrs[i] = attrs;
+ 	}
  
-@@ -1253,13 +1270,15 @@ bool vmw_resource_needs_backup(const str
-  * @type:           The resource type to evict
-  *
-  * To avoid thrashing starvation or as part of the hibernation sequence,
-- * evict all evictable resources of a specific type.
-+ * try to evict all evictable resources of a specific type.
-  */
- static void vmw_resource_evict_type(struct vmw_private *dev_priv,
- 				    enum vmw_res_type type)
- {
- 	struct list_head *lru_list = &dev_priv->res_lru[type];
- 	struct vmw_resource *evict_res;
-+	unsigned err_count = 0;
-+	int ret;
- 
- 	do {
- 		write_lock(&dev_priv->resource_lock);
-@@ -1272,7 +1291,18 @@ static void vmw_resource_evict_type(stru
- 					 lru_head));
- 		list_del_init(&evict_res->lru_head);
- 		write_unlock(&dev_priv->resource_lock);
--		vmw_resource_do_evict(evict_res);
-+
-+		ret = vmw_resource_do_evict(evict_res, false);
-+		if (unlikely(ret != 0)) {
-+			write_lock(&dev_priv->resource_lock);
-+			list_add_tail(&evict_res->lru_head, lru_list);
-+			write_unlock(&dev_priv->resource_lock);
-+			if (++err_count > VMW_RES_EVICT_ERR_COUNT) {
-+				vmw_resource_unreference(&evict_res);
-+				return;
-+			}
-+		}
-+
- 		vmw_resource_unreference(&evict_res);
- 	} while (1);
- 
+ 	system_wq = alloc_workqueue("events", 0, 0);
 
 
