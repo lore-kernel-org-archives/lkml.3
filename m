@@ -1,98 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757260Ab3LBUN5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:13:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2507 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754835Ab3LBUJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 15:09:05 -0500
-Date: Mon, 2 Dec 2013 15:09:01 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Richard Guy Briggs <rgb@redhat.com>
-Subject: Re: [PATCH 3.10 086/173] audit: log the audit_names record type
-Message-ID: <20131202150901.24a0ee87@tlielax.poochiereds.net>
-In-Reply-To: <20131202191153.440613725@linuxfoundation.org>
-References: <20131202191142.873808297@linuxfoundation.org>
-	<20131202191153.440613725@linuxfoundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757246Ab3LBUNy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:13:54 -0500
+Received: from mail-qe0-f42.google.com ([209.85.128.42]:40513 "EHLO
+	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753928Ab3LBTRd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 14:17:33 -0500
+Date: Mon, 2 Dec 2013 14:17:27 -0500
+From: Tejun Heo <htejun@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] sched: Revert 14a40ffccd61 ("sched: replace
+ PF_THREAD_BOUND with PF_NO_SETAFFINITY")
+Message-ID: <20131202191727.GC3626@htj.dyndns.org>
+References: <20131202152956.GI16796@laptop.programming.kicks-ass.net>
+ <20131202153746.GA27781@gmail.com>
+ <20131202165006.GA19064@htj.dyndns.org>
+ <20131202172837.GB29537@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131202172837.GB29537@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  2 Dec 2013 11:11:09 -0800
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+Hello, Ingo.
 
-> 3.10-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Jeff Layton <jlayton@redhat.com>
-> 
-> commit d3aea84a4ace5ff9ce7fb7714cee07bebef681c2 upstream.
-> 
-> ...to make it clear what the intent behind each record's operation was.
-> 
-> In many cases you can infer this, based on the context of the syscall
-> and the result. In other cases it's not so obvious. For instance, in
-> the case where you have a file being renamed over another, you'll have
-> two different records with the same filename but different inode info.
-> By logging this information we can clearly tell which one was created
-> and which was deleted.
-> 
-> This fixes what was broken in commit bfcec708.
-> Commit 79f6530c should also be backported to stable v3.7+.
-> 
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> Signed-off-by: Eric Paris <eparis@redhat.com>
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> Signed-off-by: Eric Paris <eparis@redhat.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> ---
->  kernel/audit.c |   20 ++++++++++++++++++++
->  1 file changed, 20 insertions(+)
-> 
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -1537,6 +1537,26 @@ void audit_log_name(struct audit_context
->  		}
->  	}
->  
-> +	/* log the audit_names record type */
-> +	audit_log_format(ab, " nametype=");
-> +	switch(n->type) {
-> +	case AUDIT_TYPE_NORMAL:
-> +		audit_log_format(ab, "NORMAL");
-> +		break;
-> +	case AUDIT_TYPE_PARENT:
-> +		audit_log_format(ab, "PARENT");
-> +		break;
-> +	case AUDIT_TYPE_CHILD_DELETE:
-> +		audit_log_format(ab, "DELETE");
-> +		break;
-> +	case AUDIT_TYPE_CHILD_CREATE:
-> +		audit_log_format(ab, "CREATE");
-> +		break;
-> +	default:
-> +		audit_log_format(ab, "UNKNOWN");
-> +		break;
-> +	}
-> +
->  	audit_log_fcaps(ab, n);
->  	audit_log_end(ab);
->  }
-> 
-> 
+On Mon, Dec 02, 2013 at 06:28:37PM +0100, Ingo Molnar wrote:
+> No, NUMA is a performance issue in this specific case, not a 
+> correctness issue. 'Correctness' for configuration details mostly 
+> means 'stuff does not crash'.
 
-I'm not sure this is really suitable or needed for stable. It's
-unlikely to hurt anything, but it doesn't really fix a problem per-se.
-It just adds a little extra info to the audit records.
+That's exactly the thing.  Workqueue users can set any random affinity
+be that per-cpu, per-NUMA or whatever (I'm not talking about the
+automatic NUMA affinity here), and they should be able to depend on
+the configured affinity being honored as long as that request has
+succeeded.  Changing affinity underneath workqueue code actively
+breaks the API and has possibility to lead to crashes.
 
-Ditto for the 3.12 version of this patch...
+> We try to give good, sensible, well performing defaults out of box, 
+> but otherwise we try to let root mis-configure (or improve!) their 
+> systems rather widely.
+
+Yeah, sure, that's why there's custom attributes interface which can
+be exposed via sysfs.
+
+> That's only because 'private affinity' attributes detached scheduler 
+> affinity handling snuck into the workqueue code. It's bad design and 
+> it needs to be fixed - and the worst aspect is undone via this revert.
+
+You can't do that because of the very nature of workqueue - the tasks
+are completely ephemeral and automatically pooled.  Nothing is
+per-task.  There are attributes which aren't even defined for
+individual tasks.  For workqueue attributes to be customizable, it
+needs some form of custom interface.
+
+> We already have APIs to manage affinities, in the scheduler. 
+> Privatizing this function into workqueue.c is limiting and actively 
+> wrong.
+
+Those are pool attributes which the tasks are keyed by.  workqueue
+needs to know them to put the matching ones in the same pool.
+
+> Such APIs should be done properly, by extending existing scheduler 
+> APIs if needed, not by turning off the old APIs via a crude flag and 
+> creating some private, per subsystem implementation ...
+
+I don't really follow this logic.  workqueue is a super structure
+built on top of tasks and has certain requirements on how its member
+tasks behave and will break, in ways which would be difficult to track
+down, if those requirements are breached.  This is something
+structurally fundamental.
+
+I suppose workqueue can taint / generate warnings if workers which are
+breaking out of the requested parameters are detected, if people are
+hell-bent on doing it, but the pros aren't clear at all to me.
+
+Thanks.
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+tejun
