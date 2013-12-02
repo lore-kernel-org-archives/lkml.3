@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab3LBTVs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:21:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39764 "EHLO
+	id S1755248Ab3LBTWY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:22:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39754 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755029Ab3LBTTQ (ORCPT
+	with ESMTP id S1755077Ab3LBTTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:19:16 -0500
+	Mon, 2 Dec 2013 14:19:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Achatz <erazor_de@users.sourceforge.net>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.12 207/212] HID: roccat: add new device return value
-Date: Mon,  2 Dec 2013 11:16:38 -0800
-Message-Id: <20131202191312.471773914@linuxfoundation.org>
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: [PATCH 3.12 205/212] media: s5h1420: Dont use dynamic static allocation
+Date: Mon,  2 Dec 2013 11:16:36 -0800
+Message-Id: <20131202191312.048995417@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,53 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit 14fc4290df2fb94a28f39dab9ed32feaa5527bef upstream.
+commit 9736a89dafe07359d9c86bf9c3b815a250b354bc upstream.
 
-Ryos uses a new return value for critical errors, others have been
-confirmed.
+Dynamic static allocation is evil, as Kernel stack is too low, and
+compilation complains about it on some archs:
+	drivers/media/dvb-frontends/s5h1420.c:851:1: warning: 's5h1420_tuner_i2c_tuner_xfer' uses dynamic stack allocation [enabled by default]
+Instead, let's enforce a limit for the buffer.
+In the specific case of this frontend, only ttpci uses it. The maximum
+number of messages there is two, on I2C read operations. As the logic
+can add an extra operation, change the size to 3.
 
-Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-roccat-common.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/media/dvb-frontends/s5h1420.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/drivers/hid/hid-roccat-common.c
-+++ b/drivers/hid/hid-roccat-common.c
-@@ -65,10 +65,11 @@ int roccat_common2_send(struct usb_devic
- EXPORT_SYMBOL_GPL(roccat_common2_send);
+--- a/drivers/media/dvb-frontends/s5h1420.c
++++ b/drivers/media/dvb-frontends/s5h1420.c
+@@ -836,9 +836,16 @@ static u32 s5h1420_tuner_i2c_func(struct
+ static int s5h1420_tuner_i2c_tuner_xfer(struct i2c_adapter *i2c_adap, struct i2c_msg msg[], int num)
+ {
+ 	struct s5h1420_state *state = i2c_get_adapdata(i2c_adap);
+-	struct i2c_msg m[1 + num];
++	struct i2c_msg m[3];
+ 	u8 tx_open[2] = { CON_1, state->CON_1_val | 1 }; /* repeater stops once there was a stop condition */
  
- enum roccat_common2_control_states {
--	ROCCAT_COMMON_CONTROL_STATUS_OVERLOAD = 0,
-+	ROCCAT_COMMON_CONTROL_STATUS_CRITICAL = 0,
- 	ROCCAT_COMMON_CONTROL_STATUS_OK = 1,
- 	ROCCAT_COMMON_CONTROL_STATUS_INVALID = 2,
--	ROCCAT_COMMON_CONTROL_STATUS_WAIT = 3,
-+	ROCCAT_COMMON_CONTROL_STATUS_BUSY = 3,
-+	ROCCAT_COMMON_CONTROL_STATUS_CRITICAL_NEW = 4,
- };
++	if (1 + num > ARRAY_SIZE(m)) {
++		printk(KERN_WARNING
++		       "%s: i2c xfer: num=%d is too big!\n",
++		       KBUILD_MODNAME, num);
++		return  -EOPNOTSUPP;
++	}
++
+ 	memset(m, 0, sizeof(struct i2c_msg) * (1 + num));
  
- static int roccat_common2_receive_control_status(struct usb_device *usb_dev)
-@@ -88,13 +89,12 @@ static int roccat_common2_receive_contro
- 		switch (control.value) {
- 		case ROCCAT_COMMON_CONTROL_STATUS_OK:
- 			return 0;
--		case ROCCAT_COMMON_CONTROL_STATUS_WAIT:
-+		case ROCCAT_COMMON_CONTROL_STATUS_BUSY:
- 			msleep(500);
- 			continue;
- 		case ROCCAT_COMMON_CONTROL_STATUS_INVALID:
--
--		case ROCCAT_COMMON_CONTROL_STATUS_OVERLOAD:
--			/* seems to be critical - replug necessary */
-+		case ROCCAT_COMMON_CONTROL_STATUS_CRITICAL:
-+		case ROCCAT_COMMON_CONTROL_STATUS_CRITICAL_NEW:
- 			return -EINVAL;
- 		default:
- 			dev_err(&usb_dev->dev,
+ 	m[0].addr = state->config->demod_address;
+@@ -847,7 +854,7 @@ static int s5h1420_tuner_i2c_tuner_xfer(
+ 
+ 	memcpy(&m[1], msg, sizeof(struct i2c_msg) * num);
+ 
+-	return i2c_transfer(state->i2c, m, 1+num) == 1 + num ? num : -EIO;
++	return i2c_transfer(state->i2c, m, 1 + num) == 1 + num ? num : -EIO;
+ }
+ 
+ static struct i2c_algorithm s5h1420_tuner_i2c_algo = {
 
 
