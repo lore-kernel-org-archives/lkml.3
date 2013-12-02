@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab3LBTfV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 14:35:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39646 "EHLO
+	id S1755851Ab3LBTfN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 14:35:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39656 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754974Ab3LBTS4 (ORCPT
+	with ESMTP id S1754980Ab3LBTS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:18:56 -0500
+	Mon, 2 Dec 2013 14:18:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Gundersen <teg@jklm.no>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.12 168/212] Input: i8042 - add PNP modaliases
-Date: Mon,  2 Dec 2013 11:15:59 -0800
-Message-Id: <20131202191306.740629315@linuxfoundation.org>
+        Elias Vanderstuyft <elias.vds@gmail.com>,
+        Simon Wood <simon@mungewell.org>, Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.12 181/212] HID:hid-lg4ff: Scale autocentering force properly on Logitech wheel
+Date: Mon,  2 Dec 2013 11:16:12 -0800
+Message-Id: <20131202191308.690305989@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -27,40 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Gundersen <teg@jklm.no>
+From: Simon Wood <simon@mungewell.org>
 
-commit 78551277e4df57864b0b0e7f85c23ede2be2edb8 upstream.
+commit f8c231569a7a455dfa1907294a46ba52b3aa8859 upstream.
 
-This allows the module to be autoloaded in the common case.
+Adjust the scaling and lineartity to match that of the Windows
+driver (from MOMO testing).
 
-In order to work on non-PnP systems the module should be compiled in or
-loaded unconditionally at boot (c.f. modules-load.d(5)), as before.
-
-Signed-off-by: Tom Gundersen <teg@jklm.no>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Reported-by: Elias Vanderstuyft <elias.vds@gmail.com>
+Signed-off-by: Simon Wood <simon@mungewell.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/serio/i8042-x86ia64io.h |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/hid/hid-lg4ff.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -765,6 +765,7 @@ static struct pnp_device_id pnp_kbd_devi
- 	{ .id = "CPQA0D7", .driver_data = 0 },
- 	{ .id = "", },
- };
-+MODULE_DEVICE_TABLE(pnp, pnp_kbd_devids);
+--- a/drivers/hid/hid-lg4ff.c
++++ b/drivers/hid/hid-lg4ff.c
+@@ -218,12 +218,21 @@ static void hid_lg4ff_set_autocenter_def
+ 	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
+ 	struct hid_report *report = list_entry(report_list->next, struct hid_report, list);
+ 	__s32 *value = report->field[0]->value;
++	__u32 expand_a, expand_b;
++
++	if (magnitude <= 0xaaaa) {
++		expand_a = 0x0c * magnitude;
++		expand_b = 0x80 * magnitude;
++	} else {
++		expand_a = (0x0c * 0xaaaa) + 0x06 * (magnitude - 0xaaaa);
++		expand_b = (0x80 * 0xaaaa) + 0xff * (magnitude - 0xaaaa);
++	}
  
- static struct pnp_driver i8042_pnp_kbd_driver = {
- 	.name           = "i8042 kbd",
-@@ -786,6 +787,7 @@ static struct pnp_device_id pnp_aux_devi
- 	{ .id = "SYN0801", .driver_data = 0 },
- 	{ .id = "", },
- };
-+MODULE_DEVICE_TABLE(pnp, pnp_aux_devids);
+ 	value[0] = 0xfe;
+ 	value[1] = 0x0d;
+-	value[2] = magnitude >> 13;
+-	value[3] = magnitude >> 13;
+-	value[4] = magnitude >> 8;
++	value[2] = expand_a / 0xaaaa;
++	value[3] = expand_a / 0xaaaa;
++	value[4] = expand_b / 0xaaaa;
+ 	value[5] = 0x00;
+ 	value[6] = 0x00;
  
- static struct pnp_driver i8042_pnp_aux_driver = {
- 	.name           = "i8042 aux",
 
 
