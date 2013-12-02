@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757Ab3LBUDO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:03:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39149 "EHLO
+	id S1756744Ab3LBUDL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:03:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39171 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753505Ab3LBTRy (ORCPT
+	with ESMTP id S1753423Ab3LBTRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:17:54 -0500
+	Mon, 2 Dec 2013 14:17:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vu Pham <vu@mellanox.com>, Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.12 093/212] iser-target: Avoid using FRMR for single dma entry requests
-Date: Mon,  2 Dec 2013 11:14:44 -0800
-Message-Id: <20131202191257.897405691@linuxfoundation.org>
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.12 094/212] target: Fix delayed Task Aborted Status (TAS) handling bug
+Date: Mon,  2 Dec 2013 11:14:45 -0800
+Message-Id: <20131202191257.986652043@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
 References: <20131202191248.517975703@linuxfoundation.org>
@@ -26,64 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vu Pham <vu@mellanox.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit f01b9f73392b48c6cda7c2c66594c73137c776da upstream.
+commit 29f4c090079f442ea2723d292e4e64f0b6ac1f27 upstream.
 
-This patch changes isert_reg_rdma_frwr() to not use FRMR for single
-dma entry requests from small I/Os, in order to avoid the associated
-memory registration overhead.
+This patch fixes a bug in delayed Task Aborted Status (TAS) handling,
+where transport_send_task_abort() was not returning for the case
+when the se_tfo->write_pending() callback indicated that last fabric
+specific WRITE PDU had not yet been received.
 
-Using DMA MR is sufficient here for the single dma entry requests,
-and addresses a >= v3.12 performance regression.
+It also adds an explicit cmd->scsi_status = SAM_STAT_TASK_ABORTED
+assignment within transport_check_aborted_status() to avoid the case
+where se_tfo->queue_status() is called when the SAM_STAT_TASK_ABORTED
+assignment + ->queue_status() in transport_send_task_abort() does not
+occur once SCF_SENT_DELAYED_TAS has been set.
 
-Signed-off-by: Vu Pham <vu@mellanox.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |   30 +++++++++++++++++++-----------
- 1 file changed, 19 insertions(+), 11 deletions(-)
+ drivers/target/target_core_transport.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -2259,18 +2259,26 @@ isert_reg_rdma_frwr(struct iscsi_conn *c
- 	data_len = min(data_left, rdma_write_max);
- 	wr->cur_rdma_length = data_len;
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -2910,6 +2910,7 @@ int transport_check_aborted_status(struc
+ 		 cmd->t_task_cdb[0], cmd->se_tfo->get_task_tag(cmd));
  
--	spin_lock_irqsave(&isert_conn->conn_lock, flags);
--	fr_desc = list_first_entry(&isert_conn->conn_frwr_pool,
--				   struct fast_reg_descriptor, list);
--	list_del(&fr_desc->list);
--	spin_unlock_irqrestore(&isert_conn->conn_lock, flags);
--	wr->fr_desc = fr_desc;
-+	/* if there is a single dma entry, dma mr is sufficient */
-+	if (count == 1) {
-+		ib_sge->addr = ib_sg_dma_address(ib_dev, &sg_start[0]);
-+		ib_sge->length = ib_sg_dma_len(ib_dev, &sg_start[0]);
-+		ib_sge->lkey = isert_conn->conn_mr->lkey;
-+		wr->fr_desc = NULL;
-+	} else {
-+		spin_lock_irqsave(&isert_conn->conn_lock, flags);
-+		fr_desc = list_first_entry(&isert_conn->conn_frwr_pool,
-+					   struct fast_reg_descriptor, list);
-+		list_del(&fr_desc->list);
-+		spin_unlock_irqrestore(&isert_conn->conn_lock, flags);
-+		wr->fr_desc = fr_desc;
+ 	cmd->se_cmd_flags |= SCF_SENT_DELAYED_TAS;
++	cmd->scsi_status = SAM_STAT_TASK_ABORTED;
+ 	trace_target_cmd_complete(cmd);
+ 	cmd->se_tfo->queue_status(cmd);
  
--	ret = isert_fast_reg_mr(fr_desc, isert_cmd, isert_conn,
--			  ib_sge, offset, data_len);
--	if (ret) {
--		list_add_tail(&fr_desc->list, &isert_conn->conn_frwr_pool);
--		goto unmap_sg;
-+		ret = isert_fast_reg_mr(fr_desc, isert_cmd, isert_conn,
-+				  ib_sge, offset, data_len);
-+		if (ret) {
-+			list_add_tail(&fr_desc->list, &isert_conn->conn_frwr_pool);
-+			goto unmap_sg;
-+		}
+@@ -2938,6 +2939,7 @@ void transport_send_task_abort(struct se
+ 		if (cmd->se_tfo->write_pending_status(cmd) != 0) {
+ 			cmd->transport_state |= CMD_T_ABORTED;
+ 			smp_mb__after_atomic_inc();
++			return;
+ 		}
  	}
- 
- 	return 0;
+ 	cmd->scsi_status = SAM_STAT_TASK_ABORTED;
 
 
