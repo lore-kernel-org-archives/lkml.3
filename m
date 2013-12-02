@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756446Ab3LBU7Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:59:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38477 "EHLO
+	id S1758811Ab3LBU7S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:59:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38475 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754095Ab3LBTNf (ORCPT
+	with ESMTP id S1754092Ab3LBTNf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Dec 2013 14:13:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 3.10 077/173] PM / runtime: Use pm_runtime_put_sync() in __device_release_driver()
-Date: Mon,  2 Dec 2013 11:11:00 -0800
-Message-Id: <20131202191152.182463681@linuxfoundation.org>
+        Aaron Lu <aaron.lu@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10 076/173] PM / hibernate: Avoid overflow in hibernate_preallocate_memory()
+Date: Mon,  2 Dec 2013 11:10:59 -0800
+Message-Id: <20131202191152.058754452@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -29,43 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Aaron Lu <aaron.lu@intel.com>
 
-commit baab52ded242c35a2290e1fa82e0cc147d0d8c1a upstream.
+commit fd432b9f8c7c88428a4635b9f5a9c6e174df6e36 upstream.
 
-Commit fa180eb448fa (PM / Runtime: Idle devices asynchronously after
-probe|release) modified __device_release_driver() to call
-pm_runtime_put(dev) instead of pm_runtime_put_sync(dev) before
-detaching the driver from the device.  However, that was a mistake,
-because pm_runtime_put(dev) causes rpm_idle() to be queued up and
-the driver may be gone already when that function is executed.
-That breaks the assumptions the drivers have the right to make
-about the core's behavior on the basis of the existing documentation
-and actually causes problems to happen, so revert that part of
-commit fa180eb448fa and restore the previous behavior of
-__device_release_driver().
+When system has a lot of highmem (e.g. 16GiB using a 32 bits kernel),
+the code to calculate how much memory we need to preallocate in
+normal zone may cause overflow. As Leon has analysed:
 
-Reported-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Fixes: fa180eb448fa (PM / Runtime: Idle devices asynchronously after probe|release)
+ It looks that during computing 'alloc' variable there is overflow:
+ alloc = (3943404 - 1970542) - 1978280 = -5418 (signed)
+ And this function goes to err_out.
+
+Fix this by avoiding that overflow.
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=60817
+Reported-and-tested-by: Leon Drugi <eyak@wp.pl>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Acked-by: Kevin Hilman <khilman@linaro.org>
-Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/dd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/power/snapshot.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -499,7 +499,7 @@ static void __device_release_driver(stru
- 						     BUS_NOTIFY_UNBIND_DRIVER,
- 						     dev);
- 
--		pm_runtime_put(dev);
-+		pm_runtime_put_sync(dev);
- 
- 		if (dev->bus && dev->bus->remove)
- 			dev->bus->remove(dev);
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -1398,7 +1398,11 @@ int hibernate_preallocate_memory(void)
+ 	 * highmem and non-highmem zones separately.
+ 	 */
+ 	pages_highmem = preallocate_image_highmem(highmem / 2);
+-	alloc = (count - max_size) - pages_highmem;
++	alloc = count - max_size;
++	if (alloc > pages_highmem)
++		alloc -= pages_highmem;
++	else
++		alloc = 0;
+ 	pages = preallocate_image_memory(alloc, avail_normal);
+ 	if (pages < alloc) {
+ 		/* We have exhausted non-highmem pages, try highmem. */
 
 
