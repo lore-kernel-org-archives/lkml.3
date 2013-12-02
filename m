@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160Ab3LBPds (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 10:33:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18535 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751145Ab3LBPdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 10:33:47 -0500
-Date: Mon, 2 Dec 2013 16:34:18 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        "Ma, Xindong" <xindong.ma@intel.com>, Michal Hocko <mhocko@suse.cz>,
-        Sameer Nanda <snanda@chromium.org>, Sergey Dyasly <dserrg@gmail.com>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] initial while_each_thread() fixes
-Message-ID: <20131202153418.GA11061@redhat.com>
-References: <20131202152423.GA10878@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131202152423.GA10878@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752482Ab3LBPd5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 10:33:57 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:52641 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab3LBPdy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 10:33:54 -0500
+From: Franck Bui-Huu <fbuihuu@gmail.com>
+To: mmarek@suse.cz
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] Fix detectition of kernel git repository in setlocalversion script [take #2]
+Date: Mon,  2 Dec 2013 16:34:29 +0100
+Message-Id: <1385998469-21515-1-git-send-email-fbuihuu@gmail.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <529CA5DE.7030505@gmail.com>
+References: <529CA5DE.7030505@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02, Oleg Nesterov wrote:
->
-> The lockless while_each_thread() is racy and broken, almost
-> every user can loop forever.
-> ...
-> Another problem with while_each_thread() is that it is very easy
-> to use it wrongly, and oom_kill.c is the good example.
+setlocalversion script was testing the presence of .git directory in order to find out
+if git is used as SCM to track the current kernel project. However in some cases, .git
+is not a directory but can be a file: when the kernel is a git submodule part of a git
+super project for example.
 
-Forgot to mention, it is not necessarily safe even under task
-list lock if it is used wrongly. Again, oom_kill.c is the good
-example, oom_kill_process() does read_lock(&tasklist_lock) but
-it doesn't verify that p is still alive.
+This patch just fixes this by using 'git rev-parse --show-cdup' to check that the
+current directory is the kernel git topdir. This has the advantage to not test and rely
+on git internal infrastructure directly.
 
-The new for_each_thread() is much simpler in this respect, it
-only needs the stable task_struct.
+Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
+---
+ scripts/setlocalversion | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Oleg.
+diff --git a/scripts/setlocalversion b/scripts/setlocalversion
+index 0b5ccf3..3d8af0e 100755
+--- a/scripts/setlocalversion
++++ b/scripts/setlocalversion
+@@ -43,7 +43,8 @@ scm_version()
+ 	fi
+ 
+ 	# Check for git and a git repo.
+-	if test -d .git && head=`git rev-parse --verify --short HEAD 2>/dev/null`; then
++	if test -z "$(git rev-parse --show-cdup 2>/dev/null)" &&
++	   head=`git rev-parse --verify --short HEAD 2>/dev/null`; then
+ 
+ 		# If we are at a tagged commit (like "v2.6.30-rc6"), we ignore
+ 		# it, because this version is defined in the top level Makefile.
+-- 
+1.8.4.2
 
