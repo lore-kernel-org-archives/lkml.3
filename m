@@ -1,140 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757054Ab3LBUmM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:42:12 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:49721 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754808Ab3LBUmJ (ORCPT
+	id S1758225Ab3LBUl2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:41:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38751 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754270Ab3LBTOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 15:42:09 -0500
-Message-ID: <529CF09D.6060906@hurleysoftware.com>
-Date: Mon, 02 Dec 2013 15:42:05 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Vlad Lungu <vlad.lungu@windriver.com>
-Subject: Re: [PATCH 03/10] tty: xuartps: Implement BREAK detection, add SYSRQ
- support
-References: <1382044093-29905-1-git-send-email-soren.brinkmann@xilinx.com> <1382044093-29905-4-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1382044093-29905-4-git-send-email-soren.brinkmann@xilinx.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+	Mon, 2 Dec 2013 14:14:08 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robherring2@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Baruch Siach <baruch@tkos.co.il>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.10 136/173] gpio: pl061: move irqdomain initialization
+Date: Mon,  2 Dec 2013 11:11:59 -0800
+Message-Id: <20131202191159.038637062@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
+References: <20131202191142.873808297@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2013 05:08 PM, Soren Brinkmann wrote:
-> From: Vlad Lungu <vlad.lungu@windriver.com>
->
-> The Cadence UART does not do break detection, even if the
-> datasheet says it does. This patch adds break detection in
-> software (tested in 8N1 mode only) and enables SYSRQ,
-> allowing for Break-g to enter KDB and all the other goodies.
->
-> Signed-off-by: Vlad Lungu <vlad.lungu@windriver.com>
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
-> I ported this patch to 3.12 and fixed some style issues
-> ---
->   drivers/tty/serial/xilinx_uartps.c | 50 +++++++++++++++++++++++++++++++++++++-
->   1 file changed, 49 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
-> index 8c0745951605..5d5557af4d22 100644
-> --- a/drivers/tty/serial/xilinx_uartps.c
-> +++ b/drivers/tty/serial/xilinx_uartps.c
-> @@ -11,13 +11,17 @@
->    *
->    */
->
-> +#if defined(CONFIG_SERIAL_XILINX_PS_UART_CONSOLE) && defined(CONFIG_MAGIC_SYSRQ)
-> +#define SUPPORT_SYSRQ
-> +#endif
-> +
->   #include <linux/platform_device.h>
->   #include <linux/serial.h>
-> +#include <linux/console.h>
->   #include <linux/serial_core.h>
->   #include <linux/slab.h>
->   #include <linux/tty.h>
->   #include <linux/tty_flip.h>
-> -#include <linux/console.h>
->   #include <linux/clk.h>
->   #include <linux/irq.h>
->   #include <linux/io.h>
-> @@ -128,6 +132,9 @@
->   #define XUARTPS_IXR_RXEMPTY	0x00000002 /* RX FIFO empty interrupt. */
->   #define XUARTPS_IXR_MASK	0x00001FFF /* Valid bit mask */
->
-> +/* Goes in read_status_mask for break detection as the HW doesn't do it*/
-> +#define XUARTPS_IXR_BRK		0x80000000
-> +
->   /** Channel Status Register
->    *
->    * The channel status register (CSR) is provided to enable the control logic
-> @@ -171,6 +178,23 @@ static irqreturn_t xuartps_isr(int irq, void *dev_id)
->   	 */
->   	isrstatus = xuartps_readl(XUARTPS_ISR_OFFSET);
->
-> +	/*
-> +	 * There is no hardware break detection, so we interpret framing
-> +	 * error with all-zeros data as a break sequence. Most of the time,
-> +	 * there's another non-zero byte at the end of the sequence.
-> +	 */
-> +
-> +	if (isrstatus & XUARTPS_IXR_FRAMING) {
-> +		while (!(xuartps_readl(XUARTPS_SR_OFFSET) &
-> +					XUARTPS_SR_RXEMPTY)) {
-> +			if (!xuartps_readl(XUARTPS_FIFO_OFFSET)) {
-> +				port->read_status_mask |= XUARTPS_IXR_BRK;
-> +				isrstatus &= ~XUARTPS_IXR_FRAMING;
-> +			}
-> +		}
-> +		xuartps_writel(XUARTPS_IXR_FRAMING, XUARTPS_ISR_OFFSET);
-> +	}
-> +
->   	/* drop byte with parity error if IGNPAR specified */
->   	if (isrstatus & port->ignore_status_mask & XUARTPS_IXR_PARITY)
->   		isrstatus &= ~(XUARTPS_IXR_RXTRIG | XUARTPS_IXR_TOUT);
-> @@ -184,6 +208,30 @@ static irqreturn_t xuartps_isr(int irq, void *dev_id)
->   		while ((xuartps_readl(XUARTPS_SR_OFFSET) &
->   			XUARTPS_SR_RXEMPTY) != XUARTPS_SR_RXEMPTY) {
->   			data = xuartps_readl(XUARTPS_FIFO_OFFSET);
-> +
-> +			/* Non-NULL byte after BREAK is garbage (99%) */
-> +			if (data && (port->read_status_mask &
-> +						XUARTPS_IXR_BRK)) {
-> +				port->read_status_mask &= ~XUARTPS_IXR_BRK;
-> +				port->icount.brk++;
-> +				if (uart_handle_break(port))
-> +					continue;
-> +			}
-> +
-> +			/*
-> +			 * uart_handle_sysrq_char() doesn't work if
-> +			 * spinlocked, for some reason
-> +			 */
-                                        ^^^^^^^^^^^^^^^
-Because the console write method, xuartps_console_write(), tries to
-lock the port->lock. Double-claim deadlock.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-> +			 if (port->sysrq) {
-> +				spin_unlock(&port->lock);
-> +				if (uart_handle_sysrq_char(port,
-> +							(unsigned char)data)) {
-> +					spin_lock(&port->lock);
-> +					continue;
-> +				}
-> +				spin_lock(&port->lock);
-> +			}
-> +
->   			port->icount.rx++;
->
->   			if (isrstatus & XUARTPS_IXR_PARITY) {
->
+------------------
+
+From: Linus Walleij <linus.walleij@linaro.org>
+
+commit 2ba3154d9cb13697b97723cce75633b48adfe826 upstream.
+
+The PL061 driver had the irqdomain initialization in an unfortunate
+place: when used with device tree (and thus passing the base IRQ
+0) the driver would work, as this registers an irqdomain and waits
+for mappings to be done dynamically as the devices request their
+IRQs, whereas when booting using platform data the irqdomain core
+would attempt to allocate IRQ descriptors dynamically (which works
+fine) but also to associate the irq_domain_associate_many() on all
+IRQs, which in turn will call the mapping function which at this
+point will try to set the type of the IRQ and then tries to acquire
+a non-initialized spinlock yielding a backtrace like this:
+
+CPU: 0 PID: 1 Comm: swapper Not tainted 3.13.0-rc1+ #652
+Backtrace:
+[<c0016f0c>] (dump_backtrace) from [<c00172ac>] (show_stack+0x18/0x1c)
+ r6:c798ace0 r5:00000000 r4:c78257e0 r3:00200140
+[<c0017294>] (show_stack) from [<c0329ea0>] (dump_stack+0x20/0x28)
+[<c0329e80>] (dump_stack) from [<c004fa80>] (__lock_acquire+0x1c0/0x1b80)
+[<c004f8c0>] (__lock_acquire) from [<c0051970>] (lock_acquire+0x6c/0x80)
+ r10:00000000 r9:c0455234 r8:00000060 r7:c047d798 r6:600000d3 r5:00000000
+ r4:c782c000
+[<c0051904>] (lock_acquire) from [<c032e484>] (_raw_spin_lock_irqsave+0x60/0x74)
+ r6:c01a1100 r5:800000d3 r4:c798acd0
+[<c032e424>] (_raw_spin_lock_irqsave) from [<c01a1100>] (pl061_irq_type+0x28/0x)
+ r6:00000000 r5:00000000 r4:c798acd0
+[<c01a10d8>] (pl061_irq_type) from [<c0059ef4>] (__irq_set_trigger+0x70/0x104)
+ r6:00000000 r5:c01a10d8 r4:c046da1c r3:c01a10d8
+[<c0059e84>] (__irq_set_trigger) from [<c005b348>] (irq_set_irq_type+0x40/0x60)
+ r10:c043240c r8:00000060 r7:00000000 r6:c046da1c r5:00000060 r4:00000000
+[<c005b308>] (irq_set_irq_type) from [<c01a1208>] (pl061_irq_map+0x40/0x54)
+ r6:c79693c0 r5:c798acd0 r4:00000060
+[<c01a11c8>] (pl061_irq_map) from [<c005d27c>] (irq_domain_associate+0xc0/0x190)
+ r5:00000060 r4:c046da1c
+[<c005d1bc>] (irq_domain_associate) from [<c005d604>] (irq_domain_associate_man)
+ r8:00000008 r7:00000000 r6:c79693c0 r5:00000060 r4:00000000
+[<c005d5d0>] (irq_domain_associate_many) from [<c005d864>] (irq_domain_add_simp)
+ r8:c046578c r7:c035b72c r6:c79693c0 r5:00000060 r4:00000008 r3:00000008
+[<c005d814>] (irq_domain_add_simple) from [<c01a1380>] (pl061_probe+0xc4/0x22c)
+ r6:00000060 r5:c0464380 r4:c798acd0
+[<c01a12bc>] (pl061_probe) from [<c01c0450>] (amba_probe+0x74/0xe0)
+ r10:c043240c r9:c0455234 r8:00000000 r7:c047d7f8 r6:c047d744 r5:00000000
+ r4:c0464380
+
+This moves the irqdomain initialization to a point where the spinlock
+and GPIO chip are both fully propulated, so the callbacks can be used
+without crashes.
+
+I had some problem reproducing the crash, as the devm_kzalloc():ed
+zeroed memory would seemingly mask the spinlock as something OK,
+but by poisoning the lock like this:
+
+u32 *dum;
+dum = (u32 *) &chip->lock;
+*dum = 0xaaaaaaaaU;
+
+I could reproduce, fix and test the patch.
+
+Reported-by: Russell King <linux@arm.linux.org.uk>
+Cc: Rob Herring <robherring2@gmail.com>
+Cc: Haojian Zhuang <haojian.zhuang@linaro.org>
+Cc: Baruch Siach <baruch@tkos.co.il>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpio/gpio-pl061.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+--- a/drivers/gpio/gpio-pl061.c
++++ b/drivers/gpio/gpio-pl061.c
+@@ -286,11 +286,6 @@ static int pl061_probe(struct amba_devic
+ 	if (!chip->base)
+ 		return -ENOMEM;
+ 
+-	chip->domain = irq_domain_add_simple(adev->dev.of_node, PL061_GPIO_NR,
+-					     irq_base, &pl061_domain_ops, chip);
+-	if (!chip->domain)
+-		return -ENODEV;
+-
+ 	spin_lock_init(&chip->lock);
+ 
+ 	chip->gc.request = pl061_gpio_request;
+@@ -320,6 +315,11 @@ static int pl061_probe(struct amba_devic
+ 	irq_set_chained_handler(irq, pl061_irq_handler);
+ 	irq_set_handler_data(irq, chip);
+ 
++	chip->domain = irq_domain_add_simple(adev->dev.of_node, PL061_GPIO_NR,
++					     irq_base, &pl061_domain_ops, chip);
++	if (!chip->domain)
++		return -ENODEV;
++
+ 	for (i = 0; i < PL061_GPIO_NR; i++) {
+ 		if (pdata) {
+ 			if (pdata->directions & (1 << i))
+
 
