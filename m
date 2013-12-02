@@ -1,277 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab3LBMhl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 07:37:41 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:54825 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753560Ab3LBMhi (ORCPT
+	id S1753911Ab3LBMiN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 07:38:13 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:59009 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753560Ab3LBMiM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 07:37:38 -0500
+	Mon, 2 Dec 2013 07:38:12 -0500
+Date: Mon, 2 Dec 2013 13:38:08 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>, acme@ghostprotocols.net,
+        linux-kernel@vger.kernel.org, namhyung@kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Jiri Olsa <jolsa@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH 2/2] perf sched: Add documentation for timehist options
+Message-ID: <20131202123808.GA22212@gmail.com>
+References: <1385943795-11761-1-git-send-email-dsahern@gmail.com>
+ <1385943795-11761-3-git-send-email-dsahern@gmail.com>
+ <20131202060729.GA28684@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CAHp75Vdr8hVBU9x1U2s7K_fp773YqeRpM4bPFaYWKeTSp9qV7w@mail.gmail.com>
-References: <1385628388-23827-1-git-send-email-acourbot@nvidia.com>
- <1385982101-24706-1-git-send-email-acourbot@nvidia.com> <CAHp75Vdr8hVBU9x1U2s7K_fp773YqeRpM4bPFaYWKeTSp9qV7w@mail.gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Mon, 2 Dec 2013 21:37:18 +0900
-Message-ID: <CAAVeFuKAG-zw2Q61NWfQF3t5ftmg8XVrnsYwhqpKReMHnJctzA@mail.gmail.com>
-Subject: Re: [PATCH v2] gpio: better lookup method for platform GPIOs
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131202060729.GA28684@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 2, 2013 at 8:49 PM, Andy Shevchenko
-<andy.shevchenko@gmail.com> wrote:
-> On Mon, Dec 2, 2013 at 1:01 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
->> Change the format of the platform GPIO lookup tables to make them less
->> confusing and improve lookup efficiency.
->>
->> The previous format was a single linked-list that required to compare
->> the device name and function ID of every single GPIO defined for each
->> lookup. Switch that to a list of per-device tables, so that the lookup
->> can be done in two steps, omitting the GPIOs that are not relevant for a
->> particular device.
->>
->> The matching rules are now defined as follows:
->> - The device name must match *exactly*, and can be NULL for GPIOs not
->>   assigned to a particular device,
->> - If the function ID in the lookup table is NULL, the con_id argument of
->>   gpiod_get() will not be used for lookup. However, if it is defined, it
->>   must match exactly.
->> - The index must always match.
->
-> Thanks for an updated version.
-> Few minor comments below.
-> Comments about loops are here as well.
->
-> I any case:
-> Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-Thanks!
+* Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
 
->
->>
->> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->> Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->> ---
->> Changes since v1:
->> - Applied most fixes suggested by Andy
->> - Hopefully safer and less confusing table lookup algorithm
->> - Added Mika's ack
->>
->>  Documentation/gpio/board.txt |  25 ++++++----
->>  drivers/gpio/gpiolib.c       | 109 +++++++++++++++++++++++--------------------
->>  include/linux/gpio/driver.h  |  22 ++++-----
->>  3 files changed, 85 insertions(+), 71 deletions(-)
->>
->> diff --git a/Documentation/gpio/board.txt b/Documentation/gpio/board.txt
->> index 0d03506f2cc5..a4fdd96cef93 100644
->> --- a/Documentation/gpio/board.txt
->> +++ b/Documentation/gpio/board.txt
->> @@ -72,10 +72,11 @@ where
->>
->>    - chip_label is the label of the gpiod_chip instance providing the GPIO
->>    - chip_hwnum is the hardware number of the GPIO within the chip
->> -  - dev_id is the identifier of the device that will make use of this GPIO. If
->> -       NULL, the GPIO will be available to all devices.
->> +  - dev_id is the identifier of the device that will make use of this GPIO. It
->> +       can be NULL, in which case it will be matched for calls to gpiod_get()
->> +       with a NULL device.
->>    - con_id is the name of the GPIO function from the device point of view. It
->> -       can be NULL.
->> +       can be NULL, in which case it will match any function.
->>    - idx is the index of the GPIO within the function.
->>    - flags is defined to specify the following properties:
->>         * GPIOF_ACTIVE_LOW      - to configure the GPIO as active-low
->> @@ -88,16 +89,20 @@ Note that GPIO_LOOKUP() is just a shortcut to GPIO_LOOKUP_IDX() where idx = 0.
->>
->>  A lookup table can then be defined as follows:
->>
->> -       struct gpiod_lookup gpios_table[] = {
->> -       GPIO_LOOKUP_IDX("gpio.0", 15, "foo.0", "led", 0, GPIO_ACTIVE_HIGH),
->> -       GPIO_LOOKUP_IDX("gpio.0", 16, "foo.0", "led", 1, GPIO_ACTIVE_HIGH),
->> -       GPIO_LOOKUP_IDX("gpio.0", 17, "foo.0", "led", 2, GPIO_ACTIVE_HIGH),
->> -       GPIO_LOOKUP("gpio.0", 1, "foo.0", "power", GPIO_ACTIVE_LOW),
->> -       };
->> +struct gpiod_lookup_table gpios_table = {
->> +       .dev_id = "foo.0",
->> +       .size = 4,
->> +       .table = {
->> +               GPIO_LOOKUP_IDX("gpio.0", 15, "led", 0, GPIO_ACTIVE_HIGH),
->> +               GPIO_LOOKUP_IDX("gpio.0", 16, "led", 1, GPIO_ACTIVE_HIGH),
->> +               GPIO_LOOKUP_IDX("gpio.0", 17, "led", 2, GPIO_ACTIVE_HIGH),
->> +               GPIO_LOOKUP("gpio.0", 1, "power", GPIO_ACTIVE_LOW),
->> +       },
->> +};
->>
->>  And the table can be added by the board code as follows:
->>
->> -       gpiod_add_table(gpios_table, ARRAY_SIZE(gpios_table));
->> +       gpiod_add_lookup_table(&gpios_table);
->>
->>  The driver controlling "foo.0" will then be able to obtain its GPIOs as follows:
->>
->> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
->> index f72618ba716a..d17d6eabed6a 100644
->> --- a/drivers/gpio/gpiolib.c
->> +++ b/drivers/gpio/gpiolib.c
->> @@ -2259,18 +2259,14 @@ void gpiod_set_value_cansleep(struct gpio_desc *desc, int value)
->>  EXPORT_SYMBOL_GPL(gpiod_set_value_cansleep);
->>
->>  /**
->> - * gpiod_add_table() - register GPIO device consumers
->> - * @table: array of consumers to register
->> - * @num: number of consumers in table
->> + * gpiod_add_lookup_table() - register GPIO device consumers
->> + * @table: table of consumers to register
->>   */
->> -void gpiod_add_table(struct gpiod_lookup *table, size_t size)
->> +void gpiod_add_lookup_table(struct gpiod_lookup_table *table)
->>  {
->>         mutex_lock(&gpio_lookup_lock);
->>
->> -       while (size--) {
->> -               list_add_tail(&table->list, &gpio_lookup_list);
->> -               table++;
->> -       }
->> +       list_add_tail(&table->list, &gpio_lookup_list);
->>
->>         mutex_unlock(&gpio_lookup_lock);
->>  }
->> @@ -2326,72 +2322,85 @@ static struct gpio_desc *acpi_find_gpio(struct device *dev, const char *con_id,
->>         return desc;
->>  }
->>
->> -static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
->> -                                   unsigned int idx,
->> -                                   enum gpio_lookup_flags *flags)
->> +static struct gpiod_lookup_table *gpiod_find_lookup_table(struct device *dev)
->>  {
->>         const char *dev_id = dev ? dev_name(dev) : NULL;
->> -       struct gpio_desc *desc = ERR_PTR(-ENODEV);
->> -       unsigned int match, best = 0;
->> -       struct gpiod_lookup *p;
->> +       struct gpiod_lookup_table *table;
->>
->>         mutex_lock(&gpio_lookup_lock);
->>
->> -       list_for_each_entry(p, &gpio_lookup_list, list) {
->> -               match = 0;
->> +       list_for_each_entry(table, &gpio_lookup_list, list) {
->> +               if (table->dev_id && dev_id) {
->> +                       /*
->> +                        * Valid strings on both ends, must be identical to have
->> +                        * a match
->> +                        */
->> +                       if (!strcmp(table->dev_id, dev_id))
->> +                               goto end;
->> +               } else {
->> +                       /*
->> +                        * One of the pointers is NULL, so both must be to have
->> +                        * a match
->> +                        */
->> +                       if (dev_id == table->dev_id)
->> +                               goto end;
->> +               }
->
-> Yes, in this case it looks clearer. Though, you might join last else
-> and if in one line.
+> * David Ahern <dsahern@gmail.com> [2013-12-01 17:23:15]:
+> 
+> > Add entry to perf-sched documentation for timehist command and its
+> > options.
+> > 
+> > v2: Addressed comments by Namhyung
+> > 
+> > Signed-off-by: David Ahern <dsahern@gmail.com>
+> > Cc: Ingo Molnar <mingo@kernel.org>
+> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: Mike Galbraith <efault@gmx.de>
+> > Cc: Jiri Olsa <jolsa@redhat.com>
+> > Cc: Namhyung Kim <namhyung@kernel.org>
+> > Cc: Stephane Eranian <eranian@google.com>
+> > Cc: Pekka Enberg <penberg@kernel.org>
+> > ---
+> >  tools/perf/Documentation/perf-sched.txt | 61 ++++++++++++++++++++++++++++++++-
+> >  1 file changed, 60 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/tools/perf/Documentation/perf-sched.txt b/tools/perf/Documentation/perf-sched.txt
+> > index 8ff4df956951..e7bb19fcdbff 100644
+> > --- a/tools/perf/Documentation/perf-sched.txt
+> > +++ b/tools/perf/Documentation/perf-sched.txt
+> > @@ -8,7 +8,7 @@ perf-sched - Tool to trace/measure scheduler properties (latencies)
+> >  SYNOPSIS
+> >  --------
+> >  [verse]
+> > -'perf sched' {record|latency|map|replay|script}
+> > +'perf sched' {record|latency|map|replay|script|timehist}
+> >  
+> >  DESCRIPTION
+> >  -----------
+> > @@ -36,6 +36,11 @@ There are five variants of perf sched:
+> 
+> Nit: There are six variants now.
 
-I don't think that would conform to the coding conventions. Will try
-and see if checkpatch complains, but I'm rather confident it will...
+Trick: it might make sense to use a more future-proof phrase:
 
->
->> +       }
->> +       table = NULL;
->
-> Up to you, though I think it's clearer to return NULL explicitly (and
-> unlock mutex before).
+		       There are several variants of perf sched:
 
-As v1 of this patch can attest, the less return statements in a
-lock-holding function, the better. :)
+;-)
 
->
->>
->> -               if (p->dev_id) {
->> -                       if (!dev_id || strcmp(p->dev_id, dev_id))
->> -                               continue;
->> +end:
->
-> Maybe 'found' suits better?
+Thanks,
 
-But we end up here even if we haven't "found" anything...
-
->
->> +       mutex_unlock(&gpio_lookup_lock);
->> +       return table;
->> +}
->>
->> -                       match += 2;
->> -               }
->> +static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
->> +                                   unsigned int idx,
->> +                                   enum gpio_lookup_flags *flags)
->> +{
->> +       struct gpio_desc *desc = ERR_PTR(-ENODEV);
->> +       struct gpiod_lookup_table *table;
->> +       int i;
->>
->> -               if (p->con_id) {
->> -                       if (!con_id || strcmp(p->con_id, con_id))
->> -                               continue;
->> +       table = gpiod_find_lookup_table(dev);
->> +       if (!table)
->> +               return desc;
->>
->> -                       match += 1;
->> -               }
->> +       for (i = 0; i < table->size; i++) {
->> +               struct gpio_chip *chip;
->> +               struct gpiod_lookup *p = &table->table[i];
->>
->> +               /* idx must always match exactly */
->>                 if (p->idx != idx)
->>                         continue;
->>
->> -               if (match > best) {
->> -                       struct gpio_chip *chip;
->> -
->> -                       chip = find_chip_by_name(p->chip_label);
->> -
->> -                       if (!chip) {
->> -                               dev_warn(dev, "cannot find GPIO chip %s\n",
->> -                                        p->chip_label);
->> -                               continue;
->> -                       }
->> +               /* If the lookup entry has a con_id, require exact match */
->> +               if (p->con_id && (!con_id || strcmp(p->con_id, con_id)))
->> +                       continue;
->>
->> -                       if (chip->ngpio <= p->chip_hwnum) {
->> -                               dev_warn(dev, "GPIO chip %s has %d GPIOs\n",
->> -                                        chip->label, chip->ngpio);
->> -                               continue;
->> -                       }
->> +               chip = find_chip_by_name(p->chip_label);
->>
->> -                       desc = gpio_to_desc(chip->base + p->chip_hwnum);
->> -                       *flags = p->flags;
->> +               if (!chip) {
->
->> +                       dev_warn(dev, "cannot find GPIO chip %s\n",
->> +                                p->chip_label);
->
-> Could it be one line?
-
-The line would be 84 characters if we do that, unfortunately.
-
-Thanks for the review!
-Alex.
+	Ingo
