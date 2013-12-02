@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100Ab3LBUcS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 15:32:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38937 "EHLO
+	id S1757939Ab3LBUcO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 15:32:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38926 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753006Ab3LBTOe (ORCPT
+	with ESMTP id S1754438Ab3LBTOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 14:14:34 -0500
+	Mon, 2 Dec 2013 14:14:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Liu <wei.liu2@citrix.com>, Ian Campbell <ian.campbell@citrix.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: [PATCH 3.10 173/173] xen-netback: fix refcnt unbalance for 3.10
-Date: Mon,  2 Dec 2013 11:12:36 -0800
-Message-Id: <20131202191202.816654348@linuxfoundation.org>
+        Nanno Langstraat <langstr@gmail.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.10 163/173] HID: apple: option to swap the Option ("Alt") and Command ("Flag") keys.
+Date: Mon,  2 Dec 2013 11:12:26 -0800
+Message-Id: <20131202191201.855682009@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131202191142.873808297@linuxfoundation.org>
 References: <20131202191142.873808297@linuxfoundation.org>
@@ -28,54 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Liu <wei.liu2@citrix.com>
+From: Nanno Langstraat <langstr@gmail.com>
 
-With the introduction of "xen-netback: Don't destroy the netdev until
-the vif is shut down" (upstream commit id 279f438e36), vif disconnect
-and free are separated. However in the backported version reference
-counting code was not correctly modified, and the reset of vif->irq
-was lost. If frontend goes through vif life cycle more than once the
-reference counting is skewed.
+commit 43c831468b3d26dbe8f2e061ccaf1abaf9cc1b8b upstream.
 
-This patch adds back the missing vif->irq reset line. It also moves
-several lines of the reference counting code to vif_free, so the moved
-code corresponds to the counterpart in vif_alloc, thus the reference
-counting is balanced.
+Use case: people who use both Apple and PC keyboards regularly, and desire to
+keep&use their PC muscle memory.
 
-Signed-off-by: Wei Liu <wei.liu2@citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Konrad Wilk <konrad.wilk@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
+A particular use case: an Apple compact external keyboard connected to a PC
+laptop. (This use case can't be covered well by X.org key remappings etc.)
+
+Signed-off-by: Nanno Langstraat <langstr@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/xen-netback/interface.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -365,17 +365,19 @@ void xenvif_disconnect(struct xenvif *vi
- 	if (netif_carrier_ok(vif->dev))
- 		xenvif_carrier_off(vif);
+---
+ drivers/hid/hid-apple.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+--- a/drivers/hid/hid-apple.c
++++ b/drivers/hid/hid-apple.c
+@@ -46,6 +46,12 @@ module_param(iso_layout, uint, 0644);
+ MODULE_PARM_DESC(iso_layout, "Enable/Disable hardcoded ISO-layout of the keyboard. "
+ 		"(0 = disabled, [1] = enabled)");
  
--	atomic_dec(&vif->refcnt);
--	wait_event(vif->waiting_to_free, atomic_read(&vif->refcnt) == 0);
--
--	if (vif->irq)
-+	if (vif->irq) {
- 		unbind_from_irqhandler(vif->irq, vif);
-+		vif->irq = 0;
++static unsigned int swap_opt_cmd = 0;
++module_param(swap_opt_cmd, uint, 0644);
++MODULE_PARM_DESC(swap_opt_cmd, "Swap the Option (\"Alt\") and Command (\"Flag\") keys. "
++		"(For people who want to keep Windows PC keyboard muscle memory. "
++		"[0] = as-is, Mac layout. 1 = swapped, Windows layout.)");
++
+ struct apple_sc {
+ 	unsigned long quirks;
+ 	unsigned int fn_on;
+@@ -150,6 +156,14 @@ static const struct apple_key_translatio
+ 	{ }
+ };
+ 
++static const struct apple_key_translation swapped_option_cmd_keys[] = {
++	{ KEY_LEFTALT,	KEY_LEFTMETA },
++	{ KEY_LEFTMETA,	KEY_LEFTALT },
++	{ KEY_RIGHTALT,	KEY_RIGHTMETA },
++	{ KEY_RIGHTMETA,KEY_RIGHTALT },
++	{ }
++};
++
+ static const struct apple_key_translation *apple_find_translation(
+ 		const struct apple_key_translation *table, u16 from)
+ {
+@@ -242,6 +256,14 @@ static int hidinput_apple_event(struct h
+ 		}
+ 	}
+ 
++	if (swap_opt_cmd) {
++		trans = apple_find_translation(swapped_option_cmd_keys, usage->code);
++		if (trans) {
++			input_event(input, usage->type, trans->to, value);
++			return 1;
++		}
 +	}
- 
- 	xen_netbk_unmap_frontend_rings(vif);
++
+ 	return 0;
  }
  
- void xenvif_free(struct xenvif *vif)
- {
-+	atomic_dec(&vif->refcnt);
-+	wait_event(vif->waiting_to_free, atomic_read(&vif->refcnt) == 0);
-+
- 	unregister_netdev(vif->dev);
- 
- 	free_netdev(vif->dev);
 
 
