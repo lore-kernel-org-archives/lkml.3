@@ -1,98 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814Ab3LCPR1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 10:17:27 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:41796 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754626Ab3LCPRZ (ORCPT
+	id S1754828Ab3LCPSw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 10:18:52 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:36387 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754040Ab3LCPSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 10:17:25 -0500
-Date: Tue, 3 Dec 2013 15:16:54 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Keerthy <j-keerthy@ti.com>
-Cc: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk, rob@landley.net,
-        sameo@linux.intel.com, lee.jones@linaro.org, grant.likely@linaro.org,
-        lgirdwood@gmail.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Message-ID: <20131203151654.GB27568@sirena.org.uk>
-References: <1386053006-6480-1-git-send-email-j-keerthy@ti.com>
- <1386053006-6480-4-git-send-email-j-keerthy@ti.com>
+	Tue, 3 Dec 2013 10:18:51 -0500
+Date: Tue, 3 Dec 2013 16:19:35 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Ville =?iso-8859-1?Q?Syrj=E4l=E4?= 
+	<ville.syrjala@linux.intel.com>,
+        David Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [i915] WARNING: [...] drivers/gpu/drm/i915/intel_display.c:9948
+ intel_get_pipe_from_connector
+Message-ID: <20131203151935.GD27344@phenom.ffwll.local>
+Mail-Followup-To: Paul Bolle <pebolle@tiscali.nl>,
+	Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
+	David Airlie <airlied@linux.ie>,
+	intel-gfx <intel-gfx@lists.freedesktop.org>,
+	dri-devel <dri-devel@lists.freedesktop.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <1385843936.10971.5.camel@x41.thuisdomein>
+ <CAKMK7uHRW-1OiMY44s2G9dwbbQLMUxZ4fHf=Eaf9gJ_WASpvLQ@mail.gmail.com>
+ <1385917025.7199.4.camel@x41.thuisdomein>
+ <CAKMK7uE_L8cqyYk6mQ4paXeh2m7tmoMXRv_KxoAeBq9MEAnFqw@mail.gmail.com>
+ <1385978027.2972.3.camel@x41.thuisdomein>
+ <CAKMK7uE=Wr95XM85XVS1nT_8cV4e1Z_SubSVjQyP8BuLz-bTQg@mail.gmail.com>
+ <1386007525.9830.4.camel@x41.thuisdomein>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zcU1BeNsGC5ZCldZ"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386053006-6480-4-git-send-email-j-keerthy@ti.com>
-X-Cookie: Boycott meat -- suck your thumb.
+In-Reply-To: <1386007525.9830.4.camel@x41.thuisdomein>
+X-Operating-System: Linux phenom 3.12.0+
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/4] Regulators: TPS65218: Add Regulator driver for
- TPS65218 PMIC
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 02, 2013 at 07:05:25PM +0100, Paul Bolle wrote:
+> On Mon, 2013-12-02 at 15:23 +0100, Daniel Vetter wrote:
+> > On Mon, Dec 2, 2013 at 10:53 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> > > This generated quite a bit of debug messages so I only copied the
+> > > WARNING and the drm (related) messages immediately preceding it. Please
+> > > feel free to prod again if that's insufficient.
+> > 
+> > Yeah, the beginning of the drm message would are wanted since I need
+> > to know what exactly your hardware claims to support ;-)
+> > 
+> > But the backtrace confirms my first hunch for now ... Just want to
+> > confirm before sending out a patch with commit message.
+> 
+> It seems Ville's patch ( https://lkml.org/lkml/2013/12/2/77 ) does the
+> trick. Do you still need the additional info?
 
---zcU1BeNsGC5ZCldZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Tue, Dec 03, 2013 at 12:13:24PM +0530, Keerthy wrote:
-
-> +static int tps65218_ldo1_dcdc3_vsel_to_uv(unsigned int vsel)
-> +{
-> +	int uV = 0;
-> +
-> +	if (vsel <= 26)
-> +		uV = vsel * 25000 + 900000;
-> +	else
-> +		uV = (vsel - 26) * 50000 + 1550000;
-> +
-> +	return uV;
-> +}
-
-Use regulator_map_voltage_linear_range() (and similarly for most of the
-other functions).
-
-> +static const struct of_device_id tps65218_of_match[] = {
-> +	TPS65218_OF_MATCH("ti,tps65218-dcdc1", tps65218_pmic_regs[0]),
-> +	TPS65218_OF_MATCH("ti,tps65218-dcdc2", tps65218_pmic_regs[1]),
-> +	TPS65218_OF_MATCH("ti,tps65218-dcdc3", tps65218_pmic_regs[2]),
-> +	TPS65218_OF_MATCH("ti,tps65218-dcdc4", tps65218_pmic_regs[3]),
-> +	TPS65218_OF_MATCH("ti,tps65218-dcdc5", tps65218_pmic_regs[4]),
-> +	TPS65218_OF_MATCH("ti,tps65218-dcdc6", tps65218_pmic_regs[5]),
-> +	TPS65218_OF_MATCH("ti,tps65218-ldo1", tps65218_pmic_regs[6]),
-> +};
-> +MODULE_DEVICE_TABLE(of, tps65218_of_match);
-
-Indexing into another array by magic number like this is both error
-prone and hard to read.  Either use defined constants or individual
-variables for the things being referenced.
-
---zcU1BeNsGC5ZCldZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSnfXiAAoJELSic+t+oim9EdkP/2uTCay2TZpGcsTIoHoBa0+5
-QinGsRfxy0uAzJ97phIQ+b/jLmjiOrl//Ni492hc/C0vIiY5l01IUCD+2Mndb8b8
-o77BiY+WthDvKAjqQ5MRDEg72MkHDDrBF6CMrvhCv364EN6cXCvEtgd6vvlIhWa4
-bldr9aRrCbD1W3mCrusRwdEC3+jTb4vZ6MgTTuIhoEkZ3fKjLX3Wgsw7T6m4BzYC
-72UbdYjjwffzxZ+4OF8q94j0kWOAo74TIMbnlDdAYgTxXIYh5Nrwja7oyiNTNWe6
-MKrI7RYt/zdzkFaHrmcKi6gceHfikoglzvlptMvHM9I31t+cqvPhED4QkLRymnRW
-u19V40FYj6nSnLORh6ue25T4O2agUGevd98ip7LMns53BexChlQb3hHvZV9dqm4g
-V+9rJHBRufjGEqy6IKLeKHQRzup7qQwS1NkQFKfnI3VWf2MNsJgv7MFeRZk3t99m
-RNfZBi4NkRynowlLibQMwpRd4DDym3LuFJpNcOG8z29+WvhCDvHcK/35lcRpnFpc
-Ii7MP4CqIWhvFX/2xQuk0sPKGo7vd4VIjaFyKlrAOSjBomI6aHpS99S0A56/m5EW
-8NfUZN1monFC9iNiVqjuI7rvYe1zw+PnGxdK55UYQ6o5ul2MhllN0tOomp4aUMhp
-SFUCdGZ5JHmNc75RTJKX
-=zZMa
------END PGP SIGNATURE-----
-
---zcU1BeNsGC5ZCldZ--
+I'd like to confirm the actual cause (I suspect that we switch
+pipes&planes around) for why you see this but other machines don't show
+this to augment the commit message. But I've merged the fix already.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
