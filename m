@@ -1,81 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755009Ab3LCOyA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 09:54:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48493 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753482Ab3LCOxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 09:53:25 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH4/5] KEYS: Fix searching of nested keyrings
-From: David Howells <dhowells@redhat.com>
-To: torvalds@linux-foundation.org, jmorris@namei.org
-Cc: Stephen Gallagher <sgallagh@redhat.com>, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 03 Dec 2013 14:53:20 +0000
-Message-ID: <20131203145320.30689.27703.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20131203145250.30689.28039.stgit@warthog.procyon.org.uk>
-References: <20131203145250.30689.28039.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.17-dirty
+	id S1755046Ab3LCOyn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 09:54:43 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:64641 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754672Ab3LCOve (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 09:51:34 -0500
+From: Peng Tao <bergwolf@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: [PATCH 5/9] staging/lustre: fix defined not used warning
+Date: Tue,  3 Dec 2013 22:42:04 +0800
+Message-Id: <1386081729-9481-8-git-send-email-bergwolf@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1386081729-9481-1-git-send-email-bergwolf@gmail.com>
+References: <1386081729-9481-1-git-send-email-bergwolf@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a keyring contains more than 16 keyrings (the capacity of a single node in
-the associative array) then those keyrings are split over multiple nodes
-arranged as a tree.
+register_sysctl_table/unregister_sysctl_table are defined
+regardless of CONFIG_SYSCTL true or false. so we don't need
+to surround them with #ifdef CONFIG_SYSCTL. Besides, current
+code got build warnings when CONFIG_SYSCTL is not set:
+drivers/staging/lustre/lustre/libcfs/linux/linux-proc.c:368:20: warning:
+‘lnet_table’ defined but not used [-Wunused-variable]
 
-If search_nested_keyrings() is called to search the keyring then it will
-attempt to manually walk over just the 0 branch of the associative array tree
-where all the keyring links are stored.  This works provided the key is found
-before the algorithm steps from one node containing keyrings to a child node
-or if there are sufficiently few keyring links that the keyrings are all in
-one node.
-
-However, if the algorithm does need to step from a node to a child node, it
-doesn't change the node pointer unless a shortcut also gets transited.  This
-means that the algorithm will keep scanning the same node over and over again
-without terminating and without returning.
-
-To fix this, move the internal-pointer-to-node translation from inside the
-shortcut transit handler so that it applies it to node arrival as well.
-
-This can be tested by:
-
-	r=`keyctl newring sandbox @s`
-	for ((i=0; i<=16; i++)); do keyctl newring ring$i $r; done
-	for ((i=0; i<=16; i++)); do keyctl add user a$i a %:ring$i; done
-	for ((i=0; i<=16; i++)); do keyctl search $r user a$i; done
-	for ((i=17; i<=20; i++)); do keyctl search $r user a$i; done
-
-The searches should all complete successfully (or with an error for 17-20),
-but instead one or more of them will hang.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Tested-by: Stephen Gallagher <sgallagh@redhat.com>
+Signed-off-by: Peng Tao <bergwolf@gmail.com>
+Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
+ drivers/staging/lustre/lnet/lnet/router_proc.c     |    4 ----
+ .../lustre/lustre/libcfs/linux/linux-proc.c        |    8 --------
+ 2 files changed, 12 deletions(-)
 
- security/keys/keyring.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 3dd8445cd489..d46cbc5e335e 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -690,8 +690,8 @@ descend_to_node:
- 		smp_read_barrier_depends();
- 		ptr = ACCESS_ONCE(shortcut->next_node);
- 		BUG_ON(!assoc_array_ptr_is_node(ptr));
--		node = assoc_array_ptr_to_node(ptr);
- 	}
-+	node = assoc_array_ptr_to_node(ptr);
+diff --git a/drivers/staging/lustre/lnet/lnet/router_proc.c b/drivers/staging/lustre/lnet/lnet/router_proc.c
+index daaa043..e4fe7a1 100644
+--- a/drivers/staging/lustre/lnet/lnet/router_proc.c
++++ b/drivers/staging/lustre/lnet/lnet/router_proc.c
+@@ -908,21 +908,17 @@ static ctl_table_t top_table[] = {
+ void
+ lnet_proc_init(void)
+ {
+-#ifdef CONFIG_SYSCTL
+ 	if (lnet_table_header == NULL)
+ 		lnet_table_header = register_sysctl_table(top_table);
+-#endif
+ }
  
- begin_node:
- 	kdebug("begin_node");
+ void
+ lnet_proc_fini(void)
+ {
+-#ifdef CONFIG_SYSCTL
+ 	if (lnet_table_header != NULL)
+ 		unregister_sysctl_table(lnet_table_header);
+ 
+ 	lnet_table_header = NULL;
+-#endif
+ }
+ 
+ #else
+diff --git a/drivers/staging/lustre/lustre/libcfs/linux/linux-proc.c b/drivers/staging/lustre/lustre/libcfs/linux/linux-proc.c
+index ef0ab10..e947b91 100644
+--- a/drivers/staging/lustre/lustre/libcfs/linux/linux-proc.c
++++ b/drivers/staging/lustre/lustre/libcfs/linux/linux-proc.c
+@@ -65,9 +65,7 @@
+ #include <asm/div64.h>
+ #include "tracefile.h"
+ 
+-#ifdef CONFIG_SYSCTL
+ static ctl_table_header_t *lnet_table_header = NULL;
+-#endif
+ extern char lnet_upcall[1024];
+ /**
+  * The path of debug log dump upcall script.
+@@ -518,7 +516,6 @@ static ctl_table_t lnet_table[] = {
+ 	}
+ };
+ 
+-#ifdef CONFIG_SYSCTL
+ static ctl_table_t top_table[] = {
+ 	{
+ 		.procname = "lnet",
+@@ -530,23 +527,18 @@ static ctl_table_t top_table[] = {
+ 	{
+ 	}
+ };
+-#endif
+ 
+ int insert_proc(void)
+ {
+-#ifdef CONFIG_SYSCTL
+ 	if (lnet_table_header == NULL)
+ 		lnet_table_header = register_sysctl_table(top_table);
+-#endif
+ 	return 0;
+ }
+ 
+ void remove_proc(void)
+ {
+-#ifdef CONFIG_SYSCTL
+ 	if (lnet_table_header != NULL)
+ 		unregister_sysctl_table(lnet_table_header);
+ 
+ 	lnet_table_header = NULL;
+-#endif
+ }
+-- 
+1.7.9.5
 
