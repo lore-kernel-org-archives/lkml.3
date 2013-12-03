@@ -1,132 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839Ab3LCOwT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 09:52:19 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:35199 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754767Ab3LCOvv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 09:51:51 -0500
-From: Peng Tao <bergwolf@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 8/9] staging/lustre: fix undefined reference if CONFIG_PROC_FS is off
-Date: Tue,  3 Dec 2013 22:42:08 +0800
-Message-Id: <1386081729-9481-12-git-send-email-bergwolf@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386081729-9481-1-git-send-email-bergwolf@gmail.com>
-References: <1386081729-9481-1-git-send-email-bergwolf@gmail.com>
+	id S1754862Ab3LCOxD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 09:53:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28017 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753961Ab3LCOw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 09:52:59 -0500
+Subject: [RFC][PATCH0/5] Keys patches
+From: David Howells <dhowells@redhat.com>
+To: torvalds@linux-foundation.org, jmorris@namei.org
+Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 03 Dec 2013 14:52:50 +0000
+Message-ID: <20131203145250.30689.28039.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When building Lustre with CONFIG_PROC_FS off, we'll get many errors like:
 
-drivers/staging/lustre/lustre/obdclass/llog_test.c:1053: error: implicit declaration of function ‘lprocfs_llog_test_init_vars’
-make[3]: *** [drivers/staging/lustre/lustre/obdclass/llog_test.o] Error 1
-make[2]: *** [drivers/staging/lustre/lustre/obdclass] Error 2
-make[2]: *** Waiting for unfinished jobs....
-  CC [M]  drivers/staging/lustre/lustre/ptlrpc/ptlrpcd.o
-drivers/staging/lustre/lustre/ptlrpc/pinger.c: In function ‘ptlrpc_pinger_main’:
-drivers/staging/lustre/lustre/ptlrpc/pinger.c:331: error: implicit declaration of function ‘obd_update_maxusage’
+Hi Linus, James,
 
-The patch defines following symbols when CONFIG_PROC_FS is off:
-fld_type_proc_dir, obd_update_maxusage(), obd_max_pages, obd_max_alloc, obd_alloc,
-obd_pages, lprocfs_llog_test_init_vars().
+Here are some fixes for the new keyring stuff.  They break down into three
+sets:
 
-Signed-off-by: Peng Tao <bergwolf@gmail.com>
-Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
+ (1) A patch to error handling in the big_key type for huge payloads.  If the
+     payload is larger than the "low limit" and the backing store allocation
+     fails, then big_key_instantiate() doesn't clear the payload pointers in
+     the key, assuming them to have been previously cleared - but only one of
+     them is.
+
+     Unfortunately, the garbage collector still calls big_key_destroy() when
+     sees one of the pointers with a weird value in it (and not NULL) which it
+     then tries to clean up.
+
+ (2) Three patches to fix the keyring type:
+
+     (a) A patch to fix the hash function to correctly divide keyrings off from
+     keys in the topology of the tree inside the associative array.  This is
+     only a problem if searching through nested keyrings - and only if the hash
+     function incorrectly puts the a keyring outside of the 0 branch of the
+     root node.
+
+     (b) A patch to fix keyrings' use of the associative array.  The
+     __key_link_begin() function initially passes a NULL key pointer to
+     assoc_array_insert() on the basis that it's holding a place in the tree
+     whilst it does more allocation and stuff.
+
+     This is only a problem when a node contains 16 keys that match at that
+     level and we want to add an also matching 17th.  This should easily be
+     manufactured with a keyring full of keyrings (without chucking any other
+     sort of key into the mix) - except for (a) above which makes it on average
+     adding the 65th keyring.
+
+     (c) A patch to fix searching down through nested keyrings, where any
+     keyring in the set has more than 16 keyrings and none of the first
+     keyrings we look through has a match (before the tree iteration needs to
+     step to a more distal node).
+
+ (3) A patch to fix the big_key type's use of a shmem file as its backing store
+     causing audit messages and LSM check failures.  This is done by setting
+     S_PRIVATE on the file to avoid LSM checks on the file (access to the shmem
+     file goes through the keyctl() interface and so is gated by the LSM that
+     way).
+
+     This isn't normally a problem if a key is used by the context that
+     generated it - and it's currently only used by libkrb5.
+
+David
 ---
- drivers/staging/lustre/lustre/fld/fld_internal.h   |    1 -
- drivers/staging/lustre/lustre/fld/fld_request.c    |    2 +-
- .../staging/lustre/lustre/include/obd_support.h    |    3 ++-
- drivers/staging/lustre/lustre/obdclass/class_obd.c |    6 ++++++
- drivers/staging/lustre/lustre/obdclass/llog_test.c |    4 ++++
- 5 files changed, 13 insertions(+), 3 deletions(-)
+David Howells (4):
+      KEYS: Pre-clear struct key on allocation
+      KEYS: Fix the keyring hash function
+      KEYS: Fix multiple key add into associative array
+      KEYS: Fix searching of nested keyrings
 
-diff --git a/drivers/staging/lustre/lustre/fld/fld_internal.h b/drivers/staging/lustre/lustre/fld/fld_internal.h
-index 56686b1..5f3935c 100644
---- a/drivers/staging/lustre/lustre/fld/fld_internal.h
-+++ b/drivers/staging/lustre/lustre/fld/fld_internal.h
-@@ -190,5 +190,4 @@ fld_target_name(struct lu_fld_target *tar)
- 	return (const char *)tar->ft_exp->exp_obd->obd_name;
- }
- 
--extern struct proc_dir_entry *fld_type_proc_dir;
- #endif /* __FLD_INTERNAL_H */
-diff --git a/drivers/staging/lustre/lustre/fld/fld_request.c b/drivers/staging/lustre/lustre/fld/fld_request.c
-index 3191a39..896f9fe 100644
---- a/drivers/staging/lustre/lustre/fld/fld_request.c
-+++ b/drivers/staging/lustre/lustre/fld/fld_request.c
-@@ -274,9 +274,9 @@ int fld_client_del_target(struct lu_client_fld *fld, __u64 idx)
- }
- EXPORT_SYMBOL(fld_client_del_target);
- 
--#ifdef LPROCFS
- struct proc_dir_entry *fld_type_proc_dir = NULL;
- 
-+#ifdef LPROCFS
- static int fld_client_proc_init(struct lu_client_fld *fld)
- {
- 	int rc;
-diff --git a/drivers/staging/lustre/lustre/include/obd_support.h b/drivers/staging/lustre/lustre/include/obd_support.h
-index 2dc95de..977bc23 100644
---- a/drivers/staging/lustre/lustre/include/obd_support.h
-+++ b/drivers/staging/lustre/lustre/include/obd_support.h
-@@ -507,6 +507,8 @@ int obd_alloc_fail(const void *ptr, const char *name, const char *type,
- 
- extern atomic_t libcfs_kmemory;
- 
-+extern void obd_update_maxusage(void);
-+
- #ifdef LPROCFS
- #define obd_memory_add(size)						  \
- 	lprocfs_counter_add(obd_memory, OBD_MEMORY_STAT, (long)(size))
-@@ -525,7 +527,6 @@ extern atomic_t libcfs_kmemory;
- 	lprocfs_stats_collector(obd_memory, OBD_MEMORY_PAGES_STAT,	    \
- 				LPROCFS_FIELDS_FLAGS_SUM)
- 
--extern void obd_update_maxusage(void);
- extern __u64 obd_memory_max(void);
- extern __u64 obd_pages_max(void);
- 
-diff --git a/drivers/staging/lustre/lustre/obdclass/class_obd.c b/drivers/staging/lustre/lustre/obdclass/class_obd.c
-index 7b1d1b6..5f8d9f2 100644
---- a/drivers/staging/lustre/lustre/obdclass/class_obd.c
-+++ b/drivers/staging/lustre/lustre/obdclass/class_obd.c
-@@ -54,7 +54,13 @@ struct list_head obd_types;
- DEFINE_RWLOCK(obd_dev_lock);
- 
- __u64 obd_max_pages = 0;
-+EXPORT_SYMBOL(obd_max_pages);
- __u64 obd_max_alloc = 0;
-+EXPORT_SYMBOL(obd_max_alloc);
-+__u64 obd_alloc;
-+EXPORT_SYMBOL(obd_alloc);
-+__u64 obd_pages;
-+EXPORT_SYMBOL(obd_pages);
- DEFINE_SPINLOCK(obd_updatemax_lock);
- 
- /* The following are visible and mutable through /proc/sys/lustre/. */
-diff --git a/drivers/staging/lustre/lustre/obdclass/llog_test.c b/drivers/staging/lustre/lustre/obdclass/llog_test.c
-index 7427c12..764068f 100644
---- a/drivers/staging/lustre/lustre/obdclass/llog_test.c
-+++ b/drivers/staging/lustre/lustre/obdclass/llog_test.c
-@@ -947,6 +947,10 @@ static void lprocfs_llog_test_init_vars(struct lprocfs_static_vars *lvars)
-     lvars->module_vars  = lprocfs_llog_test_module_vars;
-     lvars->obd_vars     = lprocfs_llog_test_obd_vars;
- }
-+#else
-+static void lprocfs_llog_test_init_vars(struct lprocfs_static_vars *lvars)
-+{
-+}
- #endif
- 
- static int llog_test_cleanup(struct obd_device *obd)
--- 
-1.7.9.5
+Eric Paris (1):
+      security: shmem: implement kernel private shmem inodes
+
+
+ Documentation/assoc_array.txt |    6 +++---
+ include/linux/assoc_array.h   |    6 +++---
+ include/linux/shmem_fs.h      |    2 ++
+ lib/assoc_array.c             |    4 ++--
+ mm/shmem.c                    |   36 +++++++++++++++++++++++++++++-------
+ security/keys/big_key.c       |    2 +-
+ security/keys/key.c           |    8 +-------
+ security/keys/keyring.c       |   17 ++++++++---------
+ 8 files changed, 49 insertions(+), 32 deletions(-)
 
