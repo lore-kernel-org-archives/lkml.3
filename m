@@ -1,166 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454Ab3LCNQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 08:16:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36909 "EHLO mx1.redhat.com"
+	id S1754487Ab3LCNQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 08:16:26 -0500
+Received: from smtp3-g21.free.fr ([212.27.42.3]:36317 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753464Ab3LCNKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 08:10:22 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 05/28] tools lib traceevent: Change pevent_parse_format to include pevent handle
-Date: Tue,  3 Dec 2013 14:09:19 +0100
-Message-Id: <1386076182-14484-6-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1386076182-14484-1-git-send-email-jolsa@redhat.com>
-References: <1386076182-14484-1-git-send-email-jolsa@redhat.com>
+	id S1754203Ab3LCNQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 08:16:22 -0500
+From: Nicolas Schichan <nschichan@freebox.fr>
+To: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: Florian Fainelli <florian@openwrt.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Leigh Brown <leigh@solinno.co.uk>,
+        Nicolas Schichan <nschichan@freebox.fr>
+Subject: [PATCH] net: mvmdio: fix wait_event_timeout() being called with a 1 jiffy timeout.
+Date: Tue,  3 Dec 2013 14:16:00 +0100
+Message-Id: <1386076560-1886-1-git-send-email-nschichan@freebox.fr>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <20131203122346.GD29282@titan.lakedaemon.net>
+References: <20131203122346.GD29282@titan.lakedaemon.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changing the pevent_parse_format interface to include the
-pevent handle.
+If a timer interrupt kicks right after the wait_event_timeout() call,
+we may endup a reporting timeout before the timeout really occured.
 
-The goal is to always use pevent object when dealing with
-traceevent library. The reason is that we might need additional
-processing (like plugins), which is not possible otherwise.
-
-Patches follow to make this happen completely.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
 ---
- tools/lib/traceevent/event-parse.c | 56 ++++++++++++++++++++++++--------------
- tools/lib/traceevent/event-parse.h |  4 ++-
- tools/perf/util/evsel.c            |  2 +-
- 3 files changed, 39 insertions(+), 23 deletions(-)
+ drivers/net/ethernet/marvell/mvmdio.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 74007ab..22566c2 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -5129,8 +5129,38 @@ enum pevent_errno __pevent_parse_format(struct event_format **eventp,
- 	return ret;
- }
- 
-+static enum pevent_errno
-+__pevent_parse_event(struct pevent *pevent,
-+		     struct event_format **eventp,
-+		     const char *buf, unsigned long size,
-+		     const char *sys)
-+{
-+	int ret = __pevent_parse_format(eventp, pevent, buf, size, sys);
-+	struct event_format *event = *eventp;
-+
-+	if (event == NULL)
-+		return ret;
-+
-+	if (pevent && add_event(pevent, event)) {
-+		ret = PEVENT_ERRNO__MEM_ALLOC_FAILED;
-+		goto event_add_failed;
-+	}
-+
-+#define PRINT_ARGS 0
-+	if (PRINT_ARGS && event->print_fmt.args)
-+		print_args(event->print_fmt.args);
-+
-+	return 0;
-+
-+event_add_failed:
-+	pevent_free_format(event);
-+	return ret;
-+}
-+
- /**
-  * pevent_parse_format - parse the event format
-+ * @pevent: the handle to the pevent
-+ * @eventp: returned format
-  * @buf: the buffer storing the event format string
-  * @size: the size of @buf
-  * @sys: the system the event belongs to
-@@ -5142,10 +5172,12 @@ enum pevent_errno __pevent_parse_format(struct event_format **eventp,
-  *
-  * /sys/kernel/debug/tracing/events/.../.../format
-  */
--enum pevent_errno pevent_parse_format(struct event_format **eventp, const char *buf,
-+enum pevent_errno pevent_parse_format(struct pevent *pevent,
-+				      struct event_format **eventp,
-+				      const char *buf,
- 				      unsigned long size, const char *sys)
+diff --git a/drivers/net/ethernet/marvell/mvmdio.c b/drivers/net/ethernet/marvell/mvmdio.c
+index 7354960..2814bbc 100644
+--- a/drivers/net/ethernet/marvell/mvmdio.c
++++ b/drivers/net/ethernet/marvell/mvmdio.c
+@@ -76,9 +76,19 @@ static int orion_mdio_wait_ready(struct mii_bus *bus)
  {
--	return __pevent_parse_format(eventp, NULL, buf, size, sys);
-+	return __pevent_parse_event(pevent, eventp, buf, size, sys);
- }
+ 	struct orion_mdio_dev *dev = bus->priv;
+ 	unsigned long timeout = usecs_to_jiffies(MVMDIO_SMI_TIMEOUT);
+-	unsigned long end = jiffies + timeout;
++	unsigned long end;
+ 	int timedout = 0;
  
- /**
-@@ -5166,25 +5198,7 @@ enum pevent_errno pevent_parse_event(struct pevent *pevent, const char *buf,
- 				     unsigned long size, const char *sys)
- {
- 	struct event_format *event = NULL;
--	int ret = __pevent_parse_format(&event, pevent, buf, size, sys);
--
--	if (event == NULL)
--		return ret;
--
--	if (add_event(pevent, event)) {
--		ret = PEVENT_ERRNO__MEM_ALLOC_FAILED;
--		goto event_add_failed;
--	}
--
--#define PRINT_ARGS 0
--	if (PRINT_ARGS && event->print_fmt.args)
--		print_args(event->print_fmt.args);
--
--	return 0;
--
--event_add_failed:
--	pevent_free_format(event);
--	return ret;
-+	return __pevent_parse_event(pevent, &event, buf, size, sys);
- }
- 
- #undef _PE
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 54273c0..620c27a 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -562,7 +562,9 @@ int pevent_parse_header_page(struct pevent *pevent, char *buf, unsigned long siz
- 
- enum pevent_errno pevent_parse_event(struct pevent *pevent, const char *buf,
- 				     unsigned long size, const char *sys);
--enum pevent_errno pevent_parse_format(struct event_format **eventp, const char *buf,
-+enum pevent_errno pevent_parse_format(struct pevent *pevent,
-+				      struct event_format **eventp,
-+				      const char *buf,
- 				      unsigned long size, const char *sys);
- void pevent_free_format(struct event_format *event);
- 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index b5fe7f9..6a046ed 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -210,7 +210,7 @@ struct event_format *event_format__new(const char *sys, const char *name)
- 		size += n;
- 	} while (n > 0);
- 
--	pevent_parse_format(&format, bf, size, sys);
-+	pevent_parse_format(NULL, &format, bf, size, sys);
- 
- out_free_bf:
- 	free(bf);
++	/*
++	 * make sure that we wait at least more than one
++	 * jiffy. wait_event_timeout() with a timeout parameter of 1
++	 * jiffy may return before the SMI access is done if a timer
++	 * interrupt kicks immediately after.
++	 */
++	if (timeout < 2)
++		timeout = 2;
++	end = jiffies + timeout;
++
+ 	while (1) {
+ 	        if (orion_mdio_smi_is_done(dev))
+ 			return 0;
 -- 
-1.8.3.1
+1.8.1.2
 
