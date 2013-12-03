@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754634Ab3LCO1a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 09:27:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48553 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753481Ab3LCO10 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 09:27:26 -0500
-Date: Tue, 3 Dec 2013 06:28:28 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
-        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
-        cascardo@linux.vnet.ibm.com, michael@ibmra.de
-Subject: Re: [PATCH 5/6] GenWQE Sysfs interfaces
-Message-ID: <20131203142828.GA3521@kroah.com>
-References: <1383741943-14609-1-git-send-email-haver@linux.vnet.ibm.com>
- <1383741943-14609-6-git-send-email-haver@linux.vnet.ibm.com>
- <20131127192204.GC28409@kroah.com>
- <1386075193.839.3.camel@oc7383187364.ibm.com>
+	id S1754654Ab3LCO1l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 09:27:41 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:46884 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753481Ab3LCO1f convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 09:27:35 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(z579ehz1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh109h2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2184h21a6h2216h22d0h2336hbe9i1155h)
+From: Peter Chen <Peter.Chen@freescale.com>
+To: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 3/3 v4] usb: chipidea: hw_phymode_configure moved before
+  ci_usb_phy_init
+Thread-Topic: [PATCH 3/3 v4] usb: chipidea: hw_phymode_configure moved
+ before  ci_usb_phy_init
+Thread-Index: AQHO7/34jSzvs6mMskiVXzEa7q0YoJpCgwiQ
+Date: Tue, 3 Dec 2013 14:27:31 +0000
+Message-ID: <F281D0F91ED19E4D8E63A7504E8A6498041413EB@039-SN2MPN1-021.039d.mgd.msft.net>
+References: <1386057710-3848-1-git-send-email-chris.ruehl@gtsys.com.hk>
+ <1386057710-3848-3-git-send-email-chris.ruehl@gtsys.com.hk>
+In-Reply-To: <1386057710-3848-3-git-send-email-chris.ruehl@gtsys.com.hk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.185.176]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386075193.839.3.camel@oc7383187364.ibm.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 01:53:13PM +0100, Frank Haverkamp wrote:
-> Hi Greg,
+ 
 > 
-> thanks for taking your time to review our code once more.
-> 
-> Am Mittwoch, den 27.11.2013, 11:22 -0800 schrieb Greg KH:
-> > On Wed, Nov 06, 2013 at 01:45:42PM +0100, Frank Haverkamp wrote:
-> > > +/**
-> > > + * genwqe_init_sysfs() - Setup sysfs entries of the card device
-> > > + */
-> > > +int genwqe_init_sysfs(struct genwqe_dev *cd)
-> > > +{
-> > > +	int rc;
-> > > +
-> > > +	rc = sysfs_create_group(&cd->dev->kobj, &genwqe_attribute_group);
-> > > +	if (rc)
-> > > +		return -ENXIO;
-> > > +
-> > > +	return 0;
-> > > +}
-> > 
-> > Why isn't this group the "default" one for the device?  That way you
-> > don't have to explicitly create/remove it, the driver core handles it
-> > all automatically for you, and you don't race with userspace when it is
-> > created/announced.
-> 
-> I found the ..._with_groups variant of device_create:
->         cd->dev = device_create_with_groups(cd->class_genwqe,
->                                             &cd->pci_dev->dev,
->                                             cd->devnum_genwqe, cd,
->                                             genwqe_attribute_groups,
->                                             GENWQE_DEVNAME "%u_card",
->                                             cd->card_idx);
-> 
-> This works nicely for me too. Is that what you had in mind?
+> usb: chipidea: hw_phymode_configure moved before ci_usb_phy_init
 
-Yes, that's what it was created for :)
+usb: chipidea: put hw_phymode_configure before ci_usb_phy_init
+Besides, a blank line is needed between your subject and commit log.
+
+> hw_phymode_configure configures the PORTSC registers and allow the
+> following phy_inits to operate on the right parameters. This fix a
+> problem
+> where the UPLI (ISP1504) could not detected,
+					    ^^be
+
+> because the Viewport was not
+> available and read the viewport return 0's only.
+> 
+> Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+> Acked-by: Peter Chen <peter.chen@freescale.com>
+> ---
+>  drivers/usb/chipidea/core.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
+> index 2834801..43897dd 100644
+> --- a/drivers/usb/chipidea/core.c
+> +++ b/drivers/usb/chipidea/core.c
+> @@ -564,6 +564,8 @@ static int ci_hdrc_probe(struct platform_device *pdev)
+>  		return -ENODEV;
+>  	}
+> 
+> +	hw_phymode_configure(ci);
+> +
+>  	ret = ci_usb_phy_init(ci);
+>  	if (ret) {
+>  		dev_err(dev, "unable to init phy: %d\n", ret);
+> @@ -581,8 +583,6 @@ static int ci_hdrc_probe(struct platform_device *pdev)
+> 
+>  	ci_get_otg_capable(ci);
+> 
+> -	hw_phymode_configure(ci);
+> -
+>  	dr_mode = ci->platdata->dr_mode;
+>  	/* initialize role(s) before the interrupt is requested */
+>  	if (dr_mode == USB_DR_MODE_OTG || dr_mode == USB_DR_MODE_HOST) {
+> --
+> 1.7.10.4
+> 
+
 
