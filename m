@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754960Ab3LCOxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 09:53:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53517 "EHLO mx1.redhat.com"
+	id S1754898Ab3LCOxZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 09:53:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27797 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753836Ab3LCOxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 09:53:34 -0500
+	id S1753482Ab3LCOxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 09:53:19 -0500
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH5/5] security: shmem: implement kernel private shmem inodes
+Subject: [PATCH3/5] KEYS: Fix multiple key add into associative array
 From: David Howells <dhowells@redhat.com>
 To: torvalds@linux-foundation.org, jmorris@namei.org
-Cc: keyrings@linux-nfs.org, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
-        linux-mm@kvack.org, linux-security-module@vger.kernel.org
-Date: Tue, 03 Dec 2013 14:53:28 +0000
-Message-ID: <20131203145328.30689.3782.stgit@warthog.procyon.org.uk>
+Cc: Stephen Gallagher <sgallagh@redhat.com>, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 03 Dec 2013 14:53:13 +0000
+Message-ID: <20131203145313.30689.17848.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20131203145250.30689.28039.stgit@warthog.procyon.org.uk>
 References: <20131203145250.30689.28039.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.17-dirty
@@ -28,150 +27,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Paris <eparis@redhat.com>
+If sufficient keys (or keyrings) are added into a keyring such that a node in
+the associative array's tree overflows (each node has a capacity N, currently
+16) and such that all N+1 keys have the same index key segment for that level
+of the tree (the level'th nibble of the index key), then assoc_array_insert()
+calls ops->diff_objects() to indicate at which bit position the two index keys
+vary.
 
-We have a problem where the big_key key storage implementation uses a
-shmem backed inode to hold the key contents.  Because of this detail of
-implementation LSM checks are being done between processes trying to
-read the keys and the tmpfs backed inode.  The LSM checks are already
-being handled on the key interface level and should not be enforced at
-the inode level (since the inode is an implementation detail, not a
-part of the security model)
+However, __key_link_begin() passes a NULL object to assoc_array_insert() with
+the intention of supplying the correct pointer later before we commit the
+change.  This means that keyring_diff_objects() is given a NULL pointer as one
+of its arguments which it does not expect.  This results in an oops like the
+attached.
 
-This patch implements a new function shmem_kernel_file_setup() which
-returns the equivalent to shmem_file_setup() only the underlying inode
-has S_PRIVATE set.  This means that all LSM checks for the inode in
-question are skipped.  It should only be used for kernel internal
-operations where the inode is not exposed to userspace without proper
-LSM checking.  It is possible that some other users of
-shmem_file_setup() should use the new interface, but this has not been
-explored.
+With the previous patch to fix the keyring hash function, this can be forced
+much more easily by creating a keyring and only adding keyrings to it.  Add any
+other sort of key and a different insertion path is taken - all 16+1 objects
+must want to cluster in the same node slot.
 
-Reproducing this bug is a little bit difficult.  The steps I used on
-Fedora are:
+This can be tested by:
 
- (1) Turn off selinux enforcing:
+	r=`keyctl newring sandbox @s`
+	for ((i=0; i<=16; i++)); do keyctl newring ring$i $r; done
 
-	setenforce 0
+This should work fine, but oopses when the 17th keyring is added.
 
- (2) Create a huge key
+Since ops->diff_objects() is always called with the first pointer pointing to
+the object to be inserted (ie. the NULL pointer), we can fix the problem by
+changing the to-be-inserted object pointer to point to the index key passed
+into assoc_array_insert() instead.
 
-	k=`dd if=/dev/zero bs=8192 count=1 | keyctl padd big_key test-key @s`
+Whilst we're at it, we also switch the arguments so that they are the same as
+for ->compare_object().
 
- (3) Access the key in another context:
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000088
+IP: [<ffffffff81191ee4>] hash_key_type_and_desc+0x18/0xb0
+...
+RIP: 0010:[<ffffffff81191ee4>] hash_key_type_and_desc+0x18/0xb0
+...
+Call Trace:
+ [<ffffffff81191f9d>] keyring_diff_objects+0x21/0xd2
+ [<ffffffff811f09ef>] assoc_array_insert+0x3b6/0x908
+ [<ffffffff811929a7>] __key_link_begin+0x78/0xe5
+ [<ffffffff81191a2e>] key_create_or_update+0x17d/0x36a
+ [<ffffffff81192e0a>] SyS_add_key+0x123/0x183
+ [<ffffffff81400ddb>] tracesys+0xdd/0xe2
 
-	runcon system_u:system_r:httpd_t:s0-s0:c0.c1023 keyctl print $k >/dev/null
-
- (4) Examine the audit logs:
-
-	ausearch -m AVC -i --subject httpd_t | audit2allow
-
-If the last command's output includes a line that looks like:
-
-	allow httpd_t user_tmpfs_t:file { open read };
-
-There was an inode check between httpd and the tmpfs filesystem.  With
-this patch no such denial will be seen.  (NOTE! you should clear your
-audit log if you have tested for this previously)
-
-(Please return you box to enforcing)
-
-Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Hugh Dickins <hughd@google.com>
-cc: linux-mm@kvack.org
+Tested-by: Stephen Gallagher <sgallagh@redhat.com>
 ---
 
- include/linux/shmem_fs.h |    2 ++
- mm/shmem.c               |   36 +++++++++++++++++++++++++++++-------
- security/keys/big_key.c  |    2 +-
- 3 files changed, 32 insertions(+), 8 deletions(-)
+ Documentation/assoc_array.txt |    6 +++---
+ include/linux/assoc_array.h   |    6 +++---
+ lib/assoc_array.c             |    4 ++--
+ security/keys/keyring.c       |    7 +++----
+ 4 files changed, 11 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/shmem_fs.h b/include/linux/shmem_fs.h
-index 30aa0dc60d75..9d55438bc4ad 100644
---- a/include/linux/shmem_fs.h
-+++ b/include/linux/shmem_fs.h
-@@ -47,6 +47,8 @@ extern int shmem_init(void);
- extern int shmem_fill_super(struct super_block *sb, void *data, int silent);
- extern struct file *shmem_file_setup(const char *name,
- 					loff_t size, unsigned long flags);
-+extern struct file *shmem_kernel_file_setup(const char *name, loff_t size,
-+					    unsigned long flags);
- extern int shmem_zero_setup(struct vm_area_struct *);
- extern int shmem_lock(struct file *file, int lock, struct user_struct *user);
- extern void shmem_unlock_mapping(struct address_space *mapping);
-diff --git a/mm/shmem.c b/mm/shmem.c
-index 8297623fcaed..902a14842b74 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2918,13 +2918,8 @@ static struct dentry_operations anon_ops = {
- 	.d_dname = simple_dname
- };
+diff --git a/Documentation/assoc_array.txt b/Documentation/assoc_array.txt
+index f4faec0f66e4..2f2c6cdd73c0 100644
+--- a/Documentation/assoc_array.txt
++++ b/Documentation/assoc_array.txt
+@@ -164,10 +164,10 @@ This points to a number of methods, all of which need to be provided:
  
--/**
-- * shmem_file_setup - get an unlinked file living in tmpfs
-- * @name: name for dentry (to be seen in /proc/<pid>/maps
-- * @size: size to be set for the file
-- * @flags: VM_NORESERVE suppresses pre-accounting of the entire object size
-- */
--struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags)
-+static struct file *__shmem_file_setup(const char *name, loff_t size,
-+				       unsigned long flags, unsigned int i_flags)
+  (4) Diff the index keys of two objects.
+ 
+-	int (*diff_objects)(const void *a, const void *b);
++	int (*diff_objects)(const void *object, const void *index_key);
+ 
+-     Return the bit position at which the index keys of two objects differ or
+-     -1 if they are the same.
++     Return the bit position at which the index key of the specified object
++     differs from the given index key or -1 if they are the same.
+ 
+ 
+  (5) Free an object.
+diff --git a/include/linux/assoc_array.h b/include/linux/assoc_array.h
+index 9a193b84238a..a89df3be1686 100644
+--- a/include/linux/assoc_array.h
++++ b/include/linux/assoc_array.h
+@@ -41,10 +41,10 @@ struct assoc_array_ops {
+ 	/* Is this the object we're looking for? */
+ 	bool (*compare_object)(const void *object, const void *index_key);
+ 
+-	/* How different are two objects, to a bit position in their keys? (or
+-	 * -1 if they're the same)
++	/* How different is an object from an index key, to a bit position in
++	 * their keys? (or -1 if they're the same)
+ 	 */
+-	int (*diff_objects)(const void *a, const void *b);
++	int (*diff_objects)(const void *object, const void *index_key);
+ 
+ 	/* Method to free an object. */
+ 	void (*free_object)(void *object);
+diff --git a/lib/assoc_array.c b/lib/assoc_array.c
+index 17edeaf19180..1b6a44f1ec3e 100644
+--- a/lib/assoc_array.c
++++ b/lib/assoc_array.c
+@@ -759,8 +759,8 @@ all_leaves_cluster_together:
+ 	pr_devel("all leaves cluster together\n");
+ 	diff = INT_MAX;
+ 	for (i = 0; i < ASSOC_ARRAY_FAN_OUT; i++) {
+-		int x = ops->diff_objects(assoc_array_ptr_to_leaf(edit->leaf),
+-					  assoc_array_ptr_to_leaf(node->slots[i]));
++		int x = ops->diff_objects(assoc_array_ptr_to_leaf(node->slots[i]),
++					  index_key);
+ 		if (x < diff) {
+ 			BUG_ON(x < 0);
+ 			diff = x;
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 0adbc77a59b9..3dd8445cd489 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -279,12 +279,11 @@ static bool keyring_compare_object(const void *object, const void *data)
+  * Compare the index keys of a pair of objects and determine the bit position
+  * at which they differ - if they differ.
+  */
+-static int keyring_diff_objects(const void *_a, const void *_b)
++static int keyring_diff_objects(const void *object, const void *data)
  {
- 	struct file *res;
- 	struct inode *inode;
-@@ -2957,6 +2952,7 @@ struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags
- 	if (!inode)
- 		goto put_dentry;
+-	const struct key *key_a = keyring_ptr_to_key(_a);
+-	const struct key *key_b = keyring_ptr_to_key(_b);
++	const struct key *key_a = keyring_ptr_to_key(object);
+ 	const struct keyring_index_key *a = &key_a->index_key;
+-	const struct keyring_index_key *b = &key_b->index_key;
++	const struct keyring_index_key *b = data;
+ 	unsigned long seg_a, seg_b;
+ 	int level, i;
  
-+	inode->i_flags |= i_flags;
- 	d_instantiate(path.dentry, inode);
- 	inode->i_size = size;
- 	clear_nlink(inode);	/* It is unlinked */
-@@ -2977,6 +2973,32 @@ put_memory:
- 	shmem_unacct_size(flags, size);
- 	return res;
- }
-+
-+/**
-+ * shmem_kernel_file_setup - get an unlinked file living in tmpfs which must be
-+ * 	kernel internal.  There will be NO LSM permission checks against the
-+ * 	underlying inode.  So users of this interface must do LSM checks at a
-+ * 	higher layer.  The one user is the big_key implementation.  LSM checks
-+ * 	are provided at the key level rather than the inode level.
-+ * @name: name for dentry (to be seen in /proc/<pid>/maps
-+ * @size: size to be set for the file
-+ * @flags: VM_NORESERVE suppresses pre-accounting of the entire object size
-+ */
-+struct file *shmem_kernel_file_setup(const char *name, loff_t size, unsigned long flags)
-+{
-+	return __shmem_file_setup(name, size, flags, S_PRIVATE);
-+}
-+
-+/**
-+ * shmem_file_setup - get an unlinked file living in tmpfs
-+ * @name: name for dentry (to be seen in /proc/<pid>/maps
-+ * @size: size to be set for the file
-+ * @flags: VM_NORESERVE suppresses pre-accounting of the entire object size
-+ */
-+struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags)
-+{
-+	return __shmem_file_setup(name, size, flags, 0);
-+}
- EXPORT_SYMBOL_GPL(shmem_file_setup);
- 
- /**
-diff --git a/security/keys/big_key.c b/security/keys/big_key.c
-index 7f44c3207a9b..8137b27d641d 100644
---- a/security/keys/big_key.c
-+++ b/security/keys/big_key.c
-@@ -70,7 +70,7 @@ int big_key_instantiate(struct key *key, struct key_preparsed_payload *prep)
- 		 *
- 		 * TODO: Encrypt the stored data with a temporary key.
- 		 */
--		file = shmem_file_setup("", datalen, 0);
-+		file = shmem_kernel_file_setup("", datalen, 0);
- 		if (IS_ERR(file)) {
- 			ret = PTR_ERR(file);
- 			goto err_quota;
 
