@@ -1,360 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167Ab3LCDQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 22:16:58 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.245]:23622 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751025Ab3LCDQ4 (ORCPT
+	id S1753237Ab3LCDUW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 22:20:22 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:6373 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025Ab3LCDUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 22:16:56 -0500
-X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Dec 2013 22:16:56 EST
-Message-ID: <529D4B58.9020700@atmel.com>
-Date: Tue, 3 Dec 2013 11:09:12 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 2 Dec 2013 22:20:18 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 02 Dec 2013 19:13:43 -0800
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v3] gpio: better lookup method for platform GPIOs
+Date: Tue, 3 Dec 2013 12:20:11 +0900
+Message-ID: <1386040811-27946-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <CAAVeFu+LLR-EwiRskE_VBQwPrnXAdt-ahfcH08mOXsFuStFMJg@mail.gmail.com>
+References: <CAAVeFu+LLR-EwiRskE_VBQwPrnXAdt-ahfcH08mOXsFuStFMJg@mail.gmail.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Bo Shen <voice.shen@atmel.com>, <linux-pwm@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <nicolas.ferre@atmel.com>,
-        <linux-kernel@vger.kernel.org>, <alexandre.belloni@free-electrons.com>,
-        <galak@codeaurora.org>, <plagnioj@jcrosoft.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 1/2] PWM: atmel-pwm: add PWM controller driver
-References: <1384766002-2852-1-git-send-email-voice.shen@atmel.com> <20131202105957.GD18060@ulmo.nvidia.com>
-In-Reply-To: <20131202105957.GD18060@ulmo.nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
+Change the format of the platform GPIO lookup tables to make them less
+confusing and improve lookup efficiency.
 
-On 12/02/2013 06:59 PM, Thierry Reding wrote:
-> On Mon, Nov 18, 2013 at 05:13:21PM +0800, Bo Shen wrote:
-> [...]
->> diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
-> [...]
->> +/* Max value for duty and period
->
-> Block comments should be of this form:
->
-> 	/*
-> 	 * Max value ...
-> 	 * ...
-> 	 */
+The previous format was a single linked-list that required to compare
+the device name and function ID of every single GPIO defined for each
+lookup. Switch that to a list of per-device tables, so that the lookup
+can be done in two steps, omitting the GPIOs that are not relevant for a
+particular device.
 
-OK, I will use this style.
+The matching rules are now defined as follows:
+- The device name must match *exactly*, and can be NULL for GPIOs not
+  assigned to a particular device,
+- If the function ID in the lookup table is NULL, the con_id argument of
+  gpiod_get() will not be used for lookup. However, if it is defined, it
+  must match exactly.
+- The index must always match.
 
->> +static int atmel_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
->> +		int duty_ns, int period_ns)
->> +{
->> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
->> +	unsigned long clk_rate, prd, dty;
->> +	unsigned long long div;
->> +	int ret, pres = 0;
->> +
->> +	clk_rate = clk_get_rate(atmel_pwm->clk);
->> +	div = clk_rate;
->> +
->> +	/* Calculate the period cycles */
->> +	while (div > PWM_MAX_PRD) {
->> +		div = clk_rate / (1 << pres);
->> +		div = div * period_ns;
->> +		/* 1/Hz = 100000000 ns */
->
-> I don't think that comment is needed.
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+Changes since v2:
+- Removed size member of the gpiod_lookup_table struct (thanks Heikki!)
+- Added Andy's reviewed-by
 
-This is asked to be added.
-And, I think keep it and it won't hurt, what do you think?
+ Documentation/gpio/board.txt |  28 ++++++-----
+ drivers/gpio/gpiolib.c       | 108 +++++++++++++++++++++++--------------------
+ include/linux/gpio/driver.h  |  21 ++++-----
+ 3 files changed, 85 insertions(+), 72 deletions(-)
 
->> +		do_div(div, 1000000000);
->> +
->> +		if (pres++ > PRD_MAX_PRES) {
->> +			dev_err(chip->dev, "pres exceed the maximum value\n");
->
-> "exceeds"
-
-Thanks for correct it.
-
->> +			return -EINVAL;
->> +		}
->> +	}
->> +
->> +	/* Calculate the duty cycles */
->> +	prd = div;
->> +	div *= duty_ns;
->> +	do_div(div, period_ns);
->> +	dty = div;
->> +
->> +	ret = clk_enable(atmel_pwm->clk);
->> +	if (ret) {
->> +		dev_err(chip->dev, "failed to enable pwm clock\n");
->
-> "PWM clock"
-
-OK, I will change all low case pwm to upper case PWM.
-
->> +static void atmel_pwm_config_v1(struct pwm_chip *chip, struct pwm_device *pwm,
->> +				int dty, int prd)
->> +{
->> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
->> +	unsigned int val;
->> +
->> +	/*
->> +	 * If the PWM channel is disabled, write value to duty and period
->> +	 * registers directly.
->> +	 * If the PWM channel is enabled, using the update register, it needs
->> +	 * to set bit 10 of CMR to 0
->> +	 */
->
-> I think it would make sense to split this comment and move each part
-> into the respective conditional branch.
-
-OK, I will split them.
-
->> +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
->> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CUPD, dty);
->> +
->> +		val = atmel_pwm_ch_readl(atmel_pwm, pwm->hwpwm, PWM_CMR);
->> +		val &= ~PWM_CMR_UPD_CDTY;
->> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, val);
->> +	} else {
->> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CDTY, dty);
->> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CPRD, prd);
->> +	}
->> +}
->> +
->> +static void atmel_pwm_config_v2(struct pwm_chip *chip, struct pwm_device *pwm,
->> +				int dty, int prd)
->> +{
->> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
->> +
->> +	/*
->> +	 * If the PWM channel is disabled, write value to duty and period
->> +	 * registers directly.
->> +	 * If the PWM channel is enabled, using the duty update register to
->> +	 * update the value.
->> +	 */
->
-> Same here.
->
->> +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
->> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CDTYUPD, dty);
->> +	} else {
->> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CDTY, dty);
->> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CPRD, prd);
->> +	}
->> +}
->
-> Neither version 1 nor version 2 seem to be able to change the period
-> while the channel is enabled. Perhaps that should be checked for in
-> atmel_pwm_config() and an error (-EBUSY) returned?
-
-The period is configured in dt in device tree, or platform data in non 
-device tree. Nowhere will update period. So, not code to update period.
-Am I right? If not, please figure out.
-
->> +
->> +static int atmel_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
->> +		enum pwm_polarity polarity)
->> +{
->> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
->> +	u32 val = 0;
->> +	int ret;
->> +
->> +	if (polarity == PWM_POLARITY_NORMAL)
->> +		val &= ~PWM_CMR_CPOL;
->> +	else
->> +		val |= PWM_CMR_CPOL;
->
-> I think I've mentioned this before, but val is always assigned to 0, so
-> clearing a bit is a superfluous. Perhaps you need to readl the CMR
-> register first before toggling the bit here?
-
-Thanks, we should read CMR, and set the CPOL accordingly.
-
->> +
->> +	ret = clk_enable(atmel_pwm->clk);
->> +	if (ret) {
->> +		dev_err(chip->dev, "failed to enable pwm clock\n");
->
-> "PWM clock"
->
->> +#ifdef CONFIG_OF
->> +static const struct of_device_id atmel_pwm_dt_ids[] = {
->> +	{
->> +		.compatible = "atmel,at91sam9rl-pwm",
->> +		.data = &atmel_pwm_data_v1,
->> +	}, {
->> +		.compatible = "atmel,sama5d3-pwm",
->> +		.data = &atmel_pwm_data_v2,
->> +	}, {
->> +		/* sentinel */
->> +	},
->> +};
->> +MODULE_DEVICE_TABLE(of, atmel_pwm_dt_ids);
->> +#endif
->
-> I don't think you can do this. You use this table in a call to
-> of_match_device() later on, in code which isn't protected by a
-> corresponding #ifdef.
-
-I will remove #ifdef.
-
->> +static inline const struct atmel_pwm_data * __init
->> +	atmel_pwm_get_driver_data(struct platform_device *pdev)
->
-> I don't think __init is warranted here. In fact I think this will give
-> you a build warning, because this code is called from atmel_pwm_probe(),
-> which in turn isn't marked __init.
-
-OK, I will remove __init.
-
-> Also it's probably not worth marking this inline explicitly. It isn't
-> all that short, and the compiler will likely inline it anyway since it's
-> only called once.
-
-It only called one, so, it can be inline.
-
->> +{
->> +	if (pdev->dev.of_node) {
->> +		const struct of_device_id *match;
->> +		match = of_match_device(atmel_pwm_dt_ids, &pdev->dev);
->
-> Blank line between the above two for readability.
-
-OK, I will add one blank line.
-
->> +		if (match == NULL)
->> +			return NULL;
->> +		return match->data;
->
-> Same here. And "if (!match)" rather than "if (match == NULL)".
-
-OK, I will change like this.
-
->> +	}
->> +
->> +	return (struct atmel_pwm_data *)
->> +		platform_get_device_id(pdev)->driver_data;
->
-> Please use a temporary variable here to make this more readable, like
-> so:
->
-> 	struct platform_device_id *id = platform_get_device_id(pdev);
->
-> 	...
->
-> 	return (struct atmel_pwm_data *)id->driver;
->
->> +}
-
-OK, I will change like this.
-
->> +static int atmel_pwm_probe(struct platform_device *pdev)
->> +{
->> +	const struct atmel_pwm_data *data;
->> +	struct atmel_pwm_chip *atmel_pwm;
->> +	struct resource *res;
->> +	int ret;
->> +
->> +	atmel_pwm = devm_kzalloc(&pdev->dev, sizeof(*atmel_pwm), GFP_KERNEL);
->> +	if (!atmel_pwm)
->> +		return -ENOMEM;
->
-> You could move this further down, so that memory doesn't get allocated
-> if atmel_pwm_get_driver_data() or platform_get_resource() fails.
-
-OK, I will move this down.
-
->> +
->> +	data = atmel_pwm_get_driver_data(pdev);
->> +	if (!data)
->> +		return -ENODEV;
->> +
->> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +	if (!res)
->> +		return -ENODEV;
->
-> No need to check the return value here. devm_ioremap_resource() checks
-> it for you.
-
-OK, I will remove this check.
-
->> +
->> +	atmel_pwm->base = devm_ioremap_resource(&pdev->dev, res);
->> +	if (IS_ERR(atmel_pwm->base))
->> +		return PTR_ERR(atmel_pwm->base);
->> +
->> +	atmel_pwm->clk = devm_clk_get(&pdev->dev, NULL);
->> +	if (IS_ERR(atmel_pwm->clk))
->> +		return PTR_ERR(atmel_pwm->clk);
->> +
->> +	ret = clk_prepare(atmel_pwm->clk);
->> +	if (ret) {
->> +		dev_err(&pdev->dev, "failed to prepare pwm clock\n");
->
-> "PWM clock"
->
->> +		return ret;
->> +	}
->> +
->> +	atmel_pwm->chip.dev = &pdev->dev;
->> +	atmel_pwm->chip.ops = &atmel_pwm_ops;
->> +	if (pdev->dev.of_node) {
->
-> Blank line between the above two for readability.
-
-OK, I will add blank line.
-
->> +		atmel_pwm->chip.of_xlate = of_pwm_xlate_with_flags;
->> +		atmel_pwm->chip.of_pwm_n_cells = 3;
->> +		atmel_pwm->chip.base = -1;
->> +	} else {
->> +		atmel_pwm->chip.base = pdev->id;
->
-> That's not correct. The chip cannot be tied to pdev->id, because that ID
-> is the instance number of the device. So typically you would have
-> devices name like this:
->
-> 	atmel-pwm.0
-> 	atmel-pwm.1
-> 	...
->
-> Now, if you have that, then you won't be able to register the second
-> instance because the first instance will already have requested PWMs
-> 0-3, and setting .base to 1 will cause PWMs 1-4 to be requested, which
-> intersects with the range of the first instance.
->
-> The same applies of course if you have other PWM controllers in the
-> system which have similar instance names.
->
-> So the right thing to do here is to provide that number via platform
-> data so that platform code can define it, knowing in advance all ranges
-> for all other PWM controllers and thereby make sure there's no
-> intersection.
-
-OK, I will fix this.
-
->> +	}
->> +	atmel_pwm->chip.npwm = 4;
->
-> Blank line between the above two for readability.
-
-OK, I will add blank line.
-
->> +	atmel_pwm->config = data->config;
->> +
->> +	ret = pwmchip_add(&atmel_pwm->chip);
->> +	if (ret < 0) {
->> +		dev_err(&pdev->dev, "failed to add pwm chip %d\n", ret);
->
-> "PWM chip"
->
-> Thierry
-
-Best Regards,
-Bo Shen
+diff --git a/Documentation/gpio/board.txt b/Documentation/gpio/board.txt
+index 0d03506f2cc5..ba169faad5c6 100644
+--- a/Documentation/gpio/board.txt
++++ b/Documentation/gpio/board.txt
+@@ -72,10 +72,11 @@ where
+ 
+   - chip_label is the label of the gpiod_chip instance providing the GPIO
+   - chip_hwnum is the hardware number of the GPIO within the chip
+-  - dev_id is the identifier of the device that will make use of this GPIO. If
+-	NULL, the GPIO will be available to all devices.
++  - dev_id is the identifier of the device that will make use of this GPIO. It
++	can be NULL, in which case it will be matched for calls to gpiod_get()
++	with a NULL device.
+   - con_id is the name of the GPIO function from the device point of view. It
+-	can be NULL.
++	can be NULL, in which case it will match any function.
+   - idx is the index of the GPIO within the function.
+   - flags is defined to specify the following properties:
+ 	* GPIOF_ACTIVE_LOW	- to configure the GPIO as active-low
+@@ -86,18 +87,23 @@ In the future, these flags might be extended to support more properties.
+ 
+ Note that GPIO_LOOKUP() is just a shortcut to GPIO_LOOKUP_IDX() where idx = 0.
+ 
+-A lookup table can then be defined as follows:
++A lookup table can then be defined as follows, with an empty entry defining its
++end:
+ 
+-	struct gpiod_lookup gpios_table[] = {
+-	GPIO_LOOKUP_IDX("gpio.0", 15, "foo.0", "led", 0, GPIO_ACTIVE_HIGH),
+-	GPIO_LOOKUP_IDX("gpio.0", 16, "foo.0", "led", 1, GPIO_ACTIVE_HIGH),
+-	GPIO_LOOKUP_IDX("gpio.0", 17, "foo.0", "led", 2, GPIO_ACTIVE_HIGH),
+-	GPIO_LOOKUP("gpio.0", 1, "foo.0", "power", GPIO_ACTIVE_LOW),
+-	};
++struct gpiod_lookup_table gpios_table = {
++	.dev_id = "foo.0",
++	.table = {
++		GPIO_LOOKUP_IDX("gpio.0", 15, "led", 0, GPIO_ACTIVE_HIGH),
++		GPIO_LOOKUP_IDX("gpio.0", 16, "led", 1, GPIO_ACTIVE_HIGH),
++		GPIO_LOOKUP_IDX("gpio.0", 17, "led", 2, GPIO_ACTIVE_HIGH),
++		GPIO_LOOKUP("gpio.0", 1, "power", GPIO_ACTIVE_LOW),
++		{ },
++	},
++};
+ 
+ And the table can be added by the board code as follows:
+ 
+-	gpiod_add_table(gpios_table, ARRAY_SIZE(gpios_table));
++	gpiod_add_lookup_table(&gpios_table);
+ 
+ The driver controlling "foo.0" will then be able to obtain its GPIOs as follows:
+ 
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index f72618ba716a..ea95b42c6154 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -2259,18 +2259,14 @@ void gpiod_set_value_cansleep(struct gpio_desc *desc, int value)
+ EXPORT_SYMBOL_GPL(gpiod_set_value_cansleep);
+ 
+ /**
+- * gpiod_add_table() - register GPIO device consumers
+- * @table: array of consumers to register
+- * @num: number of consumers in table
++ * gpiod_add_lookup_table() - register GPIO device consumers
++ * @table: table of consumers to register
+  */
+-void gpiod_add_table(struct gpiod_lookup *table, size_t size)
++void gpiod_add_lookup_table(struct gpiod_lookup_table *table)
+ {
+ 	mutex_lock(&gpio_lookup_lock);
+ 
+-	while (size--) {
+-		list_add_tail(&table->list, &gpio_lookup_list);
+-		table++;
+-	}
++	list_add_tail(&table->list, &gpio_lookup_list);
+ 
+ 	mutex_unlock(&gpio_lookup_lock);
+ }
+@@ -2326,72 +2322,84 @@ static struct gpio_desc *acpi_find_gpio(struct device *dev, const char *con_id,
+ 	return desc;
+ }
+ 
+-static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
+-				    unsigned int idx,
+-				    enum gpio_lookup_flags *flags)
++static struct gpiod_lookup_table *gpiod_find_lookup_table(struct device *dev)
+ {
+ 	const char *dev_id = dev ? dev_name(dev) : NULL;
+-	struct gpio_desc *desc = ERR_PTR(-ENODEV);
+-	unsigned int match, best = 0;
+-	struct gpiod_lookup *p;
++	struct gpiod_lookup_table *table;
+ 
+ 	mutex_lock(&gpio_lookup_lock);
+ 
+-	list_for_each_entry(p, &gpio_lookup_list, list) {
+-		match = 0;
++	list_for_each_entry(table, &gpio_lookup_list, list) {
++		if (table->dev_id && dev_id) {
++			/*
++			 * Valid strings on both ends, must be identical to have
++			 * a match
++			 */
++			if (!strcmp(table->dev_id, dev_id))
++				goto found;
++		} else {
++			/*
++			 * One of the pointers is NULL, so both must be to have
++			 * a match
++			 */
++			if (dev_id == table->dev_id)
++				goto found;
++		}
++	}
++	table = NULL;
+ 
+-		if (p->dev_id) {
+-			if (!dev_id || strcmp(p->dev_id, dev_id))
+-				continue;
++found:
++	mutex_unlock(&gpio_lookup_lock);
++	return table;
++}
+ 
+-			match += 2;
+-		}
++static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
++				    unsigned int idx,
++				    enum gpio_lookup_flags *flags)
++{
++	struct gpio_desc *desc = ERR_PTR(-ENODEV);
++	struct gpiod_lookup_table *table;
++	struct gpiod_lookup *p;
+ 
+-		if (p->con_id) {
+-			if (!con_id || strcmp(p->con_id, con_id))
+-				continue;
++	table = gpiod_find_lookup_table(dev);
++	if (!table)
++		return desc;
+ 
+-			match += 1;
+-		}
++	for (p = &table->table[0]; p->chip_label; p++) {
++		struct gpio_chip *chip;
+ 
++		/* idx must always match exactly */
+ 		if (p->idx != idx)
+ 			continue;
+ 
+-		if (match > best) {
+-			struct gpio_chip *chip;
+-
+-			chip = find_chip_by_name(p->chip_label);
+-
+-			if (!chip) {
+-				dev_warn(dev, "cannot find GPIO chip %s\n",
+-					 p->chip_label);
+-				continue;
+-			}
++		/* If the lookup entry has a con_id, require exact match */
++		if (p->con_id && (!con_id || strcmp(p->con_id, con_id)))
++			continue;
+ 
+-			if (chip->ngpio <= p->chip_hwnum) {
+-				dev_warn(dev, "GPIO chip %s has %d GPIOs\n",
+-					 chip->label, chip->ngpio);
+-				continue;
+-			}
++		chip = find_chip_by_name(p->chip_label);
+ 
+-			desc = gpio_to_desc(chip->base + p->chip_hwnum);
+-			*flags = p->flags;
++		if (!chip) {
++			dev_warn(dev, "cannot find GPIO chip %s\n",
++				 p->chip_label);
++			continue;
++		}
+ 
+-			if (match != 3)
+-				best = match;
+-			else
+-				break;
++		if (chip->ngpio <= p->chip_hwnum) {
++			dev_warn(dev, "GPIO chip %s has %d GPIOs\n",
++				 chip->label, chip->ngpio);
++			continue;
+ 		}
+-	}
+ 
+-	mutex_unlock(&gpio_lookup_lock);
++		desc = gpiochip_offset_to_desc(chip, p->chip_hwnum);
++		*flags = p->flags;
++	}
+ 
+ 	return desc;
+ }
+ 
+ /**
+  * gpio_get - obtain a GPIO for a given GPIO function
+- * @dev:	GPIO consumer
++ * @dev:	GPIO consumer, can be NULL for system-global GPIOs
+  * @con_id:	function within the GPIO consumer
+  *
+  * Return the GPIO descriptor corresponding to the function con_id of device
+diff --git a/include/linux/gpio/driver.h b/include/linux/gpio/driver.h
+index 3ea2cf6b0e6c..7193f43d0764 100644
+--- a/include/linux/gpio/driver.h
++++ b/include/linux/gpio/driver.h
+@@ -140,7 +140,6 @@ enum gpio_lookup_flags {
+  * platform data.
+  */
+ struct gpiod_lookup {
+-	struct list_head list;
+ 	/*
+ 	 * name of the chip the GPIO belongs to
+ 	 */
+@@ -150,10 +149,6 @@ struct gpiod_lookup {
+ 	 */
+ 	u16 chip_hwnum;
+ 	/*
+-	 * name of device that can claim this GPIO
+-	 */
+-	const char *dev_id;
+-	/*
+ 	 * name of the GPIO from the device's point of view
+ 	 */
+ 	const char *con_id;
+@@ -167,28 +162,32 @@ struct gpiod_lookup {
+ 	enum gpio_lookup_flags flags;
+ };
+ 
++struct gpiod_lookup_table {
++	struct list_head list;
++	const char *dev_id;
++	struct gpiod_lookup table[];
++};
++
+ /*
+  * Simple definition of a single GPIO under a con_id
+  */
+-#define GPIO_LOOKUP(_chip_label, _chip_hwnum, _dev_id, _con_id, _flags) \
+-	GPIO_LOOKUP_IDX(_chip_label, _chip_hwnum, _dev_id, _con_id, 0, _flags)
++#define GPIO_LOOKUP(_chip_label, _chip_hwnum, _con_id, _flags) \
++	GPIO_LOOKUP_IDX(_chip_label, _chip_hwnum, _con_id, 0, _flags)
+ 
+ /*
+  * Use this macro if you need to have several GPIOs under the same con_id.
+  * Each GPIO needs to use a different index and can be accessed using
+  * gpiod_get_index()
+  */
+-#define GPIO_LOOKUP_IDX(_chip_label, _chip_hwnum, _dev_id, _con_id, _idx, \
+-			_flags)                                           \
++#define GPIO_LOOKUP_IDX(_chip_label, _chip_hwnum, _con_id, _idx, _flags)  \
+ {                                                                         \
+ 	.chip_label = _chip_label,                                        \
+ 	.chip_hwnum = _chip_hwnum,                                        \
+-	.dev_id = _dev_id,                                                \
+ 	.con_id = _con_id,                                                \
+ 	.idx = _idx,                                                      \
+ 	.flags = _flags,                                                  \
+ }
+ 
+-void gpiod_add_table(struct gpiod_lookup *table, size_t size);
++void gpiod_add_lookup_table(struct gpiod_lookup_table *table);
+ 
+ #endif
+-- 
+1.8.4.2
 
