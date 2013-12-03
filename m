@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab3LCS31 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 13:29:27 -0500
-Received: from smtprelay0161.hostedemail.com ([216.40.44.161]:45667 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753561Ab3LCS3Z (ORCPT
+	id S1754352Ab3LCS3d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 13:29:33 -0500
+Received: from 9.mo1.mail-out.ovh.net ([178.32.108.172]:54465 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753667Ab3LCS32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 13:29:25 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:69:355:379:541:800:960:966:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2194:2196:2199:2200:2393:2559:2562:2693:2716:2737:2828:2901:3138:3139:3140:3141:3142:3353:3865:3866:3867:3872:3874:4225:4385:4419:5007:7652:9592:10004:10400:10481:10848:11026:11473:11658:11914:12043:12438:12517:12519:12555:12683:13141:13230:19900,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: birds51_34980db914b1c
-X-Filterd-Recvd-Size: 3024
-Message-ID: <1386095360.15309.29.camel@joe-AO722>
-Subject: [PATCH] mac80211: rx: Neaten ieee80211_deliver_skb, remove
- compare_ether_addr
-From: Joe Perches <joe@perches.com>
-To: "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 03 Dec 2013 10:29:20 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Dec 2013 13:29:28 -0500
+X-Greylist: delayed 15673 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Dec 2013 13:29:28 EST
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Douglas Gilbert <dgilbert@interlog.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Grant Likely <grant.likely@linaro.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+Subject: [PATCH v2 0/4] usb: ohci-at91: various fixes and improvements
+Date: Tue,  3 Dec 2013 18:51:52 +0100
+Message-Id: <1386093116-26387-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Ovh-Tracer-Id: 2004101834387060991
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the unnecessary duplicate test of "if (skb) {"
-when !CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS.
+Hello,
 
-Remove now unnecessary __maybe_unused, neaten comment
-Remove unnecessary parenthesis around align cast.
-Substitute reference to deprecated compare_ether_addr
-with ether_addr_equal.
+This patch series fixes a bug detected in 3.13-rc1 caused by a wrong
+assumption on platform device resources order in the platform device
+resource table.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- net/mac80211/rx.c | 33 +++++++++++++++------------------
- 1 file changed, 15 insertions(+), 18 deletions(-)
+It also move the different driver resources (clks and iomem) retrieval
+to the device managed versions (devm_ functions).
 
-diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
-index caecef8..b178c8f 100644
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -1937,20 +1937,17 @@ ieee80211_deliver_skb(struct ieee80211_rx_data *rx)
- 		}
- 	}
- 
--	if (skb) {
--		int align __maybe_unused;
--
- #ifndef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
--		/*
--		 * 'align' will only take the values 0 or 2 here
--		 * since all frames are required to be aligned
--		 * to 2-byte boundaries when being passed to
--		 * mac80211; the code here works just as well if
--		 * that isn't true, but mac80211 assumes it can
--		 * access fields as 2-byte aligned (e.g. for
--		 * compare_ether_addr)
-+	if (skb) {
-+		/* 'align' will only take the values 0 or 2 here since all
-+		 * frames are required to be aligned to 2-byte boundaries
-+		 * when being passed to mac80211; the code here works just
-+		 * as well if that isn't true, but mac80211 assumes it can
-+		 * access fields as 2-byte aligned (e.g. for ether_addr_equal)
- 		 */
--		align = ((unsigned long)(skb->data + sizeof(struct ethhdr))) & 3;
-+		int align;
-+
-+		align = (unsigned long)(skb->data + sizeof(struct ethhdr)) & 3;
- 		if (align) {
- 			if (WARN_ON(skb_headroom(skb) < 3)) {
- 				dev_kfree_skb(skb);
-@@ -1963,14 +1960,14 @@ ieee80211_deliver_skb(struct ieee80211_rx_data *rx)
- 				skb_set_tail_pointer(skb, len);
- 			}
- 		}
-+	}
- #endif
- 
--		if (skb) {
--			/* deliver to local stack */
--			skb->protocol = eth_type_trans(skb, dev);
--			memset(skb->cb, 0, sizeof(skb->cb));
--			netif_receive_skb(skb);
--		}
-+	if (skb) {
-+		/* deliver to local stack */
-+		skb->protocol = eth_type_trans(skb, dev);
-+		memset(skb->cb, 0, sizeof(skb->cb));
-+		netif_receive_skb(skb);
- 	}
- 
- 	if (xmit_skb) {
+Best Regards,
 
+Boris
+
+Changes since v1:
+ - split PATCH 3 in 2 different patches: one to remove references to
+   &pdev->dev, the other to make use of devm_clk_get
+ - replace forgotten &pdev->dev references in usb_hcd_at91_probe
+
+Boris BREZILLON (4):
+  usb: ohci-at91: fix irq and iomem resource retrieval
+  usb: ohci-at91: replace request_mem_region + ioremap by
+    devm_request_and_ioremap
+  usb: ohci-at91: use dev variable instead of &pdev->dev
+  usb: ohci-at91: use device managed clk retrieval
+
+ drivers/usb/host/ohci-at91.c |   83 ++++++++++++++----------------------------
+ 1 file changed, 28 insertions(+), 55 deletions(-)
+
+-- 
+1.7.9.5
 
