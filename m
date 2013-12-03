@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513Ab3LCLBt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 06:01:49 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:57388 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461Ab3LCLBn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 06:01:43 -0500
-Date: Tue, 3 Dec 2013 11:01:38 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: micky <micky_ching@realsil.com.cn>
-Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        wei_wang@realsil.com.cn, rogerable@realtek.com
-Subject: Re: [PATCH v2 3/3] mfd: rtsx: prevent 'used uninitialised' warnings
-Message-ID: <20131203110138.GN11828@lee--X1>
-References: <cover.1386051860.git.micky_ching@realsil.com.cn>
- <932dcc03570ceb86316272d4eba7f4207d001def.1386051860.git.micky_ching@realsil.com.cn>
- <20131203104003.GJ11828@lee--X1>
- <529DB86D.3010002@realsil.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <529DB86D.3010002@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752969Ab3LCLCw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 06:02:52 -0500
+Received: from mga02.intel.com ([134.134.136.20]:43479 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751181Ab3LCLCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 06:02:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,817,1378882800"; 
+   d="scan'208";a="437669967"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next] mei: add 9 series PCH mei device ids
+Date: Tue,  3 Dec 2013 13:01:29 +0200
+Message-Id: <1386068489-19511-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >This should contain the author's name.
-> >
-> >You should use:
-> >    `git rebase -i` /* Use edit option */
-> >then
-> >   `git commit --amend --author="First Last <first.last@email.com>"
-> >
-> >To apply it.
-> >
-> Sorry Lee, I will modify it. Is the order important? or only your
-> name is need here?
-> >>drivers/mfd/rtl8411.c: In function 'rtl8411_fetch_vendor_settings':
-> >>drivers/mfd/rtl8411.c:58:7: warning: 'reg1' is used uninitialized in this function [-Wuninitialized]
-> >>drivers/mfd/rtl8411.c: In function 'rtl8411b_fetch_vendor_settings':
-> >>drivers/mfd/rtl8411.c:79:7: warning: 'reg' is used uninitialized in this function [-Wuninitialized]
-> >>drivers/mfd/rtl8411.c: In function 'rtl8411_fetch_vendor_settings':
-> >>drivers/mfd/rtl8411.c:69:26: warning: 'reg3' may be used uninitialized in this function [-Wuninitialized]
-> >>
-> >>Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> >>Tested-by: Micky Ching <micky_ching@realsil.com.cn>
-> >I know this is a bit of a strange situation, but whenever you sent
-> >patches to the MLs,  you need to sign it off yourself too.
+And Lynx Point H Refresh and Wildcat Point LP
+device ids.
 
-Actually, you don't need to worry now. I already applied the patch
-with the correct author applied with your Ack.
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/hw-me-regs.h | 4 ++++
+ drivers/misc/mei/pci-me.c     | 4 +++-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
-> Did you mean I need write like this ?
-> 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> Tested-by: Micky Ching <micky_ching@realsil.com.cn>
-> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
-
-As I say, this situation is a bit different, but in the normal case,
-yes. Then the Maintainer will probably remove some and chop them
-around a little to his/her liking.
-
-FYI: The top SoB is usually the author, the subsequent ones are
-usually gatekeepers of upstream repos. Anyone can take a patch and
-submit it though, so in the case where the submitter isn't the author,
-the second SoB is usually the patch submitter.
-
+diff --git a/drivers/misc/mei/hw-me-regs.h b/drivers/misc/mei/hw-me-regs.h
+index 6c0fde5..f83bc80 100644
+--- a/drivers/misc/mei/hw-me-regs.h
++++ b/drivers/misc/mei/hw-me-regs.h
+@@ -110,8 +110,12 @@
+ #define MEI_DEV_ID_PPT_3      0x1DBA  /* Panther Point */
+ 
+ #define MEI_DEV_ID_LPT        0x8C3A  /* Lynx Point */
++#define MEI_DEV_ID_LPT_H      0x8C3A  /* Lynx Point H */
+ #define MEI_DEV_ID_LPT_W      0x8D3A  /* Lynx Point - Wellsburg */
+ #define MEI_DEV_ID_LPT_LP     0x9C3A  /* Lynx Point LP */
++#define MEI_DEV_ID_LPT_HR     0x8CBA  /* Lynx Point H Refresh */
++
++#define MEI_DEV_ID_WPT_LP     0x9CBA  /* Wildcat Point LP */
+ /*
+  * MEI HW Section
+  */
+diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
+index 3bfae38..7dfaa32 100644
+--- a/drivers/misc/mei/pci-me.c
++++ b/drivers/misc/mei/pci-me.c
+@@ -76,9 +76,11 @@ static DEFINE_PCI_DEVICE_TABLE(mei_me_pci_tbl) = {
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_1)},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_2)},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_3)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT)},
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_H)},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_W)},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_LP)},
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_HR)},
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_WPT_LP)},
+ 
+ 	/* required last entry */
+ 	{0, }
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.3.1
+
