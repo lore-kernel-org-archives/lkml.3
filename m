@@ -1,120 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab3LCQl4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 11:41:56 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:59528 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754083Ab3LCQlv (ORCPT
+	id S1754333Ab3LCQnN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 11:43:13 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:58041 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754036Ab3LCQnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 11:41:51 -0500
-From: Hanjun Guo <hanjun.guo@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Jon Masters <jonathan@jonmasters.org>, patches@linaro.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        linaro-acpi@lists.linaro.org, Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [RFC part3 PATCH 0/2] Using ACPI GTDT table to initialize arch timer
-Date: Wed,  4 Dec 2013 00:41:29 +0800
-Message-Id: <1386088891-2917-1-git-send-email-hanjun.guo@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 3 Dec 2013 11:43:09 -0500
+Date: Tue, 3 Dec 2013 17:43:54 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: WARNING at intel_display.c:9948 during suspend
+Message-ID: <20131203164354.GH27344@phenom.ffwll.local>
+Mail-Followup-To: Jiri Kosina <jkosina@suse.cz>,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <alpine.LNX.2.00.1312022324260.24931@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1312022324260.24931@pobox.suse.cz>
+X-Operating-System: Linux phenom 3.12.0+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the last part of patch set for core of ARM64 ACPI, and is based
-on the patch set part2 "Using ACPI MADT table to initialise SMP and GIC".
+On Mon, Dec 02, 2013 at 11:27:50PM +0100, Jiri Kosina wrote:
+> I am getting this during suspend with latest Linus' git (HEAD == af91706). 
+> 
+>  ------------[ cut here ]------------
+>  WARNING: CPU: 0 PID: 5397 at drivers/gpu/drm/i915/intel_display.c:9948 intel_get_pipe_from_connector+0x4a/0x50 [i915]()
+>  Modules linked in: ctr ccm af_packet tun iptable_mangle xt_DSCP nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables xt_tcpudp nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack iptable_filter ip_tables x_tables rfcomm cpufreq_conservative bnep cpufreq_userspace cpufreq_powersave iTCO_wdt iTCO_vendor_support kvm_intel kvm snd_hda_codec_conexant iwldvm mac80211 thinkpad_acpi snd_seq sg iwlwifi snd_seq_device snd_hda_intel snd_hda_codec snd_hwdep btusb bluetooth cfg80211 pcspkr snd_pcm i2c_i801 lpc_ich mfd_core rfkill snd_timer ehci_pci snd_page_alloc e1000e snd ptp pps_core wmi battery soundcore ac tpm_tis tpm acpi_cpufreq autofs4 uhci_hcd ehci_hcd i915 usbcore usb_common drm_kms_helper drm i2c_algo_bit video button edd fan processor ata_generic thermal thermal_sys
+>  CPU: 0 PID: 5397 Comm: kworker/u8:3 Not tainted 3.13.0-rc2-00001-gaf91706 #1
+>  Hardware name: LENOVO 7470BN2/7470BN2, BIOS 6DET38WW (2.02 ) 12/19/2008
+>  Workqueue: events_unbound async_run_entry_fn
+>   00000000000026dc ffff8800229c1ab8 ffffffff8158f73b ffff8800229c1af8
+>   ffffffff8104d527 ffff8800229c1b08 ffff880035f8b4c0 ffff880079558000
+>   ffff880037cbc000 ffffffffffffffff ffff880035f8b4c0 ffff8800229c1b08
+>  Call Trace:
+>   [<ffffffff8158f73b>] dump_stack+0x72/0x87
+>   [<ffffffff8104d527>] warn_slowpath_common+0x87/0xb0
+>   [<ffffffff8104d565>] warn_slowpath_null+0x15/0x20
+>   [<ffffffffa0173cda>] intel_get_pipe_from_connector+0x4a/0x50 [i915]
+>   [<ffffffffa019c32b>] intel_panel_disable_backlight+0x2b/0x1a0 [i915]
+>   [<ffffffffa0186cce>] intel_disable_lvds+0x4e/0x190 [i915]
+>   [<ffffffffa017ca49>] i9xx_crtc_disable+0x2a9/0x3b0 [i915]
+>   [<ffffffffa013d0da>] i915_drm_freeze+0xda/0x160 [i915]
+>   [<ffffffffa013d1a8>] i915_pm_freeze+0x28/0x50 [i915]
+>   [<ffffffff813209f8>] pci_pm_freeze+0x58/0xd0
+>   [<ffffffff813209a0>] ? pci_pm_poweroff+0xf0/0xf0
+>   [<ffffffff813e932f>] dpm_run_callback+0x4f/0xa0
+>   [<ffffffff813e958f>] __device_suspend+0xef/0x280
+>   [<ffffffff813ead6a>] async_suspend+0x1a/0xa0
+>   [<ffffffff81078765>] async_run_entry_fn+0x45/0x140
+>   [<ffffffff8106b194>] process_one_work+0x204/0x470
+>   [<ffffffff8106b0e3>] ? process_one_work+0x153/0x470
+>   [<ffffffff81591940>] ? __mutex_unlock_slowpath+0xf0/0x180
+>   [<ffffffff8106c596>] worker_thread+0x126/0x3b0
+>   [<ffffffff8109b0ed>] ? trace_hardirqs_on+0xd/0x10
+>   [<ffffffff8106c470>] ? manage_workers+0x1a0/0x1a0
+>   [<ffffffff810726ed>] kthread+0xed/0x100
+>   [<ffffffff81072600>] ? __init_kthread_worker+0x70/0x70
+>   [<ffffffff8159d8bc>] ret_from_fork+0x7c/0xb0
+>   [<ffffffff81072600>] ? __init_kthread_worker+0x70/0x70
+>  ---[ end trace 8a2e5e8955c55372 ]---
+>  PM: freeze of devices complete after 407.505 msecs
+>  PM: late freeze of devices complete after 2.719 msecs
+>  PM: noirq freeze of devices complete after 3.789 msecs
+>  Disabling non-boot CPUs ...
+>  kvm: disabling virtualization on CPU1
+>  smpboot: CPU 1 is now offline
+>  PM: Creating hibernation image:
+>  PM: Need to copy 164506 pages
 
-ACPI GTDT (Generic Timer Description Table) is used for ARM/ARM64 only,
-and contains the information for arch timer initialisation.
-
-This patch trys to convert the arch timer to ACPI using GTDT. 
-
-After this patch set was posted, we already finished the SMP, GIC and
-arch timer initialisation, which all are essential for ARM64 core system
-running, then we will focus on converting the device drivers to ACPI.
-
-Here is the GTDT ASL code I used:
----
- platforms/foundation-v8.acpi/gtdt.asl |   35 ++++++++++++++++++++++-----------
- 1 file changed, 23 insertions(+), 12 deletions(-)
-
-diff --git a/platforms/foundation-v8.acpi/gtdt.asl b/platforms/foundation-v8.acpi/gtdt.asl
-index 18c821a..714d61c 100644
---- a/platforms/foundation-v8.acpi/gtdt.asl
-+++ b/platforms/foundation-v8.acpi/gtdt.asl
-@@ -1,5 +1,6 @@
- /*
-  * Copyright (c) 2013, Al Stone <al.stone@linaro.org>
-+ *                     Hanjun Guo <hanjun.guo@linaro.org>
-  * 
-  * [GTDT] Generic Timer Description Table
-  * Format: [ByteLength]  FieldName : HexFieldValue
-@@ -21,22 +22,32 @@
- [0004]              Flags (decoded below) : 00000001
-                            Memory Present : 1
- 
--[0004]               Secure PL1 Interrupt : 00000000
--[0004]         SPL1 Flags (decoded below) : 00000000
--                             Trigger Mode : 0
-+/* In Foundation model's dts file, the last cell of interrupts
-+ * is 0xff01, it means its cpu mask is FF, and trigger type
-+ * and flag is 1 = low-to-high edge triggered.
-+ * 
-+ * so in ACPI the Trigger Mode is 1 - Edge triggered, and 
-+ * Polarity is 0 - Active high as ACPI spec describled.
-+ *
-+ * using direct mapping for hwirqs, it means that we using
-+ * ID [16, 31] for PPI, not [0, 15] used in FDT.
-+ */
-+[0004]               Secure PL1 Interrupt : 0000001d
-+[0004]         SPL1 Flags (decoded below) : 00000001
-+                             Trigger Mode : 1
-                                  Polarity : 0
- 
--[0004]           Non-Secure PL1 Interrupt : 00000000
--[0004]        NSPL1 Flags (decoded below) : 00000000
--                             Trigger Mode : 0
-+[0004]           Non-Secure PL1 Interrupt : 0000001e
-+[0004]        NSPL1 Flags (decoded below) : 00000001
-+                             Trigger Mode : 1
-                                  Polarity : 0
- 
--[0004]            Virtual Timer Interrupt : 00000000
--[0004]           VT Flags (decoded below) : 00000000
--                             Trigger Mode : 0
-+[0004]            Virtual Timer Interrupt : 0000001b
-+[0004]           VT Flags (decoded below) : 00000001
-+                             Trigger Mode : 1
-                                  Polarity : 0
- 
--[0004]           Non-Secure PL2 Interrupt : 00000000
--[0004]        NSPL2 Flags (decoded below) : 00000000
--                             Trigger Mode : 0
-+[0004]           Non-Secure PL2 Interrupt : 0000001a
-+[0004]        NSPL2 Flags (decoded below) : 00000001
-+                             Trigger Mode : 1
-                                  Polarity : 0
-
-Hanjun Guo (2):
-  clocksource / arch_timer: Use ACPI GTDT table to initialize arch
-    timer
-  ARM64 / clocksource: Use arch_timer_acpi_init()
-
- arch/arm64/kernel/time.c             |    4 ++
- drivers/clocksource/arm_arch_timer.c |  129 ++++++++++++++++++++++++++++++----
- include/clocksource/arm_arch_timer.h |    7 +-
- 3 files changed, 124 insertions(+), 16 deletions(-)
-
+Patch is in drm-intel-fixes and pull request is already sent off.
+-Daniel
 -- 
-1.7.9.5
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
