@@ -1,44 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573Ab3LCNd5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 08:33:57 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:56347 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753442Ab3LCNdy (ORCPT
+	id S1753798Ab3LCNe7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 08:34:59 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43905 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753513Ab3LCNe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 08:33:54 -0500
+	Tue, 3 Dec 2013 08:34:57 -0500
+Date: Tue, 3 Dec 2013 13:34:12 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Schichan <nschichan@freebox.fr>
+Cc: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Leigh Brown <leigh@solinno.co.uk>,
+        Florian Fainelli <florian@openwrt.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH] net: mvmdio: fix wait_event_timeout() being called
+	with a 1 jiffy timeout.
+Message-ID: <20131203133412.GU16735@n2100.arm.linux.org.uk>
+References: <20131203122346.GD29282@titan.lakedaemon.net> <1386076560-1886-1-git-send-email-nschichan@freebox.fr>
 MIME-Version: 1.0
-X-Originating-IP: [173.161.199.49]
-In-Reply-To: <CABawtvNbkeXdQiBYD9Q+oRijw6VnT=FHdiFkjvFfh8Uw8KvO_A@mail.gmail.com>
-References: <CAFi4uRvcUPvKvaeO5gZnjhMCFS+08MhEixJw-iN0AWbeBfiHvQ@mail.gmail.com>
- <CAErSpo7rbf7dwSZ12uoVXaf6HoRNDn0Pxxy-Vo_6F9kk+p07Qg@mail.gmail.com> <CABawtvNbkeXdQiBYD9Q+oRijw6VnT=FHdiFkjvFfh8Uw8KvO_A@mail.gmail.com>
-From: Nick Pegg <nick@nickpegg.com>
-Date: Tue, 3 Dec 2013 08:33:34 -0500
-Message-ID: <CAFi4uRsuPUjxAOWuMkeBYd1fmT_CQdVdeffVRN1yxPVRcWuALA@mail.gmail.com>
-Subject: Re: NETDEV WATCHDOG: eth0 (e1000e): transmit queue 0 timed out
-To: Ethan Zhao <ethan.kernel@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        Jin Feng <joe.jin@oracle.com>, konrad.wilk@oracle.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386076560-1886-1-git-send-email-nschichan@freebox.fr>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 2, 2013 at 10:51 PM, Ethan Zhao <ethan.kernel@gmail.com> wrote:
-> Bjorn,
->    Seems not the same bug as  http://sourceforge.net/p/e1000/bugs/367/
-> ,  Nick is not running his kernel on bare metal, per the error log,
-> he runs his kernel as HVM DomU guest or Dom0 on XEN ?  so just a check
-> of NULL will not fix that.
->
+On Tue, Dec 03, 2013 at 02:16:00PM +0100, Nicolas Schichan wrote:
+> If a timer interrupt kicks right after the wait_event_timeout() call,
+> we may endup a reporting timeout before the timeout really occured.
 
-Sorry, I neglected to say in my original email that the kernel is
-running as a Xen Dom0. Per Todd's request, I've opened a bug report on
-sourceforge and will follow up with this issue there:
-https://sourceforge.net/p/e1000/bugs/385/
-
-Thanks,
-Nick
+Please see my reply to Jason Cooper about this in the thread
+"Spurious timeouts in mvmdio".
