@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753670Ab3LCLFg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 06:05:36 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:55861 "EHLO SMTP.CITRIX.COM"
+	id S1753722Ab3LCLHO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 06:07:14 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:34207 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752879Ab3LCLFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 06:05:32 -0500
+	id S1752318Ab3LCLHL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 06:07:11 -0500
 X-IronPort-AV: E=Sophos;i="4.93,817,1378857600"; 
-   d="scan'208";a="80039526"
-Message-ID: <1386068729.13256.8.camel@kazak.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH RFC] xen-block: correctly define structures
- in public headers
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Roger Pau Monne <roger.pau@citrix.com>
-CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+   d="scan'208";a="80040094"
+From: Paul Durrant <Paul.Durrant@citrix.com>
+To: David Vrabel <david.vrabel@citrix.com>,
+        Roger Pau Monne <roger.pau@citrix.com>
+CC: Stefano Stabellini <Stefano.Stabellini@citrix.com>,
         Julien Grall <julien.grall@linaro.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>
-Date: Tue, 3 Dec 2013 11:05:29 +0000
-In-Reply-To: <1386068254-1413-1-git-send-email-roger.pau@citrix.com>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: RE: [Xen-devel] [PATCH RFC] xen-block: correctly define structures
+ in public headers
+Thread-Topic: [Xen-devel] [PATCH RFC] xen-block: correctly define structures
+ in public headers
+Thread-Index: AQHO8BdKh9Yy/iIgwkqwz56/wm8SE5pCT1xw
+Date: Tue, 3 Dec 2013 11:07:08 +0000
+Message-ID: <9AAE0902D5BC7E449B7C8E4E778ABCD019DD6B@AMSPEX01CL01.citrite.net>
 References: <1386068254-1413-1-git-send-email-roger.pau@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+ <529DBA07.6090108@citrix.com>
+In-Reply-To: <529DBA07.6090108@citrix.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.80.2.29]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA1
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-03 at 11:57 +0100, Roger Pau Monne wrote:
-> Using __packed__ on the public interface is not correct, this
-> structures should be compiled using the native ABI, and __packed__
-> should only be used in the backend counterpart of those structures
-> (which needs to handle different ABIs).
+> -----Original Message-----
+> From: xen-devel-bounces@lists.xen.org [mailto:xen-devel-
+> bounces@lists.xen.org] On Behalf Of David Vrabel
+> Sent: 03 December 2013 11:01
+> To: Roger Pau Monne
+> Cc: Stefano Stabellini; Julien Grall; linux-kernel@vger.kernel.org; xen-
+> devel@lists.xenproject.org; Boris Ostrovsky
+> Subject: Re: [Xen-devel] [PATCH RFC] xen-block: correctly define structures
+> in public headers
 > 
-> This was even worse in the ARM case, where the Linux kernel was
-> incorrectly using the X86_32 protocol ABI. This patch fixes it, but
-> also breaks compatibility, so an ARM DomU kernel compiled with
-> this patch will fail to communicate with PV disk devices unless the
-> Dom0 also has this patch.
-
-This is acceptable IMHO, the ARM ABI is clearly defined and previous
-kernels were simply buggy. The fact that front and backend were
-equivalently buggy and so it happened to work is not an excuse.
-
-> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-> Reported-by: Julien Grall <julien.grall@linaro.org>
-> Cc: Julien Grall <julien.grall@linaro.org>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Cc: David Vrabel <david.vrabel@citrix.com>
-> Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  include/xen/interface/io/blkif.h |   28 +++++++---------------------
->  1 files changed, 7 insertions(+), 21 deletions(-)
+> On 03/12/13 10:57, Roger Pau Monne wrote:
+> > Using __packed__ on the public interface is not correct, this
+> > structures should be compiled using the native ABI, and __packed__
+> > should only be used in the backend counterpart of those structures
+> > (which needs to handle different ABIs).
+> >
+> > This was even worse in the ARM case, where the Linux kernel was
+> > incorrectly using the X86_32 protocol ABI. This patch fixes it, but
+> > also breaks compatibility, so an ARM DomU kernel compiled with
+> > this patch will fail to communicate with PV disk devices unless the
+> > Dom0 also has this patch.
 > 
-> diff --git a/include/xen/interface/io/blkif.h b/include/xen/interface/io/blkif.h
-> index 65e1209..002ea22 100644
-> --- a/include/xen/interface/io/blkif.h
-> +++ b/include/xen/interface/io/blkif.h
-> @@ -141,14 +141,11 @@ struct blkif_request_segment_aligned {
->  	/* @last_sect: last sector in frame to transfer (inclusive).     */
->  	uint8_t     first_sect, last_sect;
->  	uint16_t    _pad; /* padding to make it 8 bytes, so it's cache-aligned */
-> -} __attribute__((__packed__));
-> +};
->  
->  struct blkif_request_rw {
->  	uint8_t        nr_segments;  /* number of segments                   */
->  	blkif_vdev_t   handle;       /* only for read/write requests         */
-> -#ifdef CONFIG_X86_64
-> -	uint32_t       _pad1;	     /* offsetof(blkif_request,u.rw.id) == 8 */
-> -#endif
+> This ABI change needs to be justified.  Why do you think it is
+> acceptable to break existing Linux guests?  Because I don't think it is.
+> 
 
-These padding fields would still serve a purpose even after removing the
-packing, which is to document/clarify where there are holes for various
-architectures. They could either be retained or perhaps replaced by a
-comment?
+Even if they are lying about their ABI?
 
-Ian.
+   Paul
 
+> David
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
