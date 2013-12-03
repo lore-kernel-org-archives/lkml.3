@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab3LCTTa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 14:19:30 -0500
-Received: from fallback3.mail.ru ([94.100.176.58]:47221 "EHLO
-	fallback3.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753548Ab3LCTT2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 14:19:28 -0500
-Message-ID: <529E2E92.4010004@list.ru>
-Date: Tue, 03 Dec 2013 23:18:42 +0400
-From: Stas Sergeev <stsp@list.ru>
+	id S1754636Ab3LCTWG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 14:22:06 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46923 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753466Ab3LCTWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 14:22:03 -0500
+Message-ID: <529E2F0C.8070405@zytor.com>
+Date: Tue, 03 Dec 2013 11:20:44 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Margarita Manterola <margamanterola@gmail.com>,
-        Maximiliano Curia <maxy@gnuservers.com.ar>,
-        Stas Sergeev <stsp@users.sourceforge.net>, Pavel Machek <pavel@ucw.cz>,
-        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Caylan Van Larson <i@caylan.net>
-Subject: Re: Large pastes into readline enabled programs causes breakage from
- v2.6.31 onwards
-References: <5291E92F.7010609@hurleysoftware.com> <1385428582-5577-1-git-send-email-peter@hurleysoftware.com> <529D236E.4020002@hurleysoftware.com> <529D9DCD.5080003@list.ru> <529E0E1F.4010303@hurleysoftware.com>
-In-Reply-To: <529E0E1F.4010303@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Spam: Not detected
-X-Mras: Ok
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>
+CC: Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Jiri Kosina <jkosina@suse.cz>, Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH?] uprobes: change uprobe_write_opcode() to modify the
+ page directly
+References: <1385426236-14960-1-git-send-email-andi@firstfloor.org>	<20131129183558.GA9803@redhat.com>	<20131129195419.GB17656@two.firstfloor.org>	<20131129200532.GA13561@redhat.com>	<alpine.LRH.2.00.1311300023070.9932@twin.jikos.cz>	<CA+55aFxJGidV4=ot0z_Va8+y2QWTDYghTm1Gin84StZ+R1SfXg@mail.gmail.com>	<20131203184909.GA17571@redhat.com> <CA+55aFw3N=iNW2Ej6w7oksX5JDVis7QL=9X9D7JB_tKZhrjsLw@mail.gmail.com>
+In-Reply-To: <CA+55aFw3N=iNW2Ej6w7oksX5JDVis7QL=9X9D7JB_tKZhrjsLw@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-03.12.2013 21:00, Peter Hurley пишет:
-> Any unit test is specifically designed to break the code under test.
-> This unit test does in fact break a possible input: note specifically
-> that the writer is not changing the termios so has no control over
-> the timing of when the input is received.
->
-> Also note that the test is a simulation; the patch will break any
-> input stream under the following conditions:
-> 1. The writer writes an EOF-terminated buffer
-> 2. All the input is received _except_ the EOF; this is strictly
->    timing-related and not controllable.
-> 3. The reader changes the termios from non-canon -> canon.
->
-> At that point the damage is done; the read_flags will indicate
-> 2 EOFs and the 2nd EOF will be interpreted as end-of-file because
-> it will appear to begin on a new line.
-How is this different from the unpatched kernel?
-In the unpatched kernel, if you happen on reader side
-to enable icanon while n_tty received all but VEOF (is this possible at 
-all?),
-then the buffer will be flushed, and the remaining VEOF
-will get you a nice EOF.
-So, in the unpatched kernel you get EOF because the buffer
-gets wiped.
-On patched kernel you get EOF because of 2 consequitive marks
-in read_flags.
-This is intentional, for backward compatibility.
-What is the problem with that, why do you call it a breakage?
-Or am I misreading the scenario you describe?
+On 12/03/2013 11:00 AM, Linus Torvalds wrote:
+> 
+> Yes, on x86, UPROBE_SWBP_INSN_SIZE is a single byte. But quite
+> frankly, on x86, exactly *because* it's a single byte, I don't
+> understand why we don't just write the damn thing with a single
+> "put_user()", and stop with all the idiotic games. No need to
+> invalidate caches, even, because if you overwrite the first byte of an
+> instruction, it all "just works". Either the instruction decoding gets
+> the old one, or it gets the new one. We already rely on that for the
+> kernel bp instruction replacement.
+> 
+> And on non-x86, UPROBE_SWBP_INSN_SIZE is not necessarily 1, so it
+> could cross a page boundary. Yes, many architectures will have
+> alignment constraints, but I don't see this testing it.
+> 
+> Whatever. I think that code is bad, and you should feel bad. But hey,
+> I think it was pretty bad before too.
+> 
+
+I guess it would have to be checked, but I would be *highly* surprised
+if UPROBE_SWBP_INSN_SIZE ever[1] could be anything than the fundamental
+instruction quantum, which means it should never be able to wrap a page,
+but *also* should mean it should be able to just be put_user()'d
+followed by whatever synchronization necessary to make it globally visible.
+
+	-hpa
+
