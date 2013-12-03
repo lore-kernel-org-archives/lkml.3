@@ -1,73 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab3LCKmO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 05:42:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:49582 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752727Ab3LCKmK (ORCPT
+	id S1752904Ab3LCKpP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 05:45:15 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:49398 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752440Ab3LCKpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 05:42:10 -0500
-Date: Tue, 3 Dec 2013 10:42:06 +0000
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Ubuntu kernel team <kernel-team@lists.ubuntu.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] Linux 3.11.y.z extended stable support
-Message-ID: <20131203104206.GA5058@hercules>
-References: <20131202154329.GC1799@hercules.my.domain>
- <CA+5PVA4X+OV3L5oKL1XoPQ4=9pi_wd6MwMaSuqjyy57pAapxxw@mail.gmail.com>
+	Tue, 3 Dec 2013 05:45:12 -0500
+Date: Tue, 3 Dec 2013 10:45:07 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: micky_ching@realsil.com.cn
+Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        wei_wang@realsil.com.cn, rogerable@realtek.com
+Subject: Re: [PATCH v2 2/3] mfd: rtsx: add card reader rtl8402
+Message-ID: <20131203104507.GL11828@lee--X1>
+References: <cover.1386051860.git.micky_ching@realsil.com.cn>
+ <39b168dd315f3b2645d92af29e5ad71789853317.1386051860.git.micky_ching@realsil.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CA+5PVA4X+OV3L5oKL1XoPQ4=9pi_wd6MwMaSuqjyy57pAapxxw@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <39b168dd315f3b2645d92af29e5ad71789853317.1386051860.git.micky_ching@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Josh,
-
-On Mon, Dec 02, 2013 at 02:58:31PM -0500, Josh Boyer wrote:
-> On Mon, Dec 2, 2013 at 10:43 AM, Luis Henriques
-> <luis.henriques@canonical.com> wrote:
-> > Since Ubuntu 13.10 "Saucy Salamander" uses the 3.11 kernel, the Ubuntu
-> > kernel team will pick up stable maintenance where Greg KH left off[1]
-> > with 3.11.10 (thanks a lot, Greg!).
-> >
-> > The Ubuntu kernel team is pleased to announce that we will be
-> > providing extended stable support for the Linux 3.11 kernel until
-> > August 2014 as a third party effort maintained on our infrastructure.
-> >
-> > Our linux-3.11.y{-queue,-review} stable branches will fork from
-> > 3.11.10 and will be published here:
-> >
-> >     git://kernel.ubuntu.com/ubuntu/linux.git
-> >
-> > We will use the same stable request/review workflow and follow the
-> > standard upstream stable kernel rules.  More details are available at
-> > http://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
-> >
-> > We welcome any feedback and contribution to this effort.  We will be
-> > posting the first review cycle patch set in a week or two.
+> From: Micky Ching <micky_ching@realsil.com.cn>
 > 
-> I might have asked this already before, but if I did I've forgotten
-> the answer.  Apologies if so.
+> Add card reader rtl8042, rtl8402 is much like rtl8411, so just add it to
+> rtl8411.c
 > 
-> Why not do this on the kernel.org infrastructure and treat it like all
-> the other kernel.org stable releases?  I'm confused why it needs to be
-> "forked" when it's following the same rules.  It seems like it could
-> just pick up with 3.11.11 and carry on.
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-I would be more than happy to maintain the 3.11 kernel using Greg's
-official stable git repository (e.g., by sending him a pull request).
-However, I believe this has been proposed in the past without
-success.
+I have never signed this patch off.
 
-Anyway, we're still open to change this.  Greg, please let me know if
-you would like to have the 3.11 kernel maintained for some more time,
-or if you rather keep it dead.
+These tags actually 'mean' something. Please don't apply them willy-nilly!
 
-Cheers,
---
-Luis
+> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+> ---
+>  drivers/mfd/rtl8411.c  |   33 +++++++++++++++++++++++++++++++++
+>  drivers/mfd/rtsx_pcr.c |    5 +++++
+>  drivers/mfd/rtsx_pcr.h |    1 +
+>  3 files changed, 39 insertions(+)
+> 
+> diff --git a/drivers/mfd/rtl8411.c b/drivers/mfd/rtl8411.c
+> index c9eab9d..4b377e3 100644
+> --- a/drivers/mfd/rtl8411.c
+> +++ b/drivers/mfd/rtl8411.c
+> @@ -216,6 +216,31 @@ static int rtl8411_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+>  	return rtsx_pci_write_register(pcr, LDO_CTL, mask, val);
+>  }
+>  
+> +static int rtl8402_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+> +{
+> +	u8 mask, val;
+> +	int err;
+> +
+> +	mask = (BPP_REG_TUNED18 << BPP_TUNED18_SHIFT_8402) | BPP_PAD_MASK;
+> +	if (voltage == OUTPUT_3V3) {
+> +		err = rtsx_pci_write_register(pcr,
+> +				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_3v3);
+> +		if (err < 0)
+> +			return err;
+> +		val = (BPP_ASIC_3V3 << BPP_TUNED18_SHIFT_8402) | BPP_PAD_3V3;
+> +	} else if (voltage == OUTPUT_1V8) {
+> +		err = rtsx_pci_write_register(pcr,
+> +				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_1v8);
+> +		if (err < 0)
+> +			return err;
+> +		val = (BPP_ASIC_2V0 << BPP_TUNED18_SHIFT_8402) | BPP_PAD_1V8;
+> +	} else {
+> +		return -EINVAL;
+> +	}
+> +
+> +	return rtsx_pci_write_register(pcr, LDO_CTL, mask, val);
+> +}
+> +
+
+I opposed this on last submission.
+
+Please find a better way to do it.
+
+Ideally, I'd like to see one function for this kind of thing. The
+information required to ensure this is carried out correctly on each
+differing platform can be passed in via a struct instead.
+
+<snip>
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
