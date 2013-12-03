@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587Ab3LCXy5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 18:54:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53951 "EHLO mx2.suse.de"
+	id S1755746Ab3LCXzJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 18:55:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32735 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754844Ab3LCXyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 18:54:55 -0500
-Date: Tue, 3 Dec 2013 23:54:52 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Alex Thorlton <athorlton@sgi.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/15] mm: numa: Serialise parallel get_user_page against
- THP migration
-Message-ID: <20131203235452.GT11295@suse.de>
-References: <1386060721-3794-1-git-send-email-mgorman@suse.de>
- <1386060721-3794-5-git-send-email-mgorman@suse.de>
- <529E6447.4030304@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <529E6447.4030304@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755629Ab3LCXzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 18:55:06 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: axboe@kernel.dk
+Cc: kmo@daterainc.com, dm-devel@redhat.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] dm cache: increment bi_remaining when bi_end_io is restored
+Date: Tue,  3 Dec 2013 18:54:59 -0500
+Message-Id: <1386114899-7766-1-git-send-email-snitzer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 06:07:51PM -0500, Rik van Riel wrote:
-> On 12/03/2013 03:51 AM, Mel Gorman wrote:
-> 
-> > +
-> > +	if (page_count(page) != 2) {
-> > +		set_pmd_at(mm, mmun_start, pmd, orig_entry);
-> > +		flush_tlb_range(vma, mmun_start, mmun_end);
-> 
-> The mmun_start and mmun_end variables are introduced in patch 5.
-> 
+Move the bio->bi_remaining increment into dm_unhook_bio() so the
+overwrite_endio() handler works as expected.
 
-Thanks, fixed now.
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+---
+ drivers/md/dm-cache-target.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
+[Jens: this one would've been needed as a post-merge fix for v3.13 but
+ immutable biovecs fell out.. please apply to your for-3.14/core]
+
+diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
+index bf3a206..7c8dd1f 100644
+--- a/drivers/md/dm-cache-target.c
++++ b/drivers/md/dm-cache-target.c
+@@ -85,6 +85,12 @@ static void dm_unhook_bio(struct dm_hook_info *h, struct bio *bio)
+ {
+ 	bio->bi_end_io = h->bi_end_io;
+ 	bio->bi_private = h->bi_private;
++
++	/*
++	 * Must bump bi_remaining to allow bio to complete with
++	 * restored bi_end_io.
++	 */
++	atomic_inc(&bio->bi_remaining);
+ }
+ 
+ /*----------------------------------------------------------------*/
+@@ -765,12 +771,6 @@ static void writethrough_endio(struct bio *bio, int err)
+ 
+ 	dm_unhook_bio(&pb->hook_info, bio);
+ 
+-	/*
+-	 * Must bump bi_remaining to allow bio to complete with
+-	 * restored bi_end_io.
+-	 */
+-	atomic_inc(&bio->bi_remaining);
+-
+ 	if (err) {
+ 		bio_endio(bio, err);
+ 		return;
 -- 
-Mel Gorman
-SUSE Labs
+1.7.1
+
