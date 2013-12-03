@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab3LCE3X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 23:29:23 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:51838 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753223Ab3LCE3E (ORCPT
+	id S1753871Ab3LCE3V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 23:29:21 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:36090 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753208Ab3LCE3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 23:29:04 -0500
+	Mon, 2 Dec 2013 23:29:03 -0500
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>,
@@ -16,9 +16,9 @@ Cc: Steven Rostedt <rostedt@goodmis.org>,
         Tom Zanussi <tom.zanussi@linux.intel.com>,
         Jovi Zhangwei <jovi.zhangwei@gmail.com>,
         Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH tip 4/5] use BPF in tracing filters
-Date: Mon,  2 Dec 2013 20:28:49 -0800
-Message-Id: <1386044930-15149-5-git-send-email-ast@plumgrid.com>
+Subject: [RFC PATCH tip 3/5] Extended BPF (64-bit BPF) design document
+Date: Mon,  2 Dec 2013 20:28:48 -0800
+Message-Id: <1386044930-15149-4-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
 References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
@@ -26,576 +26,222 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Such filters can be written in C and allow safe read-only access to
-any kernel data structure.
-Like systemtap but with safety guaranteed by kernel.
-
-The user can do:
-cat bpf_program > /sys/kernel/debug/tracing/.../filter
-if tracing event is either static or dynamic via kprobe_events.
-
-The program can be anything as long as bpf_check() can verify its safety.
-For example, the user can create kprobe_event on dst_discard()
-and use logically following code inside BPF filter:
-      skb = (struct sk_buff *)ctx->regs.di;
-      dev = bpf_load_pointer(&skb->dev);
-to access 'struct net_device'
-Since its prototype is 'int dst_discard(struct sk_buff *skb);'
-'skb' pointer is in 'rdi' register on x86_64
-bpf_load_pointer() will try to fetch 'dev' field of 'sk_buff'
-structure and will suppress page-fault if pointer is incorrect.
-
 Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- include/linux/ftrace_event.h       |    3 +
- include/trace/bpf_trace.h          |   27 +++++
- include/trace/ftrace.h             |   14 +++
- kernel/trace/Kconfig               |    1 +
- kernel/trace/Makefile              |    1 +
- kernel/trace/bpf_trace_callbacks.c |  191 ++++++++++++++++++++++++++++++++++++
- kernel/trace/trace.c               |    7 ++
- kernel/trace/trace.h               |   11 ++-
- kernel/trace/trace_events.c        |    9 +-
- kernel/trace/trace_events_filter.c |   61 +++++++++++-
- kernel/trace/trace_kprobe.c        |    6 ++
- 11 files changed, 327 insertions(+), 4 deletions(-)
- create mode 100644 include/trace/bpf_trace.h
- create mode 100644 kernel/trace/bpf_trace_callbacks.c
+ Documentation/bpf_jit.txt |  204 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 204 insertions(+)
+ create mode 100644 Documentation/bpf_jit.txt
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 8c9b7a1..8d4a7a3 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -203,6 +203,7 @@ enum {
- 	TRACE_EVENT_FL_IGNORE_ENABLE_BIT,
- 	TRACE_EVENT_FL_WAS_ENABLED_BIT,
- 	TRACE_EVENT_FL_USE_CALL_FILTER_BIT,
-+	TRACE_EVENT_FL_BPF_BIT,
- };
- 
- /*
-@@ -223,6 +224,7 @@ enum {
- 	TRACE_EVENT_FL_IGNORE_ENABLE	= (1 << TRACE_EVENT_FL_IGNORE_ENABLE_BIT),
- 	TRACE_EVENT_FL_WAS_ENABLED	= (1 << TRACE_EVENT_FL_WAS_ENABLED_BIT),
- 	TRACE_EVENT_FL_USE_CALL_FILTER	= (1 << TRACE_EVENT_FL_USE_CALL_FILTER_BIT),
-+	TRACE_EVENT_FL_BPF		= (1 << TRACE_EVENT_FL_BPF_BIT),
- };
- 
- struct ftrace_event_call {
-@@ -347,6 +349,7 @@ extern int filter_check_discard(struct ftrace_event_file *file, void *rec,
- extern int call_filter_check_discard(struct ftrace_event_call *call, void *rec,
- 				     struct ring_buffer *buffer,
- 				     struct ring_buffer_event *event);
-+extern void filter_call_bpf(struct event_filter *filter, struct pt_regs *regs);
- 
- enum {
- 	FILTER_OTHER = 0,
-diff --git a/include/trace/bpf_trace.h b/include/trace/bpf_trace.h
+diff --git a/Documentation/bpf_jit.txt b/Documentation/bpf_jit.txt
 new file mode 100644
-index 0000000..99d1e4b
+index 0000000..9c70f42
 --- /dev/null
-+++ b/include/trace/bpf_trace.h
-@@ -0,0 +1,27 @@
-+/* Copyright (c) 2011-2013 PLUMgrid, http://plumgrid.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of version 2 of the GNU General Public
-+ * License as published by the Free Software Foundation.
-+ */
-+#ifndef _LINUX_KERNEL_BPF_TRACE_H
-+#define _LINUX_KERNEL_BPF_TRACE_H
++++ b/Documentation/bpf_jit.txt
+@@ -0,0 +1,204 @@
++Subject: extended BPF or 64-bit BPF
 +
-+#include <linux/ptrace.h>
++Q: What is BPF?
++A: Safe dynamically loadable 32-bit program that can access skb->data via
++sk_load_byte/half/word calls or seccomp_data. Can be attached to sockets,
++to netfilter xtables, seccomp. In case of sockets/xtables input is skb.
++In case of seccomp input is struct seccomp_data.
 +
-+struct bpf_context {
-+	struct pt_regs regs;
-+};
++Q: What is extended BPF?
++A: Safe dynamically loadable 64-bit program that can call fixed set
++of kernel functions and takes generic bpf_context as an input.
++BPF program is a glue between kernel functions and bpf_context.
++Different kernel subsystems can define their own set of available functions
++and alter BPF machinery for specific use case.
 +
-+void *bpf_load_pointer(void *unsafe_ptr);
-+long bpf_memcmp(void *unsafe_ptr, void *safe_ptr, long size);
-+void bpf_dump_stack(struct bpf_context *ctx);
-+void bpf_trace_printk(char *fmt, long fmt_size,
-+		      long arg1, long arg2, long arg3);
-+void *bpf_table_lookup(struct bpf_context *ctx, long table_id, const void *key);
-+long bpf_table_update(struct bpf_context *ctx, long table_id, const void *key,
-+		      const void *leaf);
++Example 1:
++when function set is {bpf_load_byte/half/word} and bpf_context=skb
++the extended BPF is equivalent to original BPF (w/o negative offset extensions),
++since any such extended BPF program will only be able to load data from skb
++and interpret it.
 +
-+extern struct bpf_callbacks bpf_trace_cb;
++Example 2:
++when function set is {empty} and bpf_context=seccomp_data,
++the extended BPF is equivalent to original seccomp BPF with simpler programs
++and can immediately take advantage of extended BPF-JIT.
++(original BPF-JIT doesn't work for seccomp)
 +
-+#endif /* _LINUX_KERNEL_BPF_TRACE_H */
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 5c38606..4054393 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -17,6 +17,7 @@
-  */
- 
- #include <linux/ftrace_event.h>
-+#include <linux/kexec.h>
- 
- /*
-  * DECLARE_EVENT_CLASS can be used to add a generic function
-@@ -526,6 +527,11 @@ static inline notrace int ftrace_get_offsets_##call(			\
- #undef DECLARE_EVENT_CLASS
- #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
- 									\
-+static noinline __noclone notrace void					\
-+ftrace_raw_event_save_regs_##call(struct pt_regs *__regs, proto)	\
-+{									\
-+	crash_setup_regs(__regs, NULL);					\
-+}									\
- static notrace void							\
- ftrace_raw_event_##call(void *__data, proto)				\
- {									\
-@@ -543,6 +549,14 @@ ftrace_raw_event_##call(void *__data, proto)				\
- 		     &ftrace_file->flags))				\
- 		return;							\
- 									\
-+	if (unlikely(ftrace_file->flags & FTRACE_EVENT_FL_FILTERED) &&	\
-+	    unlikely(ftrace_file->event_call->flags & TRACE_EVENT_FL_BPF)) { \
-+		struct pt_regs __regs;					\
-+		ftrace_raw_event_save_regs_##call(&__regs, args);	\
-+		filter_call_bpf(ftrace_file->filter, &__regs);		\
-+		return;							\
-+	}								\
-+									\
- 	local_save_flags(irq_flags);					\
- 	pc = preempt_count();						\
- 									\
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index 015f85a..2809cd1 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -80,6 +80,7 @@ config FTRACE_NMI_ENTER
- 
- config EVENT_TRACING
- 	select CONTEXT_SWITCH_TRACER
-+	select BPF64
- 	bool
- 
- config CONTEXT_SWITCH_TRACER
-diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
-index d7e2068..fe90d85 100644
---- a/kernel/trace/Makefile
-+++ b/kernel/trace/Makefile
-@@ -50,6 +50,7 @@ ifeq ($(CONFIG_PERF_EVENTS),y)
- obj-$(CONFIG_EVENT_TRACING) += trace_event_perf.o
- endif
- obj-$(CONFIG_EVENT_TRACING) += trace_events_filter.o
-+obj-$(CONFIG_EVENT_TRACING) += bpf_trace_callbacks.o
- obj-$(CONFIG_KPROBE_EVENT) += trace_kprobe.o
- obj-$(CONFIG_TRACEPOINTS) += power-traces.o
- ifeq ($(CONFIG_PM_RUNTIME),y)
-diff --git a/kernel/trace/bpf_trace_callbacks.c b/kernel/trace/bpf_trace_callbacks.c
-new file mode 100644
-index 0000000..c2afd43
---- /dev/null
-+++ b/kernel/trace/bpf_trace_callbacks.c
-@@ -0,0 +1,191 @@
-+/* Copyright (c) 2011-2013 PLUMgrid, http://plumgrid.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of version 2 of the GNU General Public
-+ * License as published by the Free Software Foundation.
-+ */
-+#include <linux/kernel.h>
-+#include <linux/types.h>
-+#include <linux/slab.h>
-+#include <linux/bpf_jit.h>
-+#include <linux/uaccess.h>
-+#include <trace/bpf_trace.h>
-+#include "trace.h"
++Example 3:
++when function set is {bpf_load_xxx + bpf_table_lookup} and bpf_context=skb
++the extended BPF can be used to implement network analytics in tcpdump.
++Like counting all tcp flows through the dev or filtering for specific
++set of IP addresses.
 +
-+#define MAX_CTX_OFF sizeof(struct bpf_context)
++Example 4:
++when function set is {load_xxx + table_lookup + trace_printk} and
++bpf_context=pt_regs, the extended BPF is used to implement systemtap-like
++tracing filters
 +
-+static const struct bpf_context_access ctx_access[MAX_CTX_OFF] = {
-+#ifdef CONFIG_X86_64
-+	[offsetof(struct bpf_context, regs.di)] = {
-+		FIELD_SIZEOF(struct bpf_context, regs.di),
-+		BPF_READ
-+	},
-+	[offsetof(struct bpf_context, regs.si)] = {
-+		FIELD_SIZEOF(struct bpf_context, regs.si),
-+		BPF_READ
-+	},
-+	[offsetof(struct bpf_context, regs.dx)] = {
-+		FIELD_SIZEOF(struct bpf_context, regs.dx),
-+		BPF_READ
-+	},
-+	[offsetof(struct bpf_context, regs.cx)] = {
-+		FIELD_SIZEOF(struct bpf_context, regs.cx),
-+		BPF_READ
-+	},
-+#endif
-+};
++Extended Instruction Set was designed with these goals:
++- write programs in restricted C and compile into BPF with GCC/LLVM
++- just-in-time map to modern 64-bit CPU with minimal performance overhead
++  over two steps: C -> BPF -> native code
++- guarantee termination and safety of BPF program in kernel
++  with simple algorithm
 +
-+static const struct bpf_context_access *get_context_access(int off)
-+{
-+	if (off >= MAX_CTX_OFF)
-+		return NULL;
-+	return &ctx_access[off];
-+}
++Writing filters in tcpdump syntax or in systemtap language is difficult.
++Same filter done in C is easier to understand.
++GCC/LLVM-bpf backend is optional.
++Extended BPF can be coded with macroses from bpf.h just like original BPF.
 +
-+void *bpf_load_pointer(void *unsafe_ptr)
-+{
-+	void *ptr = NULL;
++Minimal performance overhead is achieved by having one to one mapping
++between BPF insns and native insns, and one to one mapping between BPF
++registers and native registers on 64-bit CPUs
 +
-+	probe_kernel_read(&ptr, unsafe_ptr, sizeof(void *));
-+	return ptr;
-+}
++Extended BPF allows jump forward and backward for two reasons:
++to reduce branch mispredict penalty compiler moves cold basic blocks out of
++fall-through path and to reduce code duplication that would be unavoidable
++if only jump forward was available.
++To guarantee termination simple non-recursive depth-first-search verifies
++that there are no back-edges (no loops in the program), program is a DAG
++with root at the first insn, all branches end at the last RET insn and
++all instructions are reachable.
++(Original BPF actually allows unreachable insns, but that's a bug)
 +
-+long bpf_memcmp(void *unsafe_ptr, void *safe_ptr, long size)
-+{
-+	char buf[64];
-+	int err;
++Original BPF has two registers (A and X) and hidden frame pointer.
++Extended BPF has ten registers and read-only frame pointer.
++Since 64-bit CPUs are passing arguments to the functions via registers
++the number of args from BPF program to in-kernel function is restricted to 5
++and one register is used to accept return value from in-kernel function.
++x86_64 passes first 6 arguments in registers.
++aarch64/sparcv9/mips64 have 7-8 registers for arguments.
++x86_64 has 6 callee saved registers.
++aarch64/sparcv9/mips64 have 11 or more callee saved registers.
 +
-+	if (size < 64) {
-+		err = probe_kernel_read(buf, unsafe_ptr, size);
-+		if (err)
-+			return err;
-+		return memcmp(buf, safe_ptr, size);
-+	}
-+	return -1;
-+}
++Therefore extended BPF calling convention is defined as:
++R0 - return value from in-kernel function
++R1-R5 - arguments from BPF program to in-kernel function
++R6-R9 - callee saved registers that in-kernel function will preserve
++R10 - read-only frame pointer to access stack
 +
-+void bpf_dump_stack(struct bpf_context *ctx)
-+{
-+	unsigned long flags;
++so that all BPF registers map one to one to HW registers on x86_64,aarch64,etc
++and BPF calling convention maps directly to ABIs used by kernel on 64-bit
++architectures.
 +
-+	local_save_flags(flags);
++R0-R5 are scratch registers and BPF program needs spill/fill them if necessary
++across calls.
++Note that there is only one BPF program == one BPF function and it cannot call
++other BPF functions. It can only call predefined in-kernel functions.
 +
-+	__trace_stack_regs(flags, 0, preempt_count(), (struct pt_regs *)ctx);
-+}
++All BPF registers are 64-bit without subregs, which makes JITed x86 code
++less optimal, but matches sparc/mips architectures.
++Adding 32-bit subregs was considered, since JIT can map them to x86 and aarch64
++nicely, but read-modify-write overhead for sparc/mips is not worth the gains.
 +
-+/*
-+ * limited trace_printk()
-+ * only %d %u %p %x conversion specifiers allowed
-+ */
-+void bpf_trace_printk(char *fmt, long fmt_size, long arg1, long arg2, long arg3)
-+{
-+	int fmt_cnt = 0;
-+	int i;
++Original BPF and extended BPF are two operand instructions, which helps
++to do one-to-one mapping between BPF insn and x86 insn during JIT.
 +
-+	/*
-+	 * bpf_check() guarantees that fmt points to bpf program stack and
-+	 * fmt_size bytes of it were initialized by bpf program
-+	 */
-+	if (fmt[fmt_size - 1] != 0)
-+		return;
++Extended BPF doesn't have pre-defined endianness not to favor one
++architecture vs another. Therefore bswap insn was introduced.
++Original BPF doesn't have such insn and does bswap as part of sk_load_word call
++which is often unnecessary if we want to compare the value with the constant.
++Restricted C code might be written differently depending on endianness
++and GCC/LLVM-bpf will take an endianness flag.
 +
-+	for (i = 0; i < fmt_size; i++)
-+		if (fmt[i] == '%') {
-+			if (i + 1 >= fmt_size)
-+				return;
-+			if (fmt[i + 1] != 'p' && fmt[i + 1] != 'd' &&
-+			    fmt[i + 1] != 'u' && fmt[i + 1] != 'x')
-+				return;
-+			fmt_cnt++;
-+		}
-+	if (fmt_cnt > 3)
-+		return;
-+	__trace_printk((unsigned long)__builtin_return_address(3), fmt,
-+		       arg1, arg2, arg3);
-+}
++32-bit architectures run 64-bit extended BPF programs via interpreter
 +
++Q: Why extended BPF is 64-bit? Cannot we live with 32-bit?
++A: On 64-bit architectures, pointers are 64-bit and we want to pass 64-bit
++values in/out kernel functions, so 32-bit BPF registers would require to define
++register-pair ABI, there won't be a direct BPF register to HW register
++mapping and JIT would need to do combine/split/move operations for every
++register in and out of the function, which is complex, bug prone and slow.
++Another reason is counters. To use 64-bit counter BPF program would need to do
++a complex math. Again bug prone and not atomic.
 +
-+static const struct bpf_func_proto *get_func_proto(char *strtab, int id)
-+{
-+	if (!strcmp(strtab + id, "bpf_load_pointer")) {
-+		static const struct bpf_func_proto proto = {RET_INTEGER};
-+		return &proto;
-+	}
-+	if (!strcmp(strtab + id, "bpf_memcmp")) {
-+		static const struct bpf_func_proto proto = {RET_INTEGER,
-+			INVALID_PTR, PTR_TO_STACK_IMM,
-+			CONST_ARG_STACK_IMM_SIZE};
-+		return &proto;
-+	}
-+	if (!strcmp(strtab + id, "bpf_dump_stack")) {
-+		static const struct bpf_func_proto proto = {RET_VOID,
-+			PTR_TO_CTX};
-+		return &proto;
-+	}
-+	if (!strcmp(strtab + id, "bpf_trace_printk")) {
-+		static const struct bpf_func_proto proto = {RET_VOID,
-+			PTR_TO_STACK_IMM, CONST_ARG_STACK_IMM_SIZE};
-+		return &proto;
-+	}
-+	if (!strcmp(strtab + id, "bpf_table_lookup")) {
-+		static const struct bpf_func_proto proto = {
-+			PTR_TO_TABLE_CONDITIONAL, PTR_TO_CTX,
-+			CONST_ARG_TABLE_ID, PTR_TO_STACK_IMM_TABLE_KEY};
-+		return &proto;
-+	}
-+	if (!strcmp(strtab + id, "bpf_table_update")) {
-+		static const struct bpf_func_proto proto = {RET_INTEGER,
-+			PTR_TO_CTX, CONST_ARG_TABLE_ID,
-+			PTR_TO_STACK_IMM_TABLE_KEY,
-+			PTR_TO_STACK_IMM_TABLE_ELEM};
-+		return &proto;
-+	}
-+	return NULL;
-+}
++Q: Original BPF is safe, deterministic and kernel can easily prove that.
++   Does extended BPF keep these properties?
++A: Yes. The safety of the program is determined in two steps.
++First step does depth-first-search to disallow loops and other CFG validation.
++Second step starts from the first insn and descends all possible paths.
++It simulates execution of every insn and observes the state change of
++registers and stack.
++At the start of the program the register R1 contains a pointer to bpf_context
++and has type PTR_TO_CTX. If checker sees an insn that does R2=R1, then R2 has
++now type PTR_TO_CTX as well and can be used on right hand side of expression.
++If R1=PTR_TO_CTX and insn is R2=R1+1, then R2=INVALID_PTR and it is readable.
++If register was never written to, it's not readable.
++After kernel function call, R1-R5 are reset to unreadable and R0 has a return
++type of the function. Since R6-R9 are callee saved, their state is preserved
++across the call.
++load/store instructions are allowed only with registers of valid types, which
++are PTR_TO_CTX, PTR_TO_TABLE, PTR_TO_STACK. They are bounds and alginment
++checked.
 +
-+static void execute_func(char *strtab, int id, u64 *regs)
-+{
-+	regs[R0] = 0;
++bpf_context structure is generic. Its contents are defined by specific use case.
++For seccomp it can be seccomp_data and through get_context_access callback
++BPF checker is customized, so that BPF program can only access certain fields
++of bpf_context with specified size and alignment.
++For example, the following insn:
++  BPF_INSN_LD(BPF_W, R0, R6, 8)
++intends to load word from address R6 + 8 and store it into R0
++If R6=PTR_TO_CTX, then get_context_access callback should let the checker know
++that offset 8 of size 4 bytes can be accessed for reading, otherwise the checker
++will reject the program.
++If R6=PTR_TO_STACK, then access should be aligned and be within stack bounds,
++which are hard coded to [-480, 0]. In this example offset is 8, so it will fail
++verification.
++The checker will allow BPF program to read data from stack only after it wrote
++into it.
++Pointer register spill/fill is tracked as well, since four (R6-R9) callee saved
++registers may not be enough for some programs.
 +
-+	/*
-+	 * strcmp-approach is not efficient.
-+	 * TODO: optimize it for poor archs that don't have JIT yet
-+	 */
-+	if (!strcmp(strtab + id, "bpf_load_pointer")) {
-+		regs[R0] = (u64)bpf_load_pointer((void *)regs[R1]);
-+	} else if (!strcmp(strtab + id, "bpf_memcmp")) {
-+		regs[R0] = (u64)bpf_memcmp((void *)regs[R1], (void *)regs[R2],
-+					   (long)regs[R3]);
-+	} else if (!strcmp(strtab + id, "bpf_dump_stack")) {
-+		bpf_dump_stack((struct bpf_context *)regs[R1]);
-+	} else if (!strcmp(strtab + id, "bpf_trace_printk")) {
-+		bpf_trace_printk((char *)regs[R1], (long)regs[R2],
-+				 (long)regs[R3], (long)regs[R4],
-+				 (long)regs[R5]);
-+	} else {
-+		pr_err_once("trace cannot execute unknown bpf function %d '%s'\n",
-+			    id, strtab + id);
-+	}
-+}
++Allowed function calls are customized via get_func_proto callback.
++For example:
++  u64 bpf_load_byte(struct bpf_context *ctx, u32 offset);
++function will have the following definition:
++  struct bpf_func_proto proto = {RET_INTEGER, PTR_TO_CTX};
++and BPF checker will verify that bpf_load_byte is always called with first
++argument being a valid pointer to bpf_context. After the call BPF register R0
++will be set to readable state, so that BPF program can access it.
 +
-+static void *jit_select_func(char *strtab, int id)
-+{
-+	if (!strcmp(strtab + id, "bpf_load_pointer"))
-+		return bpf_load_pointer;
++One of the useful functions that can be made available to BPF program
++are bpf_table_lookup/bpf_table_update.
++Using them a tracing filter can collect any type of statistics.
 +
-+	if (!strcmp(strtab + id, "bpf_memcmp"))
-+		return bpf_memcmp;
++Therefore extended BPF program consists of instructions and tables.
++From BPF program the table is identified by constant table_id
++and access to a table in C looks like:
++elem = bpf_table_lookup(ctx, table_id, key);
 +
-+	if (!strcmp(strtab + id, "bpf_dump_stack"))
-+		return bpf_dump_stack;
++BPF checker matches 'table_id' against known tables, verifies that 'key' points
++to stack and table->key_size bytes are initialized.
++From there on bpf_table_lookup() is a normal kernel function. It needs to do
++a lookup by whatever means and return either valid pointer to the element
++or NULL. BPF checker will verify that the program accesses the pointer only
++after comparing it to NULL. That's the meaning of PTR_TO_TABLE_CONDITIONAL and
++PTR_TO_TABLE register types in bpf_check.c
 +
-+	if (!strcmp(strtab + id, "bpf_trace_printk"))
-+		return bpf_trace_printk;
++If a kernel subsystem wants to use this BPF framework and decides to implement
++bpf_table_lookup, the checker will guarantee that argument 'ctx' is a valid
++pointer to bpf_context, 'table_id' is valid table_id and table->key_size bytes
++can be read from the pointer 'key'. It's up to implementation to decide how it
++wants to do the lookup and what is the key.
 +
-+	return NULL;
-+}
++Going back to the example BPF insn:
++  BPF_INSN_LD(BPF_W, R0, R6, 8)
++if R6=PTR_TO_TABLE, then offset and size of access must be within
++[0, table->elem_size] which is determined by constant table_id that was passed
++into bpf_table_lookup call prior to this insn.
 +
-+struct bpf_callbacks bpf_trace_cb = {
-+	execute_func, jit_select_func, get_func_proto, get_context_access
-+};
++Just like original, extended BPF is limited to 4096 insns, which means that any
++program will terminate quickly and will call fixed number of kernel functions.
++Earlier implementation of the checker had a precise calculation of worst case
++number of insns, but it was removed to simplify the code, since the worst number
++is always less then number of insns in a program anyway (because it's a DAG).
 +
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 9d20cd9..c052936 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1758,6 +1758,13 @@ void __trace_stack(struct trace_array *tr, unsigned long flags, int skip,
- 	__ftrace_trace_stack(tr->trace_buffer.buffer, flags, skip, pc, NULL);
- }
- 
-+void __trace_stack_regs(unsigned long flags, int skip, int pc,
-+			struct pt_regs *regs)
-+{
-+	__ftrace_trace_stack(global_trace.trace_buffer.buffer, flags, skip,
-+			     pc, regs);
-+}
++Since register/stack state tracking simulates execution of all insns in all
++possible branches, it will explode if not bounded. There are two bounds.
++verifier_state stack is limited to 1k, therefore BPF program cannot have
++more than 1k jump insns.
++Total number of insns to be analyzed is limited to 32k, which means that
++checker will either prove correctness or reject the program in few
++milliseconds on average x86 cpu. Valid programs take microseconds to verify.
 +
- /**
-  * trace_dump_stack - record a stack back trace in the trace buffer
-  * @skip: Number of functions to skip (helper handlers)
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index ea189e0..33d26aff 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -616,6 +616,8 @@ void ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags,
- 
- void __trace_stack(struct trace_array *tr, unsigned long flags, int skip,
- 		   int pc);
-+void __trace_stack_regs(unsigned long flags, int skip, int pc,
-+			struct pt_regs *regs);
- #else
- static inline void ftrace_trace_stack(struct ring_buffer *buffer,
- 				      unsigned long flags, int skip, int pc)
-@@ -637,6 +639,10 @@ static inline void __trace_stack(struct trace_array *tr, unsigned long flags,
- 				 int skip, int pc)
- {
- }
-+static inline void __trace_stack_regs(unsigned long flags, int skip, int pc,
-+				      struct pt_regs *regs)
-+{
-+}
- #endif /* CONFIG_STACKTRACE */
- 
- extern cycle_t ftrace_now(int cpu);
-@@ -936,12 +942,15 @@ struct ftrace_event_field {
- 	int			is_signed;
- };
- 
-+struct bpf_program;
-+
- struct event_filter {
- 	int			n_preds;	/* Number assigned */
- 	int			a_preds;	/* allocated */
- 	struct filter_pred	*preds;
- 	struct filter_pred	*root;
- 	char			*filter_string;
-+	struct bpf_program	*prog;
- };
- 
- struct event_subsystem {
-@@ -1014,7 +1023,7 @@ filter_parse_regex(char *buff, int len, char **search, int *not);
- extern void print_event_filter(struct ftrace_event_file *file,
- 			       struct trace_seq *s);
- extern int apply_event_filter(struct ftrace_event_file *file,
--			      char *filter_string);
-+			      char *filter_string, int filter_len);
- extern int apply_subsystem_event_filter(struct ftrace_subsystem_dir *dir,
- 					char *filter_string);
- extern void print_subsystem_event_filter(struct event_subsystem *system,
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index f919a2e..deed25f 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1041,9 +1041,16 @@ event_filter_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 	mutex_lock(&event_mutex);
- 	file = event_file_data(filp);
- 	if (file)
--		err = apply_event_filter(file, buf);
-+		err = apply_event_filter(file, buf, cnt);
- 	mutex_unlock(&event_mutex);
- 
-+	if (file->event_call->flags & TRACE_EVENT_FL_BPF)
-+		/*
-+		 * allocate per-cpu printk buffers, since BPF program
-+		 * might be calling bpf_trace_printk
-+		 */
-+		trace_printk_init_buffers();
-+
- 	free_page((unsigned long) buf);
- 	if (err < 0)
- 		return err;
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 2468f56..36c7bd6 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -23,6 +23,8 @@
- #include <linux/mutex.h>
- #include <linux/perf_event.h>
- #include <linux/slab.h>
-+#include <linux/bpf_jit.h>
-+#include <trace/bpf_trace.h>
- 
- #include "trace.h"
- #include "trace_output.h"
-@@ -535,6 +537,20 @@ static int filter_match_preds_cb(enum move_type move, struct filter_pred *pred,
- 	return WALK_PRED_DEFAULT;
- }
- 
-+void filter_call_bpf(struct event_filter *filter, struct pt_regs *regs)
-+{
-+	BUG_ON(!filter || !filter->prog);
-+
-+	if (!filter->prog->jit_image) {
-+		pr_warn_once("BPF jit image is not available. Fallback to emulation\n");
-+		bpf_run(filter->prog, (struct bpf_context *)regs);
-+		return;
-+	}
-+
-+	filter->prog->jit_image((struct bpf_context *)regs);
-+}
-+EXPORT_SYMBOL_GPL(filter_call_bpf);
-+
- /* return 1 if event matches, 0 otherwise (discard) */
- int filter_match_preds(struct event_filter *filter, void *rec)
- {
-@@ -794,6 +810,7 @@ static void __free_filter(struct event_filter *filter)
- 	if (!filter)
- 		return;
- 
-+	bpf_free(filter->prog);
- 	__free_preds(filter);
- 	kfree(filter->filter_string);
- 	kfree(filter);
-@@ -1893,6 +1910,37 @@ static int create_filter_start(char *filter_str, bool set_str,
- 	return err;
- }
- 
-+static int create_filter_bpf(char *filter_str, int filter_len,
-+			     struct event_filter **filterp)
-+{
-+	struct event_filter *filter;
-+	int err = 0;
-+
-+	*filterp = NULL;
-+
-+	filter = __alloc_filter();
-+	if (filter)
-+		err = replace_filter_string(filter, "bpf");
-+
-+	if (!filter || err) {
-+		__free_filter(filter);
-+		return -ENOMEM;
-+	}
-+
-+	err = bpf_load_image(filter_str, filter_len, &bpf_trace_cb,
-+			     &filter->prog);
-+
-+	if (err) {
-+		pr_err("failed to load bpf %d\n", err);
-+		__free_filter(filter);
-+		return -EACCES;
-+	}
-+
-+	*filterp = filter;
-+
-+	return err;
-+}
-+
- static void create_filter_finish(struct filter_parse_state *ps)
- {
- 	if (ps) {
-@@ -1973,7 +2021,8 @@ static int create_system_filter(struct event_subsystem *system,
- }
- 
- /* caller must hold event_mutex */
--int apply_event_filter(struct ftrace_event_file *file, char *filter_string)
-+int apply_event_filter(struct ftrace_event_file *file, char *filter_string,
-+		       int filter_len)
- {
- 	struct ftrace_event_call *call = file->event_call;
- 	struct event_filter *filter;
-@@ -1995,7 +2044,15 @@ int apply_event_filter(struct ftrace_event_file *file, char *filter_string)
- 		return 0;
- 	}
- 
--	err = create_filter(call, filter_string, true, &filter);
-+	if (!strcmp(filter_string, "bpf")) {
-+		err = create_filter_bpf(filter_string, filter_len, &filter);
-+		if (!err)
-+			call->flags |= TRACE_EVENT_FL_BPF;
-+	} else {
-+		err = create_filter(call, filter_string, true, &filter);
-+		if (!err)
-+			call->flags &= ~TRACE_EVENT_FL_BPF;
-+	}
- 
- 	/*
- 	 * Always swap the call filter with the new filter
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index dae9541..e1a2187 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -819,6 +819,12 @@ __kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
- 	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
- 		return;
- 
-+	if (unlikely(ftrace_file->flags & FTRACE_EVENT_FL_FILTERED) &&
-+	    unlikely(ftrace_file->event_call->flags & TRACE_EVENT_FL_BPF)) {
-+		filter_call_bpf(ftrace_file->filter, regs);
-+		return;
-+	}
-+
- 	local_save_flags(irq_flags);
- 	pc = preempt_count();
- 
 -- 
 1.7.9.5
 
