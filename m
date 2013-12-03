@@ -1,85 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab3LCLcH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 06:32:07 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:51310 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753079Ab3LCLcC (ORCPT
+	id S1753314Ab3LCLmI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 06:42:08 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:38324 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab3LCLmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 06:32:02 -0500
-Date: Tue, 3 Dec 2013 11:31:56 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        angus.clark@st.com,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v3 14/36] mtd: st_spi_fsm: Add device-tree binding
- documentation
-Message-ID: <20131203113156.GB12031@lee--X1>
-References: <1385727565-25794-1-git-send-email-lee.jones@linaro.org>
- <1385727565-25794-15-git-send-email-lee.jones@linaro.org>
- <CACRpkdaWXBchz78Yby11VpveBDtn6FrmupS=cnNYhvHgFJsBUw@mail.gmail.com>
- <20131202110304.GB31626@lee--X1>
- <CACRpkdb8=RRsNRKe4Nbefu2BJ4xHakmNjxFC1gwLea=bAmOz-A@mail.gmail.com>
+	Tue, 3 Dec 2013 06:42:06 -0500
+Message-ID: <529DC389.6060102@gmail.com>
+Date: Tue, 03 Dec 2013 19:42:01 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdb8=RRsNRKe4Nbefu2BJ4xHakmNjxFC1gwLea=bAmOz-A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: rkuo <rkuo@codeaurora.org>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Bart Van Assche <bvanassche@acm.org>, Bottomley@parallels.com,
+        linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers: scsi: scsi_lib.c: add prefix "SCSILIB_" to macro
+ "SP"
+References: <528AEFB7.4060301@gmail.com> <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com> <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com> <52955913.3060809@gmail.com> <529B60FF.7030601@acm.org> <529BD584.7060504@gmail.com> <1385945387.20150.2.camel@dabdike.int.hansenpartnership.com> <529C5D89.8050809@gmail.com> <20131202213243.GA20646@codeaurora.org>
+In-Reply-To: <20131202213243.GA20646@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 03 Dec 2013, Linus Walleij wrote:
-
-> On Mon, Dec 2, 2013 at 12:03 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> >> > +Optional properties:
-> >> > +  - st,syscfg          : Phandle to boot-device system configuration registers
-> >> > +  - st,boot-device-reg : Address of the aforementioned boot-device register(s)
-> >> > +  - st,boot-device-spi : Expected boot-device value if booted via this device
-> >> > +
-> >> > +Example:
-> >> > +       spifsm: spifsm@fe902000{
-> >> > +               compatible         = "st,spi-fsm";
-> >> > +               reg                =  <0xfe902000 0x1000>;
-> >> > +               reg-names          = "spi-fsm";
-> >> > +               pinctrl-0          = <&pinctrl_fsm>;
-> >> > +               st,syscfg          = <&syscfg_rear>;
-> >> > +               st,boot-device-reg = <0x958>;
-> >> > +               st,boot-device-spi = <0x1a>;
-> >>
-> >> I don't think we should encode any register offsets whatsoever in device
-> >> tree but maybe that's just me. (Yes, Stephen will beat me up about
-> >> pin control single, but I consider that a special case.)
-> >>
-> >> I would just put the last two things as #defines into the driver file(s)
-> >> or - if it's related to other syscfg registers and varies with SoC incarnation,
-> >> as a #define in a shared header for that syscfg thing.
-> >
-> > No can do. This isn't _this_ device's register offset, this is a
-> > syscfg register offset which a) there is no driver to apply specific
-> > register offsets to and b) are liable to change oversubsequent SoCs.
+On 12/03/2013 05:32 AM, rkuo wrote:
+> On Mon, Dec 02, 2013 at 06:14:33PM +0800, Chen Gang wrote:
+>> If one issue occurs, normally, both sides need improvement.
+>>
+>> For our issue:
+>>
+>>  - need try to keep uapi no touch ("arch/hexagon/uapi/asm/registers.h").
+>>
+>>  - improving our module is much easier than improving hexagon.
+>>
+>>  - for 'SP', it is really short enough to like a register name.
+>>    SG_POOL seems more suitable for our 'sgpool' related operations.
+>>
+>>
+>> It will be better to improve hexagon too, but it is not quit easy (maybe
+>> have to bear it), it is uapi :-(
 > 
-> So it can be in <linux/mfd/my-sysconfig-regs.h> as
-> a
+> I can't speak for SCSI, but that define in Hexagon isn't really used outside
+> of that file anyways (the two SP macros themselves).  I'm also pretty sure
+> the userspace isn't currently using it anyways.  Seeing as it's not really
+> buying us anything, I'm fine with just removing it and continuing to review
+> the other defines.  I'll make that change and test it locally.
 > 
-> #define MY_SYSCON_V1_BOOT_DEV_REG 0x958
-> #define MY_SYSCON_V1_BOOT_DEV_SPI 0x1a
+
+OK, thanks.
+
 > 
-> The kernel should know which SoC is in use and
-> act apropriately right?
+> Thanks,
+> Richard Kuo
+> 
+> 
 
-And this have lots of machine_is() calls everywhere?
-
-Sounds perfect. ;)
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Chen Gang
