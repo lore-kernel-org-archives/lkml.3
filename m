@@ -1,114 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533Ab3LCRqG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 12:46:06 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:52129 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752853Ab3LCRqD (ORCPT
+	id S1754614Ab3LCRuN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 12:50:13 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38005 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754181Ab3LCRuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 12:46:03 -0500
-Message-ID: <1386092759.2166.85.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: "swiotlb buffer is full" with 3.13-rc1+ but not 3.4.
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Ian Jackson <Ian.Jackson@eu.citrix.com>, netdev@vger.kernel.org,
-        Michael Chan <mchan@broadcom.com>, dl-mptfusionlinux@lsi.com,
-        linux-scsi@vger.kernel.org, support@lsi.com,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
-        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-Date: Tue, 03 Dec 2013 09:45:59 -0800
-In-Reply-To: <20131203173332.GE3734@phenom.dumpdata.com>
-References: <21144.47873.639231.96901@mariner.uk.xensource.com>
-	 <20131130185639.GA13039@pegasus.dumpdata.com>
-	 <1385844524.2170.10.camel@dabdike>
-	 <20131203173332.GE3734@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
+	Tue, 3 Dec 2013 12:50:10 -0500
+Message-ID: <529E19CD.1050705@wwwdotorg.org>
+Date: Tue, 03 Dec 2013 10:50:05 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>
+CC: andriy.shevchenko@intel.com, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH V4] dma: add channel request API that supports deferred
+ probe
+References: <1385485462-30376-1-git-send-email-swarren@wwwdotorg.org>
+In-Reply-To: <1385485462-30376-1-git-send-email-swarren@wwwdotorg.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-03 at 12:33 -0500, Konrad Rzeszutek Wilk wrote:
-> On Sat, Nov 30, 2013 at 03:48:44PM -0500, James Bottomley wrote:
-> > On Sat, 2013-11-30 at 13:56 -0500, Konrad Rzeszutek Wilk wrote:
-> > > My theory is that the SWIOTLB is not full - it is just that the request
-> > > is for a compound page that is more than 512kB. Please note that
-> > > SWIOTLB highest "chunk" of buffer it can deal with is 512kb.
-> > > 
-> > > And that is of course the question comes out - why would it try to
-> > > bounce buffer it. In Xen the answer is simple - the sg chunks cross page
-> > > boundaries which means that they are not physically contingous - so we
-> > > have to use the bounce buffer. It would be better if the the sg list
-> > > provided a large list of 4KB pages instead of compound pages as that
-> > > could help in avoiding the bounce buffer.
-> > > 
-> > > But I digress - this is a theory - I don't know whether the SCSI layer
-> > > does any colescing of the sg list - and if so, whether there is any
-> > > easy knob to tell it to not do it.
-> > 
-> > Well, SCSI doesn't, but block does.  It's actually an efficiency thing
-> > since most firmware descriptor formats cope with multiple pages and the
-> > more descriptors you have for a transaction, the more work the on-board
-> > processor on the HBA has to do.  If you have an emulated HBA, like
-> > virtio, you could turn off physical coalesing by setting the
-> > use_clustering flag to DISABLE_CLUSTERING.  But you can't do that for a
-> > real card.  I assume the problem here is that the host is passing the
-> > card directly to the guest and the guest clusters based on its idea of
-> > guest pages which don't map to contiguous physical pages?
+On 11/26/2013 10:04 AM, Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
 > 
-> Kind of. Except that in this case the guest does know that it can't map
-> them contingously - and resorts to using the bounce buffer so that it
-> can provide a nice chunk of contingous area. This is detected by
-> the SWIOTLB layer and also the block layer to discourage coalescing
-> there.
+> dma_request_slave_channel() simply returns NULL whenever DMA channel
+> lookup fails. Lookup could fail for two distinct reasons:
 > 
-> But since SCSI is all about sg list I think it gets tangled up here:
+> a) No DMA specification exists for the channel name.
+>    This includes situations where no DMA specifications exist at all, or
+>    other general lookup problems.
 > 
-> 537         for_each_sg(sgl, sg, nelems, i) {                                       
-> 538                 phys_addr_t paddr = sg_phys(sg);                                
-> 539                 dma_addr_t dev_addr = xen_phys_to_bus(paddr);                   
-> 540                                                                                 
-> 541                 if (swiotlb_force ||                                            
-> 542                     !dma_capable(hwdev, dev_addr, sg->length) ||                
-> 543                     range_straddles_page_boundary(paddr, sg->length)) {         
-> 544                         phys_addr_t map = swiotlb_tbl_map_single(hwdev,         
-> 545                                                                  start_dma_addr,
-> 546                                                                  sg_phys(sg),   
-> 547                                                                  sg->length,    
-> 548                                                                  dir);          
+> b) A DMA specification does exist, yet the driver for that channel is not
+>    yet registered.
 > 
-> So it is either not capable of reaching that physical address (so DMA
-> mask, but I doubt it - this is LSI which can do 64bit).
+> Case (b) should trigger deferred probe in client drivers. However, since
+> they have no way to differentiate the two situations, it cannot.
+> 
+> Implement new function dma_request_slave_channel_reason(), which performs
+> identically to dma_request_slave_channel(), except that it returns an
+> error-pointer rather than NULL, which allows callers to detect when
+> deferred probe should occur.
+> 
+> Eventually, all drivers should be converted to this new API, the old API
+> removed, and the new API renamed to the more desirable name. This patch
+> doesn't convert the existing API and all drivers in one go, since some
+> drivers call dma_request_slave_channel() then dma_request_channel() if
+> that fails. That would require either modifying dma_request_channel() in
+> the same way, or adding extra error-handling code to all affected
+> drivers, and there are close to 100 drivers using the other API, rather
+> than just the 15-20 or so that use dma_request_slave_channel(), which
+> might be tenable in a single patch.
+> 
+> acpi_dma_request_slave_chan_by_name() doesn't currently implement
+> deferred probe. It should, but this will be addressed later.
+> 
+> Acked-by: Dan Williams <dan.j.williams@intel.com>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> v4:
+> * Add {} around both branches in of_dma_request_slave_channel().
+> v3:
+> * s/_or_err/_reason/ in the new API name.
+> * Simplify changes to of_dma_request_slave_channel() so that the new
+>   "bool defer" parameter is not needed.
+> * Revert changes to acpi-dma.c and handle the return value conversion
+>   in dma_request_slave_channel_reason() instead.
+> * Mention that acpi_dma_request_slave_chan_by_name() should implement
+>   deferred probe, but that will happen later.
+> v2:
+> * include <linux/err.h> in <linux/dmaengine.h>
+> * Return -ENODATA if slave_id or chan_id out-of-range.
+> * Return an error-pointer not NULL if we can't find a matching DMA
+>   controller or translate the channel.
+> 
+> This patch is a dependency for:
+> * A series that reworks many of the Tegra drivers.
+> * A series that enhances ASoC's dmaengine code to support deferred probe.
+> 
+> As such, it needs to go into a topic branch on its own, based directly
+> on 3.13-rc1. If the DMA maintainers ack the patches I'm happy to create
+> this topic branch myself and send a pull request to the DMA tree. Or the
+> patches can be applied to a topic branch by the DMA maintainers and I
+> will merge their topic branch into the Tegra rework branch that I
+> mentioned.
 
-Right, so no bouncing.
-
->  Or the pages
-> straddle. They can straddle it by well, being offset at odd locations, or
-> compound pages.
-
-All modern filesystems have 4k+ block sizes, so no offsets at all.  For
-DIO you can get offsets at the beginning and end of the transfer, but
-they will be offsets within the page, so the problem can only be
-clustering (physical merging).
-
-> But why would they in the first place - and so many of them - considering
-> the flow of those printks Ian's is seeing.
-
-Probably because compaction and our allocators are designed to give out
-physically contiguous pages, which work their way back into the block
-layer in order.  On a lot of I/O workloads, we see 30%+ physical
-merging.
-
-> James,
-> The SCSI layer wouldn't do any funny business here right - no reording
-> of bios? That is all left to the block layer right?
-
-We don't see bios ... they're top of block.  SCSI sees requests but the
-block layer does all our request and sg list manipulation for us.
-
-James
-
-
+Vinod, does this patch look OK to you? Are you able to stage it into a
+topic branch that I can pull into the Tegra tree as a dependency?
