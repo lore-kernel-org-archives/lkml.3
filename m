@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab3LCMgQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 07:36:16 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:48396 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752870Ab3LCMgK (ORCPT
+	id S1753935Ab3LCMg0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 07:36:26 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:54025 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752870Ab3LCMgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 07:36:10 -0500
+	Tue, 3 Dec 2013 07:36:23 -0500
 From: Alex Shi <alex.shi@linaro.org>
 To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com,
         vincent.guittot@linaro.org, daniel.lezcano@linaro.org,
@@ -16,9 +16,9 @@ To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com,
 Cc: james.hogan@imgtec.com, alex.shi@linaro.org, jason.low2@hp.com,
         viresh.kumar@linaro.org, hanjun.guo@linaro.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/3] nohz_full: unify nohz_full funcs
-Date: Tue,  3 Dec 2013 20:35:11 +0800
-Message-Id: <1386074112-30754-3-git-send-email-alex.shi@linaro.org>
+Subject: [PATCH v2 3/3] nohz_full: update cpu load fix in nohz_full
+Date: Tue,  3 Dec 2013 20:35:12 +0800
+Message-Id: <1386074112-30754-4-git-send-email-alex.shi@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1386074112-30754-1-git-send-email-alex.shi@linaro.org>
 References: <1386074112-30754-1-git-send-email-alex.shi@linaro.org>
@@ -26,37 +26,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All other nohz_full funcs named like xxx_nohz_full_xxx.
-So renaming wake_up_full_nohz_cpu to wake_up_nohz_full_cpu to unify
-funs.
+We are not always 0 when update nohz cpu load, after nohz_full enabled.
+But current code still treat the cpu as idle. that is incorrect.
+Fix it to use correct cpu_load.
 
 Signed-off-by: Alex Shi <alex.shi@linaro.org>
 ---
- kernel/sched/core.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/sched/proc.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c180860..6c9f9b0 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -616,7 +616,7 @@ static void wake_up_idle_cpu(int cpu)
- 		smp_send_reschedule(cpu);
+diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
+index 16f5a30..f1441f0 100644
+--- a/kernel/sched/proc.c
++++ b/kernel/sched/proc.c
+@@ -568,8 +568,14 @@ void update_cpu_load_nohz(void)
+ 		/*
+ 		 * We were idle, this means load 0, the current load might be
+ 		 * !0 due to remote wakeups and the sort.
++		 * or we may has only one task and in NO_HZ_FULL, then still use
++		 * normal cpu load.
+ 		 */
+-		__update_cpu_load(this_rq, 0, pending_updates);
++		if (this_rq->cfs.h_nr_running) {
++			unsigned load = get_rq_runnable_load(this_rq);
++			__update_cpu_load(this_rq, load, pending_updates);
++		} else
++			__update_cpu_load(this_rq, 0, pending_updates);
+ 	}
+ 	raw_spin_unlock(&this_rq->lock);
  }
- 
--static bool wake_up_full_nohz_cpu(int cpu)
-+static bool wake_up_nohz_full_cpu(int cpu)
- {
- 	if (tick_nohz_full_cpu(cpu)) {
- 		if (cpu != smp_processor_id() ||
-@@ -630,7 +630,7 @@ static bool wake_up_full_nohz_cpu(int cpu)
- 
- void wake_up_nohz_cpu(int cpu)
- {
--	if (!wake_up_full_nohz_cpu(cpu))
-+	if (!wake_up_nohz_full_cpu(cpu))
- 		wake_up_idle_cpu(cpu);
- }
- 
 -- 
 1.8.1.2
 
