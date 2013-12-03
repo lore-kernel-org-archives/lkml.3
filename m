@@ -1,86 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622Ab3LCWDb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 17:03:31 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:39724 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755310Ab3LCWDY (ORCPT
+	id S1755540Ab3LCWCx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 17:02:53 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:45460 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755343Ab3LCWAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 17:03:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131203134701.e3bc01aa8b20bddfb73f53c6@linux-foundation.org>
-References: <1386106054-27636-1-git-send-email-keescook@chromium.org>
-	<1386106054-27636-3-git-send-email-keescook@chromium.org>
-	<20131203134701.e3bc01aa8b20bddfb73f53c6@linux-foundation.org>
-Date: Tue, 3 Dec 2013 14:03:22 -0800
-X-Google-Sender-Auth: kHuUufFxrHlUMqaDpP2lYjifqrI
-Message-ID: <CAGXu5j+E+UT5cBTSwh4PbPCojGk0jqCFhzMaa6BnjKYSE_CgTg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] test: check copy_to/from_user boundary validation
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        David Howells <dhowells@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 3 Dec 2013 17:00:44 -0500
+From: Kent Overstreet <kmo@daterainc.com>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Cc: hch@infradead.org, clm@fb.com, viro@zeniv.linux.org.uk, zab@redhat.com,
+        shaggy@kernel.org, Kent Overstreet <kmo@daterainc.com>
+Subject: [PATCH 06/11] iov_iter: Kill iov_iter_single_seg_count()
+Date: Tue,  3 Dec 2013 14:00:12 -0800
+Message-Id: <1386108017-27964-7-git-send-email-kmo@daterainc.com>
+X-Mailer: git-send-email 1.8.4.4
+In-Reply-To: <1386108017-27964-1-git-send-email-kmo@daterainc.com>
+References: <1386108017-27964-1-git-send-email-kmo@daterainc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 3, 2013 at 1:47 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Tue,  3 Dec 2013 13:27:34 -0800 Kees Cook <keescook@chromium.org> wrote:
->
->> To help avoid an architecture failing to correctly check kernel/user
->> boundaries when handling copy_to_user, copy_from_user, put_user, or
->> get_user, perform some simple tests and fail to load if any of them
->> behave unexpectedly.
->>
->> Specifically, this is to make sure there is a way to notice if things
->> like what was fixed in 8404663f81d212918ff85f493649a7991209fa04 ("ARM:
->> 7527/1: uaccess: explicitly check __user pointer when !CPU_USE_DOMAINS")
->> ever regresses again, for any architecture.
->
-> I guess the challenge will be to get anyone to remember to run this.
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+---
+ fs/fuse/file.c      |  6 +++---
+ include/linux/uio.h |  1 -
+ mm/filemap.c        | 15 +--------------
+ 3 files changed, 4 insertions(+), 18 deletions(-)
 
-FWIW, I'll be running it. :) I'm sure Fengguang Wu could add it too.
-
-> Really, this could be viewed as a candidate for
-> tools/testing/selftests.  The tests in there are userspace tests, and
-> your userspace test would consist of "modprobe test_user_copy".  The
-> advantage of this is that your test will get included whenever someone
-> runs the selftest suite.  This is better than having it stranded over
-> in ./kernel/.
-
-Sure, I'd be happy to add logic to that area too.
-
->> ---
->>  kernel/Makefile         |    1 +
->>  kernel/test_user_copy.c |  103 +++++++++++++++++++++++++++++++++++++++++++++++
->>  lib/Kconfig.debug       |   13 ++++++
->
-> We already have a whole pile of test modules - seven of them reside in
-> lib/ and I think there's an RCU one somewhere.  Can we bring order to
-> all of this?  Some form of integration under tools/testing would be one
-> approach.
-
-I expect to be adding more of these, and I'd like to see these
-collected in a single place as well. There are things like test_nx.c
-in the x86 tree (which actually doesn't work any more, but that's a
-separate issue).
-
-> If you're disinclined to undertake such a project at this time, I'd
-> suggest these two go into lib/ so they are known about if/when someone
-> goes for the big cleanup.
-
-lib/ sounds good. I'll move them there.
-
-Thanks!
-
--Kees
-
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 7e70506..69175a1 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -996,7 +996,7 @@ static ssize_t fuse_fill_write_pages(struct fuse_req *req,
+ 		if (!tmp) {
+ 			unlock_page(page);
+ 			page_cache_release(page);
+-			bytes = min(bytes, iov_iter_single_seg_count(ii));
++			bytes = min(bytes, iov_iter_iovec(ii).iov_len);
+ 			goto again;
+ 		}
+ 
+@@ -1187,7 +1187,7 @@ static inline unsigned long fuse_get_user_addr(const struct iov_iter *ii)
+ static inline size_t fuse_get_frag_size(const struct iov_iter *ii,
+ 					size_t max_size)
+ {
+-	return min(iov_iter_single_seg_count(ii), max_size);
++	return min(iov_iter_iovec(ii).iov_len, max_size);
+ }
+ 
+ static int fuse_get_user_pages(struct fuse_req *req, struct iov_iter *ii,
+@@ -1261,7 +1261,7 @@ static inline int fuse_iter_npages(const struct iov_iter *ii_p)
+ 	while (iov_iter_count(&ii) && npages < FUSE_MAX_PAGES_PER_REQ) {
+ 		unsigned long user_addr = fuse_get_user_addr(&ii);
+ 		unsigned offset = user_addr & ~PAGE_MASK;
+-		size_t frag_size = iov_iter_single_seg_count(&ii);
++		size_t frag_size = iov_iter_iovec(&ii).iov_len;
+ 
+ 		npages += (frag_size + offset + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 		iov_iter_advance(&ii, frag_size);
+diff --git a/include/linux/uio.h b/include/linux/uio.h
+index 347d70c..2b99e0d 100644
+--- a/include/linux/uio.h
++++ b/include/linux/uio.h
+@@ -66,7 +66,6 @@ size_t iov_iter_copy_from_user(struct page *page,
+ 		struct iov_iter *i, unsigned long offset, size_t bytes);
+ void iov_iter_advance(struct iov_iter *i, size_t bytes);
+ int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes);
+-size_t iov_iter_single_seg_count(const struct iov_iter *i);
+ 
+ static inline void iov_iter_init(struct iov_iter *i,
+ 			const struct iovec *iov, unsigned long nr_segs,
+diff --git a/mm/filemap.c b/mm/filemap.c
+index b7749a9..1a40f12 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -2075,19 +2075,6 @@ int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes)
+ EXPORT_SYMBOL(iov_iter_fault_in_readable);
+ 
+ /*
+- * Return the count of just the current iov_iter segment.
+- */
+-size_t iov_iter_single_seg_count(const struct iov_iter *i)
+-{
+-	const struct iovec *iov = i->iov;
+-	if (i->nr_segs == 1)
+-		return i->count;
+-	else
+-		return min(i->count, iov->iov_len - i->iov_offset);
+-}
+-EXPORT_SYMBOL(iov_iter_single_seg_count);
+-
+-/*
+  * Performs necessary checks before doing a write
+  *
+  * Can adjust writing position or amount of bytes to write.
+@@ -2375,7 +2362,7 @@ again:
+ 			 * once without a pagefault.
+ 			 */
+ 			bytes = min_t(unsigned long, PAGE_CACHE_SIZE - offset,
+-						iov_iter_single_seg_count(i));
++				      iov_iter_iovec(i).iov_len);
+ 			goto again;
+ 		}
+ 		pos += copied;
 -- 
-Kees Cook
-Chrome OS Security
+1.8.4.4
+
