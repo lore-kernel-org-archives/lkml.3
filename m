@@ -1,259 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab3LCKs7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 05:48:59 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:55948 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752372Ab3LCKsz (ORCPT
+	id S1753417Ab3LCKw6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 05:52:58 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:47950 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753325Ab3LCKws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 05:48:55 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvQGAJe2nVJ5LHyk/2dsb2JhbABagweDMbBzhU6BGRd0giUBAQQBDhkTHA8UBQsIAw4KCSUPBSUDIROHewXBPBaOEVcHgyCBEwOUMYNikhSDPSiBLQ
-Date: Tue, 3 Dec 2013 21:48:49 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: hannes@cmpxchg.org, mhocko@suse.cz, dchinner@redhat.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org, devel@openvz.org,
-        glommer@openvz.org, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v12 09/18] vmscan: shrink slab on memcg pressure
-Message-ID: <20131203104849.GD8803@dastard>
-References: <cover.1385974612.git.vdavydov@parallels.com>
- <be01fd9afeedb7d5c7979347f4d6ddaf67c9082d.1385974612.git.vdavydov@parallels.com>
+	Tue, 3 Dec 2013 05:52:48 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.38 with qID rB3AqVSO014533, This message is accepted by code: ctloc85258
+Message-ID: <529DB86D.3010002@realsil.com.cn>
+Date: Tue, 3 Dec 2013 18:54:37 +0800
+From: micky <micky_ching@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <be01fd9afeedb7d5c7979347f4d6ddaf67c9082d.1385974612.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Lee Jones <lee.jones@linaro.org>
+CC: <sameo@linux.intel.com>, <devel@linuxdriverproject.org>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <wei_wang@realsil.com.cn>, <rogerable@realtek.com>
+Subject: Re: [PATCH v2 3/3] mfd: rtsx: prevent 'used uninitialised' warnings
+References: <cover.1386051860.git.micky_ching@realsil.com.cn> <932dcc03570ceb86316272d4eba7f4207d001def.1386051860.git.micky_ching@realsil.com.cn> <20131203104003.GJ11828@lee--X1>
+In-Reply-To: <20131203104003.GJ11828@lee--X1>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 03:19:44PM +0400, Vladimir Davydov wrote:
-> This patch makes direct reclaim path shrink slabs not only on global
-> memory pressure, but also when we reach memory cgroup limit. To achieve
-> that, it introduces a new per-shrinker flag, SHRINKER_MEMCG_AWARE, which
-> should be set if the shrinker can handle per-memcg reclaim. For such
-> shrinkers, shrink_slab() will iterate over all eligible memory cgroups
-> (i.e. the cgroup that triggered the reclaim and all its descendants) and
-> pass the current memory cgroup to the shrinker in shrink_control.memcg
-> just like it passes the current NUMA node to NUMA-aware shrinkers.  It
-> is completely up to memcg-aware shrinkers how to organize objects in
-> order to provide required functionality. Currently none of the existing
-> shrinkers is memcg-aware, but next patches will introduce per-memcg
-> list_lru, which will facilitate the process of turning shrinkers that
-> use list_lru to be memcg-aware.
-> 
-> The number of slab objects scanned on memcg pressure is calculated in
-> the same way as on global pressure - it is proportional to the number of
-> pages scanned over the number of pages eligible for reclaim (i.e. the
-> number of on-LRU pages in the target memcg and all its descendants) -
-> except we do not employ the nr_deferred per-shrinker counter to avoid
-> memory cgroup isolation issues. Ideally, this counter should be made
-> per-memcg.
-> 
-....
+On 12/03/2013 06:40 PM, Lee Jones wrote:
+> This should contain the author's name.
+>
+> You should use:
+>     `git rebase -i` /* Use edit option */
+> then
+>    `git commit --amend --author="First Last <first.last@email.com>"
+>
+> To apply it.
+>
+Sorry Lee, I will modify it. Is the order important? or only your name 
+is need here?
+>> drivers/mfd/rtl8411.c: In function 'rtl8411_fetch_vendor_settings':
+>> drivers/mfd/rtl8411.c:58:7: warning: 'reg1' is used uninitialized in this function [-Wuninitialized]
+>> drivers/mfd/rtl8411.c: In function 'rtl8411b_fetch_vendor_settings':
+>> drivers/mfd/rtl8411.c:79:7: warning: 'reg' is used uninitialized in this function [-Wuninitialized]
+>> drivers/mfd/rtl8411.c: In function 'rtl8411_fetch_vendor_settings':
+>> drivers/mfd/rtl8411.c:69:26: warning: 'reg3' may be used uninitialized in this function [-Wuninitialized]
+>>
+>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>> Tested-by: Micky Ching <micky_ching@realsil.com.cn>
+> I know this is a bit of a strange situation, but whenever you sent
+> patches to the MLs,  you need to sign it off yourself too.
+>
+>
+Did you mean I need write like this ?
 
-> @@ -236,11 +236,17 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
->  		return 0;
->  
->  	/*
-> -	 * copy the current shrinker scan count into a local variable
-> -	 * and zero it so that other concurrent shrinker invocations
-> -	 * don't also do this scanning work.
-> +	 * Do not touch global counter of deferred objects on memcg pressure to
-> +	 * avoid isolation issues. Ideally the counter should be per-memcg.
->  	 */
-> -	nr = atomic_long_xchg(&shrinker->nr_deferred[nid], 0);
-> +	if (!shrinkctl->target_mem_cgroup) {
-> +		/*
-> +		 * copy the current shrinker scan count into a local variable
-> +		 * and zero it so that other concurrent shrinker invocations
-> +		 * don't also do this scanning work.
-> +		 */
-> +		nr = atomic_long_xchg(&shrinker->nr_deferred[nid], 0);
-> +	}
-
-That's ugly. Effectively it means that memcg reclaim is going to be
-completely ineffective when large numbers of allocations and hence
-reclaim attempts are done under GFP_NOFS context.
-
-The only thing that keeps filesystem caches in balance when there is
-lots of filesystem work going on (i.e. lots of GFP_NOFS allocations)
-is the deferal of reclaim work to a context that can do something
-about it.
-
->  	total_scan = nr;
->  	delta = (4 * fraction) / shrinker->seeks;
-> @@ -296,21 +302,46 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
->  		cond_resched();
->  	}
->  
-> -	/*
-> -	 * move the unused scan count back into the shrinker in a
-> -	 * manner that handles concurrent updates. If we exhausted the
-> -	 * scan, there is no need to do an update.
-> -	 */
-> -	if (total_scan > 0)
-> -		new_nr = atomic_long_add_return(total_scan,
-> +	if (!shrinkctl->target_mem_cgroup) {
-> +		/*
-> +		 * move the unused scan count back into the shrinker in a
-> +		 * manner that handles concurrent updates. If we exhausted the
-> +		 * scan, there is no need to do an update.
-> +		 */
-> +		if (total_scan > 0)
-> +			new_nr = atomic_long_add_return(total_scan,
->  						&shrinker->nr_deferred[nid]);
-> -	else
-> -		new_nr = atomic_long_read(&shrinker->nr_deferred[nid]);
-> +		else
-> +			new_nr = atomic_long_read(&shrinker->nr_deferred[nid]);
-> +	}
-
-So, if the memcg can't make progress, why wouldn't you defer the
-work to the global scan? Or can't a global scan trim memcg LRUs?
-And if it can't, then isn't that a major design flaw? Why not just
-allow kswapd to walk memcg LRUs in the background?
-
-/me just looked at patch 13
-
-Yeah, this goes some way to explaining why something like patch 13
-is necessary - slab shrinkers are not keeping up with page cache
-reclaim because of GFP_NOFS allocations, and so the page cache
-empties only leaving slab caches to be trimmed....
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Tested-by: Micky Ching <micky_ching@realsil.com.cn>
+Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
 
 
-> +static unsigned long
-> +shrink_slab_memcg(struct shrink_control *shrinkctl, struct shrinker *shrinker,
-> +		  unsigned long fraction, unsigned long denominator)
 
-what's this function got to do with memcgs? Why did you rename it
-from the self explanitory shrink_slab_one() name that Glauber gave
-it?
 
-> +{
-> +	unsigned long freed = 0;
-> +
-> +	if (shrinkctl->memcg && !memcg_kmem_is_active(shrinkctl->memcg))
-> +		return 0;
-
-Why here? why not check that in the caller where memcg's are being
-iterated?
-
-> +
-> +	for_each_node_mask(shrinkctl->nid, shrinkctl->nodes_to_scan) {
-> +		if (!node_online(shrinkctl->nid))
-> +			continue;
-> +
-> +		if (!(shrinker->flags & SHRINKER_NUMA_AWARE) &&
-> +		    (shrinkctl->nid != 0))
-> +			break;
-
-Hmmm - this looks broken. Nothing guarantees that node 0 in
-shrinkctl->nodes_to_scan is ever set, so non-numa aware shrinkers
-will do nothing when the first node in the mask is not set. For non-numa
-aware shrinkers, the shrinker should always be called once with a
-node id of 0.
-
-That's what earlier versions of the numa aware shrinker patch set
-did, and it seems to have been lost along the way.  Yeah, there's
-the last version from Glauber's tree that I saw:
-
-static unsigned long
-shrink_slab_one(struct shrink_control *shrinkctl, struct shrinker *shrinker,
-               unsigned long nr_pages_scanned, unsigned long lru_pages)
-{
-       unsigned long freed = 0;
-
-       if (!(shrinker->flags & SHRINKER_NUMA_AWARE)) {
-               shrinkctl->nid = 0;
-
-               return shrink_slab_node(shrinkctl, shrinker,
-                        nr_pages_scanned, lru_pages,
-                        &shrinker->nr_deferred);
-       }
-
-       for_each_node_mask(shrinkctl->nid, shrinkctl->nodes_to_scan)
-
-               if (!node_online(shrinkctl->nid))
-                       continue;
-
-               freed += shrink_slab_node(shrinkctl, shrinker,
-                        nr_pages_scanned, lru_pages,
-			 &shrinker->nr_deferred_node[shrinkctl->nid]);
-       }
-
-       return freed;
-}
-
-So, that's likely to be another reason that all the non-numa slab
-caches are not being shrunk appropriately and need to be hit with a
-bit hammer...
-
-> @@ -352,18 +383,23 @@ unsigned long shrink_slab(struct shrink_control *shrinkctl,
->  	}
->  
->  	list_for_each_entry(shrinker, &shrinker_list, list) {
-> -		for_each_node_mask(shrinkctl->nid, shrinkctl->nodes_to_scan) {
-> -			if (!node_online(shrinkctl->nid))
-> -				continue;
-> -
-> -			if (!(shrinker->flags & SHRINKER_NUMA_AWARE) &&
-> -			    (shrinkctl->nid != 0))
-> +		shrinkctl->memcg = shrinkctl->target_mem_cgroup;
-> +		do {
-> +			if (!(shrinker->flags & SHRINKER_MEMCG_AWARE) &&
-> +			    (shrinkctl->memcg != NULL)) {
-> +				mem_cgroup_iter_break(
-> +						shrinkctl->target_mem_cgroup,
-> +						shrinkctl->memcg);
->  				break;
-> +			}
->  
-> -			freed += shrink_slab_node(shrinkctl, shrinker,
-> -						  fraction, denominator);
-> +			freed += shrink_slab_memcg(shrinkctl, shrinker,
-> +						   fraction, denominator);
-> +			shrinkctl->memcg = mem_cgroup_iter(
-> +						shrinkctl->target_mem_cgroup,
-> +						shrinkctl->memcg, NULL);
-> +		} while (shrinkctl->memcg);
-
-Glauber's tree also had a bunch of comments explaining what was
-going on here. I've got no idea what the hell this code is doing,
-and why the hell we are iterating memcgs here and how and why the
-normal, non-memcg scan and shrinkers still worked.
-
-This is now just a bunch of memcg gobbledegook with no explanations
-to tell us what it is supposed to be doing. Comments are important -
-you might not think they are necessary, but seeing comments like
-this:
-
-+               /*
-+                * In a hierarchical chain, it might be that not all memcgs are
-+                * kmem active. kmemcg design mandates that when one memcg is
-+                * active, its children will be active as well. But it is
-+                * perfectly possible that its parent is not.
-+                *
-+                * We also need to make sure we scan at least once, for the
-+                * global case. So if we don't have a target memcg (saved in
-+                * root), we proceed normally and expect to break in the next
-+                * round.
-+                */
-
-in Glauber's tree helped an awful lot to explain the mess that the
-memcg stuff was making of the code...
-
-I'm liking this patch set less and less as I work my way through
-it...
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Best Regards
+Micky.
+
