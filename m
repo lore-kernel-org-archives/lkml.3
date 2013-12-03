@@ -1,253 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab3LCRJr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 12:09:47 -0500
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:49967 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754098Ab3LCRJo (ORCPT
+	id S1754624Ab3LCRKV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 12:10:21 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:34594 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466Ab3LCRKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 12:09:44 -0500
+	Tue, 3 Dec 2013 12:10:19 -0500
+Message-ID: <529E1078.1060502@acm.org>
+Date: Tue, 03 Dec 2013 11:10:16 -0600
+From: Corey Minyard <minyard@acm.org>
+Reply-To: minyard@acm.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <1386088753-2850-10-git-send-email-hanjun.guo@linaro.org>
-References: <1386088753-2850-1-git-send-email-hanjun.guo@linaro.org>
-	<1386088753-2850-10-git-send-email-hanjun.guo@linaro.org>
-Date: Tue, 3 Dec 2013 11:09:43 -0600
-Message-ID: <CAL_Jsq+XWn5ns850mV6Jvm0W4+TPh8c0aWANZPAqSPmmsDMWoQ@mail.gmail.com>
-Subject: Re: [RFC part2 PATCH 9/9] ACPI / GIC: Initialize GIC using the
- information in MADT
-From: Rob Herring <robherring2@gmail.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Linaro Patches <patches@linaro.org>, Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, linaro-acpi@lists.linaro.org,
-        linux-acpi@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+To: Srinivas_G_Gowda@Dell.com
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ipmi: setting mod_timer for read_event_msg buffer
+ cmd
+References: <52931C2D.4070908@dell.com> <5294D9D8.2030305@acm.org> <75F7F7632819D94BA80703D8B1F10B6D29CEE95A1D@BLRX7MCDC201.AMER.DELL.COM> <52992EFA.4000903@acm.org> <529C9C99.2010108@dell.com> <529CF5AA.5040700@acm.org> <75F7F7632819D94BA80703D8B1F10B6D29CEE96846@BLRX7MCDC201.AMER.DELL.COM>
+In-Reply-To: <75F7F7632819D94BA80703D8B1F10B6D29CEE96846@BLRX7MCDC201.AMER.DELL.COM>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 3, 2013 at 10:39 AM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
-> In MADT table, there are GIC cpu interface base address and
-> GIC distributor base address, use them to convert GIC to ACPI.
+On 12/03/2013 12:18 AM, Srinivas_G_Gowda@Dell.com wrote:
+> Dell - Internal Use - Confidential 
 >
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> ---
->  arch/arm64/kernel/irq.c      |    5 ++++
->  drivers/acpi/plat/arm-core.c |   66 ++++++++++++++++++++++++++++++++++++------
->  include/linux/acpi.h         |    6 ++++
->  3 files changed, 68 insertions(+), 9 deletions(-)
->
-> diff --git a/arch/arm64/kernel/irq.c b/arch/arm64/kernel/irq.c
-> index 473e5db..a9e68bf 100644
-> --- a/arch/arm64/kernel/irq.c
-> +++ b/arch/arm64/kernel/irq.c
-> @@ -25,6 +25,7 @@
->  #include <linux/irq.h>
->  #include <linux/smp.h>
->  #include <linux/init.h>
-> +#include <linux/acpi.h>
->  #include <linux/irqchip.h>
->  #include <linux/seq_file.h>
->  #include <linux/ratelimit.h>
-> @@ -78,6 +79,10 @@ void __init set_handle_irq(void (*handle_irq)(struct pt_regs *))
->  void __init init_IRQ(void)
->  {
->         irqchip_init();
-> +
-> +       if (!handle_arch_irq)
-> +               acpi_gic_init();
-> +
->         if (!handle_arch_irq)
->                 panic("No interrupt controller found.");
->  }
-> diff --git a/drivers/acpi/plat/arm-core.c b/drivers/acpi/plat/arm-core.c
-> index 17c99e1..509b847 100644
-> --- a/drivers/acpi/plat/arm-core.c
-> +++ b/drivers/acpi/plat/arm-core.c
-> @@ -29,6 +29,7 @@
->  #include <linux/module.h>
->  #include <linux/irq.h>
->  #include <linux/irqdomain.h>
-> +#include <linux/irqchip/arm-gic.h>
->  #include <linux/slab.h>
->  #include <linux/bootmem.h>
->  #include <linux/ioport.h>
-> @@ -211,11 +212,21 @@ acpi_parse_gic(struct acpi_subtable_header *header, const unsigned long end)
->         return 0;
->  }
->
-> +#ifdef CONFIG_ARM_GIC
+> Hi Corey,
+>> Unfortunately, that would start the timer unnecessarily.  You don't want to start timers unnecessarily in the kernel or the power management police will come after you.
+>    I still see the issue after applying the patch. 
+>    I have one question, for commands such as IPMI_READ_EVENT_MSG_BUFFER_CMD in smi_event_handler() that are invoked by the driver itself where do you expect the timer to be set ??
 
-Perhaps this should go in the GIC code? This is more of a general
-question of where init/probing code goes. For DT, this as been with
-the driver code.
+The timer should be done by the calling function.  Since the timer is
+actually used to time out complete operations, you don't want to reset
+it from interrupts or the kthread.  The patch I added would start the
+timer if it wasn't running and the event returned something non-idle.
 
-> +/*
-> + * Hard code here, we can not get memory size from MADT (but FDT does),
-> + * this size is described in ARMv8 foudation model's User Guide
-> + */
-> +#define GIC_DISTRIBUTOR_MEMORY_SIZE (SZ_8K)
-> +#define GIC_CPU_INTERFACE_MEMORY_SIZE (SZ_4K)
+So what should happen is smi_event_handler() starts the event message
+buffer read, goes back to the top of smi_event_handler() and handles the
+new message.  It should return something besides idle in that case.  And
+thus the timer should be started.
 
-You have the sizes swapped. The cpu interface has the DIR register at 0x1000.
+>> The patch I sent did have this call in the non-idle portion of the kernel thread and that should have done the same thing.  Plus, if you are using the kernel thread, it's going to run periodically and should kick things off again if they get stuck.  I'm suspicious now that something else is going on.
+>   ipmi_thread() is getting invoked when the issue is seen, but I keep hitting this condition
+>   else if (smi_result == SI_SM_CALL_WITH_DELAY && busy_wait)
+>   Since the timer is not armed for IPMI_READ_EVENT_MSG_BUFFER_CMD, smi_event_handler calls with time value 0, which doesn't help when OBF is stuck.
+>   We keep running around this loop since we never hit the kcs error states.
 
-> +
->  static int __init
->  acpi_parse_gic_distributor(struct acpi_subtable_header *header,
->                                 const unsigned long end)
->  {
->         struct acpi_madt_generic_distributor *distributor = NULL;
-> +       void __iomem *dist_base = NULL;
-> +       void __iomem *cpu_base = NULL;
+Maybe the timer start function needs to be called from that else clause,
+but it didn't seem so to me.  It wouldn't hurt, I suppose.  But the
+event handler should eventually return something non-idle and the timer
+start function should get called.  Is the ipmi thread just stuck using
+100% CPU?  Does the final else clause ever get hit?  Maybe the bug is in
+ipmi_thread_busy_wait().
 
-Initialization here is unnecessary.
+Thanks,
+
+-corey
 
 >
->         distributor = (struct acpi_madt_generic_distributor *)header;
 >
-> @@ -224,8 +235,43 @@ acpi_parse_gic_distributor(struct acpi_subtable_header *header,
+> Thanks,
+> G
 >
->         acpi_table_print_madt_entry(header);
->
-> +       /* GIC is initialised after page_init(), no need for early_ioremap */
-> +       dist_base = ioremap(distributor->base_address,
-> +                               GIC_CPU_INTERFACE_MEMORY_SIZE);
+> -----Original Message-----
+> From: Corey Minyard [mailto:tcminyard@gmail.com] On Behalf Of Corey Minyard
+> Sent: Tuesday, December 03, 2013 2:34 AM
+> To: Gowda, Srinivas G
+> Cc: tcminyard@gmail.com; linux-kernel@vger.kernel.org; openipmi@mvista.com
+> Subject: Re: [PATCH 1/1] ipmi: setting mod_timer for read_event_msg buffer cmd On 12/02/2013 08:49 AM, Srinivas_G_Gowda@Dell.com wrote: 
+>> Thanks for the patch Corey. 
+>> I am afraid that the system does not have interrupts enabled. It uses polling mode. 
+>>
+>> When the error is seen, I know for a fact that in function
+>> ipmi_thread() smi_result is SI_SM_CALL_WITH_DELAY, I have some logs where in busy_wait always reads as 1. Not sure if it was ever set to 0. (ill check this again).
+>> Ill anyway run the test using the patch that you have shared. 
+>>
+>> b/w would it harm if we were to do to something like this ?
+> Unfortunately, that would start the timer unnecessarily.  You don't want to start timers unnecessarily in the kernel or the power management police will come after you.
+> The patch I sent did have this call in the non-idle portion of the kernel thread and that should have done the same thing.  Plus, if you are using the kernel thread, it's going to run periodically and should kick things off again if they get stuck.  I'm suspicious now that something else is going on.
+> -corey 
+>> Signed-off-by: Srinivas Gowda <srinivas_g_gowda@dell.com>
+>> ---
+>>   drivers/char/ipmi/ipmi_si_intf.c | 1 +
+>>   1 file changed, 1 insertion(+)
+>>
+>> diff --git a/drivers/char/ipmi/ipmi_si_intf.c
+>> b/drivers/char/ipmi/ipmi_si_intf.c
+>> index 15e4a60..e23484f 100644
+>> --- a/drivers/char/ipmi/ipmi_si_intf.c
+>> +++ b/drivers/char/ipmi/ipmi_si_intf.c
+>> @@ -1008,6 +1008,7 @@ static int ipmi_thread(void *data)
+>>                spin_unlock_irqrestore(&(smi_info->si_lock), flags);
+>>                busy_wait = ipmi_thread_busy_wait(smi_result, smi_info,
+>>                                                  &busy_until);
+>> +             ipmi_start_timer_if_necessary(smi_info);
+>>                if (smi_result == SI_SM_CALL_WITHOUT_DELAY)
+>>                        ; /* do nothing */
+>>                else if (smi_result == SI_SM_CALL_WITH_DELAY && 
+>> busy_wait)
 
-Should be GIC_DISTRIBUTOR_MEMORY_SIZE.
-
-> +       if (!dist_base) {
-> +               pr_warn(PREFIX "unable to map gic dist registers\n");
-> +               return -ENOMEM;
-> +       }
-> +
-> +       /*
-> +        * acpi_lapic_addr is stored in acpi_parse_madt(),
-> +        * so we can use it here for GIC init
-> +        */
-> +       if (acpi_lapic_addr) {
-
-Checking this first would be cleaner.
-
-> +               iounmap(dist_base);
-> +               pr_warn(PREFIX "Invalid GIC cpu interface base address\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       cpu_base = ioremap(acpi_lapic_addr, GIC_CPU_INTERFACE_MEMORY_SIZE);
-
-How are gic's with different cpu address per core going to be handled?
-
-> +       if (!cpu_base) {
-> +               iounmap(dist_base);
-> +               pr_warn(PREFIX "unable to map gic cpu registers\n");
-
-All the printks are a bit verbose for my tastes. I think a single
-error print would suffice.
-
-> +               return -ENOMEM;
-> +       }
-> +
-> +       gic_init(distributor->gic_id, -1, dist_base, cpu_base);
-> +
->         return 0;
->  }
-> +#else
-> +static int __init
-> +acpi_parse_gic_distributor(struct acpi_subtable_header *header,
-> +                               const unsigned long end)
-> +{
-> +       return -ENODEV;
-> +}
-> +#endif /* CONFIG_ARM_GIC */
-
-A "if (!IS_ENABLED(CONFIG_ARM_GIC)) return;" in the above function
-would eliminate this ifdef.
-
->
->  /*
->   * Parse GIC cpu interface related entries in MADT
-> @@ -234,7 +280,7 @@ acpi_parse_gic_distributor(struct acpi_subtable_header *header,
->  static int __init acpi_parse_madt_gic_entries(void)
->  {
->         int count;
-> -
-> +
-
-Unnecessary whitespace change.
-
->         /*
->          * do a partial walk of MADT to determine how many CPUs
->          * we have including disabled CPUs
-> @@ -468,19 +514,21 @@ static void __init acpi_process_madt(void)
->                  * Parse MADT GIC cpu interface entries
->                  */
->                 error = acpi_parse_madt_gic_entries();
-> -               if (!error) {
-> -                       /*
-> -                        * Parse MADT GIC distributor entries
-> -                        */
-> -                       acpi_parse_madt_gic_distributor_entries();
-> -               }
-> +               if (!error)
-> +                       pr_info("Using ACPI for processor (GIC) configuration information\n");
->         }
->
-> -       pr_info("Using ACPI for processor (GIC) configuration information\n");
-> -
->         return;
->  }
->
-> +int __init acpi_gic_init(void)
-> +{
-> +       /*
-> +        * Parse MADT GIC distributor entries
-> +        */
-> +       return acpi_parse_madt_gic_distributor_entries();
-> +}
-> +
->  /*
->   * acpi_boot_table_init() and acpi_boot_init()
->   *  called from setup_arch(), always.
-> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-> index edd5806..58a4bf4 100644
-> --- a/include/linux/acpi.h
-> +++ b/include/linux/acpi.h
-> @@ -112,6 +112,7 @@ char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
->  void __acpi_unmap_table(char *map, unsigned long size);
->  int early_acpi_boot_init(void);
->  int acpi_boot_init (void);
-> +int acpi_gic_init(void);
->  void acpi_boot_table_init (void);
->  int acpi_mps_check (void);
->  int acpi_numa_init (void);
-> @@ -444,6 +445,11 @@ static inline int acpi_boot_init(void)
->         return 0;
->  }
->
-> +static inline int acpi_gic_init(void)
-> +{
-> +       return -ENODEV;
-> +}
-> +
->  static inline void acpi_boot_table_init(void)
->  {
->         return;
-> --
-> 1.7.9.5
->
->
-> _______________________________________________
-> linaro-kernel mailing list
-> linaro-kernel@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-kernel
