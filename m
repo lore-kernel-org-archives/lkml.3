@@ -1,222 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755802Ab3LCXjh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 18:39:37 -0500
-Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:50493 "EHLO
-	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755703Ab3LCXjO (ORCPT
+	id S1755762Ab3LCXkU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 18:40:20 -0500
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:40110 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755200Ab3LCXkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 18:39:14 -0500
-Message-Id: <20131203233305.012919046@linux.com>
-User-Agent: quilt/0.60-1
-Date: Tue, 03 Dec 2013 17:33:10 -0600
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>
-Subject: [PATCH 38/41] alpha: Replace __get_cpu_var
-References: <20131203233232.928771708@linux.com>
-Content-Disposition: inline; filename=this_alpha
+	Tue, 3 Dec 2013 18:40:16 -0500
+Date: Tue, 3 Dec 2013 15:40:13 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcg: do not declare OOM from __GFP_NOFAIL
+ allocations
+In-Reply-To: <20131203222511.GU3556@cmpxchg.org>
+Message-ID: <alpine.DEB.2.02.1312031531510.5946@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1311261658170.21003@chino.kir.corp.google.com> <alpine.DEB.2.02.1311261931210.5973@chino.kir.corp.google.com> <20131127163916.GB3556@cmpxchg.org> <alpine.DEB.2.02.1311271336220.9222@chino.kir.corp.google.com> <20131127225340.GE3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311271526080.22848@chino.kir.corp.google.com> <20131128102049.GF2761@dhcp22.suse.cz> <alpine.DEB.2.02.1311291543400.22413@chino.kir.corp.google.com> <20131202132201.GC18838@dhcp22.suse.cz> <alpine.DEB.2.02.1312021452510.13465@chino.kir.corp.google.com>
+ <20131203222511.GU3556@cmpxchg.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_cpu_var() is used for multiple purposes in the kernel source. One of
-them is address calculation via the form &__get_cpu_var(x).  This calculates
-the address for the instance of the percpu variable of the current processor
-based on an offset.
+On Tue, 3 Dec 2013, Johannes Weiner wrote:
 
-Other use cases are for storing and retrieving data from the current
-processors percpu area.  __get_cpu_var() can be used as an lvalue when
-writing data or on the right side of an assignment.
+> > > Spin on which level? The whole point of this change was to not spin for
+> > > ever because the caller might sit on top of other locks which might
+> > > prevent somebody else to die although it has been killed.
+> > 
+> > See my question about the non-memcg page allocator behavior below.
+> 
+> No, please answer the question.
+> 
 
-__get_cpu_var() is defined as :
+The question would be answered below, by having consistency in allocation 
+and charging paths between both the page allocator and memcg.
 
+> > I'm not quite sure how significant of a point this is, though, because it 
+> > depends on the caller doing the __GFP_NOFAIL allocations that allow the 
+> > bypass.  If you're doing
+> > 
+> > 	for (i = 0; i < 1 << 20; i++)
+> > 		page[i] = alloc_page(GFP_NOFS | __GFP_NOFAIL);
+> 
+> Hyperbole serves no one.
+> 
 
-#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
+Since this bypasses all charges to the root memcg in oom conditions as a 
+result of your patch, how do you ensure the "leakage" is contained to a 
+small amount of memory?  Are we currently just trusting the users of 
+__GFP_NOFAIL that they aren't allocating a large amount of memory?
 
+> > I'm referring to the generic non-memcg page allocator behavior.  Forget 
+> > memcg for a moment.  What is the behavior in the _page_allocator_ for 
+> > GFP_NOFS | __GFP_NOFAIL?  Do we spin forever if reclaim fails or do we 
+> > bypas the per-zone min watermarks to allow it to allocate because "it 
+> > needs to succeed, it may be holding filesystem locks"?
+> > 
+> > It's already been acknowledged in this thread that no bypassing is done 
+> > in the page allocator and it just spins.  There's some handwaving saying 
+> > that since the entire system is oom that there is a greater chance that 
+> > memory will be freed by something else, but that's just handwaving and is 
+> > certainly no guaranteed.
+> 
+> Do you have another explanation of why this deadlock is not triggering
+> in the global case?  It's pretty obvious that there is a deadlock that
+> can not be resolved unless some unrelated task intervenes, just read
+> __alloc_pages_slowpath().
+> 
+> But we had a concrete bug report for memcg where there was no other
+> task to intervene.  One was stuck in the OOM killer waiting for the
+> victim to exit, the victim was stuck on locks that the killer held.
+> 
 
+I believe the page allocator would be susceptible to the same deadlock if 
+nothing else on the system can reclaim memory and that belief comes from 
+code inspection that shows __GFP_NOFAIL is not guaranteed to ever succeed 
+in the page allocator as their charges now are (with your patch) in memcg.  
+I do not have an example of such an incident.
 
-__get_cpu_var() always only does an address determination. However, store
-and retrieve operations could use a segment prefix (or global register on
-other platforms) to avoid the address calculation.
+> > So, my question again: why not bypass the per-zone min watermarks in the 
+> > page allocator?
+> 
+> I don't even know what your argument is supposed to be.  The fact that
+> we don't do it in the page allocator means that there can't be a bug
+> in memcg?
+> 
 
-this_cpu_write() and this_cpu_read() can directly take an offset into a
-percpu area and use optimized assembly code to read and write per cpu
-variables.
+I'm asking if we should allow GFP_NOFS | __GFP_NOFAIL allocations in the 
+page allocator to bypass per-zone min watermarks after reclaim has failed 
+since the oom killer cannot be called in such a context so that the page 
+allocator is not susceptible to the same deadlock without a complete 
+depletion of memory reserves?
 
-
-This patch converts __get_cpu_var into either an explicit address
-calculation using this_cpu_ptr() or into a use of this_cpu operations that
-use the offset.  Thereby address calculations are avoided and less registers
-are used when code is generated.
-
-At the end of the patch set all uses of __get_cpu_var have been removed so
-the macro is removed too.
-
-The patch set includes passes over all arches as well. Once these operations
-are used throughout then specialized macros can be defined in non -x86
-arches as well in order to optimize per cpu access by f.e.  using a global
-register that may be set to the per cpu base.
-
-
-
-
-Transformations done to __get_cpu_var()
-
-
-1. Determine the address of the percpu instance of the current processor.
-
-	DEFINE_PER_CPU(int, y);
-	int *x = &__get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(&y);
-
-
-2. Same as #1 but this time an array structure is involved.
-
-	DEFINE_PER_CPU(int, y[20]);
-	int *x = __get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(y);
-
-
-3. Retrieve the content of the current processors instance of a per cpu
-variable.
-
-	DEFINE_PER_CPU(int, y);
-	int x = __get_cpu_var(y)
-
-   Converts to
-
-	int x = __this_cpu_read(y);
-
-
-4. Retrieve the content of a percpu struct
-
-	DEFINE_PER_CPU(struct mystruct, y);
-	struct mystruct x = __get_cpu_var(y);
-
-   Converts to
-
-	memcpy(&x, this_cpu_ptr(&y), sizeof(x));
-
-
-5. Assignment to a per cpu variable
-
-	DEFINE_PER_CPU(int, y)
-	__get_cpu_var(y) = x;
-
-   Converts to
-
-	this_cpu_write(y, x);
-
-
-6. Increment/Decrement etc of a per cpu variable
-
-	DEFINE_PER_CPU(int, y);
-	__get_cpu_var(y)++
-
-   Converts to
-
-	this_cpu_inc(y)
-
-Cc: Richard Henderson <rth@twiddle.net>
-CC: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Matt Turner <mattst88@gmail.com>
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/arch/alpha/kernel/perf_event.c
-===================================================================
---- linux.orig/arch/alpha/kernel/perf_event.c	2013-12-02 16:08:01.194316776 -0600
-+++ linux/arch/alpha/kernel/perf_event.c	2013-12-02 16:08:01.194316776 -0600
-@@ -431,7 +431,7 @@ static void maybe_change_configuration(s
-  */
- static int alpha_pmu_add(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int n0;
- 	int ret;
-@@ -483,7 +483,7 @@ static int alpha_pmu_add(struct perf_eve
-  */
- static void alpha_pmu_del(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	unsigned long irq_flags;
- 	int j;
-@@ -531,7 +531,7 @@ static void alpha_pmu_read(struct perf_e
- static void alpha_pmu_stop(struct perf_event *event, int flags)
- {
- 	struct hw_perf_event *hwc = &event->hw;
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	if (!(hwc->state & PERF_HES_STOPPED)) {
- 		cpuc->idx_mask &= ~(1UL<<hwc->idx);
-@@ -551,7 +551,7 @@ static void alpha_pmu_stop(struct perf_e
- static void alpha_pmu_start(struct perf_event *event, int flags)
- {
- 	struct hw_perf_event *hwc = &event->hw;
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	if (WARN_ON_ONCE(!(hwc->state & PERF_HES_STOPPED)))
- 		return;
-@@ -724,7 +724,7 @@ static int alpha_pmu_event_init(struct p
-  */
- static void alpha_pmu_enable(struct pmu *pmu)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	if (cpuc->enabled)
- 		return;
-@@ -750,7 +750,7 @@ static void alpha_pmu_enable(struct pmu
- 
- static void alpha_pmu_disable(struct pmu *pmu)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	if (!cpuc->enabled)
- 		return;
-@@ -815,7 +815,7 @@ static void alpha_perf_event_irq_handler
- 	int idx, j;
- 
- 	__this_cpu_inc(irq_pmi_count);
--	cpuc = &__get_cpu_var(cpu_hw_events);
-+	cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	/* Completely counting through the PMC's period to trigger a new PMC
- 	 * overflow interrupt while in this interrupt routine is utterly
-Index: linux/arch/alpha/kernel/time.c
-===================================================================
---- linux.orig/arch/alpha/kernel/time.c	2013-12-02 16:08:01.194316776 -0600
-+++ linux/arch/alpha/kernel/time.c	2013-12-02 16:08:01.194316776 -0600
-@@ -56,9 +56,9 @@ unsigned long est_cycle_freq;
- 
- DEFINE_PER_CPU(u8, irq_work_pending);
- 
--#define set_irq_work_pending_flag()  __get_cpu_var(irq_work_pending) = 1
--#define test_irq_work_pending()      __get_cpu_var(irq_work_pending)
--#define clear_irq_work_pending()     __get_cpu_var(irq_work_pending) = 0
-+#define set_irq_work_pending_flag()  __this_cpu_write(irq_work_pending, 1)
-+#define test_irq_work_pending()      __this_cpu_read(irq_work_pending)
-+#define clear_irq_work_pending()     __this_cpu_writeirq_work_pending, 0)
- 
- void arch_irq_work_raise(void)
- {
-
+It's not an argument, it's a question.  Relax.
