@@ -1,249 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751759Ab3LCGX2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 01:23:28 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:42136 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166Ab3LCGX1 (ORCPT
+	id S1752017Ab3LCG3o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 01:29:44 -0500
+Received: from ausxipps301.us.dell.com ([143.166.148.223]:30109 "EHLO
+	ausxipps301.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751746Ab3LCG3m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 01:23:27 -0500
-X-AuditID: 9c93017d-b7bb3ae0000068fd-dc-529d78dd376a
-From: Namhyung Kim <namhyung@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH/RFC 17/17] tracing/uprobes: Add @+file_offset fetch method
-References: <1385533203-10014-1-git-send-email-namhyung@kernel.org>
-	<1385533203-10014-18-git-send-email-namhyung@kernel.org>
-	<20131127185546.GA30544@redhat.com>
-	<877gbtq7rb.fsf@sejong.aot.lge.com>
-	<20131128163148.GA15985@redhat.com>
-	<87ob54oxzt.fsf@sejong.aot.lge.com> <20131129165106.GA5224@redhat.com>
-Date: Tue, 03 Dec 2013 15:23:25 +0900
-In-Reply-To: <20131129165106.GA5224@redhat.com> (Oleg Nesterov's message of
-	"Fri, 29 Nov 2013 17:51:06 +0100")
-Message-ID: <87mwkimp0i.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 3 Dec 2013 01:29:42 -0500
+X-Greylist: delayed 570 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Dec 2013 01:29:42 EST
+X-LoopCount0: from 10.170.28.41
+X-IronPort-AV: E=Sophos;i="4.93,815,1378875600"; 
+   d="scan'208";a="346776859"
+From: <Srinivas_G_Gowda@Dell.com>
+To: <minyard@acm.org>
+CC: <tcminyard@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <openipmi@mvista.com>
+Date: Tue, 3 Dec 2013 11:48:34 +0530
+Subject: RE: [PATCH 1/1] ipmi: setting mod_timer for read_event_msg buffer
+ cmd
+Thread-Topic: [PATCH 1/1] ipmi: setting mod_timer for read_event_msg buffer
+ cmd
+Thread-Index: Ac7vogVU58zaz2HwT6CVRPOZstrmBwATPhkw
+Message-ID: <75F7F7632819D94BA80703D8B1F10B6D29CEE96846@BLRX7MCDC201.AMER.DELL.COM>
+References: <52931C2D.4070908@dell.com> <5294D9D8.2030305@acm.org>
+ <75F7F7632819D94BA80703D8B1F10B6D29CEE95A1D@BLRX7MCDC201.AMER.DELL.COM>
+ <52992EFA.4000903@acm.org> <529C9C99.2010108@dell.com>
+ <529CF5AA.5040700@acm.org>
+In-Reply-To: <529CF5AA.5040700@acm.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-titus-version: 3.5.21.1
+x-tituslabs-classifications-30: TLPropertyRoot=Dell;Classification=Internal
+ Use;External=No;Sublabels=;
+x-tituslabs-classificationhash-30: VgNFIFU9Hx+/nZJb9Kg7IvZV04sjhm5ohgj17I+k6kb57u1mCD6mXo7G2RxAJ5LHz9JyVEDNEzdqgYO6hcVAT7xEGd7h12ZZm93khSwJAQ6W5tprmmQqiZ0IdpJ5/dfW7Ea8h7DNgu4fGLe1S9/mTsx1H3wZRv504AThSoNGr3Dup4a36rmaHAEx3ivbjfCAxWhZAH7tSMsaac2cbRJBLWlgmjiOD+lgf64D7/ntuHFvEXfwBeBw1VxdX9xd/3zEi/Om5jkkYVX0mRQVwyBM6sNWFpLqSfGjjMlphQlgKNw=
+x-titusconfig: 1.2AMER
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> So do you want me to change to make it simpler without a fetch_param?
->
-> Yes, yes. Assuming that you agree, of course.
+Dell - Internal Use - Confidential 
 
-Okay, here goes v8 then. :)
+Hi Corey,
+> Unfortunately, that would start the timer unnecessarily.  You don't want to start timers unnecessarily in the kernel or the power management police will come after you.
+   I still see the issue after applying the patch. 
+   I have one question, for commands such as IPMI_READ_EVENT_MSG_BUFFER_CMD in smi_event_handler() that are invoked by the driver itself where do you expect the timer to be set ??
 
-I also push it (with other changes come from Srikar) to the
-uprobe/fetch-v8 branch in my tree for your convenience. :)
+> The patch I sent did have this call in the non-idle portion of the kernel thread and that should have done the same thing.  Plus, if you are using the kernel thread, it's going to run periodically and should kick things off again if they get stuck.  I'm suspicious now that something else is going on.
+  ipmi_thread() is getting invoked when the issue is seen, but I keep hitting this condition
+  else if (smi_result == SI_SM_CALL_WITH_DELAY && busy_wait)
+  Since the timer is not armed for IPMI_READ_EVENT_MSG_BUFFER_CMD, smi_event_handler calls with time value 0, which doesn't help when OBF is stuck.
+  We keep running around this loop since we never hit the kcs error states.
+
 
 Thanks,
-Namhyung
+G
 
-
->From 25bc2bab14e9461f8b15e34f26d1de51f96e44e1 Mon Sep 17 00:00:00 2001
-From: Namhyung Kim <namhyung.kim@lge.com>
-Date: Mon, 25 Nov 2013 13:42:47 +0900
-Subject: [PATCH v8 17/17] tracing/uprobes: Add @+file_offset fetch method
-
-Enable to fetch data from a file offset.  Currently it only supports
-fetching from same binary uprobe set.  It'll translate the file offset
-to a proper virtual address in the process.
-
-The syntax is "@+OFFSET" as it does similar to normal memory fetching
-(@ADDR) which does no address translation.
-
-To do it, change fifth argument to receive 'void *priv' and make it
-set only for uprobes so that we can determine the arg is for kprobes
-or uprobes easily.
-
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- Documentation/trace/uprobetracer.txt |  1 +
- kernel/trace/trace_kprobe.c          |  8 ++++++++
- kernel/trace/trace_probe.c           | 13 +++++++++++-
- kernel/trace/trace_probe.h           |  2 ++
- kernel/trace/trace_uprobe.c          | 40 ++++++++++++++++++++++++++++++++++++
- 5 files changed, 63 insertions(+), 1 deletion(-)
-
-diff --git a/Documentation/trace/uprobetracer.txt b/Documentation/trace/uprobetracer.txt
-index 6e5cff263e2b..f1cf9a34ad9d 100644
---- a/Documentation/trace/uprobetracer.txt
-+++ b/Documentation/trace/uprobetracer.txt
-@@ -32,6 +32,7 @@ Synopsis of uprobe_tracer
-   FETCHARGS     : Arguments. Each probe can have up to 128 args.
-    %REG         : Fetch register REG
-    @ADDR	: Fetch memory at ADDR (ADDR should be in userspace)
-+   @+OFFSET	: Fetch memory at OFFSET (OFFSET from same file as PATH)
-    $stackN	: Fetch Nth entry of stack (N >= 0)
-    $stack	: Fetch stack address.
-    $retval	: Fetch return value.(*)
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 8b32236ae890..1cf8f3375559 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -239,6 +239,14 @@ DEFINE_BASIC_FETCH_FUNCS(symbol)
- DEFINE_FETCH_symbol(string)
- DEFINE_FETCH_symbol(string_size)
- 
-+/* kprobes don't support file_offset fetch methods */
-+#define fetch_file_offset_u8		NULL
-+#define fetch_file_offset_u16		NULL
-+#define fetch_file_offset_u32		NULL
-+#define fetch_file_offset_u64		NULL
-+#define fetch_file_offset_string	NULL
-+#define fetch_file_offset_string_size	NULL
-+
- /* Fetch type information table */
- const struct fetch_type kprobes_fetch_type_table[] = {
- 	/* Special types */
-diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index 464ec506ec08..705c06ba0a8a 100644
---- a/kernel/trace/trace_probe.c
-+++ b/kernel/trace/trace_probe.c
-@@ -373,7 +373,7 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
- 		}
- 		break;
- 
--	case '@':	/* memory or symbol */
-+	case '@':	/* memory, file-offset or symbol */
- 		if (isdigit(arg[1])) {
- 			ret = kstrtoul(arg + 1, 0, &param);
- 			if (ret)
-@@ -381,6 +381,17 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
- 
- 			f->fn = t->fetch[FETCH_MTD_memory];
- 			f->data = (void *)param;
-+		} else if (arg[1] == '+') {
-+			/* kprobes don't support file offsets */
-+			if (is_kprobe)
-+				return -EINVAL;
-+
-+			ret = kstrtol(arg + 2, 0, &offset);
-+			if (ret)
-+				break;
-+
-+			f->fn = t->fetch[FETCH_MTD_file_offset];
-+			f->data = (void *)offset;
- 		} else {
- 			/* uprobes don't support symbols */
- 			if (!is_kprobe)
-diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
-index 385206bbbf8b..d9afeb580cbf 100644
---- a/kernel/trace/trace_probe.h
-+++ b/kernel/trace/trace_probe.h
-@@ -106,6 +106,7 @@ enum {
- 	FETCH_MTD_symbol,
- 	FETCH_MTD_deref,
- 	FETCH_MTD_bitfield,
-+	FETCH_MTD_file_offset,
- 	FETCH_MTD_END,
- };
- 
-@@ -217,6 +218,7 @@ ASSIGN_FETCH_FUNC(memory, ftype),			\
- ASSIGN_FETCH_FUNC(symbol, ftype),			\
- ASSIGN_FETCH_FUNC(deref, ftype),			\
- ASSIGN_FETCH_FUNC(bitfield, ftype),			\
-+ASSIGN_FETCH_FUNC(file_offset, ftype),			\
- 	  }						\
- 	}
- 
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index f86a6a711de9..f5cbed7e7709 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -70,6 +70,11 @@ static int unregister_uprobe_event(struct trace_uprobe *tu);
- static DEFINE_MUTEX(uprobe_lock);
- static LIST_HEAD(uprobe_list);
- 
-+struct uprobe_dispatch_data {
-+	struct trace_uprobe	*tu;
-+	unsigned long		bp_addr;
-+};
-+
- static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs);
- static int uretprobe_dispatcher(struct uprobe_consumer *con,
- 				unsigned long func, struct pt_regs *regs);
-@@ -175,6 +180,29 @@ static __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
- #define fetch_symbol_string		NULL
- #define fetch_symbol_string_size	NULL
- 
-+static unsigned long translate_user_vaddr(void *file_offset)
-+{
-+	unsigned long base_addr;
-+	struct uprobe_dispatch_data *udd;
-+
-+	udd = (void *) current->utask->vaddr;
-+
-+	base_addr = udd->bp_addr - udd->tu->offset;
-+	return base_addr + (unsigned long)file_offset;
-+}
-+
-+#define DEFINE_FETCH_file_offset(type)					\
-+static __kprobes void FETCH_FUNC_NAME(file_offset, type)(struct pt_regs *regs,\
-+					void *offset, void *dest) 	\
-+{									\
-+	void *vaddr = (void *)translate_user_vaddr(offset);		\
-+									\
-+	FETCH_FUNC_NAME(memory, type)(regs, vaddr, dest);		\
-+}
-+DEFINE_BASIC_FETCH_FUNCS(file_offset)
-+DEFINE_FETCH_file_offset(string)
-+DEFINE_FETCH_file_offset(string_size)
-+
- /* Fetch type information table */
- const struct fetch_type uprobes_fetch_type_table[] = {
- 	/* Special types */
-@@ -1104,11 +1132,17 @@ int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type,
- static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs)
- {
- 	struct trace_uprobe *tu;
-+	struct uprobe_dispatch_data udd;
- 	int ret = 0;
- 
- 	tu = container_of(con, struct trace_uprobe, consumer);
- 	tu->nhit++;
- 
-+	udd.tu = tu;
-+	udd.bp_addr = instruction_pointer(regs);
-+
-+	current->utask->vaddr = (unsigned long) &udd;
-+
- 	if (tu->tp.flags & TP_FLAG_TRACE)
- 		ret |= uprobe_trace_func(tu, regs);
- 
-@@ -1123,9 +1157,15 @@ static int uretprobe_dispatcher(struct uprobe_consumer *con,
- 				unsigned long func, struct pt_regs *regs)
- {
- 	struct trace_uprobe *tu;
-+	struct uprobe_dispatch_data udd;
- 
- 	tu = container_of(con, struct trace_uprobe, consumer);
- 
-+	udd.tu = tu;
-+	udd.bp_addr = func;
-+
-+	current->utask->vaddr = (unsigned long) &udd;
-+
- 	if (tu->tp.flags & TP_FLAG_TRACE)
- 		uretprobe_trace_func(tu, func, regs);
- 
--- 
-1.7.11.7
+-----Original Message-----
+From: Corey Minyard [mailto:tcminyard@gmail.com] On Behalf Of Corey Minyard
+Sent: Tuesday, December 03, 2013 2:34 AM
+To: Gowda, Srinivas G
+Cc: tcminyard@gmail.com; linux-kernel@vger.kernel.org; openipmi@mvista.com
+Subject: Re: [PATCH 1/1] ipmi: setting mod_timer for read_event_msg buffer cmd On 12/02/2013 08:49 AM, Srinivas_G_Gowda@Dell.com wrote: 
+> Thanks for the patch Corey. 
+> I am afraid that the system does not have interrupts enabled. It uses polling mode. 
+> 
+> When the error is seen, I know for a fact that in function
+> ipmi_thread() smi_result is SI_SM_CALL_WITH_DELAY, I have some logs where in busy_wait always reads as 1. Not sure if it was ever set to 0. (ill check this again).
+> Ill anyway run the test using the patch that you have shared. 
+> 
+> b/w would it harm if we were to do to something like this ?
+Unfortunately, that would start the timer unnecessarily.  You don't want to start timers unnecessarily in the kernel or the power management police will come after you.
+The patch I sent did have this call in the non-idle portion of the kernel thread and that should have done the same thing.  Plus, if you are using the kernel thread, it's going to run periodically and should kick things off again if they get stuck.  I'm suspicious now that something else is going on.
+-corey 
+> 
+> Signed-off-by: Srinivas Gowda <srinivas_g_gowda@dell.com>
+> ---
+>  drivers/char/ipmi/ipmi_si_intf.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/char/ipmi/ipmi_si_intf.c
+> b/drivers/char/ipmi/ipmi_si_intf.c
+> index 15e4a60..e23484f 100644
+> --- a/drivers/char/ipmi/ipmi_si_intf.c
+> +++ b/drivers/char/ipmi/ipmi_si_intf.c
+> @@ -1008,6 +1008,7 @@ static int ipmi_thread(void *data)
+>               spin_unlock_irqrestore(&(smi_info->si_lock), flags);
+>               busy_wait = ipmi_thread_busy_wait(smi_result, smi_info,
+>                                                 &busy_until);
+> +             ipmi_start_timer_if_necessary(smi_info);
+>               if (smi_result == SI_SM_CALL_WITHOUT_DELAY)
+>                       ; /* do nothing */
+>               else if (smi_result == SI_SM_CALL_WITH_DELAY && 
+>busy_wait)
 
