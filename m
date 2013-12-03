@@ -1,73 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab3LCXSD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 18:18:03 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:43916 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753816Ab3LCXSB (ORCPT
+	id S1755315Ab3LCXYw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 18:24:52 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:46032 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755303Ab3LCXYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 18:18:01 -0500
-Message-ID: <529E66A4.4050000@gmail.com>
-Date: Wed, 04 Dec 2013 00:17:56 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-To: Leigh Brown <leigh@solinno.co.uk>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Schichan <nschichan@freebox.fr>,
-        Jason Cooper <jason@lakedaemon.net>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Florian Fainelli <florian@openwrt.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Spurious timeouts in mvmdio
-References: <529CA42A.3040504@freebox.fr> <20131203122346.GD29282@titan.lakedaemon.net> <20131203124033.GT16735@n2100.arm.linux.org.uk> <abe249f5cba5c267e2c536bd62c57908@doppler.thel33t.co.uk> <529E5F03.8040607@gmail.com> <8d65780eb7bfe49bb0734a09f05f70a6@doppler.thel33t.co.uk>
-In-Reply-To: <8d65780eb7bfe49bb0734a09f05f70a6@doppler.thel33t.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Dec 2013 18:24:49 -0500
+Date: Tue, 3 Dec 2013 18:24:45 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: Re: [PATCH v2 08/23] mm/memblock: Add memblock memory allocation apis
+Message-ID: <20131203232445.GX8277@htj.dyndns.org>
+References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com>
+ <1386037658-3161-9-git-send-email-santosh.shilimkar@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386037658-3161-9-git-send-email-santosh.shilimkar@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2013 12:20 AM, Leigh Brown wrote:
-> On 2013-12-03 22:45, Sebastian Hesselbarth wrote:
->> On 12/03/2013 09:57 PM, Leigh Brown wrote:
-> [...]
->>> Nicolas' patch should fix the issue, but I prefer the following as it is
->>> more
->>> correct, as it only adjusts the timeout when calling
->>> wait_event_timeout().  As
->>> I said above,I believe the polling code is correct.
->>>
->>> diff --git a/drivers/net/ethernet/marvell/mvmdio.c
->>> b/drivers/net/ethernet/marvell/mvmdio.c
->>> index 7354960..b187c08 100644
->>> --- a/drivers/net/ethernet/marvell/mvmdio.c
->>> +++ b/drivers/net/ethernet/marvell/mvmdio.c
->>> @@ -92,6 +92,14 @@ static int orion_mdio_wait_ready(struct mii_bus *bus)
->>>               if (time_is_before_jiffies(end))
->>>                   ++timedout;
->>>               } else {
->>> +            /*
->>> +             * wait_event_timeout does not guarantee a delay of at
->>> +             * least one whole jiffie, so timeout must be no less
->>> +             * than two.
->>> +             */
->>> +            if (timeout < 2)
->>> +                timeout = 2;
->>
->> If you always want to wait at least two jiffies, why not just increase
->> TIMEOUT makro to 20ms instead of messing here with it again?
->> As said on IRC log above, originally timeout was 100ms.
->
-> You could do that, but would you not feel bad leaving a latent bug in
-> the code?
-> I know it's unlikely that someone would set HZ to 50, but if they did,
-> the same
-> bug would appear again.
+Hello,
 
-If you want to ensure timeout > 2, why not then just use:
+On Mon, Dec 02, 2013 at 09:27:23PM -0500, Santosh Shilimkar wrote:
+> So we add equivalent APIs so that we can replace usage of bootmem
+> with memblock interfaces. Architectures already converted to NO_BOOTMEM
+> use these new interfaces and other which still uses bootmem, these new
+> APIs just fallback to exiting bootmem APIs. So no functional change as
+> such.
 
-- 	unsigned long timeout = usecs_to_jiffies(MVMDIO_SMI_TIMEOUT);
-+ 	unsigned long timeout = 1 + usecs_to_jiffies(MVMDIO_SMI_TIMEOUT);
+The last part of the second last sentence doesn't parse too well.  I
+think it'd be worthwhile to improve and preferably expand on it as
+this is a bit tricky to understand given the twisted state of early
+memory allocation.
 
+> In long run, once all the achitectures moves to NO_BOOTMEM, we can get rid of
+> bootmem layer completely. This is one step to remove the core code dependency
+> with bootmem and also gives path for architectures to move away from bootmem.
 
+Lines too long?
+
+> +/*
+> + * FIXME: use NUMA_NO_NODE instead of MAX_NUMNODES when bootmem/nobootmem code
+> + * will be removed.
+> + * It can't be done now, because when MEMBLOCK or NO_BOOTMEM are not enabled
+> + * all calls of the new API will be redirected to bottmem/nobootmem where
+> + * MAX_NUMNODES is widely used.
+
+I don't know.  We're introducing a new API which will be used across
+the kernel.  I don't think it makes a lot of sense to use the wrong
+constant now to convert all the users later.  Wouldn't it be better to
+make the new interface take NUMA_NO_NODE and do whatever it needs to
+do to interface with bootmem?
+
+> + * Also, memblock core APIs __next_free_mem_range_rev() and
+> + * __next_free_mem_range() would need to be updated, and as result we will
+> + * need to re-check/update all direct calls of memblock_alloc_xxx()
+> + * APIs (including nobootmem).
+> + */
+
+Hmmm....
+
+> +/* FIXME: Move to memblock.h at a point where we remove nobootmem.c */
+> +void *memblock_virt_alloc_try_nid_nopanic(phys_addr_t size,
+> +		phys_addr_t align, phys_addr_t from,
+> +		phys_addr_t max_addr, int nid);
+
+Wouldn't @min_addr instead of @from make more sense?  Ditto for other
+occurrences.
+
+> +void *memblock_virt_alloc_try_nid(phys_addr_t size, phys_addr_t align,
+> +		phys_addr_t from, phys_addr_t max_addr, int nid);
+> +void __memblock_free_early(phys_addr_t base, phys_addr_t size);
+> +void __memblock_free_late(phys_addr_t base, phys_addr_t size);
+> +
+> +#define memblock_virt_alloc(x) \
+> +	memblock_virt_alloc_try_nid(x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT, \
+> +				     BOOTMEM_ALLOC_ACCESSIBLE, MAX_NUMNODES)
+
+The underlying function interprets 0 as the default align, so it
+probably is a better idea to just use 0 here.
+
+> +#define memblock_virt_alloc_align(x, align) \
+> +	memblock_virt_alloc_try_nid(x, align, BOOTMEM_LOW_LIMIT, \
+> +				     BOOTMEM_ALLOC_ACCESSIBLE, MAX_NUMNODES)
+
+Also, do we really need this align variant separate when the caller
+can simply specify 0 for the default?
+
+> +#define memblock_virt_alloc_nopanic(x) \
+> +	memblock_virt_alloc_try_nid_nopanic(x, SMP_CACHE_BYTES, \
+> +					     BOOTMEM_LOW_LIMIT, \
+> +					     BOOTMEM_ALLOC_ACCESSIBLE, \
+> +					     MAX_NUMNODES)
+> +#define memblock_virt_alloc_align_nopanic(x, align) \
+> +	memblock_virt_alloc_try_nid_nopanic(x, align, \
+> +					     BOOTMEM_LOW_LIMIT, \
+> +					     BOOTMEM_ALLOC_ACCESSIBLE, \
+> +					     MAX_NUMNODES)
+> +#define memblock_virt_alloc_node(x, nid) \
+> +	memblock_virt_alloc_try_nid(x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT, \
+> +				     BOOTMEM_ALLOC_ACCESSIBLE, nid)
+> +#define memblock_virt_alloc_node_nopanic(x, nid) \
+> +	memblock_virt_alloc_try_nid_nopanic(x, SMP_CACHE_BYTES, \
+> +					     BOOTMEM_LOW_LIMIT, \
+> +					     BOOTMEM_ALLOC_ACCESSIBLE, nid)
+> +
+> +#define memblock_free_early(x, s)		__memblock_free_early(x, s)
+> +#define memblock_free_early_nid(x, s, nid)	__memblock_free_early(x, s)
+> +#define memblock_free_late(x, s)		__memblock_free_late(x, s)
+
+Please make the wrappers inline functions.
+
+> +#else
+> +
+> +#define BOOTMEM_ALLOC_ACCESSIBLE	0
+> +
+> +
+> +/* Fall back to all the existing bootmem APIs */
+> +#define memblock_virt_alloc(x) \
+> +	__alloc_bootmem(x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT)
+> +#define memblock_virt_alloc_align(x, align) \
+> +	__alloc_bootmem(x, align, BOOTMEM_LOW_LIMIT)
+> +#define memblock_virt_alloc_nopanic(x) \
+> +	__alloc_bootmem_nopanic(x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT)
+> +#define memblock_virt_alloc_align_nopanic(x, align) \
+> +	__alloc_bootmem_nopanic(x, align, BOOTMEM_LOW_LIMIT)
+> +#define memblock_virt_alloc_node(x, nid) \
+> +	__alloc_bootmem_node(NODE_DATA(nid), x, SMP_CACHE_BYTES, \
+> +			BOOTMEM_LOW_LIMIT)
+> +#define memblock_virt_alloc_node_nopanic(x, nid) \
+> +	__alloc_bootmem_node_nopanic(NODE_DATA(nid), x, SMP_CACHE_BYTES, \
+> +			BOOTMEM_LOW_LIMIT)
+> +#define memblock_virt_alloc_try_nid(size, align, from, max_addr, nid) \
+> +		__alloc_bootmem_node_high(NODE_DATA(nid), size, align, from)
+> +#define memblock_virt_alloc_try_nid_nopanic(size, align, from, max_addr, nid) \
+> +		___alloc_bootmem_node_nopanic(NODE_DATA(nid), size, align, \
+> +			from, max_addr)
+> +#define memblock_free_early(x, s)	free_bootmem(x, s)
+> +#define memblock_free_early_nid(x, s, nid) \
+> +			free_bootmem_node(NODE_DATA(nid), x, s)
+> +#define memblock_free_late(x, s)	free_bootmem_late(x, s)
+> +
+> +#endif /* defined(CONFIG_HAVE_MEMBLOCK) && defined(CONFIG_NO_BOOTMEM) */
+
+Ditto.
+
+> diff --git a/mm/memblock.c b/mm/memblock.c
+> index 1d15e07..3311fbb 100644
+> --- a/mm/memblock.c
+> +++ b/mm/memblock.c
+> @@ -21,6 +21,9 @@
+>  #include <linux/memblock.h>
+>  
+>  #include <asm-generic/sections.h>
+> +#include <asm/io.h>
+> +
+> +#include "internal.h"
+>  
+>  static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
+>  static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
+> @@ -933,6 +936,198 @@ phys_addr_t __init memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align, i
+>  	return memblock_alloc_base(size, align, MEMBLOCK_ALLOC_ACCESSIBLE);
+>  }
+>  
+> +/**
+> + * _memblock_virt_alloc_try_nid_nopanic - allocate boot memory block
+
+Please don't use both "__" and "_" prefixes.  It gets confusing like
+hell.  Just give it an another name.
+
+> + * @size: size of memory block to be allocated in bytes
+> + * @align: alignment of the region and block's size
+> + * @from: the lower bound of the memory region from where the allocation
+> + *	  is preferred (phys address)
+> + * @max_addr: the upper bound of the memory region from where the allocation
+> + *	      is preferred (phys address), or %BOOTMEM_ALLOC_ACCESSIBLE to
+> + *	      allocate only from memory limited by memblock.current_limit value
+
+It probably would be better style to make the above shorter and fit
+each on a single line.  If they need further explanation, they can be
+done in the body of the comment.
+
+> + * @nid: nid of the free area to find, %MAX_NUMNODES for any node
+> + *
+> + * The @from limit is dropped if it can not be satisfied and the allocation
+> + * will fall back to memory below @from.
+> + *
+> + * Allocation may fall back to any node in the system if the specified node
+> + * can not hold the requested memory.
+
+Maybe combine the above two paragraphs?
+
+> + * The phys address of allocated boot memory block is converted to virtual and
+> + * allocated memory is reset to 0.
+> + *
+> + * In addition, function sets sets the min_count for allocated boot memory block
+
+                            ^^^^^^^^^
+No mention of kmemleak at all is a bit confusing.  min_count of what?
+
+> + * to 0 so that it is never reported as leaks.
+> + *
+> + * RETURNS:
+> + * Virtual address of allocated memory block on success, NULL on failure.
+> + */
+> +static void * __init _memblock_virt_alloc_try_nid_nopanic(
+> +				phys_addr_t size, phys_addr_t align,
+> +				phys_addr_t from, phys_addr_t max_addr,
+> +				int nid)
+> +{
+> +	phys_addr_t alloc;
+> +	void *ptr;
+> +
+> +	if (WARN_ON_ONCE(slab_is_available())) {
+> +		if (nid == MAX_NUMNODES)
+> +			return kzalloc(size, GFP_NOWAIT);
+> +		else
+> +			return kzalloc_node(size, GFP_NOWAIT, nid);
+> +	}
+> +
+> +	if (!align)
+> +		align = SMP_CACHE_BYTES;
+> +
+> +	/* align @size to avoid excessive fragmentation on reserved array */
+> +	size = round_up(size, align);
+> +
+> +again:
+> +	alloc = memblock_find_in_range_node(from, max_addr, size, align, nid);
+
+Not your fault but we probably wanna update these functions so that
+their param orders are consistent.
+
+Thanks.
+
+-- 
+tejun
