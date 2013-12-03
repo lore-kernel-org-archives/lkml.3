@@ -1,95 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567Ab3LCPRK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 10:17:10 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:21786 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753409Ab3LCPRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 10:17:03 -0500
-X-IronPort-AV: E=Sophos;i="4.93,818,1378857600"; 
-   d="scan'208";a="80127075"
-Message-ID: <1386083821.13256.42.camel@kazak.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH RFC] xen-block: correctly define structures
- in public headers
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: David Vrabel <david.vrabel@citrix.com>
-CC: Roger Pau Monne <roger.pau@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Julien Grall <julien.grall@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xenproject.org>,
-        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>
-Date: Tue, 3 Dec 2013 15:17:01 +0000
-In-Reply-To: <529DF4A0.50103@citrix.com>
-References: <1386068254-1413-1-git-send-email-roger.pau@citrix.com>
-			 <529DBA07.6090108@citrix.com>
-		 <1386068884.13256.9.camel@kazak.uk.xensource.com>
-		 <529DC7BA.7080506@citrix.com>
-	 <1386078108.13256.30.camel@kazak.uk.xensource.com>
-	 <529DF4A0.50103@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	id S1754814Ab3LCPR1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 10:17:27 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:41796 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754626Ab3LCPRZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 10:17:25 -0500
+Date: Tue, 3 Dec 2013 15:16:54 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Keerthy <j-keerthy@ti.com>
+Cc: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk, rob@landley.net,
+        sameo@linux.intel.com, lee.jones@linaro.org, grant.likely@linaro.org,
+        lgirdwood@gmail.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Message-ID: <20131203151654.GB27568@sirena.org.uk>
+References: <1386053006-6480-1-git-send-email-j-keerthy@ti.com>
+ <1386053006-6480-4-git-send-email-j-keerthy@ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zcU1BeNsGC5ZCldZ"
+Content-Disposition: inline
+In-Reply-To: <1386053006-6480-4-git-send-email-j-keerthy@ti.com>
+X-Cookie: Boycott meat -- suck your thumb.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/4] Regulators: TPS65218: Add Regulator driver for
+ TPS65218 PMIC
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-03 at 15:11 +0000, David Vrabel wrote:
-> On 03/12/13 13:41, Ian Campbell wrote:
-> > On Tue, 2013-12-03 at 11:59 +0000, David Vrabel wrote:
-> >> On 03/12/13 11:08, Ian Campbell wrote:
-> >>> On Tue, 2013-12-03 at 11:01 +0000, David Vrabel wrote:
-> >>>> On 03/12/13 10:57, Roger Pau Monne wrote:
-> >>>>> Using __packed__ on the public interface is not correct, this
-> >>>>> structures should be compiled using the native ABI, and __packed__
-> >>>>> should only be used in the backend counterpart of those structures
-> >>>>> (which needs to handle different ABIs).
-> >>>>>
-> >>>>> This was even worse in the ARM case, where the Linux kernel was
-> >>>>> incorrectly using the X86_32 protocol ABI. This patch fixes it, but
-> >>>>> also breaks compatibility, so an ARM DomU kernel compiled with
-> >>>>> this patch will fail to communicate with PV disk devices unless the
-> >>>>> Dom0 also has this patch.
-> >>>>
-> >>>> This ABI change needs to be justified.  Why do you think it is
-> >>>> acceptable to break existing Linux guests?  Because I don't think it is.
-> >>>
-> >>> As I explained in my reply those guests are buggy.
-> >>
-> >> The kernel has a strong policy on not changing ABIs, even to fix bugs.
-> >> I don't think a bug fix alone is sufficient justification for ABI breakage.
-> > 
-> > This is not the kernels ABI to fix in stone. The ABI is defined by the
-> > upstream Xen project and Linux has failed to follow the specified ABI
-> > correctly.
-> 
-> I disagree. The working back and front end implementations have created
-> a new, different ABI.
 
-Which is completely incompatible with every other OS. This issue was
-discovered trying to run a NetBSD guest on a Linux dom0.
+--zcU1BeNsGC5ZCldZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I will not legitimize this broken ABI because then all these other OSes
-would need to implement all of this compatibility cruft in order to
-interoperate with Linux.
+On Tue, Dec 03, 2013 at 12:13:24PM +0530, Keerthy wrote:
 
-> > There is no deployed legacy of guests to support here.
-> 
-> I not sure I agree. It does seem to be widely used and I'm not sure we
-> have sufficient visibility on how Xen on Arm is being used to know if
-> this change will cause other people problems.
+> +static int tps65218_ldo1_dcdc3_vsel_to_uv(unsigned int vsel)
+> +{
+> +	int uV = 0;
+> +
+> +	if (vsel <= 26)
+> +		uV = vsel * 25000 + 900000;
+> +	else
+> +		uV = (vsel - 26) * 50000 + 1550000;
+> +
+> +	return uV;
+> +}
 
-It's being widely developed on and used for PoC etc. It is not widely
-deployed.
+Use regulator_map_voltage_linear_range() (and similarly for most of the
+other functions).
 
-> If Konrad and Boris agree that breaking the kernel's ABI in this way is
-> acceptable in this specific case, I'll defer to them.
+> +static const struct of_device_id tps65218_of_match[] = {
+> +	TPS65218_OF_MATCH("ti,tps65218-dcdc1", tps65218_pmic_regs[0]),
+> +	TPS65218_OF_MATCH("ti,tps65218-dcdc2", tps65218_pmic_regs[1]),
+> +	TPS65218_OF_MATCH("ti,tps65218-dcdc3", tps65218_pmic_regs[2]),
+> +	TPS65218_OF_MATCH("ti,tps65218-dcdc4", tps65218_pmic_regs[3]),
+> +	TPS65218_OF_MATCH("ti,tps65218-dcdc5", tps65218_pmic_regs[4]),
+> +	TPS65218_OF_MATCH("ti,tps65218-dcdc6", tps65218_pmic_regs[5]),
+> +	TPS65218_OF_MATCH("ti,tps65218-ldo1", tps65218_pmic_regs[6]),
+> +};
+> +MODULE_DEVICE_TABLE(of, tps65218_of_match);
 
-My opinion as Xen on ARM hypervisor maintainer is that this is the right
-thing to do in this case.
+Indexing into another array by magic number like this is both error
+prone and hard to read.  Either use defined constants or individual
+variables for the things being referenced.
 
-Ian.
+--zcU1BeNsGC5ZCldZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSnfXiAAoJELSic+t+oim9EdkP/2uTCay2TZpGcsTIoHoBa0+5
+QinGsRfxy0uAzJ97phIQ+b/jLmjiOrl//Ni492hc/C0vIiY5l01IUCD+2Mndb8b8
+o77BiY+WthDvKAjqQ5MRDEg72MkHDDrBF6CMrvhCv364EN6cXCvEtgd6vvlIhWa4
+bldr9aRrCbD1W3mCrusRwdEC3+jTb4vZ6MgTTuIhoEkZ3fKjLX3Wgsw7T6m4BzYC
+72UbdYjjwffzxZ+4OF8q94j0kWOAo74TIMbnlDdAYgTxXIYh5Nrwja7oyiNTNWe6
+MKrI7RYt/zdzkFaHrmcKi6gceHfikoglzvlptMvHM9I31t+cqvPhED4QkLRymnRW
+u19V40FYj6nSnLORh6ue25T4O2agUGevd98ip7LMns53BexChlQb3hHvZV9dqm4g
+V+9rJHBRufjGEqy6IKLeKHQRzup7qQwS1NkQFKfnI3VWf2MNsJgv7MFeRZk3t99m
+RNfZBi4NkRynowlLibQMwpRd4DDym3LuFJpNcOG8z29+WvhCDvHcK/35lcRpnFpc
+Ii7MP4CqIWhvFX/2xQuk0sPKGo7vd4VIjaFyKlrAOSjBomI6aHpS99S0A56/m5EW
+8NfUZN1monFC9iNiVqjuI7rvYe1zw+PnGxdK55UYQ6o5ul2MhllN0tOomp4aUMhp
+SFUCdGZ5JHmNc75RTJKX
+=zZMa
+-----END PGP SIGNATURE-----
+
+--zcU1BeNsGC5ZCldZ--
