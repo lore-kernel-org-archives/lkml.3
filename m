@@ -1,111 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289Ab3LCQsy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 11:48:54 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53358 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753795Ab3LCQsw (ORCPT
+	id S1754477Ab3LCQtC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 11:49:02 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50775 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753795Ab3LCQs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 11:48:52 -0500
-Date: Tue, 3 Dec 2013 16:47:48 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>, linux-acpi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Jon Masters <jonathan@jonmasters.org>, patches@linaro.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        linaro-acpi@lists.linaro.org,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Al Stone <al.stone@linaro.org>
-Subject: Re: [RFC part1 PATCH 1/7] ACPI: Make ACPI core running without PCI
- on ARM64
-Message-ID: <20131203164748.0c19d346@alan.etchedpixels.co.uk>
-In-Reply-To: <1386088611-2801-2-git-send-email-hanjun.guo@linaro.org>
-References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org>
-	<1386088611-2801-2-git-send-email-hanjun.guo@linaro.org>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Dec 2013 11:48:56 -0500
+Date: Tue, 3 Dec 2013 16:48:24 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nicolin Chen <b42378@freescale.com>
+Message-ID: <20131203164824.GG27568@sirena.org.uk>
+References: <20131203113852.63cc7e97a7a9e05f939f4ac1@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4IS0x2wnB+8sCNhC"
+Content-Disposition: inline
+In-Reply-To: <20131203113852.63cc7e97a7a9e05f939f4ac1@canb.auug.org.au>
+X-Cookie: Boycott meat -- suck your thumb.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: linux-next: manual merge of the sound-asoc tree with the
+ slave-dma tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-> diff --git a/drivers/acpi/reboot.c b/drivers/acpi/reboot.c
-> index a6c77e8b..89a181f 100644
-> --- a/drivers/acpi/reboot.c
-> +++ b/drivers/acpi/reboot.c
-> @@ -3,12 +3,43 @@
->  #include <linux/acpi.h>
->  #include <acpi/reboot.h>
->  
-> +/*
-> + * There are some rare cases in the ARM world with PCI is not one
-> + * of the buses available to us, even though we use ACPI.
+--4IS0x2wnB+8sCNhC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Can we have a comment that is easier to understand here and perhaps a
-better function name ?
+On Tue, Dec 03, 2013 at 11:38:52AM +1100, Stephen Rothwell wrote:
+> Hi all,
+>=20
+> Today's linux-next merge of the sound-asoc tree got a conflict in
+> sound/soc/fsl/fsl_ssi.c between commit bf02c7cb4314 ("ASoC: fsl_ssi: Add
+> dual fifo mode support") from the slave-dma tree and commit 2924a9981006
+> ("ASoC: fsl_ssi: Add monaural audio support for non-ac97 interface") from
+> the sound-asoc tree.
+>=20
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-> + */
-> +#ifdef CONFIG_PCI
-> +static void acpi_reset_with_writing_pci_config(u64 address, u8 reset_value)
-> +{
-> +	struct pci_bus *bus0;
-> +	unsigned int devfn;
-> +
-> +	/* The reset register can only live on bus 0. */
-> +	bus0 = pci_find_bus(0, 0);
-> +	if (!bus0)
-> +		return;
+Looks good to me, thanks.
 
-So if you can't find the PCI eg because we have no PCI on the device you
-return silently, but
+--4IS0x2wnB+8sCNhC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-> +static void acpi_reset_with_writing_pci_config(u64 address, u8 reset_value)
-> +{
-> +	pr_warn("Resetting with ACPI PCI RESET_REG failed, PCI is disabled\n");
-> +	return;
-> +}
+iQIcBAEBAgAGBQJSngtVAAoJELSic+t+oim9rpcP/3ENRUrSZ1WO3AzsTnaujR+3
+/+e+7csFKWrlHrDpMthXMI2d/uZG3NZzZ3rHEvgQAf51EeBIjupL9zA3tnEcSDwp
+/wHRgPSMqD+Kx82uWKOyr9FO7zWS2xWtaEZdT6Ej2W0wtyCFW8UoCbjs+CPy3dg5
+IJqYUbJUrLB3TLM6lH3bHvHksp1BvY83RhDFibyyeX7SLc9iNAKNZxyTNxQFqBdo
+8mOq/JAeVHY8wA4wqzHHWWjZNS8ueL1r34vLM32CPMlYleM9uHmVUXPfRZbj73ls
+M/28sfM/s9AXVLG/vPvZN2M2fJNAU57oGfP0iqP1wSLfd9hHeERHzzHhPkAR+Cyw
+tUlgwZnDxu7Y8i9B5XlavHSgO2IoaKfbgxL0uzTBlvO33sVkkiHmx93Xgx+S/EYP
+I++4ChdYJU48GnoWS91mbn2ihGsX5EzQFrqM4GfqB77b5XE0jlBIwAKx2Fd5vc3F
+zy8ao+MtKZHLW34zWQlT3/xbu+xJ+g3lz5Fo9JMCorh3gJg9PTVYZdaZNRCTpR8o
+4KflMEdeKlfhQyhnt4EyUfYdqpbNi2JFN4aoshEQIPVBT33cgJgFgkPnvRG1prnc
+eNazPNrSLclBrCJnG/6Q1eZNHA2CJ7QpN3BLK0pyqOBa70qeccP0yULWJY/pxUbp
+h2gLSw62iuW5mK9M+2nr
+=tCA0
+-----END PGP SIGNATURE-----
 
-the same system without CONFIG_PCI makes a noise.
-
-What happens when you want to build a single kernel which works on both
-PCI and non PCI systems. Surely the behaviour should be the same.
-
-The other question I'd ask is given the nature of some of these bits
-would it be better to have an acpi/pci.c which holds the PCI bits ?
-
-> +		acpi_reset_with_writing_pci_config(rr->address, reset_value);
->  		break;
->  
->  	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
-> diff --git a/drivers/pnp/pnpacpi/rsparser.c b/drivers/pnp/pnpacpi/rsparser.c
-> index 167f3d0..5804e77 100644
-> --- a/drivers/pnp/pnpacpi/rsparser.c
-> +++ b/drivers/pnp/pnpacpi/rsparser.c
-> @@ -113,8 +113,10 @@ static int dma_flags(struct pnp_dev *dev, int type, int bus_master,
->  
->  static void pnpacpi_add_irqresource(struct pnp_dev *dev, struct resource *r)
->  {
-> +#ifdef CONFIG_PCI
->  	if (!(r->flags & IORESOURCE_DISABLED))
->  		pcibios_penalize_isa_irq(r->start, 1);
-
-Probably better avoid PCI ifdefs all over the place. Any reason the
-includes for the PCI layer can't provide this as a dummy on a non-PCI
-system ?
-
-Alan
+--4IS0x2wnB+8sCNhC--
