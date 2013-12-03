@@ -1,377 +1,1348 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647Ab3LCBj6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 20:39:58 -0500
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:65238 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752431Ab3LCBjx (ORCPT
+	id S1753137Ab3LCBsW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 20:48:22 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:43288 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935Ab3LCBsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 20:39:53 -0500
+	Mon, 2 Dec 2013 20:48:21 -0500
+X-AuditID: 9c930179-b7c50ae000001bed-ea-529d38625321
+From: Namhyung Kim <namhyung@kernel.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 03/17] tracing/kprobes: Factor out struct trace_probe
+References: <1385533203-10014-1-git-send-email-namhyung@kernel.org>
+	<1385533203-10014-4-git-send-email-namhyung@kernel.org>
+	<20131129092521.GA9585@linux.vnet.ibm.com>
+	<87a9gjpvlr.fsf@sejong.aot.lge.com>
+Date: Tue, 03 Dec 2013 10:48:18 +0900
+In-Reply-To: <87a9gjpvlr.fsf@sejong.aot.lge.com> (Namhyung Kim's message of
+	"Mon, 02 Dec 2013 16:20:32 +0900")
+Message-ID: <87ob4yogbh.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAFXGft+F52p+oaa59=5e5pGfON44N36NA-XMYi5PorzWeybnKw@mail.gmail.com>
-References: <CAFXGft+CXk3W8=3w=AuYzqYtYnR8nH4Of9=668tUeT+tugD9-A@mail.gmail.com>
-	<5294BC01.7090605@gmail.com>
-	<CAFXGftLsKm9a5bmXX4Fe+rnSvYVdBDOyYGwisRP7XMu+ky=DGw@mail.gmail.com>
-	<CAFXGftLt1p6XpR2eGsMYKjEbbOHvch-LgcFw1sAXThcA2Rtjyw@mail.gmail.com>
-	<20131127124530.GA23369@hmsreliant.think-freely.org>
-	<CAFXGftJQV=5Pqs3bhfiS3T1VO1q8jfaMjAUiqm2tDbtSyBCM3A@mail.gmail.com>
-	<529C9B50.50002@gmail.com>
-	<CAGugRbXFirQ5P3ek9zN86h4vvO6qsy3eNEooJOApotA+dL+C_g@mail.gmail.com>
-	<529CB859.9090904@gmail.com>
-	<CAFXGft+F52p+oaa59=5e5pGfON44N36NA-XMYi5PorzWeybnKw@mail.gmail.com>
-Date: Tue, 3 Dec 2013 09:39:52 +0800
-Message-ID: <CAFXGft+4o6fT4SYbu3musC+-BEi=xOEGUbZSavF1-0_V1mg6zg@mail.gmail.com>
-Subject: Re: Supporting 4 way connections in LKSCTP
-From: Sun Paul <paulrbk@gmail.com>
-To: Vlad Yasevich <vyasevich@gmail.com>
-Cc: Karl Heiss <kheiss@gmail.com>, Neil Horman <nhorman@tuxdriver.com>,
-        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Another question
+Hi Srikar,
 
-if a wrong source IP is used, does the association still classified as normal?
+This is v8 that addressed all your comments.
 
-On Tue, Dec 3, 2013 at 9:31 AM, Sun Paul <paulrbk@gmail.com> wrote:
-> Thanks Vlad
->
-> I checked on the route, and it looks correct.
->
-> [root@localhost ~]# ip route get 11.1.1.1 from 110.1.1.1
-> 11.1.1.1 from 110.1.1.1 via 110.1.1.254 dev eth1
->     cache  mtu 1500 advmss 1460 hoplimit 64
->
-> [root@localhost ~]# ip route get 11.1.1.1 from 120.1.1.1
-> 11.1.1.1 from 120.1.1.1 via 120.1.1.254 dev eth2
->     cache  mtu 1500 advmss 1460 hoplimit 64
->
-> [root@localhost ~]# ip route get 12.1.1.1 from 120.1.1.1
-> 12.1.1.1 from 120.1.1.1 via 120.1.1.254 dev eth2
->     cache  mtu 1500 advmss 1460 hoplimit 64
->
-> [root@localhost ~]# ip route get 12.1.1.1 from 110.1.1.1
-> 12.1.1.1 from 110.1.1.1 via 110.1.1.254 dev eth1
->     cache  mtu 1500 advmss 1460 hoplimit 64
->
-> so, if this is not being handled in LKSCTP, is it possible to suggest
-> a way how we can achieve it?
->
-> On Tue, Dec 3, 2013 at 12:42 AM, Vlad Yasevich <vyasevich@gmail.com> wrote:
->> On 12/02/2013 10:45 AM, Karl Heiss wrote:
->>> On Mon, Dec 2, 2013 at 9:38 AM, Vlad Yasevich <vyasevich@gmail.com> wrote:
->>>> On 11/27/2013 11:03 PM, Sun Paul wrote:
->>>>> How LKSCTP select which source address to use for the INIT_ACK or
->>>>> HB_ACK? below is the testing result where a router is located in the
->>>>> middle.
->>>>>
->>>>> Before starting the application. the packet on eth1 and eth2 are
->>>>>
->>>>> eth1
->>>>> 0 packets dropped by kernel
->>>>> [root@localhost ~]# tcpdump -i eth1 -s 0 -nn
->>>>> tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
->>>>> listening on eth1, link-type EN10MB (Ethernet), capture size 65535 bytes
->>>>> 11:24:14.262489 IP 12.1.1.1.2905 > 110.1.1.1.2905: sctp (1) [INIT]
->>>>> [init tag: 28362903] [rwnd: 102400] [OS: 16] [MIS: 16] [init TSN: 0]
->>>>> 11:24:14.262522 IP 110.1.1.1.2905 > 12.1.1.1.2905: sctp (1) [ABORT]
->>>>> 11:24:14.539486
->>>>> 11:24:16.262488 IP 12.1.1.1.2905 > 110.1.1.1.2905: sctp (1) [INIT]
->>>>> [init tag: 29391734] [rwnd: 102400] [OS: 16] [MIS: 16] [init TSN: 0]
->>>>> 11:24:16.262520 IP 110.1.1.1.2905 > 12.1.1.1.2905: sctp (1) [ABORT]
->>>>>
->>>>> eth2
->>>>> [root@localhost ~]# tcpdump -i eth2 -s 0 -nn
->>>>> tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
->>>>> listening on eth2, link-type EN10MB (Ethernet), capture size 65535 bytes
->>>>>
->>>>> When starting the application. the packet show as below.
->>>>>
->>>>> eth1
->>>>> 11:26:02.261511 IP 12.1.1.1.2905 > 110.1.1.1.2905: sctp (1) [INIT]
->>>>> [init tag: 26256828] [rwnd: 102400] [OS: 16] [MIS: 16] [init TSN: 0]
->>>>> 11:26:02.263513 IP 12.1.1.1.2905 > 110.1.1.1.2905: sctp (1) [COOKIE ECHO]
->>>>> 11:26:02.264518 IP 12.1.1.1.2905 > 110.1.1.1.2905: sctp (1) [HB REQ]
->>>>> 11:26:02.563511 IP 12.1.1.1.2905 > 110.1.1.1.2905: sctp (1) [HB REQ]
->>>>>
->>>>> eth2
->>>>> 11:26:02.261604 IP 120.1.1.1.2905 > 12.1.1.1.2905: sctp (1) [INIT ACK]
->>>>> [init tag: 3478239387] [rwnd: 131072] [OS: 5] [MIS: 5] [init TSN:
->>>>> 2330749678]
->>>>> 11:26:02.263583 IP 120.1.1.1.2905 > 12.1.1.1.2905: sctp (1) [COOKIE ACK]
->>>>> 11:26:02.264548 IP 120.1.1.1.2905 > 12.1.1.1.2905: sctp (1) [HB ACK]
->>>>> 11:26:02.264652 IP 11.1.1.1.2905 > 120.1.1.1.2905: sctp (1) [HB REQ]
->>>>> 11:26:02.264705 IP 120.1.1.1.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
->>>>> 11:26:02.563543 IP 120.1.1.1.2905 > 12.1.1.1.2905: sctp (1) [HB ACK]
->>>>>
->>>>> From the above result, you can see that the INIT, COOKIE ECHO and
->>>>> HB_REQ originated from 12.1.1.1 on eth1, but the ACK (INIT_ACK,
->>>>> COOKIE_ACK, HB_ACK) are returned on eth2 using source address
->>>>> 120.1.1.1 instead of 110.1.1.1.
->>>>>
->>>>> Why LKSCTP use 120.1.1.1 as source instead of 110.1.1.1?
->>>>>
->>>>> For simple ICMP ping test, it is normal, but not for SCTP.
->>>>>
->>>>> eth1
->>>>> 11:30:02.824548 IP 12.1.1.1 > 110.1.1.1: ICMP echo request, id 37178,
->>>>> seq 12, length 64
->>>>> 11:30:02.824559 IP 110.1.1.1 > 12.1.1.1: ICMP echo reply, id 37178,
->>>>> seq 12, length 64
->>>>> 11:30:03.825551 IP 12.1.1.1 > 110.1.1.1: ICMP echo request, id 37178,
->>>>> seq 13, length 64
->>>>> 11:30:03.825561 IP 110.1.1.1 > 12.1.1.1: ICMP echo reply, id 37178,
->>>>> seq 13, length 64
->>>>>
->>>>> eth2
->>>>> 11:30:34.027687 IP 11.1.1.1 > 120.1.1.1: ICMP echo request, id 46138,
->>>>> seq 2, length 64
->>>>> 11:30:34.027697 IP 120.1.1.1 > 11.1.1.1: ICMP echo reply, id 46138,
->>>>> seq 2, length 64
->>>>> 11:30:35.027686 IP 11.1.1.1 > 120.1.1.1: ICMP echo request, id 46138,
->>>>> seq 3, length 64
->>>>> 11:30:35.027694 IP 120.1.1.1 > 11.1.1.1: ICMP echo reply, id 46138,
->>>>> seq 3, length 64
->>>>>
->>>>> Below is the route information
->>>>> #route -n
->>>>> Kernel IP routing table
->>>>> Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
->>>>> 110.1.1.0       0.0.0.0         255.255.255.0   U     0      0        0 eth1
->>>>> 120.1.1.0       0.0.0.0         255.255.255.0   U     0      0        0 eth2
->>>>>
->>>>> # ip route show
->>>>> 110.1.1.0/24 dev eth1  proto kernel  scope link  src 110.1.1.1
->>>>> 120.1.1.0/24 dev eth2  proto kernel  scope link  src 120.1.1.1
->>>>>
->>>>> Since we are using iproute2, so we will have dedicate routing table
->>>>> per interface
->>>>>
->>>>> # ip route show table SCTP1
->>>>> default via 110.1.1.254 dev eth1
->>>>>
->>>>> # ip route show table SCTP2
->>>>> default via 120.1.1.254 dev eth2
->>>>>
->>>>> # ip rule ls
->>>>> 0: from all lookup local
->>>>> 101: from 110.1.1.1 lookup SCTP1
->>>>> 102: from 120.1.1.1 lookup SCTP2
->>>>> 32766: from all lookup main
->>>>> 32767: from all lookup default
->>>>>
->>>>> How LKSCTP select source address to reply? If we know how it works,
->>>>> then we may know what is going wrong.
->>>>
->>>> LKSCTP will prefer the address returned from the routing table as long
->>>> as it is one of the addresses that is bound by the socket and are usable
->>>> by the association.
->>>>
->>>> If the address returned from the route lookup is not part of the
->>>> association, then lksctp attempts to lookup routes using one of the
->>>> source addresses it has available.  Usually the first lookup succeeds
->>>> due to the host-model implementation in linux.
->>>>
->>>> You may want to change your rule set to be destination based.  Then
->>>> in the table associated with the rule, specify the source address
->>>> you want to be used.
->>>>
->>>> -vlad
->>>
->>> I have had similar qualms myself about this behavior, and I honestly
->>> don't know what the correct answer should be...
->>>
->>> In my opinion, shouldn't the source address "just work" for
->>> acknowledgements? If the spec explicitly states that the ACK should
->>> have a source address that matches the destination of the chunk being
->>> ACKed, why should someone have to configure this behavior outside of
->>> the SCTP stack by default? Is it a technical limitation, or is this
->>> done for a particular reason?  I can understand needing to override
->>> the behavior, but why isn't the default "sane"?
->>
->> I think the results are sane, they simply may not match expectations.
->> SCTP spec doesn't say anything about source address selection.  It
->> says that a response should be send back to the source of the request.
->> This is being done in both cases, i.e. the destination address in
->> INIT-ACK matches the source of the INIT.
->>
->> The spec does contain the MAY text that allows finer control of source
->> addresses, but lksctp doesn't seem to implement that.  Whenever we've
->> tried, we couldn't get the generic mechanism working to please everyone,
->> as everyone had slightly different configurations and expectations.  So
->> we left it to the rules engine.
->>
->> In this setup, it just appears that the default routing is not what you
->> expect.  You can easily check this with 'ip route get' command.  If it
->> is not what you want linux allows you to change that via ip rules.
->>
->> -vlad
->>
->>>
->>> Karl
->>>
->>>>>
->>>>> On Wed, Nov 27, 2013 at 8:45 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
->>>>>> On Wed, Nov 27, 2013 at 07:10:49AM +0800, Sun Paul wrote:
->>>>>>> Hi Vlad
->>>>>>>
->>>>>>> Thank for your reply. If it is based on the destination IP to find the
->>>>>>> best route, why the problem didn't happen on single-homing sample?
->>>>>>>
->>>>>> Because You only ever use one address from NODE A (12.1.1.1)
->>>>>>
->>>>>>> In the single-homing sample that provided in the original email, both
->>>>>>> of the interfaces (eth1 and eth2) are presented on NODE-B during the
->>>>>>> test. However, the LKSCTP library know to use the interface eth1 to
->>>>>>> respond to the SCTP request.
->>>>>>>
->>>>>> Yes, because it does a route lookup to each of the two ip addresses to NODE B,
->>>>>> and in both lookups, the route indicates that only one source address should be
->>>>>> used (12.1.1.1).  If you issue a ip route show command, you'll see that routes
->>>>>> to both address on NODE B match on a rule that specifies the same src address
->>>>>> and interface be used.
->>>>>>
->>>>>> Neil
->>>>>>
->>>>>>> - PS
->>>>>>>
->>>>>>> On Wed, Nov 27, 2013 at 7:09 AM, Sun Paul <paulrbk@gmail.com> wrote:
->>>>>>>> Hi Vlad
->>>>>>>>
->>>>>>>> Thank for your reply. If it is based on the destination IP to find the
->>>>>>>> best route, why the problem didn't happen on single-homing sample?
->>>>>>>>
->>>>>>>> In the single-homing sample that provided in the original email, both
->>>>>>>> of the interfaces (eth1 and eth2) are presented on NODE-B during the
->>>>>>>> test. However, the LKSCTP library know to use the interface eth1 to
->>>>>>>> respond to the SCTP request.
->>>>>>>>
->>>>>>>> - PS
->>>>>>>>
->>>>>>>> On Tue, Nov 26, 2013 at 11:19 PM, Vlad Yasevich <vyasevich@gmail.com> wrote:
->>>>>>>>> On 11/25/2013 08:03 PM, Sun Paul wrote:
->>>>>>>>>> Hi
->>>>>>>>>>
->>>>>>>>>> we have a problem on using LKSCTP to form a 4 ways multi-homing network.
->>>>>>>>>>
->>>>>>>>>> Configuration
->>>>>>>>>> - Node-A has 2 IP addresses in different subnets, known as IP-A (eth1),
->>>>>>>>>> IP-B (eth2)
->>>>>>>>>> - Node-B has 2 IP addresses in different subnets, known as IP-X (eth1),
->>>>>>>>>> IP-Y (eth2)
->>>>>>>>>>
->>>>>>>>>
->>>>>>>>> First of all, this is not a 4 way multi-homed network.  As far as each
->>>>>>>>> SCTP association is concerned, it has only 2 destinations to send to
->>>>>>>>> so it has only 2 ways to get there.  The fact that you have multiple
->>>>>>>>> local addresses doesn't mean that every local address can and should
->>>>>>>>> be used to connect to the remote.
->>>>>>>>>
->>>>>>>>>> the four way paths are shown below.
->>>>>>>>>> 1. IP-A (11.1.1.1) to IP-X (11.1.1.11)
->>>>>>>>>> 2. IP-B (12.1.1.1) to IP-Y (12.1.1.11)
->>>>>>>>>> 3. IP-A (11.1.1.1) to IP-Y (12.1.1.11)
->>>>>>>>>> 4. IP-B (12.1.1.1) to IP-X (11.1.1.11)
->>>>>>>>>
->>>>>>>>> No, actually you only have 2 paths:  one to IPX and one to IP-Y.
->>>>>>>>> Which source address you choose is based on routing policy
->>>>>>>>> decisions and is outside the scope of SCTP.
->>>>>>>>>
->>>>>>>>>>
->>>>>>>>>> the HB/HB_ACK is normal for the paths " IP-A to IP-X" and "IP-B to
->>>>>>>>>> IP-Y", but it is not correct for the rest of two.
->>>>>>>>>
->>>>>>>>> Right, because linux is using a host addressing model, not an interface
->>>>>>>>> addressing model.  SCTP stack simply finds the best source address
->>>>>>>>> that can be used to reach IP-X and it happens to be IP-A.  So that
->>>>>>>>> is what it is going to use.
->>>>>>>>>
->>>>>>>>> The above explains why you are seeing what you describe below.
->>>>>>>>>
->>>>>>>>> In the end, linux SCTP implementation determines paths solely based
->>>>>>>>> on the destination address.
->>>>>>>>>
->>>>>>>>> -vlad
->>>>>>>>>
->>>>>>>>>>
->>>>>>>>>> First of all, we are using iproute2 to form 2 table such that when
->>>>>>>>>> IP-B arrives on IP-X, it will know how to route back to IP-B on the
->>>>>>>>>> same interface, i.e (eth1). Same logic for the path "IP-A to IP-X".
->>>>>>>>>>
->>>>>>>>>> What we observed here is that when 12.1.1.1 sends INIT to 11.1.1.11,
->>>>>>>>>> LKSCTP will send back the INIT_ACK to 12.1.1.1 using 12.1.1.11 but not
->>>>>>>>>> using the IP 11.1.1.11.
->>>>>>>>>>
->>>>>>>>>> The above operation makes the subsequence HB/HB_ACK in using wrong IP address.
->>>>>>>>>>
->>>>>>>>>> TCP trace on eth1
->>>>>>>>>> 18:02:41.058640 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [INIT]
->>>>>>>>>> [init tag: 19933036] [rwnd: 102400] [OS: 16] [MIS: 16] [init TSN: 0]
->>>>>>>>>> 18:02:41.061634 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [COOKIE ECHO]
->>>>>>>>>> 18:02:41.062642 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [HB REQ]
->>>>>>>>>> 18:02:41.062846 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
->>>>>>>>>> 18:02:41.361811 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
->>>>>>>>>> 18:02:41.661791 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
->>>>>>>>>> 18:02:41.961791 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
->>>>>>>>>>
->>>>>>>>>> TCP trace on eth2
->>>>>>>>>> 18:02:41.058755 IP 12.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [INIT ACK]
->>>>>>>>>> [init tag: 424726157] [rwnd: 131072] [OS: 5] [MIS: 5] [init TSN:
->>>>>>>>>> 3340756356]
->>>>>>>>>> 18:02:41.061696 IP 12.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [COOKIE ACK]
->>>>>>>>>> 18:02:41.062663 IP 12.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [HB ACK]
->>>>>>>>>> 18:02:41.062791 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
->>>>>>>>>> 18:02:41.361777 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
->>>>>>>>>> 18:02:41.661772 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
->>>>>>>>>> 18:02:41.961772 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
->>>>>>>>>> 18:02:42.161771 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
->>>>>>>>>> 18:02:42.461770 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
->>>>>>>>>> 18:02:42.675770 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
->>>>>>>>>>
->>>>>>>>>>
->>>>>>>>>> If we are using single homing, there is no problem on the SCTP
->>>>>>>>>> communication. Below is the TCP trace on eth1 using sctp_test
->>>>>>>>>>
->>>>>>>>>> 18:09:55.356727 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [INIT]
->>>>>>>>>> [init tag: 32516609] [rwnd: 102400] [OS: 16] [MIS: 16] [init TSN: 0]
->>>>>>>>>> 18:09:55.356811 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [INIT ACK]
->>>>>>>>>> [init tag: 3168861995] [rwnd: 131072] [OS: 10] [MIS: 16] [init TSN:
->>>>>>>>>> 1877695021]
->>>>>>>>>> 18:09:55.357727 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [COOKIE ECHO]
->>>>>>>>>> 18:09:55.357788 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [COOKIE ACK]
->>>>>>>>>> 18:09:55.358724 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [HB REQ]
->>>>>>>>>> 18:09:55.358740 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [HB ACK]
->>>>>>>>>> 18:09:55.379715 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [DATA]
->>>>>>>>>> (B)(E) [TSN: 0] [SID: 0] [SSEQ 0] [PPID 0x3]
->>>>>>>>>> 18:09:55.379735 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [SACK]
->>>>>>>>>> [cum ack 0] [a_rwnd 131064] [#gap acks 0] [#dup tsns 0]
->>>>>>>>>> 18:09:55.657716 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [HB REQ]
->>>>>>>>>> 18:09:55.657732 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [HB ACK]
->>>>>>>>>>
->>>>>>>>>> From the observations, it seems that the LKSCTP library is not able to
->>>>>>>>>> use the original local address when multi-homing is being used. Is
->>>>>>>>>> there anyway can be resolved it?
->>>>>>>>>>
->>>>>>>>>> Thanks
->>>>>>>>>>
->>>>>>>>>> PS
->>>>>>>>>> --
->>>>>>>>>> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
->>>>>>>>>> the body of a message to majordomo@vger.kernel.org
->>>>>>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>>>>>>>
->>>>>>>>>
->>>>>>> --
->>>>>>> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
->>>>>>> the body of a message to majordomo@vger.kernel.org
->>>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>>>>
->>>>
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
+Thanks,
+Namhyung
+
+
+>From 7f4fff0cbbaa492aa74fd9ce55f96ddfa4bca2a1 Mon Sep 17 00:00:00 2001
+From: Namhyung Kim <namhyung.kim@lge.com>
+Date: Wed, 3 Jul 2013 13:50:51 +0900
+Subject: [PATCH v8 03/17] tracing/kprobes: Factor out struct trace_probe
+
+There are functions that can be shared to both of kprobes and uprobes.
+Separate common data structure to struct trace_probe and use it from
+the shared functions.
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ kernel/trace/trace_kprobe.c | 548 ++++++++++++++++++++++----------------------
+ kernel/trace/trace_probe.h  |  20 ++
+ 2 files changed, 289 insertions(+), 279 deletions(-)
+
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index dae9541ada9e..db922fd74b05 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -27,18 +27,12 @@
+ /**
+  * Kprobe event core functions
+  */
+-struct trace_probe {
++struct trace_kprobe {
+ 	struct list_head	list;
+ 	struct kretprobe	rp;	/* Use rp.kp for kprobe use */
+ 	unsigned long 		nhit;
+-	unsigned int		flags;	/* For TP_FLAG_* */
+ 	const char		*symbol;	/* symbol name */
+-	struct ftrace_event_class	class;
+-	struct ftrace_event_call	call;
+-	struct list_head	files;
+-	ssize_t			size;		/* trace entry size */
+-	unsigned int		nr_args;
+-	struct probe_arg	args[];
++	struct trace_probe	tp;
+ };
+ 
+ struct event_file_link {
+@@ -46,56 +40,46 @@ struct event_file_link {
+ 	struct list_head		list;
+ };
+ 
+-#define SIZEOF_TRACE_PROBE(n)			\
+-	(offsetof(struct trace_probe, args) +	\
++#define SIZEOF_TRACE_KPROBE(n)				\
++	(offsetof(struct trace_kprobe, tp.args) +	\
+ 	(sizeof(struct probe_arg) * (n)))
+ 
+ 
+-static __kprobes bool trace_probe_is_return(struct trace_probe *tp)
++static __kprobes bool trace_kprobe_is_return(struct trace_kprobe *tk)
+ {
+-	return tp->rp.handler != NULL;
++	return tk->rp.handler != NULL;
+ }
+ 
+-static __kprobes const char *trace_probe_symbol(struct trace_probe *tp)
++static __kprobes const char *trace_kprobe_symbol(struct trace_kprobe *tk)
+ {
+-	return tp->symbol ? tp->symbol : "unknown";
++	return tk->symbol ? tk->symbol : "unknown";
+ }
+ 
+-static __kprobes unsigned long trace_probe_offset(struct trace_probe *tp)
++static __kprobes unsigned long trace_kprobe_offset(struct trace_kprobe *tk)
+ {
+-	return tp->rp.kp.offset;
++	return tk->rp.kp.offset;
+ }
+ 
+-static __kprobes bool trace_probe_is_enabled(struct trace_probe *tp)
++static __kprobes bool trace_kprobe_has_gone(struct trace_kprobe *tk)
+ {
+-	return !!(tp->flags & (TP_FLAG_TRACE | TP_FLAG_PROFILE));
++	return !!(kprobe_gone(&tk->rp.kp));
+ }
+ 
+-static __kprobes bool trace_probe_is_registered(struct trace_probe *tp)
+-{
+-	return !!(tp->flags & TP_FLAG_REGISTERED);
+-}
+-
+-static __kprobes bool trace_probe_has_gone(struct trace_probe *tp)
+-{
+-	return !!(kprobe_gone(&tp->rp.kp));
+-}
+-
+-static __kprobes bool trace_probe_within_module(struct trace_probe *tp,
+-						struct module *mod)
++static __kprobes bool trace_kprobe_within_module(struct trace_kprobe *tk,
++						 struct module *mod)
+ {
+ 	int len = strlen(mod->name);
+-	const char *name = trace_probe_symbol(tp);
++	const char *name = trace_kprobe_symbol(tk);
+ 	return strncmp(mod->name, name, len) == 0 && name[len] == ':';
+ }
+ 
+-static __kprobes bool trace_probe_is_on_module(struct trace_probe *tp)
++static __kprobes bool trace_kprobe_is_on_module(struct trace_kprobe *tk)
+ {
+-	return !!strchr(trace_probe_symbol(tp), ':');
++	return !!strchr(trace_kprobe_symbol(tk), ':');
+ }
+ 
+-static int register_probe_event(struct trace_probe *tp);
+-static int unregister_probe_event(struct trace_probe *tp);
++static int register_kprobe_event(struct trace_kprobe *tk);
++static int unregister_kprobe_event(struct trace_kprobe *tk);
+ 
+ static DEFINE_MUTEX(probe_lock);
+ static LIST_HEAD(probe_list);
+@@ -107,42 +91,42 @@ static int kretprobe_dispatcher(struct kretprobe_instance *ri,
+ /*
+  * Allocate new trace_probe and initialize it (including kprobes).
+  */
+-static struct trace_probe *alloc_trace_probe(const char *group,
++static struct trace_kprobe *alloc_trace_kprobe(const char *group,
+ 					     const char *event,
+ 					     void *addr,
+ 					     const char *symbol,
+ 					     unsigned long offs,
+ 					     int nargs, bool is_return)
+ {
+-	struct trace_probe *tp;
++	struct trace_kprobe *tk;
+ 	int ret = -ENOMEM;
+ 
+-	tp = kzalloc(SIZEOF_TRACE_PROBE(nargs), GFP_KERNEL);
+-	if (!tp)
++	tk = kzalloc(SIZEOF_TRACE_KPROBE(nargs), GFP_KERNEL);
++	if (!tk)
+ 		return ERR_PTR(ret);
+ 
+ 	if (symbol) {
+-		tp->symbol = kstrdup(symbol, GFP_KERNEL);
+-		if (!tp->symbol)
++		tk->symbol = kstrdup(symbol, GFP_KERNEL);
++		if (!tk->symbol)
+ 			goto error;
+-		tp->rp.kp.symbol_name = tp->symbol;
+-		tp->rp.kp.offset = offs;
++		tk->rp.kp.symbol_name = tk->symbol;
++		tk->rp.kp.offset = offs;
+ 	} else
+-		tp->rp.kp.addr = addr;
++		tk->rp.kp.addr = addr;
+ 
+ 	if (is_return)
+-		tp->rp.handler = kretprobe_dispatcher;
++		tk->rp.handler = kretprobe_dispatcher;
+ 	else
+-		tp->rp.kp.pre_handler = kprobe_dispatcher;
++		tk->rp.kp.pre_handler = kprobe_dispatcher;
+ 
+ 	if (!event || !is_good_name(event)) {
+ 		ret = -EINVAL;
+ 		goto error;
+ 	}
+ 
+-	tp->call.class = &tp->class;
+-	tp->call.name = kstrdup(event, GFP_KERNEL);
+-	if (!tp->call.name)
++	tk->tp.call.class = &tk->tp.class;
++	tk->tp.call.name = kstrdup(event, GFP_KERNEL);
++	if (!tk->tp.call.name)
+ 		goto error;
+ 
+ 	if (!group || !is_good_name(group)) {
+@@ -150,42 +134,42 @@ static struct trace_probe *alloc_trace_probe(const char *group,
+ 		goto error;
+ 	}
+ 
+-	tp->class.system = kstrdup(group, GFP_KERNEL);
+-	if (!tp->class.system)
++	tk->tp.class.system = kstrdup(group, GFP_KERNEL);
++	if (!tk->tp.class.system)
+ 		goto error;
+ 
+-	INIT_LIST_HEAD(&tp->list);
+-	INIT_LIST_HEAD(&tp->files);
+-	return tp;
++	INIT_LIST_HEAD(&tk->list);
++	INIT_LIST_HEAD(&tk->tp.files);
++	return tk;
+ error:
+-	kfree(tp->call.name);
+-	kfree(tp->symbol);
+-	kfree(tp);
++	kfree(tk->tp.call.name);
++	kfree(tk->symbol);
++	kfree(tk);
+ 	return ERR_PTR(ret);
+ }
+ 
+-static void free_trace_probe(struct trace_probe *tp)
++static void free_trace_kprobe(struct trace_kprobe *tk)
+ {
+ 	int i;
+ 
+-	for (i = 0; i < tp->nr_args; i++)
+-		traceprobe_free_probe_arg(&tp->args[i]);
++	for (i = 0; i < tk->tp.nr_args; i++)
++		traceprobe_free_probe_arg(&tk->tp.args[i]);
+ 
+-	kfree(tp->call.class->system);
+-	kfree(tp->call.name);
+-	kfree(tp->symbol);
+-	kfree(tp);
++	kfree(tk->tp.call.class->system);
++	kfree(tk->tp.call.name);
++	kfree(tk->symbol);
++	kfree(tk);
+ }
+ 
+-static struct trace_probe *find_trace_probe(const char *event,
+-					    const char *group)
++static struct trace_kprobe *find_trace_kprobe(const char *event,
++					      const char *group)
+ {
+-	struct trace_probe *tp;
++	struct trace_kprobe *tk;
+ 
+-	list_for_each_entry(tp, &probe_list, list)
+-		if (strcmp(tp->call.name, event) == 0 &&
+-		    strcmp(tp->call.class->system, group) == 0)
+-			return tp;
++	list_for_each_entry(tk, &probe_list, list)
++		if (strcmp(tk->tp.call.name, event) == 0 &&
++		    strcmp(tk->tp.call.class->system, group) == 0)
++			return tk;
+ 	return NULL;
+ }
+ 
+@@ -194,7 +178,7 @@ static struct trace_probe *find_trace_probe(const char *event,
+  * if the file is NULL, enable "perf" handler, or enable "trace" handler.
+  */
+ static int
+-enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
++enable_trace_kprobe(struct trace_kprobe *tk, struct ftrace_event_file *file)
+ {
+ 	int ret = 0;
+ 
+@@ -208,17 +192,17 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ 		}
+ 
+ 		link->file = file;
+-		list_add_tail_rcu(&link->list, &tp->files);
++		list_add_tail_rcu(&link->list, &tk->tp.files);
+ 
+-		tp->flags |= TP_FLAG_TRACE;
++		tk->tp.flags |= TP_FLAG_TRACE;
+ 	} else
+-		tp->flags |= TP_FLAG_PROFILE;
++		tk->tp.flags |= TP_FLAG_PROFILE;
+ 
+-	if (trace_probe_is_registered(tp) && !trace_probe_has_gone(tp)) {
+-		if (trace_probe_is_return(tp))
+-			ret = enable_kretprobe(&tp->rp);
++	if (trace_probe_is_registered(&tk->tp) && !trace_kprobe_has_gone(tk)) {
++		if (trace_kprobe_is_return(tk))
++			ret = enable_kretprobe(&tk->rp);
+ 		else
+-			ret = enable_kprobe(&tp->rp.kp);
++			ret = enable_kprobe(&tk->rp.kp);
+ 	}
+  out:
+ 	return ret;
+@@ -241,14 +225,14 @@ find_event_file_link(struct trace_probe *tp, struct ftrace_event_file *file)
+  * if the file is NULL, disable "perf" handler, or disable "trace" handler.
+  */
+ static int
+-disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
++disable_trace_kprobe(struct trace_kprobe *tk, struct ftrace_event_file *file)
+ {
+ 	struct event_file_link *link = NULL;
+ 	int wait = 0;
+ 	int ret = 0;
+ 
+ 	if (file) {
+-		link = find_event_file_link(tp, file);
++		link = find_event_file_link(&tk->tp, file);
+ 		if (!link) {
+ 			ret = -EINVAL;
+ 			goto out;
+@@ -256,18 +240,18 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ 
+ 		list_del_rcu(&link->list);
+ 		wait = 1;
+-		if (!list_empty(&tp->files))
++		if (!list_empty(&tk->tp.files))
+ 			goto out;
+ 
+-		tp->flags &= ~TP_FLAG_TRACE;
++		tk->tp.flags &= ~TP_FLAG_TRACE;
+ 	} else
+-		tp->flags &= ~TP_FLAG_PROFILE;
++		tk->tp.flags &= ~TP_FLAG_PROFILE;
+ 
+-	if (!trace_probe_is_enabled(tp) && trace_probe_is_registered(tp)) {
+-		if (trace_probe_is_return(tp))
+-			disable_kretprobe(&tp->rp);
++	if (!trace_probe_is_enabled(&tk->tp) && trace_probe_is_registered(&tk->tp)) {
++		if (trace_kprobe_is_return(tk))
++			disable_kretprobe(&tk->rp);
+ 		else
+-			disable_kprobe(&tp->rp.kp);
++			disable_kprobe(&tk->rp.kp);
+ 		wait = 1;
+ 	}
+  out:
+@@ -288,40 +272,40 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ }
+ 
+ /* Internal register function - just handle k*probes and flags */
+-static int __register_trace_probe(struct trace_probe *tp)
++static int __register_trace_kprobe(struct trace_kprobe *tk)
+ {
+ 	int i, ret;
+ 
+-	if (trace_probe_is_registered(tp))
++	if (trace_probe_is_registered(&tk->tp))
+ 		return -EINVAL;
+ 
+-	for (i = 0; i < tp->nr_args; i++)
+-		traceprobe_update_arg(&tp->args[i]);
++	for (i = 0; i < tk->tp.nr_args; i++)
++		traceprobe_update_arg(&tk->tp.args[i]);
+ 
+ 	/* Set/clear disabled flag according to tp->flag */
+-	if (trace_probe_is_enabled(tp))
+-		tp->rp.kp.flags &= ~KPROBE_FLAG_DISABLED;
++	if (trace_probe_is_enabled(&tk->tp))
++		tk->rp.kp.flags &= ~KPROBE_FLAG_DISABLED;
+ 	else
+-		tp->rp.kp.flags |= KPROBE_FLAG_DISABLED;
++		tk->rp.kp.flags |= KPROBE_FLAG_DISABLED;
+ 
+-	if (trace_probe_is_return(tp))
+-		ret = register_kretprobe(&tp->rp);
++	if (trace_kprobe_is_return(tk))
++		ret = register_kretprobe(&tk->rp);
+ 	else
+-		ret = register_kprobe(&tp->rp.kp);
++		ret = register_kprobe(&tk->rp.kp);
+ 
+ 	if (ret == 0)
+-		tp->flags |= TP_FLAG_REGISTERED;
++		tk->tp.flags |= TP_FLAG_REGISTERED;
+ 	else {
+ 		pr_warning("Could not insert probe at %s+%lu: %d\n",
+-			   trace_probe_symbol(tp), trace_probe_offset(tp), ret);
+-		if (ret == -ENOENT && trace_probe_is_on_module(tp)) {
++			   trace_kprobe_symbol(tk), trace_kprobe_offset(tk), ret);
++		if (ret == -ENOENT && trace_kprobe_is_on_module(tk)) {
+ 			pr_warning("This probe might be able to register after"
+ 				   "target module is loaded. Continue.\n");
+ 			ret = 0;
+ 		} else if (ret == -EILSEQ) {
+ 			pr_warning("Probing address(0x%p) is not an "
+ 				   "instruction boundary.\n",
+-				   tp->rp.kp.addr);
++				   tk->rp.kp.addr);
+ 			ret = -EINVAL;
+ 		}
+ 	}
+@@ -330,67 +314,67 @@ static int __register_trace_probe(struct trace_probe *tp)
+ }
+ 
+ /* Internal unregister function - just handle k*probes and flags */
+-static void __unregister_trace_probe(struct trace_probe *tp)
++static void __unregister_trace_kprobe(struct trace_kprobe *tk)
+ {
+-	if (trace_probe_is_registered(tp)) {
+-		if (trace_probe_is_return(tp))
+-			unregister_kretprobe(&tp->rp);
++	if (trace_probe_is_registered(&tk->tp)) {
++		if (trace_kprobe_is_return(tk))
++			unregister_kretprobe(&tk->rp);
+ 		else
+-			unregister_kprobe(&tp->rp.kp);
+-		tp->flags &= ~TP_FLAG_REGISTERED;
++			unregister_kprobe(&tk->rp.kp);
++		tk->tp.flags &= ~TP_FLAG_REGISTERED;
+ 		/* Cleanup kprobe for reuse */
+-		if (tp->rp.kp.symbol_name)
+-			tp->rp.kp.addr = NULL;
++		if (tk->rp.kp.symbol_name)
++			tk->rp.kp.addr = NULL;
+ 	}
+ }
+ 
+ /* Unregister a trace_probe and probe_event: call with locking probe_lock */
+-static int unregister_trace_probe(struct trace_probe *tp)
++static int unregister_trace_kprobe(struct trace_kprobe *tk)
+ {
+ 	/* Enabled event can not be unregistered */
+-	if (trace_probe_is_enabled(tp))
++	if (trace_probe_is_enabled(&tk->tp))
+ 		return -EBUSY;
+ 
+ 	/* Will fail if probe is being used by ftrace or perf */
+-	if (unregister_probe_event(tp))
++	if (unregister_kprobe_event(tk))
+ 		return -EBUSY;
+ 
+-	__unregister_trace_probe(tp);
+-	list_del(&tp->list);
++	__unregister_trace_kprobe(tk);
++	list_del(&tk->list);
+ 
+ 	return 0;
+ }
+ 
+ /* Register a trace_probe and probe_event */
+-static int register_trace_probe(struct trace_probe *tp)
++static int register_trace_kprobe(struct trace_kprobe *tk)
+ {
+-	struct trace_probe *old_tp;
++	struct trace_kprobe *old_tk;
+ 	int ret;
+ 
+ 	mutex_lock(&probe_lock);
+ 
+ 	/* Delete old (same name) event if exist */
+-	old_tp = find_trace_probe(tp->call.name, tp->call.class->system);
+-	if (old_tp) {
+-		ret = unregister_trace_probe(old_tp);
++	old_tk = find_trace_kprobe(tk->tp.call.name, tk->tp.call.class->system);
++	if (old_tk) {
++		ret = unregister_trace_kprobe(old_tk);
+ 		if (ret < 0)
+ 			goto end;
+-		free_trace_probe(old_tp);
++		free_trace_kprobe(old_tk);
+ 	}
+ 
+ 	/* Register new event */
+-	ret = register_probe_event(tp);
++	ret = register_kprobe_event(tk);
+ 	if (ret) {
+ 		pr_warning("Failed to register probe event(%d)\n", ret);
+ 		goto end;
+ 	}
+ 
+ 	/* Register k*probe */
+-	ret = __register_trace_probe(tp);
++	ret = __register_trace_kprobe(tk);
+ 	if (ret < 0)
+-		unregister_probe_event(tp);
++		unregister_kprobe_event(tk);
+ 	else
+-		list_add_tail(&tp->list, &probe_list);
++		list_add_tail(&tk->list, &probe_list);
+ 
+ end:
+ 	mutex_unlock(&probe_lock);
+@@ -398,11 +382,11 @@ end:
+ }
+ 
+ /* Module notifier call back, checking event on the module */
+-static int trace_probe_module_callback(struct notifier_block *nb,
++static int trace_kprobe_module_callback(struct notifier_block *nb,
+ 				       unsigned long val, void *data)
+ {
+ 	struct module *mod = data;
+-	struct trace_probe *tp;
++	struct trace_kprobe *tk;
+ 	int ret;
+ 
+ 	if (val != MODULE_STATE_COMING)
+@@ -410,15 +394,15 @@ static int trace_probe_module_callback(struct notifier_block *nb,
+ 
+ 	/* Update probes on coming module */
+ 	mutex_lock(&probe_lock);
+-	list_for_each_entry(tp, &probe_list, list) {
+-		if (trace_probe_within_module(tp, mod)) {
++	list_for_each_entry(tk, &probe_list, list) {
++		if (trace_kprobe_within_module(tk, mod)) {
+ 			/* Don't need to check busy - this should have gone. */
+-			__unregister_trace_probe(tp);
+-			ret = __register_trace_probe(tp);
++			__unregister_trace_kprobe(tk);
++			ret = __register_trace_kprobe(tk);
+ 			if (ret)
+ 				pr_warning("Failed to re-register probe %s on"
+ 					   "%s: %d\n",
+-					   tp->call.name, mod->name, ret);
++					   tk->tp.call.name, mod->name, ret);
+ 		}
+ 	}
+ 	mutex_unlock(&probe_lock);
+@@ -426,12 +410,12 @@ static int trace_probe_module_callback(struct notifier_block *nb,
+ 	return NOTIFY_DONE;
+ }
+ 
+-static struct notifier_block trace_probe_module_nb = {
+-	.notifier_call = trace_probe_module_callback,
++static struct notifier_block trace_kprobe_module_nb = {
++	.notifier_call = trace_kprobe_module_callback,
+ 	.priority = 1	/* Invoked after kprobe module callback */
+ };
+ 
+-static int create_trace_probe(int argc, char **argv)
++static int create_trace_kprobe(int argc, char **argv)
+ {
+ 	/*
+ 	 * Argument syntax:
+@@ -451,7 +435,7 @@ static int create_trace_probe(int argc, char **argv)
+ 	 * Type of args:
+ 	 *  FETCHARG:TYPE : use TYPE instead of unsigned long.
+ 	 */
+-	struct trace_probe *tp;
++	struct trace_kprobe *tk;
+ 	int i, ret = 0;
+ 	bool is_return = false, is_delete = false;
+ 	char *symbol = NULL, *event = NULL, *group = NULL;
+@@ -498,16 +482,16 @@ static int create_trace_probe(int argc, char **argv)
+ 			return -EINVAL;
+ 		}
+ 		mutex_lock(&probe_lock);
+-		tp = find_trace_probe(event, group);
+-		if (!tp) {
++		tk = find_trace_kprobe(event, group);
++		if (!tk) {
+ 			mutex_unlock(&probe_lock);
+ 			pr_info("Event %s/%s doesn't exist.\n", group, event);
+ 			return -ENOENT;
+ 		}
+ 		/* delete an event */
+-		ret = unregister_trace_probe(tp);
++		ret = unregister_trace_kprobe(tk);
+ 		if (ret == 0)
+-			free_trace_probe(tp);
++			free_trace_kprobe(tk);
+ 		mutex_unlock(&probe_lock);
+ 		return ret;
+ 	}
+@@ -554,47 +538,49 @@ static int create_trace_probe(int argc, char **argv)
+ 				 is_return ? 'r' : 'p', addr);
+ 		event = buf;
+ 	}
+-	tp = alloc_trace_probe(group, event, addr, symbol, offset, argc,
++	tk = alloc_trace_kprobe(group, event, addr, symbol, offset, argc,
+ 			       is_return);
+-	if (IS_ERR(tp)) {
++	if (IS_ERR(tk)) {
+ 		pr_info("Failed to allocate trace_probe.(%d)\n",
+-			(int)PTR_ERR(tp));
+-		return PTR_ERR(tp);
++			(int)PTR_ERR(tk));
++		return PTR_ERR(tk);
+ 	}
+ 
+ 	/* parse arguments */
+ 	ret = 0;
+ 	for (i = 0; i < argc && i < MAX_TRACE_ARGS; i++) {
++		struct probe_arg *parg = &tk->tp.args[i];
++
+ 		/* Increment count for freeing args in error case */
+-		tp->nr_args++;
++		tk->tp.nr_args++;
+ 
+ 		/* Parse argument name */
+ 		arg = strchr(argv[i], '=');
+ 		if (arg) {
+ 			*arg++ = '\0';
+-			tp->args[i].name = kstrdup(argv[i], GFP_KERNEL);
++			parg->name = kstrdup(argv[i], GFP_KERNEL);
+ 		} else {
+ 			arg = argv[i];
+ 			/* If argument name is omitted, set "argN" */
+ 			snprintf(buf, MAX_EVENT_NAME_LEN, "arg%d", i + 1);
+-			tp->args[i].name = kstrdup(buf, GFP_KERNEL);
++			parg->name = kstrdup(buf, GFP_KERNEL);
+ 		}
+ 
+-		if (!tp->args[i].name) {
++		if (!parg->name) {
+ 			pr_info("Failed to allocate argument[%d] name.\n", i);
+ 			ret = -ENOMEM;
+ 			goto error;
+ 		}
+ 
+-		if (!is_good_name(tp->args[i].name)) {
++		if (!is_good_name(parg->name)) {
+ 			pr_info("Invalid argument[%d] name: %s\n",
+-				i, tp->args[i].name);
++				i, parg->name);
+ 			ret = -EINVAL;
+ 			goto error;
+ 		}
+ 
+-		if (traceprobe_conflict_field_name(tp->args[i].name,
+-							tp->args, i)) {
++		if (traceprobe_conflict_field_name(parg->name,
++							tk->tp.args, i)) {
+ 			pr_info("Argument[%d] name '%s' conflicts with "
+ 				"another field.\n", i, argv[i]);
+ 			ret = -EINVAL;
+@@ -602,7 +588,7 @@ static int create_trace_probe(int argc, char **argv)
+ 		}
+ 
+ 		/* Parse fetch argument */
+-		ret = traceprobe_parse_probe_arg(arg, &tp->size, &tp->args[i],
++		ret = traceprobe_parse_probe_arg(arg, &tk->tp.size, parg,
+ 						is_return, true);
+ 		if (ret) {
+ 			pr_info("Parse error at argument[%d]. (%d)\n", i, ret);
+@@ -610,35 +596,35 @@ static int create_trace_probe(int argc, char **argv)
+ 		}
+ 	}
+ 
+-	ret = register_trace_probe(tp);
++	ret = register_trace_kprobe(tk);
+ 	if (ret)
+ 		goto error;
+ 	return 0;
+ 
+ error:
+-	free_trace_probe(tp);
++	free_trace_kprobe(tk);
+ 	return ret;
+ }
+ 
+-static int release_all_trace_probes(void)
++static int release_all_trace_kprobes(void)
+ {
+-	struct trace_probe *tp;
++	struct trace_kprobe *tk;
+ 	int ret = 0;
+ 
+ 	mutex_lock(&probe_lock);
+ 	/* Ensure no probe is in use. */
+-	list_for_each_entry(tp, &probe_list, list)
+-		if (trace_probe_is_enabled(tp)) {
++	list_for_each_entry(tk, &probe_list, list)
++		if (trace_probe_is_enabled(&tk->tp)) {
+ 			ret = -EBUSY;
+ 			goto end;
+ 		}
+ 	/* TODO: Use batch unregistration */
+ 	while (!list_empty(&probe_list)) {
+-		tp = list_entry(probe_list.next, struct trace_probe, list);
+-		ret = unregister_trace_probe(tp);
++		tk = list_entry(probe_list.next, struct trace_kprobe, list);
++		ret = unregister_trace_kprobe(tk);
+ 		if (ret)
+ 			goto end;
+-		free_trace_probe(tp);
++		free_trace_kprobe(tk);
+ 	}
+ 
+ end:
+@@ -666,22 +652,22 @@ static void probes_seq_stop(struct seq_file *m, void *v)
+ 
+ static int probes_seq_show(struct seq_file *m, void *v)
+ {
+-	struct trace_probe *tp = v;
++	struct trace_kprobe *tk = v;
+ 	int i;
+ 
+-	seq_printf(m, "%c", trace_probe_is_return(tp) ? 'r' : 'p');
+-	seq_printf(m, ":%s/%s", tp->call.class->system, tp->call.name);
++	seq_printf(m, "%c", trace_kprobe_is_return(tk) ? 'r' : 'p');
++	seq_printf(m, ":%s/%s", tk->tp.call.class->system, tk->tp.call.name);
+ 
+-	if (!tp->symbol)
+-		seq_printf(m, " 0x%p", tp->rp.kp.addr);
+-	else if (tp->rp.kp.offset)
+-		seq_printf(m, " %s+%u", trace_probe_symbol(tp),
+-			   tp->rp.kp.offset);
++	if (!tk->symbol)
++		seq_printf(m, " 0x%p", tk->rp.kp.addr);
++	else if (tk->rp.kp.offset)
++		seq_printf(m, " %s+%u", trace_kprobe_symbol(tk),
++			   tk->rp.kp.offset);
+ 	else
+-		seq_printf(m, " %s", trace_probe_symbol(tp));
++		seq_printf(m, " %s", trace_kprobe_symbol(tk));
+ 
+-	for (i = 0; i < tp->nr_args; i++)
+-		seq_printf(m, " %s=%s", tp->args[i].name, tp->args[i].comm);
++	for (i = 0; i < tk->tp.nr_args; i++)
++		seq_printf(m, " %s=%s", tk->tp.args[i].name, tk->tp.args[i].comm);
+ 	seq_printf(m, "\n");
+ 
+ 	return 0;
+@@ -699,7 +685,7 @@ static int probes_open(struct inode *inode, struct file *file)
+ 	int ret;
+ 
+ 	if ((file->f_mode & FMODE_WRITE) && (file->f_flags & O_TRUNC)) {
+-		ret = release_all_trace_probes();
++		ret = release_all_trace_kprobes();
+ 		if (ret < 0)
+ 			return ret;
+ 	}
+@@ -711,7 +697,7 @@ static ssize_t probes_write(struct file *file, const char __user *buffer,
+ 			    size_t count, loff_t *ppos)
+ {
+ 	return traceprobe_probes_write(file, buffer, count, ppos,
+-			create_trace_probe);
++			create_trace_kprobe);
+ }
+ 
+ static const struct file_operations kprobe_events_ops = {
+@@ -726,10 +712,10 @@ static const struct file_operations kprobe_events_ops = {
+ /* Probes profiling interfaces */
+ static int probes_profile_seq_show(struct seq_file *m, void *v)
+ {
+-	struct trace_probe *tp = v;
++	struct trace_kprobe *tk = v;
+ 
+-	seq_printf(m, "  %-44s %15lu %15lu\n", tp->call.name, tp->nhit,
+-		   tp->rp.kp.nmissed);
++	seq_printf(m, "  %-44s %15lu %15lu\n", tk->tp.call.name, tk->nhit,
++		   tk->rp.kp.nmissed);
+ 
+ 	return 0;
+ }
+@@ -804,7 +790,7 @@ static __kprobes void store_trace_args(int ent_size, struct trace_probe *tp,
+ 
+ /* Kprobe handler */
+ static __kprobes void
+-__kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
++__kprobe_trace_func(struct trace_kprobe *tk, struct pt_regs *regs,
+ 		    struct ftrace_event_file *ftrace_file)
+ {
+ 	struct kprobe_trace_entry_head *entry;
+@@ -812,7 +798,7 @@ __kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
+ 	struct ring_buffer *buffer;
+ 	int size, dsize, pc;
+ 	unsigned long irq_flags;
+-	struct ftrace_event_call *call = &tp->call;
++	struct ftrace_event_call *call = &tk->tp.call;
+ 
+ 	WARN_ON(call != ftrace_file->event_call);
+ 
+@@ -822,8 +808,8 @@ __kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
+ 	local_save_flags(irq_flags);
+ 	pc = preempt_count();
+ 
+-	dsize = __get_data_size(tp, regs);
+-	size = sizeof(*entry) + tp->size + dsize;
++	dsize = __get_data_size(&tk->tp, regs);
++	size = sizeof(*entry) + tk->tp.size + dsize;
+ 
+ 	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
+ 						call->event.type,
+@@ -832,8 +818,8 @@ __kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
+ 		return;
+ 
+ 	entry = ring_buffer_event_data(event);
+-	entry->ip = (unsigned long)tp->rp.kp.addr;
+-	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
++	entry->ip = (unsigned long)tk->rp.kp.addr;
++	store_trace_args(sizeof(*entry), &tk->tp, regs, (u8 *)&entry[1], dsize);
+ 
+ 	if (!filter_check_discard(ftrace_file, entry, buffer, event))
+ 		trace_buffer_unlock_commit_regs(buffer, event,
+@@ -841,17 +827,17 @@ __kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
+ }
+ 
+ static __kprobes void
+-kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs)
++kprobe_trace_func(struct trace_kprobe *tk, struct pt_regs *regs)
+ {
+ 	struct event_file_link *link;
+ 
+-	list_for_each_entry_rcu(link, &tp->files, list)
+-		__kprobe_trace_func(tp, regs, link->file);
++	list_for_each_entry_rcu(link, &tk->tp.files, list)
++		__kprobe_trace_func(tk, regs, link->file);
+ }
+ 
+ /* Kretprobe handler */
+ static __kprobes void
+-__kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
++__kretprobe_trace_func(struct trace_kprobe *tk, struct kretprobe_instance *ri,
+ 		       struct pt_regs *regs,
+ 		       struct ftrace_event_file *ftrace_file)
+ {
+@@ -860,7 +846,7 @@ __kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
+ 	struct ring_buffer *buffer;
+ 	int size, pc, dsize;
+ 	unsigned long irq_flags;
+-	struct ftrace_event_call *call = &tp->call;
++	struct ftrace_event_call *call = &tk->tp.call;
+ 
+ 	WARN_ON(call != ftrace_file->event_call);
+ 
+@@ -870,8 +856,8 @@ __kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
+ 	local_save_flags(irq_flags);
+ 	pc = preempt_count();
+ 
+-	dsize = __get_data_size(tp, regs);
+-	size = sizeof(*entry) + tp->size + dsize;
++	dsize = __get_data_size(&tk->tp, regs);
++	size = sizeof(*entry) + tk->tp.size + dsize;
+ 
+ 	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
+ 						call->event.type,
+@@ -880,9 +866,9 @@ __kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
+ 		return;
+ 
+ 	entry = ring_buffer_event_data(event);
+-	entry->func = (unsigned long)tp->rp.kp.addr;
++	entry->func = (unsigned long)tk->rp.kp.addr;
+ 	entry->ret_ip = (unsigned long)ri->ret_addr;
+-	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
++	store_trace_args(sizeof(*entry), &tk->tp, regs, (u8 *)&entry[1], dsize);
+ 
+ 	if (!filter_check_discard(ftrace_file, entry, buffer, event))
+ 		trace_buffer_unlock_commit_regs(buffer, event,
+@@ -890,13 +876,13 @@ __kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
+ }
+ 
+ static __kprobes void
+-kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
++kretprobe_trace_func(struct trace_kprobe *tk, struct kretprobe_instance *ri,
+ 		     struct pt_regs *regs)
+ {
+ 	struct event_file_link *link;
+ 
+-	list_for_each_entry_rcu(link, &tp->files, list)
+-		__kretprobe_trace_func(tp, ri, regs, link->file);
++	list_for_each_entry_rcu(link, &tk->tp.files, list)
++		__kretprobe_trace_func(tk, ri, regs, link->file);
+ }
+ 
+ /* Event entry printers */
+@@ -983,16 +969,18 @@ static int kprobe_event_define_fields(struct ftrace_event_call *event_call)
+ {
+ 	int ret, i;
+ 	struct kprobe_trace_entry_head field;
+-	struct trace_probe *tp = (struct trace_probe *)event_call->data;
++	struct trace_kprobe *tk = (struct trace_kprobe *)event_call->data;
+ 
+ 	DEFINE_FIELD(unsigned long, ip, FIELD_STRING_IP, 0);
+ 	/* Set argument names as fields */
+-	for (i = 0; i < tp->nr_args; i++) {
+-		ret = trace_define_field(event_call, tp->args[i].type->fmttype,
+-					 tp->args[i].name,
+-					 sizeof(field) + tp->args[i].offset,
+-					 tp->args[i].type->size,
+-					 tp->args[i].type->is_signed,
++	for (i = 0; i < tk->tp.nr_args; i++) {
++		struct probe_arg *parg = &tk->tp.args[i];
++
++		ret = trace_define_field(event_call, parg->type->fmttype,
++					 parg->name,
++					 sizeof(field) + parg->offset,
++					 parg->type->size,
++					 parg->type->is_signed,
+ 					 FILTER_OTHER);
+ 		if (ret)
+ 			return ret;
+@@ -1004,17 +992,19 @@ static int kretprobe_event_define_fields(struct ftrace_event_call *event_call)
+ {
+ 	int ret, i;
+ 	struct kretprobe_trace_entry_head field;
+-	struct trace_probe *tp = (struct trace_probe *)event_call->data;
++	struct trace_kprobe *tk = (struct trace_kprobe *)event_call->data;
+ 
+ 	DEFINE_FIELD(unsigned long, func, FIELD_STRING_FUNC, 0);
+ 	DEFINE_FIELD(unsigned long, ret_ip, FIELD_STRING_RETIP, 0);
+ 	/* Set argument names as fields */
+-	for (i = 0; i < tp->nr_args; i++) {
+-		ret = trace_define_field(event_call, tp->args[i].type->fmttype,
+-					 tp->args[i].name,
+-					 sizeof(field) + tp->args[i].offset,
+-					 tp->args[i].type->size,
+-					 tp->args[i].type->is_signed,
++	for (i = 0; i < tk->tp.nr_args; i++) {
++		struct probe_arg *parg = &tk->tp.args[i];
++
++		ret = trace_define_field(event_call, parg->type->fmttype,
++					 parg->name,
++					 sizeof(field) + parg->offset,
++					 parg->type->size,
++					 parg->type->is_signed,
+ 					 FILTER_OTHER);
+ 		if (ret)
+ 			return ret;
+@@ -1022,14 +1012,14 @@ static int kretprobe_event_define_fields(struct ftrace_event_call *event_call)
+ 	return 0;
+ }
+ 
+-static int __set_print_fmt(struct trace_probe *tp, char *buf, int len)
++static int __set_print_fmt(struct trace_kprobe *tk, char *buf, int len)
+ {
+ 	int i;
+ 	int pos = 0;
+ 
+ 	const char *fmt, *arg;
+ 
+-	if (!trace_probe_is_return(tp)) {
++	if (!trace_kprobe_is_return(tk)) {
+ 		fmt = "(%lx)";
+ 		arg = "REC->" FIELD_STRING_IP;
+ 	} else {
+@@ -1042,21 +1032,21 @@ static int __set_print_fmt(struct trace_probe *tp, char *buf, int len)
+ 
+ 	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
+ 
+-	for (i = 0; i < tp->nr_args; i++) {
++	for (i = 0; i < tk->tp.nr_args; i++) {
+ 		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
+-				tp->args[i].name, tp->args[i].type->fmt);
++				tk->tp.args[i].name, tk->tp.args[i].type->fmt);
+ 	}
+ 
+ 	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
+ 
+-	for (i = 0; i < tp->nr_args; i++) {
+-		if (strcmp(tp->args[i].type->name, "string") == 0)
++	for (i = 0; i < tk->tp.nr_args; i++) {
++		if (strcmp(tk->tp.args[i].type->name, "string") == 0)
+ 			pos += snprintf(buf + pos, LEN_OR_ZERO,
+ 					", __get_str(%s)",
+-					tp->args[i].name);
++					tk->tp.args[i].name);
+ 		else
+ 			pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
+-					tp->args[i].name);
++					tk->tp.args[i].name);
+ 	}
+ 
+ #undef LEN_OR_ZERO
+@@ -1065,20 +1055,20 @@ static int __set_print_fmt(struct trace_probe *tp, char *buf, int len)
+ 	return pos;
+ }
+ 
+-static int set_print_fmt(struct trace_probe *tp)
++static int set_print_fmt(struct trace_kprobe *tk)
+ {
+ 	int len;
+ 	char *print_fmt;
+ 
+ 	/* First: called with 0 length to calculate the needed length */
+-	len = __set_print_fmt(tp, NULL, 0);
++	len = __set_print_fmt(tk, NULL, 0);
+ 	print_fmt = kmalloc(len + 1, GFP_KERNEL);
+ 	if (!print_fmt)
+ 		return -ENOMEM;
+ 
+ 	/* Second: actually write the @print_fmt */
+-	__set_print_fmt(tp, print_fmt, len + 1);
+-	tp->call.print_fmt = print_fmt;
++	__set_print_fmt(tk, print_fmt, len + 1);
++	tk->tp.call.print_fmt = print_fmt;
+ 
+ 	return 0;
+ }
+@@ -1087,9 +1077,9 @@ static int set_print_fmt(struct trace_probe *tp)
+ 
+ /* Kprobe profile handler */
+ static __kprobes void
+-kprobe_perf_func(struct trace_probe *tp, struct pt_regs *regs)
++kprobe_perf_func(struct trace_kprobe *tk, struct pt_regs *regs)
+ {
+-	struct ftrace_event_call *call = &tp->call;
++	struct ftrace_event_call *call = &tk->tp.call;
+ 	struct kprobe_trace_entry_head *entry;
+ 	struct hlist_head *head;
+ 	int size, __size, dsize;
+@@ -1099,8 +1089,8 @@ kprobe_perf_func(struct trace_probe *tp, struct pt_regs *regs)
+ 	if (hlist_empty(head))
+ 		return;
+ 
+-	dsize = __get_data_size(tp, regs);
+-	__size = sizeof(*entry) + tp->size + dsize;
++	dsize = __get_data_size(&tk->tp, regs);
++	__size = sizeof(*entry) + tk->tp.size + dsize;
+ 	size = ALIGN(__size + sizeof(u32), sizeof(u64));
+ 	size -= sizeof(u32);
+ 
+@@ -1108,18 +1098,18 @@ kprobe_perf_func(struct trace_probe *tp, struct pt_regs *regs)
+ 	if (!entry)
+ 		return;
+ 
+-	entry->ip = (unsigned long)tp->rp.kp.addr;
++	entry->ip = (unsigned long)tk->rp.kp.addr;
+ 	memset(&entry[1], 0, dsize);
+-	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
++	store_trace_args(sizeof(*entry), &tk->tp, regs, (u8 *)&entry[1], dsize);
+ 	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
+ }
+ 
+ /* Kretprobe profile handler */
+ static __kprobes void
+-kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
++kretprobe_perf_func(struct trace_kprobe *tk, struct kretprobe_instance *ri,
+ 		    struct pt_regs *regs)
+ {
+-	struct ftrace_event_call *call = &tp->call;
++	struct ftrace_event_call *call = &tk->tp.call;
+ 	struct kretprobe_trace_entry_head *entry;
+ 	struct hlist_head *head;
+ 	int size, __size, dsize;
+@@ -1129,8 +1119,8 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
+ 	if (hlist_empty(head))
+ 		return;
+ 
+-	dsize = __get_data_size(tp, regs);
+-	__size = sizeof(*entry) + tp->size + dsize;
++	dsize = __get_data_size(&tk->tp, regs);
++	__size = sizeof(*entry) + tk->tp.size + dsize;
+ 	size = ALIGN(__size + sizeof(u32), sizeof(u64));
+ 	size -= sizeof(u32);
+ 
+@@ -1138,9 +1128,9 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
+ 	if (!entry)
+ 		return;
+ 
+-	entry->func = (unsigned long)tp->rp.kp.addr;
++	entry->func = (unsigned long)tk->rp.kp.addr;
+ 	entry->ret_ip = (unsigned long)ri->ret_addr;
+-	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
++	store_trace_args(sizeof(*entry), &tk->tp, regs, (u8 *)&entry[1], dsize);
+ 	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
+ }
+ #endif	/* CONFIG_PERF_EVENTS */
+@@ -1155,20 +1145,20 @@ static __kprobes
+ int kprobe_register(struct ftrace_event_call *event,
+ 		    enum trace_reg type, void *data)
+ {
+-	struct trace_probe *tp = (struct trace_probe *)event->data;
++	struct trace_kprobe *tk = (struct trace_kprobe *)event->data;
+ 	struct ftrace_event_file *file = data;
+ 
+ 	switch (type) {
+ 	case TRACE_REG_REGISTER:
+-		return enable_trace_probe(tp, file);
++		return enable_trace_kprobe(tk, file);
+ 	case TRACE_REG_UNREGISTER:
+-		return disable_trace_probe(tp, file);
++		return disable_trace_kprobe(tk, file);
+ 
+ #ifdef CONFIG_PERF_EVENTS
+ 	case TRACE_REG_PERF_REGISTER:
+-		return enable_trace_probe(tp, NULL);
++		return enable_trace_kprobe(tk, NULL);
+ 	case TRACE_REG_PERF_UNREGISTER:
+-		return disable_trace_probe(tp, NULL);
++		return disable_trace_kprobe(tk, NULL);
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
+ 	case TRACE_REG_PERF_ADD:
+@@ -1182,15 +1172,15 @@ int kprobe_register(struct ftrace_event_call *event,
+ static __kprobes
+ int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs)
+ {
+-	struct trace_probe *tp = container_of(kp, struct trace_probe, rp.kp);
++	struct trace_kprobe *tk = container_of(kp, struct trace_kprobe, rp.kp);
+ 
+-	tp->nhit++;
++	tk->nhit++;
+ 
+-	if (tp->flags & TP_FLAG_TRACE)
+-		kprobe_trace_func(tp, regs);
++	if (tk->tp.flags & TP_FLAG_TRACE)
++		kprobe_trace_func(tk, regs);
+ #ifdef CONFIG_PERF_EVENTS
+-	if (tp->flags & TP_FLAG_PROFILE)
+-		kprobe_perf_func(tp, regs);
++	if (tk->tp.flags & TP_FLAG_PROFILE)
++		kprobe_perf_func(tk, regs);
+ #endif
+ 	return 0;	/* We don't tweek kernel, so just return 0 */
+ }
+@@ -1198,15 +1188,15 @@ int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs)
+ static __kprobes
+ int kretprobe_dispatcher(struct kretprobe_instance *ri, struct pt_regs *regs)
+ {
+-	struct trace_probe *tp = container_of(ri->rp, struct trace_probe, rp);
++	struct trace_kprobe *tk = container_of(ri->rp, struct trace_kprobe, rp);
+ 
+-	tp->nhit++;
++	tk->nhit++;
+ 
+-	if (tp->flags & TP_FLAG_TRACE)
+-		kretprobe_trace_func(tp, ri, regs);
++	if (tk->tp.flags & TP_FLAG_TRACE)
++		kretprobe_trace_func(tk, ri, regs);
+ #ifdef CONFIG_PERF_EVENTS
+-	if (tp->flags & TP_FLAG_PROFILE)
+-		kretprobe_perf_func(tp, ri, regs);
++	if (tk->tp.flags & TP_FLAG_PROFILE)
++		kretprobe_perf_func(tk, ri, regs);
+ #endif
+ 	return 0;	/* We don't tweek kernel, so just return 0 */
+ }
+@@ -1219,21 +1209,21 @@ static struct trace_event_functions kprobe_funcs = {
+ 	.trace		= print_kprobe_event
+ };
+ 
+-static int register_probe_event(struct trace_probe *tp)
++static int register_kprobe_event(struct trace_kprobe *tk)
+ {
+-	struct ftrace_event_call *call = &tp->call;
++	struct ftrace_event_call *call = &tk->tp.call;
+ 	int ret;
+ 
+ 	/* Initialize ftrace_event_call */
+ 	INIT_LIST_HEAD(&call->class->fields);
+-	if (trace_probe_is_return(tp)) {
++	if (trace_kprobe_is_return(tk)) {
+ 		call->event.funcs = &kretprobe_funcs;
+ 		call->class->define_fields = kretprobe_event_define_fields;
+ 	} else {
+ 		call->event.funcs = &kprobe_funcs;
+ 		call->class->define_fields = kprobe_event_define_fields;
+ 	}
+-	if (set_print_fmt(tp) < 0)
++	if (set_print_fmt(tk) < 0)
+ 		return -ENOMEM;
+ 	ret = register_ftrace_event(&call->event);
+ 	if (!ret) {
+@@ -1242,7 +1232,7 @@ static int register_probe_event(struct trace_probe *tp)
+ 	}
+ 	call->flags = 0;
+ 	call->class->reg = kprobe_register;
+-	call->data = tp;
++	call->data = tk;
+ 	ret = trace_add_event_call(call);
+ 	if (ret) {
+ 		pr_info("Failed to register kprobe event: %s\n", call->name);
+@@ -1252,14 +1242,14 @@ static int register_probe_event(struct trace_probe *tp)
+ 	return ret;
+ }
+ 
+-static int unregister_probe_event(struct trace_probe *tp)
++static int unregister_kprobe_event(struct trace_kprobe *tk)
+ {
+ 	int ret;
+ 
+ 	/* tp->event is unregistered in trace_remove_event_call() */
+-	ret = trace_remove_event_call(&tp->call);
++	ret = trace_remove_event_call(&tk->tp.call);
+ 	if (!ret)
+-		kfree(tp->call.print_fmt);
++		kfree(tk->tp.call.print_fmt);
+ 	return ret;
+ }
+ 
+@@ -1269,7 +1259,7 @@ static __init int init_kprobe_trace(void)
+ 	struct dentry *d_tracer;
+ 	struct dentry *entry;
+ 
+-	if (register_module_notifier(&trace_probe_module_nb))
++	if (register_module_notifier(&trace_kprobe_module_nb))
+ 		return -EINVAL;
+ 
+ 	d_tracer = tracing_init_dentry();
+@@ -1309,12 +1299,12 @@ static __used int kprobe_trace_selftest_target(int a1, int a2, int a3,
+ }
+ 
+ static struct ftrace_event_file *
+-find_trace_probe_file(struct trace_probe *tp, struct trace_array *tr)
++find_trace_probe_file(struct trace_kprobe *tk, struct trace_array *tr)
+ {
+ 	struct ftrace_event_file *file;
+ 
+ 	list_for_each_entry(file, &tr->events, list)
+-		if (file->event_call == &tp->call)
++		if (file->event_call == &tk->tp.call)
+ 			return file;
+ 
+ 	return NULL;
+@@ -1328,7 +1318,7 @@ static __init int kprobe_trace_self_tests_init(void)
+ {
+ 	int ret, warn = 0;
+ 	int (*target)(int, int, int, int, int, int);
+-	struct trace_probe *tp;
++	struct trace_kprobe *tk;
+ 	struct ftrace_event_file *file;
+ 
+ 	target = kprobe_trace_selftest_target;
+@@ -1343,17 +1333,17 @@ static __init int kprobe_trace_self_tests_init(void)
+ 		warn++;
+ 	} else {
+ 		/* Enable trace point */
+-		tp = find_trace_probe("testprobe", KPROBE_EVENT_SYSTEM);
+-		if (WARN_ON_ONCE(tp == NULL)) {
++		tk = find_trace_probe("testprobe", KPROBE_EVENT_SYSTEM);
++		if (WARN_ON_ONCE(tk == NULL)) {
+ 			pr_warn("error on getting new probe.\n");
+ 			warn++;
+ 		} else {
+-			file = find_trace_probe_file(tp, top_trace_array());
++			file = find_trace_probe_file(tk, top_trace_array());
+ 			if (WARN_ON_ONCE(file == NULL)) {
+ 				pr_warn("error on getting probe file.\n");
+ 				warn++;
+ 			} else
+-				enable_trace_probe(tp, file);
++				enable_trace_probe(tk, file);
+ 		}
+ 	}
+ 
+@@ -1364,17 +1354,17 @@ static __init int kprobe_trace_self_tests_init(void)
+ 		warn++;
+ 	} else {
+ 		/* Enable trace point */
+-		tp = find_trace_probe("testprobe2", KPROBE_EVENT_SYSTEM);
+-		if (WARN_ON_ONCE(tp == NULL)) {
++		tk = find_trace_probe("testprobe2", KPROBE_EVENT_SYSTEM);
++		if (WARN_ON_ONCE(tk == NULL)) {
+ 			pr_warn("error on getting 2nd new probe.\n");
+ 			warn++;
+ 		} else {
+-			file = find_trace_probe_file(tp, top_trace_array());
++			file = find_trace_probe_file(tk, top_trace_array());
+ 			if (WARN_ON_ONCE(file == NULL)) {
+ 				pr_warn("error on getting probe file.\n");
+ 				warn++;
+ 			} else
+-				enable_trace_probe(tp, file);
++				enable_trace_probe(tk, file);
+ 		}
+ 	}
+ 
+@@ -1384,30 +1374,30 @@ static __init int kprobe_trace_self_tests_init(void)
+ 	ret = target(1, 2, 3, 4, 5, 6);
+ 
+ 	/* Disable trace points before removing it */
+-	tp = find_trace_probe("testprobe", KPROBE_EVENT_SYSTEM);
+-	if (WARN_ON_ONCE(tp == NULL)) {
++	tk = find_trace_probe("testprobe", KPROBE_EVENT_SYSTEM);
++	if (WARN_ON_ONCE(tk == NULL)) {
+ 		pr_warn("error on getting test probe.\n");
+ 		warn++;
+ 	} else {
+-		file = find_trace_probe_file(tp, top_trace_array());
++		file = find_trace_probe_file(tk, top_trace_array());
+ 		if (WARN_ON_ONCE(file == NULL)) {
+ 			pr_warn("error on getting probe file.\n");
+ 			warn++;
+ 		} else
+-			disable_trace_probe(tp, file);
++			disable_trace_probe(tk, file);
+ 	}
+ 
+-	tp = find_trace_probe("testprobe2", KPROBE_EVENT_SYSTEM);
+-	if (WARN_ON_ONCE(tp == NULL)) {
++	tk = find_trace_probe("testprobe2", KPROBE_EVENT_SYSTEM);
++	if (WARN_ON_ONCE(tk == NULL)) {
+ 		pr_warn("error on getting 2nd test probe.\n");
+ 		warn++;
+ 	} else {
+-		file = find_trace_probe_file(tp, top_trace_array());
++		file = find_trace_probe_file(tk, top_trace_array());
+ 		if (WARN_ON_ONCE(file == NULL)) {
+ 			pr_warn("error on getting probe file.\n");
+ 			warn++;
+ 		} else
+-			disable_trace_probe(tp, file);
++			disable_trace_probe(tk, file);
+ 	}
+ 
+ 	ret = traceprobe_command("-:testprobe", create_trace_probe);
+diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
+index 5c7e09d10d74..984e91ed8a44 100644
+--- a/kernel/trace/trace_probe.h
++++ b/kernel/trace/trace_probe.h
+@@ -124,6 +124,26 @@ struct probe_arg {
+ 	const struct fetch_type	*type;	/* Type of this argument */
+ };
+ 
++struct trace_probe {
++	unsigned int			flags;	/* For TP_FLAG_* */
++	struct ftrace_event_class	class;
++	struct ftrace_event_call	call;
++	struct list_head 		files;
++	ssize_t				size;	/* trace entry size */
++	unsigned int			nr_args;
++	struct probe_arg		args[];
++};
++
++static inline bool trace_probe_is_enabled(struct trace_probe *tp)
++{
++	return !!(tp->flags & (TP_FLAG_TRACE | TP_FLAG_PROFILE));
++}
++
++static inline bool trace_probe_is_registered(struct trace_probe *tp)
++{
++	return !!(tp->flags & TP_FLAG_REGISTERED);
++}
++
+ static inline __kprobes void call_fetch(struct fetch_param *fprm,
+ 				 struct pt_regs *regs, void *dest)
+ {
+-- 
+1.7.11.7
+
