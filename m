@@ -1,106 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751654Ab3LCHLH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 02:11:07 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:55376 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043Ab3LCHLE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 02:11:04 -0500
-Message-ID: <529D83F8.7050605@linux.vnet.ibm.com>
-Date: Tue, 03 Dec 2013 15:10:48 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>, avi.kivity@gmail.com,
-        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Eric Dumazet <dada1@cosmosbay.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
-References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1382534973-13197-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20131122191429.GA13308@amt.cnet> <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com> <5292EE2F.5090305@linux.vnet.ibm.com> <20131125181254.GB21858@amt.cnet> <529413C1.60302@linux.vnet.ibm.com> <20131126193148.GA18071@amt.cnet> <5297049E.3020800@linux.vnet.ibm.com>
-In-Reply-To: <5297049E.3020800@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120307-5490-0000-0000-0000049639C8
+	id S1751919Ab3LCHPn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 02:15:43 -0500
+Received: from mga09.intel.com ([134.134.136.24]:44013 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751247Ab3LCHPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 02:15:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,816,1378882800"; 
+   d="scan'208";a="445838527"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 0/7] perf script: Add an option to print the source line number
+Date: Tue,  3 Dec 2013 09:23:03 +0200
+Message-Id: <1386055390-13757-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2013 04:53 PM, Xiao Guangrong wrote:
-> On 11/27/2013 03:31 AM, Marcelo Tosatti wrote:
->> On Tue, Nov 26, 2013 at 11:21:37AM +0800, Xiao Guangrong wrote:
->>> On 11/26/2013 02:12 AM, Marcelo Tosatti wrote:
->>>> On Mon, Nov 25, 2013 at 02:29:03PM +0800, Xiao Guangrong wrote:
->>>>>>> Also, there is no guarantee of termination (as long as sptes are
->>>>>>> deleted with the correct timing). BTW, can't see any guarantee of
->>>>>>> termination for rculist nulls either (a writer can race with a lockless
->>>>>>> reader indefinately, restarting the lockless walk every time).
->>>>>>
->>>>>> Hmm, that can be avoided by checking dirty-bitmap before rewalk,
->>>>>> that means, if the dirty-bitmap has been set during lockless write-protection,
->>>>>> it�s unnecessary to write-protect its sptes. Your idea?
->>>>> This idea is based on the fact that the number of rmap is limited by
->>>>> RMAP_RECYCLE_THRESHOLD. So, in the case of adding new spte into rmap,
->>>>> we can break the rewalk at once, in the case of deleting, we can only
->>>>> rewalk RMAP_RECYCLE_THRESHOLD times.
->>>>
->>>> Please explain in more detail.
->>>
->>> Okay.
->>>
->>> My proposal is like this:
->>>
->>> pte_list_walk_lockless()
->>> {
->>> restart:
->>>
->>> +	if (__test_bit(slot->arch.dirty_bitmap, gfn-index))
->>> +		return;
->>>
->>> 	code-doing-lockless-walking;
->>> 	......
->>> }
->>>
->>> Before do lockless-walking, we check the dirty-bitmap first, if
->>> it is set we can simply skip write-protection for the gfn, that
->>> is the case that new spte is being added into rmap when we lockless
->>> access the rmap.
->>
->> The dirty bit could be set after the check.
->>
->>> For the case of deleting spte from rmap, the number of entry is limited
->>> by RMAP_RECYCLE_THRESHOLD, that is not endlessly.
->>
->> It can shrink and grow while lockless walk is performed.
-> 
-> Yes, indeed.
-> 
-> Hmmm, another idea in my mind to fix this is encoding the position into
-> the reserved bits of desc->more pointer, for example:
-> 
->           +------+    +------+    +------+
-> rmapp ->  |Desc 0| -> |Desc 1| -> |Desc 2|
->           +------+    +------+    +------+
-> 
-> There are 3 descs on the rmap, and:
-> rmapp = &desc0 | 1UL | 3UL << 50;
-> desc0->more = desc1 | 2UL << 50;
-> desc1->more = desc0 | 1UL << 50
-> desc2->more = &rmapp | 1UL; (The nulls pointer)
-> 
-> We will walk to the next desc only if the "position" of current desc
-> is >= the position of next desc. That can make sure we can reach the
-> last desc anyway.
-> 
-> And in order to avoiding doing too many "rewalk", we will goto the
-> slow path (do walk with holding the lock) instead when retry the walk
-> more that N times.
+Hi
 
-How about this idea? Or you guys still prefer to the idea of lockless on
-first-level?
+Here are some patches to add an option to perf script that will
+print the source file name and line number.
 
 
+Adrian Hunter (7):
+      perf script: Do not call perf_event__preprocess_sample() twice)
+      perf script: Add an option to print the source line number
+      perf tools: Use asprintf instead of malloc plus snprintf
+      perf tools: Retain bfd reference to lookup source line numbers
+      perf tools: Retain symbol source file name to lookup source line numbers
+      perf tools: Do not need to read symbols for source line lookup
+      perf tools: Do not disable source line lookup just because of 1 failure
+
+ tools/perf/Documentation/perf-script.txt |   2 +-
+ tools/perf/builtin-script.c              |  40 +++++++++--
+ tools/perf/util/dso.c                    |   3 +
+ tools/perf/util/dso.h                    |   5 ++
+ tools/perf/util/session.c                |  33 +++++----
+ tools/perf/util/session.h                |   3 +-
+ tools/perf/util/srcline.c                | 119 +++++++++++++------------------
+ tools/perf/util/symbol.c                 |   2 +
+ 8 files changed, 113 insertions(+), 94 deletions(-)
+
+
+Regards
+Adrian
