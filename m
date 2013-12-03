@@ -1,92 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab3LCObj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 09:31:39 -0500
-Received: from mga01.intel.com ([192.55.52.88]:55445 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753464Ab3LCObf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 09:31:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,818,1378882800"; 
-   d="scan'208";a="443842661"
-Date: Tue, 3 Dec 2013 16:38:08 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: Re: [PATCH] pinctrl: baytrail: lock IRQs when starting them
-Message-ID: <20131203143808.GQ2281@intel.com>
-References: <1386080632-24402-1-git-send-email-linus.walleij@linaro.org>
+	id S1754466Ab3LCOcn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 09:32:43 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:57479 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729Ab3LCOcm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 09:32:42 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <529DEB88.9020100@roeck-us.net>
+Date: Tue, 03 Dec 2013 06:32:40 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386080632-24402-1-git-send-email-linus.walleij@linaro.org>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jean Delvare <khali@linux-fr.org>
+CC: Jingoo Han <jg1.han@samsung.com>,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: Re: [PATCH 10/39] hwmon: remove DEFINE_PCI_DEVICE_TABLE macro
+References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>	<001f01ceefb3$b1968820$14c39860$%han@samsung.com>	<20131203001741.GA18237@roeck-us.net> <20131203090232.7ba0e002@endymion.delvare>
+In-Reply-To: <20131203090232.7ba0e002@endymion.delvare>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 03:23:52PM +0100, Linus Walleij wrote:
-> This uses the new API for tagging GPIO lines as in use by
-> IRQs. This enforces a few semantic checks on how the underlying
-> GPIO line is used.
-> 
-> Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Cc: Mathias Nyman <mathias.nyman@linux.intel.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> I have no idea how to compile and test this, please help,
-> I have high confidence in the patch though.
-> ---
->  drivers/pinctrl/pinctrl-baytrail.c | 22 ++++++++++++++++++++++
->  1 file changed, 22 insertions(+)
-> 
-> diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-> index 1174ea86b6e9..7ad61c59f34a 100644
-> --- a/drivers/pinctrl/pinctrl-baytrail.c
-> +++ b/drivers/pinctrl/pinctrl-baytrail.c
-> @@ -372,11 +372,33 @@ static void byt_irq_mask(struct irq_data *d)
->  {
->  }
->  
-> +static unsigned int lp_irq_startup(struct irq_data *d)
+On 12/03/2013 12:02 AM, Jean Delvare wrote:
+> On Mon, 2 Dec 2013 16:17:41 -0800, Guenter Roeck wrote:
+>> On Tue, Dec 03, 2013 at 08:10:29AM +0900, Jingoo Han wrote:
+>>> Don't use DEFINE_PCI_DEVICE_TABLE macro, because this macro
+>>> is not preferred.
+>>>
+>>> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+>>
+>> Acked-by: Guenter Roeck <linux@roeck-us.net>
+>
+> Acked-by: Jean Delvare <khali@linux-fr.org>
+>
+> too. I never liked this macro and I'm very happy to see it go.
+>
 
-This needs to be byt_irq_startup()..
+Same here. I'll take it through my -next tree.
 
-> +{
-> +	struct byt_gpio *vg = irq_data_get_irq_handler_data(d);
-> +
-> +	if (gpio_lock_as_irq(&vg->chip, irqd_to_hwirq(d)))
-> +		dev_err(vg->chip.dev,
-> +			"unable to lock HW IRQ %lu for IRQ\n",
-> +			irqd_to_hwirq(d));
-> +	byt_irq_unmask(d);
-> +	return 0;
-> +}
-> +
-> +static void lp_irq_shutdown(struct irq_data *d)
-> +{
-> +	struct byt_gpio *vg = irq_data_get_irq_handler_data(d);
-> +
-> +	byt_irq_mask(d);
-> +	gpio_unlock_as_irq(&vg->chip, irqd_to_hwirq(d));
-> +}
-> +
->  static struct irq_chip byt_irqchip = {
->  	.name = "BYT-GPIO",
->  	.irq_mask = byt_irq_mask,
->  	.irq_unmask = byt_irq_unmask,
->  	.irq_set_type = byt_irq_type,
-> +	.irq_startup = byt_irq_startup,
+Thanks,
+Guenter
 
-in order to this to compile :)
-
-> +	.irq_shutdown = byt_irq_shutdown,
->  };
->  
->  static void byt_gpio_irq_init_hw(struct byt_gpio *vg)
-> -- 
-> 1.8.3.1
