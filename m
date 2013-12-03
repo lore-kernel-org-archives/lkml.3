@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755082Ab3LCUFr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 15:05:47 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52277 "EHLO
+	id S1755095Ab3LCUGs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 15:06:48 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41320 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754534Ab3LCUFo (ORCPT
+	with ESMTP id S1753780Ab3LCUGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 15:05:44 -0500
-Message-ID: <529E3995.8090606@wwwdotorg.org>
-Date: Tue, 03 Dec 2013 13:05:41 -0700
+	Tue, 3 Dec 2013 15:06:46 -0500
+Message-ID: <529E39D2.9000705@wwwdotorg.org>
+Date: Tue, 03 Dec 2013 13:06:42 -0700
 From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
@@ -33,19 +33,10 @@ On 12/02/2013 06:55 AM, Laxman Dewangan wrote:
 
 > diff --git a/include/dt-bindings/pinctrl/pinctrl-tegra.h b/include/dt-bindings/pinctrl/pinctrl-tegra.h
 
-> +/* Tristate/normal */
-> +#define TEGRA_PIN_NORMAL				0
-> +#define TEGRA_PIN_TRISTATE				1
+> +/* Pull up/down/normal */
+> +#define TEGRA_PIN_PUPD_NORMAL				0
+> +#define TEGRA_PIN_PUPD_PULL_DOWN			1
+> +#define TEGRA_PIN_PUPD_PULL_UP				2
 
-"NORMAL" is a bit generic. "DRIVEN" might work better.
-
-> +/* High speed mode */
-> +#define TEGRA_PIN_DRIVE_HIGH_SPEED_MODE_DISABLE		0
-> +#define TEGRA_PIN_DRIVE_HIGH_SPEED_MODE_ENABLE		1
-> +
-> +/* Schmitt enable/disable */
-> +#define TEGRA_PIN_DRIVE_SCHMITT_DISABLE			0
-> +#define TEGRA_PIN_DRIVE_SCHMITT_ENABLE			1
-
-I expect you can remove "DRIVE_" from all those names to make things
-shorter.
+... and s/NORMAL/NONE/ here too, I think. Some people might consider
+some other value e.g. pull-up as normal:-)
