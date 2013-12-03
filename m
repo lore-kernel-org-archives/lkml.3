@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754149Ab3LCNLV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 08:11:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6993 "EHLO mx1.redhat.com"
+	id S1754124Ab3LCNLT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 08:11:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28436 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754083Ab3LCNLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 08:11:14 -0500
+	id S1754068Ab3LCNLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 08:11:12 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,21 +14,17 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 25/28] tools lib traceevent: Several cleanups for function plugin
-Date: Tue,  3 Dec 2013 14:09:39 +0100
-Message-Id: <1386076182-14484-26-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 22/28] tools lib traceevent: Remove malloc_or_die from event-plugin.c
+Date: Tue,  3 Dec 2013 14:09:36 +0100
+Message-Id: <1386076182-14484-23-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1386076182-14484-1-git-send-email-jolsa@redhat.com>
 References: <1386076182-14484-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several cleanups suggested by Namhyung:
-  * removing index field from struct func_stack as
-    it's not needed
-  * renaming get_index into add_and_get_index
-  * using '%*X' format string capability instead of
-    the loop
+Removing malloc_or_die calls from event-plugin.c,
+replacing them with standard malloc and error path.
 
 Suggested-by: Namhyung Kim <namhyung@kernel.org>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
@@ -42,52 +38,53 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/lib/traceevent/plugin_function.c | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ tools/lib/traceevent/event-plugin.c | 19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
-diff --git a/tools/lib/traceevent/plugin_function.c b/tools/lib/traceevent/plugin_function.c
-index 8deb22e..87acf9c 100644
---- a/tools/lib/traceevent/plugin_function.c
-+++ b/tools/lib/traceevent/plugin_function.c
-@@ -25,7 +25,6 @@
- #include "event-utils.h"
+diff --git a/tools/lib/traceevent/event-plugin.c b/tools/lib/traceevent/event-plugin.c
+index d272d87..125f567 100644
+--- a/tools/lib/traceevent/event-plugin.c
++++ b/tools/lib/traceevent/event-plugin.c
+@@ -47,7 +47,11 @@ load_plugin(struct pevent *pevent, const char *path,
+ 	char *plugin;
+ 	void *handle;
  
- static struct func_stack {
--	int index;
- 	int size;
- 	char **stack;
- } *fstack;
-@@ -57,7 +56,7 @@ static void add_child(struct func_stack *stack, const char *child, int pos)
- 	stack->stack[pos] = strdup(child);
- }
+-	plugin = malloc_or_die(strlen(path) + strlen(file) + 2);
++	plugin = malloc(strlen(path) + strlen(file) + 2);
++	if (!plugin) {
++		warning("could not allocate plugin memory\n");
++		return;
++	}
  
--static int get_index(const char *parent, const char *child, int cpu)
-+static int add_and_get_index(const char *parent, const char *child, int cpu)
- {
- 	int i;
+ 	strcpy(plugin, path);
+ 	strcat(plugin, "/");
+@@ -71,7 +75,12 @@ load_plugin(struct pevent *pevent, const char *path,
+ 		goto out_free;
+ 	}
  
-@@ -97,7 +96,7 @@ static int function_handler(struct trace_seq *s, struct pevent_record *record,
- 	unsigned long long pfunction;
- 	const char *func;
- 	const char *parent;
--	int i, index;
-+	int index;
+-	list = malloc_or_die(sizeof(*list));
++	list = malloc(sizeof(*list));
++	if (!list) {
++		warning("could not allocate plugin memory\n");
++		goto out_free;
++	}
++
+ 	list->next = *plugin_list;
+ 	list->handle = handle;
+ 	list->name = plugin;
+@@ -163,7 +172,11 @@ load_plugins(struct pevent *pevent, const char *suffix,
+ 	if (!home)
+ 		return;
  
- 	if (pevent_get_field_val(s, event, "ip", record, &function, 1))
- 		return trace_seq_putc(s, '!');
-@@ -109,10 +108,9 @@ static int function_handler(struct trace_seq *s, struct pevent_record *record,
+-	path = malloc_or_die(strlen(home) + strlen(LOCAL_PLUGIN_DIR) + 2);
++	path = malloc(strlen(home) + strlen(LOCAL_PLUGIN_DIR) + 2);
++	if (!path) {
++		warning("could not allocate plugin memory\n");
++		return;
++	}
  
- 	parent = pevent_find_function(pevent, pfunction);
- 
--	index = get_index(parent, func, record->cpu);
-+	index = add_and_get_index(parent, func, record->cpu);
- 
--	for (i = 0; i < index; i++)
--		trace_seq_printf(s, "   ");
-+	trace_seq_printf(s, "%*s", index*3, "");
- 
- 	if (func)
- 		trace_seq_printf(s, "%s", func);
+ 	strcpy(path, home);
+ 	strcat(path, "/");
 -- 
 1.8.3.1
 
