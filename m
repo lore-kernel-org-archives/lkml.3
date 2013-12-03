@@ -1,101 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201Ab3LCUpq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 15:45:46 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:42165 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754878Ab3LCUpn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 15:45:43 -0500
-Date: Tue, 3 Dec 2013 12:45:40 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        sparclinux <sparclinux@vger.kernel.org>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>
-Subject: Re: Build regressions/improvements in v3.13-rc2
-Message-ID: <20131203204540.GA4796@roeck-us.net>
-References: <1385891092-13266-1-git-send-email-geert@linux-m68k.org>
- <CAMuHMdV1hoUnYixPghCAy-LuTaB9JU-BFfBPH06gxhLRAqfp8Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdV1hoUnYixPghCAy-LuTaB9JU-BFfBPH06gxhLRAqfp8Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755222Ab3LCUrC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 15:47:02 -0500
+Received: from mga11.intel.com ([192.55.52.93]:22589 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754927Ab3LCUrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 15:47:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,819,1378882800"; 
+   d="scan'208";a="444039987"
+Message-ID: <1386103614.3048.247.camel@empanada>
+Subject: Re: [BUG] ftrace: support for SOFT_DISABLE to syscall events caused
+ huge slowdown of ftrace startup test
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Petr Mladek <pmladek@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 03 Dec 2013 14:46:54 -0600
+In-Reply-To: <20131203124120.427b9661@gandalf.local.home>
+References: <1386090969.1603.72.camel@pathway.suse.cz>
+	 <20131203124120.427b9661@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 01, 2013 at 10:50:16AM +0100, Geert Uytterhoeven wrote:
-> On Sun, Dec 1, 2013 at 10:44 AM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
-> > JFYI, when comparing v3.13-rc2[1] to v3.13-rc1[3], the summaries are:
-> >   - build errors: +8/-8
-> >   - build warnings: +147/-97
+On Tue, 2013-12-03 at 12:41 -0500, Steven Rostedt wrote:
+> On Tue, 03 Dec 2013 18:16:09 +0100
+> Petr Mladek <pmladek@suse.cz> wrote:
 > 
->   + /scratch/kisskb/src/drivers/crypto/caam/jr.c: error: implicit
-> declaration of function 'of_iomap'
-> [-Werror=implicit-function-declaration]:  => 468:2
+> > Hi,
+> > 
+> > I tested my ftrace-related patches and enabled also the startup test:
+> > 
+> >   CONFIG_FTRACE_SELFTEST=y
+> >   CONFIG_FTRACE_STARTUP_TEST=y
+> > 
+> > On today's kernel/git/tip/tip.git, the boot "freezed" for 1 minute when
+> > doing "Testing event system syscalls".
+> > 
+> > A bisect pointed finger to the commit d562aff93bfb530b099 (tracing: Add
+> > support for SOFT_DISABLE to syscall events).
+> > 
+> > It seems that the culprit are the "synchronize_sched" calls added to
+> > "unreg_event_syscall_enter" and "unreg_event_syscall_exit" functions.
+> > They are called 2312 times during the boot here and are responsible for
+> > the delay.
+> > 
+> > I wonder if it might cause slowdown also at runtime.
+> > 
+> > I am going to look deeper into the code and eventually come up with a
+> > solution. But it might take some time. I am still newbie in the kernel
+> > development. Any hints or tips are welcome ;-)
+> > 
 > 
-> powerpc/mpc85xx_defconfig
+> Yeah, the synchronize_sched() at all disabling of syscall events seems
+> rather extreme. Perhaps this is good enough.
 > 
->   + /scratch/kisskb/src/arch/powerpc/kernel/swsusp_booke.S: Error:
-> invalid sprg number:  => 161, 85, 165, 91, 167, 163, 87, 89
+> Dose this work for you?
 > 
-> powerpc-randconfig
-> 
->   + /scratch/kisskb/src/drivers/tty/ehv_bytechan.c: error: type
-> defaults to 'int' in declaration of 'console_initcall'
-> [-Werror=implicit-int]:  => 363:1
-> 
-> powerpc-allmodconfig
-> 
->   + /scratch/kisskb/src/arch/sparc/kernel/kgdb_64.c: error: implicit
-> declaration of function 'exception_enter'
-> [-Werror=implicit-function-declaration]:  => 162:7
->   + /scratch/kisskb/src/arch/sparc/kernel/kgdb_64.c: error: implicit
-> declaration of function 'exception_exit'
-> [-Werror=implicit-function-declaration]:  => 176:2
-> 
-> sparc64-allmodconfig
-> 
->   + error: drivers/built-in.o: undefined reference to
-> `i2c_register_driver':  => .init.literal+0xd88)
->   + error: sram.c: undefined reference to `devm_regmap_init_i2c':  =>
-> .text+0x590dc)
-> 
-> sparc-allmodconfig
-> xtensa-allmodconfig
-> 
->   + /scratch/kisskb/src/drivers/gpu/drm/drm_gem_cma_helper.c: error:
-> implicit declaration of function 'dma_alloc_writecombine'
-> [-Werror=implicit-function-declaration]:  => 91:2
->   + /scratch/kisskb/src/drivers/gpu/drm/drm_gem_cma_helper.c: error:
-> implicit declaration of function 'dma_free_writecombine'
-> [-Werror=implicit-function-declaration]:  => 176:3
-> 
-> sh-randconfig
-> 
-> > [1] http://kisskb.ellerman.id.au/kisskb/head/6939/ (119 out of 120 configs)
-> > [3] http://kisskb.ellerman.id.au/kisskb/head/6919/ (119 out of 120 configs)
-> 
-Also:
 
-ia64-defconfig:
+I'm also seeing a very long (~ 1 min or so) startup with
+CONFIG_FTRACE_STARTUP_TEST, but that seems to be the case with or
+without your patch, or even with the SOFT_DISABLE syscall patch
+reverted.
 
-arch/ia64/kernel/built-in.o: In function `skip_rbs_switch':
-(.text+0xef2): undefined reference to `preempt_schedule_irq'
+I haven't done a comparison between any of these cases, just noting that
+unless it's expected for the ftrace startup test to take a full minute
+or so, there might be a problem somewhere else as well.  Or I may be not
+testing correctly - if it was bisected to the SOFT_DISABLE commit, I'm
+guessing there's a more pronounced difference than what I'm seeing
+here...
 
-arm-allmodconfig:
+Tom
 
-drivers/isdn/hisax/telespci.c: In function 'setup_telespci':
-drivers/isdn/hisax/telespci.c:294:2: error: #error "not running on big endian machines now"
+> Tom, do you see anything wrong with this. I'm assuming that the
+> synchronize_sched() within the event unregistering, was there for
+> deleting of trace instances. By placing the synchronize_sched() only
+> within the deletion code, this should be good enough.
+> 
+> -- Steve
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+> index f919a2e..a11800a 100644
+> --- a/kernel/trace/trace_events.c
+> +++ b/kernel/trace/trace_events.c
+> @@ -2314,6 +2314,9 @@ int event_trace_del_tracer(struct trace_array *tr)
+>  	/* Disable any running events */
+>  	__ftrace_set_clr_event_nolock(tr, NULL, NULL, NULL, 0);
+>  
+> +	/* Access to events are within rcu_read_lock_sched() */
+> +	synchronize_sched();
+> +
+>  	down_write(&trace_event_sem);
+>  	__trace_remove_event_dirs(tr);
+>  	debugfs_remove_recursive(tr->event_dir);
+> diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+> index e4b6d11..ea90eb5 100644
+> --- a/kernel/trace/trace_syscalls.c
+> +++ b/kernel/trace/trace_syscalls.c
+> @@ -431,11 +431,6 @@ static void unreg_event_syscall_enter(struct ftrace_event_file *file,
+>  	if (!tr->sys_refcount_enter)
+>  		unregister_trace_sys_enter(ftrace_syscall_enter, tr);
+>  	mutex_unlock(&syscall_trace_lock);
+> -	/*
+> -	 * Callers expect the event to be completely disabled on
+> -	 * return, so wait for current handlers to finish.
+> -	 */
+> -	synchronize_sched();
+>  }
+>  
+>  static int reg_event_syscall_exit(struct ftrace_event_file *file,
+> @@ -474,11 +469,6 @@ static void unreg_event_syscall_exit(struct ftrace_event_file *file,
+>  	if (!tr->sys_refcount_exit)
+>  		unregister_trace_sys_exit(ftrace_syscall_exit, tr);
+>  	mutex_unlock(&syscall_trace_lock);
+> -	/*
+> -	 * Callers expect the event to be completely disabled on
+> -	 * return, so wait for current handlers to finish.
+> -	 */
+> -	synchronize_sched();
+>  }
+>  
+>  static int __init init_syscall_trace(struct ftrace_event_call *call)
 
-mips64 (out of tree 64 bit configuration with MIPS32_O32 not set):
 
-arch/mips/include/asm/syscall.h: In function 'mips_get_syscall_arg':
-arch/mips/include/asm/syscall.h:32:16: error: unused variable 'usp' [-Werror=unused-variable]
-
-Guenter
