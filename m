@@ -1,464 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab3LCKv2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 05:51:28 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:45275 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752790Ab3LCKvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 05:51:24 -0500
-Message-ID: <529DB73E.5080709@ti.com>
-Date: Tue, 3 Dec 2013 12:49:34 +0200
-From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1752921Ab3LCKs7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 05:48:59 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:55948 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752372Ab3LCKsz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 05:48:55 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvQGAJe2nVJ5LHyk/2dsb2JhbABagweDMbBzhU6BGRd0giUBAQQBDhkTHA8UBQsIAw4KCSUPBSUDIROHewXBPBaOEVcHgyCBEwOUMYNikhSDPSiBLQ
+Date: Tue, 3 Dec 2013 21:48:49 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: hannes@cmpxchg.org, mhocko@suse.cz, dchinner@redhat.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups@vger.kernel.org, devel@openvz.org,
+        glommer@openvz.org, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v12 09/18] vmscan: shrink slab on memcg pressure
+Message-ID: <20131203104849.GD8803@dastard>
+References: <cover.1385974612.git.vdavydov@parallels.com>
+ <be01fd9afeedb7d5c7979347f4d6ddaf67c9082d.1385974612.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
-        <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 1/2] memory: ti-aemif: introduce AEMIF driver
-References: <1384962416-14862-1-git-send-email-ivan.khoronzhuk@ti.com> <1384962416-14862-2-git-send-email-ivan.khoronzhuk@ti.com> <5298B370.3090405@ti.com>
-In-Reply-To: <5298B370.3090405@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.122]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <be01fd9afeedb7d5c7979347f4d6ddaf67c9082d.1385974612.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2013 05:32 PM, Santosh Shilimkar wrote:
-> On Wednesday 20 November 2013 10:46 AM, Ivan Khoronzhuk wrote:
->> Add new AEMIF driver for EMIF16 Texas Instruments controller.
->> The EMIF16 module is intended to provide a glue-less interface to
->> a variety of asynchronous memory devices like ASRA M, NOR and NAND
->> memory. A total of 256M bytes of any of these memories can be
->> accessed at any given time via four chip selects with 64M byte access
->> per chip select.
->>
-> Please add the number of CS info here.
+On Mon, Dec 02, 2013 at 03:19:44PM +0400, Vladimir Davydov wrote:
+> This patch makes direct reclaim path shrink slabs not only on global
+> memory pressure, but also when we reach memory cgroup limit. To achieve
+> that, it introduces a new per-shrinker flag, SHRINKER_MEMCG_AWARE, which
+> should be set if the shrinker can handle per-memcg reclaim. For such
+> shrinkers, shrink_slab() will iterate over all eligible memory cgroups
+> (i.e. the cgroup that triggered the reclaim and all its descendants) and
+> pass the current memory cgroup to the shrinker in shrink_control.memcg
+> just like it passes the current NUMA node to NUMA-aware shrinkers.  It
+> is completely up to memcg-aware shrinkers how to organize objects in
+> order to provide required functionality. Currently none of the existing
+> shrinkers is memcg-aware, but next patches will introduce per-memcg
+> list_lru, which will facilitate the process of turning shrinkers that
+> use list_lru to be memcg-aware.
 > 
-
-Ok
-
->> Synchronous memories such as DDR1 SD RAM, SDR SDRAM and Mobile SDR
->> are not supported.
->>
->> This controller is used on SoCs like Davinci, Keysone2
->>
+> The number of slab objects scanned on memcg pressure is calculated in
+> the same way as on global pressure - it is proportional to the number of
+> pages scanned over the number of pages eligible for reclaim (i.e. the
+> number of on-LRU pages in the target memcg and all its descendants) -
+> except we do not employ the nr_deferred per-shrinker counter to avoid
+> memory cgroup isolation issues. Ideally, this counter should be made
+> per-memcg.
 > 
->   
->> For more informations see documentation:
->> Davinci DM646x - http://www.ti.com/lit/ug/sprueq7c/sprueq7c.pdf
->> OMAP-L138 - http://www.ti.com/lit/ug/spruh77a/spruh77a.pdf
->> Kestone - http://www.ti.com/lit/ug/sprugz3a/sprugz3a.pdf
->>
-> This information probably can go below ---
->
+....
 
-Ok
+> @@ -236,11 +236,17 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+>  		return 0;
+>  
+>  	/*
+> -	 * copy the current shrinker scan count into a local variable
+> -	 * and zero it so that other concurrent shrinker invocations
+> -	 * don't also do this scanning work.
+> +	 * Do not touch global counter of deferred objects on memcg pressure to
+> +	 * avoid isolation issues. Ideally the counter should be per-memcg.
+>  	 */
+> -	nr = atomic_long_xchg(&shrinker->nr_deferred[nid], 0);
+> +	if (!shrinkctl->target_mem_cgroup) {
+> +		/*
+> +		 * copy the current shrinker scan count into a local variable
+> +		 * and zero it so that other concurrent shrinker invocations
+> +		 * don't also do this scanning work.
+> +		 */
+> +		nr = atomic_long_xchg(&shrinker->nr_deferred[nid], 0);
+> +	}
 
->> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->> ---
->>   drivers/memory/Kconfig    |   11 ++
->>   drivers/memory/Makefile   |    1 +
->>   drivers/memory/ti-aemif.c |  415 +++++++++++++++++++++++++++++++++++++++++++++
->>   3 files changed, 427 insertions(+)
->>   create mode 100644 drivers/memory/ti-aemif.c
->>
->> diff --git a/drivers/memory/Kconfig b/drivers/memory/Kconfig
->> index 29a11db..cc0e3c8 100644
->> --- a/drivers/memory/Kconfig
->> +++ b/drivers/memory/Kconfig
->> @@ -7,6 +7,17 @@ menuconfig MEMORY
->>   
->>   if MEMORY
->>   
->> +config TI_AEMIF
->> +	bool "Texas Instruments AEMIF driver"
-> Driver can be build as loadable module as well so fix above.
-> 
+That's ugly. Effectively it means that memcg reclaim is going to be
+completely ineffective when large numbers of allocations and hence
+reclaim attempts are done under GFP_NOFS context.
 
-Ok
+The only thing that keeps filesystem caches in balance when there is
+lots of filesystem work going on (i.e. lots of GFP_NOFS allocations)
+is the deferal of reclaim work to a context that can do something
+about it.
 
->> +	depends on (ARCH_DAVINCI || ARCH_KEYSTONE) && OF
->> +	help
->> +	  This driver is for the AEMIF module available in Texas Instruments
->> +	  SoCs. AEMIF stands for Asynchronous External Memory Interface and
->> +	  is intended to provide a glue-less interface to a variety of
->> +	  asynchronuous memory devices like ASRAM, NOR and NAND memory. A total
->> +	  of 256M bytes of any of these memories can be accessed at a given
->> +	  time via four chip selects with 64M byte access per chip select.
->> +
->>   config TI_EMIF
->>   	tristate "Texas Instruments EMIF driver"
->>   	depends on ARCH_OMAP2PLUS
->> diff --git a/drivers/memory/Makefile b/drivers/memory/Makefile
->> index 969d923..d4e150c 100644
->> --- a/drivers/memory/Makefile
->> +++ b/drivers/memory/Makefile
->> @@ -5,6 +5,7 @@
->>   ifeq ($(CONFIG_DDR),y)
->>   obj-$(CONFIG_OF)		+= of_memory.o
->>   endif
->> +obj-$(CONFIG_TI_AEMIF)		+= ti-aemif.o
->>   obj-$(CONFIG_TI_EMIF)		+= emif.o
->>   obj-$(CONFIG_MVEBU_DEVBUS)	+= mvebu-devbus.o
->>   obj-$(CONFIG_TEGRA20_MC)	+= tegra20-mc.o
->> diff --git a/drivers/memory/ti-aemif.c b/drivers/memory/ti-aemif.c
->> new file mode 100644
->> index 0000000..a4b479a
->> --- /dev/null
->> +++ b/drivers/memory/ti-aemif.c
->> @@ -0,0 +1,415 @@
->> +/*
->> + * TI AEMIF driver
->> + *
->> + * Copyright (C) 2010 - 2013 Texas Instruments Incorporated. http://www.ti.com/
->> + * Copyright (C) Heiko Schocher <hs@denx.de>
->> + * Copyright (C) Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->> + *
-> You mean author above, right, Please fix that for both emails ids.
-> 
+>  	total_scan = nr;
+>  	delta = (4 * fraction) / shrinker->seeks;
+> @@ -296,21 +302,46 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+>  		cond_resched();
+>  	}
+>  
+> -	/*
+> -	 * move the unused scan count back into the shrinker in a
+> -	 * manner that handles concurrent updates. If we exhausted the
+> -	 * scan, there is no need to do an update.
+> -	 */
+> -	if (total_scan > 0)
+> -		new_nr = atomic_long_add_return(total_scan,
+> +	if (!shrinkctl->target_mem_cgroup) {
+> +		/*
+> +		 * move the unused scan count back into the shrinker in a
+> +		 * manner that handles concurrent updates. If we exhausted the
+> +		 * scan, there is no need to do an update.
+> +		 */
+> +		if (total_scan > 0)
+> +			new_nr = atomic_long_add_return(total_scan,
+>  						&shrinker->nr_deferred[nid]);
+> -	else
+> -		new_nr = atomic_long_read(&shrinker->nr_deferred[nid]);
+> +		else
+> +			new_nr = atomic_long_read(&shrinker->nr_deferred[nid]);
+> +	}
 
-Ok
+So, if the memcg can't make progress, why wouldn't you defer the
+work to the global scan? Or can't a global scan trim memcg LRUs?
+And if it can't, then isn't that a major design flaw? Why not just
+allow kswapd to walk memcg LRUs in the background?
 
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +
->> +#include <linux/clk.h>
->> +#include <linux/err.h>
->> +#include <linux/io.h>
->> +#include <linux/kernel.h>
->> +#include <linux/module.h>
->> +#include <linux/of.h>
->> +#include <linux/of_platform.h>
->> +#include <linux/platform_device.h>
->> +
->> +#define TA_SHIFT	2
->> +#define RHOLD_SHIFT	4
->> +#define RSTROBE_SHIFT	7
->> +#define RSETUP_SHIFT	13
->> +#define WHOLD_SHIFT	17
->> +#define WSTROBE_SHIFT	20
->> +#define WSETUP_SHIFT	26
->> +#define EW_SHIFT	30
->> +#define SS_SHIFT	31
->> +
->> +#define TA(x)		((x) << TA_SHIFT)
->> +#define RHOLD(x)	((x) << RHOLD_SHIFT)
->> +#define RSTROBE(x)	((x) << RSTROBE_SHIFT)
->> +#define RSETUP(x)	((x) << RSETUP_SHIFT)
->> +#define WHOLD(x)	((x) << WHOLD_SHIFT)
->> +#define WSTROBE(x)	((x) << WSTROBE_SHIFT)
->> +#define WSETUP(x)	((x) << WSETUP_SHIFT)
->> +#define EW(x)		((x) << EW_SHIFT)
->> +#define SS(x)		((x) << SS_SHIFT)
->> +
->> +#define ASIZE_MAX	0x1
->> +#define TA_MAX		0x3
->> +#define RHOLD_MAX	0x7
->> +#define RSTROBE_MAX	0x3f
->> +#define RSETUP_MAX	0xf
->> +#define WHOLD_MAX	0x7
->> +#define WSTROBE_MAX	0x3f
->> +#define WSETUP_MAX	0xf
->> +#define EW_MAX		0x1
->> +#define SS_MAX		0x1
->> +#define NUM_CS		4
->> +
->> +#define TA_VAL(x)	(((x) & TA(TA_MAX)) >> TA_SHIFT)
->> +#define RHOLD_VAL(x)	(((x) & RHOLD(RHOLD_MAX)) >> RHOLD_SHIFT)
->> +#define RSTROBE_VAL(x)	(((x) & RSTROBE(RSTROBE_MAX)) >> RSTROBE_SHIFT)
->> +#define RSETUP_VAL(x)	(((x) & RSETUP(RSETUP_MAX)) >> RSETUP_SHIFT)
->> +#define WHOLD_VAL(x)	(((x) & WHOLD(WHOLD_MAX)) >> WHOLD_SHIFT)
->> +#define WSTROBE_VAL(x)	(((x) & WSTROBE(WSTROBE_MAX)) >> WSTROBE_SHIFT)
->> +#define WSETUP_VAL(x)	(((x) & WSETUP(WSETUP_MAX)) >> WSETUP_SHIFT)
->> +#define EW_VAL(x)	(((x) & EW(EW_MAX)) >> EW_SHIFT)
->> +#define SS_VAL(x)	(((x) & SS(SS_MAX)) >> SS_SHIFT)
->> +
->> +#define NRCSR_OFFSET	0x00
->> +#define AWCCR_OFFSET	0x04
->> +#define A1CR_OFFSET	0x10
->> +
->> +#define ACR_ASIZE_MASK	0x3
->> +#define ACR_EW_MASK	BIT(30)
->> +#define ACR_SS_MASK	BIT(31)
->> +#define ASIZE_16BIT	1
->> +
->> +#define CONFIG_MASK	(TA(TA_MAX) | \
->> +				RHOLD(RHOLD_MAX) | \
->> +				RSTROBE(RSTROBE_MAX) |	\
->> +				RSETUP(RSETUP_MAX) | \
->> +				WHOLD(WHOLD_MAX) | \
->> +				WSTROBE(WSTROBE_MAX) | \
->> +				WSETUP(WSETUP_MAX) | \
->> +				EW(EW_MAX) | SS(SS_MAX) | \
->> +				ASIZE_MAX)
->> +
->> +#define DRV_NAME	"ti-aemif"
->> +
->> +/**
->> + * structure to hold cs parameters
-> struct aemif_cs_data : structure to hold cs parameters
+/me just looked at patch 13
 
-Ok
+Yeah, this goes some way to explaining why something like patch 13
+is necessary - slab shrinkers are not keeping up with page cache
+reclaim because of GFP_NOFS allocations, and so the page cache
+empties only leaving slab caches to be trimmed....
 
->> + * @cs: chip-select number
->> + * @wstrobe: write strobe width, ns
->> + * @rstrobe: read strobe width, ns
->> + * @wsetup: write setup width, ns
->> + * @whold: write hold width, ns
->> + * @rsetup: read setup width, ns
->> + * @rhold: read hold width, ns
->> + * @ta: minimum turn around time, ns
->> + * @enable_ss: enable/disable select strobe mode
->> + * @enable_ew: enable/disable extended wait mode
->> + * @asize: width of the asynchronous device's data bus
->> + */
->> +struct aemif_cs_data {
->> +	u8	cs;
->> +	u16	wstrobe;
->> +	u16	rstrobe;
->> +	u8	wsetup;
->> +	u8	whold;
->> +	u8	rsetup;
->> +	u8	rhold;
->> +	u8	ta;
->> +	u8	enable_ss;
->> +	u8	enable_ew;
->> +	u8	asize;
->> +};
->> +
->> +/**
->> + * structure to hold device data
-> Prefix structure name here as suggested.
->
 
-Ok
- 
->> + * @base: base address of AEMIF registers
->> + * @clk: source clock
->> + * @clk_rate: clock's rate in kHz
->> + * @num_cs: number of assigned chip-selects
->> + * @cs_data: array of chip-select settings
->> + */
->> +struct aemif_device {
->> +	struct device *dev;
->> +	void __iomem *base;
->> +	struct clk *clk;
->> +	unsigned long clk_rate;
->> +	u8 num_cs;
->> +	int cs_offset;
->> +	struct aemif_cs_data cs_data[NUM_CS];
->> +};
->> +
->> +static struct aemif_device *aemif;
-> Add one extra line here. From other comment looks
-> like you are going to get rid of this global which will be
-> nice.
-> 
+> +static unsigned long
+> +shrink_slab_memcg(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+> +		  unsigned long fraction, unsigned long denominator)
 
-Yes
+what's this function got to do with memcgs? Why did you rename it
+from the self explanitory shrink_slab_one() name that Glauber gave
+it?
 
->> +/**
->> + * aemif_calc_rate - calculate timing data.
->> + * @wanted: The cycle time needed in nanoseconds.
->> + * @clk: The input clock rate in kHz.
->> + * @max: The maximum divider value that can be programmed.
->> + *
->> + * On success, returns the calculated timing value minus 1 for easy
->> + * programming into AEMIF timing registers, else negative errno.
->> + */
->> +static int aemif_calc_rate(int wanted, unsigned long clk, int max)
->> +{
->> +	int result;
->> +
->> +	result = DIV_ROUND_UP((wanted * clk), NSEC_PER_MSEC) - 1;
->> +
->> +	dev_dbg(aemif->dev, "%s: result %d from %ld, %d\n", __func__, result,
->> +		clk, wanted);
->> +
->> +	/* It is generally OK to have a more relaxed timing than requested... */
->> +	if (result < 0)
->> +		result = 0;
->> +
->> +	/* ... But configuring tighter timings is not an option. */
->> +	else if (result > max)
->> +		result = -EINVAL;
->> +
->> +	return result;
->> +}
->> +
->> +/**
->> + * aemif_config_abus - configure async bus parameters
->> + * @data: aemif chip select configuration
->> + *
->> + * This function programs the given timing values (in real clock) into the
->> + * AEMIF registers taking the AEMIF clock into account.
->> + *
->> + * This function does not use any locking while programming the AEMIF
->> + * because it is expected that there is only one user of a given
->> + * chip-select.
->> + *
->> + * Returns 0 on success, else negative errno.
->> + */
->> +static int aemif_config_abus(struct aemif_cs_data *data)
->> +{
->> +	int ta, rhold, rstrobe, rsetup, whold, wstrobe, wsetup;
->> +	unsigned offset;
->> +	u32 set, val;
->> +
->> +	offset = A1CR_OFFSET + (data->cs - aemif->cs_offset) * 4;
->> +
->> +	ta	= aemif_calc_rate(data->ta, aemif->clk_rate, TA_MAX);
->> +	rhold	= aemif_calc_rate(data->rhold, aemif->clk_rate,
->> +					  RHOLD_MAX);
->> +	rstrobe	= aemif_calc_rate(data->rstrobe, aemif->clk_rate,
->> +					  RSTROBE_MAX);
->> +	rsetup	= aemif_calc_rate(data->rsetup, aemif->clk_rate,
->> +					  RSETUP_MAX);
->> +	whold	= aemif_calc_rate(data->whold, aemif->clk_rate,
->> +					  WHOLD_MAX);
->> +	wstrobe	= aemif_calc_rate(data->wstrobe, aemif->clk_rate,
->> +					  WSTROBE_MAX);
->> +	wsetup	= aemif_calc_rate(data->wsetup, aemif->clk_rate,
->> +					  WSETUP_MAX);
->> +
->> +	if (ta < 0 || rhold < 0 || rstrobe < 0 || rsetup < 0 ||
->> +			whold < 0 || wstrobe < 0 || wsetup < 0) {
->> +		dev_err(aemif->dev, "%s: cannot get suitable timings\n",
->> +			__func__);
->> +		return -EINVAL;
->> +	}
->> +
->> +	set = TA(ta) | RHOLD(rhold) | RSTROBE(rstrobe) | RSETUP(rsetup) |
->> +		WHOLD(whold) | WSTROBE(wstrobe) | WSETUP(wsetup);
->> +
->> +	set |= (data->asize & ACR_ASIZE_MASK);
->> +	if (data->enable_ew)
->> +		set |= ACR_EW_MASK;
->> +	if (data->enable_ss)
->> +		set |= ACR_SS_MASK;
->> +
->> +	val = readl(aemif->base + offset);
->> +	val &= ~CONFIG_MASK;
->> +	val |= set;
->> +	writel(val, aemif->base + offset);
->> +
->> +	return 0;
->> +}
->> +
->> +static inline int aemif_cycles_to_nsec(int val)
->> +{
->> +	return ((val + 1) * NSEC_PER_MSEC) / aemif->clk_rate;
->> +}
->> +
->> +/**
->> + * aemif_get_hw_params - function to read hw register values
->> + * @data: ptr to cs data
->> + *
->> + * This function reads the defaults from the registers and update
->> + * the timing values. Required for get/set commands and also for
->> + * the case when driver needs to use defaults in hardware.
->> + */
->> +static void aemif_get_hw_params(struct aemif_cs_data *data)
->> +{
->> +	u32 val, offset;
->> +	offset = A1CR_OFFSET + (data->cs - aemif->cs_offset) * 4;
->> +
->> +	val = readl(aemif->base + offset);
->> +	data->ta = aemif_cycles_to_nsec(TA_VAL(val));
->> +	data->rhold = aemif_cycles_to_nsec(RHOLD_VAL(val));
->> +	data->rstrobe = aemif_cycles_to_nsec(RSTROBE_VAL(val));
->> +	data->rsetup = aemif_cycles_to_nsec(RSETUP_VAL(val));
->> +	data->whold = aemif_cycles_to_nsec(WHOLD_VAL(val));
->> +	data->wstrobe = aemif_cycles_to_nsec(WSTROBE_VAL(val));
->> +	data->wsetup = aemif_cycles_to_nsec(WSETUP_VAL(val));
->> +	data->enable_ew = EW_VAL(val);
->> +	data->enable_ss = SS_VAL(val);
->> +	data->asize = val & ASIZE_MAX;
->> +}
->> +
->> +/**
->> + * of_aemif_parse_abus_config - parse CS configuration from DT
->> + * @np: device node ptr
->> + *
->> + * This function update the emif async bus configuration based on the values
->> + * configured in a cs device binding node.
->> + */
->> +static int of_aemif_parse_abus_config(struct device_node *np)
->> +{
->> +	struct aemif_cs_data *data;
->> +	unsigned long cs;
->> +	u32 val;
->> +
->> +	if (kstrtoul(np->name + 2, 10, &cs) < 0) {
->> +		dev_dbg(aemif->dev, "cs name is incorrect");
->> +		return -EINVAL;
->> +	}
->> +
->> +	if (cs - aemif->cs_offset >= NUM_CS || cs < aemif->cs_offset) {
->> +		dev_dbg(aemif->dev, "cs number is incorrect %lu", cs);
->> +		return -EINVAL;
->> +	}
->> +
->> +	if (aemif->num_cs >= NUM_CS) {
->> +		dev_dbg(aemif->dev, "cs count is more than %d", NUM_CS);
->> +		return -EINVAL;
->> +	}
->> +
->> +	data = &aemif->cs_data[aemif->num_cs++];
->> +	data->cs = cs;
->> +
->> +	/* read the current value in the hw register */
->> +	aemif_get_hw_params(data);
->> +
->> +	/* override the values from device node */
->> +	of_property_read_u8(np, "ti,cs-ta", &data->ta);
->> +	of_property_read_u8(np, "ti,cs-rhold", &data->rhold);
->> +	of_property_read_u16(np, "ti,cs-rstrobe", &data->rstrobe);
->> +	of_property_read_u8(np, "ti,cs-rsetup", &data->rsetup);
->> +	of_property_read_u8(np, "ti,cs-whold", &data->whold);
->> +	of_property_read_u16(np, "ti,cs-wstrobe", &data->wstrobe);
->> +	of_property_read_u8(np, "ti,cs-wsetup", &data->wsetup);
->> +	if (!of_property_read_u32(np, "ti,bus-width", &val))
->> +		if (val == 16)
->> +			data->asize = 1;
->> +	data->enable_ew = of_property_read_bool(np, "ti,cs-ew");
->> +	data->enable_ss = of_property_read_bool(np, "ti,cs-ss");
->> +	return 0;
->> +}
->> +
->> +static const struct of_device_id aemif_of_match[] = {
->> +	{ .compatible = "ti,davinci-aemif", },
->> +	{ .compatible = "ti,keystone-aemif", },
->> +	{ .compatible = "ti,omap-L138-aemif", },
->> +	{},
->> +};
->> +
-> Looks like you are yet to update the patches from
-> previous comments. Did I miss v2 or you haven't posted
-> that yet ?
-> 
-> Regards,
-> Santosh
-> 
+> +{
+> +	unsigned long freed = 0;
+> +
+> +	if (shrinkctl->memcg && !memcg_kmem_is_active(shrinkctl->memcg))
+> +		return 0;
 
-FYI: The part of suggestions had been mentioned by Sekhar Nori
-at https://lkml.org/lkml/2013/11/26/44.
+Why here? why not check that in the caller where memcg's are being
+iterated?
 
-I has added your corrections. I'll send updated series after the bindings
-are clarified finally.
+> +
+> +	for_each_node_mask(shrinkctl->nid, shrinkctl->nodes_to_scan) {
+> +		if (!node_online(shrinkctl->nid))
+> +			continue;
+> +
+> +		if (!(shrinker->flags & SHRINKER_NUMA_AWARE) &&
+> +		    (shrinkctl->nid != 0))
+> +			break;
 
+Hmmm - this looks broken. Nothing guarantees that node 0 in
+shrinkctl->nodes_to_scan is ever set, so non-numa aware shrinkers
+will do nothing when the first node in the mask is not set. For non-numa
+aware shrinkers, the shrinker should always be called once with a
+node id of 0.
+
+That's what earlier versions of the numa aware shrinker patch set
+did, and it seems to have been lost along the way.  Yeah, there's
+the last version from Glauber's tree that I saw:
+
+static unsigned long
+shrink_slab_one(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+               unsigned long nr_pages_scanned, unsigned long lru_pages)
+{
+       unsigned long freed = 0;
+
+       if (!(shrinker->flags & SHRINKER_NUMA_AWARE)) {
+               shrinkctl->nid = 0;
+
+               return shrink_slab_node(shrinkctl, shrinker,
+                        nr_pages_scanned, lru_pages,
+                        &shrinker->nr_deferred);
+       }
+
+       for_each_node_mask(shrinkctl->nid, shrinkctl->nodes_to_scan)
+
+               if (!node_online(shrinkctl->nid))
+                       continue;
+
+               freed += shrink_slab_node(shrinkctl, shrinker,
+                        nr_pages_scanned, lru_pages,
+			 &shrinker->nr_deferred_node[shrinkctl->nid]);
+       }
+
+       return freed;
+}
+
+So, that's likely to be another reason that all the non-numa slab
+caches are not being shrunk appropriately and need to be hit with a
+bit hammer...
+
+> @@ -352,18 +383,23 @@ unsigned long shrink_slab(struct shrink_control *shrinkctl,
+>  	}
+>  
+>  	list_for_each_entry(shrinker, &shrinker_list, list) {
+> -		for_each_node_mask(shrinkctl->nid, shrinkctl->nodes_to_scan) {
+> -			if (!node_online(shrinkctl->nid))
+> -				continue;
+> -
+> -			if (!(shrinker->flags & SHRINKER_NUMA_AWARE) &&
+> -			    (shrinkctl->nid != 0))
+> +		shrinkctl->memcg = shrinkctl->target_mem_cgroup;
+> +		do {
+> +			if (!(shrinker->flags & SHRINKER_MEMCG_AWARE) &&
+> +			    (shrinkctl->memcg != NULL)) {
+> +				mem_cgroup_iter_break(
+> +						shrinkctl->target_mem_cgroup,
+> +						shrinkctl->memcg);
+>  				break;
+> +			}
+>  
+> -			freed += shrink_slab_node(shrinkctl, shrinker,
+> -						  fraction, denominator);
+> +			freed += shrink_slab_memcg(shrinkctl, shrinker,
+> +						   fraction, denominator);
+> +			shrinkctl->memcg = mem_cgroup_iter(
+> +						shrinkctl->target_mem_cgroup,
+> +						shrinkctl->memcg, NULL);
+> +		} while (shrinkctl->memcg);
+
+Glauber's tree also had a bunch of comments explaining what was
+going on here. I've got no idea what the hell this code is doing,
+and why the hell we are iterating memcgs here and how and why the
+normal, non-memcg scan and shrinkers still worked.
+
+This is now just a bunch of memcg gobbledegook with no explanations
+to tell us what it is supposed to be doing. Comments are important -
+you might not think they are necessary, but seeing comments like
+this:
+
++               /*
++                * In a hierarchical chain, it might be that not all memcgs are
++                * kmem active. kmemcg design mandates that when one memcg is
++                * active, its children will be active as well. But it is
++                * perfectly possible that its parent is not.
++                *
++                * We also need to make sure we scan at least once, for the
++                * global case. So if we don't have a target memcg (saved in
++                * root), we proceed normally and expect to break in the next
++                * round.
++                */
+
+in Glauber's tree helped an awful lot to explain the mess that the
+memcg stuff was making of the code...
+
+I'm liking this patch set less and less as I work my way through
+it...
+
+Cheers,
+
+Dave.
 -- 
-Regards,
-Ivan Khoronzhuk
+Dave Chinner
+david@fromorbit.com
