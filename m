@@ -1,69 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823Ab3LDAsw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 19:48:52 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:44187 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754710Ab3LDAsu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 19:48:50 -0500
-Message-ID: <529E7BEC.70509@hitachi.com>
-Date: Wed, 04 Dec 2013 09:48:44 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1755644Ab3LDAyT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 19:54:19 -0500
+Received: from ozlabs.org ([203.10.76.45]:55810 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754450Ab3LDAyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 19:54:18 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        David Howells <dhowells@redhat.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, keescook@chromium.org
+Subject: Re: [PATCH 1/2] test: add minimal module for verification testing
+In-Reply-To: <1386106054-27636-2-git-send-email-keescook@chromium.org>
+References: <1386106054-27636-1-git-send-email-keescook@chromium.org> <1386106054-27636-2-git-send-email-keescook@chromium.org>
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Wed, 04 Dec 2013 10:22:48 +1030
+Message-ID: <877gblxzjj.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [RFC PATCH tip 4/5] use BPF in tracing filters
-References: <1386044930-15149-1-git-send-email-ast@plumgrid.com> <1386044930-15149-5-git-send-email-ast@plumgrid.com>
-In-Reply-To: <1386044930-15149-5-git-send-email-ast@plumgrid.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/03 13:28), Alexei Starovoitov wrote:
-> Such filters can be written in C and allow safe read-only access to
-> any kernel data structure.
-> Like systemtap but with safety guaranteed by kernel.
-> 
-> The user can do:
-> cat bpf_program > /sys/kernel/debug/tracing/.../filter
-> if tracing event is either static or dynamic via kprobe_events.
-> 
-> The program can be anything as long as bpf_check() can verify its safety.
-> For example, the user can create kprobe_event on dst_discard()
-> and use logically following code inside BPF filter:
->       skb = (struct sk_buff *)ctx->regs.di;
->       dev = bpf_load_pointer(&skb->dev);
-> to access 'struct net_device'
-> Since its prototype is 'int dst_discard(struct sk_buff *skb);'
-> 'skb' pointer is in 'rdi' register on x86_64
-> bpf_load_pointer() will try to fetch 'dev' field of 'sk_buff'
-> structure and will suppress page-fault if pointer is incorrect.
+Kees Cook <keescook@chromium.org> writes:
+> When doing module loading verification tests (for example, with module
+> singing, or LSM hooks), it is very handy to have a module that can be
+> built on all systems under test, isn't auto-loaded at boot, and has
+> no device or similar dependencies. This creates the "test_module.ko"
+> module for that purpose, which only reports its load and unload to printk.
 
-Hmm, I doubt it is a good way to integrate with ftrace.
-I prefer to use this for replacing current ftrace filter,
-fetch functions and actions. In that case, we can continue
-to use current interface but much faster to trace.
-Also, we can see what filter/arguments/actions are set
-on each event.
+Bikeshed time!
 
-Thank you,
+> +#define pr_fmt(fmt) "test_module: " fmt
 
+Perhaps:
+        #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Cheers,
+Rusty.
