@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013Ab3LCE32 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 23:29:28 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:58792 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753240Ab3LCE3G (ORCPT
+	id S1753795Ab3LCE3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 23:29:19 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:65503 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753186Ab3LCE3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 23:29:06 -0500
+	Mon, 2 Dec 2013 23:29:01 -0500
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>,
@@ -16,9 +16,9 @@ Cc: Steven Rostedt <rostedt@goodmis.org>,
         Tom Zanussi <tom.zanussi@linux.intel.com>,
         Jovi Zhangwei <jovi.zhangwei@gmail.com>,
         Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH tip 5/5] tracing filter examples in BPF
-Date: Mon,  2 Dec 2013 20:28:50 -0800
-Message-Id: <1386044930-15149-6-git-send-email-ast@plumgrid.com>
+Subject: [RFC PATCH tip 2/5] Extended BPF JIT for x86-64
+Date: Mon,  2 Dec 2013 20:28:47 -0800
+Message-Id: <1386044930-15149-3-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
 References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
@@ -26,434 +26,784 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-filter_ex1: filter that prints events for loobpack device only
+Just-In-Time compiler that maps 64-bit BPF instructions to x86-64 instructions.
 
-$ cat filter_ex1.bpf > /sys/kernel/debug/tracing/events/net/netif_receive_skb/filter
-$ echo 1 > /sys/kernel/debug/tracing/events/net/netif_receive_skb/enable
-$ ping -c1 localhost
-$ cat /sys/kernel/debug/tracing/trace_pip
-            ping-5913  [003] ..s2  3779.285726: __netif_receive_skb_core: skb ffff880808e3a300 dev ffff88080bbf8000
-            ping-5913  [003] ..s2  3779.285744: __netif_receive_skb_core: skb ffff880808e3a900 dev ffff88080bbf8000
+Most BPF instructions have one to one mapping.
 
-To pre-check correctness of the filter do:
-$ trace_filter_check filter_ex1.bpf
-(final filter check always happens in kernel)
+Every BPF register maps to one x86-64 register:
+R0 -> rax
+R1 -> rdi
+R2 -> rsi
+R3 -> rdx
+R4 -> rcx
+R5 -> r8
+R6 -> rbx
+R7 -> r13
+R8 -> r14
+R9 -> r15
+FP -> rbp
 
-bpf/llvm - placeholder for LLVM-BPF backend
+BPF calling convention is defined as:
+R0 - return value from in-kernel function
+R1-R5 - arguments from BPF program to in-kernel function
+R6-R9 - callee saved registers that in-kernel function will preserve
+R10 - read-only frame pointer to access stack
+so BPF calling convention maps directly to x86-64 calling convention.
+
+Allowing zero-overhead calls between BPF filter and safe kernel functions
 
 Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- GCC-BPF backend is available on github
- (since gcc plugin infrastructure doesn't allow for out-of-tree backends)
+ arch/x86/Kconfig              |    1 +
+ arch/x86/net/Makefile         |    1 +
+ arch/x86/net/bpf64_jit_comp.c |  625 +++++++++++++++++++++++++++++++++++++++++
+ arch/x86/net/bpf_jit_comp.c   |   23 +-
+ arch/x86/net/bpf_jit_comp.h   |   35 +++
+ 5 files changed, 665 insertions(+), 20 deletions(-)
+ create mode 100644 arch/x86/net/bpf64_jit_comp.c
+ create mode 100644 arch/x86/net/bpf_jit_comp.h
 
- LLVM plugin infra is very flexible.
- LLVM-BPF backend is reusing 'LLVM target independent code generator'
- and currently it's work in progress. It can be built out of LLVM tree.
- The user would need to 'apt-get install llvm-3.x-dev'
- which will bring llvm headers and static libraries
- and then compile BPF backend only.
-
- Both compilers can compile C into BPF instruction set.
-
- tools/bpf/llvm/README.txt            |    6 +++
- tools/bpf/trace/Makefile             |   34 ++++++++++++++
- tools/bpf/trace/README.txt           |   15 +++++++
- tools/bpf/trace/filter_ex1.c         |   52 +++++++++++++++++++++
- tools/bpf/trace/filter_ex1_orig.c    |   23 ++++++++++
- tools/bpf/trace/filter_ex2.c         |   74 ++++++++++++++++++++++++++++++
- tools/bpf/trace/filter_ex2_orig.c    |   47 +++++++++++++++++++
- tools/bpf/trace/trace_filter_check.c |   82 ++++++++++++++++++++++++++++++++++
- 8 files changed, 333 insertions(+)
- create mode 100644 tools/bpf/llvm/README.txt
- create mode 100644 tools/bpf/trace/Makefile
- create mode 100644 tools/bpf/trace/README.txt
- create mode 100644 tools/bpf/trace/filter_ex1.c
- create mode 100644 tools/bpf/trace/filter_ex1_orig.c
- create mode 100644 tools/bpf/trace/filter_ex2.c
- create mode 100644 tools/bpf/trace/filter_ex2_orig.c
- create mode 100644 tools/bpf/trace/trace_filter_check.c
-
-diff --git a/tools/bpf/llvm/README.txt b/tools/bpf/llvm/README.txt
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index c84cf90..44b0b11 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -92,6 +92,7 @@ config X86
+ 	select GENERIC_CLOCKEVENTS_MIN_ADJUST
+ 	select IRQ_FORCED_THREADING
+ 	select HAVE_BPF_JIT if X86_64
++	select HAVE_BPF64_JIT if X86_64
+ 	select HAVE_ARCH_TRANSPARENT_HUGEPAGE
+ 	select CLKEVT_I8253
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+diff --git a/arch/x86/net/Makefile b/arch/x86/net/Makefile
+index 90568c3..c3bb7d5 100644
+--- a/arch/x86/net/Makefile
++++ b/arch/x86/net/Makefile
+@@ -2,3 +2,4 @@
+ # Arch-specific network modules
+ #
+ obj-$(CONFIG_BPF_JIT) += bpf_jit.o bpf_jit_comp.o
++obj-$(CONFIG_BPF64_JIT) += bpf64_jit_comp.o
+diff --git a/arch/x86/net/bpf64_jit_comp.c b/arch/x86/net/bpf64_jit_comp.c
 new file mode 100644
-index 0000000..3ca3ece
+index 0000000..5f7c331
 --- /dev/null
-+++ b/tools/bpf/llvm/README.txt
-@@ -0,0 +1,6 @@
-+placeholder for LLVM BPF backend:
-+lib/Target/BPF/*.cpp
-+
-+prerequisites:
-+apt-get install llvm-3.[23]-dev
-+
-diff --git a/tools/bpf/trace/Makefile b/tools/bpf/trace/Makefile
-new file mode 100644
-index 0000000..b63f974
---- /dev/null
-+++ b/tools/bpf/trace/Makefile
-@@ -0,0 +1,34 @@
-+CC = gcc
-+
-+all: trace_filter_check filter_ex1.bpf filter_ex2.bpf
-+
-+srctree=../../..
-+src-perf=../../perf
-+
-+CFLAGS += -I$(src-perf)/util/include
-+CFLAGS += -I$(src-perf)/arch/$(ARCH)/include
-+CFLAGS += -I$(srctree)/arch/$(ARCH)/include/uapi
-+CFLAGS += -I$(srctree)/arch/$(ARCH)/include
-+CFLAGS += -I$(srctree)/include/uapi
-+CFLAGS += -I$(srctree)/include
-+CFLAGS += -Wall -O2
-+
-+trace_filter_check: LDLIBS = -Wl,--unresolved-symbols=ignore-all
-+trace_filter_check: trace_filter_check.o \
-+	$(srctree)/kernel/bpf_jit/bpf_check.o \
-+	$(srctree)/kernel/bpf_jit/bpf_run.o \
-+	$(srctree)/kernel/trace/bpf_trace_callbacks.o
-+
-+filter_ex1: filter_ex1.o
-+filter_ex1.bpf: filter_ex1
-+	./filter_ex1 > filter_ex1.bpf
-+	rm filter_ex1
-+
-+filter_ex2: filter_ex2.o
-+filter_ex2.bpf: filter_ex2
-+	./filter_ex2 > filter_ex2.bpf
-+	rm filter_ex2
-+
-+clean:
-+	rm -rf *.o *.bpf trace_filter_check filter_ex1 filter_ex2
-+
-diff --git a/tools/bpf/trace/README.txt b/tools/bpf/trace/README.txt
-new file mode 100644
-index 0000000..7c1fcb9
---- /dev/null
-+++ b/tools/bpf/trace/README.txt
-@@ -0,0 +1,15 @@
-+Tracing filter examples
-+
-+filter_ex1: tracing filter example that prints events for loobpack device only
-+
-+$ cat filter_ex1.bpf > /sys/kernel/debug/tracing/events/net/netif_receive_skb/filter
-+$ echo 1 > /sys/kernel/debug/tracing/events/net/netif_receive_skb/enable
-+$ ping -c1 localhost
-+$ cat /sys/kernel/debug/tracing/trace_pip
-+            ping-5913  [003] ..s2  3779.285726: __netif_receive_skb_core: skb ffff880808e3a300 dev ffff88080bbf8000
-+            ping-5913  [003] ..s2  3779.285744: __netif_receive_skb_core: skb ffff880808e3a900 dev ffff88080bbf8000
-+
-+To pre-check correctness of the filter do:
-+$ trace_filter_check filter_ex1.bpf
-+(final filter check always happens in kernel)
-+
-diff --git a/tools/bpf/trace/filter_ex1.c b/tools/bpf/trace/filter_ex1.c
-new file mode 100644
-index 0000000..74696ba
---- /dev/null
-+++ b/tools/bpf/trace/filter_ex1.c
-@@ -0,0 +1,52 @@
-+#include <linux/bpf.h>
-+
-+struct bpf_insn bpf_insns_filter[] = {
-+// registers to save R6 R7
-+// allocate 24 bytes stack
-+	BPF_INSN_ST_IMM(BPF_W, __fp__, -20, 28524), // *(uint32*)(__fp__, -20)=28524
-+	BPF_INSN_LD(BPF_DW, R6, R1, 104), // R6=*(uint64*)(R1, 104)
-+	BPF_INSN_ALU(BPF_MOV, R1, R6), // R1 = R6
-+	BPF_INSN_ALU_IMM(BPF_ADD, R1, 32), // R1 += 32
-+	BPF_INSN_CALL(1), // R0=bpf_load_pointer();
-+	BPF_INSN_ALU(BPF_MOV, R7, R0), // R7 = R0
-+	BPF_INSN_ALU_IMM(BPF_MOV, R3, 2), // R3 = 2
-+	BPF_INSN_ALU(BPF_MOV, R2, __fp__), // R2 = __fp__
-+	BPF_INSN_ALU_IMM(BPF_ADD, R2, -20), // R2 += -20
-+	BPF_INSN_ALU(BPF_MOV, R1, R7), // R1 = R7
-+	BPF_INSN_CALL(18), // R0=bpf_memcmp();
-+	BPF_INSN_JUMP_IMM(BPF_JNE, R0, 0, 11), // if (R0 != 0) goto LabelL5
-+	BPF_INSN_ST_IMM(BPF_W, __fp__, -16, 543320947), // *(uint32*)(__fp__, -16)=543320947
-+	BPF_INSN_ST_IMM(BPF_W, __fp__, -12, 1679847461), // *(uint32*)(__fp__, -12)=1679847461
-+	BPF_INSN_ST_IMM(BPF_W, __fp__, -8, 622884453), // *(uint32*)(__fp__, -8)=622884453
-+	BPF_INSN_ST_IMM(BPF_W, __fp__, -4, 663664), // *(uint32*)(__fp__, -4)=663664
-+	BPF_INSN_ALU_IMM(BPF_MOV, R5, 0), // R5 = 0
-+	BPF_INSN_ALU(BPF_MOV, R4, R7), // R4 = R7
-+	BPF_INSN_ALU(BPF_MOV, R3, R6), // R3 = R6
-+	BPF_INSN_ALU_IMM(BPF_MOV, R2, 16), // R2 = 16
-+	BPF_INSN_ALU(BPF_MOV, R1, __fp__), // R1 = __fp__
-+	BPF_INSN_ALU_IMM(BPF_ADD, R1, -16), // R1 += -16
-+	BPF_INSN_CALL(29), // (void)bpf_trace_printk();
-+//LabelL5:
-+	BPF_INSN_RET(), // return void
-+};
-+
-+const char func_strtab[46] = "\0bpf_load_pointer\0bpf_memcmp\0bpf_trace_printk";
-+
-+int main()
-+{
-+	char header[4] = "bpf";
-+
-+	int insn_size = sizeof(bpf_insns_filter);
-+	int htab_size = 0;
-+	int strtab_size = sizeof(func_strtab);
-+
-+	write(1, header, 4);
-+	write(1, &insn_size, 4);
-+	write(1, &htab_size, 4);
-+	write(1, &strtab_size, 4);
-+
-+	write(1, bpf_insns_filter, insn_size);
-+	write(1, func_strtab, strtab_size);
-+	return 0;
-+}
-+
-diff --git a/tools/bpf/trace/filter_ex1_orig.c b/tools/bpf/trace/filter_ex1_orig.c
-new file mode 100644
-index 0000000..e670a82
---- /dev/null
-+++ b/tools/bpf/trace/filter_ex1_orig.c
-@@ -0,0 +1,23 @@
++++ b/arch/x86/net/bpf64_jit_comp.c
+@@ -0,0 +1,625 @@
 +/*
-+ * tracing filter example
-+ * if attached to /sys/kernel/debug/tracing/events/net/netif_receive_skb
-+ * it will print events for loobpack device only
-+ */
-+#include <linux/skbuff.h>
-+#include <linux/netdevice.h>
-+#include <linux/bpf.h>
-+#include <trace/bpf_trace.h>
-+
-+void filter(struct bpf_context *ctx)
-+{
-+	char devname[4] = "lo";
-+	struct net_device *dev;
-+	struct sk_buff *skb = 0;
-+
-+	skb = (struct sk_buff *)ctx->regs.si;
-+	dev = bpf_load_pointer(&skb->dev);
-+	if (bpf_memcmp(dev->name, devname, 2) == 0) {
-+		char fmt[] = "skb %p dev %p \n";
-+		bpf_trace_printk(fmt, sizeof(fmt), (long)skb, (long)dev, 0);
-+	}
-+}
-diff --git a/tools/bpf/trace/filter_ex2.c b/tools/bpf/trace/filter_ex2.c
-new file mode 100644
-index 0000000..cf5b7ce
---- /dev/null
-+++ b/tools/bpf/trace/filter_ex2.c
-@@ -0,0 +1,74 @@
-+#include <linux/bpf.h>
-+
-+struct bpf_insn bpf_insns_filter[] = {
-+// registers to save R6 R7
-+// allocate 32 bytes stack
-+	BPF_INSN_ALU(BPF_MOV, R6, R1), // R6 = R1
-+	BPF_INSN_ST_IMM(BPF_DW, __fp__, -32, 0), // *(uint64*)(__fp__, -32)=0
-+	BPF_INSN_LD(BPF_DW, R1, R6, 104), // R1=*(uint64*)(R6, 104)
-+	BPF_INSN_ALU_IMM(BPF_ADD, R1, 32), // R1 += 32
-+	BPF_INSN_CALL(1), // R0=bpf_load_pointer();
-+	BPF_INSN_ALU(BPF_MOV, R7, R0), // R7 = R0
-+	BPF_INSN_ST(BPF_DW, __fp__, -32, R7), // *(uint64*)(__fp__, -32)=R7
-+	BPF_INSN_ALU(BPF_MOV, R3, __fp__), // R3 = __fp__
-+	BPF_INSN_ALU_IMM(BPF_ADD, R3, -32), // R3 += -32
-+	BPF_INSN_ALU_IMM(BPF_MOV, R2, 0), // R2 = 0
-+	BPF_INSN_ALU(BPF_MOV, R1, R6), // R1 = R6
-+	BPF_INSN_CALL(18), // R0=bpf_table_lookup();
-+	BPF_INSN_JUMP_IMM(BPF_JEQ, R0, 0, 18), // if (R0 == 0) goto LabelL2
-+	BPF_INSN_ALU_IMM(BPF_MOV, R1, 1), // R1 = 1
-+	BPF_INSN_XADD(BPF_DW, R0, 0, R1), // atomic (*(uint64*)R0, 0) += R1
-+	BPF_INSN_LD(BPF_DW, R1, R0, 0), // R1=*(uint64*)(R0, 0)
-+	BPF_INSN_ALU_IMM(BPF_MOD, R1, 10000), // R1=((uint64)R1)%((uint64)10000)
-+	BPF_INSN_JUMP_IMM(BPF_JNE, R1, 0, 21), // if (R1 != 0) goto LabelL6
-+	BPF_INSN_ST_IMM(BPF_W, __fp__, -24, 544630116), // *(uint32*)(__fp__, -24)=544630116
-+	BPF_INSN_ST_IMM(BPF_W, __fp__, -20, 538996773), // *(uint32*)(__fp__, -20)=538996773
-+	BPF_INSN_ST_IMM(BPF_W, __fp__, -16, 1601465200), // *(uint32*)(__fp__, -16)=1601465200
-+	BPF_INSN_ST_IMM(BPF_W, __fp__, -12, 544501347), // *(uint32*)(__fp__, -12)=544501347
-+	BPF_INSN_ST_IMM(BPF_W, __fp__, -8, 680997), // *(uint32*)(__fp__, -8)=680997
-+	BPF_INSN_ALU_IMM(BPF_MOV, R5, 0), // R5 = 0
-+	BPF_INSN_LD(BPF_DW, R4, R0, 0), // R4=*(uint64*)(R0, 0)
-+	BPF_INSN_ALU(BPF_MOV, R3, R7), // R3 = R7
-+	BPF_INSN_ALU_IMM(BPF_MOV, R2, 20), // R2 = 20
-+	BPF_INSN_ALU(BPF_MOV, R1, __fp__), // R1 = __fp__
-+	BPF_INSN_ALU_IMM(BPF_ADD, R1, -24), // R1 += -24
-+	BPF_INSN_CALL(35), // (void)bpf_trace_printk();
-+	BPF_INSN_JUMP(BPF_JA, 0, 0, 8), // goto LabelL6
-+//LabelL2:
-+	BPF_INSN_ST_IMM(BPF_DW, __fp__, -24, 0), // *(uint64*)(__fp__, -24)=0
-+	BPF_INSN_ALU(BPF_MOV, R4, __fp__), // R4 = __fp__
-+	BPF_INSN_ALU_IMM(BPF_ADD, R4, -24), // R4 += -24
-+	BPF_INSN_ALU(BPF_MOV, R3, __fp__), // R3 = __fp__
-+	BPF_INSN_ALU_IMM(BPF_ADD, R3, -32), // R3 += -32
-+	BPF_INSN_ALU_IMM(BPF_MOV, R2, 0), // R2 = 0
-+	BPF_INSN_ALU(BPF_MOV, R1, R6), // R1 = R6
-+	BPF_INSN_CALL(52), // R0=bpf_table_update();
-+//LabelL6:
-+	BPF_INSN_RET(), // return void
-+};
-+
-+struct bpf_table bpf_filter_tables[] = {
-+	{BPF_TABLE_HASH, 8, 8, 4096, 0}
-+};
-+
-+const char func_strtab[69] = "\0bpf_load_pointer\0bpf_table_lookup\0bpf_trace_printk\0bpf_table_update";
-+
-+int main()
-+{
-+	char header[4] = "bpf";
-+
-+	int insn_size = sizeof(bpf_insns_filter);
-+	int htab_size = sizeof(bpf_filter_tables);
-+	int strtab_size = sizeof(func_strtab);
-+
-+	write(1, header, 4);
-+	write(1, &insn_size, 4);
-+	write(1, &htab_size, 4);
-+	write(1, &strtab_size, 4);
-+
-+	write(1, bpf_insns_filter, insn_size);
-+	write(1, bpf_filter_tables, htab_size);
-+	write(1, func_strtab, strtab_size);
-+	return 0;
-+}
-+
-diff --git a/tools/bpf/trace/filter_ex2_orig.c b/tools/bpf/trace/filter_ex2_orig.c
-new file mode 100644
-index 0000000..a716490
---- /dev/null
-+++ b/tools/bpf/trace/filter_ex2_orig.c
-@@ -0,0 +1,47 @@
-+/*
-+ * tracing filter that counts number of events per device
-+ * if attached to /sys/kernel/debug/tracing/events/net/netif_receive_skb
-+ * it will count number of received packets for different devices
-+ */
-+#include <linux/skbuff.h>
-+#include <linux/netdevice.h>
-+#include <linux/bpf.h>
-+#include <trace/bpf_trace.h>
-+
-+struct dev_key {
-+	void *dev;
-+};
-+
-+struct dev_leaf {
-+	uint64_t packet_cnt;
-+};
-+
-+void filter(struct bpf_context *ctx)
-+{
-+	struct net_device *dev;
-+	struct sk_buff *skb = 0;
-+	struct dev_leaf *leaf;
-+	struct dev_key key = {};
-+
-+	skb = (struct sk_buff *)ctx->regs.si;
-+	dev = bpf_load_pointer(&skb->dev);
-+
-+	key.dev = dev;
-+	leaf = bpf_table_lookup(ctx, 0, &key);
-+	if (leaf) {
-+		__sync_fetch_and_add(&leaf->packet_cnt, 1);
-+		if (leaf->packet_cnt % 10000 == 0) {
-+			char fmt[] = "dev %p  pkt_cnt %d\n";
-+			bpf_trace_printk(fmt, sizeof(fmt), (long)dev,
-+					 leaf->packet_cnt, 0);
-+		}
-+	} else {
-+		struct dev_leaf new_leaf = {};
-+		bpf_table_update(ctx, 0, &key, &new_leaf);
-+	}
-+}
-+
-+struct bpf_table filter_tables[] = {
-+	{BPF_TABLE_HASH, sizeof(struct dev_key), sizeof(struct dev_leaf), 4096, 0}
-+};
-+
-diff --git a/tools/bpf/trace/trace_filter_check.c b/tools/bpf/trace/trace_filter_check.c
-new file mode 100644
-index 0000000..4d408f5
---- /dev/null
-+++ b/tools/bpf/trace/trace_filter_check.c
-@@ -0,0 +1,82 @@
-+/* Copyright (c) 2011-2013 PLUMgrid, http://plumgrid.com
++ * Copyright (c) 2011-2013 PLUMgrid, http://plumgrid.com
 + *
 + * This program is free software; you can redistribute it and/or
 + * modify it under the terms of version 2 of the GNU General Public
 + * License as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * General Public License for more details.
 + */
-+#include <linux/bpf.h>
-+#include <trace/bpf_trace.h>
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <stdarg.h>
-+#include <errno.h>
-+#include <string.h>
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/slab.h>
++#include <linux/bpf_jit.h>
++#include <linux/moduleloader.h>
++#include "bpf_jit_comp.h"
 +
-+void *__kmalloc(size_t size, int flags)
++static inline u8 *emit_code(u8 *ptr, u32 bytes, unsigned int len)
 +{
-+	return calloc(size, 1);
-+}
-+
-+void kfree(void *objp)
-+{
-+	free(objp);
-+}
-+
-+int kmalloc_caches[128];
-+void *kmem_cache_alloc_trace(void *caches, int flags, size_t size)
-+{
-+	return calloc(size, 1);
-+}
-+
-+void bpf_compile(void *prog)
-+{
-+}
-+
-+void __bpf_free(void *prog)
-+{
-+}
-+
-+int printk(const char *fmt, ...)
-+{
-+	int ret;
-+	va_list ap;
-+
-+	va_start(ap, fmt);
-+	ret = vprintf(fmt, ap);
-+	va_end(ap);
-+	return ret;
-+}
-+
-+char buf[16000];
-+int bpf_load_image(const char *image, int image_len, struct bpf_callbacks *cb,
-+		   void **p_prog);
-+
-+int main(int ac, char **av)
-+{
-+	FILE *f;
-+	int size, err;
-+	void *prog;
-+
-+	if (ac < 2) {
-+		printf("Usage: %s bpf_binary_image\n", av[0]);
-+		return 1;
-+	}
-+
-+	f = fopen(av[1], "r");
-+	if (!f) {
-+		printf("fopen %s\n", strerror(errno));
-+		return 2;
-+	}
-+	size = fread(buf, 1, sizeof(buf), f);
-+	if (size <= 0) {
-+		printf("fread %s\n", strerror(errno));
-+		return 3;
-+	}
-+	err = bpf_load_image(buf, size, &bpf_trace_cb, &prog);
-+	if (!err)
-+		printf("OK\n");
++	if (len == 1)
++		*ptr = bytes;
++	else if (len == 2)
++		*(u16 *)ptr = bytes;
 +	else
-+		printf("err %s\n", strerror(-err));
-+	fclose(f);
-+	return 0;
++		*(u32 *)ptr = bytes;
++	return ptr + len;
 +}
++
++#define EMIT(bytes, len) (prog = emit_code(prog, (bytes), (len)))
++
++#define EMIT1(b1)		EMIT(b1, 1)
++#define EMIT2(b1, b2)		EMIT((b1) + ((b2) << 8), 2)
++#define EMIT3(b1, b2, b3)	EMIT((b1) + ((b2) << 8) + ((b3) << 16), 3)
++#define EMIT4(b1, b2, b3, b4)	EMIT((b1) + ((b2) << 8) + ((b3) << 16) + \
++				     ((b4) << 24), 4)
++/* imm32 is sign extended by cpu */
++#define EMIT1_off32(b1, off) \
++	do {EMIT1(b1); EMIT(off, 4); } while (0)
++#define EMIT2_off32(b1, b2, off) \
++	do {EMIT2(b1, b2); EMIT(off, 4); } while (0)
++#define EMIT3_off32(b1, b2, b3, off) \
++	do {EMIT3(b1, b2, b3); EMIT(off, 4); } while (0)
++#define EMIT4_off32(b1, b2, b3, b4, off) \
++	do {EMIT4(b1, b2, b3, b4); EMIT(off, 4); } while (0)
++
++/* mov A, X */
++#define EMIT_mov(A, X) \
++	EMIT3(add_2mod(0x48, A, X), 0x89, add_2reg(0xC0, A, X))
++
++#define X86_JAE 0x73
++#define X86_JE  0x74
++#define X86_JNE 0x75
++#define X86_JA  0x77
++#define X86_JGE 0x7D
++#define X86_JG  0x7F
++
++static inline bool is_imm8(__s32 value)
++{
++	return value <= 127 && value >= -128;
++}
++
++static inline bool is_simm32(__s64 value)
++{
++	return value == (__s64)(__s32)value;
++}
++
++static int bpf_size_to_x86_bytes(int bpf_size)
++{
++	if (bpf_size == BPF_W)
++		return 4;
++	else if (bpf_size == BPF_H)
++		return 2;
++	else if (bpf_size == BPF_B)
++		return 1;
++	else if (bpf_size == BPF_DW)
++		return 4; /* imm32 */
++	else
++		return 0;
++}
++
++#define AUX_REG 32
++
++/* avoid x86-64 R12 which if used as base address in memory access
++ * always needs an extra byte for index */
++static const int reg2hex[] = {
++	[R0] = 0, /* rax */
++	[R1] = 7, /* rdi */
++	[R2] = 6, /* rsi */
++	[R3] = 2, /* rdx */
++	[R4] = 1, /* rcx */
++	[R5] = 0, /* r8 */
++	[R6] = 3, /* rbx callee saved */
++	[R7] = 5, /* r13 callee saved */
++	[R8] = 6, /* r14 callee saved */
++	[R9] = 7, /* r15 callee saved */
++	[__fp__] = 5, /* rbp readonly */
++	[AUX_REG] = 1, /* r9 temp register */
++};
++
++/* is_ereg() == true if r8 <= reg <= r15,
++ * rax,rcx,...,rbp don't need extra byte of encoding */
++static inline bool is_ereg(u32 reg)
++{
++	if (reg == R5 || (reg >= R7 && reg <= R9) || reg == AUX_REG)
++		return true;
++	else
++		return false;
++}
++
++static inline u8 add_1mod(u8 byte, u32 reg)
++{
++	if (is_ereg(reg))
++		byte |= 1;
++	return byte;
++}
++static inline u8 add_2mod(u8 byte, u32 r1, u32 r2)
++{
++	if (is_ereg(r1))
++		byte |= 1;
++	if (is_ereg(r2))
++		byte |= 4;
++	return byte;
++}
++
++static inline u8 add_1reg(u8 byte, u32 a_reg)
++{
++	return byte + reg2hex[a_reg];
++}
++static inline u8 add_2reg(u8 byte, u32 a_reg, u32 x_reg)
++{
++	return byte + reg2hex[a_reg] + (reg2hex[x_reg] << 3);
++}
++
++static u8 *select_bpf_func(struct bpf_program *prog, int id)
++{
++	if (id <= 0 || id >= prog->strtab_size)
++		return NULL;
++	return prog->cb->jit_select_func(prog->strtab, id);
++}
++
++static int do_jit(struct bpf_program *bpf_prog, int *addrs, u8 *image,
++		  int oldproglen)
++{
++	struct bpf_insn *insn = bpf_prog->insns;
++	int insn_cnt = bpf_prog->insn_cnt;
++	u8 temp[64];
++	int i;
++	int proglen = 0;
++	u8 *prog = temp;
++	int stacksize = 512;
++
++	EMIT1(0x55); /* push rbp */
++	EMIT3(0x48, 0x89, 0xE5); /* mov rbp,rsp */
++
++	/* sub rsp, stacksize */
++	EMIT3_off32(0x48, 0x81, 0xEC, stacksize);
++	/* mov qword ptr [rbp-X],rbx */
++	EMIT3_off32(0x48, 0x89, 0x9D, -stacksize);
++	/* mov qword ptr [rbp-X],r13 */
++	EMIT3_off32(0x4C, 0x89, 0xAD, -stacksize + 8);
++	/* mov qword ptr [rbp-X],r14 */
++	EMIT3_off32(0x4C, 0x89, 0xB5, -stacksize + 16);
++	/* mov qword ptr [rbp-X],r15 */
++	EMIT3_off32(0x4C, 0x89, 0xBD, -stacksize + 24);
++
++	for (i = 0; i < insn_cnt; i++, insn++) {
++		const __s32 K = insn->imm;
++		__u32 a_reg = insn->a_reg;
++		__u32 x_reg = insn->x_reg;
++		u8 b1 = 0, b2 = 0, b3 = 0;
++		u8 jmp_cond;
++		__s64 jmp_offset;
++		int ilen;
++		u8 *func;
++
++		switch (insn->code) {
++			/* ALU */
++		case BPF_ALU | BPF_ADD | BPF_X:
++		case BPF_ALU | BPF_SUB | BPF_X:
++		case BPF_ALU | BPF_AND | BPF_X:
++		case BPF_ALU | BPF_OR | BPF_X:
++		case BPF_ALU | BPF_XOR | BPF_X:
++			b1 = 0x48;
++			b3 = 0xC0;
++			switch (BPF_OP(insn->code)) {
++			case BPF_ADD: b2 = 0x01; break;
++			case BPF_SUB: b2 = 0x29; break;
++			case BPF_AND: b2 = 0x21; break;
++			case BPF_OR: b2 = 0x09; break;
++			case BPF_XOR: b2 = 0x31; break;
++			}
++			EMIT3(add_2mod(b1, a_reg, x_reg), b2,
++			      add_2reg(b3, a_reg, x_reg));
++			break;
++
++			/* mov A, X */
++		case BPF_ALU | BPF_MOV | BPF_X:
++			EMIT_mov(a_reg, x_reg);
++			break;
++
++			/* neg A */
++		case BPF_ALU | BPF_NEG | BPF_X:
++			EMIT3(add_1mod(0x48, a_reg), 0xF7,
++			      add_1reg(0xD8, a_reg));
++			break;
++
++		case BPF_ALU | BPF_ADD | BPF_K:
++		case BPF_ALU | BPF_SUB | BPF_K:
++		case BPF_ALU | BPF_AND | BPF_K:
++		case BPF_ALU | BPF_OR | BPF_K:
++			b1 = add_1mod(0x48, a_reg);
++
++			switch (BPF_OP(insn->code)) {
++			case BPF_ADD: b3 = 0xC0; break;
++			case BPF_SUB: b3 = 0xE8; break;
++			case BPF_AND: b3 = 0xE0; break;
++			case BPF_OR: b3 = 0xC8; break;
++			}
++
++			if (is_imm8(K))
++				EMIT4(b1, 0x83, add_1reg(b3, a_reg), K);
++			else
++				EMIT3_off32(b1, 0x81, add_1reg(b3, a_reg), K);
++			break;
++
++		case BPF_ALU | BPF_MOV | BPF_K:
++			/* 'mov rax, imm32' sign extends imm32.
++			 * possible optimization: if imm32 is positive,
++			 * use 'mov eax, imm32' (which zero-extends imm32)
++			 * to save 2 bytes */
++			b1 = add_1mod(0x48, a_reg);
++			b2 = 0xC7;
++			b3 = 0xC0;
++			EMIT3_off32(b1, b2, add_1reg(b3, a_reg), K);
++			break;
++
++			/* A %= X
++			 * A /= X */
++		case BPF_ALU | BPF_MOD | BPF_X:
++		case BPF_ALU | BPF_DIV | BPF_X:
++			EMIT1(0x50); /* push rax */
++			EMIT1(0x52); /* push rdx */
++
++			/* mov r9, X */
++			EMIT_mov(AUX_REG, x_reg);
++
++			/* mov rax, A */
++			EMIT_mov(R0, a_reg);
++
++			/* xor rdx, rdx */
++			EMIT3(0x48, 0x31, 0xd2);
++
++			/* if X==0, skip divide, make A=0 */
++
++			/* cmp r9, 0 */
++			EMIT4(0x49, 0x83, 0xF9, 0x00);
++
++			/* je .+3 */
++			EMIT2(X86_JE, 3);
++
++			/* div r9 */
++			EMIT3(0x49, 0xF7, 0xF1);
++
++			if (BPF_OP(insn->code) == BPF_MOD) {
++				/* mov r9, rdx */
++				EMIT3(0x49, 0x89, 0xD1);
++			} else {
++				/* mov r9, rax */
++				EMIT3(0x49, 0x89, 0xC1);
++			}
++
++			EMIT1(0x5A); /* pop rdx */
++			EMIT1(0x58); /* pop rax */
++
++			/* mov A, r9 */
++			EMIT_mov(a_reg, AUX_REG);
++			break;
++
++			/* shifts */
++		case BPF_ALU | BPF_LSH | BPF_K:
++		case BPF_ALU | BPF_RSH | BPF_K:
++		case BPF_ALU | BPF_ARSH | BPF_K:
++			b1 = add_1mod(0x48, a_reg);
++			switch (BPF_OP(insn->code)) {
++			case BPF_LSH: b3 = 0xE0; break;
++			case BPF_RSH: b3 = 0xE8; break;
++			case BPF_ARSH: b3 = 0xF8; break;
++			}
++			EMIT4(b1, 0xC1, add_1reg(b3, a_reg), K);
++			break;
++
++		case BPF_ALU | BPF_BSWAP32 | BPF_X:
++			/* emit 'bswap eax' to swap lower 4-bytes */
++			if (is_ereg(a_reg))
++				EMIT2(0x41, 0x0F);
++			else
++				EMIT1(0x0F);
++			EMIT1(add_1reg(0xC8, a_reg));
++			break;
++
++		case BPF_ALU | BPF_BSWAP64 | BPF_X:
++			/* emit 'bswap rax' to swap 8-bytes */
++			EMIT3(add_1mod(0x48, a_reg), 0x0F,
++			      add_1reg(0xC8, a_reg));
++			break;
++
++			/* ST: *(u8*)(a_reg + off) = imm */
++		case BPF_ST | BPF_REL | BPF_B:
++			if (is_ereg(a_reg))
++				EMIT2(0x41, 0xC6);
++			else
++				EMIT1(0xC6);
++			goto st;
++		case BPF_ST | BPF_REL | BPF_H:
++			if (is_ereg(a_reg))
++				EMIT3(0x66, 0x41, 0xC7);
++			else
++				EMIT2(0x66, 0xC7);
++			goto st;
++		case BPF_ST | BPF_REL | BPF_W:
++			if (is_ereg(a_reg))
++				EMIT2(0x41, 0xC7);
++			else
++				EMIT1(0xC7);
++			goto st;
++		case BPF_ST | BPF_REL | BPF_DW:
++			EMIT2(add_1mod(0x48, a_reg), 0xC7);
++
++st:			if (is_imm8(insn->off))
++				EMIT2(add_1reg(0x40, a_reg), insn->off);
++			else
++				EMIT1_off32(add_1reg(0x80, a_reg), insn->off);
++
++			EMIT(K, bpf_size_to_x86_bytes(BPF_SIZE(insn->code)));
++			break;
++
++			/* STX: *(u8*)(a_reg + off) = x_reg */
++		case BPF_STX | BPF_REL | BPF_B:
++			/* emit 'mov byte ptr [rax + off], al' */
++			if (is_ereg(a_reg) || is_ereg(x_reg) ||
++			    /* have to add extra byte for x86 SIL, DIL regs */
++			    x_reg == R1 || x_reg == R2)
++				EMIT2(add_2mod(0x40, a_reg, x_reg), 0x88);
++			else
++				EMIT1(0x88);
++			goto stx;
++		case BPF_STX | BPF_REL | BPF_H:
++			if (is_ereg(a_reg) || is_ereg(x_reg))
++				EMIT3(0x66, add_2mod(0x40, a_reg, x_reg), 0x89);
++			else
++				EMIT2(0x66, 0x89);
++			goto stx;
++		case BPF_STX | BPF_REL | BPF_W:
++			if (is_ereg(a_reg) || is_ereg(x_reg))
++				EMIT2(add_2mod(0x40, a_reg, x_reg), 0x89);
++			else
++				EMIT1(0x89);
++			goto stx;
++		case BPF_STX | BPF_REL | BPF_DW:
++			EMIT2(add_2mod(0x48, a_reg, x_reg), 0x89);
++stx:			if (is_imm8(insn->off))
++				EMIT2(add_2reg(0x40, a_reg, x_reg), insn->off);
++			else
++				EMIT1_off32(add_2reg(0x80, a_reg, x_reg),
++					    insn->off);
++			break;
++
++			/* LDX: a_reg = *(u8*)(x_reg + off) */
++		case BPF_LDX | BPF_REL | BPF_B:
++			/* emit 'movzx rax, byte ptr [rax + off]' */
++			EMIT3(add_2mod(0x48, x_reg, a_reg), 0x0F, 0xB6);
++			goto ldx;
++		case BPF_LDX | BPF_REL | BPF_H:
++			/* emit 'movzx rax, word ptr [rax + off]' */
++			EMIT3(add_2mod(0x48, x_reg, a_reg), 0x0F, 0xB7);
++			goto ldx;
++		case BPF_LDX | BPF_REL | BPF_W:
++			/* emit 'mov eax, dword ptr [rax+0x14]' */
++			if (is_ereg(a_reg) || is_ereg(x_reg))
++				EMIT2(add_2mod(0x40, x_reg, a_reg), 0x8B);
++			else
++				EMIT1(0x8B);
++			goto ldx;
++		case BPF_LDX | BPF_REL | BPF_DW:
++			/* emit 'mov rax, qword ptr [rax+0x14]' */
++			EMIT2(add_2mod(0x48, x_reg, a_reg), 0x8B);
++ldx:			/* if insn->off == 0 we can save one extra byte, but
++			 * special case of x86 R13 which always needs an offset
++			 * is not worth the pain */
++			if (is_imm8(insn->off))
++				EMIT2(add_2reg(0x40, x_reg, a_reg), insn->off);
++			else
++				EMIT1_off32(add_2reg(0x80, x_reg, a_reg),
++					    insn->off);
++			break;
++
++			/* STX XADD: lock *(u8*)(a_reg + off) += x_reg */
++		case BPF_STX | BPF_XADD | BPF_B:
++			/* emit 'lock add byte ptr [rax + off], al' */
++			if (is_ereg(a_reg) || is_ereg(x_reg) ||
++			    /* have to add extra byte for x86 SIL, DIL regs */
++			    x_reg == R1 || x_reg == R2)
++				EMIT3(0xF0, add_2mod(0x40, a_reg, x_reg), 0x00);
++			else
++				EMIT2(0xF0, 0x00);
++			goto xadd;
++		case BPF_STX | BPF_XADD | BPF_H:
++			if (is_ereg(a_reg) || is_ereg(x_reg))
++				EMIT4(0x66, 0xF0, add_2mod(0x40, a_reg, x_reg),
++				      0x01);
++			else
++				EMIT3(0x66, 0xF0, 0x01);
++			goto xadd;
++		case BPF_STX | BPF_XADD | BPF_W:
++			if (is_ereg(a_reg) || is_ereg(x_reg))
++				EMIT3(0xF0, add_2mod(0x40, a_reg, x_reg), 0x01);
++			else
++				EMIT2(0xF0, 0x01);
++			goto xadd;
++		case BPF_STX | BPF_XADD | BPF_DW:
++			EMIT3(0xF0, add_2mod(0x48, a_reg, x_reg), 0x01);
++xadd:			if (is_imm8(insn->off))
++				EMIT2(add_2reg(0x40, a_reg, x_reg), insn->off);
++			else
++				EMIT1_off32(add_2reg(0x80, a_reg, x_reg),
++					    insn->off);
++			break;
++
++			/* call */
++		case BPF_JMP | BPF_CALL:
++			func = select_bpf_func(bpf_prog, K);
++			jmp_offset = func - (image + addrs[i]);
++			if (!func || !is_simm32(jmp_offset)) {
++				pr_err("unsupported bpf func %d addr %p image %p\n",
++				       K, func, image);
++				return -EINVAL;
++			}
++			EMIT1_off32(0xE8, jmp_offset);
++			break;
++
++			/* cond jump */
++		case BPF_JMP | BPF_JEQ | BPF_X:
++		case BPF_JMP | BPF_JNE | BPF_X:
++		case BPF_JMP | BPF_JGT | BPF_X:
++		case BPF_JMP | BPF_JGE | BPF_X:
++		case BPF_JMP | BPF_JSGT | BPF_X:
++		case BPF_JMP | BPF_JSGE | BPF_X:
++			/* emit 'cmp a_reg, x_reg' insn */
++			b1 = 0x48;
++			b2 = 0x39;
++			b3 = 0xC0;
++			EMIT3(add_2mod(b1, a_reg, x_reg), b2,
++			      add_2reg(b3, a_reg, x_reg));
++			goto emit_jump;
++		case BPF_JMP | BPF_JEQ | BPF_K:
++		case BPF_JMP | BPF_JNE | BPF_K:
++		case BPF_JMP | BPF_JGT | BPF_K:
++		case BPF_JMP | BPF_JGE | BPF_K:
++		case BPF_JMP | BPF_JSGT | BPF_K:
++		case BPF_JMP | BPF_JSGE | BPF_K:
++			/* emit 'cmp a_reg, imm8/32' */
++			EMIT1(add_1mod(0x48, a_reg));
++
++			if (is_imm8(K))
++				EMIT3(0x83, add_1reg(0xF8, a_reg), K);
++			else
++				EMIT2_off32(0x81, add_1reg(0xF8, a_reg), K);
++
++emit_jump:		/* convert BPF opcode to x86 */
++			switch (BPF_OP(insn->code)) {
++			case BPF_JEQ:
++				jmp_cond = X86_JE;
++				break;
++			case BPF_JNE:
++				jmp_cond = X86_JNE;
++				break;
++			case BPF_JGT:
++				/* GT is unsigned '>', JA in x86 */
++				jmp_cond = X86_JA;
++				break;
++			case BPF_JGE:
++				/* GE is unsigned '>=', JAE in x86 */
++				jmp_cond = X86_JAE;
++				break;
++			case BPF_JSGT:
++				/* signed '>', GT in x86 */
++				jmp_cond = X86_JG;
++				break;
++			case BPF_JSGE:
++				/* signed '>=', GE in x86 */
++				jmp_cond = X86_JGE;
++				break;
++			default: /* to silence gcc warning */
++				return -EFAULT;
++			}
++			jmp_offset = addrs[i + insn->off] - addrs[i];
++			if (is_imm8(jmp_offset)) {
++				EMIT2(jmp_cond, jmp_offset);
++			} else if (is_simm32(jmp_offset)) {
++				EMIT2_off32(0x0F, jmp_cond + 0x10, jmp_offset);
++			} else {
++				pr_err("cond_jmp gen bug %llx\n", jmp_offset);
++				return -EFAULT;
++			}
++
++			break;
++
++		case BPF_JMP | BPF_JA | BPF_X:
++			jmp_offset = addrs[i + insn->off] - addrs[i];
++			if (is_imm8(jmp_offset)) {
++				EMIT2(0xEB, jmp_offset);
++			} else if (is_simm32(jmp_offset)) {
++				EMIT1_off32(0xE9, jmp_offset);
++			} else {
++				pr_err("jmp gen bug %llx\n", jmp_offset);
++				return -EFAULT;
++			}
++
++			break;
++
++		case BPF_RET | BPF_K:
++			/* mov rbx, qword ptr [rbp-X] */
++			EMIT3_off32(0x48, 0x8B, 0x9D, -stacksize);
++			/* mov r13, qword ptr [rbp-X] */
++			EMIT3_off32(0x4C, 0x8B, 0xAD, -stacksize + 8);
++			/* mov r14, qword ptr [rbp-X] */
++			EMIT3_off32(0x4C, 0x8B, 0xB5, -stacksize + 16);
++			/* mov r15, qword ptr [rbp-X] */
++			EMIT3_off32(0x4C, 0x8B, 0xBD, -stacksize + 24);
++
++			EMIT1(0xC9); /* leave */
++			EMIT1(0xC3); /* ret */
++			break;
++
++		default:
++			/*pr_debug_bpf_insn(insn, NULL);*/
++			pr_err("bpf_jit: unknown opcode %02x\n", insn->code);
++			return -EINVAL;
++		}
++
++		ilen = prog - temp;
++		if (image) {
++			if (proglen + ilen > oldproglen)
++				return -2;
++			memcpy(image + proglen, temp, ilen);
++		}
++		proglen += ilen;
++		addrs[i] = proglen;
++		prog = temp;
++	}
++	return proglen;
++}
++
++void bpf_compile(struct bpf_program *prog)
++{
++	struct bpf_binary_header *header = NULL;
++	int proglen, oldproglen = 0;
++	int *addrs;
++	u8 *image = NULL;
++	int pass;
++	int i;
++
++	if (!prog || !prog->cb || !prog->cb->jit_select_func)
++		return;
++
++	addrs = kmalloc(prog->insn_cnt * sizeof(*addrs), GFP_KERNEL);
++	if (!addrs)
++		return;
++
++	for (proglen = 0, i = 0; i < prog->insn_cnt; i++) {
++		proglen += 64;
++		addrs[i] = proglen;
++	}
++	for (pass = 0; pass < 10; pass++) {
++		proglen = do_jit(prog, addrs, image, oldproglen);
++		if (proglen <= 0) {
++			image = NULL;
++			goto out;
++		}
++		if (image) {
++			if (proglen != oldproglen)
++				pr_err("bpf_jit: proglen=%d != oldproglen=%d\n",
++				       proglen, oldproglen);
++			break;
++		}
++		if (proglen == oldproglen) {
++			header = bpf_alloc_binary(proglen, &image);
++			if (!header)
++				goto out;
++		}
++		oldproglen = proglen;
++	}
++
++	if (image) {
++		bpf_flush_icache(header, image + proglen);
++		set_memory_ro((unsigned long)header, header->pages);
++	}
++out:
++	kfree(addrs);
++	prog->jit_image = (void (*)(struct bpf_context *ctx))image;
++	return;
++}
++
++static void bpf_jit_free_deferred(struct work_struct *work)
++{
++	struct bpf_program *prog = container_of(work, struct bpf_program, work);
++	unsigned long addr = (unsigned long)prog->jit_image & PAGE_MASK;
++	struct bpf_binary_header *header = (void *)addr;
++
++	set_memory_rw(addr, header->pages);
++	module_free(NULL, header);
++	free_bpf_program(prog);
++}
++
++void __bpf_free(struct bpf_program *prog)
++{
++	if (prog->jit_image) {
++		INIT_WORK(&prog->work, bpf_jit_free_deferred);
++		schedule_work(&prog->work);
++	} else {
++		free_bpf_program(prog);
++	}
++}
+diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
+index 26328e8..3c35f8d 100644
+--- a/arch/x86/net/bpf_jit_comp.c
++++ b/arch/x86/net/bpf_jit_comp.c
+@@ -13,6 +13,7 @@
+ #include <linux/filter.h>
+ #include <linux/if_vlan.h>
+ #include <linux/random.h>
++#include "bpf_jit_comp.h"
+ 
+ /*
+  * Conventions :
+@@ -112,16 +113,6 @@ do {								\
+ #define SEEN_XREG    2 /* ebx is used */
+ #define SEEN_MEM     4 /* use mem[] for temporary storage */
+ 
+-static inline void bpf_flush_icache(void *start, void *end)
+-{
+-	mm_segment_t old_fs = get_fs();
+-
+-	set_fs(KERNEL_DS);
+-	smp_wmb();
+-	flush_icache_range((unsigned long)start, (unsigned long)end);
+-	set_fs(old_fs);
+-}
+-
+ #define CHOOSE_LOAD_FUNC(K, func) \
+ 	((int)K < 0 ? ((int)K >= SKF_LL_OFF ? func##_negative_offset : func) : func##_positive_offset)
+ 
+@@ -145,16 +136,8 @@ static int pkt_type_offset(void)
+ 	return -1;
+ }
+ 
+-struct bpf_binary_header {
+-	unsigned int	pages;
+-	/* Note : for security reasons, bpf code will follow a randomly
+-	 * sized amount of int3 instructions
+-	 */
+-	u8		image[];
+-};
+-
+-static struct bpf_binary_header *bpf_alloc_binary(unsigned int proglen,
+-						  u8 **image_ptr)
++struct bpf_binary_header *bpf_alloc_binary(unsigned int proglen,
++					   u8 **image_ptr)
+ {
+ 	unsigned int sz, hole;
+ 	struct bpf_binary_header *header;
+diff --git a/arch/x86/net/bpf_jit_comp.h b/arch/x86/net/bpf_jit_comp.h
+new file mode 100644
+index 0000000..74ff45d
+--- /dev/null
++++ b/arch/x86/net/bpf_jit_comp.h
+@@ -0,0 +1,35 @@
++/* bpf_jit_comp.h : BPF filter alloc/free routines
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++#ifndef __BPF_JIT_COMP_H
++#define __BPF_JIT_COMP_H
++
++#include <linux/uaccess.h>
++#include <asm/cacheflush.h>
++
++struct bpf_binary_header {
++	unsigned int	pages;
++	/* Note : for security reasons, bpf code will follow a randomly
++	 * sized amount of int3 instructions
++	 */
++	u8		image[];
++};
++
++static inline void bpf_flush_icache(void *start, void *end)
++{
++	mm_segment_t old_fs = get_fs();
++
++	set_fs(KERNEL_DS);
++	smp_wmb();
++	flush_icache_range((unsigned long)start, (unsigned long)end);
++	set_fs(old_fs);
++}
++
++struct bpf_binary_header *bpf_alloc_binary(unsigned int proglen,
++					   u8 **image_ptr);
++
++#endif
 -- 
 1.7.9.5
 
