@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614Ab3LCRuN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 12:50:13 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38005 "EHLO
+	id S1754696Ab3LCRuj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 12:50:39 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41907 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754181Ab3LCRuK (ORCPT
+	with ESMTP id S1754158Ab3LCRuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 12:50:10 -0500
-Message-ID: <529E19CD.1050705@wwwdotorg.org>
-Date: Tue, 03 Dec 2013 10:50:05 -0700
+	Tue, 3 Dec 2013 12:50:35 -0500
+Message-ID: <529E19E7.8090402@wwwdotorg.org>
+Date: Tue, 03 Dec 2013 10:50:31 -0700
 From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
 To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>
-CC: andriy.shevchenko@intel.com, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V4] dma: add channel request API that supports deferred
- probe
-References: <1385485462-30376-1-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1385485462-30376-1-git-send-email-swarren@wwwdotorg.org>
+CC: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH V4] dma: add dma_get_any_slave_channel(), for use in of_xlate()
+References: <1385494851-22640-1-git-send-email-swarren@wwwdotorg.org>
+In-Reply-To: <1385494851-22640-1-git-send-email-swarren@wwwdotorg.org>
 X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -26,62 +26,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2013 10:04 AM, Stephen Warren wrote:
+On 11/26/2013 12:40 PM, Stephen Warren wrote:
 > From: Stephen Warren <swarren@nvidia.com>
 > 
-> dma_request_slave_channel() simply returns NULL whenever DMA channel
-> lookup fails. Lookup could fail for two distinct reasons:
+> mmp_pdma.c implements a custom of_xlate() function that is 95% identical
+> to what Tegra will need. Create a function to implement the common part,
+> so everyone doesn't just cut/paste the implementation.
 > 
-> a) No DMA specification exists for the channel name.
->    This includes situations where no DMA specifications exist at all, or
->    other general lookup problems.
-> 
-> b) A DMA specification does exist, yet the driver for that channel is not
->    yet registered.
-> 
-> Case (b) should trigger deferred probe in client drivers. However, since
-> they have no way to differentiate the two situations, it cannot.
-> 
-> Implement new function dma_request_slave_channel_reason(), which performs
-> identically to dma_request_slave_channel(), except that it returns an
-> error-pointer rather than NULL, which allows callers to detect when
-> deferred probe should occur.
-> 
-> Eventually, all drivers should be converted to this new API, the old API
-> removed, and the new API renamed to the more desirable name. This patch
-> doesn't convert the existing API and all drivers in one go, since some
-> drivers call dma_request_slave_channel() then dma_request_channel() if
-> that fails. That would require either modifying dma_request_channel() in
-> the same way, or adding extra error-handling code to all affected
-> drivers, and there are close to 100 drivers using the other API, rather
-> than just the 15-20 or so that use dma_request_slave_channel(), which
-> might be tenable in a single patch.
-> 
-> acpi_dma_request_slave_chan_by_name() doesn't currently implement
-> deferred probe. It should, but this will be addressed later.
-> 
-> Acked-by: Dan Williams <dan.j.williams@intel.com>
+> Cc: Dan Williams <dan.j.williams@intel.com>
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Lars-Peter Clausen <lars@metafoo.de>
+> Cc: dmaengine@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
 > Signed-off-by: Stephen Warren <swarren@nvidia.com>
 > ---
-> v4:
-> * Add {} around both branches in of_dma_request_slave_channel().
 > v3:
-> * s/_or_err/_reason/ in the new API name.
-> * Simplify changes to of_dma_request_slave_channel() so that the new
->   "bool defer" parameter is not needed.
-> * Revert changes to acpi-dma.c and handle the return value conversion
->   in dma_request_slave_channel_reason() instead.
-> * Mention that acpi_dma_request_slave_chan_by_name() should implement
->   deferred probe, but that will happen later.
-> v2:
-> * include <linux/err.h> in <linux/dmaengine.h>
-> * Return -ENODATA if slave_id or chan_id out-of-range.
-> * Return an error-pointer not NULL if we can't find a matching DMA
->   controller or translate the channel.
+> * Re-implemented the common code as dma_get_any_slave_channel(), in
+>   dmaengine.c. This allows it to mutex_lock(&dma_list_mutex), and hence
+>   avoid the retry loop.
+> * Rather than having the common code call out to a driver-provided
+>   callback at the tail (which avoided drivers having to implement an
+>   of_xlate function themselves), have drivers implement a custom
+>   of_xlate() again, which mostly just calls the new
+>   dma_get_any_slave_channel(), then does any extra custom work.
 > 
-> This patch is a dependency for:
-> * A series that reworks many of the Tegra drivers.
-> * A series that enhances ASoC's dmaengine code to support deferred probe.
+> v2:
+> * Squashed the conversion of mmp_pdma.c into the patch that added the
+>   common implementation, so it's easier to see the whole conversion in
+>   one go.
+> 
+> This patch is a dependency for a series that reworks many of the Tegra
+> drivers.
 > 
 > As such, it needs to go into a topic branch on its own, based directly
 > on 3.13-rc1. If the DMA maintainers ack the patches I'm happy to create
@@ -89,6 +64,10 @@ On 11/26/2013 10:04 AM, Stephen Warren wrote:
 > patches can be applied to a topic branch by the DMA maintainers and I
 > will merge their topic branch into the Tegra rework branch that I
 > mentioned.
+> 
+> Note that this patch is independant from the "dma: add channel request
+> API that supports deferred probe" which I just sent, so it could
+> (should?) be a different topic branch.
 
 Vinod, does this patch look OK to you? Are you able to stage it into a
 topic branch that I can pull into the Tegra tree as a dependency?
