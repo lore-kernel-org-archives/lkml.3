@@ -1,50 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab3LCVdq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 16:33:46 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:47764 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754877Ab3LCVdo (ORCPT
+	id S1755271Ab3LCVgj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 16:36:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54552 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755098Ab3LCVgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 16:33:44 -0500
-MIME-Version: 1.0
-Date: Tue, 3 Dec 2013 22:33:43 +0100
-Message-ID: <CAAfyv37aM6SrpuU9fzKA6GKsWn=To5ANOpG_kSX509NjMjdecA@mail.gmail.com>
-Subject: 3.13-rc2 phy-twl4030-usb.c - Timeout setting T2 HSUSB PHY DPLL
-From: Belisko Marek <marek.belisko@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 3 Dec 2013 16:36:36 -0500
+Date: Tue, 3 Dec 2013 13:36:34 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        David Howells <dhowells@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/2] test: add minimal module for verification testing
+Message-Id: <20131203133634.e3e4264d7e027c858c0c9268@linux-foundation.org>
+In-Reply-To: <1386106054-27636-2-git-send-email-keescook@chromium.org>
+References: <1386106054-27636-1-git-send-email-keescook@chromium.org>
+	<1386106054-27636-2-git-send-email-keescook@chromium.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue,  3 Dec 2013 13:27:33 -0800 Kees Cook <keescook@chromium.org> wrote:
 
-current 3.13-rcX break usb support on gta04 board (similar to
-beagleboard) when booting via board file.
+> When doing module loading verification tests (for example, with module
+> singing, or LSM hooks), it is very handy to have a module that can be
+> built on all systems under test, isn't auto-loaded at boot, and has
+> no device or similar dependencies. This creates the "test_module.ko"
+> module for that purpose, which only reports its load and unload to printk.
+> 
+> --- /dev/null
+> +++ b/kernel/test_module.c
+> @@ -0,0 +1,26 @@
+> +/*
+> + * "hello world" kernel module
+> + */
+> +
+> +#define pr_fmt(fmt) "test_module: " fmt
+> +
+> +#include <linux/module.h>
 
-In console we can see messages:
- [ 5227.287841] twl4030_usb twl4030_usb: Timeout setting T2 HSUSB PHY DPLL clock
-[ 5232.936096] omap_musb_mailbox: musb core is not yet ready
-[ 5233.958160] twl4030_usb twl4030_usb: Timeout setting T2 HSUSB PHY DPLL clock
-[ 5235.058227] twl4030_usb twl4030_usb: Timeout setting T2 HSUSB PHY DPLL clock
+It really should have a whole bunch more includes, rather than relying
+on winning the nested include lottery.
 
-Any pointer what could cause that? (in 3.12 usb works fine)
+> +static int __init test_module_init(void)
+> +{
+> +	pr_info("Hello, world\n");
 
-BR,
+pr_info is maybe too low a facility level?  Pretty much the whole point
+of the module is to print this message, so let's ensure that it is visible.
 
-marek
+> +	return 0;
+> +}
+> +
+> +module_init(test_module_init);
+> +
+> +static void __exit test_module_exit(void)
+> +{
+> +	pr_info("Goodbye\n");
+> +}
+> +
+> +module_exit(test_module_exit);
+> +
+> +MODULE_AUTHOR("Kees Cook <keescook@chromium.org>");
+> +MODULE_LICENSE("GPL");
+> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> index db25707aa41b..20abc92032e0 100644
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -1578,6 +1578,20 @@ config DMA_API_DEBUG
+>  	  This option causes a performance degredation.  Use only if you want
+>  	  to debug device drivers. If unsure, say N.
+>  
+> +config TEST_MODULE
+> +	tristate "Test module loading with 'hello world' module"
+> +	default n
+> +	depends on m
+> +	help
+> +	  This builds the "test_module" module that emits "Hello, world"
+> +	  on printk when loaded. It is designed to be used for basic
+> +	  evaluation of the module loading subsystem (for example when
+> +	  validating module verification). It lacks any extra dependencies,
+> +	  and will not normally be loaded by the system unless explicitly
+> +	  request by name.
 
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
+Would be useful to have a comment along these lines in test_module.c,
+so readers know why it exists.
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
