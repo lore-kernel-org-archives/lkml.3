@@ -1,62 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab3LCMdL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 07:33:11 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:43033 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775Ab3LCMdH (ORCPT
+	id S1753631Ab3LCMeO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 07:34:14 -0500
+Received: from relay.parallels.com ([195.214.232.42]:58469 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752789Ab3LCMeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 07:33:07 -0500
-Date: Tue, 3 Dec 2013 12:32:53 +0000
-From: Kim Phillips <kim.phillips@linaro.org>
-To: gregkh@linuxfoundation.org
-Cc: B08248@freescale.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: driver core patches
-Message-Id: <20131203123253.9fd9b92ff0170b214e69f18b@linaro.org>
-In-Reply-To: <20131106021247.GB6687@kroah.com>
-References: <9F6FE96B71CF29479FF1CDC8046E15036F480C@039-SN1MPN1-002.039d.mgd.msft.net>
-	<20131106021247.GB6687@kroah.com>
-X-Mailer: Sylpheed 3.4.0beta5 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 3 Dec 2013 07:34:12 -0500
+Message-ID: <529DCFC2.5010400@parallels.com>
+Date: Tue, 3 Dec 2013 16:34:10 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+MIME-Version: 1.0
+To: Dave Chinner <david@fromorbit.com>
+CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <dchinner@redhat.com>,
+        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        <glommer@openvz.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v12 12/18] fs: make icache, dcache shrinkers memcg-aware
+References: <cover.1385974612.git.vdavydov@parallels.com> <8e7582ad42f35cd9a9ea274bd203e2423b944b62.1385974612.git.vdavydov@parallels.com> <20131203114557.GS10988@dastard>
+In-Reply-To: <20131203114557.GS10988@dastard>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Nov 2013 18:12:47 -0800
-"gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org> wrote:
+On 12/03/2013 03:45 PM, Dave Chinner wrote:
+> On Mon, Dec 02, 2013 at 03:19:47PM +0400, Vladimir Davydov wrote:
+>> Using the per-memcg LRU infrastructure introduced by previous patches,
+>> this patch makes dcache and icache shrinkers memcg-aware. To achieve
+>> that, it converts s_dentry_lru and s_inode_lru from list_lru to
+>> memcg_list_lru and restricts the reclaim to per-memcg parts of the lists
+>> in case of memcg pressure.
+>>
+>> Other FS objects are currently ignored and only reclaimed on global
+>> pressure, because their shrinkers are heavily FS-specific and can't be
+>> converted to be memcg-aware so easily. However, we can pass on target
+>> memcg to the FS layer and let it decide if per-memcg objects should be
+>> reclaimed.
+> And now you have a big problem, because that means filesystems like
+> XFS won't reclaim inodes during memcg reclaim.
+>
+> That is, for XFS, prune_icache_lru() does not free any memory. All
+> it does is remove all the VFS references to the struct xfs_inode,
+> which is then reclaimed via the sb->s_op->free_cached_objects()
+> method.
+>
+> IOWs, what you've done is broken.
 
-> On Tue, Nov 05, 2013 at 10:53:36PM +0000, Stuart Yoder wrote:
-> > Hi Greg,
-> > 
-> > Any feedback on the driver core patches in Kim Phillips patch series
-> > from mid-October?
-> > 
-> > The 3rd patch of the series has some open issues related to vfio-pci,
-> > but the first two are driver core related and am wondering if they
-> > are acceptable.
-> 
-> As I saw there was lots of discussion, and some rework needed, I haven't
-> paid any attention to them, expecting to see another set show up.
+Missed that, thanks for pointing out.
 
-the first two patches didn't receive any feedback, whilst the 3rd broke
-vfio-pci userspace i/f compatibility, so I'm going to assume that 1 and
-2 are acceptable and work to enable rebinding platform devices, and
-that vfio-pci can transition over later.
+>
+>> Note that with this patch applied we lose global LRU order, but it does
+> We don't have global LRU order today for the filesystem caches.
+> We have per superblock, per-node LRU reclaim order.
+>
+>> --- a/fs/dcache.c
+>> +++ b/fs/dcache.c
+>> @@ -343,18 +343,24 @@ static void dentry_unlink_inode(struct dentry * dentry)
+>>  #define D_FLAG_VERIFY(dentry,x) WARN_ON_ONCE(((dentry)->d_flags & (DCACHE_LRU_LIST | DCACHE_SHRINK_LIST)) != (x))
+>>  static void d_lru_add(struct dentry *dentry)
+>>  {
+>> +	struct list_lru *lru =
+>> +		mem_cgroup_kmem_list_lru(&dentry->d_sb->s_dentry_lru, dentry);
+>> +
+>>  	D_FLAG_VERIFY(dentry, 0);
+>>  	dentry->d_flags |= DCACHE_LRU_LIST;
+>>  	this_cpu_inc(nr_dentry_unused);
+>> -	WARN_ON_ONCE(!list_lru_add(&dentry->d_sb->s_dentry_lru, &dentry->d_lru));
+>> +	WARN_ON_ONCE(!list_lru_add(lru, &dentry->d_lru));
+>>  }
+> This is what I mean about pushing memcg cruft into places where it
+> is not necessary. This can be done entirely behind list_lru_add(),
+> without the caller having to care.
+>
+>> @@ -970,9 +976,9 @@ dentry_lru_isolate(struct list_head *item, spinlock_t *lru_lock, void *arg)
+>>  }
+>>  
+>>  /**
+>> - * prune_dcache_sb - shrink the dcache
+>> - * @sb: superblock
+>> - * @nr_to_scan : number of entries to try to free
+>> + * prune_dcache_lru - shrink the dcache
+>> + * @lru: dentry lru list
+>> + * @nr_to_scan: number of entries to try to free
+>>   * @nid: which node to scan for freeable entities
+>>   *
+>>   * Attempt to shrink the superblock dcache LRU by @nr_to_scan entries. This is
+>> @@ -982,14 +988,13 @@ dentry_lru_isolate(struct list_head *item, spinlock_t *lru_lock, void *arg)
+>>   * This function may fail to free any resources if all the dentries are in
+>>   * use.
+>>   */
+>> -long prune_dcache_sb(struct super_block *sb, unsigned long nr_to_scan,
+>> -		     int nid)
+>> +long prune_dcache_lru(struct list_lru *lru, unsigned long nr_to_scan, int nid)
+>>  {
+>>  	LIST_HEAD(dispose);
+>>  	long freed;
+>>  
+>> -	freed = list_lru_walk_node(&sb->s_dentry_lru, nid, dentry_lru_isolate,
+>> -				       &dispose, &nr_to_scan);
+>> +	freed = list_lru_walk_node(lru, nid, dentry_lru_isolate,
+>> +				   &dispose, &nr_to_scan);
+>>  	shrink_dentry_list(&dispose);
+>>  	return freed;
+>>  }
+> And here, you pass an LRU when what we really need to pass is the
+> struct shrink_control that contains nr_to_scan, nid, and the memcg
+> that pruning is targetting.
+>
+> Because of the tight integration of the LRUs and shrinkers, it makes
+> sense to pass the shrink control all the way into the list. i.e:
+>
+> 	freed = list_lru_scan(&sb->s_dentry_lru, sc, dentry_lru_isolate,
+> 			      &dispose);
+>
+> And again, that hides everything to do with memcg based LRUs and
+> reclaim from the callers. It's clean, simple and hard to get wrong.
+>
+>> @@ -1029,7 +1034,7 @@ void shrink_dcache_sb(struct super_block *sb)
+>>  	do {
+>>  		LIST_HEAD(dispose);
+>>  
+>> -		freed = list_lru_walk(&sb->s_dentry_lru,
+>> +		freed = memcg_list_lru_walk_all(&sb->s_dentry_lru,
+>>  			dentry_lru_isolate_shrink, &dispose, UINT_MAX);
+>>  
+> list_lru_walk() is, by definition, supposed to walk every single
+> object on the LRU. With memcg awareness, it should be walking all
+> the memcg lists, too.
+>
+>> diff --git a/fs/super.c b/fs/super.c
+>> index cece164..b198da4 100644
+>> --- a/fs/super.c
+>> +++ b/fs/super.c
+>> @@ -57,6 +57,8 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
+>>  				      struct shrink_control *sc)
+>>  {
+>>  	struct super_block *sb;
+>> +	struct list_lru *inode_lru;
+>> +	struct list_lru *dentry_lru;
+>>  	long	fs_objects = 0;
+>>  	long	total_objects;
+>>  	long	freed = 0;
+>> @@ -75,11 +77,14 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
+>>  	if (!grab_super_passive(sb))
+>>  		return SHRINK_STOP;
+>>  
+>> -	if (sb->s_op->nr_cached_objects)
+>> +	if (sb->s_op->nr_cached_objects && !sc->memcg)
+>>  		fs_objects = sb->s_op->nr_cached_objects(sb, sc->nid);
+>>  
+>> -	inodes = list_lru_count_node(&sb->s_inode_lru, sc->nid);
+>> -	dentries = list_lru_count_node(&sb->s_dentry_lru, sc->nid);
+>> +	inode_lru = mem_cgroup_list_lru(&sb->s_inode_lru, sc->memcg);
+>> +	dentry_lru = mem_cgroup_list_lru(&sb->s_dentry_lru, sc->memcg);
+>> +
+>> +	inodes = list_lru_count_node(inode_lru, sc->nid);
+>> +	dentries = list_lru_count_node(dentry_lru, sc->nid);
+>>  	total_objects = dentries + inodes + fs_objects + 1;
+> Again: list_lru_count_sc(&sb->s_inode_lru, sc).
+>
+> And push the scan control down into ->nr_cached_objects, too.
 
-> Also, it's way past the merge window, and I can't do anything with any
-> new patches until after 3.13-rc1 is out, combined with a
-> travel-schedule-from-hell, and I really am not going to want to review
-> these types of patches for a number of weeks.
-> 
-> So take the time, fix them up, and send them after 3.13-rc2 is out or so
-> and I should have a chance to look at them then.  Hopefully I'll hate
-> them less by then, but I'm not guaranteeing anything...
+Thanks for the tip! Now I see your point, it would really look better if
+we used shrink_control here.
 
-ok, 3.13-rc2 is out, so I'm going to repost 1 & 2 now.
-
-fwiw, I'm omitting the fourth patch to reduce confusion because it
-depends on Antonios Motakis' vfio-platform WIP patchseries.
-
-Kim
+Thanks.
