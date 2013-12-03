@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab3LCJAw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 04:00:52 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:7021 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752010Ab3LCJAt (ORCPT
+	id S1753418Ab3LCJBI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 04:01:08 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:38647 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998Ab3LCJBE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 04:00:49 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhEHAKqcnVJ5LHyk/2dsb2JhbABagweDMbBzhDWBGYEYF3SCJQEBBScTHCMQCAMOCgklDwUlAyETiADBFxcWjmgHgyCBEwOYE4pMh0iDPSg
-Date: Tue, 3 Dec 2013 20:00:41 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: hannes@cmpxchg.org, mhocko@suse.cz, dchinner@redhat.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org, devel@openvz.org,
-        glommer@openvz.org, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH v12 05/18] fs: do not use destroy_super() in
- alloc_super() fail path
-Message-ID: <20131203090041.GB8803@dastard>
-References: <cover.1385974612.git.vdavydov@parallels.com>
- <af90b79aebe9cd9f6e1d35513f2618f4e9888e9b.1385974612.git.vdavydov@parallels.com>
+	Tue, 3 Dec 2013 04:01:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <af90b79aebe9cd9f6e1d35513f2618f4e9888e9b.1385974612.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CEB92A62.3A401%bjorn.andersson@sonymobile.com>
+References: <5293E7FB.6040300@wwwdotorg.org>
+	<CEB92A62.3A401%bjorn.andersson@sonymobile.com>
+Date: Tue, 3 Dec 2013 10:01:03 +0100
+Message-ID: <CACRpkda515hO6daP_4FZEXiGJTPHUaT1-ZLUW7sjVtR7-XjuZQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] pinctrl: Add documentation for pinctrl-msm8x74
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?ISO-8859-1?Q?Andersson=2C_Bj=F6rn?= 
+	<Bjorn.Andersson@sonymobile.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 03:19:40PM +0400, Vladimir Davydov wrote:
-> Using destroy_super() in alloc_super() fail path is bad, because:
-> 
-> * It will trigger WARN_ON(!list_empty(&s->s_mounts)) since s_mounts is
->   initialized after several 'goto fail's.
+On Tue, Nov 26, 2013 at 1:52 AM, "Andersson, Björn"
+<Bjorn.Andersson@sonymobile.com> wrote:
+> On 11/25/13 4:14 PM, "Stephen Warren" <swarren@wwwdotorg.org> wrote:
 
-So let's fix that.
+>>> +Optional subnode-properties:
+>>> +- qcom,function: A name of the function to be muxed to the specified
+>>> +                 pins. Possible values are listed below.
+>>
+>>Are "pins" and "functions" generic enough now that they don't need a
+>>vendor prefix? Both those property names are certainly mentioned in
+>>pinctrl-bindings.txt.
+>
+> I've missed that these where in pinconf-generic. I based
+> msm_dt_subnode_to_map
+> on the tegra implementation and made changes to support pinconf-generic,
+> which
+> now seems identical with pinconf_generic_dt_subnode_to_map.
+> I'll use that directly instead.
 
-> * It will call kfree_rcu() to free the super block although kfree() is
->   obviously enough there.
-> * The list_lru structure was initially implemented without the ability
->   to destroy an uninitialized object in mind.
-> 
-> I'm going to replace the conventional list_lru with per-memcg lru to
-> implement per-memcg slab reclaim. This new structure will fail
-> destruction of objects that haven't been properly initialized so let's
-> inline appropriate snippets from destroy_super() to alloc_super() fail
-> path instead of using the whole function there.
+OK that's essentially one of my comments on patch 1/3 addressed,
+so looking forward to see v2.
 
-You're basically undoing the change made in commit 7eb5e88 ("uninline
-destroy_super(), consolidate alloc_super()") which was done less
-than a month ago. :/
-
-The code as it stands works just fine - the list-lru structures in
-the superblock are actually initialised (to zeros) - and so calling
-list_lru_destroy() on it works just fine in that state as the
-pointers that are freed are NULL. Yes, unexpected, but perfectly
-valid code.
-
-I haven't looked at the internals of the list_lru changes you've
-made yet, but it surprises me that we can't handle this case
-internally to list_lru_destroy().
-
-Al, your call on inlining destroy_super() in alloc_super() again....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Yours,
+Linus Walleij
