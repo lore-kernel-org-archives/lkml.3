@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254Ab3LCVwF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 16:52:05 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:33945 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755041Ab3LCVvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 16:51:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type; q=dns; s=
-	sasl; b=t9Q3CKJWFIcEXHYvzn1SLmbZODQHwiRJQK1zjfxaGYEYPDob+3qsjxa7
-	+urJJZBYBmPzYS65FOHyVfrK8jtPoxDMyqAta0m5acJOJL9pTjveGSj0ucz4mn0v
-	omAPtfCv+46g2SO23VyhNmrZDcPFQV1Jd1J9ZLJljPW835ayl7A=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v1.8.4.5
-Date: Tue, 03 Dec 2013 13:48:11 -0800
-Message-ID: <xmqq38m9mwlr.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 1ACEE06C-5C65-11E3-9BFA-D331802839F8-77302942!b-pb-sasl-quonix.pobox.com
+	id S1755285Ab3LCVxf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 16:53:35 -0500
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:35663 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754670Ab3LCVxc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 16:53:32 -0500
+X-AuditID: cbfec37c-b7f9d6d000003434-08-529e52db58ab
+Message-id: <529E52D9.4080103@samsung.com>
+Date: Tue, 03 Dec 2013 14:53:29 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH 3.12 000/212] 3.12.3-stable review
+References: <20131202191248.517975703@linuxfoundation.org>
+In-reply-to: <20131202191248.517975703@linuxfoundation.org>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.21.63]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t9hP93bQfOCDA5+sbCYs34Nm0Xz4vVs
+	Fpd3zWGz+PrTwWLBxkeMFo/63rI7sHnsnHWX3ePEjN8sHvvnrmH3+LxJLoAlissmJTUnsyy1
+	SN8ugStjw/bHjAUTeSt2/jzA2MB4lquLkZNDQsBE4urDeewQtpjEhXvr2UBsIYFljBJnvllB
+	2L1MEo8fF3UxcgHZGxklNnb/YwFJ8ApoSZz4/4gZxGYRUJU4dOcQ2CA2AXWJz693sEM0y0k0
+	LVkNViMqECFxdPUzVoheQYkfk++BzRERCJZY+3UhI8gCZoEVjBLHX74Eu0JYwExix5oeqEFW
+	El+/N4M1cwpYS7y8dBkszgxU86hlHTOELS+xec1bZoh6ZYk/l08xdTFyAH2mKLF9tdUERpFZ
+	SFbPQtI9C0n3AkbmVYxipcXJBcVJ6akVxnrFibnFpXnpesn5uZsYIRFTs4Px3lebQ4wCHIxK
+	PLwJnPOChFgTy4orcw8xSnAwK4nwbvUDCvGmJFZWpRblxxeV5qQWH2Jk4uCUamBkVyjJyWA5
+	ceDG0RfON2q+dp3O4ma+Zvpg5YMdfary5zQzvdJ/xu7i7X2X8dn/o5HurfunLU4duJa5fPMl
+	rRLlK/8Xmi1oTtktL/jpl+O/PFt+5Q+mi+M9d01k7giqunsn3+lOmIhOTnVCg12YklSdX1V3
+	/auYKsl9+l8X/T7i+zPGeJsBy2MlluKMREMt5qLiRAC1PBSqdgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A maintenance release Git v1.8.4.5 is now available at the
-usual places.
+On 12/02/2013 12:13 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.12.3 release.
+> There are 212 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Wed Dec  4 19:11:18 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.12.3-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-The release tarballs are found at:
+Patch applied with warnings:
 
-    http://code.google.com/p/git-core/downloads/list
+  git apply --index ../stable_tree_project/patch-3.12.3-rc1 
+../stable_tree_project/patch-3.12.3-rc1:8684: space before tab in 
+indent. * Anon maps don't have the execname. 
+../stable_tree_project/patch-3.12.3-rc1:8685: space before tab in 
+indent. */ warning: 2 lines add whitespace errors.
 
-and their SHA-1 checksums are:
+Problem patch:
 
-b43c0cc46749ad62b8ac74237ceca00c8e386edb  git-1.8.4.5.tar.gz
-bd66db8c9528e53d2b93e88ef8e96164e597333f  git-htmldocs-1.8.4.5.tar.gz
-1ff6380e60c879a563ef89452ca461e9610e41c0  git-manpages-1.8.4.5.tar.gz
+Don Zickus <dzickus@redhat.com> perf tools: Synthesize anon MMAP records 
+again
 
-The following public repositories all have a copy of the v1.8.4.5
-tag and the maint-1.8.4 branch that the tag points at:
+http://lkml.indiana.edu/hypermail/linux/kernel/1311.1/03602.html
 
-  url = https://kernel.googlesource.com/pub/scm/git/git
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
+boot testing - passed
+dmesg regression tests - passed - dmesgs look good. No regressions 
+compared to the previous dmesgs for this release. dmesg emerg, crit, 
+alert, err are clean. No regressions in warn.
 
-Also, http://www.kernel.org/pub/software/scm/git/ has copies of the
-release tarballs.
+Test systems:
+     Samsung Series 9 900X4C Intel Corei5 (3.4 and later)
+     HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+     Dell OptiPlex 790 Intel(R) Core(TM) i5-2400
 
-Git v1.8.4.5 Release Notes
-==========================
+-- Shuah
 
-Fixes since v1.8.4.4
---------------------
-
- * Recent update to remote-hg that attempted to make it work better
-   with non ASCII pathnames fed Unicode strings to the underlying Hg
-   API, which was wrong.
-
- * "git submodule init" copied "submodule.$name.update" settings from
-   .gitmodules to .git/config without making sure if the suggested
-   value was sensible.
-
-----------------------------------------------------------------
-
-Changes since v1.8.4.4 are as follows:
-
-Junio C Hamano (2):
-      submodule: do not copy unknown update mode from .gitmodules
-      Git 1.8.4.5
-
-Richard Hansen (1):
-      remote-hg: don't decode UTF-8 paths into Unicode objects
-
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
