@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab3LCBg1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 20:36:27 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:2880 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752291Ab3LCBgZ (ORCPT
+	id S1753413Ab3LCBj2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 20:39:28 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:8496 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752431Ab3LCBjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 20:36:25 -0500
-Message-ID: <1386034289.1791.210.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v4 07/12] efi: passing kexec necessary efi data via
- setup_data
-From: Toshi Kani <toshi.kani@hp.com>
-To: Dave Young <dyoung@redhat.com>
-Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
-        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.infradead.org, greg@kroah.com, matt@console-pimps.org
-Date: Mon, 02 Dec 2013 18:31:29 -0700
-In-Reply-To: <1386023600.1791.201.camel@misato.fc.hp.com>
-References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
-	 <1385445477-9665-8-git-send-email-dyoung@redhat.com>
-	 <20131127140732.GD32267@pd.tnic>
-	 <20131129091415.GH4186@dhcp-16-126.nay.redhat.com>
-	 <1386023600.1791.201.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	Mon, 2 Dec 2013 20:39:24 -0500
+Message-ID: <529D3627.1000205@huawei.com>
+Date: Tue, 3 Dec 2013 09:38:47 +0800
+From: Rui Xiang <rui.xiang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sysfs: add necessary Null check in sysfs_do_create_link_sd
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.188]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-02 at 15:33 -0700, Toshi Kani wrote:
-> On Fri, 2013-11-29 at 17:14 +0800, Dave Young wrote:
-> > On 11/27/13 at 03:07pm, Borislav Petkov wrote:
-> > > On Tue, Nov 26, 2013 at 01:57:52PM +0800, Dave Young wrote:
-> > > > Add a new setup_data type SETUP_EFI for kexec use.
-> > > > Passing the saved fw_vendor, runtime, config tables and
-> > > > efi runtime mappings.
-> > > > 
-> > > > When entering virtual mode, directly mapping the efi
-> > > > runtime ragions which we passed in previously. And skip
-> > > > the step to call SetVirtualAddressMap.
-> > > > 
-> > > > Specially for HP z420 workstation it need another variable
-> > > > saving,
-> > > 
-> > > Why the special handling? Does that mean, this is going to be the case
-> > > for other HP UEFI implementations too?
-> > 
-> > I have only one HP machine for testing, Maybe Toshi can help to verify
-> > on other machines. Just comment out the function efi_reuse_config to see
-> > if kexec kernel panic.
-> 
-> My system (HP prototype server) did not need the special handling in
-> efi_reuse_config().  I will check with firmware team to get more
-> information on this.
+While target_sd or sd are null, it won't need sysfs_put and
+should return -ENOENT directly. Here add null check for
+target_sd and sd.
 
-I have one question.  I think this special handling assumes that
-efi.smbios contains a virtual address on HP z420.  So, how does the 1st
-kernel set a virtual address to efi.smbios in the first place?
+Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+---
+ fs/sysfs/symlink.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-Thanks,
--Toshi
+diff --git a/fs/sysfs/symlink.c b/fs/sysfs/symlink.c
+index 3ae3f1b..d69b786 100644
+--- a/fs/sysfs/symlink.c
++++ b/fs/sysfs/symlink.c
+@@ -83,8 +83,10 @@ static int sysfs_do_create_link_sd(struct sysfs_dirent *parent_sd,
+ 	return 0;
+ 
+  out_put:
+-	sysfs_put(target_sd);
+-	sysfs_put(sd);
++	if (target_sd)
++		sysfs_put(target_sd);
++	if (sd)
++		sysfs_put(sd);
+ 	return error;
+ }
+ 
+-- 
+1.8.2.2
 
