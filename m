@@ -1,27 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567Ab3LCSuh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 13:50:37 -0500
-Received: from clapton.uenf.br ([200.20.228.30]:38912 "EHLO clapton.uenf.br"
+	id S1754643Ab3LCSwJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 13:52:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7104 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752829Ab3LCSug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 13:50:36 -0500
-X-Greylist: delayed 2895 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Dec 2013 13:50:36 EST
-Date: Tue, 03 Dec 2013 14:46:38 -0200
-Message-ID: <20131203144638.Horde.QxioP6tSjMPQkS_YYZUiOQ1@zappa.uenf.br>
-From: Mr Saeed Ahmed <info@aban.org>
-Reply-to: mrsaeedahmedaban@hotmail.com
-User-Agent: Internet Messaging Program (IMP) H5 (6.1.4)
-Content-Type: text/plain; charset=UTF-8; format=flowed; DelSp=Yes
+	id S1752829Ab3LCSwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 13:52:05 -0500
+Date: Tue, 3 Dec 2013 19:52:56 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Sergey Dyasly <dserrg@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        "Ma, Xindong" <xindong.ma@intel.com>, Michal Hocko <mhocko@suse.cz>,
+        Sameer Nanda <snanda@chromium.org>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] initial while_each_thread() fixes
+Message-ID: <20131203185256.GA18062@redhat.com>
+References: <20131202152423.GA10878@redhat.com> <20131203194635.7be1c07ae042ee395bc83527@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <20131203194635.7be1c07ae042ee395bc83527@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I guess you got my email?
+Hi Sergey,
 
--- 
-I guess you got my email?
+On 12/03, Sergey Dyasly wrote:
+>
+> I was waiting for this one!
+
+I know ;) Sorry for delay. and thanks for review!
+
+Oleg.
 
