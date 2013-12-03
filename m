@@ -1,138 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220Ab3LCK5y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 05:57:54 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:19738 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752790Ab3LCK5w (ORCPT
+	id S1753134Ab3LCLAd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 06:00:33 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:39733 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752372Ab3LCLAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 05:57:52 -0500
-X-IronPort-AV: E=Sophos;i="4.93,817,1378857600"; 
-   d="scan'208";a="77666364"
-From: Roger Pau Monne <roger.pau@citrix.com>
-To: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
-CC: Roger Pau Monne <roger.pau@citrix.com>,
-        Julien Grall <julien.grall@linaro.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH RFC] xen-block: correctly define structures in public headers
-Date: Tue, 3 Dec 2013 11:57:34 +0100
-Message-ID: <1386068254-1413-1-git-send-email-roger.pau@citrix.com>
-X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
+	Tue, 3 Dec 2013 06:00:30 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.38 with qID rB3B0F2U015324, This message is accepted by code: ctloc85258
+Message-ID: <529DBA3D.1040908@realsil.com.cn>
+Date: Tue, 3 Dec 2013 19:02:21 +0800
+From: micky <micky_ching@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-DLP: MIA1
+To: Lee Jones <lee.jones@linaro.org>
+CC: <sameo@linux.intel.com>, <devel@linuxdriverproject.org>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <wei_wang@realsil.com.cn>, <rogerable@realtek.com>
+Subject: Re: [PATCH v2 2/3] mfd: rtsx: add card reader rtl8402
+References: <cover.1386051860.git.micky_ching@realsil.com.cn> <39b168dd315f3b2645d92af29e5ad71789853317.1386051860.git.micky_ching@realsil.com.cn> <20131203104507.GL11828@lee--X1>
+In-Reply-To: <20131203104507.GL11828@lee--X1>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using __packed__ on the public interface is not correct, this
-structures should be compiled using the native ABI, and __packed__
-should only be used in the backend counterpart of those structures
-(which needs to handle different ABIs).
+On 12/03/2013 06:45 PM, Lee Jones wrote:
+>> From: Micky Ching<micky_ching@realsil.com.cn>
+>>
+>> Add card reader rtl8042, rtl8402 is much like rtl8411, so just add it to
+>> rtl8411.c
+>>
+>> Signed-off-by: Lee Jones<lee.jones@linaro.org>
+> I have never signed this patch off.
+>
+> These tags actually 'mean' something. Please don't apply them willy-nilly!
+ok, I will remove it.
+>> Signed-off-by: Micky Ching<micky_ching@realsil.com.cn>
+>> ---
+>>   drivers/mfd/rtl8411.c  |   33 +++++++++++++++++++++++++++++++++
+>>   drivers/mfd/rtsx_pcr.c |    5 +++++
+>>   drivers/mfd/rtsx_pcr.h |    1 +
+>>   3 files changed, 39 insertions(+)
+>>
+>> diff --git a/drivers/mfd/rtl8411.c b/drivers/mfd/rtl8411.c
+>> index c9eab9d..4b377e3 100644
+>> --- a/drivers/mfd/rtl8411.c
+>> +++ b/drivers/mfd/rtl8411.c
+>> @@ -216,6 +216,31 @@ static int rtl8411_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+>>   	return rtsx_pci_write_register(pcr, LDO_CTL, mask, val);
+>>   }
+>>   
+>> +static int rtl8402_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+>> +{
+>> +	u8 mask, val;
+>> +	int err;
+>> +
+>> +	mask = (BPP_REG_TUNED18 << BPP_TUNED18_SHIFT_8402) | BPP_PAD_MASK;
+>> +	if (voltage == OUTPUT_3V3) {
+>> +		err = rtsx_pci_write_register(pcr,
+>> +				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_3v3);
+>> +		if (err < 0)
+>> +			return err;
+>> +		val = (BPP_ASIC_3V3 << BPP_TUNED18_SHIFT_8402) | BPP_PAD_3V3;
+>> +	} else if (voltage == OUTPUT_1V8) {
+>> +		err = rtsx_pci_write_register(pcr,
+>> +				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_1v8);
+>> +		if (err < 0)
+>> +			return err;
+>> +		val = (BPP_ASIC_2V0 << BPP_TUNED18_SHIFT_8402) | BPP_PAD_1V8;
+>> +	} else {
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	return rtsx_pci_write_register(pcr, LDO_CTL, mask, val);
+>> +}
+>> +
+> I opposed this on last submission.
+>
+> Please find a better way to do it.
+>
+> Ideally, I'd like to see one function for this kind of thing. The
+> information required to ensure this is carried out correctly on each
+> differing platform can be passed in via a struct instead.
+ok, I will add some member to rtsx_pcr to merge the function.
+> <snip>
+>
 
-This was even worse in the ARM case, where the Linux kernel was
-incorrectly using the X86_32 protocol ABI. This patch fixes it, but
-also breaks compatibility, so an ARM DomU kernel compiled with
-this patch will fail to communicate with PV disk devices unless the
-Dom0 also has this patch.
 
-Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-Reported-by: Julien Grall <julien.grall@linaro.org>
-Cc: Julien Grall <julien.grall@linaro.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- include/xen/interface/io/blkif.h |   28 +++++++---------------------
- 1 files changed, 7 insertions(+), 21 deletions(-)
-
-diff --git a/include/xen/interface/io/blkif.h b/include/xen/interface/io/blkif.h
-index 65e1209..002ea22 100644
---- a/include/xen/interface/io/blkif.h
-+++ b/include/xen/interface/io/blkif.h
-@@ -141,14 +141,11 @@ struct blkif_request_segment_aligned {
- 	/* @last_sect: last sector in frame to transfer (inclusive).     */
- 	uint8_t     first_sect, last_sect;
- 	uint16_t    _pad; /* padding to make it 8 bytes, so it's cache-aligned */
--} __attribute__((__packed__));
-+};
- 
- struct blkif_request_rw {
- 	uint8_t        nr_segments;  /* number of segments                   */
- 	blkif_vdev_t   handle;       /* only for read/write requests         */
--#ifdef CONFIG_X86_64
--	uint32_t       _pad1;	     /* offsetof(blkif_request,u.rw.id) == 8 */
--#endif
- 	uint64_t       id;           /* private guest value, echoed in resp  */
- 	blkif_sector_t sector_number;/* start sector idx on disk (r/w only)  */
- 	struct blkif_request_segment {
-@@ -157,47 +154,36 @@ struct blkif_request_rw {
- 		/* @last_sect: last sector in frame to transfer (inclusive).     */
- 		uint8_t     first_sect, last_sect;
- 	} seg[BLKIF_MAX_SEGMENTS_PER_REQUEST];
--} __attribute__((__packed__));
-+};
- 
- struct blkif_request_discard {
- 	uint8_t        flag;         /* BLKIF_DISCARD_SECURE or zero.        */
- #define BLKIF_DISCARD_SECURE (1<<0)  /* ignored if discard-secure=0          */
- 	blkif_vdev_t   _pad1;        /* only for read/write requests         */
--#ifdef CONFIG_X86_64
--	uint32_t       _pad2;        /* offsetof(blkif_req..,u.discard.id)==8*/
--#endif
- 	uint64_t       id;           /* private guest value, echoed in resp  */
- 	blkif_sector_t sector_number;
- 	uint64_t       nr_sectors;
- 	uint8_t        _pad3;
--} __attribute__((__packed__));
-+};
- 
- struct blkif_request_other {
- 	uint8_t      _pad1;
- 	blkif_vdev_t _pad2;        /* only for read/write requests         */
--#ifdef CONFIG_X86_64
--	uint32_t     _pad3;        /* offsetof(blkif_req..,u.other.id)==8*/
--#endif
- 	uint64_t     id;           /* private guest value, echoed in resp  */
--} __attribute__((__packed__));
-+};
- 
- struct blkif_request_indirect {
- 	uint8_t        indirect_op;
- 	uint16_t       nr_segments;
--#ifdef CONFIG_X86_64
--	uint32_t       _pad1;        /* offsetof(blkif_...,u.indirect.id) == 8 */
--#endif
- 	uint64_t       id;
- 	blkif_sector_t sector_number;
- 	blkif_vdev_t   handle;
- 	uint16_t       _pad2;
- 	grant_ref_t    indirect_grefs[BLKIF_MAX_INDIRECT_PAGES_PER_REQUEST];
--#ifdef CONFIG_X86_64
--	uint32_t      _pad3;         /* make it 64 byte aligned */
--#else
-+#ifdef CONFIG_X86_32
- 	uint64_t      _pad3;         /* make it 64 byte aligned */
- #endif
--} __attribute__((__packed__));
-+};
- 
- struct blkif_request {
- 	uint8_t        operation;    /* BLKIF_OP_???                         */
-@@ -207,7 +193,7 @@ struct blkif_request {
- 		struct blkif_request_other other;
- 		struct blkif_request_indirect indirect;
- 	} u;
--} __attribute__((__packed__));
-+};
- 
- struct blkif_response {
- 	uint64_t        id;              /* copied from request */
 -- 
-1.7.7.5 (Apple Git-26)
+Best Regards
+Micky.
 
