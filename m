@@ -1,253 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab3LCJdF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 04:33:05 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:51655 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab3LCJdA (ORCPT
+	id S1752808Ab3LCJdd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 04:33:33 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:51427 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752171Ab3LCJd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 04:33:00 -0500
-Message-ID: <529DA544.6000102@hitachi.com>
-Date: Tue, 03 Dec 2013 18:32:52 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 3 Dec 2013 04:33:28 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvUGAMWknVJ5LHyk/2dsb2JhbABagweDMbBzhU6BGBd0giUBAQQBDhkTHA8NBwULCAMOCgklDwUlAyETh3sFwRsXFo4RVweDIIETA5gTikyHSIM9KIEt
+Date: Tue, 3 Dec 2013 20:33:23 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: hannes@cmpxchg.org, mhocko@suse.cz, dchinner@redhat.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups@vger.kernel.org, devel@openvz.org,
+        glommer@openvz.org, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v12 06/18] vmscan: rename shrink_slab() args to make it
+ more generic
+Message-ID: <20131203093323.GC8803@dastard>
+References: <cover.1385974612.git.vdavydov@parallels.com>
+ <6fbe648a707331e0716cc7a4fc6366ca83a97f6a.1385974612.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH/RFC 17/17] tracing/uprobes: Add @+file_offset fetch method
-References: <1385533203-10014-1-git-send-email-namhyung@kernel.org> <1385533203-10014-18-git-send-email-namhyung@kernel.org> <20131127185546.GA30544@redhat.com> <877gbtq7rb.fsf@sejong.aot.lge.com> <20131128163148.GA15985@redhat.com> <87ob54oxzt.fsf@sejong.aot.lge.com> <20131129165106.GA5224@redhat.com> <87mwkimp0i.fsf@sejong.aot.lge.com>
-In-Reply-To: <87mwkimp0i.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6fbe648a707331e0716cc7a4fc6366ca83a97f6a.1385974612.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/03 15:23), Namhyung Kim wrote:
->>> So do you want me to change to make it simpler without a fetch_param?
->>
->> Yes, yes. Assuming that you agree, of course.
-> 
-> Okay, here goes v8 then. :)
-> 
-> I also push it (with other changes come from Srikar) to the
-> uprobe/fetch-v8 branch in my tree for your convenience. :)
+On Mon, Dec 02, 2013 at 03:19:41PM +0400, Vladimir Davydov wrote:
+> Currently in addition to a shrink_control struct shrink_slab() takes two
+> arguments, nr_pages_scanned and lru_pages, which are used for balancing
+> slab reclaim versus page reclaim - roughly speaking, shrink_slab() will
+> try to scan nr_pages_scanned/lru_pages fraction of all slab objects.
 
-This looks good for me :)
+Yes, that is it's primary purpose, and the variables explain that
+clearly. i.e. it passes a quantity of work to be done, and a value
+to relate that to the overall size of the cache that the work was
+one on. i.e. they tell us that shrink_slab is trying to stay in
+balance with the amount of work that page cache reclaim has just
+done.
 
->>From 25bc2bab14e9461f8b15e34f26d1de51f96e44e1 Mon Sep 17 00:00:00 2001
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> Date: Mon, 25 Nov 2013 13:42:47 +0900
-> Subject: [PATCH v8 17/17] tracing/uprobes: Add @+file_offset fetch method
-> 
-> Enable to fetch data from a file offset.  Currently it only supports
-> fetching from same binary uprobe set.  It'll translate the file offset
-> to a proper virtual address in the process.
-> 
-> The syntax is "@+OFFSET" as it does similar to normal memory fetching
-> (@ADDR) which does no address translation.
-> 
-> To do it, change fifth argument to receive 'void *priv' and make it
-> set only for uprobes so that we can determine the arg is for kprobes
-> or uprobes easily.
-> 
-> Suggested-by: Oleg Nesterov <oleg@redhat.com>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> However, shrink_slab() is not always called after page cache reclaim.
+> For example, drop_slab() uses shrink_slab() to drop as many slab objects
+> as possible and thus has to pass phony values 1000/1000 to it, which do
+> not make sense for nr_pages_scanned/lru_pages. Moreover, as soon as
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Yup, but that's not the primary purpose of the code, and doesn't
+require balancing against page cache reclaim. hence the numbers that
+are passed in are just there to make the shrinkers iterate
+efficiently but without doing too much work in a single scan. i.e.
+reclaim in chunks across all caches, rather than try to completely
+remove a single cache at a time....
 
-Thank you!
+And the reason that this is done? because caches have reclaim
+relationships that mean some shrinkers can't make progress until
+other shrinkers do their work. Hence to effective free all memory,
+we have to iterate repeatedly across all caches. That's what
+drop_slab() does.
+o
+> kmemcg reclaim is introduced, we will have to make up phony values for
+> nr_pages_scanned and lru_pages again when doing kmem-only reclaim for a
+> memory cgroup, which is possible if the cgroup has its kmem limit less
+> than the total memory limit.
 
-> ---
->  Documentation/trace/uprobetracer.txt |  1 +
->  kernel/trace/trace_kprobe.c          |  8 ++++++++
->  kernel/trace/trace_probe.c           | 13 +++++++++++-
->  kernel/trace/trace_probe.h           |  2 ++
->  kernel/trace/trace_uprobe.c          | 40 ++++++++++++++++++++++++++++++++++++
->  5 files changed, 63 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/trace/uprobetracer.txt b/Documentation/trace/uprobetracer.txt
-> index 6e5cff263e2b..f1cf9a34ad9d 100644
-> --- a/Documentation/trace/uprobetracer.txt
-> +++ b/Documentation/trace/uprobetracer.txt
-> @@ -32,6 +32,7 @@ Synopsis of uprobe_tracer
->    FETCHARGS     : Arguments. Each probe can have up to 128 args.
->     %REG         : Fetch register REG
->     @ADDR	: Fetch memory at ADDR (ADDR should be in userspace)
-> +   @+OFFSET	: Fetch memory at OFFSET (OFFSET from same file as PATH)
->     $stackN	: Fetch Nth entry of stack (N >= 0)
->     $stack	: Fetch stack address.
->     $retval	: Fetch return value.(*)
-> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-> index 8b32236ae890..1cf8f3375559 100644
-> --- a/kernel/trace/trace_kprobe.c
-> +++ b/kernel/trace/trace_kprobe.c
-> @@ -239,6 +239,14 @@ DEFINE_BASIC_FETCH_FUNCS(symbol)
->  DEFINE_FETCH_symbol(string)
->  DEFINE_FETCH_symbol(string_size)
->  
-> +/* kprobes don't support file_offset fetch methods */
-> +#define fetch_file_offset_u8		NULL
-> +#define fetch_file_offset_u16		NULL
-> +#define fetch_file_offset_u32		NULL
-> +#define fetch_file_offset_u64		NULL
-> +#define fetch_file_offset_string	NULL
-> +#define fetch_file_offset_string_size	NULL
-> +
->  /* Fetch type information table */
->  const struct fetch_type kprobes_fetch_type_table[] = {
->  	/* Special types */
-> diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-> index 464ec506ec08..705c06ba0a8a 100644
-> --- a/kernel/trace/trace_probe.c
-> +++ b/kernel/trace/trace_probe.c
-> @@ -373,7 +373,7 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
->  		}
->  		break;
->  
-> -	case '@':	/* memory or symbol */
-> +	case '@':	/* memory, file-offset or symbol */
->  		if (isdigit(arg[1])) {
->  			ret = kstrtoul(arg + 1, 0, &param);
->  			if (ret)
-> @@ -381,6 +381,17 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
->  
->  			f->fn = t->fetch[FETCH_MTD_memory];
->  			f->data = (void *)param;
-> +		} else if (arg[1] == '+') {
-> +			/* kprobes don't support file offsets */
-> +			if (is_kprobe)
-> +				return -EINVAL;
-> +
-> +			ret = kstrtol(arg + 2, 0, &offset);
-> +			if (ret)
-> +				break;
-> +
-> +			f->fn = t->fetch[FETCH_MTD_file_offset];
-> +			f->data = (void *)offset;
->  		} else {
->  			/* uprobes don't support symbols */
->  			if (!is_kprobe)
-> diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
-> index 385206bbbf8b..d9afeb580cbf 100644
-> --- a/kernel/trace/trace_probe.h
-> +++ b/kernel/trace/trace_probe.h
-> @@ -106,6 +106,7 @@ enum {
->  	FETCH_MTD_symbol,
->  	FETCH_MTD_deref,
->  	FETCH_MTD_bitfield,
-> +	FETCH_MTD_file_offset,
->  	FETCH_MTD_END,
->  };
->  
-> @@ -217,6 +218,7 @@ ASSIGN_FETCH_FUNC(memory, ftype),			\
->  ASSIGN_FETCH_FUNC(symbol, ftype),			\
->  ASSIGN_FETCH_FUNC(deref, ftype),			\
->  ASSIGN_FETCH_FUNC(bitfield, ftype),			\
-> +ASSIGN_FETCH_FUNC(file_offset, ftype),			\
->  	  }						\
->  	}
->  
-> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> index f86a6a711de9..f5cbed7e7709 100644
-> --- a/kernel/trace/trace_uprobe.c
-> +++ b/kernel/trace/trace_uprobe.c
-> @@ -70,6 +70,11 @@ static int unregister_uprobe_event(struct trace_uprobe *tu);
->  static DEFINE_MUTEX(uprobe_lock);
->  static LIST_HEAD(uprobe_list);
->  
-> +struct uprobe_dispatch_data {
-> +	struct trace_uprobe	*tu;
-> +	unsigned long		bp_addr;
-> +};
-> +
->  static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs);
->  static int uretprobe_dispatcher(struct uprobe_consumer *con,
->  				unsigned long func, struct pt_regs *regs);
-> @@ -175,6 +180,29 @@ static __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
->  #define fetch_symbol_string		NULL
->  #define fetch_symbol_string_size	NULL
->  
-> +static unsigned long translate_user_vaddr(void *file_offset)
-> +{
-> +	unsigned long base_addr;
-> +	struct uprobe_dispatch_data *udd;
-> +
-> +	udd = (void *) current->utask->vaddr;
-> +
-> +	base_addr = udd->bp_addr - udd->tu->offset;
-> +	return base_addr + (unsigned long)file_offset;
-> +}
-> +
-> +#define DEFINE_FETCH_file_offset(type)					\
-> +static __kprobes void FETCH_FUNC_NAME(file_offset, type)(struct pt_regs *regs,\
-> +					void *offset, void *dest) 	\
-> +{									\
-> +	void *vaddr = (void *)translate_user_vaddr(offset);		\
-> +									\
-> +	FETCH_FUNC_NAME(memory, type)(regs, vaddr, dest);		\
-> +}
-> +DEFINE_BASIC_FETCH_FUNCS(file_offset)
-> +DEFINE_FETCH_file_offset(string)
-> +DEFINE_FETCH_file_offset(string_size)
-> +
->  /* Fetch type information table */
->  const struct fetch_type uprobes_fetch_type_table[] = {
->  	/* Special types */
-> @@ -1104,11 +1132,17 @@ int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type,
->  static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs)
->  {
->  	struct trace_uprobe *tu;
-> +	struct uprobe_dispatch_data udd;
->  	int ret = 0;
->  
->  	tu = container_of(con, struct trace_uprobe, consumer);
->  	tu->nhit++;
->  
-> +	udd.tu = tu;
-> +	udd.bp_addr = instruction_pointer(regs);
-> +
-> +	current->utask->vaddr = (unsigned long) &udd;
-> +
->  	if (tu->tp.flags & TP_FLAG_TRACE)
->  		ret |= uprobe_trace_func(tu, regs);
->  
-> @@ -1123,9 +1157,15 @@ static int uretprobe_dispatcher(struct uprobe_consumer *con,
->  				unsigned long func, struct pt_regs *regs)
->  {
->  	struct trace_uprobe *tu;
-> +	struct uprobe_dispatch_data udd;
->  
->  	tu = container_of(con, struct trace_uprobe, consumer);
->  
-> +	udd.tu = tu;
-> +	udd.bp_addr = func;
-> +
-> +	current->utask->vaddr = (unsigned long) &udd;
-> +
->  	if (tu->tp.flags & TP_FLAG_TRACE)
->  		uretprobe_trace_func(tu, func, regs);
->  
-> 
+I'm missing something here - why would memcg reclaim require
+passing phony values? How are you going to keep slab caches in
+balance with memory pressure generated by the page cache?
 
+And, FWIW:
 
+>  unsigned long shrink_slab(struct shrink_control *shrink,
+> -			  unsigned long nr_pages_scanned,
+> -			  unsigned long lru_pages);
+> +			  unsigned long fraction, unsigned long denominator);
+
+I'm not sure what "fraction" means in this case. A fraction is made
+up of a numerator and denominator, but:
+
+> @@ -243,9 +243,9 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+>  	nr = atomic_long_xchg(&shrinker->nr_deferred[nid], 0);
+>  
+>  	total_scan = nr;
+> -	delta = (4 * nr_pages_scanned) / shrinker->seeks;
+> +	delta = (4 * fraction) / shrinker->seeks;
+
+ (4 * nr_pages_scanned) is a dividend, while:
+
+>  	delta *= max_pass;
+> -	do_div(delta, lru_pages + 1);
+> +	do_div(delta, denominator + 1);
+
+(lru_pages + 1) is a divisor.
+
+Cheers,
+
+Dave.
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Dave Chinner
+david@fromorbit.com
