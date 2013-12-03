@@ -1,39 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab3LCMof (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 07:44:35 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41393 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751268Ab3LCMoe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 07:44:34 -0500
-X-Sasl-enc: 5wUoGhPjCvJ35AjKk+PSBh4dfkp+qy/gi927l088CQNZ 1386074673
-Message-ID: <529DD22F.3040102@iki.fi>
-Date: Tue, 03 Dec 2013 14:44:31 +0200
-From: Pekka Enberg <penberg@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Joonsoo Kim <js1304@gmail.com>
-CC: Meelis Roos <mroos@linux.ee>, Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: Slab BUG with DEBUG_* options
-References: <alpine.SOC.1.00.1311300125490.6363@math.ut.ee>	<529DC632.9010107@iki.fi> <CAAmzW4N=2--OuOFVEME3FJa7uFCkVEYJp=9DbSBVOPjiXnLxcg@mail.gmail.com>
-In-Reply-To: <CAAmzW4N=2--OuOFVEME3FJa7uFCkVEYJp=9DbSBVOPjiXnLxcg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753212Ab3LCMuI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 07:50:08 -0500
+Received: from mga11.intel.com ([192.55.52.93]:10686 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752098Ab3LCMuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 07:50:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,817,1378882800"; 
+   d="scan'208";a="443793774"
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Chris Ball <cjb@laptop.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Rob Landley <rob@landley.net>, Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org
+Subject: [PATCHv4] ARM: tegra: add gpiod_lookup table for paz00
+Date: Tue,  3 Dec 2013 14:49:58 +0200
+Message-Id: <1386074998-17833-1-git-send-email-heikki.krogerus@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.4
+In-Reply-To: <1385460350-17543-2-git-send-email-mika.westerberg@linux.intel.com>
+References: <1385460350-17543-2-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2013 02:25 PM, Joonsoo Kim wrote:
-> No. He report that BUG() is triggered on v3.11-rc2 and v3.12.
-> And my recent change is merged into v3.13-rc1 as you know. :)
+This makes it possible to request the gpio descriptors in
+rfkill_gpio driver regardless of the platform.
 
-Hah, I guess my eyesight isn't what it used to be, I could have sworn it 
-said v3.13-rc2... Thanks anyway, Joonsoo!
+Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+---
+ arch/arm/mach-tegra/board-paz00.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-                             Pekka
+Changes since v3:
+-----------------
+Rebased on top of Alexandre's patch "gpio: better lookup method for
+platform GPIOs".
+
+diff --git a/arch/arm/mach-tegra/board-paz00.c b/arch/arm/mach-tegra/board-paz00.c
+index 06f0240..e4dec9f 100644
+--- a/arch/arm/mach-tegra/board-paz00.c
++++ b/arch/arm/mach-tegra/board-paz00.c
+@@ -18,6 +18,7 @@
+  */
+ 
+ #include <linux/platform_device.h>
++#include <linux/gpio/driver.h>
+ #include <linux/rfkill-gpio.h>
+ #include "board.h"
+ 
+@@ -36,7 +37,17 @@ static struct platform_device wifi_rfkill_device = {
+ 	},
+ };
+ 
++static struct gpiod_lookup_table wifi_gpio_lookup = {
++	.dev_id = "rfkill_gpio",
++	.table = {
++		GPIO_LOOKUP_IDX("tegra-gpio", 25, NULL, 0, 0),
++		GPIO_LOOKUP_IDX("tegra-gpio", 85, NULL, 1, 0),
++		{ },
++	},
++};
++
+ void __init tegra_paz00_wifikill_init(void)
+ {
++	gpiod_add_lookup_table(&wifi_gpio_lookup);
+ 	platform_device_register(&wifi_rfkill_device);
+ }
+-- 
+1.8.4.4
+
