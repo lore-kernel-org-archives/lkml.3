@@ -1,73 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947Ab3LCB5S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 20:57:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11292 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751124Ab3LCB5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 20:57:15 -0500
-Date: Tue, 3 Dec 2013 09:56:13 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
-        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.infradead.org, greg@kroah.com, matt@console-pimps.org
-Subject: Re: [PATCH v4 07/12] efi: passing kexec necessary efi data via
- setup_data
-Message-ID: <20131203015613.GB3980@dhcp-16-126.nay.redhat.com>
-References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
- <1385445477-9665-8-git-send-email-dyoung@redhat.com>
- <20131127140732.GD32267@pd.tnic>
- <20131129091415.GH4186@dhcp-16-126.nay.redhat.com>
- <1386023600.1791.201.camel@misato.fc.hp.com>
- <1386034289.1791.210.camel@misato.fc.hp.com>
+	id S1753212Ab3LCB7R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 20:59:17 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50416 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752154Ab3LCB7P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 20:59:15 -0500
+X-AuditID: 9c930179-b7c50ae000001bed-d7-529d3af2655f
+Date: Tue, 3 Dec 2013 11:01:41 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 1/9] mm/rmap: recompute pgoff for huge page
+Message-ID: <20131203020141.GA31168@lge.com>
+References: <1385624926-28883-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1385624926-28883-2-git-send-email-iamjoonsoo.kim@lge.com>
+ <20131202144434.2afc2b5bb69f2b4b45608e4e@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386034289.1791.210.camel@misato.fc.hp.com>
+In-Reply-To: <20131202144434.2afc2b5bb69f2b4b45608e4e@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/13 at 06:31pm, Toshi Kani wrote:
-> On Mon, 2013-12-02 at 15:33 -0700, Toshi Kani wrote:
-> > On Fri, 2013-11-29 at 17:14 +0800, Dave Young wrote:
-> > > On 11/27/13 at 03:07pm, Borislav Petkov wrote:
-> > > > On Tue, Nov 26, 2013 at 01:57:52PM +0800, Dave Young wrote:
-> > > > > Add a new setup_data type SETUP_EFI for kexec use.
-> > > > > Passing the saved fw_vendor, runtime, config tables and
-> > > > > efi runtime mappings.
-> > > > > 
-> > > > > When entering virtual mode, directly mapping the efi
-> > > > > runtime ragions which we passed in previously. And skip
-> > > > > the step to call SetVirtualAddressMap.
-> > > > > 
-> > > > > Specially for HP z420 workstation it need another variable
-> > > > > saving,
-> > > > 
-> > > > Why the special handling? Does that mean, this is going to be the case
-> > > > for other HP UEFI implementations too?
-> > > 
-> > > I have only one HP machine for testing, Maybe Toshi can help to verify
-> > > on other machines. Just comment out the function efi_reuse_config to see
-> > > if kexec kernel panic.
-> > 
-> > My system (HP prototype server) did not need the special handling in
-> > efi_reuse_config().  I will check with firmware team to get more
-> > information on this.
+On Mon, Dec 02, 2013 at 02:44:34PM -0800, Andrew Morton wrote:
+> On Thu, 28 Nov 2013 16:48:38 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
 > 
-> I have one question.  I think this special handling assumes that
-> efi.smbios contains a virtual address on HP z420.  So, how does the 1st
-> kernel set a virtual address to efi.smbios in the first place?
+> > We have to recompute pgoff if the given page is huge, since result based
+> > on HPAGE_SIZE is not approapriate for scanning the vma interval tree, as
+> > shown by commit 36e4f20af833 ("hugetlb: do not use vma_hugecache_offset()
+> > for vma_prio_tree_foreach") and commit 369a713e ("rmap: recompute pgoff
+> > for unmapping huge page").
+> > 
+> > ...
+> >
+> > --- a/mm/rmap.c
+> > +++ b/mm/rmap.c
+> > @@ -1714,6 +1714,10 @@ static int rmap_walk_file(struct page *page, int (*rmap_one)(struct page *,
+> >  
+> >  	if (!mapping)
+> >  		return ret;
+> > +
+> > +	if (PageHuge(page))
+> > +		pgoff = page->index << compound_order(page);
+> > +
+> >  	mutex_lock(&mapping->i_mmap_mutex);
+> >  	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
+> >  		unsigned long address = vma_address(page, vma);
+> 
+> a)  Can't we just do this?
+> 
+> --- a/mm/rmap.c~mm-rmap-recompute-pgoff-for-huge-page-fix
+> +++ a/mm/rmap.c
+> @@ -1708,16 +1708,13 @@ static int rmap_walk_file(struct page *p
+>  		struct vm_area_struct *, unsigned long, void *), void *arg)
+>  {
+>  	struct address_space *mapping = page->mapping;
+> -	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+> +	pgoff_t pgoff = page->index << compound_order(page);
+>  	struct vm_area_struct *vma;
+>  	int ret = SWAP_AGAIN;
+>  
+>  	if (!mapping)
+>  		return ret;
+>  
+> -	if (PageHuge(page))
+> -		pgoff = page->index << compound_order(page);
+> -
+>  	mutex_lock(&mapping->i_mmap_mutex);
+>  	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
+>  		unsigned long address = vma_address(page, vma);
+> 
+> compound_order() does the right thing for all styles of page, yes?
 
-Hi, Toshi,
+Yes. I will change.
 
-It's originally a physical address, I think kernel does not change it.
-As the fw_vendor, runtime etc. are changed to virt addr by firmware, so I
-assume smbios on Hp z420 is also changed by firmware after becoming virtual mode.
+> 
+> b) If that PageHuge() test you added the correct thing to use?
+> 
+> /*
+>  * PageHuge() only returns true for hugetlbfs pages, but not for normal or
+>  * transparent huge pages.  See the PageTransHuge() documentation for more
+>  * details.
+>  */
+> 
+>    Obviously we won't be encountering transparent huge pages here,
+>    but what's the best future-safe approach?
 
-Thanks
-Dave
+compound_order() also works for transparent huge pages, so it may be safe way.
+
+> I hate that PageHuge() oddity with a passion!  Maybe it would be better
+> if it was called PageHugetlbfs.
+
+I also think that PageHuge() is odd name.
+It has only 50 call sites. Let's change it :)
+
+Thanks.
+
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
