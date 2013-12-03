@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808Ab3LCGC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 01:02:26 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:55429 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab3LCGCZ (ORCPT
+	id S1752097Ab3LCGGz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 01:06:55 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:9395 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104Ab3LCGGw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 01:02:25 -0500
-X-AuditID: 9c93017e-b7c62ae0000049d9-aa-529d73eafe56
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC] Packaging libtraceevent.so
-References: <20131202140322.4ad6a151@gandalf.local.home>
-Date: Tue, 03 Dec 2013 15:02:18 +0900
-In-Reply-To: <20131202140322.4ad6a151@gandalf.local.home> (Steven Rostedt's
-	message of "Mon, 2 Dec 2013 14:03:22 -0500")
-Message-ID: <87txeqmpzp.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 3 Dec 2013 01:06:52 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 02 Dec 2013 22:03:58 -0800
+Message-ID: <529D745D.2070503@nvidia.com>
+Date: Tue, 3 Dec 2013 11:34:13 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ARM: dts: tegra: Header file for pinctrl constants
+References: <1385992502-12771-1-git-send-email-ldewangan@nvidia.com> <20131202142522.GA17566@ulmo.nvidia.com>
+In-Reply-To: <20131202142522.GA17566@ulmo.nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
-
-(also add Jiri to CC list, hi!)
-
-On Mon, 2 Dec 2013 14:03:22 -0500, Steven Rostedt wrote:
-> Hi all!
+On Monday 02 December 2013 07:55 PM, Thierry Reding wrote:
+> * PGP Signed by an unknown key
 >
-> The question has recently come up in Fedora about packaging the
-> libtraceevent.so library. Currently there's 4 users of it:
+> On Mon, Dec 02, 2013 at 07:25:01PM +0530, Laxman Dewangan wrote:
 >
->  1) perf
->  2) trace-cmd
->  3) powertop
->  4) rasdaemon
+
+> +
+> +/* Schmitt enable/disable */
+> +#define TEGRA_PIN_DRIVE_SCHMITT_DISABLE			0
+> +#define TEGRA_PIN_DRIVE_SCHMITT_ENABLE			1
+> These are all boolean, so I wonder if perhaps we should be simply
+> defining a single pair and reuse that in different contexts:
 >
-> But each have their own copy of the code.
+> 	#define TEGRA_PIN_DISABLE	0
+> 	#define TEGRA_PIN_ENABLE	1
 >
-> Both perf and trace-cmd are the major developers of the package, and I
-> would recommend that they continue using the *.a version, but for those
-> tools that are simple users of the library, it would probably make
-> sense to have them use libtraceevent.so and remove their copies from
-> the code (powertop and rasdaemon).
+> The property names should provide enough context for them to be used
+> unambiguously.
 >
-> The question that I'm posing here is, what currently needs to be done
-> to have this happen?
-
-I think the most important thing is error handling.  The filter parser
-code still has some calls to die().  It should be converted to return
-error and appropriate error messages IMHO.  But I didn't check it'd
-affect to the end-user APIs though.
-
-And it needs to add plugin APIs before the public release.
-
 >
-> Is the API stable enough for a release?
 
-Well, afaics the plugin unregister API should pass pevent as an argument
-so that it can unregister individual event/function handlers in it.
-
-Other than that I think it's pretty stable. :)
+I can make generic ENABLE/DISABLE macro as you suggested but datasheet 
+says as 0=NORMAL, 1 = TRISTATE. and that's why I kept name very near to 
+the datasheet.
 
 Thanks,
-Namhyung
-
->
-> We probably should have a dot versioning with the .so (ie.
-> libtraceevent.so.1)
->
-> So what are people's thoughts on this topic?
->
-> -- Steve
+Laxman
