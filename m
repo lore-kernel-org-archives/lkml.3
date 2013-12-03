@@ -1,97 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab3LCOvp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 09:51:45 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:42845 "EHLO
+	id S1754791Ab3LCOvw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 09:51:52 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:60055 "EHLO
 	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754164Ab3LCOvm (ORCPT
+	with ESMTP id S1754164Ab3LCOvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 09:51:42 -0500
+	Tue, 3 Dec 2013 09:51:47 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 7/9] staging/lustre/llite: remove ll_file_get_iov_count
-Date: Tue,  3 Dec 2013 22:42:06 +0800
-Message-Id: <1386081729-9481-10-git-send-email-bergwolf@gmail.com>
+Subject: =?UTF-8?q?=5BPATCH=208/9=5D=20staging/lustre=3A=20fix=20undefined=20reference=20if=20CONFIG=5FPROC=5FFS=20is=20off?=
+Date: Tue,  3 Dec 2013 22:42:07 +0800
+Message-Id: <1386081729-9481-11-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386081729-9481-1-git-send-email-bergwolf@gmail.com>
 References: <1386081729-9481-1-git-send-email-bergwolf@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It exactly copies generic_segment_checks() except wrongly calling
-access_ok(VERIFY_READ) for aio read range. Drop it and just call
-generic_segment_checks() instead.
+When building Lustre with CONFIG_PROC_FS off, we'll get many errors like:
+
+drivers/staging/lustre/lustre/obdclass/llog_test.c:1053: error: implicit declaration of function ‘lprocfs_llog_test_init_vars’
+make[3]: *** [drivers/staging/lustre/lustre/obdclass/llog_test.o] Error 1
+make[2]: *** [drivers/staging/lustre/lustre/obdclass] Error 2
+make[2]: *** Waiting for unfinished jobs....
+  CC [M]  drivers/staging/lustre/lustre/ptlrpc/ptlrpcd.o
+drivers/staging/lustre/lustre/ptlrpc/pinger.c: In function ‘ptlrpc_pinger_main’:
+drivers/staging/lustre/lustre/ptlrpc/pinger.c:331: error: implicit declaration of function ‘obd_update_maxusage’
+
+The patch defines following symbols when CONFIG_PROC_FS is off:
+fld_type_proc_dir, obd_update_maxusage(), obd_max_pages, obd_max_alloc, obd_alloc,
+obd_pages, lprocfs_llog_test_init_vars().
 
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- drivers/staging/lustre/lustre/llite/file.c |   36 ++--------------------------
- 1 file changed, 2 insertions(+), 34 deletions(-)
+ drivers/staging/lustre/lustre/fld/fld_internal.h   |    1 -
+ drivers/staging/lustre/lustre/fld/fld_request.c    |    2 +-
+ .../staging/lustre/lustre/include/obd_support.h    |    3 ++-
+ drivers/staging/lustre/lustre/obdclass/class_obd.c |    6 ++++++
+ drivers/staging/lustre/lustre/obdclass/llog_test.c |    4 ++++
+ 5 files changed, 13 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/llite/file.c b/drivers/staging/lustre/lustre/llite/file.c
-index 8f03eb0..25442ac 100644
---- a/drivers/staging/lustre/lustre/llite/file.c
-+++ b/drivers/staging/lustre/lustre/llite/file.c
-@@ -1148,38 +1148,6 @@ out:
- 	return result;
+diff --git a/drivers/staging/lustre/lustre/fld/fld_internal.h b/drivers/staging/lustre/lustre/fld/fld_internal.h
+index 56686b1..5f3935c 100644
+--- a/drivers/staging/lustre/lustre/fld/fld_internal.h
++++ b/drivers/staging/lustre/lustre/fld/fld_internal.h
+@@ -190,5 +190,4 @@ fld_target_name(struct lu_fld_target *tar)
+ 	return (const char *)tar->ft_exp->exp_obd->obd_name;
  }
  
--
--/*
-- * XXX: exact copy from kernel code (__generic_file_aio_write_nolock)
-- */
--static int ll_file_get_iov_count(const struct iovec *iov,
--				 unsigned long *nr_segs, size_t *count)
--{
--	size_t cnt = 0;
--	unsigned long seg;
--
--	for (seg = 0; seg < *nr_segs; seg++) {
--		const struct iovec *iv = &iov[seg];
--
--		/*
--		 * If any segment has a negative length, or the cumulative
--		 * length ever wraps negative then return -EINVAL.
--		 */
--		cnt += iv->iov_len;
--		if (unlikely((ssize_t)(cnt|iv->iov_len) < 0))
--			return -EINVAL;
--		if (access_ok(VERIFY_READ, iv->iov_base, iv->iov_len))
--			continue;
--		if (seg == 0)
--			return -EFAULT;
--		*nr_segs = seg;
--		cnt -= iv->iov_len;   /* This segment is no good */
--		break;
--	}
--	*count = cnt;
--	return 0;
--}
--
- static ssize_t ll_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 				unsigned long nr_segs, loff_t pos)
+-extern struct proc_dir_entry *fld_type_proc_dir;
+ #endif /* __FLD_INTERNAL_H */
+diff --git a/drivers/staging/lustre/lustre/fld/fld_request.c b/drivers/staging/lustre/lustre/fld/fld_request.c
+index 3191a39..896f9fe 100644
+--- a/drivers/staging/lustre/lustre/fld/fld_request.c
++++ b/drivers/staging/lustre/lustre/fld/fld_request.c
+@@ -274,9 +274,9 @@ int fld_client_del_target(struct lu_client_fld *fld, __u64 idx)
+ }
+ EXPORT_SYMBOL(fld_client_del_target);
+ 
+-#ifdef LPROCFS
+ struct proc_dir_entry *fld_type_proc_dir = NULL;
+ 
++#ifdef LPROCFS
+ static int fld_client_proc_init(struct lu_client_fld *fld)
  {
-@@ -1189,7 +1157,7 @@ static ssize_t ll_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 	ssize_t	     result;
- 	int		 refcheck;
+ 	int rc;
+diff --git a/drivers/staging/lustre/lustre/include/obd_support.h b/drivers/staging/lustre/lustre/include/obd_support.h
+index 2dc95de..977bc23 100644
+--- a/drivers/staging/lustre/lustre/include/obd_support.h
++++ b/drivers/staging/lustre/lustre/include/obd_support.h
+@@ -507,6 +507,8 @@ int obd_alloc_fail(const void *ptr, const char *name, const char *type,
  
--	result = ll_file_get_iov_count(iov, &nr_segs, &count);
-+	result = generic_segment_checks(iov, &nr_segs, &ocount, VERIFY_WRITE);
- 	if (result)
- 		return result;
+ extern atomic_t libcfs_kmemory;
  
-@@ -1248,7 +1216,7 @@ static ssize_t ll_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 	ssize_t	     result;
- 	int		 refcheck;
++extern void obd_update_maxusage(void);
++
+ #ifdef LPROCFS
+ #define obd_memory_add(size)						  \
+ 	lprocfs_counter_add(obd_memory, OBD_MEMORY_STAT, (long)(size))
+@@ -525,7 +527,6 @@ extern atomic_t libcfs_kmemory;
+ 	lprocfs_stats_collector(obd_memory, OBD_MEMORY_PAGES_STAT,	    \
+ 				LPROCFS_FIELDS_FLAGS_SUM)
  
--	result = ll_file_get_iov_count(iov, &nr_segs, &count);
-+	result = generic_segment_checks(iov, &nr_segs, &ocount, VERIFY_READ);
- 	if (result)
- 		return result;
+-extern void obd_update_maxusage(void);
+ extern __u64 obd_memory_max(void);
+ extern __u64 obd_pages_max(void);
  
+diff --git a/drivers/staging/lustre/lustre/obdclass/class_obd.c b/drivers/staging/lustre/lustre/obdclass/class_obd.c
+index 7b1d1b6..5f8d9f2 100644
+--- a/drivers/staging/lustre/lustre/obdclass/class_obd.c
++++ b/drivers/staging/lustre/lustre/obdclass/class_obd.c
+@@ -54,7 +54,13 @@ struct list_head obd_types;
+ DEFINE_RWLOCK(obd_dev_lock);
+ 
+ __u64 obd_max_pages = 0;
++EXPORT_SYMBOL(obd_max_pages);
+ __u64 obd_max_alloc = 0;
++EXPORT_SYMBOL(obd_max_alloc);
++__u64 obd_alloc;
++EXPORT_SYMBOL(obd_alloc);
++__u64 obd_pages;
++EXPORT_SYMBOL(obd_pages);
+ DEFINE_SPINLOCK(obd_updatemax_lock);
+ 
+ /* The following are visible and mutable through /proc/sys/lustre/. */
+diff --git a/drivers/staging/lustre/lustre/obdclass/llog_test.c b/drivers/staging/lustre/lustre/obdclass/llog_test.c
+index 7427c12..764068f 100644
+--- a/drivers/staging/lustre/lustre/obdclass/llog_test.c
++++ b/drivers/staging/lustre/lustre/obdclass/llog_test.c
+@@ -947,6 +947,10 @@ static void lprocfs_llog_test_init_vars(struct lprocfs_static_vars *lvars)
+     lvars->module_vars  = lprocfs_llog_test_module_vars;
+     lvars->obd_vars     = lprocfs_llog_test_obd_vars;
+ }
++#else
++static void lprocfs_llog_test_init_vars(struct lprocfs_static_vars *lvars)
++{
++}
+ #endif
+ 
+ static int llog_test_cleanup(struct obd_device *obd)
 -- 
 1.7.9.5
 
