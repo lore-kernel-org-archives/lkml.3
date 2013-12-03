@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399Ab3LCDbV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 22:31:21 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:6129 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825Ab3LCDbT (ORCPT
+	id S1753309Ab3LCDgN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 22:36:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44570 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752705Ab3LCDgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 22:31:19 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 02 Dec 2013 19:24:44 -0800
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH] gpio: rewrite gpiochip_offset_to_desc()
-Date: Tue, 3 Dec 2013 12:31:11 +0900
-Message-ID: <1386041471-1826-1-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.8.4.2
-X-NVConfidentiality: public
+	Mon, 2 Dec 2013 22:36:12 -0500
+Date: Mon, 2 Dec 2013 19:37:12 -0800
+From: Greg KH <greg@kroah.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Veaceslav Falico <vfalico@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
+        Knut Petersen <Knut_Petersen@t-online.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] PCI: update MSI attribute file documentation
+Message-ID: <20131203033712.GA8525@kroah.com>
+References: <20131129031419.GB5889@neilslaptop.think-freely.org>
+ <20131129094137.GC3028@redhat.com>
+ <20131129175336.GA6152@kroah.com>
+ <CAErSpo44sQU2PbufCYF+wzpMtMPC97_FgAMQgruX9Nw3XbmL8g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo44sQU2PbufCYF+wzpMtMPC97_FgAMQgruX9Nw3XbmL8g@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gpiochip_offset_to_desc() was using gpio_to_desc(), which directly
-addresses the global GPIO array we are hoping to get rid of someday.
-Reimplement it using the descriptor array of the chip itself, after
-checking the requested offset is within the valid bounds of the chip.
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
----
- drivers/gpio/gpiolib.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Now that the MSI modes are now attribute files in sysfs, not
+subdirectories, update the documentation to reflect this.
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 4ca103965d8c..ea95b42c6154 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -150,9 +150,10 @@ EXPORT_SYMBOL_GPL(gpio_to_desc);
- static struct gpio_desc *gpiochip_offset_to_desc(struct gpio_chip *chip,
- 						 unsigned int offset)
- {
--	unsigned int gpio = chip->base + offset;
-+	if (offset >= chip->ngpio)
-+		return ERR_PTR(-EINVAL);
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+diff --git a/Documentation/ABI/testing/sysfs-bus-pci b/Documentation/ABI/testing/sysfs-bus-pci
+index 5210a51c90fd..a3c5a6685036 100644
+--- a/Documentation/ABI/testing/sysfs-bus-pci
++++ b/Documentation/ABI/testing/sysfs-bus-pci
+@@ -70,18 +70,15 @@ Date:		September, 2011
+ Contact:	Neil Horman <nhorman@tuxdriver.com>
+ Description:
+ 		The /sys/devices/.../msi_irqs directory contains a variable set
+-		of sub-directories, with each sub-directory being named after a
+-		corresponding msi irq vector allocated to that device.  Each
+-		numbered sub-directory N contains attributes of that irq.
+-		Note that this directory is not created for device drivers which
+-		do not support msi irqs
++		of files, with each file being named after a corresponding msi
++		irq vector allocated to that device.
  
--	return gpio_to_desc(gpio);
-+	return &chip->desc[offset];
- }
+-What:		/sys/bus/pci/devices/.../msi_irqs/<N>/mode
++What:		/sys/bus/pci/devices/.../msi_irqs/<N>
+ Date:		September 2011
+ Contact:	Neil Horman <nhorman@tuxdriver.com>
+ Description:
+ 		This attribute indicates the mode that the irq vector named by
+-		the parent directory is in (msi vs. msix)
++		the file is in (msi vs. msix)
  
- /**
--- 
-1.8.4.2
-
+ What:		/sys/bus/pci/devices/.../remove
+ Date:		January 2009
