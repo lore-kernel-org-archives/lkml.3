@@ -1,64 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241Ab3LCI70 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 03:59:26 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:40765 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513Ab3LCI7X (ORCPT
+	id S1752935Ab3LCJAg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 04:00:36 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57245 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab3LCJAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 03:59:23 -0500
-Message-ID: <529D9D43.6040101@ti.com>
-Date: Tue, 3 Dec 2013 14:28:43 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Marek Belisko <marek.belisko@open-nandra.com>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <hns@goldelico.com>
-Subject: Re: [PATCH] omap: twl-common: Fix musb-hdrc device name.
-References: <1386059589-4030-1-git-send-email-marek.belisko@open-nandra.com>
-In-Reply-To: <1386059589-4030-1-git-send-email-marek.belisko@open-nandra.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Dec 2013 04:00:32 -0500
+X-AuditID: 9c930197-b7c3dae000002c11-da-529d9daf7955
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Pekka Enberg <penberg@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH v2 1/3] perf tools: Record total sampling time
+Date: Tue,  3 Dec 2013 18:00:27 +0900
+Message-Id: <1386061229-19514-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-On Tuesday 03 December 2013 02:03 PM, Marek Belisko wrote:
-> Without this change when booting omap3 device (gta04) with board file
-> leads to follwing errors:
-> 
-> [    1.203308] musb-hdrc musb-hdrc.0.auto: unable to find phy
-> [    1.209075] HS USB OTG: no transceiver configured
-> [    1.214019] musb-hdrc musb-hdrc.0.auto: musb_init_controller failed with status -517
-> 
-> and usb isn't working.
-> 
-> This is probably regression caused by commit: 6c27f939
+It's sometimes useful to see total sampling or elapsed time with
+normal performance result.  To do that, record first and last sample
+time for each evsel and to display it in the header (--stdio only for
+now).
 
-I think a better fix would be to have this merged..
-https://lkml.org/lkml/2013/7/26/91
-> 
-> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
-> ---
->  arch/arm/mach-omap2/twl-common.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-omap2/twl-common.c b/arch/arm/mach-omap2/twl-common.c
-> index b0d54da..3640ce0 100644
-> --- a/arch/arm/mach-omap2/twl-common.c
-> +++ b/arch/arm/mach-omap2/twl-common.c
-> @@ -92,7 +92,7 @@ void __init omap_pmic_late_init(void)
->  
->  #if defined(CONFIG_ARCH_OMAP3)
->  struct phy_consumer consumers[] = {
-> -	PHY_CONSUMER("musb-hdrc.0", "usb"),
-> +	PHY_CONSUMER("musb-hdrc.0.auto", "usb"),
+  $ perf record -a sleep 1
+  $ perf report --stdio
+  ...
+  # Samples: 4K of event 'cycles'
+  # Event count (approx.): 4087481688
+  # Total sampling time  : 1.001260 (sec)
+  #
+  # Overhead       Command               Shared Object                   Symbol
+  # ........  ............  ..........................  .......................
+  #
+      89.06%      nautilus  libgobject-2.0.so.0.3701.0  [.] 0x0000000000020bf0
+       1.79%   kworker/1:0  [kernel.kallsyms]           [k] generic_exec_single
+       1.75%       swapper  [kernel.kallsyms]           [k] intel_idle
+       1.14%      nautilus  [unknown]                   [.] 0x0000003153f2ff61
+       0.69%   kworker/0:1  [kernel.kallsyms]           [k] generic_exec_single
+       0.67%      nautilus  ld-2.17.so                  [.] do_lookup_x
 
-the index '0' might vary for some boards leading it to again break musb.
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-report.c | 15 ++++++++++++++-
+ tools/perf/util/evsel.h     |  2 ++
+ tools/perf/util/hist.h      |  1 +
+ tools/perf/util/session.c   |  7 +++++++
+ 4 files changed, 24 insertions(+), 1 deletion(-)
 
-Thanks
-Kishon
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 8cf8e66ba594..1d47fbec4421 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -456,6 +456,14 @@ static size_t hists__fprintf_nr_sample_events(struct perf_report *rep,
+ 		ret += fprintf(fp, "\n# Sort order   : %s", sort_order);
+ 	} else
+ 		ret += fprintf(fp, "\n# Event count (approx.): %" PRIu64, nr_events);
++	if (rep->tool.ordered_samples) {
++		u64 total_time = hists->stats.total_time;
++		u64 sec = total_time / NSEC_PER_SEC;
++		u64 usec = (total_time - sec * NSEC_PER_SEC) / NSEC_PER_USEC;
++
++		ret += fprintf(fp, "\n# Total sampling time  : "
++			       "%" PRIu64 ".%06" PRIu64 " (sec)", sec, usec);
++	}
+ 	return ret + fprintf(fp, "\n#\n");
+ }
+ 
+@@ -565,8 +573,13 @@ static int __cmd_report(struct perf_report *rep)
+ 	}
+ 
+ 	nr_samples = 0;
+-	list_for_each_entry(pos, &session->evlist->entries, node)
++	list_for_each_entry(pos, &session->evlist->entries, node) {
+ 		nr_samples += pos->hists.nr_entries;
++		if (rep->tool.ordered_samples) {
++			pos->hists.stats.total_time = pos->last_timestamp -
++							pos->first_timestamp;
++		}
++	}
+ 
+ 	ui_progress__init(&prog, nr_samples, "Merging related events...");
+ 
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 8120eeb86ac1..20a7c653b74b 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -67,6 +67,8 @@ struct perf_evsel {
+ 	int			idx;
+ 	u32			ids;
+ 	struct hists		hists;
++	u64			first_timestamp;
++	u64			last_timestamp;
+ 	char			*name;
+ 	double			scale;
+ 	const char		*unit;
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index b621347a1585..bc5acdfc2b4b 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -28,6 +28,7 @@ struct symbol;
+  */
+ struct events_stats {
+ 	u64 total_period;
++	u64 total_time;
+ 	u64 total_lost;
+ 	u64 total_invalid_chains;
+ 	u32 nr_events[PERF_RECORD_HEADER_MAX];
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 4ce146bae552..e4b158f0586a 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -925,6 +925,13 @@ perf_session__deliver_sample(struct perf_session *session,
+ 	u64 sample_type = evsel->attr.sample_type;
+ 	u64 read_format = evsel->attr.read_format;
+ 
++	if (tool->ordered_samples) {
++		if (evsel->first_timestamp == 0)
++			evsel->first_timestamp = sample->time;
++
++		evsel->last_timestamp = sample->time;
++	}
++
+ 	/* Standard sample delievery. */
+ 	if (!(sample_type & PERF_SAMPLE_READ))
+ 		return tool->sample(tool, event, sample, evsel, machine);
+-- 
+1.7.11.7
+
