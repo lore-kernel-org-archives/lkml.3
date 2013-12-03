@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171Ab3LCQh4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 11:37:56 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:49434 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754129Ab3LCQht (ORCPT
+	id S1753700Ab3LCQiI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 11:38:08 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:36976 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466Ab3LCQiD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 11:37:49 -0500
+	Tue, 3 Dec 2013 11:38:03 -0500
 From: Hanjun Guo <hanjun.guo@linaro.org>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Catalin Marinas <catalin.marinas@arm.com>,
@@ -24,9 +24,9 @@ Cc: linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         linaro-acpi@lists.linaro.org, Hanjun Guo <hanjun.guo@linaro.org>,
         Graeme Gregory <graeme.gregory@linaro.org>
-Subject: [RFC part1 PATCH 2/7] ARM64 : Add dummy asm/cpu.h
-Date: Wed,  4 Dec 2013 00:36:46 +0800
-Message-Id: <1386088611-2801-3-git-send-email-hanjun.guo@linaro.org>
+Subject: [RFC part1 PATCH 3/7] ACPI / processor_core: Rework _PDC related stuff to make it more arch-independent
+Date: Wed,  4 Dec 2013 00:36:47 +0800
+Message-Id: <1386088611-2801-4-git-send-email-hanjun.guo@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org>
 References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org>
@@ -34,47 +34,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI requires a cpu.h, add a dummy one copied from arm. This will need
-updated or replaced as ACPI based cpu hotplug for armv8 is worked out.
+_PDC related stuff in processor_core.c is little bit X86/IA64 dependent,
+rework the code to make it more arch-independent.
 
-Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+The return value of acpi_processor_eval_pdc() should be 'acpi_status' but
+defined as 'int', fix it too.
+
 Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
 ---
- arch/arm64/include/asm/cpu.h |   25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
- create mode 100644 arch/arm64/include/asm/cpu.h
+ drivers/acpi/processor_core.c |   27 ++++++++++++---------------
+ 1 file changed, 12 insertions(+), 15 deletions(-)
 
-diff --git a/arch/arm64/include/asm/cpu.h b/arch/arm64/include/asm/cpu.h
-new file mode 100644
-index 0000000..dbeb98d
---- /dev/null
-+++ b/arch/arm64/include/asm/cpu.h
-@@ -0,0 +1,25 @@
-+/*
-+ *  Copyright (C) 2004-2005 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __ASM_ARM_CPU_H
-+#define __ASM_ARM_CPU_H
+diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
+index 34e7b3c..9931435 100644
+--- a/drivers/acpi/processor_core.c
++++ b/drivers/acpi/processor_core.c
+@@ -273,8 +273,19 @@ static void acpi_set_pdc_bits(u32 *buf)
+ 	buf[0] = ACPI_PDC_REVISION_ID;
+ 	buf[1] = 1;
+ 
++#if defined(CONFIG_X86) || defined(CONFIG_IA64)
+ 	/* Enable coordination with firmware's _TSD info */
+ 	buf[2] = ACPI_PDC_SMP_T_SWCOORD;
++	if (boot_option_idle_override == IDLE_NOMWAIT) {
++		/*
++		 * If mwait is disabled for CPU C-states, the C2C3_FFH access
++		 * mode will be disabled in the parameter of _PDC object.
++		 * Of course C1_FFH access mode will also be disabled.
++		 */
++		buf[2] &= ~(ACPI_PDC_C_C2C3_FFH | ACPI_PDC_C_C1_FFH);
 +
-+#include <linux/percpu.h>
-+#include <linux/cpu.h>
-+#include <linux/topology.h>
-+
-+struct cpuinfo_arm {
-+	struct cpu	cpu;
-+	u32		cpuid;
-+#ifdef CONFIG_SMP
-+	unsigned int	loops_per_jiffy;
++	}
 +#endif
-+};
-+
-+DECLARE_PER_CPU(struct cpuinfo_arm, cpu_data);
-+
-+#endif
+ 
+ 	/* Twiddle arch-specific bits needed for _PDC */
+ 	arch_acpi_set_pdc_bits(buf);
+@@ -323,25 +334,11 @@ static struct acpi_object_list *acpi_processor_alloc_pdc(void)
+  * _PDC is required for a BIOS-OS handshake for most of the newer
+  * ACPI processor features.
+  */
+-static int
++static acpi_status
+ acpi_processor_eval_pdc(acpi_handle handle, struct acpi_object_list *pdc_in)
+ {
+ 	acpi_status status = AE_OK;
+ 
+-	if (boot_option_idle_override == IDLE_NOMWAIT) {
+-		/*
+-		 * If mwait is disabled for CPU C-states, the C2C3_FFH access
+-		 * mode will be disabled in the parameter of _PDC object.
+-		 * Of course C1_FFH access mode will also be disabled.
+-		 */
+-		union acpi_object *obj;
+-		u32 *buffer = NULL;
+-
+-		obj = pdc_in->pointer;
+-		buffer = (u32 *)(obj->buffer.pointer);
+-		buffer[2] &= ~(ACPI_PDC_C_C2C3_FFH | ACPI_PDC_C_C1_FFH);
+-
+-	}
+ 	status = acpi_evaluate_object(handle, "_PDC", pdc_in, NULL);
+ 
+ 	if (ACPI_FAILURE(status))
 -- 
 1.7.9.5
 
