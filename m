@@ -1,241 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591Ab3LCCqp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 21:46:45 -0500
-Received: from mail.fpasia.hk ([202.130.89.98]:58463 "EHLO fpa01n0.fpasia.hk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752705Ab3LCCqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 21:46:39 -0500
-Message-ID: <529D4607.9080709@gtsys.com.hk>
-Date: Tue, 03 Dec 2013 10:46:31 +0800
-From: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11 ThunderBrowse/3.8
+	id S1753765Ab3LCCrT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 21:47:19 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36458 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753432Ab3LCCrO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 21:47:14 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <529D4600.6040601@jp.fujitsu.com>
+Date: Tue, 3 Dec 2013 11:46:24 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] usb: phy-generic: Add ULPI VBUS support
-References: <1385967919-13258-1-git-send-email-chris.ruehl@gtsys.com.hk> <1385967919-13258-4-git-send-email-chris.ruehl@gtsys.com.hk> <20131202182204.GQ12952@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20131202182204.GQ12952@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        "Moore, Robert" <robert.moore@intel.com>,
+        Toshi Kani <toshi.kani@hp.com>, Yinghai Lu <yinghai@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Lv Zheng <lv.zheng@intel.com>
+Subject: Re: [PATCH 7/10] ACPI / hotplug: Move container-specific code out
+ of the core
+References: <1421028.Rsfpmhnym3@vostro.rjw.lan> <2547688.l8Q1XKb3Ol@vostro.rjw.lan> <5297FDC7.6000007@jp.fujitsu.com> <1554480.uCR6qUxJk9@vostro.rjw.lan>
+In-Reply-To: <1554480.uCR6qUxJk9@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 03, 2013 02:22 AM, Mark Rutland wrote:
-> On Mon, Dec 02, 2013 at 07:05:19AM +0000, Chris Ruehl wrote:
->> usb: phy-generic: Add ULPI VBUS support
+(2013/11/29 22:08), Rafael J. Wysocki wrote:
+> On Friday, November 29, 2013 11:36:55 AM Yasuaki Ishimatsu wrote:
+>> Hi Rafael,
+>
+> Hi,
+>
+>> Replying to this mail may be wrong.
+>
+> OK, so this particular patch doesn't break things any more?
+
+Yes.
+
+>
+>> Do you remember following your patch?
+>> http://lkml.org/lkml/2013/2/23/97
 >>
->> Some platforms need to set the VBUS parameters of the ULPI
->> like ISP1504 which interact with overcurrent protection and
->> power switch MIC2575. Therefore it requires to set
->> * DRVVBUS
->> * DRVVBUS_EXT
->> * EXTVBUSIND
->> * CHRGVBUS
->> of the ULPI.
->> This patch add support for it.
+>> I want to add autoeject variable in acpi_hotplug_profile structure and
+>> set autoecjet of container device "false".
 >
-> Could you elaborate on when we need to do this and why?
-
-Hi Mark,
-
-If the parameters not set properly for this kind of board design
-(ULPI + MIC) the 5V USB power is unstable and result errors while detecting and
-running a usb-device.
-
+> Then after the series the $subject patch belongs to it will work almost the
+> same way as /sys/firmware/acpi/container/enabled (hot add will still work after
+> patch [4/10] if "enabled" is 0), but only for containers.
 >
+>> Currently, I have a problem on ejecting container device. Since linux-3.12,
+>> container device is removed by acpi_scan_hot_remove.
 >>
->> Devicetree configuration example:
+>> I think this has two problems.
 >>
->> usbphy0: usbphy@0x10024170 {
->>   compatible = "usb-nop-xceiv";
->>   reg =<0x10024170 0x4>; /* ULPI Viewport OTG */
->>   clocks =<&clks 75>;
->>   clock-names = "main_clk";
->> };
->>
->> &usbphy0 {
->>          reset-gpios =<&gpio1 31 1>;
->>          pinctrl-names = "default";
->>          pinctrl-0 =<&pinctrl_usbphy0&pinctrl_usbotg1>;
->>          ulpi_set_vbus =<0x0f>;
->> };
->>
->> Please refer to the phy-bindings.txt for the value of ulpi_set_vbus commit
->> with this patch.
->>
->> Signed-off-by: Chris Ruehl<chris.ruehl@gtsys.com.hk>
->> ---
->>   .../devicetree/bindings/phy/phy-bindings.txt       |   15 ++++++
->>   drivers/usb/phy/phy-generic.c                      |   50 +++++++++++++++++++-
->>   drivers/usb/phy/phy-generic.h                      |    3 ++
->>   3 files changed, 67 insertions(+), 1 deletion(-)
->>
->> diff --git a/Documentation/devicetree/bindings/phy/phy-bindings.txt b/Documentation/devicetree/bindings/phy/phy-bindings.txt
->> index 8ae844f..b109b2f 100644
->> --- a/Documentation/devicetree/bindings/phy/phy-bindings.txt
->> +++ b/Documentation/devicetree/bindings/phy/phy-bindings.txt
->> @@ -34,6 +34,18 @@ phys : the phandle for the PHY device (used by the PHY subsystem)
->>   phy-names : the names of the PHY corresponding to the PHYs present in the
->>   	    *phys* phandle
->>
->> +Optional Properties:
->> +reset-gpios :	GPIO used to reset ULPI like ISP1504 with
->> +		0 = reset active high ; 1 = reset active low.
+>>     1. easily fail
+>>        My container device has CPU device and Memory device, and maximum size of
+>>        memory is 3Tbyte. In my environment, hot removing container device fails
+>>        on offlining memory if memory is used by application.
+>>        I think if offlininig memory, we must retly to offline memory several
+>>        times.
 >
-> The format of the gpio-specifier doesn't matter here.
+> Yes, that's correct.  But then you can try to offline the memory upfront
+> and only remove the container after that has been successful.
+>
+>>     2. cannot work with userland's application
+>>        Hot removing CPU and memory on container device, we need take care of
+>>        userland application. Before linux-3.12, container device just notifies
+>>        KOBJ_OFFLINE to udev. So by using udev, if application binds to removed
+>>        CPU or node, applications can change them before hot removing container
+>>        device.
+>>        Currently, KOBJ_OFFLINE is notified to udev. But acpi_scan_hot_remove
+>>        also runs simultaneously for hot removing container device. So when
+>>        applications runs for corresponding to the deletion of the devices,
+>>        the devices may have been deleted.
+>
 
-I write this description because its takes me half a day to figure out that
-the gpio definition must set <&gpioX num 1> to activate low rather then
-<&gpioX num 0> which is active high! Only want to give people a hand. I don't
-mind if you want to truncate it to:
+> So the expectation is that the container will refuse to offline, but instead
+> it will emit KOBJ_OFFLINE so that user space can do some cleanup and offline
+> it through the "eject" attribute, right?
 
-reset-gpios :	GPIO used to reset ULPI
-cs-gpios:	GPIO used to select a ULPI chipset
+Yes, that's right.
 
 >
-> Why do you need to mention the ISP1504? Either this is generic, or it
-> doesn't belong here.
+>> I don't know what devices are on hotpluggable conatainer device of other
+>> vendors. At least, my container device cannot be hot removed correctly.
+>> Then I want to add autoeject variable in acpi_hotplug_profile so that user
+>> can change the parameter to "true" or "false".
 >
-> Perhaps we need a ulpi-phy binding document. This and the rest of the
-> patch is strongly tied to ULPI.
-
-
+> I have a different idea.
 >
->> +cs-gpios :	GPIO used to activate a ULPI like ISP1504 with
->> +		0 = reset acitive high; 1 = reset active low.
+> Why don't we create a bus type for containers in analogy with CPUs and memory
+> and make it support offline.  Then, the container scan handler will create a
+> "physical" container device under that bus type and the new bus type code will
+> implement the logic you need (that is, it will have a sysfs flag that will
+> cause the offline to fail emitting a uevent of some sort if set and will allow
+> the offline to happen when unset).  That "physical" container device will go
+> away (again, via the container scan handler) during container removal.
 >
-> Again, the format of the gpio-specifier is not a concern here. I'm also
-> a little confused as to the name "cs-gpios" for something that activates
-> the ULPI.
+
+> The eject work flow can be:
+>    (1) an eject event occurs,
+>    (2) the container "physical" device fails offline in acpi_scan_hot_remove()
+>        emmitting, say, KOBJ_CHANGE for the "physical" device,
+>    (3) user space notices the KOBJ_CHANGE and does the cleanup as needed,
+>    (4) user space changes the "physical" container device flag controlling
+>        offline to 0,
+>    (5) user space uses the sysfs "eject" attribute of the ACPI container object
+>        to finally eject the container,
+>    (6) the offline in acpi_scan_hot_remove() is now successful, because the
+>        flag controlling it has been set to 0 in step (4),
+>    (7) the "physical" container device goes away before executing _EJ0,
+>    (8) the container is ejected.
 >
->> +ulpi_set_vbus :	ULPI configuation parameter to program the VBUS signaling of
->> +		ISP1504 or similar chipsets.
+> Of course, if the flag controlling container offline is 0 to start with, step
+> (6) will now occur directly after (1), so whoever wants containers to be
+> hot-removed automatically may just clear that flag for all of them on boot.
 >
-> Could you elaborate on this? Is this applicable to any ULPI PHY? The
-> description implies that it's somewhat tied to ISP1504 (if it's not,
-> drop the mention of ISP1504).
+> How does that sound?
+
+
+The above ideas are almost O.K. I want kernel to notify user space of KOBJ_OFFLINE.
+Even if user space catches "KOBJ_CHANGE", user doesn't know whether the notification
+is offline or not.
+
+Thanks,
+Yasuaki Ishimatsu
+
+> Rafael
 >
-> Why exactly do we need this, and why should it live in the DT?
->
-> Why can se not figure this out automatically, or have defaults that work
-> in more places?
-
-We talk about board specific design, some designs need to set the VBUS flags 
-others not, but its all run on the same generic kernel functions. FMHO this is
-exactly what DT is designed for. The problem is how to encode the VBUS setup
-a) easy to understand
-b) easy to decode in the code
-
-Drivers like phy-tegra-usb using there own hard coded ulpi setup, I think this
-patch offers a way to work with the phy-generic.
-
->
-> Also, s/_/-/ on property names please.
-
-got it.
-
->
->> +		Set the parameter:
->> +		DRVVBUS = (1) DRVVBUS_EXT = (1<<1) EXTVBUSIND = (1<<2) CHRGVBUS = (1<<3)
->> +		eg: DRVVBUS | DRVVBUS_EXT = 0x03
->> +		    ulpi_set_vbus =<0x03>
->
-> I don't like putting arbitrary bitfields like this in DT. They're
-> illegible and easy to abuse
-
-Sorry, but for the pinctrl (e.g fsl,imx27-pinctrl.txt) its done this way too, 
-and for the code logic its becomes very simple. A solution with Boolean
-ulpi-set-drvvbus
-..
-ulpi-set-chrgvbus
-result in much more code in the kernel, by four times calling 
-of_property_read_bool() vs. one time of_property_read_u32()
-and the overhead the logic to encode it into a u32.
-
->
-> Boolean properties are nicer for flags.
->
-> What exactly do these flags mean?
-
-The flags names related to the phy-ulpi.c used names ULPI_OTG_DRVVBUS ...
-DRVVBUS 	enables the general logic for USB-VBUS in the ULPI
-DRVVBUS_EXT	enables the external power out
-DRVBUSIND	enables the logic for overcurrent protection and fault detection
-CHRGVBUS 	enables the pump to stabilize the 5V output power level
-
->
-> [...]
->
->> @@ -253,14 +284,15 @@ static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
->>
->>   	if (dev->of_node) {
->>   		struct device_node *node = dev->of_node;
->> +		struct resource	*res;
->>   		enum of_gpio_flags flags;
->>   		enum of_gpio_flags csflags;
->> +		u32 ulpi_vbus;
->>
->>   		if (of_property_read_u32(node, "clock-frequency",&clk_rate))
->>   			clk_rate = 0;
->>
->>   		needs_vcc = of_property_read_bool(node, "vcc-supply");
->> -
->>   		nop->gpio_reset = of_get_named_gpio_flags(node, "reset-gpios",
->>   								0,&flags);
->
-> Why the random line deletion?
-
-Ups that's should be happen while I had a earlier release.. I missed it.
-
->
->>
->> @@ -274,6 +306,22 @@ static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
->>   		if (gpio_is_valid(nop->gpio_chipselect))
->>   			nop->cs_active_low = csflags&  OF_GPIO_ACTIVE_LOW;
->>
->> +		err = of_property_read_u32(node, "ulpi_set_vbus",&ulpi_vbus);
-add spaces here
->> +		if (err) {
->> +			nop->ulpi_vbus = -1;
->> +			nop->viewport = NULL;
-
->> +			ulpi_vbus = 0;
-remove this its unused
-
->> +		} else {
->> +			dev_dbg(dev,"ULPI ulpi_set_vbus 0x%02x",ulpi_vbus);
-add spaces here
->> +			nop->ulpi_vbus = ulpi_vbus;
->> +			res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->
-> This wasn't described in the binding document, and it's ULPI specific. I
-
-You right, we looking IORESOURCE_MEM for the ULPI-Viewport which I missed to 
-mentioned.
-The reg = <> for the current phy: phy@0 defines in the imx27.dtmi was unused.
-1) I moved it to the AIPI2
-2) merge them into the usb address range
-to the the ULPI viewport available when needed.
-
-
-> think we need a separate ulpi-phy binding that builds upon the generic
-> one.
->
-I agree with this.
-
-> Thanks,
-> Mark.
-
-Thanks for the review.
-Chris
-
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+
