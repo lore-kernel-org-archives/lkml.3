@@ -1,51 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754383Ab3LCRQO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 12:16:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42745 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753466Ab3LCRQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 12:16:12 -0500
-Subject: [BUG] ftrace: support for SOFT_DISABLE to syscall events caused
- huge slowdown of ftrace startup test
-From: Petr Mladek <pmladek@suse.cz>
-To: Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 03 Dec 2013 18:16:09 +0100
-Message-ID: <1386090969.1603.72.camel@pathway.suse.cz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+	id S1754255Ab3LCRUa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 12:20:30 -0500
+Received: from 19.mo1.mail-out.ovh.net ([178.32.97.206]:49037 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752829Ab3LCRU3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 12:20:29 -0500
+Message-ID: <529E12CD.5040607@overkiz.com>
+Date: Tue, 03 Dec 2013 18:20:13 +0100
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Grant Likely <grant.likely@linaro.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/3] usb: ohci-at91: use device managed clk retrieval
+References: <1386079669-3995-1-git-send-email-b.brezillon@overkiz.com> <1386079669-3995-4-git-send-email-b.brezillon@overkiz.com> <529E1C82.8070501@cogentembedded.com>
+In-Reply-To: <529E1C82.8070501@cogentembedded.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 1468454955530352823
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello Sergei,
 
-I tested my ftrace-related patches and enabled also the startup test:
+On 03/12/2013 19:01, Sergei Shtylyov wrote:
+> Hello.
+>
+> On 12/03/2013 05:07 PM, Boris BREZILLON wrote:
+>
+>> Replace clk_get calls by devm_clk_get calls.
+>
+>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+>> Tested-by: Robert Nelson <robertcnelson@gmail.com>
+>> ---
+>>   drivers/usb/host/ohci-at91.c |   32 ++++++++------------------------
+>>   1 file changed, 8 insertions(+), 24 deletions(-)
+>
+>> diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
+>> index c406f1e..3652962 100644
+>> --- a/drivers/usb/host/ohci-at91.c
+>> +++ b/drivers/usb/host/ohci-at91.c
+>> @@ -164,30 +164,30 @@ static int usb_hcd_at91_probe(const struct 
+>> hc_driver *driver,
+>>           goto err;
+>>       }
+>>
+>> -    iclk = clk_get(&pdev->dev, "ohci_clk");
+>> +    iclk = devm_clk_get(dev, "ohci_clk");
+>>       if (IS_ERR(iclk)) {
+>> -        dev_err(&pdev->dev, "failed to get ohci_clk\n");
+>> +        dev_err(dev, "failed to get ohci_clk\n");
+>
+>    You changed this call...
+>
+>>           retval = PTR_ERR(iclk);
+>>           goto err;
+>>       }
+>> -    fclk = clk_get(&pdev->dev, "uhpck");
+>> +    fclk = devm_clk_get(dev, "uhpck");
+>>       if (IS_ERR(fclk)) {
+>>           dev_err(&pdev->dev, "failed to get uhpck\n");
+>
+>    ... but not this one.
 
-  CONFIG_FTRACE_SELFTEST=y
-  CONFIG_FTRACE_STARTUP_TEST=y
+This is an oversight.
 
-On today's kernel/git/tip/tip.git, the boot "freezed" for 1 minute when
-doing "Testing event system syscalls".
+>
+>>           retval = PTR_ERR(fclk);
+>> -        goto err4;
+>> +        goto err;
+>>       }
+>> -    hclk = clk_get(&pdev->dev, "hclk");
+>> +    hclk = devm_clk_get(dev, "hclk");
+>>       if (IS_ERR(hclk)) {
+>>           dev_err(&pdev->dev, "failed to get hclk\n");
+>
+>    ... or this one. Actually, I think cganging these calls would be 
+> out of scope for this patch.
 
-A bisect pointed finger to the commit d562aff93bfb530b099 (tracing: Add
-support for SOFT_DISABLE to syscall events).
+Ditto.
 
-It seems that the culprit are the "synchronize_sched" calls added to
-"unreg_event_syscall_enter" and "unreg_event_syscall_exit" functions.
-They are called 2312 times during the boot here and are responsible for
-the delay.
+I'll split the patch to in 2 patches:
+  1) replace &pdev->dev by dev
+  2) use devm_clk_get instead of clk_get.
 
-I wonder if it might cause slowdown also at runtime.
+>
+>>           retval = PTR_ERR(hclk);
+>> -        goto err5;
+>> +        goto err;
+>>       }
+>>       if (IS_ENABLED(CONFIG_COMMON_CLK)) {
+>> -        uclk = clk_get(&pdev->dev, "usb_clk");
+>> +        uclk = devm_clk_get(&pdev->dev, "usb_clk");
+>
+>    Hm, why not 'dev' like in all of the above?
+Ditto.
 
-I am going to look deeper into the code and eventually come up with a
-solution. But it might take some time. I am still newbie in the kernel
-development. Any hints or tips are welcome ;-)
+Thanks for your review.
 
 Best Regards,
-Petr
+
+Boris
+>
+>>           if (IS_ERR(uclk)) {
+>>               dev_err(&pdev->dev, "failed to get uclk\n");
+>>               retval = PTR_ERR(uclk);
+>> -            goto err6;
+>> +            goto err;
+>>           }
+>>       }
+>>
+>
+> WBR, Sergei
+>
+>
 
