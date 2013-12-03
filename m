@@ -1,166 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab3LCU7B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 15:59:01 -0500
-Received: from doppler.thel33t.co.uk ([193.110.88.198]:48655 "EHLO
-	doppler.thel33t.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754082Ab3LCU7A (ORCPT
+	id S1755113Ab3LCVAS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 16:00:18 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:42852 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849Ab3LCVAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 15:59:00 -0500
-X-Greylist: delayed 477 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Dec 2013 15:58:59 EST
+	Tue, 3 Dec 2013 16:00:13 -0500
+Date: Tue, 3 Dec 2013 22:00:09 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+Message-ID: <20131203210009.GA3764@dhcp22.suse.cz>
+References: <alpine.DEB.2.02.1311141525440.30112@chino.kir.corp.google.com>
+ <20131118154115.GA3556@cmpxchg.org>
+ <20131118165110.GE32623@dhcp22.suse.cz>
+ <20131122165100.GN3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311261648570.21003@chino.kir.corp.google.com>
+ <20131127163435.GA3556@cmpxchg.org>
+ <20131202200221.GC5524@dhcp22.suse.cz>
+ <20131202212500.GN22729@cmpxchg.org>
+ <20131203120454.GA12758@dhcp22.suse.cz>
+ <20131203201713.GR3556@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Tue, 03 Dec 2013 20:57:24 +0000
-From: Leigh Brown <leigh@solinno.co.uk>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Schichan <nschichan@freebox.fr>
-Cc: Jason Cooper <jason@lakedaemon.net>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Florian Fainelli <florian@openwrt.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: Spurious timeouts in mvmdio
-In-Reply-To: <20131203124033.GT16735@n2100.arm.linux.org.uk>
-References: <529CA42A.3040504@freebox.fr>
- <20131203122346.GD29282@titan.lakedaemon.net>
- <20131203124033.GT16735@n2100.arm.linux.org.uk>
-Message-ID: <abe249f5cba5c267e2c536bd62c57908@doppler.thel33t.co.uk>
-User-Agent: Roundcube Webmail/0.6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131203201713.GR3556@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell and Nicolas,
-
-Apologies for taking so long to respond to this thread.
-
-On 2013-12-03 12:40, Russell King - ARM Linux wrote:
-> On Tue, Dec 03, 2013 at 07:23:46AM -0500, Jason Cooper wrote:
->> On Mon, Dec 02, 2013 at 04:15:54PM +0100, Nicolas Schichan wrote:
-[...]
->> 11:31 < shesselba> kos_tom: it is already using usecs_to_jiffies()
->> 11:31 < shesselba> the thing is: 1ms is less than a jiffy
+On Tue 03-12-13 15:17:13, Johannes Weiner wrote:
+> On Tue, Dec 03, 2013 at 01:04:54PM +0100, Michal Hocko wrote:
+> > On Mon 02-12-13 16:25:00, Johannes Weiner wrote:
+> > > On Mon, Dec 02, 2013 at 09:02:21PM +0100, Michal Hocko wrote:
+> > [...]
+> > > > But we are not talking just about races here. What if the OOM is a
+> > > > result of an OOM action itself. E.g. a killed task faults a memory in
+> > > > while exiting and it hasn't freed its memory yet. Should we notify in
+> > > > such a case? What would an userspace OOM handler do (the in-kernel
+> > > > implementation has an advantage because it can check the tasks flags)?
+> > > 
+> > > We don't notify in such a case.  Every charge from a TIF_MEMDIE or
+> > > exiting task is bypassing the limit immediately.  Not even reclaim.
+> > 
+> > Not really. Assume a memcg is under OOM. A task is killed by
+> > userspace so we get into signal delivery code which clears
+> > fatal_signal_pending and the code goes on to exit but then it faults in.
+> > __mem_cgroup_try_charge will not see signal pending and TIF_MEMDIE is
+> > not set yet. OOM is still not resolved so we are back to square one.
 > 
-> Yes, and the kernels time conversion functions aren't stupid.  Let's
-> look at this function's implementation:
+> Ah, that's a completely separate problem, though.  One issue I have
+> with these checks is that I never know which one are shortcuts and
+> micro optimizations and which one are functionally necessary.
+
+That is why I asked for the changelog update to mention the fix as well
+(https://lkml.org/lkml/2013/11/18/161 resp.
+https://lkml.org/lkml/2013/11/18/142)
+
+> > > > > So again, I don't see this patch is doing anything but blur the
+> > > > > current line and make notification less predictable. And, as someone
+> > > > > else in this thread already said, it's a uservisible change in
+> > > > > behavior and would break known tuning usecases.
+> > > > 
+> > > > I would like to understand how would such a tuning usecase work and how
+> > > > it would break with this change.
+> > > 
+> > > I would do test runs and with every run increase the size of the
+> > > workload until I get OOM notifications to know when the kernel has
+> > > been pushed beyond its limits and available memory + reclaim
+> > > capability can't keep up with the workload anymore.
+> > > 
+> > > Not informing me just because due to timing variance a random process
+> > > exits in the last moment would be flat out lying.  The machine is OOM.
+> > > Many reclaim cycles failing is a good predictor.  Last minute exit of
+> > > random task is not, it's happenstance and I don't want to rely on a
+> > > fluke like this to size my workload.
+> > 
+> > Such a metric would be inherently racy for the same reason. You simply
+> > cannot rely on not seeing OOMs because an exiting task managed to leave
+> > in time (after MEM_CGROUP_RECLAIM_RETRIES direct reclaim loops and
+> > before mem_cgroup_oom). Difference between in time and little bit too
+> > late is just too fragile to be useful IMO.
 > 
-> unsigned long usecs_to_jiffies(const unsigned int u)
-> {
->         if (u > jiffies_to_usecs(MAX_JIFFY_OFFSET))
->                 return MAX_JIFFY_OFFSET;
-> #if HZ <= USEC_PER_SEC && !(USEC_PER_SEC % HZ)
->         return (u + (USEC_PER_SEC / HZ) - 1) / (USEC_PER_SEC / HZ);
-> #elif HZ > USEC_PER_SEC && !(HZ % USEC_PER_SEC)
->         return u * (HZ / USEC_PER_SEC);
-> #else
->         return (USEC_TO_HZ_MUL32 * u + USEC_TO_HZ_ADJ32)
->                 >> USEC_TO_HZ_SHR32;
-> #endif
-> }
+> Are we saying the same thing?  Or did I misunderstand you?
+
+yes we are and my point was that using such a metric doesn't make much
+sense. So arguing with reliability and possible regressions is a bit
+over-reaction. I was backing this patch because it has moved the check
+to a more appropriate place where it actually solves also another issue.
+
+I was probably not clear enough about that.
+
+> > > > Consider the above example. You would get 2 notification for the very
+> > > > same OOM condition.
+> > > > On the other hand if the encountered exiting task was just a race then
+> > > > we have two options basically. Either there are more tasks racing (and
+> > > > not all of them are exiting) or there is only one (all are exiting).
+> > > > We will not loose any notification in the first case because the flags
+> > > > are checked before mem_cgroup_oom_trylock and so one of tasks would lock
+> > > > and notify.
+> > > > The second case is more interesting. Userspace won't get notification
+> > > > but we also know that no action is required as the OOM will be resolved
+> > > > by itself. And now we should consider whether notification would do more
+> > > > good than harm. The tuning usecase would loose one event. Would such a
+> > > > rare situation skew the statistics so much? On the other hand a real OOM
+> > > > killer would do something which means something will be killed. I find
+> > > > the later much worse.
+> > > 
+> > > We already check in various places (sigh) for whether reclaim and
+> > > killing is still necessary.  What is the end game here?  An endless
+> > > loop right before the kill where we check if the kill is still
+> > > necessary?
+> > 
+> > The patch as is doesn't cover all the cases and ideally we should check
+> > that for OOM_SCAN_ABORT and later in oom_kill_process because they can
+> > back out as well if we want to have only-on-action notification. Such a
+> > solution would be too messy though.
 > 
-> Now, assuming HZ=100 and USEC_PER_SEC=1000000, we will use:
+> There is never an only-on-action notification and there is no check to
+> cover all cases.  This is the fallacy I'm trying to point out.  All we
+> can do is pick a fairly predictable line and stick to it.
+
+Yes, nothing will be 100% but drawing the line at the place where the
+kernel is going to _do_ something sounds like a quite a clear cut to
+me and a reasonable semantic. That something might be either killing
+something or putting somebody to sleep and wait for the userspace. That
+would be an ideal semantic IMHO. The code doesn't allow us to do so now
+unfortunately (without too much refactoring).
+
+> > But as I've said. The primary reason I liked this change is because it
+> > solves the above mentioned OOM during exit issue and it also prevents
+> > from a pointless notification. I am perfectly fine with moving the
+> > check+set TIF_MEMDIE down so solve only the issue #1 and do not mess
+> > with notifications.
 > 
-> 	return (u + (USEC_PER_SEC / HZ) - 1) / (USEC_PER_SEC / HZ);
+> The notification is not pointless, we are OOM at the time we make the
+> decision.
+
+We have clearly different opinions here. I do not consider temporal
+OOM conditions as significant enough. As the OOM itself is really hard
+to define and to be _agreed_ on I think we should be as practical as
+possible and provide the oom notification interface as comfortable
+to users as possible. And then we should balance cons and pros of
+notifying. I am still convinced that notifying less is better in general
+because I see OOM killer use cases.
+
+> > > You're not fixing this problem, so why make the notifications less
+> > > reliable?
+> > 
+> > I am still not seeing why it is less reliable. The notification is
+> > inherently racy so you cannot rely on any simple metrics based on their
+> > count (at least not in general).
 > 
-> If you ask for 1us, this comes out as:
+> It should be based on reclaim failing, which is more predictable and
+> reproducible across multiple runs.  Anything else is just random
+> coincidence, I can't fathom why you think that it's at all meaningful.
+
+If you are interested in reclaim failing then failcnt is a much better
+metric for you. That's all that I am saying.
+ 
+> You could do one more reclaim cycle and a charge attempt, or even just
+> add an msleep() between the last reclaim cycle and the last charge
+> attempt for exactly the same outcome.
 > 
-> 	return (1 + (1000000 / 100) - 1) / (1000000 / 100);
+> > > > So all in all. I do agree with you that this path will never be race
+> > > > free and without pointless OOM actions. I also agree that drawing the
+> > > > line is hard. But I am more inclined to prevent from notification when
+> > > > we already know that _no action_ is required because IMHO the vast
+> > > > majority of oom listeners are there to _do_ an action which is mostly
+> > > > deadly.
+> > > 
+> > > If you want to push the machine so hard that active measures like
+> > > reclaim can't keep up and you rely on stupid timing like this to save
+> > > your sorry butt, then you'll just have to live with the
+> > > unpredictability of it.  You're going to eat kills that might have
+> > > been avoided last minute either way.  It's no excuse to plaster the MM
+> > > with TIF_MEMDIE checks and last-minute cgroup margin checks in the
+> > > weirdest locations.
+> > 
+> > Yes I do not agree with putting TIF_MEMDIE checks all over the place and
+> > we should reduce their number to minimum. It is fair to say that the
+> > patch didn't add a new check. It just has moved it to cover both
+> > in-kernel and user space oom paths. That was a bonus I liked. To be
+> > honest I do not see the notification side effect as a big deal as those
+> > are racy anyway and I would rather see fewer of them than more
+> > (especially when it is clear that nothing is to be done).
 > 
-> which is one jiffy.  So, for a requested 1us period, you're given a
-> 1 jiffy interval, or 10ms.  For other (sensible) values:
+> I don't know why we have this check there in the first place, it
+> should be part of the OOM victim selection process and not a hacky
+> shortcut in memcg.  It's a blatant layering violation for no obvious
+> reason.
+
+My understanding is that it tries to expedite the process. Scanning
+tasks might be quite expensive. Sure, you would find a task and abort
+scanning as well but that might be after zillions of tasks scanned.
+
+> > > Again, how likely is it anyway that the kill was truly skipped and not
+> > > just deferred?  Reclaim failing is a good indicator that you're in
+> > > trouble, a random task exiting in an ongoing workload does not say
+> > > much.  The machine could still be in trouble, so you just deferred the
+> > > inevitable, you didn't really avoid a kill.
+> > > 
+> > > At this point we are talking about OOM kill frequency and statistical
+> > > probability during apparently normal operations.  The OOM killer was
+> > > never written for that, it was supposed to be a last minute resort
+> > > that should not occur during normal operations and only if all SANE
+> > > measures to avoid it have failed.  99% of all users have no interest
+> > > in these micro-optimizations and we shouldn't clutter the code and
+> > > have unpredictable behavior without even a trace of data to show that
+> > > this is anything more than a placebo measure for one use case.
+> > 
+> > OK, as it seems that the notification part is too controversial, how
+> > would you like the following? It reverts the notification part and still
+> > solves the fault on exit path. I will prepare the full patch with the
+> > changelog if this looks reasonable:
+> > ---
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index 28c9221b74ea..f44fe7e65a98 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -1783,6 +1783,16 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+> >  	unsigned int points = 0;
+> >  	struct task_struct *chosen = NULL;
+> >  
+> > +	/*
+> > +	 * If current has a pending SIGKILL or is exiting, then automatically
+> > +	 * select it.  The goal is to allow it to allocate so that it may
+> > +	 * quickly exit and free its memory.
+> > +	 */
+> > +	if (fatal_signal_pending(current) || current->flags & PF_EXITING) {
+> > +		set_thread_flag(TIF_MEMDIE);
+> > +		goto cleanup;
 > 
->         return (USEC_TO_HZ_MUL32 * u + USEC_TO_HZ_ADJ32)
->                 >> USEC_TO_HZ_SHR32;
+> 		return;
 > 
-> gets used, which has a similar behaviour.
+> Anyway, I wish this would not be here at all and part of the thread
+> scanner.  As David said, this is a very cold path, why the shortcut?
+
+Right. I would rather go and drop the original patch as we couldn't find
+an agreement so the partial revert wouldn't be needed. This was just an
+illustration.
+
+> > @@ -2233,16 +2243,6 @@ bool mem_cgroup_oom_synchronize(bool handle)
+> >  	if (!handle)
+> >  		goto cleanup;
+> >  
+> > -	/*
+> > -	 * If current has a pending SIGKILL or is exiting, then automatically
+> > -	 * select it.  The goal is to allow it to allocate so that it may
+> > -	 * quickly exit and free its memory.
+> > -	 */
+> > -	if (fatal_signal_pending(current) || current->flags & PF_EXITING) {
+> > -		set_thread_flag(TIF_MEMDIE);
+> > -		goto cleanup;
+> > -	}
+> > -
+> >  	owait.memcg = memcg;
+> >  	owait.wait.flags = 0;
+> >  	owait.wait.func = memcg_oom_wake_function;
+> > @@ -2266,6 +2266,13 @@ bool mem_cgroup_oom_synchronize(bool handle)
+> >  		schedule();
+> >  		mem_cgroup_unmark_under_oom(memcg);
+> >  		finish_wait(&memcg_oom_waitq, &owait.wait);
+> > +
+> > +		/* Userspace OOM handler cannot set TIF_MEMDIE to a target */
+> > +		if (memcg->oom_kill_disable) {
+> > +			if ((fatal_signal_pending(current) ||
+> > +						current->flags & PF_EXITING))
+> > +				set_thread_flag(TIF_MEMDIE);
+> > +		}
 > 
-> Now, depending on how you use this one jiffy interval, the thing to 
-> realise
-> is that with this kind of loop:
-> 
-> 	timeout = jiffies + usecs_to_jiffies(1);
-> 	do {
-> 		something;
-> 	} while (time_is_before_jiffies(timeout));
-> 
-> what this equates to is:
-> 
-> 	} while (jiffies - timeout < 0);
+> This is an entirely different change that I think makes sense.
 
-You've got that last line the wrong way round, but I understand what you 
-are
-getting at.
+OK, I will post the full patch after we settle with this one finally.
 
-> What this means is that the loop breaks at jiffies = timeout, so it can
-> indeed timeout before one tick - within 0 to 10ms for HZ=100.  The 
-> problem
-> is not the usecs_to_jiffies(), it's with the implementation.
-
-> If you use time_is_before_eq_jiffies() instead, it will also loop if
-> jiffies == timeout, which will give you the additional safety margin -
-> meaning it will timeout after 10 to 20ms instead.
-
-The code in question uses the logic in reverse so it *exits* if
-time_is_before_jiffies(end) is true.  In other words it exits if 
-"jiffies" is
-greater than "end".  Since, as you say, usecs_to_jiffies(somevalue) will 
-be a
-minimum of 1, that means it will always loop at least twice.  So, I 
-think it's
-doing what you suggest, but in a different way, when polling.
-
-> You may wish to consider coding this differently as well - if you have
-> the error interrupt, there's no need for this loop.  You only need the
-> loop if you're using usleep_range().  Note the return value of
-> wait_event_timeout() will tell you positively and correctly if the 
-> waited
-> condition succeeded or you timed out.
-
-Although the the wait_event_timeout is in the loop, it always exits due 
-to
-setting timedout to 1.  This was done to make the code smaller but I was
-probably trying to be cleverer than I should have been.
-
-So, given the above I believe the polling code is correct.  My mistake 
-was to
-assume that wait_event_timeout() guarantees a minimum of 1 jiffie wait.
-
-Nicolas' patch should fix the issue, but I prefer the following as it is 
-more
-correct, as it only adjusts the timeout when calling 
-wait_event_timeout().  As
-I said above,I believe the polling code is correct.
-
-diff --git a/drivers/net/ethernet/marvell/mvmdio.c 
-b/drivers/net/ethernet/marvell/mvmdio.c
-index 7354960..b187c08 100644
---- a/drivers/net/ethernet/marvell/mvmdio.c
-+++ b/drivers/net/ethernet/marvell/mvmdio.c
-@@ -92,6 +92,14 @@ static int orion_mdio_wait_ready(struct mii_bus *bus)
-  			if (time_is_before_jiffies(end))
-  				++timedout;
-  	        } else {
-+			/*
-+			 * wait_event_timeout does not guarantee a delay of at
-+			 * least one whole jiffie, so timeout must be no less
-+			 * than two.
-+			 */
-+			if (timeout < 2)
-+				timeout = 2;
-+
-  			wait_event_timeout(dev->smi_busy_wait,
-  				           orion_mdio_smi_is_done(dev),
-  				           timeout);
-
-Nicolas - does the above also fix your issue?  I will also test it on my 
-Dreamplug.
-
-Apologies for causing this regression.
-
-Regards,
-
-Leigh.
-
+-- 
+Michal Hocko
+SUSE Labs
