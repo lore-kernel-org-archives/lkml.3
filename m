@@ -1,91 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754884Ab3LCPT7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 10:19:59 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:58485 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279Ab3LCPT5 (ORCPT
+	id S1754329Ab3LCPWR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 10:22:17 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:15594 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752988Ab3LCPWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 10:19:57 -0500
-Date: Tue, 3 Dec 2013 10:19:53 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Josh Hunt <joshhunt00@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [3.8-rc3 -> 3.8-rc4 regression] Re: [PATCH] module, async:
- async_synchronize_full() on module init iff async is used
-Message-ID: <20131203151953.GK8277@htj.dyndns.org>
-References: <CA+55aFzm4k2CyQ_mZVHyeasjw4ybqfO2SpJrZZNZeUsSW8PB=g@mail.gmail.com>
- <CA+55aFxLJ=Yfms9SkPJLjQ-ZASPNZC0JUBsb3OwonJvTCcBzxA@mail.gmail.com>
- <20130116025251.GM2668@htj.dyndns.org>
- <20130812070411.GA2878@elie.Belkin>
- <20130812150900.GJ15892@htj.dyndns.org>
- <CAKA=qzY5NBZSv8r9sHqX-3fY-yrSXq26zPM1AvjoANaZkqJavQ@mail.gmail.com>
- <CA+55aFw9wNBoJBYQ+kjpqs6cnVjGHVs2oxfguMmyYXNPcqqzkQ@mail.gmail.com>
- <CAKA=qzY2JYxbO=0s8_SnUn-8b=1+RqsdAzXQhfHYxo1isv0K-g@mail.gmail.com>
- <20131126222945.GC8588@mtj.dyndns.org>
- <CAKA=qzbyPxU8sBRbYzL61VS6R_o5p+2RdPogJ0nOmQ8NBi2GSA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKA=qzbyPxU8sBRbYzL61VS6R_o5p+2RdPogJ0nOmQ8NBi2GSA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 3 Dec 2013 10:22:14 -0500
+Date: Tue, 3 Dec 2013 10:22:08 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC] Packaging libtraceevent.so
+Message-ID: <20131203102208.1d9bf444@gandalf.local.home>
+In-Reply-To: <87txeqmpzp.fsf@sejong.aot.lge.com>
+References: <20131202140322.4ad6a151@gandalf.local.home>
+	<87txeqmpzp.fsf@sejong.aot.lge.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, 03 Dec 2013 15:02:18 +0900
+Namhyung Kim <namhyung@kernel.org> wrote:
 
-On Tue, Dec 03, 2013 at 08:28:43AM -0600, Josh Hunt wrote:
-> You're right. Thanks for pointing this out. I did not realize there
-> was a bug in the init script. The version of initramfs-tools I was
-> using had the following bug:
-> https://bugs.launchpad.net/ubuntu/+source/initramfs-tools/+bug/1215911
+> Hi Steve,
 > 
-> Updating to 0.99ubuntu13.4 of initramfs-tools resolved my boot hangs.
+> (also add Jiri to CC list, hi!)
+
+Ug, I thought I added him, but looking at my email, I must have thought
+I did but did not. :-/
+
 > 
-> I did try using the workaround as suggested by Linus. In my setup the
-> dm_init() code was hit, however it still appeared to be too late at
-> times. I also tried moving the call to async_synchronize_full() above
-> the for loop and it still had the same issue (patch attached.) Out of
-> around 10 reboot tests it failed to find root 1 or 2 times.
+> On Mon, 2 Dec 2013 14:03:22 -0500, Steven Rostedt wrote:
+> > Hi all!
+> >
+> > The question has recently come up in Fedora about packaging the
+> > libtraceevent.so library. Currently there's 4 users of it:
+> >
+> >  1) perf
+> >  2) trace-cmd
+> >  3) powertop
+> >  4) rasdaemon
+> >
+> > But each have their own copy of the code.
+> >
+> > Both perf and trace-cmd are the major developers of the package, and I
+> > would recommend that they continue using the *.a version, but for those
+> > tools that are simple users of the library, it would probably make
+> > sense to have them use libtraceevent.so and remove their copies from
+> > the code (powertop and rasdaemon).
+> >
+> > The question that I'm posing here is, what currently needs to be done
+> > to have this happen?
 > 
-> The ubuntu scripts don't ever actually call do_mount() if it can't
-> find the device. It seems to rely on some udev functionality to tell
-> it when the device is present, and if that fails it just bails out.
+> I think the most important thing is error handling.  The filter parser
+> code still has some calls to die().  It should be converted to return
+> error and appropriate error messages IMHO.  But I didn't check it'd
+> affect to the end-user APIs though.
+
+Yep that should be cleaned up as well.
+
 > 
-> This change has introduced a regression. However, I only noticed it
-> b/c my init script had a bug which caused it not to wait around for
-> the device to appear.
+> And it needs to add plugin APIs before the public release.
 
-Hmmm.... so, read the bug report, digged and asked around a bit.
-Here's the root problem - ubuntu's initramfs uses a tool to wait for
-the root device which uses libudev to listen for the device event;
-unfortunately, its rx buffer is not set large enough and the receiver
-isn't fast enough, which means that netlink broadcast messages from
-the kernel can overrun the buffer.  When that happens, it sets an
-error on the socket, so the next recv fails with -ENOBUFS.  If that
-happens, the wait for root aborts immediately and initramfs proceeds
-to mount non-existent root device.
+I agree with that too.
 
-The only thing which changes by these patches is the timing of events.
-The problem likely wasn't as exposed before because things were slow
-enough so that either the messages could be consumed fast enough or
-there's enough delay between libata module load and the root device
-wait hiding the bug in the wait logic.
+> 
+> >
+> > Is the API stable enough for a release?
+> 
+> Well, afaics the plugin unregister API should pass pevent as an argument
+> so that it can unregister individual event/function handlers in it.
+> 
+> Other than that I think it's pretty stable. :)
 
-So, yeah, it's a full blown timing bug.  I'm not sure what we can do
-to work around from kernel side except for randomly slowing things
-down or forcefully enlarging rx buffer size.  There really is no
-interlocking to take advantage of. :(
+OK, lets work on getting these minor things fixed and get it ready for
+a public library.
 
-Thanks.
-
--- 
-tejun
+-- Steve
