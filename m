@@ -1,81 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab3LCN2W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 08:28:22 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:43604 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497Ab3LCN2S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 08:28:18 -0500
-Date: Tue, 3 Dec 2013 13:28:04 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Keerthy <a0393675@ti.com>, Keerthy <j-keerthy@ti.com>,
-        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk, rob@landley.net,
-        sameo@linux.intel.com, grant.likely@linaro.org, lgirdwood@gmail.com,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Message-ID: <20131203132804.GU27568@sirena.org.uk>
-References: <1386053006-6480-1-git-send-email-j-keerthy@ti.com>
- <1386053006-6480-3-git-send-email-j-keerthy@ti.com>
- <20131203092410.GD11828@lee--X1>
- <529DAD2B.4040909@ti.com>
- <20131203112107.GP11828@lee--X1>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+OC8RVH7U83T7eJX"
-Content-Disposition: inline
-In-Reply-To: <20131203112107.GP11828@lee--X1>
-X-Cookie: Boycott meat -- suck your thumb.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/4] MFD: TPS65218: Add driver for the TPS65218 PMIC
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1753526Ab3LCNbq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 08:31:46 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:43695 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751041Ab3LCNbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 08:31:43 -0500
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Wim Van Sebroeck <wim@iguana.be>, <scottwood@freescale.com>,
+        Guenter Roeck <linux@roeck-us.net>
+CC: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH v2] watchdog: mpc8xxx_wdt convert to watchdog core
+Message-Id: <20131203133140.5E9DF1A2BEA@localhost.localdomain>
+Date: Tue,  3 Dec 2013 14:31:40 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Convert mpc8xxx_wdt.c to the new watchdog API.
 
---+OC8RVH7U83T7eJX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-On Tue, Dec 03, 2013 at 11:21:07AM +0000, Lee Jones wrote:
-
-> other is that you shouldn't be doing this at all with regulators. Mark
-> likes the idea of having a single regulator controller node which
-> contains all of these individual regulator sub-nodes and you initiate
-> a single call to for_each_child_of_node() within the driver in order
-> to register them all.
-
-That's not really the case, it depends on how the hardware is
-structured.  If the regulators are not laid out in a regular fashion or
-otherwise reusable then the above big bag of regulators makes sense.  If
-the hardware is reusable then things are different.
-
---+OC8RVH7U83T7eJX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSndxgAAoJELSic+t+oim9cBUP/06WWWYrjhT9fJn2COoIxdZm
-bQmYBjMo0J2CIqBtpYmCc5bGWRYO+IY+R23mzOE1NQ2KxLlHqxbZavvG1B1y5D/8
-ypi8z+f3zib8jNacSv1wqIgajskRT6X3WPpsxtZGIk6K2j2Q9B7bVv8HFHzVjtwC
-gpFwGuC9RjsSn80PtnJ5ymE15oYj1xPIrTJHmmDsWC5HmLIayEPJ4GvAGuHO6DTy
-I+inkTPpGr1dT3nqR7R1p/wgOFFnAGtV0Wv+E0XwI+NLfWcPEesFSGSE5IKPpr6c
-F4iGuFiRZL27bccWz3PjRCozsceXdsE36oNyE4l4HE3zCgYuZTvTK9w2ExXTi5ZE
-hUZmeWcOOkJBmKTAZc7oAXGDZHSZWFq2IETxNUjfhDyM1kWUq1p24V04aWoVtkNz
-BiD1mJbPa0DTziBCtMzlp8erVnjTPJSeHmzTIrYZH6GnKkLsBbFTD/WhsqC1pMNc
-CMDyFCfUAdyF3yBF2KiyyO5XEIrcN2OBn5H7Qc4Z+KMXBaHPtQtTvCu0qwK3W4hg
-KuoqL6YV6/DmeXrNk2r/yLKC0H3Q7Al1wntu/rk+I1YdUPRVlrFSeQD5pUcltcaW
-/DH/+TOu3I115kYlgMDIK+45zwR0K3GzhJkMdCXtqiNY3keqsgTOXMQEU6JyTUHZ
-2mfX6wXcDEqAh+gkwqKR
-=fI/p
------END PGP SIGNATURE-----
-
---+OC8RVH7U83T7eJX--
+diff -ur a/drivers/watchdog/mpc8xxx_wdt.c b/drivers/watchdog/mpc8xxx_wdt.c
+--- a/drivers/watchdog/mpc8xxx_wdt.c	2013-05-11 22:57:46.000000000 +0200
++++ b/drivers/watchdog/mpc8xxx_wdt.c	2013-11-30 16:14:53.803495472 +0100
+@@ -72,53 +72,36 @@
+  * to 0
+  */
+ static int prescale = 1;
+-static unsigned int timeout_sec;
+ 
+-static unsigned long wdt_is_open;
+ static DEFINE_SPINLOCK(wdt_spinlock);
+ 
+-static void mpc8xxx_wdt_keepalive(void)
++static int mpc8xxx_wdt_ping(struct watchdog_device *w)
+ {
+ 	/* Ping the WDT */
+ 	spin_lock(&wdt_spinlock);
+ 	out_be16(&wd_base->swsrr, 0x556c);
+ 	out_be16(&wd_base->swsrr, 0xaa39);
+ 	spin_unlock(&wdt_spinlock);
++	return 0;
+ }
+ 
++static struct watchdog_device mpc8xxx_wdt_dev;
+ static void mpc8xxx_wdt_timer_ping(unsigned long arg);
+-static DEFINE_TIMER(wdt_timer, mpc8xxx_wdt_timer_ping, 0, 0);
++static DEFINE_TIMER(wdt_timer, mpc8xxx_wdt_timer_ping, 0,
++		(unsigned long)&mpc8xxx_wdt_dev);
+ 
+ static void mpc8xxx_wdt_timer_ping(unsigned long arg)
+ {
+-	mpc8xxx_wdt_keepalive();
+-	/* We're pinging it twice faster than needed, just to be sure. */
+-	mod_timer(&wdt_timer, jiffies + HZ * timeout_sec / 2);
+-}
++	struct watchdog_device *w = (struct watchdog_device *)arg;
+ 
+-static void mpc8xxx_wdt_pr_warn(const char *msg)
+-{
+-	pr_crit("%s, expect the %s soon!\n", msg,
+-		reset ? "reset" : "machine check exception");
+-}
+-
+-static ssize_t mpc8xxx_wdt_write(struct file *file, const char __user *buf,
+-				 size_t count, loff_t *ppos)
+-{
+-	if (count)
+-		mpc8xxx_wdt_keepalive();
+-	return count;
++	mpc8xxx_wdt_ping(w);
++	/* We're pinging it twice faster than needed, just to be sure. */
++	mod_timer(&wdt_timer, jiffies + HZ * w->timeout / 2);
+ }
+ 
+-static int mpc8xxx_wdt_open(struct inode *inode, struct file *file)
++static int mpc8xxx_wdt_start(struct watchdog_device *w)
+ {
+ 	u32 tmp = SWCRR_SWEN;
+-	if (test_and_set_bit(0, &wdt_is_open))
+-		return -EBUSY;
+-
+-	/* Once we start the watchdog we can't stop it */
+-	if (nowayout)
+-		__module_get(THIS_MODULE);
+ 
+ 	/* Good, fire up the show */
+ 	if (prescale)
+@@ -132,59 +115,31 @@
+ 
+ 	del_timer_sync(&wdt_timer);
+ 
+-	return nonseekable_open(inode, file);
++	return 0;
+ }
+ 
+-static int mpc8xxx_wdt_release(struct inode *inode, struct file *file)
++static int mpc8xxx_wdt_stop(struct watchdog_device *w)
+ {
+-	if (!nowayout)
+-		mpc8xxx_wdt_timer_ping(0);
+-	else
+-		mpc8xxx_wdt_pr_warn("watchdog closed");
+-	clear_bit(0, &wdt_is_open);
++	mod_timer(&wdt_timer, jiffies);
+ 	return 0;
+ }
+ 
+-static long mpc8xxx_wdt_ioctl(struct file *file, unsigned int cmd,
+-							unsigned long arg)
+-{
+-	void __user *argp = (void __user *)arg;
+-	int __user *p = argp;
+-	static const struct watchdog_info ident = {
+-		.options = WDIOF_KEEPALIVEPING,
+-		.firmware_version = 1,
+-		.identity = "MPC8xxx",
+-	};
+-
+-	switch (cmd) {
+-	case WDIOC_GETSUPPORT:
+-		return copy_to_user(argp, &ident, sizeof(ident)) ? -EFAULT : 0;
+-	case WDIOC_GETSTATUS:
+-	case WDIOC_GETBOOTSTATUS:
+-		return put_user(0, p);
+-	case WDIOC_KEEPALIVE:
+-		mpc8xxx_wdt_keepalive();
+-		return 0;
+-	case WDIOC_GETTIMEOUT:
+-		return put_user(timeout_sec, p);
+-	default:
+-		return -ENOTTY;
+-	}
+-}
++static struct watchdog_info mpc8xxx_wdt_info = {
++	.options = WDIOF_KEEPALIVEPING,
++	.firmware_version = 1,
++	.identity = "MPC8xxx",
++};
+ 
+-static const struct file_operations mpc8xxx_wdt_fops = {
+-	.owner		= THIS_MODULE,
+-	.llseek		= no_llseek,
+-	.write		= mpc8xxx_wdt_write,
+-	.unlocked_ioctl	= mpc8xxx_wdt_ioctl,
+-	.open		= mpc8xxx_wdt_open,
+-	.release	= mpc8xxx_wdt_release,
++static struct watchdog_ops mpc8xxx_wdt_ops = {
++	.owner = THIS_MODULE,
++	.start = mpc8xxx_wdt_start,
++	.ping = mpc8xxx_wdt_ping,
++	.stop = mpc8xxx_wdt_stop,
+ };
+ 
+-static struct miscdevice mpc8xxx_wdt_miscdev = {
+-	.minor	= WATCHDOG_MINOR,
+-	.name	= "watchdog",
+-	.fops	= &mpc8xxx_wdt_fops,
++static struct watchdog_device mpc8xxx_wdt_dev = {
++	.info = &mpc8xxx_wdt_info,
++	.ops = &mpc8xxx_wdt_ops,
+ };
+ 
+ static const struct of_device_id mpc8xxx_wdt_match[];
+@@ -196,6 +151,7 @@
+ 	const struct mpc8xxx_wdt_type *wdt_type;
+ 	u32 freq = fsl_get_sys_freq();
+ 	bool enabled;
++	unsigned int timeout_sec;
+ 
+ 	match = of_match_device(mpc8xxx_wdt_match, &ofdev->dev);
+ 	if (!match)
+@@ -222,6 +178,7 @@
+ 	else
+ 		timeout_sec = timeout / freq;
+ 
++	mpc8xxx_wdt_dev.timeout = timeout_sec;
+ #ifdef MODULE
+ 	ret = mpc8xxx_wdt_init_late();
+ 	if (ret)
+@@ -237,7 +194,7 @@
+ 	 * userspace handles it.
+ 	 */
+ 	if (enabled)
+-		mpc8xxx_wdt_timer_ping(0);
++		mod_timer(&wdt_timer, jiffies);
+ 	return 0;
+ err_unmap:
+ 	iounmap(wd_base);
+@@ -247,9 +204,10 @@
+ 
+ static int mpc8xxx_wdt_remove(struct platform_device *ofdev)
+ {
+-	mpc8xxx_wdt_pr_warn("watchdog removed");
++	pr_crit("Watchdog removed, expect the %s soon!\n",
++		reset ? "reset" : "machine check exception");
+ 	del_timer_sync(&wdt_timer);
+-	misc_deregister(&mpc8xxx_wdt_miscdev);
++	watchdog_unregister_device(&mpc8xxx_wdt_dev);
+ 	iounmap(wd_base);
+ 
+ 	return 0;
+@@ -301,10 +259,11 @@
+ 	if (!wd_base)
+ 		return -ENODEV;
+ 
+-	ret = misc_register(&mpc8xxx_wdt_miscdev);
++	watchdog_set_nowayout(&mpc8xxx_wdt_dev, nowayout);
++
++	ret = watchdog_register_device(&mpc8xxx_wdt_dev);
+ 	if (ret) {
+-		pr_err("cannot register miscdev on minor=%d (err=%d)\n",
+-		       WATCHDOG_MINOR, ret);
++		pr_err("cannot register watchdog device (err=%d)\n", ret);
+ 		return ret;
+ 	}
+ 	return 0;
+diff -ur a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -1146,6 +1146,7 @@
+ config 8xxx_WDT
+ 	tristate "MPC8xxx Platform Watchdog Timer"
+ 	depends on PPC_8xx || PPC_83xx || PPC_86xx
++	select WATCHDOG_CORE
+ 	help
+ 	  This driver is for a SoC level watchdog that exists on some
+ 	  Freescale PowerPC processors. So far this driver supports:
