@@ -1,190 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab3LCNWc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 08:22:32 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:46131 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753417Ab3LCNW1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 08:22:27 -0500
-Subject: Re: [PATCH 3/6] GenWQE Utility functions
-From: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Reply-To: haver@linux.vnet.ibm.com
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
-        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
-        cascardo@linux.vnet.ibm.com, michael@ibmra.de
-In-Reply-To: <20131127192659.GD28409@kroah.com>
-References: <1383741943-14609-1-git-send-email-haver@linux.vnet.ibm.com>
-	 <1383741943-14609-4-git-send-email-haver@linux.vnet.ibm.com>
-	 <20131127192659.GD28409@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Tue, 03 Dec 2013 14:21:46 +0100
-Message-ID: <1386076906.839.32.camel@oc7383187364.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120313-4966-0000-0000-000007B3488C
+	id S1753826Ab3LCNWo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 08:22:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33095 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753674Ab3LCNWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 08:22:40 -0500
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Petr Mladek <pmladek@suse.cz>
+Subject: [PATCH v5 2/8] x86: allow to call text_poke_bp during boot
+Date: Tue,  3 Dec 2013 14:21:21 +0100
+Message-Id: <1386076887-2655-3-git-send-email-pmladek@suse.cz>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1386076887-2655-1-git-send-email-pmladek@suse.cz>
+References: <1386076887-2655-1-git-send-email-pmladek@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+We would like to use text_poke_bp in ftrace. It might be called also during
+boot when there is only one CPU and we do not need to sync the others.
 
-Am Mittwoch, den 27.11.2013, 11:26 -0800 schrieb Greg KH:
-> On Wed, Nov 06, 2013 at 01:45:40PM +0100, Frank Haverkamp wrote:
-> > +/**
-> > + * init_crc32() - Prepare a lookup table for fast crc32 calculations
-> > + *
-> > + * Existing kernel functions seem to use a different polynom,
-> > + * therefore we could not use them here.
-> > + *
-> > + * Genwqe's Polynomial = 0x20044009
-> > + */
-> > +#define CRC32_POLYNOMIAL	0x20044009
-> > +static u32 crc32_tab[256];	/* crc32 lookup table */
-> > +
-> > +void init_crc32(void)
-> 
-> That's a _very_ generic function name to now be global in the whole
-> kernel.
-> 
-> And why not just add new polynomial functionality to the existing crc32
-> in-kernel code instead of rolling your own here?
-> 
+The check is must to have because there are also disabled interrupts during
+the boot. Then the call would cause a deadlock, see the warning in
+"smp_call_function_many", kernel/smp.c:371.
 
-The name is indeed to generic. I fixed that. It is for sure a candidate
-to be covered by the in-kernel crc support. I had a look and found that
+The change is inspired by the code in arch/x86/kernel/ftrace.c.
+
+Signed-off-by: Petr Mladek <pmladek@suse.cz>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+---
+ arch/x86/kernel/alternative.c | 17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index 10a7ec0c66f9..2e47107b9055 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -602,6 +602,17 @@ static void do_sync_core(void *info)
+ 	sync_core();
+ }
  
-   static void crc32init_be(void)
-
-is unfortunately defined static and that the polynomial is missing.
-Maybe:
-
-   void crc32init_be_generic(const uint32_t polynomial,
-                             uint32_t (*tab)[256])
-
-   inline u32 __pure crc32_be_generic(u32 crc, unsigned char const *p,
-                                     size_t len, const u32 (*tab)[256],
-                                     u32 polynomial)
-
-would be good to have. Adding my own "crc32table_genwqe_be[]" to the
-generic code might be waste memory. None except of us are using that
-particular polynomial, as far as I saw. So enhancing the table
-generation function and exporting that and the crc32_be_generic might be
-a good idea.
-
-In my latest version of the patchset I did not include such a proposal
-(yet).
-
-> > +static void genwqe_dump_sgl(struct genwqe_dev *cd, struct sg_entry *sgl,
-> > +		    size_t sgl_size)
-> > +{
-> > +	unsigned int i, j;
-> > +	struct pci_dev *pci_dev = cd->pci_dev;
-> > +
-> > +	for (j = 0, i = 0; i < sgl_size/sizeof(struct sg_entry); i++, j++) {
-> > +		if (j == 8) {
-> > +			dev_info(&pci_dev->dev, "  --\n");
-> > +			j = 0;
-> > +		}
-> > +		dev_info(&pci_dev->dev, "  %016llx %08x %08x %s\n",
-> > +			 be64_to_cpu(sgl[i].target_addr),
-> > +			 be32_to_cpu(sgl[i].len),
-> > +			 be32_to_cpu(sgl[i].flags),
-> > +			 (be32_to_cpu(sgl[i].len) > PAGE_SIZE) ? "C" : "");
-> > +
-> > +		if (be32_to_cpu(sgl[i].flags) == SG_END_LIST)
-> > +			break;
-> > +	}
-> > +}
-> 
-> That's a lot of kernel log mess, why?
-
-I removed it. It was for debugging the scatter gather lists our hardware
-uses. Since it works now, I can get rid of the printing.
-
-> > +/**
-> > + * free_user_pages() - Give pinned pages back
-> > + *
-> > + * Documentation of get_user_pages is in mm/memory.c:
-> > + *
-> > + * If the page is written to, set_page_dirty (or set_page_dirty_lock,
-> > + * as appropriate) must be called after the page is finished with, and
-> > + * before put_page is called.
-> > + */
-> > +static int free_user_pages(struct page **page_list, unsigned int nr_pages,
-> > +			   int dirty)
-> > +{
-> > +	unsigned int i;
-> > +
-> > +	for (i = 0; i < nr_pages; i++) {
-> > +		if (page_list[i] != NULL) {
-> > +			if (dirty)
-> > +				set_page_dirty_lock(page_list[i]);
-> > +			put_page(page_list[i]);
-> > +		}
-> > +	}
-> > +	return 0;
-> > +}
-> > +
-> > +/**
-> > + * user_vmap() - Map user-space memory to virtual kernel memory
-> > + * @cd:         pointer to genwqe device
-> > + * @m:          mapping params
-> > + * @uaddr:      user virtual address
-> > + * @size:       size of memory to be mapped
-> > + *
-> > + * We need to think about how we could speed this up. Of course it is
-> > + * not a good idea to do this over and over again, like we are
-> > + * currently doing it. Nevertheless, I am curious where on the path
-> > + * the performance is spend. Most probably within the memory
-> > + * allocation functions, but maybe also in the DMA mapping code.
-> > + *
-> > + * Restrictions: The maximum size of the possible mapping currently depends
-> > + *               on the amount of memory we can get using kzalloc() for the
-> > + *               page_list and pci_alloc_coherent for the sg_list.
-> > + *               The sg_list is currently itself not scattered, which could
-> > + *               be fixed with some effort. The page_list must be split into
-> > + *               PAGE_SIZE chunks too. All that will make the complicated
-> > + *               code more complicated.
-> > + *
-> > + * Return: 0 if success
-> > + */
-> > +int user_vmap(struct genwqe_dev *cd, struct dma_mapping *m, void *uaddr,
-> > +	      unsigned long size, struct ddcb_requ *req)
-> 
-> Again, _very_ generic global symbol name.  Please audit all of these.
-
-I prefixed those and found some others too. I hope that I have found all
-similar cases in our code.
-
-> And shouldn't this just be a core mm function?  Why is this in a driver?
-
-The current implementation is at the moment not generic enough to be
-useful for others. But you are right, something alike might be useful if
-there is a 2nd or 3rd user with same/similar needs.
-
-> > +/**
-> > + * user_vunmap() - Undo mapping of user-space memory to virtual kernel memory
-> > + * @cd:         pointer to genwqe device
-> > + * @m:          mapping params
-> > + */
-> > +int user_vunmap(struct genwqe_dev *cd, struct dma_mapping *m,
-> > +		struct ddcb_requ *req)
-> 
-> Same as above.
-> 
-> thanks,
-> 
-> greg k-h
-> 
-
-Regards
-
-Frank
++static void run_sync(void)
++{
++	/*
++	 * We do not need to sync other cores during boot when there is only one
++	 * CPU enabled. In fact, we must not because there are also disabled
++	 * interrupts. The call would fail because of a potential deadlock.
++	 */
++	if (num_online_cpus() != 1)
++		on_each_cpu(do_sync_core, NULL, 1);
++}
++
+ static bool bp_patching_in_progress;
+ static void *bp_int3_handler, *bp_int3_addr;
+ 
+@@ -664,7 +675,7 @@ int text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+ 	if (unlikely(ret))
+ 		goto fail;
+ 
+-	on_each_cpu(do_sync_core, NULL, 1);
++	run_sync();
+ 
+ 	if (len - sizeof(int3) > 0) {
+ 		/* patch all but the first byte */
+@@ -677,14 +688,14 @@ int text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+ 		 * not necessary and we'd be safe even without it. But
+ 		 * better safe than sorry (plus there's not only Intel).
+ 		 */
+-		on_each_cpu(do_sync_core, NULL, 1);
++		run_sync();
+ 	}
+ 
+ 	/* patch the first byte */
+ 	ret = text_poke(addr, opcode, sizeof(int3));
+ 	BUG_ON(ret);
+ 
+-	on_each_cpu(do_sync_core, NULL, 1);
++	run_sync();
+ 
+ fail:
+ 	bp_patching_in_progress = false;
+-- 
+1.8.4
 
