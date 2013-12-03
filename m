@@ -1,106 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754264Ab3LCRAh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 12:00:37 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:59018 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752412Ab3LCRAf (ORCPT
+	id S1754266Ab3LCRBn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 12:01:43 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:37763 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752868Ab3LCRBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 12:00:35 -0500
-Message-ID: <529E0E1F.4010303@hurleysoftware.com>
-Date: Tue, 03 Dec 2013 12:00:15 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Tue, 3 Dec 2013 12:01:39 -0500
+Message-ID: <529E1C82.8070501@cogentembedded.com>
+Date: Tue, 03 Dec 2013 21:01:38 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Stas Sergeev <stsp@list.ru>
-CC: Margarita Manterola <margamanterola@gmail.com>,
-        Maximiliano Curia <maxy@gnuservers.com.ar>,
-        Stas Sergeev <stsp@users.sourceforge.net>, Pavel Machek <pavel@ucw.cz>,
-        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Caylan Van Larson <i@caylan.net>
-Subject: Re: Large pastes into readline enabled programs causes breakage from
- v2.6.31 onwards
-References: <5291E92F.7010609@hurleysoftware.com> <1385428582-5577-1-git-send-email-peter@hurleysoftware.com> <529D236E.4020002@hurleysoftware.com> <529D9DCD.5080003@list.ru>
-In-Reply-To: <529D9DCD.5080003@list.ru>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+To: Boris BREZILLON <b.brezillon@overkiz.com>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Grant Likely <grant.likely@linaro.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/3] usb: ohci-at91: use device managed clk retrieval
+References: <1386079669-3995-1-git-send-email-b.brezillon@overkiz.com> <1386079669-3995-4-git-send-email-b.brezillon@overkiz.com>
+In-Reply-To: <1386079669-3995-4-git-send-email-b.brezillon@overkiz.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2013 04:01 AM, Stas Sergeev wrote:
-> 03.12.2013 04:18, Peter Hurley пишет:
->> Unfortunately, this patch breaks EOF push handling.
->>
->> Normally, when an EOF is found not at the line start, the output
->> is made available to a canonical reader (without the EOF) -- this is
->> commonly referred to as EOF push. An EOF at the beginning of a line
->> forces the read to return 0 bytes read, which the caller interprets
->> as an end-of-file and discontinues reading.
->>
->> Since this patch simulates an EOF push, an actual EOF push that
->> follows will appear to be an EOF at the beginning of a line and
->> cause read to return 0, thus indicating premature end-of-file.
->>
->> I've attached a simulation testcase that shows the unexpected EOF.
->>
->> I think this general approach is still the way forward with this bug
->> but I need to ponder how the simulated EOF push state can properly be
->> distinguished from the other eol conditions in canon_copy_from_read_buf()
->> so line_start is not reset to the read_tail.
-> Hi Peter, why do you think this is even a problem?
-> If you enable icanon and the first thing you did was
-> to send VEOF, then you need an EOF.
-> If you want to be backward-compatible, you'll likely need
-> to go that route, because currently it works exactly that
-> way, except that the read buffer is lost. Other than preserving
-> the read buffer, my patch was not supposed to change anything.
-> I already have a program (written, tested, went to customer,
-> used in production, oops sorry:) that switches to icanon and
-> sends VEOF to simulate EOF. If you change this, then the behaviour
-> will depend on whether the reader happened to read the data
-> while still in RAW mode or already in icanon mode, which will
-> create an unfixable race.
+Hello.
+
+On 12/03/2013 05:07 PM, Boris BREZILLON wrote:
+
+> Replace clk_get calls by devm_clk_get calls.
+
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> Tested-by: Robert Nelson <robertcnelson@gmail.com>
+> ---
+>   drivers/usb/host/ohci-at91.c |   32 ++++++++------------------------
+>   1 file changed, 8 insertions(+), 24 deletions(-)
+
+> diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
+> index c406f1e..3652962 100644
+> --- a/drivers/usb/host/ohci-at91.c
+> +++ b/drivers/usb/host/ohci-at91.c
+> @@ -164,30 +164,30 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
+>   		goto err;
+>   	}
 >
-> I think the only reliable and consistent fix would be to add ioctls
-> for EOF and EOL pushes. Then people will not even need to switch
-> back-n-forth like crazy. But as things are now, I think my patch
-> is conservative and safe. Do you think it can break something real,
-> other than the test-case? I think your test-case was made with the
-> particular patch in mind, but it is not compatible with the current
-> kernel, so it can't be "broken".
+> -	iclk = clk_get(&pdev->dev, "ohci_clk");
+> +	iclk = devm_clk_get(dev, "ohci_clk");
+>   	if (IS_ERR(iclk)) {
+> -		dev_err(&pdev->dev, "failed to get ohci_clk\n");
+> +		dev_err(dev, "failed to get ohci_clk\n");
 
-Stas,
+    You changed this call...
 
-Any unit test is specifically designed to break the code under test.
-This unit test does in fact break a possible input: note specifically
-that the writer is not changing the termios so has no control over
-the timing of when the input is received.
+>   		retval = PTR_ERR(iclk);
+>   		goto err;
+>   	}
+> -	fclk = clk_get(&pdev->dev, "uhpck");
+> +	fclk = devm_clk_get(dev, "uhpck");
+>   	if (IS_ERR(fclk)) {
+>   		dev_err(&pdev->dev, "failed to get uhpck\n");
 
-Also note that the test is a simulation; the patch will break any
-input stream under the following conditions:
-1. The writer writes an EOF-terminated buffer
-2. All the input is received _except_ the EOF; this is strictly
-    timing-related and not controllable.
-3. The reader changes the termios from non-canon -> canon.
+    ... but not this one.
 
-At that point the damage is done; the read_flags will indicate
-2 EOFs and the 2nd EOF will be interpreted as end-of-file because
-it will appear to begin on a new line.
+>   		retval = PTR_ERR(fclk);
+> -		goto err4;
+> +		goto err;
+>   	}
+> -	hclk = clk_get(&pdev->dev, "hclk");
+> +	hclk = devm_clk_get(dev, "hclk");
+>   	if (IS_ERR(hclk)) {
+>   		dev_err(&pdev->dev, "failed to get hclk\n");
 
-That said, this problem is definitely solvable; I'm just looking
-for the best way to solve it.
+    ... or this one. Actually, I think cganging these calls would be out of 
+scope for this patch.
 
-Consider the total brute-force approach; a shadow read_flags that
-distinguishes a real EOF receive from the fake EOF push initiated
-by the patch. That would work, but I'm looking for a solution more
-space-efficient and simpler than a duplicate 256-byte buffer :)
+>   		retval = PTR_ERR(hclk);
+> -		goto err5;
+> +		goto err;
+>   	}
+>   	if (IS_ENABLED(CONFIG_COMMON_CLK)) {
+> -		uclk = clk_get(&pdev->dev, "usb_clk");
+> +		uclk = devm_clk_get(&pdev->dev, "usb_clk");
 
-Regards,
-Peter Hurley
+    Hm, why not 'dev' like in all of the above?
+
+>   		if (IS_ERR(uclk)) {
+>   			dev_err(&pdev->dev, "failed to get uclk\n");
+>   			retval = PTR_ERR(uclk);
+> -			goto err6;
+> +			goto err;
+>   		}
+>   	}
+>
+
+WBR, Sergei
+
 
