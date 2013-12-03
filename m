@@ -1,171 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab3LCWPB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 17:15:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54702 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754834Ab3LCWPA (ORCPT
+	id S1755389Ab3LCWPs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 17:15:48 -0500
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:35230 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754859Ab3LCWPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 17:15:00 -0500
-Date: Tue, 3 Dec 2013 14:14:58 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, dave.hansen@intel.com
-Subject: Re: [PATCH v5] mm: add overcommit_kbytes sysctl variable
-Message-Id: <20131203141458.5e0980df43c7a248578b3e72@linux-foundation.org>
-In-Reply-To: <529DDDAF.1000202@redhat.com>
-References: <1382101019-23563-1-git-send-email-jmarchan@redhat.com>
-	<1382101019-23563-2-git-send-email-jmarchan@redhat.com>
-	<529DDDAF.1000202@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Dec 2013 17:15:47 -0500
+Date: Tue, 3 Dec 2013 17:15:43 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org
+Subject: Re: sysfs: use a separate locking class for open files depending on
+ mmap
+Message-ID: <20131203221543.GP8277@htj.dyndns.org>
+References: <20131128051223.45739660885@gitolite.kernel.org>
+ <20131203184324.GA11320@redhat.com>
+ <20131203211028.GN8277@htj.dyndns.org>
+ <20131203211515.GA17951@redhat.com>
+ <20131203213649.GO8277@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131203213649.GO8277@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 03 Dec 2013 14:33:35 +0100 Jerome Marchand <jmarchan@redhat.com> wrote:
+Hello,
 
-> 
-> Changes since v4:
->  - revert to my initial overcommit_kbytes design as it is more
->  consistent with current *_ratio/*_bytes implementation for other
->  variables.
-> 
-> Some applications that run on HPC clusters are designed around the
-> availability of RAM and the overcommit ratio is fine tuned to get the
-> maximum usage of memory without swapping. With growing memory, the
-> 1%-of-all-RAM grain provided by overcommit_ratio has become too coarse
-> for these workload (on a 2TB machine it represents no less than
-> 20GB).
-> 
-> This patch adds the new overcommit_kbytes sysctl variable that allow a
-> much finer grain.
+Can you please test whether this patch makes the lockdep warning go
+away?
 
-Seems OK to me.
+Thanks a lot!
 
-> --- a/Documentation/sysctl/vm.txt
-> +++ b/Documentation/sysctl/vm.txt
-> @@ -574,6 +575,17 @@ The default value is 0.
->  
->  ==============================================================
->  
-> +overcommit_kbytes:
-> +
-> +When overcommit_memory is set to 2, the committed address space is not
-> +permitted to exceed swap plus this amount of physical RAM. See below.
-> +
-> +Note: overcommit_kbytes is the counterpart of overcommit_ratio. Only one
-> +of them may be specified at a time. Setting one disable the other (which
-
-
---- a/Documentation/sysctl/vm.txt~mm-add-overcommit_kbytes-sysctl-variable-fix
-+++ a/Documentation/sysctl/vm.txt
-@@ -581,7 +581,7 @@ When overcommit_memory is set to 2, the
- permitted to exceed swap plus this amount of physical RAM. See below.
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index b94f936..fccb645 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -470,6 +470,9 @@ static int sysfs_bin_mmap(struct file *file, struct vm_area_struct *vma)
+ 	struct kobject *kobj = of->sd->s_parent->s_dir.kobj;
+ 	int rc;
  
- Note: overcommit_kbytes is the counterpart of overcommit_ratio. Only one
--of them may be specified at a time. Setting one disable the other (which
-+of them may be specified at a time. Setting one disables the other (which
- then appears as 0 when read).
- 
- ==============================================================
-
-
-
-Please do use checkpatch.
-
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: mm-add-overcommit_kbytes-sysctl-variable-checkpatch-fixes
-
-WARNING: Non-standard signature: Signed-of-by:
-#13: 
-Signed-of-by: Jerome Marchand <jmarchan@redhat.com>
-
-WARNING: externs should be avoided in .c files
-#115: FILE: kernel/sysctl.c:100:
-+extern unsigned long sysctl_overcommit_kbytes;
-
-ERROR: do not initialise globals to 0 or NULL
-#142: FILE: mm/mmap.c:89:
-+unsigned long sysctl_overcommit_kbytes __read_mostly = 0;
-
-ERROR: do not initialise globals to 0 or NULL
-#184: FILE: mm/nommu.c:63:
-+unsigned long sysctl_overcommit_kbytes __read_mostly = 0;
-
-total: 2 errors, 2 warnings, 145 lines checked
-
-./patches/mm-add-overcommit_kbytes-sysctl-variable.patch has style problems, please review.
-
-If any of these errors are false positives, please report
-them to the maintainer, see CHECKPATCH in MAINTAINERS.
-
-Please run checkpatch prior to sending patches
-
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- include/linux/mm.h |    4 ++++
- kernel/sysctl.c    |    3 ---
- mm/mmap.c          |    2 +-
- mm/nommu.c         |    2 +-
- 4 files changed, 6 insertions(+), 5 deletions(-)
-
-diff -puN include/linux/mm.h~mm-add-overcommit_kbytes-sysctl-variable-checkpatch-fixes include/linux/mm.h
---- a/include/linux/mm.h~mm-add-overcommit_kbytes-sysctl-variable-checkpatch-fixes
-+++ a/include/linux/mm.h
-@@ -57,6 +57,10 @@ extern int sysctl_legacy_va_layout;
- extern unsigned long sysctl_user_reserve_kbytes;
- extern unsigned long sysctl_admin_reserve_kbytes;
- 
-+extern int sysctl_overcommit_memory;
-+extern int sysctl_overcommit_ratio;
-+extern unsigned long sysctl_overcommit_kbytes;
++	if (!(of->sd->s_flags & SYSFS_FLAG_HAS_MMAP))
++		return -ENODEV;
 +
- extern int overcommit_ratio_handler(struct ctl_table *, int, void __user *,
- 				    size_t *, loff_t *);
- extern int overcommit_kbytes_handler(struct ctl_table *, int, void __user *,
-diff -puN kernel/sysctl.c~mm-add-overcommit_kbytes-sysctl-variable-checkpatch-fixes kernel/sysctl.c
---- a/kernel/sysctl.c~mm-add-overcommit_kbytes-sysctl-variable-checkpatch-fixes
-+++ a/kernel/sysctl.c
-@@ -95,9 +95,6 @@
- #if defined(CONFIG_SYSCTL)
+ 	mutex_lock(&of->mutex);
  
- /* External variables not in a header file. */
--extern int sysctl_overcommit_memory;
--extern int sysctl_overcommit_ratio;
--extern unsigned long sysctl_overcommit_kbytes;
- extern int max_threads;
- extern int suid_dumpable;
- #ifdef CONFIG_COREDUMP
-diff -puN mm/mmap.c~mm-add-overcommit_kbytes-sysctl-variable-checkpatch-fixes mm/mmap.c
---- a/mm/mmap.c~mm-add-overcommit_kbytes-sysctl-variable-checkpatch-fixes
-+++ a/mm/mmap.c
-@@ -86,7 +86,7 @@ EXPORT_SYMBOL(vm_get_page_prot);
+ 	/* need of->sd for battr, its parent for kobj */
+@@ -477,9 +480,6 @@ static int sysfs_bin_mmap(struct file *file, struct vm_area_struct *vma)
+ 	if (!sysfs_get_active(of->sd))
+ 		goto out_unlock;
  
- int sysctl_overcommit_memory __read_mostly = OVERCOMMIT_GUESS;  /* heuristic overcommit */
- int sysctl_overcommit_ratio __read_mostly = 50;	/* default is 50% */
--unsigned long sysctl_overcommit_kbytes __read_mostly = 0;
-+unsigned long sysctl_overcommit_kbytes __read_mostly;
- int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
- unsigned long sysctl_user_reserve_kbytes __read_mostly = 1UL << 17; /* 128MB */
- unsigned long sysctl_admin_reserve_kbytes __read_mostly = 1UL << 13; /* 8MB */
-diff -puN mm/nommu.c~mm-add-overcommit_kbytes-sysctl-variable-checkpatch-fixes mm/nommu.c
---- a/mm/nommu.c~mm-add-overcommit_kbytes-sysctl-variable-checkpatch-fixes
-+++ a/mm/nommu.c
-@@ -60,7 +60,7 @@ unsigned long highest_memmap_pfn;
- struct percpu_counter vm_committed_as;
- int sysctl_overcommit_memory = OVERCOMMIT_GUESS; /* heuristic overcommit */
- int sysctl_overcommit_ratio = 50; /* default is 50% */
--unsigned long sysctl_overcommit_kbytes __read_mostly = 0;
-+unsigned long sysctl_overcommit_kbytes __read_mostly;
- int sysctl_max_map_count = DEFAULT_MAX_MAP_COUNT;
- int sysctl_nr_trim_pages = CONFIG_NOMMU_INITIAL_TRIM_EXCESS;
- unsigned long sysctl_user_reserve_kbytes __read_mostly = 1UL << 17; /* 128MB */
-_
+-	if (!battr->mmap)
+-		goto out_put;
+-
+ 	rc = battr->mmap(file, kobj, battr, vma);
+ 	if (rc)
+ 		goto out_put;
+@@ -851,6 +851,14 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+ 	sd->s_attr.attr = (void *)attr;
+ 	sysfs_dirent_init_lockdep(sd);
+ 
++	if (type == SYSFS_KOBJ_BIN_ATTR) {
++		const struct bin_attribute *battr =
++			container_of(attr, struct bin_attribute, attr);
++
++		if (battr->mmap)
++			sd->s_flags |= SYSFS_FLAG_HAS_MMAP;
++	}
++
+ 	sysfs_addrm_start(&acxt);
+ 	rc = sysfs_add_one(&acxt, sd, dir_sd);
+ 	sysfs_addrm_finish(&acxt);
+diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
+index 0af09fb..27c1f7e 100644
+--- a/fs/sysfs/sysfs.h
++++ b/fs/sysfs/sysfs.h
+@@ -96,6 +96,7 @@ struct sysfs_dirent {
+ 
+ #define SYSFS_FLAG_MASK			~(SYSFS_NS_TYPE_MASK|SYSFS_TYPE_MASK)
+ #define SYSFS_FLAG_REMOVED		0x02000
++#define SYSFS_FLAG_HAS_MMAP		0x04000
+ 
+ static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
+ {
 
+-- 
+tejun
