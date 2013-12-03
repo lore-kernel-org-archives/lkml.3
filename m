@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754506Ab3LCCeC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 21:34:02 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:53703 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753591Ab3LCC3Y (ORCPT
+	id S1754531Ab3LCCeL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 21:34:11 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58700 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753591Ab3LCCeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 21:29:24 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-mm@kvack.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [PATCH v2 10/23] mm/printk: Use memblock apis for early memory allocations
-Date: Mon, 2 Dec 2013 21:27:25 -0500
-Message-ID: <1386037658-3161-11-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com>
-References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com>
+	Mon, 2 Dec 2013 21:34:08 -0500
+X-AuditID: 9c930197-b7c3dae000002c11-b7-529d431e979c
+From: Namhyung Kim <namhyung@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC 0/3] perf tools: Show time info (v1)
+References: <1385967199-3759-1-git-send-email-namhyung@kernel.org>
+	<20131202170448.GF17656@two.firstfloor.org>
+Date: Tue, 03 Dec 2013 11:34:06 +0900
+In-Reply-To: <20131202170448.GF17656@two.firstfloor.org> (Andi Kleen's message
+	of "Mon, 2 Dec 2013 18:04:48 +0100")
+Message-ID: <87bo0yoe75.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch to memblock interfaces for early memory allocator instead of
-bootmem allocator. No functional change in beahvior than what it is
-in current code from bootmem users points of view.
+Hi Andi,
 
-Archs already converted to NO_BOOTMEM now directly use memblock
-interfaces instead of bootmem wrappers build on top of memblock. And the
-archs which still uses bootmem, these new apis just fallback to exiting
-bootmem APIs.
+On Mon, 2 Dec 2013 18:04:48 +0100, Andi Kleen wrote:
+> On Mon, Dec 02, 2013 at 03:53:16PM +0900, Namhyung Kim wrote:
+>> Hi,
+>> 
+>> Sometimes users might want to see time information along with the
+>> performance result but the perf cannot provide it currently.
+>> 
+>> In this patchset, I added such feature using sample->time.  When the
+>> perf processes sample events, it calculate time info and update last
+>> timestamp.  It keeps the last timestamp for each evsel (and for each
+>> cpu if it's a per-cpu session).
+>
+> Does the sorting on arbitary fields work now?
+>
+> I believe to make use of this you totally want to sort on it too,
+> but traditionally perf report could only sort on a single field.
+>
+> Without sorting adding more and more fields is just confusing. 
 
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
----
- kernel/printk/printk.c |   10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+Yeah, that's the plan that I also have.  As Ingo requested, we'll have
+more flexible field and sort-key selection options.  I'll work on that
+as soon as the on-going works find their way to inclusion.
 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index be7c86b..d8147f91 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -757,14 +757,10 @@ void __init setup_log_buf(int early)
- 		return;
- 
- 	if (early) {
--		unsigned long mem;
--
--		mem = memblock_alloc(new_log_buf_len, PAGE_SIZE);
--		if (!mem)
--			return;
--		new_log_buf = __va(mem);
-+		new_log_buf =
-+			memblock_virt_alloc_align(new_log_buf_len, PAGE_SIZE);
- 	} else {
--		new_log_buf = alloc_bootmem_nopanic(new_log_buf_len);
-+		new_log_buf = memblock_virt_alloc_nopanic(new_log_buf_len);
- 	}
- 
- 	if (unlikely(!new_log_buf)) {
--- 
-1.7.9.5
-
+Thanks,
+Namhyung
