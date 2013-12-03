@@ -1,94 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab3LCVxn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 16:53:43 -0500
-Received: from smtprelay0118.hostedemail.com ([216.40.44.118]:34761 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755253Ab3LCVxj (ORCPT
+	id S1755330Ab3LCVzT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 16:55:19 -0500
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:22000 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754508Ab3LCVzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 16:53:39 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3866:3867:3868:3874:4250:4321:5007:7652:10004:10400:10848:11026:11232:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: sea52_59c4eca569d57
-X-Filterd-Recvd-Size: 2652
-Message-ID: <1386107616.30493.18.camel@joe-AO722>
-Subject: Re: [PATCH 2/2] test: check copy_to/from_user boundary validation
-From: Joe Perches <joe@perches.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        David Howells <dhowells@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Tue, 03 Dec 2013 13:53:36 -0800
-In-Reply-To: <1386106054-27636-3-git-send-email-keescook@chromium.org>
-References: <1386106054-27636-1-git-send-email-keescook@chromium.org>
-	 <1386106054-27636-3-git-send-email-keescook@chromium.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Dec 2013 16:55:17 -0500
+X-AuditID: cbfec37d-b7fa86d000003175-4d-529e5344a9d8
+Message-id: <529E5342.8060505@samsung.com>
+Date: Tue, 03 Dec 2013 14:55:14 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH 3.10 000/173] 3.10.22-stable review
+References: <20131202191142.873808297@linuxfoundation.org>
+In-reply-to: <20131202191142.873808297@linuxfoundation.org>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.21.63]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t9hP12X4HlBBl/vG1nMWb+GzaJ58Xo2
+	i8u75rBZfP3pYLFg4yNGi0d9b9kd2Dx2zrrL7nFixm8Wj/1z17B7fN4kF8ASxWWTkpqTWZZa
+	pG+XwJWxYPN59oKjnBWXn/9mbWDcz97FyMkhIWAi0bP3ByuELSZx4d56ti5GLg4hgWWMElum
+	LWSEcHqZJB6s62QGqRIS2Mgo0XClHsTmFdCS2Nn4CSzOIqAqseXiLzYQm01AXeLz6x3sEPVy
+	Ek1LVoPViApESBxd/YwVoldQ4sfkeywgtohAsMTarxDLmAVWMEocf/kSbJCwgLnEuWVvgBo4
+	gAZZSexaGwQS5hSwluh+9ApsJrOAmcSjlnVQtrzE5jVvoe5Ulvhz+RQTSKuEgKLE9tVWExhF
+	ZiHZPAtJ9ywk3QsYmVcxipUWJxcUJ6WnVpjoFSfmFpfmpesl5+duYoRETO0OxvtfbQ4xCnAw
+	KvHwcrDPCxJiTSwrrsw9xCjBwawkwrvVDyjEm5JYWZValB9fVJqTWnyIkYmDU6qB0e1xztXu
+	l0UWM0PWTVctKPxatPH3jR9ZSUene7nbqhW+/XqiwrIyy140R+YKi7wA57UATmvt5SEHHrjO
+	3rR4pbxr09fjuT5vOtO5vM2UT+3UkdvoNPVVnq6uQFhmyfar7EbTWEKUOJNMt8hPas4uXXXm
+	VK28i+T1hnRXuQmldxflbPQoX1CixFKckWioxVxUnAgA4ixDi3YCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-03 at 13:27 -0800, Kees Cook wrote:
-> To help avoid an architecture failing to correctly check kernel/user
-> boundaries when handling copy_to_user, copy_from_user, put_user, or
-> get_user, perform some simple tests and fail to load if any of them
-> behave unexpectedly.
+On 12/02/2013 12:09 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.22 release.
+> There are 173 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Wed Dec  4 19:10:16 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.22-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-> diff --git a/kernel/test_user_copy.c b/kernel/test_user_copy.c
-
-> +#define failed(msg) {	\
-> +	pr_warn(msg);	\
-> +	ret = -EINVAL;	\
-> +}
-
-That's an ugly macro.
-
-Maybe use something like:
-
-#define test(func, msg)				\
-({						\
-	int ret = func;				\
-	if (ret)				\
-		pr_warn("%s\n", msg);		\
-	ret;					\
-})
-
-> +static int __init test_user_copy_init(void)
-> +{
-> +	int ret = 0;
-> +	char *kmem;
-> +	char __user *usermem;
-> +	unsigned long user_addr;
-> +	unsigned long value = 0x5A;
-> +
-> +	kmem = kmalloc(PAGE_SIZE * 2, GFP_KERNEL);
-> +	if (!kmem) {
-> +		pr_warn("Failed to allocate kernel memory\n");
-
-Unnecessary as there's a generic alloc OOM
-with a dump_stack()
-
-[]
-
-> +	/* Legitimate usage: none of these should fail. */
-> +	if (copy_from_user(kmem, usermem, PAGE_SIZE))
-> +		failed("legitimate copy_from_user failed");
-
-	ret |= test(copy_from_user(kmem, usermem, PAGE_SIZE),
-		    "legitimate copy_from_user failed");
-
-> +	if (copy_to_user(usermem, kmem, PAGE_SIZE))
-> +		failed("legitimate copy_to_user failed");
-
-	ret |= test(copy_to_user(usermem, kmem, PAGE_SIZE),
-		    "legitimate copy_to_user failed");
-
-etc.
+Patch applied cleanly
+compile and boot tests - passed
+dmesg regression testing - passed
 
 
+dmesgs look good. No regressions compared to the previous dmesgs for 
+this release. dmesg emerg, crit, alert, err are clean. No regressions in 
+warn.
+
+Test systems
+
+     Samsung Series 9 900X4C Intel Corei5 (3.4 and later)
+     HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+     Dell OptiPlex 790 Intel(R) Core(TM) i5-2400
+
+-- Shuah
+
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
