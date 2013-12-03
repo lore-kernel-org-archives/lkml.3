@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab3LCNtu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 08:49:50 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:47846 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753404Ab3LCNts (ORCPT
+	id S1753943Ab3LCNun (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 08:50:43 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48620 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753295Ab3LCNum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 08:49:48 -0500
-Subject: Re: [PATCH 1/6] GenWQE PCI support, health monitoring and recovery
-From: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Reply-To: haver@linux.vnet.ibm.com
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
-        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
-        cascardo@linux.vnet.ibm.com, michael@ibmra.de
-In-Reply-To: <20131127192028.GB28409@kroah.com>
-References: <1383741943-14609-1-git-send-email-haver@linux.vnet.ibm.com>
-	 <1383741943-14609-2-git-send-email-haver@linux.vnet.ibm.com>
-	 <20131127192028.GB28409@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Tue, 03 Dec 2013 14:49:41 +0100
-Message-ID: <1386078581.12186.22.camel@oc7383187364.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120313-2966-0000-0000-0000098F2485
+	Tue, 3 Dec 2013 08:50:42 -0500
+Date: Tue, 3 Dec 2013 13:50:02 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Vinayak Kale <vkale@apm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "patches@apm.com" <patches@apm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Tuan Phan <tphan@apm.com>
+Subject: Re: [PATCH V6 2/2] arm64: perf: add support for percpu pmu interrupt
+Message-ID: <20131203135002.GJ1169@mudshark.cambridge.arm.com>
+References: <1385976843-13280-1-git-send-email-vkale@apm.com>
+ <1385976843-13280-3-git-send-email-vkale@apm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385976843-13280-3-git-send-email-vkale@apm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Mon, Dec 02, 2013 at 09:34:03AM +0000, Vinayak Kale wrote:
+>  static void
+> +armpmu_disable_percpu_irq(void *data)
+> +{
+> +	struct arm_pmu *armpmu = data;
+> +	struct platform_device *pmu_device = armpmu->plat_device;
+> +	int irq = platform_get_irq(pmu_device, 0);
+> +
+> +	cpumask_test_and_clear_cpu(smp_processor_id(), &armpmu->active_irqs);
 
-Am Mittwoch, den 27.11.2013, 11:20 -0800 schrieb Greg KH:
-> On Wed, Nov 06, 2013 at 01:45:38PM +0100, Frank Haverkamp wrote:
-> > +/*
-> > + * Flags for extended output (dbg_print)
-> > + *   We define different levels of debugging for the appropriate unit.
-> > + */
-> > +#define dbg_card			0x00000001
-> > +#define dbg_card_ddcb			0x00000004
-> > +#define dbg_card_regs			0x00000008
-> > +#define dbg_card_sglist			0x00000400
-> > +#define dbg_card_pinning		0x00000800
-> > +
-> > +#define genwqe_dprintk(_cd, dbg_unit, fmt, ...) do {			\
-> > +		struct genwqe_dev *__cd = (_cd);			\
-> > +		if ((_cd)->debug & (dbg_unit))				\
-> > +			dev_info(&__cd->pci_dev->dev, fmt,		\
-> > +				 ## __VA_ARGS__);			\
-> > +	} while (0)
-> 
-> Ugh, really?  How is a debugging printk being sent out with dev_info()?
-> 
-> And why not just use dynamic kernel debugging and not create your own
-> masks and macros?  We are trying to make everything use the same
-> infrastructure, please don't create new ones for every individual driver
-> in the kernel, that's a mess.
+Why not just cpumask_clear_cpu?
 
-I removed the genwqe_dprintk function completely. Our debug flag I kept
-for the moment, because I like to use the kernel hexdump functions to
-print my control blocks for debugging:
+> +	disable_percpu_irq(irq);
+> +}
+> +
+> +static void
+>  armpmu_release_hardware(struct arm_pmu *armpmu)
+>  {
+> -	int i, irq, irqs;
+> +	int irq;
+> +	unsigned int i, irqs;
+>  	struct platform_device *pmu_device = armpmu->plat_device;
+>  
+>  	irqs = min(pmu_device->num_resources, num_possible_cpus());
+> +	if (!irqs)
+> +		return;
+>  
+> -	for (i = 0; i < irqs; ++i) {
+> -		if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
+> -			continue;
+> -		irq = platform_get_irq(pmu_device, i);
+> -		if (irq >= 0)
+> -			free_irq(irq, armpmu);
+> +	irq = platform_get_irq(pmu_device, 0);
+> +	if (irq <= 0)
+> +		return;
+> +
+> +	if (irq_is_percpu(irq)) {
+> +		on_each_cpu(armpmu_disable_percpu_irq, armpmu, 1);
+> +		free_percpu_irq(irq, &cpu_hw_events);
+> +	} else {
+> +		for (i = 0; i < irqs; ++i) {
+> +			if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
+> +				continue;
+> +			irq = platform_get_irq(pmu_device, i);
+> +			if (irq > 0)
+> +				free_irq(irq, armpmu);
+> +		}
+>  	}
+>  }
+>  
+> +static void
+> +armpmu_enable_percpu_irq(void *data)
+> +{
+> +	struct arm_pmu *armpmu = data;
+> +	struct platform_device *pmu_device = armpmu->plat_device;
+> +	int irq = platform_get_irq(pmu_device, 0);
+> +
+> +	enable_percpu_irq(irq, IRQ_TYPE_NONE);
+> +	cpumask_set_cpu(smp_processor_id(), &armpmu->active_irqs);
 
-      if (cd->debug & dbg_card_ddcb) {
-             dev_dbg(&pci_dev->dev, "FINISHED DDCB#%d\n", req->num);
-             genwqe_hexdump(pci_dev, pddcb, sizeof(*pddcb));
-      }
+Hmm, wouldn't it make more sense to pass the irq in data, then deal with the
+mask in the caller? (since the mask will *always* be updated by each CPU).
 
-Or is there something allowing me to do those hexdumps with the
-dynamic_debug feature too? dynamic_hex_dump() looks like what I want.
-So let me try to use that and get rid of my own debug support.
+Similarly for the disable path.
 
-> 
-> thanks,
-> 
-> greg k-h
-> 
-
-Regards
-
-Frank
-
-
-
+Will
