@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544Ab3LCTmt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 14:42:49 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:41668 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753548Ab3LCTmo (ORCPT
+	id S1754648Ab3LCTmw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 14:42:52 -0500
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:38353 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753620Ab3LCTmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 14:42:44 -0500
+	Tue, 3 Dec 2013 14:42:45 -0500
 From: Bill Sumner <bill.sumner@hp.com>
 To: dwmw2@infradead.org, indou.takao@jp.fujitsu.com, bhe@redhat.com
 Cc: iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
         linux-kernel@vger.kernel.org, ddutile@redhat.com,
         ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com, bill.sumner@hp.com,
         doug.hatch@hp.com
-Subject: [PATCH 1/6] Crashdump-Accepting-Active-IOMMU-Flags-and-Prototypes
-Date: Tue,  3 Dec 2013 12:41:29 -0700
-Message-Id: <1386099694-4190-2-git-send-email-bill.sumner@hp.com>
+Subject: [PATCH 2/6] Crashdump-Accepting-Active-IOMMU-Utility-functions
+Date: Tue,  3 Dec 2013 12:41:30 -0700
+Message-Id: <1386099694-4190-3-git-send-email-bill.sumner@hp.com>
 X-Mailer: git-send-email 1.7.11.3
 In-Reply-To: <1386099694-4190-1-git-send-email-bill.sumner@hp.com>
 References: <Crashdump-Accepting-Active-IOMMU>
@@ -28,102 +28,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Bill Sumner <bill.sumner@hp.com>
 ---
- drivers/iommu/intel-iommu.c | 75 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 75 insertions(+)
+ drivers/iommu/intel-iommu.c | 74 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 74 insertions(+)
 
 diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 15e9b57..a0e8a76 100644
+index a0e8a76..b68b962 100644
 --- a/drivers/iommu/intel-iommu.c
 +++ b/drivers/iommu/intel-iommu.c
-@@ -48,6 +48,7 @@
- 
- #include "irq_remapping.h"
- #include "pci.h"
-+#include <linux/crash_dump.h>
- 
- #define ROOT_SIZE		VTD_PAGE_SIZE
- #define CONTEXT_SIZE		VTD_PAGE_SIZE
-@@ -164,6 +165,80 @@ static inline unsigned long virt_to_dma_pfn(void *p)
- 	return page_to_dma_pfn(virt_to_page(p));
+@@ -4453,3 +4453,77 @@ static void __init check_tylersburg_isoch(void)
+ 	printk(KERN_WARNING "DMAR: Recommended TLB entries for ISOCH unit is 16; your BIOS set %d\n",
+ 	       vtisochctrl);
  }
- 
 +#ifdef CONFIG_CRASH_DUMP
-+/* ===================================================================
-+ * Crashdump Accepting Active IOMMU
-+ * Enhances the crashdump kernel to deal with an active iommu
-+ * and legacy DMA from the (old) panic'd kernel in a manner similar to how
-+ * legacy DMA is handled when no hardware iommu was in use by the old kernel --
-+ * allow the legacy DMA to continue into its current buffers.
-+ *
-+ * This code:
-+ * 1. accepts the iommu hardware in an active state from the old kernel,
-+ * 2. leaves the current translations in-place so that legacy DMA will
-+ *    continue to use its current buffers,
-+ * 3. allocates to the device drivers in the crashdump kernel
-+ *    portions of the iova address ranges that are different
-+ *    from the iova address ranges that were being used by the old kernel
-+ *    at the time of the panic.
-+ * -------------------------------------------------------------------
++
++/* ========================================================================
++ * Utility functions for accessing the iommu Translation Tables
++ * ------------------------------------------------------------------------
 + */
-+
-+/* Flags for Crashdump Accepting Active IOMMU */
-+
-+static int crashdump_accepting_active_iommu;	/* activate this feature */
-+static int intel_iommu_translation_tables_are_mapped;	/* table copy done */
-+
-+static struct {				/* run-time pr_debug() flags */
-+	unsigned in_crashdump:1;	/* if crashdump_accepting_active_iommu */
-+	unsigned domain_get:1;		/* pr_debug in domain_get* functions */
-+	unsigned copy_page_table:1;	/* enter/leave copy_page_table() */
-+	unsigned copy_page_addr:1;	/* enter/leave copy_page_addr() */
-+	unsigned addr_ranges:1;		/* accumulated addr ranges */
-+	unsigned reserved_ranges:1;	/* accumulated addr ranges reserved */
-+	unsigned page_addr:1;		/* adr(each page table) */
-+	unsigned enter_oldcopy:1;	/* enter oldcopy() parameters */
-+	unsigned leave_oldcopy:1;	/* leave oldcopy() parameters */
-+} pr_dbg  = {				/* Enable flags below here */
-+	.in_crashdump = 1,
-+	.domain_get = 1,
-+	.copy_page_table = 1,
-+	.copy_page_addr = 0,
-+	.addr_ranges = 0,
-+	.reserved_ranges = 0,
-+	.page_addr = 0,
-+	.enter_oldcopy = 0,
-+	.leave_oldcopy = 0,
-+};
-+
-+/* Prototypes of interface functions for Crashdump Accepting Active IOMMU */
++static inline struct context_entry *
++get_context_phys_from_root(struct root_entry *root)
++{
++	return (struct context_entry *)
++		(root_present(root) ? (void *) (root->val & VTD_PAGE_MASK)
++				    : NULL);
++}
 +
 +static int
-+copy_intel_iommu_translation_tables(struct dmar_drhd_unit *drhd,
-+	struct root_entry **root_old_p, struct root_entry **root_new_p);
++context_get_p(struct context_entry *c)    {return((c->lo >> 0) & 0x1); }
 +
 +static int
-+domain_get_did_from_old_kernel(struct intel_iommu *iommu, struct pci_dev *pdev);
++context_get_fpdi(struct context_entry *c) {return((c->lo >> 1) & 0x1); }
 +
 +static int
-+domain_get_gaw_from_old_kernel(struct intel_iommu *iommu, struct pci_dev *pdev);
++context_get_t(struct context_entry *c)    {return((c->lo >> 2) & 0x3); }
 +
 +static u64
-+domain_get_pgd_from_old_kernel(struct intel_iommu *iommu, struct pci_dev *pdev);
++context_get_asr(struct context_entry *c)  {return((c->lo >> 12));      }
 +
-+static void
-+domain_get_ranges_from_old_kernel(struct dmar_domain *domain,
-+		  struct intel_iommu *iommu, struct pci_dev *pdev);
 +static int
-+intel_iommu_get_dids_from_old_kernel(struct intel_iommu *iommu);
++context_get_aw(struct context_entry *c)   {return((c->hi >> 0) & 0x7); }
 +
-+/* Debug-print functions for  Crashdump Accepting Active IOMMU */
++static int
++context_get_aval(struct context_entry *c) {return((c->hi >> 3) & 0xf); }
 +
-+static void
-+print_intel_iommu_registers(struct dmar_drhd_unit *drhd);
-+#endif	/* CONFIG_CRASH_DUMP */
++static int
++context_get_did(struct context_entry *c)  {return((c->hi >> 8) & 0xffff); }
++
++static void context_put_asr(struct context_entry *c, unsigned long asr)
++{
++	c->lo &= (~VTD_PAGE_MASK);
++	c->lo |= (asr << VTD_PAGE_SHIFT);
++}
 +
 +
- /* global iommu list, set NULL for ignored DMAR units */
- static struct intel_iommu **g_iommus;
- 
++/*
++ * Copy memory from a physically-addressed area into a virtually-addressed area
++ */
++static int oldcopy(void *to, void *from, int size)
++{
++	size_t ret = 0;			/* Length copied */
++	unsigned long pfn;		/* Page Frame Number */
++	char *buf = to;			/* Adr(Output buffer) */
++	size_t csize = (size_t)size;	/* Num(bytes to copy) */
++	unsigned long offset;		/* Lower 12 bits of from */
++	int userbuf = 0;		/* to is in kernel space */
++
++	if (pr_dbg.enter_oldcopy)
++		pr_debug("ENTER %s to=%16.16llx, from = %16.16llx, size = %d\n",
++			__func__,
++			(unsigned long long) to,
++			(unsigned long long) from, size);
++
++	if (intel_iommu_translation_tables_are_mapped)
++		memcpy(to, phys_to_virt((phys_addr_t)from), csize);
++	else {
++		pfn = ((unsigned long) from) >> VTD_PAGE_SHIFT;
++		offset = ((unsigned long) from) & (~VTD_PAGE_MASK);
++		ret = copy_oldmem_page(pfn, buf, csize, offset, userbuf);
++	}
++
++	if (pr_dbg.leave_oldcopy)
++		pr_debug("LEAVE %s ret=%d\n", __func__, (int) ret);
++
++	return (int) ret;
++}
++#endif /* CONFIG_CRASH_DUMP */
 -- 
 Bill Sumner <bill.sumner@hp.com>
 
