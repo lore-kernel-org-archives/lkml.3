@@ -1,48 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466Ab3LCOcn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 09:32:43 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:57479 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752729Ab3LCOcm (ORCPT
+	id S1754545Ab3LCOdW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 09:33:22 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:53440 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753902Ab3LCOdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 09:32:42 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <529DEB88.9020100@roeck-us.net>
-Date: Tue, 03 Dec 2013 06:32:40 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Tue, 3 Dec 2013 09:33:19 -0500
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: Jingoo Han <jg1.han@samsung.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: Re: [PATCH 10/39] hwmon: remove DEFINE_PCI_DEVICE_TABLE macro
-References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>	<001f01ceefb3$b1968820$14c39860$%han@samsung.com>	<20131203001741.GA18237@roeck-us.net> <20131203090232.7ba0e002@endymion.delvare>
-In-Reply-To: <20131203090232.7ba0e002@endymion.delvare>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131025152236.GC10673@mudshark.cambridge.arm.com>
+References: <1382008671-4515-1-git-send-email-sandeepa.prabhu@linaro.org>
+	<1382008671-4515-2-git-send-email-sandeepa.prabhu@linaro.org>
+	<20131025152236.GC10673@mudshark.cambridge.arm.com>
+Date: Tue, 3 Dec 2013 20:03:17 +0530
+Message-ID: <CA+b37P0xNDqKWm-Vdpmwrvqxr01C+bOhas+-nEUxLFe7pzEB7A@mail.gmail.com>
+Subject: Re: [PATCH RFC v4 1/6] arm64: support single-step and breakpoint
+ handler hooks
+From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "srikar@linux.vnet.ibm.com" <srikar@linux.vnet.ibm.com>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "masami.hiramatsu.pt@hitachi.com" <masami.hiramatsu.pt@hitachi.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2013 12:02 AM, Jean Delvare wrote:
-> On Mon, 2 Dec 2013 16:17:41 -0800, Guenter Roeck wrote:
->> On Tue, Dec 03, 2013 at 08:10:29AM +0900, Jingoo Han wrote:
->>> Don't use DEFINE_PCI_DEVICE_TABLE macro, because this macro
->>> is not preferred.
->>>
->>> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
->>
->> Acked-by: Guenter Roeck <linux@roeck-us.net>
->
-> Acked-by: Jean Delvare <khali@linux-fr.org>
->
-> too. I never liked this macro and I'm very happy to see it go.
->
+Hi Will,
 
-Same here. I'll take it through my -next tree.
+Sorry for responding to this after long-time, I missed this review
+during Linaro connect travels.
+
+On 25 October 2013 20:52, Will Deacon <will.deacon@arm.com> wrote:
+> Hi Sandeepa,
+>
+> This is getting there, thanks for persevering with it. I still have a few
+> minor comments though.
+>
+> On Thu, Oct 17, 2013 at 12:17:46PM +0100, Sandeepa Prabhu wrote:
+>> AArch64 Single Steping and Breakpoint debug exceptions will be
+>> used by multiple debug framworks like kprobes & kgdb.
+>>
+>> This patch implements the hooks for those frameworks to register
+>> their own handlers for handling breakpoint and single step events.
+>>
+>> Reworked the debug exception handler in entry.S: do_dbg to route
+>> software breakpoint (BRK64) exception to do_debug_exception()
+>>
+>> Signed-off-by: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+>> Signed-off-by: Deepak Saxena <dsaxena@linaro.org>
+>> ---
+>>  arch/arm64/include/asm/debug-monitors.h | 21 ++++++++
+>>  arch/arm64/kernel/debug-monitors.c      | 86 ++++++++++++++++++++++++++++++++-
+>>  arch/arm64/kernel/entry.S               |  2 +
+>>  3 files changed, 108 insertions(+), 1 deletion(-)
+>
+> [...]
+>
+>> @@ -215,7 +257,10 @@ static int single_step_handler(unsigned long addr, unsigned int esr,
+>>                */
+>>               user_rewind_single_step(current);
+>>       } else {
+>> -             /* TODO: route to KGDB */
+>> +             /* call registered single step handlers */
+>
+> Don't bother with this comment (it's crystal clear from the code).
+OK, I will remove this unnecessary print.
+>
+>> +             if (call_step_hook(regs, esr) == DBG_HOOK_HANDLED)
+>> +                     return 0;
+>> +
+>>               pr_warning("Unexpected kernel single-step exception at EL1\n");
+>>               /*
+>>                * Re-enable stepping since we know that we will be
+>> @@ -227,11 +272,50 @@ static int single_step_handler(unsigned long addr, unsigned int esr,
+>>       return 0;
+>>  }
+>>
+>> +
+>> +static LIST_HEAD(break_hook);
+>> +DEFINE_RWLOCK(break_hook_lock);
+>
+> This guy can be a plain old spinlock. That way, the readers have less
+> overhead but things still work because we only call a single hook function.
+well, kprobes need to support recursive breakpoints (i.e. breakpoint
+handler executing BRK once again)
+so I converted this lock to rw_lock.  I should put this info in commit
+description to be more clearer.
+Let me know if you find any issue with re-cursing in breakpoint exception?
 
 Thanks,
-Guenter
-
+Sandeepa
+>
+> Will
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
