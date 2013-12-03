@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754501Ab3LCPFy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 10:05:54 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:60253 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753481Ab3LCPFt (ORCPT
+	id S1754560Ab3LCPIT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 10:08:19 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:35496 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753662Ab3LCPIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 10:05:49 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: haver@linux.vnet.ibm.com
-Subject: Re: [PATCH 1/6] GenWQE PCI support, health monitoring and recovery
-Date: Tue, 3 Dec 2013 16:05:38 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        cody@linux.vnet.ibm.com, schwidefsky@de.ibm.com, utz.bacher@de.ibm.com,
-        mmarek@suse.cz, rmallon@gmail.com, jsvogt@de.ibm.com,
-        MIJUNG@de.ibm.com, cascardo@linux.vnet.ibm.com, michael@ibmra.de
-References: <1383741943-14609-1-git-send-email-haver@linux.vnet.ibm.com> <20131203143010.GB3521@kroah.com> <1386082011.29309.2.camel@oc7383187364.ibm.com>
-In-Reply-To: <1386082011.29309.2.camel@oc7383187364.ibm.com>
+	Tue, 3 Dec 2013 10:08:17 -0500
+Date: Tue, 3 Dec 2013 15:07:55 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, alsa-devel@alsa-project.org
+Message-ID: <20131203150755.GZ27568@sirena.org.uk>
+References: <1386066427-6862-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312031605.38972.arnd@arndb.de>
-X-Provags-ID: V02:K0:ndWR9KSWGpHNrQZG7QBxgIEND/gSlMvDHBDj9sFBUdy
- tUu1sFlitFR72nGQzMpnL5ll3i2aPY+ErFknKtUj1/hrGMACCn
- 1YkqJk/YHEk9RQTQWcK1/dxFXAIcpDfcw7bn6VdQ9720KAlakf
- dVYmcNfv1JoGOWt+Br3Pl+ty123LU3WNLMezeZxkSLGeqHzqKS
- tsSTFrJ63rgsdkLgD/Wcx13M2Jnjgj+uj9V6ON9srhhD9AO1Ly
- /WAlsz6JMbXg+N1ImcrM5vFHtevpbO416fWfg1pnQ0+DaCY2PP
- natQmM5glwHKP0iMSDqSlL0vtFZgUI/3jolRaXWhexSBTnpc+q
- zRSrdO3CFKEPoDUsNS6Q=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IchZQccUbQrk8obU"
+Content-Disposition: inline
+In-Reply-To: <1386066427-6862-1-git-send-email-lee.jones@linaro.org>
+X-Cookie: Boycott meat -- suck your thumb.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] ASoC: ux500_pcm: Differentiate between pdata and DT
+ initialisation
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 03 December 2013, Frank Haverkamp wrote:
-> Ohh, sorry __u64 of course:
-> 
-> /* common struct for chip image exchange */
-> struct genwqe_bitstream {
->         __u64 data_addr;                /* pointer to image data */
->         __u32 size;                     /* size of image file */
->         __u32 crc;                      /* crc of this image */
->         __u8  partition;                /* '0', '1', or 'v' */
->         __u64 target_addr;              /* starting address in Flash */
->         __u8  uid;                      /* 1=host/x=dram */
-> 
->         __u64 slu_id;                   /* informational/sim: SluID */
->         __u64 app_id;                   /* informational/sim: AppID */
-> 
->         __u16 retc;                     /* returned from processing */
->         __u16 attn;                     /* attention code from
-> processing */
->         __u32 progress;                 /* progress code from processing
-> */
-> };
-> 
-> and than I do in my userspace application:
-> 
->         load.data_addr = (unsigned long)buf;
-> 
-> Is that ok, or must I consider more?
-> 
 
-I haven't followed the recent discussions, jumping into the middle here:
-The structure above is not safe for a generic ioctl interface because it
-has different padding on x86-32 and x86-64, where __u64 has different
-alignment.
+--IchZQccUbQrk8obU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-You can try to avoid the implicit padding by sorting the members by size,
-by making some members larger or by adding explicit padding.
+On Tue, Dec 03, 2013 at 10:27:06AM +0000, Lee Jones wrote:
+> If booting with full DT support (i.e. DMA too, the last piece of the
+> puzzle), then we don't need to use the compatible_request_channel call
+> back or require some of the historical bumph which probably isn't
+> required by a platform data start-up now either. This will also be
+> ripped out in upcoming commits.
 
-	Arnd
+Applied both, thanks.
+
+--IchZQccUbQrk8obU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSnfPIAAoJELSic+t+oim9LnAP/108kwuVEJ/gly3Yzp0R4R9m
+8d6dKjeJLSRoD7Z86cHDpu9z+0REWDLN9rivdOFaFWdckBokLKz0mS+a5kWGTswr
+oJqMtpeBTUtTMRdGGGKnFFK2FG9ygg8OgR9gbkytY0LdpLoGUSX3H97Z6UPZuN/O
+DZppzk/9k6p6DKjz9gIxXOpxyRPXDMSeGK7a7YD571B4HwxNKNkNUTf4yK/uOmNE
+zHLsVXvhAaYsihYy20n+3YbncTceNl0UmYOihu8WCivkjA7Gx/iSF8fJ84cShJwC
+5JuAFDAi4ovgdLQukLUzqLdun7KenJDJ5rxjnUL29hTCEYnMHnIgOa5nQwBGWVqT
+pO0cxYoPOxB5NRTEQN6+dODVDWsHu7uPQSROlgdyEpy4d2SjvlrNoclnoH7NQNEK
+nKVPONovUCOXx8Hj+IrmW/W2kpSQkXOgJMauUfvwq18GxqGHJHaqo9JcrFDkFpwC
++OFKXLSvyDOvYp7KFzMjrEdpqKjgXeCG/XitjQyQZz/Cziiz9merk14IXVhKZy+L
+NjrR+fQvykMCQGO+f5gGD6O1YA23svpoW4gLdUfZEDk5pVPwTm+ZXNITid8Nd20a
+Qrojf85b1aEY4NNMNozjxxyamKbxHSnKi0a5WSVV2IRSrLlr9fo1bNlFTKNT3Z8u
+GNPkfHh7cMFA5JPu+52c
+=UArl
+-----END PGP SIGNATURE-----
+
+--IchZQccUbQrk8obU--
