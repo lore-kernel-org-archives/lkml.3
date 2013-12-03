@@ -1,230 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751385Ab3LCFZH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 00:25:07 -0500
-Received: from mail.fpasia.hk ([202.130.89.98]:40862 "EHLO fpa01n0.fpasia.hk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750920Ab3LCFZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 00:25:04 -0500
-Message-ID: <529D6B24.7020502@gtsys.com.hk>
-Date: Tue, 03 Dec 2013 13:24:52 +0800
-From: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11 ThunderBrowse/3.8
+	id S1751376Ab3LCFdP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 00:33:15 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47496 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944Ab3LCFdO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 00:33:14 -0500
+X-AuditID: 9c93016f-b7c57ae0000070d3-8e-529d6d18f341
+From: Namhyung Kim <namhyung@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Pekka Enberg <penberg@iki.fi>
+Subject: Re: [PATCH 1/3] perf tools: Record total sampling time
+References: <1385967199-3759-1-git-send-email-namhyung@kernel.org>
+	<1385967199-3759-2-git-send-email-namhyung@kernel.org>
+	<20131202124527.GB22212@gmail.com> <20131202125709.GA22404@gmail.com>
+	<1385999009.1710.72.camel@leonhard> <20131202163620.GC27781@gmail.com>
+Date: Tue, 03 Dec 2013 14:33:11 +0900
+In-Reply-To: <20131202163620.GC27781@gmail.com> (Ingo Molnar's message of
+	"Mon, 2 Dec 2013 17:36:20 +0100")
+Message-ID: <8738mao5wo.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] usb: phy-generic: Add ULPI VBUS support
-References: <1385967919-13258-1-git-send-email-chris.ruehl@gtsys.com.hk> <1385967919-13258-4-git-send-email-chris.ruehl@gtsys.com.hk> <20131202182204.GQ12952@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20131202182204.GQ12952@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Ingo,
 
+On Mon, 2 Dec 2013 17:36:20 +0100, Ingo Molnar wrote:
+> * Namhyung Kim <namhyung@kernel.org> wrote:
+>
+>> 2013-12-02 (월), 13:57 +0100, Ingo Molnar:
+>> > So basically, in the end I think it should be possible to have the 
+>> > following behavior:
+>> > 
+>> >    perf record -a -e cycles sleep 1
+>> > 
+>> >    perf report stat              # Reports as if we ran: 'perf stat -a -e cycles sleep 1'
+>> >    perf report                   # Reports the usual histogram
+>> > 
+>> >    perf report --stat            # Reports the perf stat output and the histogram
+>> > 
+>> > or so.
+>> 
+>> I don't think we need both of 'perf report stat' and 'perf report
+>> --stat'.  At least it looks somewhat confusing to users IMHO.
+>
+> Okay. Maybe the --stat option would be the more logical choice, 
+> because '--' options can be added arbitrarily, while it would be weird 
+> to add multiple subcommand options.
+>
+> So basically there would be two options:
+>
+>    --show-stat         [--no-show-stat]
+>    --show-histogram    [--no-show-histogram]
+>
+> Today --show-histogram is the only one enabled by default.
 
-On Tuesday, December 03, 2013 02:22 AM, Mark Rutland wrote:
-> On Mon, Dec 02, 2013 at 07:05:19AM +0000, Chris Ruehl wrote:
->> usb: phy-generic: Add ULPI VBUS support
->>
->> Some platforms need to set the VBUS parameters of the ULPI
->> like ISP1504 which interact with overcurrent protection and
->> power switch MIC2575. Therefore it requires to set
->> * DRVVBUS
->> * DRVVBUS_EXT
->> * EXTVBUSIND
->> * CHRGVBUS
->> of the ULPI.
->> This patch add support for it.
->
-> Could you elaborate on when we need to do this and why?
->
->>
->> Devicetree configuration example:
->>
->> usbphy0: usbphy@0x10024170 {
->>   compatible = "usb-nop-xceiv";
->>   reg =<0x10024170 0x4>; /* ULPI Viewport OTG */
->>   clocks =<&clks 75>;
->>   clock-names = "main_clk";
->> };
->>
->> &usbphy0 {
->>          reset-gpios =<&gpio1 31 1>;
->>          pinctrl-names = "default";
->>          pinctrl-0 =<&pinctrl_usbphy0&pinctrl_usbotg1>;
->>          ulpi_set_vbus =<0x0f>;
->> };
->>
->> Please refer to the phy-bindings.txt for the value of ulpi_set_vbus commit
->> with this patch.
->>
->> Signed-off-by: Chris Ruehl<chris.ruehl@gtsys.com.hk>
->> ---
->>   .../devicetree/bindings/phy/phy-bindings.txt       |   15 ++++++
->>   drivers/usb/phy/phy-generic.c                      |   50 +++++++++++++++++++-
->>   drivers/usb/phy/phy-generic.h                      |    3 ++
->>   3 files changed, 67 insertions(+), 1 deletion(-)
->>
->> diff --git a/Documentation/devicetree/bindings/phy/phy-bindings.txt b/Documentation/devicetree/bindings/phy/phy-bindings.txt
->> index 8ae844f..b109b2f 100644
->> --- a/Documentation/devicetree/bindings/phy/phy-bindings.txt
->> +++ b/Documentation/devicetree/bindings/phy/phy-bindings.txt
->> @@ -34,6 +34,18 @@ phys : the phandle for the PHY device (used by the PHY subsystem)
->>   phy-names : the names of the PHY corresponding to the PHYs present in the
->>   	    *phys* phandle
->>
->> +Optional Properties:
->> +reset-gpios :	GPIO used to reset ULPI like ISP1504 with
->> +		0 = reset active high ; 1 = reset active low.
->
-> The format of the gpio-specifier doesn't matter here.
->
-> Why do you need to mention the ISP1504? Either this is generic, or it
-> doesn't belong here.
->
-> Perhaps we need a ulpi-phy binding document. This and the rest of the
-> patch is strongly tied to ULPI.
->
->> +cs-gpios :	GPIO used to activate a ULPI like ISP1504 with
->> +		0 = reset acitive high; 1 = reset active low.
->
-> Again, the format of the gpio-specifier is not a concern here. I'm also
-> a little confused as to the name "cs-gpios" for something that activates
-> the ULPI.
->
->> +ulpi_set_vbus :	ULPI configuation parameter to program the VBUS signaling of
->> +		ISP1504 or similar chipsets.
->
-> Could you elaborate on this? Is this applicable to any ULPI PHY? The
-> description implies that it's somewhat tied to ISP1504 (if it's not,
-> drop the mention of ISP1504).
->
-> Why exactly do we need this, and why should it live in the DT?
->
-> Why can se not figure this out automatically, or have defaults that work
-> in more places?
->
-> Also, s/_/-/ on property names please.
->
->> +		Set the parameter:
->> +		DRVVBUS = (1) DRVVBUS_EXT = (1<<1) EXTVBUSIND = (1<<2) CHRGVBUS = (1<<3)
->> +		eg: DRVVBUS | DRVVBUS_EXT = 0x03
->> +		    ulpi_set_vbus =<0x03>
->
-> I don't like putting arbitrary bitfields like this in DT. They're
-> illegible and easy to abuse.
->
-> Boolean properties are nicer for flags.
->
-> What exactly do these flags mean?
->
-> [...]
->
->> @@ -253,14 +284,15 @@ static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
->>
->>   	if (dev->of_node) {
->>   		struct device_node *node = dev->of_node;
->> +		struct resource	*res;
->>   		enum of_gpio_flags flags;
->>   		enum of_gpio_flags csflags;
->> +		u32 ulpi_vbus;
->>
->>   		if (of_property_read_u32(node, "clock-frequency",&clk_rate))
->>   			clk_rate = 0;
->>
->>   		needs_vcc = of_property_read_bool(node, "vcc-supply");
->> -
->>   		nop->gpio_reset = of_get_named_gpio_flags(node, "reset-gpios",
->>   								0,&flags);
->
-> Why the random line deletion?
->
->>
->> @@ -274,6 +306,22 @@ static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
->>   		if (gpio_is_valid(nop->gpio_chipselect))
->>   			nop->cs_active_low = csflags&  OF_GPIO_ACTIVE_LOW;
->>
->> +		err = of_property_read_u32(node, "ulpi_set_vbus",&ulpi_vbus);
->> +		if (err) {
->> +			nop->ulpi_vbus = -1;
->> +			nop->viewport = NULL;
->> +			ulpi_vbus = 0;
->> +		} else {
->> +			dev_dbg(dev,"ULPI ulpi_set_vbus 0x%02x",ulpi_vbus);
->> +			nop->ulpi_vbus = ulpi_vbus;
->> +			res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->
-> This wasn't described in the binding document, and it's ULPI specific. I
-> think we need a separate ulpi-phy binding that builds upon the generic
-> one.
->
-Mark, before commit an other patch, is it this what you looking for?
---- /dev/null
-+++ b/Documentation/devicetree/bindings/phy/phy-ulpi.txt
-@@ -0,0 +1,36 @@
-+This document explains only the device tree data binding for phy-ulpi nodes. 
-For general
-+information about PHY subsystem refer to Documentation/phy.txt
-+
-+PHY device node
-+===============
-+
-+Required Properties:
-+reg:           ULPI Viewport
-+reset-gpios :  GPIO used to reset ULPI chipset
-+
-+Optional Properties:
-+cs-gpios :     GPIO used to activate a ULPI chipset
-+ulpi-set-vbus :        ULPI configuation parameter to program the VBUS logic
-+               Set the parameter:
-+               DRVVBUS         = (1<<0)        Enable VBUS logic
-+               DRVVBUS_EXT     = (1<<1)        Enable External VBUS logic
-+               EXTVBUSIND      = (1<<2)        Enable Ext. VBUS indication and 
-fault handler
-+               CHRGVBUS        = (1<<3)        Enable VBUS charge pump logic
-+               eg: DRVVBUS | DRVVBUS_EXT = 0x03
-+                   ulpi_set_vbus = <0x03>
-+
-+For example:
-+
-+phys: phy@p {
-+    compatible = "xxx";
-+    reg = <p>;
-+    .
-+    .
-+    #phy-cells = <1>;
-+    .
-+    .
-+    reset-gpios = <&gpioX nn n>
-+    cs-gpios = <&gpioX nn n>
-+    ulpi-set-vbus = <0xXX>;
-+};
-+
+Hmm.. okay, this is possible.  But we have some --show-* options already
+mostly for enabling more columns so it won't be symmetric to this level
+of control.  What about using plain --stat nad --historam then?
 
+Or we can deprecate those existing --show-* options and convert them to
+suggested -F <fields> option and then use your proposal above.
 
-Thanks
-Chris
+>
+> Running:
+>
+>    perf report --no-show-histogram --show-stat
+>
+> would give perf-stat output.
 
+Right.
 
+>
+> This --show-* pattern could be used in the future, for example to 
+> express debug output:
+>
+>   perf report --show-debug
+>
+> Or to show other details that are off by default.
+>
+> 'perf report --show' should perhaps list all --show options that are 
+> available currently.
 
+You can do similar with shell completion. :)
 
-> Thanks,
-> Mark.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+> Maybe the syntax should be similar to the sort option?
+>
+> What's your preference?
 
--- 
-GTSYS Limited RFID Technology
-A01 24/F Gold King Industrial Bld
-35-41 Tai Lin Pai Road, Kwai Chung, Hong Kong
-Fax (852) 8167 4060 - Tel (852) 3598 9488
+Well, I think it's good to have separate options (like --[show-]stat,
+--[show-]histogram, etc) if they won't grow to many.  But if there's a
+possiblity of growing, it'd be more convenient to have single option can
+receive multiple values like the sort option does.
 
-Disclaimer: http://www.gtsys.com.hk/email/classified.html
+>
+>> For perf report stat usage, I think there's not much thing we can do 
+>> for a single event - the most case.  We can simple show total count 
+>> and elapsed (or sampled time) for the event, but it's already in the 
+>> header with this patch.
+>> 
+>>       # Samples: 4K of event 'cycles'
+>>       # Event count (approx.): 4087481688
+>>       # Total sampling time  : 1.001260 (sec)
+>
+> That's what I mean, instead of 'this patch' we should utilize perf 
+> stat output mode. That will solve your particular feature request 
+> here, plus gives us much more: it gives perf stat integration into 
+> report.
+
+Let me clarify.  The first two lines were already there before this
+patch and I just added last sampling time line.  Those lines are
+displayed right above the usual histogram for each event.  They are
+displayed by default on --stdio output.
+
+And you want to make it look like perf stat, right?
+
+So what should perf report --[show-]stat do (say there're two events)?
+
+1. display perf stat-like output at the beginning or end of usual output
+and remove those per-event info in the header
+
+2. same as 1 but keep the original per-event info
+
+3. same as 1 but also change per-event info to perf stat-like output
+
+4. just change per-event info to perf stat-like output
+
+>
+>> If an user really want to see perf stat-like output (without the 
+>> usual histogram) for a recorded session, it'd be better to have 
+>> 'perf record --stat' do the job (like git diff --stat) IMHO.
+>
+> Why? Showing the result is a reporting feature really. Firstly we 
+> record everything, then we 'analyze', looking at various details of 
+> data.
+>
+> Getting perf stat output could be used to get a first, rough, high 
+> level overview.
+
+Yes, but perf report already provides such high level information per
+event so I just thought the --[show-]stat can be used to see the whole
+picture only.  But I won't insist it strongly - sometimes it might be
+useful to see both information together.
+
+>
+>> > i.e. a perf.data file would by default always carry enough information 
+>> > to enable the extraction of the 'perf stat' data.
+>> > 
+>> > At that point visualizing it is purely report-time logic, it does not 
+>> > need any record-time options.
+>> > 
+>> > This would work for multi-event sampling as well, if we do:
+>> > 
+>> >    perf record -a -e cycles -e branches sleep 1
+>> > 
+>> > then 'perf report stat' would output the same as:
+>> > 
+>> >  $ perf stat -e cycles -e branches -a sleep 1
+>> > 
+>> >  Performance counter stats for 'system wide':
+>> > 
+>> >         34,174,518      cycles                    [100.00%]
+>> >          3,155,677      branches                                                    
+>> > 
+>> >        1.000802852 seconds time elapsed
+>> > 
+>> 
+>> Yeah, it'd be good to have same output both for perf stat and perf 
+>> report --stat (or stat if you want).  But I don't think it's 
+>> possible to determine multiplexed counter values like perf stat does 
+>> unless we use PERF_SAMPLE_READ for recoding.
+>
+> That's my point: is there any reason why we shouldn't turn on 
+> PERF_SAMPLE_READ for these events, and read them at the beginning and 
+> at the end of a sampling session?
+
+But adding PERF_SAMPLE_READ to attr.sample_type will result in every
+sample has read record in the output, right?
+
+>
+> ( some people might even want periodic samples emitted inbetween, to 
+>   be able to see a time flow representation of samples, but that's for 
+>   the future. )
+>
+>> > Another neat feature this kind of workflo enables is the integration 
+>> > of --repeat to perf record, so something like:
+>> > 
+>> >     perf record --repeat 3 -a -e cycles -e branches sleep 1
+>> > 
+>> > would save 3 samples after each other, and would allow extraction of 
+>> > the statistical stability of the measurement, and 'perf report stat' 
+>> > would print the same result as a raw perf stat run would:
+>> > 
+>> >  $ perf stat --repeat 3 -e cycles -e branches -e instructions -a sleep 1
+>> > 
+>> >  Performance counter stats for 'system wide' (3 runs):
+>> > 
+>> >     28,975,150,642      cycles                     ( +-  0.43% ) [100.00%]
+>> >     10,740,235,371      branches                                                      ( +-  0.47% ) [100.00%]
+>> >     44,535,464,754      instructions              #    1.54  insns per cycle          ( +-  0.47% )
+>> > 
+>> >        1.005718027 seconds time elapsed                                          ( +-  0.43% )
+>> 
+>> Yeah, but it can be used only for a new forked workload.
+>
+> Well, it can be used for anything that perf record can do today, 
+> except maybe the Ctrl-C method of measurement, right?
+
+I'm not sure I understood you correctly.  How do you repeat if you
+attach to an existing process (as it can be terminated in the middle)?
+
+>
+>> > Or something like that. At that point we share reporting between 
+>> > perf stat and perf report, no special ad-hoc options are needed to 
+>> > just measure and report timestamps, it would all be a 'natural' 
+>> > side effect of having perf stat.
+>> > 
+>> > What do you think?
+>> 
+>> I think it'd be better if we can share code as much as possible.  
+>> And it'd much better if we can forget about the difference in 
+>> options. :)
+>
+> Agreed - see the --show-<xyz> pattern I suggested above.
+>
+> It could be different as well, sort-key alike:
+>
+>    --show +stat,-hist,+debug
+>
+
+See my comment above.
+
+Thanks,
+Namhyung
