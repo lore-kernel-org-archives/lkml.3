@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039Ab3LCXol (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 18:44:41 -0500
-Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:56267 "EHLO
-	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755531Ab3LCXjF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 18:39:05 -0500
-Message-Id: <20131203233257.025796154@linux.com>
-User-Agent: quilt/0.60-1
-Date: Tue, 03 Dec 2013 17:32:55 -0600
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+	id S1756060Ab3LCXop (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 18:44:45 -0500
+Received: from mga02.intel.com ([134.134.136.20]:42342 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756041Ab3LCXom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 18:44:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,820,1378882800"; 
+   d="scan'208";a="418884260"
+From: Andi Kleen <andi@firstfloor.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Wim Van Sebroeck <wim@iguana.be>
-Subject: [PATCH 23/41] watchdog: Replace __raw_get_cpu_var uses
-References: <20131203233232.928771708@linux.com>
-Content-Disposition: inline; filename=this_watchdog
+        "mingo\@elte.hu" <mingo@elte.hu>, David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [BUG] perf stat: explicit grouping yields unexpected results
+References: <CABPqkBTiBHF4wZ3c_Czkh3JgvXGNWJW1LH42Jh4NG_ZJkGkbgw@mail.gmail.com>
+	<20131115063457.GB12442@gmail.com>
+	<CABPqkBQ2wD_knJP9FQxThSxNng4DZhtRxeUUAW0efAs9=jBXEA@mail.gmail.com>
+	<20131115103405.GA18264@gmail.com>
+	<20131117034134.GA19762@tassilo.jf.intel.com>
+	<20131129133340.GA25751@krava.brq.redhat.com>
+	<20131202152329.GD22695@tassilo.jf.intel.com>
+	<CABPqkBQuY0VDKVhFGscAtK2vZjaSJQBCEtVCk4km-bKW85Zx-A@mail.gmail.com>
+Date: Tue, 03 Dec 2013 15:44:38 -0800
+In-Reply-To: <CABPqkBQuY0VDKVhFGscAtK2vZjaSJQBCEtVCk4km-bKW85Zx-A@mail.gmail.com>
+	(Stephane Eranian's message of "Tue, 3 Dec 2013 03:52:13 +0100")
+Message-ID: <87r49tcxeh.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of these are the uses of &__raw_get_cpu_var for address calculation.
+Stephane Eranian <eranian@google.com> writes:
+>>
+> I don't understand why this need to be so complicated.
+> Maybe just change the error code in case of group
+> overcommitment? That way, the tool could distinguish
+> and report the appropriate error message.
 
-touch_softlockup_watchdog_sync() uses __raw_get_cpu_var to write to
-per cpu variables. Use __this_cpu_write instead.
+The existing errno is an ABI.
 
-Cc: Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-watchdog@vger.kernel.org
-Signed-off-by: Christoph Lameter <cl@linux.com>
+Also that would handle this case, but there are a bazillion other 
+failure cases in perf. And we can't invent new errnos for all of them.
 
-Index: linux/kernel/watchdog.c
-===================================================================
---- linux.orig/kernel/watchdog.c	2013-12-02 16:07:54.234510172 -0600
-+++ linux/kernel/watchdog.c	2013-12-02 16:07:54.234510172 -0600
-@@ -174,8 +174,8 @@ EXPORT_SYMBOL(touch_nmi_watchdog);
- 
- void touch_softlockup_watchdog_sync(void)
- {
--	__raw_get_cpu_var(softlockup_touch_sync) = true;
--	__raw_get_cpu_var(watchdog_touch_ts) = 0;
-+	__this_cpu_write(softlockup_touch_sync, true);
-+	__this_cpu_write(watchdog_touch_ts, 0);
- }
- 
- #ifdef CONFIG_HARDLOCKUP_DETECTOR
-@@ -341,7 +341,7 @@ static void watchdog_set_prio(unsigned i
- 
- static void watchdog_enable(unsigned int cpu)
- {
--	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
-+	struct hrtimer *hrtimer = raw_cpu_ptr(&watchdog_hrtimer);
- 
- 	/* kick off the timer for the hardlockup detector */
- 	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-@@ -361,7 +361,7 @@ static void watchdog_enable(unsigned int
- 
- static void watchdog_disable(unsigned int cpu)
- {
--	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
-+	struct hrtimer *hrtimer = raw_cpu_ptr(&watchdog_hrtimer);
- 
- 	watchdog_set_prio(SCHED_NORMAL, 0);
- 	hrtimer_cancel(hrtimer);
-@@ -488,7 +488,7 @@ static struct smp_hotplug_thread watchdo
- 
- static void restart_watchdog_hrtimer(void *info)
- {
--	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
-+	struct hrtimer *hrtimer = raw_cpu_ptr(&watchdog_hrtimer);
- 	int ret;
- 
- 	/*
+A string error interface would cover it all.
 
+Usually when something strange like this happens in perf I have to apply
+this patch
+https://lkml.org/lkml/2013/3/8/432
+and use ftrace to trace it down.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
