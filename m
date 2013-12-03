@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924Ab3LCC3q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 21:29:46 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:53711 "EHLO
+	id S1754005Ab3LCC3z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 21:29:55 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:53719 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753829Ab3LCC3e (ORCPT
+	with ESMTP id S1753770Ab3LCC3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 21:29:34 -0500
+	Mon, 2 Dec 2013 21:29:40 -0500
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-mm@kvack.org>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2 21/23] mm/ARM: kernel: Use memblock apis for early memory allocations
-Date: Mon, 2 Dec 2013 21:27:36 -0500
-Message-ID: <1386037658-3161-22-git-send-email-santosh.shilimkar@ti.com>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH v2 23/23] mm/ARM: OMAP: Use memblock apis for early memory allocations
+Date: Mon, 2 Dec 2013 21:27:38 -0500
+Message-ID: <1386037658-3161-24-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com>
 References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com>
@@ -37,38 +38,39 @@ bootmem APIs.
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Tejun Heo <tj@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Walmsley <paul@pwsan.com>
+Cc: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- arch/arm/kernel/devtree.c |    2 +-
- arch/arm/kernel/setup.c   |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/mach-omap2/omap_hwmod.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
-index 739c3df..85b9b3b 100644
---- a/arch/arm/kernel/devtree.c
-+++ b/arch/arm/kernel/devtree.c
-@@ -33,7 +33,7 @@ void __init early_init_dt_add_memory_arch(u64 base, u64 size)
+diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
+index e3f0eca..92d11e2 100644
+--- a/arch/arm/mach-omap2/omap_hwmod.c
++++ b/arch/arm/mach-omap2/omap_hwmod.c
+@@ -2695,9 +2695,7 @@ static int __init _alloc_links(struct omap_hwmod_link **ml,
+ 	sz = sizeof(struct omap_hwmod_link) * LINKS_PER_OCP_IF;
  
- void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
- {
--	return alloc_bootmem_align(size, align);
-+	return memblock_virt_alloc_align(size, align);
+ 	*sl = NULL;
+-	*ml = alloc_bootmem(sz);
+-
+-	memset(*ml, 0, sz);
++	*ml = memblock_virt_alloc(sz);
+ 
+ 	*sl = (void *)(*ml) + sizeof(struct omap_hwmod_link);
+ 
+@@ -2816,9 +2814,7 @@ static int __init _alloc_linkspace(struct omap_hwmod_ocp_if **ois)
+ 	pr_debug("omap_hwmod: %s: allocating %d byte linkspace (%d links)\n",
+ 		 __func__, sz, max_ls);
+ 
+-	linkspace = alloc_bootmem(sz);
+-
+-	memset(linkspace, 0, sz);
++	linkspace = memblock_virt_alloc(sz);
+ 
+ 	return 0;
  }
- 
- void __init arm_dt_memblock_reserve(void)
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 6a1b8a8..0d3c6aa 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -717,7 +717,7 @@ static void __init request_standard_resources(const struct machine_desc *mdesc)
- 	kernel_data.end     = virt_to_phys(_end - 1);
- 
- 	for_each_memblock(memory, region) {
--		res = alloc_bootmem_low(sizeof(*res));
-+		res = memblock_virt_alloc(sizeof(*res));
- 		res->name  = "System RAM";
- 		res->start = __pfn_to_phys(memblock_region_memory_base_pfn(region));
- 		res->end = __pfn_to_phys(memblock_region_memory_end_pfn(region)) - 1;
 -- 
 1.7.9.5
 
