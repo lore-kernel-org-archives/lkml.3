@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab3LCOJc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 09:09:32 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:52406 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588Ab3LCOJ2 (ORCPT
+	id S1753443Ab3LCOMI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 09:12:08 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:42322 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab3LCOMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 09:09:28 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <kishon@ti.com>, <balbi@ti.com>, <linux@arm.linux.org.uk>
-CC: <santosh.shilimkar@ti.com>, <gregkh@linuxfoundation.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] phy: kconfig: add depends on "USB_PHY" to OMAP_USB2 and TWL4030_USB
-Date: Tue, 3 Dec 2013 19:38:52 +0530
-Message-ID: <1386079732-19657-1-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 3 Dec 2013 09:12:03 -0500
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] MFD: ab8500: use irqdomain to map interrupts
+Date: Tue,  3 Dec 2013 15:11:54 +0100
+Message-Id: <1386079914-23807-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes
-warning: (OMAP_USB2 && TWL4030_USB) selects USB_PHY which has unmet
-direct dependencies (USB_SUPPORT)
-that shows up while disabling USB_SUPPORT from menuconfig.
+All subdrivers use the irqdomain to demux AB8500 IRQs but here
+in the hierarchical path we find a leftover instance using the
+hard-coded IRQ base. Convert it to use irqdomain with a
+oneliner.
 
-Reported-by: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
+Cc: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
-Changes from v1:
-* changed from *depends on USB_SUPPORT* to *depends on USB_PHY" and
-also changed the subject.
- drivers/phy/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mfd/ab8500-core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index a344f3d..330ef2d 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -24,8 +24,8 @@ config PHY_EXYNOS_MIPI_VIDEO
- config OMAP_USB2
- 	tristate "OMAP USB2 PHY Driver"
- 	depends on ARCH_OMAP2PLUS
-+	depends on USB_PHY
- 	select GENERIC_PHY
--	select USB_PHY
- 	select OMAP_CONTROL_USB
- 	help
- 	  Enable this to support the transceiver that is part of SOC. This
-@@ -36,8 +36,8 @@ config OMAP_USB2
- config TWL4030_USB
- 	tristate "TWL4030 USB Transceiver Driver"
- 	depends on TWL4030_CORE && REGULATOR_TWL4030 && USB_MUSB_OMAP2PLUS
-+	depends on USB_PHY
- 	select GENERIC_PHY
--	select USB_PHY
- 	help
- 	  Enable this to support the USB OTG transceiver on TWL4030
- 	  family chips (including the TWL5030 and TPS659x0 devices).
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index b6c2cdc76091..7134a4060881 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -491,7 +491,7 @@ static int ab8500_handle_hierarchical_line(struct ab8500 *ab8500,
+ 		if (line == AB8540_INT_GPIO43F || line == AB8540_INT_GPIO44F)
+ 			line += 1;
+ 
+-		handle_nested_irq(ab8500->irq_base + line);
++		handle_nested_irq(irq_create_mapping(ab8500->domain, line));
+ 	}
+ 
+ 	return 0;
 -- 
-1.7.10.4
+1.8.3.1
 
