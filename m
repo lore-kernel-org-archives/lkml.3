@@ -1,108 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab3LCLMX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 06:12:23 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54922 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752529Ab3LCLMU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 06:12:20 -0500
-Message-ID: <529DBC81.5030805@pengutronix.de>
-Date: Tue, 03 Dec 2013 12:12:01 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	id S1753443Ab3LCLOM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 06:14:12 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:32258 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752879Ab3LCLOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 06:14:10 -0500
+X-IronPort-AV: E=Sophos;i="4.93,817,1378857600"; 
+   d="scan'208";a="80041355"
+Message-ID: <529DBCFE.9030004@citrix.com>
+Date: Tue, 3 Dec 2013 12:14:06 +0100
+From: =?UTF-8?B?Um9nZXIgUGF1IE1vbm7DqQ==?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-CC: peter.chen@freescale.com, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3 v4] usb: chipidea: Reallocate regmap only if lpm is
- detected
-References: <1386057710-3848-1-git-send-email-chris.ruehl@gtsys.com.hk>
-In-Reply-To: <1386057710-3848-1-git-send-email-chris.ruehl@gtsys.com.hk>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Julien Grall <julien.grall@linaro.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: Re: [Xen-devel] [PATCH RFC] xen-block: correctly define structures
+ in public headers
+References: <1386068254-1413-1-git-send-email-roger.pau@citrix.com> <1386068729.13256.8.camel@kazak.uk.xensource.com>
+In-Reply-To: <1386068729.13256.8.camel@kazak.uk.xensource.com>
 X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="TgCl74V2hBUa28oexmCPLAlBB4cATjTEI"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---TgCl74V2hBUa28oexmCPLAlBB4cATjTEI
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 03/12/13 12:05, Ian Campbell wrote:
+> On Tue, 2013-12-03 at 11:57 +0100, Roger Pau Monne wrote:
+>> Using __packed__ on the public interface is not correct, this
+>> structures should be compiled using the native ABI, and __packed__
+>> should only be used in the backend counterpart of those structures
+>> (which needs to handle different ABIs).
+>>
+>> This was even worse in the ARM case, where the Linux kernel was
+>> incorrectly using the X86_32 protocol ABI. This patch fixes it, but
+>> also breaks compatibility, so an ARM DomU kernel compiled with
+>> this patch will fail to communicate with PV disk devices unless the
+>> Dom0 also has this patch.
+> 
+> This is acceptable IMHO, the ARM ABI is clearly defined and previous
+> kernels were simply buggy. The fact that front and backend were
+> equivalently buggy and so it happened to work is not an excuse.
+> 
+>> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+>> Reported-by: Julien Grall <julien.grall@linaro.org>
+>> Cc: Julien Grall <julien.grall@linaro.org>
+>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> Cc: David Vrabel <david.vrabel@citrix.com>
+>> Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+>> Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>> ---
+>>  include/xen/interface/io/blkif.h |   28 +++++++---------------------
+>>  1 files changed, 7 insertions(+), 21 deletions(-)
+>>
+>> diff --git a/include/xen/interface/io/blkif.h b/include/xen/interface/io/blkif.h
+>> index 65e1209..002ea22 100644
+>> --- a/include/xen/interface/io/blkif.h
+>> +++ b/include/xen/interface/io/blkif.h
+>> @@ -141,14 +141,11 @@ struct blkif_request_segment_aligned {
+>>  	/* @last_sect: last sector in frame to transfer (inclusive).     */
+>>  	uint8_t     first_sect, last_sect;
+>>  	uint16_t    _pad; /* padding to make it 8 bytes, so it's cache-aligned */
+>> -} __attribute__((__packed__));
+>> +};
+>>  
+>>  struct blkif_request_rw {
+>>  	uint8_t        nr_segments;  /* number of segments                   */
+>>  	blkif_vdev_t   handle;       /* only for read/write requests         */
+>> -#ifdef CONFIG_X86_64
+>> -	uint32_t       _pad1;	     /* offsetof(blkif_request,u.rw.id) == 8 */
+>> -#endif
+> 
+> These padding fields would still serve a purpose even after removing the
+> packing, which is to document/clarify where there are holes for various
+> architectures. They could either be retained or perhaps replaced by a
+> comment?
 
-On 12/03/2013 09:01 AM, Chris Ruehl wrote:
-> usb: chipidea: Reallocate regmap only if lpm is detected
->=20
-> The regmap only needs to reallocate if the hw_read on the CAP register =
-shows
-> lpm is used. Therefore the if() statement check the change.
->=20
-> Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-> Acked-by: Peter Chen <peter.chen@freescale.com>
-> ---
->  drivers/usb/chipidea/core.c |    7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
->=20
-> diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
-> index 5d8981c..9a5ef20 100644
-> --- a/drivers/usb/chipidea/core.c
-> +++ b/drivers/usb/chipidea/core.c
-> @@ -208,7 +208,8 @@ static int hw_device_init(struct ci_hdrc *ci, void =
-__iomem *base)
->  	reg =3D hw_read(ci, CAP_HCCPARAMS, HCCPARAMS_LEN) >>
->  		__ffs(HCCPARAMS_LEN);
->  	ci->hw_bank.lpm  =3D reg;
-> -	hw_alloc_regmap(ci, !!reg);
-> +	if (reg)
-> +		hw_alloc_regmap(ci, !!reg);
->  	ci->hw_bank.size =3D ci->hw_bank.op - ci->hw_bank.abs;
->  	ci->hw_bank.size +=3D OP_LAST;
->  	ci->hw_bank.size /=3D sizeof(u32);
-> @@ -642,6 +643,10 @@ static int ci_hdrc_probe(struct platform_device *p=
-dev)
->  			: CI_ROLE_GADGET;
->  	}
-> =20
-> +	/* only update vbus status for peripheral */
-> +	if (ci->role =3D=3D CI_ROLE_GADGET)
-> +		ci_handle_vbus_change(ci);
-> +
+Those paddings are already present in drivers/block/xen-blkback/common.h
+for each of the different ABIs, which I think is enough, but if I had
+to, I would rather replace them with comments.
 
-This change seems unrelated to me.
-
-Marc
-
->  	ret =3D ci_role_start(ci, ci->role);
->  	if (ret) {
->  		dev_err(dev, "can't start %s role\n", ci_role(ci)->name);
->=20
-
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---TgCl74V2hBUa28oexmCPLAlBB4cATjTEI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlKdvIIACgkQjTAFq1RaXHO4CgCcDXjl3Og9VLXeknyx5T3PV/s1
-/sIAn0Kkbh1w+r3Tnm4atO+3QFZsJeJV
-=iMbz
------END PGP SIGNATURE-----
-
---TgCl74V2hBUa28oexmCPLAlBB4cATjTEI--
