@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab3LCRxn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 12:53:43 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:51339 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264Ab3LCRxm (ORCPT
+	id S1754510Ab3LCR5X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 12:57:23 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:47190 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754174Ab3LCR5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 12:53:42 -0500
-Message-ID: <529E1AA1.9000202@infradead.org>
-Date: Tue, 03 Dec 2013 09:53:37 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Remove unnecessarily gendered language
-References: <1386033532-25431-1-git-send-email-matthew.garrett@nebula.com> <CAMuHMdXcHTTmnqCTJWRJU_2vgv3wtB9gFGiR5Z0GF=BDKniXCg@mail.gmail.com>
-In-Reply-To: <CAMuHMdXcHTTmnqCTJWRJU_2vgv3wtB9gFGiR5Z0GF=BDKniXCg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Dec 2013 12:57:19 -0500
+From: Peng Tao <bergwolf@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: [PATCH v2 0/4] staging/lustre: fix build and remove ll_file_get_iov_count
+Date: Wed,  4 Dec 2013 01:54:55 +0800
+Message-Id: <1386093299-8837-1-git-send-email-bergwolf@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/13 01:04, Geert Uytterhoeven wrote:
-> Disclaimer: didn't read through all of it.
-> 
-> On Tue, Dec 3, 2013 at 2:18 AM, Matthew Garrett
-> <matthew.garrett@nebula.com> wrote:
->> --- a/drivers/scsi/mesh.c
->> +++ b/drivers/scsi/mesh.c
->> @@ -1190,8 +1190,8 @@ static void handle_msgin(struct mesh_state *ms)
->>                         if (tp->sdtr_state != sdtr_sent) {
->>                                 /* reply with an SDTR */
->>                                 add_sdtr_msg(ms);
->> -                               /* limit period to at least his value,
->> -                                  offset to no more than his */
->> +                               /* limit period to at least its value,
->> +                                  offset to no more than its */
->>                                 if (ms->msgout[3] < ms->msgin[3])
->>                                         ms->msgout[3] = ms->msgin[3];
->>                                 if (ms->msgout[4] > ms->msgin[4])
-> 
-> I think both occurrences of "his" should actually be "this".
-> 
-> BTW, the singular they  ("The caller must know what they are doing!")
-> feels a bit strange to me, but it seems to match the wikipedia article on
-> singular they. As a non-native English speaker, I was not familiar with it.
+Hi Greg,
 
-I understand, since as a native English speaker I was not familiar with it either,
-and I still don't like it.  ;)
+Patch 1 is added because there is a newly introduced (7fc1f83) error
+when CONFIG_FS_POSIX_ACL is off.
+Patch 2 is updated to fix build errors in itself.
 
+Please see if they can be merged. Thanks and sorry for the noise.
+
+Thanks,
+Tao
+
+Cc: Andreas Dilger <andreas.dilger@intel.com>
+
+Peng Tao (4):
+  staging/lustre: fix build error in ll_setxattr_common
+  staging/lustre/llite: remove ll_file_get_iov_count
+  staging/lustre: fix undefined reference if CONFIG_PROC_FS is off
+  staging/lustre: don't compile procfs code when CONFIG_PROC_FS is off
+
+ drivers/staging/lustre/lustre/fid/Makefile         |    3 +-
+ drivers/staging/lustre/lustre/fid/lproc_fid.c      |    2 -
+ drivers/staging/lustre/lustre/fld/Makefile         |    3 +-
+ drivers/staging/lustre/lustre/fld/fld_internal.h   |    1 -
+ drivers/staging/lustre/lustre/fld/fld_request.c    |    2 +-
+ drivers/staging/lustre/lustre/fld/lproc_fld.c      |    3 -
+ .../staging/lustre/lustre/include/lprocfs_status.h |    8 +-
+ drivers/staging/lustre/lustre/include/lustre_sec.h |   17 +-
+ .../staging/lustre/lustre/include/obd_support.h    |    3 +-
+ drivers/staging/lustre/lustre/ldlm/ldlm_pool.c     |    9 +
+ drivers/staging/lustre/lustre/llite/Makefile       |    3 +-
+ drivers/staging/lustre/lustre/llite/file.c         |   36 +-
+ .../staging/lustre/lustre/llite/llite_internal.h   |   14 +-
+ drivers/staging/lustre/lustre/llite/llite_lib.c    |    1 +
+ drivers/staging/lustre/lustre/llite/lproc_llite.c  |    4 -
+ drivers/staging/lustre/lustre/llite/xattr.c        |    2 +-
+ drivers/staging/lustre/lustre/lmv/Makefile         |    4 +-
+ drivers/staging/lustre/lustre/lmv/lproc_lmv.c      |    5 -
+ drivers/staging/lustre/lustre/lov/Makefile         |    3 +-
+ drivers/staging/lustre/lustre/lov/lov_internal.h   |    2 +-
+ drivers/staging/lustre/lustre/lov/lproc_lov.c      |    4 +-
+ drivers/staging/lustre/lustre/lvfs/Makefile        |    3 +-
+ drivers/staging/lustre/lustre/lvfs/lvfs_lib.c      |    2 -
+ drivers/staging/lustre/lustre/mdc/Makefile         |    3 +-
+ drivers/staging/lustre/lustre/mdc/lproc_mdc.c      |    3 -
+ drivers/staging/lustre/lustre/mgc/Makefile         |    3 +-
+ drivers/staging/lustre/lustre/mgc/lproc_mgc.c      |    3 -
+ drivers/staging/lustre/lustre/mgc/mgc_internal.h   |    2 +-
+ drivers/staging/lustre/lustre/mgc/mgc_request.c    |    2 +
+ drivers/staging/lustre/lustre/obdclass/class_obd.c |   13 +
+ .../lustre/lustre/obdclass/linux/linux-module.c    |    4 +-
+ drivers/staging/lustre/lustre/obdclass/llog_test.c |    4 +
+ .../lustre/lustre/obdclass/lprocfs_status.c        |  348 ++++++++++----------
+ drivers/staging/lustre/lustre/osc/Makefile         |    3 +-
+ drivers/staging/lustre/lustre/osc/lproc_osc.c      |    2 -
+ drivers/staging/lustre/lustre/ptlrpc/Makefile      |    3 +-
+ .../staging/lustre/lustre/ptlrpc/ptlrpc_internal.h |    6 +
+ 37 files changed, 263 insertions(+), 270 deletions(-)
 
 -- 
-~Randy
+1.7.9.5
+
