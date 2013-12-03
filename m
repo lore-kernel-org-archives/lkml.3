@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab3LCOFK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 09:05:10 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:55271 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754233Ab3LCOFA (ORCPT
+	id S1754357Ab3LCOFR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 09:05:17 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:38102 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754313Ab3LCOFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 09:05:00 -0500
+	Tue, 3 Dec 2013 09:05:13 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, Dmitry Eremin <dmitry.eremin@intel.com>,
         Ned Bass <bass6@llnl.gov>, Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH v3 12/15] staging/lustre: clean up SET_BUT_UNUSED/UNUSED macros
-Date: Tue,  3 Dec 2013 21:58:50 +0800
-Message-Id: <1386079133-6459-13-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH v3 15/15] staging/lustre/ptlrpc: better error handling in ptlrpcd_start
+Date: Tue,  3 Dec 2013 21:58:53 +0800
+Message-Id: <1386079133-6459-16-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386079133-6459-1-git-send-email-bergwolf@gmail.com>
 References: <1386079133-6459-1-git-send-email-bergwolf@gmail.com>
@@ -24,8 +24,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dmitry Eremin <dmitry.eremin@intel.com>
 
-This is SET_BUT_UNUSED/UNUSED macro cleaning up part
-of the original Lustre tree commit.
+This is only part of the original Lustre tree commit. It cleans up
+ptlrpcd_start error handling a bit.
 
 Lustre-change: http://review.whamcloud.com/6139
 Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3204
@@ -35,151 +35,91 @@ Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- .../staging/lustre/include/linux/libcfs/libcfs.h   |    2 --
- drivers/staging/lustre/lnet/selftest/rpc.c         |    2 --
- drivers/staging/lustre/lnet/selftest/selftest.h    |    3 --
- drivers/staging/lustre/lnet/selftest/timer.c       |   11 ++-----
- drivers/staging/lustre/lustre/llite/dcache.c       |   34 ++++++++------------
- 5 files changed, 17 insertions(+), 35 deletions(-)
+ drivers/staging/lustre/lustre/ptlrpc/ptlrpcd.c |   44 ++++++++++++------------
+ 1 file changed, 22 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/staging/lustre/include/linux/libcfs/libcfs.h b/drivers/staging/lustre/include/linux/libcfs/libcfs.h
-index 687dbab..4a6c7da 100644
---- a/drivers/staging/lustre/include/linux/libcfs/libcfs.h
-+++ b/drivers/staging/lustre/include/linux/libcfs/libcfs.h
-@@ -181,8 +181,6 @@ static inline void *__container_of(void *ptr, unsigned long shift)
- #define container_of0(ptr, type, member) \
- 	((type *)__container_of((void *)(ptr), offsetof(type, member)))
- 
--#define SET_BUT_UNUSED(a) do { } while(sizeof(a) - sizeof(a))
--
- #define _LIBCFS_H
- 
- #endif /* _LIBCFS_H */
-diff --git a/drivers/staging/lustre/lnet/selftest/rpc.c b/drivers/staging/lustre/lnet/selftest/rpc.c
-index 7659a26..5ae59d2 100644
---- a/drivers/staging/lustre/lnet/selftest/rpc.c
-+++ b/drivers/staging/lustre/lnet/selftest/rpc.c
-@@ -124,7 +124,6 @@ srpc_bulk_t *
- srpc_alloc_bulk(int cpt, unsigned bulk_npg, unsigned bulk_len, int sink)
+diff --git a/drivers/staging/lustre/lustre/ptlrpc/ptlrpcd.c b/drivers/staging/lustre/lustre/ptlrpc/ptlrpcd.c
+index 2ebdb1b..8a95fa5 100644
+--- a/drivers/staging/lustre/lustre/ptlrpc/ptlrpcd.c
++++ b/drivers/staging/lustre/lustre/ptlrpc/ptlrpcd.c
+@@ -600,7 +600,6 @@ static int ptlrpcd_bind(int index, int max)
+ int ptlrpcd_start(int index, int max, const char *name, struct ptlrpcd_ctl *pc)
  {
- 	srpc_bulk_t  *bk;
--	struct page  **pages;
- 	int	      i;
+ 	int rc;
+-	int env = 0;
  
- 	LASSERT(bulk_npg > 0 && bulk_npg <= LNET_MAX_IOV);
-@@ -140,7 +139,6 @@ srpc_alloc_bulk(int cpt, unsigned bulk_npg, unsigned bulk_len, int sink)
- 	bk->bk_sink   = sink;
- 	bk->bk_len    = bulk_len;
- 	bk->bk_niov   = bulk_npg;
--	UNUSED(pages);
+ 	/*
+ 	 * Do not allow start second thread for one pc.
+@@ -619,6 +618,7 @@ int ptlrpcd_start(int index, int max, const char *name, struct ptlrpcd_ctl *pc)
+ 	pc->pc_set = ptlrpc_prep_set();
+ 	if (pc->pc_set == NULL)
+ 		GOTO(out, rc = -ENOMEM);
++
+ 	/*
+ 	 * So far only "client" ptlrpcd uses an environment. In the future,
+ 	 * ptlrpcd thread (or a thread-set) has to be given an argument,
+@@ -626,40 +626,40 @@ int ptlrpcd_start(int index, int max, const char *name, struct ptlrpcd_ctl *pc)
+ 	 */
+ 	rc = lu_context_init(&pc->pc_env.le_ctx, LCT_CL_THREAD|LCT_REMEMBER);
+ 	if (rc != 0)
+-		GOTO(out, rc);
++		GOTO(out_set, rc);
  
- 	for (i = 0; i < bulk_npg; i++) {
- 		struct page *pg;
-diff --git a/drivers/staging/lustre/lnet/selftest/selftest.h b/drivers/staging/lustre/lnet/selftest/selftest.h
-index 8053b05..cd53926 100644
---- a/drivers/staging/lustre/lnet/selftest/selftest.h
-+++ b/drivers/staging/lustre/lnet/selftest/selftest.h
-@@ -572,9 +572,6 @@ swi_state2str (int state)
- #undef STATE2STR
+-	env = 1;
+ 	{
+ 		struct task_struct *task;
+-
+ 		if (index >= 0) {
+ 			rc = ptlrpcd_bind(index, max);
+ 			if (rc < 0)
+-				GOTO(out, rc);
++				GOTO(out_env, rc);
+ 		}
+ 
+-		task = kthread_run(ptlrpcd, pc, "%s", pc->pc_name);
++		task = kthread_run(ptlrpcd, pc, pc->pc_name);
+ 		if (IS_ERR(task))
+-			GOTO(out, rc = PTR_ERR(task));
++			GOTO(out_env, rc = PTR_ERR(task));
+ 
+-		rc = 0;
+ 		wait_for_completion(&pc->pc_starting);
+ 	}
+-out:
+-	if (rc) {
+-		if (pc->pc_set != NULL) {
+-			struct ptlrpc_request_set *set = pc->pc_set;
+-
+-			spin_lock(&pc->pc_lock);
+-			pc->pc_set = NULL;
+-			spin_unlock(&pc->pc_lock);
+-			ptlrpc_set_destroy(set);
+-		}
+-		if (env != 0)
+-			lu_context_fini(&pc->pc_env.le_ctx);
+-		clear_bit(LIOD_BIND, &pc->pc_flags);
+-		clear_bit(LIOD_START, &pc->pc_flags);
++	return 0;
++
++out_env:
++	lu_context_fini(&pc->pc_env.le_ctx);
++
++out_set:
++	if (pc->pc_set != NULL) {
++		struct ptlrpc_request_set *set = pc->pc_set;
++
++		spin_lock(&pc->pc_lock);
++		pc->pc_set = NULL;
++		spin_unlock(&pc->pc_lock);
++		ptlrpc_set_destroy(set);
+ 	}
++	clear_bit(LIOD_BIND, &pc->pc_flags);
++
++out:
++	clear_bit(LIOD_START, &pc->pc_flags);
+ 	return rc;
  }
  
--#define UNUSED(x)       ( (void)(x) )
--
--
- #define selftest_wait_events()	cfs_pause(cfs_time_seconds(1) / 10)
- 
- 
-diff --git a/drivers/staging/lustre/lnet/selftest/timer.c b/drivers/staging/lustre/lnet/selftest/timer.c
-index 82fd363..b8e50ef 100644
---- a/drivers/staging/lustre/lnet/selftest/timer.c
-+++ b/drivers/staging/lustre/lnet/selftest/timer.c
-@@ -171,19 +171,14 @@ stt_check_timers(cfs_time_t *last)
- int
- stt_timer_main(void *arg)
- {
--	int rc = 0;
--	UNUSED(arg);
--
--	SET_BUT_UNUSED(rc);
--
- 	cfs_block_allsigs();
- 
- 	while (!stt_data.stt_shuttingdown) {
- 		stt_check_timers(&stt_data.stt_prev_slot);
- 
--		rc = wait_event_timeout(stt_data.stt_waitq,
--					stt_data.stt_shuttingdown,
--					cfs_time_seconds(STTIMER_SLOTTIME));
-+		wait_event_timeout(stt_data.stt_waitq,
-+				   stt_data.stt_shuttingdown,
-+				   cfs_time_seconds(STTIMER_SLOTTIME));
- 	}
- 
- 	spin_lock(&stt_data.stt_lock);
-diff --git a/drivers/staging/lustre/lustre/llite/dcache.c b/drivers/staging/lustre/lustre/llite/dcache.c
-index e7629be..cbd663e 100644
---- a/drivers/staging/lustre/lustre/llite/dcache.c
-+++ b/drivers/staging/lustre/lustre/llite/dcache.c
-@@ -404,7 +404,6 @@ int ll_revalidate_it(struct dentry *de, int lookup_flags,
- 		struct inode *inode = de->d_inode;
- 		struct ll_inode_info *lli = ll_i2info(inode);
- 		struct obd_client_handle **och_p;
--		__u64 *och_usecount;
- 		__u64 ibits;
- 
- 		/*
-@@ -418,37 +417,32 @@ int ll_revalidate_it(struct dentry *de, int lookup_flags,
- 		 */
- 
- 
--		if (it->it_flags & FMODE_WRITE) {
-+		if (it->it_flags & FMODE_WRITE)
- 			och_p = &lli->lli_mds_write_och;
--			och_usecount = &lli->lli_open_fd_write_count;
--		} else if (it->it_flags & FMODE_EXEC) {
-+		else if (it->it_flags & FMODE_EXEC)
- 			och_p = &lli->lli_mds_exec_och;
--			och_usecount = &lli->lli_open_fd_exec_count;
--		} else {
-+		else
- 			och_p = &lli->lli_mds_read_och;
--			och_usecount = &lli->lli_open_fd_read_count;
--		}
-+
- 		/* Check for the proper lock. */
- 		ibits = MDS_INODELOCK_LOOKUP;
- 		if (!ll_have_md_lock(inode, &ibits, LCK_MINMODE))
- 			goto do_lock;
- 		mutex_lock(&lli->lli_och_mutex);
- 		if (*och_p) { /* Everything is open already, do nothing */
--			/*(*och_usecount)++;  Do not let them steal our open
--			  handle from under us */
--			SET_BUT_UNUSED(och_usecount);
--			/* XXX The code above was my original idea, but in case
--			   we have the handle, but we cannot use it due to later
--			   checks (e.g. O_CREAT|O_EXCL flags set), nobody
--			   would decrement counter increased here. So we just
--			   hope the lock won't be invalidated in between. But
--			   if it would be, we'll reopen the open request to
--			   MDS later during file open path */
-+			/* Originally it was idea to do not let them steal our
-+			 * open handle from under us by (*och_usecount)++ here.
-+			 * But in case we have the handle, but we cannot use it
-+			 * due to later checks (e.g. O_CREAT|O_EXCL flags set),
-+			 * nobody would decrement counter increased here. So we
-+			 * just hope the lock won't be invalidated in between.
-+			 * But if it would be, we'll reopen the open request to
-+			 * MDS later during file open path.
-+			 */
- 			mutex_unlock(&lli->lli_och_mutex);
- 			return 1;
--		} else {
--			mutex_unlock(&lli->lli_och_mutex);
- 		}
-+		mutex_unlock(&lli->lli_och_mutex);
- 	}
- 
- 	if (it->it_op == IT_GETATTR) {
 -- 
 1.7.9.5
 
