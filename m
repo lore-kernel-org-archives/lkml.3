@@ -1,89 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294Ab3LCPCS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 10:02:18 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52747 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753464Ab3LCPCG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 10:02:06 -0500
-Date: Tue, 3 Dec 2013 15:00:38 +0000
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Alex Shi <alex.shi@linaro.org>
-Cc: "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "pjt@google.com" <pjt@google.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "jason.low2@hp.com" <jason.low2@hp.com>,
-        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] nohz_full: fix code sytle issue of
- tick_nohz_full_stop_tick
-Message-ID: <20131203150038.GE10134@e103034-lin>
-References: <1386074112-30754-1-git-send-email-alex.shi@linaro.org>
- <1386074112-30754-2-git-send-email-alex.shi@linaro.org>
+	id S1754268Ab3LCPEI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 10:04:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36960 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752542Ab3LCPEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 10:04:05 -0500
+Date: Tue, 3 Dec 2013 15:04:00 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, athorlton@sgi.com, riel@redhat.com,
+        gregkh@linuxfoundation.org, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mm: numa: return the number of base pages altered by
+ protection changes
+Message-ID: <20131203150400.GR11295@suse.de>
+References: <1385922957129@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1386074112-30754-2-git-send-email-alex.shi@linaro.org>
+In-Reply-To: <1385922957129@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In subject: s/sytle/style/
+commit 72403b4a0fbdf433c1fe0127e49864658f6f6468 upstream.
 
-On Tue, Dec 03, 2013 at 12:35:10PM +0000, Alex Shi wrote:
-> Code usually starts with 'tab' instead of 7 'space'es in kernel
-> 
-> Signed-off-by: Alex Shi <alex.shi@linaro.org>
-> ---
->  kernel/time/tick-sched.c | 16 ++++++++--------
->  1 file changed, 8 insertions(+), 8 deletions(-)
-> 
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 3612fc7..b55d1c0 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -681,18 +681,18 @@ out:
->  static void tick_nohz_full_stop_tick(struct tick_sched *ts)
->  {
->  #ifdef CONFIG_NO_HZ_FULL
-> -       int cpu = smp_processor_id();
-> +	int cpu = smp_processor_id();
->  
-> -       if (!tick_nohz_full_cpu(cpu) || is_idle_task(current))
-> -               return;
-> +	if (!tick_nohz_full_cpu(cpu) || is_idle_task(current))
-> +		return;
->  
-> -       if (!ts->tick_stopped && ts->nohz_mode == NOHZ_MODE_INACTIVE)
-> -	       return;
-> +	if (!ts->tick_stopped && ts->nohz_mode == NOHZ_MODE_INACTIVE)
-> +		return;
->  
-> -       if (!can_stop_full_tick())
-> -               return;
-> +	if (!can_stop_full_tick())
-> +		return;
->  
-> -       tick_nohz_stop_sched_tick(ts, ktime_get(), cpu);
-> +	tick_nohz_stop_sched_tick(ts, ktime_get(), cpu);
->  #endif
->  }
->  
-> -- 
-> 1.8.1.2
-> 
-> 
+Commit 0255d4918480 ("mm: Account for a THP NUMA hinting update as one
+PTE update") was added to account for the number of PTE updates when
+marking pages prot_numa.  task_numa_work was using the old return value
+to track how much address space had been updated.  Altering the return
+value causes the scanner to do more work than it is configured or
+documented to in a single unit of work.
+
+This patch reverts that commit and accounts for the number of THP
+updates separately in vmstat.  It is up to the administrator to
+interpret the pair of values correctly.  This is a straight-forward
+operation and likely to only be of interest when actively debugging NUMA
+balancing problems.
+
+The impact of this patch is that the NUMA PTE scanner will scan slower
+when THP is enabled and workloads may converge slower as a result.  On
+the flip size system CPU usage should be lower than recent tests
+reported.  This is an illustrative example of a short single JVM specjbb
+test
+
+specjbb
+                       3.12.0                3.12.0
+                      vanilla      acctupdates
+TPut 1      26143.00 (  0.00%)     25747.00 ( -1.51%)
+TPut 7     185257.00 (  0.00%)    183202.00 ( -1.11%)
+TPut 13    329760.00 (  0.00%)    346577.00 (  5.10%)
+TPut 19    442502.00 (  0.00%)    460146.00 (  3.99%)
+TPut 25    540634.00 (  0.00%)    549053.00 (  1.56%)
+TPut 31    512098.00 (  0.00%)    519611.00 (  1.47%)
+TPut 37    461276.00 (  0.00%)    474973.00 (  2.97%)
+TPut 43    403089.00 (  0.00%)    414172.00 (  2.75%)
+
+              3.12.0      3.12.0
+             vanillaacctupdates
+User         5169.64     5184.14
+System        100.45       80.02
+Elapsed       252.75      251.85
+
+Performance is similar but note the reduction in system CPU time.  While
+this showed a performance gain, it will not be universal but at least
+it'll be behaving as documented.  The vmstats are obviously different but
+here is an obvious interpretation of them from mmtests.
+
+                                3.12.0      3.12.0
+                               vanillaacctupdates
+NUMA page range updates        1408326    11043064
+NUMA huge PMD updates                0       21040
+NUMA PTE updates               1408326      291624
+
+"NUMA page range updates" == nr_pte_updates and is the value returned to
+the NUMA pte scanner.  NUMA huge PMD updates were the number of THP
+updates which in combination can be used to calculate how many ptes were
+updated from userspace.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reported-by: Alex Thorlton <athorlton@sgi.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/vm_event_item.h | 1 +
+ mm/mprotect.c                 | 7 ++++++-
+ mm/vmstat.c                   | 1 +
+ 3 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index 1855f0a..c557c6d 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -39,6 +39,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		PAGEOUTRUN, ALLOCSTALL, PGROTATED,
+ #ifdef CONFIG_NUMA_BALANCING
+ 		NUMA_PTE_UPDATES,
++		NUMA_HUGE_PTE_UPDATES,
+ 		NUMA_HINT_FAULTS,
+ 		NUMA_HINT_FAULTS_LOCAL,
+ 		NUMA_PAGE_MIGRATE,
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index 412ba2b..6c3f56f 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -138,6 +138,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+ 	pmd_t *pmd;
+ 	unsigned long next;
+ 	unsigned long pages = 0;
++	unsigned long nr_huge_updates = 0;
+ 	bool all_same_node;
+ 
+ 	pmd = pmd_offset(pud, addr);
+@@ -148,7 +149,8 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+ 				split_huge_page_pmd(vma, addr, pmd);
+ 			else if (change_huge_pmd(vma, pmd, addr, newprot,
+ 						 prot_numa)) {
+-				pages++;
++				pages += HPAGE_PMD_NR;
++				nr_huge_updates++;
+ 				continue;
+ 			}
+ 			/* fall through */
+@@ -168,6 +170,9 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+ 			change_pmd_protnuma(vma->vm_mm, addr, pmd);
+ 	} while (pmd++, addr = next, addr != end);
+ 
++	if (nr_huge_updates)
++		count_vm_numa_events(NUMA_HUGE_PTE_UPDATES, nr_huge_updates);
++
+ 	return pages;
+ }
+ 
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 9bb3145..5a442a7 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -812,6 +812,7 @@ const char * const vmstat_text[] = {
+ 
+ #ifdef CONFIG_NUMA_BALANCING
+ 	"numa_pte_updates",
++	"numa_huge_pte_updates",
+ 	"numa_hint_faults",
+ 	"numa_hint_faults_local",
+ 	"numa_pages_migrated",
