@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab3LCNXZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 08:23:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33129 "EHLO mx2.suse.de"
+	id S1754003Ab3LCNXn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 08:23:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33145 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753399Ab3LCNXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 08:23:21 -0500
+	id S1753673Ab3LCNXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 08:23:42 -0500
 From: Petr Mladek <pmladek@suse.cz>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
@@ -14,9 +14,9 @@ To: Steven Rostedt <rostedt@goodmis.org>,
         Jiri Kosina <jkosina@suse.cz>
 Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
         Petr Mladek <pmladek@suse.cz>
-Subject: [PATCH v5 4/8] x86: speed up int3-based patching using direct write
-Date: Tue,  3 Dec 2013 14:21:23 +0100
-Message-Id: <1386076887-2655-5-git-send-email-pmladek@suse.cz>
+Subject: [PATCH v5 5/8] x86: do not trace __probe_kernel_read
+Date: Tue,  3 Dec 2013 14:21:24 +0100
+Message-Id: <1386076887-2655-6-git-send-email-pmladek@suse.cz>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1386076887-2655-1-git-send-email-pmladek@suse.cz>
 References: <1386076887-2655-1-git-send-email-pmladek@suse.cz>
@@ -24,168 +24,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When trying to use text_poke_bp_iter in ftrace, the result was slower than
-the original implementation.
+probe_kernel_read is used when modifying function calls in ftrace_replace_code,
+see arch/x86/kernel/ftrace.c. On x86, the code is replaced using int3 guard.
+All functions are patched in parallel to reduce an expensive synchronization
+of all CPUs. The result is that all affected functions are called via
+ftrace_int3_handler during the process.
 
-It turned out that one difference was in text_poke vs. ftrace_write.
-text_poke did many extra operations to make sure that code was read-write
-and the change was atomic.
+ftrace_int3_handler is relatively slow because it has to check whether
+it is responsible for the handled IP. Therefore we should not modify
+functions that used during patching. It would slowdown the patching.
 
-In fact, we do not need the atomic operation inside text_poke_bp_iter because
-the modified code is guarded by the int3 handler. The int3 interrupt itself
-is added and removed by an atomic operation because we modify only one byte.
+I tried to switch between 7 tracers: blk, branch, function_graph, wakeup_rt,
+irqsoff, function, and nop. Every tracer has also been enabled and disabled.
+With 500 cycles, I got these times before this commit:
 
-Also if we patch many functions, it is more effective to set the whole text code
-read-write instead of remapping each address into a helper address space.
+    real    18m2.477s     18m8.654s     18m9.196s
+    user    0m0.008s      0m0.008s      0m0.012s
+    sys     0m17.316s     0m17.104s     0m17.300s
 
-This patch adds text_poke_part which is inspired by ftrace_write.
-Then it is used in text_poke_bp_iter instead of the slower text_poke.
-It adds the limitation that text_poke_bp_iter user is responsible for
-setting the patched code read-write.
+and after this commit:
 
-Note that we can't use it in text_poke because it is not effective
-to set the page or two read-write just because patching one piece.
-
-For example, I tried to switch between 7 tracers: blk, branch, function_graph,
-wakeup_rt, irqsoff, function, and nop. Every tracer has also been enabled and
-disabled. With 100 cycles, I got these times with text_poke:
-
-    real    25m7.380s     25m13.44s     25m9.072s
-    user    0m0.004s      0m0.004s      0m0.004s
-    sys     0m3.480s      0m3.508s      0m3.420s
-
-and with text_poke_part:
-
-    real    3m23.335s     3m24.422s     3m26.686s
-    user    0m0.004s      0m0.004s	0m0.004s
-    sys     0m3.724s      0m3.772s	0m3.588s
+    real    16m14.390s    16m15.200s    16m19.632s
+    user    0m0.028s      0m0.024s	0m0.028s
+    sys     0m23.788s     0m23.812s	0m23.804s
 
 Signed-off-by: Petr Mladek <pmladek@suse.cz>
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
- arch/x86/kernel/alternative.c | 67 ++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 57 insertions(+), 10 deletions(-)
+ mm/maccess.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index 2f6088282724..9f8dd4f9e852 100644
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -598,6 +598,51 @@ int __kprobes text_poke(void *addr, const void *opcode, size_t len)
- 	return 0;
- }
+diff --git a/mm/maccess.c b/mm/maccess.c
+index d53adf9ba84b..bed9ee854ea0 100644
+--- a/mm/maccess.c
++++ b/mm/maccess.c
+@@ -18,7 +18,7 @@
+ long __weak probe_kernel_read(void *dst, const void *src, size_t size)
+     __attribute__((alias("__probe_kernel_read")));
  
-+/**
-+ * text_poke_part - Update part of the instruction on a live kernel when using
-+ * 		    int3 breakpoint
-+ * @addr:   address to modify
-+ * @opcode: source of the copy
-+ * @len:    length to copy
-+ *
-+ * If we patch instructions using int3 interrupt, we do not need to be so
-+ * careful about an atomic write. Adding and removing the interrupt is atomic
-+ * because we modify only one byte. The rest of the instruction could be
-+ * modified in several steps because it is guarded by the interrupt handler.
-+ * Hence we could use faster code here. See also text_poke_bp_iter below
-+ * for more details.
-+ *
-+ * Note: This function must be called under text_mutex. Also the caller is
-+ * responsible for setting the patched code read-write. This is more effective
-+ * only when you patch many addresses at the same time.
-+ */
-+static int text_poke_part(void *addr, const void *opcode, size_t len)
-+{
-+	int ret;
-+
-+	/* The patching makes sense only for a text code */
-+	if (unlikely((unsigned long)addr < (unsigned long)_text) ||
-+	    unlikely((unsigned long)addr >= (unsigned long)_etext))
-+		return -EFAULT;
-+
-+#if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
-+	/*
-+	 * On x86_64, the kernel text mapping is always mapped read-only with
-+	 * CONFIG_DEBUG_RODATA. Instead, we need to use the kernel identity
-+	 * mapping that can be set read-write, for example using
-+	 * set_kernel_text_rw().
-+	 */
-+	addr = __va(__pa_symbol(addr));
-+#endif
-+
-+	ret = probe_kernel_write(addr, opcode, len);
-+	if (unlikely(ret))
-+		return -EPERM;
-+
-+	sync_core();
-+	return 0;
-+}
-+
- static void do_sync_core(void *info)
+-long __probe_kernel_read(void *dst, const void *src, size_t size)
++long notrace __probe_kernel_read(void *dst, const void *src, size_t size)
  {
- 	sync_core();
-@@ -752,7 +797,7 @@ static int add_iter_breakpoint(struct text_poke_bp_iter *iterator,
- 
- 	if (likely(!ret))
- 		/* write the breakpoint */
--		ret = text_poke(addr, &bp_int3, sizeof(bp_int3));
-+		ret = text_poke_part(addr, &bp_int3, sizeof(bp_int3));
- 
- 	return ret;
- }
-@@ -770,9 +815,9 @@ static int update_iter_code(struct text_poke_bp_iter *iterator,
- 
- 	/* write all but the first byte */
- 	addr = iterator->get_addr(iter);
--	return text_poke(addr + sizeof(bp_int3),
--			 opcode + sizeof(bp_int3),
--			 bp_int3_len - sizeof(bp_int3));
-+	return text_poke_part(addr + sizeof(bp_int3),
-+			      opcode + sizeof(bp_int3),
-+			      bp_int3_len - sizeof(bp_int3));
- }
- 
- static int finish_iter_update(struct text_poke_bp_iter *iterator,
-@@ -786,7 +831,7 @@ static int finish_iter_update(struct text_poke_bp_iter *iterator,
- 	if (opcode) {
- 		/* write the first byte if defined */
- 		addr = iterator->get_addr(iter);
--		ret = text_poke(addr, opcode, sizeof(bp_int3));
-+		ret = text_poke_part(addr, opcode, sizeof(bp_int3));
- 	}
- 
- 	/* Patching has finished. Let's update the status flag if any. */
-@@ -822,9 +867,9 @@ static void recover_iter(struct text_poke_bp_iter *iterator,
- 	if (memcmp(actual + sizeof(bp_int3),
- 		   old_opcode + sizeof(bp_int3),
- 		   bp_int3_len - sizeof(bp_int3)) != 0) {
--		err = text_poke(addr + sizeof(bp_int3),
--				old_opcode + sizeof(bp_int3),
--				bp_int3_len - sizeof(bp_int3));
-+		err = text_poke_part(addr + sizeof(bp_int3),
-+				     old_opcode + sizeof(bp_int3),
-+				     bp_int3_len - sizeof(bp_int3));
- 		/* we should not continue if recovering has failed */
- 		BUG_ON(err);
- 		/*
-@@ -836,7 +881,7 @@ static void recover_iter(struct text_poke_bp_iter *iterator,
- 	}
- 
- 	/* Finally, put back the first byte from the old code */
--	err = text_poke(addr, old_opcode, sizeof(bp_int3));
-+	err = text_poke_part(addr, old_opcode, sizeof(bp_int3));
- 	/* we can not continue if the interrupt is still there */
- 	BUG_ON(err);
- }
-@@ -864,7 +909,9 @@ static void recover_iter(struct text_poke_bp_iter *iterator,
-  * It is a bit more paranoid than text_poke_bp because it checks the actual
-  * code before patching. This is a good practice proposed by the ftrace code.
-  *
-- * Note: This function must be called under text_mutex.
-+ * Note: This function must be called under text_mutex. Also the caller is
-+ * responsible for making the patched code read-write, for example using
-+ * set_kernel_text_rw() and set_all_modules_text_rw()
-  */
- int text_poke_bp_list(struct text_poke_bp_iter *iterator)
- {
+ 	long ret;
+ 	mm_segment_t old_fs = get_fs();
 -- 
 1.8.4
 
