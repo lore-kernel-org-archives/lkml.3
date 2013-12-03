@@ -1,102 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762Ab3LCXkU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 18:40:20 -0500
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:40110 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755200Ab3LCXkQ (ORCPT
+	id S1755786Ab3LCXjf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 18:39:35 -0500
+Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:36885
+	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755704Ab3LCXjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 18:40:16 -0500
-Date: Tue, 3 Dec 2013 15:40:13 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcg: do not declare OOM from __GFP_NOFAIL
- allocations
-In-Reply-To: <20131203222511.GU3556@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1312031531510.5946@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1311261658170.21003@chino.kir.corp.google.com> <alpine.DEB.2.02.1311261931210.5973@chino.kir.corp.google.com> <20131127163916.GB3556@cmpxchg.org> <alpine.DEB.2.02.1311271336220.9222@chino.kir.corp.google.com> <20131127225340.GE3556@cmpxchg.org>
- <alpine.DEB.2.02.1311271526080.22848@chino.kir.corp.google.com> <20131128102049.GF2761@dhcp22.suse.cz> <alpine.DEB.2.02.1311291543400.22413@chino.kir.corp.google.com> <20131202132201.GC18838@dhcp22.suse.cz> <alpine.DEB.2.02.1312021452510.13465@chino.kir.corp.google.com>
- <20131203222511.GU3556@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 3 Dec 2013 18:39:14 -0500
+Message-Id: <20131203233306.647259536@linux.com>
+User-Agent: quilt/0.60-1
+Date: Tue, 03 Dec 2013 17:33:13 -0600
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 41/41] percpu: Remove __this_cpu_ptr
+References: <20131203233232.928771708@linux.com>
+Content-Disposition: inline; filename=__this_cpu_ptr_gone
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Dec 2013, Johannes Weiner wrote:
+The __this_cpu_ptr macro is no longer in use so drop it.
 
-> > > Spin on which level? The whole point of this change was to not spin for
-> > > ever because the caller might sit on top of other locks which might
-> > > prevent somebody else to die although it has been killed.
-> > 
-> > See my question about the non-memcg page allocator behavior below.
-> 
-> No, please answer the question.
-> 
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-The question would be answered below, by having consistency in allocation 
-and charging paths between both the page allocator and memcg.
+Index: linux/include/linux/percpu.h
+===================================================================
+--- linux.orig/include/linux/percpu.h	2013-12-03 15:52:58.758524804 -0600
++++ linux/include/linux/percpu.h	2013-12-03 15:52:58.758524804 -0600
+@@ -139,9 +139,6 @@ extern int __init pcpu_page_first_chunk(
+ 				pcpu_fc_populate_pte_fn_t populate_pte_fn);
+ #endif
+ 
+-/* Keep until we have removed all uses of __this_cpu_ptr */
+-#define __this_cpu_ptr raw_cpu_ptr
+-
+ /*
+  * Use this to get to a cpu's version of the per-cpu object
+  * dynamically allocated. Non-atomic access to the current CPU's
 
-> > I'm not quite sure how significant of a point this is, though, because it 
-> > depends on the caller doing the __GFP_NOFAIL allocations that allow the 
-> > bypass.  If you're doing
-> > 
-> > 	for (i = 0; i < 1 << 20; i++)
-> > 		page[i] = alloc_page(GFP_NOFS | __GFP_NOFAIL);
-> 
-> Hyperbole serves no one.
-> 
-
-Since this bypasses all charges to the root memcg in oom conditions as a 
-result of your patch, how do you ensure the "leakage" is contained to a 
-small amount of memory?  Are we currently just trusting the users of 
-__GFP_NOFAIL that they aren't allocating a large amount of memory?
-
-> > I'm referring to the generic non-memcg page allocator behavior.  Forget 
-> > memcg for a moment.  What is the behavior in the _page_allocator_ for 
-> > GFP_NOFS | __GFP_NOFAIL?  Do we spin forever if reclaim fails or do we 
-> > bypas the per-zone min watermarks to allow it to allocate because "it 
-> > needs to succeed, it may be holding filesystem locks"?
-> > 
-> > It's already been acknowledged in this thread that no bypassing is done 
-> > in the page allocator and it just spins.  There's some handwaving saying 
-> > that since the entire system is oom that there is a greater chance that 
-> > memory will be freed by something else, but that's just handwaving and is 
-> > certainly no guaranteed.
-> 
-> Do you have another explanation of why this deadlock is not triggering
-> in the global case?  It's pretty obvious that there is a deadlock that
-> can not be resolved unless some unrelated task intervenes, just read
-> __alloc_pages_slowpath().
-> 
-> But we had a concrete bug report for memcg where there was no other
-> task to intervene.  One was stuck in the OOM killer waiting for the
-> victim to exit, the victim was stuck on locks that the killer held.
-> 
-
-I believe the page allocator would be susceptible to the same deadlock if 
-nothing else on the system can reclaim memory and that belief comes from 
-code inspection that shows __GFP_NOFAIL is not guaranteed to ever succeed 
-in the page allocator as their charges now are (with your patch) in memcg.  
-I do not have an example of such an incident.
-
-> > So, my question again: why not bypass the per-zone min watermarks in the 
-> > page allocator?
-> 
-> I don't even know what your argument is supposed to be.  The fact that
-> we don't do it in the page allocator means that there can't be a bug
-> in memcg?
-> 
-
-I'm asking if we should allow GFP_NOFS | __GFP_NOFAIL allocations in the 
-page allocator to bypass per-zone min watermarks after reclaim has failed 
-since the oom killer cannot be called in such a context so that the page 
-allocator is not susceptible to the same deadlock without a complete 
-depletion of memory reserves?
-
-It's not an argument, it's a question.  Relax.
