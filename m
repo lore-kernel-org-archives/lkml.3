@@ -1,68 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab3LCSE6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 13:04:58 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57399 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754238Ab3LCSEz (ORCPT
+	id S1754640Ab3LCSGm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 13:06:42 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:38843 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093Ab3LCSGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 13:04:55 -0500
-Date: Tue, 3 Dec 2013 18:04:30 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org
-Message-ID: <20131203180430.GI27568@sirena.org.uk>
-References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
- <003001ceefb5$c418c600$4c4a5200$%han@samsung.com>
+	Tue, 3 Dec 2013 13:06:41 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="48DfXVLS5QXSkCLu"
-Content-Disposition: inline
-In-Reply-To: <003001ceefb5$c418c600$4c4a5200$%han@samsung.com>
-X-Cookie: Boycott meat -- suck your thumb.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 27/39] spi: remove DEFINE_PCI_DEVICE_TABLE macro
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <20131203091655.GB20179@gmail.com>
+References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
+	<20131203091655.GB20179@gmail.com>
+Date: Tue, 3 Dec 2013 10:06:39 -0800
+Message-ID: <CAMEtUuziP0zVe63HSxF0uVs1pnP--1HBs1-WsR2xfLOTyBaHSQ@mail.gmail.com>
+Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>, Pekka Enberg <penberg@iki.fi>,
+        "David S. Miller" <davem@davemloft.net>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 3, 2013 at 1:16 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> Very cool! (Added various other folks who might be interested in this
+> to the Cc: list.)
+>
+> I have one generic concern:
+>
+> It would be important to make it easy to extract loaded BPF code from
+> the kernel in source code equivalent form, which compiles to the same
+> BPF code.
+>
+> I.e. I think it would be fundamentally important to make sure that
+> this is all within the kernel's license domain, to make it very clear
+> there can be no 'binary only' BPF scripts.
+>
+> By up-loading BPF into a kernel the person loading it agrees to make
+> that code available to all users of that system who can access it,
+> under the same license as the kernel's code (or under a more
+> permissive license).
+>
+> The last thing we want is people getting funny ideas and writing
+> drivers in BPF and hiding the code or making license claims over it
 
---48DfXVLS5QXSkCLu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+all makes sense.
+In case of kernel modules all export_symbols are accessible and module
+has to have kernel compatible license. Same licensing terms apply to
+anything else that interacts with kernel functions.
+In case of BPF the list of accessible functions is tiny, so it's much
+easier to enforce specific limited use case.
+For tracing filters it's just bpf_load_xx/trace_printk/dump_stack.
+Even if someone has funny ideas they cannot be brought to life, since
+drivers need a lot more than this set of functions and BPF checker
+will reject any attempts to call something outside of this tiny list.
+imo the same applies to existing BPF as well. Meaning that tcpdump
+filter string and seccomp filters, if distributed, has to have their
+source code available.
 
-On Tue, Dec 03, 2013 at 08:25:19AM +0900, Jingoo Han wrote:
-> Don't use DEFINE_PCI_DEVICE_TABLE macro, because this macro
-> is not preferred.
+> I.e. we want to allow flexible plugins technologically, but make sure
+> people who run into such a plugin can modify and improve it under the
+> same license as they can modify and improve the kernel itself!
 
-Applied, thanks.  It's on a topic branch by itself so I can easily drop
-it if we decide to do something else.
+wow. I guess if the whole thing takes off, we would need an in-kernel
+directory to store upstreamed bpf filters as well :)
 
---48DfXVLS5QXSkCLu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>> opcode encoding is the same between old BPF and extended BPF.
+>> Original BPF has two 32-bit registers.
+>> Extended BPF has ten 64-bit registers.
+>> That is the main difference.
+>>
+>> Old BPF was using jt/jf fields for jump-insn only.
+>> New BPF combines them into generic 'off' field for jump and non-jump insns.
+>> k==imm field has the same meaning.
+>
+> This only affects the internal JIT representation, not the BPF byte
+> code, right?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+that is the ebpf vs bpf code difference. JIT doesn't keep another
+representation.
+Just converts it to x86
 
-iQIcBAEBAgAGBQJSnh0rAAoJELSic+t+oim9GC4P/Rw8raDhr206VlAvoJdTOCXR
-auyX6BQMhxgC4rBRUTH8SVXl8orVFzPFBnkeDvZHBFV5j+YbiG1CV7eJvJ5Eu2xu
-qcQAmvt0FNWvy3Gr39MfvMLI4rGoz1a0P8BI6A24/gDHNlntCcDJTgCSeNUUD1/U
-WXQqttCYJvS1HtEbIZhC/H4Ep065rNWrhscNC8J/dqCTrBmpU4Ufyivryly6FNgG
-M6OgPOB5O0Zab79R3YlkfLWQGudw8bdPzCaa4uaZjMmITnSax7xVivNEbo1rMyip
-chigavIra1pTLXlG3m4DV1EOwlSj3heF4Leg+N2bUquKsDsNp1lx8foCY7aQDPnS
-9zKYGJKd0QMr3uPiO/82BYn9s1ApfmdyG+VKaO6pq8BVJ9Tt2rRK8YvxUuYxBtBs
-cIShJs8in76GWq47EFq27exPko8rTbd1gkye38PKAv4+WZQOodU6zh7cCTF55Je1
-ps3UtwEUh7jplycHSaF3RyL/XW9e7k1NnbA9STblW1MOS/k6K1Uuub7CdmS+n7RK
-Okztb8KcgqIhmmrQmPu3sLW8VGH5DMEfakl7+tgL2q1UoCvGLfmjSUyTbmYxcxmW
-tR92v4ONCJqEUzJYrBP9akdcNe5JgtIr1cj3GhX2IjwfxZfk5NWVxowrjOm+erfb
-GENRPH1hYqYfxGO0jDV0
-=wXhR
------END PGP SIGNATURE-----
+>>  32 files changed, 3332 insertions(+), 24 deletions(-)
+>
+> Impressive!
+>
+> I'm wondering, will the new nftable code in works make use of the BPF
+> JIT as well, or is that a separate implementation?
 
---48DfXVLS5QXSkCLu--
+nft is much higher level state machine customized for specific nftable use case.
+imo iptables/nftable rules can be compiled into extended bpf.
+One needs to define bpf_context and set of functions to do packet
+lookup via bpf_callbacks...
+but let's do it one step at a a time.
+
+Thanks
+Alexei
