@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab3LCWCx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 17:02:53 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:45460 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755343Ab3LCWAo (ORCPT
+	id S1755522Ab3LCWCt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 17:02:49 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:36002 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755366Ab3LCWAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 17:00:44 -0500
+	Tue, 3 Dec 2013 17:00:46 -0500
 From: Kent Overstreet <kmo@daterainc.com>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org
 Cc: hch@infradead.org, clm@fb.com, viro@zeniv.linux.org.uk, zab@redhat.com,
         shaggy@kernel.org, Kent Overstreet <kmo@daterainc.com>
-Subject: [PATCH 06/11] iov_iter: Kill iov_iter_single_seg_count()
-Date: Tue,  3 Dec 2013 14:00:12 -0800
-Message-Id: <1386108017-27964-7-git-send-email-kmo@daterainc.com>
+Subject: [PATCH 07/11] iov_iter: Kill written arg to iov_iter_init()
+Date: Tue,  3 Dec 2013 14:00:13 -0800
+Message-Id: <1386108017-27964-8-git-send-email-kmo@daterainc.com>
 X-Mailer: git-send-email 1.8.4.4
 In-Reply-To: <1386108017-27964-1-git-send-email-kmo@daterainc.com>
 References: <1386108017-27964-1-git-send-email-kmo@daterainc.com>
@@ -24,87 +24,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Kent Overstreet <kmo@daterainc.com>
 ---
- fs/fuse/file.c      |  6 +++---
- include/linux/uio.h |  1 -
- mm/filemap.c        | 15 +--------------
- 3 files changed, 4 insertions(+), 18 deletions(-)
+ fs/btrfs/file.c     |  8 +++++---
+ fs/cifs/file.c      |  4 ++--
+ fs/fuse/file.c      | 11 ++++++-----
+ include/linux/uio.h |  9 +++------
+ mm/filemap.c        |  4 +++-
+ 5 files changed, 19 insertions(+), 17 deletions(-)
 
+diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+index 82d0342..273c429 100644
+--- a/fs/btrfs/file.c
++++ b/fs/btrfs/file.c
+@@ -1577,8 +1577,9 @@ static ssize_t __btrfs_direct_write(struct kiocb *iocb,
+ 		return written;
+ 
+ 	pos += written;
+-	count -= written;
+-	iov_iter_init(&i, iov, nr_segs, count, written);
++	iov_iter_init(&i, iov, nr_segs, count);
++	iov_iter_advance(&i, written);
++
+ 	written_buffered = __btrfs_buffered_write(file, &i, pos);
+ 	if (written_buffered < 0) {
+ 		err = written_buffered;
+@@ -1693,7 +1694,8 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
+ 	} else {
+ 		struct iov_iter i;
+ 
+-		iov_iter_init(&i, iov, nr_segs, count, num_written);
++		iov_iter_init(&i, iov, nr_segs, count + num_written);
++		iov_iter_advance(&i, num_written);
+ 
+ 		num_written = __btrfs_buffered_write(file, &i, pos);
+ 		if (num_written > 0)
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index 5a5a872..dc11685 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -2416,7 +2416,7 @@ cifs_iovec_write(struct file *file, const struct iovec *iov,
+ 	else
+ 		pid = current->tgid;
+ 
+-	iov_iter_init(&it, iov, nr_segs, len, 0);
++	iov_iter_init(&it, iov, nr_segs, len);
+ 	do {
+ 		size_t save_len;
+ 
+@@ -2720,7 +2720,7 @@ cifs_readdata_to_iov(struct cifs_readdata *rdata, const struct iovec *iov,
+ 	unsigned int i;
+ 
+ 	/* set up iov_iter and advance to the correct offset */
+-	iov_iter_init(&ii, iov, nr_segs, iov_length(iov, nr_segs), 0);
++	iov_iter_init(&ii, iov, nr_segs, iov_length(iov, nr_segs));
+ 	iov_iter_advance(&ii, pos);
+ 
+ 	*copied = 0;
 diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 7e70506..69175a1 100644
+index 69175a1..ce45524 100644
 --- a/fs/fuse/file.c
 +++ b/fs/fuse/file.c
-@@ -996,7 +996,7 @@ static ssize_t fuse_fill_write_pages(struct fuse_req *req,
- 		if (!tmp) {
- 			unlock_page(page);
- 			page_cache_release(page);
--			bytes = min(bytes, iov_iter_single_seg_count(ii));
-+			bytes = min(bytes, iov_iter_iovec(ii).iov_len);
- 			goto again;
- 		}
+@@ -1135,9 +1135,10 @@ static ssize_t fuse_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 			goto out;
  
-@@ -1187,7 +1187,7 @@ static inline unsigned long fuse_get_user_addr(const struct iov_iter *ii)
- static inline size_t fuse_get_frag_size(const struct iov_iter *ii,
- 					size_t max_size)
- {
--	return min(iov_iter_single_seg_count(ii), max_size);
-+	return min(iov_iter_iovec(ii).iov_len, max_size);
- }
+ 		pos += written;
+-		count -= written;
  
- static int fuse_get_user_pages(struct fuse_req *req, struct iov_iter *ii,
-@@ -1261,7 +1261,7 @@ static inline int fuse_iter_npages(const struct iov_iter *ii_p)
- 	while (iov_iter_count(&ii) && npages < FUSE_MAX_PAGES_PER_REQ) {
- 		unsigned long user_addr = fuse_get_user_addr(&ii);
- 		unsigned offset = user_addr & ~PAGE_MASK;
--		size_t frag_size = iov_iter_single_seg_count(&ii);
-+		size_t frag_size = iov_iter_iovec(&ii).iov_len;
+-		iov_iter_init(&i, iov, nr_segs, count, written);
++		iov_iter_init(&i, iov, nr_segs, count);
++		iov_iter_advance(&i, written);
++
+ 		written_buffered = fuse_perform_write(file, mapping, &i, pos);
+ 		if (written_buffered < 0) {
+ 			err = written_buffered;
+@@ -1157,7 +1158,7 @@ static ssize_t fuse_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 		written += written_buffered;
+ 		iocb->ki_pos = pos + written_buffered;
+ 	} else {
+-		iov_iter_init(&i, iov, nr_segs, count, 0);
++		iov_iter_init(&i, iov, nr_segs, count);
+ 		written = fuse_perform_write(file, mapping, &i, pos);
+ 		if (written >= 0)
+ 			iocb->ki_pos = pos + written;
+@@ -1283,7 +1284,7 @@ ssize_t fuse_direct_io(struct fuse_io_priv *io, const struct iovec *iov,
+ 	struct fuse_req *req;
+ 	struct iov_iter ii;
  
- 		npages += (frag_size + offset + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 		iov_iter_advance(&ii, frag_size);
+-	iov_iter_init(&ii, iov, nr_segs, count, 0);
++	iov_iter_init(&ii, iov, nr_segs, count);
+ 
+ 	if (io->async)
+ 		req = fuse_get_req_for_background(fc, fuse_iter_npages(&ii));
+@@ -2171,7 +2172,7 @@ static int fuse_ioctl_copy_user(struct page **pages, struct iovec *iov,
+ 	if (!bytes)
+ 		return 0;
+ 
+-	iov_iter_init(&ii, iov, nr_segs, bytes, 0);
++	iov_iter_init(&ii, iov, nr_segs, bytes);
+ 
+ 	while (iov_iter_count(&ii)) {
+ 		struct page *page = pages[page_idx++];
 diff --git a/include/linux/uio.h b/include/linux/uio.h
-index 347d70c..2b99e0d 100644
+index 2b99e0d..d653fee 100644
 --- a/include/linux/uio.h
 +++ b/include/linux/uio.h
-@@ -66,7 +66,6 @@ size_t iov_iter_copy_from_user(struct page *page,
- 		struct iov_iter *i, unsigned long offset, size_t bytes);
+@@ -67,16 +67,13 @@ size_t iov_iter_copy_from_user(struct page *page,
  void iov_iter_advance(struct iov_iter *i, size_t bytes);
  int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes);
--size_t iov_iter_single_seg_count(const struct iov_iter *i);
  
- static inline void iov_iter_init(struct iov_iter *i,
- 			const struct iovec *iov, unsigned long nr_segs,
+-static inline void iov_iter_init(struct iov_iter *i,
+-			const struct iovec *iov, unsigned long nr_segs,
+-			size_t count, size_t written)
++static inline void iov_iter_init(struct iov_iter *i, const struct iovec *iov,
++				 unsigned long nr_segs, size_t count)
+ {
+ 	i->iov = iov;
+ 	i->nr_segs = nr_segs;
+ 	i->iov_offset = 0;
+-	i->count = count + written;
+-
+-	iov_iter_advance(i, written);
++	i->count = count;
+ }
+ 
+ static inline size_t iov_iter_count(struct iov_iter *i)
 diff --git a/mm/filemap.c b/mm/filemap.c
-index b7749a9..1a40f12 100644
+index 1a40f12..d48f39f 100644
 --- a/mm/filemap.c
 +++ b/mm/filemap.c
-@@ -2075,19 +2075,6 @@ int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes)
- EXPORT_SYMBOL(iov_iter_fault_in_readable);
+@@ -2387,7 +2387,9 @@ generic_file_buffered_write(struct kiocb *iocb, const struct iovec *iov,
+ 	ssize_t status;
+ 	struct iov_iter i;
  
- /*
-- * Return the count of just the current iov_iter segment.
-- */
--size_t iov_iter_single_seg_count(const struct iov_iter *i)
--{
--	const struct iovec *iov = i->iov;
--	if (i->nr_segs == 1)
--		return i->count;
--	else
--		return min(i->count, iov->iov_len - i->iov_offset);
--}
--EXPORT_SYMBOL(iov_iter_single_seg_count);
--
--/*
-  * Performs necessary checks before doing a write
-  *
-  * Can adjust writing position or amount of bytes to write.
-@@ -2375,7 +2362,7 @@ again:
- 			 * once without a pagefault.
- 			 */
- 			bytes = min_t(unsigned long, PAGE_CACHE_SIZE - offset,
--						iov_iter_single_seg_count(i));
-+				      iov_iter_iovec(i).iov_len);
- 			goto again;
- 		}
- 		pos += copied;
+-	iov_iter_init(&i, iov, nr_segs, count, written);
++	iov_iter_init(&i, iov, nr_segs, count + written);
++	iov_iter_advance(&i, written);
++
+ 	status = generic_perform_write(file, &i, pos);
+ 
+ 	if (likely(status >= 0)) {
 -- 
 1.8.4.4
 
