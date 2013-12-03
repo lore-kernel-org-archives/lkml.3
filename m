@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755147Ab3LCVB3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 16:01:29 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:36554 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665Ab3LCVB1 (ORCPT
+	id S1754999Ab3LCVKg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 16:10:36 -0500
+Received: from mail-yh0-f45.google.com ([209.85.213.45]:44315 "EHLO
+	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753811Ab3LCVKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 16:01:27 -0500
+	Tue, 3 Dec 2013 16:10:32 -0500
+Date: Tue, 3 Dec 2013 16:10:28 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org
+Subject: Re: sysfs: use a separate locking class for open files depending on
+ mmap
+Message-ID: <20131203211028.GN8277@htj.dyndns.org>
+References: <20131128051223.45739660885@gitolite.kernel.org>
+ <20131203184324.GA11320@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20131203204540.GA4796@roeck-us.net>
-References: <1385891092-13266-1-git-send-email-geert@linux-m68k.org>
-	<CAMuHMdV1hoUnYixPghCAy-LuTaB9JU-BFfBPH06gxhLRAqfp8Q@mail.gmail.com>
-	<20131203204540.GA4796@roeck-us.net>
-Date: Tue, 3 Dec 2013 22:01:27 +0100
-X-Google-Sender-Auth: Uv_eVyDrfh1RQkLEmJfYiZ1QP8o
-Message-ID: <CAMuHMdXsn9R6-R5yMCnjEmum5LjBRmL8+v+_ryvRLJyQBg1ZtA@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.13-rc2
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        sparclinux <sparclinux@vger.kernel.org>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131203184324.GA11320@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 3, 2013 at 9:45 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> ia64-defconfig:
->
-> arch/ia64/kernel/built-in.o: In function `skip_rbs_switch':
-> (.text+0xef2): undefined reference to `preempt_schedule_irq'
+Hello, Dave.
 
-Funny, that one was actually introduced in v3.13-rc1, but it fell through
-the cracks of the regex handling in my script.
+On Tue, Dec 03, 2013 at 01:43:24PM -0500, Dave Jones wrote:
+>  > +	/*
+>  > +	 * The following is done to give a different lockdep key to
+>  > +	 * @of->mutex for files which implement mmap.  This is a rather
+>  > +	 * crude way to avoid false positive lockdep warning around
+>  > +	 * mm->mmap_sem - mmap nests @of->mutex under mm->mmap_sem and
+>  > +	 * reading /sys/block/sda/trace/act_mask grabs sr_mutex, under
+>  > +	 * which mm->mmap_sem nests, while holding @of->mutex.  As each
+>  > +	 * open file has a separate mutex, it's okay as long as those don't
+>  > +	 * happen on the same file.  At this point, we can't easily give
+>  > +	 * each file a separate locking class.  Let's differentiate on
+>  > +	 * whether the file has mmap or not for now.
+>  > +	 */
+>  > +	if (has_mmap)
+>  > +		mutex_init(&of->mutex);
+>  > +	else
+>  > +		mutex_init(&of->mutex);
+>  > +
+>  
+> Somehow I just triggered this trace again, even with this commit applied.
+> The trace is pretty much identical to the old one.
 
-BTW, my scripts are back online: https://github.com/geertu/linux-scripts.
-linux-log-diff didn't see the ia64 breakage, linux-log-summary did.
-One day I plan to merge linux-log-diff and linux-log-summary, so I have
-to maintain only one regex chain.
+Hah, ain't that weird.  That's the trace you reported on the other
+mail, right?  I'll follow up on that one.
 
-Gr{oetje,eeting}s,
+Thanks.
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+tejun
