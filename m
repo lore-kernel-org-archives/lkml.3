@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513Ab3LCGuO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 01:50:14 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:16465 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab3LCGuL (ORCPT
+	id S1752871Ab3LCGvM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 01:51:12 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:53028 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751938Ab3LCGvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 01:50:11 -0500
-X-AuditID: cbfee690-b7f676d00000310d-d8-529d7f210564
+	Tue, 3 Dec 2013 01:51:08 -0500
+X-AuditID: cbfee690-b7f676d00000310d-c0-529d7f5a03b9
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Daniel Lezcano'" <daniel.lezcano@linaro.org>
 Cc: "'Thomas Gleixner'" <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
@@ -16,42 +16,45 @@ Cc: "'Thomas Gleixner'" <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         "'Simon Horman'" <horms+renesas@verge.net.au>,
         "'Laurent Pinchart'" <laurent.pinchart+renesas@ideasonboard.com>,
         "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/2] clocksource: sh_tmu: remove unnecessary
+References: <000001ceeff3$e867a100$b936e300$%han@samsung.com>
+In-reply-to: <000001ceeff3$e867a100$b936e300$%han@samsung.com>
+Subject: [PATCH 2/2] clocksource: sh_mtu2: remove unnecessary
  platform_set_drvdata()
-Date: Tue, 03 Dec 2013 15:50:09 +0900
-Message-id: <000001ceeff3$e867a100$b936e300$%han@samsung.com>
+Date: Tue, 03 Dec 2013 15:51:06 +0900
+Message-id: <000b01ceeff4$0a6d0a60$1f471f20$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7v8+f5y27PXVikS06wEXaGqjqG/g==
+Thread-index: Ac7v8+f5y27PXVikS06wEXaGqjqG/gAABRaA
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t8zI13F+rlBBhdabSwmTJrAaDHvs6zF
-	hbcf2CwuL7zEajGx6Q6Lxf63P1ktLu+aw2axedNUZgcOj9kdM1k9Gp9LeNy5tofN4925c+we
-	p98fYvXo27KK0WPOz28sHp83yQVwRHHZpKTmZJalFunbJXBlTNqnU9DMVvH1fQNTA+Nvli5G
-	Tg4JAROJ7rWXGSFsMYkL99azdTFycQgJLGOUmDnxOlxR65T5LBCJ6YwSr1bfZoRwfjFK7Fl6
-	G6ydTUBN4suXw+wgtoiAgcTr07/ZQYqYBZYxSbQf+QSWEBYIlXg5bxaYzSKgKrGm7wsbiM0r
-	YCtxY88TVghbUOLH5Htgq5kFtCTW7zzOBGHLS2xe85a5i5ED6CR1iUd/dSF26Uk0bVrIDFEi
-	IrHvxTtGiJKP7BL/yyE2CUh8m3yIBSIsK7HpADPEX5ISB1fcYJnAKDYLyd5ZSPbOQrJ3FpIF
-	CxhZVjGKphYkFxQnpReZ6BUn5haX5qXrJefnbmKExOuEHYz3DlgfYkwGWj+RWUo0OR8Y73kl
-	8YbGZkYWpiamxkbmlmakCSuJ86o9SgoSEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwGibc+Dl
-	Zw2ZjUlHppx1OnV2qUPc3xWPHseKeq3xmhuem5H7xjFv3fovFwM9vjMG1Mu8znfJU53fmPHl
-	/PWD/7g0jOoOsj9v1/px8ObDmJMlmtuvbcmq3N7lXfTs61KbWSXN8+78uv8t8OGWKc9PqwQJ
-	Tpi/rYprhXziZEuGBvG/hcpGV1dvCStUYinOSDTUYi4qTgQAMiPZoe0CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJKsWRmVeSWpSXmKPExsVy+t9jQV3F+rlBBuuemFtMmDSB0WLeZ1mL
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsVy+t8zY92o+rlBBksOmVhMmDSB0WLeZ1mL
 	C28/sFlcXniJ1WJi0x0Wi/1vf7JaXN41h81i86apzA4cHrM7ZrJ6ND6X8LhzbQ+bx7tz59g9
-	Tr8/xOrRt2UVo8ecn99YPD5vkgvgiGpgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0
-	tDBXUshLzE21VXLxCdB1y8wBukxJoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEa
-	SFjHmDFpn05BM1vF1/cNTA2Mv1m6GDk5JARMJFqnzIeyxSQu3FvP1sXIxSEkMJ1R4tXq24wQ
-	zi9GiT1LQRxODjYBNYkvXw6zg9giAgYSr0//ZgcpYhZYxiTRfuQTWEJYIFTi5bxZYDaLgKrE
-	mr4vbCA2r4CtxI09T1ghbEGJH5Pvga1mFtCSWL/zOBOELS+xec1b5i5GDqCT1CUe/dWF2KUn
-	0bRpITNEiYjEvhfvGCcwCsxCMmkWkkmzkEyahaRlASPLKkbR1ILkguKk9FxDveLE3OLSvHS9
-	5PzcTYzghPBMagfjygaLQ4wCHIxKPLwPts8JEmJNLCuuzD3EKMHBrCTCOz99bpAQb0piZVVq
-	UX58UWlOavEhxmSgRycyS4km5wOTVV5JvKGxiZmRpZGZhZGJuTlpwkrivAdarQOFBNITS1Kz
-	U1MLUotgtjBxcEo1MAb1Xr6cl/z3YU9OnMDP020/53/s6vWw/pdyPvhI197ZCx+caNrO8KbL
-	e8Zt0yOOhY3TNPff05gzg3lOnLPG8r1iD0ICow4fLkmuUr8lpaV/QyKqYu3H0/fsDlcHpf5Z
-	enz+xy9v1Ho/qWns8r+4r2oyv3ez5ua+JW8ncMj4/nqWHFqf4jpbM1GJpTgj0VCLuag4EQBp
-	TH+fTAMAAA==
+	Tr8/xOrRt2UVo8ecn99YPD5vkgvgiOKySUnNySxLLdK3S+DKeNqQVdDFVrHh3ALGBsYm1i5G
+	Tg4JAROJh48ns0PYYhIX7q1n62Lk4hASWMYocfDADTaYoqbZ89khEosYJWae+ALl/GKU2PX+
+	BhNIFZuAmsSXL4fBRokIGEi8Pv0brIhZYBmTRPuRT0AOB1CHrcTxM9wgNZwCdhJXr/xhBLGF
+	BcIkrv28ygxiswioStz/tQZsMy9QedPhGywQtqDEj8n3wGxmAS2J9TuPM0HY8hKb17xlBhkv
+	IaAu8eivLsQJRhKnP+1lhygRkdj34h0jyDkSAp0cEgtnL2GH2CUg8W3yIRaIXlmJTQeYIR6W
+	lDi44gbLBEaJWUg2z0KyeRaSzbOQrFjAyLKKUTS1ILmgOCm9yESvODG3uDQvXS85P3cTIyTC
+	J+xgvHfA+hBjMtD6icxSosn5wASRVxJvaGxmZGFqYmpsZG5pRpqwkjiv2qOkICGB9MSS1OzU
+	1ILUovii0pzU4kOMTBycUg2MpiGrhdeYf59dePHg9eb5tQn23XJadV27lN6auLz3ihU5vG7i
+	5f2pZbkLl34S3vFvV+oWjc2elppbpk9ZGc/rrDohkrVft8gv7L/ymuNdGrwx4mZpKxm29D76
+	sPF7yOrVJkp3jSLFH/mHvrVe//jr98YPMRes1X74/v91eT233U5dThndLM4wJZbijERDLeai
+	4kQAN3MiwQYDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAKsWRmVeSWpSXmKPExsVy+t9jAd2o+rlBBp96DSwmTJrAaDHvs6zF
+	hbcf2CwuL7zEajGx6Q6Lxf63P1ktLu+aw2axedNUZgcOj9kdM1k9Gp9LeNy5tofN4925c+we
+	p98fYvXo27KK0WPOz28sHp83yQVwRDUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpa
+	WpgrKeQl5qbaKrn4BOi6ZeYAXaakUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAAN
+	JKxjzHjakFXQxVax4dwCxgbGJtYuRk4OCQETiabZ89khbDGJC/fWs3UxcnEICSxilJh54gs7
+	hPOLUWLX+xtMIFVsAmoSX74cBusQETCQeH36N1gRs8AyJon2I5+AHA6gDluJ42e4QWo4Bewk
+	rl75wwhiCwuESVz7eZUZxGYRUJW4/2sNG4jNC1TedPgGC4QtKPFj8j0wm1lAS2L9zuNMELa8
+	xOY1b5lBxksIqEs8+qsLcYKRxOlPe9khSkQk9r14xziBUWgWkkmzkEyahWTSLCQtCxhZVjGK
+	phYkFxQnpeca6RUn5haX5qXrJefnbmIEp49n0jsYVzVYHGIU4GBU4uF9sH1OkBBrYllxZe4h
+	RgkOZiUR3vnpc4OEeFMSK6tSi/Lji0pzUosPMSYDPTqRWUo0OR+Y2vJK4g2NTcyMLI3MLIxM
+	zM1JE1YS5z3Yah0oJJCeWJKanZpakFoEs4WJg1OqgXFlEIOk14y/nb3lT7v+ThZ78PzC44ds
+	UefaKu/UX1mSmDIh2q/vRtTdprNnDCPlWV81LvC1yGI3XXJ7936rDzaSq7uEOvx+T7bPPhO/
+	8XesUoZMv2GlrN2J1wo1a2dPqtmzZ/eMNSbV74xEsiVcJfYGzHt2c+6/b5+cPNfv3OZpmLfj
+	tfVN3RVKLMUZiYZazEXFiQB3pzA0YwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -66,15 +69,15 @@ device driver data to NULL.
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 Acked-by: Simon Horman <horms+renesas@verge.net.au>
 ---
- drivers/clocksource/sh_tmu.c |    1 -
+ drivers/clocksource/sh_mtu2.c |    1 -
  1 file changed, 1 deletion(-)
 
-diff --git a/drivers/clocksource/sh_tmu.c b/drivers/clocksource/sh_tmu.c
-index 63557cd..e29295e 100644
---- a/drivers/clocksource/sh_tmu.c
-+++ b/drivers/clocksource/sh_tmu.c
-@@ -523,7 +523,6 @@ static int sh_tmu_probe(struct platform_device *pdev)
- 	ret = sh_tmu_setup(p, pdev);
+diff --git a/drivers/clocksource/sh_mtu2.c b/drivers/clocksource/sh_mtu2.c
+index 3cf1283..d8ed6e6 100644
+--- a/drivers/clocksource/sh_mtu2.c
++++ b/drivers/clocksource/sh_mtu2.c
+@@ -358,7 +358,6 @@ static int sh_mtu2_probe(struct platform_device *pdev)
+ 	ret = sh_mtu2_setup(p, pdev);
  	if (ret) {
  		kfree(p);
 -		platform_set_drvdata(pdev, NULL);
