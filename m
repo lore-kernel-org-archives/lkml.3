@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276Ab3LCOqo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 09:46:44 -0500
-Received: from mail-qe0-f47.google.com ([209.85.128.47]:35911 "EHLO
-	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab3LCOqk (ORCPT
+	id S1754383Ab3LCOrB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 09:47:01 -0500
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:49272 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753408Ab3LCOrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 09:46:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <1384515691-26299-3-git-send-email-sachin.kamat@linaro.org>
-References: <1384515691-26299-1-git-send-email-sachin.kamat@linaro.org>
-	<1384515691-26299-3-git-send-email-sachin.kamat@linaro.org>
-Date: Tue, 3 Dec 2013 20:16:39 +0530
-Message-ID: <CAM4voakmcVGTHF6zHh=GrghJexPQOVGtmAFr-w7qqaeKVDEW7Q@mail.gmail.com>
-Subject: Re: [RFC v2 2/4] power: asv: Add a common ASV driver for Exynos SoCs.
-From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        "myungjoo.ham" <myungjoo.ham@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Doug Anderson <dianders@google.com>,
-        Andrew Bresticker <abrestic@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 3 Dec 2013 09:47:00 -0500
+Subject: Re: [PATCH 1/6] GenWQE PCI support, health monitoring and recovery
+From: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Reply-To: haver@linux.vnet.ibm.com
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
+        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
+        cascardo@linux.vnet.ibm.com, michael@ibmra.de
+In-Reply-To: <20131203143010.GB3521@kroah.com>
+References: <1383741943-14609-1-git-send-email-haver@linux.vnet.ibm.com>
+	 <1383741943-14609-2-git-send-email-haver@linux.vnet.ibm.com>
+	 <20131127191658.GA28409@kroah.com>
+	 <1386077717.12186.7.camel@oc7383187364.ibm.com>
+	 <20131203143010.GB3521@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Tue, 03 Dec 2013 15:46:51 +0100
+Message-ID: <1386082011.29309.2.camel@oc7383187364.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120314-6892-0000-0000-00000717CE51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Am Dienstag, den 03.12.2013, 06:30 -0800 schrieb Greg KH:
+> On Tue, Dec 03, 2013 at 02:35:17PM +0100, Frank Haverkamp wrote:
+> > > > +/* common struct for chip image exchange */
+> > > > +struct chip_bitstream {
+> > > > +	uint8_t __user *pdata;		/* pointer to image data     */
+> > > > +	int	 size;			/* size of image file	     */
+> > > 
+> > > I think this fails the 32/64bit issue, right?
+> > 
+> > Yes. I replaced those by something like
+> >    __u32 data_addr;
+> > I hope that is fixing the 32/64bit issue.
+> 
+> No, not at all, how are you going to put a 64bit userspace pointer in
+> there?
+> 
 
-CC'ing Doug and Andrew who have also worked on ASV.
+Ohh, sorry __u64 of course:
 
-[...]
+/* common struct for chip image exchange */
+struct genwqe_bitstream {
+        __u64 data_addr;                /* pointer to image data */
+        __u32 size;                     /* size of image file */
+        __u32 crc;                      /* crc of this image */
+        __u8  partition;                /* '0', '1', or 'v' */
+        __u64 target_addr;              /* starting address in Flash */
+        __u8  uid;                      /* 1=host/x=dram */
 
-> +
-> +       chip_id = of_find_compatible_node(NULL, NULL,
-> +                                               "samsung,exynos4210-chipid");
-> +       if (!chip_id) {
-> +               pr_err("%s: unable to find chipid\n", __func__);
-> +               return -ENODEV;
-> +       }
-> +
-> +       base = of_iomap(chip_id, 0);
-> +       if (!base) {
-> +               dev_err(&pdev->dev, "unable to map chip_id register\n");
-> +               ret = -ENOMEM;
-> +               goto err_map;
-> +       }
-My u-boot had the chipid clock disabled and I was getting an invalid
-value at 1000_0004 (0 on the SMDK5420 and 0x43520010 on the
-chromebook). Maybe it would be better if we enable the chipid clock in
-the driver as well.
-> +
-> +       exynos_asv_info->base = base;
-> +
-> +       /* call SoC specific intialisation routine */
-> +
-> +       register_asv_member(exynos_asv_info->asv_list, exynos_asv_info->nr_mem);
-> +
-> +       iounmap(base);
-> +err_map:
-> +       of_node_put(chip_id);
-> +
-> +       return ret;
-> +}
-[...]
-> diff --git a/drivers/power/asv/exynos-asv.h b/drivers/power/asv/exynos-asv.h
-> new file mode 100644
-> index 000000000000..89a1ae8b5e19
-> --- /dev/null
-> +++ b/drivers/power/asv/exynos-asv.h
-> @@ -0,0 +1,21 @@
-> +/*
-> + * Exynos - Adaptive Supply Voltage Driver Header File
-> + *
-> + * copyright (c) 2013 samsung electronics co., ltd.
-> + *             http://www.samsung.com/
-Please fix the copyright
+        __u64 slu_id;                   /* informational/sim: SluID */
+        __u64 app_id;                   /* informational/sim: AppID */
 
-Thanks,
-Abhilash
+        __u16 retc;                     /* returned from processing */
+        __u16 attn;                     /* attention code from
+processing */
+        __u32 progress;                 /* progress code from processing
+*/
+};
+
+and than I do in my userspace application:
+
+        load.data_addr = (unsigned long)buf;
+
+Is that ok, or must I consider more?
+
+Regards
+
+Frank
+
+
