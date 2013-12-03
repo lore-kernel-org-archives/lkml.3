@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653Ab3LCICS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 03:02:18 -0500
-Received: from mail.fpasia.hk ([202.130.89.98]:43869 "EHLO fpa01n0.fpasia.hk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751759Ab3LCICH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 03:02:07 -0500
-From: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-To: peter.chen@freescale.com
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Chris Ruehl <chris.ruehl@gtsys.com.hk>
-Subject: [PATCH 2/3 v4] Fix Internal error: : 808 [#1] ARM related to STS flag
-Date: Tue,  3 Dec 2013 16:01:49 +0800
-Message-Id: <1386057710-3848-2-git-send-email-chris.ruehl@gtsys.com.hk>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1386057710-3848-1-git-send-email-chris.ruehl@gtsys.com.hk>
-References: <1386057710-3848-1-git-send-email-chris.ruehl@gtsys.com.hk>
+	id S1752768Ab3LCICo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 03:02:44 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:47913 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665Ab3LCICl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 03:02:41 -0500
+Date: Tue, 3 Dec 2013 09:02:32 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Jingoo Han <jg1.han@samsung.com>,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: Re: [PATCH 10/39] hwmon: remove DEFINE_PCI_DEVICE_TABLE macro
+Message-ID: <20131203090232.7ba0e002@endymion.delvare>
+In-Reply-To: <20131203001741.GA18237@roeck-us.net>
+References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
+	<001f01ceefb3$b1968820$14c39860$%han@samsung.com>
+	<20131203001741.GA18237@roeck-us.net>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix Internal error: : 808 [#1] ARM related to STS flag
+On Mon, 2 Dec 2013 16:17:41 -0800, Guenter Roeck wrote:
+> On Tue, Dec 03, 2013 at 08:10:29AM +0900, Jingoo Han wrote:
+> > Don't use DEFINE_PCI_DEVICE_TABLE macro, because this macro
+> > is not preferred.
+> > 
+> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> 
+> Acked-by: Guenter Roeck <linux@roeck-us.net>
 
-* init the sts flag to 0 (missed)
-* fix write the real bit not sts value
-* Set PORTCS_STS and DEVLC_STS only if sts = 1
- (prefered solution by Mr. Peter Chen, Maintainer of ChipIdea subsystem)
+Acked-by: Jean Delvare <khali@linux-fr.org>
 
-Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
----
- drivers/usb/chipidea/core.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+too. I never liked this macro and I'm very happy to see it go.
 
-diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
-index 9a5ef20..2834801 100644
---- a/drivers/usb/chipidea/core.c
-+++ b/drivers/usb/chipidea/core.c
-@@ -243,7 +243,7 @@ static int hw_device_init(struct ci_hdrc *ci, void __iomem *base)
- 
- static void hw_phymode_configure(struct ci_hdrc *ci)
- {
--	u32 portsc, lpm, sts;
-+	u32 portsc, lpm, sts = 0;
- 
- 	switch (ci->platdata->phy_mode) {
- 	case USBPHY_INTERFACE_MODE_UTMI:
-@@ -273,10 +273,12 @@ static void hw_phymode_configure(struct ci_hdrc *ci)
- 
- 	if (ci->hw_bank.lpm) {
- 		hw_write(ci, OP_DEVLC, DEVLC_PTS(7) | DEVLC_PTW, lpm);
--		hw_write(ci, OP_DEVLC, DEVLC_STS, sts);
-+		if (sts)
-+			hw_write(ci, OP_DEVLC, DEVLC_STS, DEVLC_STS);
- 	} else {
- 		hw_write(ci, OP_PORTSC, PORTSC_PTS(7) | PORTSC_PTW, portsc);
--		hw_write(ci, OP_PORTSC, PORTSC_STS, sts);
-+		if (sts)
-+			hw_write(ci, OP_PORTSC, PORTSC_STS, PORTSC_STS);
- 	}
- }
- 
 -- 
-1.7.10.4
-
+Jean Delvare
