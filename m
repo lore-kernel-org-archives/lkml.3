@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab3LCLIK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 06:08:10 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:30775 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752827Ab3LCLIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 06:08:07 -0500
+	id S1753417Ab3LCLKB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 06:10:01 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:63137 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752560Ab3LCLKA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 06:10:00 -0500
 X-IronPort-AV: E=Sophos;i="4.93,817,1378857600"; 
-   d="scan'208";a="80040266"
-Message-ID: <1386068884.13256.9.camel@kazak.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH RFC] xen-block: correctly define structures
- in public headers
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: David Vrabel <david.vrabel@citrix.com>
-CC: Roger Pau Monne <roger.pau@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Julien Grall <julien.grall@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xenproject.org>,
-        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>
-Date: Tue, 3 Dec 2013 11:08:04 +0000
-In-Reply-To: <529DBA07.6090108@citrix.com>
-References: <1386068254-1413-1-git-send-email-roger.pau@citrix.com>
-	 <529DBA07.6090108@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+   d="scan'208";a="77669816"
+Message-ID: <529DBC05.2040109@citrix.com>
+Date: Tue, 3 Dec 2013 12:09:57 +0100
+From: =?UTF-8?B?Um9nZXIgUGF1IE1vbm7DqQ==?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
+To: David Vrabel <david.vrabel@citrix.com>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        Julien Grall <julien.grall@linaro.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH RFC] xen-block: correctly define structures in public
+ headers
+References: <1386068254-1413-1-git-send-email-roger.pau@citrix.com> <529DBA07.6090108@citrix.com>
+In-Reply-To: <529DBA07.6090108@citrix.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA2
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-03 at 11:01 +0000, David Vrabel wrote:
+On 03/12/13 12:01, David Vrabel wrote:
 > On 03/12/13 10:57, Roger Pau Monne wrote:
-> > Using __packed__ on the public interface is not correct, this
-> > structures should be compiled using the native ABI, and __packed__
-> > should only be used in the backend counterpart of those structures
-> > (which needs to handle different ABIs).
-> > 
-> > This was even worse in the ARM case, where the Linux kernel was
-> > incorrectly using the X86_32 protocol ABI. This patch fixes it, but
-> > also breaks compatibility, so an ARM DomU kernel compiled with
-> > this patch will fail to communicate with PV disk devices unless the
-> > Dom0 also has this patch.
+>> Using __packed__ on the public interface is not correct, this
+>> structures should be compiled using the native ABI, and __packed__
+>> should only be used in the backend counterpart of those structures
+>> (which needs to handle different ABIs).
+>>
+>> This was even worse in the ARM case, where the Linux kernel was
+>> incorrectly using the X86_32 protocol ABI. This patch fixes it, but
+>> also breaks compatibility, so an ARM DomU kernel compiled with
+>> this patch will fail to communicate with PV disk devices unless the
+>> Dom0 also has this patch.
 > 
 > This ABI change needs to be justified.  Why do you think it is
 > acceptable to break existing Linux guests?  Because I don't think it is.
 
-As I explained in my reply those guests are buggy.
+ARM Linux guests are not using the ABI found in Xen public headers, they
+are using the X86_32 ABI, because of the __packed__ and #ifdef
+CONFIG_X86_64 (which made ARM kernels use the X86_32 ABI).
 
-Ian.
+If someone picks a pristine version of the structures found in blkif.h
+from upstream Xen and compile them on ARM they will see that it differs
+from what the Linux kernel currently generates, which is not acceptable.
+
+IMHO keeping it like this is a big mistake, this prevents compatibility
+with ARM guests that implement the correct ABI.
 
