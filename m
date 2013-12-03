@@ -1,113 +1,337 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753670Ab3LCIz5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 03:55:57 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:34340 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753616Ab3LCIzq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 03:55:46 -0500
-Message-ID: <529D9CD1.3020208@metafoo.de>
-Date: Tue, 03 Dec 2013 09:56:49 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, broonie@kernel.org,
-        alsa-devel@alsa-project.org
-Subject: Re: [alsa-devel] [PATCH 2/3] ASoC: ux500_pcm: Differentiate between
- pdata and DT initialisation
-References: <1386007222-10081-1-git-send-email-lee.jones@linaro.org> <1386007222-10081-2-git-send-email-lee.jones@linaro.org> <529CCDAF.7050205@metafoo.de> <20131203083600.GB11828@lee--X1>
-In-Reply-To: <20131203083600.GB11828@lee--X1>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753588Ab3LCIzn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 03:55:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49405 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752301Ab3LCIwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 03:52:05 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: Rik van Riel <riel@redhat.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 02/15] mm: hugetlbfs: fix hugetlbfs optimization
+Date: Tue,  3 Dec 2013 08:51:49 +0000
+Message-Id: <1386060721-3794-3-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1386060721-3794-1-git-send-email-mgorman@suse.de>
+References: <1386060721-3794-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2013 09:36 AM, Lee Jones wrote:
-> On Mon, 02 Dec 2013, Lars-Peter Clausen wrote:
->
->> On 12/02/2013 07:00 PM, Lee Jones wrote:
->>> If booting with full DT support (i.e. DMA too, the last piece of the
->>> puzzle), then we don't need to use the compatible request channel call
->>> back. We also require slightly different flags to inform the core that
->>> we are booting with DT.
->>
->> I don't think you need differentiate between DT and non-DT here.
->> If the SND_DMAENGINE_PCM_FLAG_COMPAT is set and the
->> SND_DMAENGINE_PCM_FLAG_NO_DT is not set it will first try to request the
->> channels from the DT if that fails it will fallback to the compat path. So
->> all this patch needs to do is remove the SND_DMAENGINE_PCM_FLAG_NO_DT, that
->> should be it.
->
-> I have no way of testing that, as we are currently 80% through
-> shutting down platform data altogether. In fact, I think there is only
-> ASoC to be converted. Most of this stuff is going to be ripped out
-> within the next couple of weeks in any case. It will happen as soon as
-> I can find an hour or two to work on it.
->
-> For that reason I didn't want to disturb the current semantics. I've
-> already found that a bunch of he generic (oh, you can just use the
-> central) functions (for that) don't actually work for us for one
-> reason or another.
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-All SND_DMAENGINE_PCM_FLAG_NO_DT does is to skip trying to request the channel 
-from the dt. If of_node is NULL this step will be skipped anyway. So only 
-setting SND_DMAENGINE_PCM_FLAG_NO_DT if we already know that the node is NULL 
-is redundant.
+commit 27c73ae759774e63313c1fbfeb17ba076cea64c5 upstream.
 
->
->>> Cc: alsa-devel@alsa-project.org
->>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
->>> ---
->>>   sound/soc/ux500/ux500_pcm.c | 26 +++++++++++++++++++++-----
->>>   1 file changed, 21 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/sound/soc/ux500/ux500_pcm.c b/sound/soc/ux500/ux500_pcm.c
->>> index 2f1bdb7..00cdd7b 100644
->>> --- a/sound/soc/ux500/ux500_pcm.c
->>> +++ b/sound/soc/ux500/ux500_pcm.c
->>> @@ -134,15 +134,31 @@ static const struct snd_dmaengine_pcm_config ux500_dmaengine_pcm_config = {
->>>   	.prepare_slave_config = ux500_pcm_prepare_slave_config,
->>>   };
->>>
->>> +static const struct snd_dmaengine_pcm_config ux500_dmaengine_of_pcm_config = {
->>> +	.prepare_slave_config = ux500_pcm_prepare_slave_config,
->>> +};
->>> +
->>>   int ux500_pcm_register_platform(struct platform_device *pdev)
->>>   {
->>> +	const struct snd_dmaengine_pcm_config *pcm_config;
->>> +	struct device_node *np = pdev->dev.of_node;
->>> +	unsigned int pcm_flags;
->>>   	int ret;
->>>
->>> -	ret = snd_dmaengine_pcm_register(&pdev->dev,
->>> -			&ux500_dmaengine_pcm_config,
->>> -			SND_DMAENGINE_PCM_FLAG_NO_RESIDUE |
->>> -			SND_DMAENGINE_PCM_FLAG_COMPAT |
->>> -			SND_DMAENGINE_PCM_FLAG_NO_DT);
->>> +	if (np) {
->>> +		pcm_config = &ux500_dmaengine_of_pcm_config;
->>> +
->>> +		pcm_flags = SND_DMAENGINE_PCM_FLAG_NO_RESIDUE |
->>> +			SND_DMAENGINE_PCM_FLAG_COMPAT;
->>> +	} else {
->>> +		pcm_config = &ux500_dmaengine_pcm_config;
->>> +
->>> +		pcm_flags = SND_DMAENGINE_PCM_FLAG_NO_RESIDUE |
->>> +			SND_DMAENGINE_PCM_FLAG_NO_DT |
->>> +			SND_DMAENGINE_PCM_FLAG_COMPAT;
->>> +	}
->>> +
->>> +	ret = snd_dmaengine_pcm_register(&pdev->dev, pcm_config, pcm_flags);
->>>   	if (ret < 0) {
->>>   		dev_err(&pdev->dev,
->>>   			"%s: ERROR: Failed to register platform '%s' (%d)!\n",
->>>
->>
->
+Commit 7cb2ef56e6a8 ("mm: fix aio performance regression for database
+caused by THP") can cause dereference of a dangling pointer if
+split_huge_page runs during PageHuge() if there are updates to the
+tail_page->private field.
+
+Also it is repeating compound_head twice for hugetlbfs and it is running
+compound_head+compound_trans_head for THP when a single one is needed in
+both cases.
+
+The new code within the PageSlab() check doesn't need to verify that the
+THP page size is never bigger than the smallest hugetlbfs page size, to
+avoid memory corruption.
+
+A longstanding theoretical race condition was found while fixing the
+above (see the change right after the skip_unlock label, that is
+relevant for the compound_lock path too).
+
+By re-establishing the _mapcount tail refcounting for all compound
+pages, this also fixes the below problem:
+
+  echo 0 >/sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
+
+  BUG: Bad page state in process bash  pfn:59a01
+  page:ffffea000139b038 count:0 mapcount:10 mapping:          (null) index:0x0
+  page flags: 0x1c00000000008000(tail)
+  Modules linked in:
+  CPU: 6 PID: 2018 Comm: bash Not tainted 3.12.0+ #25
+  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+  Call Trace:
+    dump_stack+0x55/0x76
+    bad_page+0xd5/0x130
+    free_pages_prepare+0x213/0x280
+    __free_pages+0x36/0x80
+    update_and_free_page+0xc1/0xd0
+    free_pool_huge_page+0xc2/0xe0
+    set_max_huge_pages.part.58+0x14c/0x220
+    nr_hugepages_store_common.isra.60+0xd0/0xf0
+    nr_hugepages_store+0x13/0x20
+    kobj_attr_store+0xf/0x20
+    sysfs_write_file+0x189/0x1e0
+    vfs_write+0xc5/0x1f0
+    SyS_write+0x55/0xb0
+    system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Tested-by: Khalid Aziz <khalid.aziz@oracle.com>
+Cc: Pravin Shelar <pshelar@nicira.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Ben Hutchings <bhutchings@solarflare.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/hugetlb.h |   6 ++
+ mm/hugetlb.c            |  17 ++++++
+ mm/swap.c               | 143 ++++++++++++++++++++++++++++--------------------
+ 3 files changed, 106 insertions(+), 60 deletions(-)
+
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 0393270..6125579 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -31,6 +31,7 @@ struct hugepage_subpool *hugepage_new_subpool(long nr_blocks);
+ void hugepage_put_subpool(struct hugepage_subpool *spool);
+ 
+ int PageHuge(struct page *page);
++int PageHeadHuge(struct page *page_head);
+ 
+ void reset_vma_resv_huge_pages(struct vm_area_struct *vma);
+ int hugetlb_sysctl_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
+@@ -104,6 +105,11 @@ static inline int PageHuge(struct page *page)
+ 	return 0;
+ }
+ 
++static inline int PageHeadHuge(struct page *page_head)
++{
++	return 0;
++}
++
+ static inline void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
+ {
+ }
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 0b7656e..f0a4ca4 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -736,6 +736,23 @@ int PageHuge(struct page *page)
+ }
+ EXPORT_SYMBOL_GPL(PageHuge);
+ 
++/*
++ * PageHeadHuge() only returns true for hugetlbfs head page, but not for
++ * normal or transparent huge pages.
++ */
++int PageHeadHuge(struct page *page_head)
++{
++	compound_page_dtor *dtor;
++
++	if (!PageHead(page_head))
++		return 0;
++
++	dtor = get_compound_page_dtor(page_head);
++
++	return dtor == free_huge_page;
++}
++EXPORT_SYMBOL_GPL(PageHeadHuge);
++
+ pgoff_t __basepage_index(struct page *page)
+ {
+ 	struct page *page_head = compound_head(page);
+diff --git a/mm/swap.c b/mm/swap.c
+index 759c3ca..0c8f7a4 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -82,19 +82,6 @@ static void __put_compound_page(struct page *page)
+ 
+ static void put_compound_page(struct page *page)
+ {
+-	/*
+-	 * hugetlbfs pages cannot be split from under us.  If this is a
+-	 * hugetlbfs page, check refcount on head page and release the page if
+-	 * the refcount becomes zero.
+-	 */
+-	if (PageHuge(page)) {
+-		page = compound_head(page);
+-		if (put_page_testzero(page))
+-			__put_compound_page(page);
+-
+-		return;
+-	}
+-
+ 	if (unlikely(PageTail(page))) {
+ 		/* __split_huge_page_refcount can run under us */
+ 		struct page *page_head = compound_trans_head(page);
+@@ -111,14 +98,31 @@ static void put_compound_page(struct page *page)
+ 			 * still hot on arches that do not support
+ 			 * this_cpu_cmpxchg_double().
+ 			 */
+-			if (PageSlab(page_head)) {
+-				if (PageTail(page)) {
++			if (PageSlab(page_head) || PageHeadHuge(page_head)) {
++				if (likely(PageTail(page))) {
++					/*
++					 * __split_huge_page_refcount
++					 * cannot race here.
++					 */
++					VM_BUG_ON(!PageHead(page_head));
++					atomic_dec(&page->_mapcount);
+ 					if (put_page_testzero(page_head))
+ 						VM_BUG_ON(1);
+-
+-					atomic_dec(&page->_mapcount);
+-					goto skip_lock_tail;
++					if (put_page_testzero(page_head))
++						__put_compound_page(page_head);
++					return;
+ 				} else
++					/*
++					 * __split_huge_page_refcount
++					 * run before us, "page" was a
++					 * THP tail. The split
++					 * page_head has been freed
++					 * and reallocated as slab or
++					 * hugetlbfs page of smaller
++					 * order (only possible if
++					 * reallocated as slab on
++					 * x86).
++					 */
+ 					goto skip_lock;
+ 			}
+ 			/*
+@@ -132,8 +136,27 @@ static void put_compound_page(struct page *page)
+ 				/* __split_huge_page_refcount run before us */
+ 				compound_unlock_irqrestore(page_head, flags);
+ skip_lock:
+-				if (put_page_testzero(page_head))
+-					__put_single_page(page_head);
++				if (put_page_testzero(page_head)) {
++					/*
++					 * The head page may have been
++					 * freed and reallocated as a
++					 * compound page of smaller
++					 * order and then freed again.
++					 * All we know is that it
++					 * cannot have become: a THP
++					 * page, a compound page of
++					 * higher order, a tail page.
++					 * That is because we still
++					 * hold the refcount of the
++					 * split THP tail and
++					 * page_head was the THP head
++					 * before the split.
++					 */
++					if (PageHead(page_head))
++						__put_compound_page(page_head);
++					else
++						__put_single_page(page_head);
++				}
+ out_put_single:
+ 				if (put_page_testzero(page))
+ 					__put_single_page(page);
+@@ -155,7 +178,6 @@ out_put_single:
+ 			VM_BUG_ON(atomic_read(&page->_count) != 0);
+ 			compound_unlock_irqrestore(page_head, flags);
+ 
+-skip_lock_tail:
+ 			if (put_page_testzero(page_head)) {
+ 				if (PageHead(page_head))
+ 					__put_compound_page(page_head);
+@@ -198,51 +220,52 @@ bool __get_page_tail(struct page *page)
+ 	 * proper PT lock that already serializes against
+ 	 * split_huge_page().
+ 	 */
++	unsigned long flags;
+ 	bool got = false;
+-	struct page *page_head;
+-
+-	/*
+-	 * If this is a hugetlbfs page it cannot be split under us.  Simply
+-	 * increment refcount for the head page.
+-	 */
+-	if (PageHuge(page)) {
+-		page_head = compound_head(page);
+-		atomic_inc(&page_head->_count);
+-		got = true;
+-	} else {
+-		unsigned long flags;
++	struct page *page_head = compound_trans_head(page);
+ 
+-		page_head = compound_trans_head(page);
+-		if (likely(page != page_head &&
+-					get_page_unless_zero(page_head))) {
+-
+-			/* Ref to put_compound_page() comment. */
+-			if (PageSlab(page_head)) {
+-				if (likely(PageTail(page))) {
+-					__get_page_tail_foll(page, false);
+-					return true;
+-				} else {
+-					put_page(page_head);
+-					return false;
+-				}
+-			}
+-
+-			/*
+-			 * page_head wasn't a dangling pointer but it
+-			 * may not be a head page anymore by the time
+-			 * we obtain the lock. That is ok as long as it
+-			 * can't be freed from under us.
+-			 */
+-			flags = compound_lock_irqsave(page_head);
+-			/* here __split_huge_page_refcount won't run anymore */
++	if (likely(page != page_head && get_page_unless_zero(page_head))) {
++		/* Ref to put_compound_page() comment. */
++		if (PageSlab(page_head) || PageHeadHuge(page_head)) {
+ 			if (likely(PageTail(page))) {
++				/*
++				 * This is a hugetlbfs page or a slab
++				 * page. __split_huge_page_refcount
++				 * cannot race here.
++				 */
++				VM_BUG_ON(!PageHead(page_head));
+ 				__get_page_tail_foll(page, false);
+-				got = true;
+-			}
+-			compound_unlock_irqrestore(page_head, flags);
+-			if (unlikely(!got))
++				return true;
++			} else {
++				/*
++				 * __split_huge_page_refcount run
++				 * before us, "page" was a THP
++				 * tail. The split page_head has been
++				 * freed and reallocated as slab or
++				 * hugetlbfs page of smaller order
++				 * (only possible if reallocated as
++				 * slab on x86).
++				 */
+ 				put_page(page_head);
++				return false;
++			}
++		}
++
++		/*
++		 * page_head wasn't a dangling pointer but it
++		 * may not be a head page anymore by the time
++		 * we obtain the lock. That is ok as long as it
++		 * can't be freed from under us.
++		 */
++		flags = compound_lock_irqsave(page_head);
++		/* here __split_huge_page_refcount won't run anymore */
++		if (likely(PageTail(page))) {
++			__get_page_tail_foll(page, false);
++			got = true;
+ 		}
++		compound_unlock_irqrestore(page_head, flags);
++		if (unlikely(!got))
++			put_page(page_head);
+ 	}
+ 	return got;
+ }
+-- 
+1.8.4
 
