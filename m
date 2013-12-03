@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331Ab3LCRFz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 12:05:55 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53420 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752868Ab3LCRFw (ORCPT
+	id S1754357Ab3LCRIT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 12:08:19 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52847 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752630Ab3LCRIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 12:05:52 -0500
-Date: Tue, 3 Dec 2013 17:03:10 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Julien Grall <julien.grall@linaro.org>, <xen-devel@lists.xenproject.org>,
-        <patches@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Roger Pau Monne <roger.pau@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [PATCH v2] xen/block: Correctly define structures in public
- headers on ARM32 and ARM64
-Message-ID: <20131203170310.7099a706@alan.etchedpixels.co.uk>
-In-Reply-To: <1386088897.13256.66.camel@kazak.uk.xensource.com>
-References: <1386085237-8334-1-git-send-email-julien.grall@linaro.org>
-	<20131203160018.67542a53@alan.etchedpixels.co.uk>
-	<529E04AB.5060304@linaro.org>
-	<20131203163228.3313dff8@alan.etchedpixels.co.uk>
-	<1386088897.13256.66.camel@kazak.uk.xensource.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Dec 2013 12:08:16 -0500
+Date: Tue, 3 Dec 2013 17:08:15 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Jon Masters <jonathan@jonmasters.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [RFC part3 PATCH 2/2] ARM64 / clocksource: Use
+ arch_timer_acpi_init()
+Message-ID: <20131203170815.GB16025@e106331-lin.cambridge.arm.com>
+References: <1386088891-2917-1-git-send-email-hanjun.guo@linaro.org>
+ <1386088891-2917-3-git-send-email-hanjun.guo@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386088891-2917-3-git-send-email-hanjun.guo@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> itself. The protocol is defined by an entity which is external to Linux.
-> If this had been a bug in the IP protocol handling we would fix it and
-> move on. This case is no different IMHO.
+On Tue, Dec 03, 2013 at 04:41:31PM +0000, Hanjun Guo wrote:
+> Use arch_timer_acpi_init() on ARM64 to initialise arch timer
+> in ACPI way when DT is not available.
+> 
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> ---
+>  arch/arm64/kernel/time.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/arch/arm64/kernel/time.c b/arch/arm64/kernel/time.c
+> index 29c39d5..fb009da 100644
+> --- a/arch/arm64/kernel/time.c
+> +++ b/arch/arm64/kernel/time.c
+> @@ -67,6 +67,10 @@ void __init time_init(void)
+>  
+>  	clocksource_of_init();
+>  
+> +	/* if can't be initialised from DT, try ACPI way */
+> +	if (!arch_timer_get_rate())
+> +		arch_timer_acpi_init();
+> +
 
-Actually that is quite untrue. We are *very* careful that we can talk to
-other internet nodes that speak broken versions of TCP. There have even
-been changes made to protocol definitions during initial research to
-avoid tripping bugs in existing implementations.
+As mentioned on the previous patch, I think for the timebeing we should
+rely on CNTFREQ.
 
-> Once we set the ABI in stone then this is the sort of thing we will care
-> very much about (as we have done for many years on x86). Until then it
-> is not.
+Additionally, if you need to do this we should have an analagous
+mechanism to clocksource_of_init() that performs this initialisation for
+ACPI, and here we can call a clocksource_*_init function that does the
+right thing.
 
-Maybe Xen doesn't, but perhaps Linux doesn't wish to be tarred with the
-same brush. What Xen decides is the official protocol is Xen's decision.
-What a Linux guest does to keep compatibility ought to follow what Linux
-does as policy.
+There's no need for this file to know anything about ACPI.
 
-Alan
+Mark.
