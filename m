@@ -1,117 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324Ab3LCJY1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 04:24:27 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:54314 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752094Ab3LCJYV (ORCPT
+	id S1752601Ab3LCJYn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 04:24:43 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:33371 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415Ab3LCJYk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 04:24:21 -0500
-Date: Tue, 3 Dec 2013 09:24:10 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Keerthy <j-keerthy@ti.com>
-Cc: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk, rob@landley.net,
-        sameo@linux.intel.com, grant.likely@linaro.org, lgirdwood@gmail.com,
-        broonie@kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH 2/4] MFD: TPS65218: Add driver for the TPS65218 PMIC
-Message-ID: <20131203092410.GD11828@lee--X1>
-References: <1386053006-6480-1-git-send-email-j-keerthy@ti.com>
- <1386053006-6480-3-git-send-email-j-keerthy@ti.com>
+	Tue, 3 Dec 2013 04:24:40 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.38 with qID rB39OSXa010387, This message is accepted by code: ctloc85258
+From: <micky_ching@realsil.com.cn>
+To: <sameo@linux.intel.com>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <wei_wang@realsil.com.cn>,
+        <rogerable@realtek.com>, Micky Ching <micky_ching@realsil.com.cn>
+Subject: [PATCH v2 0/3] mfd: rtsx: decrease driver size and add new device
+Date: Tue, 3 Dec 2013 17:26:30 +0800
+Message-ID: <cover.1386051860.git.micky_ching@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1386053006-6480-3-git-send-email-j-keerthy@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The TPS65218 chip is a power management IC for Portable Navigation Systems
-> and Tablet Computing devices. It contains the following components:
-> 
->  - Regulators.
->  - Over Temperature warning and Shut down.
-> 
-> This patch adds support for tps65218 mfd device. At this time only
-> the regulator functionality is made available.
-> 
-> Signed-off-by: Keerthy <j-keerthy@ti.com>
-> ---
->  drivers/mfd/Kconfig          |   14 ++
->  drivers/mfd/Makefile         |    1 +
->  drivers/mfd/tps65218.c       |  281 +++++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/tps65218.h |  288 ++++++++++++++++++++++++++++++++++++++++++
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-<snip>
+With the recent added support request of yet another device, the
+burden of duplicated code was becoming a little messy. To rectify is,
+we init rtl8411-like chips to 8411 param first, then modify the
+different values according each chip.
 
-> +config MFD_TPS65218
-> +	tristate "TI TPS65218 Power Management chips"
-> +	depends on I2C
-> +	select MFD_CORE
-> +	select REGMAP_I2C
-> +	help
-> +	  If you say yes here you get support for the TPS65218 series of
-> +	  Power Management chips.
-> +	  These include voltage regulators, gpio and other features
-> +	  that are often used in portable devices.
+Micky Ching (3):
+  mfd: rtsx: reduce code duplication in rtl8411
+  mfd: rtsx: add card reader rtl8402
+  mfd: rtsx: prevent 'used uninitialised' warnings
 
-Perhaps you should add a note that only the regulator component is
-currently supported.
+ drivers/mfd/rtl8411.c  |  100 ++++++++++++++++++++++--------------------------
+ drivers/mfd/rtsx_pcr.c |    5 +++
+ drivers/mfd/rtsx_pcr.h |    9 +++++
+ 3 files changed, 60 insertions(+), 54 deletions(-)
 
-<snip>
-
-> new file mode 100644
-> index 0000000..8c61640
-> --- /dev/null
-> +++ b/drivers/mfd/tps65218.c
-> @@ -0,0 +1,281 @@
-> +/*
-> + * TPS65218 chip family multi-function driver
-
-Instead of calling it an MFD driver (is there such a thing?) I think
-you should mention its true purpose, as per the datasheet.
-
-<snip>
-
-> +static const struct of_device_id of_tps65218_match_table[] = {
-> +	{ .compatible = "ti,tps65218", },
-> +	{ /* end */ }
-
-I think the end comment is superfluous.
-
-However, if you _really_ want to put something in there, I dislike
-"/* Sentinel */" the least.
-
-> +static int tps65218_probe(struct i2c_client *client,
-> +				const struct i2c_device_id *ids)
-> +{
-
-<snip>
-
-> +	ret = of_platform_populate(client->dev.of_node, NULL, NULL,
-> +				   &client->dev);
-
-What are you trying to do here?
-
-Register each regulator as a platform device?
-
-<snip>
-
-> +static const struct i2c_device_id tps65218_id_table[] = {
-> +	{"tps65218", TPS65218},
-> +};
-
-This has a different structure to of_tps65218_match_table, please
-ensure they're the same. I prefer spaces after '{' and before '}'.
-
-<snip>
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+--
+1.7.9.5
