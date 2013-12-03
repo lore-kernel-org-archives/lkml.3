@@ -1,86 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab3LCVUP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 16:20:15 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:61172 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755161Ab3LCVUK (ORCPT
+	id S1755250Ab3LCVVZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 16:21:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54358 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755058Ab3LCVVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 16:20:10 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xenproject.org,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH] cpuidle: Check for dev before deregistering it.
-Date: Tue, 03 Dec 2013 22:33:08 +0100
-Message-ID: <3652709.SMvyaH5n9G@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1386086398-3686-1-git-send-email-konrad.wilk@oracle.com>
-References: <1386086398-3686-1-git-send-email-konrad.wilk@oracle.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Tue, 3 Dec 2013 16:21:22 -0500
+Date: Tue, 3 Dec 2013 13:21:20 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 1/3] Introduce FW_INFO* functions and messages
+Message-Id: <20131203132120.6a7ab2cd7cc99720712cbe6a@linux-foundation.org>
+In-Reply-To: <1385997579-22240-2-git-send-email-prarit@redhat.com>
+References: <1385997579-22240-1-git-send-email-prarit@redhat.com>
+	<1385997579-22240-2-git-send-email-prarit@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 03, 2013 10:59:58 AM Konrad Rzeszutek Wilk wrote:
-> If not, we could end up in the unfortunate situation where
-> we dereference a NULL pointer b/c we have cpuidle disabled.
-> 
-> This is the case when booting under Xen (which uses the
-> ACPI P/C states but disables the CPU idle driver) - and can
-> be easily reproduced when booting with cpuidle.off=1.
-> 
-> BUG: unable to handle kernel NULL pointer dereference at           (null)
-> IP: [<ffffffff8156db4a>] cpuidle_unregister_device+0x2a/0x90
-> .. snip..
-> Call Trace:
->  [<ffffffff813b15b4>] acpi_processor_power_exit+0x3c/0x5c
->  [<ffffffff813af0a9>] acpi_processor_stop+0x61/0xb6
->  [<ffffffff814215bf>] __device_release_driver+0fffff81421653>] device_release_driver+0x23/0x30
->  [<ffffffff81420ed8>] bus_remove_device+0x108/0x180
->  [<ffffffff8141d9d9>] device_del+0x129/0x1c0
->  [<ffffffff813cb4b0>] ? unregister_xenbus_watch+0x1f0/0x1f0
->  [<ffffffff8141da8e>] device_unregister+0x1e/0x60
->  [<ffffffff814243e9>] unregister_cpu+0x39/0x60
->  [<ffffffff81019e03>] arch_unregister_cpu+0x23/0x30
->  [<ffffffff813c3c51>] handle_vcpu_hotplug_event+0xc1/0xe0
->  [<ffffffff813cb4f5>] xenwatch_thread+0x45/0x120
->  [<ffffffff810af010>] ? abort_exclusive_wait+0xb0/0xb0
->  [<ffffffff8108ec42>] kthread+0xd2/0xf0
->  [<ffffffff8108eb70>] ? kthread_create_on_node+0x180/0x180
->  [<ffffffff816ce17c>] ret_from_fork+0x7c/0xb0
->  [<ffffffff8108eb70>] ? kthread_create_on_node+0x180/0x180
-> 
-> This problem also appears in 3.12 and could be a candidate for backport.
-> 
-> CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> CC: Daniel Lezcano <daniel.lezcano@linaro.org>
-> CC: linux-pm@vger.kernel.org
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+On Mon,  2 Dec 2013 10:19:37 -0500 Prarit Bhargava <prarit@redhat.com> wrote:
 
-Applied, thanks!
+> Logging and tracking firmware bugs in the kernel has long been an issue
+> for system administrators.  The current kernel does not have a good
+> uniform method of reporting firmware bugs and the code in the kernel is a
+> mix of printk's and WARN_ONs.  This causes problems for both system
+> administrators and QA engineers who attempt to diagnose problems within
+> the kernel.
+> 
+> Using printk's is somewhat effective but lacks information useful for
+> reporting a bug such as the system vendor or model, BIOS revision, etc.
+> Using WARN_ONs is also questionable because the data like the backtrace
+> and the list of modules is usually unnecessary for firmware issues as the
+> warning stems from one call path during system or driver initialization.
+> We have heard many complaints from users about the excess verbosity and
+> confusing stacktraces for these messages.
+> 
+> I'm proposing with this patch to do something similar to the WARN()
+> mechanism that is currently implemented in the kernel.  This
+> patchset introduces FW_INFO() and FW_INFO_DEV() which logs output like:
+> 
+> [  230.661137] [Firmware Info]: pci_bus 0000:00: at
+> /home/prarit_modules/prarit.c:21 Your BIOS is broken because it is
+> -ENOWORKY.
+> [  230.671076] [Firmware Info]: Intel Corporation SandyBridge Platform/To
+> be filled by O.E.M., BIOS RMLCRB.86I.R3.27.D685.1305151733 05/15/2013
+> 
+> instead of the verbose back traces we are currently seeing.  These messages
+> can be easily gleaned from /var/log/messages, etc., by automatic bug
+> reporting tools and system administrators to properly report bugs to
+> hardware vendors.
+> 
+> I found an improperly classified FW_INFO in arch/x86/kernel/cpu/amd.c
+> which that should be a FW_BUG.
 
-> ---
->  drivers/cpuidle/cpuidle.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-> index 2a991e4..a55e68f 100644
-> --- a/drivers/cpuidle/cpuidle.c
-> +++ b/drivers/cpuidle/cpuidle.c
-> @@ -400,7 +400,7 @@ EXPORT_SYMBOL_GPL(cpuidle_register_device);
->   */
->  void cpuidle_unregister_device(struct cpuidle_device *dev)
->  {
-> -	if (dev->registered == 0)
-> +	if (!dev || dev->registered == 0)
->  		return;
->  
->  	cpuidle_pause_and_lock();
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+A slight simplification:
+
+> +static inline char *dump_hadware_arch_desc(void)
+> +{
+> +	return NULL;
+> +}
+
+	return "unavailable";
+
+> +void warn_slowpath_fmt_dev(const char *file, int line,
+> +			   struct device *dev, int level, const char *fmt, ...)
+> +{
+> +	struct slowpath_args args;
+> +	static char fw_str[16] = "\0";
+> +
+> +	switch (level) {
+> +	case 1:
+> +		strcpy(fw_str, "[Firmware Info]");
+> +		break;
+> +	case 2:
+> +		strcpy(fw_str, "[Firmware Warn]");
+> +		break;
+> +	case 3:
+> +		strcpy(fw_str, "[Firmware Bug]");
+
+What's With The Crazy Capitalization In This Code?  It's Illiterate!
+
+> +		add_taint(TAINT_FIRMWARE_WORKAROUND, LOCKDEP_STILL_OK);
+> +		break;
+> +	default:
+> +		strcpy(fw_str, "[Firmware Bug]");
+> +		break;
+> +	}
+> +
+> +	if (dev)
+> +		pr_info("%s: %s %s ", fw_str,
+> +			dev_driver_string(dev), dev_name(dev));
+> +	pr_info("%s: at %s:%d\n", fw_str, file, line);
+> +
+> +	args.fmt = fmt;
+> +	va_start(args.args, fmt);
+> +	printk(KERN_WARNING "%s: %pV", fw_str, &args);
+> +	va_end(args.args);
+> +
+> +	if (dump_hardware_arch_desc())
+> +		pr_info("%s: System Info: %s\n", fw_str,
+> +			dump_hardware_arch_desc());
+> +	else
+> +		pr_info("%s: System Info: Hardware Unidentified\n", fw_str);
+
+	pr_info(""%s: system info: %s\n", fw_str, dump_hardware_arch_desc());
+
+> +}
+> +EXPORT_SYMBOL(warn_slowpath_fmt_dev);
+> +
+> +
+
+> +char *dump_hardware_arch_desc(void)
+> +{
+> +	if (dump_stack_arch_desc_str[0] != '\0')
+> +		return dump_stack_arch_desc_str;
+> +	return NULL;
+
+	return "unavaliable";
+
+> +}
+
+
+The general thrust of the patchset seems useful and important.  I do
+agree with Joe's suggestion regarding the presentation, although it
+isn't a show-stopper.
+
+I do wonder if it all should be generalised a bit - it creates a bunch
+of infrastructure which is specific to system firmware issues, but
+what's so special about firmware?  Why can't I use this infrastructure
+to log netdev errors or acpi errors or PM errors or...?  But I didn't
+think about it much ;)
+
+
