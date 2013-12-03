@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab3LCBd3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 20:33:29 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:35272 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186Ab3LCBd2 (ORCPT
+	id S1753219Ab3LCBg1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 20:36:27 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:2880 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752291Ab3LCBgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 20:33:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <x49ob4z700n.fsf@segfault.boston.devel.redhat.com>
-References: <1385890077-30873-1-git-send-email-tom.leiming@gmail.com>
-	<x49ob4z700n.fsf@segfault.boston.devel.redhat.com>
-Date: Tue, 3 Dec 2013 09:33:27 +0800
-Message-ID: <CACVXFVMmPwOCoe9hU+mO6J2_9shEpRZUKdyt1Gni2Gjw3Zf8Qw@mail.gmail.com>
-Subject: Re: [PATCH] block: fix mq request allocation
-From: Ming Lei <tom.leiming@gmail.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 2 Dec 2013 20:36:25 -0500
+Message-ID: <1386034289.1791.210.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v4 07/12] efi: passing kexec necessary efi data via
+ setup_data
+From: Toshi Kani <toshi.kani@hp.com>
+To: Dave Young <dyoung@redhat.com>
+Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.infradead.org, greg@kroah.com, matt@console-pimps.org
+Date: Mon, 02 Dec 2013 18:31:29 -0700
+In-Reply-To: <1386023600.1791.201.camel@misato.fc.hp.com>
+References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
+	 <1385445477-9665-8-git-send-email-dyoung@redhat.com>
+	 <20131127140732.GD32267@pd.tnic>
+	 <20131129091415.GH4186@dhcp-16-126.nay.redhat.com>
+	 <1386023600.1791.201.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeff,
+On Mon, 2013-12-02 at 15:33 -0700, Toshi Kani wrote:
+> On Fri, 2013-11-29 at 17:14 +0800, Dave Young wrote:
+> > On 11/27/13 at 03:07pm, Borislav Petkov wrote:
+> > > On Tue, Nov 26, 2013 at 01:57:52PM +0800, Dave Young wrote:
+> > > > Add a new setup_data type SETUP_EFI for kexec use.
+> > > > Passing the saved fw_vendor, runtime, config tables and
+> > > > efi runtime mappings.
+> > > > 
+> > > > When entering virtual mode, directly mapping the efi
+> > > > runtime ragions which we passed in previously. And skip
+> > > > the step to call SetVirtualAddressMap.
+> > > > 
+> > > > Specially for HP z420 workstation it need another variable
+> > > > saving,
+> > > 
+> > > Why the special handling? Does that mean, this is going to be the case
+> > > for other HP UEFI implementations too?
+> > 
+> > I have only one HP machine for testing, Maybe Toshi can help to verify
+> > on other machines. Just comment out the function efi_reuse_config to see
+> > if kexec kernel panic.
+> 
+> My system (HP prototype server) did not need the special handling in
+> efi_reuse_config().  I will check with firmware team to get more
+> information on this.
 
-On Mon, Dec 2, 2013 at 11:20 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> Ming Lei <tom.leiming@gmail.com> writes:
->
->> blk_mq_alloc_request_pinned() may return NULL request in case of
->> !__GFP_WAIT, so cause its callers to derefence NULL pointer for
->> releasing current context.
->>
->> This patch introduces two flags to address the issue.
->
-> Hi, Ming,
->
->
-> Good catch, but your patch seems overly complicated.  How about
-> something like the following (compile-tested only), instead?  Note that
-
-Looks your patch is better and simpler, :-)
-
-
-> I did not touch blk_make_request, as the put_ctx there seems to
-> correlate to a get_ctx earlier in the function (not a leaked reference
-> from __blk_mq_alloc_request).
->
-> -Jeff
->
-> p.s. Jens, every time I see GFP_ATOMIC|__GFP_WAIT, my head explodes.  Just sayin'.
->
-> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-
-Reported-by: Ming Lei <tom.leiming@gmail.com>
-
->
->
-> diff --git a/block/blk-mq.c b/block/blk-mq.c
-> index cdc629c..70fd6f9 100644
-> --- a/block/blk-mq.c
-> +++ b/block/blk-mq.c
-> @@ -202,10 +202,12 @@ static struct request *blk_mq_alloc_request_pinned(struct request_queue *q,
->                 if (rq) {
->                         blk_mq_rq_ctx_init(q, ctx, rq, rw);
->                         break;
-> -               } else if (!(gfp & __GFP_WAIT))
-> -                       break;
-> +               }
->
->                 blk_mq_put_ctx(ctx);
-> +               if (!(gfp & __GFP_WAIT))
-> +                       break;
-> +
->                 __blk_mq_run_hw_queue(hctx);
->                 blk_mq_wait_for_tags(hctx->tags);
->         } while (1);
-> @@ -222,7 +224,8 @@ struct request *blk_mq_alloc_request(struct request_queue *q, int rw,
->                 return NULL;
->
->         rq = blk_mq_alloc_request_pinned(q, rw, gfp, reserved);
-> -       blk_mq_put_ctx(rq->mq_ctx);
-> +       if (rq)
-> +               blk_mq_put_ctx(rq->mq_ctx);
->         return rq;
->  }
->
-> @@ -235,7 +238,8 @@ struct request *blk_mq_alloc_reserved_request(struct request_queue *q, int rw,
->                 return NULL;
->
->         rq = blk_mq_alloc_request_pinned(q, rw, gfp, true);
-> -       blk_mq_put_ctx(rq->mq_ctx);
-> +       if (rq)
-> +               blk_mq_put_ctx(rq->mq_ctx);
->         return rq;
->  }
->  EXPORT_SYMBOL(blk_mq_alloc_reserved_request);
-
+I have one question.  I think this special handling assumes that
+efi.smbios contains a virtual address on HP z420.  So, how does the 1st
+kernel set a virtual address to efi.smbios in the first place?
 
 Thanks,
--- 
-Ming Lei
+-Toshi
+
