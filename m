@@ -1,75 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530Ab3LCOIb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 09:08:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35068 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753736Ab3LCOI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 09:08:26 -0500
-Date: Tue, 3 Dec 2013 15:08:21 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Nestor Lopez Casado <nlopezcasad@logitech.com>
-Cc: Olivier Gay <ogay@logitech.com>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mathieu Meisser <mmeisser@logitech.com>
-Subject: Re: [PATCH] HID: logitech-dj: add HIDRAW dependency in Kconfig
-In-Reply-To: <CAE7qMrq6YzvprAGDTO8uEU9WZXXGpP=TG_OxB6=-1KuF1Tr8sg@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1312031507260.24931@pobox.suse.cz>
-References: <1386026244-21553-1-git-send-email-ogay@logitech.com> <alpine.LNX.2.00.1312030852410.24931@pobox.suse.cz> <CAFLMSp-7X568ZdZ-JAAX9ttmMFhYP+DeLuc_-yCw1WCuvVAHng@mail.gmail.com> <alpine.LNX.2.00.1312031350130.24931@pobox.suse.cz>
- <CAE7qMrq6YzvprAGDTO8uEU9WZXXGpP=TG_OxB6=-1KuF1Tr8sg@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754553Ab3LCOIj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 09:08:39 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:45255 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753217Ab3LCOIf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 09:08:35 -0500
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Liam Girdwood <lrg@slimlogic.co.uk>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <mark.brown@linaro.org>, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH] regulator: ab8500: delete non-devicetree probe path
+Date: Tue,  3 Dec 2013 15:08:22 +0100
+Message-Id: <1386079702-22821-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Dec 2013, Nestor Lopez Casado wrote:
+The Ux500 platform has been converted to do device-tree only
+boots, no longer supports platform data passing, so this
+probe path is unused. Delete it, simplifying the driver a
+whole lot.
 
-> > > <3>[  210.131988] logitech-djreceiver 0003:046D:C52B.0005: claimed by
-> > > neither input, hiddev nor hidraw
-> > > <3>[  210.132202] logitech-djreceiver 0003:046D:C52B.0005:
-> > > logi_dj_probe:hid_hw_start returned error
-> > >
-> > > In logi_dj_probe, we call hid_hw_start with HID_CONNECT_DEFAULT
-> > > argument and if hidraw driver is not present, the call fails and we
-> > > return an error in logi_dj_probe.
-> > >
-> > > > It's clear that without hidraw it's not possible to change the pairing
-> > > > from userspace, but I fail to see why probing the receiver should be
-> > > > affected?
-> > >
-> > > As of today, hid-logitech-dj.c depends on hidraw API to work. All HID
-> > > reports sent to control / configure the receiver are sent using hidraw
-> > > API. That's why we fail logi_dj_probe if we cannot connect to hidraw.
-> >
-> > Hmm, so unifying receiver is not claimed by hid-input at all?
-> > (HID_CONNECT_DEFAULT also contains HID_CONNECT_HIDINPUT) How so?
-> >
-> > (again, I will not be able to test it with my receiver up until the day
-> > after tomorrow).
-> >
-> The unifying receiver has 3 usb interfaces. When hid-logitech-dj driver is
-> loaded, interfaces 0 and 1 are discarded.
-> 
-> Interface 2 consists of a hid class interface with 3 collections, each of
-> which sports the 'vendor' usage, thus, there is no reason for hid_input to
-> claim any of them. On the other hand, hidraw has no issue in claiming the
-> collections, even if they are 'vendor'. As of today, hid-logitech-dj uses
-> hidraw api to send configuration/control reports to interface 2 of the
-> Unifying receiver.
-> 
-> Without the hid-logitech-dj driver, interfaces 0 and 1 are claimed by
-> hid-input, as they correspond to a keyboard and a mouse. But that is not
-> relevant to the discussion.
+Cc: Mark Brown <mark.brown@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+I tried to also delete this boot path for the external regulators
+in ab8500-ext.c, but it seems to not have been cleanly converted
+to device tree yet, making it dependent on passing some platform
+data still. Thus I cannot go down the path and delete all platform
+data down to the point where (most of)
+arch/arm/mach-ux500/board-mop500-regulator.[c|h] gets deleted,
+but I can do this much.
+---
+ drivers/regulator/ab8500.c | 102 ++++-----------------------------------------
+ 1 file changed, 8 insertions(+), 94 deletions(-)
 
-Ah, indeed, that's the part I forgot and will find out only when I have my 
-receiver handy again.
-
-Thanks for the explanation, now it all makes sense. I will be queuing the 
-patch, with probably slightly more verbose changelog.
-
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index 603f192e84f1..0f86695b737a 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -2998,37 +2998,6 @@ static void abx500_get_regulator_info(struct ab8500 *ab8500)
+ 	}
+ }
+ 
+-static int ab8500_regulator_init_registers(struct platform_device *pdev,
+-					   int id, int mask, int value)
+-{
+-	struct ab8500_reg_init *reg_init = abx500_regulator.init;
+-	int err;
+-
+-	BUG_ON(value & ~mask);
+-	BUG_ON(mask & ~reg_init[id].mask);
+-
+-	/* initialize register */
+-	err = abx500_mask_and_set_register_interruptible(
+-		&pdev->dev,
+-		reg_init[id].bank,
+-		reg_init[id].addr,
+-		mask, value);
+-	if (err < 0) {
+-		dev_err(&pdev->dev,
+-			"Failed to initialize 0x%02x, 0x%02x.\n",
+-			reg_init[id].bank,
+-			reg_init[id].addr);
+-		return err;
+-	}
+-	dev_vdbg(&pdev->dev,
+-		 "  init: 0x%02x, 0x%02x, 0x%02x, 0x%02x\n",
+-		 reg_init[id].bank,
+-		 reg_init[id].addr,
+-		 mask, value);
+-
+-	return 0;
+-}
+-
+ static int ab8500_regulator_register(struct platform_device *pdev,
+ 				     struct regulator_init_data *init_data,
+ 				     int id, struct device_node *np)
+@@ -3095,9 +3064,7 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
+ {
+ 	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
+ 	struct device_node *np = pdev->dev.of_node;
+-	struct ab8500_platform_data *ppdata;
+-	struct ab8500_regulator_platform_data *pdata;
+-	int i, err;
++	int err;
+ 
+ 	if (!ab8500) {
+ 		dev_err(&pdev->dev, "null mfd parent\n");
+@@ -3106,68 +3073,15 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
+ 
+ 	abx500_get_regulator_info(ab8500);
+ 
+-	if (np) {
+-		err = of_regulator_match(&pdev->dev, np,
+-					 abx500_regulator.match,
+-					 abx500_regulator.match_size);
+-		if (err < 0) {
+-			dev_err(&pdev->dev,
+-				"Error parsing regulator init data: %d\n", err);
+-			return err;
+-		}
+-
+-		err = ab8500_regulator_of_probe(pdev, np);
+-		return err;
+-	}
+-
+-	ppdata = dev_get_platdata(ab8500->dev);
+-	if (!ppdata) {
+-		dev_err(&pdev->dev, "null parent pdata\n");
+-		return -EINVAL;
+-	}
+-
+-	pdata = ppdata->regulator;
+-	if (!pdata) {
+-		dev_err(&pdev->dev, "null pdata\n");
+-		return -EINVAL;
+-	}
+-
+-	/* make sure the platform data has the correct size */
+-	if (pdata->num_regulator != abx500_regulator.info_size) {
+-		dev_err(&pdev->dev, "Configuration error: size mismatch.\n");
+-		return -EINVAL;
+-	}
+-
+-	/* initialize debug (initial state is recorded with this call) */
+-	err = ab8500_regulator_debug_init(pdev);
+-	if (err)
++	err = of_regulator_match(&pdev->dev, np,
++				 abx500_regulator.match,
++				 abx500_regulator.match_size);
++	if (err < 0) {
++		dev_err(&pdev->dev,
++			"Error parsing regulator init data: %d\n", err);
+ 		return err;
+-
+-	/* initialize registers */
+-	for (i = 0; i < pdata->num_reg_init; i++) {
+-		int id, mask, value;
+-
+-		id = pdata->reg_init[i].id;
+-		mask = pdata->reg_init[i].mask;
+-		value = pdata->reg_init[i].value;
+-
+-		/* check for configuration errors */
+-		BUG_ON(id >= abx500_regulator.init_size);
+-
+-		err = ab8500_regulator_init_registers(pdev, id, mask, value);
+-		if (err < 0)
+-			return err;
+-	}
+-
+-	/* register all regulators */
+-	for (i = 0; i < abx500_regulator.info_size; i++) {
+-		err = ab8500_regulator_register(pdev, &pdata->regulator[i],
+-						i, NULL);
+-		if (err < 0)
+-			return err;
+ 	}
+-
+-	return 0;
++	return ab8500_regulator_of_probe(pdev, np);
+ }
+ 
+ static int ab8500_regulator_remove(struct platform_device *pdev)
 -- 
-Jiri Kosina
-SUSE Labs
+1.8.3.1
+
