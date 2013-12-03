@@ -1,101 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543Ab3LCNlz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 08:41:55 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:23511 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752485Ab3LCNlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 08:41:51 -0500
-X-IronPort-AV: E=Sophos;i="4.93,818,1378857600"; 
-   d="scan'208";a="80082752"
-Message-ID: <1386078108.13256.30.camel@kazak.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH RFC] xen-block: correctly define structures
- in public headers
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: David Vrabel <david.vrabel@citrix.com>
-CC: Roger Pau Monne <roger.pau@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Julien Grall <julien.grall@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xenproject.org>,
-        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>
-Date: Tue, 3 Dec 2013 13:41:48 +0000
-In-Reply-To: <529DC7BA.7080506@citrix.com>
-References: <1386068254-1413-1-git-send-email-roger.pau@citrix.com>
-		 <529DBA07.6090108@citrix.com>
-	 <1386068884.13256.9.camel@kazak.uk.xensource.com>
-	 <529DC7BA.7080506@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	id S1753619Ab3LCNmP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 08:42:15 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48419 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752485Ab3LCNmO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 08:42:14 -0500
+Date: Tue, 3 Dec 2013 13:41:13 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Vinayak Kale <vkale@apm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "patches@apm.com" <patches@apm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Tuan Phan <tphan@apm.com>
+Subject: Re: [PATCH V6 2/2] arm64: perf: add support for percpu pmu interrupt
+Message-ID: <20131203134113.GI1169@mudshark.cambridge.arm.com>
+References: <1385976843-13280-1-git-send-email-vkale@apm.com>
+ <1385976843-13280-3-git-send-email-vkale@apm.com>
+ <20131203113052.GE1169@mudshark.cambridge.arm.com>
+ <CAPrCYke4P2V47iG=1b_f3YHiTqC2hOG5yiKTUWuWG+pX8JauMQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPrCYke4P2V47iG=1b_f3YHiTqC2hOG5yiKTUWuWG+pX8JauMQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-03 at 11:59 +0000, David Vrabel wrote:
-> On 03/12/13 11:08, Ian Campbell wrote:
-> > On Tue, 2013-12-03 at 11:01 +0000, David Vrabel wrote:
-> >> On 03/12/13 10:57, Roger Pau Monne wrote:
-> >>> Using __packed__ on the public interface is not correct, this
-> >>> structures should be compiled using the native ABI, and __packed__
-> >>> should only be used in the backend counterpart of those structures
-> >>> (which needs to handle different ABIs).
-> >>>
-> >>> This was even worse in the ARM case, where the Linux kernel was
-> >>> incorrectly using the X86_32 protocol ABI. This patch fixes it, but
-> >>> also breaks compatibility, so an ARM DomU kernel compiled with
-> >>> this patch will fail to communicate with PV disk devices unless the
-> >>> Dom0 also has this patch.
+On Tue, Dec 03, 2013 at 11:49:11AM +0000, Vinayak Kale wrote:
+> On Tue, Dec 3, 2013 at 5:00 PM, Will Deacon <will.deacon@arm.com> wrote:
+> > On Mon, Dec 02, 2013 at 09:34:03AM +0000, Vinayak Kale wrote:
+> >> Add support for irq registration when pmu interrupt is percpu.
 > >>
-> >> This ABI change needs to be justified.  Why do you think it is
-> >> acceptable to break existing Linux guests?  Because I don't think it is.
-> > 
-> > As I explained in my reply those guests are buggy.
+> >> Signed-off-by: Vinayak Kale <vkale@apm.com>
+> >> Signed-off-by: Tuan Phan <tphan@apm.com>
+> >> ---
+> >>  arch/arm64/kernel/perf_event.c |  116 +++++++++++++++++++++++++++++-----------
+> >>  1 file changed, 86 insertions(+), 30 deletions(-)
+> >>
+> >> diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
+> >> index cea1594..d2d562f 100644
+> >> --- a/arch/arm64/kernel/perf_event.c
+> >> +++ b/arch/arm64/kernel/perf_event.c
+> >> @@ -22,6 +22,7 @@
+> >>
+> >>  #include <linux/bitmap.h>
+> >>  #include <linux/interrupt.h>
+> >> +#include <linux/irq.h>
+> >>  #include <linux/kernel.h>
+> >>  #include <linux/export.h>
+> >>  #include <linux/perf_event.h>
+> >> @@ -363,26 +364,61 @@ validate_group(struct perf_event *event)
+> >>  }
+> >>
+> >>  static void
+> >> +armpmu_disable_percpu_irq(void *data)
+> >> +{
+> >> +     struct arm_pmu *armpmu = data;
+> >> +     struct platform_device *pmu_device = armpmu->plat_device;
+> >> +     int irq = platform_get_irq(pmu_device, 0);
+> >> +
+> >> +     cpumask_test_and_clear_cpu(smp_processor_id(), &armpmu->active_irqs);
+> >> +     disable_percpu_irq(irq);
+> >> +}
+> >> +
+> >> +static void
+> >>  armpmu_release_hardware(struct arm_pmu *armpmu)
+> >>  {
+> >> -     int i, irq, irqs;
+> >> +     int irq;
+> >
+> > Why did you not make this unsigned, like I suggested?
 > 
-> The kernel has a strong policy on not changing ABIs, even to fix bugs.
-> I don't think a bug fix alone is sufficient justification for ABI breakage.
+> Suggestion was to make 'irqs' variable unsigned and modify the check
+> for 'irqs' to if (!irqs).
+> This patch incorporates that suggestion.
+> 
+> We have to keep 'irq' signed only. 'platform_get_irq()' can return error value.
 
-This is not the kernels ABI to fix in stone. The ABI is defined by the
-upstream Xen project and Linux has failed to follow the specified ABI
-correctly.
+Damn, yes, I see the issue there. Ok, I'll go back and take another look at
+your patch...
 
-> 1. The ARM ABI for blkif was specified as uniform between 32-bit and
-> 64-bit and is equivalent to the x86_64 ABI.
-
-The ARM ABI is specified here:
-http://xenbits.xen.org/docs/unstable/hypercall/arm/include,public,arch-arm.h.html#incontents_arm_abi
-
-> 2. ARM 32-bit back and frontend implementation did /not/ use this
-> defined ABI, but instead used the x86_32 ABI.  What did 32-bit ARM
-> frontends report as their ABI? x86_32? or native?
-
-They reported themselves as ARM (XEN_IO_PROTO_ABI_ARM == "arm") but they
-unintentionally implemented something else which was akin to the x86_32
-API. They didn't actually "implement the x86_32 API", it's perhaps
-confusing to say that they did.
-
-> 3. ARM 64-bit back and frontend implementation did use the specified
-> ABI, but the backend is not compatible with 32-bit ARM guests.  What did
-> 64-bit ARM frontends report as their ABI?  x86_64? or native?
-
-They report themselves as ARM (XEN_IO_PROTO_ABI_ARM == "arm").
-
-> 4. Support for 64-bit ARM guests is not upstream in Linux yet (so I
-> don't mind if 64-bit guests are broken).
-
-Yes, it is upstream.
-
-> I think this should be resolved in a backward compatible way.
-
-No. Linux is in error here and should be fixed. We have done this before
-(e.g. with event channels being the wrong bit size).
-
-There is no deployed legacy of guests to support here. At this stage we
-have not even formally committed to keeping the hypercall ABI stable. We
-will likely do so with the Xen 4.4 release.
-
-Ian.
-
+Will
