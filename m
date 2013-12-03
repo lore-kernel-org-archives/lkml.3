@@ -1,18 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab3LCOxD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 09:53:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28017 "EHLO mx1.redhat.com"
+	id S1754882Ab3LCOxM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 09:53:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53870 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753961Ab3LCOw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 09:52:59 -0500
-Subject: [RFC][PATCH0/5] Keys patches
+	id S1754849Ab3LCOxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 09:53:02 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH1/5] KEYS: Pre-clear struct key on allocation
 From: David Howells <dhowells@redhat.com>
 To: torvalds@linux-foundation.org, jmorris@namei.org
-Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+Cc: Stephen Gallagher <sgallagh@redhat.com>, keyrings@linux-nfs.org,
+        Patrik Kis <pkis@redhat.com>, linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Tue, 03 Dec 2013 14:52:50 +0000
-Message-ID: <20131203145250.30689.28039.stgit@warthog.procyon.org.uk>
+Date: Tue, 03 Dec 2013 14:52:58 +0000
+Message-ID: <20131203145258.30689.87874.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20131203145250.30689.28039.stgit@warthog.procyon.org.uk>
+References: <20131203145250.30689.28039.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -21,74 +28,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The second word of key->payload does not get initialised in key_alloc(), but
+the big_key type is relying on it having been cleared.  The problem comes when
+big_key fails to instantiate a large key and doesn't then set the payload.  The
+big_key_destroy() op is called from the garbage collector and this assumes that
+the dentry pointer stored in the second word will be NULL if instantiation did
+not complete.
 
-Hi Linus, James,
+Therefore just pre-clear the entire struct key on allocation rather than trying
+to be clever and only initialising to 0 only those bits that aren't otherwise
+initialised.
 
-Here are some fixes for the new keyring stuff.  They break down into three
-sets:
+The lack of initialisation can lead to a bug report like the following if
+big_key failed to initialise its file:
 
- (1) A patch to error handling in the big_key type for huge payloads.  If the
-     payload is larger than the "low limit" and the backing store allocation
-     fails, then big_key_instantiate() doesn't clear the payload pointers in
-     the key, assuming them to have been previously cleared - but only one of
-     them is.
+	general protection fault: 0000 [#1] SMP
+	Modules linked in: ...
+	CPU: 0 PID: 51 Comm: kworker/0:1 Not tainted 3.10.0-53.el7.x86_64 #1
+	Hardware name: Dell Inc. PowerEdge 1955/0HC513, BIOS 1.4.4 12/09/2008
+	Workqueue: events key_garbage_collector
+	task: ffff8801294f5680 ti: ffff8801296e2000 task.ti: ffff8801296e2000
+	RIP: 0010:[<ffffffff811b4a51>] dput+0x21/0x2d0
+	...
+	Call Trace:
+	 [<ffffffff811a7b06>] path_put+0x16/0x30
+	 [<ffffffff81235604>] big_key_destroy+0x44/0x60
+	 [<ffffffff8122dc4b>] key_gc_unused_keys.constprop.2+0x5b/0xe0
+	 [<ffffffff8122df2f>] key_garbage_collector+0x1df/0x3c0
+	 [<ffffffff8107759b>] process_one_work+0x17b/0x460
+	 [<ffffffff8107834b>] worker_thread+0x11b/0x400
+	 [<ffffffff81078230>] ? rescuer_thread+0x3e0/0x3e0
+	 [<ffffffff8107eb00>] kthread+0xc0/0xd0
+	 [<ffffffff8107ea40>] ? kthread_create_on_node+0x110/0x110
+	 [<ffffffff815c4bec>] ret_from_fork+0x7c/0xb0
+	 [<ffffffff8107ea40>] ? kthread_create_on_node+0x110/0x110
 
-     Unfortunately, the garbage collector still calls big_key_destroy() when
-     sees one of the pointers with a weird value in it (and not NULL) which it
-     then tries to clean up.
-
- (2) Three patches to fix the keyring type:
-
-     (a) A patch to fix the hash function to correctly divide keyrings off from
-     keys in the topology of the tree inside the associative array.  This is
-     only a problem if searching through nested keyrings - and only if the hash
-     function incorrectly puts the a keyring outside of the 0 branch of the
-     root node.
-
-     (b) A patch to fix keyrings' use of the associative array.  The
-     __key_link_begin() function initially passes a NULL key pointer to
-     assoc_array_insert() on the basis that it's holding a place in the tree
-     whilst it does more allocation and stuff.
-
-     This is only a problem when a node contains 16 keys that match at that
-     level and we want to add an also matching 17th.  This should easily be
-     manufactured with a keyring full of keyrings (without chucking any other
-     sort of key into the mix) - except for (a) above which makes it on average
-     adding the 65th keyring.
-
-     (c) A patch to fix searching down through nested keyrings, where any
-     keyring in the set has more than 16 keyrings and none of the first
-     keyrings we look through has a match (before the tree iteration needs to
-     step to a more distal node).
-
- (3) A patch to fix the big_key type's use of a shmem file as its backing store
-     causing audit messages and LSM check failures.  This is done by setting
-     S_PRIVATE on the file to avoid LSM checks on the file (access to the shmem
-     file goes through the keyctl() interface and so is gated by the LSM that
-     way).
-
-     This isn't normally a problem if a key is used by the context that
-     generated it - and it's currently only used by libkrb5.
-
-David
+Reported-by: Patrik Kis <pkis@redhat.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: Stephen Gallagher <sgallagh@redhat.com>
 ---
-David Howells (4):
-      KEYS: Pre-clear struct key on allocation
-      KEYS: Fix the keyring hash function
-      KEYS: Fix multiple key add into associative array
-      KEYS: Fix searching of nested keyrings
 
-Eric Paris (1):
-      security: shmem: implement kernel private shmem inodes
+ security/keys/key.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
-
- Documentation/assoc_array.txt |    6 +++---
- include/linux/assoc_array.h   |    6 +++---
- include/linux/shmem_fs.h      |    2 ++
- lib/assoc_array.c             |    4 ++--
- mm/shmem.c                    |   36 +++++++++++++++++++++++++++++-------
- security/keys/big_key.c       |    2 +-
- security/keys/key.c           |    8 +-------
- security/keys/keyring.c       |   17 ++++++++---------
- 8 files changed, 49 insertions(+), 32 deletions(-)
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 55d110f0aced..6e21c11e48bc 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -272,7 +272,7 @@ struct key *key_alloc(struct key_type *type, const char *desc,
+ 	}
+ 
+ 	/* allocate and initialise the key and its description */
+-	key = kmem_cache_alloc(key_jar, GFP_KERNEL);
++	key = kmem_cache_zalloc(key_jar, GFP_KERNEL);
+ 	if (!key)
+ 		goto no_memory_2;
+ 
+@@ -293,18 +293,12 @@ struct key *key_alloc(struct key_type *type, const char *desc,
+ 	key->uid = uid;
+ 	key->gid = gid;
+ 	key->perm = perm;
+-	key->flags = 0;
+-	key->expiry = 0;
+-	key->payload.data = NULL;
+-	key->security = NULL;
+ 
+ 	if (!(flags & KEY_ALLOC_NOT_IN_QUOTA))
+ 		key->flags |= 1 << KEY_FLAG_IN_QUOTA;
+ 	if (flags & KEY_ALLOC_TRUSTED)
+ 		key->flags |= 1 << KEY_FLAG_TRUSTED;
+ 
+-	memset(&key->type_data, 0, sizeof(key->type_data));
+-
+ #ifdef KEY_DEBUGGING
+ 	key->magic = KEY_DEBUG_MAGIC;
+ #endif
 
