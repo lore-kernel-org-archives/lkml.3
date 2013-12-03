@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab3LCQQI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 11:16:08 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:11119 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753815Ab3LCQQE (ORCPT
+	id S1753877Ab3LCQUB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 11:20:01 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:63283 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab3LCQT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 11:16:04 -0500
-Date: Tue, 3 Dec 2013 11:16:01 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 22/28] tools lib traceevent: Remove malloc_or_die from
- event-plugin.c
-Message-ID: <20131203111601.540ed5f7@gandalf.local.home>
-In-Reply-To: <1386076182-14484-23-git-send-email-jolsa@redhat.com>
-References: <1386076182-14484-1-git-send-email-jolsa@redhat.com>
-	<1386076182-14484-23-git-send-email-jolsa@redhat.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 3 Dec 2013 11:19:59 -0500
+Message-ID: <529E04AB.5060304@linaro.org>
+Date: Tue, 03 Dec 2013 16:19:55 +0000
+From: Julien Grall <julien.grall@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131104 Icedove/17.0.10
+MIME-Version: 1.0
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: xen-devel@lists.xenproject.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Roger Pau Monne <roger.pau@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH v2] xen/block: Correctly define structures in public headers
+ on ARM32 and ARM64
+References: <1386085237-8334-1-git-send-email-julien.grall@linaro.org> <20131203160018.67542a53@alan.etchedpixels.co.uk>
+In-Reply-To: <20131203160018.67542a53@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  3 Dec 2013 14:09:36 +0100
-Jiri Olsa <jolsa@redhat.com> wrote:
-
-> Removing malloc_or_die calls from event-plugin.c,
-> replacing them with standard malloc and error path.
+On 12/03/2013 04:00 PM, One Thousand Gnomes wrote:
+> On Tue,  3 Dec 2013 15:40:37 +0000
+> Julien Grall <julien.grall@linaro.org> wrote:
 > 
-> Suggested-by: Namhyung Kim <namhyung@kernel.org>
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: David Ahern <dsahern@gmail.com>
-> ---
->  tools/lib/traceevent/event-plugin.c | 19 ++++++++++++++++---
->  1 file changed, 16 insertions(+), 3 deletions(-)
+>> On ARM (32 bits and 64 bits), the double-word is 8-bytes aligned. This will
+>> result on different structure from Xen and Linux repositories.
+>>
+>> As Linux is using __packed__ attribute, it must have a 4-bytes padding before
+>> each "id" field.
+>>
+>> This change breaks guest block support with older kernel. IMHO, it's acceptable
+>> because Xen on ARM is still on Tech Preview and the hypercall ABI is not yet
+>> freezed.
 > 
-> diff --git a/tools/lib/traceevent/event-plugin.c b/tools/lib/traceevent/event-plugin.c
-> index d272d87..125f567 100644
-> --- a/tools/lib/traceevent/event-plugin.c
-> +++ b/tools/lib/traceevent/event-plugin.c
-> @@ -47,7 +47,11 @@ load_plugin(struct pevent *pevent, const char *path,
->  	char *plugin;
->  	void *handle;
->  
-> -	plugin = malloc_or_die(strlen(path) + strlen(file) + 2);
-> +	plugin = malloc(strlen(path) + strlen(file) + 2);
-> +	if (!plugin) {
-> +		warning("could not allocate plugin memory\n");
-> +		return;
+> How does a guest ascertain which API to use ?
+> 
+> How does the patch ensure new kernels on existing hypervisor versions
+> don't break ?
 
-This should be changed to return an error code. Yes it will require
-other places to change for that update as well.
+As Ian said on the thread "xen-block: correctly define structures in
+public headers" (see thread https://lkml.org/lkml/2013/12/3/155), the
+ABI is not yet fixed for ARM.
 
--- Steve
+> 
+> What is the failure case given the alignment change seems potentially to
+> produce valid but incorrect I/O requests - can it cause corruption ?
 
-> +	}
->  
->  	strcpy(plugin, path);
->  	strcat(plugin, "/");
+The request ID will likely be wrong, so the guest won't accept the
+request. It should not corrupt the block device.
+
+> It seems to me you should be defining
+> 
+> struct blkif_request_rw_v2
+> 
+> and using the correct version according to which API the hypervisor
+> requires, not just breaking it.
+
+This API doesn't involve the hypervisor. It's only a way to talk between
+DOM0 and a guest. Without this change you will break compatibility with
+other OSes.
+
+-- 
+Julien Grall
