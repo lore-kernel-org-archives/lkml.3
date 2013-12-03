@@ -1,56 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab3LCNEE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 08:04:04 -0500
-Received: from mga09.intel.com ([134.134.136.24]:48127 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752485Ab3LCNEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 08:04:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,817,1378882800"; 
-   d="scan'208";a="437717111"
-Date: Tue, 3 Dec 2013 15:10:36 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Chris Ball <cjb@laptop.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Rob Landley <rob@landley.net>, Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org
-Subject: Re: [PATCHv4] ARM: tegra: add gpiod_lookup table for paz00
-Message-ID: <20131203131036.GP2281@intel.com>
-References: <1385460350-17543-2-git-send-email-mika.westerberg@linux.intel.com>
- <1386074998-17833-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1753224Ab3LCNJf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 08:09:35 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:55730 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752578Ab3LCNJe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 08:09:34 -0500
+Message-ID: <529DD809.3040500@gmail.com>
+Date: Tue, 03 Dec 2013 21:09:29 +0800
+From: Younger Liu <younger.liucn@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386074998-17833-1-git-send-email-heikki.krogerus@linux.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        fs-devel <linux-fsdevel@vger.kernel.org>,
+        kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH V2 1/2] f2fs: A minor change for avoiding any possible conflicts
+ to the other fs
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 02:49:58PM +0200, Heikki Krogerus wrote:
-> This makes it possible to request the gpio descriptors in
-> rfkill_gpio driver regardless of the platform.
-> 
-> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> ---
->  arch/arm/mach-tegra/board-paz00.c | 11 +++++++++++
->  1 file changed, 11 insertions(+)
-> 
-> Changes since v3:
-> -----------------
-> Rebased on top of Alexandre's patch "gpio: better lookup method for
-> platform GPIOs".
+From: Younger Liu <liuyiyang@hisense.com>
 
-Thanks Heikki.
+This minor change for the naming conventions of debugfs_root
+to avoid any possible conflicts to the other filesystem.
 
-Linus, are you OK with picking patches 2-6 from this series and replacing
-patch 1 with this v4 from Heikki or should I resend the whole series?
+This patch is based on the first patch:
+[PATCH V2 0/2] f2fs: remove debufs dir if debugfs_create_file() failed.
+
+Signed-off-by: Younger Liu <younger.liucn@gmail.com>
+Cc: Younger Liu <younger.liucn@gmail.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ fs/f2fs/debug.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/fs/f2fs/debug.c b/fs/f2fs/debug.c
+index b51fb3c..61adbcb 100644
+--- a/fs/f2fs/debug.c
++++ b/fs/f2fs/debug.c
+@@ -24,7 +24,7 @@
+ #include "gc.h"
+
+ static LIST_HEAD(f2fs_stat_list);
+-static struct dentry *debugfs_root;
++static struct dentry *f2fs_debugfs_root;
+ static DEFINE_MUTEX(f2fs_stat_mutex);
+
+ static void update_general_status(struct f2fs_sb_info *sbi)
+@@ -342,11 +342,11 @@ void __init f2fs_create_root_stats(void)
+ {
+ 	struct dentry *file;
+
+-	debugfs_root = debugfs_create_dir("f2fs", NULL);
+-	if (!debugfs_root)
++	f2fs_debugfs_root = debugfs_create_dir("f2fs", NULL);
++	if (!f2fs_debugfs_root)
+ 		goto bail;
+
+-	file = debugfs_create_file("status", S_IRUGO, debugfs_root,
++	file = debugfs_create_file("status", S_IRUGO, f2fs_debugfs_root,
+ 			NULL, &stat_fops);
+ 	if (!file)
+ 		goto free_debugfs_dir;
+@@ -354,18 +354,18 @@ void __init f2fs_create_root_stats(void)
+ 	return;
+
+ free_debugfs_dir:
+-	debugfs_remove(debugfs_root);
++	debugfs_remove(f2fs_debugfs_root);
+
+ bail:
+-	debugfs_root = NULL;
++	f2fs_debugfs_root = NULL;
+ 	return;
+ }
+
+ void f2fs_destroy_root_stats(void)
+ {
+-	if (!debugfs_root)
++	if (!f2fs_debugfs_root)
+ 		return;
+
+-	debugfs_remove_recursive(debugfs_root);
+-	debugfs_root = NULL;
++	debugfs_remove_recursive(f2fs_debugfs_root);
++	f2fs_debugfs_root = NULL;
+ }
+-- 
+1.7.9.5
+
