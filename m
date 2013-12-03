@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab3LCQAS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 11:00:18 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:41878 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754545Ab3LCQAO (ORCPT
+	id S1755153Ab3LCQAZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 11:00:25 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:44864 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755117Ab3LCQAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 11:00:14 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: rjw@rjwysocki.net, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xenproject.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: [PATCH] cpuidle: Check for dev before deregistering it.
-Date: Tue,  3 Dec 2013 10:59:58 -0500
-Message-Id: <1386086398-3686-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Tue, 3 Dec 2013 11:00:18 -0500
+Date: Tue, 3 Dec 2013 10:52:45 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chun-Yeow Yeoh <yeohchunyeow@gmail.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: Re: linux-next: manual merge of the wireless-next tree with the
+ wireless tree
+Message-ID: <20131203155245.GA2893@tuxdriver.com>
+References: <20131203112032.b6c5faa3e40442b66770df91@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131203112032.b6c5faa3e40442b66770df91@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If not, we could end up in the unfortunate situation where
-we dereference a NULL pointer b/c we have cpuidle disabled.
+On Tue, Dec 03, 2013 at 11:20:32AM +1100, Stephen Rothwell wrote:
+> Hi John,
+> 
+> Today's linux-next merge of the wireless-next tree got a conflict in
+> net/mac80211/util.c between commit 3f718fd8401d ("mac80211: fix the mesh
+> channel switch support") from the wireless tree and commit ca91dc97b8a0
+> ("mac80211: use put_unaligned_le16 for precedence value in mesh") from
+> the wireless-next tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc net/mac80211/util.c
+> index 9f9b9bd3fd44,06265d7f8cc3..000000000000
+> --- a/net/mac80211/util.c
+> +++ b/net/mac80211/util.c
+> @@@ -2457,9 -2481,13 +2479,8 @@@ int ieee80211_send_action_csa(struct ie
+>   			  WLAN_EID_CHAN_SWITCH_PARAM_TX_RESTRICT : 0x00;
+>   		put_unaligned_le16(WLAN_REASON_MESH_CHAN, pos); /* Reason Cd */
+>   		pos += 2;
+> - 		pre_value = cpu_to_le16(ifmsh->pre_value);
+> - 		memcpy(pos, &pre_value, 2);		/* Precedence Value */
+>  -		if (!ifmsh->pre_value)
+>  -			ifmsh->pre_value = 1;
+>  -		else
+>  -			ifmsh->pre_value++;
+> + 		put_unaligned_le16(ifmsh->pre_value, pos);/* Precedence Value */
+>   		pos += 2;
+>  -		ifmsh->chsw_init = true;
+>   	}
+>   
+>   	ieee80211_tx_skb(sdata, skb);
 
-This is the case when booting under Xen (which uses the
-ACPI P/C states but disables the CPU idle driver) - and can
-be easily reproduced when booting with cpuidle.off=1.
+This differs from how I resolved the conflict when merging in wireless-testing...
 
-BUG: unable to handle kernel NULL pointer dereference at           (null)
-IP: [<ffffffff8156db4a>] cpuidle_unregister_device+0x2a/0x90
-.. snip..
-Call Trace:
- [<ffffffff813b15b4>] acpi_processor_power_exit+0x3c/0x5c
- [<ffffffff813af0a9>] acpi_processor_stop+0x61/0xb6
- [<ffffffff814215bf>] __device_release_driver+0fffff81421653>] device_release_driver+0x23/0x30
- [<ffffffff81420ed8>] bus_remove_device+0x108/0x180
- [<ffffffff8141d9d9>] device_del+0x129/0x1c0
- [<ffffffff813cb4b0>] ? unregister_xenbus_watch+0x1f0/0x1f0
- [<ffffffff8141da8e>] device_unregister+0x1e/0x60
- [<ffffffff814243e9>] unregister_cpu+0x39/0x60
- [<ffffffff81019e03>] arch_unregister_cpu+0x23/0x30
- [<ffffffff813c3c51>] handle_vcpu_hotplug_event+0xc1/0xe0
- [<ffffffff813cb4f5>] xenwatch_thread+0x45/0x120
- [<ffffffff810af010>] ? abort_exclusive_wait+0xb0/0xb0
- [<ffffffff8108ec42>] kthread+0xd2/0xf0
- [<ffffffff8108eb70>] ? kthread_create_on_node+0x180/0x180
- [<ffffffff816ce17c>] ret_from_fork+0x7c/0xb0
- [<ffffffff8108eb70>] ? kthread_create_on_node+0x180/0x180
+Johannes, could you comment on which (if either) of these options is correct?
 
-This problem also appears in 3.12 and could be a candidate for backport.
-
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: linux-pm@vger.kernel.org
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/cpuidle/cpuidle.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index 2a991e4..a55e68f 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -400,7 +400,7 @@ EXPORT_SYMBOL_GPL(cpuidle_register_device);
-  */
- void cpuidle_unregister_device(struct cpuidle_device *dev)
- {
--	if (dev->registered == 0)
-+	if (!dev || dev->registered == 0)
- 		return;
- 
- 	cpuidle_pause_and_lock();
+John
 -- 
-1.8.3.1
-
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
