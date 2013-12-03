@@ -1,108 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256Ab3LCOQD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 09:16:03 -0500
-Received: from 4.mo1.mail-out.ovh.net ([46.105.76.26]:48749 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754175Ab3LCOP5 (ORCPT
+	id S1754218Ab3LCOQA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 09:16:00 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:45150 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754173Ab3LCOP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 09:15:57 -0500
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Douglas Gilbert <dgilbert@interlog.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
+	Tue, 3 Dec 2013 09:15:56 -0500
+Message-ID: <529DE791.6080007@atmel.com>
+Date: Tue, 3 Dec 2013 15:15:45 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Boris BREZILLON <b.brezillon@overkiz.com>,
+        Douglas Gilbert <dgilbert@interlog.com>,
         Tomasz Figa <tomasz.figa@gmail.com>,
         Alan Stern <stern@rowland.harvard.edu>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Grant Likely <grant.likely@linaro.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-Subject: [PATCH 2/3] usb: ohci-at91: replace request_mem_region + ioremap by devm_request_and_ioremap
-Date: Tue,  3 Dec 2013 15:07:48 +0100
-Message-Id: <1386079669-3995-3-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386079669-3995-1-git-send-email-b.brezillon@overkiz.com>
-References: <1386079669-3995-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 16672044347201714433
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+CC: Grant Likely <grant.likely@linaro.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 3/3] usb: ohci-at91: use device managed clk retrieval
+References: <1386079669-3995-1-git-send-email-b.brezillon@overkiz.com> <1386079669-3995-4-git-send-email-b.brezillon@overkiz.com>
+In-Reply-To: <1386079669-3995-4-git-send-email-b.brezillon@overkiz.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the request_mem_region + ioremap calls by the
-devm_request_and_ioremap call which does the same things but with device
-managed resources.
+On 03/12/2013 15:07, Boris BREZILLON :
+> Replace clk_get calls by devm_clk_get calls.
+>
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> Tested-by: Robert Nelson <robertcnelson@gmail.com>
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Tested-by: Robert Nelson <robertcnelson@gmail.com>
----
- drivers/usb/host/ohci-at91.c |   24 +++++-------------------
- 1 file changed, 5 insertions(+), 19 deletions(-)
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
-index 7aec6ca..c406f1e 100644
---- a/drivers/usb/host/ohci-at91.c
-+++ b/drivers/usb/host/ohci-at91.c
-@@ -157,24 +157,18 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
- 	hcd->rsrc_start = mem_r->start;
- 	hcd->rsrc_len = resource_size(mem_r);
- 
--	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
--		pr_debug("request_mem_region failed\n");
--		retval = -EBUSY;
--		goto err1;
--	}
--
--	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
-+	hcd->regs = devm_request_and_ioremap(&pdev->dev, mem_r);
- 	if (!hcd->regs) {
--		pr_debug("ioremap failed\n");
-+		dev_dbg(dev, "devm_request_and_ioremap failed\n");
- 		retval = -EIO;
--		goto err2;
-+		goto err;
- 	}
- 
- 	iclk = clk_get(&pdev->dev, "ohci_clk");
- 	if (IS_ERR(iclk)) {
- 		dev_err(&pdev->dev, "failed to get ohci_clk\n");
- 		retval = PTR_ERR(iclk);
--		goto err3;
-+		goto err;
- 	}
- 	fclk = clk_get(&pdev->dev, "uhpck");
- 	if (IS_ERR(fclk)) {
-@@ -218,13 +212,7 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
-  err4:
- 	clk_put(iclk);
- 
-- err3:
--	iounmap(hcd->regs);
--
-- err2:
--	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
--
-- err1:
-+ err:
- 	usb_put_hcd(hcd);
- 	return retval;
- }
-@@ -247,8 +235,6 @@ static void usb_hcd_at91_remove(struct usb_hcd *hcd,
- {
- 	usb_remove_hcd(hcd);
- 	at91_stop_hc(pdev);
--	iounmap(hcd->regs);
--	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
- 	usb_put_hcd(hcd);
- 
- 	if (IS_ENABLED(CONFIG_COMMON_CLK))
+Thanks Boris for these fixes.
+
+Alan, Greg, can you take the whole series as fixes for 3.13?
+
+Thanks, best regards,
+
+> ---
+>   drivers/usb/host/ohci-at91.c |   32 ++++++++------------------------
+>   1 file changed, 8 insertions(+), 24 deletions(-)
+>
+> diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
+> index c406f1e..3652962 100644
+> --- a/drivers/usb/host/ohci-at91.c
+> +++ b/drivers/usb/host/ohci-at91.c
+> @@ -164,30 +164,30 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
+>   		goto err;
+>   	}
+>
+> -	iclk = clk_get(&pdev->dev, "ohci_clk");
+> +	iclk = devm_clk_get(dev, "ohci_clk");
+>   	if (IS_ERR(iclk)) {
+> -		dev_err(&pdev->dev, "failed to get ohci_clk\n");
+> +		dev_err(dev, "failed to get ohci_clk\n");
+>   		retval = PTR_ERR(iclk);
+>   		goto err;
+>   	}
+> -	fclk = clk_get(&pdev->dev, "uhpck");
+> +	fclk = devm_clk_get(dev, "uhpck");
+>   	if (IS_ERR(fclk)) {
+>   		dev_err(&pdev->dev, "failed to get uhpck\n");
+>   		retval = PTR_ERR(fclk);
+> -		goto err4;
+> +		goto err;
+>   	}
+> -	hclk = clk_get(&pdev->dev, "hclk");
+> +	hclk = devm_clk_get(dev, "hclk");
+>   	if (IS_ERR(hclk)) {
+>   		dev_err(&pdev->dev, "failed to get hclk\n");
+>   		retval = PTR_ERR(hclk);
+> -		goto err5;
+> +		goto err;
+>   	}
+>   	if (IS_ENABLED(CONFIG_COMMON_CLK)) {
+> -		uclk = clk_get(&pdev->dev, "usb_clk");
+> +		uclk = devm_clk_get(&pdev->dev, "usb_clk");
+>   		if (IS_ERR(uclk)) {
+>   			dev_err(&pdev->dev, "failed to get uclk\n");
+>   			retval = PTR_ERR(uclk);
+> -			goto err6;
+> +			goto err;
+>   		}
+>   	}
+>
+> @@ -203,15 +203,6 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
+>   	/* Error handling */
+>   	at91_stop_hc(pdev);
+>
+> -	if (IS_ENABLED(CONFIG_COMMON_CLK))
+> -		clk_put(uclk);
+> - err6:
+> -	clk_put(hclk);
+> - err5:
+> -	clk_put(fclk);
+> - err4:
+> -	clk_put(iclk);
+> -
+>    err:
+>   	usb_put_hcd(hcd);
+>   	return retval;
+> @@ -236,13 +227,6 @@ static void usb_hcd_at91_remove(struct usb_hcd *hcd,
+>   	usb_remove_hcd(hcd);
+>   	at91_stop_hc(pdev);
+>   	usb_put_hcd(hcd);
+> -
+> -	if (IS_ENABLED(CONFIG_COMMON_CLK))
+> -		clk_put(uclk);
+> -	clk_put(hclk);
+> -	clk_put(fclk);
+> -	clk_put(iclk);
+> -	fclk = iclk = hclk = NULL;
+>   }
+>
+>   /*-------------------------------------------------------------------------*/
+>
+
+
 -- 
-1.7.9.5
-
+Nicolas Ferre
