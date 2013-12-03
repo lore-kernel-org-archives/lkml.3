@@ -1,107 +1,451 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132Ab3LCCXP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 21:23:15 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:55958 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752536Ab3LCCXN (ORCPT
+	id S1753254Ab3LCCYV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 21:24:21 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:53804 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751827Ab3LCCYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 21:23:13 -0500
-X-AuditID: 9c93016f-b7c57ae0000070d3-87-529d408f7c45
-Date: Tue, 3 Dec 2013 11:25:39 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 4/5] slab: introduce byte sized index for the freelist
- of a slab
-Message-ID: <20131203022539.GF31168@lge.com>
-References: <1385974183-31423-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1385974183-31423-5-git-send-email-iamjoonsoo.kim@lge.com>
+	Mon, 2 Dec 2013 21:24:20 -0500
+X-AuditID: 9c930197-b7c3dae000002c11-5c-529d40d23a80
+From: Namhyung Kim <namhyung@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 08/17] tracing/probes: Split [ku]probes_fetch_type_table
+References: <1385533203-10014-1-git-send-email-namhyung@kernel.org>
+	<1385533203-10014-9-git-send-email-namhyung@kernel.org>
+	<20131202170454.GA28115@redhat.com>
+	<20131202170952.GB28115@redhat.com>
+Date: Tue, 03 Dec 2013 11:24:18 +0900
+In-Reply-To: <20131202170952.GB28115@redhat.com> (Oleg Nesterov's message of
+	"Mon, 2 Dec 2013 18:09:52 +0100")
+Message-ID: <87k3fmoenh.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385974183-31423-5-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 05:49:42PM +0900, Joonsoo Kim wrote:
-> Currently, the freelist of a slab consist of unsigned int sized indexes.
-> Since most of slabs have less number of objects than 256, large sized
-> indexes is needless. For example, consider the minimum kmalloc slab. It's
-> object size is 32 byte and it would consist of one page, so 256 indexes
-> through byte sized index are enough to contain all possible indexes.
-> 
-> There can be some slabs whose object size is 8 byte. We cannot handle
-> this case with byte sized index, so we need to restrict minimum
-> object size. Since these slabs are not major, wasted memory from these
-> slabs would be negligible.
-> 
-> Some architectures' page size isn't 4096 bytes and rather larger than
-> 4096 bytes (One example is 64KB page size on PPC or IA64) so that
-> byte sized index doesn't fit to them. In this case, we will use
-> two bytes sized index.
-> 
-> Below is some number for this patch.
-> 
-> * Before *
-> kmalloc-512          525    640    512    8    1 : tunables   54   27    0 : slabdata     80     80      0
-> kmalloc-256          210    210    256   15    1 : tunables  120   60    0 : slabdata     14     14      0
-> kmalloc-192         1016   1040    192   20    1 : tunables  120   60    0 : slabdata     52     52      0
-> kmalloc-96           560    620    128   31    1 : tunables  120   60    0 : slabdata     20     20      0
-> kmalloc-64          2148   2280     64   60    1 : tunables  120   60    0 : slabdata     38     38      0
-> kmalloc-128          647    682    128   31    1 : tunables  120   60    0 : slabdata     22     22      0
-> kmalloc-32         11360  11413     32  113    1 : tunables  120   60    0 : slabdata    101    101      0
-> kmem_cache           197    200    192   20    1 : tunables  120   60    0 : slabdata     10     10      0
-> 
-> * After *
-> kmalloc-512          521    648    512    8    1 : tunables   54   27    0 : slabdata     81     81      0
-> kmalloc-256          208    208    256   16    1 : tunables  120   60    0 : slabdata     13     13      0
-> kmalloc-192         1029   1029    192   21    1 : tunables  120   60    0 : slabdata     49     49      0
-> kmalloc-96           529    589    128   31    1 : tunables  120   60    0 : slabdata     19     19      0
-> kmalloc-64          2142   2142     64   63    1 : tunables  120   60    0 : slabdata     34     34      0
-> kmalloc-128          660    682    128   31    1 : tunables  120   60    0 : slabdata     22     22      0
-> kmalloc-32         11716  11780     32  124    1 : tunables  120   60    0 : slabdata     95     95      0
-> kmem_cache           197    210    192   21    1 : tunables  120   60    0 : slabdata     10     10      0
-> 
-> kmem_caches consisting of objects less than or equal to 256 byte have
-> one or more objects than before. In the case of kmalloc-32, we have 11 more
-> objects, so 352 bytes (11 * 32) are saved and this is roughly 9% saving of
-> memory. Of couse, this percentage decreases as the number of objects
-> in a slab decreases.
-> 
-> Here are the performance results on my 4 cpus machine.
-> 
-> * Before *
-> 
->  Performance counter stats for 'perf bench sched messaging -g 50 -l 1000' (10 runs):
-> 
->        229,945,138 cache-misses                                                  ( +-  0.23% )
-> 
->       11.627897174 seconds time elapsed                                          ( +-  0.14% )
-> 
-> * After *
-> 
->  Performance counter stats for 'perf bench sched messaging -g 50 -l 1000' (10 runs):
-> 
->        218,640,472 cache-misses                                                  ( +-  0.42% )
-> 
->       11.504999837 seconds time elapsed                                          ( +-  0.21% )
-> 
-> cache-misses are reduced by this patchset, roughly 5%.
-> And elapsed times are improved by 1%.
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> 
+Hi Oleg,
 
-Hello, Christoph.
+On Mon, 2 Dec 2013 18:09:52 +0100, Oleg Nesterov wrote:
+> On 12/02, Oleg Nesterov wrote:
+>>
+>> On 11/27, Namhyung Kim wrote:
+>> >
+>> > Use separate fetch_type_table for kprobes and uprobes.  It currently
+>> > shares all fetch methods but some of them will be implemented
+>> > differently later.
+>>
+>> Hmm. This looks wrong, afaics...
+>>
+>> >  static int parse_probe_arg(char *arg, const struct fetch_type *t,
+>> >  		     struct fetch_param *f, bool is_return, bool is_kprobe)
+>> >  {
+>> > +	const struct fetch_type *ftbl;
+>> >  	unsigned long param;
+>> >  	long offset;
+>> >  	char *tmp;
+>> > -	int ret;
+>> > +	int ret = 0;
+>> >
+>> > -	ret = 0;
+>> > +	ftbl = is_kprobe ? kprobes_fetch_type_table : uprobes_fetch_type_table;
+>>
+>> OK, but what if, say, CONFIG_KPROBE_EVENT && !CONFIG_UPROBE_EVENT ?
+>> The kernel won't compile in this case?
+>
+> Ah, wait, probably I was wrong. I didn't noticee that this patch
+> does
+>
+> 	extern __weak const struct fetch_type kprobes_fetch_type_table[];
+> 	extern __weak const struct fetch_type uprobes_fetch_type_table[];
+>
+> Is it the reason for "weak" ?
 
-Can I get your ACK for this patch?
+Exactly!
 
-Thanks.
+>
+> If yes, perhaps this deserves a comment or at least a note in the changelog.
+> Or is there another reason?
+
+Nope.  I'll add a comment and a note in the changelog too.  Please see the
+new version below.
+
+>
+> I am wondering if this should always work, with any toolchain. I simply
+> do not know what is the documented behaviour if a "weak" symbol is never
+> defined.
+
+It's something like a weak reference - if it couldn't find a definition
+the ref would have value of 0 instead of error.  I'm not sure this is a
+standard or documented behavior but it worked for a long time AFAIK so I
+guess it's pretty compatible.
+
+Btw I found this:
+
+http://gcc.gnu.org/ml/gcc/1999-02n/msg01219.html
+
+Thanks,
+Namhyung
+
+
+>From 510612b00f3e8c7c1322b3ce10be87296d9bce28 Mon Sep 17 00:00:00 2001
+From: Namhyung Kim <namhyung.kim@lge.com>
+Date: Tue, 26 Nov 2013 14:56:28 +0900
+Subject: [PATCH v8 08/17] tracing/probes: Split [ku]probes_fetch_type_table
+
+Use separate fetch_type_table for kprobes and uprobes.  It currently
+shares all fetch methods but some of them will be implemented
+differently later.
+
+This is not to break build if [ku]probes is configured alone (like
+!CONFIG_KPROBE_EVENT and CONFIG_UPROBE_EVENT).  So I added '__weak'
+to the table declaration so that it can be safely omitted when it
+configured out.
+
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ kernel/trace/trace_kprobe.c | 18 +++++++++++
+ kernel/trace/trace_probe.c  | 64 +++++++++++++++-----------------------
+ kernel/trace/trace_probe.h  | 76 ++++++++++++++++++++++++++++++++++++++-------
+ kernel/trace/trace_uprobe.c | 18 +++++++++++
+ 4 files changed, 126 insertions(+), 50 deletions(-)
+
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 62d6c961bbce..d00ee5ce6ccc 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -88,6 +88,24 @@ static int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs);
+ static int kretprobe_dispatcher(struct kretprobe_instance *ri,
+ 				struct pt_regs *regs);
+ 
++/* Fetch type information table */
++const struct fetch_type kprobes_fetch_type_table[] = {
++	/* Special types */
++	[FETCH_TYPE_STRING] = __ASSIGN_FETCH_TYPE("string", string, string,
++					sizeof(u32), 1, "__data_loc char[]"),
++	[FETCH_TYPE_STRSIZE] = __ASSIGN_FETCH_TYPE("string_size", u32,
++					string_size, sizeof(u32), 0, "u32"),
++	/* Basic types */
++	ASSIGN_FETCH_TYPE(u8,  u8,  0),
++	ASSIGN_FETCH_TYPE(u16, u16, 0),
++	ASSIGN_FETCH_TYPE(u32, u32, 0),
++	ASSIGN_FETCH_TYPE(u64, u64, 0),
++	ASSIGN_FETCH_TYPE(s8,  u8,  1),
++	ASSIGN_FETCH_TYPE(s16, u16, 1),
++	ASSIGN_FETCH_TYPE(s32, u32, 1),
++	ASSIGN_FETCH_TYPE(s64, u64, 1),
++};
++
+ /*
+  * Allocate new trace_probe and initialize it (including kprobes).
+  */
+diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+index c26bc9eaa2ac..68b00a214fcc 100644
+--- a/kernel/trace/trace_probe.c
++++ b/kernel/trace/trace_probe.c
+@@ -54,10 +54,6 @@ DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d")
+ DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%d")
+ DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%Ld")
+ 
+-/* For defining macros, define string/string_size types */
+-typedef u32 string;
+-typedef u32 string_size;
+-
+ /* Print type function for string type */
+ __kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
+ 						  const char *name,
+@@ -74,7 +70,6 @@ __kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
+ 
+ const char PRINT_TYPE_FMT_NAME(string)[] = "\\\"%s\\\"";
+ 
+-#define FETCH_FUNC_NAME(method, type)	fetch_##method##_##type
+ /*
+  * Define macro for basic types - we don't need to define s* types, because
+  * we have to care only about bitwidth at recording time.
+@@ -359,25 +354,8 @@ free_bitfield_fetch_param(struct bitfield_fetch_param *data)
+ 	kfree(data);
+ }
+ 
+-/* Fetch type information table */
+-static const struct fetch_type fetch_type_table[] = {
+-	/* Special types */
+-	[FETCH_TYPE_STRING] = __ASSIGN_FETCH_TYPE("string", string, string,
+-					sizeof(u32), 1, "__data_loc char[]"),
+-	[FETCH_TYPE_STRSIZE] = __ASSIGN_FETCH_TYPE("string_size", u32,
+-					string_size, sizeof(u32), 0, "u32"),
+-	/* Basic types */
+-	ASSIGN_FETCH_TYPE(u8,  u8,  0),
+-	ASSIGN_FETCH_TYPE(u16, u16, 0),
+-	ASSIGN_FETCH_TYPE(u32, u32, 0),
+-	ASSIGN_FETCH_TYPE(u64, u64, 0),
+-	ASSIGN_FETCH_TYPE(s8,  u8,  1),
+-	ASSIGN_FETCH_TYPE(s16, u16, 1),
+-	ASSIGN_FETCH_TYPE(s32, u32, 1),
+-	ASSIGN_FETCH_TYPE(s64, u64, 1),
+-};
+-
+-static const struct fetch_type *find_fetch_type(const char *type)
++static const struct fetch_type *find_fetch_type(const char *type,
++						const struct fetch_type *ftbl)
+ {
+ 	int i;
+ 
+@@ -398,21 +376,21 @@ static const struct fetch_type *find_fetch_type(const char *type)
+ 
+ 		switch (bs) {
+ 		case 8:
+-			return find_fetch_type("u8");
++			return find_fetch_type("u8", ftbl);
+ 		case 16:
+-			return find_fetch_type("u16");
++			return find_fetch_type("u16", ftbl);
+ 		case 32:
+-			return find_fetch_type("u32");
++			return find_fetch_type("u32", ftbl);
+ 		case 64:
+-			return find_fetch_type("u64");
++			return find_fetch_type("u64", ftbl);
+ 		default:
+ 			goto fail;
+ 		}
+ 	}
+ 
+-	for (i = 0; i < ARRAY_SIZE(fetch_type_table); i++)
+-		if (strcmp(type, fetch_type_table[i].name) == 0)
+-			return &fetch_type_table[i];
++	for (i = 0; i < NR_FETCH_TYPES; i++)
++		if (strcmp(type, ftbl[i].name) == 0)
++			return &ftbl[i];
+ 
+ fail:
+ 	return NULL;
+@@ -426,16 +404,17 @@ static __kprobes void fetch_stack_address(struct pt_regs *regs,
+ }
+ 
+ static fetch_func_t get_fetch_size_function(const struct fetch_type *type,
+-					fetch_func_t orig_fn)
++					    fetch_func_t orig_fn,
++					    const struct fetch_type *ftbl)
+ {
+ 	int i;
+ 
+-	if (type != &fetch_type_table[FETCH_TYPE_STRING])
++	if (type != &ftbl[FETCH_TYPE_STRING])
+ 		return NULL;	/* Only string type needs size function */
+ 
+ 	for (i = 0; i < FETCH_MTD_END; i++)
+ 		if (type->fetch[i] == orig_fn)
+-			return fetch_type_table[FETCH_TYPE_STRSIZE].fetch[i];
++			return ftbl[FETCH_TYPE_STRSIZE].fetch[i];
+ 
+ 	WARN_ON(1);	/* This should not happen */
+ 
+@@ -504,12 +483,14 @@ static int parse_probe_vars(char *arg, const struct fetch_type *t,
+ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+ 		     struct fetch_param *f, bool is_return, bool is_kprobe)
+ {
++	const struct fetch_type *ftbl;
+ 	unsigned long param;
+ 	long offset;
+ 	char *tmp;
+-	int ret;
++	int ret = 0;
+ 
+-	ret = 0;
++	ftbl = is_kprobe ? kprobes_fetch_type_table : uprobes_fetch_type_table;
++	BUG_ON(ftbl == NULL);
+ 
+ 	/* Until uprobe_events supports only reg arguments */
+ 	if (!is_kprobe && arg[0] != '%')
+@@ -568,7 +549,7 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+ 			struct deref_fetch_param	*dprm;
+ 			const struct fetch_type		*t2;
+ 
+-			t2 = find_fetch_type(NULL);
++			t2 = find_fetch_type(NULL, ftbl);
+ 			*tmp = '\0';
+ 			dprm = kzalloc(sizeof(struct deref_fetch_param), GFP_KERNEL);
+ 
+@@ -637,9 +618,13 @@ static int __parse_bitfield_probe_arg(const char *bf,
+ int traceprobe_parse_probe_arg(char *arg, ssize_t *size,
+ 		struct probe_arg *parg, bool is_return, bool is_kprobe)
+ {
++	const struct fetch_type *ftbl;
+ 	const char *t;
+ 	int ret;
+ 
++	ftbl = is_kprobe ? kprobes_fetch_type_table : uprobes_fetch_type_table;
++	BUG_ON(ftbl == NULL);
++
+ 	if (strlen(arg) > MAX_ARGSTR_LEN) {
+ 		pr_info("Argument is too long.: %s\n",  arg);
+ 		return -ENOSPC;
+@@ -654,7 +639,7 @@ int traceprobe_parse_probe_arg(char *arg, ssize_t *size,
+ 		arg[t - parg->comm] = '\0';
+ 		t++;
+ 	}
+-	parg->type = find_fetch_type(t);
++	parg->type = find_fetch_type(t, ftbl);
+ 	if (!parg->type) {
+ 		pr_info("Unsupported type: %s\n", t);
+ 		return -EINVAL;
+@@ -668,7 +653,8 @@ int traceprobe_parse_probe_arg(char *arg, ssize_t *size,
+ 
+ 	if (ret >= 0) {
+ 		parg->fetch_size.fn = get_fetch_size_function(parg->type,
+-							      parg->fetch.fn);
++							      parg->fetch.fn,
++							      ftbl);
+ 		parg->fetch_size.data = parg->fetch.data;
+ 	}
+ 
+diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
+index 7c6be146f444..99d3aa1f2d8a 100644
+--- a/kernel/trace/trace_probe.h
++++ b/kernel/trace/trace_probe.h
+@@ -126,24 +126,70 @@ struct fetch_param {
+ 	void 			*data;
+ };
+ 
++/* For defining macros, define string/string_size types */
++typedef u32 string;
++typedef u32 string_size;
++
+ #define PRINT_TYPE_FUNC_NAME(type)	print_type_##type
+ #define PRINT_TYPE_FMT_NAME(type)	print_type_format_##type
+ 
+ /* Printing  in basic type function template */
+-#define DECLARE_BASIC_PRINT_TYPE_FUNC(type, fmt)			\
++#define DECLARE_BASIC_PRINT_TYPE_FUNC(type)				\
+ __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,		\
+ 					 const char *name,		\
+ 					 void *data, void *ent);	\
+-extern const char PRINT_TYPE_FMT_NAME(type)[];
+-
+-DECLARE_BASIC_PRINT_TYPE_FUNC(u8 , "%x")
+-DECLARE_BASIC_PRINT_TYPE_FUNC(u16, "%x")
+-DECLARE_BASIC_PRINT_TYPE_FUNC(u32, "%x")
+-DECLARE_BASIC_PRINT_TYPE_FUNC(u64, "%Lx")
+-DECLARE_BASIC_PRINT_TYPE_FUNC(s8,  "%d")
+-DECLARE_BASIC_PRINT_TYPE_FUNC(s16, "%d")
+-DECLARE_BASIC_PRINT_TYPE_FUNC(s32, "%d")
+-DECLARE_BASIC_PRINT_TYPE_FUNC(s64, "%Ld")
++extern const char PRINT_TYPE_FMT_NAME(type)[]
++
++DECLARE_BASIC_PRINT_TYPE_FUNC(u8);
++DECLARE_BASIC_PRINT_TYPE_FUNC(u16);
++DECLARE_BASIC_PRINT_TYPE_FUNC(u32);
++DECLARE_BASIC_PRINT_TYPE_FUNC(u64);
++DECLARE_BASIC_PRINT_TYPE_FUNC(s8);
++DECLARE_BASIC_PRINT_TYPE_FUNC(s16);
++DECLARE_BASIC_PRINT_TYPE_FUNC(s32);
++DECLARE_BASIC_PRINT_TYPE_FUNC(s64);
++DECLARE_BASIC_PRINT_TYPE_FUNC(string);
++
++#define FETCH_FUNC_NAME(method, type)	fetch_##method##_##type
++
++/* Declare macro for basic types */
++#define DECLARE_FETCH_FUNC(method, type)				\
++extern void FETCH_FUNC_NAME(method, type)(struct pt_regs *regs, 	\
++					  void *data, void *dest)
++
++#define DECLARE_BASIC_FETCH_FUNCS(method) 	\
++DECLARE_FETCH_FUNC(method, u8);			\
++DECLARE_FETCH_FUNC(method, u16);		\
++DECLARE_FETCH_FUNC(method, u32);		\
++DECLARE_FETCH_FUNC(method, u64)
++
++DECLARE_BASIC_FETCH_FUNCS(reg);
++#define fetch_reg_string			NULL
++#define fetch_reg_string_size			NULL
++
++DECLARE_BASIC_FETCH_FUNCS(stack);
++#define fetch_stack_string			NULL
++#define fetch_stack_string_size			NULL
++
++DECLARE_BASIC_FETCH_FUNCS(retval);
++#define fetch_retval_string			NULL
++#define fetch_retval_string_size		NULL
++
++DECLARE_BASIC_FETCH_FUNCS(memory);
++DECLARE_FETCH_FUNC(memory, string);
++DECLARE_FETCH_FUNC(memory, string_size);
++
++DECLARE_BASIC_FETCH_FUNCS(symbol);
++DECLARE_FETCH_FUNC(symbol, string);
++DECLARE_FETCH_FUNC(symbol, string_size);
++
++DECLARE_BASIC_FETCH_FUNCS(deref);
++DECLARE_FETCH_FUNC(deref, string);
++DECLARE_FETCH_FUNC(deref, string_size);
++
++DECLARE_BASIC_FETCH_FUNCS(bitfield);
++#define fetch_bitfield_string			NULL
++#define fetch_bitfield_string_size		NULL
+ 
+ /* Default (unsigned long) fetch type */
+ #define __DEFAULT_FETCH_TYPE(t) u##t
+@@ -178,6 +224,14 @@ ASSIGN_FETCH_FUNC(bitfield, ftype),			\
+ #define FETCH_TYPE_STRING	0
+ #define FETCH_TYPE_STRSIZE	1
+ 
++#define NR_FETCH_TYPES		10
++
++/*
++ * Fetch type information table.
++ * It's declared as a weak symbol due to conditional compilation.
++ */
++extern __weak const struct fetch_type kprobes_fetch_type_table[];
++extern __weak const struct fetch_type uprobes_fetch_type_table[];
+ 
+ struct probe_arg {
+ 	struct fetch_param	fetch;
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index b233d9cb1216..c66ddc744f12 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -74,6 +74,24 @@ static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs);
+ static int uretprobe_dispatcher(struct uprobe_consumer *con,
+ 				unsigned long func, struct pt_regs *regs);
+ 
++/* Fetch type information table */
++const struct fetch_type uprobes_fetch_type_table[] = {
++	/* Special types */
++	[FETCH_TYPE_STRING] = __ASSIGN_FETCH_TYPE("string", string, string,
++					sizeof(u32), 1, "__data_loc char[]"),
++	[FETCH_TYPE_STRSIZE] = __ASSIGN_FETCH_TYPE("string_size", u32,
++					string_size, sizeof(u32), 0, "u32"),
++	/* Basic types */
++	ASSIGN_FETCH_TYPE(u8,  u8,  0),
++	ASSIGN_FETCH_TYPE(u16, u16, 0),
++	ASSIGN_FETCH_TYPE(u32, u32, 0),
++	ASSIGN_FETCH_TYPE(u64, u64, 0),
++	ASSIGN_FETCH_TYPE(s8,  u8,  1),
++	ASSIGN_FETCH_TYPE(s16, u16, 1),
++	ASSIGN_FETCH_TYPE(s32, u32, 1),
++	ASSIGN_FETCH_TYPE(s64, u64, 1),
++};
++
+ static inline void init_trace_uprobe_filter(struct trace_uprobe_filter *filter)
+ {
+ 	rwlock_init(&filter->rwlock);
+-- 
+1.7.11.7
+
