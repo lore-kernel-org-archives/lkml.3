@@ -1,199 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab3LCSfB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 13:35:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26668 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752868Ab3LCSe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 13:34:59 -0500
-Message-ID: <1386095692.25738.279.camel@ul30vt.home>
-Subject: Re: [PATCH 2/3 v2] iommu/fsl: Enable default DMA window for PCIe
- devices
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Varun Sethi <Varun.Sethi@freescale.com>
-Cc: "joro@8bytes.org" <joro@8bytes.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stuart Yoder <stuart.yoder@freescale.com>,
-        Scott Wood <scottwood@freescale.com>,
-        Bharat Bhushan <Bharat.Bhushan@freescale.com>
-Date: Tue, 03 Dec 2013 11:34:52 -0700
-In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D0A606B8F@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1381922582-28724-1-git-send-email-Varun.Sethi@freescale.com>
-	 <1381922582-28724-3-git-send-email-Varun.Sethi@freescale.com>
-	 <1386020016.25738.240.camel@ul30vt.home>
-	 <C5ECD7A89D1DC44195F34B25E172658D0A606B8F@039-SN2MPN1-011.039d.mgd.msft.net>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754216Ab3LCSfL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 13:35:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53016 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753947Ab3LCSfF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 13:35:05 -0500
+Date: Tue, 3 Dec 2013 10:36:07 -0800
+From: Greg KH <greg@kroah.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Veaceslav Falico <vfalico@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
+        Knut Petersen <Knut_Petersen@t-online.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PCI: update MSI attribute file documentation
+Message-ID: <20131203183607.GA19504@kroah.com>
+References: <20131129031419.GB5889@neilslaptop.think-freely.org>
+ <20131129094137.GC3028@redhat.com>
+ <20131129175336.GA6152@kroah.com>
+ <CAErSpo44sQU2PbufCYF+wzpMtMPC97_FgAMQgruX9Nw3XbmL8g@mail.gmail.com>
+ <20131203033712.GA8525@kroah.com>
+ <CAErSpo42MJ1VkhDdJ_AM-5hsidakcE_GQzWfV9UVT36nK_5a5A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo42MJ1VkhDdJ_AM-5hsidakcE_GQzWfV9UVT36nK_5a5A@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-03 at 18:15 +0000, Varun Sethi wrote:
+On Tue, Dec 03, 2013 at 11:23:51AM -0700, Bjorn Helgaas wrote:
+> On Mon, Dec 2, 2013 at 8:37 PM, Greg KH <greg@kroah.com> wrote:
+> > From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >
+> > Now that the MSI modes are now attribute files in sysfs, not
+> > subdirectories, update the documentation to reflect this.
+> >
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 > 
-> > -----Original Message-----
-> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > Sent: Tuesday, December 03, 2013 3:04 AM
-> > To: Sethi Varun-B16395
-> > Cc: joro@8bytes.org; iommu@lists.linux-foundation.org; linuxppc-
-> > dev@lists.ozlabs.org; linux-kernel@vger.kernel.org; Yoder Stuart-B08248;
-> > Wood Scott-B07421; Bhushan Bharat-R65777
-> > Subject: Re: [PATCH 2/3 v2] iommu/fsl: Enable default DMA window for PCIe
-> > devices
-> > 
-> > On Wed, 2013-10-16 at 16:53 +0530, Varun Sethi wrote:
-> > > Once the PCIe device assigned to a guest VM (via VFIO) gets detached
-> > > from the iommu domain (when guest terminates), its PAMU table entry is
-> > > disabled. So, this would prevent the device from being used once it's
-> > assigned back to the host.
-> > >
-> > > This patch allows for creation of a default DMA window corresponding
-> > > to the device and subsequently enabling the PAMU table entry. Before
-> > > we enable the entry, we ensure that the device's bus master capability
-> > is disabled (device quiesced).
-> > >
-> > > Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
-> > > ---
-> > >  drivers/iommu/fsl_pamu.c        |   43 ++++++++++++++++++++++++++++---
-> > -----
-> > >  drivers/iommu/fsl_pamu.h        |    1 +
-> > >  drivers/iommu/fsl_pamu_domain.c |   46
-> > ++++++++++++++++++++++++++++++++++++---
-> > >  3 files changed, 78 insertions(+), 12 deletions(-)
-> > >
-> > > diff --git a/drivers/iommu/fsl_pamu.c b/drivers/iommu/fsl_pamu.c index
-> > > cba0498..fb4a031 100644
-> > > --- a/drivers/iommu/fsl_pamu.c
-> > > +++ b/drivers/iommu/fsl_pamu.c
-> > > @@ -225,6 +225,21 @@ static struct paace *pamu_get_spaace(struct paace
-> > *paace, u32 wnum)
-> > >  	return spaace;
-> > >  }
-> > >
-> > > +/*
-> > > + * Defaul PPAACE settings for an LIODN.
-> > > + */
-> > > +static void setup_default_ppaace(struct paace *ppaace) {
-> > > +	pamu_init_ppaace(ppaace);
-> > > +	/* window size is 2^(WSE+1) bytes */
-> > > +	set_bf(ppaace->addr_bitfields, PPAACE_AF_WSE, 35);
-> > > +	ppaace->wbah = 0;
-> > > +	set_bf(ppaace->addr_bitfields, PPAACE_AF_WBAL, 0);
-> > > +	set_bf(ppaace->impl_attr, PAACE_IA_ATM,
-> > > +		PAACE_ATM_NO_XLATE);
-> > > +	set_bf(ppaace->addr_bitfields, PAACE_AF_AP,
-> > > +		PAACE_AP_PERMS_ALL);
-> > > +}
-> > >  /**
-> > >   * pamu_get_fspi_and_allocate() - Allocates fspi index and reserves
-> > subwindows
-> > >   *                                required for primary PAACE in the
-> > secondary
-> > > @@ -253,6 +268,24 @@ static unsigned long
-> > pamu_get_fspi_and_allocate(u32 subwin_cnt)
-> > >  	return (spaace_addr - (unsigned long)spaact) / (sizeof(struct
-> > > paace));  }
-> > >
-> > > +/* Reset the PAACE entry to the default state */ void
-> > > +enable_default_dma_window(int liodn) {
-> > > +	struct paace *ppaace;
-> > > +
-> > > +	ppaace = pamu_get_ppaace(liodn);
-> > > +	if (!ppaace) {
-> > > +		pr_debug("Invalid liodn entry\n");
-> > > +		return;
-> > > +	}
-> > > +
-> > > +	memset(ppaace, 0, sizeof(struct paace));
-> > > +
-> > > +	setup_default_ppaace(ppaace);
-> > > +	mb();
-> > > +	pamu_enable_liodn(liodn);
-> > > +}
-> > > +
-> > >  /* Release the subwindows reserved for a particular LIODN */  void
-> > > pamu_free_subwins(int liodn)  { @@ -752,15 +785,7 @@ static void
-> > > __init setup_liodns(void)
-> > >  				continue;
-> > >  			}
-> > >  			ppaace = pamu_get_ppaace(liodn);
-> > > -			pamu_init_ppaace(ppaace);
-> > > -			/* window size is 2^(WSE+1) bytes */
-> > > -			set_bf(ppaace->addr_bitfields, PPAACE_AF_WSE, 35);
-> > > -			ppaace->wbah = 0;
-> > > -			set_bf(ppaace->addr_bitfields, PPAACE_AF_WBAL, 0);
-> > > -			set_bf(ppaace->impl_attr, PAACE_IA_ATM,
-> > > -				PAACE_ATM_NO_XLATE);
-> > > -			set_bf(ppaace->addr_bitfields, PAACE_AF_AP,
-> > > -				PAACE_AP_PERMS_ALL);
-> > > +			setup_default_ppaace(ppaace);
-> > >  			if (of_device_is_compatible(node, "fsl,qman-portal"))
-> > >  				setup_qbman_paace(ppaace, QMAN_PORTAL_PAACE);
-> > >  			if (of_device_is_compatible(node, "fsl,qman")) diff --
-> > git
-> > > a/drivers/iommu/fsl_pamu.h b/drivers/iommu/fsl_pamu.h index
-> > > 8fc1a12..0edcbbbb 100644
-> > > --- a/drivers/iommu/fsl_pamu.h
-> > > +++ b/drivers/iommu/fsl_pamu.h
-> > > @@ -406,5 +406,6 @@ void get_ome_index(u32 *omi_index, struct device
-> > > *dev);  int  pamu_update_paace_stash(int liodn, u32 subwin, u32
-> > > value);  int pamu_disable_spaace(int liodn, u32 subwin);
-> > >  u32 pamu_get_max_subwin_cnt(void);
-> > > +void enable_default_dma_window(int liodn);
-> > >
-> > >  #endif  /* __FSL_PAMU_H */
-> > > diff --git a/drivers/iommu/fsl_pamu_domain.c
-> > > b/drivers/iommu/fsl_pamu_domain.c index 966ae70..dd6cafc 100644
-> > > --- a/drivers/iommu/fsl_pamu_domain.c
-> > > +++ b/drivers/iommu/fsl_pamu_domain.c
-> > > @@ -340,17 +340,57 @@ static inline struct device_domain_info
-> > *find_domain(struct device *dev)
-> > >  	return dev->archdata.iommu_domain;
-> > >  }
-> > >
-> > > +/* Disable device DMA capability and enable default DMA window */
-> > > +static void disable_device_dma(struct device_domain_info *info,
-> > > +				int enable_dma_window)
-> > 
-> > nit, bool?
-> > 
-> > > +{
-> > > +#ifdef CONFIG_PCI
-> > > +	if (info->dev->bus == &pci_bus_type) {
-> > > +		struct pci_dev *pdev = NULL;
-> > 
-> > nit, unnecessary initialization
-> > 
-> > > +		pdev = to_pci_dev(info->dev);
-> > > +		if (pci_is_enabled(pdev))
-> > > +			pci_disable_device(pdev);
-> > 
-> > This looks suspicious.  What's the case where you're finding devices
-> > where this is needed?  Logically the driver that called
-> > pci_enable_device() should also call pci_disabled_device() when it's
-> > done.  Maybe there's a case to be made that we can't rely on the driver,
-> > but then maybe there should be a pr_debug/info here to notify that
-> > somebody left the device running.  There might also be the question of
-> > whether you should test the busmaster bit in the command register rather
-> > than trusting these indirect paths if it's really for cleanup.  Thanks,
-> > 
-> Once the device is detached from the domain, we enable a default DMA
-> window for the device. Before enabling the default window, I want to
-> ensure that device DMA is disabled. VFIO subsystem handles this for
-> vfio-pci. But, can we assume that this would always be the case?
+> Thanks, I'll fold this into the patch that makes the code change, if
+> you don't mind.
 
-That's what I'm asking.  It seems like pci_enable/disable_device is part
-of the driver API and every enable should have a matching disable.  If
-this is to catch cases where the disable never happened, then there
-should be some indication that the previous driver did something wrong
-and we should have some sort of printed warning.  Then there's also the
-question of whether this fully does what you want it to.  This is an
-indirect way of checking the busmaster bit in the command register.  If
-you really want to make sure it's disabled, is it sufficient or should
-we be reading the actual command register?  Thanks,
-
-Alex
-
+I don't mind at all, thanks.
 
