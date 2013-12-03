@@ -1,154 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab3LCNqZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 08:46:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7895 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752729Ab3LCNqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 08:46:22 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 07/28] perf tools: Add build and install plugins targets
-Date: Tue,  3 Dec 2013 14:09:21 +0100
-Message-Id: <1386076182-14484-8-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1386076182-14484-1-git-send-email-jolsa@redhat.com>
-References: <1386076182-14484-1-git-send-email-jolsa@redhat.com>
+	id S1753762Ab3LCNtA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 08:49:00 -0500
+Received: from relay.parallels.com ([195.214.232.42]:48502 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753262Ab3LCNs6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 08:48:58 -0500
+Message-ID: <529DE144.8020005@parallels.com>
+Date: Tue, 3 Dec 2013 17:48:52 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Dave Chinner <david@fromorbit.com>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
+        <dchinner@redhat.com>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>
+Subject: Re: [PATCH v12 05/18] fs: do not use destroy_super() in alloc_super()
+ fail path
+References: <cover.1385974612.git.vdavydov@parallels.com> <af90b79aebe9cd9f6e1d35513f2618f4e9888e9b.1385974612.git.vdavydov@parallels.com> <20131203090041.GB8803@dastard> <529DA2F5.1040602@parallels.com> <20131203133755.GJ10323@ZenIV.linux.org.uk>
+In-Reply-To: <20131203133755.GJ10323@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding 'plugins' target along with the libtraceevent.a,
-so plugins are built together with traceevent library.
+On 12/03/2013 05:37 PM, Al Viro wrote:
+> On Tue, Dec 03, 2013 at 01:23:01PM +0400, Vladimir Davydov wrote:
+>
+>> Actually, I'm not going to modify the list_lru structure, because I
+>> think it's good as it is. I'd like to substitute it with a new
+>> structure, memcg_list_lru, only in those places where this functionality
+>> (per-memcg scanning) is really needed. This new structure would look
+>> like this:
+>>
+>> struct memcg_list_lru {
+>>     struct list_lru global_lru;
+>>     struct list_lru **memcg_lrus;
+>>     struct list_head list;
+>>     void *old_lrus;
+>> }
+>>
+>> Since old_lrus and memcg_lrus can be NULL under normal operation, in
+>> memcg_list_lru_destroy() I'd have to check either the list or the
+>> global_lru field, i.e. it would look like:
+>>
+>> if (!list.next)
+>>     /* has not been initialized */
+>>     return;
+>>
+>> or
+> ... or just use hlist_head.
 
-Adding 'install-traceevent-plugins' Makefile install target,
-instructing perf to install plugins into:
-  $(HOME)/.traceevent/plugins
-    - if installed localy under $HOME
-  $(DESTDIR)/$(prefix)/$(libdir)/traceevent/plugins
-    - if installed globally
+list_head serves as a list node here (those structures are organized in
+a linked list) and I have to remove it from the list upon destruction so
+hlist_head is not relevant here.
 
-Examples:
-  $ make install
-  ...
-  $ find ~/.traceevent/plugins/
-  /home/jolsa/.traceevent/plugins/
-  /home/jolsa/.traceevent/plugins/plugin_mac80211.so
-  /home/jolsa/.traceevent/plugins/plugin_kvm.so
-  /home/jolsa/.traceevent/plugins/plugin_scsi.so
-  /home/jolsa/.traceevent/plugins/plugin_sched_switch.so
-  /home/jolsa/.traceevent/plugins/plugin_xen.so
-  /home/jolsa/.traceevent/plugins/plugin_cfg80211.so
-  /home/jolsa/.traceevent/plugins/plugin_function.so
-  /home/jolsa/.traceevent/plugins/plugin_kmem.so
-  /home/jolsa/.traceevent/plugins/plugin_hrtimer.so
-  /home/jolsa/.traceevent/plugins/plugin_jbd2.so
-
-  $ sudo make install DESTDIR=/opt/perf/
-  ...
-  $ find /opt/perf/lib64/traceevent/plugins/
-  /opt/perf/lib64/traceevent/plugins/
-  /opt/perf/lib64/traceevent/plugins/plugin_kvm.so
-  /opt/perf/lib64/traceevent/plugins/plugin_scsi.so
-  /opt/perf/lib64/traceevent/plugins/plugin_mac80211.so
-  /opt/perf/lib64/traceevent/plugins/plugin_hrtimer.so
-  /opt/perf/lib64/traceevent/plugins/plugin_kmem.so
-  /opt/perf/lib64/traceevent/plugins/plugin_jbd2.so
-  /opt/perf/lib64/traceevent/plugins/plugin_sched_switch.so
-  /opt/perf/lib64/traceevent/plugins/plugin_function.so
-  /opt/perf/lib64/traceevent/plugins/plugin_cfg80211.so
-  /opt/perf/lib64/traceevent/plugins/plugin_xen.so
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Ahern <dsahern@gmail.com>
----
- tools/perf/Makefile.perf   | 17 ++++++++++++-----
- tools/perf/config/Makefile |  8 ++++++++
- 2 files changed, 20 insertions(+), 5 deletions(-)
-
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index e416ccc..abc7ac3 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -105,7 +105,7 @@ ifeq ($(config),1)
- include config/Makefile
- endif
- 
--export prefix bindir sharedir sysconfdir
-+export prefix bindir sharedir sysconfdir DESTDIR
- 
- # sparse is architecture-neutral, which means that we need to tell it
- # explicitly what architecture to check for. Fix this up for yours..
-@@ -710,13 +710,20 @@ $(LIB_FILE): $(LIB_OBJS)
- # libtraceevent.a
- TE_SOURCES = $(wildcard $(TRACE_EVENT_DIR)*.[ch])
- 
--$(LIBTRACEEVENT): $(TE_SOURCES)
--	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) CFLAGS="-g -Wall $(EXTRA_CFLAGS)" libtraceevent.a
-+LIBTRACEEVENT_FLAGS  = $(QUIET_SUBDIR1) O=$(OUTPUT)
-+LIBTRACEEVENT_FLAGS += CFLAGS="-g -Wall $(EXTRA_CFLAGS)"
-+LIBTRACEEVENT_FLAGS += plugin_dir=$(plugindir_SQ)
-+
-+$(LIBTRACEEVENT): $(TE_SOURCES) $(OUTPUT)PERF-CFLAGS
-+	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) libtraceevent.a plugins
- 
- $(LIBTRACEEVENT)-clean:
- 	$(call QUIET_CLEAN, libtraceevent)
- 	@$(MAKE) -C $(TRACE_EVENT_DIR) O=$(OUTPUT) clean >/dev/null
- 
-+install-traceevent-plugins:
-+	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) install_plugins
-+
- LIBLK_SOURCES = $(wildcard $(LK_PATH)*.[ch])
- 
- # if subdir is set, we've been called from above so target has been built
-@@ -785,7 +792,7 @@ cscope:
- 
- ### Detect prefix changes
- TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):\
--             $(bindir_SQ):$(perfexecdir_SQ):$(template_dir_SQ):$(prefix_SQ)
-+             $(bindir_SQ):$(perfexecdir_SQ):$(template_dir_SQ):$(prefix_SQ):$(plugindir_SQ)
- 
- $(OUTPUT)PERF-CFLAGS: .FORCE-PERF-CFLAGS
- 	@FLAGS='$(TRACK_CFLAGS)'; \
-@@ -849,7 +856,7 @@ endif
- 		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests/attr'; \
- 		$(INSTALL) tests/attr/* '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests/attr'
- 
--install: install-bin try-install-man
-+install: install-bin try-install-man install-traceevent-plugins
- 
- install-python_ext:
- 	$(PYTHON_WORD) util/setup.py --quiet install --root='/$(DESTDIR_SQ)'
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 0761d57..bae1072 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -593,3 +593,11 @@ else
- perfexec_instdir = $(prefix)/$(perfexecdir)
- endif
- perfexec_instdir_SQ = $(subst ','\'',$(perfexec_instdir))
-+
-+# If we install to $(HOME) we keep the traceevent default:
-+# $(HOME)/.traceevent/plugins
-+# Otherwise we install plugins into the global $(libdir).
-+ifdef DESTDIR
-+plugindir=$(libdir)/traceevent/plugins
-+plugindir_SQ= $(subst ','\'',$(prefix)/$(plugindir))
-+endif
--- 
-1.8.3.1
-
+Thanks.
