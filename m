@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143Ab3LCXHn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 18:07:43 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:54932 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755103Ab3LCXHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 18:07:10 -0500
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        David Howells <dhowells@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, keescook@chromium.org
-Subject: [PATCH v2 0/2] test modules
-Date: Tue,  3 Dec 2013 15:06:25 -0800
-Message-Id: <1386111987-13073-1-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-X-HELO: www.outflux.net
+	id S1755505Ab3LCXOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 18:14:19 -0500
+Received: from doppler.thel33t.co.uk ([193.110.88.198]:48850 "EHLO
+	doppler.thel33t.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754461Ab3LCXOP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 18:14:15 -0500
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Tue, 03 Dec 2013 23:20:38 +0000
+From: Leigh Brown <leigh@solinno.co.uk>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Nicolas Schichan <nschichan@freebox.fr>,
+        Jason Cooper <jason@lakedaemon.net>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Florian Fainelli <florian@openwrt.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Spurious timeouts in mvmdio
+In-Reply-To: <529E5F03.8040607@gmail.com>
+References: <529CA42A.3040504@freebox.fr>
+ <20131203122346.GD29282@titan.lakedaemon.net>
+ <20131203124033.GT16735@n2100.arm.linux.org.uk>
+ <abe249f5cba5c267e2c536bd62c57908@doppler.thel33t.co.uk>
+ <529E5F03.8040607@gmail.com>
+Message-ID: <8d65780eb7bfe49bb0734a09f05f70a6@doppler.thel33t.co.uk>
+User-Agent: Roundcube Webmail/0.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a pair of test modules I'd like to see in the tree. Instead
-of putting these in lkdtm, where I've been adding various tests that
-trigger crashes, these don't make sense there since they need to be
-either distinctly separate, or their pass/fail state don't need to crash
-the machine.
+On 2013-12-03 22:45, Sebastian Hesselbarth wrote:
+> On 12/03/2013 09:57 PM, Leigh Brown wrote:
+[...]
+>> Nicolas' patch should fix the issue, but I prefer the following as it 
+>> is
+>> more
+>> correct, as it only adjusts the timeout when calling
+>> wait_event_timeout().  As
+>> I said above,I believe the polling code is correct.
+>> 
+>> diff --git a/drivers/net/ethernet/marvell/mvmdio.c
+>> b/drivers/net/ethernet/marvell/mvmdio.c
+>> index 7354960..b187c08 100644
+>> --- a/drivers/net/ethernet/marvell/mvmdio.c
+>> +++ b/drivers/net/ethernet/marvell/mvmdio.c
+>> @@ -92,6 +92,14 @@ static int orion_mdio_wait_ready(struct mii_bus 
+>> *bus)
+>>               if (time_is_before_jiffies(end))
+>>                   ++timedout;
+>>               } else {
+>> +            /*
+>> +             * wait_event_timeout does not guarantee a delay of at
+>> +             * least one whole jiffie, so timeout must be no less
+>> +             * than two.
+>> +             */
+>> +            if (timeout < 2)
+>> +                timeout = 2;
+> 
+> If you always want to wait at least two jiffies, why not just increase
+> TIMEOUT makro to 20ms instead of messing here with it again?
+> As said on IRC log above, originally timeout was 100ms.
+> 
+> Sebastian
 
-These live in lib/ for now, along with a few other in-kernel test modules,
-and use the slightly more common "test_" naming convention, instead of
-"test-". We should likely standardize on the former:
+You could do that, but would you not feel bad leaving a latent bug in 
+the code?
+I know it's unlikely that someone would set HZ to 50, but if they did, 
+the same
+bug would appear again.
 
-$ find . -name 'test_*.c' | grep -v /tools/ | wc -l
-4
-$ find . -name 'test-*.c' | grep -v /tools/ | wc -l
-2
+Regards,
 
-The first is entirely a no-op module, designed to allow simple testing
-of the module loading and verification interface. It's useful to have
-a module that has no other uses or dependencies so it can be reliably
-used for just testing module loading and verification.
+Leigh.
 
-The second is a module that exercises the user memory access functions,
-in an effort to make sure that we can quickly catch any regressions in
-boundary checking (e.g. like what was recently fixed on ARM).
 
-Thanks,
-
--Kees
 
