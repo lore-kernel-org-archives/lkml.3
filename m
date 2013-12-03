@@ -1,150 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268Ab3LCPEI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 10:04:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36960 "EHLO mx2.suse.de"
+	id S1754634Ab3LCPEU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 10:04:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28413 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752542Ab3LCPEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 10:04:05 -0500
-Date: Tue, 3 Dec 2013 15:04:00 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, athorlton@sgi.com, riel@redhat.com,
-        gregkh@linuxfoundation.org, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mm: numa: return the number of base pages altered by
- protection changes
-Message-ID: <20131203150400.GR11295@suse.de>
-References: <1385922957129@kroah.com>
+	id S1754421Ab3LCPEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 10:04:16 -0500
+Date: Tue, 3 Dec 2013 10:03:46 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>
+Subject: Re: [PATCH] vmcore: call remap_pfn_range() separately for respective
+ partial pages
+Message-ID: <20131203150346.GC4251@redhat.com>
+References: <52970342.8090302@jp.fujitsu.com>
+ <20131202152754.GC18642@redhat.com>
+ <529D3158.2080603@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1385922957129@kroah.com>
+In-Reply-To: <529D3158.2080603@jp.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 72403b4a0fbdf433c1fe0127e49864658f6f6468 upstream.
+On Tue, Dec 03, 2013 at 10:18:16AM +0900, HATAYAMA Daisuke wrote:
+> (2013/12/03 0:27), Vivek Goyal wrote:
+> >On Thu, Nov 28, 2013 at 05:48:02PM +0900, HATAYAMA Daisuke wrote:
+> >>Hello Vivek,
+> >>
+> >>Here is a patch set for mmap failure for /proc/vmcore.
+> >>Could you try to use this on the problematic system?
+> >>
+> >>This patch doesn't copy partial pages to the 2nd kernel, only prepares
+> >>vmcore objects for respective partial pages to invoke remap_pfn_range()
+> >>for individual partial pages.
+> >
+> >Hi Hatayama,
+> >
+> >Thanks for the patch. Ok, I see that partial pages will be put in a separate
+> >call to remap_oldmem_pfn_range() and this time it should succeed.
+> >
+> >I am wondering what do you think about your old approach of copying
+> >only relevant old memory to a new kernel page in new kernel. I kind
+> >of feel little uncomfortable with the idea of rounding down start
+> >and roudning up end to page size boundaries and then accessing the
+> >full page using oldmem interface. A safer approach might be to allocate
+> >page in new kernel, read *only* those bytes as reported by elf header
+> >and fill rest of the page with zeros.
+> >
+> >Thanks
+> >Vivek
+> >
+> 
+> Even if copying partial pages into the 2nd kernel, we need to use ioremap()
+> once on them, and I think the ioremap() is exactly similar to
+> remap_pfn_range() for a single page. There seems no difference on safeness
+> between them.
 
-Commit 0255d4918480 ("mm: Account for a THP NUMA hinting update as one
-PTE update") was added to account for the number of PTE updates when
-marking pages prot_numa.  task_numa_work was using the old return value
-to track how much address space had been updated.  Altering the return
-value causes the scanner to do more work than it is configured or
-documented to in a single unit of work.
+Hmm.., that's a good point. So anyway we will map the full page and read
+parts of it.
 
-This patch reverts that commit and accounts for the number of THP
-updates separately in vmstat.  It is up to the administrator to
-interpret the pair of values correctly.  This is a straight-forward
-operation and likely to only be of interest when actively debugging NUMA
-balancing problems.
+> 
+> Also, current /proc/vmcore shows user-land tools a shape with holes not
+> filled with zeros both in case of read() and in case of mmap(). If we adapt
+> copying one without reading data in holes, shape of /proc/vmcore gets
+> changed again.
 
-The impact of this patch is that the NUMA PTE scanner will scan slower
-when THP is enabled and workloads may converge slower as a result.  On
-the flip size system CPU usage should be lower than recent tests
-reported.  This is an illustrative example of a short single JVM specjbb
-test
+I will not be worried about this as contents of those holes are undefined.
+And if we replace undefined with zeros, it should not break any
+application.
 
-specjbb
-                       3.12.0                3.12.0
-                      vanilla      acctupdates
-TPut 1      26143.00 (  0.00%)     25747.00 ( -1.51%)
-TPut 7     185257.00 (  0.00%)    183202.00 ( -1.11%)
-TPut 13    329760.00 (  0.00%)    346577.00 (  5.10%)
-TPut 19    442502.00 (  0.00%)    460146.00 (  3.99%)
-TPut 25    540634.00 (  0.00%)    549053.00 (  1.56%)
-TPut 31    512098.00 (  0.00%)    519611.00 (  1.47%)
-TPut 37    461276.00 (  0.00%)    474973.00 (  2.97%)
-TPut 43    403089.00 (  0.00%)    414172.00 (  2.75%)
-
-              3.12.0      3.12.0
-             vanillaacctupdates
-User         5169.64     5184.14
-System        100.45       80.02
-Elapsed       252.75      251.85
-
-Performance is similar but note the reduction in system CPU time.  While
-this showed a performance gain, it will not be universal but at least
-it'll be behaving as documented.  The vmstats are obviously different but
-here is an obvious interpretation of them from mmtests.
-
-                                3.12.0      3.12.0
-                               vanillaacctupdates
-NUMA page range updates        1408326    11043064
-NUMA huge PMD updates                0       21040
-NUMA PTE updates               1408326      291624
-
-"NUMA page range updates" == nr_pte_updates and is the value returned to
-the NUMA pte scanner.  NUMA huge PMD updates were the number of THP
-updates which in combination can be used to calculate how many ptes were
-updated from userspace.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reported-by: Alex Thorlton <athorlton@sgi.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/vm_event_item.h | 1 +
- mm/mprotect.c                 | 7 ++++++-
- mm/vmstat.c                   | 1 +
- 3 files changed, 8 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-index 1855f0a..c557c6d 100644
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -39,6 +39,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- 		PAGEOUTRUN, ALLOCSTALL, PGROTATED,
- #ifdef CONFIG_NUMA_BALANCING
- 		NUMA_PTE_UPDATES,
-+		NUMA_HUGE_PTE_UPDATES,
- 		NUMA_HINT_FAULTS,
- 		NUMA_HINT_FAULTS_LOCAL,
- 		NUMA_PAGE_MIGRATE,
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 412ba2b..6c3f56f 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -138,6 +138,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 	pmd_t *pmd;
- 	unsigned long next;
- 	unsigned long pages = 0;
-+	unsigned long nr_huge_updates = 0;
- 	bool all_same_node;
- 
- 	pmd = pmd_offset(pud, addr);
-@@ -148,7 +149,8 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 				split_huge_page_pmd(vma, addr, pmd);
- 			else if (change_huge_pmd(vma, pmd, addr, newprot,
- 						 prot_numa)) {
--				pages++;
-+				pages += HPAGE_PMD_NR;
-+				nr_huge_updates++;
- 				continue;
- 			}
- 			/* fall through */
-@@ -168,6 +170,9 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 			change_pmd_protnuma(vma->vm_mm, addr, pmd);
- 	} while (pmd++, addr = next, addr != end);
- 
-+	if (nr_huge_updates)
-+		count_vm_numa_events(NUMA_HUGE_PTE_UPDATES, nr_huge_updates);
-+
- 	return pages;
- }
- 
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 9bb3145..5a442a7 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -812,6 +812,7 @@ const char * const vmstat_text[] = {
- 
- #ifdef CONFIG_NUMA_BALANCING
- 	"numa_pte_updates",
-+	"numa_huge_pte_updates",
- 	"numa_hint_faults",
- 	"numa_hint_faults_local",
- 	"numa_pages_migrated",
+Thanks
+Vivek
