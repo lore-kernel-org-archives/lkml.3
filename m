@@ -1,223 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516Ab3LCXCT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 18:02:19 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:51113 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755248Ab3LCXCQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 18:02:16 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        linux-pm@vger.kernel.org,
+	id S1755448Ab3LCXHO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 18:07:14 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:32958 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755099Ab3LCXHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 18:07:10 -0500
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kevin Hilman <khilman@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH 1/5] PM / Sleep: Add pm_generic functions to re-use runtime PM callbacks
-Date: Wed, 04 Dec 2013 00:15:13 +0100
-Message-ID: <5255487.U4HM7Lafsi@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1385566500-7666-2-git-send-email-ulf.hansson@linaro.org>
-References: <1385566500-7666-1-git-send-email-ulf.hansson@linaro.org> <1385566500-7666-2-git-send-email-ulf.hansson@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        David Howells <dhowells@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, keescook@chromium.org
+Subject: [PATCH v2 1/2] test: add minimal module for verification testing
+Date: Tue,  3 Dec 2013 15:06:26 -0800
+Message-Id: <1386111987-13073-2-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1386111987-13073-1-git-send-email-keescook@chromium.org>
+References: <1386111987-13073-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 27, 2013 04:34:56 PM Ulf Hansson wrote:
-> To put devices into low power state during sleep, it sometimes makes
-> sense at subsystem-level to re-use the runtime PM callbacks.
-> 
-> The PM core will at device_suspend_late disable runtime PM, after that
-> we can safely operate on these callbacks. At suspend_late the device
-> will be put into low power state by invoking the runtime_suspend
-> callbacks, unless the runtime status is already suspended. At
-> resume_early the state is restored by invoking the runtime_resume
-> callbacks. Soon after the PM core will re-enable runtime PM before
-> returning from device_resume_early.
-> 
-> The new pm_generic functions are named pm_generic_suspend_late_runtime
-> and pm_generic_resume_early_runtime, they are supposed to be used in
-> pairs.
-> 
-> Do note that these new generic callbacks will work smothly even with
-> and without CONFIG_PM_RUNTIME, as long as the runtime PM callbacks are
-> implemented inside CONFIG_PM instead of CONFIG_PM_RUNTIME.
-> 
-> A special thanks to Alan Stern who came up with this idea.
-> 
-> Cc: Kevin Hilman <khilman@linaro.org>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
-> ---
->  drivers/base/power/generic_ops.c |   86 ++++++++++++++++++++++++++++++++++++++
->  include/linux/pm.h               |    2 +
->  2 files changed, 88 insertions(+)
-> 
-> diff --git a/drivers/base/power/generic_ops.c b/drivers/base/power/generic_ops.c
-> index 5ee030a..8e78ad1 100644
-> --- a/drivers/base/power/generic_ops.c
-> +++ b/drivers/base/power/generic_ops.c
-> @@ -93,6 +93,49 @@ int pm_generic_suspend_late(struct device *dev)
->  EXPORT_SYMBOL_GPL(pm_generic_suspend_late);
+When doing module loading verification tests (for example, with module
+singing, or LSM hooks), it is very handy to have a module that can be
+built on all systems under test, isn't auto-loaded at boot, and has
+no device or similar dependencies. This creates the "test_module.ko"
+module for that purpose, which only reports its load and unload to printk.
 
-After a bit of reconsideration it appears to me that the only benefit of that
-would be to make it possible for drivers to work around incomplete PM domains
-implementations.  Which would be of questionable value.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+v2:
+ - use pr_warn, better comment, add headers explicitly, move to lib/; akpm.
+---
+ lib/Kconfig.debug |   14 ++++++++++++++
+ lib/Makefile      |    1 +
+ lib/test_module.c |   33 +++++++++++++++++++++++++++++++++
+ 3 files changed, 48 insertions(+)
+ create mode 100644 lib/test_module.c
 
->  /**
-> + * pm_generic_suspend_late_runtime - Generic suspend_late callback for drivers
-> + * @dev: Device to suspend.
-> + * Use to invoke runtime_suspend callbacks at suspend_late.
-> + */
-> +int pm_generic_suspend_late_runtime(struct device *dev)
-> +{
-> +	int (*callback)(struct device *);
-> +	int ret = 0;
-> +
-> +	/*
-> +	 * PM core has disabled runtime PM in device_suspend_late, thus we can
-> +	 * safely check the device's runtime status and decide whether
-> +	 * additional actions are needed to put the device into low power state.
-> +	 * If so, we invoke the runtime_suspend callbacks.
-> +	 * For the !CONFIG_PM_RUNTIME case, pm_runtime_status_suspended() always
-> +	 * returns false and therefore the runtime_suspend callback will be
-> +	 * invoked.
-> +	 */
-> +	if (pm_runtime_status_suspended(dev))
-> +		return 0;
-> +
-> +	if (dev->pm_domain)
-> +		callback = dev->pm_domain->ops.runtime_suspend;
-
-First of all, for this to work you need to assume that the type/bus/class will
-not exercise hardware in any way by itself (or you can look at the PCI bus type
-for an example why it won't generally work otherwise), so you could simply skip
-the rest of this conditional.
-
-For the bus types you are concerned about (platform and AMBA) that actually is
-the case as far as I can say.
-
-> +	else if (dev->type && dev->type->pm)
-> +		callback = dev->type->pm->runtime_suspend;
-> +	else if (dev->class && dev->class->pm)
-> +		callback = dev->class->pm->runtime_suspend;
-> +	else if (dev->bus && dev->bus->pm)
-> +		callback = dev->bus->pm->runtime_suspend;
-> +	else
-> +		callback = NULL;
-> +
-> +	if (!callback && dev->driver && dev->driver->pm)
-> +		callback = dev->driver->pm->runtime_suspend;
-> +
-> +	if (callback)
-> +		ret = callback(dev);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(pm_generic_suspend_late_runtime);
-
-After that you're left with something like this:
-
-int prototype_suspend_late(struct device *dev)
-{
-	int (*callback)(struct device *);
-
-	if (pm_runtime_status_suspended(dev))
-		return 0;
-
-	if (dev->pm_domain)
-		callback = dev->pm_domain->ops.runtime_suspend;
-	else if (dev->driver && dev->driver->pm)
-		callback = dev->driver->pm->runtime_suspend;
-	else
-		callback = NULL;
-
-	return callback ? callback(dev) : 0;
-}
-
-Moreover, if a driver's .suspend_late is pointed to the above, it can be called
-in two ways.  The first way is via type/bus/class or the PM core itself which
-means that all PM handling at this stage is going to be done by
-prototype_suspend_late().  The other way is via a PM domain, in which case
-there may be some additional PM handling in the domain code in principle
-(before or after calling the driver's .suspend_late()).  However, in the
-latter case it generally wouldn't be OK to call PM domain's .runtime_suspend(),
-because that may interfere with the PM handling in its .suspend_late().  So
-again, this pretty much requires that the PM domain's .suspend_late pointer be
-NULL or point to a routine that simply executes the driver's callback and does
-noting in addition to that.
-
-Now, I suspect that if the driver's runtime_suspend callback is
-driver_runtime_suspend() and the PM domain's runtime_suspend callback is
-pm_domain_runtime_suspend(), the code you actually want to be executed at the
-"late suspend" stage will be
-
-	if (!pm_runtime_status_suspended(dev))
-		pm_domain_runtime_suspend()
-			driver_runtime_suspend()
-
-(where the assumption is that pm_domain_runtime_suspend() will call
-driver_runtime_suspend() for you).  Clearly, prototype_suspend_late() will lead
-to that effective result in the conditions in which it makes sense to use it.
-
-So, instead of pointing the driver's .suspend_late() to prototype_suspend_late(),
-why don't you point the .suspend_late of the *PM* *domain* to the following
-slightly modified version of that function:
-
-int pm_domain_simplified_suspend_late(struct device *dev)
-{
-	int (*callback)(struct device *) = NULL;
-
-	if (pm_runtime_status_suspended(dev))
-		return 0;
-
-	/* Try to execute our own .runtime_suspend() callback. */
-	if (dev->pm_domain)
-		callback = dev->pm_domain->ops.runtime_suspend;
-
-	if (WARN_ON(!callback) && dev->driver && dev->driver->pm)
-		callback = dev->driver->pm->runtime_suspend;
-
-	return callback ? callback(dev) : 0;
-}
-
-This will cause exactly the code you need to be executed too (with
-a fallback to direct execution of the driver's callback in broken
-cases where the PM domain's own .runtime_suspend() is not implemented),
-but in a much cleaner way (no going back to the code layer that has just
-called you etc.).  And you *can* point the PM domain's .suspend_late
-to this, because it has to be either empty of trivial if the
-prototype_suspend_late() above is supposed to work as the driver's
-.suspend_late() callback.
-
-So in my opinion, if you point the .suspend_late callback pointers of the
-PM domains in question to the pm_domain_simplified_suspend_late() above
-and their .resume_early callback pointers to the following function:
-
-int pm_domain_simplified_resume_early(struct device *dev)
-{
-	int (*callback)(struct device *) = NULL;
-
-	if (pm_runtime_status_suspended(dev))
-		return 0;
-
-	if (dev->pm_domain)
-		callback = dev->pm_domain->ops.runtime_resume;
-
-	if (WARN_ON(!callback) && dev->driver && dev->driver->pm)
-		callback = dev->driver->pm->runtime_resume;
-
-	return callback ? callback(dev) : 0;
-}
-
-it will solve your problems without that horrible jumping between code
-layers.
-
-Thanks,
-Rafael
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index db25707aa41b..81882335c625 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -1578,6 +1578,20 @@ config DMA_API_DEBUG
+ 	  This option causes a performance degredation.  Use only if you want
+ 	  to debug device drivers. If unsure, say N.
+ 
++config TEST_MODULE
++	tristate "Test module loading with 'hello world' module"
++	default n
++	depends on m
++	help
++	  This builds the "test_module" module that emits "Hello, world"
++	  on printk when loaded. It is designed to be used for basic
++	  evaluation of the module loading subsystem (for example when
++	  validating module verification). It lacks any extra dependencies,
++	  and will not normally be loaded by the system unless explicitly
++	  requested by name.
++
++	  If unsure, say N.
++
+ source "samples/Kconfig"
+ 
+ source "lib/Kconfig.kgdb"
+diff --git a/lib/Makefile b/lib/Makefile
+index a459c31e8c6b..b494b9af631c 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -31,6 +31,7 @@ obj-y += string_helpers.o
+ obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
+ obj-y += kstrtox.o
+ obj-$(CONFIG_TEST_KSTRTOX) += test-kstrtox.o
++obj-$(CONFIG_TEST_MODULE) += test_module.o
+ 
+ ifeq ($(CONFIG_DEBUG_KOBJECT),y)
+ CFLAGS_kobject.o += -DDEBUG
+diff --git a/lib/test_module.c b/lib/test_module.c
+new file mode 100644
+index 000000000000..6c207658bb19
+--- /dev/null
++++ b/lib/test_module.c
+@@ -0,0 +1,33 @@
++/*
++ * This module emits "Hello, world" on printk when loaded.
++ *
++ * It is designed to be used for basic evaluation of the module loading
++ * subsystem (for example when validating module signing/verification). It
++ * lacks any extra dependencies, and will not normally be loaded by the
++ * system unless explicitly requested by name.
++ */
++
++#define pr_fmt(fmt) "test_module: " fmt
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/printk.h>
++
++static int __init test_module_init(void)
++{
++	pr_warn("Hello, world\n");
++
++	return 0;
++}
++
++module_init(test_module_init);
++
++static void __exit test_module_exit(void)
++{
++	pr_warn("Goodbye\n");
++}
++
++module_exit(test_module_exit);
++
++MODULE_AUTHOR("Kees Cook <keescook@chromium.org>");
++MODULE_LICENSE("GPL");
+-- 
+1.7.9.5
 
