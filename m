@@ -1,94 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab3LCI4w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 03:56:52 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:34514 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752349Ab3LCI4v (ORCPT
+	id S1753762Ab3LCI46 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 03:56:58 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:54867 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752375Ab3LCI4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 03:56:51 -0500
-Message-ID: <529D9D14.9040109@metafoo.de>
-Date: Tue, 03 Dec 2013 09:57:56 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+	Tue, 3 Dec 2013 03:56:53 -0500
+X-Originating-IP: 50.43.14.201
+Date: Tue, 3 Dec 2013 00:56:46 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Joe Perches <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>
+Subject: Re: [PATCH] checkpatch: More comprehensive split strings warning
+Message-ID: <20131203085646.GA24252@leaf>
+References: <1386019438.2680.32.camel@joe-AO722>
+ <20131202213358.GA15802@jtriplet-mobl1>
+ <1386049457.15309.23.camel@joe-AO722>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, broonie@kernel.org,
-        alsa-devel@alsa-project.org
-Subject: Re: [alsa-devel] [PATCH 3/3] ASoC: ux500: Dynamically fill DAI driver
- data on probe
-References: <1386007222-10081-1-git-send-email-lee.jones@linaro.org> <1386007222-10081-3-git-send-email-lee.jones@linaro.org> <529CCD2F.3060206@metafoo.de> <20131203084026.GC11828@lee--X1>
-In-Reply-To: <20131203084026.GC11828@lee--X1>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386049457.15309.23.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2013 09:40 AM, Lee Jones wrote:
-> On Mon, 02 Dec 2013, Lars-Peter Clausen wrote:
->
->> On 12/02/2013 07:00 PM, Lee Jones wrote:
->> [...]
->>> +void ux500_msp_populate_dai_drv(struct snd_soc_dai_driver *ux500_msp_dai_drv)
->>> +{
->>> +	ux500_msp_dai_drv->probe                 = ux500_msp_dai_probe;
->>> +	ux500_msp_dai_drv->suspend               = NULL;
->>> +	ux500_msp_dai_drv->resume                = NULL;
->>> +	ux500_msp_dai_drv->playback.channels_min = UX500_MSP_MIN_CHANNELS;
->>> +	ux500_msp_dai_drv->playback.channels_max = UX500_MSP_MAX_CHANNELS;
->>> +	ux500_msp_dai_drv->playback.rates        = UX500_I2S_RATES;
->>> +	ux500_msp_dai_drv->playback.formats      = UX500_I2S_FORMATS;
->>> +	ux500_msp_dai_drv->capture.channels_min  = UX500_MSP_MIN_CHANNELS;
->>> +	ux500_msp_dai_drv->capture.channels_max  = UX500_MSP_MAX_CHANNELS;
->>> +	ux500_msp_dai_drv->capture.rates         = UX500_I2S_RATES;
->>> +	ux500_msp_dai_drv->capture.formats       = UX500_I2S_FORMATS;
->>> +	ux500_msp_dai_drv->ops                   = ux500_msp_dai_ops;
->>>   };
->>
->> You can just use the same static driver for all devices. No need to
->> dynamically allocate it.
->
-> How do you mean? Just create a 'static struct' instead?
+On Mon, Dec 02, 2013 at 09:44:17PM -0800, Joe Perches wrote:
+> The current checkpatch test for split strings does
+> not find several cases that should be found.
+> 
+> For instance:
+> 
+> diff --git a/drivers/net/wireless/iwlwifi/mvm/rs.c b/drivers/net/wireless/iwlwifi/mvm/rs.c
+> []
+> @@ -1868,7 +1865,8 @@ static void rs_rate_scale_perform(struct iwl_mvm *mvm,
+>  		/* Else poor success; go back to mode in "active" table */
+>  		} else {
+>  			IWL_DEBUG_RATE(mvm,
+> -				       "LQ: GOING BACK TO THE OLD TABLE suc=%d cur-tpt=%d old-tpt=%d\n",
+> +				       "GOING BACK TO THE OLD TABLE: SR %d "
+> +				       "cur-tpt %d old-tpt %d\n",
+>  				       window->success_ratio,
+>  				       window->average_tpt,
+>  				      lq_sta->last_tpt);
+> 
+> does not currently emit a warning.
+> 
+> Improve the test to find these cases.
+> 
+> Add more exceptions to reduce false positives for
+> assembly and octal/hex string constants.
 
-Yes.
+Nice choice of exceptions; that should work quite well.
 
-static struct snd_soc_dai_driver ux500_msp_dai_driver = {
-	...
-};
+> Signed-off-by: Joe Perches <joe@perches.com>
 
->
->>>   static const struct snd_soc_component_driver ux500_msp_component = {
->>> @@ -809,6 +742,7 @@ static const struct snd_soc_component_driver ux500_msp_component = {
->>>   static int ux500_msp_drv_probe(struct platform_device *pdev)
->>>   {
->>>   	struct ux500_msp_i2s_drvdata *drvdata;
->>> +	struct snd_soc_dai_driver *ux500_msp_dai_drv;
->>>   	int ret = 0;
->>>
->>>   	dev_dbg(&pdev->dev, "%s: Enter (pdev->name = %s).\n", __func__,
->>> @@ -863,8 +797,18 @@ static int ux500_msp_drv_probe(struct platform_device *pdev)
->>>   	}
->>>   	dev_set_drvdata(&pdev->dev, drvdata);
->>>
->>> +	ux500_msp_dai_drv = devm_kzalloc(&pdev->dev,
->>> +					 sizeof(*ux500_msp_dai_drv),
->>> +					 GFP_KERNEL);
->>> +	if (!ux500_msp_dai_drv) {
->>> +		ret = -ENOMEM;
->>> +		goto err_init_msp;
->>> +	}
->>> +
->>> +	ux500_msp_populate_dai_drv(ux500_msp_dai_drv);
->>> +
->>>   	ret = snd_soc_register_component(&pdev->dev, &ux500_msp_component,
->>> -					 &ux500_msp_dai_drv[drvdata->msp->id], 1);
->>> +					 ux500_msp_dai_drv, 1);
->>>   	if (ret < 0) {
->>>   		dev_err(&pdev->dev, "Error: %s: Failed to register MSP%d!\n",
->>>   			__func__, drvdata->msp->id);
->>>
->>
->
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
+>  scripts/checkpatch.pl | 12 ++++--------
+>  1 file changed, 4 insertions(+), 8 deletions(-)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 38be5d5..1d0d5ac 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -2049,16 +2049,12 @@ sub process {
+>  		}
+>  
+>  # Check for user-visible strings broken across lines, which breaks the ability
+> -# to grep for the string.  Limited to strings used as parameters (those
+> -# following an open parenthesis), which almost completely eliminates false
+> -# positives, as well as warning only once per parameter rather than once per
+> -# line of the string.  Make an exception when the previous string ends in a
+> -# newline (multiple lines in one string constant) or \n\t (common in inline
+> -# assembly to indent the instruction on the following line).
+> +# to grep for the string.  Make exceptions when the previous string ends in a
+> +# newline (multiple lines in one string constant) or '\t', '\r', ';', or '{'
+> +# (common in inline assembly) or is a octal \123 or hexadecimal \xaf value
+>  		if ($line =~ /^\+\s*"/ &&
+>  		    $prevline =~ /"\s*$/ &&
+> -		    $prevline =~ /\(/ &&
+> -		    $prevrawline !~ /\\n(?:\\t)*"\s*$/) {
+> +		    $prevrawline !~ /(?:\\(?:[ntr]|[0-7]{1,3}|x[0-9a-fA-F]{1,2})|;\s*|\{\s*)"\s*$/) {
+>  			WARN("SPLIT_STRING",
+>  			     "quoted string split across lines\n" . $hereprev);
+>  		}
+> 
+> 
