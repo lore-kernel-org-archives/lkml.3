@@ -1,97 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab3LCJIJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 04:08:09 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:47675 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753224Ab3LCJHS (ORCPT
+	id S1753383Ab3LCJIu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 04:08:50 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:49191 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688Ab3LCJIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 04:07:18 -0500
-From: Alex Shi <alex.shi@linaro.org>
-To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, daniel.lezcano@linaro.org,
-        fweisbec@gmail.com, linux@arm.linux.org.uk, tony.luck@intel.com,
-        fenghua.yu@intel.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        arjan@linux.intel.com, pjt@google.com, fengguang.wu@intel.com
-Cc: james.hogan@imgtec.com, alex.shi@linaro.org, jason.low2@hp.com,
-        gregkh@linuxfoundation.org, hanjun.guo@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] sched: clean up cpu_load update
-Date: Tue,  3 Dec 2013 17:05:55 +0800
-Message-Id: <1386061556-28233-4-git-send-email-alex.shi@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1386061556-28233-1-git-send-email-alex.shi@linaro.org>
-References: <1386061556-28233-1-git-send-email-alex.shi@linaro.org>
+	Tue, 3 Dec 2013 04:08:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <529D9D43.6040101@ti.com>
+References: <1386059589-4030-1-git-send-email-marek.belisko@open-nandra.com>
+	<529D9D43.6040101@ti.com>
+Date: Tue, 3 Dec 2013 10:08:38 +0100
+Message-ID: <CAAfyv37Vie1vZK2XQ1cfVq6eVnSuaBLfykk6pU8fwEyqvPF4BA@mail.gmail.com>
+Subject: Re: [PATCH] omap: twl-common: Fix musb-hdrc device name.
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we don't decay the rq->cpu_load, so we don't need the
-pending_updates. But we still want update rq->rt_avg, so
-still keep rq->last_load_update_tick and func __update_cpu_load.
+Hi,
 
-After remove the load_idx, in the most of time the source_load is
-equal to target_load, except only when source cpu is idle. At that
-time we force set the cpu_load is 0(in update_cpu_load_nohz).
-So we still left cpu_load in rq.
+On Tue, Dec 3, 2013 at 9:58 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> Hi,
+>
+> On Tuesday 03 December 2013 02:03 PM, Marek Belisko wrote:
+>> Without this change when booting omap3 device (gta04) with board file
+>> leads to follwing errors:
+>>
+>> [    1.203308] musb-hdrc musb-hdrc.0.auto: unable to find phy
+>> [    1.209075] HS USB OTG: no transceiver configured
+>> [    1.214019] musb-hdrc musb-hdrc.0.auto: musb_init_controller failed with status -517
+>>
+>> and usb isn't working.
+>>
+>> This is probably regression caused by commit: 6c27f939
+>
+> I think a better fix would be to have this merged..
+> https://lkml.org/lkml/2013/7/26/91
+Yes I see but how this could help with current situation? Ho you then
+specify device number?
+This patch is fixing 3.13-rcx regression.
 
-Signed-off-by: Alex Shi <alex.shi@linaro.org>
----
- kernel/sched/proc.c | 11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+>>
+>> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+>> ---
+>>  arch/arm/mach-omap2/twl-common.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/mach-omap2/twl-common.c b/arch/arm/mach-omap2/twl-common.c
+>> index b0d54da..3640ce0 100644
+>> --- a/arch/arm/mach-omap2/twl-common.c
+>> +++ b/arch/arm/mach-omap2/twl-common.c
+>> @@ -92,7 +92,7 @@ void __init omap_pmic_late_init(void)
+>>
+>>  #if defined(CONFIG_ARCH_OMAP3)
+>>  struct phy_consumer consumers[] = {
+>> -     PHY_CONSUMER("musb-hdrc.0", "usb"),
+>> +     PHY_CONSUMER("musb-hdrc.0.auto", "usb"),
+>
+> the index '0' might vary for some boards leading it to again break musb.
+If you run grep for musb-hdrc :
+arch/arm/mach-omap2/board-3430sdp.c: usb_bind_phy("musb-hdrc.0.auto",
+0, "twl4030_usb");
+arch/arm/mach-omap2/board-devkit8000.c:
+usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+arch/arm/mach-omap2/board-overo.c: usb_bind_phy("musb-hdrc.0.auto", 0,
+"twl4030_usb");
+arch/arm/mach-omap2/board-omap3beagle.c:
+usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+arch/arm/mach-omap2/board-omap3touchbook.c:
+usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+arch/arm/mach-omap2/board-cm-t35.c: usb_bind_phy("musb-hdrc.0.auto",
+0, "twl4030_usb");
+arch/arm/mach-omap2/board-omap3stalker.c:
+usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+arch/arm/mach-omap2/board-omap3logic.c:
+usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+arch/arm/mach-omap2/board-2430sdp.c: usb_bind_phy("musb-hdrc.0.auto",
+0, "twl4030_usb");
+arch/arm/mach-omap2/board-ldp.c: usb_bind_phy("musb-hdrc.0.auto", 0,
+"twl4030_usb");
+arch/arm/mach-omap2/board-rx51.c: usb_bind_phy("musb-hdrc.0.auto", 0,
+"twl4030_usb");
+arch/arm/mach-omap2/board-omap3pandora.c:
+usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
 
-diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
-index a2435c5..057bb9b 100644
---- a/kernel/sched/proc.c
-+++ b/kernel/sched/proc.c
-@@ -404,8 +404,7 @@ static void calc_load_account_active(struct rq *this_rq)
-  * scheduler tick (TICK_NSEC). With tickless idle this will not be called
-  * every tick. We fix it up based on jiffies.
-  */
--static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
--			      unsigned long pending_updates)
-+static void __update_cpu_load(struct rq *this_rq, unsigned long this_load)
- {
- 	this_rq->nr_load_updates++;
- 
-@@ -449,7 +448,6 @@ void update_idle_cpu_load(struct rq *this_rq)
- {
- 	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
- 	unsigned long load = get_rq_runnable_load(this_rq);
--	unsigned long pending_updates;
- 
- 	/*
- 	 * bail if there's load or we're actually up-to-date.
-@@ -457,10 +455,9 @@ void update_idle_cpu_load(struct rq *this_rq)
- 	if (load || curr_jiffies == this_rq->last_load_update_tick)
- 		return;
- 
--	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
- 	this_rq->last_load_update_tick = curr_jiffies;
- 
--	__update_cpu_load(this_rq, load, pending_updates);
-+	__update_cpu_load(this_rq, load);
- }
- 
- /*
-@@ -483,7 +480,7 @@ void update_cpu_load_nohz(void)
- 		 * We were idle, this means load 0, the current load might be
- 		 * !0 due to remote wakeups and the sort.
- 		 */
--		__update_cpu_load(this_rq, 0, pending_updates);
-+		__update_cpu_load(this_rq, 0);
- 	}
- 	raw_spin_unlock(&this_rq->lock);
- }
-@@ -499,7 +496,7 @@ void update_cpu_load_active(struct rq *this_rq)
- 	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
- 	 */
- 	this_rq->last_load_update_tick = jiffies;
--	__update_cpu_load(this_rq, load, 1);
-+	__update_cpu_load(this_rq, load);
- 
- 	calc_load_account_active(this_rq);
- }
+Until mentioned patch isn't merged and PHY_CONSUMER isn't updated I
+think this is correct solution.
+>
+> Thanks
+> Kishon
+
+BR,
+
+marek
+
 -- 
-1.8.1.2
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
 
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
