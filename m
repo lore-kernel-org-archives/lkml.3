@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753197Ab3LCCux (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 21:50:53 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:60318 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752007Ab3LCCuv (ORCPT
+	id S1753344Ab3LCCwP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 21:52:15 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:53735 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228Ab3LCCwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 21:50:51 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <529D4705.1000100@roeck-us.net>
-Date: Mon, 02 Dec 2013 18:50:45 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Mon, 2 Dec 2013 21:52:14 -0500
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.4 00/60] 3.4.72-stable review
-References: <20131202190330.152596462@linuxfoundation.org>
-In-Reply-To: <20131202190330.152596462@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131202152329.GD22695@tassilo.jf.intel.com>
+References: <CABPqkBTiBHF4wZ3c_Czkh3JgvXGNWJW1LH42Jh4NG_ZJkGkbgw@mail.gmail.com>
+	<20131115063457.GB12442@gmail.com>
+	<CABPqkBQ2wD_knJP9FQxThSxNng4DZhtRxeUUAW0efAs9=jBXEA@mail.gmail.com>
+	<20131115103405.GA18264@gmail.com>
+	<20131117034134.GA19762@tassilo.jf.intel.com>
+	<20131129133340.GA25751@krava.brq.redhat.com>
+	<20131202152329.GD22695@tassilo.jf.intel.com>
+Date: Tue, 3 Dec 2013 03:52:13 +0100
+Message-ID: <CABPqkBQuY0VDKVhFGscAtK2vZjaSJQBCEtVCk4km-bKW85Zx-A@mail.gmail.com>
+Subject: Re: [BUG] perf stat: explicit grouping yields unexpected results
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2013 11:05 AM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.4.72 release.
-> There are 60 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+On Mon, Dec 2, 2013 at 4:23 PM, Andi Kleen <ak@linux.intel.com> wrote:
+>> Something like below? user space supply buffer for error string.
 >
-> Responses should be made by Wed Dec  4 19:01:45 UTC 2013.
-> Anything received after that time might be too late.
+> That would work, although I was thinking of making it a more
+> generic mechanism (store it into task_struct, have a extra
+> syscall to retrieve)
 >
-
-Build results:
-	total: 103 pass: 89 skipped: 10 fail: 4
-
-qemu tests all passed. Results are as expected.
-
-Guenter
+I don't understand why this need to be so complicated.
+Maybe just change the error code in case of group
+overcommitment? That way, the tool could distinguish
+and report the appropriate error message.
 
 
+>> jirka
+>>
+>>
+>> ---
+>> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+>> index e1802d6..a827870 100644
+>> --- a/include/uapi/linux/perf_event.h
+>> +++ b/include/uapi/linux/perf_event.h
+>> @@ -331,8 +331,8 @@ struct perf_event_attr {
+>>        */
+>>       __u32   sample_stack_user;
+>>
+>> -     /* Align to u64. */
+>> -     __u32   __reserved_2;
+>> +     __u32   errstr_size;
+>> +     char    *errstr;
+>>  };
+>>
+>>  #define perf_flags(attr)     (*(&(attr)->read_format + 1))
+>>
+>
+> --
+> ak@linux.intel.com -- Speaking for myself only
