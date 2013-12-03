@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab3LCOXw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 09:23:52 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:53986 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752920Ab3LCOXs (ORCPT
+	id S1754142Ab3LCOYG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 09:24:06 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:53000 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753429Ab3LCOYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 09:23:48 -0500
-Date: Tue, 3 Dec 2013 14:23:43 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, Mark Brown <mark.brown@linaro.org>
-Subject: Re: [PATCH] regulator: ab8500: delete non-devicetree probe path
-Message-ID: <20131203142343.GD28159@lee--X1>
-References: <1386079702-22821-1-git-send-email-linus.walleij@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1386079702-22821-1-git-send-email-linus.walleij@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 3 Dec 2013 09:24:00 -0500
+From: Linus Walleij <linus.walleij@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH] pinctrl: baytrail: lock IRQs when starting them
+Date: Tue,  3 Dec 2013 15:23:52 +0100
+Message-Id: <1386080632-24402-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 03 Dec 2013, Linus Walleij wrote:
+This uses the new API for tagging GPIO lines as in use by
+IRQs. This enforces a few semantic checks on how the underlying
+GPIO line is used.
 
-> The Ux500 platform has been converted to do device-tree only
-> boots, no longer supports platform data passing, so this
-> probe path is unused. Delete it, simplifying the driver a
-> whole lot.
-> 
-> Cc: Mark Brown <mark.brown@linaro.org>
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> I tried to also delete this boot path for the external regulators
-> in ab8500-ext.c, but it seems to not have been cleanly converted
-> to device tree yet, making it dependent on passing some platform
-> data still. Thus I cannot go down the path and delete all platform
-> data down to the point where (most of)
-> arch/arm/mach-ux500/board-mop500-regulator.[c|h] gets deleted,
-> but I can do this much.
-> ---
->  drivers/regulator/ab8500.c | 102 ++++-----------------------------------------
->  1 file changed, 8 insertions(+), 94 deletions(-)
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+I have no idea how to compile and test this, please help,
+I have high confidence in the patch though.
+---
+ drivers/pinctrl/pinctrl-baytrail.c | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
+diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
+index 1174ea86b6e9..7ad61c59f34a 100644
+--- a/drivers/pinctrl/pinctrl-baytrail.c
++++ b/drivers/pinctrl/pinctrl-baytrail.c
+@@ -372,11 +372,33 @@ static void byt_irq_mask(struct irq_data *d)
+ {
+ }
+ 
++static unsigned int lp_irq_startup(struct irq_data *d)
++{
++	struct byt_gpio *vg = irq_data_get_irq_handler_data(d);
++
++	if (gpio_lock_as_irq(&vg->chip, irqd_to_hwirq(d)))
++		dev_err(vg->chip.dev,
++			"unable to lock HW IRQ %lu for IRQ\n",
++			irqd_to_hwirq(d));
++	byt_irq_unmask(d);
++	return 0;
++}
++
++static void lp_irq_shutdown(struct irq_data *d)
++{
++	struct byt_gpio *vg = irq_data_get_irq_handler_data(d);
++
++	byt_irq_mask(d);
++	gpio_unlock_as_irq(&vg->chip, irqd_to_hwirq(d));
++}
++
+ static struct irq_chip byt_irqchip = {
+ 	.name = "BYT-GPIO",
+ 	.irq_mask = byt_irq_mask,
+ 	.irq_unmask = byt_irq_unmask,
+ 	.irq_set_type = byt_irq_type,
++	.irq_startup = byt_irq_startup,
++	.irq_shutdown = byt_irq_shutdown,
+ };
+ 
+ static void byt_gpio_irq_init_hw(struct byt_gpio *vg)
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.3.1
+
