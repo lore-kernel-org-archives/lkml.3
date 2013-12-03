@@ -1,114 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752372Ab3LCKW1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 05:22:27 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:36137 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438Ab3LCKWY (ORCPT
+	id S1752800Ab3LCKXl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 05:23:41 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:40736 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752593Ab3LCKXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 05:22:24 -0500
-Message-ID: <529DB092.8010307@linux.vnet.ibm.com>
-Date: Tue, 03 Dec 2013 15:51:06 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 3 Dec 2013 05:23:38 -0500
 MIME-Version: 1.0
-To: "mpe@ellerman.id.au" <michael@ozlabs.org>
-CC: mikey@neuling.org, michaele@au1.ibm.com, linux-kernel@vger.kernel.org,
-        eranian@google.com, linuxppc-dev@ozlabs.org,
-        sukadev@linux.vnet.ibm.com
-Subject: Re: [V3 01/10] perf: New conditional branch filter criteria in branch
- stack sampling
-References: <20131126060618.917ED2C00A9@ozlabs.org> <529474C7.9050005@linux.vnet.ibm.com>
-In-Reply-To: <529474C7.9050005@linux.vnet.ibm.com>
+In-Reply-To: <20131202110304.GB31626@lee--X1>
+References: <1385727565-25794-1-git-send-email-lee.jones@linaro.org>
+	<1385727565-25794-15-git-send-email-lee.jones@linaro.org>
+	<CACRpkdaWXBchz78Yby11VpveBDtn6FrmupS=cnNYhvHgFJsBUw@mail.gmail.com>
+	<20131202110304.GB31626@lee--X1>
+Date: Tue, 3 Dec 2013 11:23:35 +0100
+Message-ID: <CACRpkdb8=RRsNRKe4Nbefu2BJ4xHakmNjxFC1gwLea=bAmOz-A@mail.gmail.com>
+Subject: Re: [PATCH v3 14/36] mtd: st_spi_fsm: Add device-tree binding documentation
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        angus.clark@st.com,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120310-0260-0000-0000-00000409A3FA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2013 03:45 PM, Anshuman Khandual wrote:
-> On 11/26/2013 11:36 AM, mpe@ellerman.id.au wrote:
->> Ideally your commit subject would contain a verb, preferably in the present
->> tense.
+On Mon, Dec 2, 2013 at 12:03 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>> > +Optional properties:
+>> > +  - st,syscfg          : Phandle to boot-device system configuration registers
+>> > +  - st,boot-device-reg : Address of the aforementioned boot-device register(s)
+>> > +  - st,boot-device-spi : Expected boot-device value if booted via this device
+>> > +
+>> > +Example:
+>> > +       spifsm: spifsm@fe902000{
+>> > +               compatible         = "st,spi-fsm";
+>> > +               reg                =  <0xfe902000 0x1000>;
+>> > +               reg-names          = "spi-fsm";
+>> > +               pinctrl-0          = <&pinctrl_fsm>;
+>> > +               st,syscfg          = <&syscfg_rear>;
+>> > +               st,boot-device-reg = <0x958>;
+>> > +               st,boot-device-spi = <0x1a>;
 >>
->> I think simply "perf: Add PERF_SAMPLE_BRANCH_COND" would be clearer.
-> 
-> 
-> Sure, will change it.
-> 
+>> I don't think we should encode any register offsets whatsoever in device
+>> tree but maybe that's just me. (Yes, Stephen will beat me up about
+>> pin control single, but I consider that a special case.)
 >>
->> On Wed, 2013-16-10 at 06:56:48 UTC, Anshuman Khandual wrote:
->>> POWER8 PMU based BHRB supports filtering for conditional branches.
->>> This patch introduces new branch filter PERF_SAMPLE_BRANCH_COND which
->>> will extend the existing perf ABI. Other architectures can provide
->>> this functionality with either HW filtering support (if present) or
->>> with SW filtering of instructions.
->>>
->>> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
->>> Reviewed-by: Stephane Eranian <eranian@google.com>
->>> ---
->>>  include/uapi/linux/perf_event.h | 3 ++-
->>>  1 file changed, 2 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
->>> index 0b1df41..5da52b6 100644
->>> --- a/include/uapi/linux/perf_event.h
->>> +++ b/include/uapi/linux/perf_event.h
->>> @@ -160,8 +160,9 @@ enum perf_branch_sample_type {
->>>  	PERF_SAMPLE_BRANCH_ABORT_TX	= 1U << 7, /* transaction aborts */
->>>  	PERF_SAMPLE_BRANCH_IN_TX	= 1U << 8, /* in transaction */
->>>  	PERF_SAMPLE_BRANCH_NO_TX	= 1U << 9, /* not in transaction */
->>> +	PERF_SAMPLE_BRANCH_COND		= 1U << 10, /* conditional branches */
->>>  
->>> -	PERF_SAMPLE_BRANCH_MAX		= 1U << 10, /* non-ABI */
->>> +	PERF_SAMPLE_BRANCH_MAX		= 1U << 11, /* non-ABI */
->>>  };
->>
->> This no longer applies against Linus' tree, you'll need to rebase it.
-> 
-> Okay
+>> I would just put the last two things as #defines into the driver file(s)
+>> or - if it's related to other syscfg registers and varies with SoC incarnation,
+>> as a #define in a shared header for that syscfg thing.
+>
+> No can do. This isn't _this_ device's register offset, this is a
+> syscfg register offset which a) there is no driver to apply specific
+> register offsets to and b) are liable to change oversubsequent SoCs.
 
-Hey Michael,
+So it can be in <linux/mfd/my-sysconfig-regs.h> as
+a
 
-Looks like the patch still applies on top of Linus's tree. The modified patch with
-a new commit subject line can be found here.
+#define MY_SYSCON_V1_BOOT_DEV_REG 0x958
+#define MY_SYSCON_V1_BOOT_DEV_SPI 0x1a
 
-----------------------------------------------------------------------
->From d368096fc51a8da65f2d80ed5090d43cbc269f62 Mon Sep 17 00:00:00 2001
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Date: Mon, 22 Jul 2013 12:22:27 +0530
-Subject: [PATCH] perf: Add PERF_SAMPLE_BRANCH_COND
+The kernel should know which SoC is in use and
+act apropriately right?
 
-POWER8 PMU based BHRB supports filtering for conditional branches.
-This patch introduces new branch filter PERF_SAMPLE_BRANCH_COND which
-will extend the existing perf ABI. Other architectures can provide
-this functionality with either HW filtering support (if present) or
-with SW filtering of instructions.
+But indeed, what you're doing has been done before
+in drivers/regulator/anatop-regulator.c where some
+register offset is read in from the attribute
+"anatop-delay-reg-offset". So it may be that the DT people
+need to overrule me on this one :-)
 
-Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Reviewed-by: Stephane Eranian <eranian@google.com>
----
- include/uapi/linux/perf_event.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+I don't think we should hard-code knowledge of specific
+register locations into the device tree at all as that makes
+things very hard to debug.
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index e1802d6..e2d8b8b 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -163,8 +163,9 @@ enum perf_branch_sample_type {
- 	PERF_SAMPLE_BRANCH_ABORT_TX	= 1U << 7, /* transaction aborts */
- 	PERF_SAMPLE_BRANCH_IN_TX	= 1U << 8, /* in transaction */
- 	PERF_SAMPLE_BRANCH_NO_TX	= 1U << 9, /* not in transaction */
-+	PERF_SAMPLE_BRANCH_COND		= 1U << 10, /* conditional branches */
- 
--	PERF_SAMPLE_BRANCH_MAX		= 1U << 10, /* non-ABI */
-+	PERF_SAMPLE_BRANCH_MAX		= 1U << 11, /* non-ABI */
- };
- 
- #define PERF_SAMPLE_BRANCH_PLM_ALL \
--- 
-1.7.11.7
-
+Yours,
+Linus Walleij
