@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754634Ab3LCPEU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 10:04:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28413 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754421Ab3LCPEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 10:04:16 -0500
-Date: Tue, 3 Dec 2013 10:03:46 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>
-Subject: Re: [PATCH] vmcore: call remap_pfn_range() separately for respective
- partial pages
-Message-ID: <20131203150346.GC4251@redhat.com>
-References: <52970342.8090302@jp.fujitsu.com>
- <20131202152754.GC18642@redhat.com>
- <529D3158.2080603@jp.fujitsu.com>
+	id S1754501Ab3LCPFy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 10:05:54 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:60253 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753481Ab3LCPFt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 10:05:49 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: haver@linux.vnet.ibm.com
+Subject: Re: [PATCH 1/6] GenWQE PCI support, health monitoring and recovery
+Date: Tue, 3 Dec 2013 16:05:38 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        cody@linux.vnet.ibm.com, schwidefsky@de.ibm.com, utz.bacher@de.ibm.com,
+        mmarek@suse.cz, rmallon@gmail.com, jsvogt@de.ibm.com,
+        MIJUNG@de.ibm.com, cascardo@linux.vnet.ibm.com, michael@ibmra.de
+References: <1383741943-14609-1-git-send-email-haver@linux.vnet.ibm.com> <20131203143010.GB3521@kroah.com> <1386082011.29309.2.camel@oc7383187364.ibm.com>
+In-Reply-To: <1386082011.29309.2.camel@oc7383187364.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <529D3158.2080603@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312031605.38972.arnd@arndb.de>
+X-Provags-ID: V02:K0:ndWR9KSWGpHNrQZG7QBxgIEND/gSlMvDHBDj9sFBUdy
+ tUu1sFlitFR72nGQzMpnL5ll3i2aPY+ErFknKtUj1/hrGMACCn
+ 1YkqJk/YHEk9RQTQWcK1/dxFXAIcpDfcw7bn6VdQ9720KAlakf
+ dVYmcNfv1JoGOWt+Br3Pl+ty123LU3WNLMezeZxkSLGeqHzqKS
+ tsSTFrJ63rgsdkLgD/Wcx13M2Jnjgj+uj9V6ON9srhhD9AO1Ly
+ /WAlsz6JMbXg+N1ImcrM5vFHtevpbO416fWfg1pnQ0+DaCY2PP
+ natQmM5glwHKP0iMSDqSlL0vtFZgUI/3jolRaXWhexSBTnpc+q
+ zRSrdO3CFKEPoDUsNS6Q=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 10:18:16AM +0900, HATAYAMA Daisuke wrote:
-> (2013/12/03 0:27), Vivek Goyal wrote:
-> >On Thu, Nov 28, 2013 at 05:48:02PM +0900, HATAYAMA Daisuke wrote:
-> >>Hello Vivek,
-> >>
-> >>Here is a patch set for mmap failure for /proc/vmcore.
-> >>Could you try to use this on the problematic system?
-> >>
-> >>This patch doesn't copy partial pages to the 2nd kernel, only prepares
-> >>vmcore objects for respective partial pages to invoke remap_pfn_range()
-> >>for individual partial pages.
-> >
-> >Hi Hatayama,
-> >
-> >Thanks for the patch. Ok, I see that partial pages will be put in a separate
-> >call to remap_oldmem_pfn_range() and this time it should succeed.
-> >
-> >I am wondering what do you think about your old approach of copying
-> >only relevant old memory to a new kernel page in new kernel. I kind
-> >of feel little uncomfortable with the idea of rounding down start
-> >and roudning up end to page size boundaries and then accessing the
-> >full page using oldmem interface. A safer approach might be to allocate
-> >page in new kernel, read *only* those bytes as reported by elf header
-> >and fill rest of the page with zeros.
-> >
-> >Thanks
-> >Vivek
-> >
+On Tuesday 03 December 2013, Frank Haverkamp wrote:
+> Ohh, sorry __u64 of course:
 > 
-> Even if copying partial pages into the 2nd kernel, we need to use ioremap()
-> once on them, and I think the ioremap() is exactly similar to
-> remap_pfn_range() for a single page. There seems no difference on safeness
-> between them.
-
-Hmm.., that's a good point. So anyway we will map the full page and read
-parts of it.
-
+> /* common struct for chip image exchange */
+> struct genwqe_bitstream {
+>         __u64 data_addr;                /* pointer to image data */
+>         __u32 size;                     /* size of image file */
+>         __u32 crc;                      /* crc of this image */
+>         __u8  partition;                /* '0', '1', or 'v' */
+>         __u64 target_addr;              /* starting address in Flash */
+>         __u8  uid;                      /* 1=host/x=dram */
 > 
-> Also, current /proc/vmcore shows user-land tools a shape with holes not
-> filled with zeros both in case of read() and in case of mmap(). If we adapt
-> copying one without reading data in holes, shape of /proc/vmcore gets
-> changed again.
+>         __u64 slu_id;                   /* informational/sim: SluID */
+>         __u64 app_id;                   /* informational/sim: AppID */
+> 
+>         __u16 retc;                     /* returned from processing */
+>         __u16 attn;                     /* attention code from
+> processing */
+>         __u32 progress;                 /* progress code from processing
+> */
+> };
+> 
+> and than I do in my userspace application:
+> 
+>         load.data_addr = (unsigned long)buf;
+> 
+> Is that ok, or must I consider more?
+> 
 
-I will not be worried about this as contents of those holes are undefined.
-And if we replace undefined with zeros, it should not break any
-application.
+I haven't followed the recent discussions, jumping into the middle here:
+The structure above is not safe for a generic ioctl interface because it
+has different padding on x86-32 and x86-64, where __u64 has different
+alignment.
 
-Thanks
-Vivek
+You can try to avoid the implicit padding by sorting the members by size,
+by making some members larger or by adding explicit padding.
+
+	Arnd
