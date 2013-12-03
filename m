@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386Ab3LCWip (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 17:38:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54830 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755260Ab3LCWin (ORCPT
+	id S1755456Ab3LCWix (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 17:38:53 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:39939 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755260Ab3LCWiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 17:38:43 -0500
-Date: Tue, 3 Dec 2013 14:38:41 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] mm readahead: Fix the readahead fail in case of
- empty numa node
-Message-Id: <20131203143841.11b71e387dc1db3a8ab0974c@linux-foundation.org>
-In-Reply-To: <1386066977-17368-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-References: <1386066977-17368-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Dec 2013 17:38:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <529D9100.4070207@parallels.com>
+References: <1385989693-28788-1-git-send-email-vdavydov@parallels.com>
+	<20131202181501.GA5524@dhcp22.suse.cz>
+	<CAA6-i6rWsZNQmFY5L-=yc6TaTGyg4hP4qn9gMZVsu8wWJ=1ywg@mail.gmail.com>
+	<529CDDB3.3090301@parallels.com>
+	<CAA6-i6q+WooWMSbJwLS=ByVu=fgAQuep99iP7tAXiuLABu2gVA@mail.gmail.com>
+	<529D9100.4070207@parallels.com>
+Date: Wed, 4 Dec 2013 02:38:46 +0400
+Message-ID: <CAA6-i6q2viRkbjYOHcoiCHgvdfbfo-4j0k9gj9AA4SH1YToqVg@mail.gmail.com>
+Subject: Re: [PATCH] memcg: remove KMEM_ACCOUNTED_ACTIVATED
+From: Glauber Costa <glommer@gmail.com>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        cgroups@vger.kernel.org, devel@openvz.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  3 Dec 2013 16:06:17 +0530 Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
+>>> Hi, Glauber
 
-> On a cpu with an empty numa node,
+Hi.
 
-This makes no sense - numa nodes don't reside on CPUs.
+>
+> In memcg_update_kmem_limit() we do the whole process of limit
+> initialization under a mutex so the situation we need protection from in
+> tcp_update_limit() is impossible. BTW once set, the 'activated' flag is
+> never cleared and never checked alone, only along with the 'active'
+> flag, that's why I doubt we need it at all.
 
-I think you mean "on a CPU which resides on a memoryless NUMA node"?
+The updates are protected by a mutex, but the readers are not, and should not.
+So we can still be patching the readers, and the double-flag was
+initially used so
+we can make sure that both flags are only set after the static branches are in.
 
-> readahead fails because max_sane_readahead
-> returns zero. The reason is we look into number of inactive + free pages 
-> available on the current node.
-> 
-> The following patch tries to fix the behaviour by checking for potential
-> empty numa node cases.
-> The rationale for the patch is, readahead may be worth doing on a remote
-> node instead of incuring costly disk faults later.
-> 
-> I still feel we may have to sanitize the nr below, (for e.g., nr/8)
-> to avoid serious consequences of malicious application trying to do
-> a big readahead on a empty numa node causing unnecessary load on remote nodes.
-> ( or it may even be that current behaviour is right in not going ahead with
-> readahead to avoid the memory load on remote nodes).
-> 
+Note that one of the flags is set inside memcg_update_cache_sizes(). After that,
+we call static_key_slow_inc(). At this point, someone whose code is
+patched in could
+start accounting, but it shouldn't - because not all sites are patched in.
 
-I don't recall the rationale for the current code and of course we
-didn't document it.  It might be in the changelogs somewhere - could
-you please do the git digging and see if you can find out?
+So after the update is done, we set the other flag, and now everybody
+will start going
+through.
 
-I don't immediately see why readahead into a different node is
-considered a bad thing.
+Could you do something clever with just one flag? Probably yes. But I
+doubt it would
+be that much cleaner, this is just the way that patching sites work.
 
-> --- a/mm/readahead.c
-> +++ b/mm/readahead.c
-> @@ -243,8 +243,11 @@ int force_page_cache_readahead(struct address_space *mapping, struct file *filp,
->   */
->  unsigned long max_sane_readahead(unsigned long nr)
->  {
-> -	return min(nr, (node_page_state(numa_node_id(), NR_INACTIVE_FILE)
-> -		+ node_page_state(numa_node_id(), NR_FREE_PAGES)) / 2);
-> +	unsigned long numa_free_page;
-> +	numa_free_page = (node_page_state(numa_node_id(), NR_INACTIVE_FILE)
-> +			   + node_page_state(numa_node_id(), NR_FREE_PAGES));
-> +
-> +	return numa_free_page ? min(nr, numa_free_page / 2) : nr;
-
-Well even if this CPU's node has very little pagecache at all, what's
-wrong with permitting readahead?  We don't know that the new pagecache
-will be allocated exclusively from this CPU's node anyway.  All very
-odd.
-
-Whatever we do, we should leave behind some good code comments which
-explain the rationale(s), please.  Right now it's rather opaque.
+-- 
+E Mare, Libertas
