@@ -1,245 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab3LCXiI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 18:38:08 -0500
-Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:42375 "EHLO
-	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753015Ab3LCXiE (ORCPT
+	id S1755614Ab3LCXjG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 18:39:06 -0500
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:50493 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754494Ab3LCXix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 18:38:04 -0500
-X-Greylist: delayed 316 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Dec 2013 18:38:04 EST
-Message-Id: <20131203233252.318527534@linux.com>
+	Tue, 3 Dec 2013 18:38:53 -0500
+Message-Id: <20131203233245.411363890@linux.com>
 User-Agent: quilt/0.60-1
-Date: Tue, 03 Dec 2013 17:32:46 -0600
+Date: Tue, 03 Dec 2013 17:32:33 -0600
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 14/41] x86: Rename __this_cpu_xxx_# operations to raw_cpu_xxx_#
+Subject: [PATCH 01/41] mm: Replace __get_cpu_var uses with this_cpu_ptr
 References: <20131203233232.928771708@linux.com>
-Content-Disposition: inline; filename=x86_rename
+Content-Disposition: inline; filename=this_mm
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is required now since the core portion expects a different naming.
+Replace places where __get_cpu_var() is used for an address calculation
+with this_cpu_ptr().
 
-Change the names from __this_cpu_xxxx_# to raw_cpu_xxxx_#.
-
-Also changes the uses of the x86 percpu primitives in preempt.h.
-
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/arch/x86/include/asm/percpu.h
+Index: linux/lib/radix-tree.c
 ===================================================================
---- linux.orig/arch/x86/include/asm/percpu.h	2013-12-02 16:07:50.984600478 -0600
-+++ linux/arch/x86/include/asm/percpu.h	2013-12-02 16:07:50.984600478 -0600
-@@ -362,25 +362,25 @@ do {									\
-  */
- #define this_cpu_read_stable(var)	percpu_from_op("mov", var, "p" (&(var)))
+--- linux.orig/lib/radix-tree.c	2013-12-02 16:07:45.744746084 -0600
++++ linux/lib/radix-tree.c	2013-12-02 16:07:45.734746361 -0600
+@@ -221,7 +221,7 @@ radix_tree_node_alloc(struct radix_tree_
+ 		 * succeed in getting a node here (and never reach
+ 		 * kmem_cache_alloc)
+ 		 */
+-		rtp = &__get_cpu_var(radix_tree_preloads);
++		rtp = this_cpu_ptr(&radix_tree_preloads);
+ 		if (rtp->nr) {
+ 			ret = rtp->nodes[rtp->nr - 1];
+ 			rtp->nodes[rtp->nr - 1] = NULL;
+@@ -277,14 +277,14 @@ static int __radix_tree_preload(gfp_t gf
+ 	int ret = -ENOMEM;
  
--#define __this_cpu_read_1(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
--#define __this_cpu_read_2(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
--#define __this_cpu_read_4(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
--
--#define __this_cpu_write_1(pcp, val)	percpu_to_op("mov", (pcp), val)
--#define __this_cpu_write_2(pcp, val)	percpu_to_op("mov", (pcp), val)
--#define __this_cpu_write_4(pcp, val)	percpu_to_op("mov", (pcp), val)
--#define __this_cpu_add_1(pcp, val)	percpu_add_op((pcp), val)
--#define __this_cpu_add_2(pcp, val)	percpu_add_op((pcp), val)
--#define __this_cpu_add_4(pcp, val)	percpu_add_op((pcp), val)
--#define __this_cpu_and_1(pcp, val)	percpu_to_op("and", (pcp), val)
--#define __this_cpu_and_2(pcp, val)	percpu_to_op("and", (pcp), val)
--#define __this_cpu_and_4(pcp, val)	percpu_to_op("and", (pcp), val)
--#define __this_cpu_or_1(pcp, val)	percpu_to_op("or", (pcp), val)
--#define __this_cpu_or_2(pcp, val)	percpu_to_op("or", (pcp), val)
--#define __this_cpu_or_4(pcp, val)	percpu_to_op("or", (pcp), val)
--#define __this_cpu_xchg_1(pcp, val)	percpu_xchg_op(pcp, val)
--#define __this_cpu_xchg_2(pcp, val)	percpu_xchg_op(pcp, val)
--#define __this_cpu_xchg_4(pcp, val)	percpu_xchg_op(pcp, val)
-+#define raw_cpu_read_1(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
-+#define raw_cpu_read_2(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
-+#define raw_cpu_read_4(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
-+
-+#define raw_cpu_write_1(pcp, val)	percpu_to_op("mov", (pcp), val)
-+#define raw_cpu_write_2(pcp, val)	percpu_to_op("mov", (pcp), val)
-+#define raw_cpu_write_4(pcp, val)	percpu_to_op("mov", (pcp), val)
-+#define raw_cpu_add_1(pcp, val)		percpu_add_op((pcp), val)
-+#define raw_cpu_add_2(pcp, val)		percpu_add_op((pcp), val)
-+#define raw_cpu_add_4(pcp, val)		percpu_add_op((pcp), val)
-+#define raw_cpu_and_1(pcp, val)		percpu_to_op("and", (pcp), val)
-+#define raw_cpu_and_2(pcp, val)		percpu_to_op("and", (pcp), val)
-+#define raw_cpu_and_4(pcp, val)		percpu_to_op("and", (pcp), val)
-+#define raw_cpu_or_1(pcp, val)		percpu_to_op("or", (pcp), val)
-+#define raw_cpu_or_2(pcp, val)		percpu_to_op("or", (pcp), val)
-+#define raw_cpu_or_4(pcp, val)		percpu_to_op("or", (pcp), val)
-+#define raw_cpu_xchg_1(pcp, val)	percpu_xchg_op(pcp, val)
-+#define raw_cpu_xchg_2(pcp, val)	percpu_xchg_op(pcp, val)
-+#define raw_cpu_xchg_4(pcp, val)	percpu_xchg_op(pcp, val)
- 
- #define this_cpu_read_1(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
- #define this_cpu_read_2(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
-@@ -401,16 +401,16 @@ do {									\
- #define this_cpu_xchg_2(pcp, nval)	percpu_xchg_op(pcp, nval)
- #define this_cpu_xchg_4(pcp, nval)	percpu_xchg_op(pcp, nval)
- 
--#define __this_cpu_add_return_1(pcp, val) percpu_add_return_op(pcp, val)
--#define __this_cpu_add_return_2(pcp, val) percpu_add_return_op(pcp, val)
--#define __this_cpu_add_return_4(pcp, val) percpu_add_return_op(pcp, val)
--#define __this_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
--#define __this_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
--#define __this_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
--
--#define this_cpu_add_return_1(pcp, val)	percpu_add_return_op(pcp, val)
--#define this_cpu_add_return_2(pcp, val)	percpu_add_return_op(pcp, val)
--#define this_cpu_add_return_4(pcp, val)	percpu_add_return_op(pcp, val)
-+#define raw_cpu_add_return_1(pcp, val)		percpu_add_return_op(pcp, val)
-+#define raw_cpu_add_return_2(pcp, val)		percpu_add_return_op(pcp, val)
-+#define raw_cpu_add_return_4(pcp, val)		percpu_add_return_op(pcp, val)
-+#define raw_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define raw_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define raw_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+
-+#define this_cpu_add_return_1(pcp, val)		percpu_add_return_op(pcp, val)
-+#define this_cpu_add_return_2(pcp, val)		percpu_add_return_op(pcp, val)
-+#define this_cpu_add_return_4(pcp, val)		percpu_add_return_op(pcp, val)
- #define this_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
- #define this_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
- #define this_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-@@ -427,7 +427,7 @@ do {									\
- 	__ret;								\
- })
- 
--#define __this_cpu_cmpxchg_double_4	percpu_cmpxchg8b_double
-+#define raw_cpu_cmpxchg_double_4	percpu_cmpxchg8b_double
- #define this_cpu_cmpxchg_double_4	percpu_cmpxchg8b_double
- #endif /* CONFIG_X86_CMPXCHG64 */
- 
-@@ -436,22 +436,22 @@ do {									\
-  * 32 bit must fall back to generic operations.
-  */
- #ifdef CONFIG_X86_64
--#define __this_cpu_read_8(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
--#define __this_cpu_write_8(pcp, val)	percpu_to_op("mov", (pcp), val)
--#define __this_cpu_add_8(pcp, val)	percpu_add_op((pcp), val)
--#define __this_cpu_and_8(pcp, val)	percpu_to_op("and", (pcp), val)
--#define __this_cpu_or_8(pcp, val)	percpu_to_op("or", (pcp), val)
--#define __this_cpu_add_return_8(pcp, val) percpu_add_return_op(pcp, val)
--#define __this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
--#define __this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
--
--#define this_cpu_read_8(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
--#define this_cpu_write_8(pcp, val)	percpu_to_op("mov", (pcp), val)
--#define this_cpu_add_8(pcp, val)	percpu_add_op((pcp), val)
--#define this_cpu_and_8(pcp, val)	percpu_to_op("and", (pcp), val)
--#define this_cpu_or_8(pcp, val)		percpu_to_op("or", (pcp), val)
--#define this_cpu_add_return_8(pcp, val)	percpu_add_return_op(pcp, val)
--#define this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define raw_cpu_read_8(pcp)			percpu_from_op("mov", (pcp), "m"(pcp))
-+#define raw_cpu_write_8(pcp, val)		percpu_to_op("mov", (pcp), val)
-+#define raw_cpu_add_8(pcp, val)			percpu_add_op((pcp), val)
-+#define raw_cpu_and_8(pcp, val)			percpu_to_op("and", (pcp), val)
-+#define raw_cpu_or_8(pcp, val)			percpu_to_op("or", (pcp), val)
-+#define raw_cpu_add_return_8(pcp, val)		percpu_add_return_op(pcp, val)
-+#define raw_cpu_xchg_8(pcp, nval)		percpu_xchg_op(pcp, nval)
-+#define raw_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+
-+#define this_cpu_read_8(pcp)			percpu_from_op("mov", (pcp), "m"(pcp))
-+#define this_cpu_write_8(pcp, val)		percpu_to_op("mov", (pcp), val)
-+#define this_cpu_add_8(pcp, val)		percpu_add_op((pcp), val)
-+#define this_cpu_and_8(pcp, val)		percpu_to_op("and", (pcp), val)
-+#define this_cpu_or_8(pcp, val)			percpu_to_op("or", (pcp), val)
-+#define this_cpu_add_return_8(pcp, val)		percpu_add_return_op(pcp, val)
-+#define this_cpu_xchg_8(pcp, nval)		percpu_xchg_op(pcp, nval)
- #define this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
- 
- /*
-@@ -474,7 +474,7 @@ do {									\
- 	__ret;								\
- })
- 
--#define __this_cpu_cmpxchg_double_8	percpu_cmpxchg16b_double
-+#define raw_cpu_cmpxchg_double_8	percpu_cmpxchg16b_double
- #define this_cpu_cmpxchg_double_8	percpu_cmpxchg16b_double
- 
- #endif
-@@ -495,9 +495,9 @@ static __always_inline int x86_this_cpu_
- 	unsigned long __percpu *a = (unsigned long *)addr + nr / BITS_PER_LONG;
- 
- #ifdef CONFIG_X86_64
--	return ((1UL << (nr % BITS_PER_LONG)) & __this_cpu_read_8(*a)) != 0;
-+	return ((1UL << (nr % BITS_PER_LONG)) & raw_cpu_read_8(*a)) != 0;
- #else
--	return ((1UL << (nr % BITS_PER_LONG)) & __this_cpu_read_4(*a)) != 0;
-+	return ((1UL << (nr % BITS_PER_LONG)) & raw_cpu_read_4(*a)) != 0;
- #endif
- }
- 
-Index: linux/arch/x86/include/asm/preempt.h
+ 	preempt_disable();
+-	rtp = &__get_cpu_var(radix_tree_preloads);
++	rtp = this_cpu_ptr(&radix_tree_preloads);
+ 	while (rtp->nr < ARRAY_SIZE(rtp->nodes)) {
+ 		preempt_enable();
+ 		node = kmem_cache_alloc(radix_tree_node_cachep, gfp_mask);
+ 		if (node == NULL)
+ 			goto out;
+ 		preempt_disable();
+-		rtp = &__get_cpu_var(radix_tree_preloads);
++		rtp = this_cpu_ptr(&radix_tree_preloads);
+ 		if (rtp->nr < ARRAY_SIZE(rtp->nodes))
+ 			rtp->nodes[rtp->nr++] = node;
+ 		else
+Index: linux/mm/memcontrol.c
 ===================================================================
---- linux.orig/arch/x86/include/asm/preempt.h	2013-12-02 16:07:50.984600478 -0600
-+++ linux/arch/x86/include/asm/preempt.h	2013-12-02 16:07:50.984600478 -0600
-@@ -13,12 +13,12 @@ DECLARE_PER_CPU(int, __preempt_count);
+--- linux.orig/mm/memcontrol.c	2013-12-02 16:07:45.744746084 -0600
++++ linux/mm/memcontrol.c	2013-12-02 16:07:45.734746361 -0600
+@@ -2432,7 +2432,7 @@ static void drain_stock(struct memcg_sto
   */
- static __always_inline int preempt_count(void)
+ static void drain_local_stock(struct work_struct *dummy)
  {
--	return __this_cpu_read_4(__preempt_count) & ~PREEMPT_NEED_RESCHED;
-+	return raw_cpu_read_4(__preempt_count) & ~PREEMPT_NEED_RESCHED;
+-	struct memcg_stock_pcp *stock = &__get_cpu_var(memcg_stock);
++	struct memcg_stock_pcp *stock = this_cpu_ptr(&memcg_stock);
+ 	drain_stock(stock);
+ 	clear_bit(FLUSHING_CACHED_CHARGE, &stock->flags);
  }
+Index: linux/mm/memory-failure.c
+===================================================================
+--- linux.orig/mm/memory-failure.c	2013-12-02 16:07:45.744746084 -0600
++++ linux/mm/memory-failure.c	2013-12-02 16:07:45.734746361 -0600
+@@ -1286,7 +1286,7 @@ static void memory_failure_work_func(str
+ 	unsigned long proc_flags;
+ 	int gotten;
  
- static __always_inline void preempt_count_set(int pc)
- {
--	__this_cpu_write_4(__preempt_count, pc);
-+	raw_cpu_write_4(__preempt_count, pc);
- }
+-	mf_cpu = &__get_cpu_var(memory_failure_cpu);
++	mf_cpu = this_cpu_ptr(&memory_failure_cpu);
+ 	for (;;) {
+ 		spin_lock_irqsave(&mf_cpu->lock, proc_flags);
+ 		gotten = kfifo_get(&mf_cpu->fifo, &entry);
+Index: linux/mm/page-writeback.c
+===================================================================
+--- linux.orig/mm/page-writeback.c	2013-12-02 16:07:45.744746084 -0600
++++ linux/mm/page-writeback.c	2013-12-02 16:07:45.734746361 -0600
+@@ -1628,7 +1628,7 @@ void balance_dirty_pages_ratelimited(str
+ 	 * 1000+ tasks, all of them start dirtying pages at exactly the same
+ 	 * time, hence all honoured too large initial task->nr_dirtied_pause.
+ 	 */
+-	p =  &__get_cpu_var(bdp_ratelimits);
++	p =  this_cpu_ptr(&bdp_ratelimits);
+ 	if (unlikely(current->nr_dirtied >= ratelimit))
+ 		*p = 0;
+ 	else if (unlikely(*p >= ratelimit_pages)) {
+@@ -1640,7 +1640,7 @@ void balance_dirty_pages_ratelimited(str
+ 	 * short-lived tasks (eg. gcc invocations in a kernel build) escaping
+ 	 * the dirty throttling and livelock other long-run dirtiers.
+ 	 */
+-	p = &__get_cpu_var(dirty_throttle_leaks);
++	p = this_cpu_ptr(&dirty_throttle_leaks);
+ 	if (*p > 0 && current->nr_dirtied < ratelimit) {
+ 		unsigned long nr_pages_dirtied;
+ 		nr_pages_dirtied = min(*p, ratelimit - current->nr_dirtied);
+Index: linux/mm/swap.c
+===================================================================
+--- linux.orig/mm/swap.c	2013-12-02 16:07:45.744746084 -0600
++++ linux/mm/swap.c	2013-12-02 16:07:45.734746361 -0600
+@@ -409,7 +409,7 @@ void rotate_reclaimable_page(struct page
  
- /*
-@@ -47,17 +47,17 @@ static __always_inline void preempt_coun
+ 		page_cache_get(page);
+ 		local_irq_save(flags);
+-		pvec = &__get_cpu_var(lru_rotate_pvecs);
++		pvec = this_cpu_ptr(&lru_rotate_pvecs);
+ 		if (!pagevec_add(pvec, page))
+ 			pagevec_move_tail(pvec);
+ 		local_irq_restore(flags);
+Index: linux/mm/vmalloc.c
+===================================================================
+--- linux.orig/mm/vmalloc.c	2013-12-02 16:07:45.744746084 -0600
++++ linux/mm/vmalloc.c	2013-12-02 16:07:45.734746361 -0600
+@@ -1488,7 +1488,7 @@ void vfree(const void *addr)
+ 	if (!addr)
+ 		return;
+ 	if (unlikely(in_interrupt())) {
+-		struct vfree_deferred *p = &__get_cpu_var(vfree_deferred);
++		struct vfree_deferred *p = this_cpu_ptr(&vfree_deferred);
+ 		if (llist_add((struct llist_node *)addr, &p->list))
+ 			schedule_work(&p->wq);
+ 	} else
+Index: linux/mm/slub.c
+===================================================================
+--- linux.orig/mm/slub.c	2013-12-02 16:07:45.744746084 -0600
++++ linux/mm/slub.c	2013-12-02 16:07:45.734746361 -0600
+@@ -2175,7 +2175,7 @@ static inline void *new_slab_objects(str
  
- static __always_inline void set_preempt_need_resched(void)
- {
--	__this_cpu_and_4(__preempt_count, ~PREEMPT_NEED_RESCHED);
-+	raw_cpu_and_4(__preempt_count, ~PREEMPT_NEED_RESCHED);
- }
+ 	page = new_slab(s, flags, node);
+ 	if (page) {
+-		c = __this_cpu_ptr(s->cpu_slab);
++		c = raw_cpu_ptr(s->cpu_slab);
+ 		if (c->page)
+ 			flush_slab(s, c);
  
- static __always_inline void clear_preempt_need_resched(void)
- {
--	__this_cpu_or_4(__preempt_count, PREEMPT_NEED_RESCHED);
-+	raw_cpu_or_4(__preempt_count, PREEMPT_NEED_RESCHED);
- }
+@@ -2395,7 +2395,7 @@ redo:
+ 	 * and the retrieval of the tid.
+ 	 */
+ 	preempt_disable();
+-	c = __this_cpu_ptr(s->cpu_slab);
++	c = this_cpu_ptr(s->cpu_slab);
  
- static __always_inline bool test_preempt_need_resched(void)
- {
--	return !(__this_cpu_read_4(__preempt_count) & PREEMPT_NEED_RESCHED);
-+	return !(raw_cpu_read_4(__preempt_count) & PREEMPT_NEED_RESCHED);
- }
+ 	/*
+ 	 * The transaction ids are globally unique per cpu and per operation on
+@@ -2650,7 +2650,7 @@ redo:
+ 	 * during the cmpxchg then the free will succedd.
+ 	 */
+ 	preempt_disable();
+-	c = __this_cpu_ptr(s->cpu_slab);
++	c = this_cpu_ptr(s->cpu_slab);
  
- /*
-@@ -66,12 +66,12 @@ static __always_inline bool test_preempt
+ 	tid = c->tid;
+ 	preempt_enable();
+Index: linux/mm/vmstat.c
+===================================================================
+--- linux.orig/mm/vmstat.c	2013-12-02 16:07:45.744746084 -0600
++++ linux/mm/vmstat.c	2013-12-02 16:07:45.734746361 -0600
+@@ -502,7 +502,7 @@ static int refresh_cpu_vm_stats(void)
+ 			continue;
  
- static __always_inline void __preempt_count_add(int val)
- {
--	__this_cpu_add_4(__preempt_count, val);
-+	raw_cpu_add_4(__preempt_count, val);
- }
- 
- static __always_inline void __preempt_count_sub(int val)
- {
--	__this_cpu_add_4(__preempt_count, -val);
-+	raw_cpu_add_4(__preempt_count, -val);
- }
- 
- static __always_inline bool __preempt_count_dec_and_test(void)
-@@ -84,7 +84,7 @@ static __always_inline bool __preempt_co
-  */
- static __always_inline bool should_resched(void)
- {
--	return unlikely(!__this_cpu_read_4(__preempt_count));
-+	return unlikely(!raw_cpu_read_4(__preempt_count));
- }
- 
- #ifdef CONFIG_PREEMPT
+ 		if (__this_cpu_read(p->pcp.count)) {
+-			drain_zone_pages(zone, __this_cpu_ptr(&p->pcp));
++			drain_zone_pages(zone, this_cpu_ptr(&p->pcp));
+ 			changes++;
+ 		}
+ #endif
 
