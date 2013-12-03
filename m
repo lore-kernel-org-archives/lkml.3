@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169Ab3LCHPx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 02:15:53 -0500
+	id S1752333Ab3LCHP6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 02:15:58 -0500
 Received: from mga02.intel.com ([134.134.136.20]:2119 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751376Ab3LCHPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 02:15:48 -0500
+	id S1752197Ab3LCHPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 02:15:53 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,816,1378882800"; 
-   d="scan'208";a="445838738"
+   d="scan'208";a="445838770"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 5/7] perf tools: Retain symbol source file name to lookup source line numbers
-Date: Tue,  3 Dec 2013 09:23:08 +0200
-Message-Id: <1386055390-13757-6-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 6/7] perf tools: Do not need to read symbols for source line lookup
+Date: Tue,  3 Dec 2013 09:23:09 +0200
+Message-Id: <1386055390-13757-7-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1386055390-13757-1-git-send-email-adrian.hunter@intel.com>
 References: <1386055390-13757-1-git-send-email-adrian.hunter@intel.com>
@@ -28,78 +28,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, lookup of an ip's source file name
-and line number is done using the dso file name.
-Instead retain the file name used to lookup the
-dso's symbols and use that.
+When using libbfd to lookup source filename and line number,
+libbfd does not need the symbol table.  Removing the symbol
+table reading, doubles the speed of 'perf script' with the
+'srcline' option.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/dso.c     | 1 +
- tools/perf/util/dso.h     | 1 +
- tools/perf/util/srcline.c | 7 ++++++-
- tools/perf/util/symbol.c  | 2 ++
- 4 files changed, 10 insertions(+), 1 deletion(-)
+ tools/perf/util/srcline.c | 53 +----------------------------------------------
+ 1 file changed, 1 insertion(+), 52 deletions(-)
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 68aa55a..49da968 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -470,6 +470,7 @@ void dso__delete(struct dso *dso)
- 		free(dso->long_name);
- 	dso_cache__free(&dso->cache);
- 	dso__free_a2l(dso);
-+	free(dso->symsrc_filename);
- 	free(dso);
- }
- 
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index d8613dc..7142e52 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -78,6 +78,7 @@ struct dso {
- 	struct rb_root	 symbol_names[MAP__NR_TYPES];
- 	struct rb_root	 cache;
- 	void		 *a2l;
-+	char		 *symsrc_filename;
- 	enum dso_kernel_type	kernel;
- 	enum dso_swap_type	needs_swap;
- 	enum dso_binary_type	symtab_type;
 diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index 25b85b2..93795f9 100644
+index 93795f9..e09c9e0 100644
 --- a/tools/perf/util/srcline.c
 +++ b/tools/perf/util/srcline.c
-@@ -249,11 +249,16 @@ char *get_srcline(struct dso *dso, unsigned long addr)
- 	char *file = NULL;
- 	unsigned line = 0;
- 	char *srcline;
--	char *dso_name = dso->long_name;
-+	char *dso_name;
+@@ -29,54 +29,6 @@ struct a2l_data {
+ 	asymbol 	**syms;
+ };
  
- 	if (!dso->has_srcline)
- 		return SRCLINE_UNKNOWN;
+-static int bfd_error(const char *string)
+-{
+-	const char *errmsg;
+-
+-	errmsg = bfd_errmsg(bfd_get_error());
+-	fflush(stdout);
+-
+-	if (string)
+-		pr_debug("%s: %s\n", string, errmsg);
+-	else
+-		pr_debug("%s\n", errmsg);
+-
+-	return -1;
+-}
+-
+-static int slurp_symtab(bfd *abfd, struct a2l_data *a2l)
+-{
+-	long storage;
+-	long symcount;
+-	asymbol **syms;
+-	bfd_boolean dynamic = FALSE;
+-
+-	if ((bfd_get_file_flags(abfd) & HAS_SYMS) == 0)
+-		return bfd_error(bfd_get_filename(abfd));
+-
+-	storage = bfd_get_symtab_upper_bound(abfd);
+-	if (storage == 0L) {
+-		storage = bfd_get_dynamic_symtab_upper_bound(abfd);
+-		dynamic = TRUE;
+-	}
+-	if (storage < 0L)
+-		return bfd_error(bfd_get_filename(abfd));
+-
+-	syms = malloc(storage);
+-	if (dynamic)
+-		symcount = bfd_canonicalize_dynamic_symtab(abfd, syms);
+-	else
+-		symcount = bfd_canonicalize_symtab(abfd, syms);
+-
+-	if (symcount < 0) {
+-		free(syms);
+-		return bfd_error(bfd_get_filename(abfd));
+-	}
+-
+-	a2l->syms = syms;
+-	return 0;
+-}
+-
+ static void find_address_in_section(bfd *abfd, asection *section, void *data)
+ {
+ 	bfd_vma pc, vma;
+@@ -96,7 +48,7 @@ static void find_address_in_section(bfd *abfd, asection *section, void *data)
+ 	if (pc < vma || pc >= vma + size)
+ 		return;
  
-+	if (dso->symsrc_filename)
-+		dso_name = dso->symsrc_filename;
-+	else
-+		dso_name = dso->long_name;
-+
- 	if (dso_name[0] == '[')
+-	a2l->found = bfd_find_nearest_line(abfd, section, a2l->syms, pc - vma,
++	a2l->found = bfd_find_nearest_line(abfd, section, NULL, pc - vma,
+ 					   &a2l->filename, &a2l->funcname,
+ 					   &a2l->line);
+ }
+@@ -122,9 +74,6 @@ static struct a2l_data *addr2line_init(const char *path)
+ 	if (a2l->input == NULL)
  		goto out;
  
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 360eefe..de87dba 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1336,6 +1336,8 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 		if (!syms_ss && symsrc__has_symtab(ss)) {
- 			syms_ss = ss;
- 			next_slot = true;
-+			if (!dso->symsrc_filename)
-+				dso->symsrc_filename = strdup(name);
- 		}
+-	if (slurp_symtab(abfd, a2l))
+-		goto out;
+-
+ 	return a2l;
  
- 		if (!runtime_ss && symsrc__possibly_runtime(ss)) {
+ out:
 -- 
 1.7.11.7
 
