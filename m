@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab3LCRwY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 12:52:24 -0500
-Received: from 15.mo1.mail-out.ovh.net ([188.165.38.232]:41815 "EHLO
+	id S1754741Ab3LCRwh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 12:52:37 -0500
+Received: from 3.mo1.mail-out.ovh.net ([46.105.60.232]:51833 "EHLO
 	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754158Ab3LCRwV (ORCPT
+	with ESMTP id S1754264Ab3LCRwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 12:52:21 -0500
+	Tue, 3 Dec 2013 12:52:31 -0500
 From: Boris BREZILLON <b.brezillon@overkiz.com>
 To: Douglas Gilbert <dgilbert@interlog.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>,
@@ -16,13 +16,13 @@ To: Douglas Gilbert <dgilbert@interlog.com>,
 Cc: Grant Likely <grant.likely@linaro.org>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Boris BREZILLON <b.brezillon@overkiz.com>
-Subject: [PATCH v2 1/4] usb: ohci-at91: fix irq and iomem resource retrieval
-Date: Tue,  3 Dec 2013 18:51:53 +0100
-Message-Id: <1386093116-26387-2-git-send-email-b.brezillon@overkiz.com>
+Subject: [PATCH v2 2/4] usb: ohci-at91: replace request_mem_region + ioremap by devm_request_and_ioremap
+Date: Tue,  3 Dec 2013 18:51:54 +0100
+Message-Id: <1386093116-26387-3-git-send-email-b.brezillon@overkiz.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386093116-26387-1-git-send-email-b.brezillon@overkiz.com>
 References: <1386093116-26387-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 2007198059130878208
+X-Ovh-Tracer-Id: 2010012808897984769
 X-Ovh-Remote: 80.245.18.66 ()
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
@@ -36,66 +36,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using dt resources retrieval (interrupts and reg properties) there is
-no predefined order for these resources in the platform dev resources
-table.
-
-Retrieve resources using the platform_get_resource function instead of
-direct resource table entries to avoid resource type mismatch.
+Replace the request_mem_region + ioremap calls by the
+devm_request_and_ioremap call which does the same things but with device
+managed resources.
 
 Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com> 
 ---
- drivers/usb/host/ohci-at91.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ drivers/usb/host/ohci-at91.c |   24 +++++-------------------
+ 1 file changed, 5 insertions(+), 19 deletions(-)
 
 diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
-index 418444e..7aec6ca 100644
+index 7aec6ca..8528895 100644
 --- a/drivers/usb/host/ohci-at91.c
 +++ b/drivers/usb/host/ohci-at91.c
-@@ -136,23 +136,26 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
- 	struct ohci_hcd *ohci;
- 	int retval;
- 	struct usb_hcd *hcd = NULL;
-+	struct device *dev = &pdev->dev;
-+	struct resource *mem_r, *irq_r;
+@@ -157,24 +157,18 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
+ 	hcd->rsrc_start = mem_r->start;
+ 	hcd->rsrc_len = resource_size(mem_r);
  
--	if (pdev->num_resources != 2) {
--		pr_debug("hcd probe: invalid num_resources");
-+	mem_r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!mem_r) {
-+		dev_dbg(dev, "hcd probe: missing memory resource\n");
- 		return -ENODEV;
+-	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
+-		pr_debug("request_mem_region failed\n");
+-		retval = -EBUSY;
+-		goto err1;
+-	}
+-
+-	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
++	hcd->regs = devm_request_and_ioremap(dev, mem_r);
+ 	if (!hcd->regs) {
+-		pr_debug("ioremap failed\n");
++		dev_dbg(dev, "devm_request_and_ioremap failed\n");
+ 		retval = -EIO;
+-		goto err2;
++		goto err;
  	}
  
--	if ((pdev->resource[0].flags != IORESOURCE_MEM)
--			|| (pdev->resource[1].flags != IORESOURCE_IRQ)) {
--		pr_debug("hcd probe: invalid resource type\n");
-+	irq_r = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-+	if (!irq_r) {
-+		dev_dbg(dev, "hcd probe: missing irq resource\n");
- 		return -ENODEV;
+ 	iclk = clk_get(&pdev->dev, "ohci_clk");
+ 	if (IS_ERR(iclk)) {
+ 		dev_err(&pdev->dev, "failed to get ohci_clk\n");
+ 		retval = PTR_ERR(iclk);
+-		goto err3;
++		goto err;
  	}
+ 	fclk = clk_get(&pdev->dev, "uhpck");
+ 	if (IS_ERR(fclk)) {
+@@ -218,13 +212,7 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
+  err4:
+ 	clk_put(iclk);
  
- 	hcd = usb_create_hcd(driver, &pdev->dev, "at91");
- 	if (!hcd)
- 		return -ENOMEM;
--	hcd->rsrc_start = pdev->resource[0].start;
--	hcd->rsrc_len = resource_size(&pdev->resource[0]);
-+	hcd->rsrc_start = mem_r->start;
-+	hcd->rsrc_len = resource_size(mem_r);
+- err3:
+-	iounmap(hcd->regs);
+-
+- err2:
+-	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+-
+- err1:
++ err:
+ 	usb_put_hcd(hcd);
+ 	return retval;
+ }
+@@ -247,8 +235,6 @@ static void usb_hcd_at91_remove(struct usb_hcd *hcd,
+ {
+ 	usb_remove_hcd(hcd);
+ 	at91_stop_hc(pdev);
+-	iounmap(hcd->regs);
+-	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+ 	usb_put_hcd(hcd);
  
- 	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
- 		pr_debug("request_mem_region failed\n");
-@@ -199,7 +202,7 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
- 	ohci->num_ports = board->ports;
- 	at91_start_hc(pdev);
- 
--	retval = usb_add_hcd(hcd, pdev->resource[1].start, IRQF_SHARED);
-+	retval = usb_add_hcd(hcd, irq_r->start, IRQF_SHARED);
- 	if (retval == 0)
- 		return retval;
- 
+ 	if (IS_ENABLED(CONFIG_COMMON_CLK))
 -- 
 1.7.9.5
 
