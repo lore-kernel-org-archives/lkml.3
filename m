@@ -1,115 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347Ab3LCVzp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 16:55:45 -0500
-Received: from mail-oa0-f73.google.com ([209.85.219.73]:48966 "EHLO
-	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754592Ab3LCVzn (ORCPT
+	id S1755369Ab3LCV4l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 16:56:41 -0500
+Received: from mailout3.w2.samsung.com ([211.189.100.13]:29317 "EHLO
+	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754653Ab3LCV4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 16:55:43 -0500
-From: Ben Zhang <benzh@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Don Zickus <dzickus@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ben Zhang <benzh@chromium.org>
-Subject: [PATCH] watchdog: Add a sysctl to disable soft lockup detector
-Date: Tue,  3 Dec 2013 13:54:34 -0800
-Message-Id: <1386107674-15903-1-git-send-email-benzh@chromium.org>
-X-Mailer: git-send-email 1.8.4.1
+	Tue, 3 Dec 2013 16:56:39 -0500
+X-AuditID: cbfec37c-b7f9d6d000003434-c7-529e53965c04
+Message-id: <529E5393.1040401@samsung.com>
+Date: Tue, 03 Dec 2013 14:56:35 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH 3.4 00/60] 3.4.72-stable review
+References: <20131202190330.152596462@linuxfoundation.org>
+In-reply-to: <20131202190330.152596462@linuxfoundation.org>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.21.63]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9hP91pwfOCDO7P57aYs34Nm0Xz4vVs
+	Fpd3zWGz+PrTwWLBxkeMFo/63rI7sHnsnHWX3ePEjN8sHvvnrmH3+LxJLoAlissmJTUnsyy1
+	SN8ugSvjwLbLLAVHOCtubJjA2MC4h72LkZNDQsBE4uHaP1C2mMSFe+vZuhi5OIQEljFK3O66
+	B+X0Mkn8arrOAuFsZJS4/HkXG0gLr4CWxJVt3SwgNouAqkTn6ztgNpuAusTn1zvAxgoJyEk0
+	LVnNDGKLCkRIHF39jBWiV1Dix+R7YPUiAsESa78uZARZwCxwmFHi3P5rYEXCAsYSR35uZIIY
+	ZCVxcstroKEcHJwC1hL/t7mBhJkFzCQetaxjhrDlJTavecsMUa4s8efyKSaQcgkBRYntq60m
+	MIrMQrJ5FpLuWUi6FzAyr2IUKy1OLihOSk+tMNYrTswtLs1L10vOz93ECImZmh2M977aHGIU
+	4GBU4uFN4JwXJMSaWFZcmXuIUYKDWUmEd6sfUIg3JbGyKrUoP76oNCe1+BAjEwenVAPjRG4T
+	rWuJfxUWzrac9nL9bsOe7DlHmvXmSyUvrG0qCdwfWmSiqhDzQPTHJE71zKTF9ksZvxzfeKYx
+	pbH6ldiHc9+vnD0VIxFUdaj9rlWJ7KEENr77LN3nEr7eOfJhwfIHR9RXNF+rPiywXDhWa9rN
+	hFa1w7s+LheOeezTNY3zvPDuHRNErrR+VWIpzkg01GIuKk4EADEnSuh3AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This provides usermode a way to disable only the soft
-lockup detector while keeping the hard lockup detector
-running.
+On 12/02/2013 12:05 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.4.72 release.
+> There are 60 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Wed Dec  4 19:01:45 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.72-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-kernel.softlockup_detector_enable=1:
-This is the default. The soft lockup detector is enabled.
-When a soft lockup is detected, a warning message with
-debug info is printed. The kernel may be configured to
-panics in this case via the sysctl kernel.softlockup_panic.
+Patch applied cleanly
+compile and boot tests - passed
+dmesg regression testing - passed
 
-kernel.softlockup_detector_enable=0:
-The soft lockup detector is disabled. Warning message is
-not printed on soft lockup. The kernel does not panic on
-soft lockup regardless of the value of kernel.softlockup_panic.
-Note kernel.softlockup_detector_enable does not affect
-the hard lockup detector.
 
-Signed-off-by: Ben Zhang <benzh@chromium.org>
----
- include/linux/sched.h |  1 +
- kernel/sysctl.c       |  9 +++++++++
- kernel/watchdog.c     | 15 +++++++++++++++
- 3 files changed, 25 insertions(+)
+dmesgs look good. No regressions compared to the previous dmesgs for 
+this release. dmesg emerg, crit, alert, err are clean. No regressions in 
+warn.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 768b037..93ebec4 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -270,6 +270,7 @@ extern int proc_dowatchdog_thresh(struct ctl_table *table, int write,
- 				  void __user *buffer,
- 				  size_t *lenp, loff_t *ppos);
- extern unsigned int  softlockup_panic;
-+extern unsigned int  softlockup_detector_enable;
- void lockup_detector_init(void);
- #else
- static inline void touch_softlockup_watchdog(void)
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 34a6047..8ae1f36 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -840,6 +840,15 @@ static struct ctl_table kern_table[] = {
- 		.extra2		= &one,
- 	},
- 	{
-+		.procname	= "softlockup_detector_enable",
-+		.data		= &softlockup_detector_enable,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &zero,
-+		.extra2		= &one,
-+	},
-+	{
- 		.procname       = "nmi_watchdog",
- 		.data           = &watchdog_user_enabled,
- 		.maxlen         = sizeof (int),
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 4431610..b9594e6 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -80,6 +80,18 @@ static int __init softlockup_panic_setup(char *str)
- }
- __setup("softlockup_panic=", softlockup_panic_setup);
- 
-+unsigned int __read_mostly softlockup_detector_enable = 1;
-+
-+static int __init softlockup_detector_enable_setup(char *str)
-+{
-+	unsigned long res;
-+	if (kstrtoul(str, 0, &res))
-+		res = 1;
-+	softlockup_detector_enable = res;
-+	return 1;
-+}
-+__setup("softlockup_detector_enable=", softlockup_detector_enable_setup);
-+
- static int __init nowatchdog_setup(char *str)
- {
- 	watchdog_user_enabled = 0;
-@@ -293,6 +305,9 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
- 		return HRTIMER_RESTART;
- 	}
- 
-+	if (!softlockup_detector_enable)
-+		return HRTIMER_RESTART;
-+
- 	/* check for a softlockup
- 	 * This is done by making sure a high priority task is
- 	 * being scheduled.  The task touches the watchdog to
+Test systems
+
+     Samsung Series 9 900X4C Intel Corei5 (3.4 and later)
+     HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+     Dell OptiPlex 790 Intel(R) Core(TM) i5-2400
+
+-- Shuah
+
+
 -- 
-1.8.4.1
-
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
