@@ -1,156 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301Ab3LCJOI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 04:14:08 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:58441 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751268Ab3LCJOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 04:14:00 -0500
-X-IronPort-AV: E=Sophos;i="4.93,816,1378828800"; 
-   d="scan'208";a="9179320"
-Message-ID: <529D9E1C.8050008@cn.fujitsu.com>
-Date: Tue, 03 Dec 2013 17:02:20 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1752796Ab3LCJRI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 04:17:08 -0500
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:57543 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751964Ab3LCJRA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 04:17:00 -0500
+Date: Tue, 3 Dec 2013 10:16:55 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>, Pekka Enberg <penberg@iki.fi>,
+        "David S. Miller" <davem@davemloft.net>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
+Message-ID: <20131203091655.GB20179@gmail.com>
+References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>
-CC: Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: GPF in aio_migratepage
-References: <20131126032645.GA32301@redhat.com> <20131126060132.GA6400@redhat.com> <20131126071953.GE9244@kmo-pixel> <20131126152337.GL15489@kvack.org> <20131126155618.GA624@redhat.com>
-In-Reply-To: <20131126155618.GA624@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/03 17:08:52,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/03 17:13:53,
-	Serialize complete at 2013/12/03 17:13:53
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
-According to your analysis and the dump stack, it seems that it tried to migrate
-aio ring pages in the compact path, but the aio context(mapping->private_data) is
-invalid (not NULL), so only one case can cause this condition, aio ring file was
-left and not cleaned up in the fail path of ioctx_alloc.
 
-So please try the following patch, I think it can fix this issue.
+* Alexei Starovoitov <ast@plumgrid.com> wrote:
 
+> Hi All,
+> 
+> the following set of patches adds BPF support to trace filters.
+> 
+> Trace filters can be written in C and allow safe read-only access to 
+> any kernel data structure. Like systemtap but with safety guaranteed 
+> by kernel.
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- fs/aio.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Very cool! (Added various other folks who might be interested in this 
+to the Cc: list.)
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 08159ed..5255548 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -367,8 +367,10 @@ static int aio_setup_ring(struct kioctx *ctx)
- 	if (nr_pages > AIO_RING_PAGES) {
- 		ctx->ring_pages = kcalloc(nr_pages, sizeof(struct page *),
- 					  GFP_KERNEL);
--		if (!ctx->ring_pages)
-+		if (!ctx->ring_pages) {
-+			put_aio_ring_file(ctx);
- 			return -ENOMEM;
-+		}
- 	}
- 
- 	ctx->mmap_size = nr_pages * PAGE_SIZE;
--- 
-1.7.7
+I have one generic concern:
 
+It would be important to make it easy to extract loaded BPF code from 
+the kernel in source code equivalent form, which compiles to the same 
+BPF code.
 
+I.e. I think it would be fundamentally important to make sure that 
+this is all within the kernel's license domain, to make it very clear 
+there can be no 'binary only' BPF scripts.
 
-On 11/26/2013 11:56 PM, Dave Jones wrote:
+By up-loading BPF into a kernel the person loading it agrees to make 
+that code available to all users of that system who can access it, 
+under the same license as the kernel's code (or under a more 
+permissive license).
 
-> On Tue, Nov 26, 2013 at 10:23:37AM -0500, Benjamin LaHaise wrote:
->  > On Mon, Nov 25, 2013 at 11:19:53PM -0800, Kent Overstreet wrote:
->  > > On Tue, Nov 26, 2013 at 01:01:32AM -0500, Dave Jones wrote:
->  > > > On Mon, Nov 25, 2013 at 10:26:45PM -0500, Dave Jones wrote:
->  > > >  > Hi Kent,
->  > > >  > 
->  > > >  > I hit the GPF below on a tree based on 8e45099e029bb6b369b27d8d4920db8caff5ecce
->  > > >  > which has your commit e34ecee2ae791df674dfb466ce40692ca6218e43
->  > > >  > ("aio: Fix a trinity splat").  Is this another path your patch missed, or
->  > > >  > a completely different bug to what you were chasing ?
->  > > > 
->  > > > And here's another from a different path, this time on 32bit.
->  > 
->  > For Dave: what line is this bug on?  Is it the dereference of ctx when 
->  > doing spin_lock_irqsave(&ctx->completion_lock, flags); or is the 
->  > ctx->ring_pages[idx] = new; ?
-> 
->>From the 32bit trace:
-> 
->> EIP is at aio_migratepage+0xad/0x126
-> 
-> disasm of aio.o shows aio_migratepage at 0x6f5, which means we oopsed at 7a2...
-> 
-> 
-> 
->                         ctx->ring_pages[idx] = new;
->      79f:       8b 57 50                mov    0x50(%edi),%edx
->      7a2:       89 34 82                mov    %esi,(%edx,%eax,4)
->         raw_spin_unlock_irq(&lock->rlock);
-> 
-> which matches up with the Code: line.
-> 
-> So that's actually..
-> 
-> 	spin_unlock_irqrestore(&ctx->completion_lock, flags);
-> 
-> 
-> The 64bit trace looks a little funky due to gcc optimising and moving
-> things around, but I think it's the same thing except this time it's
-> in the lock acquire path instead of lock release.
-> 
->> aio_migratepage+0xa6/0x150
-> 
-> aio_migratepage is at 0x540, and at 0x5e6, we see...
-> 
->          */
->         spin_lock(&mapping->private_lock);
->         ctx = mapping->private_data;
->      5c3:       4d 8b ad a8 01 00 00    mov    0x1a8(%r13),%r13
->         if (ctx) {
->      5ca:       4d 85 ed                test   %r13,%r13
->      5cd:       0f 84 85 00 00 00       je     658 <aio_migratepage+0x118>
->                 pgoff_t idx;
->                 spin_lock_irqsave(&ctx->completion_lock, flags);
->      5d3:       49 8d 95 c8 02 00 00    lea    0x2c8(%r13),%rdx
->      5da:       48 89 d7                mov    %rdx,%rdi
->      5dd:       48 89 55 c8             mov    %rdx,-0x38(%rbp)
->      5e1:       e8 00 00 00 00          callq  5e6 <aio_migratepage+0xa6>
->                 migrate_page_copy(new, old);
->      5e6:       48 89 de                mov    %rbx,%rsi
->      5e9:       4c 89 e7                mov    %r12,%rdi
->          */
->         spin_lock(&mapping->private_lock);
->         ctx = mapping->private_data;
->         if (ctx) {
->                 pgoff_t idx;
->                 spin_lock_irqsave(&ctx->completion_lock, flags);
-> 
-> 
->  > Actually, is there easy way to reproduce this with Trinity?  I can have a 
->  > look if you point me in the right direction.
-> 
-> I've not found a simple reproducer recipe yet, working on it.
-> So far I've just been running it for an hour and waiting. If I can narrow down
-> the syscalls necessary I'll let you know.
->  
-> 	Dave
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+The last thing we want is people getting funny ideas and writing 
+drivers in BPF and hiding the code or making license claims over it 
+...
 
+I.e. we want to allow flexible plugins technologically, but make sure 
+people who run into such a plugin can modify and improve it under the 
+same license as they can modify and improve the kernel itself!
 
+[ People can still 'hide' their sekrit plugins if they want to, by not
+  distributing them to anyone who'd redistribute it widely. ]
+
+> The user can do:
+> cat bpf_program > /sys/kernel/debug/tracing/.../filter
+> if tracing event is either static or dynamic via kprobe_events.
+> 
+> The filter program may look like:
+> void filter(struct bpf_context *ctx)
+> {
+>         char devname[4] = "eth5";
+>         struct net_device *dev;
+>         struct sk_buff *skb = 0;
+> 
+>         dev = (struct net_device *)ctx->regs.si;
+>         if (bpf_memcmp(dev->name, devname, 4) == 0) {
+>                 char fmt[] = "skb %p dev %p eth5\n";
+>                 bpf_trace_printk(fmt, skb, dev, 0, 0);
+>         }
+> }
+> 
+> The kernel will do static analysis of bpf program to make sure that 
+> it cannot crash the kernel (doesn't have loops, valid 
+> memory/register accesses, etc). Then kernel will map bpf 
+> instructions to x86 instructions and let it run in the place of 
+> trace filter.
+> 
+> To demonstrate performance I did a synthetic test:
+>         dev = init_net.loopback_dev;
+>         do_gettimeofday(&start_tv);
+>         for (i = 0; i < 1000000; i++) {
+>                 struct sk_buff *skb;
+>                 skb = netdev_alloc_skb(dev, 128);
+>                 kfree_skb(skb);
+>         }
+>         do_gettimeofday(&end_tv);
+>         time = end_tv.tv_sec - start_tv.tv_sec;
+>         time *= USEC_PER_SEC;
+>         time += (long long)((long)end_tv.tv_usec - (long)start_tv.tv_usec);
+> 
+>         printk("1M skb alloc/free %lld (usecs)\n", time);
+> 
+> no tracing
+> [   33.450966] 1M skb alloc/free 145179 (usecs)
+> 
+> echo 1 > enable
+> [   97.186379] 1M skb alloc/free 240419 (usecs)
+> (tracing slows down kfree_skb() due to event_buffer_lock/buffer_unlock_commit)
+> 
+> echo 'name==eth5' > filter
+> [  139.644161] 1M skb alloc/free 302552 (usecs)
+> (running filter_match_preds() for every skb and discarding
+> event_buffer is even slower)
+> 
+> cat bpf_prog > filter
+> [  171.150566] 1M skb alloc/free 199463 (usecs)
+> (JITed bpf program is safely checking dev->name == eth5 and discarding)
+
+So, to do the math:
+
+   tracing               'all' overhead:   95 nsecs per event
+   tracing 'eth5 + old filter' overhead:  157 nsecs per event
+   tracing 'eth5 + BPF filter' overhead:   54 nsecs per event
+
+So via BPF and a fairly trivial filter, we are able to reduce tracing 
+overhead for real - while old-style filters.
+
+In addition to that we now also have arbitrary BPF scripts, full C 
+programs (or written in any other language from which BPF bytecode can 
+be generated) enabled.
+
+Seems like a massive win-win scenario to me ;-)
+
+> echo 0 > enable
+> [  258.073593] 1M skb alloc/free 144919 (usecs)
+> (tracing is disabled, performance is back to original)
+> 
+> The C program compiled into BPF and then JITed into x86 is faster 
+> than filter_match_preds() approach (199-145 msec vs 302-145 msec)
+> 
+> tracing+bpf is a tool for safe read-only access to variables without 
+> recompiling the kernel and without affecting running programs.
+> 
+> BPF filters can be written manually (see 
+> tools/bpf/trace/filter_ex1.c) or better compiled from restricted C 
+> via GCC or LLVM
+
+> Q: What is the difference between existing BPF and extended BPF?
+> A:
+> Existing BPF insn from uapi/linux/filter.h
+> struct sock_filter {
+>         __u16   code;   /* Actual filter code */
+>         __u8    jt;     /* Jump true */
+>         __u8    jf;     /* Jump false */
+>         __u32   k;      /* Generic multiuse field */
+> };
+> 
+> Extended BPF insn from linux/bpf.h
+> struct bpf_insn {
+>         __u8    code;    /* opcode */
+>         __u8    a_reg:4; /* dest register*/
+>         __u8    x_reg:4; /* source register */
+>         __s16   off;     /* signed offset */
+>         __s32   imm;     /* signed immediate constant */
+> };
+> 
+> opcode encoding is the same between old BPF and extended BPF.
+> Original BPF has two 32-bit registers.
+> Extended BPF has ten 64-bit registers.
+> That is the main difference.
+> 
+> Old BPF was using jt/jf fields for jump-insn only.
+> New BPF combines them into generic 'off' field for jump and non-jump insns.
+> k==imm field has the same meaning.
+
+This only affects the internal JIT representation, not the BPF byte 
+code, right?
+
+>  32 files changed, 3332 insertions(+), 24 deletions(-)
+
+Impressive!
+
+I'm wondering, will the new nftable code in works make use of the BPF 
+JIT as well, or is that a separate implementation?
+
+Thanks,
+
+	Ingo
