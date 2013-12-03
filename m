@@ -1,231 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab3LCNbq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 08:31:46 -0500
-Received: from pegase1.c-s.fr ([93.17.236.30]:43695 "EHLO mailhub1.si.c-s.fr"
+	id S1753412Ab3LCNdk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 08:33:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33654 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751041Ab3LCNbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 08:31:43 -0500
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Wim Van Sebroeck <wim@iguana.be>, <scottwood@freescale.com>,
-        Guenter Roeck <linux@roeck-us.net>
-CC: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v2] watchdog: mpc8xxx_wdt convert to watchdog core
-Message-Id: <20131203133140.5E9DF1A2BEA@localhost.localdomain>
-Date: Tue,  3 Dec 2013 14:31:40 +0100 (CET)
+	id S1751041Ab3LCNdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 08:33:39 -0500
+Message-ID: <529DDDAF.1000202@redhat.com>
+Date: Tue, 03 Dec 2013 14:33:35 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: linux-mm@kvack.org
+CC: linux-kernel@vger.kernel.org, dave.hansen@intel.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH v5] mm: add overcommit_kbytes sysctl variable
+References: <1382101019-23563-1-git-send-email-jmarchan@redhat.com> <1382101019-23563-2-git-send-email-jmarchan@redhat.com>
+In-Reply-To: <1382101019-23563-2-git-send-email-jmarchan@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert mpc8xxx_wdt.c to the new watchdog API.
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+Changes since v4:
+ - revert to my initial overcommit_kbytes design as it is more
+ consistent with current *_ratio/*_bytes implementation for other
+ variables.
 
-diff -ur a/drivers/watchdog/mpc8xxx_wdt.c b/drivers/watchdog/mpc8xxx_wdt.c
---- a/drivers/watchdog/mpc8xxx_wdt.c	2013-05-11 22:57:46.000000000 +0200
-+++ b/drivers/watchdog/mpc8xxx_wdt.c	2013-11-30 16:14:53.803495472 +0100
-@@ -72,53 +72,36 @@
-  * to 0
-  */
- static int prescale = 1;
--static unsigned int timeout_sec;
+Some applications that run on HPC clusters are designed around the
+availability of RAM and the overcommit ratio is fine tuned to get the
+maximum usage of memory without swapping. With growing memory, the
+1%-of-all-RAM grain provided by overcommit_ratio has become too coarse
+for these workload (on a 2TB machine it represents no less than
+20GB).
+
+This patch adds the new overcommit_kbytes sysctl variable that allow a
+much finer grain.
+
+Signed-of-by: Jerome Marchand <jmarchan@redhat.com>
+---
+ Documentation/sysctl/vm.txt            |   12 ++++++++++++
+ Documentation/vm/overcommit-accounting |    7 ++++---
+ include/linux/mm.h                     |    5 +++++
+ include/linux/mman.h                   |    1 +
+ kernel/sysctl.c                        |   10 +++++++++-
+ mm/mmap.c                              |   25 +++++++++++++++++++++++++
+ mm/nommu.c                             |    1 +
+ mm/util.c                              |   12 ++++++++++--
+ 8 files changed, 67 insertions(+), 6 deletions(-)
+
+diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+index 1fbd4eb..739c21e 100644
+--- a/Documentation/sysctl/vm.txt
++++ b/Documentation/sysctl/vm.txt
+@@ -47,6 +47,7 @@ Currently, these files are in /proc/sys/vm:
+ - numa_zonelist_order
+ - oom_dump_tasks
+ - oom_kill_allocating_task
++- overcommit_kbytes
+ - overcommit_memory
+ - overcommit_ratio
+ - page-cluster
+@@ -574,6 +575,17 @@ The default value is 0.
  
--static unsigned long wdt_is_open;
- static DEFINE_SPINLOCK(wdt_spinlock);
+ ==============================================================
  
--static void mpc8xxx_wdt_keepalive(void)
-+static int mpc8xxx_wdt_ping(struct watchdog_device *w)
- {
- 	/* Ping the WDT */
- 	spin_lock(&wdt_spinlock);
- 	out_be16(&wd_base->swsrr, 0x556c);
- 	out_be16(&wd_base->swsrr, 0xaa39);
- 	spin_unlock(&wdt_spinlock);
-+	return 0;
- }
- 
-+static struct watchdog_device mpc8xxx_wdt_dev;
- static void mpc8xxx_wdt_timer_ping(unsigned long arg);
--static DEFINE_TIMER(wdt_timer, mpc8xxx_wdt_timer_ping, 0, 0);
-+static DEFINE_TIMER(wdt_timer, mpc8xxx_wdt_timer_ping, 0,
-+		(unsigned long)&mpc8xxx_wdt_dev);
- 
- static void mpc8xxx_wdt_timer_ping(unsigned long arg)
- {
--	mpc8xxx_wdt_keepalive();
--	/* We're pinging it twice faster than needed, just to be sure. */
--	mod_timer(&wdt_timer, jiffies + HZ * timeout_sec / 2);
--}
-+	struct watchdog_device *w = (struct watchdog_device *)arg;
- 
--static void mpc8xxx_wdt_pr_warn(const char *msg)
--{
--	pr_crit("%s, expect the %s soon!\n", msg,
--		reset ? "reset" : "machine check exception");
--}
--
--static ssize_t mpc8xxx_wdt_write(struct file *file, const char __user *buf,
--				 size_t count, loff_t *ppos)
--{
--	if (count)
--		mpc8xxx_wdt_keepalive();
--	return count;
-+	mpc8xxx_wdt_ping(w);
-+	/* We're pinging it twice faster than needed, just to be sure. */
-+	mod_timer(&wdt_timer, jiffies + HZ * w->timeout / 2);
- }
- 
--static int mpc8xxx_wdt_open(struct inode *inode, struct file *file)
-+static int mpc8xxx_wdt_start(struct watchdog_device *w)
- {
- 	u32 tmp = SWCRR_SWEN;
--	if (test_and_set_bit(0, &wdt_is_open))
--		return -EBUSY;
--
--	/* Once we start the watchdog we can't stop it */
--	if (nowayout)
--		__module_get(THIS_MODULE);
- 
- 	/* Good, fire up the show */
- 	if (prescale)
-@@ -132,59 +115,31 @@
- 
- 	del_timer_sync(&wdt_timer);
- 
--	return nonseekable_open(inode, file);
-+	return 0;
- }
- 
--static int mpc8xxx_wdt_release(struct inode *inode, struct file *file)
-+static int mpc8xxx_wdt_stop(struct watchdog_device *w)
- {
--	if (!nowayout)
--		mpc8xxx_wdt_timer_ping(0);
--	else
--		mpc8xxx_wdt_pr_warn("watchdog closed");
--	clear_bit(0, &wdt_is_open);
-+	mod_timer(&wdt_timer, jiffies);
- 	return 0;
- }
- 
--static long mpc8xxx_wdt_ioctl(struct file *file, unsigned int cmd,
--							unsigned long arg)
--{
--	void __user *argp = (void __user *)arg;
--	int __user *p = argp;
--	static const struct watchdog_info ident = {
--		.options = WDIOF_KEEPALIVEPING,
--		.firmware_version = 1,
--		.identity = "MPC8xxx",
--	};
--
--	switch (cmd) {
--	case WDIOC_GETSUPPORT:
--		return copy_to_user(argp, &ident, sizeof(ident)) ? -EFAULT : 0;
--	case WDIOC_GETSTATUS:
--	case WDIOC_GETBOOTSTATUS:
--		return put_user(0, p);
--	case WDIOC_KEEPALIVE:
--		mpc8xxx_wdt_keepalive();
--		return 0;
--	case WDIOC_GETTIMEOUT:
--		return put_user(timeout_sec, p);
--	default:
--		return -ENOTTY;
--	}
--}
-+static struct watchdog_info mpc8xxx_wdt_info = {
-+	.options = WDIOF_KEEPALIVEPING,
-+	.firmware_version = 1,
-+	.identity = "MPC8xxx",
-+};
- 
--static const struct file_operations mpc8xxx_wdt_fops = {
--	.owner		= THIS_MODULE,
--	.llseek		= no_llseek,
--	.write		= mpc8xxx_wdt_write,
--	.unlocked_ioctl	= mpc8xxx_wdt_ioctl,
--	.open		= mpc8xxx_wdt_open,
--	.release	= mpc8xxx_wdt_release,
-+static struct watchdog_ops mpc8xxx_wdt_ops = {
-+	.owner = THIS_MODULE,
-+	.start = mpc8xxx_wdt_start,
-+	.ping = mpc8xxx_wdt_ping,
-+	.stop = mpc8xxx_wdt_stop,
- };
- 
--static struct miscdevice mpc8xxx_wdt_miscdev = {
--	.minor	= WATCHDOG_MINOR,
--	.name	= "watchdog",
--	.fops	= &mpc8xxx_wdt_fops,
-+static struct watchdog_device mpc8xxx_wdt_dev = {
-+	.info = &mpc8xxx_wdt_info,
-+	.ops = &mpc8xxx_wdt_ops,
- };
- 
- static const struct of_device_id mpc8xxx_wdt_match[];
-@@ -196,6 +151,7 @@
- 	const struct mpc8xxx_wdt_type *wdt_type;
- 	u32 freq = fsl_get_sys_freq();
- 	bool enabled;
-+	unsigned int timeout_sec;
- 
- 	match = of_match_device(mpc8xxx_wdt_match, &ofdev->dev);
- 	if (!match)
-@@ -222,6 +178,7 @@
- 	else
- 		timeout_sec = timeout / freq;
- 
-+	mpc8xxx_wdt_dev.timeout = timeout_sec;
- #ifdef MODULE
- 	ret = mpc8xxx_wdt_init_late();
- 	if (ret)
-@@ -237,7 +194,7 @@
- 	 * userspace handles it.
- 	 */
- 	if (enabled)
--		mpc8xxx_wdt_timer_ping(0);
-+		mod_timer(&wdt_timer, jiffies);
- 	return 0;
- err_unmap:
- 	iounmap(wd_base);
-@@ -247,9 +204,10 @@
- 
- static int mpc8xxx_wdt_remove(struct platform_device *ofdev)
- {
--	mpc8xxx_wdt_pr_warn("watchdog removed");
-+	pr_crit("Watchdog removed, expect the %s soon!\n",
-+		reset ? "reset" : "machine check exception");
- 	del_timer_sync(&wdt_timer);
--	misc_deregister(&mpc8xxx_wdt_miscdev);
-+	watchdog_unregister_device(&mpc8xxx_wdt_dev);
- 	iounmap(wd_base);
- 
- 	return 0;
-@@ -301,10 +259,11 @@
- 	if (!wd_base)
- 		return -ENODEV;
- 
--	ret = misc_register(&mpc8xxx_wdt_miscdev);
-+	watchdog_set_nowayout(&mpc8xxx_wdt_dev, nowayout);
++overcommit_kbytes:
 +
-+	ret = watchdog_register_device(&mpc8xxx_wdt_dev);
- 	if (ret) {
--		pr_err("cannot register miscdev on minor=%d (err=%d)\n",
--		       WATCHDOG_MINOR, ret);
-+		pr_err("cannot register watchdog device (err=%d)\n", ret);
- 		return ret;
- 	}
- 	return 0;
-diff -ur a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -1146,6 +1146,7 @@
- config 8xxx_WDT
- 	tristate "MPC8xxx Platform Watchdog Timer"
- 	depends on PPC_8xx || PPC_83xx || PPC_86xx
-+	select WATCHDOG_CORE
- 	help
- 	  This driver is for a SoC level watchdog that exists on some
- 	  Freescale PowerPC processors. So far this driver supports:
++When overcommit_memory is set to 2, the committed address space is not
++permitted to exceed swap plus this amount of physical RAM. See below.
++
++Note: overcommit_kbytes is the counterpart of overcommit_ratio. Only one
++of them may be specified at a time. Setting one disable the other (which
++then appears as 0 when read).
++
++==============================================================
++
+ overcommit_memory:
+ 
+ This value contains a flag that enables memory overcommitment.
+diff --git a/Documentation/vm/overcommit-accounting b/Documentation/vm/overcommit-accounting
+index 8eaa2fc..cbfaaa6 100644
+--- a/Documentation/vm/overcommit-accounting
++++ b/Documentation/vm/overcommit-accounting
+@@ -14,8 +14,8 @@ The Linux kernel supports the following overcommit handling modes
+ 
+ 2	-	Don't overcommit. The total address space commit
+ 		for the system is not permitted to exceed swap + a
+-		configurable percentage (default is 50) of physical RAM.
+-		Depending on the percentage you use, in most situations
++		configurable amount (default is 50%) of physical RAM.
++		Depending on the amount you use, in most situations
+ 		this means a process will not be killed while accessing
+ 		pages but will receive errors on memory allocation as
+ 		appropriate.
+@@ -26,7 +26,8 @@ The Linux kernel supports the following overcommit handling modes
+ 
+ The overcommit policy is set via the sysctl `vm.overcommit_memory'.
+ 
+-The overcommit percentage is set via `vm.overcommit_ratio'.
++The overcommit amount can be set via `vm.overcommit_ratio' (percentage)
++or `vm.overcommit_kbytes' (absolute value).
+ 
+ The current overcommit limit and amount committed are viewable in
+ /proc/meminfo as CommitLimit and Committed_AS respectively.
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 1cedd00..8f17978 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -57,6 +57,11 @@ extern int sysctl_legacy_va_layout;
+ extern unsigned long sysctl_user_reserve_kbytes;
+ extern unsigned long sysctl_admin_reserve_kbytes;
+ 
++extern int overcommit_ratio_handler(struct ctl_table *, int, void __user *,
++				    size_t *, loff_t *);
++extern int overcommit_kbytes_handler(struct ctl_table *, int, void __user *,
++				    size_t *, loff_t *);
++
+ #define nth_page(page,n) pfn_to_page(page_to_pfn((page)) + (n))
+ 
+ /* to align the pointer to the (next) page boundary */
+diff --git a/include/linux/mman.h b/include/linux/mman.h
+index 7f7f8da..16373c8 100644
+--- a/include/linux/mman.h
++++ b/include/linux/mman.h
+@@ -9,6 +9,7 @@
+ 
+ extern int sysctl_overcommit_memory;
+ extern int sysctl_overcommit_ratio;
++extern unsigned long sysctl_overcommit_kbytes;
+ extern struct percpu_counter vm_committed_as;
+ 
+ #ifdef CONFIG_SMP
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 34a6047..7877929 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -97,6 +97,7 @@
+ /* External variables not in a header file. */
+ extern int sysctl_overcommit_memory;
+ extern int sysctl_overcommit_ratio;
++extern unsigned long sysctl_overcommit_kbytes;
+ extern int max_threads;
+ extern int suid_dumpable;
+ #ifdef CONFIG_COREDUMP
+@@ -1128,7 +1129,14 @@ static struct ctl_table vm_table[] = {
+ 		.data		= &sysctl_overcommit_ratio,
+ 		.maxlen		= sizeof(sysctl_overcommit_ratio),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec,
++		.proc_handler	= overcommit_ratio_handler,
++	},
++	{
++		.procname	= "overcommit_kbytes",
++		.data		= &sysctl_overcommit_kbytes,
++		.maxlen		= sizeof(sysctl_overcommit_kbytes),
++		.mode		= 0644,
++		.proc_handler	= overcommit_kbytes_handler,
+ 	},
+ 	{
+ 		.procname	= "page-cluster", 
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 834b2d7..b25167d 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -86,6 +86,7 @@ EXPORT_SYMBOL(vm_get_page_prot);
+ 
+ int sysctl_overcommit_memory __read_mostly = OVERCOMMIT_GUESS;  /* heuristic overcommit */
+ int sysctl_overcommit_ratio __read_mostly = 50;	/* default is 50% */
++unsigned long sysctl_overcommit_kbytes __read_mostly = 0;
+ int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
+ unsigned long sysctl_user_reserve_kbytes __read_mostly = 1UL << 17; /* 128MB */
+ unsigned long sysctl_admin_reserve_kbytes __read_mostly = 1UL << 13; /* 8MB */
+@@ -95,6 +96,30 @@ unsigned long sysctl_admin_reserve_kbytes __read_mostly = 1UL << 13; /* 8MB */
+  */
+ struct percpu_counter vm_committed_as ____cacheline_aligned_in_smp;
+ 
++int overcommit_ratio_handler(struct ctl_table *table, int write,
++			     void __user *buffer, size_t *lenp,
++			     loff_t *ppos)
++{
++	int ret;
++
++	ret = proc_dointvec(table, write, buffer, lenp, ppos);
++	if (ret == 0 && write)
++		sysctl_overcommit_kbytes = 0;
++	return ret;
++}
++
++int overcommit_kbytes_handler(struct ctl_table *table, int write,
++			     void __user *buffer, size_t *lenp,
++			     loff_t *ppos)
++{
++	int ret;
++
++	ret = proc_doulongvec_minmax(table, write, buffer, lenp, ppos);
++	if (ret == 0 && write)
++		sysctl_overcommit_ratio = 0;
++	return ret;
++}
++
+ /*
+  * The global memory commitment made in the system can be a metric
+  * that can be used to drive ballooning decisions when Linux is hosted
+diff --git a/mm/nommu.c b/mm/nommu.c
+index fec093a..319ab8f 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -60,6 +60,7 @@ unsigned long highest_memmap_pfn;
+ struct percpu_counter vm_committed_as;
+ int sysctl_overcommit_memory = OVERCOMMIT_GUESS; /* heuristic overcommit */
+ int sysctl_overcommit_ratio = 50; /* default is 50% */
++unsigned long sysctl_overcommit_kbytes __read_mostly = 0;
+ int sysctl_max_map_count = DEFAULT_MAX_MAP_COUNT;
+ int sysctl_nr_trim_pages = CONFIG_NOMMU_INITIAL_TRIM_EXCESS;
+ unsigned long sysctl_user_reserve_kbytes __read_mostly = 1UL << 17; /* 128MB */
+diff --git a/mm/util.c b/mm/util.c
+index f7bc209..73cf802 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -406,8 +406,16 @@ struct address_space *page_mapping(struct page *page)
+  */
+ unsigned long vm_commit_limit(void)
+ {
+-	return ((totalram_pages - hugetlb_total_pages())
+-		* sysctl_overcommit_ratio / 100) + total_swap_pages;
++	unsigned long allowed;
++
++	if (sysctl_overcommit_kbytes)
++		allowed = sysctl_overcommit_kbytes >> (PAGE_SHIFT - 10);
++	else
++		allowed = ((totalram_pages - hugetlb_total_pages())
++			   * sysctl_overcommit_ratio / 100);
++	allowed += total_swap_pages;
++
++	return allowed;
+ }
+ 
+ 
+-- 
+1.7.7.6
+
+
+
