@@ -1,90 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab3LCGvM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 01:51:12 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:53028 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938Ab3LCGvI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 01:51:08 -0500
-X-AuditID: cbfee690-b7f676d00000310d-c0-529d7f5a03b9
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Daniel Lezcano'" <daniel.lezcano@linaro.org>
-Cc: "'Thomas Gleixner'" <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        "'Magnus Damm'" <damm@igel.co.jp>,
-        "'Paul Mundt'" <lethal@linux-sh.org>,
-        "'Simon Horman'" <horms+renesas@verge.net.au>,
-        "'Laurent Pinchart'" <laurent.pinchart+renesas@ideasonboard.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <000001ceeff3$e867a100$b936e300$%han@samsung.com>
-In-reply-to: <000001ceeff3$e867a100$b936e300$%han@samsung.com>
-Subject: [PATCH 2/2] clocksource: sh_mtu2: remove unnecessary
- platform_set_drvdata()
-Date: Tue, 03 Dec 2013 15:51:06 +0900
-Message-id: <000b01ceeff4$0a6d0a60$1f471f20$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7v8+f5y27PXVikS06wEXaGqjqG/gAABRaA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsVy+t8zY92o+rlBBksOmVhMmDSB0WLeZ1mL
-	C28/sFlcXniJ1WJi0x0Wi/1vf7JaXN41h81i86apzA4cHrM7ZrJ6ND6X8LhzbQ+bx7tz59g9
-	Tr8/xOrRt2UVo8ecn99YPD5vkgvgiOKySUnNySxLLdK3S+DKeNqQVdDFVrHh3ALGBsYm1i5G
-	Tg4JAROJh48ns0PYYhIX7q1n62Lk4hASWMYocfDADTaYoqbZ89khEosYJWae+ALl/GKU2PX+
-	BhNIFZuAmsSXL4fBRokIGEi8Pv0brIhZYBmTRPuRT0AOB1CHrcTxM9wgNZwCdhJXr/xhBLGF
-	BcIkrv28ygxiswioStz/tQZsMy9QedPhGywQtqDEj8n3wGxmAS2J9TuPM0HY8hKb17xlBhkv
-	IaAu8eivLsQJRhKnP+1lhygRkdj34h0jyDkSAp0cEgtnL2GH2CUg8W3yIRaIXlmJTQeYIR6W
-	lDi44gbLBEaJWUg2z0KyeRaSzbOQrFjAyLKKUTS1ILmgOCm9yESvODG3uDQvXS85P3cTIyTC
-	J+xgvHfA+hBjMtD6icxSosn5wASRVxJvaGxmZGFqYmpsZG5pRpqwkjiv2qOkICGB9MSS1OzU
-	1ILUovii0pzU4kOMTBycUg2MpiGrhdeYf59dePHg9eb5tQn23XJadV27lN6auLz3ihU5vG7i
-	5f2pZbkLl34S3vFvV+oWjc2elppbpk9ZGc/rrDohkrVft8gv7L/ymuNdGrwx4mZpKxm29D76
-	sPF7yOrVJkp3jSLFH/mHvrVe//jr98YPMRes1X74/v91eT233U5dThndLM4wJZbijERDLeai
-	4kQAN3MiwQYDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAKsWRmVeSWpSXmKPExsVy+t9jAd2o+rlBBp96DSwmTJrAaDHvs6zF
-	hbcf2CwuL7zEajGx6Q6Lxf63P1ktLu+aw2axedNUZgcOj9kdM1k9Gp9LeNy5tofN4925c+we
-	p98fYvXo27KK0WPOz28sHp83yQVwRDUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpa
-	WpgrKeQl5qbaKrn4BOi6ZeYAXaakUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAAN
-	JKxjzHjakFXQxVax4dwCxgbGJtYuRk4OCQETiabZ89khbDGJC/fWs3UxcnEICSxilJh54gs7
-	hPOLUWLX+xtMIFVsAmoSX74cBusQETCQeH36N1gRs8AyJon2I5+AHA6gDluJ42e4QWo4Bewk
-	rl75wwhiCwuESVz7eZUZxGYRUJW4/2sNG4jNC1TedPgGC4QtKPFj8j0wm1lAS2L9zuNMELa8
-	xOY1b5lBxksIqEs8+qsLcYKRxOlPe9khSkQk9r14xziBUWgWkkmzkEyahWTSLCQtCxhZVjGK
-	phYkFxQnpeca6RUn5haX5qXrJefnbmIEp49n0jsYVzVYHGIU4GBU4uF9sH1OkBBrYllxZe4h
-	RgkOZiUR3vnpc4OEeFMSK6tSi/Lji0pzUosPMSYDPTqRWUo0OR+Y2vJK4g2NTcyMLI3MLIxM
-	zM1JE1YS5z3Yah0oJJCeWJKanZpakFoEs4WJg1OqgXFlEIOk14y/nb3lT7v+ThZ78PzC44ds
-	UefaKu/UX1mSmDIh2q/vRtTdprNnDCPlWV81LvC1yGI3XXJ7936rDzaSq7uEOvx+T7bPPhO/
-	8XesUoZMv2GlrN2J1wo1a2dPqtmzZ/eMNSbV74xEsiVcJfYGzHt2c+6/b5+cPNfv3OZpmLfj
-	tfVN3RVKLMUZiYZazEXFiQB3pzA0YwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752887Ab3LCG4w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 01:56:52 -0500
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:28948
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751711Ab3LCG4t convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 01:56:49 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(z579ehz1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de097hz2dh109h2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2184h21a6h2216h22d0h2336hbe9i1155h)
+From: Li Xiubo <Li.Xiubo@freescale.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Shawn Guo <Shawn.Guo@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "t.figa@samsung.com" <t.figa@samsung.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "rob@landley.net" <rob@landley.net>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: RE: [PATCHv6 4/4] Documentation: Add device tree bindings for
+ Freescale FTM PWM.
+Thread-Topic: [PATCHv6 4/4] Documentation: Add device tree bindings for
+ Freescale FTM PWM.
+Thread-Index: AQHO304Oa+l5Yof+m0uL31eeJzu+Zpo7Q+4AgAblB9A=
+Date: Tue, 3 Dec 2013 06:56:44 +0000
+Message-ID: <1DD289F6464F0949A2FCA5AA6DC23F828E38BB@039-SN2MPN1-011.039d.mgd.msft.net>
+References: <1384220218-12716-1-git-send-email-Li.Xiubo@freescale.com>
+ <1384220218-12716-5-git-send-email-Li.Xiubo@freescale.com>
+ <20131128213159.GE14689@mithrandir>
+In-Reply-To: <20131128213159.GE14689@mithrandir>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.208.78]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver core clears the driver data to NULL after device_release
-or on probe failure. Thus, it is not needed to manually clear the
-device driver data to NULL.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-Acked-by: Simon Horman <horms+renesas@verge.net.au>
----
- drivers/clocksource/sh_mtu2.c |    1 -
- 1 file changed, 1 deletion(-)
+> > +    "ftm0" (module clock),
+> > +    "ftm0_counter" (counter clock),
+> > +- clocks : Must contain a clock specifier for each entry in
+> > +clock-names,
+> > +  See clock/clock-bindings.txt for details of the property values.
+> 
+> Note that the order is significant here, at least from the way the driver
+> currently implements this. You can probably make this more generic in the
+> driver by using of_property_match_string() on the clock-names property to
+> find the index of "ftm0_counter" and pass that index to the
+> of_parse_phandle_with_args() function to cope with the situation where the
+> device tree has the clocks in a different order.
+> 
 
-diff --git a/drivers/clocksource/sh_mtu2.c b/drivers/clocksource/sh_mtu2.c
-index 3cf1283..d8ed6e6 100644
---- a/drivers/clocksource/sh_mtu2.c
-+++ b/drivers/clocksource/sh_mtu2.c
-@@ -358,7 +358,6 @@ static int sh_mtu2_probe(struct platform_device *pdev)
- 	ret = sh_mtu2_setup(p, pdev);
- 	if (ret) {
- 		kfree(p);
--		platform_set_drvdata(pdev, NULL);
- 		pm_runtime_idle(&pdev->dev);
- 		return ret;
- 	}
--- 
-1.7.10.4
+Yes, this's much better. As this is still under discussing, I will improve
+about this after that.
+
+And I will also revise other as you have piontet out.
+
+--
+Best Regards,
 
 
