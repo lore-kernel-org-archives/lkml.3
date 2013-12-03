@@ -1,37 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584Ab3LCMQq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 07:16:46 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:37560 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753493Ab3LCMQo (ORCPT
+	id S1753624Ab3LCMSc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 07:18:32 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:35219 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752389Ab3LCMSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 07:16:44 -0500
-MIME-Version: 1.0
-In-Reply-To: <001d01ceefb3$733b8cb0$59b2a610$%han@samsung.com>
-References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
-	<001d01ceefb3$733b8cb0$59b2a610$%han@samsung.com>
-Date: Tue, 3 Dec 2013 13:16:43 +0100
-Message-ID: <CACRpkdYBiSSgpSvJAARK5uUwNqqVTNc_iqVs3=SXg4FWfoa1xw@mail.gmail.com>
-Subject: Re: [PATCH 08/39] gpio: remove DEFINE_PCI_DEVICE_TABLE macro
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Tue, 3 Dec 2013 07:18:30 -0500
+Date: Tue, 3 Dec 2013 21:18:27 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Magnus Damm <magnus.damm@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: [PATCH 03/03] pinctrl: sh-pfc: r7s72100 SCIF2 port4, 6 and 8
+ support
+Message-ID: <20131203121827.GE21976@verge.net.au>
+References: <20131127080606.18384.45103.sendpatchset@w520>
+ <20131127080640.18384.21957.sendpatchset@w520>
+ <CACRpkdZMLe-uGPY0psjC_6+kdJecAvnjddnJTMkMNzg43DooiA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZMLe-uGPY0psjC_6+kdJecAvnjddnJTMkMNzg43DooiA@mail.gmail.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 3, 2013 at 12:08 AM, Jingoo Han <jg1.han@samsung.com> wrote:
+On Tue, Dec 03, 2013 at 10:36:54AM +0100, Linus Walleij wrote:
+> On Wed, Nov 27, 2013 at 9:06 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
+> 
+> > From: Magnus Damm <damm@opensource.se>
+> >
+> > Add the remaining SCIF2 pins using the recently introduced macro.
+> >
+> > Signed-off-by: Magnus Damm <damm@opensource.se>
+> 
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> Laurent, please pick this into your stack for my tree.
+> 
+> I guess the pure DTS changes can go directly to Simon's tree?
 
-> Don't use DEFINE_PCI_DEVICE_TABLE macro, because this macro
-> is not preferred.
->
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-
-Patch applied to the GPIO tree.
-
-Yours,
-Linus Walleij
+Yes, I'll pick them up.
