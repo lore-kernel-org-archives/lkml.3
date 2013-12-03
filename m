@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015Ab3LCSDZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 13:03:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52732 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754219Ab3LCSDX (ORCPT
+	id S1754785Ab3LCSE6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 13:04:58 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:57399 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754238Ab3LCSEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 13:03:23 -0500
-Date: Tue, 3 Dec 2013 10:04:25 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Veaceslav Falico <vfalico@redhat.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Neil Horman <nhorman@tuxdriver.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zdenek Kabelac <zkabelac@redhat.com>
-Subject: Re: [PATCH 1/2] kobject: remove kset from sysfs immediately in
- kset_unregister()
-Message-ID: <20131203180425.GC15279@kroah.com>
-References: <20131008201915.19377.34185.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20131008202016.19377.17182.stgit@bhelgaas-glaptop.roam.corp.google.com>
+	Tue, 3 Dec 2013 13:04:55 -0500
+Date: Tue, 3 Dec 2013 18:04:30 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org
+Message-ID: <20131203180430.GI27568@sirena.org.uk>
+References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
+ <003001ceefb5$c418c600$4c4a5200$%han@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="48DfXVLS5QXSkCLu"
 Content-Disposition: inline
-In-Reply-To: <20131008202016.19377.17182.stgit@bhelgaas-glaptop.roam.corp.google.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <003001ceefb5$c418c600$4c4a5200$%han@samsung.com>
+X-Cookie: Boycott meat -- suck your thumb.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 27/39] spi: remove DEFINE_PCI_DEVICE_TABLE macro
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 02:20:16PM -0600, Bjorn Helgaas wrote:
-> There's no explicit "unlink from sysfs" interface for ksets, so I think
-> callers of kset_unregister() expect the kset to be removed from sysfs
-> immediately, without waiting for the last reference to be released.
-> 
-> This patch makes the sysfs removal happen immediately, so the caller may
-> create a new kset with the same name as soon as kset_unregister() returns.
-> 
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 
-With the PCI MSI attribute change, this patch is no longer needed,
-right?
+--48DfXVLS5QXSkCLu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-thanks,
+On Tue, Dec 03, 2013 at 08:25:19AM +0900, Jingoo Han wrote:
+> Don't use DEFINE_PCI_DEVICE_TABLE macro, because this macro
+> is not preferred.
 
-greg k-h
+Applied, thanks.  It's on a topic branch by itself so I can easily drop
+it if we decide to do something else.
 
-> ---
->  Documentation/kobject.txt |    3 ++-
->  lib/kobject.c             |    1 +
->  2 files changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/kobject.txt b/Documentation/kobject.txt
-> index c5182bb..8e8b501 100644
-> --- a/Documentation/kobject.txt
-> +++ b/Documentation/kobject.txt
-> @@ -342,7 +342,8 @@ kset use:
->  
->  When you are finished with the kset, call:
->    void kset_unregister(struct kset *kset);
-> -to destroy it.
-> +to destroy it.  This removes the kset from sysfs and, after the kset
-> +reference count goes to zero, releases it.
->  
->  An example of using a kset can be seen in the
->  samples/kobject/kset-example.c file in the kernel tree.
-> diff --git a/lib/kobject.c b/lib/kobject.c
-> index 9621751..9098992 100644
-> --- a/lib/kobject.c
-> +++ b/lib/kobject.c
-> @@ -753,6 +753,7 @@ void kset_unregister(struct kset *k)
->  {
->  	if (!k)
->  		return;
-> +	kobject_del(&k->kobj);
->  	kobject_put(&k->kobj);
->  }
->  
+--48DfXVLS5QXSkCLu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSnh0rAAoJELSic+t+oim9GC4P/Rw8raDhr206VlAvoJdTOCXR
+auyX6BQMhxgC4rBRUTH8SVXl8orVFzPFBnkeDvZHBFV5j+YbiG1CV7eJvJ5Eu2xu
+qcQAmvt0FNWvy3Gr39MfvMLI4rGoz1a0P8BI6A24/gDHNlntCcDJTgCSeNUUD1/U
+WXQqttCYJvS1HtEbIZhC/H4Ep065rNWrhscNC8J/dqCTrBmpU4Ufyivryly6FNgG
+M6OgPOB5O0Zab79R3YlkfLWQGudw8bdPzCaa4uaZjMmITnSax7xVivNEbo1rMyip
+chigavIra1pTLXlG3m4DV1EOwlSj3heF4Leg+N2bUquKsDsNp1lx8foCY7aQDPnS
+9zKYGJKd0QMr3uPiO/82BYn9s1ApfmdyG+VKaO6pq8BVJ9Tt2rRK8YvxUuYxBtBs
+cIShJs8in76GWq47EFq27exPko8rTbd1gkye38PKAv4+WZQOodU6zh7cCTF55Je1
+ps3UtwEUh7jplycHSaF3RyL/XW9e7k1NnbA9STblW1MOS/k6K1Uuub7CdmS+n7RK
+Okztb8KcgqIhmmrQmPu3sLW8VGH5DMEfakl7+tgL2q1UoCvGLfmjSUyTbmYxcxmW
+tR92v4ONCJqEUzJYrBP9akdcNe5JgtIr1cj3GhX2IjwfxZfk5NWVxowrjOm+erfb
+GENRPH1hYqYfxGO0jDV0
+=wXhR
+-----END PGP SIGNATURE-----
+
+--48DfXVLS5QXSkCLu--
