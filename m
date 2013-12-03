@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102Ab3LCP7f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 10:59:35 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:58102 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754164Ab3LCP7d (ORCPT
+	id S1755129Ab3LCQAS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 11:00:18 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:41878 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754545Ab3LCQAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 10:59:33 -0500
-Date: Tue, 3 Dec 2013 15:59:26 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] mfd/pinctrl: delete platform data header
-Message-ID: <20131203155926.GI28159@lee--X1>
-References: <1386082249-18958-1-git-send-email-linus.walleij@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1386082249-18958-1-git-send-email-linus.walleij@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 3 Dec 2013 11:00:14 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: rjw@rjwysocki.net, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xenproject.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: [PATCH] cpuidle: Check for dev before deregistering it.
+Date: Tue,  3 Dec 2013 10:59:58 -0500
+Message-Id: <1386086398-3686-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.3.1
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 03 Dec 2013, Linus Walleij wrote:
+If not, we could end up in the unfortunate situation where
+we dereference a NULL pointer b/c we have cpuidle disabled.
 
-> This deletes the special AB8500 GPIO platform data passing
-> header and merges the few remaining contents down into the
-> abx500 pinctrl driver which handles the abx500 GPIO device.
-> 
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> Lee, Sam: I'd like an ACK on this one too, for the same
-> reason as the previous patch.
-> ---
->  drivers/pinctrl/pinctrl-abx500.c       |  1 -
->  drivers/pinctrl/pinctrl-abx500.h       | 12 ++++++++++++
->  include/linux/mfd/abx500/ab8500-gpio.h | 23 -----------------------
->  3 files changed, 12 insertions(+), 24 deletions(-)
->  delete mode 100644 include/linux/mfd/abx500/ab8500-gpio.h
+This is the case when booting under Xen (which uses the
+ACPI P/C states but disables the CPU idle driver) - and can
+be easily reproduced when booting with cpuidle.off=1.
 
-Same caveat:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+BUG: unable to handle kernel NULL pointer dereference at           (null)
+IP: [<ffffffff8156db4a>] cpuidle_unregister_device+0x2a/0x90
+.. snip..
+Call Trace:
+ [<ffffffff813b15b4>] acpi_processor_power_exit+0x3c/0x5c
+ [<ffffffff813af0a9>] acpi_processor_stop+0x61/0xb6
+ [<ffffffff814215bf>] __device_release_driver+0fffff81421653>] device_release_driver+0x23/0x30
+ [<ffffffff81420ed8>] bus_remove_device+0x108/0x180
+ [<ffffffff8141d9d9>] device_del+0x129/0x1c0
+ [<ffffffff813cb4b0>] ? unregister_xenbus_watch+0x1f0/0x1f0
+ [<ffffffff8141da8e>] device_unregister+0x1e/0x60
+ [<ffffffff814243e9>] unregister_cpu+0x39/0x60
+ [<ffffffff81019e03>] arch_unregister_cpu+0x23/0x30
+ [<ffffffff813c3c51>] handle_vcpu_hotplug_event+0xc1/0xe0
+ [<ffffffff813cb4f5>] xenwatch_thread+0x45/0x120
+ [<ffffffff810af010>] ? abort_exclusive_wait+0xb0/0xb0
+ [<ffffffff8108ec42>] kthread+0xd2/0xf0
+ [<ffffffff8108eb70>] ? kthread_create_on_node+0x180/0x180
+ [<ffffffff816ce17c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff8108eb70>] ? kthread_create_on_node+0x180/0x180
 
+This problem also appears in 3.12 and could be a candidate for backport.
+
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: linux-pm@vger.kernel.org
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/cpuidle/cpuidle.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 2a991e4..a55e68f 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -400,7 +400,7 @@ EXPORT_SYMBOL_GPL(cpuidle_register_device);
+  */
+ void cpuidle_unregister_device(struct cpuidle_device *dev)
+ {
+-	if (dev->registered == 0)
++	if (!dev || dev->registered == 0)
+ 		return;
+ 
+ 	cpuidle_pause_and_lock();
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.3.1
+
