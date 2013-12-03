@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab3LCJIB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 04:08:01 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:46572 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237Ab3LCJH3 (ORCPT
+	id S1753367Ab3LCJIJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 04:08:09 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:47675 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753224Ab3LCJHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 04:07:29 -0500
+	Tue, 3 Dec 2013 04:07:18 -0500
 From: Alex Shi <alex.shi@linaro.org>
 To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com,
         vincent.guittot@linaro.org, daniel.lezcano@linaro.org,
@@ -16,9 +16,9 @@ To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com,
 Cc: james.hogan@imgtec.com, alex.shi@linaro.org, jason.low2@hp.com,
         gregkh@linuxfoundation.org, hanjun.guo@linaro.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] sched: bias to target cpu load to reduce task moving
-Date: Tue,  3 Dec 2013 17:05:56 +0800
-Message-Id: <1386061556-28233-5-git-send-email-alex.shi@linaro.org>
+Subject: [PATCH 3/4] sched: clean up cpu_load update
+Date: Tue,  3 Dec 2013 17:05:55 +0800
+Message-Id: <1386061556-28233-4-git-send-email-alex.shi@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1386061556-28233-1-git-send-email-alex.shi@linaro.org>
 References: <1386061556-28233-1-git-send-email-alex.shi@linaro.org>
@@ -26,92 +26,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Task migration happens when target just a bit less then source cpu load.
-To reduce such situation happens, aggravate the target cpu load with
-sd->imbalance_pct/100.
+Since we don't decay the rq->cpu_load, so we don't need the
+pending_updates. But we still want update rq->rt_avg, so
+still keep rq->last_load_update_tick and func __update_cpu_load.
 
-This patch removes the hackbench thread regression on Daniel's
-Intel Core2 server.
-
-a5d6e63		+patch1~3		+patch1~4
-hackbench -T -s 4096 -l 1000 -g 10 -f 40
-27.914"         38.694"			28.587"
-28.390"         38.341"			29.513"
-28.048"         38.626"			28.706"
+After remove the load_idx, in the most of time the source_load is
+equal to target_load, except only when source cpu is idle. At that
+time we force set the cpu_load is 0(in update_cpu_load_nohz).
+So we still left cpu_load in rq.
 
 Signed-off-by: Alex Shi <alex.shi@linaro.org>
 ---
- kernel/sched/fair.c | 18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
+ kernel/sched/proc.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index bccdd89..c49b7ba 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -978,7 +978,7 @@ static inline unsigned long group_weight(struct task_struct *p, int nid)
- 
- static unsigned long weighted_cpuload(const int cpu);
- static unsigned long source_load(int cpu);
--static unsigned long target_load(int cpu);
-+static unsigned long target_load(int cpu, int imbalance_pct);
- static unsigned long power_of(int cpu);
- static long effective_load(struct task_group *tg, int cpu, long wl, long wg);
- 
-@@ -3809,11 +3809,17 @@ static unsigned long source_load(int cpu)
-  * Return a high guess at the load of a migration-target cpu weighted
-  * according to the scheduling class and "nice" value.
+diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
+index a2435c5..057bb9b 100644
+--- a/kernel/sched/proc.c
++++ b/kernel/sched/proc.c
+@@ -404,8 +404,7 @@ static void calc_load_account_active(struct rq *this_rq)
+  * scheduler tick (TICK_NSEC). With tickless idle this will not be called
+  * every tick. We fix it up based on jiffies.
   */
--static unsigned long target_load(int cpu)
-+static unsigned long target_load(int cpu, int imbalance_pct)
+-static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+-			      unsigned long pending_updates)
++static void __update_cpu_load(struct rq *this_rq, unsigned long this_load)
  {
- 	struct rq *rq = cpu_rq(cpu);
- 	unsigned long total = weighted_cpuload(cpu);
+ 	this_rq->nr_load_updates++;
  
-+	/*
-+	 * without cpu_load decay, in most of time cpu_load is same as total
-+	 * so we need to make target a bit heavier to reduce task migration
-+	 */
-+	total = total * imbalance_pct / 100;
-+
- 	if (!sched_feat(LB_BIAS))
- 		return total;
- 
-@@ -4033,7 +4039,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 	this_cpu  = smp_processor_id();
- 	prev_cpu  = task_cpu(p);
- 	load	  = source_load(prev_cpu);
--	this_load = target_load(this_cpu);
-+	this_load = target_load(this_cpu, 100);
+@@ -449,7 +448,6 @@ void update_idle_cpu_load(struct rq *this_rq)
+ {
+ 	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+ 	unsigned long load = get_rq_runnable_load(this_rq);
+-	unsigned long pending_updates;
  
  	/*
- 	 * If sync wakeup then subtract the (maximum possible)
-@@ -4089,7 +4095,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ 	 * bail if there's load or we're actually up-to-date.
+@@ -457,10 +455,9 @@ void update_idle_cpu_load(struct rq *this_rq)
+ 	if (load || curr_jiffies == this_rq->last_load_update_tick)
+ 		return;
  
- 	if (balanced ||
- 	    (this_load <= load &&
--	     this_load + target_load(prev_cpu) <= tl_per_task)) {
-+	     this_load + target_load(prev_cpu, 100) <= tl_per_task)) {
- 		/*
- 		 * This domain has SD_WAKE_AFFINE and
- 		 * p is cache cold in this domain, and
-@@ -4135,7 +4141,7 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p, int this_cpu)
- 			if (local_group)
- 				load = source_load(i);
- 			else
--				load = target_load(i);
-+				load = target_load(i, sd->imbalance_pct);
+-	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
+ 	this_rq->last_load_update_tick = curr_jiffies;
  
- 			avg_load += load;
- 		}
-@@ -5478,7 +5484,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+-	__update_cpu_load(this_rq, load, pending_updates);
++	__update_cpu_load(this_rq, load);
+ }
  
- 		/* Bias balancing toward cpus of our domain */
- 		if (local_group)
--			load = target_load(i);
-+			load = target_load(i, env->sd->imbalance_pct);
- 		else
- 			load = source_load(i);
+ /*
+@@ -483,7 +480,7 @@ void update_cpu_load_nohz(void)
+ 		 * We were idle, this means load 0, the current load might be
+ 		 * !0 due to remote wakeups and the sort.
+ 		 */
+-		__update_cpu_load(this_rq, 0, pending_updates);
++		__update_cpu_load(this_rq, 0);
+ 	}
+ 	raw_spin_unlock(&this_rq->lock);
+ }
+@@ -499,7 +496,7 @@ void update_cpu_load_active(struct rq *this_rq)
+ 	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
+ 	 */
+ 	this_rq->last_load_update_tick = jiffies;
+-	__update_cpu_load(this_rq, load, 1);
++	__update_cpu_load(this_rq, load);
  
+ 	calc_load_account_active(this_rq);
+ }
 -- 
 1.8.1.2
 
