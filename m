@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887Ab3LCHRB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 02:17:01 -0500
-Received: from mga09.intel.com ([134.134.136.24]:44013 "EHLO mga09.intel.com"
+	id S1752938Ab3LCHRE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 02:17:04 -0500
+Received: from mga09.intel.com ([134.134.136.24]:32337 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751487Ab3LCHPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 02:15:41 -0500
+	id S1751403Ab3LCHPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 02:15:40 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,816,1378882800"; 
-   d="scan'208";a="445838700"
+   d="scan'208";a="445838578"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 4/7] perf tools: Retain bfd reference to lookup source line numbers
-Date: Tue,  3 Dec 2013 09:23:07 +0200
-Message-Id: <1386055390-13757-5-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 2/7] perf script: Add an option to print the source line number
+Date: Tue,  3 Dec 2013 09:23:05 +0200
+Message-Id: <1386055390-13757-3-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1386055390-13757-1-git-send-email-adrian.hunter@intel.com>
 References: <1386055390-13757-1-git-send-email-adrian.hunter@intel.com>
@@ -28,139 +28,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Closng and re-opening for every lookup when using
-libbfd to lookup source file name and line number
-is very very slow.  Instead keep the reference on
-struct dso.
+Add field 'srcline' that displays the source file name
+and line number associated with the sample ip.  The
+information displayed is the same as from addr2line.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/dso.c     |  1 +
- tools/perf/util/dso.h     |  3 +++
- tools/perf/util/srcline.c | 36 ++++++++++++++++++++++++++++++------
- 3 files changed, 34 insertions(+), 6 deletions(-)
+ tools/perf/Documentation/perf-script.txt |  2 +-
+ tools/perf/builtin-script.c              | 29 +++++++++++++++++++++++++++--
+ 2 files changed, 28 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index af4c687c..68aa55a 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -469,6 +469,7 @@ void dso__delete(struct dso *dso)
- 	if (dso->lname_alloc)
- 		free(dso->long_name);
- 	dso_cache__free(&dso->cache);
-+	dso__free_a2l(dso);
- 	free(dso);
- }
+diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
+index cfdbb1e..c2a5071 100644
+--- a/tools/perf/Documentation/perf-script.txt
++++ b/tools/perf/Documentation/perf-script.txt
+@@ -115,7 +115,7 @@ OPTIONS
+ -f::
+ --fields::
+         Comma separated list of fields to print. Options are:
+-        comm, tid, pid, time, cpu, event, trace, ip, sym, dso, addr, symoff.
++        comm, tid, pid, time, cpu, event, trace, ip, sym, dso, addr, symoff, srcline.
+         Field list can be prepended with the type, trace, sw or hw,
+         to indicate to which event type the field list applies.
+         e.g., -f sw:comm,tid,time,ip,sym  and -f trace:time,cpu,trace
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 5b865a9..9d0febc 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -43,6 +43,7 @@ enum perf_output_field {
+ 	PERF_OUTPUT_DSO             = 1U << 9,
+ 	PERF_OUTPUT_ADDR            = 1U << 10,
+ 	PERF_OUTPUT_SYMOFFSET       = 1U << 11,
++	PERF_OUTPUT_SRCLINE         = 1U << 12,
+ };
  
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index 9ac666a..d8613dc 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -77,6 +77,7 @@ struct dso {
- 	struct rb_root	 symbols[MAP__NR_TYPES];
- 	struct rb_root	 symbol_names[MAP__NR_TYPES];
- 	struct rb_root	 cache;
-+	void		 *a2l;
- 	enum dso_kernel_type	kernel;
- 	enum dso_swap_type	needs_swap;
- 	enum dso_binary_type	symtab_type;
-@@ -166,4 +167,6 @@ static inline bool dso__is_kcore(struct dso *dso)
- 	       dso->data_type == DSO_BINARY_TYPE__GUEST_KCORE;
- }
+ struct output_option {
+@@ -61,6 +62,7 @@ struct output_option {
+ 	{.str = "dso",   .field = PERF_OUTPUT_DSO},
+ 	{.str = "addr",  .field = PERF_OUTPUT_ADDR},
+ 	{.str = "symoff", .field = PERF_OUTPUT_SYMOFFSET},
++	{.str = "srcline", .field = PERF_OUTPUT_SRCLINE},
+ };
  
-+void dso__free_a2l(struct dso *dso);
-+
- #endif /* __PERF_DSO */
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index 4c8e816..25b85b2 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -146,18 +146,24 @@ static void addr2line_cleanup(struct a2l_data *a2l)
- }
- 
- static int addr2line(const char *dso_name, unsigned long addr,
--		     char **file, unsigned int *line)
-+		     char **file, unsigned int *line, struct dso *dso)
- {
- 	int ret = 0;
--	struct a2l_data *a2l;
-+	struct a2l_data *a2l = dso->a2l;
-+
-+	if (!a2l) {
-+		dso->a2l = addr2line_init(dso_name);
-+		a2l = dso->a2l;
+ /* default set to maintain compatibility with current format */
+@@ -210,6 +212,11 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
+ 		       "to DSO.\n");
+ 		return -EINVAL;
+ 	}
++	if (PRINT_FIELD(SRCLINE) && !PRINT_FIELD(IP)) {
++		pr_err("Display of source line number requested but sample IP is not\n"
++		       "selected. Hence, no address to lookup the source line number.\n");
++		return -EINVAL;
 +	}
  
--	a2l = addr2line_init(dso_name);
- 	if (a2l == NULL) {
- 		pr_warning("addr2line_init failed for %s\n", dso_name);
- 		return 0;
+ 	if ((PRINT_FIELD(PID) || PRINT_FIELD(TID)) &&
+ 		perf_evsel__check_stype(evsel, PERF_SAMPLE_TID, "TID",
+@@ -348,6 +355,24 @@ static void print_sample_start(struct perf_sample *sample,
  	}
- 
- 	a2l->addr = addr;
-+	a2l->found = false;
-+
- 	bfd_map_over_sections(a2l->abfd, find_address_in_section, a2l);
- 
- 	if (a2l->found && a2l->filename) {
-@@ -168,14 +174,26 @@ static int addr2line(const char *dso_name, unsigned long addr,
- 			ret = 1;
- 	}
- 
--	addr2line_cleanup(a2l);
- 	return ret;
  }
  
-+void dso__free_a2l(struct dso *dso)
++static void print_sample_finish(struct perf_evsel *evsel,
++				struct addr_location *al)
 +{
-+	struct a2l_data *a2l = dso->a2l;
++	struct perf_event_attr *attr = &evsel->attr;
 +
-+	if (!a2l)
-+		return;
++	if (PRINT_FIELD(SRCLINE) && al->map && al->map->dso) {
++		char *srcline;
 +
-+	addr2line_cleanup(a2l);
++		srcline = get_srcline(al->map->dso,
++				      map__rip_2objdump(al->map, al->addr));
++		if (srcline != SRCLINE_UNKNOWN)
++			printf("\n  %s", srcline);
++		free_srcline(srcline);
++	}
 +
-+	dso->a2l = NULL;
++	printf("\n");
 +}
 +
- #else /* HAVE_LIBBFD_SUPPORT */
- 
- static int addr2line(const char *dso_name, unsigned long addr,
--		     char **file, unsigned int *line_nr)
-+		     char **file, unsigned int *line_nr,
-+		     struct dso *dso __maybe_unused)
+ static bool is_bts_event(struct perf_event_attr *attr)
  {
- 	FILE *fp;
- 	char cmd[PATH_MAX];
-@@ -219,6 +237,11 @@ out:
- 	pclose(fp);
- 	return ret;
- }
-+
-+void dso__free_a2l(struct dso *dso __maybe_unused)
-+{
-+}
-+
- #endif /* HAVE_LIBBFD_SUPPORT */
+ 	return ((attr->type == PERF_TYPE_HARDWARE) &&
+@@ -438,7 +463,7 @@ static void print_sample_bts(union perf_event *event,
+ 	     !output[attr->type].user_set))
+ 		print_sample_addr(event, sample, machine, thread, attr);
  
- char *get_srcline(struct dso *dso, unsigned long addr)
-@@ -237,7 +260,7 @@ char *get_srcline(struct dso *dso, unsigned long addr)
- 	if (!strncmp(dso_name, "/tmp/perf-", 10))
- 		goto out;
- 
--	if (!addr2line(dso_name, addr, &file, &line))
-+	if (!addr2line(dso_name, addr, &file, &line, dso))
- 		goto out;
- 
- 	if (asprintf(&srcline, "%s:%u", file, line) < 0)
-@@ -248,6 +271,7 @@ char *get_srcline(struct dso *dso, unsigned long addr)
- 
- out:
- 	dso->has_srcline = 0;
-+	dso__free_a2l(dso);
- 	return SRCLINE_UNKNOWN;
+-	printf("\n");
++	print_sample_finish(evsel, al);
  }
  
+ static void process_event(union perf_event *event, struct perf_sample *sample,
+@@ -480,7 +505,7 @@ static void process_event(union perf_event *event, struct perf_sample *sample,
+ 				     PERF_MAX_STACK_DEPTH);
+ 	}
+ 
+-	printf("\n");
++	print_sample_finish(evsel, al);
+ }
+ 
+ static int default_start_script(const char *script __maybe_unused,
 -- 
 1.7.11.7
 
