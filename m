@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab3LCKgz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 05:36:55 -0500
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:33258 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752301Ab3LCKgx (ORCPT
+	id S1752790Ab3LCKkN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 05:40:13 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:63958 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003Ab3LCKkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 05:36:53 -0500
-X-Greylist: delayed 391 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Dec 2013 05:36:53 EST
+	Tue, 3 Dec 2013 05:40:11 -0500
+Date: Tue, 3 Dec 2013 10:40:03 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: micky_ching@realsil.com.cn
+Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        wei_wang@realsil.com.cn, rogerable@realtek.com
+Subject: Re: [PATCH v2 3/3] mfd: rtsx: prevent 'used uninitialised' warnings
+Message-ID: <20131203104003.GJ11828@lee--X1>
+References: <cover.1386051860.git.micky_ching@realsil.com.cn>
+ <932dcc03570ceb86316272d4eba7f4207d001def.1386051860.git.micky_ching@realsil.com.cn>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1312030852410.24931@pobox.suse.cz>
-References: <1386026244-21553-1-git-send-email-ogay@logitech.com> <alpine.LNX.2.00.1312030852410.24931@pobox.suse.cz>
-From: Olivier Gay <ogay@logitech.com>
-Date: Tue, 3 Dec 2013 11:30:00 +0100
-Message-ID: <CAFLMSp-7X568ZdZ-JAAX9ttmMFhYP+DeLuc_-yCw1WCuvVAHng@mail.gmail.com>
-Subject: Re: [PATCH] HID: logitech-dj: add HIDRAW dependency in Kconfig
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Mathieu Meisser <mmeisser@logitech.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <932dcc03570ceb86316272d4eba7f4207d001def.1386051860.git.micky_ching@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->On Tue, Dec 3, 2013 at 8:53 AM, Jiri Kosina <jkosina@suse.cz> wrote:
-> I don't have my receiver with me at the moment, so can't really verify --
-> how exactly does it fail during probe()?
+On Tue, 03 Dec 2013, micky_ching@realsil.com.cn wrote:
 
-Hi Jiri,
+> From: Micky Ching <micky_ching@realsil.com.cn>
 
-Without hidraw driver, we get this:
+This should contain the author's name.
 
-<3>[  210.131988] logitech-djreceiver 0003:046D:C52B.0005: claimed by
-neither input, hiddev nor hidraw
-<3>[  210.132202] logitech-djreceiver 0003:046D:C52B.0005:
-logi_dj_probe:hid_hw_start returned error
+You should use:
+   `git rebase -i` /* Use edit option */
+then 
+  `git commit --amend --author="First Last <first.last@email.com>"
 
-In logi_dj_probe, we call hid_hw_start with HID_CONNECT_DEFAULT
-argument and if hidraw driver is not present, the call fails and we
-return an error in logi_dj_probe.
+To apply it.
 
-> It's clear that without hidraw it's not possible to change the pairing
-> from userspace, but I fail to see why probing the receiver should be
-> affected?
+> drivers/mfd/rtl8411.c: In function 'rtl8411_fetch_vendor_settings':
+> drivers/mfd/rtl8411.c:58:7: warning: 'reg1' is used uninitialized in this function [-Wuninitialized]
+> drivers/mfd/rtl8411.c: In function 'rtl8411b_fetch_vendor_settings':
+> drivers/mfd/rtl8411.c:79:7: warning: 'reg' is used uninitialized in this function [-Wuninitialized]
+> drivers/mfd/rtl8411.c: In function 'rtl8411_fetch_vendor_settings':
+> drivers/mfd/rtl8411.c:69:26: warning: 'reg3' may be used uninitialized in this function [-Wuninitialized]
+> 
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Tested-by: Micky Ching <micky_ching@realsil.com.cn>
 
-As of today, hid-logitech-dj.c depends on hidraw API to work. All HID
-reports sent to control / configure the receiver are sent using hidraw
-API. That's why we fail logi_dj_probe if we cannot connect to hidraw.
+I know this is a bit of a strange situation, but whenever you sent
+patches to the MLs,  you need to sign it off yourself too.
 
-Best regards,
 
-Olivier
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
