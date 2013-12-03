@@ -1,92 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751437Ab3LCFRU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 00:17:20 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60817 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944Ab3LCFRR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 00:17:17 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <529D6933.9070609@jp.fujitsu.com>
-Date: Tue, 03 Dec 2013 14:16:35 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1751385Ab3LCFZH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 00:25:07 -0500
+Received: from mail.fpasia.hk ([202.130.89.98]:40862 "EHLO fpa01n0.fpasia.hk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750920Ab3LCFZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 00:25:04 -0500
+Message-ID: <529D6B24.7020502@gtsys.com.hk>
+Date: Tue, 03 Dec 2013 13:24:52 +0800
+From: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11 ThunderBrowse/3.8
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>
-Subject: Re: [PATCH] vmcore: call remap_pfn_range() separately for respective
- partial pages
-References: <52970342.8090302@jp.fujitsu.com> <20131202152754.GC18642@redhat.com> <529D3158.2080603@jp.fujitsu.com>
-In-Reply-To: <529D3158.2080603@jp.fujitsu.com>
+To: Mark Rutland <mark.rutland@arm.com>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] usb: phy-generic: Add ULPI VBUS support
+References: <1385967919-13258-1-git-send-email-chris.ruehl@gtsys.com.hk> <1385967919-13258-4-git-send-email-chris.ruehl@gtsys.com.hk> <20131202182204.GQ12952@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20131202182204.GQ12952@e106331-lin.cambridge.arm.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/03 10:18), HATAYAMA Daisuke wrote:
-> (2013/12/03 0:27), Vivek Goyal wrote:
->> On Thu, Nov 28, 2013 at 05:48:02PM +0900, HATAYAMA Daisuke wrote:
->>> Hello Vivek,
->>>
->>> Here is a patch set for mmap failure for /proc/vmcore.
->>> Could you try to use this on the problematic system?
->>>
->>> This patch doesn't copy partial pages to the 2nd kernel, only prepares
->>> vmcore objects for respective partial pages to invoke remap_pfn_range()
->>> for individual partial pages.
+
+
+On Tuesday, December 03, 2013 02:22 AM, Mark Rutland wrote:
+> On Mon, Dec 02, 2013 at 07:05:19AM +0000, Chris Ruehl wrote:
+>> usb: phy-generic: Add ULPI VBUS support
 >>
->> Hi Hatayama,
->>
->> Thanks for the patch. Ok, I see that partial pages will be put in a separate
->> call to remap_oldmem_pfn_range() and this time it should succeed.
->>
->> I am wondering what do you think about your old approach of copying
->> only relevant old memory to a new kernel page in new kernel. I kind
->> of feel little uncomfortable with the idea of rounding down start
->> and roudning up end to page size boundaries and then accessing the
->> full page using oldmem interface. A safer approach might be to allocate
->> page in new kernel, read *only* those bytes as reported by elf header
->> and fill rest of the page with zeros.
->>
->> Thanks
->> Vivek
->>
+>> Some platforms need to set the VBUS parameters of the ULPI
+>> like ISP1504 which interact with overcurrent protection and
+>> power switch MIC2575. Therefore it requires to set
+>> * DRVVBUS
+>> * DRVVBUS_EXT
+>> * EXTVBUSIND
+>> * CHRGVBUS
+>> of the ULPI.
+>> This patch add support for it.
 >
-> Even if copying partial pages into the 2nd kernel, we need to use ioremap()
-> once on them, and I think the ioremap() is exactly similar to
-> remap_pfn_range() for a single page. There seems no difference on safeness
-> between them.
+> Could you elaborate on when we need to do this and why?
 >
-
-I suspected some kind of pre-fetching could be performed when just page table
-is created. But it's common thing between the two cases above. Then, as you say,
-it would be safer to read less data from non-System-RAM area. Copying seems
-better in our case.
-
-Another concern to reading data from partial pages is a possibility of
-undesirable hardware prefetch to non-System-RAM area. Is it better to disable this?
-
-> Also, current /proc/vmcore shows user-land tools a shape with holes not
-> filled with zeros both in case of read() and in case of mmap(). If we adapt
-> copying one without reading data in holes, shape of /proc/vmcore gets
-> changed again.
+>>
+>> Devicetree configuration example:
+>>
+>> usbphy0: usbphy@0x10024170 {
+>>   compatible = "usb-nop-xceiv";
+>>   reg =<0x10024170 0x4>; /* ULPI Viewport OTG */
+>>   clocks =<&clks 75>;
+>>   clock-names = "main_clk";
+>> };
+>>
+>> &usbphy0 {
+>>          reset-gpios =<&gpio1 31 1>;
+>>          pinctrl-names = "default";
+>>          pinctrl-0 =<&pinctrl_usbphy0&pinctrl_usbotg1>;
+>>          ulpi_set_vbus =<0x0f>;
+>> };
+>>
+>> Please refer to the phy-bindings.txt for the value of ulpi_set_vbus commit
+>> with this patch.
+>>
+>> Signed-off-by: Chris Ruehl<chris.ruehl@gtsys.com.hk>
+>> ---
+>>   .../devicetree/bindings/phy/phy-bindings.txt       |   15 ++++++
+>>   drivers/usb/phy/phy-generic.c                      |   50 +++++++++++++++++++-
+>>   drivers/usb/phy/phy-generic.h                      |    3 ++
+>>   3 files changed, 67 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/phy/phy-bindings.txt b/Documentation/devicetree/bindings/phy/phy-bindings.txt
+>> index 8ae844f..b109b2f 100644
+>> --- a/Documentation/devicetree/bindings/phy/phy-bindings.txt
+>> +++ b/Documentation/devicetree/bindings/phy/phy-bindings.txt
+>> @@ -34,6 +34,18 @@ phys : the phandle for the PHY device (used by the PHY subsystem)
+>>   phy-names : the names of the PHY corresponding to the PHYs present in the
+>>   	    *phys* phandle
+>>
+>> +Optional Properties:
+>> +reset-gpios :	GPIO used to reset ULPI like ISP1504 with
+>> +		0 = reset active high ; 1 = reset active low.
 >
+> The format of the gpio-specifier doesn't matter here.
+>
+> Why do you need to mention the ISP1504? Either this is generic, or it
+> doesn't belong here.
+>
+> Perhaps we need a ulpi-phy binding document. This and the rest of the
+> patch is strongly tied to ULPI.
+>
+>> +cs-gpios :	GPIO used to activate a ULPI like ISP1504 with
+>> +		0 = reset acitive high; 1 = reset active low.
+>
+> Again, the format of the gpio-specifier is not a concern here. I'm also
+> a little confused as to the name "cs-gpios" for something that activates
+> the ULPI.
+>
+>> +ulpi_set_vbus :	ULPI configuation parameter to program the VBUS signaling of
+>> +		ISP1504 or similar chipsets.
+>
+> Could you elaborate on this? Is this applicable to any ULPI PHY? The
+> description implies that it's somewhat tied to ISP1504 (if it's not,
+> drop the mention of ISP1504).
+>
+> Why exactly do we need this, and why should it live in the DT?
+>
+> Why can se not figure this out automatically, or have defaults that work
+> in more places?
+>
+> Also, s/_/-/ on property names please.
+>
+>> +		Set the parameter:
+>> +		DRVVBUS = (1) DRVVBUS_EXT = (1<<1) EXTVBUSIND = (1<<2) CHRGVBUS = (1<<3)
+>> +		eg: DRVVBUS | DRVVBUS_EXT = 0x03
+>> +		    ulpi_set_vbus =<0x03>
+>
+> I don't like putting arbitrary bitfields like this in DT. They're
+> illegible and easy to abuse.
+>
+> Boolean properties are nicer for flags.
+>
+> What exactly do these flags mean?
+>
+> [...]
+>
+>> @@ -253,14 +284,15 @@ static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
+>>
+>>   	if (dev->of_node) {
+>>   		struct device_node *node = dev->of_node;
+>> +		struct resource	*res;
+>>   		enum of_gpio_flags flags;
+>>   		enum of_gpio_flags csflags;
+>> +		u32 ulpi_vbus;
+>>
+>>   		if (of_property_read_u32(node, "clock-frequency",&clk_rate))
+>>   			clk_rate = 0;
+>>
+>>   		needs_vcc = of_property_read_bool(node, "vcc-supply");
+>> -
+>>   		nop->gpio_reset = of_get_named_gpio_flags(node, "reset-gpios",
+>>   								0,&flags);
+>
+> Why the random line deletion?
+>
+>>
+>> @@ -274,6 +306,22 @@ static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
+>>   		if (gpio_is_valid(nop->gpio_chipselect))
+>>   			nop->cs_active_low = csflags&  OF_GPIO_ACTIVE_LOW;
+>>
+>> +		err = of_property_read_u32(node, "ulpi_set_vbus",&ulpi_vbus);
+>> +		if (err) {
+>> +			nop->ulpi_vbus = -1;
+>> +			nop->viewport = NULL;
+>> +			ulpi_vbus = 0;
+>> +		} else {
+>> +			dev_dbg(dev,"ULPI ulpi_set_vbus 0x%02x",ulpi_vbus);
+>> +			nop->ulpi_vbus = ulpi_vbus;
+>> +			res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>
+> This wasn't described in the binding document, and it's ULPI specific. I
+> think we need a separate ulpi-phy binding that builds upon the generic
+> one.
+>
+Mark, before commit an other patch, is it this what you looking for?
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/phy-ulpi.txt
+@@ -0,0 +1,36 @@
++This document explains only the device tree data binding for phy-ulpi nodes. 
+For general
++information about PHY subsystem refer to Documentation/phy.txt
++
++PHY device node
++===============
++
++Required Properties:
++reg:           ULPI Viewport
++reset-gpios :  GPIO used to reset ULPI chipset
++
++Optional Properties:
++cs-gpios :     GPIO used to activate a ULPI chipset
++ulpi-set-vbus :        ULPI configuation parameter to program the VBUS logic
++               Set the parameter:
++               DRVVBUS         = (1<<0)        Enable VBUS logic
++               DRVVBUS_EXT     = (1<<1)        Enable External VBUS logic
++               EXTVBUSIND      = (1<<2)        Enable Ext. VBUS indication and 
+fault handler
++               CHRGVBUS        = (1<<3)        Enable VBUS charge pump logic
++               eg: DRVVBUS | DRVVBUS_EXT = 0x03
++                   ulpi_set_vbus = <0x03>
++
++For example:
++
++phys: phy@p {
++    compatible = "xxx";
++    reg = <p>;
++    .
++    .
++    #phy-cells = <1>;
++    .
++    .
++    reset-gpios = <&gpioX nn n>
++    cs-gpios = <&gpioX nn n>
++    ulpi-set-vbus = <0xXX>;
++};
++
 
-So, next patch will change data in holes by filling them with zeros.
 
-BTW, we have now page cache interface implemented by Michael Holzheu, but
-we have yet to use it on x86 because we've never wanted it so far. It's
-natural to use it to read partial pages on-demand, but I also in part think
-that it's not proper time to start using new mechanism that needs to be tested
-more. How do you think?
+Thanks
+Chris
+
+
+
+
+> Thanks,
+> Mark.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 -- 
-Thanks.
-HATAYAMA, Daisuke
+GTSYS Limited RFID Technology
+A01 24/F Gold King Industrial Bld
+35-41 Tai Lin Pai Road, Kwai Chung, Hong Kong
+Fax (852) 8167 4060 - Tel (852) 3598 9488
 
+Disclaimer: http://www.gtsys.com.hk/email/classified.html
