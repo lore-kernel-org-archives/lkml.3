@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab3LCUWB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 15:22:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47192 "EHLO mx1.redhat.com"
+	id S1755181Ab3LCUWm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 15:22:42 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47581 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754164Ab3LCUV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 15:21:57 -0500
-Date: Tue, 3 Dec 2013 21:22:49 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: William Dauchy <wdauchy@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        "Ma, Xindong" <xindong.ma@intel.com>, Michal Hocko <mhocko@suse.cz>,
-        Sameer Nanda <snanda@chromium.org>, Sergey Dyasly <dserrg@gmail.com>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] initial while_each_thread() fixes
-Message-ID: <20131203202249.GA21510@redhat.com>
-References: <20131202152423.GA10878@redhat.com> <CAJ75kXYu943GxQpKGkpfmAj87YKbr1aoPu60zozik1MCkK7gag@mail.gmail.com>
+	id S1753755Ab3LCUWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 15:22:41 -0500
+Message-ID: <529E3D4C.9070403@zytor.com>
+Date: Tue, 03 Dec 2013 12:21:32 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJ75kXYu943GxQpKGkpfmAj87YKbr1aoPu60zozik1MCkK7gag@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Jiri Kosina <jkosina@suse.cz>, Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH?] uprobes: change uprobe_write_opcode() to modify the
+ page directly
+References: <1385426236-14960-1-git-send-email-andi@firstfloor.org> <20131129183558.GA9803@redhat.com> <20131129195419.GB17656@two.firstfloor.org> <20131129200532.GA13561@redhat.com> <alpine.LRH.2.00.1311300023070.9932@twin.jikos.cz> <CA+55aFxJGidV4=ot0z_Va8+y2QWTDYghTm1Gin84StZ+R1SfXg@mail.gmail.com> <20131203184909.GA17571@redhat.com> <CA+55aFw3N=iNW2Ej6w7oksX5JDVis7QL=9X9D7JB_tKZhrjsLw@mail.gmail.com> <529E2F0C.8070405@zytor.com> <20131203200147.GB19083@redhat.com>
+In-Reply-To: <20131203200147.GB19083@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi William,
+On 12/03/2013 12:01 PM, Oleg Nesterov wrote:
+> 
+>> followed by whatever synchronization necessary to make it globally visible.
+> 
+> Could you explain what this synchronization should actually do ?
+> 
 
-On 12/03, William Dauchy wrote:
->
-> I was wondering if this patch was also targeted for stable branch?
+That is architecture-dependent.  On x86 it requires each CPU on which
+this code is visible to be IPId, on others it involves complex icache
+flushing protocols.
 
-Unlikely... but we will see.
+	-hpa
 
-> Before this patch, I was testing this one
-> https://lkml.org/lkml/2013/11/13/336
-
-perhaps this patch makes more sense for stable.
-
-But, to clarify just in case, it is not needed after this series.
-
-> which is fixing my oom issues.
-
-Yes, but it doesn't fix all problems even in mm/oom_kill.c, and
-we need to fix while_each_thread() anyway.
-
-> I applied the two patches on top of a 3.10.x and got some tasks
-> stalled after the first OOM:
-
-So you are saying that this was introduced by this series?
-
-Could you retest with the recent kernel?
-
-> INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 21,
-> t=15014 jiffies, g=65569, c=65568, q=6537)
-
-This series does not expand the rcu-locked sections except: it adds
-rcu_read_lock() into has_intersects_mems_allowed() but this is the
-obvious bugfix.
-
-So far I _think_ that this series should not be blamed for that, but
-I'll try to recheck.
-
-Oleg.
 
