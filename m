@@ -1,102 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab3LCAyH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 19:54:07 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:42653 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751670Ab3LCAyC (ORCPT
+	id S1752939Ab3LCBPO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 20:15:14 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:54517 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821Ab3LCBPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 19:54:02 -0500
-Message-ID: <529D2BA6.5020005@linaro.org>
-Date: Mon, 02 Dec 2013 16:53:58 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Miroslav Lichvar <mlichvar@redhat.com>
-CC: linux-kernel@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>
-Subject: Re: [PATCH RFC] timekeeping: Fix clock stability with nohz
-References: <1384440640-9482-1-git-send-email-mlichvar@redhat.com> <528A7C88.1030801@linaro.org> <20131120183900.GA25735@localhost>
-In-Reply-To: <20131120183900.GA25735@localhost>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Dec 2013 20:15:09 -0500
+X-AuditID: cbfee68f-b7f336d00000481b-48-529d309b0609
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Joe Perches'" <joe@perches.com>,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        linux-pci@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
+ <003b01ceefb6$bca43ed0$35ecbc70$%han@samsung.com>
+ <1386028330.15309.13.camel@joe-AO722>
+In-reply-to: <1386028330.15309.13.camel@joe-AO722>
+Subject: Re: [PATCH 38/39] PCI: remove DEFINE_PCI_DEVICE_TABLE macro
+Date: Tue, 03 Dec 2013 10:15:06 +0900
+Message-id: <003e01ceefc5$1a6f9880$4f4ec980$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7vuYdnnBm2Aax/SVWlYGdl6thGxAAClhtw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t8zI93ZBnODDB42i1ssacqwaF68ns3i
+	8sJLrBaz7z9msbi8aw6bxdl5x9kc2DwWbCr12D93DbvHl1XXmD36tqxi9Pi8SS6ANYrLJiU1
+	J7MstUjfLoEro3fhT7aCg2wVi2e/Y25gnM3axcjJISFgIvH85h0oW0ziwr31bF2MXBxCAssY
+	Jd5MXssGU7SoYToTRGIRo8TjV+dZIJxfjBKn+7eCVbEJqEl8+XKYHcQWEYiQWLL7ACNIEbNA
+	B6NEw7t+VoiOmYwSzfPfMHcxcnBwChhJXFnLD9IgLOAisfbZArBBLAKqEqtugqzj5OAVsJVY
+	ueMNG4QtKPFj8j0WEJtZQEti/c7jTBC2vMTmNW/BRkoIqEs8+qsLcYORxNTeX1DlIhL7XrwD
+	u0dC4CW7xOWFtxkhdglIfJt8iAWiV1Zi0wFmiI8lJQ6uuMEygVFiFpLNs5BsnoVk8ywkKxYw
+	sqxiFE0tSC4oTkovMtYrTswtLs1L10vOz93ECInZ/h2Mdw9YH2JMBlo/kVlKNDkfGPN5JfGG
+	xmZGFqYmpsZG5pZmpAkrifPef5gUJCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFxEvv50p97
+	GmdHu6YKN8XbJzJ7yWpoB/MJ2u7TU8mbkK4aNSHEbwWvtozIr+9hBsnr54u0rbNuynz9NuBl
+	Jpv/zAmp+oemWYU8S9vc4a9mYebfaJAkqD+N58uCWWteP3E6Pius+bt91HexvlIPmeKQafM7
+	mlmvf/96IFY9dvn75WbvjV5dPq7EUpyRaKjFXFScCAAaKql47wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJKsWRmVeSWpSXmKPExsVy+t9jAd3ZBnODDBomCFssacqwaF68ns3i
+	8sJLrBaz7z9msbi8aw6bxdl5x9kc2DwWbCr12D93DbvHl1XXmD36tqxi9Pi8SS6ANaqB0SYj
+	NTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6AAlhbLEnFKg
+	UEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEdY0bvwp9sBQfZKhbPfsfcwDibtYuRk0NC
+	wERiUcN0JghbTOLCvfVsXYxcHEICixglHr86zwLh/GKUON2/lQ2kik1ATeLLl8PsILaIQITE
+	kt0HGEGKmAU6GCUa3vWzQnTMZJRonv+GuYuRg4NTwEjiylp+kAZhAReJtc8WgA1iEVCVWHUT
+	YjWvgK3Eyh1v2CBsQYkfk++xgNjMAloS63ceZ4Kw5SU2r3kLNlJCQF3i0V9diBuMJKb2/oIq
+	F5HY9+Id4wRGoVlIJs1CMmkWkkmzkLQsYGRZxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iRGc
+	EJ5J72Bc1WBxiFGAg1GJh/fB9jlBQqyJZcWVuYcYJTiYlUR4O3nmBgnxpiRWVqUW5ccXleak
+	Fh9iTAZ6dCKzlGhyPjBZ5ZXEGxqbmBlZGplZGJmYm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhm
+	CxMHp1QDo6bsSp+wnxGnT77etV96qYiasfjy4n8cOqsm72IMcVx6fkXBx6hbQty7ls4r7HDO
+	0ajjidzTcVtk0cfrgTM2h/bZXyw/cvOJxZJ5os4OO4+nz9jncLw3w+2g4JUW/s2n1IxeH/7l
+	fIDn6lfVutXzOtPSWp5+tvdbpn1wUkqG9Pazml/i/7vzmiuxFGckGmoxFxUnAgCU0vSlTAMA	AA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2013 10:39 AM, Miroslav Lichvar wrote:
-> On Mon, Nov 18, 2013 at 12:46:00PM -0800, John Stultz wrote:
->>> In a simulation with 1GHz TSC clock and 10Hz clock update the maximum
->>> error went down from 4.7 microseconds to 5.5 nanoseconds. With 1Hz
->>> update the maximum error went down from 480 microseconds to 55
->>> nanoseconds.
->> Curious what sort of a environment you're using for simulation (as well
->> as the real test below)?
-> I compile the kernel timekeeping.c file into a test program where a
-> fake TSC is provided to the kernel code and I can easily control the
-> tick length and timekeeper updates. The program collects pairs of
-> TSC/getnstimeofday() values and then it runs linear regression through
-> the points to see the frequency offset and how stable the clock was.
->
-> http://mlichvar.fedorapeople.org/tmp/tk_test.tar.gz
+On Tuesday, December 03, 2013 8:52 AM, Joe Perches wrote:
+> On Tue, 2013-12-03 at 08:32 +0900, Jingoo Han wrote:
+> > Don't use DEFINE_PCI_DEVICE_TABLE macro, because this macro
+> > is not preferred. Also, the definition of DEFINE_PCI_DEVICE_TABLE
+> > macro is removed.
+> 
+> These sorts of treewide conversions are almost never
+> applied wholesale.
+> 
+> This patch is not appropriate until there are no more
+> uses of DEFINE_PCI_DEVICE_TABLE in Linus' tree.
+> 
+> Just marking the function as deprecated in the
+> documentation and the pci.h file is probably good
+> enough for now.
+> 
+> see:  http://lkml.org/lkml/2013/12/2/400
 
-So.. this doesn't build for me.
+Actually, I want to remove all DEFINE_PCI_DEVICE_TABLEs from the
+next 3.14-rc1 kernel, by merging all patches through Greg's tree.
 
-timekeeping.o: In function `change_clocksource':
-timekeeping.c:(.text+0x535): undefined reference to `lock_acquire'
-timekeeping.c:(.text+0x588): undefined reference to `lock_release'
-timekeeping.o: In function `__getnstimeofday':
-timekeeping.c:(.text+0x675): undefined reference to `trace_hardirqs_off'
-timekeeping.c:(.text+0x69b): undefined reference to `lock_acquire'
-timekeeping.c:(.text+0x6b0): undefined reference to `lock_release'
-timekeeping.c:(.text+0x6c2): undefined reference to `trace_hardirqs_on'
-timekeeping.c:(.text+0x77c): undefined reference to `trace_hardirqs_off'
+Greg,
+How about you?
 
-
-Do you need a special .config in your kernel source? Changing lockdep
-and irq tracer configs don't seem to fix things for me.
-
-
-
->> But this is all very interesting! Thanks again for digging into this
->> issue and sending the patch!
-> Thanks for looking into it. I agree this is a rather radical change
-> and it needs to be done very carefully. At this point, I'd like to
-> know if you think there are no fundamental problems in the design and
-> whether it would be an acceptable replacement.
->
-> A different approach to fix this problem would be controlling the
-> maximum idle interval from the tick adjusting code so that the NTP
-> error corrections can be accurate. That would further increase the
-> complexity of the code and increase the interrupt rate.
-
-So I'm still trying to break apart the larger change you've made into
-smaller functional steps.
-
-The main two differences I see are:
-
-1) Calculating the mult value directly from the ntp_tick_length() value
-(via the division) each update cycle.
-
-2) Drastically simplifying the ntp_error correction to a 0/1 multiplier
-adjustment (assuming the calculated mult will be slightly slow, due to
-truncating the remainder in the division) based on the sign of the error.
-
-(and I'm ignoring the previously mentioned accounting changes that
-appear to be improperly dropped ;)
-
-This makes me suspect the main issue is we're over-correcting in the
-timekeeping_bigadjust() logic with nohz and I'm curious if instead we
-could either limit timekeeping_bigadjust() adjustment to achieve the
-same stability? In particular, bigadjust()'s exponential adjustment of
-mult seems problematic.
-
-Am I missing or glossing over anything else that is key to your changes?
-
-thanks
--john
-
-
-
+Best regards,
+Jingoo Han
 
