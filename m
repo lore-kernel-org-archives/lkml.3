@@ -1,196 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab3LCCj5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 21:39:57 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:33222 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752019Ab3LCCjx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 21:39:53 -0500
+	id S1753314Ab3LCCk7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 21:40:59 -0500
+Received: from mga14.intel.com ([143.182.124.37]:60441 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752510Ab3LCCk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 21:40:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,814,1378882800"; 
+   d="asc'?scan'208";a="393553085"
+Date: Mon, 2 Dec 2013 21:23:30 -0500
+From: "Chen, Gong" <gong.chen@linux.intel.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Levente Kurusa <levex@linux.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        EDAC <linux-edac@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: mcheck: call put_device on device_register failure
+Message-ID: <20131203022330.GA25136@gchen.bj.intel.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Levente Kurusa <levex@linux.com>, Ingo Molnar <mingo@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Tony Luck <tony.luck@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	x86@kernel.org, EDAC <linux-edac@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <5298F900.9000208@linux.com>
+ <20131129205628.GA20144@pd.tnic>
+ <52999419.7040600@linux.com>
+ <20131130111214.GB4323@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <1389567.80471385515291622.JavaMail.weblogic@epml11>
-References: <1389567.80471385515291622.JavaMail.weblogic@epml11>
-Date: Tue, 3 Dec 2013 10:39:52 +0800
-Message-ID: <CAMk6uBnKEnoRxtxJjc0r_r__t3uz7zjaR9CCOc6nWq5Znn=bgQ@mail.gmail.com>
-Subject: Re: [PATCH] blackfin: Kill CONFIG_MTD_PARTITIONS
-From: Steven Miao <realmz6@gmail.com>
-To: eunb.song@samsung.com
-Cc: Mike Frysinger <vapier@gentoo.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ibTvN161/egqYuK8"
+Content-Disposition: inline
+In-Reply-To: <20131130111214.GB4323@pd.tnic>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applied. Thanks!
 
-On Wed, Nov 27, 2013 at 9:21 AM, Eunbong Song <eunb.song@samsung.com> wrote:
->
-> This patch removes CONFIG_MTD_PARTITIONS in config files for blackfin.
->  Because CONFIG_MTD_PARTITIONS was removed by commit 6a8a98b22b10f1560d5f90aded4a54234b9b2724.
->
->
-> Signed-off-by: Eunbong Song <eunb.song@samsung.com>
-> ---
->  arch/blackfin/configs/BF538-EZKIT_defconfig   |    1 -
->  arch/blackfin/configs/BF561-ACVILON_defconfig |    1 -
->  arch/blackfin/configs/BlackStamp_defconfig    |    1 -
->  arch/blackfin/configs/CM-BF533_defconfig      |    1 -
->  arch/blackfin/configs/CM-BF548_defconfig      |    1 -
->  arch/blackfin/configs/CM-BF561_defconfig      |    1 -
->  arch/blackfin/configs/DNP5370_defconfig       |    1 -
->  arch/blackfin/configs/H8606_defconfig         |    1 -
->  arch/blackfin/configs/IP0X_defconfig          |    1 -
->  arch/blackfin/configs/PNAV-10_defconfig       |    1 -
->  arch/blackfin/configs/SRV1_defconfig          |    1 -
->  arch/blackfin/configs/TCM-BF518_defconfig     |    1 -
->  12 files changed, 0 insertions(+), 12 deletions(-)
->
-> diff --git a/arch/blackfin/configs/BF538-EZKIT_defconfig b/arch/blackfin/configs/BF538-EZKIT_defconfig
-> index 972aa62..be03be6 100644
-> --- a/arch/blackfin/configs/BF538-EZKIT_defconfig
-> +++ b/arch/blackfin/configs/BF538-EZKIT_defconfig
-> @@ -59,7 +59,6 @@ CONFIG_BFIN_SIR=m
->  CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
->  # CONFIG_FW_LOADER is not set
->  CONFIG_MTD=y
-> -CONFIG_MTD_PARTITIONS=y
->  CONFIG_MTD_CMDLINE_PARTS=y
->  CONFIG_MTD_CHAR=m
->  CONFIG_MTD_BLOCK=y
-> diff --git a/arch/blackfin/configs/BF561-ACVILON_defconfig b/arch/blackfin/configs/BF561-ACVILON_defconfig
-> index 9198837..802f9c4 100644
-> --- a/arch/blackfin/configs/BF561-ACVILON_defconfig
-> +++ b/arch/blackfin/configs/BF561-ACVILON_defconfig
-> @@ -49,7 +49,6 @@ CONFIG_SYN_COOKIES=y
->  CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
->  # CONFIG_FW_LOADER is not set
->  CONFIG_MTD=y
-> -CONFIG_MTD_PARTITIONS=y
->  CONFIG_MTD_CMDLINE_PARTS=y
->  CONFIG_MTD_CHAR=y
->  CONFIG_MTD_BLOCK=y
-> diff --git a/arch/blackfin/configs/BlackStamp_defconfig b/arch/blackfin/configs/BlackStamp_defconfig
-> index 7b982d0..3853c47 100644
-> --- a/arch/blackfin/configs/BlackStamp_defconfig
-> +++ b/arch/blackfin/configs/BlackStamp_defconfig
-> @@ -44,7 +44,6 @@ CONFIG_IP_PNP=y
->  CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
->  # CONFIG_FW_LOADER is not set
->  CONFIG_MTD=y
-> -CONFIG_MTD_PARTITIONS=y
->  CONFIG_MTD_CMDLINE_PARTS=y
->  CONFIG_MTD_CHAR=m
->  CONFIG_MTD_BLOCK=y
-> diff --git a/arch/blackfin/configs/CM-BF533_defconfig b/arch/blackfin/configs/CM-BF533_defconfig
-> index c940a1e..5e0db82 100644
-> --- a/arch/blackfin/configs/CM-BF533_defconfig
-> +++ b/arch/blackfin/configs/CM-BF533_defconfig
-> @@ -36,7 +36,6 @@ CONFIG_UNIX=y
->  # CONFIG_WIRELESS is not set
->  CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
->  CONFIG_MTD=y
-> -CONFIG_MTD_PARTITIONS=y
->  CONFIG_MTD_CMDLINE_PARTS=y
->  CONFIG_MTD_CHAR=y
->  CONFIG_MTD_BLOCK=y
-> diff --git a/arch/blackfin/configs/CM-BF548_defconfig b/arch/blackfin/configs/CM-BF548_defconfig
-> index e961483..b9af4fa 100644
-> --- a/arch/blackfin/configs/CM-BF548_defconfig
-> +++ b/arch/blackfin/configs/CM-BF548_defconfig
-> @@ -53,7 +53,6 @@ CONFIG_INET_XFRM_MODE_BEET=m
->  CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
->  # CONFIG_FW_LOADER is not set
->  CONFIG_MTD=y
-> -CONFIG_MTD_PARTITIONS=y
->  CONFIG_MTD_CMDLINE_PARTS=y
->  CONFIG_MTD_CHAR=y
->  CONFIG_MTD_BLOCK=y
-> diff --git a/arch/blackfin/configs/CM-BF561_defconfig b/arch/blackfin/configs/CM-BF561_defconfig
-> index 24936b9..d6dd98e 100644
-> --- a/arch/blackfin/configs/CM-BF561_defconfig
-> +++ b/arch/blackfin/configs/CM-BF561_defconfig
-> @@ -51,7 +51,6 @@ CONFIG_INET=y
->  # CONFIG_WIRELESS is not set
->  CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
->  CONFIG_MTD=y
-> -CONFIG_MTD_PARTITIONS=y
->  CONFIG_MTD_CMDLINE_PARTS=y
->  CONFIG_MTD_CHAR=y
->  CONFIG_MTD_BLOCK=y
-> diff --git a/arch/blackfin/configs/DNP5370_defconfig b/arch/blackfin/configs/DNP5370_defconfig
-> index 89162d0..2b58cb2 100644
-> --- a/arch/blackfin/configs/DNP5370_defconfig
-> +++ b/arch/blackfin/configs/DNP5370_defconfig
-> @@ -36,7 +36,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
->  CONFIG_MTD=y
->  CONFIG_MTD_DEBUG=y
->  CONFIG_MTD_DEBUG_VERBOSE=1
-> -CONFIG_MTD_PARTITIONS=y
->  CONFIG_MTD_CHAR=y
->  CONFIG_MTD_BLOCK=y
->  CONFIG_NFTL=y
-> diff --git a/arch/blackfin/configs/H8606_defconfig b/arch/blackfin/configs/H8606_defconfig
-> index a26436b..f754e49 100644
-> --- a/arch/blackfin/configs/H8606_defconfig
-> +++ b/arch/blackfin/configs/H8606_defconfig
-> @@ -36,7 +36,6 @@ CONFIG_IRTTY_SIR=m
->  # CONFIG_WIRELESS is not set
->  # CONFIG_FW_LOADER is not set
->  CONFIG_MTD=y
-> -CONFIG_MTD_PARTITIONS=y
->  CONFIG_MTD_CHAR=y
->  CONFIG_MTD_BLOCK=y
->  CONFIG_MTD_RAM=y
-> diff --git a/arch/blackfin/configs/IP0X_defconfig b/arch/blackfin/configs/IP0X_defconfig
-> index 6479915..6295165 100644
-> --- a/arch/blackfin/configs/IP0X_defconfig
-> +++ b/arch/blackfin/configs/IP0X_defconfig
-> @@ -43,7 +43,6 @@ CONFIG_IP_NF_TARGET_REJECT=y
->  CONFIG_IP_NF_MANGLE=y
->  # CONFIG_WIRELESS is not set
->  CONFIG_MTD=y
-> -CONFIG_MTD_PARTITIONS=y
->  CONFIG_MTD_CHAR=y
->  CONFIG_MTD_BLOCK=y
->  CONFIG_MTD_CFI=y
-> diff --git a/arch/blackfin/configs/PNAV-10_defconfig b/arch/blackfin/configs/PNAV-10_defconfig
-> index 8fd9b44..a6a7298 100644
-> --- a/arch/blackfin/configs/PNAV-10_defconfig
-> +++ b/arch/blackfin/configs/PNAV-10_defconfig
-> @@ -46,7 +46,6 @@ CONFIG_IP_PNP=y
->  CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
->  # CONFIG_FW_LOADER is not set
->  CONFIG_MTD=y
-> -CONFIG_MTD_PARTITIONS=y
->  CONFIG_MTD_CHAR=m
->  CONFIG_MTD_BLOCK=y
->  CONFIG_MTD_RAM=y
-> diff --git a/arch/blackfin/configs/SRV1_defconfig b/arch/blackfin/configs/SRV1_defconfig
-> index 0520c16..bc21664 100644
-> --- a/arch/blackfin/configs/SRV1_defconfig
-> +++ b/arch/blackfin/configs/SRV1_defconfig
-> @@ -38,7 +38,6 @@ CONFIG_IRTTY_SIR=m
->  # CONFIG_WIRELESS is not set
->  # CONFIG_FW_LOADER is not set
->  CONFIG_MTD=y
-> -CONFIG_MTD_PARTITIONS=y
->  CONFIG_MTD_CHAR=m
->  CONFIG_MTD_BLOCK=y
->  CONFIG_MTD_JEDECPROBE=m
-> diff --git a/arch/blackfin/configs/TCM-BF518_defconfig b/arch/blackfin/configs/TCM-BF518_defconfig
-> index e4ed865..ea88158 100644
-> --- a/arch/blackfin/configs/TCM-BF518_defconfig
-> +++ b/arch/blackfin/configs/TCM-BF518_defconfig
-> @@ -54,7 +54,6 @@ CONFIG_IP_PNP=y
->  CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
->  # CONFIG_FW_LOADER is not set
->  CONFIG_MTD=y
-> -CONFIG_MTD_PARTITIONS=y
->  CONFIG_MTD_CMDLINE_PARTS=y
->  CONFIG_MTD_CHAR=y
->  CONFIG_MTD_BLOCK=y
-> --
-> 1.7.0.4
+--ibTvN161/egqYuK8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Sat, Nov 30, 2013 at 12:12:14PM +0100, Borislav Petkov wrote:
+> Date:	Sat, 30 Nov 2013 12:12:14 +0100
+> From: Borislav Petkov <bp@alien8.de>
+> To: Levente Kurusa <levex@linux.com>
+> Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+>  Tony Luck <tony.luck@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+>  x86@kernel.org, EDAC <linux-edac@vger.kernel.org>, LKML
+>  <linux-kernel@vger.kernel.org>
+> Subject: Re: [PATCH] x86: mcheck: call put_device on device_register fail=
+ure
+> User-Agent: Mutt/1.5.21 (2010-09-15)
+>=20
+> On Sat, Nov 30, 2013 at 08:30:33AM +0100, Levente Kurusa wrote:
+> > No, if the call to put_device gives up the last reference to the
+> > device, then device_release gets called which in turn frees the memory
+> > associated with it. In this case, mce_device_release() will get
+> > called, which is just a simple kfree call.
+>=20
+> Aah, that's that delayed freeing the driver core does, right. Now you
+> made me go and look into detail:
+>=20
+> device_unregister
+> |->put_device
+>   |->kobject_put
+>      |->kref_put(&kobj->kref, kobject_release)
+> 	|->kref_sub(kref, 1, release)
+> 	   |->release
+> 	   |->kobject_release
+> 	      |->kobject_cleanup
+> 	         |->t->release
+> 		 |->device_release
+> 		    |->mce_device_release
+>=20
+>=20
+> Ok, I see it now. :-) :-)
+>=20
+> Thanks, I'll take your patch as-is.
+>=20
+
+I have some concerns about it. if device_register is failed, it will
+backtraces all kinds of conditions automatically, including put_device
+definately. So do we really need an extra put_device when it returns
+failure?
+
+--ibTvN161/egqYuK8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSnUCiAAoJEI01n1+kOSLHdz4P/1BEmCySrRgSWQaQXuWYWc4v
+m8X8S2PRVRp0SsgI2GFDDI3muqHqzblPt1lHhXqYyYqSGc/XgygZS0jusVKeK2Wn
+MktOzWPDJLAYh0Vd5LMwwII8NAUFdIMdO4Xs83O6oIrgg1Qozlie/xx92jCtopZj
+SXZhXYk5cTo81ng3vt7i16r+amSkp7hoHjMOI0/QJABuYkt+ZnOmf5MtCc8RAWBh
+o3yIj74Hvw5knosoMG6FpGktxXEBENJPCFprC9KKgQLraVtS95HtNM/MrK8sCPzv
+2LYEdF9IxOwtWVqBscr4/ywWh8yi0yJ3v8gZOIywmgfwdw4slMFnzzVmWsxW9856
+zhp5UVmlnZk5BiUVb2RgQHpxlNN/Gmrey2LmEtO6Lsmfrfj30XbH8q8BG2AWCoG1
+Rz4yQCczZo4H6uID/i8f7W+64OasPN8KpgdMTU7f7+e3kvx/y75narzVbX5ysP9t
+e7fEPvUU/6mIgTPwMahnIS4sMaXHRE9Wm0oIYLRKFGj1bFM5GmsCIspg4YoVgJ4Z
+EGVVLYmfGNf/FCiEcdi76d0mK932XcJHZAsS+xIpgegmU6pqKKXZkTqjg/RNNGKT
+Y75wF8WKshe9jrEd3FQw6506uUEU08JTf+cFLXE1TuQGbJ2H+847toXBemo3OFK7
+O7CvkXrGBqGaXihX8dw6
+=iCwA
+-----END PGP SIGNATURE-----
+
+--ibTvN161/egqYuK8--
