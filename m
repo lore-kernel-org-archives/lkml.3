@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753596Ab3LCSXR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 13:23:17 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:49457 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227Ab3LCSXP (ORCPT
+	id S1753949Ab3LCSYS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 13:24:18 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:52477 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753750Ab3LCSYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 13:23:15 -0500
-Date: Tue, 3 Dec 2013 15:23:05 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/7] perf script: Do not call
- perf_event__preprocess_sample() twice)
-Message-ID: <20131203182305.GA2052@ghostprotocols.net>
-References: <1386055390-13757-1-git-send-email-adrian.hunter@intel.com>
- <1386055390-13757-2-git-send-email-adrian.hunter@intel.com>
+	Tue, 3 Dec 2013 13:24:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386055390-13757-2-git-send-email-adrian.hunter@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131203033712.GA8525@kroah.com>
+References: <20131129031419.GB5889@neilslaptop.think-freely.org>
+ <20131129094137.GC3028@redhat.com> <20131129175336.GA6152@kroah.com>
+ <CAErSpo44sQU2PbufCYF+wzpMtMPC97_FgAMQgruX9Nw3XbmL8g@mail.gmail.com> <20131203033712.GA8525@kroah.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 3 Dec 2013 11:23:51 -0700
+Message-ID: <CAErSpo42MJ1VkhDdJ_AM-5hsidakcE_GQzWfV9UVT36nK_5a5A@mail.gmail.com>
+Subject: Re: [PATCH] PCI: update MSI attribute file documentation
+To: Greg KH <greg@kroah.com>
+Cc: Veaceslav Falico <vfalico@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
+        Knut Petersen <Knut_Petersen@t-online.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Dec 03, 2013 at 09:23:04AM +0200, Adrian Hunter escreveu:
-> perf_event__preprocess_sample() is called in
-> process_sample_event().  Instead of calling it
-> again in perf_evsel__print_ip(), pass though
-> the resultant addr_location.
+On Mon, Dec 2, 2013 at 8:37 PM, Greg KH <greg@kroah.com> wrote:
+> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>
+> Now that the MSI modes are now attribute files in sysfs, not
+> subdirectories, update the documentation to reflect this.
+>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-<SNIP>
-> +++ b/tools/perf/util/session.c
-> @@ -1487,11 +1487,12 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
->  	return NULL;
->  }
->  
-> -void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
-> +void perf_evsel__print_ip(struct perf_evsel *evsel,
-> +			  union perf_event *event __maybe_unused,
+Thanks, I'll fold this into the patch that makes the code change, if
+you don't mind.
 
-Why do we have to keep this parameter?
+Bjorn
 
-- Arnaldo
+> diff --git a/Documentation/ABI/testing/sysfs-bus-pci b/Documentation/ABI/testing/sysfs-bus-pci
+> index 5210a51c90fd..a3c5a6685036 100644
+> --- a/Documentation/ABI/testing/sysfs-bus-pci
+> +++ b/Documentation/ABI/testing/sysfs-bus-pci
+> @@ -70,18 +70,15 @@ Date:               September, 2011
+>  Contact:       Neil Horman <nhorman@tuxdriver.com>
+>  Description:
+>                 The /sys/devices/.../msi_irqs directory contains a variable set
+> -               of sub-directories, with each sub-directory being named after a
+> -               corresponding msi irq vector allocated to that device.  Each
+> -               numbered sub-directory N contains attributes of that irq.
+> -               Note that this directory is not created for device drivers which
+> -               do not support msi irqs
+> +               of files, with each file being named after a corresponding msi
+> +               irq vector allocated to that device.
+>
+> -What:          /sys/bus/pci/devices/.../msi_irqs/<N>/mode
+> +What:          /sys/bus/pci/devices/.../msi_irqs/<N>
+>  Date:          September 2011
+>  Contact:       Neil Horman <nhorman@tuxdriver.com>
+>  Description:
+>                 This attribute indicates the mode that the irq vector named by
+> -               the parent directory is in (msi vs. msix)
+> +               the file is in (msi vs. msix)
+>
+>  What:          /sys/bus/pci/devices/.../remove
+>  Date:          January 2009
