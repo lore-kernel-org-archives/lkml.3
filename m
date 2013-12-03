@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab3LCO0x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 09:26:53 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:53175 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753443Ab3LCO0u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 09:26:50 -0500
+	id S1754585Ab3LCO1J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 09:27:09 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:42233 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753481Ab3LCO1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 09:27:04 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <bcousson@baylibre.com>, <paul@pwsan.com>, <tony@atomide.com>
 CC: <tomi.valkeinen@ti.com>, <balbi@ti.com>, <sr@denx.de>,
@@ -14,9 +13,9 @@ CC: <tomi.valkeinen@ti.com>, <balbi@ti.com>, <sr@denx.de>,
         <bigeasy@linutronix.de>, <linux-omap@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH 2/3] ARM: OMAP2+: hwmod: Fix RESET logic
-Date: Tue, 3 Dec 2013 16:25:47 +0200
-Message-ID: <1386080748-17005-3-git-send-email-rogerq@ti.com>
+Subject: [PATCH 3/3] ARM: OMAP3: hwmod data: Don't prevent RESET of USB Host module
+Date: Tue, 3 Dec 2013 16:25:48 +0200
+Message-ID: <1386080748-17005-4-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386080748-17005-1-git-send-email-rogerq@ti.com>
 References: <1386080748-17005-1-git-send-email-rogerq@ti.com>
@@ -26,102 +25,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In _ocp_softreset(), after _set_softreset() + write_sysconfig(),
-the hwmod's sysc_cache will always contain SOFTRESET bit set
-so all further writes to sysconfig using this cache will initiate
-a repeated SOFTRESET e.g. enable_sysc(). This is true for OMAP3 like
-platforms that have RESET_DONE status in the SYSSTATUS register and
-so the the SOFTRESET bit in SYSCONFIG is not automatically cleared.
-It is not a problem for OMAP4 like platforms that indicate RESET
-completion by clearing the SOFTRESET bit in the SYSCONFIG register.
+Unlike what the comment states, errata i660 does not state that we
+can't RESET the USB host module. Instead it states that RESET is the
+only way to recover from a deadlock situation.
 
-This repeated SOFTRESET is undesired and was the root cause of
-USB host issues on OMAP3 platforms when hwmod was allowed to do the
-SOFTRESET for the USB Host module.
-
-To fix this we clear the SOFTRESET bit and update the sysconfig
-register + sysc_cache using write_sysconfig().
+RESET ensures that the module is in a known good state irrespective
+of what bootloader does with the module, so it must be done at boot.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/mach-omap2/omap_hwmod.c | 43 +++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 42 insertions(+), 1 deletion(-)
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c | 13 +++----------
+ 1 file changed, 3 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
-index e3f0eca..615acec 100644
---- a/arch/arm/mach-omap2/omap_hwmod.c
-+++ b/arch/arm/mach-omap2/omap_hwmod.c
-@@ -399,7 +399,7 @@ static int _set_clockactivity(struct omap_hwmod *oh, u8 clockact, u32 *v)
- }
+diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+index 9e56fab..d337429 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+@@ -1943,7 +1943,8 @@ static struct omap_hwmod_class_sysconfig omap3xxx_usb_host_hs_sysc = {
+ 	.syss_offs	= 0x0014,
+ 	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_CLOCKACTIVITY |
+ 			   SYSC_HAS_SIDLEMODE | SYSC_HAS_ENAWAKEUP |
+-			   SYSC_HAS_SOFTRESET | SYSC_HAS_AUTOIDLE),
++			   SYSC_HAS_SOFTRESET | SYSC_HAS_AUTOIDLE |
++			   SYSS_HAS_RESET_STATUS),
+ 	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
+ 			   MSTANDBY_FORCE | MSTANDBY_NO | MSTANDBY_SMART),
+ 	.sysc_fields	= &omap_hwmod_sysc_type1,
+@@ -2021,15 +2022,7 @@ static struct omap_hwmod omap3xxx_usb_host_hs_hwmod = {
+ 	 * hence HWMOD_SWSUP_MSTANDBY
+ 	 */
  
- /**
-- * _set_softreset: set OCP_SYSCONFIG.CLOCKACTIVITY bits in @v
-+ * _set_softreset: set OCP_SYSCONFIG.SOFTRESET bit in @v
-  * @oh: struct omap_hwmod *
-  * @v: pointer to register contents to modify
-  *
-@@ -427,6 +427,36 @@ static int _set_softreset(struct omap_hwmod *oh, u32 *v)
- }
+-	/*
+-	 * During system boot; If the hwmod framework resets the module
+-	 * the module will have smart idle settings; which can lead to deadlock
+-	 * (above Errata Id:i660); so, dont reset the module during boot;
+-	 * Use HWMOD_INIT_NO_RESET.
+-	 */
+-
+-	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY |
+-			  HWMOD_INIT_NO_RESET,
++	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
+ };
  
- /**
-+ * _clr_softreset: clear OCP_SYSCONFIG.SOFTRESET bit in @v
-+ * @oh: struct omap_hwmod *
-+ * @v: pointer to register contents to modify
-+ *
-+ * Clear the SOFTRESET bit in @v for hwmod @oh.  Returns -EINVAL upon
-+ * error or 0 upon success.
-+ */
-+static int _clr_softreset(struct omap_hwmod *oh, u32 *v)
-+{
-+	u32 softrst_mask;
-+
-+	if (!oh->class->sysc ||
-+	    !(oh->class->sysc->sysc_flags & SYSC_HAS_SOFTRESET))
-+		return -EINVAL;
-+
-+	if (!oh->class->sysc->sysc_fields) {
-+		WARN(1,
-+		     "omap_hwmod: %s: sysc_fields absent for sysconfig class\n",
-+		     oh->name);
-+		return -EINVAL;
-+	}
-+
-+	softrst_mask = (0x1 << oh->class->sysc->sysc_fields->srst_shift);
-+
-+	*v &= ~softrst_mask;
-+
-+	return 0;
-+}
-+
-+/**
-  * _wait_softreset_complete - wait for an OCP softreset to complete
-  * @oh: struct omap_hwmod * to wait on
-  *
-@@ -1911,6 +1941,12 @@ static int _ocp_softreset(struct omap_hwmod *oh)
- 	ret = _set_softreset(oh, &v);
- 	if (ret)
- 		goto dis_opt_clks;
-+
-+	_write_sysconfig(v, oh);
-+	ret = _clr_softreset(oh, &v);
-+	if (ret)
-+		goto dis_opt_clks;
-+
- 	_write_sysconfig(v, oh);
- 
- 	if (oh->class->sysc->srst_udelay)
-@@ -3169,6 +3205,11 @@ int omap_hwmod_softreset(struct omap_hwmod *oh)
- 		goto error;
- 	_write_sysconfig(v, oh);
- 
-+	ret = _clr_softreset(oh, &v);
-+	if (ret)
-+		goto error;
-+	_write_sysconfig(v, oh);
-+
- error:
- 	return ret;
- }
+ /*
 -- 
 1.8.3.2
 
