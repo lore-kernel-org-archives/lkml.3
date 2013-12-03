@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab3LCCq1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 21:46:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44248 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705Ab3LCCqZ (ORCPT
+	id S1753523Ab3LCCqh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 21:46:37 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:65302 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752888Ab3LCCqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 21:46:25 -0500
-Date: Mon, 2 Dec 2013 18:47:26 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Rui Xiang <rui.xiang@huawei.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sysfs: add necessary Null check in
- sysfs_do_create_link_sd
-Message-ID: <20131203024726.GC23997@kroah.com>
-References: <529D3627.1000205@huawei.com>
+	Mon, 2 Dec 2013 21:46:32 -0500
+Date: Mon, 2 Dec 2013 18:46:29 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.12 000/212] 3.12.3-stable review
+Message-ID: <20131203024629.GA21479@roeck-us.net>
+References: <20131202191248.517975703@linuxfoundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <529D3627.1000205@huawei.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20131202191248.517975703@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 09:38:47AM +0800, Rui Xiang wrote:
-> While target_sd or sd are null, it won't need sysfs_put and
-> should return -ENOENT directly. Here add null check for
-> target_sd and sd.
+On Mon, Dec 02, 2013 at 11:13:11AM -0800, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.12.3 release.
+> There are 212 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 > 
-> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
-> ---
->  fs/sysfs/symlink.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
+> Responses should be made by Wed Dec  4 19:11:18 UTC 2013.
+> Anything received after that time might be too late.
 > 
-> diff --git a/fs/sysfs/symlink.c b/fs/sysfs/symlink.c
-> index 3ae3f1b..d69b786 100644
-> --- a/fs/sysfs/symlink.c
-> +++ b/fs/sysfs/symlink.c
-> @@ -83,8 +83,10 @@ static int sysfs_do_create_link_sd(struct sysfs_dirent *parent_sd,
->  	return 0;
->  
->   out_put:
-> -	sysfs_put(target_sd);
-> -	sysfs_put(sd);
-> +	if (target_sd)
-> +		sysfs_put(target_sd);
-> +	if (sd)
-> +		sysfs_put(sd);
+Build results:
+	total: 110 pass: 107 skipped: 3 fail: 0
 
-This change does nothing at all, why is it needed?
+qemu tests all passed. Perfect results.
 
-greg k-h
+Guenter
