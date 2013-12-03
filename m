@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753664Ab3LCC3Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 21:29:25 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36902 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753365Ab3LCC3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 21:29:20 -0500
+	id S1753924Ab3LCC3q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 21:29:46 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:53711 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753829Ab3LCC3e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 21:29:34 -0500
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-mm@kvack.org>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2 09/23] mm/init: Use memblock apis for early memory allocations
-Date: Mon, 2 Dec 2013 21:27:24 -0500
-Message-ID: <1386037658-3161-10-git-send-email-santosh.shilimkar@ti.com>
+Subject: [PATCH v2 21/23] mm/ARM: kernel: Use memblock apis for early memory allocations
+Date: Mon, 2 Dec 2013 21:27:36 -0500
+Message-ID: <1386037658-3161-22-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com>
 References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com>
@@ -38,26 +39,36 @@ Cc: Tejun Heo <tj@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- init/main.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/arm/kernel/devtree.c |    2 +-
+ arch/arm/kernel/setup.c   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/init/main.c b/init/main.c
-index febc511..934430d 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -355,9 +355,9 @@ static inline void smp_prepare_cpus(unsigned int maxcpus) { }
-  */
- static void __init setup_command_line(char *command_line)
+diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
+index 739c3df..85b9b3b 100644
+--- a/arch/arm/kernel/devtree.c
++++ b/arch/arm/kernel/devtree.c
+@@ -33,7 +33,7 @@ void __init early_init_dt_add_memory_arch(u64 base, u64 size)
+ 
+ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
  {
--	saved_command_line = alloc_bootmem(strlen (boot_command_line)+1);
--	initcall_command_line = alloc_bootmem(strlen (boot_command_line)+1);
--	static_command_line = alloc_bootmem(strlen (command_line)+1);
-+	saved_command_line = memblock_virt_alloc(strlen(boot_command_line)+1);
-+	initcall_command_line = memblock_virt_alloc(strlen (boot_command_line)+1);
-+	static_command_line = memblock_virt_alloc(strlen(command_line)+1);
- 	strcpy (saved_command_line, boot_command_line);
- 	strcpy (static_command_line, command_line);
+-	return alloc_bootmem_align(size, align);
++	return memblock_virt_alloc_align(size, align);
  }
+ 
+ void __init arm_dt_memblock_reserve(void)
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 6a1b8a8..0d3c6aa 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -717,7 +717,7 @@ static void __init request_standard_resources(const struct machine_desc *mdesc)
+ 	kernel_data.end     = virt_to_phys(_end - 1);
+ 
+ 	for_each_memblock(memory, region) {
+-		res = alloc_bootmem_low(sizeof(*res));
++		res = memblock_virt_alloc(sizeof(*res));
+ 		res->name  = "System RAM";
+ 		res->start = __pfn_to_phys(memblock_region_memory_base_pfn(region));
+ 		res->end = __pfn_to_phys(memblock_region_memory_end_pfn(region)) - 1;
 -- 
 1.7.9.5
 
