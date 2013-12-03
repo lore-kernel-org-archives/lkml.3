@@ -1,89 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753619Ab3LCNmP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 08:42:15 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48419 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752485Ab3LCNmO (ORCPT
+	id S1753940Ab3LCNnc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 08:43:32 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:56495 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753755Ab3LCNn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 08:42:14 -0500
-Date: Tue, 3 Dec 2013 13:41:13 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Vinayak Kale <vkale@apm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "patches@apm.com" <patches@apm.com>, "jcm@redhat.com" <jcm@redhat.com>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Tuan Phan <tphan@apm.com>
-Subject: Re: [PATCH V6 2/2] arm64: perf: add support for percpu pmu interrupt
-Message-ID: <20131203134113.GI1169@mudshark.cambridge.arm.com>
-References: <1385976843-13280-1-git-send-email-vkale@apm.com>
- <1385976843-13280-3-git-send-email-vkale@apm.com>
- <20131203113052.GE1169@mudshark.cambridge.arm.com>
- <CAPrCYke4P2V47iG=1b_f3YHiTqC2hOG5yiKTUWuWG+pX8JauMQ@mail.gmail.com>
+	Tue, 3 Dec 2013 08:43:29 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+I3wy5XnOAuIqNfQ/MlcB0xbrKhgMB+ko=
+Date: Tue, 3 Dec 2013 08:43:10 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Leigh Brown <leigh@solinno.co.uk>, Nicolas Schichan <nschichan@freebox.fr>,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Florian Fainelli <florian@openwrt.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: Spurious timeouts in mvmdio
+Message-ID: <20131203134310.GE29282@titan.lakedaemon.net>
+References: <529CA42A.3040504@freebox.fr>
+ <20131203122346.GD29282@titan.lakedaemon.net>
+ <20131203124033.GT16735@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPrCYke4P2V47iG=1b_f3YHiTqC2hOG5yiKTUWuWG+pX8JauMQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131203124033.GT16735@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 11:49:11AM +0000, Vinayak Kale wrote:
-> On Tue, Dec 3, 2013 at 5:00 PM, Will Deacon <will.deacon@arm.com> wrote:
-> > On Mon, Dec 02, 2013 at 09:34:03AM +0000, Vinayak Kale wrote:
-> >> Add support for irq registration when pmu interrupt is percpu.
-> >>
-> >> Signed-off-by: Vinayak Kale <vkale@apm.com>
-> >> Signed-off-by: Tuan Phan <tphan@apm.com>
-> >> ---
-> >>  arch/arm64/kernel/perf_event.c |  116 +++++++++++++++++++++++++++++-----------
-> >>  1 file changed, 86 insertions(+), 30 deletions(-)
-> >>
-> >> diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
-> >> index cea1594..d2d562f 100644
-> >> --- a/arch/arm64/kernel/perf_event.c
-> >> +++ b/arch/arm64/kernel/perf_event.c
-> >> @@ -22,6 +22,7 @@
-> >>
-> >>  #include <linux/bitmap.h>
-> >>  #include <linux/interrupt.h>
-> >> +#include <linux/irq.h>
-> >>  #include <linux/kernel.h>
-> >>  #include <linux/export.h>
-> >>  #include <linux/perf_event.h>
-> >> @@ -363,26 +364,61 @@ validate_group(struct perf_event *event)
-> >>  }
-> >>
-> >>  static void
-> >> +armpmu_disable_percpu_irq(void *data)
-> >> +{
-> >> +     struct arm_pmu *armpmu = data;
-> >> +     struct platform_device *pmu_device = armpmu->plat_device;
-> >> +     int irq = platform_get_irq(pmu_device, 0);
-> >> +
-> >> +     cpumask_test_and_clear_cpu(smp_processor_id(), &armpmu->active_irqs);
-> >> +     disable_percpu_irq(irq);
-> >> +}
-> >> +
-> >> +static void
-> >>  armpmu_release_hardware(struct arm_pmu *armpmu)
-> >>  {
-> >> -     int i, irq, irqs;
-> >> +     int irq;
-> >
-> > Why did you not make this unsigned, like I suggested?
+On Tue, Dec 03, 2013 at 12:40:34PM +0000, Russell King - ARM Linux wrote:
+> On Tue, Dec 03, 2013 at 07:23:46AM -0500, Jason Cooper wrote:
+> > On Mon, Dec 02, 2013 at 04:15:54PM +0100, Nicolas Schichan wrote:
+> > > During 3.13-rc1 testing, I have found out that the mvmdio driver
+> > > would report timeouts on the kernel console:
+> > > 
+> > > [   11.011334] orion-mdio orion-mdio: Timeout: SMI busy for too long
+> > > 
+> > > The hardware is a MV88F6281 Kirkwood CPU. The mvmdio driver is using
+> > > the irq line 46 (ge00_err).
+> > > 
+> > > I am inclined to believe that it is due to the fact that
+> > > wait_event_timeout() is called with a timeout parameter of 1 jiffy
+> > > in orion_mdio_wait_ready(). If the timer interrupt ticks right after
+> > > calling wait_event_timeout(), we may end up spending much less time
+> > > than MVMDIO_SMI_TIMEOUT (1 msec) in wait_event_timeout(), and as a
+> > > result report a timeout as the MDIO access did not complete in such
+> > > a short time.
+> > > 
+> > > As to how to fix this, I see two options (I don't know which one
+> > > would be prefered):
+> > > 
+> > > - Option 1: always pass a timeout of at least 2 jiffy to wait_event_timeout().
+> > > - Option 2: switch to wait_event_hrtimeout().
+> > > 
+> > > I can provide patches for both options.
+> > 
+> > Based on yesterday's irc chat, option 1 sounds good.  Here's the dump
+> > from yesterday where Sebastian provided a thorough explanation:
+> > 
+> > 11:29 < shesselba> increasing max timeout to 2 ticks at least sounds reasonable
+> > 11:29 < shesselba> 10ms should be enough for every CONFIG_HZ there is
+> > 
+> > 11:30 < kos_tom> why make the timeout tied to the ticks? there are functions/macros to convert real time numbers into ticks.
+> > 11:30 < kos_tom> msecs_to_jiffies() or something
+> > 
+> > 11:31 < shesselba> kos_tom: it is already using usecs_to_jiffies()
+> > 11:31 < shesselba> the thing is: 1ms is less than a jiffy
 > 
-> Suggestion was to make 'irqs' variable unsigned and modify the check
-> for 'irqs' to if (!irqs).
-> This patch incorporates that suggestion.
+> Yes, and the kernels time conversion functions aren't stupid.  Let's
+> look at this function's implementation:
 > 
-> We have to keep 'irq' signed only. 'platform_get_irq()' can return error value.
+> unsigned long usecs_to_jiffies(const unsigned int u)
+> {
+>         if (u > jiffies_to_usecs(MAX_JIFFY_OFFSET))
+>                 return MAX_JIFFY_OFFSET;
+> #if HZ <= USEC_PER_SEC && !(USEC_PER_SEC % HZ)
+>         return (u + (USEC_PER_SEC / HZ) - 1) / (USEC_PER_SEC / HZ);
+> #elif HZ > USEC_PER_SEC && !(HZ % USEC_PER_SEC)
+>         return u * (HZ / USEC_PER_SEC);
+> #else
+>         return (USEC_TO_HZ_MUL32 * u + USEC_TO_HZ_ADJ32)
+>                 >> USEC_TO_HZ_SHR32;
+> #endif
+> }
+> 
+> Now, assuming HZ=100 and USEC_PER_SEC=1000000, we will use:
+> 
+> 	return (u + (USEC_PER_SEC / HZ) - 1) / (USEC_PER_SEC / HZ);
+> 
+> If you ask for 1us, this comes out as:
+> 
+> 	return (1 + (1000000 / 100) - 1) / (1000000 / 100);
+> 
+> which is one jiffy.  So, for a requested 1us period, you're given a
+> 1 jiffy interval, or 10ms.  For other (sensible) values:
+> 
+>         return (USEC_TO_HZ_MUL32 * u + USEC_TO_HZ_ADJ32)
+>                 >> USEC_TO_HZ_SHR32;
+> 
+> gets used, which has a similar behaviour.
+> 
+> Now, depending on how you use this one jiffy interval, the thing to realise
+> is that with this kind of loop:
+> 
+> 	timeout = jiffies + usecs_to_jiffies(1);
+> 	do {
+> 		something;
+> 	} while (time_is_before_jiffies(timeout));
+> 
+> what this equates to is:
+> 
+> 	} while (jiffies - timeout < 0);
+> 
+> What this means is that the loop breaks at jiffies = timeout, so it can
+> indeed timeout before one tick - within 0 to 10ms for HZ=100.  The problem
+> is not the usecs_to_jiffies(), it's with the implementation.
 
-Damn, yes, I see the issue there. Ok, I'll go back and take another look at
-your patch...
+Ack.
 
-Will
+> If you use time_is_before_eq_jiffies() instead, it will also loop if
+> jiffies == timeout, which will give you the additional safety margin -
+> meaning it will timeout after 10 to 20ms instead.
+> 
+> You may wish to consider coding this differently as well - if you have
+> the error interrupt, there's no need for this loop.  You only need the
+> loop if you're using usleep_range().  Note the return value of
+> wait_event_timeout() will tell you positively and correctly if the waited
+> condition succeeded or you timed out.
+
+Nicolas, sorry for the confusion.  Mind spinning a v2?
+
+thx,
+
+Jason.
