@@ -1,173 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631Ab3LCMeO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 07:34:14 -0500
-Received: from relay.parallels.com ([195.214.232.42]:58469 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752789Ab3LCMeM (ORCPT
+	id S1753544Ab3LCMew (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 07:34:52 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:58687 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752881Ab3LCMet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 07:34:12 -0500
-Message-ID: <529DCFC2.5010400@parallels.com>
-Date: Tue, 3 Dec 2013 16:34:10 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <dchinner@redhat.com>,
-        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        <glommer@openvz.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v12 12/18] fs: make icache, dcache shrinkers memcg-aware
-References: <cover.1385974612.git.vdavydov@parallels.com> <8e7582ad42f35cd9a9ea274bd203e2423b944b62.1385974612.git.vdavydov@parallels.com> <20131203114557.GS10988@dastard>
-In-Reply-To: <20131203114557.GS10988@dastard>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Tue, 3 Dec 2013 07:34:49 -0500
+Date: Tue, 3 Dec 2013 12:34:46 +0000
+From: Kim Phillips <kim.phillips@linaro.org>
+To: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: kvm@vger.kernel.org, scottwood@freescale.com, R65777@freescale.com,
+        B07421@freescale.com, B08248@freescale.com,
+        christoffer.dall@linaro.org, alex.williamson@redhat.com,
+        a.motakis@virtualopensystems.com, agraf@suse.de, B16395@freescale.com
+Subject: [REPOST][PATCH 1/2] driver core: Add new device_driver flag to
+ allow binding via sysfs only
+Message-Id: <20131203123446.42fbff34a8ebd7afd38159a5@linaro.org>
+X-Mailer: Sylpheed 3.4.0beta5 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2013 03:45 PM, Dave Chinner wrote:
-> On Mon, Dec 02, 2013 at 03:19:47PM +0400, Vladimir Davydov wrote:
->> Using the per-memcg LRU infrastructure introduced by previous patches,
->> this patch makes dcache and icache shrinkers memcg-aware. To achieve
->> that, it converts s_dentry_lru and s_inode_lru from list_lru to
->> memcg_list_lru and restricts the reclaim to per-memcg parts of the lists
->> in case of memcg pressure.
->>
->> Other FS objects are currently ignored and only reclaimed on global
->> pressure, because their shrinkers are heavily FS-specific and can't be
->> converted to be memcg-aware so easily. However, we can pass on target
->> memcg to the FS layer and let it decide if per-memcg objects should be
->> reclaimed.
-> And now you have a big problem, because that means filesystems like
-> XFS won't reclaim inodes during memcg reclaim.
->
-> That is, for XFS, prune_icache_lru() does not free any memory. All
-> it does is remove all the VFS references to the struct xfs_inode,
-> which is then reclaimed via the sb->s_op->free_cached_objects()
-> method.
->
-> IOWs, what you've done is broken.
+VFIO supports pass-through of devices to user space - for sake
+of illustration, say a PCI e1000 device:
 
-Missed that, thanks for pointing out.
+- the e1000 is first unbound from the PCI e1000 driver via sysfs
+- the vfio-pci driver is told via new_id that it now handles e1000 devices
+- the e1000 is explicitly bound to vfio-pci through sysfs
 
->
->> Note that with this patch applied we lose global LRU order, but it does
-> We don't have global LRU order today for the filesystem caches.
-> We have per superblock, per-node LRU reclaim order.
->
->> --- a/fs/dcache.c
->> +++ b/fs/dcache.c
->> @@ -343,18 +343,24 @@ static void dentry_unlink_inode(struct dentry * dentry)
->>  #define D_FLAG_VERIFY(dentry,x) WARN_ON_ONCE(((dentry)->d_flags & (DCACHE_LRU_LIST | DCACHE_SHRINK_LIST)) != (x))
->>  static void d_lru_add(struct dentry *dentry)
->>  {
->> +	struct list_lru *lru =
->> +		mem_cgroup_kmem_list_lru(&dentry->d_sb->s_dentry_lru, dentry);
->> +
->>  	D_FLAG_VERIFY(dentry, 0);
->>  	dentry->d_flags |= DCACHE_LRU_LIST;
->>  	this_cpu_inc(nr_dentry_unused);
->> -	WARN_ON_ONCE(!list_lru_add(&dentry->d_sb->s_dentry_lru, &dentry->d_lru));
->> +	WARN_ON_ONCE(!list_lru_add(lru, &dentry->d_lru));
->>  }
-> This is what I mean about pushing memcg cruft into places where it
-> is not necessary. This can be done entirely behind list_lru_add(),
-> without the caller having to care.
->
->> @@ -970,9 +976,9 @@ dentry_lru_isolate(struct list_head *item, spinlock_t *lru_lock, void *arg)
->>  }
->>  
->>  /**
->> - * prune_dcache_sb - shrink the dcache
->> - * @sb: superblock
->> - * @nr_to_scan : number of entries to try to free
->> + * prune_dcache_lru - shrink the dcache
->> + * @lru: dentry lru list
->> + * @nr_to_scan: number of entries to try to free
->>   * @nid: which node to scan for freeable entities
->>   *
->>   * Attempt to shrink the superblock dcache LRU by @nr_to_scan entries. This is
->> @@ -982,14 +988,13 @@ dentry_lru_isolate(struct list_head *item, spinlock_t *lru_lock, void *arg)
->>   * This function may fail to free any resources if all the dentries are in
->>   * use.
->>   */
->> -long prune_dcache_sb(struct super_block *sb, unsigned long nr_to_scan,
->> -		     int nid)
->> +long prune_dcache_lru(struct list_lru *lru, unsigned long nr_to_scan, int nid)
->>  {
->>  	LIST_HEAD(dispose);
->>  	long freed;
->>  
->> -	freed = list_lru_walk_node(&sb->s_dentry_lru, nid, dentry_lru_isolate,
->> -				       &dispose, &nr_to_scan);
->> +	freed = list_lru_walk_node(lru, nid, dentry_lru_isolate,
->> +				   &dispose, &nr_to_scan);
->>  	shrink_dentry_list(&dispose);
->>  	return freed;
->>  }
-> And here, you pass an LRU when what we really need to pass is the
-> struct shrink_control that contains nr_to_scan, nid, and the memcg
-> that pruning is targetting.
->
-> Because of the tight integration of the LRUs and shrinkers, it makes
-> sense to pass the shrink control all the way into the list. i.e:
->
-> 	freed = list_lru_scan(&sb->s_dentry_lru, sc, dentry_lru_isolate,
-> 			      &dispose);
->
-> And again, that hides everything to do with memcg based LRUs and
-> reclaim from the callers. It's clean, simple and hard to get wrong.
->
->> @@ -1029,7 +1034,7 @@ void shrink_dcache_sb(struct super_block *sb)
->>  	do {
->>  		LIST_HEAD(dispose);
->>  
->> -		freed = list_lru_walk(&sb->s_dentry_lru,
->> +		freed = memcg_list_lru_walk_all(&sb->s_dentry_lru,
->>  			dentry_lru_isolate_shrink, &dispose, UINT_MAX);
->>  
-> list_lru_walk() is, by definition, supposed to walk every single
-> object on the LRU. With memcg awareness, it should be walking all
-> the memcg lists, too.
->
->> diff --git a/fs/super.c b/fs/super.c
->> index cece164..b198da4 100644
->> --- a/fs/super.c
->> +++ b/fs/super.c
->> @@ -57,6 +57,8 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
->>  				      struct shrink_control *sc)
->>  {
->>  	struct super_block *sb;
->> +	struct list_lru *inode_lru;
->> +	struct list_lru *dentry_lru;
->>  	long	fs_objects = 0;
->>  	long	total_objects;
->>  	long	freed = 0;
->> @@ -75,11 +77,14 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
->>  	if (!grab_super_passive(sb))
->>  		return SHRINK_STOP;
->>  
->> -	if (sb->s_op->nr_cached_objects)
->> +	if (sb->s_op->nr_cached_objects && !sc->memcg)
->>  		fs_objects = sb->s_op->nr_cached_objects(sb, sc->nid);
->>  
->> -	inodes = list_lru_count_node(&sb->s_inode_lru, sc->nid);
->> -	dentries = list_lru_count_node(&sb->s_dentry_lru, sc->nid);
->> +	inode_lru = mem_cgroup_list_lru(&sb->s_inode_lru, sc->memcg);
->> +	dentry_lru = mem_cgroup_list_lru(&sb->s_dentry_lru, sc->memcg);
->> +
->> +	inodes = list_lru_count_node(inode_lru, sc->nid);
->> +	dentries = list_lru_count_node(dentry_lru, sc->nid);
->>  	total_objects = dentries + inodes + fs_objects + 1;
-> Again: list_lru_count_sc(&sb->s_inode_lru, sc).
->
-> And push the scan control down into ->nr_cached_objects, too.
+However, now we have two drivers in the system that both handle e1000
+devices.  A hotplug event could then occur and it is ambiguous as to which
+driver will claim the device.  The desired semantics is that vfio-pci is
+only bound to devices by explicit request in sysfs.  This patch makes this
+possible by introducing a sysfs_bind_only flag in struct device_driver.
 
-Thanks for the tip! Now I see your point, it would really look better if
-we used shrink_control here.
+Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
+Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
+---
+rebased onto 3.13-rc2, and reposted from first submission which
+recieved no comments:
 
-Thanks.
+https://lkml.org/lkml/2013/10/11/53
+
+ drivers/base/dd.c      | 5 ++++-
+ include/linux/device.h | 2 ++
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index 0605176..b83b16d 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -389,7 +389,7 @@ static int __device_attach(struct device_driver *drv, void *data)
+ {
+ 	struct device *dev = data;
+ 
+-	if (!driver_match_device(drv, dev))
++	if (drv->sysfs_bind_only || !driver_match_device(drv, dev))
+ 		return 0;
+ 
+ 	return driver_probe_device(drv, dev);
+@@ -476,6 +476,9 @@ static int __driver_attach(struct device *dev, void *data)
+  */
+ int driver_attach(struct device_driver *drv)
+ {
++	if (drv->sysfs_bind_only)
++		return 0;
++
+ 	return bus_for_each_dev(drv->bus, NULL, drv, __driver_attach);
+ }
+ EXPORT_SYMBOL_GPL(driver_attach);
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 952b010..ed441d1 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -200,6 +200,7 @@ extern struct klist *bus_get_device_klist(struct bus_type *bus);
+  * @owner:	The module owner.
+  * @mod_name:	Used for built-in modules.
+  * @suppress_bind_attrs: Disables bind/unbind via sysfs.
++ * @sysfs_bind_only: Only allow bind/unbind via sysfs.
+  * @of_match_table: The open firmware table.
+  * @acpi_match_table: The ACPI match table.
+  * @probe:	Called to query the existence of a specific device,
+@@ -233,6 +234,7 @@ struct device_driver {
+ 	const char		*mod_name;	/* used for built-in modules */
+ 
+ 	bool suppress_bind_attrs;	/* disables bind/unbind via sysfs */
++	bool sysfs_bind_only;		/* only allow bind/unbind via sysfs */
+ 
+ 	const struct of_device_id	*of_match_table;
+ 	const struct acpi_device_id	*acpi_match_table;
+-- 
+1.8.5
+
