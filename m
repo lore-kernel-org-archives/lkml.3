@@ -1,102 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003Ab3LCFoV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 00:44:21 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:65529 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab3LCFoR convert rfc822-to-8bit (ORCPT
+	id S1752219Ab3LCFof (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 00:44:35 -0500
+Received: from smtprelay0046.hostedemail.com ([216.40.44.46]:54899 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751912Ab3LCFoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 00:44:17 -0500
-X-AuditID: 9c93017d-b7bb3ae0000068fd-32-529d6faf76fd
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Pekka Enberg <penberg@iki.fi>
-Subject: Re: [PATCH 1/3] perf tools: Record total sampling time
-References: <1385967199-3759-1-git-send-email-namhyung@kernel.org>
-	<1385967199-3759-2-git-send-email-namhyung@kernel.org>
-	<20131202124527.GB22212@gmail.com> <20131202125709.GA22404@gmail.com>
-	<1385999009.1710.72.camel@leonhard> <20131202163620.GC27781@gmail.com>
-	<20131202202459.GF17149@ghostprotocols.net>
-Date: Tue, 03 Dec 2013 14:44:15 +0900
-In-Reply-To: <20131202202459.GF17149@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Mon, 2 Dec 2013 17:24:59 -0300")
-Message-ID: <87y542mqts.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 3 Dec 2013 00:44:20 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3865:3866:3867:3868:3870:3871:3874:4605:5007:6119:7652:7808:7809:10004:10400:10848:11026:11473:11657:11658:11914:12043:12296:12438:12517:12519:12555:12663:12679:13161:13229,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: stem39_42bd356dba95d
+X-Filterd-Recvd-Size: 3144
+Message-ID: <1386049457.15309.23.camel@joe-AO722>
+Subject: [PATCH] checkpatch: More comprehensive split strings warning
+From: Joe Perches <joe@perches.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>
+Date: Mon, 02 Dec 2013 21:44:17 -0800
+In-Reply-To: <20131202213358.GA15802@jtriplet-mobl1>
+References: <1386019438.2680.32.camel@joe-AO722>
+	 <20131202213358.GA15802@jtriplet-mobl1>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Dec 2013 17:24:59 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Dec 02, 2013 at 05:36:20PM +0100, Ingo Molnar escreveu:
->> * Namhyung Kim <namhyung@kernel.org> wrote:
->> > 2013-12-02 (월), 13:57 +0100, Ingo Molnar:
->> > > So basically, in the end I think it should be possible to have the 
->> > > following behavior:
->
->> > >    perf record -a -e cycles sleep 1
->
->> > >    perf report stat              # Reports as if we ran: 'perf stat -a -e cycles sleep 1'
->> > >    perf report                   # Reports the usual histogram
->
->> > >    perf report --stat            # Reports the perf stat output and the histogram
->
->> > > or so.
->
->> > I don't think we need both of 'perf report stat' and 'perf report
->> > --stat'.  At least it looks somewhat confusing to users IMHO.
->  
->> Okay. Maybe the --stat option would be the more logical choice, 
->> because '--' options can be added arbitrarily, while it would be weird 
->> to add multiple subcommand options.
->  
->> So basically there would be two options:
->  
->>    --show-stat         [--no-show-stat]
->>    --show-histogram    [--no-show-histogram]
->  
->> Today --show-histogram is the only one enabled by default.
->  
->> Running:
->  
->>    perf report --no-show-histogram --show-stat
->
-> Why not:
->
-> perf stat -i perf.data
->
-> and make it be an optional argument, so plain:
->
-> perf stat -i
->
-> would process perf.data, i.e. would get the samples, accrue the periods,
-> calculate the time, etc and then present it as 'perf stat <some
-> target>'.
+The current checkpatch test for split strings does
+not find several cases that should be found.
 
-Yeah, actually this came into my head too.  But how about just making
-"perf stat" read from perf.data and print output - I mean without the -i
-option like other commands do.  Currently perf stat doesn't allow no
-argument given it won't confuse existing users.
+For instance:
 
-It should produce same output as Ingo suggested with "perf report
---show-stat --no-show-histogram".
+diff --git a/drivers/net/wireless/iwlwifi/mvm/rs.c b/drivers/net/wireless/iwlwifi/mvm/rs.c
+[]
+@@ -1868,7 +1865,8 @@ static void rs_rate_scale_perform(struct iwl_mvm *mvm,
+ 		/* Else poor success; go back to mode in "active" table */
+ 		} else {
+ 			IWL_DEBUG_RATE(mvm,
+-				       "LQ: GOING BACK TO THE OLD TABLE suc=%d cur-tpt=%d old-tpt=%d\n",
++				       "GOING BACK TO THE OLD TABLE: SR %d "
++				       "cur-tpt %d old-tpt %d\n",
+ 				       window->success_ratio,
+ 				       window->average_tpt,
+ 				      lq_sta->last_tpt);
 
->
-> Right now 'perf stat -i' i used for '--no-inherit', perhaps we can just
-> have --no-inherit have no short option and grab -i to have the same
-> meaning as in 'report', 'script', etc.
+does not currently emit a warning.
 
-Agreed.  Maybe we could change it to plain --inherit.
+Improve the test to find these cases.
 
-Thanks,
-Namhyung
+Add more exceptions to reduce false positives for
+assembly and octal/hex string constants.
+
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 38be5d5..1d0d5ac 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2049,16 +2049,12 @@ sub process {
+ 		}
+ 
+ # Check for user-visible strings broken across lines, which breaks the ability
+-# to grep for the string.  Limited to strings used as parameters (those
+-# following an open parenthesis), which almost completely eliminates false
+-# positives, as well as warning only once per parameter rather than once per
+-# line of the string.  Make an exception when the previous string ends in a
+-# newline (multiple lines in one string constant) or \n\t (common in inline
+-# assembly to indent the instruction on the following line).
++# to grep for the string.  Make exceptions when the previous string ends in a
++# newline (multiple lines in one string constant) or '\t', '\r', ';', or '{'
++# (common in inline assembly) or is a octal \123 or hexadecimal \xaf value
+ 		if ($line =~ /^\+\s*"/ &&
+ 		    $prevline =~ /"\s*$/ &&
+-		    $prevline =~ /\(/ &&
+-		    $prevrawline !~ /\\n(?:\\t)*"\s*$/) {
++		    $prevrawline !~ /(?:\\(?:[ntr]|[0-7]{1,3}|x[0-9a-fA-F]{1,2})|;\s*|\{\s*)"\s*$/) {
+ 			WARN("SPLIT_STRING",
+ 			     "quoted string split across lines\n" . $hereprev);
+ 		}
+
+
