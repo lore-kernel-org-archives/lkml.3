@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab3LCBj2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 20:39:28 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:8496 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752431Ab3LCBjY (ORCPT
+	id S1753543Ab3LCBjj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 20:39:39 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:57890 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752980Ab3LCBj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 20:39:24 -0500
-Message-ID: <529D3627.1000205@huawei.com>
-Date: Tue, 3 Dec 2013 09:38:47 +0800
-From: Rui Xiang <rui.xiang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Mon, 2 Dec 2013 20:39:26 -0500
+Message-ID: <529D35F0.60108@huawei.com>
+Date: Tue, 3 Dec 2013 09:37:52 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] sysfs: add necessary Null check in sysfs_do_create_link_sd
+To: William Dauchy <wdauchy@gmail.com>
+CC: Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Shawn Bohrer <shawn.bohrer@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        <cgroups@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Markus Blank-Burian <burian@muenster.de>
+Subject: Re: 3.10.16 cgroup_mutex deadlock
+References: <20131111220626.GA7509@sbohrermbp13-local.rgmadvisors.com> <52820030.6000806@huawei.com> <20131112143147.GB6049@dhcp22.suse.cz> <20131112155530.GA2860@sbohrermbp13-local.rgmadvisors.com> <20131112165504.GF6049@dhcp22.suse.cz> <20131114225649.GA16725@sbohrermbp13-local.rgmadvisors.com> <20131115062458.GA9755@mtj.dyndns.org> <20131115075401.GB9755@mtj.dyndns.org> <alpine.LNX.2.00.1311171746160.15789@eggly.anvils> <CAJ75kXZYjKwV_XiEB493jNyGRqS395JZyY-S9xQBQJLyaCSOEQ@mail.gmail.com> <20131122221839.GD8981@mtj.dyndns.org> <CAJ75kXabrnxqdtb5SXqm_pYTrSih9yvP38DApF+_P+YZCepTMw@mail.gmail.com> <5292A5EA.1030501@huawei.com> <CAJ75kXYKx67VaGYRs1nwataE2ra216qTB9Yks=MRGFN-c_b3uA@mail.gmail.com>
+In-Reply-To: <CAJ75kXYKx67VaGYRs1nwataE2ra216qTB9Yks=MRGFN-c_b3uA@mail.gmail.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.188]
+X-Originating-IP: [10.135.68.215]
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While target_sd or sd are null, it won't need sysfs_put and
-should return -ENOENT directly. Here add null check for
-target_sd and sd.
+On 2013/12/2 18:31, William Dauchy wrote:
+> Hi Li,
+> 
+> On Mon, Nov 25, 2013 at 2:20 AM, Li Zefan <lizefan@huawei.com> wrote:
+>> I'll do this after the patch hits mainline, if Tejun doesn't plan to.
+> 
+> Do you have some news about it?
+> 
 
-Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
----
- fs/sysfs/symlink.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+Tejun has already done the backport. :)
 
-diff --git a/fs/sysfs/symlink.c b/fs/sysfs/symlink.c
-index 3ae3f1b..d69b786 100644
---- a/fs/sysfs/symlink.c
-+++ b/fs/sysfs/symlink.c
-@@ -83,8 +83,10 @@ static int sysfs_do_create_link_sd(struct sysfs_dirent *parent_sd,
- 	return 0;
- 
-  out_put:
--	sysfs_put(target_sd);
--	sysfs_put(sd);
-+	if (target_sd)
-+		sysfs_put(target_sd);
-+	if (sd)
-+		sysfs_put(sd);
- 	return error;
- }
- 
--- 
-1.8.2.2
+It has been included in 3.10.22, which will be released in a couple of days.
+
+http://article.gmane.org/gmane.linux.kernel.stable/71292
 
