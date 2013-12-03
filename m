@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931Ab3LCMMR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 07:12:17 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:40291 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965Ab3LCMMO (ORCPT
+	id S1753442Ab3LCMNA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 07:13:00 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43882 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752972Ab3LCMM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 07:12:14 -0500
+	Tue, 3 Dec 2013 07:12:58 -0500
+Date: Tue, 3 Dec 2013 12:12:22 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Florian Meier <florian.meier@koalo.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Mark Brown <broonie@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        dmaengine <dmaengine@vger.kernel.org>
+Subject: Re: [PATCHv8] dmaengine: Add support for BCM2835
+Message-ID: <20131203121222.GS16735@n2100.arm.linux.org.uk>
+References: <529CDBA8.6070107@koalo.de> <1386072258.1871.44.camel@smile>
 MIME-Version: 1.0
-In-Reply-To: <1386040811-27946-1-git-send-email-acourbot@nvidia.com>
-References: <CAAVeFu+LLR-EwiRskE_VBQwPrnXAdt-ahfcH08mOXsFuStFMJg@mail.gmail.com>
-	<1386040811-27946-1-git-send-email-acourbot@nvidia.com>
-Date: Tue, 3 Dec 2013 13:12:09 +0100
-Message-ID: <CACRpkdbJSCWFeF=Q_pfmbDTeQwxCMazgu88r=X_onysKT8JWpg@mail.gmail.com>
-Subject: Re: [PATCH v3] gpio: better lookup method for platform GPIOs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386072258.1871.44.camel@smile>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 3, 2013 at 4:20 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+On Tue, Dec 03, 2013 at 02:04:18PM +0200, Andy Shevchenko wrote:
+> On Mon, 2013-12-02 at 20:12 +0100, Florian Meier wrote:
+> > +static void bcm2835_dma_free(struct bcm2835_dmadev *od)
+> > +{
+> > +	while (!list_empty(&od->ddev.channels)) {
+> > +		struct bcm2835_chan *c = list_first_entry(&od->ddev.channels,
+> > +			struct bcm2835_chan, vc.chan.device_node);
+> > +
+> 
+> list_for_each_entry_safe() suits well here.
+> 
+> > +		list_del(&c->vc.chan.device_node);
+> > +		tasklet_kill(&c->vc.task);
+> > +	}
 
-> Change the format of the platform GPIO lookup tables to make them less
-> confusing and improve lookup efficiency.
->
-> The previous format was a single linked-list that required to compare
-> the device name and function ID of every single GPIO defined for each
-> lookup. Switch that to a list of per-device tables, so that the lookup
-> can be done in two steps, omitting the GPIOs that are not relevant for a
-> particular device.
->
-> The matching rules are now defined as follows:
-> - The device name must match *exactly*, and can be NULL for GPIOs not
->   assigned to a particular device,
-> - If the function ID in the lookup table is NULL, the con_id argument of
->   gpiod_get() will not be used for lookup. However, if it is defined, it
->   must match exactly.
-> - The index must always match.
->
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
-> Changes since v2:
-> - Removed size member of the gpiod_lookup_table struct (thanks Heikki!)
-> - Added Andy's reviewed-by
+For such a loop, where we're deleting all entries in a list,
+list_for_each_entry_safe() is a little heavier than necessary.  This
+is how the code would look:
 
-OK looks good, however I must get my fixes stack to Torvalds
-and pull -rc3 back in before I can apply this, it seems, as
-it builds upon pending fixes.
+static void bcm2835_dma_free(struct bcm2835_dmadev *od)
+{
+	struct bcm2835_chan *c, *next;
 
-Yours,
-Linus Walleij
+	list_for_each_entry_safe(c, next, &od->ddev.channels,
+				 vc.chan.device_node) {
+		list_del(&c->vc.chan.device_node);
+		tasklet_kill(&c->vc.task);
+	}
+
+I see very little gain in this approach.
