@@ -1,108 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003Ab3LCOu3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 09:50:29 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:46430 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753217Ab3LCOu0 (ORCPT
+	id S1754158Ab3LCOun (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 09:50:43 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:58297 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754014Ab3LCOuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 09:50:26 -0500
+	Tue, 3 Dec 2013 09:50:40 -0500
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         linux-kernel@vger.kernel.org
 Cc: Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 1/3] pinctrl: abx500: delete non-devicetree probe path
-Date: Tue,  3 Dec 2013 15:50:17 +0100
-Message-Id: <1386082217-18883-1-git-send-email-linus.walleij@linaro.org>
+Subject: [PATCH 2/3] mfd: ab8500: delete all GPIO platform data instances
+Date: Tue,  3 Dec 2013 15:50:34 +0100
+Message-Id: <1386082234-18919-1-git-send-email-linus.walleij@linaro.org>
 X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All instances of this device are now coming from device tree-
-enabled platforms probing without using platform data.
+This deletes all instances where the AB8500 GPIO platform
+data is passed around. It is completely unused in the kernel
+now, so it does not hurt anyone.
 
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/pinctrl/pinctrl-abx500.c | 36 +++++++++---------------------------
- 1 file changed, 9 insertions(+), 27 deletions(-)
+Sam, Lee: requesting an ACK to take this through either the
+pinctrl tree or the ARM SoC tree if I build up more of these
+pdata removal patches for abx500.
+---
+ include/linux/mfd/abx500/ab8500-gpio.h | 10 ----------
+ include/linux/mfd/abx500/ab8500.h      |  2 --
+ 2 files changed, 12 deletions(-)
 
-diff --git a/drivers/pinctrl/pinctrl-abx500.c b/drivers/pinctrl/pinctrl-abx500.c
-index 4780959e11d4..66a06d5194cd 100644
---- a/drivers/pinctrl/pinctrl-abx500.c
-+++ b/drivers/pinctrl/pinctrl-abx500.c
-@@ -1218,21 +1218,15 @@ static const struct of_device_id abx500_gpio_match[] = {
+diff --git a/include/linux/mfd/abx500/ab8500-gpio.h b/include/linux/mfd/abx500/ab8500-gpio.h
+index 172b2f201ae0..ebef068cbb6f 100644
+--- a/include/linux/mfd/abx500/ab8500-gpio.h
++++ b/include/linux/mfd/abx500/ab8500-gpio.h
+@@ -8,16 +8,6 @@
+ #ifndef _AB8500_GPIO_H
+ #define _AB8500_GPIO_H
  
- static int abx500_gpio_probe(struct platform_device *pdev)
- {
--	struct ab8500_platform_data *abx500_pdata =
--				dev_get_platdata(pdev->dev.parent);
--	struct abx500_gpio_platform_data *pdata = NULL;
- 	struct device_node *np = pdev->dev.of_node;
-+	const struct of_device_id *match;
- 	struct abx500_pinctrl *pct;
--	const struct platform_device_id *platid = platform_get_device_id(pdev);
- 	unsigned int id = -1;
- 	int ret, err;
- 	int i;
- 
--	if (abx500_pdata)
--		pdata = abx500_pdata->gpio;
+-/*
+- * Platform data to register a block: only the initial gpio/irq number.
+- * Array sizes are large enough to contain all AB8500 and AB9540 GPIO
+- * registers.
+- */
 -
--	if (!(pdata || np)) {
--		dev_err(&pdev->dev, "gpio dt and platform data missing\n");
-+	if (!np) {
-+		dev_err(&pdev->dev, "gpio dt node missing\n");
- 		return -ENODEV;
- 	}
- 
-@@ -1248,17 +1242,14 @@ static int abx500_gpio_probe(struct platform_device *pdev)
- 	pct->parent = dev_get_drvdata(pdev->dev.parent);
- 	pct->chip = abx500gpio_chip;
- 	pct->chip.dev = &pdev->dev;
--	pct->chip.base = (np) ? -1 : pdata->gpio_base;
--
--	if (platid)
--		id = platid->driver_data;
--	else if (np) {
--		const struct of_device_id *match;
-+	pct->chip.base = -1; /* Dynamic allocation */
- 
--		match = of_match_device(abx500_gpio_match, &pdev->dev);
--		if (match)
--			id = (unsigned long)match->data;
-+	match = of_match_device(abx500_gpio_match, &pdev->dev);
-+	if (!match) {
-+		dev_err(&pdev->dev, "gpio dt not matching\n");
-+		return -ENODEV;
- 	}
-+	id = (unsigned long)match->data;
- 
- 	/* Poke in other ASIC variants here */
- 	switch (id) {
-@@ -1349,14 +1340,6 @@ static int abx500_gpio_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--static const struct platform_device_id abx500_pinctrl_id[] = {
--	{ "pinctrl-ab8500", PINCTRL_AB8500 },
--	{ "pinctrl-ab8540", PINCTRL_AB8540 },
--	{ "pinctrl-ab9540", PINCTRL_AB9540 },
--	{ "pinctrl-ab8505", PINCTRL_AB8505 },
--	{ },
+-struct abx500_gpio_platform_data {
+-	int gpio_base;
 -};
 -
- static struct platform_driver abx500_gpio_driver = {
- 	.driver = {
- 		.name = "abx500-gpio",
-@@ -1365,7 +1348,6 @@ static struct platform_driver abx500_gpio_driver = {
- 	},
- 	.probe = abx500_gpio_probe,
- 	.remove = abx500_gpio_remove,
--	.id_table = abx500_pinctrl_id,
+ enum abx500_gpio_pull_updown {
+ 	ABX500_GPIO_PULL_DOWN = 0x0,
+ 	ABX500_GPIO_PULL_NONE = 0x1,
+diff --git a/include/linux/mfd/abx500/ab8500.h b/include/linux/mfd/abx500/ab8500.h
+index f4acd898dac9..a86ca1406fb8 100644
+--- a/include/linux/mfd/abx500/ab8500.h
++++ b/include/linux/mfd/abx500/ab8500.h
+@@ -368,7 +368,6 @@ struct ab8500 {
  };
  
- static int __init abx500_gpio_init(void)
+ struct ab8500_regulator_platform_data;
+-struct ab8500_gpio_platform_data;
+ struct ab8500_codec_platform_data;
+ struct ab8500_sysctrl_platform_data;
+ 
+@@ -382,7 +381,6 @@ struct ab8500_platform_data {
+ 	int irq_base;
+ 	void (*init) (struct ab8500 *);
+ 	struct ab8500_regulator_platform_data *regulator;
+-	struct abx500_gpio_platform_data *gpio;
+ 	struct ab8500_codec_platform_data *codec;
+ 	struct ab8500_sysctrl_platform_data *sysctrl;
+ };
 -- 
 1.8.3.1
 
