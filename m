@@ -1,104 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808Ab3LCJdd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 04:33:33 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:51427 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752171Ab3LCJd2 (ORCPT
+	id S1752899Ab3LCJdv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 04:33:51 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:47037 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab3LCJdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 04:33:28 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvUGAMWknVJ5LHyk/2dsb2JhbABagweDMbBzhU6BGBd0giUBAQQBDhkTHA8NBwULCAMOCgklDwUlAyETh3sFwRsXFo4RVweDIIETA5gTikyHSIM9KIEt
-Date: Tue, 3 Dec 2013 20:33:23 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: hannes@cmpxchg.org, mhocko@suse.cz, dchinner@redhat.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org, devel@openvz.org,
-        glommer@openvz.org, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v12 06/18] vmscan: rename shrink_slab() args to make it
- more generic
-Message-ID: <20131203093323.GC8803@dastard>
-References: <cover.1385974612.git.vdavydov@parallels.com>
- <6fbe648a707331e0716cc7a4fc6366ca83a97f6a.1385974612.git.vdavydov@parallels.com>
+	Tue, 3 Dec 2013 04:33:47 -0500
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kevin Bracey <kevin@bracey.fi>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Kyungmin Park <kmpark@infradead.org>,
+        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Doug Anderson <dianders@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH] pinctrl: samsung: Allow pin value to be initialized using pinfunc.
+Date: Tue, 03 Dec 2013 10:33:43 +0100
+Message-ID: <2004634.MefHDYV4b2@flatron>
+User-Agent: KMail/4.11.3 (Linux/3.12.0-gentoo; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <CACRpkdYDONQ-7U3hGYnx7jb0_Y=rcOcvy-2F1dO058FfOO4stg@mail.gmail.com>
+References: <1384881351-10782-1-git-send-email-t.figa@samsung.com> <2715269.S45Tc0DQGQ@flatron> <CACRpkdYDONQ-7U3hGYnx7jb0_Y=rcOcvy-2F1dO058FfOO4stg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6fbe648a707331e0716cc7a4fc6366ca83a97f6a.1385974612.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 03:19:41PM +0400, Vladimir Davydov wrote:
-> Currently in addition to a shrink_control struct shrink_slab() takes two
-> arguments, nr_pages_scanned and lru_pages, which are used for balancing
-> slab reclaim versus page reclaim - roughly speaking, shrink_slab() will
-> try to scan nr_pages_scanned/lru_pages fraction of all slab objects.
+On Tuesday 03 of December 2013 10:31:12 Linus Walleij wrote:
+> On Tue, Nov 26, 2013 at 1:30 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> 
+> > IMHO a way to specify a default safe state of all pins (with lowest power
+> > consumption, without possibility of glitching external devices, etc.)
+> > would be really useful for Samsung platforms (and probably Renesas ones
+> > as Kevin wrote).
+> 
+> I'm following :-)
+> 
+> Now if we could see some more details and a patch, that would
+> be great ...
 
-Yes, that is it's primary purpose, and the variables explain that
-clearly. i.e. it passes a quantity of work to be done, and a value
-to relate that to the overall size of the cache that the work was
-one on. i.e. they tell us that shrink_slab is trying to stay in
-balance with the amount of work that page cache reclaim has just
-done.
+Yeah, I would like to see them too. ;)
 
-> However, shrink_slab() is not always called after page cache reclaim.
-> For example, drop_slab() uses shrink_slab() to drop as many slab objects
-> as possible and thus has to pass phony values 1000/1000 to it, which do
-> not make sense for nr_pages_scanned/lru_pages. Moreover, as soon as
+Unfortunately my make_pinctrl_default_state_patches() function is
+returning -ENOTIME at the moment. :( (I hope to get it fixed
+later this month, though.)
 
-Yup, but that's not the primary purpose of the code, and doesn't
-require balancing against page cache reclaim. hence the numbers that
-are passed in are just there to make the shrinkers iterate
-efficiently but without doing too much work in a single scan. i.e.
-reclaim in chunks across all caches, rather than try to completely
-remove a single cache at a time....
+Best regards,
+Tomasz
 
-And the reason that this is done? because caches have reclaim
-relationships that mean some shrinkers can't make progress until
-other shrinkers do their work. Hence to effective free all memory,
-we have to iterate repeatedly across all caches. That's what
-drop_slab() does.
-o
-> kmemcg reclaim is introduced, we will have to make up phony values for
-> nr_pages_scanned and lru_pages again when doing kmem-only reclaim for a
-> memory cgroup, which is possible if the cgroup has its kmem limit less
-> than the total memory limit.
-
-I'm missing something here - why would memcg reclaim require
-passing phony values? How are you going to keep slab caches in
-balance with memory pressure generated by the page cache?
-
-And, FWIW:
-
->  unsigned long shrink_slab(struct shrink_control *shrink,
-> -			  unsigned long nr_pages_scanned,
-> -			  unsigned long lru_pages);
-> +			  unsigned long fraction, unsigned long denominator);
-
-I'm not sure what "fraction" means in this case. A fraction is made
-up of a numerator and denominator, but:
-
-> @@ -243,9 +243,9 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
->  	nr = atomic_long_xchg(&shrinker->nr_deferred[nid], 0);
->  
->  	total_scan = nr;
-> -	delta = (4 * nr_pages_scanned) / shrinker->seeks;
-> +	delta = (4 * fraction) / shrinker->seeks;
-
- (4 * nr_pages_scanned) is a dividend, while:
-
->  	delta *= max_pass;
-> -	do_div(delta, lru_pages + 1);
-> +	do_div(delta, denominator + 1);
-
-(lru_pages + 1) is a divisor.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
