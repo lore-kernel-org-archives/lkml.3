@@ -1,64 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754349Ab3LCCcu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 21:32:50 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:57510 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754298Ab3LCCcq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 21:32:46 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.38 with qID rB32WLFV032647, This message is accepted by code: ctloc85258
-From: <micky_ching@realsil.com.cn>
-To: <cjb@laptop.org>, <sameo@linux.intel.com>
-CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
-Subject: [PATCH v3 1/2] mmc: rtsx: fix card poweroff bug
-Date: Tue, 3 Dec 2013 10:34:12 +0800
-Message-ID: <8e0f4bae7d78ae990b355760903f0a2e0410e96c.1385947736.git.micky_ching@realsil.com.cn>
+	id S1754271Ab3LCCcb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 21:32:31 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:53792 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753718Ab3LCC32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 21:29:28 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-mm@kvack.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: [PATCH v2 18/23] mm/percpu: Use memblock apis for early memory allocations
+Date: Mon, 2 Dec 2013 21:27:33 -0500
+Message-ID: <1386037658-3161-19-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1385947736.git.micky_ching@realsil.com.cn>
-References: <cover.1385947736.git.micky_ching@realsil.com.cn>
+In-Reply-To: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com>
+References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Micky Ching <micky_ching@realsil.com.cn>
+Switch to memblock interfaces for early memory allocator instead of
+bootmem allocator. No functional change in beahvior than what it is
+in current code from bootmem users points of view.
 
-If the host driver removed while card in the slot, the host will not
-power off card power correctly. This bug is produced because host
-eject flag set before the last mmc_set_ios callback, we should set the
-eject flag after power off.
+Archs already converted to NO_BOOTMEM now directly use memblock
+interfaces instead of bootmem wrappers build on top of memblock. And the
+archs which still uses bootmem, these new apis just fallback to exiting
+bootmem APIs.
 
-Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- drivers/mmc/host/rtsx_pci_sdmmc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ mm/percpu.c |   41 +++++++++++++++++++++++++----------------
+ 1 file changed, 25 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
-index 375a880e..c9a7328 100644
---- a/drivers/mmc/host/rtsx_pci_sdmmc.c
-+++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
-@@ -1328,7 +1328,6 @@ static int rtsx_pci_sdmmc_drv_remove(struct platform_device *pdev)
- 	pcr->slots[RTSX_SD_CARD].p_dev = NULL;
- 	pcr->slots[RTSX_SD_CARD].card_event = NULL;
- 	mmc = host->mmc;
--	host->eject = true;
+diff --git a/mm/percpu.c b/mm/percpu.c
+index 0d10def..f74902c 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -1063,7 +1063,7 @@ struct pcpu_alloc_info * __init pcpu_alloc_alloc_info(int nr_groups,
+ 			  __alignof__(ai->groups[0].cpu_map[0]));
+ 	ai_size = base_size + nr_units * sizeof(ai->groups[0].cpu_map[0]);
  
- 	mutex_lock(&host->host_mutex);
- 	if (host->mrq) {
-@@ -1346,6 +1345,8 @@ static int rtsx_pci_sdmmc_drv_remove(struct platform_device *pdev)
- 	mutex_unlock(&host->host_mutex);
+-	ptr = alloc_bootmem_nopanic(PFN_ALIGN(ai_size));
++	ptr = memblock_virt_alloc_nopanic(PFN_ALIGN(ai_size));
+ 	if (!ptr)
+ 		return NULL;
+ 	ai = ptr;
+@@ -1088,7 +1088,7 @@ struct pcpu_alloc_info * __init pcpu_alloc_alloc_info(int nr_groups,
+  */
+ void __init pcpu_free_alloc_info(struct pcpu_alloc_info *ai)
+ {
+-	free_bootmem(__pa(ai), ai->__ai_size);
++	memblock_free_early(__pa(ai), ai->__ai_size);
+ }
  
- 	mmc_remove_host(mmc);
-+	host->eject = true;
-+
- 	mmc_free_host(mmc);
+ /**
+@@ -1246,10 +1246,12 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 	PCPU_SETUP_BUG_ON(pcpu_verify_alloc_info(ai) < 0);
  
- 	dev_dbg(&(pdev->dev),
+ 	/* process group information and build config tables accordingly */
+-	group_offsets = alloc_bootmem(ai->nr_groups * sizeof(group_offsets[0]));
+-	group_sizes = alloc_bootmem(ai->nr_groups * sizeof(group_sizes[0]));
+-	unit_map = alloc_bootmem(nr_cpu_ids * sizeof(unit_map[0]));
+-	unit_off = alloc_bootmem(nr_cpu_ids * sizeof(unit_off[0]));
++	group_offsets = memblock_virt_alloc(ai->nr_groups *
++					     sizeof(group_offsets[0]));
++	group_sizes = memblock_virt_alloc(ai->nr_groups *
++					   sizeof(group_sizes[0]));
++	unit_map = memblock_virt_alloc(nr_cpu_ids * sizeof(unit_map[0]));
++	unit_off = memblock_virt_alloc(nr_cpu_ids * sizeof(unit_off[0]));
+ 
+ 	for (cpu = 0; cpu < nr_cpu_ids; cpu++)
+ 		unit_map[cpu] = UINT_MAX;
+@@ -1311,7 +1313,7 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 	 * empty chunks.
+ 	 */
+ 	pcpu_nr_slots = __pcpu_size_to_slot(pcpu_unit_size) + 2;
+-	pcpu_slot = alloc_bootmem(pcpu_nr_slots * sizeof(pcpu_slot[0]));
++	pcpu_slot = memblock_virt_alloc(pcpu_nr_slots * sizeof(pcpu_slot[0]));
+ 	for (i = 0; i < pcpu_nr_slots; i++)
+ 		INIT_LIST_HEAD(&pcpu_slot[i]);
+ 
+@@ -1322,7 +1324,7 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 	 * covers static area + reserved area (mostly used for module
+ 	 * static percpu allocation).
+ 	 */
+-	schunk = alloc_bootmem(pcpu_chunk_struct_size);
++	schunk = memblock_virt_alloc(pcpu_chunk_struct_size);
+ 	INIT_LIST_HEAD(&schunk->list);
+ 	schunk->base_addr = base_addr;
+ 	schunk->map = smap;
+@@ -1346,7 +1348,7 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 
+ 	/* init dynamic chunk if necessary */
+ 	if (dyn_size) {
+-		dchunk = alloc_bootmem(pcpu_chunk_struct_size);
++		dchunk = memblock_virt_alloc(pcpu_chunk_struct_size);
+ 		INIT_LIST_HEAD(&dchunk->list);
+ 		dchunk->base_addr = base_addr;
+ 		dchunk->map = dmap;
+@@ -1626,7 +1628,7 @@ int __init pcpu_embed_first_chunk(size_t reserved_size, size_t dyn_size,
+ 	size_sum = ai->static_size + ai->reserved_size + ai->dyn_size;
+ 	areas_size = PFN_ALIGN(ai->nr_groups * sizeof(void *));
+ 
+-	areas = alloc_bootmem_nopanic(areas_size);
++	areas = memblock_virt_alloc_nopanic(areas_size);
+ 	if (!areas) {
+ 		rc = -ENOMEM;
+ 		goto out_free;
+@@ -1712,7 +1714,7 @@ out_free_areas:
+ out_free:
+ 	pcpu_free_alloc_info(ai);
+ 	if (areas)
+-		free_bootmem(__pa(areas), areas_size);
++		memblock_free_early(__pa(areas), areas_size);
+ 	return rc;
+ }
+ #endif /* BUILD_EMBED_FIRST_CHUNK */
+@@ -1760,7 +1762,7 @@ int __init pcpu_page_first_chunk(size_t reserved_size,
+ 	/* unaligned allocations can't be freed, round up to page size */
+ 	pages_size = PFN_ALIGN(unit_pages * num_possible_cpus() *
+ 			       sizeof(pages[0]));
+-	pages = alloc_bootmem(pages_size);
++	pages = memblock_virt_alloc(pages_size);
+ 
+ 	/* allocate pages */
+ 	j = 0;
+@@ -1823,7 +1825,7 @@ enomem:
+ 		free_fn(page_address(pages[j]), PAGE_SIZE);
+ 	rc = -ENOMEM;
+ out_free_ar:
+-	free_bootmem(__pa(pages), pages_size);
++	memblock_free_early(__pa(pages), pages_size);
+ 	pcpu_free_alloc_info(ai);
+ 	return rc;
+ }
+@@ -1848,12 +1850,15 @@ EXPORT_SYMBOL(__per_cpu_offset);
+ static void * __init pcpu_dfl_fc_alloc(unsigned int cpu, size_t size,
+ 				       size_t align)
+ {
+-	return __alloc_bootmem_nopanic(size, align, __pa(MAX_DMA_ADDRESS));
++	return  memblock_virt_alloc_try_nid_nopanic(size, align,
++						     __pa(MAX_DMA_ADDRESS),
++						     BOOTMEM_ALLOC_ACCESSIBLE,
++						     MAX_NUMNODES);
+ }
+ 
+ static void __init pcpu_dfl_fc_free(void *ptr, size_t size)
+ {
+-	free_bootmem(__pa(ptr), size);
++	memblock_free_early(__pa(ptr), size);
+ }
+ 
+ void __init setup_per_cpu_areas(void)
+@@ -1896,7 +1901,11 @@ void __init setup_per_cpu_areas(void)
+ 	void *fc;
+ 
+ 	ai = pcpu_alloc_alloc_info(1, 1);
+-	fc = __alloc_bootmem(unit_size, PAGE_SIZE, __pa(MAX_DMA_ADDRESS));
++	fc = memblock_virt_alloc_try_nid_nopanic(unit_size,
++						 PAGE_SIZE,
++						 __pa(MAX_DMA_ADDRESS),
++						 BOOTMEM_ALLOC_ACCESSIBLE,
++						 MAX_NUMNODES);
+ 	if (!ai || !fc)
+ 		panic("Failed to allocate memory for percpu areas.");
+ 	/* kmemleak tracks the percpu allocations separately */
 -- 
 1.7.9.5
 
