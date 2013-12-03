@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752503Ab3LCAtR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 19:49:17 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:49399 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751670Ab3LCAtP (ORCPT
+	id S1752987Ab3LCAtp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 19:49:45 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:54109 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752601Ab3LCAtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 19:49:15 -0500
-Message-ID: <529D2A6F.5050607@ti.com>
-Date: Mon, 2 Dec 2013 19:48:47 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 2 Dec 2013 19:49:20 -0500
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <tj@kernel.org>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: Re: [PATCH 09/24] mm/memblock: Add memblock memory allocation apis
-References: <1383954120-24368-1-git-send-email-santosh.shilimkar@ti.com> <1383954120-24368-10-git-send-email-santosh.shilimkar@ti.com> <20131202163136.f31f39c5940c0ba6d20f4a00@linux-foundation.org>
-In-Reply-To: <20131202163136.f31f39c5940c0ba6d20f4a00@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131126001033.GB21634@quad.lixom.net>
+References: <1385274652-16415-1-git-send-email-acourbot@nvidia.com> <20131126001033.GB21634@quad.lixom.net>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 3 Dec 2013 09:48:59 +0900
+Message-ID: <CAAVeFuKh7T42AfAud=ZJ-j_7BgeRUFOytD7CNQ_DFdZeQRHj4A@mail.gmail.com>
+Subject: Re: [PATCH v11 0/7] ARM: support for the Trusted Foundations secure monitor
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Olof Johansson <olof@lixom.net>, Alexandre Courbot <acourbot@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 December 2013 07:31 PM, Andrew Morton wrote:
-> On Fri, 8 Nov 2013 18:41:45 -0500 Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
-> 
->> Introduce memblock memory allocation APIs which allow to support
->> PAE or LPAE extension on 32 bits archs where the physical memory start
->> address can be beyond 4GB. In such cases, existing bootmem APIs which
->> operate on 32 bit addresses won't work and needs memblock layer which
->> operates on 64 bit addresses.
+On Tue, Nov 26, 2013 at 9:10 AM, Olof Johansson <olof@lixom.net> wrote:
+> On Sun, Nov 24, 2013 at 03:30:45PM +0900, Alexandre Courbot wrote:
+>> New rebase that should be ready-to-apply on the latest Tegra tree. The last
+>> remaining blocker is Russell's approval for this series and it is my hope to
+>> obtain it with this version.
 >>
->> So we add equivalent APIs so that we can replace usage of bootmem
->> with memblock interfaces. Architectures already converted to NO_BOOTMEM
->> use these new interfaces and other which still uses bootmem, these new
->> APIs just fallback to exiting bootmem APIs. So no functional change as
->> such.
+>> There has been quite some debate around this series, notably about the SMC
+>> calling conventions and whether the firmware interface should be moved out of
+>> arch/arm. I hope that all the questions have been answered and that we can move
+>> forward with this series that enables NVIDIA-branded retail Tegra devices to run
+>> mainline.
 >>
->> In long run, once all the achitectures moves to NO_BOOTMEM, we can get rid of
->> bootmem layer completely. This is one step to remove the core code dependency
->> with bootmem and also gives path for architectures to move away from bootmem.
+>> Changes since v10:
+>> - Rebased on top of more recent sources since some files have been renamed in
+>>   mach-tegra.
+>> - Gave a final proof-read and extensive testing.
 >>
->> The proposed interface will became active if both CONFIG_HAVE_MEMBLOCK
->> and CONFIG_NO_BOOTMEM are specified by arch. In case !CONFIG_NO_BOOTMEM,
->> the memblock() wrappers will fallback to the existing bootmem apis so
->> that arch's not converted to NO_BOOTMEM continue to work as is.
->>
->> The meaning of MEMBLOCK_ALLOC_ACCESSIBLE and MEMBLOCK_ALLOC_ANYWHERE is
->> kept same.
->>
->> ...
->>
->> +static void * __init _memblock_virt_alloc_try_nid_nopanic(
->> +				phys_addr_t size, phys_addr_t align,
->> +				phys_addr_t from, phys_addr_t max_addr,
->> +				int nid)
->> +{
->> +	phys_addr_t alloc;
->> +	void *ptr;
->> +
->> +	if (WARN_ON_ONCE(slab_is_available())) {
->> +		if (nid == MAX_NUMNODES)
->> +			return kzalloc(size, GFP_NOWAIT);
->> +		else
->> +			return kzalloc_node(size, GFP_NOWAIT, nid);
->> +	}
-> 
-> The use of MAX_NUMNODES is a bit unconventional here.  I *think* we
-> generally use NUMA_NO_NODE to indicate "don't care".  I Also *think*
-> that if this code did s/MAX_NUMNODES/NUMA_NO_NODE/g then the above
-> simply becomes
-> 
-> 	return kzalloc_node(size, GFP_NOWAIT, nid);
-> 
-> and kzalloc_node() handles NUMA_NO_NODE appropriately.
-> 
-> I *think* ;)  Please check all this.
-> 
-I guess same comment was given by Tejun as well. We didn't
-address that in this series mainly because when NO_BOOTMEM
-are not enabled, all calls of the new APIs will
-be redirected to bootmem  where MAX_NUMNODES is used.
+>> Alexandre Courbot (7):
+>>   ARM: add basic support for Trusted Foundations
+>>   of: add vendor prefix for Trusted Logic Mobility
+>>   of: add Trusted Foundations bindings documentation
+>>   ARM: tegra: add support for Trusted Foundations
+>>   ARM: tegra: split setting of CPU reset handler
+>>   ARM: tegra: set CPU reset handler using firmware
+>>   ARM: tegra: support Trusted Foundations by default
+>
+> Ok, this looks good to me. Russell, do you want the first patch in your
+> tree or are you ok with acking that and we can take everything through
+> arm-soc?
+>
+> The alternative is that we can have Stephen provide a stable branch with
+> the first patch on it and we both merge that, then the rest goes on top
+> of that through arm-soc.
 
-Also, memblock core APIs __next_free_mem_range_rev() and
-__next_free_mem_range() would need to be updated, and as result
-we will need to re-check/update all direct calls of
-memblock_alloc_xxx() APIs (including nobootmem).
-
-So to keep behavior consistent with and without NO_BOOTMEM, we
-used MAX_NUMNODES. Once we get a stage where we can remove
-the bootmem.c, it should be easy to update the code
-to use NUMA_NO_NODE without too much churn.
-
-Regards,
-Santosh
+Russell, ping?
