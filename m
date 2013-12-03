@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab3LCDpF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 22:45:05 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:45165 "EHLO comal.ext.ti.com"
+	id S1754175Ab3LCDpR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 22:45:17 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:45171 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753650Ab3LCDof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 22:44:35 -0500
+	id S1753725Ab3LCDon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 22:44:43 -0500
 From: Felipe Balbi <balbi@ti.com>
 To: Linux OMAP Mailing List <linux-omap@vger.kernel.org>
 CC: Aaro Koskinen <aaro.koskinen@iki.fi>, <sameo@linux.intel.com>,
@@ -14,9 +14,9 @@ CC: Aaro Koskinen <aaro.koskinen@iki.fi>, <sameo@linux.intel.com>,
 	<linux-arm-kernel@lists.infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Felipe Balbi <balbi@ti.com>
-Subject: [PATCH v2 09/15] mfd: menelaus: Pass menelaus_chip pointer to get/set voltage
-Date: Mon, 2 Dec 2013 21:43:02 -0600
-Message-ID: <1386042188-12246-9-git-send-email-balbi@ti.com>
+Subject: [PATCH v2 11/15] mfd: menelaus: Start to use irqdomain
+Date: Mon, 2 Dec 2013 21:43:04 -0600
+Message-ID: <1386042188-12246-11-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.8.4.GIT
 In-Reply-To: <1386042188-12246-1-git-send-email-balbi@ti.com>
 References: <1386042188-12246-1-git-send-email-balbi@ti.com>
@@ -26,170 +26,238 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-those functions are static and can easily receive
-a menelaus_chip pointer argument.
+introduce an irq_chip and irq_domain for
+menelaus driver. Following patches will
+convert uses to traditional request_threaded_irq().
+
+while at that, some better error handling had
+to be added, so we could free irq descs we
+allocated.
 
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/mfd/menelaus.c | 50 +++++++++++++++++++++++++++-----------------------
- 1 file changed, 27 insertions(+), 23 deletions(-)
+ drivers/mfd/menelaus.c | 127 ++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 120 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
-index 8672d86..13d1cb0 100644
+index aa3c579..e4f33b7 100644
 --- a/drivers/mfd/menelaus.c
 +++ b/drivers/mfd/menelaus.c
-@@ -463,10 +463,9 @@ struct menelaus_vtg_value {
- 	u16 val;
+@@ -34,6 +34,7 @@
+ #include <linux/module.h>
+ #include <linux/i2c.h>
+ #include <linux/interrupt.h>
++#include <linux/irqdomain.h>
+ #include <linux/sched.h>
+ #include <linux/mutex.h>
+ #include <linux/delay.h>
+@@ -47,6 +48,7 @@
+ #include <asm/gpio.h>
+ 
+ #define DRIVER_NAME			"menelaus"
++#define MENELAUS_NR_IRQS		16
+ 
+ #define MENELAUS_I2C_ADDRESS		0x72
+ 
+@@ -168,11 +170,19 @@ struct menelaus_chip {
+ 	u8			rtc_control;
+ 	unsigned		uie:1;
+ #endif
++	int			irq_base;
+ 	unsigned		vcore_hw_mode:1;
+ 	u8			mask1, mask2;
++	u8			ack1, ack2;
++
+ 	void			(*handlers[16])(struct menelaus_chip *);
+ 	void			(*mmc_callback)(void *data, u8 mask);
+ 	void			*mmc_callback_data;
++
++	unsigned		mask1_pending:1;
++	unsigned		mask2_pending:1;
++	unsigned		ack1_pending:1;
++	unsigned		ack2_pending:1;
  };
  
--static int menelaus_set_voltage(const struct menelaus_vtg *vtg, int mV,
--				int vtg_val, int mode)
-+static int menelaus_set_voltage(struct menelaus_chip *m,
-+		const struct menelaus_vtg *vtg, int mV, int vtg_val, int mode)
- {
--	struct menelaus_chip *m = the_menelaus;
- 	struct i2c_client *c = m->client;
- 	int val, ret;
- 
-@@ -498,8 +497,8 @@ out:
- 	return ret;
+ static struct menelaus_chip *the_menelaus;
+@@ -235,6 +245,83 @@ static int menelaus_ack_irq(struct menelaus_chip *m, int irq)
+ 		return menelaus_write_reg(m, MENELAUS_INT_ACK1, 1 << irq);
  }
  
--static int menelaus_get_vtg_value(int vtg, const struct menelaus_vtg_value *tbl,
--				  int n)
-+static int menelaus_get_vtg_value(struct menelaus_chip *m,
-+		int vtg, const struct menelaus_vtg_value *tbl, int n)
++static void menelaus_irq_ack(struct irq_data *data)
++{
++	struct menelaus_chip *m = irq_data_get_irq_chip_data(data);
++	int irq = data->irq - m->irq_base;
++
++	if (irq > 7) {
++		m->ack2 |= BIT(irq);
++		m->ack2_pending = true;
++	} else {
++		m->ack1 |= BIT(irq);
++		m->ack1_pending = true;
++	}
++}
++
++static void menelaus_irq_mask(struct irq_data *data)
++{
++	struct menelaus_chip *m = irq_data_get_irq_chip_data(data);
++	int irq = data->irq - m->irq_base;
++
++	if (irq > 7) {
++		m->mask2 |= BIT(irq);
++		m->mask2_pending = true;
++	} else {
++		m->mask1 |= BIT(irq);
++		m->mask1_pending = true;
++	}
++}
++
++static void menelaus_irq_unmask(struct irq_data *data)
++{
++	struct menelaus_chip *m = irq_data_get_irq_chip_data(data);
++	int irq = data->irq - m->irq_base;
++
++	if (irq > 7) {
++		m->mask2 &= ~BIT(irq);
++		m->mask2_pending = true;
++	} else {
++		m->mask1 &= ~BIT(irq);
++		m->mask1_pending = true;
++	}
++}
++
++static void menelaus_irq_bus_lock(struct irq_data *data)
++{
++	struct menelaus_chip *m = irq_data_get_irq_chip_data(data);
++
++	mutex_lock(&m->lock);
++}
++
++static void menelaus_irq_bus_sync_unlock(struct irq_data *data)
++{
++	struct menelaus_chip *m = irq_data_get_irq_chip_data(data);
++
++	if (m->ack1_pending)
++		menelaus_write_reg(m, MENELAUS_INT_ACK1, m->ack1);
++
++	if (m->ack2_pending)
++		menelaus_write_reg(m, MENELAUS_INT_ACK2, m->ack2);
++
++	if (m->mask1_pending)
++		menelaus_write_reg(m, MENELAUS_INT_MASK1, m->mask1);
++
++	if (m->mask2_pending)
++		menelaus_write_reg(m, MENELAUS_INT_MASK2, m->mask2);
++
++	mutex_unlock(&m->lock);
++}
++
++static struct irq_chip menelaus_irq_chip = {
++	.name		= "menelaus",
++	.irq_ack	= menelaus_irq_ack,
++	.irq_mask	= menelaus_irq_mask,
++	.irq_unmask	= menelaus_irq_unmask,
++	.irq_bus_lock	= menelaus_irq_bus_lock,
++	.irq_bus_sync_unlock = menelaus_irq_bus_sync_unlock,
++};
++
+ /* Adds a handler for an interrupt. Does not run in interrupt context */
+ static int menelaus_add_irq_work(struct menelaus_chip *m, int irq,
+ 		void (*handler)(struct menelaus_chip *))
+@@ -1186,8 +1273,11 @@ static int menelaus_probe(struct i2c_client *client,
+ 			  const struct i2c_device_id *id)
  {
- 	int i;
+ 	struct menelaus_chip	*m;
++	struct device_node	*node = client->dev.of_node;
+ 	int			rev = 0, val;
+ 	int			err = 0;
++	int			irq_base;
++	int			i;
+ 	struct menelaus_platform_data *menelaus_pdata =
+ 					dev_get_platdata(&client->dev);
  
-@@ -546,7 +545,7 @@ int menelaus_set_vcore_sw(unsigned int mV)
- 	struct i2c_client *c = m->client;
- 	int val, ret;
+@@ -1205,12 +1295,32 @@ static int menelaus_probe(struct i2c_client *client,
  
--	val = menelaus_get_vtg_value(mV, vcore_values,
-+	val = menelaus_get_vtg_value(m, mV, vcore_values,
- 				     ARRAY_SIZE(vcore_values));
+ 	the_menelaus = m;
+ 	m->client = client;
++	mutex_init(&m->lock);
++
++	irq_base = irq_alloc_descs(-1, 0, MENELAUS_NR_IRQS, 0);
++	if (irq_base < 0) {
++		dev_err(&client->dev, "failed to allocate irq descs\n");
++		return irq_base;
++	}
++
++	irq_domain_add_legacy(node, MENELAUS_NR_IRQS, irq_base, 0,
++			&irq_domain_simple_ops, m);
++
++	m->irq_base = irq_base;
++
++	for (i = irq_base; i < irq_base + MENELAUS_NR_IRQS; i++) {
++		irq_set_chip_data(i, m);
++		irq_set_chip_and_handler(i, &menelaus_irq_chip,
++				handle_simple_irq);
++		irq_set_nested_thread(i, 1);
++		set_irq_flags(i, IRQF_VALID);
++	}
+ 
+ 	/* If a true probe check the device */
+ 	rev = menelaus_read_reg(m, MENELAUS_REV);
+ 	if (rev < 0) {
+ 		pr_err(DRIVER_NAME ": device not found");
+-		return -ENODEV;
++		goto fail_free_descs;
+ 	}
+ 
+ 	/* Ack and disable all Menelaus interrupts */
+@@ -1230,17 +1340,15 @@ static int menelaus_probe(struct i2c_client *client,
+ 		if (err) {
+ 			dev_dbg(&client->dev,  "can't get IRQ %d, err %d\n",
+ 					client->irq, err);
+-			return err;
++			goto fail_free_descs;
+ 		}
+ 	}
+ 
+-	mutex_init(&m->lock);
+-
+ 	pr_info("Menelaus rev %d.%d\n", rev >> 4, rev & 0x0f);
+ 
+ 	val = menelaus_read_reg(m, MENELAUS_VCORE_CTRL1);
  	if (val < 0)
- 		return -EINVAL;
-@@ -570,11 +569,11 @@ int menelaus_set_vcore_hw(unsigned int roof_mV, unsigned int floor_mV)
- 	struct i2c_client *c = m->client;
- 	int fval, rval, val, ret;
+-		goto fail;
++		goto fail_free_irq;
+ 	if (val & (1 << 7))
+ 		m->vcore_hw_mode = 1;
+ 	else
+@@ -1249,14 +1357,18 @@ static int menelaus_probe(struct i2c_client *client,
+ 	if (menelaus_pdata != NULL && menelaus_pdata->late_init != NULL) {
+ 		err = menelaus_pdata->late_init(&client->dev);
+ 		if (err < 0)
+-			goto fail;
++			goto fail_free_irq;
+ 	}
  
--	rval = menelaus_get_vtg_value(roof_mV, vcore_values,
-+	rval = menelaus_get_vtg_value(m, roof_mV, vcore_values,
- 				      ARRAY_SIZE(vcore_values));
- 	if (rval < 0)
- 		return -EINVAL;
--	fval = menelaus_get_vtg_value(floor_mV, vcore_values,
-+	fval = menelaus_get_vtg_value(m, floor_mV, vcore_values,
- 				      ARRAY_SIZE(vcore_values));
- 	if (fval < 0)
- 		return -EINVAL;
-@@ -619,15 +618,16 @@ static const struct menelaus_vtg_value vmem_values[] = {
+ 	menelaus_rtc_init(m);
  
- int menelaus_set_vmem(unsigned int mV)
- {
-+	struct menelaus_chip *m = the_menelaus;
- 	int val;
- 
- 	if (mV == 0)
--		return menelaus_set_voltage(&vmem_vtg, 0, 0, 0);
-+		return menelaus_set_voltage(m, &vmem_vtg, 0, 0, 0);
- 
--	val = menelaus_get_vtg_value(mV, vmem_values, ARRAY_SIZE(vmem_values));
-+	val = menelaus_get_vtg_value(m, mV, vmem_values, ARRAY_SIZE(vmem_values));
- 	if (val < 0)
- 		return -EINVAL;
--	return menelaus_set_voltage(&vmem_vtg, mV, val, 0x02);
-+	return menelaus_set_voltage(m, &vmem_vtg, mV, val, 0x02);
+ 	return 0;
+-fail:
++fail_free_irq:
+ 	free_irq(client->irq, m);
++
++fail_free_descs:
++	irq_free_descs(irq_base, MENELAUS_NR_IRQS);
++
+ 	return err;
  }
- EXPORT_SYMBOL(menelaus_set_vmem);
  
-@@ -648,15 +648,16 @@ static const struct menelaus_vtg_value vio_values[] = {
+@@ -1265,6 +1377,7 @@ static int menelaus_remove(struct i2c_client *client)
+ 	struct menelaus_chip	*m = i2c_get_clientdata(client);
  
- int menelaus_set_vio(unsigned int mV)
- {
-+	struct menelaus_chip *m = the_menelaus;
- 	int val;
- 
- 	if (mV == 0)
--		return menelaus_set_voltage(&vio_vtg, 0, 0, 0);
-+		return menelaus_set_voltage(m, &vio_vtg, 0, 0, 0);
- 
--	val = menelaus_get_vtg_value(mV, vio_values, ARRAY_SIZE(vio_values));
-+	val = menelaus_get_vtg_value(m, mV, vio_values, ARRAY_SIZE(vio_values));
- 	if (val < 0)
- 		return -EINVAL;
--	return menelaus_set_voltage(&vio_vtg, mV, val, 0x02);
-+	return menelaus_set_voltage(m, &vio_vtg, mV, val, 0x02);
+ 	free_irq(client->irq, m);
++	irq_free_descs(m->irq_base, MENELAUS_NR_IRQS);
+ 	the_menelaus = NULL;
+ 	return 0;
  }
- EXPORT_SYMBOL(menelaus_set_vio);
- 
-@@ -689,6 +690,7 @@ static const struct menelaus_vtg vdcdc3_vtg = {
- 
- int menelaus_set_vdcdc(int dcdc, unsigned int mV)
- {
-+	struct menelaus_chip *m = the_menelaus;
- 	const struct menelaus_vtg *vtg;
- 	int val;
- 
-@@ -700,13 +702,13 @@ int menelaus_set_vdcdc(int dcdc, unsigned int mV)
- 		vtg = &vdcdc3_vtg;
- 
- 	if (mV == 0)
--		return menelaus_set_voltage(vtg, 0, 0, 0);
-+		return menelaus_set_voltage(m, vtg, 0, 0, 0);
- 
--	val = menelaus_get_vtg_value(mV, vdcdc_values,
-+	val = menelaus_get_vtg_value(m, mV, vdcdc_values,
- 				     ARRAY_SIZE(vdcdc_values));
- 	if (val < 0)
- 		return -EINVAL;
--	return menelaus_set_voltage(vtg, mV, val, 0x03);
-+	return menelaus_set_voltage(m, vtg, mV, val, 0x03);
- }
- 
- static const struct menelaus_vtg_value vmmc_values[] = {
-@@ -726,15 +728,16 @@ static const struct menelaus_vtg vmmc_vtg = {
- 
- int menelaus_set_vmmc(unsigned int mV)
- {
-+	struct menelaus_chip *m = the_menelaus;
- 	int val;
- 
- 	if (mV == 0)
--		return menelaus_set_voltage(&vmmc_vtg, 0, 0, 0);
-+		return menelaus_set_voltage(m, &vmmc_vtg, 0, 0, 0);
- 
--	val = menelaus_get_vtg_value(mV, vmmc_values, ARRAY_SIZE(vmmc_values));
-+	val = menelaus_get_vtg_value(m, mV, vmmc_values, ARRAY_SIZE(vmmc_values));
- 	if (val < 0)
- 		return -EINVAL;
--	return menelaus_set_voltage(&vmmc_vtg, mV, val, 0x02);
-+	return menelaus_set_voltage(m, &vmmc_vtg, mV, val, 0x02);
- }
- EXPORT_SYMBOL(menelaus_set_vmmc);
- 
-@@ -756,15 +759,16 @@ static const struct menelaus_vtg vaux_vtg = {
- 
- int menelaus_set_vaux(unsigned int mV)
- {
-+	struct menelaus_chip *m = the_menelaus;
- 	int val;
- 
- 	if (mV == 0)
--		return menelaus_set_voltage(&vaux_vtg, 0, 0, 0);
-+		return menelaus_set_voltage(m, &vaux_vtg, 0, 0, 0);
- 
--	val = menelaus_get_vtg_value(mV, vaux_values, ARRAY_SIZE(vaux_values));
-+	val = menelaus_get_vtg_value(m, mV, vaux_values, ARRAY_SIZE(vaux_values));
- 	if (val < 0)
- 		return -EINVAL;
--	return menelaus_set_voltage(&vaux_vtg, mV, val, 0x02);
-+	return menelaus_set_voltage(m, &vaux_vtg, mV, val, 0x02);
- }
- EXPORT_SYMBOL(menelaus_set_vaux);
- 
 -- 
 1.8.4.GIT
 
