@@ -1,141 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab3LCVVZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 16:21:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54358 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755058Ab3LCVVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 16:21:22 -0500
-Date: Tue, 3 Dec 2013 13:21:20 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 1/3] Introduce FW_INFO* functions and messages
-Message-Id: <20131203132120.6a7ab2cd7cc99720712cbe6a@linux-foundation.org>
-In-Reply-To: <1385997579-22240-2-git-send-email-prarit@redhat.com>
-References: <1385997579-22240-1-git-send-email-prarit@redhat.com>
-	<1385997579-22240-2-git-send-email-prarit@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755261Ab3LCVXv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 16:23:51 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:44141 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754877Ab3LCVXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 16:23:49 -0500
+Date: Tue, 3 Dec 2013 16:23:38 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+Message-ID: <20131203212338.GT3556@cmpxchg.org>
+References: <20131118154115.GA3556@cmpxchg.org>
+ <20131118165110.GE32623@dhcp22.suse.cz>
+ <20131122165100.GN3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311261648570.21003@chino.kir.corp.google.com>
+ <20131127163435.GA3556@cmpxchg.org>
+ <20131202200221.GC5524@dhcp22.suse.cz>
+ <20131202212500.GN22729@cmpxchg.org>
+ <20131203120454.GA12758@dhcp22.suse.cz>
+ <20131203201713.GR3556@cmpxchg.org>
+ <20131203210009.GA3764@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131203210009.GA3764@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  2 Dec 2013 10:19:37 -0500 Prarit Bhargava <prarit@redhat.com> wrote:
-
-> Logging and tracking firmware bugs in the kernel has long been an issue
-> for system administrators.  The current kernel does not have a good
-> uniform method of reporting firmware bugs and the code in the kernel is a
-> mix of printk's and WARN_ONs.  This causes problems for both system
-> administrators and QA engineers who attempt to diagnose problems within
-> the kernel.
+On Tue, Dec 03, 2013 at 10:00:09PM +0100, Michal Hocko wrote:
+> On Tue 03-12-13 15:17:13, Johannes Weiner wrote:
+> > On Tue, Dec 03, 2013 at 01:04:54PM +0100, Michal Hocko wrote:
+> > > On Mon 02-12-13 16:25:00, Johannes Weiner wrote:
+> > > > On Mon, Dec 02, 2013 at 09:02:21PM +0100, Michal Hocko wrote:
+> > > [...]
+> > > > > But we are not talking just about races here. What if the OOM is a
+> > > > > result of an OOM action itself. E.g. a killed task faults a memory in
+> > > > > while exiting and it hasn't freed its memory yet. Should we notify in
+> > > > > such a case? What would an userspace OOM handler do (the in-kernel
+> > > > > implementation has an advantage because it can check the tasks flags)?
+> > > > 
+> > > > We don't notify in such a case.  Every charge from a TIF_MEMDIE or
+> > > > exiting task is bypassing the limit immediately.  Not even reclaim.
+> > > 
+> > > Not really. Assume a memcg is under OOM. A task is killed by
+> > > userspace so we get into signal delivery code which clears
+> > > fatal_signal_pending and the code goes on to exit but then it faults in.
+> > > __mem_cgroup_try_charge will not see signal pending and TIF_MEMDIE is
+> > > not set yet. OOM is still not resolved so we are back to square one.
+> > 
+> > Ah, that's a completely separate problem, though.  One issue I have
+> > with these checks is that I never know which one are shortcuts and
+> > micro optimizations and which one are functionally necessary.
 > 
-> Using printk's is somewhat effective but lacks information useful for
-> reporting a bug such as the system vendor or model, BIOS revision, etc.
-> Using WARN_ONs is also questionable because the data like the backtrace
-> and the list of modules is usually unnecessary for firmware issues as the
-> warning stems from one call path during system or driver initialization.
-> We have heard many complaints from users about the excess verbosity and
-> confusing stacktraces for these messages.
+> That is why I asked for the changelog update to mention the fix as well
+> (https://lkml.org/lkml/2013/11/18/161 resp.
+> https://lkml.org/lkml/2013/11/18/142)
 > 
-> I'm proposing with this patch to do something similar to the WARN()
-> mechanism that is currently implemented in the kernel.  This
-> patchset introduces FW_INFO() and FW_INFO_DEV() which logs output like:
+> > > > > > So again, I don't see this patch is doing anything but blur the
+> > > > > > current line and make notification less predictable. And, as someone
+> > > > > > else in this thread already said, it's a uservisible change in
+> > > > > > behavior and would break known tuning usecases.
+> > > > > 
+> > > > > I would like to understand how would such a tuning usecase work and how
+> > > > > it would break with this change.
+> > > > 
+> > > > I would do test runs and with every run increase the size of the
+> > > > workload until I get OOM notifications to know when the kernel has
+> > > > been pushed beyond its limits and available memory + reclaim
+> > > > capability can't keep up with the workload anymore.
+> > > > 
+> > > > Not informing me just because due to timing variance a random process
+> > > > exits in the last moment would be flat out lying.  The machine is OOM.
+> > > > Many reclaim cycles failing is a good predictor.  Last minute exit of
+> > > > random task is not, it's happenstance and I don't want to rely on a
+> > > > fluke like this to size my workload.
+> > > 
+> > > Such a metric would be inherently racy for the same reason. You simply
+> > > cannot rely on not seeing OOMs because an exiting task managed to leave
+> > > in time (after MEM_CGROUP_RECLAIM_RETRIES direct reclaim loops and
+> > > before mem_cgroup_oom). Difference between in time and little bit too
+> > > late is just too fragile to be useful IMO.
+> > 
+> > Are we saying the same thing?  Or did I misunderstand you?
 > 
-> [  230.661137] [Firmware Info]: pci_bus 0000:00: at
-> /home/prarit_modules/prarit.c:21 Your BIOS is broken because it is
-> -ENOWORKY.
-> [  230.671076] [Firmware Info]: Intel Corporation SandyBridge Platform/To
-> be filled by O.E.M., BIOS RMLCRB.86I.R3.27.D685.1305151733 05/15/2013
+> yes we are and my point was that using such a metric doesn't make much
+> sense. So arguing with reliability and possible regressions is a bit
+> over-reaction. I was backing this patch because it has moved the check
+> to a more appropriate place where it actually solves also another issue.
 > 
-> instead of the verbose back traces we are currently seeing.  These messages
-> can be easily gleaned from /var/log/messages, etc., by automatic bug
-> reporting tools and system administrators to properly report bugs to
-> hardware vendors.
+> I was probably not clear enough about that.
 > 
-> I found an improperly classified FW_INFO in arch/x86/kernel/cpu/amd.c
-> which that should be a FW_BUG.
+> > > > > Consider the above example. You would get 2 notification for the very
+> > > > > same OOM condition.
+> > > > > On the other hand if the encountered exiting task was just a race then
+> > > > > we have two options basically. Either there are more tasks racing (and
+> > > > > not all of them are exiting) or there is only one (all are exiting).
+> > > > > We will not loose any notification in the first case because the flags
+> > > > > are checked before mem_cgroup_oom_trylock and so one of tasks would lock
+> > > > > and notify.
+> > > > > The second case is more interesting. Userspace won't get notification
+> > > > > but we also know that no action is required as the OOM will be resolved
+> > > > > by itself. And now we should consider whether notification would do more
+> > > > > good than harm. The tuning usecase would loose one event. Would such a
+> > > > > rare situation skew the statistics so much? On the other hand a real OOM
+> > > > > killer would do something which means something will be killed. I find
+> > > > > the later much worse.
+> > > > 
+> > > > We already check in various places (sigh) for whether reclaim and
+> > > > killing is still necessary.  What is the end game here?  An endless
+> > > > loop right before the kill where we check if the kill is still
+> > > > necessary?
+> > > 
+> > > The patch as is doesn't cover all the cases and ideally we should check
+> > > that for OOM_SCAN_ABORT and later in oom_kill_process because they can
+> > > back out as well if we want to have only-on-action notification. Such a
+> > > solution would be too messy though.
+> > 
+> > There is never an only-on-action notification and there is no check to
+> > cover all cases.  This is the fallacy I'm trying to point out.  All we
+> > can do is pick a fairly predictable line and stick to it.
+> 
+> Yes, nothing will be 100% but drawing the line at the place where the
+> kernel is going to _do_ something sounds like a quite a clear cut to
+> me and a reasonable semantic. That something might be either killing
+> something or putting somebody to sleep and wait for the userspace. That
+> would be an ideal semantic IMHO. The code doesn't allow us to do so now
+> unfortunately (without too much refactoring).
+> 
+> > > But as I've said. The primary reason I liked this change is because it
+> > > solves the above mentioned OOM during exit issue and it also prevents
+> > > from a pointless notification. I am perfectly fine with moving the
+> > > check+set TIF_MEMDIE down so solve only the issue #1 and do not mess
+> > > with notifications.
+> > 
+> > The notification is not pointless, we are OOM at the time we make the
+> > decision.
+> 
+> We have clearly different opinions here. I do not consider temporal
+> OOM conditions as significant enough.
 
-A slight simplification:
+As opposed to what, "permanent" OOM conditions? :-) I'm running out of
+ways to phrase this...  The sampling window for OOM conditions is
+completely arbitrary.  Right now it spans 5 reclaim cycles.  Adding a
+last-second check for a random event right before the kill adds
+nothing but noise.
 
-> +static inline char *dump_hadware_arch_desc(void)
-> +{
-> +	return NULL;
-> +}
+> As the OOM itself is really hard to define and to be _agreed_ on I
+> think we should be as practical as possible and provide the oom
+> notification interface as comfortable to users as possible. And then
+> we should balance cons and pros of notifying. I am still convinced
+> that notifying less is better in general because I see OOM killer
+> use cases.
 
-	return "unavailable";
+If the sampling window is too small for you, then increase the number
+of reclaim cycles as I proposed earlier.  It does exactly the same
+thing but it's less invasive:
 
-> +void warn_slowpath_fmt_dev(const char *file, int line,
-> +			   struct device *dev, int level, const char *fmt, ...)
-> +{
-> +	struct slowpath_args args;
-> +	static char fw_str[16] = "\0";
-> +
-> +	switch (level) {
-> +	case 1:
-> +		strcpy(fw_str, "[Firmware Info]");
-> +		break;
-> +	case 2:
-> +		strcpy(fw_str, "[Firmware Warn]");
-> +		break;
-> +	case 3:
-> +		strcpy(fw_str, "[Firmware Bug]");
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 13b9d0f..6d308ed 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -67,7 +67,7 @@
+ struct cgroup_subsys mem_cgroup_subsys __read_mostly;
+ EXPORT_SYMBOL(mem_cgroup_subsys);
+ 
+-#define MEM_CGROUP_RECLAIM_RETRIES	5
++#define MEM_CGROUP_RECLAIM_RETRIES	6
+ static struct mem_cgroup *root_mem_cgroup __read_mostly;
+ 
+ #ifdef CONFIG_MEMCG_SWAP
 
-What's With The Crazy Capitalization In This Code?  It's Illiterate!
+Or just wait for every single task in the memcg to be stuck in the
+charge path, then you know for sure that the OOM condition is
+permanent.  Unless an external task kills one of them, of course...
 
-> +		add_taint(TAINT_FIRMWARE_WORKAROUND, LOCKDEP_STILL_OK);
-> +		break;
-> +	default:
-> +		strcpy(fw_str, "[Firmware Bug]");
-> +		break;
-> +	}
-> +
-> +	if (dev)
-> +		pr_info("%s: %s %s ", fw_str,
-> +			dev_driver_string(dev), dev_name(dev));
-> +	pr_info("%s: at %s:%d\n", fw_str, file, line);
-> +
-> +	args.fmt = fmt;
-> +	va_start(args.args, fmt);
-> +	printk(KERN_WARNING "%s: %pV", fw_str, &args);
-> +	va_end(args.args);
-> +
-> +	if (dump_hardware_arch_desc())
-> +		pr_info("%s: System Info: %s\n", fw_str,
-> +			dump_hardware_arch_desc());
-> +	else
-> +		pr_info("%s: System Info: Hardware Unidentified\n", fw_str);
+> > > @@ -2266,6 +2266,13 @@ bool mem_cgroup_oom_synchronize(bool handle)
+> > >  		schedule();
+> > >  		mem_cgroup_unmark_under_oom(memcg);
+> > >  		finish_wait(&memcg_oom_waitq, &owait.wait);
+> > > +
+> > > +		/* Userspace OOM handler cannot set TIF_MEMDIE to a target */
+> > > +		if (memcg->oom_kill_disable) {
+> > > +			if ((fatal_signal_pending(current) ||
+> > > +						current->flags & PF_EXITING))
+> > > +				set_thread_flag(TIF_MEMDIE);
+> > > +		}
+> > 
+> > This is an entirely different change that I think makes sense.
+> 
+> OK, I will post the full patch after we settle with this one finally.
 
-	pr_info(""%s: system info: %s\n", fw_str, dump_hardware_arch_desc());
-
-> +}
-> +EXPORT_SYMBOL(warn_slowpath_fmt_dev);
-> +
-> +
-
-> +char *dump_hardware_arch_desc(void)
-> +{
-> +	if (dump_stack_arch_desc_str[0] != '\0')
-> +		return dump_stack_arch_desc_str;
-> +	return NULL;
-
-	return "unavaliable";
-
-> +}
-
-
-The general thrust of the patchset seems useful and important.  I do
-agree with Joe's suggestion regarding the presentation, although it
-isn't a show-stopper.
-
-I do wonder if it all should be generalised a bit - it creates a bunch
-of infrastructure which is specific to system firmware issues, but
-what's so special about firmware?  Why can't I use this infrastructure
-to log netdev errors or acpi errors or PM errors or...?  But I didn't
-think about it much ;)
-
-
+Thanks.
