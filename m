@@ -1,149 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab3LCUAa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 15:00:30 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:52971 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754825Ab3LCT7z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 14:59:55 -0500
-MIME-Version: 1.0
-In-Reply-To: <529E0E69.90009@zytor.com>
-References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
-	<1386044930-15149-4-git-send-email-ast@plumgrid.com>
-	<529E0E69.90009@zytor.com>
-Date: Tue, 3 Dec 2013 11:59:53 -0800
-Message-ID: <CAMEtUuxENa69dMdhmZg=tSJ_mWaYAy_JqBF2NXxkqbaAxawFkw@mail.gmail.com>
-Subject: Re: [RFC PATCH tip 3/5] Extended BPF (64-bit BPF) design document
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755008Ab3LCUB1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 15:01:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45293 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753487Ab3LCUBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 15:01:25 -0500
+Message-ID: <1386100843.25738.284.camel@ul30vt.home>
+Subject: Re: [PATCH 0/6] Crashdump Accepting Active IOMMU
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Bill Sumner <bill.sumner@hp.com>
+Cc: dwmw2@infradead.org, indou.takao@jp.fujitsu.com, bhe@redhat.com,
+        iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ddutile@redhat.com, ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com,
+        doug.hatch@hp.com
+Date: Tue, 03 Dec 2013 13:00:43 -0700
+In-Reply-To: <1386099694-4190-1-git-send-email-bill.sumner@hp.com>
+References: <Crashdump-Accepting-Active-IOMMU>
+	 <1386099694-4190-1-git-send-email-bill.sumner@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 3, 2013 at 9:01 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 12/02/2013 08:28 PM, Alexei Starovoitov wrote:
->> +
->> +All BPF registers are 64-bit without subregs, which makes JITed x86 code
->> +less optimal, but matches sparc/mips architectures.
->> +Adding 32-bit subregs was considered, since JIT can map them to x86 and aarch64
->> +nicely, but read-modify-write overhead for sparc/mips is not worth the gains.
->> +
->
-> I find this tradeoff to be more than somewhat puzzling, given that x86
-> and ARM are by far the dominant tradeoffs, and it would make
-> implementation on 32-bit CPUs cheaper if a lot of the operations are 32 bit.
->
-> Instead it seems like the niche architectures (which, realistically,
-> SPARC and MIPS have become) ought to take the performance hit.
->
-> Perhaps you are simply misunderstanding the notion of subregisters.
-> Neither x86 nor ARM64 leave the top 32 bits intact, so I don't see why
-> SPARC/MIPS would do RMW either.
+On Tue, 2013-12-03 at 12:41 -0700, Bill Sumner wrote:
+> The following series implements a fix for:
+> A kdump problem about DMA that has been discussed for a long time. That is,
+> when a kernel panics and boots into the kdump kernel, DMA started by the 
+> panicked kernel is not stopped before the kdump kernel is booted and the 
+> kdump kernel disables the IOMMU while this DMA continues.  This causes the
+> IOMMU to stop translating the DMA addresses as IOVAs and begin to treat them 
+> as physical memory addresses -- which causes the DMA to either:
+> (1) generate DMAR errors or (2) generate PCI SERR errors or (3) transfer  
+> data to or from incorrect areas of memory. Often this causes the dump to fail.
 
-32-bit reg write access on x86-64 is of course zero-extended. 16 and 8
-bit are not.
-If BPF isa to allow 32-bit subregs, it would need to allow int args to
-be passed in them
-as well. I'm not sure yet that arm64 calling convention will match
-x86-64 in that sense.
->From compiler point of view if arg has int32 type and lives in 32-bit
-subreg on 64-bit cpu,
-the compiler has to access it with 32-bit subreg ops only. It cannot
-assume that it was zero extended by caller. So all ops on sparc/mips
-would have to use extra registers and do 64->32 masks.
-Also 32-bit subreg doesn't help to look at int variables. In both
-cases it will be 32-bit load
-then with subregs cmp eax and without it cmp rax after jit.
-To increment atomic 32-bit counter in memory, they don't help either.
-They just don't give enough performance boost to justify complexity in encoding,
-analyzing and JITing. So I don't see a viable benefit of 32-bit subregs yet.
+I didn't review the content, but please add commit logs per patch.  You
+have a very thorough description here in the cover letter, but the cover
+letter doesn't get stored in the code base.  Thanks,
 
-The above arguments apply to 64-bit CPUs with 64-bit registers with or
-without 32-bit subregs.
+Alex
 
-If you're talking about 32-bit CPUs it's completely different matter.
-If we want to support JIT on them we need 32-bit bpf isa
-(proposed BPF isa is 64-bit with no effort to make it JITable on 32-bit cpus)
-Which can reuse all of the same encoding and make all registers 32-bit.
-Compiler will produce different bpf code though.
-It would know that it cannot load 64-bit value in one insn and will
-use register pairs and so on.
-Like -m32 / -m64 switch for bpf backend.
-Letting compiler generate 64-bit BPF isa and then try to JIT it to
-32-bit cpu is feasible, but very painful. Such JIT will be too large
-to include in kernel.
-Proposed JIT is short and simple because it maps all registers and
-instructions one to one.
+> 
+> This patch set modifies the behavior of the iommu in the (new) crashdump kernel: 
+> 1. to accept the iommu hardware in an active state, 
+> 2. to leave the current translations in-place so that legacy DMA will continue
+>    using its current buffers until the device drivers in the crashdump kernel
+>    initialize and initialize their devices,
+> 3. to use different portions of the iova address ranges for the device drivers
+>    in the crashdump kernel than the iova ranges that were in-use at the time
+>    of the panic.  
+> 
+> Advantages of this approach:
+> 1. All manipulation of the IO-device is done by the Linux device-driver
+>    for that device.
+> 2. This approach behaves in a manner very similar to operation without an
+>    active iommu.
+> 3. Any activity between the IO-device and its RMRR areas is handled by the
+>    device-driver in the same manner as during a non-kdump boot.
+> 4. If an IO-device has no driver in the kdump kernel, it is simply left alone.
+>    This supports the practice of creating a special kdump kernel without
+>    drivers for any devices that are not required for taking a crashdump. 
+> 
+> Changes since the RFC version of this patch:
+> 1. Consolidated all of the operational code into the "copy..." functions.
+>    The "process..." functions were primarily used for diagnostics and
+>    exploration; however, there was a small amount of operational code that
+>    used the "process..." functions.
+>    This operational code has been moved into the "copy..." functions.
+> 
+> 2. Removed the "Process ..." functions and the diagnostic code that ran
+>    on that function set.  This removed about 1/4 of the code -- which this
+>    operational patch set no longer needs.  These portions of the RFC patch
+>    could be formatted as a separate patch and submitted independently
+>    at a later date. 
+> 
+> 3. Re-formatted the code to the Linux Coding Standards.
+>    The checkpatch script still finds some lines to complain about;
+>    however most of these lines are either (1) lines that I did not change,
+>    or (2) lines that only changed by adding a level of indent which pushed
+>    them over 80-characters, or (3) new lines whose intent is far clearer when
+>    longer than 80-characters.
+> 
+> 4. Updated the remaining debug print to be significantly more flexible.
+>    This allows control over the amount of debug print to the console --
+>    which can vary widely.
+> 
+> 5. Fixed a couple of minor bugs found by testing on a machine with a
+>    very large IO configuration.
+> 
+> At a high level, this code operates primarily during iommu initialization
+> and device-driver initialization
+> 
+> During intel-iommu hardware initialization:
+> In intel_iommu_init(void)
+> * If (This is the crash kernel)
+>   .  Set flag: crashdump_accepting_active_iommu (all changes below check this)
+>   .  Skip disabling the iommu hardware translations
+> 
+> In init_dmars()
+> * Duplicate the intel iommu translation tables from the old kernel
+>   in the new kernel
+>   . The root-entry table, all context-entry tables,
+>     and all page-translation-entry tables
+>   . The duplicate tables contain updated physical addresses to link them together.
+>   . The duplicate tables are mapped into kernel virtual addresses
+>     in the new kernel which allows most of the existing iommu code
+>     to operate without change.
+>   . Do some minimal sanity-checks during the copy
+>   . Place the address of the new root-entry structure into "struct intel_iommu"
+> 
+> * Skip setting-up new domains for 'si', 'rmrr', 'isa' 
+>   . Translations for 'rmrr' and 'isa' ranges have been copied from the old kernel
+>   . This patch has not yet been tested with iommu pass-through enabled
+> 
+> * Existing (unchanged) code near the end of dmar_init:
+>   . Loads the address of the (now new) root-entry structure from
+>     "struct intel_iommu" into the iommu hardware and does the hardware flushes.
+>     This changes the active translation tables from the ones in the old kernel
+>     to the copies in the new kernel.
+>   . This is legal because the translations in the two sets of tables are
+>     currently identical:
+>       Virtualization Technology for Directed I/O. Architecture Specification,
+>       February 2011, Rev. 1.3  (section 11.2, paragraph 2) 
+> 
+> In iommu_init_domains()
+> * Mark as in-use all domain-id's from the old kernel
+>   . In case the new kernel contains a device that was not in the old kernel
+>     and a new, unused domain-id is actually needed, the bitmap will give us one.
+> 
+> When a new domain is created for a device:
+> * If (this device has a context in the old kernel)
+>   . Get domain-id, address-width, and IOVA ranges from the old kernel context;
+>   . Get address(page-entry-tables) from the copy in the new kernel;
+>   . And apply all of the above values to the new domain structure.
+> * Else
+>   . Create a new domain as normal
+> 
+> --- 
+> Signed-off-by: Bill Sumner <bill.sumner@hp.com>
+> 
+> Bill Sumner (6):
+>   Crashdump-Accepting-Active-IOMMU-Flags-and-Prototypes
+>   Crashdump-Accepting-Active-IOMMU-Utility-functions
+>   Crashdump-Accepting-Active-IOMMU-Domain-Interfaces
+>   Crashdump-Accepting-Active-IOMMU-Copy-Translations
+>   Crashdump-Accepting-Active-IOMMU-Debug-Print-IOMMU
+>   Crashdump-Accepting-Active-IOMMU-Call-From-Mainline
+> 
+>  drivers/iommu/intel-iommu.c | 1292 ++++++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 1224 insertions(+), 68 deletions(-)
+> 
 
-So the big question, do we really care about lack of bpf jit on 32-bit cpus?
-Considering that ebpf still works on them, but via interpreter (see
-bpf_run.c)...
-imo that is the same situation as we have today with old bpf.
 
->> +Q: Why extended BPF is 64-bit? Cannot we live with 32-bit?
->> +A: On 64-bit architectures, pointers are 64-bit and we want to pass 64-bit
->> +values in/out kernel functions, so 32-bit BPF registers would require to define
->> +register-pair ABI, there won't be a direct BPF register to HW register
->> +mapping and JIT would need to do combine/split/move operations for every
->> +register in and out of the function, which is complex, bug prone and slow.
->> +Another reason is counters. To use 64-bit counter BPF program would need to do
->> +a complex math. Again bug prone and not atomic.
->
-> Having EBPF code manipulating pointers - or kernel memory - directly
-> seems like a nonstarter.  However, per your subsequent paragraph it
-> sounds like pointers are a special type at which point it shouldn't
-> matter at the EBPF level how many bytes it takes to represent it?
 
-bpf_check() will track every register through every insn.
-If pointer is stored in the register, it will know what type
-of pointer it is and will allow '*reg' operation only if pointer is valid.
-For example, upon entry into bpf program, register R1 will have type ptr_to_ctx.
-After JITing it means that 'rdi' has a valid pointer and it points to
-'struct bpf_context'.
-If bpf code has R1 = R1 + 1 insn, the checker will assign invalid_ptr type to R1
-after this insn and memory access via R1 will be rejected by checker.
-
-BPF program actually can manipulate kernel memory directly
-when checker guarantees that it is safe to do so :)
-
-For example in tracing filters bpf_context access is restricted to:
-static const struct bpf_context_access ctx_access[MAX_CTX_OFF] = {
-        [offsetof(struct bpf_context, regs.di)] = {
-                FIELD_SIZEOF(struct bpf_context, regs.di),
-                BPF_READ
-        },
-
-meaning that bpf program can only do 8-byte load from 'rdi + 112'
-when rdi still has type ptr_to_ctx. (112 is offset of 'di' field
-within bpf_context)
-
-Direct access making it so efficient and fast. After JITing bpf
-program is pretty to close to natively compiled code. C->bpf->x86 is
-quite close to C->x86. (talking about x86_64 of course)
-
-Over course of development bpf_check() found several compiler bugs.
-I also tried all of sorts of ways to break bpf jail from inside of a
-bpf program, but so far checker catches everything I was able to throw
-at it.
-
-btw, tools/bpf/trace/trace_filter_check.c is a user space program that
-links kernel/bpf_jit/bpf_check.o to make it easier to debug/understand
-how bpf_check() is working.
-It's there to do the same check as kernel will do while loading, but
-doing it in userspace.
-So it's faster to get an answer whether bpf filter is safe or not.
-Examples are in the same tools/bpf/trace/ dir.
-
-Thank you so much for review! Really appreciate the feedback.
-
-Regards,
-Alexei
