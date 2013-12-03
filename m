@@ -1,91 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab3LCDg2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 22:36:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44580 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753452Ab3LCDgY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 22:36:24 -0500
-Date: Mon, 2 Dec 2013 19:37:24 -0800
-From: Greg KH <greg@kroah.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Veaceslav Falico <vfalico@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] PCI: export MSI mode using attributes, not kobjects
-Message-ID: <20131203033724.GB8525@kroah.com>
-References: <20131129031419.GB5889@neilslaptop.think-freely.org>
- <20131129094137.GC3028@redhat.com>
- <20131129175336.GA6152@kroah.com>
- <CAErSpo44sQU2PbufCYF+wzpMtMPC97_FgAMQgruX9Nw3XbmL8g@mail.gmail.com>
+	id S1752881Ab3LCDob (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 22:44:31 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:45163 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751025Ab3LCDo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 22:44:29 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Linux OMAP Mailing List <linux-omap@vger.kernel.org>
+CC: Aaro Koskinen <aaro.koskinen@iki.fi>, <sameo@linux.intel.com>,
+        Tony Lindgren <tony@atomide.com>, <lee.jones@linaro.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH v2 04/15] mfd: menelaus: Remove unnecessary loop
+Date: Mon, 2 Dec 2013 21:42:57 -0600
+Message-ID: <1386042188-12246-4-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.8.4.GIT
+In-Reply-To: <1386042188-12246-1-git-send-email-balbi@ti.com>
+References: <1386042188-12246-1-git-send-email-balbi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAErSpo44sQU2PbufCYF+wzpMtMPC97_FgAMQgruX9Nw3XbmL8g@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 06:24:06PM -0700, Bjorn Helgaas wrote:
-> On Fri, Nov 29, 2013 at 10:53 AM, Greg KH <greg@kroah.com> wrote:
-> > On Fri, Nov 29, 2013 at 10:41:37AM +0100, Veaceslav Falico wrote:
-> >> On Wed, Nov 27, 2013 at 10:46:52AM -0800, Greg Kroah-Hartman wrote:
-> >> >From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >> >
-> >> >The PCI MSI sysfs code is a mess with kobjects for things that don't
-> >> >really need to be kobjects.  This patch creates attributes dynamically
-> >> >for the MSI interrupts instead of using kobjects.
-> >> >
-> >> >Note, this removes a directory from the current MSI interrupt sysfs
-> >> >code:
-> >> >
-> >> >old MSI kobjects:
-> >> >pci_device
-> >> >   └── msi_irqs
-> >> >       └── 40
-> >> >           └── mode
-> >> >
-> >> >new MSI attributes:
-> >> >pci_device
-> >> >   └── msi_irqs
-> >> >       └── 40
-> >> >
-> >> >As there was only one file "mode" with the kobject model, the interrupt
-> >> >number is now a file that returns the "mode" of the interrupt (msi vs.
-> >> >msix).
-> >> >
-> >> >Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >>
-> >> Works like a charm for me.
-> >>
-> >> FWIW,
-> >>
-> >> Reviewed-by: Veaceslav Falico <vfalico@redhat.com>
-> >
-> > On Thu, Nov 28, 2013 at 10:14:19PM -0500, Neil Horman wrote:
-> >> ACK, Testing with git-head irqbalance on F19 with this patch and it works fine.
-> >>
-> >> Thanks!
-> >> Acked-by: Neil Horman <nhorman@tuxdriver.com>
-> >
-> > Great, thanks for both of you testing this.
-> >
-> > Bjorn, any objection to take this through your tree for 3.14-rc1?
-> 
-> Nope, I don't object at all.  We probably should update
-> Documentation/ABI/testing/sysfs-bus-pci at the same time, though.
+we can let irqs refire and give the scheduler
+a chance to choose when we should be scheduled.
 
-Now sent.
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/mfd/menelaus.c | 43 +++++++++++++++++++------------------------
+ 1 file changed, 19 insertions(+), 24 deletions(-)
 
-thanks,
+diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
+index 11d7d81..11dc4d3 100644
+--- a/drivers/mfd/menelaus.c
++++ b/drivers/mfd/menelaus.c
+@@ -795,30 +795,25 @@ static irqreturn_t menelaus_irq(int irq, void *_menelaus)
+ {
+ 	struct menelaus_chip *menelaus = _menelaus;
+ 	void (*handler)(struct menelaus_chip *menelaus);
+-
+-	while (1) {
+-		unsigned isr;
+-
+-		isr = (menelaus_read_reg(MENELAUS_INT_STATUS2)
+-				& ~menelaus->mask2) << 8;
+-		isr |= menelaus_read_reg(MENELAUS_INT_STATUS1)
+-				& ~menelaus->mask1;
+-		if (!isr)
+-			break;
+-
+-		while (isr) {
+-			int irq = fls(isr) - 1;
+-			isr &= ~(1 << irq);
+-
+-			mutex_lock(&menelaus->lock);
+-			menelaus_disable_irq(irq);
+-			menelaus_ack_irq(irq);
+-			handler = menelaus->handlers[irq];
+-			if (handler)
+-				handler(menelaus);
+-			menelaus_enable_irq(irq);
+-			mutex_unlock(&menelaus->lock);
+-		}
++	unsigned isr;
++
++	isr = (menelaus_read_reg(MENELAUS_INT_STATUS2)
++			& ~menelaus->mask2) << 8;
++	isr |= menelaus_read_reg(MENELAUS_INT_STATUS1)
++		& ~menelaus->mask1;
++
++	while (isr) {
++		int irq = fls(isr) - 1;
++		isr &= ~(1 << irq);
++
++		mutex_lock(&menelaus->lock);
++		menelaus_disable_irq(irq);
++		menelaus_ack_irq(irq);
++		handler = menelaus->handlers[irq];
++		if (handler)
++			handler(menelaus);
++		menelaus_enable_irq(irq);
++		mutex_unlock(&menelaus->lock);
+ 	}
+ 
+ 	return IRQ_HANDLED;
+-- 
+1.8.4.GIT
 
-greg k-h
