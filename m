@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865Ab3LCAUl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 19:20:41 -0500
-Received: from ozlabs.org ([203.10.76.45]:57029 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751533Ab3LCAUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 19:20:38 -0500
-Date: Tue, 3 Dec 2013 11:20:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Chun-Yeow Yeoh" <yeohchunyeow@gmail.com>
-Subject: linux-next: manual merge of the wireless-next tree with the
- wireless tree
-Message-Id: <20131203112032.b6c5faa3e40442b66770df91@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+	id S1752171Ab3LCAbk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 19:31:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43443 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab3LCAbi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Dec 2013 19:31:38 -0500
+Date: Mon, 2 Dec 2013 16:31:36 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: <tj@kernel.org>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: Re: [PATCH 09/24] mm/memblock: Add memblock memory allocation apis
+Message-Id: <20131202163136.f31f39c5940c0ba6d20f4a00@linux-foundation.org>
+In-Reply-To: <1383954120-24368-10-git-send-email-santosh.shilimkar@ti.com>
+References: <1383954120-24368-1-git-send-email-santosh.shilimkar@ti.com>
+	<1383954120-24368-10-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__3_Dec_2013_11_20_32_+1100_aDNjMGSUBBBzxLm."
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__3_Dec_2013_11_20_32_+1100_aDNjMGSUBBBzxLm.
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 8 Nov 2013 18:41:45 -0500 Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
 
-Hi John,
+> Introduce memblock memory allocation APIs which allow to support
+> PAE or LPAE extension on 32 bits archs where the physical memory start
+> address can be beyond 4GB. In such cases, existing bootmem APIs which
+> operate on 32 bit addresses won't work and needs memblock layer which
+> operates on 64 bit addresses.
+> 
+> So we add equivalent APIs so that we can replace usage of bootmem
+> with memblock interfaces. Architectures already converted to NO_BOOTMEM
+> use these new interfaces and other which still uses bootmem, these new
+> APIs just fallback to exiting bootmem APIs. So no functional change as
+> such.
+> 
+> In long run, once all the achitectures moves to NO_BOOTMEM, we can get rid of
+> bootmem layer completely. This is one step to remove the core code dependency
+> with bootmem and also gives path for architectures to move away from bootmem.
+> 
+> The proposed interface will became active if both CONFIG_HAVE_MEMBLOCK
+> and CONFIG_NO_BOOTMEM are specified by arch. In case !CONFIG_NO_BOOTMEM,
+> the memblock() wrappers will fallback to the existing bootmem apis so
+> that arch's not converted to NO_BOOTMEM continue to work as is.
+> 
+> The meaning of MEMBLOCK_ALLOC_ACCESSIBLE and MEMBLOCK_ALLOC_ANYWHERE is
+> kept same.
+> 
+> ...
+>
+> +static void * __init _memblock_virt_alloc_try_nid_nopanic(
+> +				phys_addr_t size, phys_addr_t align,
+> +				phys_addr_t from, phys_addr_t max_addr,
+> +				int nid)
+> +{
+> +	phys_addr_t alloc;
+> +	void *ptr;
+> +
+> +	if (WARN_ON_ONCE(slab_is_available())) {
+> +		if (nid == MAX_NUMNODES)
+> +			return kzalloc(size, GFP_NOWAIT);
+> +		else
+> +			return kzalloc_node(size, GFP_NOWAIT, nid);
+> +	}
 
-Today's linux-next merge of the wireless-next tree got a conflict in
-net/mac80211/util.c between commit 3f718fd8401d ("mac80211: fix the mesh
-channel switch support") from the wireless tree and commit ca91dc97b8a0
-("mac80211: use put_unaligned_le16 for precedence value in mesh") from
-the wireless-next tree.
+The use of MAX_NUMNODES is a bit unconventional here.  I *think* we
+generally use NUMA_NO_NODE to indicate "don't care".  I Also *think*
+that if this code did s/MAX_NUMNODES/NUMA_NO_NODE/g then the above
+simply becomes
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+	return kzalloc_node(size, GFP_NOWAIT, nid);
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+and kzalloc_node() handles NUMA_NO_NODE appropriately.
 
-diff --cc net/mac80211/util.c
-index 9f9b9bd3fd44,06265d7f8cc3..000000000000
---- a/net/mac80211/util.c
-+++ b/net/mac80211/util.c
-@@@ -2457,9 -2481,13 +2479,8 @@@ int ieee80211_send_action_csa(struct ie
-  			  WLAN_EID_CHAN_SWITCH_PARAM_TX_RESTRICT : 0x00;
-  		put_unaligned_le16(WLAN_REASON_MESH_CHAN, pos); /* Reason Cd */
-  		pos +=3D 2;
-- 		pre_value =3D cpu_to_le16(ifmsh->pre_value);
-- 		memcpy(pos, &pre_value, 2);		/* Precedence Value */
- -		if (!ifmsh->pre_value)
- -			ifmsh->pre_value =3D 1;
- -		else
- -			ifmsh->pre_value++;
-+ 		put_unaligned_le16(ifmsh->pre_value, pos);/* Precedence Value */
-  		pos +=3D 2;
- -		ifmsh->chsw_init =3D true;
-  	}
- =20
-  	ieee80211_tx_skb(sdata, skb);
+I *think* ;)  Please check all this.
 
---Signature=_Tue__3_Dec_2013_11_20_32_+1100_aDNjMGSUBBBzxLm.
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSnSPUAAoJEMDTa8Ir7ZwVvUAP/2vx4eg658g6PD+xV9OqSkH/
-FjHpeix1q/38ZBhXFb2R+NbKptQswC9r9ObaL3Bk9+nz/SLlX/P8keXjR3wUpS4u
-Dx/LzQcjfwUutBVhDzsxv3VQzmhQJ4fWpwqlKo+O2Vox1zJegqFz5JCzH98I1gtS
-YiU7yX0vDgQl4+qYZqk4/ncvX3bTGwOFlhlOWiNwtS6UVifyVD0l/EWEJ9mIKdUE
-TMQ/Dbhqg3NiZw4Tu3eEXnvhvT4/amAkWFdlIDgqD25RkfFzGvVWL5zaA5VoyEZu
-yGXL3F2VN/6UDX6l8vixtSVIOChUQRbvw1D/nBJYPrbzHJgL4A3TacvTxtyMVe4x
-3gaObx1yV6dpvvKIUtEtq/tYL3Vbg9lJ4yx4739F2NoX9ZitFOmlc3oZfskUjfzz
-Ii44oXox9HbawG3Rpc75ATpYohy1a+8YfZ7eBLC//JSTWknUM2ZVjyeQtXPHD9mI
-+0bz/i4xlpRK3N7yu6FyEMNTLXPVGmkxWzf47ALi6q5IumOOytFF3ewSxIkMwaJG
-mFNZBLEVxPaP+PT8FvBxnrkwlwvM28QQxdEk0LrKCO3fyxov++x4DaiX2XTZY/jR
-ywcqXIb4xND9dI46hEqcgpMtcfTYz/RnwOQTyO3oRwX94YLmeYPPeuTKIsASaFG8
-9lR3isdl+RqIZcTwIPLB
-=xT7P
------END PGP SIGNATURE-----
-
---Signature=_Tue__3_Dec_2013_11_20_32_+1100_aDNjMGSUBBBzxLm.--
