@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab3LCQau (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 11:30:50 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:48135 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716Ab3LCQaq (ORCPT
+	id S1753860Ab3LCQfI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 11:35:08 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53301 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752257Ab3LCQfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 11:30:46 -0500
-Message-ID: <529E072B.3060901@linaro.org>
-Date: Wed, 04 Dec 2013 00:30:35 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Jon Masters <jonathan@jonmasters.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Patch Tracking <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [RFC part3 PATCH 2/2] ARM64 / clocksource: Use arch_timer_acpi_init()
-References: <1386069328-22502-1-git-send-email-hanjun.guo@linaro.org> <1386069328-22502-3-git-send-email-hanjun.guo@linaro.org> <CACRpkdYeMOMQzDn5=XpDg7X9L_zMZczGg-5SBA8q_WvwFPnH7A@mail.gmail.com> <529DE21E.4080707@linaro.org> <CACRpkdZWELp1u=O=gSGZhaxQ2oTMu_jXuJb43snrr-tdYW9XAA@mail.gmail.com> <20131203144309.GC7552@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20131203144309.GC7552@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 3 Dec 2013 11:35:05 -0500
+Date: Tue, 3 Dec 2013 16:32:28 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Julien Grall <julien.grall@linaro.org>
+Cc: xen-devel@lists.xenproject.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Roger Pau Monne <roger.pau@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH v2] xen/block: Correctly define structures in public
+ headers on ARM32 and ARM64
+Message-ID: <20131203163228.3313dff8@alan.etchedpixels.co.uk>
+In-Reply-To: <529E04AB.5060304@linaro.org>
+References: <1386085237-8334-1-git-send-email-julien.grall@linaro.org>
+	<20131203160018.67542a53@alan.etchedpixels.co.uk>
+	<529E04AB.5060304@linaro.org>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年12月03日 22:43, Mark Rutland wrote:
-> On Tue, Dec 03, 2013 at 02:13:49PM +0000, Linus Walleij wrote:
->> On Tue, Dec 3, 2013 at 2:52 PM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
->>
->>> I will introduce has_arch_timer_node() as you said and use
->>> it as follows:
->>>
->>> if (has_arch_timer_node())
->>> clocksource_of_init();
->>> esle
->>> arch_timer_acpi_init(); /* try ACPI way */
->>>
->>> Is this make sense to you?
-> What does arch_timer_acpi_init() do? Is it just detecting the presence
-> of the timer, or grabbing the rate from a property in an ACPI table?
+> > How does the patch ensure new kernels on existing hypervisor versions
+> > don't break ?
+> 
+> As Ian said on the thread "xen-block: correctly define structures in
+> public headers" (see thread https://lkml.org/lkml/2013/12/3/155), the
+> ABI is not yet fixed for ARM.
 
-It seems that you didn't get the PATCH 1/2, and my part1/part2 patch set
-is also missing, I will resend all the patch set, sorry for the noise.
+And if you are one of the existing users that helps how ?
 
-Thanks
-Hanjun
+> > 
+> > What is the failure case given the alignment change seems potentially to
+> > produce valid but incorrect I/O requests - can it cause corruption ?
+> 
+> The request ID will likely be wrong, so the guest won't accept the
+> request. It should not corrupt the block device.
+
+"Would likely" 
+
+That seems joyously confident.
+
+So at the very least your guest should deliberately issue a request which
+will error if the ABI version mismatches, and at that point you know
+which ABI to use so the guest can keep compatibility trivially.
+
+> > It seems to me you should be defining
+> > 
+> > struct blkif_request_rw_v2
+> > 
+> > and using the correct version according to which API the hypervisor
+> > requires, not just breaking it.
+> 
+> This API doesn't involve the hypervisor. It's only a way to talk between
+> DOM0 and a guest. Without this change you will break compatibility with
+> other OSes.
+
+With this change you break compatibility between the existing OS's,new
+guests and old DOM0 and vice versa.
+
+If a request in old format is guaranteed to error in new format (or you
+can construct one that will) then you can trivially support both APIs on
+the guest side at least for a while. That will avoid regressions when
+people mix versions and also mean you've got a much better ability to
+find a bug if stuff breaks as you won't have to switch guest and dom0
+together when debugging.
+
+Alan
+
+
