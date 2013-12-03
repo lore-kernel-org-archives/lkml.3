@@ -1,68 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754487Ab3LCPJo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 10:09:44 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:35522 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461Ab3LCPJk (ORCPT
+	id S1754647Ab3LCPJx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 10:09:53 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:35236 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754535Ab3LCPJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 10:09:40 -0500
-Date: Tue, 3 Dec 2013 15:09:37 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>
-Message-ID: <20131203150937.GA27568@sirena.org.uk>
-References: <1386079702-22821-1-git-send-email-linus.walleij@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="z/2SwVaBG11ut2fa"
-Content-Disposition: inline
-In-Reply-To: <1386079702-22821-1-git-send-email-linus.walleij@linaro.org>
-X-Cookie: Boycott meat -- suck your thumb.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: ab8500: delete non-devicetree probe path
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Tue, 3 Dec 2013 10:09:49 -0500
+From: Julien Grall <julien.grall@linaro.org>
+To: xen-devel@lists.xenproject.org
+Cc: patches@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Julien Grall <julien.grall@linaro.org>,
+        Roger Pau Monne <roger.pau@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH] xen/block: Correctly define structures in public headers on ARM32 and ARM64
+Date: Tue,  3 Dec 2013 15:09:42 +0000
+Message-Id: <1386083382-7306-1-git-send-email-julien.grall@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On ARM (32 bits and 64 bits), the double-word is 8-bytes aligned. This will
+result on different structure from Xen and Linux repositories.
 
---z/2SwVaBG11ut2fa
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+As Linux is using __packed__ attribute, it must have a 4-bytes padding before
+each "id" field.
 
-On Tue, Dec 03, 2013 at 03:08:22PM +0100, Linus Walleij wrote:
-> The Ux500 platform has been converted to do device-tree only
-> boots, no longer supports platform data passing, so this
-> probe path is unused. Delete it, simplifying the driver a
-> whole lot.
+This change breaks guest block support with older kernel. IMHO, it's acceptable
+because Xen on ARM is still on Tech Preview and the hypercall ABI is not yet
+freezed.
 
-Applied, thanks.
+Signed-off-by: Julien Grall <julien.grall@linaro.org>
+Cc: Roger Pau Monne <roger.pau@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: David Vrabel <david.vrabel@citrix.com>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: Ian Campbell <ian.campbell@citrix.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
---z/2SwVaBG11ut2fa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+---
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+This patch is the rework of "xen-block: correctly define structures in public
+headers" sent by Roger (see https://lkml.org/lkml/2013/12/3/155).
+---
+ include/xen/interface/io/blkif.h |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-iQIcBAEBAgAGBQJSnfQtAAoJELSic+t+oim9Z5AP/2fg320UphH+Amcu3QchaaNt
-qPVSpiByAeERrF1YQYv5JM8JUj8zsXNnrQIAx6x2mK+3xfyxUrp4K67jrFC3qg3P
-6JcX8wgtePKKQZ3yJreaFJFbjgDYbtEzvRc3Bwb8VhXiIxVeAKN+rCt/tB7gLYl2
-dD0NlcxwdeVgU/VvD0ARzwYMTu94QQS9xk8UWcvRYvfXlah+fz0BhwnU4ylqMf00
-ZamS+S0v2sh6RmHt8zImewEnQoJSLJ445fSyR46xctSnwcwHMiANzTDiwQomGt1/
-0iF5d7GAACw420P/jjiIAvA0poqyAVgTuJJvO5UedRhtw8MGCfd6edxXsdG6ftm6
-ezZv/EP+WF9UqH6c2l+LEf/quLkMaOQvA7V0ap1huZmD8rtQCRDURlu+lYQP454f
-0mCpbxxIqoUmgQhL888FLPSpc4K2OkQo5l3w5NJfBzBbcJQi6v0LwMypUzuX4sfT
-6CKjl12VwYystw8u6Ge+v3t9IKlyV+dOz9qomCsyVztJHQDv3nn+YnqdDCYVon03
-gGJPlJrZUE4S/qdsqNKhdUcibLSuy+c2pEQPPm0QxC4TV9I51yD6KLeh+uFCvl3J
-E1HuSeUtb6AN2qPTljlAorAKiDNkjM9rY3R63ltdSTCKAYDcJpIKCCgzaqB3T0uo
-sQ0XSWsISQbohh0FVtLO
-=QKVP
------END PGP SIGNATURE-----
+diff --git a/include/xen/interface/io/blkif.h b/include/xen/interface/io/blkif.h
+index 65e1209..08e8e9d 100644
+--- a/include/xen/interface/io/blkif.h
++++ b/include/xen/interface/io/blkif.h
+@@ -146,7 +146,7 @@ struct blkif_request_segment_aligned {
+ struct blkif_request_rw {
+ 	uint8_t        nr_segments;  /* number of segments                   */
+ 	blkif_vdev_t   handle;       /* only for read/write requests         */
+-#ifdef CONFIG_X86_64
++#if defined(CONFIG_X86_64) || defined(CONFIG_ARM) || defined(CONFIG_ARM64)
+ 	uint32_t       _pad1;	     /* offsetof(blkif_request,u.rw.id) == 8 */
+ #endif
+ 	uint64_t       id;           /* private guest value, echoed in resp  */
+@@ -163,7 +163,7 @@ struct blkif_request_discard {
+ 	uint8_t        flag;         /* BLKIF_DISCARD_SECURE or zero.        */
+ #define BLKIF_DISCARD_SECURE (1<<0)  /* ignored if discard-secure=0          */
+ 	blkif_vdev_t   _pad1;        /* only for read/write requests         */
+-#ifdef CONFIG_X86_64
++#if defined(CONFIG_X86_64) || defined(CONFIG_ARM) || defined(CONFIG_ARM64)
+ 	uint32_t       _pad2;        /* offsetof(blkif_req..,u.discard.id)==8*/
+ #endif
+ 	uint64_t       id;           /* private guest value, echoed in resp  */
+@@ -175,7 +175,7 @@ struct blkif_request_discard {
+ struct blkif_request_other {
+ 	uint8_t      _pad1;
+ 	blkif_vdev_t _pad2;        /* only for read/write requests         */
+-#ifdef CONFIG_X86_64
++#if defined(CONFIG_X86_64) || defined(CONFIG_ARM) || defined(CONFIG_ARM64)
+ 	uint32_t     _pad3;        /* offsetof(blkif_req..,u.other.id)==8*/
+ #endif
+ 	uint64_t     id;           /* private guest value, echoed in resp  */
+@@ -184,7 +184,7 @@ struct blkif_request_other {
+ struct blkif_request_indirect {
+ 	uint8_t        indirect_op;
+ 	uint16_t       nr_segments;
+-#ifdef CONFIG_X86_64
++#if defined(CONFIG_X86_64) || defined(CONFIG_ARM) || defined(CONFIG_ARM64)
+ 	uint32_t       _pad1;        /* offsetof(blkif_...,u.indirect.id) == 8 */
+ #endif
+ 	uint64_t       id;
+@@ -192,7 +192,7 @@ struct blkif_request_indirect {
+ 	blkif_vdev_t   handle;
+ 	uint16_t       _pad2;
+ 	grant_ref_t    indirect_grefs[BLKIF_MAX_INDIRECT_PAGES_PER_REQUEST];
+-#ifdef CONFIG_X86_64
++#if defined(CONFIG_X86_64) || defined(CONFIG_ARM) || defined(CONFIG_ARM64)
+ 	uint32_t      _pad3;         /* make it 64 byte aligned */
+ #else
+ 	uint64_t      _pad3;         /* make it 64 byte aligned */
+-- 
+1.7.10.4
 
---z/2SwVaBG11ut2fa--
