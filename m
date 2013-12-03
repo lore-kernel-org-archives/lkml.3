@@ -1,74 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab3LCPdv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 10:33:51 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:35707 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752731Ab3LCPdt (ORCPT
+	id S1754649Ab3LCPe4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 10:34:56 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:32760 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753418Ab3LCPew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 10:33:49 -0500
-Date: Tue, 3 Dec 2013 10:33:46 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Alexei Starovoitov <ast@plumgrid.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        =?UTF-8?B?RnLDqWTDqXJpYw==?= Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>, Pekka Enberg <penberg@iki.fi>,
-        "David S. Miller" <davem@davemloft.net>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
-Message-ID: <20131203103346.65c744e3@gandalf.local.home>
-In-Reply-To: <20131203091655.GB20179@gmail.com>
-References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
-	<20131203091655.GB20179@gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 3 Dec 2013 10:34:52 -0500
+Message-ID: <529DFA09.1030707@siemens.com>
+Date: Tue, 03 Dec 2013 16:34:33 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Kim Phillips <kim.phillips@linaro.org>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: kvm@vger.kernel.org, scottwood@freescale.com, R65777@freescale.com,
+        B07421@freescale.com, B08248@freescale.com,
+        christoffer.dall@linaro.org, alex.williamson@redhat.com,
+        a.motakis@virtualopensystems.com, agraf@suse.de, B16395@freescale.com
+Subject: Re: [REPOST][PATCH 1/2] driver core: Add new device_driver flag to
+ allow binding via sysfs only
+References: <20131203123446.42fbff34a8ebd7afd38159a5@linaro.org>
+In-Reply-To: <20131203123446.42fbff34a8ebd7afd38159a5@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Dec 2013 10:16:55 +0100
-Ingo Molnar <mingo@kernel.org> wrote:
-
- 
-> So, to do the math:
+On 2013-12-03 13:34, Kim Phillips wrote:
+> VFIO supports pass-through of devices to user space - for sake
+> of illustration, say a PCI e1000 device:
 > 
->    tracing               'all' overhead:   95 nsecs per event
->    tracing 'eth5 + old filter' overhead:  157 nsecs per event
->    tracing 'eth5 + BPF filter' overhead:   54 nsecs per event
+> - the e1000 is first unbound from the PCI e1000 driver via sysfs
+> - the vfio-pci driver is told via new_id that it now handles e1000 devices
+> - the e1000 is explicitly bound to vfio-pci through sysfs
 > 
-> So via BPF and a fairly trivial filter, we are able to reduce tracing 
-> overhead for real - while old-style filters.
+> However, now we have two drivers in the system that both handle e1000
+> devices.  A hotplug event could then occur and it is ambiguous as to which
+> driver will claim the device.  The desired semantics is that vfio-pci is
+> only bound to devices by explicit request in sysfs.  This patch makes this
+> possible by introducing a sysfs_bind_only flag in struct device_driver.
+> 
+> Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
+> Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
+> ---
+> rebased onto 3.13-rc2, and reposted from first submission which
+> recieved no comments:
+> 
+> https://lkml.org/lkml/2013/10/11/53
+> 
+>  drivers/base/dd.c      | 5 ++++-
+>  include/linux/device.h | 2 ++
+>  2 files changed, 6 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+> index 0605176..b83b16d 100644
+> --- a/drivers/base/dd.c
+> +++ b/drivers/base/dd.c
+> @@ -389,7 +389,7 @@ static int __device_attach(struct device_driver *drv, void *data)
+>  {
+>  	struct device *dev = data;
+>  
+> -	if (!driver_match_device(drv, dev))
+> +	if (drv->sysfs_bind_only || !driver_match_device(drv, dev))
+>  		return 0;
+>  
+>  	return driver_probe_device(drv, dev);
+> @@ -476,6 +476,9 @@ static int __driver_attach(struct device *dev, void *data)
+>   */
+>  int driver_attach(struct device_driver *drv)
+>  {
+> +	if (drv->sysfs_bind_only)
+> +		return 0;
+> +
+>  	return bus_for_each_dev(drv->bus, NULL, drv, __driver_attach);
+>  }
+>  EXPORT_SYMBOL_GPL(driver_attach);
+> diff --git a/include/linux/device.h b/include/linux/device.h
+> index 952b010..ed441d1 100644
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -200,6 +200,7 @@ extern struct klist *bus_get_device_klist(struct bus_type *bus);
+>   * @owner:	The module owner.
+>   * @mod_name:	Used for built-in modules.
+>   * @suppress_bind_attrs: Disables bind/unbind via sysfs.
+> + * @sysfs_bind_only: Only allow bind/unbind via sysfs.
+>   * @of_match_table: The open firmware table.
+>   * @acpi_match_table: The ACPI match table.
+>   * @probe:	Called to query the existence of a specific device,
+> @@ -233,6 +234,7 @@ struct device_driver {
+>  	const char		*mod_name;	/* used for built-in modules */
+>  
+>  	bool suppress_bind_attrs;	/* disables bind/unbind via sysfs */
+> +	bool sysfs_bind_only;		/* only allow bind/unbind via sysfs */
+>  
+>  	const struct of_device_id	*of_match_table;
+>  	const struct acpi_device_id	*acpi_match_table;
+> 
 
-Yep, seems that BPF can do what I wasn't able to do with the normal
-filters. Although, I haven't looked at the code yet, I'm assuming that
-the BPF works on the parameters passed into the trace event. The normal
-filters can only process the results of the trace (what's being
-recorded) not the parameters of the trace event itself. To get what's
-recorded, we need to write to the buffer first, and then we decided if
-we want to keep the event or not and discard the event from the buffer
-if we do not.
+I think I only discussed this with Stuart in person at the KVM Forum:
+Why not deriving the property "sysfs bind only" from the fact that a
+device does wild-card binding? Are there use cases that benefit from
+decoupling both features?
 
-That method does not reduce overhead at all, and only adds to it, as
-Alexei's tests have shown. The purpose of the filter was not to reduce
-overhead, but to reduce filling the buffer with needless data.
+Jan
 
-It looks as if the BPF filter works on the parameters of the trace
-event and not what is written to the buffers (as they can be
-different). I've been looking for a way to do just that, and if this
-does accomplish it, I'll be very happy :-)
-
--- Steve
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
