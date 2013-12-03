@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab3LCMNA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 07:13:00 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43882 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752972Ab3LCMM6 (ORCPT
+	id S1753219Ab3LCMPP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 07:15:15 -0500
+Received: from smtp-out-012.synserver.de ([212.40.185.12]:1077 "EHLO
+	smtp-out-110.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751268Ab3LCMPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 07:12:58 -0500
-Date: Tue, 3 Dec 2013 12:12:22 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Florian Meier <florian.meier@koalo.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Mark Brown <broonie@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        dmaengine <dmaengine@vger.kernel.org>
-Subject: Re: [PATCHv8] dmaengine: Add support for BCM2835
-Message-ID: <20131203121222.GS16735@n2100.arm.linux.org.uk>
-References: <529CDBA8.6070107@koalo.de> <1386072258.1871.44.camel@smile>
+	Tue, 3 Dec 2013 07:15:10 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 11980
+Message-ID: <529DCB76.4070705@metafoo.de>
+Date: Tue, 03 Dec 2013 13:15:50 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386072258.1871.44.camel@smile>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Lee Jones <lee.jones@linaro.org>
+CC: alsa-devel@alsa-project.org, linus.walleij@linaro.org, broonie@kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [alsa-devel] [PATCH 1/2] ASoC: ux500_pcm: Differentiate between
+ pdata and DT initialisation
+References: <1386066427-6862-1-git-send-email-lee.jones@linaro.org> <529DC6BE.3080607@metafoo.de> <20131203120420.GC12031@lee--X1>
+In-Reply-To: <20131203120420.GC12031@lee--X1>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 02:04:18PM +0200, Andy Shevchenko wrote:
-> On Mon, 2013-12-02 at 20:12 +0100, Florian Meier wrote:
-> > +static void bcm2835_dma_free(struct bcm2835_dmadev *od)
-> > +{
-> > +	while (!list_empty(&od->ddev.channels)) {
-> > +		struct bcm2835_chan *c = list_first_entry(&od->ddev.channels,
-> > +			struct bcm2835_chan, vc.chan.device_node);
-> > +
+On 12/03/2013 01:04 PM, Lee Jones wrote:
+> On Tue, 03 Dec 2013, Lars-Peter Clausen wrote:
 > 
-> list_for_each_entry_safe() suits well here.
+>> On 12/03/2013 11:27 AM, Lee Jones wrote:
+>>> If booting with full DT support (i.e. DMA too, the last piece of the
+>>> puzzle), then we don't need to use the compatible_request_channel call
+>>> back or require some of the historical bumph which probably isn't
+>>> required by a platform data start-up now either. This will also be
+>>> ripped out in upcoming commits.
+>>>
+>>> Cc: alsa-devel@alsa-project.org
+>>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>
+>> Strictly speaking you do not need the second config, but well considering
+>> that this will all hopefully be removed soon anyway it should be fine.
 > 
-> > +		list_del(&c->vc.chan.device_node);
-> > +		tasklet_kill(&c->vc.task);
-> > +	}
+> That's true it will, but why don't we need the second config? I won't
+> want the compat function to be called in the DT case.
 
-For such a loop, where we're deleting all entries in a list,
-list_for_each_entry_safe() is a little heavier than necessary.  This
-is how the code would look:
+It will only be called if it was not possible to request the DMA channel
+from the DT.
 
-static void bcm2835_dma_free(struct bcm2835_dmadev *od)
-{
-	struct bcm2835_chan *c, *next;
+- Lars
 
-	list_for_each_entry_safe(c, next, &od->ddev.channels,
-				 vc.chan.device_node) {
-		list_del(&c->vc.chan.device_node);
-		tasklet_kill(&c->vc.task);
-	}
-
-I see very little gain in this approach.
