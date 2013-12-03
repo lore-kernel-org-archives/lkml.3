@@ -1,245 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab3LCXYw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 18:24:52 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:46032 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755303Ab3LCXYt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 18:24:49 -0500
-Date: Tue, 3 Dec 2013 18:24:45 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: Re: [PATCH v2 08/23] mm/memblock: Add memblock memory allocation apis
-Message-ID: <20131203232445.GX8277@htj.dyndns.org>
-References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com>
- <1386037658-3161-9-git-send-email-santosh.shilimkar@ti.com>
+	id S1755589Ab3LCX1Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 18:27:16 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:49947 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755218Ab3LCX1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 18:27:13 -0500
+Message-ID: <529E68CC.4090808@ti.com>
+Date: Wed, 4 Dec 2013 08:27:08 +0900
+From: Milo Kim <milo.kim@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386037658-3161-9-git-send-email-santosh.shilimkar@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-pwm@vger.kernel.org>, Lee Jones <lee.jones@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v3 3/4] pwm: add LP3943 PWM driver
+References: <1378949630-6275-1-git-send-email-milo.kim@ti.com> <20131203102455.GH21178@ulmo.nvidia.com>
+In-Reply-To: <20131203102455.GH21178@ulmo.nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Thierry,
 
-On Mon, Dec 02, 2013 at 09:27:23PM -0500, Santosh Shilimkar wrote:
-> So we add equivalent APIs so that we can replace usage of bootmem
-> with memblock interfaces. Architectures already converted to NO_BOOTMEM
-> use these new interfaces and other which still uses bootmem, these new
-> APIs just fallback to exiting bootmem APIs. So no functional change as
-> such.
+On 12/03/2013 07:24 PM, Thierry Reding wrote:
+> On Thu, Sep 12, 2013 at 10:33:50AM +0900, Milo Kim wrote:
+>> This is the other of the LP3943 MFD driver.
+>> LP3943 can be used as a PWM generator, up to 2 channels.
+>>
+>> * Two PWM generators supported
+>>
+>> * Supported PWM operations
+>>    request, free, config, enable and disable
+>>
+>> * Pin assignment
+>>    A driver data, 'pin_used' is checked when a PWM is requested.
+>>    If the output pin is already assigned, then returns as failure.
+>>    If the pin is available, 'pin_used' is set.
+>>    When the PWM is not used anymore, then it is cleared.
+>>    It is defined as unsigned long type for atomic bit operation APIs,
+>>    but only LSB 16bits are used because LP3943 has 16 outputs.
+>>
+>> Cc: Thierry Reding <thierry.reding@gmail.com>
+>> Signed-off-by: Milo Kim <milo.kim@ti.com>
+>> ---
+>> * Patch v3
+>>    Manual polarity not supported any more.
+>>    Add encapsulation functions for accessing internal data structure.
+>>    Use pwm_set_chip_data() and pwm_get_chip_data().
+>>    And other code fixes based on Thierry's feedback.
+>>
+>>   drivers/pwm/Kconfig      |   10 ++
+>>   drivers/pwm/Makefile     |    1 +
+>>   drivers/pwm/pwm-lp3943.c |  314 ++++++++++++++++++++++++++++++++++++++++++++++
+>>   3 files changed, 325 insertions(+)
+>>   create mode 100644 drivers/pwm/pwm-lp3943.c
+>
+> Hi Milo,
+>
+> Is this patchset still the latest version? I've tried to remember the
+> status of this series, but I could only draw a blank.
 
-The last part of the second last sentence doesn't parse too well.  I
-think it'd be worthwhile to improve and preferably expand on it as
-this is a bit tricky to understand given the twisted state of early
-memory allocation.
+Thanks a lot for this reminder.
+I forgot to check the status.
 
-> In long run, once all the achitectures moves to NO_BOOTMEM, we can get rid of
-> bootmem layer completely. This is one step to remove the core code dependency
-> with bootmem and also gives path for architectures to move away from bootmem.
+The latest one is the v4, but LP3943 PWM driver code is same as v3.
 
-Lines too long?
+   Update from v3 to v4:
+     Move the driver description from the documentation to the MFD 
+driver file.
 
-> +/*
-> + * FIXME: use NUMA_NO_NODE instead of MAX_NUMNODES when bootmem/nobootmem code
-> + * will be removed.
-> + * It can't be done now, because when MEMBLOCK or NO_BOOTMEM are not enabled
-> + * all calls of the new API will be redirected to bottmem/nobootmem where
-> + * MAX_NUMNODES is widely used.
+There are two things to be ACKed for v4.
+One is the PWM driver. (https://lkml.org/lkml/2013/9/25/11)
+The other is the documentation. (https://lkml.org/lkml/2013/9/25/10)
 
-I don't know.  We're introducing a new API which will be used across
-the kernel.  I don't think it makes a lot of sense to use the wrong
-constant now to convert all the users later.  Wouldn't it be better to
-make the new interface take NUMA_NO_NODE and do whatever it needs to
-do to interface with bootmem?
-
-> + * Also, memblock core APIs __next_free_mem_range_rev() and
-> + * __next_free_mem_range() would need to be updated, and as result we will
-> + * need to re-check/update all direct calls of memblock_alloc_xxx()
-> + * APIs (including nobootmem).
-> + */
-
-Hmmm....
-
-> +/* FIXME: Move to memblock.h at a point where we remove nobootmem.c */
-> +void *memblock_virt_alloc_try_nid_nopanic(phys_addr_t size,
-> +		phys_addr_t align, phys_addr_t from,
-> +		phys_addr_t max_addr, int nid);
-
-Wouldn't @min_addr instead of @from make more sense?  Ditto for other
-occurrences.
-
-> +void *memblock_virt_alloc_try_nid(phys_addr_t size, phys_addr_t align,
-> +		phys_addr_t from, phys_addr_t max_addr, int nid);
-> +void __memblock_free_early(phys_addr_t base, phys_addr_t size);
-> +void __memblock_free_late(phys_addr_t base, phys_addr_t size);
-> +
-> +#define memblock_virt_alloc(x) \
-> +	memblock_virt_alloc_try_nid(x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT, \
-> +				     BOOTMEM_ALLOC_ACCESSIBLE, MAX_NUMNODES)
-
-The underlying function interprets 0 as the default align, so it
-probably is a better idea to just use 0 here.
-
-> +#define memblock_virt_alloc_align(x, align) \
-> +	memblock_virt_alloc_try_nid(x, align, BOOTMEM_LOW_LIMIT, \
-> +				     BOOTMEM_ALLOC_ACCESSIBLE, MAX_NUMNODES)
-
-Also, do we really need this align variant separate when the caller
-can simply specify 0 for the default?
-
-> +#define memblock_virt_alloc_nopanic(x) \
-> +	memblock_virt_alloc_try_nid_nopanic(x, SMP_CACHE_BYTES, \
-> +					     BOOTMEM_LOW_LIMIT, \
-> +					     BOOTMEM_ALLOC_ACCESSIBLE, \
-> +					     MAX_NUMNODES)
-> +#define memblock_virt_alloc_align_nopanic(x, align) \
-> +	memblock_virt_alloc_try_nid_nopanic(x, align, \
-> +					     BOOTMEM_LOW_LIMIT, \
-> +					     BOOTMEM_ALLOC_ACCESSIBLE, \
-> +					     MAX_NUMNODES)
-> +#define memblock_virt_alloc_node(x, nid) \
-> +	memblock_virt_alloc_try_nid(x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT, \
-> +				     BOOTMEM_ALLOC_ACCESSIBLE, nid)
-> +#define memblock_virt_alloc_node_nopanic(x, nid) \
-> +	memblock_virt_alloc_try_nid_nopanic(x, SMP_CACHE_BYTES, \
-> +					     BOOTMEM_LOW_LIMIT, \
-> +					     BOOTMEM_ALLOC_ACCESSIBLE, nid)
-> +
-> +#define memblock_free_early(x, s)		__memblock_free_early(x, s)
-> +#define memblock_free_early_nid(x, s, nid)	__memblock_free_early(x, s)
-> +#define memblock_free_late(x, s)		__memblock_free_late(x, s)
-
-Please make the wrappers inline functions.
-
-> +#else
-> +
-> +#define BOOTMEM_ALLOC_ACCESSIBLE	0
-> +
-> +
-> +/* Fall back to all the existing bootmem APIs */
-> +#define memblock_virt_alloc(x) \
-> +	__alloc_bootmem(x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT)
-> +#define memblock_virt_alloc_align(x, align) \
-> +	__alloc_bootmem(x, align, BOOTMEM_LOW_LIMIT)
-> +#define memblock_virt_alloc_nopanic(x) \
-> +	__alloc_bootmem_nopanic(x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT)
-> +#define memblock_virt_alloc_align_nopanic(x, align) \
-> +	__alloc_bootmem_nopanic(x, align, BOOTMEM_LOW_LIMIT)
-> +#define memblock_virt_alloc_node(x, nid) \
-> +	__alloc_bootmem_node(NODE_DATA(nid), x, SMP_CACHE_BYTES, \
-> +			BOOTMEM_LOW_LIMIT)
-> +#define memblock_virt_alloc_node_nopanic(x, nid) \
-> +	__alloc_bootmem_node_nopanic(NODE_DATA(nid), x, SMP_CACHE_BYTES, \
-> +			BOOTMEM_LOW_LIMIT)
-> +#define memblock_virt_alloc_try_nid(size, align, from, max_addr, nid) \
-> +		__alloc_bootmem_node_high(NODE_DATA(nid), size, align, from)
-> +#define memblock_virt_alloc_try_nid_nopanic(size, align, from, max_addr, nid) \
-> +		___alloc_bootmem_node_nopanic(NODE_DATA(nid), size, align, \
-> +			from, max_addr)
-> +#define memblock_free_early(x, s)	free_bootmem(x, s)
-> +#define memblock_free_early_nid(x, s, nid) \
-> +			free_bootmem_node(NODE_DATA(nid), x, s)
-> +#define memblock_free_late(x, s)	free_bootmem_late(x, s)
-> +
-> +#endif /* defined(CONFIG_HAVE_MEMBLOCK) && defined(CONFIG_NO_BOOTMEM) */
-
-Ditto.
-
-> diff --git a/mm/memblock.c b/mm/memblock.c
-> index 1d15e07..3311fbb 100644
-> --- a/mm/memblock.c
-> +++ b/mm/memblock.c
-> @@ -21,6 +21,9 @@
->  #include <linux/memblock.h>
->  
->  #include <asm-generic/sections.h>
-> +#include <asm/io.h>
-> +
-> +#include "internal.h"
->  
->  static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
->  static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
-> @@ -933,6 +936,198 @@ phys_addr_t __init memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align, i
->  	return memblock_alloc_base(size, align, MEMBLOCK_ALLOC_ACCESSIBLE);
->  }
->  
-> +/**
-> + * _memblock_virt_alloc_try_nid_nopanic - allocate boot memory block
-
-Please don't use both "__" and "_" prefixes.  It gets confusing like
-hell.  Just give it an another name.
-
-> + * @size: size of memory block to be allocated in bytes
-> + * @align: alignment of the region and block's size
-> + * @from: the lower bound of the memory region from where the allocation
-> + *	  is preferred (phys address)
-> + * @max_addr: the upper bound of the memory region from where the allocation
-> + *	      is preferred (phys address), or %BOOTMEM_ALLOC_ACCESSIBLE to
-> + *	      allocate only from memory limited by memblock.current_limit value
-
-It probably would be better style to make the above shorter and fit
-each on a single line.  If they need further explanation, they can be
-done in the body of the comment.
-
-> + * @nid: nid of the free area to find, %MAX_NUMNODES for any node
-> + *
-> + * The @from limit is dropped if it can not be satisfied and the allocation
-> + * will fall back to memory below @from.
-> + *
-> + * Allocation may fall back to any node in the system if the specified node
-> + * can not hold the requested memory.
-
-Maybe combine the above two paragraphs?
-
-> + * The phys address of allocated boot memory block is converted to virtual and
-> + * allocated memory is reset to 0.
-> + *
-> + * In addition, function sets sets the min_count for allocated boot memory block
-
-                            ^^^^^^^^^
-No mention of kmemleak at all is a bit confusing.  min_count of what?
-
-> + * to 0 so that it is never reported as leaks.
-> + *
-> + * RETURNS:
-> + * Virtual address of allocated memory block on success, NULL on failure.
-> + */
-> +static void * __init _memblock_virt_alloc_try_nid_nopanic(
-> +				phys_addr_t size, phys_addr_t align,
-> +				phys_addr_t from, phys_addr_t max_addr,
-> +				int nid)
-> +{
-> +	phys_addr_t alloc;
-> +	void *ptr;
-> +
-> +	if (WARN_ON_ONCE(slab_is_available())) {
-> +		if (nid == MAX_NUMNODES)
-> +			return kzalloc(size, GFP_NOWAIT);
-> +		else
-> +			return kzalloc_node(size, GFP_NOWAIT, nid);
-> +	}
-> +
-> +	if (!align)
-> +		align = SMP_CACHE_BYTES;
-> +
-> +	/* align @size to avoid excessive fragmentation on reserved array */
-> +	size = round_up(size, align);
-> +
-> +again:
-> +	alloc = memblock_find_in_range_node(from, max_addr, size, align, nid);
-
-Not your fault but we probably wanna update these functions so that
-their param orders are consistent.
-
-Thanks.
-
--- 
-tejun
+Thanks,
+   Milo
