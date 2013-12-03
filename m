@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755014Ab3LCUiY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 15:38:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58699 "EHLO mx1.redhat.com"
+	id S1755126Ab3LCUls (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 15:41:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8245 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754702Ab3LCUiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 15:38:23 -0500
-Date: Tue, 3 Dec 2013 21:38:26 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Jiri Kosina <jkosina@suse.cz>, Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH?] uprobes: change uprobe_write_opcode() to modify the
-	page directly
-Message-ID: <20131203203826.GA24812@redhat.com>
-References: <20131129183558.GA9803@redhat.com> <20131129195419.GB17656@two.firstfloor.org> <20131129200532.GA13561@redhat.com> <alpine.LRH.2.00.1311300023070.9932@twin.jikos.cz> <CA+55aFxJGidV4=ot0z_Va8+y2QWTDYghTm1Gin84StZ+R1SfXg@mail.gmail.com> <20131203184909.GA17571@redhat.com> <CA+55aFw3N=iNW2Ej6w7oksX5JDVis7QL=9X9D7JB_tKZhrjsLw@mail.gmail.com> <529E2F0C.8070405@zytor.com> <20131203200147.GB19083@redhat.com> <529E3D4C.9070403@zytor.com>
+	id S1754897Ab3LCUlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 15:41:46 -0500
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH tip 3/5] Extended BPF (64-bit BPF) design document
+References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
+	<1386044930-15149-4-git-send-email-ast@plumgrid.com>
+	<529E0E69.90009@zytor.com>
+	<CAMEtUuxENa69dMdhmZg=tSJ_mWaYAy_JqBF2NXxkqbaAxawFkw@mail.gmail.com>
+From: fche@redhat.com (Frank Ch. Eigler)
+Date: Tue, 03 Dec 2013 15:41:28 -0500
+In-Reply-To: <CAMEtUuxENa69dMdhmZg=tSJ_mWaYAy_JqBF2NXxkqbaAxawFkw@mail.gmail.com> (Alexei Starovoitov's message of "Tue, 3 Dec 2013 11:59:53 -0800")
+Message-ID: <y0mpppdr7k7.fsf@fche.csb>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <529E3D4C.9070403@zytor.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03, H. Peter Anvin wrote:
+
+Alexei Starovoitov <ast@plumgrid.com> writes:
+
+> [...]
+>> Having EBPF code manipulating pointers - or kernel memory - directly
+>> seems like a nonstarter.  However, per your subsequent paragraph it
+>> sounds like pointers are a special type at which point it shouldn't
+>> matter at the EBPF level how many bytes it takes to represent it?
 >
-> On 12/03/2013 12:01 PM, Oleg Nesterov wrote:
-> >
-> >> followed by whatever synchronization necessary to make it globally visible.
-> >
-> > Could you explain what this synchronization should actually do ?
-> >
->
-> That is architecture-dependent. On x86 it requires each CPU on which
-> this code is visible to be IPId, on others it involves complex icache
-> flushing protocols.
+> bpf_check() will track every register through every insn.
+> If pointer is stored in the register, it will know what type
+> of pointer it is and will allow '*reg' operation only if pointer is valid.
+> [...]
+> BPF program actually can manipulate kernel memory directly
+> when checker guarantees that it is safe to do so :)
 
-Hmm. And why this would be better than arch-independent code I sent?
+It sounds like this sort of static analysis would have difficulty with
+situations such as:
 
-IOW. Could you please comment the patch I sent?
+- multiple levels of indirection
 
-Oleg.
+- conditionals (where it can't trace a unique data/type flow for all pointers)
 
+- aliasing (same reason)
+
+- the possibility of bad (or userspace?) pointers arriving as
+  parameters from the underlying trace events
+  
+
+> For example in tracing filters bpf_context access is restricted to:
+> static const struct bpf_context_access ctx_access[MAX_CTX_OFF] = {
+>         [offsetof(struct bpf_context, regs.di)] = {
+>                 FIELD_SIZEOF(struct bpf_context, regs.di),
+>                 BPF_READ
+>         },
+
+Are such constraints to be hard-coded in the kernel?
+
+
+> Over course of development bpf_check() found several compiler bugs.
+> I also tried all of sorts of ways to break bpf jail from inside of a
+> bpf program, but so far checker catches everything I was able to throw
+> at it.
+
+(One can be sure that attackers will chew hard on this interface,
+should it become reasonably accessible to userspace, so good job
+starting to check carefully!)
+
+
+- FChE
