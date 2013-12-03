@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637Ab3LCLzG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 06:55:06 -0500
-Received: from smtp-out-012.synserver.de ([212.40.185.12]:1090 "EHLO
-	smtp-out-110.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752866Ab3LCLzB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 06:55:01 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 13280
-Message-ID: <529DC6BE.3080607@metafoo.de>
-Date: Tue, 03 Dec 2013 12:55:42 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	id S1753687Ab3LCL7h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 06:59:37 -0500
+Received: from mga11.intel.com ([192.55.52.93]:58483 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752970Ab3LCL7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 06:59:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,817,1378882800"; 
+   d="scan'208";a="443773103"
+Date: Tue, 3 Dec 2013 13:59:27 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: balbi@ti.com, gregkh@linuxfoundation.org, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, rob@landley.net, bcousson@baylibre.com,
+        tony@atomide.com, linux@arm.linux.org.uk, grant.likely@linaro.org,
+        s.nawrocki@samsung.com, galak@codeaurora.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH v2 2/7] usb: dwc3: adapt dwc3 core to use Generic PHY
+ Framework
+Message-ID: <20131203115927.GD26423@xps8300>
+References: <1381866857-3861-1-git-send-email-kishon@ti.com>
+ <1381866857-3861-3-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        broonie@kernel.org, linus.walleij@linaro.org,
-        alsa-devel@alsa-project.org
-Subject: Re: [alsa-devel] [PATCH 1/2] ASoC: ux500_pcm: Differentiate between
- pdata and DT initialisation
-References: <1386066427-6862-1-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1386066427-6862-1-git-send-email-lee.jones@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381866857-3861-3-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2013 11:27 AM, Lee Jones wrote:
-> If booting with full DT support (i.e. DMA too, the last piece of the
-> puzzle), then we don't need to use the compatible_request_channel call
-> back or require some of the historical bumph which probably isn't
-> required by a platform data start-up now either. This will also be
-> ripped out in upcoming commits.
-> 
-> Cc: alsa-devel@alsa-project.org
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Hi Kishon,
 
-Strictly speaking you do not need the second config, but well considering
-that this will all hopefully be removed soon anyway it should be fine.
+On Wed, Oct 16, 2013 at 01:24:12AM +0530, Kishon Vijay Abraham I wrote:
+> +	count = of_property_match_string(node, "phy-names", "usb2-phy");
+> +	if (count >= 0 || (pdata && pdata->usb2_generic_phy)) {
+> +		dwc->usb2_generic_phy = devm_phy_get(dev, "usb2-phy");
+> +		if (IS_ERR(dwc->usb2_generic_phy)) {
+> +			dev_err(dev, "no usb2 phy configured yet");
+> +			return PTR_ERR(dwc->usb2_generic_phy);
+> +		}
+> +		dwc->usb2_phy = NULL;
+> +	}
+> +
+> +	count = of_property_match_string(node, "phy-names", "usb3-phy");
+> +	if (count >= 0 || (pdata && pdata->usb3_generic_phy)) {
+> +		dwc->usb3_generic_phy = devm_phy_get(dev, "usb3-phy");
+> +		if (IS_ERR(dwc->usb3_generic_phy)) {
+> +			dev_err(dev, "no usb3 phy configured yet");
+> +			return PTR_ERR(dwc->usb3_generic_phy);
+> +		}
+> +		dwc->usb3_phy = NULL;
+> +	}
 
-Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
+Is there some specific reason for these checks? The driver should not
+need to care about the platform (DT, ACPI, platform based).
+
+Just get the phys and check the return value. In case ERR_PTR(-ENODEV)
+leave the phy as NULL and let the driver continue normally. With other
+errors you make the dwc3 probe fail.
+
+Thanks,
+
+-- 
+heikki
