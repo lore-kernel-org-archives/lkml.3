@@ -1,163 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab3LCJqr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 04:46:47 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:34233 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753252Ab3LCJpu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 04:45:50 -0500
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, dvhart@linux.intel.com, peterz@infradead.org,
-        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
-        jeffm@suse.com, torvalds@linux-foundation.org, scott.norton@hp.com,
-        tom.vaden@hp.com, aswin@hp.com, Waiman.Long@hp.com, jason.low2@hp.com,
-        davidlohr@hp.com
-Subject: [PATCH v2 2/4] futex: Larger hash table
-Date: Tue,  3 Dec 2013 01:45:25 -0800
-Message-Id: <1386063927-6545-3-git-send-email-davidlohr@hp.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1386063927-6545-1-git-send-email-davidlohr@hp.com>
-References: <1386063927-6545-1-git-send-email-davidlohr@hp.com>
+	id S1752988Ab3LCJrP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 04:47:15 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:59783 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751857Ab3LCJrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 04:47:12 -0500
+Message-ID: <529DA82C.5080606@ti.com>
+Date: Tue, 3 Dec 2013 11:45:16 +0200
+From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
+        <david.woodhouse@intel.com>
+Subject: Re: [PATCH v2 00/10] Reuse davinci-nand driver for Keystone arch
+References: <1385033305-13179-1-git-send-email-ivan.khoronzhuk@ti.com> <5298C0B0.4030404@ti.com>
+In-Reply-To: <5298C0B0.4030404@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.122]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the futex global hash table suffers from it's fixed, smallish
-(for today's standards) size of 256 entries, as well as its lack of NUMA
-awareness. Large systems, using many futexes, can be prone to high amounts
-of collisions; where these futexes hash to the same bucket and lead to
-extra contention on the same hb->lock. Furthermore, cacheline bouncing is a
-reality when we have multiple hb->locks residing on the same cacheline and
-different futexes hash to adjacent buckets.
+On 11/29/2013 06:28 PM, Santosh Shilimkar wrote:
+> Ivan,
+> On Thursday 21 November 2013 06:28 AM, Ivan Khoronzhuk wrote:
+>> This series contains fixes and updates of Davinci nand driver in
+>> order to reuse it for Keystone platform.
+>>
+>> The series is combination of two following series:
+>> - Davinci nand driver fixes and updates:
+>>    https://lkml.org/lkml/2013/11/20/271
+>> - Reuse davinci-nand driver for Keystone arch
+>>    https://lkml.org/lkml/2013/11/20/315
+>>
+>> Ivan Khoronzhuk (10):
+>>    mtd: nand: davinci: fix driver registration
+>>    mtd: nand: davinci: return ENOMEM if memory allocation is failed
+>>    mtd: nand: davinci: check required ti,davinci-chipselect property
+>>    mtd: nand: davinci: simplify error handling
+>>    mtd: nand: davinci: move bindings under mtd
+>>    mtd: nand: davinci: extend description of bindings
+>>    mtd: nand: davinci: adjust DT properties to MTD generic
+>>    mtd: nand: davinci: reuse driver for Keystone arch
+>>    mtd: nand: davinci: don't set timings if AEMIF is used
+>>    mtd: nand: davinci: don't request AEMIF address range
+>>
+>>   .../devicetree/bindings/arm/davinci/nand.txt       |   46 --------
+>>   .../devicetree/bindings/mtd/davinci-nand.txt       |   94 ++++++++++++++++
+>>   drivers/mtd/nand/Kconfig                           |    6 +-
+>>   drivers/mtd/nand/davinci_nand.c                    |  117 +++++++++++---------
+>>   4 files changed, 164 insertions(+), 99 deletions(-)
+>>   delete mode 100644 Documentation/devicetree/bindings/arm/davinci/nand.txt
+>>   create mode 100644 Documentation/devicetree/bindings/mtd/davinci-nand.txt
+>>
+> Please drop patch 9 from the series considering we are handling it
+> differently and repost the entire series with David in cc. David
+> has been lining up the patches.
+> 
+> Regards,
+> Santosh
+> 
 
-This patch keeps the current static size of 16 entries for small systems,
-or otherwise, 256 * ncpus (or larger as we need to round the number to a
-power of 2). Note that this number of CPUs accounts for all CPUs that can
-ever be available in the system, taking into consideration things like
-hotpluging. While we do impose extra overhead at bootup by making the hash
-table larger, this is a one time thing, and does not shadow the benefits
-of this patch.
+Ok, I'll drop patch 9.
+Only question about patch
+ARM: davinci: aemif: get rid of davinci-nand driver dependency on aemif
+(http://www.spinics.net/lists/devicetree/msg13711.html).
+How would be better, the series would be based on it or vice-versa?
 
-Furthermore, as suggested by tglx, by cache aligning the hash buckets we can
-avoid access across cacheline boundaries and also avoid massive cache line
-bouncing if multiple cpus are hammering away at different hash buckets which
-happen to reside in the same cache line.
-
-Also, similar to other core kernel components (pid, dcache, tcp), by using
-alloc_large_system_hash() we benefit from its NUMA awareness and thus the
-table is distributed among the nodes instead of in a single one.
-
-For a custom microbenchmark that pounds on the uaddr hashing -- making the wait
-path fail at futex_wait_setup() returning -EWOULDBLOCK for large amounts of
-futexes, we can see the following benefits on a 80-core, 8-socket 1Tb server:
-
-+---------+--------------------+------------------------+-----------------------+-------------------------------+
-| threads | baseline (ops/sec) | aligned-only (ops/sec) | large table (ops/sec) | large table+aligned (ops/sec) |
-+---------+--------------------+------------------------+-----------------------+-------------------------------+
-|     512 |              32426 | 50531  (+55.8%)        | 255274  (+687.2%)     | 292553  (+802.2%)             |
-|     256 |              65360 | 99588  (+52.3%)        | 443563  (+578.6%)     | 508088  (+677.3%)             |
-|     128 |             125635 | 200075 (+59.2%)        | 742613  (+491.1%)     | 835452  (+564.9%)             |
-|      80 |             193559 | 323425 (+67.1%)        | 1028147 (+431.1%)     | 1130304 (+483.9%)             |
-|      64 |             247667 | 443740 (+79.1%)        | 997300  (+302.6%)     | 1145494 (+362.5%)             |
-|      32 |             628412 | 721401 (+14.7%)        | 965996  (+53.7%)      | 1122115 (+78.5%)              |
-+---------+--------------------+------------------------+-----------------------+-------------------------------+
-
-Cc: Ingo Molnar <mingo@kernel.org>
-Reviewed-by: Darren Hart <dvhart@linux.intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Jeff Mahoney <jeffm@suse.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Scott Norton <scott.norton@hp.com>
-Cc: Tom Vaden <tom.vaden@hp.com>
-Cc: Aswin Chandramouleeswaran <aswin@hp.com>
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-Signed-off-by: Jason Low <jason.low2@hp.com>
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
----
- kernel/futex.c | 26 +++++++++++++++++++-------
- 1 file changed, 19 insertions(+), 7 deletions(-)
-
-diff --git a/kernel/futex.c b/kernel/futex.c
-index e6ffe73..e603520 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -63,6 +63,7 @@
- #include <linux/sched/rt.h>
- #include <linux/hugetlb.h>
- #include <linux/freezer.h>
-+#include <linux/bootmem.h>
- 
- #include <asm/futex.h>
- 
-@@ -70,8 +71,6 @@
- 
- int __read_mostly futex_cmpxchg_enabled;
- 
--#define FUTEX_HASHBITS (CONFIG_BASE_SMALL ? 4 : 8)
--
- /*
-  * Futex flags used to encode options to functions and preserve them across
-  * restarts.
-@@ -149,9 +148,11 @@ static const struct futex_q futex_q_init = {
- struct futex_hash_bucket {
- 	spinlock_t lock;
- 	struct plist_head chain;
--};
-+} ____cacheline_aligned_in_smp;
- 
--static struct futex_hash_bucket futex_queues[1<<FUTEX_HASHBITS];
-+static unsigned long __read_mostly futex_hashsize;
-+
-+static struct futex_hash_bucket *futex_queues;
- 
- /*
-  * We hash on the keys returned from get_futex_key (see below).
-@@ -161,7 +162,7 @@ static struct futex_hash_bucket *hash_futex(union futex_key *key)
- 	u32 hash = jhash2((u32*)&key->both.word,
- 			  (sizeof(key->both.word)+sizeof(key->both.ptr))/4,
- 			  key->both.offset);
--	return &futex_queues[hash & ((1 << FUTEX_HASHBITS)-1)];
-+	return &futex_queues[hash & (futex_hashsize - 1)];
- }
- 
- /*
-@@ -2718,7 +2719,18 @@ SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
- static int __init futex_init(void)
- {
- 	u32 curval;
--	int i;
-+	unsigned long i;
-+
-+#if CONFIG_BASE_SMALL
-+	futex_hashsize = 16;
-+#else
-+	futex_hashsize = roundup_pow_of_two(256 * num_possible_cpus());
-+#endif
-+
-+	futex_queues = alloc_large_system_hash("futex", sizeof(*futex_queues),
-+					       futex_hashsize, 0,
-+					       futex_hashsize < 256 ? HASH_SMALL : 0,
-+					       NULL, NULL, futex_hashsize, futex_hashsize);
- 
- 	/*
- 	 * This will fail and we want it. Some arch implementations do
-@@ -2733,7 +2745,7 @@ static int __init futex_init(void)
- 	if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
- 		futex_cmpxchg_enabled = 1;
- 
--	for (i = 0; i < ARRAY_SIZE(futex_queues); i++) {
-+	for (i = 0; i < futex_hashsize; i++) {
- 		plist_head_init(&futex_queues[i].chain);
- 		spin_lock_init(&futex_queues[i].lock);
- 	}
 -- 
-1.8.1.4
-
+Regards,
+Ivan Khoronzhuk
