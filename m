@@ -1,97 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab3LCXmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 18:42:46 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43926 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753478Ab3LCXmi (ORCPT
+	id S1755999Ab3LCXml (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 18:42:41 -0500
+Received: from mga09.intel.com ([134.134.136.24]:12114 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754475Ab3LCXmd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 18:42:38 -0500
-Date: Tue, 3 Dec 2013 23:42:09 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Leigh Brown <leigh@solinno.co.uk>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Nicolas Schichan <nschichan@freebox.fr>,
-        Jason Cooper <jason@lakedaemon.net>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Florian Fainelli <florian@openwrt.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Spurious timeouts in mvmdio
-Message-ID: <20131203234209.GW16735@n2100.arm.linux.org.uk>
-References: <529CA42A.3040504@freebox.fr> <20131203122346.GD29282@titan.lakedaemon.net> <20131203124033.GT16735@n2100.arm.linux.org.uk> <abe249f5cba5c267e2c536bd62c57908@doppler.thel33t.co.uk> <529E5F03.8040607@gmail.com> <8d65780eb7bfe49bb0734a09f05f70a6@doppler.thel33t.co.uk> <529E66A4.4050000@gmail.com> <ae69666fd3b61411d7bbd9ac993cec13@doppler.thel33t.co.uk>
+	Tue, 3 Dec 2013 18:42:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,820,1378882800"; 
+   d="scan'208";a="418883060"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Prarit Bhargava <prarit@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "x86@kernel.org" <x86@kernel.org>
+Subject: RE: [PATCH] x86: Add check for number of available vectors before
+ CPU down
+Thread-Topic: [PATCH] x86: Add check for number of available vectors before
+ CPU down
+Thread-Index: AQHO54G0xwYj7snyL0Gh1vo/GSQeoppDMV2Q
+Date: Tue, 3 Dec 2013 23:42:19 +0000
+Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C712205A59505E@ORSMSX106.amr.corp.intel.com>
+References: <1384878243-5086-1-git-send-email-prarit@redhat.com>
+In-Reply-To: <1384878243-5086-1-git-send-email-prarit@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ae69666fd3b61411d7bbd9ac993cec13@doppler.thel33t.co.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 11:38:23PM +0000, Leigh Brown wrote:
-> On 2013-12-03 23:17, Sebastian Hesselbarth wrote:
->> If you want to ensure timeout > 2, why not then just use:
->>
->> - 	unsigned long timeout = usecs_to_jiffies(MVMDIO_SMI_TIMEOUT);
->> + 	unsigned long timeout = 1 + usecs_to_jiffies(MVMDIO_SMI_TIMEOUT);
->
-> This will make it correct when using interrupts but it will make the  
-> loop wait one jiffie longer than it should when polling.
 
-Alternatively, code it like this instead.
 
- drivers/net/ethernet/marvell/mvmdio.c |   32 +++++++++++++++-----------------
- 1 files changed, 15 insertions(+), 17 deletions(-)
+> -----Original Message-----
+> From: Prarit Bhargava [mailto:prarit@redhat.com]
+> 
+> Second try at this ...
+> 
+> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64791
+> 
+> When a cpu is downed on a system, the irqs on the cpu are assigned to
+> other cpus.  It is possible, however, that when a cpu is downed there
+> aren't enough free vectors on the remaining cpus to account for the
+> vectors from the cpu that is being downed.
+> 
+> This results in an interesting "overflow" condition where irqs are
+> "assigned" to a CPU but are not handled.
+> 
+> For example, when downing cpus on a 1-64 logical processor system:
+> 
+> +			if (per_cpu(vector_irq, cpu)[vector] < 0)
+> +				count++;
 
-diff --git a/drivers/net/ethernet/marvell/mvmdio.c b/drivers/net/ethernet/marvell/mvmdio.c
-index 7354960b583b..a6f59831fc5b 100644
---- a/drivers/net/ethernet/marvell/mvmdio.c
-+++ b/drivers/net/ethernet/marvell/mvmdio.c
-@@ -76,31 +76,29 @@ static int orion_mdio_wait_ready(struct mii_bus *bus)
- {
- 	struct orion_mdio_dev *dev = bus->priv;
- 	unsigned long timeout = usecs_to_jiffies(MVMDIO_SMI_TIMEOUT);
--	unsigned long end = jiffies + timeout;
--	int timedout = 0;
- 
--	while (1) {
--	        if (orion_mdio_smi_is_done(dev))
-+	if (dev->err_interrupt > 0) {
-+		if (wait_event_timeout(dev->smi_busy_wait,
-+				       orion_mdio_smi_is_done(dev),
-+				       1 + timeout))
- 			return 0;
--	        else if (timedout)
--			break;
-+	} else {
-+		unsigned long end = jiffies + timeout;
- 
--	        if (dev->err_interrupt <= 0) {
--			usleep_range(MVMDIO_SMI_POLL_INTERVAL_MIN,
--				     MVMDIO_SMI_POLL_INTERVAL_MAX);
-+		while (1) {
-+	        	if (orion_mdio_smi_is_done(dev))
-+				return 0;
- 
- 			if (time_is_before_jiffies(end))
--				++timedout;
--	        } else {
--			wait_event_timeout(dev->smi_busy_wait,
--				           orion_mdio_smi_is_done(dev),
--				           timeout);
--
--			++timedout;
--	        }
-+				break;
-+
-+			usleep_range(MVMDIO_SMI_POLL_INTERVAL_MIN,
-+				     MVMDIO_SMI_POLL_INTERVAL_MAX);
-+		}
- 	}
- 
- 	dev_err(bus->parent, "Timeout: SMI busy for too long\n");
-+
- 	return  -ETIMEDOUT;
- }
- 
+But later on fixup_irqs will set some of vector_irq vector as -1 on this
+to-be-disabled cpu. That will release vectors assigned to this cpu. So
+checking vector_irq at this point before fixup_irqs doesn't make sense, right?
+
+Thanks.
+
+-Fenghua
+
