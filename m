@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab3LCLP1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 06:15:27 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:27179 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753560Ab3LCLPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 06:15:24 -0500
+	id S1753471Ab3LCLSK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 06:18:10 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:58527 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752949Ab3LCLSG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 06:18:06 -0500
 X-IronPort-AV: E=Sophos;i="4.93,817,1378857600"; 
-   d="scan'208";a="80041612"
-Message-ID: <1386069322.13256.11.camel@kazak.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH RFC] xen-block: correctly define structures
- in public headers
-From: Ian Campbell <Ian.Campbell@citrix.com>
+   d="scan'208";a="77672073"
+Message-ID: <529DBDEB.7030306@citrix.com>
+Date: Tue, 3 Dec 2013 12:18:03 +0100
+From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
 To: Jan Beulich <JBeulich@suse.com>
-CC: Roger Pau Monne <roger.pau@citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>,
+CC: David Vrabel <david.vrabel@citrix.com>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Julien Grall <julien.grall@linaro.org>,
         <xen-devel@lists.xenproject.org>,
-        BorisOstrovsky <boris.ostrovsky@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
         <linux-kernel@vger.kernel.org>
-Date: Tue, 3 Dec 2013 11:15:22 +0000
-In-Reply-To: <529DCA8F02000078001094FF@nat28.tlf.novell.com>
-References: <1386068254-1413-1-git-send-email-roger.pau@citrix.com>
-	 <1386068729.13256.8.camel@kazak.uk.xensource.com>
-	 <529DCA8F02000078001094FF@nat28.tlf.novell.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-MIME-Version: 1.0
+Subject: Re: [Xen-devel] [PATCH RFC] xen-block: correctly define structures
+ in public headers
+References: <1386068254-1413-1-git-send-email-roger.pau@citrix.com> <529DCB3C0200007800109502@nat28.tlf.novell.com>
+In-Reply-To: <529DCB3C0200007800109502@nat28.tlf.novell.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
 X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-03 at 11:11 +0000, Jan Beulich wrote:
-> >>> On 03.12.13 at 12:05, Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> > On Tue, 2013-12-03 at 11:57 +0100, Roger Pau Monne wrote:
-> >> Using __packed__ on the public interface is not correct, this
-> >> structures should be compiled using the native ABI, and __packed__
-> >> should only be used in the backend counterpart of those structures
-> >> (which needs to handle different ABIs).
-> >> 
-> >> This was even worse in the ARM case, where the Linux kernel was
-> >> incorrectly using the X86_32 protocol ABI. This patch fixes it, but
-> >> also breaks compatibility, so an ARM DomU kernel compiled with
-> >> this patch will fail to communicate with PV disk devices unless the
-> >> Dom0 also has this patch.
-> > 
-> > This is acceptable IMHO, the ARM ABI is clearly defined and previous
-> > kernels were simply buggy. The fact that front and backend were
-> > equivalently buggy and so it happened to work is not an excuse.
+On 03/12/13 12:14, Jan Beulich wrote:
+>>>> On 03.12.13 at 11:57, Roger Pau Monne <roger.pau@citrix.com> wrote:
+>>  struct blkif_request_rw {
+>>  	uint8_t        nr_segments;  /* number of segments                   */
+>>  	blkif_vdev_t   handle;       /* only for read/write requests         */
+>> -#ifdef CONFIG_X86_64
+>> -	uint32_t       _pad1;	     /* offsetof(blkif_request,u.rw.id) == 8 */
+>> -#endif
+>>  	uint64_t       id;           /* private guest value, echoed in resp  */
+>>  	blkif_sector_t sector_number;/* start sector idx on disk (r/w only)  */
+>>  	struct blkif_request_segment {
+>> @@ -157,47 +154,36 @@ struct blkif_request_rw {
+>>  		/* @last_sect: last sector in frame to transfer (inclusive).     */
+>>  		uint8_t     first_sect, last_sect;
+>>  	} seg[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+>> -} __attribute__((__packed__));
+>> +};
 > 
-> But afaics the change is not just to the ARM form of the ABI,
-> but to x86 (32- and 64-bit) too. And that clearly must not be
-> altered.
+> Removing the packed attribute here and below is not possible
+> as long as the defined structures get used in struct blkif_request
+> as the second field after a uint8_t one, and as long as the
+> individual fields here aren't natively aligned.
 
-I understood there to be no (intentional) change to the x86 ABIs here.
-Obviously that would be a bug in the patch.
-
-Ian.
+Sorry, the patch is incorrect, let me resend that.
 
