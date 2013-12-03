@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195Ab3LCRNs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 12:13:48 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52971 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753015Ab3LCRNq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 12:13:46 -0500
-Date: Tue, 3 Dec 2013 17:13:45 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Jon Masters <jonathan@jonmasters.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Graeme Gregory <graeme.gregory@linaro.org>
-Subject: Re: [RFC part1 PATCH 2/7] ARM64 : Add dummy asm/cpu.h
-Message-ID: <20131203171345.GC16025@e106331-lin.cambridge.arm.com>
-References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org>
- <1386088611-2801-3-git-send-email-hanjun.guo@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386088611-2801-3-git-send-email-hanjun.guo@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754383Ab3LCRQO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 12:16:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42745 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753466Ab3LCRQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 12:16:12 -0500
+Subject: [BUG] ftrace: support for SOFT_DISABLE to syscall events caused
+ huge slowdown of ftrace startup test
+From: Petr Mladek <pmladek@suse.cz>
+To: Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 03 Dec 2013 18:16:09 +0100
+Message-ID: <1386090969.1603.72.camel@pathway.suse.cz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 04:36:46PM +0000, Hanjun Guo wrote:
-> ACPI requires a cpu.h, add a dummy one copied from arm. This will need
-> updated or replaced as ACPI based cpu hotplug for armv8 is worked out.
+Hi,
 
-What exactly requires cpu.h, and why?
+I tested my ftrace-related patches and enabled also the startup test:
 
-Why copy the file verbatim rather than factoring it out?
+  CONFIG_FTRACE_SELFTEST=y
+  CONFIG_FTRACE_STARTUP_TEST=y
 
-> 
-> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> ---
->  arch/arm64/include/asm/cpu.h |   25 +++++++++++++++++++++++++
->  1 file changed, 25 insertions(+)
->  create mode 100644 arch/arm64/include/asm/cpu.h
-> 
-> diff --git a/arch/arm64/include/asm/cpu.h b/arch/arm64/include/asm/cpu.h
-> new file mode 100644
-> index 0000000..dbeb98d
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/cpu.h
-> @@ -0,0 +1,25 @@
-> +/*
-> + *  Copyright (C) 2004-2005 ARM Ltd.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +#ifndef __ASM_ARM_CPU_H
-> +#define __ASM_ARM_CPU_H
-> +
-> +#include <linux/percpu.h>
-> +#include <linux/cpu.h>
-> +#include <linux/topology.h>
-> +
-> +struct cpuinfo_arm {
-> +	struct cpu	cpu;
-> +	u32		cpuid;
+On today's kernel/git/tip/tip.git, the boot "freezed" for 1 minute when
+doing "Testing event system syscalls".
 
-We use a u64 elsewhere for the mpidr_el1 in arm64.
+A bisect pointed finger to the commit d562aff93bfb530b099 (tracing: Add
+support for SOFT_DISABLE to syscall events).
 
-Thanks,
-Mark.
+It seems that the culprit are the "synchronize_sched" calls added to
+"unreg_event_syscall_enter" and "unreg_event_syscall_exit" functions.
+They are called 2312 times during the boot here and are responsible for
+the delay.
+
+I wonder if it might cause slowdown also at runtime.
+
+I am going to look deeper into the code and eventually come up with a
+solution. But it might take some time. I am still newbie in the kernel
+development. Any hints or tips are welcome ;-)
+
+Best Regards,
+Petr
+
