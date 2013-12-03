@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab3LCOE2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 09:04:28 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:41098 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753917Ab3LCOEY (ORCPT
+	id S1754448Ab3LCOHg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 09:07:36 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:52095 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754006Ab3LCOEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 09:04:24 -0500
+	Tue, 3 Dec 2013 09:04:20 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org,
         JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>,
         Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH v3 04/15] staging/lustre: make obd_uuid_equals return bool
-Date: Tue,  3 Dec 2013 21:58:42 +0800
-Message-Id: <1386079133-6459-5-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH v3 03/15] staging/lustre: constify uuid argument of obd_uuid2str
+Date: Tue,  3 Dec 2013 21:58:41 +0800
+Message-Id: <1386079133-6459-4-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386079133-6459-1-git-send-email-bergwolf@gmail.com>
 References: <1386079133-6459-1-git-send-email-bergwolf@gmail.com>
@@ -39,24 +39,22 @@ Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- .../lustre/lustre/include/lustre/lustre_user.h     |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ .../lustre/lustre/include/lustre/lustre_user.h     |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/staging/lustre/lustre/include/lustre/lustre_user.h b/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
-index ff825d8..631f026 100644
+index 9436166..ff825d8 100644
 --- a/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
 +++ b/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
-@@ -428,8 +428,8 @@ struct obd_uuid {
- 	char uuid[UUID_MAX];
- };
- 
--static inline int obd_uuid_equals(const struct obd_uuid *u1,
--				  const struct obd_uuid *u2)
-+static inline bool obd_uuid_equals(const struct obd_uuid *u1,
-+				   const struct obd_uuid *u2)
- {
- 	return strcmp((char *)u1->uuid, (char *)u2->uuid) == 0;
+@@ -446,7 +446,7 @@ static inline void obd_str2uuid(struct obd_uuid *uuid, const char *tmp)
  }
+ 
+ /* For printf's only, make sure uuid is terminated */
+-static inline char *obd_uuid2str(struct obd_uuid *uuid)
++static inline char *obd_uuid2str(const struct obd_uuid *uuid)
+ {
+ 	if (uuid->uuid[sizeof(*uuid) - 1] != '\0') {
+ 		/* Obviously not safe, but for printfs, no real harm done...
 -- 
 1.7.9.5
 
