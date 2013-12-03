@@ -1,81 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792Ab3LCR71 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 12:59:27 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50411 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754683Ab3LCR7Z (ORCPT
+	id S1754883Ab3LCR7a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 12:59:30 -0500
+Received: from 11.mo1.mail-out.ovh.net ([188.165.48.29]:50666 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754854Ab3LCR72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 12:59:25 -0500
-Date: Tue, 3 Dec 2013 17:59:08 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, linaro-kernel@lists.linaro.org,
-        Graeme Gregory <graeme.gregory@linaro.org>, patches@linaro.org,
-        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, linaro-acpi@lists.linaro.org,
-        linux-acpi@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        linux-arm-kernel@lists.infradead.org
-Message-ID: <20131203175908.GH27568@sirena.org.uk>
-References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org>
- <1386088611-2801-3-git-send-email-hanjun.guo@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pn37QocMfltEWxia"
-Content-Disposition: inline
-In-Reply-To: <1386088611-2801-3-git-send-email-hanjun.guo@linaro.org>
-X-Cookie: Boycott meat -- suck your thumb.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC part1 PATCH 2/7] ARM64 : Add dummy asm/cpu.h
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Tue, 3 Dec 2013 12:59:28 -0500
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Douglas Gilbert <dgilbert@interlog.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Grant Likely <grant.likely@linaro.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+Subject: [PATCH v2 4/4] usb: ohci-at91: use device managed clk retrieval
+Date: Tue,  3 Dec 2013 18:51:56 +0100
+Message-Id: <1386093116-26387-5-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1386093116-26387-1-git-send-email-b.brezillon@overkiz.com>
+References: <1386093116-26387-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 2015923783408908547
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Replace clk_get calls by devm_clk_get calls.
 
---pn37QocMfltEWxia
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com> 
+---
+ drivers/usb/host/ohci-at91.c |   30 +++++++-----------------------
+ 1 file changed, 7 insertions(+), 23 deletions(-)
 
-On Wed, Dec 04, 2013 at 12:36:46AM +0800, Hanjun Guo wrote:
-> ACPI requires a cpu.h, add a dummy one copied from arm. This will need
-> updated or replaced as ACPI based cpu hotplug for armv8 is worked out.
+diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
+index 2a86e32..7b2ccd3 100644
+--- a/drivers/usb/host/ohci-at91.c
++++ b/drivers/usb/host/ohci-at91.c
+@@ -164,30 +164,30 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
+ 		goto err;
+ 	}
+ 
+-	iclk = clk_get(dev, "ohci_clk");
++	iclk = devm_clk_get(dev, "ohci_clk");
+ 	if (IS_ERR(iclk)) {
+ 		dev_err(dev, "failed to get ohci_clk\n");
+ 		retval = PTR_ERR(iclk);
+ 		goto err;
+ 	}
+-	fclk = clk_get(dev, "uhpck");
++	fclk = devm_clk_get(dev, "uhpck");
+ 	if (IS_ERR(fclk)) {
+ 		dev_err(dev, "failed to get uhpck\n");
+ 		retval = PTR_ERR(fclk);
+-		goto err4;
++		goto err;
+ 	}
+-	hclk = clk_get(dev, "hclk");
++	hclk = devm_clk_get(dev, "hclk");
+ 	if (IS_ERR(hclk)) {
+ 		dev_err(dev, "failed to get hclk\n");
+ 		retval = PTR_ERR(hclk);
+-		goto err5;
++		goto err;
+ 	}
+ 	if (IS_ENABLED(CONFIG_COMMON_CLK)) {
+-		uclk = clk_get(dev, "usb_clk");
++		uclk = devm_clk_get(dev, "usb_clk");
+ 		if (IS_ERR(uclk)) {
+ 			dev_err(dev, "failed to get uclk\n");
+ 			retval = PTR_ERR(uclk);
+-			goto err6;
++			goto err;
+ 		}
+ 	}
+ 
+@@ -203,15 +203,6 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
+ 	/* Error handling */
+ 	at91_stop_hc(pdev);
+ 
+-	if (IS_ENABLED(CONFIG_COMMON_CLK))
+-		clk_put(uclk);
+- err6:
+-	clk_put(hclk);
+- err5:
+-	clk_put(fclk);
+- err4:
+-	clk_put(iclk);
+-
+  err:
+ 	usb_put_hcd(hcd);
+ 	return retval;
+@@ -236,13 +227,6 @@ static void usb_hcd_at91_remove(struct usb_hcd *hcd,
+ 	usb_remove_hcd(hcd);
+ 	at91_stop_hc(pdev);
+ 	usb_put_hcd(hcd);
+-
+-	if (IS_ENABLED(CONFIG_COMMON_CLK))
+-		clk_put(uclk);
+-	clk_put(hclk);
+-	clk_put(fclk);
+-	clk_put(iclk);
+-	fclk = iclk = hclk = NULL;
+ }
+ 
+ /*-------------------------------------------------------------------------*/
+-- 
+1.7.9.5
 
-We're going to need the same thing for CPU topology, I've got a similar
-addition as part of a series to introduce that (which is going to want
-an ACPI back end at some point I guess) at which point it'll stop being
-a dummy.  I should be posting this week all being well.
-
---pn37QocMfltEWxia
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSnhvpAAoJELSic+t+oim9XrwP/27B9eW5D6QqKsmBzm5lQmm9
-H18D4MTDoFBz1xzNA5nU4vNZN+MUQ7dHL1Kbk9RETceGt9BBCV/hhJvv52vJNZnJ
-Dc4lC4I5Gb31fleohVehC3hK2yDzm3/m9+PyAf1N3jr9mftmJzpwh7p+XjvZujmq
-DQSElx/GWNTbLEBjXKQhfjP1Z0AlD7VgDI4kxY3VAc7oymurfCOCvcJUESBYoukx
-SCF4cxESaMVsSCLXHCaN478bf6xwapnAO7pv2vmy6q6UzVl0900UlHxrDoxPixZy
-ynzrknTyQSuc3uMEeN5w+vEP8Shkja3jLnnRX49VDmL4kPFx3Hz/94s6ZRgvlK+C
-qnRhuaSrBR1Cuo5j/M5QgoCRT+oDHRMoru+4u9gqDjCU37C1GG48glCPU4fEAViO
-ktdVOLbSIo5e3tp61K22z7ObVi32fqop7yzQem4yaYUherbp2cO51LeYXZpLLC8f
-E6eqUl3Z9nLpjM9ipyp/CaEKv2geAV9u6O0DjwCNycH6QfEf44XieikQSIZ/cH9X
-ew7VM+HYORICYH1pCMiA/HYqt5b+dPQ+NOVSeGzb5aK7/y7+6g72vjXZC65C0Krq
-KcG/hKB98XJvXy4dLO8H8C+uXE3qw3OzAQiAW7OAJha1GDn+d3fs4WOg/HQZW01d
-m1XYhz/WN173z4vfw8cN
-=U12+
------END PGP SIGNATURE-----
-
---pn37QocMfltEWxia--
