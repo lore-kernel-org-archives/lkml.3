@@ -1,256 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631Ab3LCIzr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 03:55:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49401 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752255Ab3LCIwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 03:52:05 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Alex Thorlton <athorlton@sgi.com>
-Cc: Rik van Riel <riel@redhat.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 01/15] mm: numa: Do not batch handle PMD pages
-Date: Tue,  3 Dec 2013 08:51:48 +0000
-Message-Id: <1386060721-3794-2-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1386060721-3794-1-git-send-email-mgorman@suse.de>
-References: <1386060721-3794-1-git-send-email-mgorman@suse.de>
+	id S1753670Ab3LCIz5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 03:55:57 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:34340 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753616Ab3LCIzq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 03:55:46 -0500
+Message-ID: <529D9CD1.3020208@metafoo.de>
+Date: Tue, 03 Dec 2013 09:56:49 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, broonie@kernel.org,
+        alsa-devel@alsa-project.org
+Subject: Re: [alsa-devel] [PATCH 2/3] ASoC: ux500_pcm: Differentiate between
+ pdata and DT initialisation
+References: <1386007222-10081-1-git-send-email-lee.jones@linaro.org> <1386007222-10081-2-git-send-email-lee.jones@linaro.org> <529CCDAF.7050205@metafoo.de> <20131203083600.GB11828@lee--X1>
+In-Reply-To: <20131203083600.GB11828@lee--X1>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the THP migration races closed it is still possible to occasionally
-see corruption. The problem is related to handling PMD pages in batch.
-When a page fault is handled it can be assumed that the page being
-faulted will also be flushed from the TLB. The same flushing does not
-happen when handling PMD pages in batch. Fixing is straight forward but
-there are a number of reasons not to
+On 12/03/2013 09:36 AM, Lee Jones wrote:
+> On Mon, 02 Dec 2013, Lars-Peter Clausen wrote:
+>
+>> On 12/02/2013 07:00 PM, Lee Jones wrote:
+>>> If booting with full DT support (i.e. DMA too, the last piece of the
+>>> puzzle), then we don't need to use the compatible request channel call
+>>> back. We also require slightly different flags to inform the core that
+>>> we are booting with DT.
+>>
+>> I don't think you need differentiate between DT and non-DT here.
+>> If the SND_DMAENGINE_PCM_FLAG_COMPAT is set and the
+>> SND_DMAENGINE_PCM_FLAG_NO_DT is not set it will first try to request the
+>> channels from the DT if that fails it will fallback to the compat path. So
+>> all this patch needs to do is remove the SND_DMAENGINE_PCM_FLAG_NO_DT, that
+>> should be it.
+>
+> I have no way of testing that, as we are currently 80% through
+> shutting down platform data altogether. In fact, I think there is only
+> ASoC to be converted. Most of this stuff is going to be ripped out
+> within the next couple of weeks in any case. It will happen as soon as
+> I can find an hour or two to work on it.
+>
+> For that reason I didn't want to disturb the current semantics. I've
+> already found that a bunch of he generic (oh, you can just use the
+> central) functions (for that) don't actually work for us for one
+> reason or another.
 
-1. Multiple TLB flushes may have to be sent depending on what pages get
-   migrated
-2. The handling of PMDs in batch means that faults get accounted to
-   the task that is handling the fault. While care is taken to only
-   mark PMDs where the last CPU and PID match it can still have problems
-   due to PID truncation when matching PIDs.
-3. Batching on the PMD level may reduce faults but setting pmd_numa
-   requires taking a heavy lock that can contend with THP migration
-   and handling the fault requires the release/acquisition of the PTL
-   for every page migrated. It's still pretty heavy.
+All SND_DMAENGINE_PCM_FLAG_NO_DT does is to skip trying to request the channel 
+from the dt. If of_node is NULL this step will be skipped anyway. So only 
+setting SND_DMAENGINE_PCM_FLAG_NO_DT if we already know that the node is NULL 
+is redundant.
 
-PMD batch handling is not something that people ever have been happy
-with. This patch removes it and later patches will deal with the
-additional fault overhead using more installigent migrate rate adaption.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1381141781-10992-48-git-send-email-mgorman@suse.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- mm/memory.c   | 91 ++---------------------------------------------------------
- mm/mprotect.c | 40 ++------------------------
- 2 files changed, 5 insertions(+), 126 deletions(-)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index d176154..f453384 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3586,93 +3586,6 @@ out:
- 	return 0;
- }
- 
--/* NUMA hinting page fault entry point for regular pmds */
--#ifdef CONFIG_NUMA_BALANCING
--static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
--		     unsigned long addr, pmd_t *pmdp)
--{
--	pmd_t pmd;
--	pte_t *pte, *orig_pte;
--	unsigned long _addr = addr & PMD_MASK;
--	unsigned long offset;
--	spinlock_t *ptl;
--	bool numa = false;
--
--	spin_lock(&mm->page_table_lock);
--	pmd = *pmdp;
--	if (pmd_numa(pmd)) {
--		set_pmd_at(mm, _addr, pmdp, pmd_mknonnuma(pmd));
--		numa = true;
--	}
--	spin_unlock(&mm->page_table_lock);
--
--	if (!numa)
--		return 0;
--
--	/* we're in a page fault so some vma must be in the range */
--	BUG_ON(!vma);
--	BUG_ON(vma->vm_start >= _addr + PMD_SIZE);
--	offset = max(_addr, vma->vm_start) & ~PMD_MASK;
--	VM_BUG_ON(offset >= PMD_SIZE);
--	orig_pte = pte = pte_offset_map_lock(mm, pmdp, _addr, &ptl);
--	pte += offset >> PAGE_SHIFT;
--	for (addr = _addr + offset; addr < _addr + PMD_SIZE; pte++, addr += PAGE_SIZE) {
--		pte_t pteval = *pte;
--		struct page *page;
--		int page_nid = -1;
--		int target_nid;
--		bool migrated = false;
--
--		if (!pte_present(pteval))
--			continue;
--		if (!pte_numa(pteval))
--			continue;
--		if (addr >= vma->vm_end) {
--			vma = find_vma(mm, addr);
--			/* there's a pte present so there must be a vma */
--			BUG_ON(!vma);
--			BUG_ON(addr < vma->vm_start);
--		}
--		if (pte_numa(pteval)) {
--			pteval = pte_mknonnuma(pteval);
--			set_pte_at(mm, addr, pte, pteval);
--		}
--		page = vm_normal_page(vma, addr, pteval);
--		if (unlikely(!page))
--			continue;
--		/* only check non-shared pages */
--		if (unlikely(page_mapcount(page) != 1))
--			continue;
--
--		page_nid = page_to_nid(page);
--		target_nid = numa_migrate_prep(page, vma, addr, page_nid);
--		pte_unmap_unlock(pte, ptl);
--		if (target_nid != -1) {
--			migrated = migrate_misplaced_page(page, target_nid);
--			if (migrated)
--				page_nid = target_nid;
--		} else {
--			put_page(page);
--		}
--
--		if (page_nid != -1)
--			task_numa_fault(page_nid, 1, migrated);
--
--		pte = pte_offset_map_lock(mm, pmdp, addr, &ptl);
--	}
--	pte_unmap_unlock(orig_pte, ptl);
--
--	return 0;
--}
--#else
--static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
--		     unsigned long addr, pmd_t *pmdp)
--{
--	BUG();
--	return 0;
--}
--#endif /* CONFIG_NUMA_BALANCING */
--
- /*
-  * These routines also need to handle stuff like marking pages dirty
-  * and/or accessed for architectures that don't do it in hardware (most
-@@ -3811,8 +3724,8 @@ retry:
- 		}
- 	}
- 
--	if (pmd_numa(*pmd))
--		return do_pmd_numa_page(mm, vma, address, pmd);
-+	/* THP should already have been handled */
-+	BUG_ON(pmd_numa(*pmd));
- 
- 	/*
- 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 412ba2b..18f1117 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -37,14 +37,12 @@ static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
- 
- static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 		unsigned long addr, unsigned long end, pgprot_t newprot,
--		int dirty_accountable, int prot_numa, bool *ret_all_same_node)
-+		int dirty_accountable, int prot_numa)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	pte_t *pte, oldpte;
- 	spinlock_t *ptl;
- 	unsigned long pages = 0;
--	bool all_same_node = true;
--	int last_nid = -1;
- 
- 	pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
- 	arch_enter_lazy_mmu_mode();
-@@ -63,12 +61,6 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 
- 				page = vm_normal_page(vma, addr, oldpte);
- 				if (page) {
--					int this_nid = page_to_nid(page);
--					if (last_nid == -1)
--						last_nid = this_nid;
--					if (last_nid != this_nid)
--						all_same_node = false;
--
- 					/* only check non-shared pages */
- 					if (!pte_numa(oldpte) &&
- 					    page_mapcount(page) == 1) {
-@@ -111,26 +103,9 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 	arch_leave_lazy_mmu_mode();
- 	pte_unmap_unlock(pte - 1, ptl);
- 
--	*ret_all_same_node = all_same_node;
- 	return pages;
- }
- 
--#ifdef CONFIG_NUMA_BALANCING
--static inline void change_pmd_protnuma(struct mm_struct *mm, unsigned long addr,
--				       pmd_t *pmd)
--{
--	spin_lock(&mm->page_table_lock);
--	set_pmd_at(mm, addr & PMD_MASK, pmd, pmd_mknuma(*pmd));
--	spin_unlock(&mm->page_table_lock);
--}
--#else
--static inline void change_pmd_protnuma(struct mm_struct *mm, unsigned long addr,
--				       pmd_t *pmd)
--{
--	BUG();
--}
--#endif /* CONFIG_NUMA_BALANCING */
--
- static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 		pud_t *pud, unsigned long addr, unsigned long end,
- 		pgprot_t newprot, int dirty_accountable, int prot_numa)
-@@ -138,7 +113,6 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 	pmd_t *pmd;
- 	unsigned long next;
- 	unsigned long pages = 0;
--	bool all_same_node;
- 
- 	pmd = pmd_offset(pud, addr);
- 	do {
-@@ -156,16 +130,8 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 		if (pmd_none_or_clear_bad(pmd))
- 			continue;
- 		pages += change_pte_range(vma, pmd, addr, next, newprot,
--				 dirty_accountable, prot_numa, &all_same_node);
--
--		/*
--		 * If we are changing protections for NUMA hinting faults then
--		 * set pmd_numa if the examined pages were all on the same
--		 * node. This allows a regular PMD to be handled as one fault
--		 * and effectively batches the taking of the PTL
--		 */
--		if (prot_numa && all_same_node)
--			change_pmd_protnuma(vma->vm_mm, addr, pmd);
-+				 dirty_accountable, prot_numa);
-+
- 	} while (pmd++, addr = next, addr != end);
- 
- 	return pages;
--- 
-1.8.4
+>
+>>> Cc: alsa-devel@alsa-project.org
+>>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>> ---
+>>>   sound/soc/ux500/ux500_pcm.c | 26 +++++++++++++++++++++-----
+>>>   1 file changed, 21 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/sound/soc/ux500/ux500_pcm.c b/sound/soc/ux500/ux500_pcm.c
+>>> index 2f1bdb7..00cdd7b 100644
+>>> --- a/sound/soc/ux500/ux500_pcm.c
+>>> +++ b/sound/soc/ux500/ux500_pcm.c
+>>> @@ -134,15 +134,31 @@ static const struct snd_dmaengine_pcm_config ux500_dmaengine_pcm_config = {
+>>>   	.prepare_slave_config = ux500_pcm_prepare_slave_config,
+>>>   };
+>>>
+>>> +static const struct snd_dmaengine_pcm_config ux500_dmaengine_of_pcm_config = {
+>>> +	.prepare_slave_config = ux500_pcm_prepare_slave_config,
+>>> +};
+>>> +
+>>>   int ux500_pcm_register_platform(struct platform_device *pdev)
+>>>   {
+>>> +	const struct snd_dmaengine_pcm_config *pcm_config;
+>>> +	struct device_node *np = pdev->dev.of_node;
+>>> +	unsigned int pcm_flags;
+>>>   	int ret;
+>>>
+>>> -	ret = snd_dmaengine_pcm_register(&pdev->dev,
+>>> -			&ux500_dmaengine_pcm_config,
+>>> -			SND_DMAENGINE_PCM_FLAG_NO_RESIDUE |
+>>> -			SND_DMAENGINE_PCM_FLAG_COMPAT |
+>>> -			SND_DMAENGINE_PCM_FLAG_NO_DT);
+>>> +	if (np) {
+>>> +		pcm_config = &ux500_dmaengine_of_pcm_config;
+>>> +
+>>> +		pcm_flags = SND_DMAENGINE_PCM_FLAG_NO_RESIDUE |
+>>> +			SND_DMAENGINE_PCM_FLAG_COMPAT;
+>>> +	} else {
+>>> +		pcm_config = &ux500_dmaengine_pcm_config;
+>>> +
+>>> +		pcm_flags = SND_DMAENGINE_PCM_FLAG_NO_RESIDUE |
+>>> +			SND_DMAENGINE_PCM_FLAG_NO_DT |
+>>> +			SND_DMAENGINE_PCM_FLAG_COMPAT;
+>>> +	}
+>>> +
+>>> +	ret = snd_dmaengine_pcm_register(&pdev->dev, pcm_config, pcm_flags);
+>>>   	if (ret < 0) {
+>>>   		dev_err(&pdev->dev,
+>>>   			"%s: ERROR: Failed to register platform '%s' (%d)!\n",
+>>>
+>>
+>
 
