@@ -1,344 +1,361 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754429Ab3LCNQS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 08:16:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63798 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753298Ab3LCNKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 08:10:22 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 02/28] tools lib traceevent: Add plugin support
-Date: Tue,  3 Dec 2013 14:09:16 +0100
-Message-Id: <1386076182-14484-3-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1386076182-14484-1-git-send-email-jolsa@redhat.com>
-References: <1386076182-14484-1-git-send-email-jolsa@redhat.com>
+	id S1753986Ab3LCNSv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 08:18:51 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52685 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752542Ab3LCNSu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 08:18:50 -0500
+Date: Tue, 3 Dec 2013 13:18:11 +0000
+From: Dave Martin <Dave.Martin@arm.com>
+To: Anurag Aggarwal <a.anurag@samsung.com>
+Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        naveen.sel@samsung.com, narendra.m1@samsung.com, nico@linaro.org,
+        catalin.marinas@arm.com, will.deacon@arm.com,
+        linux-kernel@vger.kernel.org, ashish.kalra@samsung.com,
+        cpgs@samsung.com, anurag19aggarwal@gmail.com,
+        naveenkrishna.ch@gmail.com, rajat.suri@samsung.com,
+        poorva.s@samsung.com, mohammad.a2@samsung.com
+Subject: Re: [PATCH V3] ARM : unwinder : Prevent data abort due to stack
+ overflow
+Message-ID: <20131203131811.GC2281@e103592.cambridge.arm.com>
+References: <1386062785-3261-1-git-send-email-a.anurag@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386062785-3261-1-git-send-email-a.anurag@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Backporting plugin support for traceevent lib.
+On Tue, Dec 03, 2013 at 02:56:25PM +0530, Anurag Aggarwal wrote:
+> Signed-off-by: Anurag Aggarwal <a.anurag@samsung.com>
 
-Backported from Steven Rostedt's trace-cmd repo (HEAD 0f2c2fb):
-git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
+Move the S-o-b line to the end of your commit message.  I'm getting
+tired of saying this.
 
-It's now possible to use following interface to load plugins
-(shared objects) to enhance pevent object functionality.
+> 
+> While unwinding backtrace, stack overflow is possible. This stack
+> overflow can sometimes lead to data abort in system if the area after
+> stack is not mapped to physical memory.
+> 
+> To prevent this problem from happening, execute the instructions that
+> can cause a data abort in separate helper functions, where a check for
+> feasibility is made before reading data from the stack.
 
-The plugin interface/hooks are as follows:
-(taken from event-parse.h comments)
+This is looking better now overall, but please take a moment to respond
+to the comments I just made on the v2 thread.
 
-- 'pevent_plugin_loader' (required)
-    The function name to initialized the plugin.
+Other comments on this patch below.
 
-    int pevent_plugin_loader(struct pevent *pevent)
+Cheers
+---Dave
 
-- 'pevent_plugin_unloader' (optional)
-    The function called just before unloading
+> 
+> ---
+>  arch/arm/kernel/unwind.c |  207 ++++++++++++++++++++++++++++++++++------------
+>  1 files changed, 153 insertions(+), 54 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/unwind.c b/arch/arm/kernel/unwind.c
+> index 00df012..a140725 100644
+> --- a/arch/arm/kernel/unwind.c
+> +++ b/arch/arm/kernel/unwind.c
+> @@ -49,6 +49,8 @@
+>  #include <asm/traps.h>
+>  #include <asm/unwind.h>
+>  
+> +#define TOTAL_REGISTERS 16
+> +
+>  /* Dummy functions to avoid linker complaints */
+>  void __aeabi_unwind_cpp_pr0(void)
+>  {
+> @@ -66,8 +68,9 @@ void __aeabi_unwind_cpp_pr2(void)
+>  EXPORT_SYMBOL(__aeabi_unwind_cpp_pr2);
+>  
+>  struct unwind_ctrl_block {
+> -	unsigned long vrs[16];		/* virtual register set */
+> +	unsigned long vrs[TOTAL_REGISTERS];	/* virtual register set */
+>  	const unsigned long *insn;	/* pointer to the current instructions word */
+> +	unsigned long sp_high;		/* highest value of sp allowed*/
+>  	int entries;			/* number of entries left to interpret */
+>  	int byte;			/* current byte number in the instructions word */
+>  };
+> @@ -235,6 +238,148 @@ static unsigned long unwind_get_byte(struct unwind_ctrl_block *ctrl)
+>  	return ret;
+>  }
+>  
+> +static int unwind_exec_pop_subset_r4_to_r13(struct unwind_ctrl_block *ctrl,
+> +						unsigned long insn)
+> +{
+> +	int available_stack;
+> +	unsigned long mask;
+> +	unsigned long *vsp = (unsigned long *)ctrl->vrs[SP];
+> +	int load_sp, reg = 4;
+> +
+> +	/* caculate the space available on stack */
+> +	available_stack = ctrl->sp_high - ctrl->vrs[SP];
 
-    int pevent_plugin_unloader(void)
+sp_high and vrs[SP] are just integers, to available_stack is a number of
+bytes, not words.
 
-- 'pevent_plugin_options'  (optional)
-    Plugin options that can be set before loading
+All your checks involving available_sp seem to assume words.
 
-    struct plugin_option pevent_plugin_options[] = {
-       {
-               .name = "option-name",
-               .plugin_alias = "overide-file-name", (optional)
-               .description = "description of option to show users",
-       },
-       {
-               .name = NULL,
-       },
-    };
+(Previously this was correct because you computed available_stack by
+subtracting two unsigned long *).
 
-    Array must end with .name = NULL;
+> +
+> +	insn = (insn << 8) | unwind_get_byte(ctrl);
+> +	mask = insn & 0x0fff;
+> +	if (mask == 0) {
+> +		pr_warning("unwind: 'Refuse to unwind' instruction %04lx\n",
+> +			insn);
+> +		return -URC_FAILURE;
+> +	}
 
-    The plugin_alias (below) can be used to give a shorter
-    name to access the variable. Useful if a plugin handles
-    more than one event.
+For cleanliness, we should keep decode in unwind_exec_insn() and do
+only the execution of the specific insn in these functions.
 
-    NOTE options support is not backported yet.
+mask could be a parameter instead of insn, for example.
 
-- 'pevent_plugin_alias' (optional)
-    The name to use for finding options (uses filename if not defined)
+> +
+> +	/*
+> +	 *  Check whether there is enough space
+> +	 *  on stack to execute the instruction
+> +	 *  if not then return failure
 
-New traceevent functions are added to search and load
-available plugins:
+(Minor nit: in these multiline comments, please use just one space
+after *.  Also, feel free to use longer lines up to 79 chars -- this
+could fit on two lines.  My example had short lines because I needed to
+demonstrate a multiline comment...)
 
-  struct plugin_list*
-  traceevent_load_plugins(struct pevent *pevent)
-    - loads plusing for 'struct pevent' object and returns
-      loaded plugins list
+> +	 */
+> +	if (available_stack < TOTAL_REGISTERS) {
+> +		unsigned long mask_copy = mask;
+> +		int required_stack = 0;
+> +
+> +		while (mask_copy) {
+> +			if (mask_copy & 1)
+> +				required_stack++;
+> +			mask_copy >>= 1;
+> +		}
+> +
+> +		if (available_stack < required_stack)
+> +			return -URC_FAILURE;
+> +	}
+> +
+> +	load_sp = mask & (1 << (13 - 4));
+> +	while (mask) {
+> +		if (mask & 1)
+> +			ctrl->vrs[reg] = *vsp++;
+> +		mask >>= 1;
+> +		reg++;
+> +	}
+> +	if (!load_sp)
+> +		ctrl->vrs[SP] = (unsigned long)vsp;
+> +
+> +	pr_debug("%s: fp = %08lx sp = %08lx lr = %08lx pc = %08lx\n", __func__,
+> +		ctrl->vrs[FP], ctrl->vrs[SP], ctrl->vrs[LR], ctrl->vrs[PC]);
+> +
+> +	return URC_OK;
+> +}
+> +
+> +static int unwind_exec_pop_r4_to_rN(struct unwind_ctrl_block *ctrl,
+> +					unsigned long insn)
+> +{
+> +	int available_stack;
+> +	unsigned long *vsp = (unsigned long *)ctrl->vrs[SP];
+> +	int reg;
+> +
+> +	/* caculate the space available on stack */
+> +	available_stack = ctrl->sp_high - ctrl->vrs[SP];
+> +
+> +	/*
+> +	 *  Check whether there is enough space
+> +	 *  on stack to execute the instruction
+> +	 *  if not then return failure
+> +	 */
+> +	if (available_stack < TOTAL_REGISTERS) {
+> +		int required_stack;
+> +
+> +		required_stack = insn & 7;
+> +		required_stack += (insn & 0x80) ? 1 : 0;
+> +
+> +		if (available_stack < required_stack)
+> +			return -URC_FAILURE;
+> +	}
+> +
+> +	/* pop R4-R[4+bbb] */
+> +	for (reg = 4; reg <= 4 + (insn & 7); reg++)
+> +		ctrl->vrs[reg] = *vsp++;
+> +	if (insn & 0x80)
+> +		ctrl->vrs[14] = *vsp++;
+> +	ctrl->vrs[SP] = (unsigned long)vsp;
+> +
+> +	pr_debug("%s: fp = %08lx sp = %08lx lr = %08lx pc = %08lx\n", __func__,
+> +		ctrl->vrs[FP], ctrl->vrs[SP], ctrl->vrs[LR], ctrl->vrs[PC]);
+> +
+> +	return URC_OK;
+> +}
+> +
+> +static int unwind_exec_pop_subset_r0_to_r3(struct unwind_ctrl_block *ctrl,
+> +					unsigned long insn)
+> +{
+> +	int available_stack;
+> +	unsigned long mask = unwind_get_byte(ctrl);
+> +	unsigned long *vsp = (unsigned long *)ctrl->vrs[SP];
+> +	int reg = 0;
+> +
+> +	if (mask == 0 || mask & 0xf0) {
+> +		pr_warning("unwind: Spare encoding %04lx\n",
+> +			(insn << 8) | mask);
+> +		return -URC_FAILURE;
+> +	}
+> +
+> +	/* caculate the space available on stack */
+> +	available_stack = ctrl->sp_high - ctrl->vrs[SP];
+> +
+> +	/*
+> +	 *  Check whether there is enough space
+> +	 *  on stack to execute the instruction
+> +	 *  if not then return failure
+> +	 */
+> +	if (available_stack < TOTAL_REGISTERS) {
+> +		unsigned long mask_copy = mask;
+> +		int required_stack = 0;
+> +
+> +		while (mask_copy) {
+> +			if (mask_copy & 1)
+> +				required_stack++;
+> +			mask_copy >>= 1;
+> +		}
+> +		if (available_stack < required_stack)
+> +			return -URC_FAILURE;
+> +	}
+> +
+> +	/* pop R0-R3 according to mask */
+> +	while (mask) {
+> +		if (mask & 1)
+> +			ctrl->vrs[reg] = *vsp++;
+> +		mask >>= 1;
+> +		reg++;
+> +	}
+> +	ctrl->vrs[SP] = (unsigned long)vsp;
+> +
+> +	pr_debug("%s: fp = %08lx sp = %08lx lr = %08lx pc = %08lx\n", __func__,
+> +		ctrl->vrs[FP], ctrl->vrs[SP], ctrl->vrs[LR], ctrl->vrs[PC]);
+> +
+> +	return URC_OK;
+> +}
+> +
+>  /*
+>   * Execute the current unwind instruction.
+>   */
+> @@ -249,65 +394,19 @@ static int unwind_exec_insn(struct unwind_ctrl_block *ctrl)
+>  	else if ((insn & 0xc0) == 0x40)
+>  		ctrl->vrs[SP] -= ((insn & 0x3f) << 2) + 4;
+>  	else if ((insn & 0xf0) == 0x80) {
 
-  void traceevent_unload_plugins(struct plugin_list *plugin_list);
-    - unload plugin list
+Many of the { } in this ifelse are now unnecessary.  You should remove
+the ones that aren't needed any more.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Ahern <dsahern@gmail.com>
----
- tools/lib/traceevent/Makefile       |   6 +-
- tools/lib/traceevent/event-parse.h  |   5 +
- tools/lib/traceevent/event-plugin.c | 202 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 212 insertions(+), 1 deletion(-)
- create mode 100644 tools/lib/traceevent/event-plugin.c
-
-diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index fc15020..2ccb5bc 100644
---- a/tools/lib/traceevent/Makefile
-+++ b/tools/lib/traceevent/Makefile
-@@ -180,7 +180,11 @@ $(obj)/%.o: $(src)/%.c
- %.o: $(src)/%.c
- 	$(Q)$(call do_compile)
- 
--PEVENT_LIB_OBJS = event-parse.o trace-seq.o parse-filter.o parse-utils.o
-+PEVENT_LIB_OBJS  = event-parse.o
-+PEVENT_LIB_OBJS += event-plugin.o
-+PEVENT_LIB_OBJS += trace-seq.o
-+PEVENT_LIB_OBJS += parse-filter.o
-+PEVENT_LIB_OBJS += parse-utils.o
- PEVENT_LIB_OBJS += kbuffer-parse.o
- 
- ALL_OBJS = $(PEVENT_LIB_OBJS)
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 8d73d25..a288860 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -377,6 +377,11 @@ enum pevent_errno {
- };
- #undef _PE
- 
-+struct plugin_list;
-+
-+struct plugin_list *traceevent_load_plugins(struct pevent *pevent);
-+void traceevent_unload_plugins(struct plugin_list *plugin_list);
-+
- struct cmdline;
- struct cmdline_list;
- struct func_map;
-diff --git a/tools/lib/traceevent/event-plugin.c b/tools/lib/traceevent/event-plugin.c
-new file mode 100644
-index 0000000..d272d87
---- /dev/null
-+++ b/tools/lib/traceevent/event-plugin.c
-@@ -0,0 +1,202 @@
-+/*
-+ * Copyright (C) 2009, 2010 Red Hat Inc, Steven Rostedt <srostedt@redhat.com>
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU Lesser General Public
-+ * License as published by the Free Software Foundation;
-+ * version 2.1 of the License (not later!)
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU Lesser General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU Lesser General Public
-+ * License along with this program; if not,  see <http://www.gnu.org/licenses>
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ */
-+
-+#include <string.h>
-+#include <dlfcn.h>
-+#include <stdlib.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <unistd.h>
-+#include <dirent.h>
-+#include "event-parse.h"
-+#include "event-utils.h"
-+
-+#define LOCAL_PLUGIN_DIR ".traceevent/plugins"
-+
-+struct plugin_list {
-+	struct plugin_list	*next;
-+	char			*name;
-+	void			*handle;
-+};
-+
-+static void
-+load_plugin(struct pevent *pevent, const char *path,
-+	    const char *file, void *data)
-+{
-+	struct plugin_list **plugin_list = data;
-+	pevent_plugin_load_func func;
-+	struct plugin_list *list;
-+	const char *alias;
-+	char *plugin;
-+	void *handle;
-+
-+	plugin = malloc_or_die(strlen(path) + strlen(file) + 2);
-+
-+	strcpy(plugin, path);
-+	strcat(plugin, "/");
-+	strcat(plugin, file);
-+
-+	handle = dlopen(plugin, RTLD_NOW | RTLD_GLOBAL);
-+	if (!handle) {
-+		warning("could not load plugin '%s'\n%s\n",
-+			plugin, dlerror());
-+		goto out_free;
-+	}
-+
-+	alias = dlsym(handle, PEVENT_PLUGIN_ALIAS_NAME);
-+	if (!alias)
-+		alias = file;
-+
-+	func = dlsym(handle, PEVENT_PLUGIN_LOADER_NAME);
-+	if (!func) {
-+		warning("could not find func '%s' in plugin '%s'\n%s\n",
-+			PEVENT_PLUGIN_LOADER_NAME, plugin, dlerror());
-+		goto out_free;
-+	}
-+
-+	list = malloc_or_die(sizeof(*list));
-+	list->next = *plugin_list;
-+	list->handle = handle;
-+	list->name = plugin;
-+	*plugin_list = list;
-+
-+	pr_stat("registering plugin: %s", plugin);
-+	func(pevent);
-+	return;
-+
-+ out_free:
-+	free(plugin);
-+}
-+
-+static void
-+load_plugins_dir(struct pevent *pevent, const char *suffix,
-+		 const char *path,
-+		 void (*load_plugin)(struct pevent *pevent,
-+				     const char *path,
-+				     const char *name,
-+				     void *data),
-+		 void *data)
-+{
-+	struct dirent *dent;
-+	struct stat st;
-+	DIR *dir;
-+	int ret;
-+
-+	ret = stat(path, &st);
-+	if (ret < 0)
-+		return;
-+
-+	if (!S_ISDIR(st.st_mode))
-+		return;
-+
-+	dir = opendir(path);
-+	if (!dir)
-+		return;
-+
-+	while ((dent = readdir(dir))) {
-+		const char *name = dent->d_name;
-+
-+		if (strcmp(name, ".") == 0 ||
-+		    strcmp(name, "..") == 0)
-+			continue;
-+
-+		/* Only load plugins that end in suffix */
-+		if (strcmp(name + (strlen(name) - strlen(suffix)), suffix) != 0)
-+			continue;
-+
-+		load_plugin(pevent, path, name, data);
-+	}
-+
-+	closedir(dir);
-+}
-+
-+static void
-+load_plugins(struct pevent *pevent, const char *suffix,
-+	     void (*load_plugin)(struct pevent *pevent,
-+				 const char *path,
-+				 const char *name,
-+				 void *data),
-+	     void *data)
-+{
-+	char *home;
-+	char *path;
-+	char *envdir;
-+
-+	/*
-+	 * If a system plugin directory was defined,
-+	 * check that first.
-+	 */
-+#ifdef PLUGIN_DIR
-+	load_plugins_dir(pevent, suffix, PLUGIN_DIR, load_plugin, data);
-+#endif
-+
-+	/*
-+	 * Next let the environment-set plugin directory
-+	 * override the system defaults.
-+	 */
-+	envdir = getenv("TRACEEVENT_PLUGIN_DIR");
-+	if (envdir)
-+		load_plugins_dir(pevent, suffix, envdir, load_plugin, data);
-+
-+	/*
-+	 * Now let the home directory override the environment
-+	 * or system defaults.
-+	 */
-+	home = getenv("HOME");
-+	if (!home)
-+		return;
-+
-+	path = malloc_or_die(strlen(home) + strlen(LOCAL_PLUGIN_DIR) + 2);
-+
-+	strcpy(path, home);
-+	strcat(path, "/");
-+	strcat(path, LOCAL_PLUGIN_DIR);
-+
-+	load_plugins_dir(pevent, suffix, path, load_plugin, data);
-+
-+	free(path);
-+}
-+
-+struct plugin_list*
-+traceevent_load_plugins(struct pevent *pevent)
-+{
-+	struct plugin_list *list = NULL;
-+
-+	load_plugins(pevent, ".so", load_plugin, &list);
-+	return list;
-+}
-+
-+void
-+traceevent_unload_plugins(struct plugin_list *plugin_list)
-+{
-+	pevent_plugin_unload_func func;
-+	struct plugin_list *list;
-+
-+	while (plugin_list) {
-+		list = plugin_list;
-+		plugin_list = list->next;
-+		func = dlsym(list->handle, PEVENT_PLUGIN_UNLOADER_NAME);
-+		if (func)
-+			func();
-+		dlclose(list->handle);
-+		free(list->name);
-+		free(list);
-+	}
-+}
--- 
-1.8.3.1
-
+> -		unsigned long mask;
+> -		unsigned long *vsp = (unsigned long *)ctrl->vrs[SP];
+> -		int load_sp, reg = 4;
+> -
+> -		insn = (insn << 8) | unwind_get_byte(ctrl);
+> -		mask = insn & 0x0fff;
+> -		if (mask == 0) {
+> -			pr_warning("unwind: 'Refuse to unwind' instruction %04lx\n",
+> -				   insn);
+> -			return -URC_FAILURE;
+> -		}
+> -
+> -		/* pop R4-R15 according to mask */
+> -		load_sp = mask & (1 << (13 - 4));
+> -		while (mask) {
+> -			if (mask & 1)
+> -				ctrl->vrs[reg] = *vsp++;
+> -			mask >>= 1;
+> -			reg++;
+> -		}
+> -		if (!load_sp)
+> -			ctrl->vrs[SP] = (unsigned long)vsp;
+> +		return unwind_exec_pop_subset_r4_to_r13(ctrl, insn);
+>  	} else if ((insn & 0xf0) == 0x90 &&
+>  		   (insn & 0x0d) != 0x0d)
+>  		ctrl->vrs[SP] = ctrl->vrs[insn & 0x0f];
+>  	else if ((insn & 0xf0) == 0xa0) {
+> -		unsigned long *vsp = (unsigned long *)ctrl->vrs[SP];
+> -		int reg;
+> -
+> -		/* pop R4-R[4+bbb] */
+> -		for (reg = 4; reg <= 4 + (insn & 7); reg++)
+> -			ctrl->vrs[reg] = *vsp++;
+> -		if (insn & 0x80)
+> -			ctrl->vrs[14] = *vsp++;
+> -		ctrl->vrs[SP] = (unsigned long)vsp;
+> +		return unwind_exec_pop_r4_to_rN(ctrl, insn);
+>  	} else if (insn == 0xb0) {
+>  		if (ctrl->vrs[PC] == 0)
+>  			ctrl->vrs[PC] = ctrl->vrs[LR];
+>  		/* no further processing */
+>  		ctrl->entries = 0;
+>  	} else if (insn == 0xb1) {
+> -		unsigned long mask = unwind_get_byte(ctrl);
+> -		unsigned long *vsp = (unsigned long *)ctrl->vrs[SP];
+> -		int reg = 0;
+> -
+> -		if (mask == 0 || mask & 0xf0) {
+> -			pr_warning("unwind: Spare encoding %04lx\n",
+> -			       (insn << 8) | mask);
+> -			return -URC_FAILURE;
+> -		}
+> -
+> -		/* pop R0-R3 according to mask */
+> -		while (mask) {
+> -			if (mask & 1)
+> -				ctrl->vrs[reg] = *vsp++;
+> -			mask >>= 1;
+> -			reg++;
+> -		}
+> -		ctrl->vrs[SP] = (unsigned long)vsp;
+> +		return unwind_exec_pop_subset_r0_to_r3(ctrl, insn);
+>  	} else if (insn == 0xb2) {
+>  		unsigned long uleb128 = unwind_get_byte(ctrl);
+>  
+> @@ -329,13 +428,13 @@ static int unwind_exec_insn(struct unwind_ctrl_block *ctrl)
+>   */
+>  int unwind_frame(struct stackframe *frame)
+>  {
+> -	unsigned long high, low;
+> +	unsigned long low;
+>  	const struct unwind_idx *idx;
+>  	struct unwind_ctrl_block ctrl;
+>  
+> -	/* only go to a higher address on the stack */
+> +	/* store the highest address on the stack to avoid crossing it*/
+>  	low = frame->sp;
+> -	high = ALIGN(low, THREAD_SIZE);
+> +	ctrl.sp_high = ALIGN(low, THREAD_SIZE);
+>  
+>  	pr_debug("%s(pc = %08lx lr = %08lx sp = %08lx)\n", __func__,
+>  		 frame->pc, frame->lr, frame->sp);
+> @@ -386,7 +485,7 @@ int unwind_frame(struct stackframe *frame)
+>  		int urc = unwind_exec_insn(&ctrl);
+>  		if (urc < 0)
+>  			return urc;
+> -		if (ctrl.vrs[SP] < low || ctrl.vrs[SP] >= high)
+> +		if (ctrl.vrs[SP] < low || ctrl.vrs[SP] >= ctrl.sp_high)
+>  			return -URC_FAILURE;
+>  	}
+>  
+> -- 
+> 1.7.0.4
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
