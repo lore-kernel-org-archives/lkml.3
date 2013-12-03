@@ -1,60 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab3LCJdv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 04:33:51 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:47037 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815Ab3LCJdr (ORCPT
+	id S1752986Ab3LCJgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 04:36:54 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:40729 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab3LCJgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 04:33:47 -0500
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kevin Bracey <kevin@bracey.fi>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH] pinctrl: samsung: Allow pin value to be initialized using pinfunc.
-Date: Tue, 03 Dec 2013 10:33:43 +0100
-Message-ID: <2004634.MefHDYV4b2@flatron>
-User-Agent: KMail/4.11.3 (Linux/3.12.0-gentoo; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <CACRpkdYDONQ-7U3hGYnx7jb0_Y=rcOcvy-2F1dO058FfOO4stg@mail.gmail.com>
-References: <1384881351-10782-1-git-send-email-t.figa@samsung.com> <2715269.S45Tc0DQGQ@flatron> <CACRpkdYDONQ-7U3hGYnx7jb0_Y=rcOcvy-2F1dO058FfOO4stg@mail.gmail.com>
+	Tue, 3 Dec 2013 04:36:48 -0500
+Date: Tue, 3 Dec 2013 09:36:37 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Keerthy <j-keerthy@ti.com>
+Cc: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk, rob@landley.net,
+        sameo@linux.intel.com, grant.likely@linaro.org, lgirdwood@gmail.com,
+        broonie@kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH 1/4] mfd: DT bindings for TPS65218 PMIC
+Message-ID: <20131203093637.GE11828@lee--X1>
+References: <1386053006-6480-1-git-send-email-j-keerthy@ti.com>
+ <1386053006-6480-2-git-send-email-j-keerthy@ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1386053006-6480-2-git-send-email-j-keerthy@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 03 of December 2013 10:31:12 Linus Walleij wrote:
-> On Tue, Nov 26, 2013 at 1:30 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> Add DT bindings for TPS65218 PMIC.
 > 
-> > IMHO a way to specify a default safe state of all pins (with lowest power
-> > consumption, without possibility of glitching external devices, etc.)
-> > would be really useful for Samsung platforms (and probably Renesas ones
-> > as Kevin wrote).
+> Signed-off-by: Keerthy <j-keerthy@ti.com>
+> ---
+>  Documentation/devicetree/bindings/mfd/tps65218.txt |   27 ++++++++++++++++++++
+>  .../devicetree/bindings/regulator/tps65218.txt     |   22 ++++++++++++++++
+>  2 files changed, 49 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/tps65218.txt
+>  create mode 100644 Documentation/devicetree/bindings/regulator/tps65218.txt
 > 
-> I'm following :-)
-> 
-> Now if we could see some more details and a patch, that would
-> be great ...
+> diff --git a/Documentation/devicetree/bindings/mfd/tps65218.txt b/Documentation/devicetree/bindings/mfd/tps65218.txt
+> new file mode 100644
+> index 0000000..87cb7a8
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/tps65218.txt
+> @@ -0,0 +1,27 @@
+> +The TPS65218 Integrated Power Management Chips.
+> +These chips are connected to an i2c bus.
 
-Yeah, I would like to see them too. ;)
+                                   I2C
 
-Unfortunately my make_pinctrl_default_state_patches() function is
-returning -ENOTIME at the moment. :( (I hope to get it fixed
-later this month, though.)
+> +Required properties:
+> +- compatible : Must be "ti,tps65218";
+> +- interrupts : This i2c device has an IRQ line connected to the main SoC
 
-Best regards,
-Tomasz
+                       I2C
 
+> +- interrupt-controller : Since the tps65218 support several interrupts
+
+                                               support(s) (hosts?)
+
+> +  internally, it is considered as an interrupt controller cascaded to the SoC.
+> +- #interrupt-cells = <2>;
+> +- interrupt-parent : The parent interrupt controller.
+
+           Phandle to ...
+
+> +Optional node:
+
+            node(s):
+
+> +- Child nodes contain in the tps65218.
+> +  It supports a number of features.
+
+Please re-phase the above two sentences to something decipherable.
+
+> +  The children nodes will thus depend of the capability of the variant.
+
+Please, go on ...
+
+> +Example:
+> +/*
+> + * Integrated Power Management Chip
+> + */
+> +tps@24 {
+> +    compatible = "ti,tps65218";
+> +    reg = <0x24>;
+> +    interrupt-controller;
+> +    #interrupt-cells = <2>;
+> +    interrupt-parent = <&gic>;
+> +};
+
+Perhaps it would be better to centralise the documentation inclusive
+of the regulator contingent. Or at least provide a _full_ example in
+each document.
+
+> diff --git a/Documentation/devicetree/bindings/regulator/tps65218.txt b/Documentation/devicetree/bindings/regulator/tps65218.txt
+> new file mode 100644
+> index 0000000..1ccf170
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/regulator/tps65218.txt
+> @@ -0,0 +1,22 @@
+> +TPS65218 family of regulators
+> +
+> +Required properties:
+> +For tps65218 regulators/LDOs
+> +- compatible:
+> +  - "ti,tps65218-dcdc1" for DCDC1
+> +  - "ti,tps65218-dcdc2" for DCDC2
+> +  - "ti,tps65218-dcdc3" for DCDC3
+> +  - "ti,tps65218-dcdc4" for DCDC4
+> +  - "ti,tps65218-dcdc5" for DCDC5
+> +  - "ti,tps65218-dcdc6" for DCDC6
+> +  - "ti,tps65218-ldo1" for LDO1 LDO
+
+Why aren't you using 'regulator-compatible'?
+
+> +Optional properties:
+> +- Any optional property defined in bindings/regulator/regulator.txt
+> +
+> +Example:
+> +	xyz: regulator@0 {
+
+Genuine question: Is the @0 meaningful?
+
+> +		compatible = "ti,tps65218-dcdc1";
+> +		regulator-min-microvolt  = <1000000>;
+> +		regulator-max-microvolt  = <3000000>;
+> +	};
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
