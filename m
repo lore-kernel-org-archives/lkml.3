@@ -1,87 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab3LCMfD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 07:35:03 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:36741 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753585Ab3LCMe6 (ORCPT
+	id S1753848Ab3LCMfg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 07:35:36 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53453 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab3LCMfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 07:34:58 -0500
-Date: Tue, 3 Dec 2013 12:34:54 +0000
-From: Kim Phillips <kim.phillips@linaro.org>
-To: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: kvm@vger.kernel.org, scottwood@freescale.com, R65777@freescale.com,
-        B07421@freescale.com, B08248@freescale.com,
-        christoffer.dall@linaro.org, alex.williamson@redhat.com,
-        a.motakis@virtualopensystems.com, agraf@suse.de, B16395@freescale.com
-Subject: [REPOST][PATCH 2/2] driver core: platform: allow platform drivers
- to bind to any device
-Message-Id: <20131203123454.3ab18749ed0d0d943b10df9a@linaro.org>
-X-Mailer: Sylpheed 3.4.0beta5 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Dec 2013 07:35:31 -0500
+Date: Tue, 3 Dec 2013 12:34:59 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Li Xiubo <Li.Xiubo@freescale.com>
+Cc: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        Fabio Estevam <Fabio.Estevam@freescale.com>,
+        "LW@KARO-electronics.de" <LW@KARO-electronics.de>,
+        "oskar@scara.com" <oskar@scara.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20131203123459.GS27568@sirena.org.uk>
+References: <1385621219-20652-1-git-send-email-Li.Xiubo@freescale.com>
+ <20131129183855.GI27568@sirena.org.uk>
+ <1DD289F6464F0949A2FCA5AA6DC23F828E3D21@039-SN2MPN1-011.039d.mgd.msft.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="s2BgGqEnop8iZnuR"
+Content-Disposition: inline
+In-Reply-To: <1DD289F6464F0949A2FCA5AA6DC23F828E3D21@039-SN2MPN1-011.039d.mgd.msft.net>
+X-Cookie: Boycott meat -- suck your thumb.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2] ASoC: SGTL5000: Fix kernel failed while trying to get
+ optional VDDD supply.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Platform drivers such as the vfio-platform "meta-" driver [1]
-should be allowed to specify that they can bind to any device,
-much like PCI drivers can with PCI_ANY_ID.
 
-Currently, binding platform drivers to devices depends on:
+--s2BgGqEnop8iZnuR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-- a string match in the device node's compatible entry (OF)
-- a string match in the ACPI id list (ACPI)
-- a string match in the id_table (platform data)
-- a string match on the driver name (fall-back)
+On Tue, Dec 03, 2013 at 09:49:47AM +0000, Li Xiubo wrote:
 
-none of which allow for the notion of "match any."
+> 2, If the regulator dt node is exist but the optional VDDD is absent (i.e.
+> The external VDDD is not used), a -EPROBE_DEFER will be returned, if just
+> return the -EPROBE_DEFER to the probe(and then the probe deferral
+> mechanism will do the probe again later, is that right ?), and then the
+> regulator_get_optional() will be called later again, and the -EPROBE_DEFER
+> will be returned again too, and now how should I handle -EPROBE_DEFER error
+> twice ? Or should there be a counter about this ? That to say when the
+> -EPROBE_DEFER error is the second time returned from regulator_get_optional()
+> can we ensure that the optional VDDD is really not in use.
 
-This patch adds the notion by adding a "match any device" boolean to
-struct platform_driver, for drivers to be able to set and thus not cause
-platform_match() to fail when a bind is requested.
+The driver should just defer when it's told to defer, I don't understand
+why it would want to count anything?
 
-[1] http://www.spinics.net/lists/kvm/msg96701.html
+--s2BgGqEnop8iZnuR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
----
-rebased onto 3.13-rc2, and reposted from first submission which
-received no comments:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-https://lkml.org/lkml/2013/10/11/48
+iQIcBAEBAgAGBQJSnc/wAAoJELSic+t+oim96FsP/3OVW9cWGacoOZg++GTnt4oY
++XsSLti7BjdMkbFAYutczbktHhVvWCGFd0HdlAF/X4YhLdr8DZ5Clx9G/aY34WWz
+65LOwPYnvbxWqgSUf7hE44959Vsi6cufS0pEM1JmWnjtUJIkphfeIjEwFGfy42m4
+RyyJ1ozHimuCXeFfv9LtgYjo1lzW0gwiz+g0tup9tgrBAYQD8gBK5515Hotyibs4
+AvnzFEKMyfEDhJlSzoF54PeuO9I0/VAufCyZBWysuQPspll7dtVMTjGkN5IzySkt
+X6s6Pdh1axtrGEN30RdKKqkTQ1beZj0V9LyyBRzrfj64Wzlz0VNJZLYt2XVEsfpj
+JjPDVJlH8xWh4SZrOxm9anDJq255XpjUQmC+RzfLFEJtfdou7u6MmCPONaJ1pyHl
+gLAh23G2v1HnOlwQZmmvvQK4CaC3TFSR+TAANtis9gOx2Z1vok87brPRh5WAh4O8
+TagD6ajHkPOEtFYSzHPwdfQ5GbQ/XUAn36yRjUi3xs6iLNtbQjraLAjyLfb/Je6c
+goDPmYptTYoibd6kxvqhVcAQJ+t5N/sDb5fHVGNX7FDXUpoS56S5rA8/eDXHdCpn
+zyUNpWXXMgclpBLKscvQ07B16WSQnkuK0id+fhRXeVO4ljKene6XBEOkzQfMR6QX
+91NcVaatbcVu+inXLvRV
+=6hMD
+-----END PGP SIGNATURE-----
 
- drivers/base/platform.c         | 4 ++++
- include/linux/platform_device.h | 1 +
- 2 files changed, 5 insertions(+)
-
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index 3a94b79..78a5b62 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -736,6 +736,10 @@ static int platform_match(struct device *dev, struct device_driver *drv)
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct platform_driver *pdrv = to_platform_driver(drv);
- 
-+	/* the driver matches any device */
-+	if (pdrv->match_any_dev)
-+		return 1;
-+
- 	/* Attempt an OF style match first */
- 	if (of_driver_match_device(dev, drv))
- 		return 1;
-diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
-index 16f6654..55e76b1 100644
---- a/include/linux/platform_device.h
-+++ b/include/linux/platform_device.h
-@@ -179,6 +179,7 @@ struct platform_driver {
- 	struct device_driver driver;
- 	const struct platform_device_id *id_table;
- 	bool prevent_deferred_probe;
-+	bool match_any_dev;
- };
- 
- #define to_platform_driver(drv)	(container_of((drv), struct platform_driver, \
--- 
-1.8.5
+--s2BgGqEnop8iZnuR--
