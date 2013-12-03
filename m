@@ -1,98 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755271Ab3LCVgj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 16:36:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54552 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755098Ab3LCVgg (ORCPT
+	id S1755342Ab3LCVg4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 16:36:56 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:53902 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755098Ab3LCVgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 16:36:36 -0500
-Date: Tue, 3 Dec 2013 13:36:34 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        David Howells <dhowells@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/2] test: add minimal module for verification testing
-Message-Id: <20131203133634.e3e4264d7e027c858c0c9268@linux-foundation.org>
-In-Reply-To: <1386106054-27636-2-git-send-email-keescook@chromium.org>
-References: <1386106054-27636-1-git-send-email-keescook@chromium.org>
-	<1386106054-27636-2-git-send-email-keescook@chromium.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Dec 2013 16:36:52 -0500
+Date: Tue, 3 Dec 2013 16:36:49 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org
+Subject: Re: sysfs: use a separate locking class for open files depending on
+ mmap
+Message-ID: <20131203213649.GO8277@htj.dyndns.org>
+References: <20131128051223.45739660885@gitolite.kernel.org>
+ <20131203184324.GA11320@redhat.com>
+ <20131203211028.GN8277@htj.dyndns.org>
+ <20131203211515.GA17951@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131203211515.GA17951@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  3 Dec 2013 13:27:33 -0800 Kees Cook <keescook@chromium.org> wrote:
+Hey,
 
-> When doing module loading verification tests (for example, with module
-> singing, or LSM hooks), it is very handy to have a module that can be
-> built on all systems under test, isn't auto-loaded at boot, and has
-> no device or similar dependencies. This creates the "test_module.ko"
-> module for that purpose, which only reports its load and unload to printk.
+On Tue, Dec 03, 2013 at 04:15:15PM -0500, Dave Jones wrote:
+>  > > Somehow I just triggered this trace again, even with this commit applied.
+>  > > The trace is pretty much identical to the old one.
+>  > 
+>  > Hah, ain't that weird.  That's the trace you reported on the other
+>  > mail, right?  I'll follow up on that one.
 > 
-> --- /dev/null
-> +++ b/kernel/test_module.c
-> @@ -0,0 +1,26 @@
-> +/*
-> + * "hello world" kernel module
-> + */
-> +
-> +#define pr_fmt(fmt) "test_module: " fmt
-> +
-> +#include <linux/module.h>
+> just so there's no doubt, here's a fresh one.
 
-It really should have a whole bunch more includes, rather than relying
-on winning the nested include lottery.
+Argh, found the culprit.  The unified mmap path grabs of->mutex to
+check whether the file implements mmap, which means that if you try to
+mmap a file which doesn't implement mmap, you still add the locking
+dependency.  I'm working on the fix.
 
-> +static int __init test_module_init(void)
-> +{
-> +	pr_info("Hello, world\n");
+Thanks.
 
-pr_info is maybe too low a facility level?  Pretty much the whole point
-of the module is to print this message, so let's ensure that it is visible.
-
-> +	return 0;
-> +}
-> +
-> +module_init(test_module_init);
-> +
-> +static void __exit test_module_exit(void)
-> +{
-> +	pr_info("Goodbye\n");
-> +}
-> +
-> +module_exit(test_module_exit);
-> +
-> +MODULE_AUTHOR("Kees Cook <keescook@chromium.org>");
-> +MODULE_LICENSE("GPL");
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index db25707aa41b..20abc92032e0 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -1578,6 +1578,20 @@ config DMA_API_DEBUG
->  	  This option causes a performance degredation.  Use only if you want
->  	  to debug device drivers. If unsure, say N.
->  
-> +config TEST_MODULE
-> +	tristate "Test module loading with 'hello world' module"
-> +	default n
-> +	depends on m
-> +	help
-> +	  This builds the "test_module" module that emits "Hello, world"
-> +	  on printk when loaded. It is designed to be used for basic
-> +	  evaluation of the module loading subsystem (for example when
-> +	  validating module verification). It lacks any extra dependencies,
-> +	  and will not normally be loaded by the system unless explicitly
-> +	  request by name.
-
-Would be useful to have a comment along these lines in test_module.c,
-so readers know why it exists.
-
+-- 
+tejun
