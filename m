@@ -1,66 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169Ab3LCIQF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 03:16:05 -0500
-Received: from mga02.intel.com ([134.134.136.20]:51524 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065Ab3LCIQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 03:16:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,816,1378882800"; 
-   d="scan'208";a="437599170"
-Date: Tue, 3 Dec 2013 10:15:56 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-Cc: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] usb: phy-generic: Add ULPI VBUS support
-Message-ID: <20131203081556.GA26423@xps8300>
-References: <1385967919-13258-1-git-send-email-chris.ruehl@gtsys.com.hk>
- <1385967919-13258-4-git-send-email-chris.ruehl@gtsys.com.hk>
+	id S1751987Ab3LCIXn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 03:23:43 -0500
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:41108 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab3LCIXm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 03:23:42 -0500
+From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+CC: "bhe@redhat.com" <bhe@redhat.com>, "tom.vaden@hp.com" <tom.vaden@hp.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "jingbai.ma@hp.com" <jingbai.ma@hp.com>,
+        "ptesarik@suse.cz" <ptesarik@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lisa.mitchell@hp.com" <lisa.mitchell@hp.com>,
+        "anderson@redhat.com" <anderson@redhat.com>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>
+Subject: Re: [PATCH 0/3] makedumpfile: hugepage filtering for vmcore dump
+Thread-Topic: [PATCH 0/3] makedumpfile: hugepage filtering for vmcore dump
+Thread-Index: Ac7v67ROedF5GXt4RJCKk/zkroiBrQ==
+Date: Tue, 3 Dec 2013 08:05:06 +0000
+Message-ID: <0910DD04CBD6DE4193FCF86B9C00BE971CA130@BPXM01GP.gisp.nec.co.jp>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.21.40.240]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385967919-13258-4-git-send-email-chris.ruehl@gtsys.com.hk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 03:05:19PM +0800, Chris Ruehl wrote:
-> @@ -154,6 +164,27 @@ int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_gen_xceiv *nop,
->  {
->  	int err;
->  
-> +	if (nop->ulpi_vbus > 0) {
-> +		unsigned int flags = 0;
-> +
-> +		if (nop->ulpi_vbus & 0x1)
-> +			flags |= ULPI_OTG_DRVVBUS;
-> +		if (nop->ulpi_vbus & 0x2)
-> +			flags |= ULPI_OTG_DRVVBUS_EXT;
-> +		if (nop->ulpi_vbus & 0x4)
-> +			flags |= ULPI_OTG_EXTVBUSIND;
-> +		if (nop->ulpi_vbus & 0x8)
-> +			flags |= ULPI_OTG_CHRGVBUS;
-> +
-> +		nop->ulpi = otg_ulpi_create(&ulpi_viewport_access_ops, flags);
-> +		if (!nop->ulpi) {
-> +			dev_err(dev, "Failed create ULPI Phy\n");
-> +			return -ENOMEM;
-> +		}
-> +		dev_dbg(dev, "Create ULPI Phy\n");
-> +		nop->ulpi->io_priv =  nop->viewport;
-> +	}
+On 2013/11/29 13:57:21, kexec <kexec-bounces@lists.infradead.org> wrote:
+> (2013/11/29 13:23), Atsushi Kumagai wrote:
+> > On 2013/11/29 12:24:45, kexec <kexec-bounces@lists.infradead.org> wrote:
+> >> (2013/11/29 12:02), Atsushi Kumagai wrote:
+> >>> On 2013/11/28 16:50:21, kexec <kexec-bounces@lists.infradead.org> wrote:
+> >>>>>> ping, in case you overlooked this...
+> >>>>>
+> >>>>> Sorry for the delayed response, I prioritize the release of v1.5.5 now.
+> >>>>>
+> >>>>> Thanks for your advice, check_cyclic_buffer_overrun() should be fixed
+> >>>>> as you said. In addition, I'm considering other way to address such case,
+> >>>>> that is to bring the number of "overflowed pages" to the next cycle and
+> >>>>> exclude them at the top of __exclude_unnecessary_pages() like below:
+> >>>>>
+> >>>>>                   /*
+> >>>>>                    * The pages which should be excluded still remain.
+> >>>>>                    */
+> >>>>>                   if (remainder >= 1) {
+> >>>>>                           int i;
+> >>>>>                           unsigned long tmp;
+> >>>>>                           for (i = 0; i < remainder; ++i) {
+> >>>>>                                   if (clear_bit_on_2nd_bitmap_for_kernel(pfn + i)) {
+> >>>>>                                           pfn_user++;
+> >>>>>                                           tmp++;
+> >>>>>                                   }
+> >>>>>                           }
+> >>>>>                           pfn += tmp;
+> >>>>>                           remainder -= tmp;
+> >>>>>                           mem_map += (tmp - 1) * SIZE(page);
+> >>>>>                           continue;
+> >>>>>                   }
+> >>>>>
+> >>>>> If this way works well, then aligning info->buf_size_cyclic will be
+> >>>>> unnecessary.
+> >>>>>
+> >>>>
+> >>>> I selected the current implementation of changing cyclic buffer size becuase
+> >>>> I thought it was simpler than carrying over remaining filtered pages to next cycle
+> >>>> in that there was no need to add extra code in filtering processing.
+> >>>>
+> >>>> I guess the reason why you think this is better now is how to detect maximum order of
+> >>>> huge page is hard in some way, right?
+> >>>
+> >>> The maximum order will be gotten from HUGETLB_PAGE_ORDER or HPAGE_PMD_ORDER,
+> >>> so I don't say it's hard. However, the carrying over method doesn't depend on
+> >>> such kernel symbols, so I think it's robuster.
+> >>>
+> >>
+> >> Then, it's better to remove check_cyclic_buffer_overrun() and rewrite part of free page
+> >> filtering in __exclude_unnecessary_pages(). Could you do that too?
+> >
+> > Sure, I'll modify it too.
+> >
+>
+> This is a suggestion from different point of view...
+>
+> In general, data on crash dump can be corrupted. Thus, order contained in a page
+> descriptor can also be corrupted. For example, if the corrupted value were a huge
+> number, wide range of pages after buddy page would be filtered falsely.
+>
+> So, actually we should sanity check data in crash dump before using them for application
+> level feature. I've picked up order contained in page descriptor, so there would be other
+> data used in makedumpfile that are not checked.
 
-This is so wrong. You are registering one kind of usb phy driver from
-an other. Change drivers/usb/phy/ulpi.c to be a platform device. The
-whole flag system in it is pretty horrid. While you are at it, change
-that so it sets the values based on boolean flags from OF properties
-or platform data.
+What you said is reasonable, but how will you do such sanity check ?
+Certain standard values are necessary for sanity check, how will
+you prepare such values ?
+(Get them from kernel source and hard-code them in makedumpfile ?)
 
-NAK for the whole set.
+> Unlike diskdump, we no longer need to care about kernel/hardware level data integrity
+> outside of user-land, but we still care about data its own integrity.
+>
+> On the other hand, if we do it, we might face some difficulty, for example, hardness of
+> maintenance or performance bottleneck; it might be the reason why we don't see sanity
+> check in makedumpfile now.
+
+There are many values which should be checked, e.g. page.flags, page._count,
+page.mapping, list_head.next and so on.
+If we introduce sanity check for them, the issues you mentioned will be appear
+distinctly.
+
+So I think makedumpfile has to trust crash dump in practice.
 
 
--- 
-heikki
+Thanks
+Atsushi Kumagai
+
+> --
+> Thanks.
+> HATAYAMA, Daisuke
+>
+>
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
+>
