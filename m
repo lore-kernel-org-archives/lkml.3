@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333Ab3LCL1t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 06:27:49 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45039 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752761Ab3LCL1r (ORCPT
+	id S1753395Ab3LCL2j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 06:28:39 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:58234 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752768Ab3LCL2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 06:27:47 -0500
-Date: Tue, 3 Dec 2013 11:27:01 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Vinayak Kale <vkale@apm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "patches@apm.com" <patches@apm.com>, "jcm@redhat.com" <jcm@redhat.com>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Chris Smith <chris.smith@st.com>
-Subject: Re: [PATCH V6 1/2] genirq: Add an accessor for IRQ_PER_CPU flag
-Message-ID: <20131203112701.GD1169@mudshark.cambridge.arm.com>
-References: <1385976843-13280-1-git-send-email-vkale@apm.com>
- <1385976843-13280-2-git-send-email-vkale@apm.com>
+	Tue, 3 Dec 2013 06:28:34 -0500
+Date: Tue, 3 Dec 2013 11:28:27 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: micky <micky_ching@realsil.com.cn>
+Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        wei_wang@realsil.com.cn, rogerable@realtek.com
+Subject: Re: [PATCH v2 3/3] mfd: rtsx: prevent 'used uninitialised' warnings
+Message-ID: <20131203112827.GA12031@lee--X1>
+References: <cover.1386051860.git.micky_ching@realsil.com.cn>
+ <932dcc03570ceb86316272d4eba7f4207d001def.1386051860.git.micky_ching@realsil.com.cn>
+ <20131203104003.GJ11828@lee--X1>
+ <20131203104038.GK11828@lee--X1>
+ <529DBA84.9060907@realsil.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1385976843-13280-2-git-send-email-vkale@apm.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <529DBA84.9060907@realsil.com.cn>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 09:34:02AM +0000, Vinayak Kale wrote:
-> This patch adds an accessor function for IRQ_PER_CPU flag.
-> The accessor function is useful to determine whether an IRQ is percpu or not.
-> 
-> This patch is based on an older patch posted by Chris Smith here [1].
-> There is a minor change w.r.t. Chris's original patch: The accessor function
-> is renamed as 'irq_is_percpu' instead of 'irq_is_per_cpu'.
-> 
-> [1]: http://lkml.indiana.edu/hypermail/linux/kernel/1207.3/02955.html
-> 
-> Signed-off-by: Chris Smith <chris.smith@st.com>
-> Signed-off-by: Vinayak Kale <vkale@apm.com>
-> ---
->  include/linux/irqdesc.h |    8 ++++++++
->  1 file changed, 8 insertions(+)
-> 
-> diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
-> index 56fb646..26e2661 100644
-> --- a/include/linux/irqdesc.h
-> +++ b/include/linux/irqdesc.h
-> @@ -152,6 +152,14 @@ static inline int irq_balancing_disabled(unsigned int irq)
->  	return desc->status_use_accessors & IRQ_NO_BALANCING_MASK;
->  }
->  
-> +static inline int irq_is_percpu(unsigned int irq)
-> +{
-> +	struct irq_desc *desc;
-> +
-> +	desc = irq_to_desc(irq);
-> +	return desc->status_use_accessors & IRQ_PER_CPU;
-> +}
-> +
->  static inline void
->  irq_set_lockdep_class(unsigned int irq, struct lock_class_key *class)
->  {
+On Tue, 03 Dec 2013, micky wrote:
 
-Acked-by: Will Deacon <will.deacon@arm.com>
+> On 12/03/2013 06:40 PM, Lee Jones wrote:
+> >By the way, I'm going to apply this patch now.
+> >
+> So, in next patch-set, I will not include this patch.
 
-Will
+Exactly.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
