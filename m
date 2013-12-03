@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754919Ab3LCVrF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 16:47:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54569 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754470Ab3LCVrD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 16:47:03 -0500
-Date: Tue, 3 Dec 2013 13:47:01 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        David Howells <dhowells@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2] test: check copy_to/from_user boundary validation
-Message-Id: <20131203134701.e3bc01aa8b20bddfb73f53c6@linux-foundation.org>
-In-Reply-To: <1386106054-27636-3-git-send-email-keescook@chromium.org>
-References: <1386106054-27636-1-git-send-email-keescook@chromium.org>
-	<1386106054-27636-3-git-send-email-keescook@chromium.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755121Ab3LCVvt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 16:51:49 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:63903 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754530Ab3LCVvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 16:51:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:date:message-id:mime-version:content-type; q=dns; s=
+	sasl; b=Bci1H6Ex4V+5sjpDpKs0bXZifgIq97+ETqbCWw69MoNu+zNP9UkWm9ER
+	nxM3j3A9u9PJtTX1nj5UQ7ZOV/Qt8bQ15wt8FnO4jYd10P8ER19WoVCHMTB3b9VY
+	PiXlVhR+50xYv9z/OiLhJXc2m/+nAJZHQ3iCsWpUA4k54RUaRKY=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] Git v1.8.5.1
+Date: Tue, 03 Dec 2013 13:47:49 -0800
+Message-ID: <xmqq8uw1mwmb.fsf@gitster.dls.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 18EE1C5E-5C65-11E3-8B4D-D331802839F8-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  3 Dec 2013 13:27:34 -0800 Kees Cook <keescook@chromium.org> wrote:
+The latest maintenance release Git v1.8.5.1 is now available at
+the usual places.
 
-> To help avoid an architecture failing to correctly check kernel/user
-> boundaries when handling copy_to_user, copy_from_user, put_user, or
-> get_user, perform some simple tests and fail to load if any of them
-> behave unexpectedly.
-> 
-> Specifically, this is to make sure there is a way to notice if things
-> like what was fixed in 8404663f81d212918ff85f493649a7991209fa04 ("ARM:
-> 7527/1: uaccess: explicitly check __user pointer when !CPU_USE_DOMAINS")
-> ever regresses again, for any architecture.
+The release tarballs are found at:
 
-I guess the challenge will be to get anyone to remember to run this.
+    http://code.google.com/p/git-core/downloads/list
 
-Really, this could be viewed as a candidate for
-tools/testing/selftests.  The tests in there are userspace tests, and
-your userspace test would consist of "modprobe test_user_copy".  The
-advantage of this is that your test will get included whenever someone
-runs the selftest suite.  This is better than having it stranded over
-in ./kernel/.
+and their SHA-1 checksums are:
 
-> ---
->  kernel/Makefile         |    1 +
->  kernel/test_user_copy.c |  103 +++++++++++++++++++++++++++++++++++++++++++++++
->  lib/Kconfig.debug       |   13 ++++++
+dcd244c7198e8afe42ab223f7b3c9b1ae01749c3  git-1.8.5.1.tar.gz
+16cd5fdf486aa880c4fcb297d769070c67996317  git-htmldocs-1.8.5.1.tar.gz
+32befa65b564640981d71f8a38eee19939a2eb63  git-manpages-1.8.5.1.tar.gz
 
-We already have a whole pile of test modules - seven of them reside in
-lib/ and I think there's an RCU one somewhere.  Can we bring order to
-all of this?  Some form of integration under tools/testing would be one
-approach.
+The following public repositories all have a copy of the v1.8.5.1
+tag and the maint branch that the tag points at:
 
-If you're disinclined to undertake such a project at this time, I'd
-suggest these two go into lib/ so they are known about if/when someone
-goes for the big cleanup.
+  url = https://kernel.googlesource.com/pub/scm/git/git
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+Also, http://www.kernel.org/pub/software/scm/git/ has copies of the
+release tarballs.
+
+Git v1.8.5.1 Release Notes
+==========================
+
+Fixes since v1.8.5
+------------------
+
+ * "git submodule init" copied "submodule.$name.update" settings from
+   .gitmodules to .git/config without making sure if the suggested
+   value was sensible.
+
+----------------------------------------------------------------
+
+Changes since v1.8.5 are as follows:
+
+Junio C Hamano (3):
+      submodule: do not copy unknown update mode from .gitmodules
+      Git 1.8.4.5
+      Git 1.8.5.1
+
+Nick Townsend (1):
+      ref-iteration doc: add_submodule_odb() returns 0 for success
 
