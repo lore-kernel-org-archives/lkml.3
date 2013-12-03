@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591Ab3LCLVS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 06:21:18 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:38108 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753174Ab3LCLVP (ORCPT
+	id S1753245Ab3LCLYq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 06:24:46 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:46699 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab3LCLYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 06:21:15 -0500
-Date: Tue, 3 Dec 2013 11:21:07 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Keerthy <a0393675@ti.com>
-Cc: Keerthy <j-keerthy@ti.com>, rob.herring@calxeda.com, pawel.moll@arm.com,
-        mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, rob@landley.net, sameo@linux.intel.com,
-        grant.likely@linaro.org, lgirdwood@gmail.com, broonie@kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 2/4] MFD: TPS65218: Add driver for the TPS65218 PMIC
-Message-ID: <20131203112107.GP11828@lee--X1>
-References: <1386053006-6480-1-git-send-email-j-keerthy@ti.com>
- <1386053006-6480-3-git-send-email-j-keerthy@ti.com>
- <20131203092410.GD11828@lee--X1>
- <529DAD2B.4040909@ti.com>
+	Tue, 3 Dec 2013 06:24:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <529DAD2B.4040909@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 3 Dec 2013 16:54:43 +0530
+Message-ID: <CAD6G_RT0S43BrOeXxJ6d3p1ALbXkGumZCSPBaK1Bz=2pX3hHYQ@mail.gmail.com>
+Subject: Need help on Linux PCIe
+From: Jagan Teki <jagannadh.teki@gmail.com>
+To: bhelgaas@google.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>+	ret = of_platform_populate(client->dev.of_node, NULL, NULL,
-> >>+				   &client->dev);
-> >What are you trying to do here?
-> >
-> >Register each regulator as a platform device?
-> 
-> Yeah. The probe will be called for every regulator separately.
+Hi,
 
-So there are two schools of thought on this. One is that if you want
-to do it that way you should use the MFD framework to do this for you.
-There is no need to recreate functionality that already exists. The
-other is that you shouldn't be doing this at all with regulators. Mark
-likes the idea of having a single regulator controller node which
-contains all of these individual regulator sub-nodes and you initiate
-a single call to for_each_child_of_node() within the driver in order
-to register them all.
+I have few question on Linux PCIe subsystem, I am trying to understand
+the PCIe on ARM platform.
+1. Compared to PCI, PCIe have an extra port functionalists/services
+which is implemented drivers/pci/pcie/* is it true?
+2. PCIe root complex is same as Host controller drivers in linux drivers/host/*
+3. As individual endpoint drivers are registered to pci_core as
+pci_driver_register, then what is the common call for registering
+individual HC driver to pci-core?
+4. Can you list-down the basic and advanced functionalists supported
+by HC driver in PCIe?
+5. The PCIe port bus driver is common core? means no need to change w.r.t SOC?
 
-<snip>
-
-> >This has a different structure to of_tps65218_match_table, please
-> >ensure they're the same. I prefer spaces after '{' and before '}'.
-> 
-> Ok. I will add a space after '{' and before '}'. Sorry I did not
-> follow tps65218_id_table being different than of_tps65218_match_table.
-> 
-> One is of the type of_device_id and the other i2c_device_id.
-
-Shouldn't matter, it's just a formatting thing.
+Request for your comments.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks,
+Jagan.
+--------
+Jagannadha Sutradharudu Teki,
+E: jagannadh.teki@gmail.com, P: +91-9676773388
+Engineer - System Software Hacker
+U-boot - SPI Custodian and Zynq APSOC
+Ln: http://www.linkedin.com/in/jaganteki
