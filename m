@@ -1,65 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab3LCRCk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 12:02:40 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:34107 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab3LCRCg (ORCPT
+	id S1754213Ab3LCREN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 12:04:13 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52758 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752535Ab3LCREJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 12:02:36 -0500
-Date: Tue, 3 Dec 2013 17:02:23 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Hanjun Guo <hanjun.guo@linaro.org>, Mark Rutland <mark.rutland@arm.com>,
-        linaro-kernel@lists.linaro.org,
+	Tue, 3 Dec 2013 12:04:09 -0500
+Date: Tue, 3 Dec 2013 17:04:07 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Graeme Gregory <graeme.gregory@linaro.org>, patches@linaro.org,
-        Olof Johansson <olof@lixom.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, linaro-acpi@lists.linaro.org,
-        linux-acpi@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Jon Masters <jonathan@jonmasters.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Bjorn Helgaas <bhelgaas@google.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC part1 PATCH 3/7] ACPI / processor_core: Rework _PDC
- related stuff to make it more arch-independent
-Message-ID: <20131203170223.GA14624@srcf.ucam.org>
-References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org>
- <1386088611-2801-4-git-send-email-hanjun.guo@linaro.org>
- <20131203165140.24a05540@alan.etchedpixels.co.uk>
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Jon Masters <jonathan@jonmasters.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>
+Subject: Re: [RFC part3 PATCH 1/2] clocksource / arch_timer: Use ACPI GTDT
+ table to initialize arch timer
+Message-ID: <20131203170407.GA16025@e106331-lin.cambridge.arm.com>
+References: <1386088891-2917-1-git-send-email-hanjun.guo@linaro.org>
+ <1386088891-2917-2-git-send-email-hanjun.guo@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131203165140.24a05540@alan.etchedpixels.co.uk>
+In-Reply-To: <1386088891-2917-2-git-send-email-hanjun.guo@linaro.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 04:51:40PM +0000, One Thousand Gnomes wrote:
-> On Wed,  4 Dec 2013 00:36:47 +0800
-> Hanjun Guo <hanjun.guo@linaro.org> wrote:
+On Tue, Dec 03, 2013 at 04:41:30PM +0000, Hanjun Guo wrote:
+> ACPI GTDT (Generic Timer Description Table) contains information for
+> arch timer initialization, this patch use this table to probe arm timer.
 > 
-> > _PDC related stuff in processor_core.c is little bit X86/IA64 dependent,
-> > rework the code to make it more arch-independent.
-> > 
-> > The return value of acpi_processor_eval_pdc() should be 'acpi_status' but
-> > defined as 'int', fix it too.
+> GTDT table is used for ARM/ARM64 only, please refer to chapter 5.2.24
+> of ACPI 5.0 spec for detailed inforamtion
 > 
-> Why not just define boot_options_idle_override as well. Then you can
-> leave the code unchanged. Also more importantly you can have override
-> values for ARM when it turns out you need those too and the logic will be
-> the same for both processor families
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> ---
+>  drivers/clocksource/arm_arch_timer.c |  129 ++++++++++++++++++++++++++++++----
+>  include/clocksource/arm_arch_timer.h |    7 +-
+>  2 files changed, 120 insertions(+), 16 deletions(-)
+ 
+[...]
 
-The arguments to _PDC are architecture specific, so there do need to be 
-code changes here.
+> +#ifdef CONFIG_ACPI
+> +void __init arch_timer_acpi_init(void)
+> +{
+> +	struct acpi_table_gtdt *gtdt;
+> +	acpi_size tbl_size;
+> +	int trigger, polarity;
+> +	void __iomem *base = NULL;
+> +
+> +	if (acpi_disabled)
+> +		return;
+> +
+> +	if (arch_timers_present & ARCH_CP15_TIMER) {
+> +		pr_warn("arch_timer: already initialized, skipping\n");
+> +		return;
+> +	}
+> +
+> +	if (ACPI_FAILURE(acpi_get_table_with_size(ACPI_SIG_GTDT, 0,
+> +			(struct acpi_table_header **)&gtdt, &tbl_size))) {
+> +		pr_err("arch_timer: GTDT table not defined\n");
+> +		return;
+> +	}
+> +
+> +	arch_timers_present |= ARCH_CP15_TIMER;
+> +
+> +	/*
+> +	 * Get the timer frequency. Since there is no frequency info
+> +	 * in the GTDT table, so we should read it from CNTFREG register
+> +	 * or hard code here to wait for the new ACPI spec available.
+> +	 */
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+If the core's CNTFRQ register does not hold the correct value, that is a
+horrendous firmware bug. The clock-frequency property in the DT is a
+horrific workaround for buggy firmware.
+
+We should not duplicate it in ACPI; people should be strongly encouraged
+to fix their firmware to do what it is supposed to do.
+
+Rely on CNTFRQ only. If it is wrong, then bail out. Let's not create a
+fertile environment for buggy firmware.
+
+> +	if (!gtdt->address) {
+> +		arch_timer_rate = arch_timer_get_cntfrq();
+> +	} else {
+> +		base = ioremap(gtdt->address, CNTFRQ);
+> +		if (!base) {
+> +			pr_warn("arch_timer: unable to map arch timer base address\n");
+> +			return;
+> +		}
+> +
+> +		arch_timer_rate = readl_relaxed(base + CNTFRQ);
+> +		iounmap(base);
+> +	}
+> +
+> +	if (!arch_timer_rate) {
+> +		/* Hard code here to set frequence ? */
+> +		pr_warn("arch_timer: Could not get frequency from GTDT table or CNTFREG\n");
+> +	}
+> +
+> +	if (gtdt->secure_pl1_interrupt) {
+> +		trigger = (gtdt->secure_pl1_flags & ACPI_GTDT_INTERRUPT_MODE) ?
+> +			ACPI_EDGE_SENSITIVE : ACPI_LEVEL_SENSITIVE;
+> +		polarity =
+> +			(gtdt->secure_pl1_flags & ACPI_GTDT_INTERRUPT_POLARITY)
+> +			? ACPI_ACTIVE_LOW : ACPI_ACTIVE_HIGH;
+> +		arch_timer_ppi[0] = acpi_register_gsi(NULL,
+> +				gtdt->secure_pl1_interrupt, trigger, polarity);
+> +	}
+
+This pattern looks like it can be factored out. I don't see why the
+driver needs to have such intimate knowledge of the interrrupt.
+
+> +	if (gtdt->non_secure_pl1_interrupt) {
+> +		trigger =
+> +			(gtdt->non_secure_pl1_flags & ACPI_GTDT_INTERRUPT_MODE)
+> +			? ACPI_EDGE_SENSITIVE : ACPI_LEVEL_SENSITIVE;
+> +		polarity =
+> +		(gtdt->non_secure_pl1_flags & ACPI_GTDT_INTERRUPT_POLARITY)
+> +			? ACPI_ACTIVE_LOW : ACPI_ACTIVE_HIGH;
+> +		arch_timer_ppi[1] = acpi_register_gsi(NULL,
+> +			gtdt->non_secure_pl1_interrupt, trigger, polarity);
+> +	}
+> +	if (gtdt->virtual_timer_interrupt) {
+> +		trigger = (gtdt->virtual_timer_flags & ACPI_GTDT_INTERRUPT_MODE)
+> +			? ACPI_EDGE_SENSITIVE : ACPI_LEVEL_SENSITIVE;
+> +		polarity =
+> +		(gtdt->virtual_timer_flags & ACPI_GTDT_INTERRUPT_POLARITY)
+> +			? ACPI_ACTIVE_LOW : ACPI_ACTIVE_HIGH;
+> +		arch_timer_ppi[2] = acpi_register_gsi(NULL,
+> +			gtdt->virtual_timer_interrupt, trigger, polarity);
+> +	}
+> +	if (gtdt->non_secure_pl2_interrupt) {
+> +		trigger =
+> +			(gtdt->non_secure_pl2_flags & ACPI_GTDT_INTERRUPT_MODE)
+> +			? ACPI_EDGE_SENSITIVE : ACPI_LEVEL_SENSITIVE;
+> +		polarity =
+> +		(gtdt->non_secure_pl2_flags & ACPI_GTDT_INTERRUPT_POLARITY)
+> +			? ACPI_ACTIVE_LOW : ACPI_ACTIVE_HIGH;
+> +		arch_timer_ppi[3] = acpi_register_gsi(NULL,
+> +			gtdt->non_secure_pl2_interrupt, trigger, polarity);
+> +	}
+
+Please factor out the interrupt parsing.
+
+Thanks,
+Mark.
