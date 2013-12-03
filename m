@@ -1,82 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123Ab3LCQ6o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 11:58:44 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53398 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412Ab3LCQ6k (ORCPT
+	id S1754181Ab3LCQ71 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 11:59:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52330 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753700Ab3LCQ70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 11:58:40 -0500
-Date: Tue, 3 Dec 2013 16:57:55 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>, linux-acpi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Jon Masters <jonathan@jonmasters.org>, patches@linaro.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        linaro-acpi@lists.linaro.org
-Subject: Re: [RFC part2 PATCH 2/9] ARM64 / ACPI: Prefill cpu
- possible/present maps and map logical cpu id to APIC id
-Message-ID: <20131203165755.37b07796@alan.etchedpixels.co.uk>
-In-Reply-To: <1386088753-2850-3-git-send-email-hanjun.guo@linaro.org>
-References: <1386088753-2850-1-git-send-email-hanjun.guo@linaro.org>
-	<1386088753-2850-3-git-send-email-hanjun.guo@linaro.org>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Dec 2013 11:59:26 -0500
+Date: Tue, 3 Dec 2013 09:00:28 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peng Tao <bergwolf@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andreas Dilger <andreas.dilger@intel.com>
+Subject: Re: [PATCH 7/9] staging/lustre/llite: remove ll_file_get_iov_count
+Message-ID: <20131203170028.GA9063@kroah.com>
+References: <1386081729-9481-1-git-send-email-bergwolf@gmail.com>
+ <1386081729-9481-10-git-send-email-bergwolf@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386081729-9481-10-git-send-email-bergwolf@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 03, 2013 at 10:42:06PM +0800, Peng Tao wrote:
+> It exactly copies generic_segment_checks() except wrongly calling
+> access_ok(VERIFY_READ) for aio read range. Drop it and just call
+> generic_segment_checks() instead.
+> 
+> Signed-off-by: Peng Tao <bergwolf@gmail.com>
+> Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
+> ---
+>  drivers/staging/lustre/lustre/llite/file.c |   36 ++--------------------------
+>  1 file changed, 2 insertions(+), 34 deletions(-)
 
-> diff --git a/drivers/acpi/plat/arm-core.c b/drivers/acpi/plat/arm-core.c
-> index 45ff625..8527ecc 100644
-> --- a/drivers/acpi/plat/arm-core.c
-> +++ b/drivers/acpi/plat/arm-core.c
-> @@ -58,6 +58,13 @@ EXPORT_SYMBOL(acpi_pci_disabled);
->   */
->  static u64 acpi_lapic_addr __initdata;
->  
-> +/* available_cpus here means enabled cpu in MADT */
-> +int available_cpus;
-> +
-> +/* Map logic cpu id to physical GIC id. */
-> +int arm_cpu_to_apicid[NR_CPUS] = { [0 ... NR_CPUS-1] = -1 };
-> +int boot_cpu_apic_id = -1;
-> +
+This patch breaks the build, in numerous ways, which means you didn't
+even build test this patch.
 
-static ?
+PLEASE be more careful, it's getting such that I really dread seeing
+these patches show up in my inbox...
 
-Really shouldn't be leaking names like "available_cpus" out of ACPI into
-the global namespace
-
-
-> +#ifdef CONFIG_SMP
-> +	if (available_cpus == 0) {
-> +		pr_info(PREFIX "Found 0 CPUs; assuming 1\n");
-> +		/* FIXME: should be the real GIC id read from hardware */
-> +		arm_cpu_to_apicid[available_cpus] = 0;
-> +		available_cpus = 1;	/* We've got at least one of these */
-> +	}
-> +#endif
-
-Isn't this true uniprocessor (by definition in fact)
-
-
-> + */
-> +void __init prefill_possible_map(void)
-
-leaking more unprefixed names into the global namespace
-
+greg k-h
