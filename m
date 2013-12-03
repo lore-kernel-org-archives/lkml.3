@@ -1,307 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab3LCMzd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 07:55:33 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:56343 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753225Ab3LCMza convert rfc822-to-8bit (ORCPT
+	id S1753418Ab3LCM6M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 07:58:12 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51003 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752827Ab3LCM6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 07:55:30 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next list <linux-next@vger.kernel.org>,
+	Tue, 3 Dec 2013 07:58:08 -0500
+Date: Tue, 3 Dec 2013 12:57:18 +0000
+From: Dave Martin <Dave.Martin@arm.com>
+To: Anurag Aggarwal <anurag19aggarwal@gmail.com>
+Cc: "naveen.sel@samsung.com" <naveen.sel@samsung.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "narendra.m1@samsung.com" <narendra.m1@samsung.com>,
+        "nico@linaro.org" <nico@linaro.org>,
+        Anurag Aggarwal <a.anurag@samsung.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        Lv Zheng <lv.zheng@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: randconfig build error with next-20131202, in arch/x86/pci
-Date: Tue, 03 Dec 2013 14:08:26 +0100
-Message-ID: <3737409.hAs7519lnE@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAErSpo4a2CcEpt6okjTS-wyGCgc7JsHWnGPn7FXrhRfwXqj=oA@mail.gmail.com>
-References: <CA+r1ZhiKj_0HXb7s1oDc-Pgm6n63rYNpxzqXfxKDgdKZU27LcQ@mail.gmail.com> <CAErSpo4a2CcEpt6okjTS-wyGCgc7JsHWnGPn7FXrhRfwXqj=oA@mail.gmail.com>
+        "ashish.kalra@samsung.com" <ashish.kalra@samsung.com>,
+        "cpgs@samsung.com" <cpgs@samsung.com>,
+        "naveenkrishna.ch@gmail.com" <naveenkrishna.ch@gmail.com>,
+        "rajat.suri@samsung.com" <rajat.suri@samsung.com>,
+        "poorva.s@samsung.com" <poorva.s@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "mohammad.a2@samsung.com" <mohammad.a2@samsung.com>
+Subject: Re: [PATCH V2] ARM : unwinder : Prevent data abort due to stack
+ overflow while executing unwind instructions Signed-off-by: Anurag Aggarwal
+ <a.anurag@samsung.com>
+Message-ID: <20131203125718.GB2281@e103592.cambridge.arm.com>
+References: <1385717671-28953-1-git-send-email-a.anurag@samsung.com>
+ <20131129125953.GG4634@e103592.cambridge.arm.com>
+ <CAPoNrttZfHLa9WDJihChbMGNBmdtPa+TOS=HEd2Ro-3hcuVxNA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPoNrttZfHLa9WDJihChbMGNBmdtPa+TOS=HEd2Ro-3hcuVxNA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 02, 2013 04:14:32 PM Bjorn Helgaas wrote:
-> [+cc Lv, Rafael, linux-acpi]
-> 
-> Is this fallout related to "ACPI: Cleanup <acpi/acpi.h>,
-> <acpi/acpi_bus.h> and <acpi/acpi_drivers.h> inclusions"?
-
-We have a new version of that patch that should avoid at least some of these
-errors.  I'm going to replace the one in my tree with it shortly.
-
-> On Mon, Dec 2, 2013 at 7:57 AM, Jim Davis <jim.epost@gmail.com> wrote:
-> > Building with the attached random configuration file,
+On Sat, Nov 30, 2013 at 08:39:02PM +0530, Anurag Aggarwal wrote:
+> > Looks like you still need to move your S-o-B line.  It needs to be at
+> > the end of the commit message.
 > >
-> > arch/x86/pci/mmconfig-shared.c:373:1: error: unknown type name ‘acpi_status’
-> >  static acpi_status check_mcfg_resource(struct acpi_resource *res, void *data)
-> >  ^
-> > arch/x86/pci/mmconfig-shared.c:373:47: warning: ‘struct acpi_resource’
-> > declared inside parameter list [enabled by default]
-> >  static acpi_status check_mcfg_resource(struct acpi_resource *res, void *data)
-> >                                                ^
-> > arch/x86/pci/mmconfig-shared.c:373:47: warning: its scope is only this
-> > definition or declaration, which is probably not what you want
-> > [enabled by default]
-> > arch/x86/pci/mmconfig-shared.c: In function ‘check_mcfg_resource’:
-> > arch/x86/pci/mmconfig-shared.c:376:33: error: storage size of
-> > ‘address’ isn’t known
-> >   struct acpi_resource_address64 address;
-> >                                  ^
-> > arch/x86/pci/mmconfig-shared.c:377:2: error: unknown type name ‘acpi_status’
-> >   acpi_status status;
-> >   ^
-> > arch/x86/pci/mmconfig-shared.c:379:9: error: dereferencing pointer to
-> > incomplete type
-> >   if (res->type == ACPI_RESOURCE_TYPE_FIXED_MEMORY32) {
-> >          ^
-> > arch/x86/pci/mmconfig-shared.c:379:19: error:
-> > ‘ACPI_RESOURCE_TYPE_FIXED_MEMORY32’ undeclared (first use in this
-> > function)
-> >   if (res->type == ACPI_RESOURCE_TYPE_FIXED_MEMORY32) {
-> >                    ^
-> > arch/x86/pci/mmconfig-shared.c:379:19: note: each undeclared
-> > identifier is reported only once for each function it appears in
-> > arch/x86/pci/mmconfig-shared.c:381:8: error: dereferencing pointer to
-> > incomplete type
-> >     &res->data.fixed_memory32;
-> >         ^
-> > arch/x86/pci/mmconfig-shared.c:383:11: error: ‘AE_OK’ undeclared
-> > (first use in this function)
-> >     return AE_OK;
-> >            ^
-> > arch/x86/pci/mmconfig-shared.c:384:35: error: dereferencing pointer to
-> > incomplete type
-> >    if ((mcfg_res->start >= fixmem32->address) &&
-> >                                    ^
-> > arch/x86/pci/mmconfig-shared.c:385:33: error: dereferencing pointer to
-> > incomplete type
-> >        (mcfg_res->end < (fixmem32->address +
-> >                                  ^
-> > arch/x86/pci/mmconfig-shared.c:386:19: error: dereferencing pointer to
-> > incomplete type
-> >            fixmem32->address_length))) {
-> >                    ^
-> > arch/x86/pci/mmconfig-shared.c:388:11: error: ‘AE_CTRL_TERMINATE’
-> > undeclared (first use in this function)
-> >     return AE_CTRL_TERMINATE;
-> >            ^
-> > arch/x86/pci/mmconfig-shared.c:391:10: error: dereferencing pointer to
-> > incomplete type
-> >   if ((res->type != ACPI_RESOURCE_TYPE_ADDRESS32) &&
-> >           ^
-> > arch/x86/pci/mmconfig-shared.c:391:20: error:
-> > ‘ACPI_RESOURCE_TYPE_ADDRESS32’ undeclared (first use in this function)
-> >   if ((res->type != ACPI_RESOURCE_TYPE_ADDRESS32) &&
-> >                     ^
-> > arch/x86/pci/mmconfig-shared.c:392:10: error: dereferencing pointer to
-> > incomplete type
-> >       (res->type != ACPI_RESOURCE_TYPE_ADDRESS64))
-> >           ^
-> > arch/x86/pci/mmconfig-shared.c:392:20: error:
-> > ‘ACPI_RESOURCE_TYPE_ADDRESS64’ undeclared (first use in this function)
-> >       (res->type != ACPI_RESOURCE_TYPE_ADDRESS64))
-> >                     ^
-> > arch/x86/pci/mmconfig-shared.c:395:2: error: implicit declaration of
-> > function ‘acpi_resource_to_address64’
-> > [-Werror=implicit-function-declaration]
-> >   status = acpi_resource_to_address64(res, &address);
-> >   ^
-> > arch/x86/pci/mmconfig-shared.c:396:2: error: implicit declaration of
-> > function ‘ACPI_FAILURE’ [-Werror=implicit-function-declaration]
-> >   if (ACPI_FAILURE(status) ||
-> >   ^
-> > arch/x86/pci/mmconfig-shared.c:398:31: error: ‘ACPI_MEMORY_RANGE’
-> > undeclared (first use in this function)
-> >      (address.resource_type != ACPI_MEMORY_RANGE))
-> >                                ^
-> > arch/x86/pci/mmconfig-shared.c:376:33: warning: unused variable
-> > ‘address’ [-Wunused-variable]
-> >   struct acpi_resource_address64 address;
-> >                                  ^
-> > arch/x86/pci/mmconfig-shared.c: At top level:
-> > arch/x86/pci/mmconfig-shared.c:409:1: error: unknown type name ‘acpi_status’
-> >  static acpi_status find_mboard_resource(acpi_handle handle, u32 lvl,
-> >  ^
-> > arch/x86/pci/mmconfig-shared.c:409:41: error: unknown type name ‘acpi_handle’
-> >  static acpi_status find_mboard_resource(acpi_handle handle, u32 lvl,
-> >                                          ^
-> > arch/x86/pci/mmconfig-shared.c: In function ‘is_acpi_reserved’:
-> > arch/x86/pci/mmconfig-shared.c:431:2: error: implicit declaration of
-> > function ‘acpi_get_devices’ [-Werror=implicit-function-declaration]
-> >   acpi_get_devices("PNP0C01", find_mboard_resource, &mcfg_res, NULL);
-> >   ^
-> > arch/x86/pci/mmconfig-shared.c:431:30: error: ‘find_mboard_resource’
-> > undeclared            ^
-> > jim@krebstar:~$ more errs
-> > jim@krebstar:~$ cat errs
-> > arch/x86/pci/mmconfig-shared.c:373:1: error: unknown type name ‘acpi_status’
-> >  static acpi_status check_mcfg_resource(struct acpi_resource *res, void *data)
-> >  ^
-> > arch/x86/pci/mmconfig-shared.c:373:47: warning: ‘struct acpi_resource’
-> > declared inside parameter list [enabled by default]
-> >  static acpi_status check_mcfg_resource(struct acpi_resource *res, void *data)
-> >                                                ^
-> > arch/x86/pci/mmconfig-shared.c:373:47: warning: its scope is only this
-> > definition or declaration, which is probably not what you want
-> > [enabled by default]
-> > arch/x86/pci/mmconfig-shared.c: In function ‘check_mcfg_resource’:
-> > arch/x86/pci/mmconfig-shared.c:376:33: error: storage size of
-> > ‘address’ isn’t known
-> >   struct acpi_resource_address64 address;
-> >                                  ^
-> > arch/x86/pci/mmconfig-shared.c:377:2: error: unknown type name ‘acpi_status’
-> >   acpi_status status;
-> >   ^
-> > arch/x86/pci/mmconfig-shared.c:379:9: error: dereferencing pointer to
-> > incomplete type
-> >   if (res->type == ACPI_RESOURCE_TYPE_FIXED_MEMORY32) {
-> >          ^
-> > arch/x86/pci/mmconfig-shared.c:379:19: error:
-> > ‘ACPI_RESOURCE_TYPE_FIXED_MEMORY32’ undeclared (first use in this
-> > function)
-> >   if (res->type == ACPI_RESOURCE_TYPE_FIXED_MEMORY32) {
-> >                    ^
-> > arch/x86/pci/mmconfig-shared.c:379:19: note: each undeclared
-> > identifier is reported only once for each function it appears in
-> > arch/x86/pci/mmconfig-shared.c:381:8: error: dereferencing pointer to
-> > incomplete type
-> >     &res->data.fixed_memory32;
-> >         ^
-> > arch/x86/pci/mmconfig-shared.c:383:11: error: ‘AE_OK’ undeclared
-> > (first use in this function)
-> >     return AE_OK;
-> >            ^
-> > arch/x86/pci/mmconfig-shared.c:384:35: error: dereferencing pointer to
-> > incomplete type
-> >    if ((mcfg_res->start >= fixmem32->address) &&
-> >                                    ^
-> > arch/x86/pci/mmconfig-shared.c:385:33: error: dereferencing pointer to
-> > incomplete type
-> >        (mcfg_res->end < (fixmem32->address +
-> >                                  ^
-> > arch/x86/pci/mmconfig-shared.c:386:19: error: dereferencing pointer to
-> > incomplete type
-> >            fixmem32->address_length))) {
-> >                    ^
-> > arch/x86/pci/mmconfig-shared.c:388:11: error: ‘AE_CTRL_TERMINATE’
-> > undeclared (first use in this function)
-> >     return AE_CTRL_TERMINATE;
-> >            ^
-> > arch/x86/pci/mmconfig-shared.c:391:10: error: dereferencing pointer to
-> > incomplete type
-> >   if ((res->type != ACPI_RESOURCE_TYPE_ADDRESS32) &&
-> >           ^
-> > arch/x86/pci/mmconfig-shared.c:391:20: error:
-> > ‘ACPI_RESOURCE_TYPE_ADDRESS32’ undeclared (first use in this function)
-> >   if ((res->type != ACPI_RESOURCE_TYPE_ADDRESS32) &&
-> >                     ^
-> > arch/x86/pci/mmconfig-shared.c:392:10: error: dereferencing pointer to
-> > incomplete type
-> >       (res->type != ACPI_RESOURCE_TYPE_ADDRESS64))
-> >           ^
-> > arch/x86/pci/mmconfig-shared.c:392:20: error:
-> > ‘ACPI_RESOURCE_TYPE_ADDRESS64’ undeclared (first use in this function)
-> >       (res->type != ACPI_RESOURCE_TYPE_ADDRESS64))
-> >                     ^
-> > arch/x86/pci/mmconfig-shared.c:395:2: error: implicit declaration of
-> > function ‘acpi_resource_to_address64’
-> > [-Werror=implicit-function-declaration]
-> >   status = acpi_resource_to_address64(res, &address);
-> >   ^
-> > arch/x86/pci/mmconfig-shared.c:396:2: error: implicit declaration of
-> > function ‘ACPI_FAILURE’ [-Werror=implicit-function-declaration]
-> >   if (ACPI_FAILURE(status) ||
-> >   ^
-> > arch/x86/pci/mmconfig-shared.c:398:31: error: ‘ACPI_MEMORY_RANGE’
-> > undeclared (first use in this function)
-> >      (address.resource_type != ACPI_MEMORY_RANGE))
-> >                                ^
-> > arch/x86/pci/mmconfig-shared.c:376:33: warning: unused variable
-> > ‘address’ [-Wunused-variable]
-> >   struct acpi_resource_address64 address;
-> >                                  ^
-> > arch/x86/pci/mmconfig-shared.c: At top level:
-> > arch/x86/pci/mmconfig-shared.c:409:1: error: unknown type name ‘acpi_status’
-> >  static acpi_status find_mboard_resource(acpi_handle handle, u32 lvl,
-> >  ^
-> > arch/x86/pci/mmconfig-shared.c:409:41: error: unknown type name ‘acpi_handle’
-> >  static acpi_status find_mboard_resource(acpi_handle handle, u32 lvl,
-> >                                          ^
-> > arch/x86/pci/mmconfig-shared.c: In function ‘is_acpi_reserved’:
-> > arch/x86/pci/mmconfig-shared.c:431:2: error: implicit declaration of
-> > function ‘acpi_get_devices’ [-Werror=implicit-function-declaration]
-> >   acpi_get_devices("PNP0C01", find_mboard_resource, &mcfg_res, NULL);
-> >   ^
-> > arch/x86/pci/mmconfig-shared.c:431:30: error: ‘find_mboard_resource’
-> > undeclared (first use in this function)
-> >   acpi_get_devices("PNP0C01", find_mboard_resource, &mcfg_res, NULL);
-> >                               ^
-> > arch/x86/pci/mmconfig-shared.c: At top level:
-> > arch/x86/pci/mmconfig-shared.c:544:13: warning: ‘struct
-> > acpi_mcfg_allocation’ declared inside parameter list [enabled by
-> > default]
-> >       struct acpi_mcfg_allocation *cfg)
-> >              ^
-> > arch/x86/pci/mmconfig-shared.c:544:13: warning: ‘struct
-> > acpi_table_mcfg’ declared inside parameter list [enabled by default]
-> > arch/x86/pci/mmconfig-shared.c: In function ‘acpi_mcfg_check_entry’:
-> > arch/x86/pci/mmconfig-shared.c:548:9: error: dereferencing pointer to
-> > incomplete type
-> >   if (cfg->address < 0xFFFFFFFF)
-> >          ^
-> > arch/x86/pci/mmconfig-shared.c:551:19: error: dereferencing pointer to
-> > incomplete type
-> >   if (!strncmp(mcfg->header.oem_id, "SGI", 3))
-> >                    ^
-> > arch/x86/pci/mmconfig-shared.c:554:10: error: dereferencing pointer to
-> > incomplete type
-> >   if (mcfg->header.revision >= 1) {
-> >           ^
-> > In file included from include/linux/kernel.h:13:0,
-> >                  from include/linux/kernfs.h:10,
-> >                  from include/linux/sysfs.h:15,
-> >                  from include/linux/kobject.h:21,
-> >                  from include/linux/pci.h:28,
-> >                  from arch/x86/pci/mmconfig-shared.c:13:
-> > arch/x86/pci/mmconfig-shared.c:561:39: error: dereferencing pointer to
-> > incomplete type
-> >          "is above 4GB, ignored\n", cfg->pci_segment,
-> >                                        ^
-> > include/linux/printk.h:217:33: note: in definition of macro ‘pr_err’
-> >   printk(KERN_ERR pr_fmt(fmt), ##__VA_ARGS__)
-> >                                  ^
-> >            ^
-> > arch/x86/pci/mmconfig-shared.c:600:32: error: dereferencing pointer to
-> > incomplete type
-> >         cfg->end_bus_number, cfg->address) == NULL) {
-> >                                 ^
-> > arch/x86/pci/mmconfig-shared.c: In function ‘pci_mmcfg_early_init’:
-> > arch/x86/pci/mmconfig-shared.c:642:25: error: ‘ACPI_SIG_MCFG’
-> > undeclared (first use in this function)
-> >     acpi_sfi_table_parse(ACPI_SIG_MCFG, pci_parse_mcfg);
-> >                          ^
-> > arch/x86/pci/mmconfig-shared.c: In function ‘pci_mmcfg_late_init’:
-> > arch/x86/pci/mmconfig-shared.c:658:24: error: ‘ACPI_SIG_MCFG’
-> > undeclared (first use in this function)
-> >    acpi_sfi_table_parse(ACPI_SIG_MCFG, pci_parse_mcfg);
-> >                         ^
-> > arch/x86/pci/mmconfig-shared.c: At top level:
-> > arch/x86/pci/mmconfig-shared.c:373:20: warning: ‘check_mcfg_resource’
-> > defined but not used [-Wunused-function]
-> >  static acpi_status check_mcfg_resource(struct acpi_resource *res, void *data)
-> >                     ^
-> > cc1: some warnings being treated as errors
-> > make[1]: *** [arch/x86/pci/mmconfig-shared.o] Error 1
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> > On Fri, Nov 29, 2013 at 09:34:31AM +0000, Anurag Aggarwal wrote:
+> >> While unwinding backtrace, stack overflow is possible. This stack overflow can sometimes
+> >> lead to data abort in system if the area after stack is not mapped to physical memory.
+> >>
+> >> To prevent this problem from happening execute the instructions that can cause data
+> >> abort in there seperate functions instead of unwind_exec_insn, where a check for there
+> >> feasibility is made first.
+> >
+> > Minor nit, but please wrap the commit message lines to 72 chars or less.
+> > This helps the patch message to be listed nicely in git log.
+> >
+> >
+> > If you agree with the changes I suggest below, the second paragraph
+> > could be reworded something like:
+> >
+> > --snip--
+> >
+> > To prevent this problem from happening, execute the instructions that
+> > can cause a data abort in separate helper functions, where a check for
+> > feasibility is made before reading each word from the stack.
+> >
+> > --snip--
+> >
+> >
+> >> ---
+> >>  arch/arm/kernel/unwind.c |  197 ++++++++++++++++++++++++++++++++++------------
+> >>  1 files changed, 148 insertions(+), 49 deletions(-)
+> >>
+> >> diff --git a/arch/arm/kernel/unwind.c b/arch/arm/kernel/unwind.c
+> >> index 00df012..150e0fc 100644
+> >> --- a/arch/arm/kernel/unwind.c
+> >> +++ b/arch/arm/kernel/unwind.c
+> >> @@ -49,6 +49,8 @@
+> >>  #include <asm/traps.h>
+> >>  #include <asm/unwind.h>
+> >>
+> >> +#define TOTAL_REGISTERS 16
+> >> +
+> >>  /* Dummy functions to avoid linker complaints */
+> >>  void __aeabi_unwind_cpp_pr0(void)
+> >>  {
+> >> @@ -66,7 +68,7 @@ void __aeabi_unwind_cpp_pr2(void)
+> >>  EXPORT_SYMBOL(__aeabi_unwind_cpp_pr2);
+> >>
+> >>  struct unwind_ctrl_block {
+> >> -     unsigned long vrs[16];          /* virtual register set */
+> >> +     unsigned long vrs[TOTAL_REGISTERS];     /* virtual register set */
+> >>       const unsigned long *insn;      /* pointer to the current instructions word */
+> >>       int entries;                    /* number of entries left to interpret */
+> >>       int byte;                       /* current byte number in the instructions word */
+> >> @@ -235,6 +237,148 @@ static unsigned long unwind_get_byte(struct unwind_ctrl_block *ctrl)
+> >>       return ret;
+> >>  }
+> >>
+> >> +static int unwind_exec_insn_0x80(struct unwind_ctrl_block *ctrl,
+> >> +                             unsigned long insn)
+> >
+> > Since these are now split out as named functions, it's useful to have
+> > human readable names.
+> >
+> > Maybe something like:
+> >
+> >         unwind_exec_pop_subset_r4_to_r13
+> >
+> > What do you think?
+> >
+> >> +{
+> >> +     unsigned long high, low;
+> >> +     unsigned long mask;
+> >> +     unsigned long *vsp = (unsigned long *)ctrl->vrs[SP];
+> >> +     int load_sp, reg = 4;
+> >> +
+> >> +     low = ctrl->vrs[SP];
+> >> +     high = ALIGN(low, THREAD_SIZE);
+> >
+> > You can calculate low, high and high - low once and store them in
+> > unwind_ctrl_block.  No need to recalculate them every time.
+> 
+> I don't think it is feasible to store high and low in unwind_ctrl_block,
+> we will have to recalculate them every time in this case also as the
+> value of sp is which change every time and depending on the value
+> of sp the value of high and low will also change.
+
+Actually, low is only a stepping stone for computing high, so we don't
+need to store it (looks like you didn't, in your next version of the
+patch).
+
+high doesn't need to be calculated per frame: it should be fixed for
+the whole backtrace.  However, taking advantage of that would involve
+a bit of extra refactoring that is not really pert of this patch.
+Probably not worth it for now.
+
+> 
+> 
+> >
+> > Field names like "low" may be confusing though.  "sp_low" etc. may be
+> > clearer.
+> >
+> >> +
+> >> +     insn = (insn << 8) | unwind_get_byte(ctrl);
+> >> +     mask = insn & 0x0fff;
+> >> +     if (mask == 0) {
+> >> +             pr_warning("unwind: 'Refuse to unwind' instruction %04lx\n",
+> >> +                     insn);
+> >> +             return -URC_FAILURE;
+> >> +     }
+> >> +
+> >> +     /*
+> >> +      *  Check whether there is enough space
+> >> +      *  on stack to execute the instruction
+> >> +      *  if not then return failure
+> >> +      */
+> >> +     if ((high - low) < TOTAL_REGISTERS) {
+> >
+> > I'm still not sure we are optimising something valuable by factoring out
+> > this check.
+> 
+> Even I am confused as to you why you are not sure. From the documentation
+> and the original source code, it seems clear that only the last set of registers
+> can create a stack overflow for these three instructions, so why waste cpu
+> cycles in calculations that are unnecessary
+
+Can you give me an example of where the optimisation brings a measurable
+benefit?
+
+For example, you could try
+
+time /bin/bash -c 'for ((x=0; x<1000; ++x)); ps -Al; done >/dev/null'
+
+Computing the wchan for each process involves invoking the backtracer a
+few times per process to find where the scheduler was invoked from.
+
+
+Even so, ps has huge overheads because it must stat and read thousands
+of files from /proc.  It's horrendously slow even on by x86 box.
+
+Maybe there's something in the kernel that's more performance-critical
+on the backtracer, but I can't think of one of the top of my head.
+ftrace doesn't rely on the backtracer IIUC because it adds its own
+instrumentation for tracking call graphs.
+
+Cheers
+---Dave
