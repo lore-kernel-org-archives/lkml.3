@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939Ab3LCBPO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Dec 2013 20:15:14 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:54517 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821Ab3LCBPJ (ORCPT
+	id S1753110Ab3LCBSd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Dec 2013 20:18:33 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59457 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821Ab3LCBSc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Dec 2013 20:15:09 -0500
-X-AuditID: cbfee68f-b7f336d00000481b-48-529d309b0609
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Joe Perches'" <joe@perches.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        linux-pci@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
- <003b01ceefb6$bca43ed0$35ecbc70$%han@samsung.com>
- <1386028330.15309.13.camel@joe-AO722>
-In-reply-to: <1386028330.15309.13.camel@joe-AO722>
-Subject: Re: [PATCH 38/39] PCI: remove DEFINE_PCI_DEVICE_TABLE macro
-Date: Tue, 03 Dec 2013 10:15:06 +0900
-Message-id: <003e01ceefc5$1a6f9880$4f4ec980$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7vuYdnnBm2Aax/SVWlYGdl6thGxAAClhtw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t8zI93ZBnODDB42i1ssacqwaF68ns3i
-	8sJLrBaz7z9msbi8aw6bxdl5x9kc2DwWbCr12D93DbvHl1XXmD36tqxi9Pi8SS6ANYrLJiU1
-	J7MstUjfLoEro3fhT7aCg2wVi2e/Y25gnM3axcjJISFgIvH85h0oW0ziwr31bF2MXBxCAssY
-	Jd5MXssGU7SoYToTRGIRo8TjV+dZIJxfjBKn+7eCVbEJqEl8+XKYHcQWEYiQWLL7ACNIEbNA
-	B6NEw7t+VoiOmYwSzfPfMHcxcnBwChhJXFnLD9IgLOAisfbZArBBLAKqEqtugqzj5OAVsJVY
-	ueMNG4QtKPFj8j0WEJtZQEti/c7jTBC2vMTmNW/BRkoIqEs8+qsLcYORxNTeX1DlIhL7XrwD
-	u0dC4CW7xOWFtxkhdglIfJt8iAWiV1Zi0wFmiI8lJQ6uuMEygVFiFpLNs5BsnoVk8ywkKxYw
-	sqxiFE0tSC4oTkovMtYrTswtLs1L10vOz93ECInZ/h2Mdw9YH2JMBlo/kVlKNDkfGPN5JfGG
-	xmZGFqYmpsZG5pZmpAkrifPef5gUJCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFxEvv50p97
-	GmdHu6YKN8XbJzJ7yWpoB/MJ2u7TU8mbkK4aNSHEbwWvtozIr+9hBsnr54u0rbNuynz9NuBl
-	Jpv/zAmp+oemWYU8S9vc4a9mYebfaJAkqD+N58uCWWteP3E6Pius+bt91HexvlIPmeKQafM7
-	mlmvf/96IFY9dvn75WbvjV5dPq7EUpyRaKjFXFScCAAaKql47wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJKsWRmVeSWpSXmKPExsVy+t9jAd3ZBnODDBomCFssacqwaF68ns3i
-	8sJLrBaz7z9msbi8aw6bxdl5x9kc2DwWbCr12D93DbvHl1XXmD36tqxi9Pi8SS6ANaqB0SYj
-	NTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6AAlhbLEnFKg
-	UEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEdY0bvwp9sBQfZKhbPfsfcwDibtYuRk0NC
-	wERiUcN0JghbTOLCvfVsXYxcHEICixglHr86zwLh/GKUON2/lQ2kik1ATeLLl8PsILaIQITE
-	kt0HGEGKmAU6GCUa3vWzQnTMZJRonv+GuYuRg4NTwEjiylp+kAZhAReJtc8WgA1iEVCVWHUT
-	YjWvgK3Eyh1v2CBsQYkfk++xgNjMAloS63ceZ4Kw5SU2r3kLNlJCQF3i0V9diBuMJKb2/oIq
-	F5HY9+Id4wRGoVlIJs1CMmkWkkmzkLQsYGRZxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iRGc
-	EJ5J72Bc1WBxiFGAg1GJh/fB9jlBQqyJZcWVuYcYJTiYlUR4O3nmBgnxpiRWVqUW5ccXleak
-	Fh9iTAZ6dCKzlGhyPjBZ5ZXEGxqbmBlZGplZGJmYm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhm
-	CxMHp1QDo6bsSp+wnxGnT77etV96qYiasfjy4n8cOqsm72IMcVx6fkXBx6hbQty7ls4r7HDO
-	0ajjidzTcVtk0cfrgTM2h/bZXyw/cvOJxZJ5os4OO4+nz9jncLw3w+2g4JUW/s2n1IxeH/7l
-	fIDn6lfVutXzOtPSWp5+tvdbpn1wUkqG9Pazml/i/7vzmiuxFGckGmoxFxUnAgCU0vSlTAMA	AA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 2 Dec 2013 20:18:32 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <529D3158.2080603@jp.fujitsu.com>
+Date: Tue, 03 Dec 2013 10:18:16 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>
+Subject: Re: [PATCH] vmcore: call remap_pfn_range() separately for respective
+ partial pages
+References: <52970342.8090302@jp.fujitsu.com> <20131202152754.GC18642@redhat.com>
+In-Reply-To: <20131202152754.GC18642@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 03, 2013 8:52 AM, Joe Perches wrote:
-> On Tue, 2013-12-03 at 08:32 +0900, Jingoo Han wrote:
-> > Don't use DEFINE_PCI_DEVICE_TABLE macro, because this macro
-> > is not preferred. Also, the definition of DEFINE_PCI_DEVICE_TABLE
-> > macro is removed.
-> 
-> These sorts of treewide conversions are almost never
-> applied wholesale.
-> 
-> This patch is not appropriate until there are no more
-> uses of DEFINE_PCI_DEVICE_TABLE in Linus' tree.
-> 
-> Just marking the function as deprecated in the
-> documentation and the pci.h file is probably good
-> enough for now.
-> 
-> see:  http://lkml.org/lkml/2013/12/2/400
+(2013/12/03 0:27), Vivek Goyal wrote:
+> On Thu, Nov 28, 2013 at 05:48:02PM +0900, HATAYAMA Daisuke wrote:
+>> Hello Vivek,
+>>
+>> Here is a patch set for mmap failure for /proc/vmcore.
+>> Could you try to use this on the problematic system?
+>>
+>> This patch doesn't copy partial pages to the 2nd kernel, only prepares
+>> vmcore objects for respective partial pages to invoke remap_pfn_range()
+>> for individual partial pages.
+>
+> Hi Hatayama,
+>
+> Thanks for the patch. Ok, I see that partial pages will be put in a separate
+> call to remap_oldmem_pfn_range() and this time it should succeed.
+>
+> I am wondering what do you think about your old approach of copying
+> only relevant old memory to a new kernel page in new kernel. I kind
+> of feel little uncomfortable with the idea of rounding down start
+> and roudning up end to page size boundaries and then accessing the
+> full page using oldmem interface. A safer approach might be to allocate
+> page in new kernel, read *only* those bytes as reported by elf header
+> and fill rest of the page with zeros.
+>
+> Thanks
+> Vivek
+>
 
-Actually, I want to remove all DEFINE_PCI_DEVICE_TABLEs from the
-next 3.14-rc1 kernel, by merging all patches through Greg's tree.
+Even if copying partial pages into the 2nd kernel, we need to use ioremap()
+once on them, and I think the ioremap() is exactly similar to
+remap_pfn_range() for a single page. There seems no difference on safeness
+between them.
 
-Greg,
-How about you?
+Also, current /proc/vmcore shows user-land tools a shape with holes not
+filled with zeros both in case of read() and in case of mmap(). If we adapt
+copying one without reading data in holes, shape of /proc/vmcore gets
+changed again.
 
-Best regards,
-Jingoo Han
+-- 
+Thanks.
+HATAYAMA, Daisuke
 
