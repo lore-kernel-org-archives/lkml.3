@@ -1,92 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755697Ab3LDPL1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 10:11:27 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:35464 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074Ab3LDPLZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 10:11:25 -0500
+	id S932502Ab3LDPMm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 10:12:42 -0500
+Received: from mga02.intel.com ([134.134.136.20]:64003 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932178Ab3LDPMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 10:12:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,825,1378882800"; 
+   d="scan'208";a="446781373"
+Date: Wed, 4 Dec 2013 17:12:13 +0200
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: intel-gfx@lists.freedesktop.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/6] x86: Add Intel graphics stolen memory quirk for
+ gen2 platforms
+Message-ID: <20131204151213.GW10036@intel.com>
+References: <1386085793-317-1-git-send-email-ville.syrjala@linux.intel.com>
+ <1386085793-317-3-git-send-email-ville.syrjala@linux.intel.com>
+ <20131204090814.GA32218@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAD6G_RR=toq_6tCav6Y9=EprK9LC3YfGO=scvWpcGfDpWwJbRA@mail.gmail.com>
-References: <CAD6G_RT0S43BrOeXxJ6d3p1ALbXkGumZCSPBaK1Bz=2pX3hHYQ@mail.gmail.com>
- <CAErSpo4DNqUpA6Cb_tanW3uRJ3J-4utCQwtRz3eYZETCMtniUQ@mail.gmail.com> <CAD6G_RR=toq_6tCav6Y9=EprK9LC3YfGO=scvWpcGfDpWwJbRA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 4 Dec 2013 08:11:04 -0700
-Message-ID: <CAErSpo57gPPY73nCHbfGVynZRde0jj9_kjpR=FKwY-uTXzY2cw@mail.gmail.com>
-Subject: Re: Need help on Linux PCIe
-To: Jagan Teki <jagannadh.teki@gmail.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131204090814.GA32218@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 3, 2013 at 11:20 PM, Jagan Teki <jagannadh.teki@gmail.com> wrote:
-> Thanks for your quick response.
-> Please find my comments below.
->
-> On Tue, Dec 3, 2013 at 11:09 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Tue, Dec 3, 2013 at 4:24 AM, Jagan Teki <jagannadh.teki@gmail.com> wrote:
->>> Hi,
->>>
->>> I have few question on Linux PCIe subsystem, I am trying to understand
->>> the PCIe on ARM platform.
->>> 1. Compared to PCI, PCIe have an extra port functionalists/services
->>> which is implemented drivers/pci/pcie/* is it true?
->>
->> Yes.
->>
->>> 2. PCIe root complex is same as Host controller drivers in linux drivers/host/*
->>
->> Yes.
->>
->>> 3. As individual endpoint drivers are registered to pci_core as
->>> pci_driver_register, then what is the common call for registering
->>> individual HC driver to pci-core?
->>
->> The host controller-PCI core interface is not as mature as the
->> pci_register_driver() interface.  The basic interface is
->> pci_scan_root_bus().  If you skim through the drivers in
->> drivers/pci/host/* and drivers/acpi/pci_root.c, the interface to the
->> PCI core will be fairly obvious.  And you'll learn what the existing
->> practices are in case you need to add or modify something.
->
-> OK.
->
-> I understand the flow as below - please correct if am wrong.
->
-> From low level (hw) - HC driver has a platform registration using
-> platform_driver_register() to lower layer
-> and then pci_scan_root_bus() --> pci_common_init_dev() registration to
-> upper layer as PCI - BIOS and then ends.
+On Wed, Dec 04, 2013 at 10:08:14AM +0100, Ingo Molnar wrote:
+> 
+> * ville.syrjala@linux.intel.com <ville.syrjala@linux.intel.com> wrote:
+> 
+> > v2: Rewrite to use the TOM-TSEG_SIZE-stolen_size and TOUD methods
+> 
+> I guess v2 is a reaction to my review feedback? I got no reply to my 
+> mail from you so I'm not sure and I'd like to know whether all 
+> feedback was addressed.
 
-Yes.  Sometime HC drivers use platform_driver_register(); other use
-something else depending on how the HC device is enumerated.  For
-example, drivers/acpi/pci_root.c uses something else to deal with host
-bridges in the ACPI namespace.
+Actually this was mostly insipired by a private mail from hpa. I forgot
+to reply to your mail, sorry about that.
 
-> From upper level (app) - each endpoint driver has
-> pci_driver_register() call to PCI Core for lower level
+But anyways, I think apart from your comment about the KB/MB macros,
+the rest of the comments no longer apply. And as far as those macros
+go, there seem to be similar macros already sprinkled around in various
+places, so I'm not sure how big of a fallout we'd have if I just stick
+them into kernel.h.
 
-Yes.
-
-> and then the upper level registration is based on endpoint().
-
-I don't know what you mean here (I don't know of a function named
-"endpoint()").  But the driver model matches drivers to PCI functions
-based on vendor and device IDs.  A Linux "pci_dev" is what the PCI
-specs refer to as a "function."
-
-> What is the connection here for PCI-BIOS and PCI-Core here, does these
-> are two different entities means there is no common call for these?
-> I see for ARM - "arch/arm/kernel/bios32.c" is PCI-BIOS is it correct?
-> does we have separate BIOS codes for architectures?
-
-The "pcibios_*" functions are architecture-specific things called by
-the generic PCI core.  Generally, things specified by the PCI specs
-are architecture-independent and should be in the PCI core
-(drivers/pci/*).
-
-Bjorn
+-- 
+Ville Syrjälä
+Intel OTC
