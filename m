@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933445Ab3LDUIX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 15:08:23 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:59434 "EHLO
+	id S933431Ab3LDUIV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 15:08:21 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:59441 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933328Ab3LDUHX (ORCPT
+	with ESMTP id S933329Ab3LDUHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 15:07:23 -0500
+	Wed, 4 Dec 2013 15:07:24 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 14/38] tools lib traceevent: Add plugin build support
-Date: Wed,  4 Dec 2013 17:06:38 -0300
-Message-Id: <1386187622-2928-15-git-send-email-acme@infradead.org>
+Subject: [PATCH 37/38] tools lib traceevent: Remove malloc_or_die from plugin_function.c
+Date: Wed,  4 Dec 2013 17:07:01 -0300
+Message-Id: <1386187622-2928-38-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1386187622-2928-1-git-send-email-acme@infradead.org>
 References: <1386187622-2928-1-git-send-email-acme@infradead.org>
@@ -31,29 +31,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Backporting missing pieces of plugin building infrastructure:
+Removing malloc_or_die calls from plugin_function.c, replacing them and
+factoring the code with standard realloc and error path.
 
-  - Adding Makefile 'plugins' target to build all
-    defined plugins
-
-  - Adding Makefile 'install_plugins' target as 'install_lib'
-    target dependency
-
-  - Link plugin objects with shared object building
-
-Backported from Steven Rostedt's trace-cmd repo (HEAD 0f2c2fb):
-git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
-
-Plugins are by default installed into following locations:
-
-  '$(HOME)/.traceevent/plugins'
-     - If we are installing under $(HOME)
-
-  '$(prefix)/lib/traceevent/plugins'
-     - Otherwise
-
-This path is propagated to the plugin object as a plugins search path.
-
+Suggested-by: Namhyung Kim <namhyung@kernel.org>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -63,116 +44,59 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1386076182-14484-4-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1386076182-14484-27-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/Makefile | 52 ++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 47 insertions(+), 5 deletions(-)
+ tools/lib/traceevent/plugin_function.c | 29 ++++++++++++++++++++---------
+ 1 file changed, 20 insertions(+), 9 deletions(-)
 
-diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index 2ccb5bc800e8..15267988f6b6 100644
---- a/tools/lib/traceevent/Makefile
-+++ b/tools/lib/traceevent/Makefile
-@@ -43,6 +43,30 @@ man_dir_SQ = '$(subst ','\'',$(man_dir))'
- export man_dir man_dir_SQ INSTALL
- export DESTDIR DESTDIR_SQ
- 
-+set_plugin_dir := 1
+diff --git a/tools/lib/traceevent/plugin_function.c b/tools/lib/traceevent/plugin_function.c
+index 87acf9c77948..aad92ad5e96f 100644
+--- a/tools/lib/traceevent/plugin_function.c
++++ b/tools/lib/traceevent/plugin_function.c
+@@ -43,11 +43,17 @@ static void add_child(struct func_stack *stack, const char *child, int pos)
+ 	if (pos < stack->size)
+ 		free(stack->stack[pos]);
+ 	else {
+-		if (!stack->stack)
+-			stack->stack = malloc_or_die(sizeof(char *) * STK_BLK);
+-		else
+-			stack->stack = realloc(stack->stack, sizeof(char *) *
+-					       (stack->size + STK_BLK));
++		char **ptr;
 +
-+# Set plugin_dir to preffered global plugin location
-+# If we install under $HOME directory we go under
-+# $(HOME)/.traceevent/plugins
-+#
-+# We dont set PLUGIN_DIR in case we install under $HOME
-+# directory, because by default the code looks under:
-+# $(HOME)/.traceevent/plugins by default.
-+#
-+ifeq ($(plugin_dir),)
-+ifeq ($(prefix),$(HOME))
-+override plugin_dir = $(HOME)/.traceevent/plugins
-+set_plugin_dir := 0
-+else
-+override plugin_dir = $(prefix)/lib/traceevent/plugins
-+endif
-+endif
++		ptr = realloc(stack->stack, sizeof(char *) *
++			      (stack->size + STK_BLK));
++		if (!ptr) {
++			warning("could not allocate plugin memory\n");
++			return;
++		}
 +
-+ifeq ($(set_plugin_dir),1)
-+PLUGIN_DIR = -DPLUGIN_DIR="$(DESTDIR)/$(plugin_dir)"
-+PLUGIN_DIR_SQ = '$(subst ','\'',$(PLUGIN_DIR))'
-+endif
++		stack->stack = ptr;
 +
- # copy a bit from Linux kbuild
+ 		for (i = stack->size; i < stack->size + STK_BLK; i++)
+ 			stack->stack[i] = NULL;
+ 		stack->size += STK_BLK;
+@@ -64,10 +70,15 @@ static int add_and_get_index(const char *parent, const char *child, int cpu)
+ 		return 0;
  
- ifeq ("$(origin V)", "command line")
-@@ -96,6 +120,7 @@ export prefix bindir src obj
- # Shell quotes
- bindir_SQ = $(subst ','\'',$(bindir))
- bindir_relative_SQ = $(subst ','\'',$(bindir_relative))
-+plugin_dir_SQ = $(subst ','\'',$(plugin_dir))
- 
- LIB_FILE = libtraceevent.a libtraceevent.so
- 
-@@ -138,8 +163,8 @@ else
-   print_app_build =		echo '  BUILD    '$(OBJ);
-   print_fpic_compile =		echo '  CC FPIC  '$(OBJ);
-   print_shared_lib_compile =	echo '  BUILD    SHARED LIB '$(OBJ);
--  print_plugin_obj_compile =	echo '  BUILD    PLUGIN OBJ '$(OBJ);
--  print_plugin_build =		echo '  BUILD    PLUGIN     '$(OBJ);
-+  print_plugin_obj_compile =	echo '  CC FPIC  '$(OBJ);
-+  print_plugin_build =		echo '  BUILD    PLUGIN '$(OBJ);
-   print_static_lib_build =	echo '  BUILD    STATIC LIB '$(OBJ);
-   print_install =		echo '  INSTALL  '$1'	to	$(DESTDIR_SQ)$2';
- endif
-@@ -187,9 +212,11 @@ PEVENT_LIB_OBJS += parse-filter.o
- PEVENT_LIB_OBJS += parse-utils.o
- PEVENT_LIB_OBJS += kbuffer-parse.o
- 
--ALL_OBJS = $(PEVENT_LIB_OBJS)
-+PLUGINS := $(PLUGIN_OBJS:.o=.so)
+ 	if (cpu > cpus) {
+-		if (fstack)
+-			fstack = realloc(fstack, sizeof(*fstack) * (cpu + 1));
+-		else
+-			fstack = malloc_or_die(sizeof(*fstack) * (cpu + 1));
++		struct func_stack *ptr;
 +
-+ALL_OBJS = $(PEVENT_LIB_OBJS) $(PLUGIN_OBJS)
- 
--CMD_TARGETS = $(LIB_FILE)
-+CMD_TARGETS = $(LIB_FILE) $(PLUGINS)
- 
- TARGETS = $(CMD_TARGETS)
- 
-@@ -204,9 +231,17 @@ libtraceevent.so: $(PEVENT_LIB_OBJS)
- libtraceevent.a: $(PEVENT_LIB_OBJS)
- 	$(Q)$(do_build_static_lib)
- 
-+plugins: $(PLUGINS)
++		ptr = realloc(fstack, sizeof(*fstack) * (cpu + 1));
++		if (!ptr) {
++			warning("could not allocate plugin memory\n");
++			return 0;
++		}
 +
- $(PEVENT_LIB_OBJS): %.o: $(src)/%.c TRACEEVENT-CFLAGS
- 	$(Q)$(do_fpic_compile)
++		fstack = ptr;
  
-+$(PLUGIN_OBJS): %.o : $(src)/%.c
-+	$(Q)$(do_compile_plugin_obj)
-+
-+$(PLUGINS): %.so: %.o
-+	$(Q)$(do_plugin_build)
-+
- define make_version.h
- 	(echo '/* This file is automatically generated. Do not modify. */';		\
- 	echo \#define VERSION_CODE $(shell						\
-@@ -294,9 +329,16 @@ define do_install
- 	$(INSTALL) $1 '$(DESTDIR_SQ)$2'
- endef
- 
--install_lib: all_cmd
-+install_lib: all_cmd install_plugins
- 	$(Q)$(call do_install,$(LIB_FILE),$(bindir_SQ))
- 
-+PLUGINS_INSTALL = $(subst .so,.install,$(PLUGINS))
-+
-+$(PLUGINS_INSTALL): %.install : %.so force
-+	$(Q)$(call do_install,$<,$(plugin_dir_SQ))
-+
-+install_plugins: $(PLUGINS_INSTALL)
-+
- install: install_lib
- 
- clean:
+ 		/* Account for holes in the cpu count */
+ 		for (i = cpus + 1; i <= cpu; i++)
 -- 
 1.8.1.4
 
