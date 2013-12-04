@@ -1,147 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab3LDFVd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 00:21:33 -0500
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:47004 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752783Ab3LDFUN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 00:20:13 -0500
-Date: Tue, 3 Dec 2013 21:20:09 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: [patch 5/8] res_counter: remove interface for locked charging and
- uncharging
-In-Reply-To: <alpine.DEB.2.02.1312032116440.29733@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1312032118230.29733@chino.kir.corp.google.com>
-References: <20131119131400.GC20655@dhcp22.suse.cz> <20131119134007.GD20655@dhcp22.suse.cz> <alpine.DEB.2.02.1311192352070.20752@chino.kir.corp.google.com> <20131120152251.GA18809@dhcp22.suse.cz> <alpine.DEB.2.02.1311201917520.7167@chino.kir.corp.google.com>
- <20131128115458.GK2761@dhcp22.suse.cz> <alpine.DEB.2.02.1312021504170.13465@chino.kir.corp.google.com> <alpine.DEB.2.02.1312032116440.29733@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751601Ab3LDFZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 00:25:57 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:44244 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751046Ab3LDFZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 00:25:54 -0500
+Date: Wed, 4 Dec 2013 00:25:42 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcg: do not declare OOM from __GFP_NOFAIL
+ allocations
+Message-ID: <20131204052542.GY3556@cmpxchg.org>
+References: <20131127225340.GE3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311271526080.22848@chino.kir.corp.google.com>
+ <20131128102049.GF2761@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1311291543400.22413@chino.kir.corp.google.com>
+ <20131202132201.GC18838@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312021452510.13465@chino.kir.corp.google.com>
+ <20131203222511.GU3556@cmpxchg.org>
+ <alpine.DEB.2.02.1312031531510.5946@chino.kir.corp.google.com>
+ <20131204030101.GV3556@cmpxchg.org>
+ <20131204043417.GM10988@dastard>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131204043417.GM10988@dastard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The res_counter_{charge,uncharge}_locked() variants are not used in the
-kernel outside of the resource counter code itself, so remove the
-interface.
+On Wed, Dec 04, 2013 at 03:34:17PM +1100, Dave Chinner wrote:
+> On Tue, Dec 03, 2013 at 10:01:01PM -0500, Johannes Weiner wrote:
+> > On Tue, Dec 03, 2013 at 03:40:13PM -0800, David Rientjes wrote:
+> > > On Tue, 3 Dec 2013, Johannes Weiner wrote:
+> > > I believe the page allocator would be susceptible to the same deadlock if 
+> > > nothing else on the system can reclaim memory and that belief comes from 
+> > > code inspection that shows __GFP_NOFAIL is not guaranteed to ever succeed 
+> > > in the page allocator as their charges now are (with your patch) in memcg.  
+> > > I do not have an example of such an incident.
+> > 
+> > Me neither.
+> 
+> Is this the sort of thing that you expect to see when GFP_NOFS |
+> GFP_NOFAIL type allocations continualy fail?
+> 
+> http://oss.sgi.com/archives/xfs/2013-12/msg00095.html
+> 
+> XFS doesn't use GFP_NOFAIL, it does it's own loop with GFP_NOWARN in
+> kmem_alloc() so that if we get stuck for more than 100 attempts to
+> allocate it throws a warning. i.e. only when we really are stuck and
+> reclaim is not making any progress.
+> 
+> This specific case is due to memory fragmentation preventing a 64k
+> memory allocation (due to the filesystem being configured with a 64k
+> directory block size), but GFP_NOFS | GFP_NOFAIL allocations happen
+> *all the time* in filesystems.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- Documentation/cgroups/resource_counter.txt | 14 ++------------
- include/linux/res_counter.h                |  6 +-----
- kernel/res_counter.c                       | 23 ++++++++++++-----------
- 3 files changed, 15 insertions(+), 28 deletions(-)
+Yes, the question is whether this in itself is a practical problem,
+regardless of whether you use __GFP_NOFAIL or a manual loop.
 
-diff --git a/Documentation/cgroups/resource_counter.txt b/Documentation/cgroups/resource_counter.txt
---- a/Documentation/cgroups/resource_counter.txt
-+++ b/Documentation/cgroups/resource_counter.txt
-@@ -76,24 +76,14 @@ to work with it.
- 	limit_fail_at parameter is set to the particular res_counter element
- 	where the charging failed.
- 
-- d. int res_counter_charge_locked
--			(struct res_counter *rc, unsigned long val, bool force)
--
--	The same as res_counter_charge(), but it must not acquire/release the
--	res_counter->lock internally (it must be called with res_counter->lock
--	held). The force parameter indicates whether we can bypass the limit.
--
-- e. u64 res_counter_uncharge[_locked]
--			(struct res_counter *rc, unsigned long val)
-+ d. u64 res_counter_uncharge(struct res_counter *rc, unsigned long val)
- 
- 	When a resource is released (freed) it should be de-accounted
- 	from the resource counter it was accounted to.  This is called
- 	"uncharging". The return value of this function indicate the amount
- 	of charges still present in the counter.
- 
--	The _locked routines imply that the res_counter->lock is taken.
--
-- f. u64 res_counter_uncharge_until
-+ e. u64 res_counter_uncharge_until
- 		(struct res_counter *rc, struct res_counter *top,
- 		 unsinged long val)
- 
-diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
---- a/include/linux/res_counter.h
-+++ b/include/linux/res_counter.h
-@@ -104,15 +104,13 @@ void res_counter_init(struct res_counter *counter, struct res_counter *parent);
-  *       units, e.g. numbers, bytes, Kbytes, etc
-  *
-  * returns 0 on success and <0 if the counter->usage will exceed the
-- * counter->limit _locked call expects the counter->lock to be taken
-+ * counter->limit
-  *
-  * charge_nofail works the same, except that it charges the resource
-  * counter unconditionally, and returns < 0 if the after the current
-  * charge we are over limit.
-  */
- 
--int __must_check res_counter_charge_locked(struct res_counter *counter,
--					   unsigned long val, bool force);
- int __must_check res_counter_charge(struct res_counter *counter,
- 		unsigned long val, struct res_counter **limit_fail_at);
- int res_counter_charge_nofail(struct res_counter *counter,
-@@ -125,12 +123,10 @@ int res_counter_charge_nofail(struct res_counter *counter,
-  * @val: the amount of the resource
-  *
-  * these calls check for usage underflow and show a warning on the console
-- * _locked call expects the counter->lock to be taken
-  *
-  * returns the total charges still present in @counter.
-  */
- 
--u64 res_counter_uncharge_locked(struct res_counter *counter, unsigned long val);
- u64 res_counter_uncharge(struct res_counter *counter, unsigned long val);
- 
- u64 res_counter_uncharge_until(struct res_counter *counter,
-diff --git a/kernel/res_counter.c b/kernel/res_counter.c
---- a/kernel/res_counter.c
-+++ b/kernel/res_counter.c
-@@ -22,8 +22,18 @@ void res_counter_init(struct res_counter *counter, struct res_counter *parent)
- 	counter->parent = parent;
- }
- 
--int res_counter_charge_locked(struct res_counter *counter, unsigned long val,
--			      bool force)
-+static u64 res_counter_uncharge_locked(struct res_counter *counter,
-+				       unsigned long val)
-+{
-+	if (WARN_ON(counter->usage < val))
-+		val = counter->usage;
-+
-+	counter->usage -= val;
-+	return counter->usage;
-+}
-+
-+static int res_counter_charge_locked(struct res_counter *counter,
-+				     unsigned long val, bool force)
- {
- 	int ret = 0;
- 
-@@ -86,15 +96,6 @@ int res_counter_charge_nofail(struct res_counter *counter, unsigned long val,
- 	return __res_counter_charge(counter, val, limit_fail_at, true);
- }
- 
--u64 res_counter_uncharge_locked(struct res_counter *counter, unsigned long val)
--{
--	if (WARN_ON(counter->usage < val))
--		val = counter->usage;
--
--	counter->usage -= val;
--	return counter->usage;
--}
--
- u64 res_counter_uncharge_until(struct res_counter *counter,
- 			       struct res_counter *top,
- 			       unsigned long val)
+> > > > > So, my question again: why not bypass the per-zone min watermarks in the 
+> > > > > page allocator?
+> > > > 
+> > > > I don't even know what your argument is supposed to be.  The fact that
+> > > > we don't do it in the page allocator means that there can't be a bug
+> > > > in memcg?
+> > > > 
+> > > 
+> > > I'm asking if we should allow GFP_NOFS | __GFP_NOFAIL allocations in the 
+> > > page allocator to bypass per-zone min watermarks after reclaim has failed 
+> > > since the oom killer cannot be called in such a context so that the page 
+> > > allocator is not susceptible to the same deadlock without a complete 
+> > > depletion of memory reserves?
+> > 
+> > Yes, I think so.
+> 
+> There be dragons. If memcg's deadlock in low memory conditions in
+> the presence of GFP_NOFS | GFP_NOFAIL allocations, then we need to
+> make the memcg reclaim design more robust, not work around it by
+> allowing filesystems to drain critical memory reserves needed for
+> other situations....
+
+The problems in the page allocator and memcg are entirely unrelated.
+What we do in the memcg does not affect the page allocator and vice
+versa.  However, they are problems of the same type, so we are trying
+to find out whether both instances can have the same solution:
+
+If GFP_NOFS | __GFP_NOFAIL allocations can not make forward progress
+in direct reclaim, they are screwed: can't reclaim memory, can't OOM
+kill, can't return NULL.  They are essentially stuck until a third
+party intervenes.  This applies to both the page allocator and memcg.
+
+In memcg, I fixed it by allowing the __GFP_NOFAIL task to bypass the
+user-defined memory limit after reclaim fails.
+
+David asks whether we should do the equivalent in the page allocator
+and allow __GFP_NOFAIL allocations to dip into the emergency memory
+reserves for the same reason.
+
+I suggested that the situations are not entirely the same.  A memcg
+might only have one or two tasks and so third party intervention to
+reduce memory usage in the memcg can be unlikely to impossible,
+whereas in the case of the page allocator, the likelihood of any task
+in the system releasing or reclaiming memory is higher.
+
+However, the GFP_NOFS | __GFP_NOFAIL task stuck in the page allocator
+may hold filesystem locks that could prevent a third party from
+freeing memory and/or exiting, so we can not guarantee that only the
+__GFP_NOFAIL task is getting stuck, it might well trap other tasks.
+The same applies to open-coded GFP_NOFS allocation loops of course
+unless they cycle the filesystem locks while looping.
