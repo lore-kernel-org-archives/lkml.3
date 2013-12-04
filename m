@@ -1,158 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751931Ab3LDFpf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 00:45:35 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44929 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab3LDFpc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 00:45:32 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <529EC0FC.1010400@jp.fujitsu.com>
-Date: Wed, 4 Dec 2013 14:43:24 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1753196Ab3LDFqF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 00:46:05 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:44254 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752478Ab3LDFqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 00:46:01 -0500
+Date: Wed, 4 Dec 2013 00:45:33 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups@vger.kernel.org
+Subject: Re: [patch 7/8] mm, memcg: allow processes handling oom
+ notifications to access reserves
+Message-ID: <20131204054533.GZ3556@cmpxchg.org>
+References: <20131119131400.GC20655@dhcp22.suse.cz>
+ <20131119134007.GD20655@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1311192352070.20752@chino.kir.corp.google.com>
+ <20131120152251.GA18809@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1311201917520.7167@chino.kir.corp.google.com>
+ <20131128115458.GK2761@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312021504170.13465@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1312032116440.29733@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1312032118570.29733@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        "Moore, Robert" <robert.moore@intel.com>,
-        Toshi Kani <toshi.kani@hp.com>, Yinghai Lu <yinghai@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>, Lv Zheng <lv.zheng@intel.com>
-Subject: Re: [PATCH 7/10] ACPI / hotplug: Move container-specific code out
- of the core
-References: <1421028.Rsfpmhnym3@vostro.rjw.lan> <1554480.uCR6qUxJk9@vostro.rjw.lan> <529D4600.6040601@jp.fujitsu.com> <81535269.SKoBMiGyoU@vostro.rjw.lan>
-In-Reply-To: <81535269.SKoBMiGyoU@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1312032118570.29733@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/03 22:15), Rafael J. Wysocki wrote:
-> On Tuesday, December 03, 2013 11:46:24 AM Yasuaki Ishimatsu wrote:
->> (2013/11/29 22:08), Rafael J. Wysocki wrote:
->>> On Friday, November 29, 2013 11:36:55 AM Yasuaki Ishimatsu wrote:
->>>> Hi Rafael,
->>>
->>> Hi,
->>>
->>>> Replying to this mail may be wrong.
->>>
->>> OK, so this particular patch doesn't break things any more?
->>
->> Yes.
->>
->>>
->>>> Do you remember following your patch?
->>>> http://lkml.org/lkml/2013/2/23/97
->>>>
->>>> I want to add autoeject variable in acpi_hotplug_profile structure and
->>>> set autoecjet of container device "false".
->>>
->>> Then after the series the $subject patch belongs to it will work almost the
->>> same way as /sys/firmware/acpi/container/enabled (hot add will still work after
->>> patch [4/10] if "enabled" is 0), but only for containers.
->>>
->>>> Currently, I have a problem on ejecting container device. Since linux-3.12,
->>>> container device is removed by acpi_scan_hot_remove.
->>>>
->>>> I think this has two problems.
->>>>
->>>>      1. easily fail
->>>>         My container device has CPU device and Memory device, and maximum size of
->>>>         memory is 3Tbyte. In my environment, hot removing container device fails
->>>>         on offlining memory if memory is used by application.
->>>>         I think if offlininig memory, we must retly to offline memory several
->>>>         times.
->>>
->>> Yes, that's correct.  But then you can try to offline the memory upfront
->>> and only remove the container after that has been successful.
->>>
->>>>      2. cannot work with userland's application
->>>>         Hot removing CPU and memory on container device, we need take care of
->>>>         userland application. Before linux-3.12, container device just notifies
->>>>         KOBJ_OFFLINE to udev. So by using udev, if application binds to removed
->>>>         CPU or node, applications can change them before hot removing container
->>>>         device.
->>>>         Currently, KOBJ_OFFLINE is notified to udev. But acpi_scan_hot_remove
->>>>         also runs simultaneously for hot removing container device. So when
->>>>         applications runs for corresponding to the deletion of the devices,
->>>>         the devices may have been deleted.
->>>
->>
->>> So the expectation is that the container will refuse to offline, but instead
->>> it will emit KOBJ_OFFLINE so that user space can do some cleanup and offline
->>> it through the "eject" attribute, right?
->>
->> Yes, that's right.
->>
->>>
->>>> I don't know what devices are on hotpluggable conatainer device of other
->>>> vendors. At least, my container device cannot be hot removed correctly.
->>>> Then I want to add autoeject variable in acpi_hotplug_profile so that user
->>>> can change the parameter to "true" or "false".
->>>
->>> I have a different idea.
->>>
->>> Why don't we create a bus type for containers in analogy with CPUs and memory
->>> and make it support offline.  Then, the container scan handler will create a
->>> "physical" container device under that bus type and the new bus type code will
->>> implement the logic you need (that is, it will have a sysfs flag that will
->>> cause the offline to fail emitting a uevent of some sort if set and will allow
->>> the offline to happen when unset).  That "physical" container device will go
->>> away (again, via the container scan handler) during container removal.
->>>
->>
->>> The eject work flow can be:
->>>     (1) an eject event occurs,
->>>     (2) the container "physical" device fails offline in acpi_scan_hot_remove()
->>>         emmitting, say, KOBJ_CHANGE for the "physical" device,
->>>     (3) user space notices the KOBJ_CHANGE and does the cleanup as needed,
->>>     (4) user space changes the "physical" container device flag controlling
->>>         offline to 0,
->>>     (5) user space uses the sysfs "eject" attribute of the ACPI container object
->>>         to finally eject the container,
->>>     (6) the offline in acpi_scan_hot_remove() is now successful, because the
->>>         flag controlling it has been set to 0 in step (4),
->>>     (7) the "physical" container device goes away before executing _EJ0,
->>>     (8) the container is ejected.
->>>
->>> Of course, if the flag controlling container offline is 0 to start with, step
->>> (6) will now occur directly after (1), so whoever wants containers to be
->>> hot-removed automatically may just clear that flag for all of them on boot.
->>>
->>> How does that sound?
->>
->>
->> The above ideas are almost O.K. I want kernel to notify user space of KOBJ_OFFLINE.
->> Even if user space catches "KOBJ_CHANGE", user doesn't know whether the notification
->> is offline or not.
->
+On Tue, Dec 03, 2013 at 09:20:17PM -0800, David Rientjes wrote:
+> Now that a per-process flag is available, define it for processes that
+> handle userspace oom notifications.  This is an optimization to avoid
+> mantaining a list of such processes attached to a memcg at any given time
+> and iterating it at charge time.
+> 
+> This flag gets set whenever a process has registered for an oom
+> notification and is cleared whenever it unregisters.
+> 
+> When memcg reclaim has failed to free any memory, it is necessary for
+> userspace oom handlers to be able to dip into reserves to pagefault text,
+> allocate kernel memory to read the "tasks" file, allocate heap, etc.
 
-> It is easy to figure out, though.  Since the KOBJ_CHANGE will be emitted for
-> container devices only in that situation, user space can see that (1) it is
-> from a container and (2) it is KOBJ_CHANGE, so it must mean "container offline
-> has been attempted".
->
-> My concern with using KOBJ_OFFLINE for that is that device_offline() emits it
-> too on success and it may be easily confused with the one emitted on failure
-> for containers.
+The task handling the OOM of a memcg can obviously not be part of that
+same memcg.
 
-I have no objection.
+I've said this many times in the past, but here is the most recent
+thread from Tejun, me, and Li on this topic:
 
-Thanks,
-Yasuaki Ishimatsu
+---
 
->
-> Thanks,
-> Rafael
->
+On Tue, 3 Dec 2013 at 15:35:48 +0800, Li Zefan wrote:
+> On Mon, 2 Dec 2013 at 11:44:06 -0500, Johannes Weiner wrote:
+> > On Fri, Nov 29, 2013 at 03:05:25PM -0500, Tejun Heo wrote:
+> > > Whoa, so we support oom handler inside the memcg that it handles?
+> > > Does that work reliably?  Changing the above detail in this patch
+> > > isn't difficult (and we'll later need to update kernfs too) but
+> > > supporting such setup properly would be a *lot* of commitment and I'm
+> > > very doubtful we'd be able to achieve that by just carefully avoiding
+> > > memory allocation in the operations that usreland oom handler uses -
+> > > that set is destined to expand over time, extremely fragile and will
+> > > be hellish to maintain.
+> > > 
+> > > So, I'm not at all excited about commiting to this guarantee.  This
+> > > one is an easy one but it looks like the first step onto dizzying
+> > > slippery slope.
+> > > 
+> > > Am I misunderstanding something here?  Are you and Johannes firm on
+> > > supporting this?
+> >
+> > Handling a memcg OOM from userspace running inside that OOM memcg is
+> > completely crazy.  I mean, think about this for just two seconds...
+> > Really?
+> >
+> > I get that people are doing it right now, and if you can get away with
+> > it for now, good for you.  But you have to be aware how crazy this is
+> > and if it breaks you get to keep the pieces and we are not going to
+> > accomodate this in the kernel.  Fix your crazy userspace.
+> 
+> +1
 
+---
 
