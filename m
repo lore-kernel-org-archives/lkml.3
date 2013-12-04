@@ -1,47 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932691Ab3LDP36 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 10:29:58 -0500
-Received: from a9-111.smtp-out.amazonses.com ([54.240.9.111]:56489 "EHLO
-	a9-111.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932404Ab3LDP35 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 10:29:57 -0500
-X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Dec 2013 10:29:56 EST
-Date: Wed, 4 Dec 2013 15:24:52 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: David Rientjes <rientjes@google.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Pekka Enberg <penberg@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch 3/8] mm, mempolicy: remove per-process flag
-In-Reply-To: <alpine.DEB.2.02.1312032117490.29733@chino.kir.corp.google.com>
-Message-ID: <00000142be3633ba-2a459537-58fb-444b-a99f-33ff5e5b2aed-000000@email.amazonses.com>
-References: <20131119131400.GC20655@dhcp22.suse.cz> <20131119134007.GD20655@dhcp22.suse.cz> <alpine.DEB.2.02.1311192352070.20752@chino.kir.corp.google.com> <20131120152251.GA18809@dhcp22.suse.cz> <alpine.DEB.2.02.1311201917520.7167@chino.kir.corp.google.com>
- <20131128115458.GK2761@dhcp22.suse.cz> <alpine.DEB.2.02.1312021504170.13465@chino.kir.corp.google.com> <alpine.DEB.2.02.1312032116440.29733@chino.kir.corp.google.com> <alpine.DEB.2.02.1312032117490.29733@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S932665Ab3LDPcL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 10:32:11 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58130 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932546Ab3LDPcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 10:32:09 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20131204085448.GA31778@gmail.com>
+References: <tip-j21wzqv790q834n7yc6g80j1@git.kernel.org> <20131204085448.GA31778@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.12.04-54.240.9.111
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [tip:x86/urgent] x86-64, build: Always pass in -mno-sse
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 04 Dec 2013 07:31:28 -0800
+To: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, kevin.b.smith@intel.com,
+        hjl.tools@gmail.com
+CC: linux-tip-commits@vger.kernel.org
+Message-ID: <8798ec32-5add-4772-9c41-6f69401b16c9@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Dec 2013, David Rientjes wrote:
+I can regenerate the patch if you want.
 
-> PF_MEMPOLICY is an unnecessary optimization for CONFIG_SLAB users.
-> There's no significant performance degradation to checking
-> current->mempolicy rather than current->flags & PF_MEMPOLICY in the
-> allocation path, especially since this is considered unlikely().
+Ingo Molnar <mingo@kernel.org> wrote:
+>
+>* tip-bot for H. Peter Anvin <tipbot@zytor.com> wrote:
+>
+>> Commit-ID:  5551a34e5aeab868f8d37f70d8754868921b4ee5
+>> Gitweb:    
+>http://git.kernel.org/tip/5551a34e5aeab868f8d37f70d8754868921b4ee5
+>> Author:     H. Peter Anvin <hpa@linux.intel.com>
+>> AuthorDate: Wed, 20 Nov 2013 13:31:49 -0800
+>> Committer:  H. Peter Anvin <hpa@linux.intel.com>
+>> CommitDate: Tue, 3 Dec 2013 17:40:22 -0800
+>> 
+>> x86-64, build: Always pass in -mno-sse
+>> 
+>> Always pass in the -mno-sse argument, regardless if
+>> -preferred-stack-boundary is supported.  We never want to generate
+>SSE
+>> instructions in the kernel unless we *really* know what we're doing.
+>> 
+>> According to H. J. Lu, any version of gcc new enough that we support
+>> it at all should handle the -mno-sse option, so just add it
+>> unconditionally.
+>> 
+>> Reported-by: Kevin B. Smith <kevin.b.smith@intel.com>
+>> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+>> Cc: H. J. Lu <hjl.tools@gmail.com>
+>> Link:
+>http://lkml.kernel.org/n/tip-j21wzqv790q834n7yc6g80j1@git.kernel.org
+>> Cc: <stable@vger.kernel.org> # build fix only
+>> ---
+>>  arch/x86/Makefile | 8 +++++++-
+>>  1 file changed, 7 insertions(+), 1 deletion(-)
+>> 
+>> diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+>> index 41250fb..eda00f9 100644
+>> --- a/arch/x86/Makefile
+>> +++ b/arch/x86/Makefile
+>> @@ -31,6 +31,9 @@ ifeq ($(CONFIG_X86_32),y)
+>>  
+>>          KBUILD_CFLAGS += -msoft-float -mregparm=3
+>-freg-struct-return
+>>  
+>> +        # Don't autogenerate SSE instructions
+>> +	KBUILD_CFLAGS += -mno-sse
+>> +
+>>          # Never want PIC in a 32-bit kernel, prevent breakage with
+>GCC built
+>>          # with nonstandard options
+>>          KBUILD_CFLAGS += -fno-pic
+>> @@ -57,8 +60,11 @@ else
+>>          KBUILD_AFLAGS += -m64
+>>          KBUILD_CFLAGS += -m64
+>>  
+>> +        # Don't autogenerate SSE instructions
+>> +	KBUILD_CFLAGS += -mno-sse
+>> +
+>>  	# Use -mpreferred-stack-boundary=3 if supported.
+>> -	KBUILD_CFLAGS += $(call cc-option,-mno-sse
+>-mpreferred-stack-boundary=3)
+>> +	KBUILD_CFLAGS += $(call cc-option,-mpreferred-stack-boundary=3)
+>>  
+>>          # FIXME - should be integrated in Makefile.cpu
+>(Makefile_32.cpu)
+>>          cflags-$(CONFIG_MK8) += $(call cc-option,-march=k8)
+>
+>Just a detail I noticed: in kbuild we intentionally use 8 spaces for 
+>tabs in Makefiles and only use tabs for commands where tabs are 
+>required.
+>
+>The above code introduces tabs in the middle of 8-space sequences. It 
+>works but is inconsistent.
+>
+>Thanks,
+>
+>	Ingo
 
-The use of current->mempolicy increase the cache footprint since its in a
-rarely used cacheline. This performance issue would occur when memory
-policies are not used since that cacheline would then have to be touched
-regardless of memory policies be in effect or not. PF_MEMPOLICY was used
-to avoid touching the cacheline.
-
-
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
