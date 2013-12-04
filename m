@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238Ab3LDXzZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 18:55:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36259 "EHLO
+	id S1756272Ab3LDX4Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 18:56:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36355 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753400Ab3LDXzX (ORCPT
+	with ESMTP id S1756060Ab3LDX4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 18:55:23 -0500
-Date: Wed, 4 Dec 2013 14:59:10 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Samuel Dominguez <samuel.dominguez.lorenzo@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: lustre: lnet: lnet: fixed space coding style
- issues
-Message-ID: <20131204225910.GA9205@kroah.com>
-References: <20131204211348.GB5225@gmail.com>
+	Wed, 4 Dec 2013 18:56:22 -0500
+Date: Wed, 4 Dec 2013 15:29:53 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, linux-kernel@vger.kernel.org,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 0/2] MIPS/staging: Probe octeon-usb driver via device-tree
+Message-ID: <20131204232953.GA7698@kroah.com>
+References: <1386100012-6077-1-git-send-email-ddaney.cavm@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131204211348.GB5225@gmail.com>
+In-Reply-To: <1386100012-6077-1-git-send-email-ddaney.cavm@gmail.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 09:13:48PM +0000, Samuel Dominguez wrote:
-> >From 187369f55f9f9bc58c87fc1ac118143db5735033 Mon Sep 17 00:00:00 2001
-> From: =?UTF-8?q?Samuel=20Dom=C3=ADnguez?=
->  <samuel.dominguez.lorenzo@gmail.com>
-> Date: Wed, 4 Dec 2013 20:35:41 +0000
-> Subject: [PATCH] staging: lustre: lnet: lnet: fixed space coding style issues
-
-Please just use 'git send-email' directly, so I don't have to edit out
-this cruft from the body of the email.
-
+On Tue, Dec 03, 2013 at 11:46:50AM -0800, David Daney wrote:
+> From: David Daney <david.daney@cavium.com>
 > 
-> Fixed a coding style issue.
+> Tested against both EdgeRouter LITE (no bootloader supplied device
+> tree), and ebb5610 (device tree supplied by bootloader).
+> 
+> The patch set is spread across both the MIPS and staging trees, so it
+> would be great if Ralf could merge at least the MIPS parts, if not
+> both parts.
 
-Which one?
+That's fine with me:
 
-care to try this again?
-
-thanks,
-
-greg k-h
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
