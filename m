@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755133Ab3LDIj1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 03:39:27 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:42868 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754400Ab3LDIjZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 03:39:25 -0500
-Message-ID: <529EEAC1.3010203@gmail.com>
-Date: Wed, 04 Dec 2013 16:41:37 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755238Ab3LDIj4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 03:39:56 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:55595 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754544Ab3LDIjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 03:39:54 -0500
+X-IronPort-AV: E=Sophos;i="4.93,823,1378828800"; 
+   d="scan'208";a="9188197"
+Message-ID: <529EE877.7030701@cn.fujitsu.com>
+Date: Wed, 04 Dec 2013 16:31:51 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: Joe Perches <joe@perches.com>, "John W. Linville" <linville@tuxdriver.com>,
-        rkuo <rkuo@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, linux-wireless@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH] net: mac80211: tx.c: be sure of 'sdata->vif.type' must
- be NL80211_IFTYPE_AP when be in NL80211_IFTYPE_AP case
-References: <528AEFB7.4060301@gmail.com>   <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com>   <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com>   <52957ADA.2080704@gmail.com>   (sfid-20131127_055211_558798_A7DF5684) <1385739487.8656.1.camel@jlt4.sipsolutions.net>   <5299D306.7070701@gmail.com>   (sfid-20131130_125901_519610_EDA4068E) <1385816013.4327.1.camel@jlt4.sipsolutions.net>   <5299ED38.4090509@gmail.com> <5299EFDD.6060405@gmail.com>   (sfid-20131130_150205_984535_068F14A9) <1385842134.6108.4.camel@jlt4.sipsolutions.net>   <1385843940.2664.4.camel@joe-AO722>   <1385890523.4171.1.camel@jlt4.sipsolutions.net>   <1385937499.2664.21.camel@joe-AO722>  <1385995738.20277.4.camel@jlt4.sipsolutions.net>  <529E8F90.1020205@gmail.com> (sfid-20131204_031032_173575_B927B340) <1386144281.4284.0.camel@jlt4.sipsolutions.net>
-In-Reply-To: <1386144281.4284.0.camel@jlt4.sipsolutions.net>
-Content-Type: text/plain; charset=UTF-8
+To: Gao feng <gaofeng@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com
+CC: containers@lists.linux-foundation.org, ebiederm@xmission.com,
+        serge.hallyn@ubuntu.com, eparis@redhat.com, sgrubb@redhat.com,
+        Richard Guy Briggs <rgb@redhat.com>
+Subject: Re: [RFC Part1 PATCH 00/20 v2] Add namespace support for audit
+References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
+In-Reply-To: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/04 16:30:38,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/04 16:39:44,
+	Serialize complete at 2013/12/04 16:39:44
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2013 04:04 PM, Johannes Berg wrote:
-> On Wed, 2013-12-04 at 10:12 +0800, Chen Gang wrote:
+Hi
+
+On 10/24/2013 03:31 PM, Gao feng wrote:
+> Here is the v1 patchset: http://lwn.net/Articles/549546/
 > 
->> It is really not urgent, and for keeping quality, it is necessary to
->> spend suitable time resource (e.g 1 hour or more) to  make, review and
->> test this kind of patch carefully by oneself.
->>
->> So could you please help improve it when you have suitable related time
->> resources?
-> 
-> No. Who are you to suggest what I need to work on?
-> 
-> johannes
+> The main target of this patchset is allowing user in audit
+> namespace to generate the USER_MSG type of audit message,
+> some userspace tools need to generate audit message, or
+> these tools will broken.
 > 
 
-I am one of volunteers for Open Source, and I don't care about who I am.
+I really need this feature, right now,some process such as
+logind are broken in container becase we leak of this feature.
 
-Since this thread is started by me, I have duty to try my best to let it
-finish (but may fail).
+> And the login process in container may want to setup
+> /proc/<pid>/loginuid, right now this value is unalterable
+> once it being set. this will also broke the login problem
+> in container. After this patchset, we can reset this loginuid
+> to zero if task is running in a new audit namespace.
+> 
 
-According to our original discussion, it seems we agree that I am not
-the suitable member to finish it, so I suggest you or another members to
-try.
+I notice this problem has been fixed in audit tree, so may be
+I don't need to clean up loginuid when we create audit namespace.
 
+And in audit tree, audit socket is per net namespace, hmm, I want
+to know if anybody has a solution to allow processes to generate
+USER_MSG type of audit message in un init pid/user namepsace.
 
-Thanks.
--- 
-Chen Gang
+Any idea? Eric,Steve,Richard?
+
+Thanks
+Gao
