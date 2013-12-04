@@ -1,269 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751570Ab3LDFKW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 00:10:22 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:50055 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876Ab3LDFKT (ORCPT
+	id S1751253Ab3LDFSw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 00:18:52 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:12116 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab3LDFSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 00:10:19 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <529EB936.20605@roeck-us.net>
-Date: Tue, 03 Dec 2013 21:10:14 -0800
-From: Guenter Roeck <linux@roeck-us.net>
+	Wed, 4 Dec 2013 00:18:50 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 03 Dec 2013 21:15:53 -0800
+Message-ID: <529EBB29.2030008@nvidia.com>
+Date: Wed, 4 Dec 2013 14:18:33 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Christophe Leroy <christophe.leroy@c-s.fr>,
-        Wim Van Sebroeck <wim@iguana.be>, scottwood@freescale.com
-CC: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2] watchdog: mpc8xxx_wdt convert to watchdog core
-References: <20131203133140.5E9DF1A2BEA@localhost.localdomain>
-In-Reply-To: <20131203133140.5E9DF1A2BEA@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Chris Ball <cjb@laptop.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Rob Landley <rob@landley.net>, Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Subject: Re: [PATCHv4] ARM: tegra: add gpiod_lookup table for paz00
+References: <1385460350-17543-2-git-send-email-mika.westerberg@linux.intel.com> <1386074998-17833-1-git-send-email-heikki.krogerus@linux.intel.com>
+In-Reply-To: <1386074998-17833-1-git-send-email-heikki.krogerus@linux.intel.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2013 05:31 AM, Christophe Leroy wrote:
-> Convert mpc8xxx_wdt.c to the new watchdog API.
+On 12/03/2013 09:49 PM, Heikki Krogerus wrote:
+> This makes it possible to request the gpio descriptors in
+> rfkill_gpio driver regardless of the platform.
 >
-> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> ---
+>   arch/arm/mach-tegra/board-paz00.c | 11 +++++++++++
+>   1 file changed, 11 insertions(+)
 >
-> diff -ur a/drivers/watchdog/mpc8xxx_wdt.c b/drivers/watchdog/mpc8xxx_wdt.c
-> --- a/drivers/watchdog/mpc8xxx_wdt.c	2013-05-11 22:57:46.000000000 +0200
-> +++ b/drivers/watchdog/mpc8xxx_wdt.c	2013-11-30 16:14:53.803495472 +0100
-> @@ -72,53 +72,36 @@
->    * to 0
+> Changes since v3:
+> -----------------
+> Rebased on top of Alexandre's patch "gpio: better lookup method for
+> platform GPIOs".
+>
+> diff --git a/arch/arm/mach-tegra/board-paz00.c b/arch/arm/mach-tegra/board-paz00.c
+> index 06f0240..e4dec9f 100644
+> --- a/arch/arm/mach-tegra/board-paz00.c
+> +++ b/arch/arm/mach-tegra/board-paz00.c
+> @@ -18,6 +18,7 @@
 >    */
->   static int prescale = 1;
-> -static unsigned int timeout_sec;
 >
-> -static unsigned long wdt_is_open;
->   static DEFINE_SPINLOCK(wdt_spinlock);
+>   #include <linux/platform_device.h>
+> +#include <linux/gpio/driver.h>
+>   #include <linux/rfkill-gpio.h>
+>   #include "board.h"
 >
-> -static void mpc8xxx_wdt_keepalive(void)
-> +static int mpc8xxx_wdt_ping(struct watchdog_device *w)
->   {
->   	/* Ping the WDT */
->   	spin_lock(&wdt_spinlock);
->   	out_be16(&wd_base->swsrr, 0x556c);
->   	out_be16(&wd_base->swsrr, 0xaa39);
->   	spin_unlock(&wdt_spinlock);
-> +	return 0;
->   }
->
-
-Ok, now I understand a bit better.
-
-I think it would be better to keep the original mpc8xxx_wdt_keepalive()
-function and add
-
-static int mpc8xxx_wdt_ping(struct watchdog_device *w)
-{
-	mpc8xxx_wdt_keepalive();
-}
-
-since the parameter is not used. Then you can call mpc8xxx_wdt_keepalive()
-from mpc8xxx_wdt_timer_ping(), and you don't have to add the dummy argument.
-
-Otherwise looks good.
-
-Note there is a problem in the probe function with
-	u32 freq = fsl_get_sys_freq();
-and
-	if (!freq || freq == -1)
-		     ^^^^^^^^^^^
-
-but fixing that would be a different patch.	
-
-Guenter
-
-> +static struct watchdog_device mpc8xxx_wdt_dev;
->   static void mpc8xxx_wdt_timer_ping(unsigned long arg);
-> -static DEFINE_TIMER(wdt_timer, mpc8xxx_wdt_timer_ping, 0, 0);
-> +static DEFINE_TIMER(wdt_timer, mpc8xxx_wdt_timer_ping, 0,
-> +		(unsigned long)&mpc8xxx_wdt_dev);
->
->   static void mpc8xxx_wdt_timer_ping(unsigned long arg)
->   {
-> -	mpc8xxx_wdt_keepalive();
-> -	/* We're pinging it twice faster than needed, just to be sure. */
-> -	mod_timer(&wdt_timer, jiffies + HZ * timeout_sec / 2);
-> -}
-> +	struct watchdog_device *w = (struct watchdog_device *)arg;
->
-> -static void mpc8xxx_wdt_pr_warn(const char *msg)
-> -{
-> -	pr_crit("%s, expect the %s soon!\n", msg,
-> -		reset ? "reset" : "machine check exception");
-> -}
-> -
-> -static ssize_t mpc8xxx_wdt_write(struct file *file, const char __user *buf,
-> -				 size_t count, loff_t *ppos)
-> -{
-> -	if (count)
-> -		mpc8xxx_wdt_keepalive();
-> -	return count;
-> +	mpc8xxx_wdt_ping(w);
-> +	/* We're pinging it twice faster than needed, just to be sure. */
-> +	mod_timer(&wdt_timer, jiffies + HZ * w->timeout / 2);
->   }
->
-> -static int mpc8xxx_wdt_open(struct inode *inode, struct file *file)
-> +static int mpc8xxx_wdt_start(struct watchdog_device *w)
->   {
->   	u32 tmp = SWCRR_SWEN;
-> -	if (test_and_set_bit(0, &wdt_is_open))
-> -		return -EBUSY;
-> -
-> -	/* Once we start the watchdog we can't stop it */
-> -	if (nowayout)
-> -		__module_get(THIS_MODULE);
->
->   	/* Good, fire up the show */
->   	if (prescale)
-> @@ -132,59 +115,31 @@
->
->   	del_timer_sync(&wdt_timer);
->
-> -	return nonseekable_open(inode, file);
-> +	return 0;
->   }
->
-> -static int mpc8xxx_wdt_release(struct inode *inode, struct file *file)
-> +static int mpc8xxx_wdt_stop(struct watchdog_device *w)
->   {
-> -	if (!nowayout)
-> -		mpc8xxx_wdt_timer_ping(0);
-> -	else
-> -		mpc8xxx_wdt_pr_warn("watchdog closed");
-> -	clear_bit(0, &wdt_is_open);
-> +	mod_timer(&wdt_timer, jiffies);
->   	return 0;
->   }
->
-> -static long mpc8xxx_wdt_ioctl(struct file *file, unsigned int cmd,
-> -							unsigned long arg)
-> -{
-> -	void __user *argp = (void __user *)arg;
-> -	int __user *p = argp;
-> -	static const struct watchdog_info ident = {
-> -		.options = WDIOF_KEEPALIVEPING,
-> -		.firmware_version = 1,
-> -		.identity = "MPC8xxx",
-> -	};
-> -
-> -	switch (cmd) {
-> -	case WDIOC_GETSUPPORT:
-> -		return copy_to_user(argp, &ident, sizeof(ident)) ? -EFAULT : 0;
-> -	case WDIOC_GETSTATUS:
-> -	case WDIOC_GETBOOTSTATUS:
-> -		return put_user(0, p);
-> -	case WDIOC_KEEPALIVE:
-> -		mpc8xxx_wdt_keepalive();
-> -		return 0;
-> -	case WDIOC_GETTIMEOUT:
-> -		return put_user(timeout_sec, p);
-> -	default:
-> -		return -ENOTTY;
-> -	}
-> -}
-> +static struct watchdog_info mpc8xxx_wdt_info = {
-> +	.options = WDIOF_KEEPALIVEPING,
-> +	.firmware_version = 1,
-> +	.identity = "MPC8xxx",
-> +};
->
-> -static const struct file_operations mpc8xxx_wdt_fops = {
-> -	.owner		= THIS_MODULE,
-> -	.llseek		= no_llseek,
-> -	.write		= mpc8xxx_wdt_write,
-> -	.unlocked_ioctl	= mpc8xxx_wdt_ioctl,
-> -	.open		= mpc8xxx_wdt_open,
-> -	.release	= mpc8xxx_wdt_release,
-> +static struct watchdog_ops mpc8xxx_wdt_ops = {
-> +	.owner = THIS_MODULE,
-> +	.start = mpc8xxx_wdt_start,
-> +	.ping = mpc8xxx_wdt_ping,
-> +	.stop = mpc8xxx_wdt_stop,
+> @@ -36,7 +37,17 @@ static struct platform_device wifi_rfkill_device = {
+>   	},
 >   };
 >
-> -static struct miscdevice mpc8xxx_wdt_miscdev = {
-> -	.minor	= WATCHDOG_MINOR,
-> -	.name	= "watchdog",
-> -	.fops	= &mpc8xxx_wdt_fops,
-> +static struct watchdog_device mpc8xxx_wdt_dev = {
-> +	.info = &mpc8xxx_wdt_info,
-> +	.ops = &mpc8xxx_wdt_ops,
->   };
->
->   static const struct of_device_id mpc8xxx_wdt_match[];
-> @@ -196,6 +151,7 @@
->   	const struct mpc8xxx_wdt_type *wdt_type;
->   	u32 freq = fsl_get_sys_freq();
->   	bool enabled;
-> +	unsigned int timeout_sec;
->
->   	match = of_match_device(mpc8xxx_wdt_match, &ofdev->dev);
->   	if (!match)
-> @@ -222,6 +178,7 @@
->   	else
->   		timeout_sec = timeout / freq;
->
-> +	mpc8xxx_wdt_dev.timeout = timeout_sec;
->   #ifdef MODULE
->   	ret = mpc8xxx_wdt_init_late();
->   	if (ret)
-> @@ -237,7 +194,7 @@
->   	 * userspace handles it.
->   	 */
->   	if (enabled)
-> -		mpc8xxx_wdt_timer_ping(0);
-> +		mod_timer(&wdt_timer, jiffies);
->   	return 0;
->   err_unmap:
->   	iounmap(wd_base);
-> @@ -247,9 +204,10 @@
->
->   static int mpc8xxx_wdt_remove(struct platform_device *ofdev)
->   {
-> -	mpc8xxx_wdt_pr_warn("watchdog removed");
-> +	pr_crit("Watchdog removed, expect the %s soon!\n",
-> +		reset ? "reset" : "machine check exception");
->   	del_timer_sync(&wdt_timer);
-> -	misc_deregister(&mpc8xxx_wdt_miscdev);
-> +	watchdog_unregister_device(&mpc8xxx_wdt_dev);
->   	iounmap(wd_base);
->
->   	return 0;
-> @@ -301,10 +259,11 @@
->   	if (!wd_base)
->   		return -ENODEV;
->
-> -	ret = misc_register(&mpc8xxx_wdt_miscdev);
-> +	watchdog_set_nowayout(&mpc8xxx_wdt_dev, nowayout);
-> +
-> +	ret = watchdog_register_device(&mpc8xxx_wdt_dev);
->   	if (ret) {
-> -		pr_err("cannot register miscdev on minor=%d (err=%d)\n",
-> -		       WATCHDOG_MINOR, ret);
-> +		pr_err("cannot register watchdog device (err=%d)\n", ret);
->   		return ret;
->   	}
->   	return 0;
-> diff -ur a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -1146,6 +1146,7 @@
->   config 8xxx_WDT
->   	tristate "MPC8xxx Platform Watchdog Timer"
->   	depends on PPC_8xx || PPC_83xx || PPC_86xx
-> +	select WATCHDOG_CORE
->   	help
->   	  This driver is for a SoC level watchdog that exists on some
->   	  Freescale PowerPC processors. So far this driver supports:
->
->
+> +static struct gpiod_lookup_table wifi_gpio_lookup = {
+> +	.dev_id = "rfkill_gpio",
+> +	.table = {
+> +		GPIO_LOOKUP_IDX("tegra-gpio", 25, NULL, 0, 0),
+> +		GPIO_LOOKUP_IDX("tegra-gpio", 85, NULL, 1, 0),
 
+nit: the flags could be changed to GPIO_ACTIVE_HIGH (which evaluates to 
+0) to be more explicit.
