@@ -1,121 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932822Ab3LDQMk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 11:12:40 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:55399 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755669Ab3LDQMi (ORCPT
+	id S932847Ab3LDQMu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 11:12:50 -0500
+Received: from smtprelay0236.hostedemail.com ([216.40.44.236]:44255 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753258Ab3LDQMs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 11:12:38 -0500
-Message-ID: <529F5472.9030207@gmail.com>
-Date: Wed, 04 Dec 2013 11:12:34 -0500
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Michael Tuexen <Michael.Tuexen@lurchi.franken.de>
-CC: David Laight <David.Laight@ACULAB.COM>, Sun Paul <paulrbk@gmail.com>,
-        netdev@vger.kernel.org, linux-sctp@vger.kernel.org,
-        Karl Heiss <kheiss@gmail.com>, Neil Horman <nhorman@tuxdriver.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Supporting 4 way connections in LKSCTP
-References: <CAFXGft+CXk3W8=3w=AuYzqYtYnR8nH4Of9=668tUeT+tugD9-A@mail.gmail.com>	<20131127124530.GA23369@hmsreliant.think-freely.org>	<CAFXGftJQV=5Pqs3bhfiS3T1VO1q8jfaMjAUiqm2tDbtSyBCM3A@mail.gmail.com>	<529C9B50.50002@gmail.com>	<CAGugRbXFirQ5P3ek9zN86h4vvO6qsy3eNEooJOApotA+dL+C_g@mail.gmail.com>	<529CB859.9090904@gmail.com>	<CAFXGft+F52p+oaa59=5e5pGfON44N36NA-XMYi5PorzWeybnKw@mail.gmail.com>	<CAFXGft+4o6fT4SYbu3musC+-BEi=xOEGUbZSavF1-0_V1mg6zg@mail.gmail.com>	<529D3BF9.3070208@gmail.com>	<CAFXGftJtCCJ=pVxg_DH-+n2bKmoKXavog0y8mfX+h-1z3hP49Q@mail.gmail.com>	<529DCF42.1070800@gmail.com>	<CAFXGftK5tz90OzObiV7Hi+g080j3zWCNdo217CKdNkOY4JWQUg@mail.gmail.com>	<529DF73E.7060604@gmail.com> <CAFXGftKZD0zN1S=UTa_bYr71-v=7mzU=_CewTNkjPv9CGGB_Fg@mail.gmail.com> <529F395B.9040308@gmail.com> <AE90C24D6B3A694183C094C60CF0A2F6026B745D@saturn3.aculab.com> <529F4D1A.3050304@gmail.com> <7A4B9BD9-B2BF-4625-A2E5-500CD4A6D399@lurchi.franken.de>
-In-Reply-To: <7A4B9BD9-B2BF-4625-A2E5-500CD4A6D399@lurchi.franken.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 4 Dec 2013 11:12:48 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:2903:2914:3138:3139:3140:3141:3142:3354:3622:3653:3865:3866:3867:3868:3870:3871:3874:4250:4321:5007:6119:7576:7652:7875:7901:7903:8957:10004:10400:10848:11026:11232:11473:11658:11914:12043:12291:12438:12517:12519:12555:12740:13019:13095,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: spy94_5228af79b881a
+X-Filterd-Recvd-Size: 3513
+Message-ID: <1386173563.30493.72.camel@joe-AO722>
+Subject: Re: [PATCH v3] checkpatch: add DT compatible string documentation
+ checks
+From: Joe Perches <joe@perches.com>
+To: Rob Herring <robherring2@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Andy Whitcroft <apw@canonical.com>
+Date: Wed, 04 Dec 2013 08:12:43 -0800
+In-Reply-To: <1386173031-17867-1-git-send-email-robherring2@gmail.com>
+References: <1386173031-17867-1-git-send-email-robherring2@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2013 11:01 AM, Michael Tuexen wrote:
-> On Dec 4, 2013, at 4:41 PM, Vlad Yasevich <vyasevich@gmail.com> wrote:
+On Wed, 2013-12-04 at 10:03 -0600, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
 > 
->> On 12/04/2013 09:50 AM, David Laight wrote:
->>>>> In normal operation, IP-A sends INIT to IP-X, IP-X returns INIT_ACK to
->>>>> IP-A. IP-A then sends HB to IP-X, IP-X then returns HB_ACK to IP-A. In
->>>>> the meantime, IP-B sends HB to IP-Y and IPY returns HB_ACK.
->>>>>
->>>>> In case of the path between IP-A and IP-X is broken, IP-B sends INIT
->>>>> to IP-X, NODE-B uses IP-Y to return INIT_ACK to IP-B. Then IP-B sends
->>>>> HB to IP-X, and IP-Y returns HB_ACK to IP-B. In the meantime, the HB
->>>>> communication between IP-B and IP-Y follows the normal flow.
->>>>>
->>>>> Can I confirm, is it really valid?
->>>>
->>>> As long as NODE-B knows about both IP-A and IP-B, and NODE-A knows about
->>>> both IP-X and IP-Y (meaning all the addresses were exchanged inside INIT
->>>> and INIT-ACK), then this situation is perfectly valid.  In fact, this
->>>> has been tested an multiple interops.
->>>
->>> There are some network configurations that do cause problems.
->>> Consider 4 systems with 3 LAN segments:
->>> A) 10.10.10.1 on LAN X and 192.168.1.1 on LAN Y.
->>> B) 10.10.10.2 on LAN X and 192.168.1.2 on LAN Y.
->>> C) 10.10.10.3 on LAN X.
->>> D) 10.10.10.4 on LAN X and 192.168.1.2 on LAN Z.
->>> There are no routers between the networks (and none of the systems
->>> are running IP forwarding).
->>>
->>> If A connects to B everything is fine - traffic can use either LAN.
->>>
->>> Connections from A to C are problematic if C tries to send anything
->>> (except a HB) to 192.168.1.1 before receiving a HB response.
->>> One of the SCTP stacks we've used did send messages to an
->>> inappropriate address, but I've forgotten which one.
->>
->> I guess that would be problematic if A can not receive traffic for
->> 192.168.1.1 on the interface connected to LAN X.  I shouldn't
->> technically be a problem for C as it should mark the path to 192.168.1.1
->> as down.  For A, as long as it doesn't decide to ABORT the association,
->> it shouldn't be a problem either.  It would be interesting to know more
->> about what problems you've observed.
->>
->>>
->>> Connections between A and D fail unless the HB errors A receives
->>> for 192.168.1.2 are ignored.
->>
->> Yes, this configuration is very error prone, especially if system B and
->> system D are up at the same time.  Any attempts by system A to use
->> LAN Y will result in an ABORT generated by system B.  I have seen
->> this issue well in production and we had to renumber system D to solve
->> it.
-> The point is that address scoping should be used. When sending an
-> INIT from 10.10.10.1 to 10.10.10.4 you should not list 192.168.1.1,
-> since you are transmitting an address to a node which might or might
-> not "be in the same scope". We had IDs for that in the past, but
-> they never made it to RFC state, because they were not progressed enough
-> by the authors. Maybe we should push them again...
-
-But these 2 are technically in the same scope.  They are both private
-address types.  Also, this will not solve the problem either since
-the configured addresses could be:
-System A) 10.0.0.1 on Lan X, 10.10.0.1 on Lan Y
-System B) 10.0.0.2 on Lan X, 10.10.0.2 on Lan Y
-System C) 10.0.0.3 on Lan X, 10.10.0.2 on Lan Z
-
-Same problem will occur.
-
-Btw, were there any IDs other then draft-stewart-tsvwg-sctp-ipv4?
-
-Thanks
--vlad
-
+> This adds a simple check that any compatible strings in DeviceTree dts
+> files are present in Documentation/devicetree/bindings. Vendor prefixes
+> are also checked for existing in vendor-prefixes.txt These should be
+> temporary checks until we have more sophisticated binding schema checking.
 > 
-> Best regards
-> Michael
->>
->> -vlad
->>>
->>> Of course the application could explicitly bind to only the 10.x address
->>> but that requires the application know the exact network topology
->>> and may be difficult for incoming calls.
->>>
->>> 	David
->>>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Andy Whitcroft <apw@canonical.com>
+> Cc: Joe Perches <joe@perches.com>
+
+Signed-off-by: Joe Perches <joe@perches.com>
+
+> ---
+> v3:
+> - Use a single message type UNDOCUMENTED_DT_STRING
+> - Ensure '+' is at beginning of the line
+> - Move vendor-prefixes.txt to variable
 > 
+> v2:
+> - Add vendor string checking against vendor-prefixes.txt
+> - Add '_', '.' and '+' as valid compatible string characters
+> - Use 'grep -E' instead of egrep
+> 
+>  scripts/checkpatch.pl | 25 +++++++++++++++++++++++++
+>  1 file changed, 25 insertions(+)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 9c98100..3696366 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -2034,6 +2034,31 @@ sub process {
+>  			     "Use of $flag is deprecated, please use \`$replacement->{$flag} instead.\n" . $herecurr) if ($replacement->{$flag});
+>  		}
+>  
+> +# check for DT compatible documentation
+> +		if ($realfile =~ /\.dts/ && $rawline =~ /^\+\s*compatible\s*=/) {
+> +			my @compats = $rawline =~ /\"([a-zA-Z0-9\-\,\.\+_]+)\"/g;
+> +
+> +			foreach my $compat (@compats) {
+> +				my $compat2 = $compat;
+> +				my $dt_path = "Documentation/devicetree/bindings/";
+> +				$compat2 =~ s/\,[a-z]*\-/\,<\.\*>\-/;
+> +				`grep -Erq "$compat|$compat2" $dt_path`;
+> +				if ( $? >> 8 ) {
+> +					WARN("UNDOCUMENTED_DT_STRING",
+> +					     "DT compatible string \"$compat\" appears un-documented -- check $dt_path\n" . $herecurr);
+> +				}
+> +
+> +				my $vendor = $compat;
+> +				my $vendor_path = $dt_path . "vendor-prefixes.txt";
+> +				$vendor =~ s/^([a-zA-Z0-9]+)\,.*/$1/;
+> +				`grep -Eq "$vendor" $vendor_path`;
+> +				if ( $? >> 8 ) {
+> +					WARN("UNDOCUMENTED_DT_STRING",
+> +					     "DT compatible string vendor \"$vendor\" appears un-documented -- check $vendor_path\n" . $herecurr);
+> +				}
+> +			}
+> +		}
+> +
+>  # check we are in a valid source file if not then ignore this hunk
+>  		next if ($realfile !~ /\.(h|c|s|S|pl|sh)$/);
+>  
+
+
 
