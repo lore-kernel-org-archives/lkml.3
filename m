@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932842Ab3LDQEB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 11:04:01 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:46219 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932508Ab3LDQEA (ORCPT
+	id S932768Ab3LDQHh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 11:07:37 -0500
+Received: from mail-qe0-f47.google.com ([209.85.128.47]:45408 "EHLO
+	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932508Ab3LDQHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 11:04:00 -0500
-From: Rob Herring <robherring2@gmail.com>
-To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
-Subject: [PATCH v3] checkpatch: add DT compatible string documentation checks
-Date: Wed,  4 Dec 2013 10:03:51 -0600
-Message-Id: <1386173031-17867-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Wed, 4 Dec 2013 11:07:36 -0500
+Date: Wed, 4 Dec 2013 11:07:30 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: Re: [PATCH v2 08/23] mm/memblock: Add memblock memory allocation apis
+Message-ID: <20131204160730.GQ3158@htj.dyndns.org>
+References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com>
+ <1386037658-3161-9-git-send-email-santosh.shilimkar@ti.com>
+ <20131203232445.GX8277@htj.dyndns.org>
+ <529F5047.50309@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <529F5047.50309@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+Hello,
 
-This adds a simple check that any compatible strings in DeviceTree dts
-files are present in Documentation/devicetree/bindings. Vendor prefixes
-are also checked for existing in vendor-prefixes.txt These should be
-temporary checks until we have more sophisticated binding schema checking.
+On Wed, Dec 04, 2013 at 10:54:47AM -0500, Santosh Shilimkar wrote:
+> Well as you know there are architectures still using bootmem even after
+> this series. Changing MAX_NUMNODES to NUMA_NO_NODE is too invasive and
+> actually should be done in a separate series. As commented, the best
+> time to do that would be when all remaining architectures moves to
+> memblock.
+> 
+> Just to give you perspective, look at the patch end of the email which
+> Grygorrii cooked up. It doesn't cover all the users of MAX_NUMNODES
+> and we are bot even sure whether the change is correct and its
+> impact on the code which we can't even tests. I would really want to
+> avoid touching all the architectures and keep the scope of the series
+> to core code as we aligned initially.
+> 
+> May be you have better idea to handle this change so do
+> let us know how to proceed with it. With such a invasive change the
+> $subject series can easily get into circles again :-(
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Andy Whitcroft <apw@canonical.com>
-Cc: Joe Perches <joe@perches.com>
----
-v3:
-- Use a single message type UNDOCUMENTED_DT_STRING
-- Ensure '+' is at beginning of the line
-- Move vendor-prefixes.txt to variable
+But we don't have to use MAX_NUMNODES for the new interface, no?  Or
+do you think that it'd be more confusing because it ends up mixing the
+two?  It kinda really bothers me this patchset is expanding the usage
+of the wrong constant with only very far-out plan to fix that.  All
+archs converting to nobootmem will take a *long* time, that is, if
+that happens at all.  I don't really care about the order of things
+happening but "this is gonna be fixed when everyone moves off
+MAX_NUMNODES" really isn't good enough.
 
-v2:
-- Add vendor string checking against vendor-prefixes.txt
-- Add '_', '.' and '+' as valid compatible string characters
-- Use 'grep -E' instead of egrep
+Thanks.
 
- scripts/checkpatch.pl | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 9c98100..3696366 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2034,6 +2034,31 @@ sub process {
- 			     "Use of $flag is deprecated, please use \`$replacement->{$flag} instead.\n" . $herecurr) if ($replacement->{$flag});
- 		}
- 
-+# check for DT compatible documentation
-+		if ($realfile =~ /\.dts/ && $rawline =~ /^\+\s*compatible\s*=/) {
-+			my @compats = $rawline =~ /\"([a-zA-Z0-9\-\,\.\+_]+)\"/g;
-+
-+			foreach my $compat (@compats) {
-+				my $compat2 = $compat;
-+				my $dt_path = "Documentation/devicetree/bindings/";
-+				$compat2 =~ s/\,[a-z]*\-/\,<\.\*>\-/;
-+				`grep -Erq "$compat|$compat2" $dt_path`;
-+				if ( $? >> 8 ) {
-+					WARN("UNDOCUMENTED_DT_STRING",
-+					     "DT compatible string \"$compat\" appears un-documented -- check $dt_path\n" . $herecurr);
-+				}
-+
-+				my $vendor = $compat;
-+				my $vendor_path = $dt_path . "vendor-prefixes.txt";
-+				$vendor =~ s/^([a-zA-Z0-9]+)\,.*/$1/;
-+				`grep -Eq "$vendor" $vendor_path`;
-+				if ( $? >> 8 ) {
-+					WARN("UNDOCUMENTED_DT_STRING",
-+					     "DT compatible string vendor \"$vendor\" appears un-documented -- check $vendor_path\n" . $herecurr);
-+				}
-+			}
-+		}
-+
- # check we are in a valid source file if not then ignore this hunk
- 		next if ($realfile !~ /\.(h|c|s|S|pl|sh)$/);
- 
 -- 
-1.8.3.2
-
+tejun
