@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172Ab3LDXwU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 18:52:20 -0500
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:43981 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756141Ab3LDXwA (ORCPT
+	id S1756203Ab3LDXwi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 18:52:38 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55508 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753400Ab3LDXwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 18:52:00 -0500
-Date: Wed, 4 Dec 2013 15:51:57 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] mm: memcg: do not allow task about to OOM kill to
- bypass the limit
-In-Reply-To: <1386197114-5317-3-git-send-email-hannes@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1312041546370.6329@chino.kir.corp.google.com>
-References: <1386197114-5317-1-git-send-email-hannes@cmpxchg.org> <1386197114-5317-3-git-send-email-hannes@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 4 Dec 2013 18:52:35 -0500
+Message-ID: <529F797A.6010107@jp.fujitsu.com>
+Date: Wed, 04 Dec 2013 13:50:34 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: fweisbec@gmail.com, tglx@linutronix.de, mingo@kernel.org
+CC: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, oleg@redhat.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 02/10] posix-timers: Remove dead process posix cpu timers
+ caching
+References: <1385221040-24731-1-git-send-email-fweisbec@gmail.com> <1385221040-24731-3-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1385221040-24731-3-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Dec 2013, Johannes Weiner wrote:
+> @@ -1090,13 +1063,8 @@ void posix_cpu_timer_schedule(struct k_itimer *timer)
+>  			timer->it.cpu.expires = 0;
+>  			goto out_unlock;
+>  		} else if (unlikely(p->exit_state) && thread_group_empty(p)) {
+> -			/*
+> -			 * We've noticed that the thread is dead, but
+> -			 * not yet reaped.  Take this opportunity to
+> -			 * drop our task ref.
+> -			 */
+> +			/* Optimizations: if the process is dying, no need to rearm */
+>  			cpu_timer_sample_group(timer->it_clock, p, &now);
 
-> 4942642080ea ("mm: memcg: handle non-error OOM situations more
-> gracefully") allowed tasks that already entered a memcg OOM condition
-> to bypass the memcg limit on subsequent allocation attempts hoping
-> this would expedite finishing the page fault and executing the kill.
+Why do we still need to call cpu_timer_sample_group? You removed to below line which uses
+"now".
+
+> -			clear_dead_task(timer, now);
+>  			goto out_unlock;
+>  		}
+>  		spin_lock(&p->sighand->siglock);
 > 
-> David Rientjes is worried that this breaks memcg isolation guarantees
-> and since there is no evidence that the bypass actually speeds up
-> fault processing just change it so that these subsequent charge
-> attempts fail outright.  The notable exception being __GFP_NOFAIL
-> charges which are required to bypass the limit regardless.
-> 
-> Reported-by: David Rientjes <rientjes@google.com>
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Acked-by: David Rientjes <rientjes@google.com>
-
-Thanks!
-
-I think we should consider marking this for stable@vger.kernel.org for 
-3.12 since the original patch went into 3.12-rc6.  Depending on the number 
-of allocators in the oom memcg, the amount of memory bypassed can become 
-quite large.
-
-For example, in a memcg with a limit of 128MB, if you start 10 concurrent 
-processes that simply allocate a lot of memory you can get quite a bit of 
-memory bypassed.  If I start 10 membench processes, which would cause a 
-128MB memcg to oom even if only one such process were running, we get:
-
-# grep RSS /proc/1092[0-9]/status
-VmRSS:	   15724 kB
-VmRSS:	   15064 kB
-VmRSS:	   13224 kB
-VmRSS:	   14520 kB
-VmRSS:	   14472 kB
-VmRSS:	   13016 kB
-VmRSS:	   13024 kB
-VmRSS:	   14560 kB
-VmRSS:	   14864 kB
-VmRSS:	   14772 kB
-
-And all of those total ~140MB of memory while bound to a memcg with a 
-128MB limit, about 10% of memory is bypassed.
