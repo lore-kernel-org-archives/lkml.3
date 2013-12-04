@@ -1,148 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135Ab3LDKd5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 05:33:57 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:47535 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755522Ab3LDKdz (ORCPT
+	id S1755540Ab3LDKfg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 05:35:36 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:52155 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754217Ab3LDKfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 05:33:55 -0500
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Cc: michael@ellerman.id.au, mikey@neuling.org, sukadev@linux.vnet.ibm.com,
-        eranian@google.com, acme@ghostprotocols.net, ak@linux.intel.com,
-        mingo@kernel.org
-Subject: [PATCH V4 09/10] power8, perf: Change BHRB branch filter configuration
-Date: Wed,  4 Dec 2013 16:02:41 +0530
-Message-Id: <1386153162-11225-10-git-send-email-khandual@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1386153162-11225-1-git-send-email-khandual@linux.vnet.ibm.com>
-References: <1386153162-11225-1-git-send-email-khandual@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120410-2000-0000-0000-00000EC96E78
+	Wed, 4 Dec 2013 05:35:32 -0500
+Date: Wed, 4 Dec 2013 11:34:32 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Milo Kim <milo.kim@ti.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-pwm@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v4 0/4] LP3943 MFD driver for a GPIO expander and a PWM
+ generator
+Message-ID: <20131204103431.GC26589@ulmo.nvidia.com>
+References: <1380082975-6022-1-git-send-email-milo.kim@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CblX+4bnyfN0pR09"
+Content-Disposition: inline
+In-Reply-To: <1380082975-6022-1-git-send-email-milo.kim@ti.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Powerpc kernel now supports SW based branch filters for book3s systems with some
-specifc requirements while dealing with HW supported branch filters in order to
-achieve overall OR semantics prevailing in perf branch stack sampling framework.
-This patch adapts the BHRB branch filter configuration to meet those protocols.
-POWER8 PMU does support 3 branch filters (out of which two are getting used in
-perf branch stack) which are mutually exclussive and cannot be ORed with each
-other. This implies that PMU can only handle one HW based branch filter request
-at any point of time. For all other combinations PMU will pass it on to the SW.
 
-Also the combination of PERF_SAMPLE_BRANCH_ANY_CALL and PERF_SAMPLE_BRANCH_COND
-can now be handled in SW, hence we dont error them out anymore.
+--CblX+4bnyfN0pR09
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
----
- arch/powerpc/perf/power8-pmu.c | 73 +++++++++++++++++++++++++++++++-----------
- 1 file changed, 54 insertions(+), 19 deletions(-)
+On Wed, Sep 25, 2013 at 01:22:55PM +0900, Milo Kim wrote:
+> LP3943 is an integrated device capable of driving 16 output channels.
+> It can be used for GPIO expander and PWM generators.
+> LP3493 registers are controlled via the I2C interface.
+>=20
+> This patch-set consists of four parts - MFD, GPIO, PWM and documents.
+>=20
+> Update from v3 to v4:
+>   Move the driver description from the documentation to the MFD driver fi=
+le.
+>=20
+> Milo Kim (4):
+>   mfd: add LP3943 MFD driver
+>   gpio: add LP3943 I2C GPIO expander driver
+>   pwm: add LP3943 PWM driver
+>   Documentation: add LP3943 DT bindings and document
 
-diff --git a/arch/powerpc/perf/power8-pmu.c b/arch/powerpc/perf/power8-pmu.c
-index 03c5b8d..6021349 100644
---- a/arch/powerpc/perf/power8-pmu.c
-+++ b/arch/powerpc/perf/power8-pmu.c
-@@ -561,7 +561,56 @@ static int power8_generic_events[] = {
- 
- static u64 power8_bhrb_filter_map(u64 branch_sample_type, u64 *filter_mask)
- {
--	u64 pmu_bhrb_filter = 0;
-+	u64 x, tmp, pmu_bhrb_filter = 0;
-+	*filter_mask = 0;
-+
-+	/* No branch filter requested */
-+	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY) {
-+		*filter_mask = PERF_SAMPLE_BRANCH_ANY;
-+		return pmu_bhrb_filter;
-+	}
-+
-+	/*
-+	 * P8 does not support oring of PMU HW branch filters. Hence
-+	 * if multiple branch filters are requested which includes filters
-+	 * supported in PMU, still go ahead and clear the PMU based HW branch
-+	 * filter component as in this case all the filters will be processed
-+ 	 * in SW.
-+	 */
-+	tmp = branch_sample_type;
-+
-+	/* Remove privilege filters before comparison */
-+	tmp &= ~PERF_SAMPLE_BRANCH_USER;
-+	tmp &= ~PERF_SAMPLE_BRANCH_KERNEL;
-+	tmp &= ~PERF_SAMPLE_BRANCH_HV;
-+
-+	for_each_branch_sample_type(x) {
-+		/* Ignore privilege requests */
-+		if ((x == PERF_SAMPLE_BRANCH_USER) || (x == PERF_SAMPLE_BRANCH_KERNEL) || (x == PERF_SAMPLE_BRANCH_HV))
-+			continue;
-+
-+		if (!(tmp & x))
-+			continue;
-+
-+               /* Supported HW PMU filters */
-+		if (tmp & PERF_SAMPLE_BRANCH_ANY_CALL) {
-+			tmp &= ~PERF_SAMPLE_BRANCH_ANY_CALL;
-+			if (tmp) {
-+				pmu_bhrb_filter = 0;
-+				*filter_mask = 0;
-+				return pmu_bhrb_filter;
-+			}
-+		}
-+
-+		if (tmp & PERF_SAMPLE_BRANCH_COND) {
-+			tmp &= ~PERF_SAMPLE_BRANCH_COND;
-+			if (tmp) {
-+				pmu_bhrb_filter = 0;
-+				*filter_mask = 0;
-+				return pmu_bhrb_filter;
-+			}
-+		}
-+	}
- 
- 	/* BHRB and regular PMU events share the same privilege state
- 	 * filter configuration. BHRB is always recorded along with a
-@@ -570,34 +619,20 @@ static u64 power8_bhrb_filter_map(u64 branch_sample_type, u64 *filter_mask)
- 	 * PMU event, we ignore any separate BHRB specific request.
- 	 */
- 
--	/* No branch filter requested */
--	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY)
--		return pmu_bhrb_filter;
--
--	/* Invalid branch filter options - HW does not support */
--	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY_RETURN)
--		return -1;
--
--	if (branch_sample_type & PERF_SAMPLE_BRANCH_IND_CALL)
--		return -1;
--
-+	/* Supported individual branch filters */
- 	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY_CALL) {
- 		pmu_bhrb_filter |= POWER8_MMCRA_IFM1;
-+		*filter_mask    |= PERF_SAMPLE_BRANCH_ANY_CALL;
- 		return pmu_bhrb_filter;
- 	}
- 
- 	if (branch_sample_type & PERF_SAMPLE_BRANCH_COND) {
- 		pmu_bhrb_filter |= POWER8_MMCRA_IFM3;
-+		*filter_mask    |= PERF_SAMPLE_BRANCH_COND;
- 		return pmu_bhrb_filter;
- 	}
- 
--	/* PMU does not support ANY combination of HW BHRB filters */
--	if ((branch_sample_type & PERF_SAMPLE_BRANCH_ANY_CALL) &&
--			(branch_sample_type & PERF_SAMPLE_BRANCH_COND))
--		return -1;
--
--	/* Every thing else is unsupported */
--	return -1;
-+	return pmu_bhrb_filter;
- }
- 
- static void power8_config_bhrb(u64 pmu_bhrb_filter)
--- 
-1.7.11.7
+I suspect that given the build-time dependencies Lee may want to take
+all four patches through the MFD tree, so I've acked the PWM parts.
 
+Thierry
+
+--CblX+4bnyfN0pR09
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSnwU3AAoJEN0jrNd/PrOh7oUP/ivmm5ud0khS1wkyAYvT9w4Q
+ZLiIUS4+GIT2kHq9WArXn+69wkw4w9+t4CtWTIpoMBpLWPnVYpWe3ZSiysbk0E1R
+v2dM5KYeorjEEoHS5voRynfVzOt58XUZ9QfODv8Nn0HOCgkmzCl+uPo21MX/KA14
+iUeXV++lg7TMj+leMMaJaWClwMapLHg7q5U+x53DLMT2Qjw2lKdhjr5NqXKghuw+
+KiCL0evwe6JCAQc/5TJDJZrsYaKM1MW/+hSistDB8Deh9v3MzV0xMvPD13Pw7Coo
+nvezs7HawicHpihMkqG4oJxxARa0eFr9s62OcE9znU25twQbsXSQSnkT8g8StlA5
+f9ECApLfciCG9awJl3Nq2QB66HxSAbW3Mz+3FmD00swYcvzSNT9xTu4sWPmhjdX0
+9ZLGMMCH3pLp8TGfsGfDEGEDnbl/ZAesAxu2HWI+P3n2EkDCX6NLT+D2LmjfLOwo
+HAttQ9gnZymTfN7ejhIIsO6gJObcyEsuOE8eArMaOYAXDtnznMbziDI0CcuFgcHT
+o6nhQzuPnRdObfOZPnyeN2A5pZb2yLinklz/MURdKtFbJhgtVt2cBKGt08BUI5eL
+W4tqyEkkzy96iyyBlRGGFPS93jEBm6m5j7RIEh4gg6ZjfcZ8vjtjV4hDMm4v/cgK
+4paYhbBQzKXSU7bObC/5
+=m/Iq
+-----END PGP SIGNATURE-----
+
+--CblX+4bnyfN0pR09--
