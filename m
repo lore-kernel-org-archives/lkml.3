@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932439Ab3LDWpm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 17:45:42 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:44438 "EHLO zene.cmpxchg.org"
+	id S932247Ab3LDWpg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 17:45:36 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:44433 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932067Ab3LDWph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 17:45:37 -0500
+	id S1756109Ab3LDWpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 17:45:32 -0500
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
         linux-mm@kvack.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [patch 2/2] mm: memcg: do not allow task about to OOM kill to bypass the limit
-Date: Wed,  4 Dec 2013 17:45:14 -0500
-Message-Id: <1386197114-5317-3-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 1/2] mm: memcg: fix race condition between memcg teardown and swapin
+Date: Wed,  4 Dec 2013 17:45:13 -0500
+Message-Id: <1386197114-5317-2-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1386197114-5317-1-git-send-email-hannes@cmpxchg.org>
 References: <1386197114-5317-1-git-send-email-hannes@cmpxchg.org>
@@ -21,36 +21,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-4942642080ea ("mm: memcg: handle non-error OOM situations more
-gracefully") allowed tasks that already entered a memcg OOM condition
-to bypass the memcg limit on subsequent allocation attempts hoping
-this would expedite finishing the page fault and executing the kill.
+There is a race condition between a memcg being torn down and a swapin
+triggered from a different memcg of a page that was recorded to belong
+to the exiting memcg on swapout (with CONFIG_MEMCG_SWAP extension).
+The result is unreclaimable pages pointing to dead memcgs, which can
+lead to anything from endless loops in later memcg teardown (the page
+is charged to all hierarchical parents but is not on any LRU list) or
+crashes from following the dangling memcg pointer.
 
-David Rientjes is worried that this breaks memcg isolation guarantees
-and since there is no evidence that the bypass actually speeds up
-fault processing just change it so that these subsequent charge
-attempts fail outright.  The notable exception being __GFP_NOFAIL
-charges which are required to bypass the limit regardless.
+Memcgs with tasks in them can not be torn down and usually charges
+don't show up in memcgs without tasks.  Swapin with the
+CONFIG_MEMCG_SWAP extension is the notable exception because it
+charges the cgroup that was recorded as owner during swapout, which
+may be empty and in the process of being torn down when a task in
+another memcg triggers the swapin:
 
-Reported-by: David Rientjes <rientjes@google.com>
+  teardown:                 swapin:
+
+                            lookup_swap_cgroup_id()
+                            rcu_read_lock()
+                            mem_cgroup_lookup()
+                            css_tryget()
+                            rcu_read_unlock()
+  disable css_tryget()
+  call_rcu()
+    offline_css()
+      reparent_charges()
+                            res_counter_charge() (hierarchical!)
+                            css_put()
+                              css_free()
+                            pc->mem_cgroup = dead memcg
+                            add page to dead lru
+
+Add a final reparenting step into css_free() to make sure any such
+raced charges are moved out of the memcg before it's finally freed.
+
+In the longer term it would be cleaner to have the css_tryget() and
+the res_counter charge under the same RCU lock section so that the
+charge reparenting is deferred until the last charge whose tryget
+succeeded is visible.  But this will require more invasive changes
+that will be harder to evaluate and backport into stable, so better
+defer them to a separate change set.
+
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: <stable@kernel.org>
 ---
- mm/memcontrol.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/memcontrol.c | 36 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index f6a63f5b3827..bf5e89457149 100644
+index e3aff0175d4c..f6a63f5b3827 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -2694,7 +2694,7 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
- 		goto bypass;
+@@ -6355,6 +6355,42 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
+ static void mem_cgroup_css_free(struct cgroup_subsys_state *css)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
++	/*
++	 * XXX: css_offline() would be where we should reparent all
++	 * memory to prepare the cgroup for destruction.  However,
++	 * memcg does not do css_tryget() and res_counter charging
++	 * under the same RCU lock region, which means that charging
++	 * could race with offlining.  Offlining only happens to
++	 * cgroups with no tasks in them but charges can show up
++	 * without any tasks from the swapin path when the target
++	 * memcg is looked up from the swapout record and not from the
++	 * current task as it usually is.  A race like this can leak
++	 * charges and put pages with stale cgroup pointers into
++	 * circulation:
++	 *
++	 * #0                        #1
++	 *                           lookup_swap_cgroup_id()
++	 *                           rcu_read_lock()
++	 *                           mem_cgroup_lookup()
++	 *                           css_tryget()
++	 *                           rcu_read_unlock()
++	 * disable css_tryget()
++	 * call_rcu()
++	 *   offline_css()
++	 *     reparent_charges()
++	 *                           res_counter_charge()
++	 *                           css_put()
++	 *                             css_free()
++	 *                           pc->mem_cgroup = dead memcg
++	 *                           add page to lru
++	 *
++	 * The bulk of the charges are still moved in offline_css() to
++	 * avoid pinning a lot of pages in case a long-term reference
++	 * like a swapout record is deferring the css_free() to long
++	 * after offlining.  But this makes sure we catch any charges
++	 * made after offlining:
++	 */
++	mem_cgroup_reparent_charges(memcg);
  
- 	if (unlikely(task_in_memcg_oom(current)))
--		goto bypass;
-+		goto nomem;
- 
- 	if (gfp_mask & __GFP_NOFAIL)
- 		oom = false;
+ 	memcg_destroy_kmem(memcg);
+ 	__mem_cgroup_free(memcg);
 -- 
 1.8.4.2
 
