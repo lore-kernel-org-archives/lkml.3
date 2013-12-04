@@ -1,186 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932416Ab3LDO2C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 09:28:02 -0500
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:44652 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932301Ab3LDO14 (ORCPT
+	id S1755746Ab3LDO3W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 09:29:22 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:57141 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753663Ab3LDO3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 09:27:56 -0500
-Date: Wed, 4 Dec 2013 11:27:45 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: dsahern@gmail.com, jolsa@redhat.com, Ingo Molnar <mingo@kernel.org>,
-        a.p.zijlstra@chello.nl, paulus@samba.org, linux-kernel@vger.kernel.org,
-        Pekka Enberg <penberg@iki.fi>, Zhang@infradead.org,
-        Yanmin <yanmin_zhang@linux.intel.com>,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: Re: [PATCH 3/5] perf tools: Update the Document for perf kvm record
- for new behavior.
-Message-ID: <20131204142745.GG6359@ghostprotocols.net>
-References: <cover.1386197481.git.yangds.fnst@cn.fujitsu.com>
- <3a3a9c1e05acb5a274d1d8369db5a4c6467d6276.1386197481.git.yangds.fnst@cn.fujitsu.com>
+	Wed, 4 Dec 2013 09:29:19 -0500
+Message-ID: <529F3C1C.2050509@ti.com>
+Date: Wed, 4 Dec 2013 19:58:44 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3a3a9c1e05acb5a274d1d8369db5a4c6467d6276.1386197481.git.yangds.fnst@cn.fujitsu.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vivek Gautam <gautamvivek1987@gmail.com>
+CC: Jingoo Han <jg1.han@samsung.com>, Kamil Debski <k.debski@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        <linux-doc@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Julius Werner <jwerner@chromium.org>
+Subject: Re: [PATCH RFC 1/4] phy: Add new Exynos5 USB 3.0 PHY driver
+References: <1383205544-32244-1-git-send-email-gautam.vivek@samsung.com>	<1383205544-32244-2-git-send-email-gautam.vivek@samsung.com>	<527744B2.4090303@ti.com>	<030d01ced946$d6e23490$84a69db0$%debski@samsung.com>	<52779D28.9000905@ti.com>	<CAFp+6iH7vQ-OtMFL4pyr4tFDRchH4oh1Z0753WNgrHiUzj+kzw@mail.gmail.com>	<00fe01ceda0a$941957a0$bc4c06e0$%debski@samsung.com>	<000001ceda17$f41c2030$dc546090$%han@samsung.com>	<000101ceda1f$04ca6f20$0e5f4d60$%han@samsung.com>	<CAFp+6iFAZab35F-MOOZHcHpzSEOL=51gWBK2KZbOJS+0731GJQ@mail.gmail.com>	<000301ceda84$1d648bf0$582da3d0$%han@samsung.com>	<5280BB65.5040305@ti.com>	<CAFp+6iGKpzOHjwnSMvSgTehzPLQMB8madoYqMk5JPSAZfSGSTg@mail.gmail.com>	<528C7B0E.3080401@ti.com> <CAFp+6iF3UnV-w2pYQE2THQZBGma8xpp6pqSuwXzjUN3emJnftQ@mail.gmail.com> <528CD8EC.9050403@ti.com>
+In-Reply-To: <528CD8EC.9050403@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Dec 04, 2013 at 05:56:41PM -0500, Dongsheng Yang escreveu:
-> As we have changed the default behavior of perf kvm to --guest enabled,
-> the document about perf kvm record is outdated. This patch update it to
-> show the correct output with --host/--guest/neither/both of them.
- 
-> +++ b/tools/perf/Documentation/perf-kvm.txt
-> @@ -24,10 +24,17 @@ There are a couple of variants of perf kvm:
->    of an arbitrary workload.
-  
->    'perf kvm record <command>' to record the performance counter profile
-> -  of an arbitrary workload and save it into a perf data file. If both
-> -  --host and --guest are input, the perf data file name is perf.data.kvm.
-> -  If there is  no --host but --guest, the file name is perf.data.guest.
-> -  If there is no --guest but --host, the file name is perf.data.host.
-> +  of an arbitrary workload and save it into a perf data file. We set the
-> +  default behavior of perf kvm as --guest, so if neither --host nor --guest
-> +  is input, the perf data file name is perf.data.guest. If --host is input,
-> +  the perf data file name is perf.data.kvm. If you want to record data into
-> +  perf.data.host, please input --host --no-guest. The behaviors are shown as
-> +  following:
+Hi Vivek,
 
-Perhaps this is clearer:
+On Wednesday 20 November 2013 09:14 PM, Kishon Vijay Abraham I wrote:
+> Hi,
+> 
+> On Wednesday 20 November 2013 03:02 PM, Vivek Gautam wrote:
+>> On Wed, Nov 20, 2013 at 2:34 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>> On Wednesday 20 November 2013 02:27 PM, Vivek Gautam wrote:
+>>>> Hi Kishon,
+>>>>
+>>>>
+>>>> On Mon, Nov 11, 2013 at 4:41 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>>>> Hi,
+>>>> sorry for the delayed response.
+>>>>
+>>>>>
+>>>>> On Wednesday 06 November 2013 05:37 AM, Jingoo Han wrote:
+>>>>>> On Wednesday, November 06, 2013 2:58 AM, Vivek Gautam wrote:
+>>>>>>> On Tue, Nov 5, 2013 at 5:33 PM, Jingoo Han <jg1.han@samsung.com> wrote:
+>>>>>>
+>>>>>> [.....]
+>>>>>>
+>>>>>>>> USB3.0 PHY consists of two blocks such as 3.0 block and 2.0 block.
+>>>>>>>> This USB3.0 PHY can support UTMI+ and PIPE3 interface for 3.0 block
+>>>>>>>> and 2.0 block, respectively.
+>>>>>>>>
+>>>>>>>> Conclusion:
+>>>>>>>>
+>>>>>>>>    1) USB2.0 PHY: USB2.0 HOST, USB2.0 Device
+>>>>>>>>                        Base address: 0x1213 0000
+>>>>>>>>
+>>>>>>>>    2) USB3.0 PHY: USB3.0 DRD (3.0 HOST & 3.0 Device)
+>>>>>>>>                        Base address: 0x1210 0000
+>>>>>>>>                        2.0 block(UTMI+) & 3.0 block(PIPE3)
+>>>>>>>
+>>>>>>> And this is of course the PHY used by DWC3 controller, which works at
+>>>>>>> both High speed as well as Super Speed.
+>>>>>>> Right ?
+>>>>>>
+>>>>>> Right.
+>>>>>>
+>>>>>> While 3.0 block(PIPE3) can be used for Super Speed, 2.0 block(UTMI+)
+>>>>>> can be used for High speed.
+>>>>>
+>>>>> It should then come under *single IP muliple PHY* category similar to what
+>>>>> Sylwester has done.
+>>>>
+>>>> Do you mean that i should be including PHY IDs for UTMI+ phy and PIPE3
+>>>> phy present in this PHY block ?
+>>>> AFAICS the two phys (UTMI+ and PIPE3) do not really have separate
+>>>> registers to program, and that's the reason
+>>>> we program the entire PHY in a shot.
+>>>
+>>> you mean you program the same set of bits for UTMI+ and PIPE3?
+>>
+>> No, looking closely into PHY datasheet as well as Exynos5250 manual, i
+>> can see that UTMI+ and PIPE3
+>> phys have separate bit settings. So i think we should be able to
+>> segregate the two PHYs (UTMI+ and PIPE3).
+>> Pardon me for my earlier observations.
+> 
+> no problem..
+>> Let me clarify more with our h/w team also on this and then i will
+>> confirm with this.
 
-"Use 'perf kvm record <command>' to record the a profile of an arbitrary
-workload and save it into a perf.data file. The default is to record
-guest samples, use --host to ask for just host samples or both --guest
-and --host for both kinds of samples to be taken."
+Did you get more information on this?
 
-Argh, then I wonder why do we have --guest if the only possibility,
-according to the text above, is for it to be used in the --no-guest
-variant, is that the case?
-
-Do we really, really need to have those .host or .guest or .kvm filename
-suffixes?
-
-Can't we have this somehow encoded in the perf.data file header and show
-it when doing a report? humm, it is already, and we can see it already
-in 'perf evlist':
-
-[root@ssdandy ~]# perf kvm record -a
-^C[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 1.489 MB perf.data.guest (~65058 samples) ]
-[root@ssdandy ~]# perf evlist
-raw_syscalls:sys_enter
-raw_syscalls:sys_exit
-[root@ssdandy ~]# perf evlist -v
-raw_syscalls:sys_enter: sample_freq=1, type: 2, config: 41, size: 96,
-sample_type: IP|TID|TIME|CALLCHAIN|ID|CPU|PERIOD|RAW, read_format: ID,
-disabled: 1, inherit: 1, mmap: 1, comm: 1, enable_on_exec: 1,
-sample_id_all: 1, exclude_guest: 1
-raw_syscalls:sys_exit: sample_freq=1, type: 2, config: 40, size: 96,
-sample_type: IP|TID|TIME|CALLCHAIN|ID|CPU|PERIOD|RAW, read_format: ID,
-disabled: 1, inherit: 1, enable_on_exec: 1, sample_id_all: 1,
-exclude_guest: 1
-[root@ssdandy ~]#
-
-Humm, strange, the exclude_guest bit is set, which doesn't look like it
-matches that text...
-
-Lemme try explicitely using --guest and --host:
-
-[root@ssdandy ~]# perf kvm --guest record sleep 2
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.012 MB perf.data.guest (~532 samples) ]
-[root@ssdandy ~]# perf evlist -v
-raw_syscalls:sys_enter: sample_freq=1, type: 2, config: 41, size: 96, sample_type: IP|TID|TIME|CALLCHAIN|ID|CPU|PERIOD|RAW, read_format: ID, disabled: 1, inherit: 1, mmap: 1, comm: 1, enable_on_exec: 1, sample_id_all: 1, exclude_guest: 1
-raw_syscalls:sys_exit: sample_freq=1, type: 2, config: 40, size: 96, sample_type: IP|TID|TIME|CALLCHAIN|ID|CPU|PERIOD|RAW, read_format: ID, disabled: 1, inherit: 1, enable_on_exec: 1, sample_id_all: 1, exclude_guest: 1
-[root@ssdandy ~]#
-
-exclude_guest still there...
-
-Then:
-
-[root@ssdandy ~]# perf kvm --host record sleep 2
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.012 MB perf.data.kvm (~544 samples) ]
-[root@ssdandy ~]# perf evlist -v
-raw_syscalls:sys_enter: sample_freq=1, type: 2, config: 41, size: 96, sample_type: IP|TID|TIME|CALLCHAIN|ID|CPU|PERIOD|RAW, read_format: ID, disabled: 1, inherit: 1, mmap: 1, comm: 1, enable_on_exec: 1, sample_id_all: 1, exclude_guest: 1
-raw_syscalls:sys_exit: sample_freq=1, type: 2, config: 40, size: 96, sample_type: IP|TID|TIME|CALLCHAIN|ID|CPU|PERIOD|RAW, read_format: ID, disabled: 1, inherit: 1, enable_on_exec: 1, sample_id_all: 1, exclude_guest: 1
-[root@ssdandy ~]# 
-
-Still there... oops, I've been just bitten by this odd suffixes convention,
-as 'perf evlist', like all other tools, by default will look at 'perf.data', not
-the 'perf kvm' convention...
-
-So again:
-
-[root@ssdandy ~]# perf kvm --guest record -a
-^C[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 1.060 MB perf.data.guest (~46303 samples) ]
-[root@ssdandy ~]# ls -lart perf.data* | tail -1
--rw-------. 1 root root 1113684 Dec  4 11:11 perf.data.guest
-[root@ssdandy ~]# perf evlist -v -i perf.data.guest
-cycles: sample_freq=4000, size: 96, sample_type: IP|TID|TIME|CPU|PERIOD, disabled: 1, inherit: 1, mmap: 1, comm: 1, freq: 1, sample_id_all: 1, exclude_host: 1
-[root@ssdandy ~]# 
-
-Matches the documentation, i.e. perf_event_attr.exclude_guest is not set,
-meaning --guest, and .exclude_host is set, ok.
-
-[root@ssdandy ~]# perf kvm --host record sleep 1
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.013 MB perf.data.kvm (~554 samples) ]
-[root@ssdandy ~]# ls -lart perf.data* | tail -1
--rw-------. 1 root root   15976 Dec  4 11:13 perf.data.kvm
-[root@ssdandy ~]# perf evlist -v -i perf.data.kvm
-cycles: sample_freq=4000, size: 96, sample_type: IP|TID|TIME|PERIOD, disabled: 1, inherit: 1, mmap: 1, comm: 1, freq: 1, enable_on_exec: 1, sample_id_all: 1
-[root@ssdandy ~]#
-
-Yes, 'perf kvm record --host' actually means: "perf kvm --host --guest', as
-both exclude_{host,guest} are zeroed.
-
-[root@ssdandy ~]# perf kvm --host --no-guest record sleep 1
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.013 MB perf.data.host (~552 samples) ]
-[root@ssdandy ~]# ls -lart perf.data* | tail -1
--rw-------. 1 root root   15904 Dec  4 11:14 perf.data.host
-[root@ssdandy ~]# perf evlist -v -i perf.data.host
-cycles: sample_freq=4000, size: 96, sample_type: IP|TID|TIME|PERIOD, disabled: 1, inherit: 1, mmap: 1, comm: 1, freq: 1, enable_on_exec: 1, sample_id_all: 1, exclude_guest: 1
-[root@ssdandy ~]# 
-
-Seems all ok, just not immediately intuitive.
-
-I would expect one to do: (yeah, there was a discussion long ago, can't
-remember the details right now, should have paid more attention at the
-time :-\)
-
-perf kvm record <target> 
-
-to mean:
-
-perf kvm record --host --guest <target>
-
-and generate a perf.data file, just like all other tools.
-
-What about 'perf kvm report', I think one will have to point it to the
-right file to use, using -i, right? So doing it at 'perf kvm record'
-explicitely as well will reduce confusion and make it behave just like
-all the other tools?
-
-Comments?
-
-- Arnaldo
-
-> +    Default('')         ->  perf.data.guest
-> +    --host              ->  perf.data.kvm
-> +    --guest             ->  perf.data.guest
-> +    --host --guest      ->  perf.data.kvm
-> +    --host --no-guest   ->  perf.data.host
->  
->    'perf kvm report' to display the performance counter profile information
->    recorded via perf kvm record.
-> -- 
-> 1.8.2.1
+Thanks
+Kishon
