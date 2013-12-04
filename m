@@ -1,48 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933324Ab3LDTk4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 14:40:56 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:52119 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933067Ab3LDTjR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 14:39:17 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 3/5] ARM: msm: Only build clock.c on proc_comm based platforms
-Date: Wed,  4 Dec 2013 11:39:10 -0800
-Message-Id: <1386185952-27259-4-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.5.1.19.gdaad3aa
-In-Reply-To: <1386185952-27259-1-git-send-email-sboyd@codeaurora.org>
-References: <1386185952-27259-1-git-send-email-sboyd@codeaurora.org>
+	id S1756061Ab3LDTlE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 14:41:04 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:43433 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933067Ab3LDTlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 14:41:00 -0500
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
+        <wim@iguana.be>, <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <Pawel.Moll@arm.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
+        <grygorii.strashko@ti.com>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [PATCH v5 0/5] Update Davinci watchdog driver
+Date: Wed, 4 Dec 2013 21:39:25 +0200
+Message-ID: <1386185970-14488-1-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The functionality provided by clock.c in mach-msm is only needed
-on proc_comm based platforms. Only build the file if proc_comm is
-enabled. This prevents compile failures for platforms that are
-part of the multi-platform kernel.
+These patches are intended to update Davinci watchdog to use WDT core
+and reuse driver for keystone arch, because Keystone uses the similar
+IP like Davinci.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/mach-msm/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+See Documentation:
+Davinci DM646x - http://www.ti.com/lit/ug/spruer5b/spruer5b.pdf
+Keystone - http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
 
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 7ed4c1b..6baae6e 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -1,5 +1,5 @@
- obj-y += timer.o
--obj-y += clock.o
-+obj-$(CONFIG_MSM_PROC_COMM) += clock.o
- 
- obj-$(CONFIG_MSM_VIC) += irq-vic.o
- 
+Also:
+ - improved to support GET_TIMELEFT option.
+ - added "clocks" and "timeout-sec" properties to DT.
+
+Based on
+git://git.kernel.org/pub/scm/linux/kernel/git/ssantosh/linux-keystone.git
+keystone/master
+
+v4..v5:
+- watchdog: davinci: change driver to use WDT core
+	switched off CONFIG_WATCHDOG_NOWAYOUT option
+
+v3..v4:
+- watchdog: davinci: change driver to use WDT core
+	reverted rename of platform driver to "davinci-wdt"
+	as it causes a regression on Davinci platforms.
+
+- arm: dts: keystone: add watchdog entry
+	The patch will be sent separately after series is ready.
+
+v2..v3:
+- watchdog: davinci: change driver to use WDT core
+	removed "ti,keystone-wdt" compatible from driver
+	renamed wdt device names for mach-davinci from
+		"watchdog" to "davinci-wdt"
+
+- watchdog: davinci: reuse driver for keystone arch
+	moved "clocks" property under "Optional properties"
+	improved description of "clocks" property
+
+- arm: dts: keystone: add watchdog entry
+	replaced "ti,keystone-wdt" compatible on
+		 "ti,keystone-wdt","ti,davinci-wdt"
+
+v1..v2:
+- watchdog: davinci: change driver to use WDT core
+	corrected 2011 -> 2006-2013
+	removed useless function comment
+	corrected initialization of heartbeat
+	switched on CONFIG_WATCHDOG_NOWAYOUT option
+
+- watchdog: davinci: use davinci_wdt_device structure to hold device data
+	substituted wdd to watchdog device in commit message
+
+- watchdog: davinci: add GET_TIMELEFT option support
+	corrected comment (is -> has)
+	removed redundant error message "clock freq is not set"
+
+- watchdog: davinci: add GET_STATUS option support
+	dropped
+
+- watchdog: davinci: add "timeout-sec" property
+	use consistent formatting
+
+- watchdog: davinci: reuse driver for keystone arch
+	use consistent formatting
+
+- watchdog: davinci: add "clocks" property
+	merged with above patch
+
+Ivan Khoronzhuk (5):
+  watchdog: davinci: change driver to use WDT core
+  watchdog: davinci: use davinci_wdt_device structure to hold device
+    data
+  watchdog: davinci: add GET_TIMELEFT option support
+  watchdog: davinci: add "timeout-sec" property
+  watchdog: davinci: reuse driver for keystone arch
+
+ .../devicetree/bindings/watchdog/davinci-wdt.txt   |   16 +-
+ drivers/watchdog/Kconfig                           |    5 +-
+ drivers/watchdog/davinci_wdt.c                     |  221 +++++++++-----------
+ 3 files changed, 113 insertions(+), 129 deletions(-)
+
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.9.5
 
