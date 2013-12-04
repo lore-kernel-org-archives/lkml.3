@@ -1,97 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932915Ab3LDPrP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 10:47:15 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:61377 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932609Ab3LDPo7 (ORCPT
+	id S932932Ab3LDPrw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 10:47:52 -0500
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:64764 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932569Ab3LDPru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 10:44:59 -0500
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Mugunthan V N <mugunthanvnm@ti.com>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFCv2 3/6] net: phy: provide phy_resume/phy_suspend helpers
-Date: Wed,  4 Dec 2013 16:44:45 +0100
-Message-Id: <1386171888-28190-4-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1384978913-8052-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1384978913-8052-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Wed, 4 Dec 2013 10:47:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <1386088753-2850-3-git-send-email-hanjun.guo@linaro.org>
+References: <1386088753-2850-1-git-send-email-hanjun.guo@linaro.org>
+	<1386088753-2850-3-git-send-email-hanjun.guo@linaro.org>
+Date: Wed, 4 Dec 2013 09:47:49 -0600
+Message-ID: <CAL_JsqKF-_GCRR1d5Hs0F6pCMfLxUYkXAAp9hY7Ywuu1C+aZ0A@mail.gmail.com>
+Subject: Re: [RFC part2 PATCH 2/9] ARM64 / ACPI: Prefill cpu possible/present
+ maps and map logical cpu id to APIC id
+From: Rob Herring <robherring2@gmail.com>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Linaro Patches <patches@linaro.org>, Olof Johansson <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, linaro-acpi@lists.linaro.org,
+        linux-acpi@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds helper functions to resume and suspend a given phy_device
-by calling the corresponding driver callbacks if available.
+On Tue, Dec 3, 2013 at 10:39 AM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+> When boot the kernel with MADT, the cpu possible and present maps should be
+> prefilled for cpu topology and acpi based cpu hot-plug.
+>
+> The logic cpu id maps to APIC id (GIC id) is also implemented, it is needed
+> for acpi processor drivers.
+>
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> ---
+>  arch/arm64/include/asm/acpi.h |   10 ++--
+>  arch/arm64/kernel/setup.c     |    2 +
+>  arch/arm64/kernel/smp.c       |    2 +
+>  drivers/acpi/plat/arm-core.c  |  118 +++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 129 insertions(+), 3 deletions(-)
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Changelog:
-RFCv1->RFCv2:
-- only suspend if WOL is not enabled
-- remove EXPORT_SYMBOL for phy_suspend/resume
+[snip]
 
-Cc: David Miller <davem@davemloft.net>
-Cc: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Mugunthan V N <mugunthanvnm@ti.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/net/phy/phy_device.c |   24 ++++++++++++++++++++++++
- include/linux/phy.h          |    2 ++
- 2 files changed, 26 insertions(+), 0 deletions(-)
+> diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
+> index a0c2ca6..1428024 100644
+> --- a/arch/arm64/kernel/smp.c
+> +++ b/arch/arm64/kernel/smp.c
+> @@ -420,7 +420,9 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
+>                 if (err)
+>                         continue;
+>
+> +#ifndef CONFIG_ACPI
+>                 set_cpu_present(cpu, true);
+> +#endif
 
-diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
-index d6447b3..6f0e9e4 100644
---- a/drivers/net/phy/phy_device.c
-+++ b/drivers/net/phy/phy_device.c
-@@ -625,6 +625,30 @@ void phy_detach(struct phy_device *phydev)
- }
- EXPORT_SYMBOL(phy_detach);
- 
-+int phy_suspend(struct phy_device *phydev)
-+{
-+	struct phy_driver *phydrv = to_phy_driver(phydev->dev.driver);
-+	struct ethtool_wolinfo wol;
-+
-+	/* If the device has WOL enabled, we cannot suspend the PHY */
-+	wol.cmd = ETHTOOL_GWOL;
-+	phy_ethtool_get_wol(phydev, &wol);
-+	if (wol.wolopts)
-+		return -EBUSY;
-+
-+	if (phydrv->suspend)
-+		return phydrv->suspend(phydev);
-+	return 0;
-+}
-+
-+int phy_resume(struct phy_device *phydev)
-+{
-+	struct phy_driver *phydrv = to_phy_driver(phydev->dev.driver);
-+
-+	if (phydrv->resume)
-+		return phydrv->resume(phydev);
-+	return 0;
-+}
- 
- /* Generic PHY support and helper functions */
- 
-diff --git a/include/linux/phy.h b/include/linux/phy.h
-index 48a4dc3..1070ee3 100644
---- a/include/linux/phy.h
-+++ b/include/linux/phy.h
-@@ -538,6 +538,8 @@ struct phy_device *phy_device_create(struct mii_bus *bus, int addr, int phy_id,
- struct phy_device *get_phy_device(struct mii_bus *bus, int addr, bool is_c45);
- int phy_device_register(struct phy_device *phy);
- int phy_init_hw(struct phy_device *phydev);
-+int phy_suspend(struct phy_device *phydev);
-+int phy_resume(struct phy_device *phydev);
- struct phy_device * phy_attach(struct net_device *dev,
- 		const char *bus_id, phy_interface_t interface);
- struct phy_device *phy_find_first(struct mii_bus *bus);
--- 
-1.7.2.5
+Should this be moved to DT cpu topology related code?
 
+>                 max_cpus--;
+>         }
+>  }
+> diff --git a/drivers/acpi/plat/arm-core.c b/drivers/acpi/plat/arm-core.c
+> index 45ff625..8527ecc 100644
+> --- a/drivers/acpi/plat/arm-core.c
+> +++ b/drivers/acpi/plat/arm-core.c
+
+[snip]
+
+> @@ -221,6 +284,61 @@ static int __init acpi_parse_madt_gic_distributor_entries(void)
+>         return 0;
+>  }
+>
+> +static int setup_possible_cpus __initdata = -1;
+> +static int __init _setup_possible_cpus(char *str)
+> +{
+> +       get_option(&str, &setup_possible_cpus);
+> +       return 0;
+> +}
+> +early_param("possible_cpus", _setup_possible_cpus);
+
+This does not seem ACPI or ARM specific.
+
+> +
+> +/*
+> + * cpu_possible_mask should be static, it cannot change as cpu's
+> + * are onlined, or offlined. The reason is per-cpu data-structures
+> + * are allocated by some modules at init time, and dont expect to
+> + * do this dynamically on cpu arrival/departure.
+> + * cpu_present_mask on the other hand can change dynamically.
+> + * In case when cpu_hotplug is not compiled, then we resort to current
+> + * behaviour, which is cpu_possible == cpu_present.
+> + * - Ashok Raj
+> + *
+> + * Three ways to find out the number of additional hotplug CPUs:
+> + * - If the BIOS specified disabled CPUs in ACPI/mptables use that.
+> + * - The user can overwrite it with possible_cpus=NUM
+> + * - Otherwise don't reserve additional CPUs.
+> + * We do this because additional CPUs waste a lot of memory.
+> + * -AK
+> + */
+> +void __init prefill_possible_map(void)
+> +{
+> +       int i;
+> +       int possible, disabled_cpus;
+> +
+> +       disabled_cpus = total_cpus - available_cpus;
+> +
+> +       if (setup_possible_cpus == -1) {
+> +               if (disabled_cpus > 0)
+> +                       setup_possible_cpus = disabled_cpus;
+> +               else
+> +                       setup_possible_cpus = 0;
+> +       }
+> +
+> +       possible = available_cpus + setup_possible_cpus;
+> +
+> +       pr_info("SMP: the system is limited to %d CPUs\n", nr_cpu_ids);
+> +
+> +       if (possible > nr_cpu_ids)
+> +               possible = nr_cpu_ids;
+> +
+> +       pr_info("SMP: Allowing %d CPUs, %d hotplug CPUs\n",
+> +               possible, max((possible - available_cpus), 0));
+> +
+> +       for (i = 0; i < possible; i++)
+> +               set_cpu_possible(i, true);
+> +       for (; i < NR_CPUS; i++)
+> +               set_cpu_possible(i, false);
+> +}
+
+This does not seem ACPI or ARM specific either.
+
+Rob
