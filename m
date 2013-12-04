@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186Ab3LDLBU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 06:01:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26475 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932072Ab3LDLBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 06:01:17 -0500
-Date: Wed, 4 Dec 2013 10:29:34 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 22/28] tools lib traceevent: Remove malloc_or_die from
- event-plugin.c
-Message-ID: <20131204092934.GB1219@krava.brq.redhat.com>
-References: <1386076182-14484-1-git-send-email-jolsa@redhat.com>
- <1386076182-14484-23-git-send-email-jolsa@redhat.com>
- <20131203111601.540ed5f7@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131203111601.540ed5f7@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755611Ab3LDLDh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 06:03:37 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:60357 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704Ab3LDLDf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 06:03:35 -0500
+X-AuditID: cbfec7f4-b7f966d0000003d9-6a-529f0c054260
+Message-id: <1386155011.25938.4.camel@AMDC1943>
+Subject: Re: [PATCH v6 3/3] mfd: max14577: Add device tree bindings document
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>
+Date: Wed, 04 Dec 2013 12:03:31 +0100
+In-reply-to: <529F0B75.5040004@samsung.com>
+References: <1386153615-25456-1-git-send-email-k.kozlowski@samsung.com>
+ <1386153615-25456-4-git-send-email-k.kozlowski@samsung.com>
+ <529F08DD.2090005@samsung.com> <1386154579.25938.2.camel@AMDC1943>
+ <529F0B75.5040004@samsung.com>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPIsWRmVeSWpSXmKPExsVy+t/xK7qsPPODDN71S1sc3KppsXHGelaL
+	qQ+fsFlc//Kc1WL+kXOsFhNXTma2OPdqJaPF2aY37Bb3vx5ltPh2pYPJYtPja6wWC9uWsFhc
+	3jWHzWLtkbvsFkuvX2SymDB9LYvF4RUHmCzWvZzOYvHqYBuLg7DHmnlrGD0WfL7C7jGh/xOj
+	x85Zd9k9Vi7/wuaxeYWWx6ZVnWwer1bPZPW4c20PUGhJvUffllWMHp83yXlsnBsawBvFZZOS
+	mpNZllqkb5fAlTFjwUWmgvucFZv+zGZpYNzH3sXIySEhYCKx5+VLNghbTOLCvfVANheHkMBS
+	Ron9bw8zQTifGSVuP21lAaniFdCXeHDkHyuILSzgI9F45g0ziM0mYCyxefkSsEkiAhoSM/9e
+	YQRpZhbYxCpx8c47oGYODhYBVYk1+zlAajgFtCWePX7HDrHgNaPExAdPGEESzALqEpPmLWKG
+	OElJYnd7JztEXF5i85q3zBBHCEr8mHyPZQKjwCwkLbOQlM1CUraAkXkVo2hqaXJBcVJ6rqFe
+	cWJucWleul5yfu4mRkikftnBuPiY1SFGAQ5GJR5eDvZ5QUKsiWXFlbmHGCU4mJVEeLewzQ8S
+	4k1JrKxKLcqPLyrNSS0+xMjEwSnVwGh4YcXGN9Vf8o4HBr5gtFMLUG/acT8ozmrdWr65lvHS
+	W5bZbpw79/HuTpFQrRdS/h65wupNjgJTzGsqH8v4/wt23dm547Lf7Y+vrP5ov9y88bS6Ri7b
+	wW8vVSz0jq950HhCVuTd2YmaMyb+r2riYOcVLtUqUfpxT/bneefOrGBdoX8LmVZMD1NiKc5I
+	NNRiLipOBACGC5bHsgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 11:16:01AM -0500, Steven Rostedt wrote:
-> On Tue,  3 Dec 2013 14:09:36 +0100
-> Jiri Olsa <jolsa@redhat.com> wrote:
-> 
-> > Removing malloc_or_die calls from event-plugin.c,
-> > replacing them with standard malloc and error path.
+On Wed, 2013-12-04 at 20:01 +0900, Chanwoo Choi wrote:
+> On 12/04/2013 07:56 PM, Krzysztof Kozlowski wrote:
+> > On Wed, 2013-12-04 at 19:50 +0900, Chanwoo Choi wrote:
+(...)
+> >>
+> >> I prefer to add dt data about max14577-muic on following:
+> >> If extcon consumer driver need to use muic device, dts should provide following dt data.
+> >>
+> >> 		muic: max14577-muic {
+> >> 			compatible = "maxim, max14577-muic";
+> >> 		};
+> >>> +	};
+> >>>
+> >> For example,
+> >> If fuel-gauge want to use extcon subsystem, dt data of fuel-gauge add 'extcon' property as following:
+> >>
+> >> 	fuel-gague@ {
+> >> 		compatible = "...";
+> >> 		extcon = <&muic>;
+> >> 	}
+> >>
+> > Hi,
 > > 
-> > Suggested-by: Namhyung Kim <namhyung@kernel.org>
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Namhyung Kim <namhyung@kernel.org>
-> > Cc: Paul Mackerras <paulus@samba.org>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Cc: David Ahern <dsahern@gmail.com>
-> > ---
-> >  tools/lib/traceevent/event-plugin.c | 19 ++++++++++++++++---
-> >  1 file changed, 16 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/tools/lib/traceevent/event-plugin.c b/tools/lib/traceevent/event-plugin.c
-> > index d272d87..125f567 100644
-> > --- a/tools/lib/traceevent/event-plugin.c
-> > +++ b/tools/lib/traceevent/event-plugin.c
-> > @@ -47,7 +47,11 @@ load_plugin(struct pevent *pevent, const char *path,
-> >  	char *plugin;
-> >  	void *handle;
-> >  
-> > -	plugin = malloc_or_die(strlen(path) + strlen(file) + 2);
-> > +	plugin = malloc(strlen(path) + strlen(file) + 2);
-> > +	if (!plugin) {
-> > +		warning("could not allocate plugin memory\n");
-> > +		return;
+> > The extcon driver itself does not use the binding. It is only needed for
+> > consumers. Is it a common practice to add to documentation such notice
+> > for consumers only?
 > 
-> This should be changed to return an error code. Yes it will require
-> other places to change for that update as well.
+> As you comment, It is only for extcon consumer.
+> But extcon provider driver always is operated with extcon consumer driver.
+> If dts file don't support upper dt data about extcon provider driver,
+> all of extcon consumer drivers could not use extcon subsystem.
+> 
+> I thinks it is common dt data for muic device.
 
-Any chance this could be a separated feature? ;-)
+OK, I'll add it.
 
-AFACIS there's no technical problem with the current code.
-If the load_plugin fails (due to ENOMEM or interface error)
-it's not added on the plugin_list, which is the output/handle
-of plugin interface (and there's warning ;-)).
+Best regards,
+Krzysztof
 
-I think we need some complex/unified error handling for the
-whole library and add that globally.
-
-jirka
