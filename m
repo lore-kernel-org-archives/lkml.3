@@ -1,161 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755729Ab3LDVcY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 16:32:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35467 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752976Ab3LDVcW (ORCPT
+	id S1754809Ab3LDVkI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 16:40:08 -0500
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:44827 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754216Ab3LDVkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 16:32:22 -0500
-Date: Wed, 4 Dec 2013 13:32:20 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: BUG: sleeping function called from invalid context at
- kernel/locking/mutex.c:616
-Message-Id: <20131204133220.a7f38e748ce2c57f90483111@linux-foundation.org>
-In-Reply-To: <1386147578.20621.4.camel@phoenix>
-References: <1385895217.3994.2.camel@phoenix>
-	<1386144811.16763.2.camel@phoenix>
-	<20131204003147.454534da.akpm@linux-foundation.org>
-	<1386147578.20621.4.camel@phoenix>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Dec 2013 16:40:05 -0500
+Date: Wed, 4 Dec 2013 23:39:51 +0200
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 1/2] MIPS: OCTEON: Supply OCTEON+ USB nodes in internal
+ device trees.
+Message-ID: <20131204213951.GH30823@blackmetal.musicnaut.iki.fi>
+References: <1386100012-6077-1-git-send-email-ddaney.cavm@gmail.com>
+ <1386100012-6077-2-git-send-email-ddaney.cavm@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386100012-6077-2-git-send-email-ddaney.cavm@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 04 Dec 2013 16:59:38 +0800 Axel Lin <axel.lin@ingics.com> wrote:
+Hi,
 
-> > 
-> > Please add a lot more printk's so we can narrow it down further?  I'd
-> > use something like 
-> > 
-> > 	printk(%d: %d\n", __LINE__, preempt_count());
-> > 
-> > (note: preempt_count(), not in_atomic())
-> > 
-> > Paste that all over the place so we can see which statement is doing
-> > the wrong thing.  
+On Tue, Dec 03, 2013 at 11:46:51AM -0800, David Daney wrote:
+> From: David Daney <david.daney@cavium.com>
 > 
-> Below is the code ( to show the line number ):
+> This will be needed by the next patch to use said nodes for probing
+> via the device tree.
 > 
-> 459 int add_to_page_cache_locked(struct page *page, struct address_space
-> *mapping,
->  460                 pgoff_t offset, gfp_t gfp_mask)
->  461 {
->  462         int error;
->  463 
->  464         VM_BUG_ON(!PageLocked(page));
->  465         VM_BUG_ON(PageSwapBacked(page));
->  466 
->  467         printk("%d: %d\n", __LINE__, preempt_count());
->  468         error = mem_cgroup_cache_charge(page, current->mm,
->  469                                         gfp_mask &
-> GFP_RECLAIM_MASK);
->  470 printk("%d: %d\n", __LINE__, preempt_count());
->  471         if (error)
->  472                 return error;
->  473 
->  474         error = radix_tree_maybe_preload(gfp_mask &
-> ~__GFP_HIGHMEM);
->  475 printk("%d: %d\n", __LINE__, preempt_count());
->  476         if (error) {
->  477                 mem_cgroup_uncharge_cache_page(page);
->  478                 return error;
->  479         }
->  480 
->  481         page_cache_get(page);
->  482         page->mapping = mapping;
->  483         page->index = offset;
->  484 
->  485 printk("%d: %d\n", __LINE__, preempt_count());
->  486         spin_lock_irq(&mapping->tree_lock);
->  487 printk("%d: %d\n", __LINE__, preempt_count());
->  488         error = radix_tree_insert(&mapping->page_tree, offset,
-> page);
->  489 printk("%d: %d\n", __LINE__, preempt_count());
->  490         radix_tree_preload_end();
->  491 printk("%d: %d\n", __LINE__, preempt_count());
->  492         if (unlikely(error))
->  493                 goto err_insert;
->  494 printk("%d: %d\n", __LINE__, preempt_count());
->  495         mapping->nrpages++;
->  496 printk("%d: %d\n", __LINE__, preempt_count());
->  497         __inc_zone_page_state(page, NR_FILE_PAGES);
->  498 printk("%d: %d\n", __LINE__, preempt_count());
->  499         spin_unlock_irq(&mapping->tree_lock);
->  500 printk("%d: %d\n", __LINE__, preempt_count());
->  501         trace_mm_filemap_add_to_page_cache(page);
->  502 printk("%d: %d\n", __LINE__, preempt_count());
->  503         return 0;
->  504 err_insert:
->  505         page->mapping = NULL;
->  506         /* Leave page->index set: truncation relies upon it */
->  507         spin_unlock_irq(&mapping->tree_lock);
->  508         mem_cgroup_uncharge_cache_page(page);
->  509         page_cache_release(page);
->  510 printk("%d: %d\n", __LINE__, preempt_count());
->  511         return error;
->  512 }
+> Signed-off-by: David Daney <david.daney@cavium.com>
+
+Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+
+A.
+
+> ---
+>  .../cavium-octeon/executive/cvmx-helper-board.c    | 27 ++++++++++++++++++
+>  arch/mips/cavium-octeon/octeon-platform.c          | 32 ++++++++++++++++++++++
+>  arch/mips/cavium-octeon/octeon_3xxx.dts            | 19 +++++++++++++
+>  arch/mips/include/asm/octeon/cvmx-helper-board.h   |  9 ++++++
+>  4 files changed, 87 insertions(+)
 > 
-> Below is the output log:
+> diff --git a/arch/mips/cavium-octeon/executive/cvmx-helper-board.c b/arch/mips/cavium-octeon/executive/cvmx-helper-board.c
+> index 0a1283c..b764df6 100644
+> --- a/arch/mips/cavium-octeon/executive/cvmx-helper-board.c
+> +++ b/arch/mips/cavium-octeon/executive/cvmx-helper-board.c
+> @@ -722,3 +722,30 @@ int __cvmx_helper_board_hardware_enable(int interface)
+>  	}
+>  	return 0;
+>  }
+> +
+> +/**
+> + * Get the clock type used for the USB block based on board type.
+> + * Used by the USB code for auto configuration of clock type.
+> + *
+> + * Return USB clock type enumeration
+> + */
+> +enum cvmx_helper_board_usb_clock_types __cvmx_helper_board_usb_get_clock_type(void)
+> +{
+> +	switch (cvmx_sysinfo_get()->board_type) {
+> +	case CVMX_BOARD_TYPE_BBGW_REF:
+> +	case CVMX_BOARD_TYPE_LANAI2_A:
+> +	case CVMX_BOARD_TYPE_LANAI2_U:
+> +	case CVMX_BOARD_TYPE_LANAI2_G:
+> +	case CVMX_BOARD_TYPE_NIC10E_66:
+> +	case CVMX_BOARD_TYPE_UBNT_E100:
+> +		return USB_CLOCK_TYPE_CRYSTAL_12;
+> +	case CVMX_BOARD_TYPE_NIC10E:
+> +		return USB_CLOCK_TYPE_REF_12;
+> +	default:
+> +		break;
+> +	}
+> +	/* Most boards except NIC10e use a 12MHz crystal */
+> +	if (OCTEON_IS_MODEL(OCTEON_FAM_2))
+> +		return USB_CLOCK_TYPE_CRYSTAL_12;
+> +	return USB_CLOCK_TYPE_REF_48;
+> +}
+> diff --git a/arch/mips/cavium-octeon/octeon-platform.c b/arch/mips/cavium-octeon/octeon-platform.c
+> index 1830874..cd4fd6b 100644
+> --- a/arch/mips/cavium-octeon/octeon-platform.c
+> +++ b/arch/mips/cavium-octeon/octeon-platform.c
+> @@ -171,6 +171,7 @@ device_initcall(octeon_ohci_device_init);
+>  static struct of_device_id __initdata octeon_ids[] = {
+>  	{ .compatible = "simple-bus", },
+>  	{ .compatible = "cavium,octeon-6335-uctl", },
+> +	{ .compatible = "cavium,octeon-5750-usbn", },
+>  	{ .compatible = "cavium,octeon-3860-bootbus", },
+>  	{ .compatible = "cavium,mdio-mux", },
+>  	{ .compatible = "gpio-leds", },
+> @@ -682,6 +683,37 @@ end_led:
+>  		}
+>  	}
+>  
+> +	/* DWC2 USB */
+> +	alias_prop = fdt_getprop(initial_boot_params, aliases,
+> +				 "usbn", NULL);
+> +	if (alias_prop) {
+> +		int usbn = fdt_path_offset(initial_boot_params, alias_prop);
+> +
+> +		if (usbn >= 0 && (current_cpu_type() == CPU_CAVIUM_OCTEON2 ||
+> +				  !octeon_has_feature(OCTEON_FEATURE_USB))) {
+> +			pr_debug("Deleting usbn\n");
+> +			fdt_nop_node(initial_boot_params, usbn);
+> +			fdt_nop_property(initial_boot_params, aliases, "usbn");
+> +		} else  {
+> +			__be32 new_f[1];
+> +			enum cvmx_helper_board_usb_clock_types c;
+> +			c = __cvmx_helper_board_usb_get_clock_type();
+> +			switch (c) {
+> +			case USB_CLOCK_TYPE_REF_48:
+> +				new_f[0] = cpu_to_be32(48000000);
+> +				fdt_setprop_inplace(initial_boot_params, usbn,
+> +						    "refclk-frequency",  new_f, sizeof(new_f));
+> +				/* Fall through ...*/
+> +			case USB_CLOCK_TYPE_REF_12:
+> +				/* Missing "refclk-type" defaults to external. */
+> +				fdt_nop_property(initial_boot_params, usbn, "refclk-type");
+> +				break;
+> +			default:
+> +				break;
+> +			}
+> +		}
+> +	}
+> +
+>  	return 0;
+>  }
+>  
+> diff --git a/arch/mips/cavium-octeon/octeon_3xxx.dts b/arch/mips/cavium-octeon/octeon_3xxx.dts
+> index 88cb42d..fa33115 100644
+> --- a/arch/mips/cavium-octeon/octeon_3xxx.dts
+> +++ b/arch/mips/cavium-octeon/octeon_3xxx.dts
+> @@ -550,6 +550,24 @@
+>  				big-endian-regs;
+>  			};
+>  		};
+> +
+> +		usbn: usbn@1180068000000 {
+> +			compatible = "cavium,octeon-5750-usbn";
+> +			reg = <0x11800 0x68000000 0x0 0x1000>;
+> +			ranges; /* Direct mapping */
+> +			#address-cells = <2>;
+> +			#size-cells = <2>;
+> +			/* 12MHz, 24MHz and 48MHz allowed */
+> +			refclk-frequency = <12000000>;
+> +			/* Either "crystal" or "external" */
+> +			refclk-type = "crystal";
+> +
+> +			usbc@16f0010000000 {
+> +				compatible = "cavium,octeon-5750-usbc";
+> +				reg = <0x16f00 0x10000000 0x0 0x80000>;
+> +				interrupts = <0 56>;
+> +			};
+> +		};
+>  	};
+>  
+>  	aliases {
+> @@ -566,6 +584,7 @@
+>  		flash0 = &flash0;
+>  		cf0 = &cf0;
+>  		uctl = &uctl;
+> +		usbn = &usbn;
+>  		led0 = &led0;
+>  	};
+>   };
+> diff --git a/arch/mips/include/asm/octeon/cvmx-helper-board.h b/arch/mips/include/asm/octeon/cvmx-helper-board.h
+> index 41785dd..8933203 100644
+> --- a/arch/mips/include/asm/octeon/cvmx-helper-board.h
+> +++ b/arch/mips/include/asm/octeon/cvmx-helper-board.h
+> @@ -36,6 +36,13 @@
+>  
+>  #include <asm/octeon/cvmx-helper.h>
+>  
+> +enum cvmx_helper_board_usb_clock_types {
+> +	USB_CLOCK_TYPE_REF_12,
+> +	USB_CLOCK_TYPE_REF_24,
+> +	USB_CLOCK_TYPE_REF_48,
+> +	USB_CLOCK_TYPE_CRYSTAL_12,
+> +};
+> +
+>  typedef enum {
+>  	set_phy_link_flags_autoneg = 0x1,
+>  	set_phy_link_flags_flow_control_dont_touch = 0x0 << 1,
+> @@ -154,4 +161,6 @@ extern int __cvmx_helper_board_interface_probe(int interface,
+>   */
+>  extern int __cvmx_helper_board_hardware_enable(int interface);
+>  
+> +enum cvmx_helper_board_usb_clock_types __cvmx_helper_board_usb_get_clock_type(void);
+> +
+>  #endif /* __CVMX_HELPER_BOARD_H__ */
+> -- 
+> 1.7.11.7
 > 
-> VFS: Mounted root (jffs2 filesystem) on device 31:1.
-> devtmpfs: mounted
-> Freeing unused kernel memory: 92K (003a8000 - 003bf000)
-> 467: 0
-> 470: 0
-> 475: 1
-> 485: 1
-> 487: 2
-> 489: 2
-> 491: 1
-> 494: 1
-> 496: 1
-> 498: 1
-> 500: 0
-> 502: 0
-> 467: 0
-> 470: 0
-> 475: 1
-> 485: 1
-> 487: 2
-> 489: 2
-> 491: 1
-> 494: 1
-> 496: 1
-> 498: 1
-> 500: 0
-> 502: 0
-> 467: 0
-> 470: 0
-> 475: 1
-> 485: 1
-> 487: 2
-> 489: 2
-> 491: 1
-> 494: 1
-> 496: 1
-> 498: 1
-> 500: 1
-
-blam.  spin_unlock_irq(&mapping->tree_lock) failed to decrement
-preempt_count().  What the heck.
-
-What architecture is this?  Please send the full .config.
-
-And exactly which kernel version is in use?
-
-Thanks.
-
-> 502: 1
-> BUG: sleeping function called from invalid context at kernel/locking/mutex.c:616
-> in_atomic(): 1, irqs_disabled(): 128, pid: 1, name: swapper
-> 1 lock held by swapper/1:
-
+> 
