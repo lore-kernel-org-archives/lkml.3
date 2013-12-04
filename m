@@ -1,53 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab3LDRD4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 12:03:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33836 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755944Ab3LDRDx (ORCPT
+	id S932883Ab3LDRD6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 12:03:58 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57972 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755945Ab3LDRDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Dec 2013 12:03:53 -0500
-Date: Wed, 4 Dec 2013 09:03:52 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [PATCH 3.12 000/212] 3.12.3-stable review
-Message-ID: <20131204170352.GD14367@kroah.com>
-References: <20131202191248.517975703@linuxfoundation.org>
- <87eh5sg9mw.wl%satoru.takeuchi@gmail.com>
+Message-ID: <529F6075.10200@wwwdotorg.org>
+Date: Wed, 04 Dec 2013 10:03:49 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87eh5sg9mw.wl%satoru.takeuchi@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Laxman Dewangan <ldewangan@nvidia.com>, rob.herring@calxeda.com
+CC: pawel.moll@arm.com, mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        linux@arm.linux.org.uk, thierry.reding@gmail.com,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 2/2] ARM: tegra: convert device tree file of Dalmore
+ to use pinctrl defines
+References: <1386076567-14283-1-git-send-email-ldewangan@nvidia.com> <1386076567-14283-2-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1386076567-14283-2-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 08:04:23PM +0900, Satoru Takeuchi wrote:
-> At Mon,  2 Dec 2013 11:13:11 -0800,
-> Greg Kroah-Hartman wrote:
-> > 
-> > This is the start of the stable review cycle for the 3.12.3 release.
-> > There are 212 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> > 
-> > Responses should be made by Wed Dec  4 19:11:18 UTC 2013.
-> > Anything received after that time might be too late.
-> 
-> This kernel can be built and boot without any problem.
-> Building a kernel with this kernel also works fine.
-> 
->  - Build Machine: debian jessy x86_64
->    CPU: Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz x 4
->    memory: 8GB
-> 
->  - Test machine: debian jessy x86_64(KVM guest on the Build Machine)
->    vCPU: x2
->    memory: 2GB
+On 12/03/2013 06:16 AM, Laxman Dewangan wrote:
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 
-Thanks for testing these three kernels and letting me know all is fine.
-
-greg k-h
+Patch description? Why convert only 1 board DT file?
