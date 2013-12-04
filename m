@@ -1,145 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932932Ab3LDPrw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 10:47:52 -0500
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:64764 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932569Ab3LDPru (ORCPT
+	id S932775Ab3LDPsv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 10:48:51 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:54739 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932508Ab3LDPst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 10:47:50 -0500
+	Wed, 4 Dec 2013 10:48:49 -0500
+Message-ID: <529F4ED4.20500@linaro.org>
+Date: Wed, 04 Dec 2013 23:48:36 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1386088753-2850-3-git-send-email-hanjun.guo@linaro.org>
-References: <1386088753-2850-1-git-send-email-hanjun.guo@linaro.org>
-	<1386088753-2850-3-git-send-email-hanjun.guo@linaro.org>
-Date: Wed, 4 Dec 2013 09:47:49 -0600
-Message-ID: <CAL_JsqKF-_GCRR1d5Hs0F6pCMfLxUYkXAAp9hY7Ywuu1C+aZ0A@mail.gmail.com>
-Subject: Re: [RFC part2 PATCH 2/9] ARM64 / ACPI: Prefill cpu possible/present
- maps and map logical cpu id to APIC id
-From: Rob Herring <robherring2@gmail.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
+To: Mark Rutland <mark.rutland@arm.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Linaro Patches <patches@linaro.org>, Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, linaro-acpi@lists.linaro.org,
-        linux-acpi@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Jon Masters <jonathan@jonmasters.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Al Stone <al.stone@linaro.org>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        "Zheng, Lv" <lv.zheng@intel.com>
+Subject: Re: [RFC part1 PATCH 5/7] ARM64 / ACPI: Introduce arm_core.c and
+ its related head file
+References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org> <1386088611-2801-6-git-send-email-hanjun.guo@linaro.org> <20131203180300.GD16025@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20131203180300.GD16025@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 3, 2013 at 10:39 AM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
-> When boot the kernel with MADT, the cpu possible and present maps should be
-> prefilled for cpu topology and acpi based cpu hot-plug.
++CC Lv Zheng
+
+On 2013年12月04日 02:03, Mark Rutland wrote:
+> On Tue, Dec 03, 2013 at 04:36:49PM +0000, Hanjun Guo wrote:
+>> introduce arm_core.c and its related head file, after this patch,
+>> we can get ACPI tables from BIOS on ARM64 now.
+>>
+>> Signed-off-by: Al Stone <al.stone@linaro.org>
+>> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>> ---
+>>   arch/arm64/include/asm/acpi.h |   57 +++++++++++
+>>   arch/arm64/kernel/setup.c     |    8 ++
+>>   drivers/acpi/Makefile         |    2 +
+>>   drivers/acpi/plat/Makefile    |    1 +
+>>   drivers/acpi/plat/arm-core.c  |  219 +++++++++++++++++++++++++++++++++++++++++
+>>   5 files changed, 287 insertions(+)
+>>   create mode 100644 drivers/acpi/plat/Makefile
+>>   create mode 100644 drivers/acpi/plat/arm-core.c
+>>
+>> diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
+>> index c186f5b..e9444e4 100644
+>> --- a/arch/arm64/include/asm/acpi.h
+>> +++ b/arch/arm64/include/asm/acpi.h
+>> @@ -19,6 +19,43 @@
+>>   #ifndef _ASM_ARM_ACPI_H
+>>   #define _ASM_ARM_ACPI_H
+>>   
+>> +#include <asm/cacheflush.h>
+>> +
+>> +#include <linux/init.h>
+>> +
+>> +#define COMPILER_DEPENDENT_INT64	long long
+>> +#define COMPILER_DEPENDENT_UINT64	unsigned long long
+> Given we've already pulled in linux/init.h, which has pulled in
+> linux/types.h, is there any reason we can't use s64 and u64 here?
 >
-> The logic cpu id maps to APIC id (GIC id) is also implemented, it is needed
-> for acpi processor drivers.
->
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> ---
->  arch/arm64/include/asm/acpi.h |   10 ++--
->  arch/arm64/kernel/setup.c     |    2 +
->  arch/arm64/kernel/smp.c       |    2 +
->  drivers/acpi/plat/arm-core.c  |  118 +++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 129 insertions(+), 3 deletions(-)
+> If we can, then why don't we unify this further up so each arch doesn't
+> have to define this redundantly?
 
-[snip]
+It make sense to me, I didn't notice that before, Lv, any comments about it?
 
-> diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
-> index a0c2ca6..1428024 100644
-> --- a/arch/arm64/kernel/smp.c
-> +++ b/arch/arm64/kernel/smp.c
-> @@ -420,7 +420,9 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
->                 if (err)
->                         continue;
->
-> +#ifndef CONFIG_ACPI
->                 set_cpu_present(cpu, true);
-> +#endif
+>> +
+>> +/*
+>> + * Calling conventions:
+>> + *
+>> + * ACPI_SYSTEM_XFACE        - Interfaces to host OS (handlers, threads)
+>> + * ACPI_EXTERNAL_XFACE      - External ACPI interfaces
+>> + * ACPI_INTERNAL_XFACE      - Internal ACPI interfaces
+>> + * ACPI_INTERNAL_VAR_XFACE  - Internal variable-parameter list interfaces
+>> + */
+>> +#define ACPI_SYSTEM_XFACE
+>> +#define ACPI_EXTERNAL_XFACE
+>> +#define ACPI_INTERNAL_XFACE
+>> +#define ACPI_INTERNAL_VAR_XFACE
+>> +
+>> +/* Asm macros */
+>> +#define ACPI_FLUSH_CPU_CACHE() flush_cache_all()
+> Can you elaborate on when ACPI needs to use this?
 
-Should this be moved to DT cpu topology related code?
+Mainly used in two cases:
 
->                 max_cpus--;
->         }
->  }
-> diff --git a/drivers/acpi/plat/arm-core.c b/drivers/acpi/plat/arm-core.c
-> index 45ff625..8527ecc 100644
-> --- a/drivers/acpi/plat/arm-core.c
-> +++ b/drivers/acpi/plat/arm-core.c
+1) system sleep, there are sleep states defined
+in ACPI, such as S0, S1, S2, S3 and etc.
+when system enter sleep states, flush cache is needed.
 
-[snip]
+2) When CPU enter idle states deeper than C3.
 
-> @@ -221,6 +284,61 @@ static int __init acpi_parse_madt_gic_distributor_entries(void)
->         return 0;
->  }
->
-> +static int setup_possible_cpus __initdata = -1;
-> +static int __init _setup_possible_cpus(char *str)
-> +{
-> +       get_option(&str, &setup_possible_cpus);
-> +       return 0;
-> +}
-> +early_param("possible_cpus", _setup_possible_cpus);
-
-This does not seem ACPI or ARM specific.
-
-> +
-> +/*
-> + * cpu_possible_mask should be static, it cannot change as cpu's
-> + * are onlined, or offlined. The reason is per-cpu data-structures
-> + * are allocated by some modules at init time, and dont expect to
-> + * do this dynamically on cpu arrival/departure.
-> + * cpu_present_mask on the other hand can change dynamically.
-> + * In case when cpu_hotplug is not compiled, then we resort to current
-> + * behaviour, which is cpu_possible == cpu_present.
-> + * - Ashok Raj
-> + *
-> + * Three ways to find out the number of additional hotplug CPUs:
-> + * - If the BIOS specified disabled CPUs in ACPI/mptables use that.
-> + * - The user can overwrite it with possible_cpus=NUM
-> + * - Otherwise don't reserve additional CPUs.
-> + * We do this because additional CPUs waste a lot of memory.
-> + * -AK
-> + */
-> +void __init prefill_possible_map(void)
-> +{
-> +       int i;
-> +       int possible, disabled_cpus;
-> +
-> +       disabled_cpus = total_cpus - available_cpus;
-> +
-> +       if (setup_possible_cpus == -1) {
-> +               if (disabled_cpus > 0)
-> +                       setup_possible_cpus = disabled_cpus;
-> +               else
-> +                       setup_possible_cpus = 0;
-> +       }
-> +
-> +       possible = available_cpus + setup_possible_cpus;
-> +
-> +       pr_info("SMP: the system is limited to %d CPUs\n", nr_cpu_ids);
-> +
-> +       if (possible > nr_cpu_ids)
-> +               possible = nr_cpu_ids;
-> +
-> +       pr_info("SMP: Allowing %d CPUs, %d hotplug CPUs\n",
-> +               possible, max((possible - available_cpus), 0));
-> +
-> +       for (i = 0; i < possible; i++)
-> +               set_cpu_possible(i, true);
-> +       for (; i < NR_CPUS; i++)
-> +               set_cpu_possible(i, false);
-> +}
-
-This does not seem ACPI or ARM specific either.
-
-Rob
+Thanks
+hanjun
