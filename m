@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756169Ab3LDXfj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 18:35:39 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:51142 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752821Ab3LDXfg (ORCPT
+	id S933390Ab3LDXhV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 18:37:21 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:54633 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756108Ab3LDXfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 18:35:36 -0500
+	Wed, 4 Dec 2013 18:35:37 -0500
 From: Rob Herring <robherring2@gmail.com>
 To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
 Cc: Mike Turquette <mturquette@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH 0/7] Calxeda arm64 clock updates
-Date: Wed,  4 Dec 2013 17:35:20 -0600
-Message-Id: <1386200127-23143-1-git-send-email-robherring2@gmail.com>
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Subject: [PATCH 1/7] dt-bindings: add Calxeda ECX-3000 clock binding
+Date: Wed,  4 Dec 2013 17:35:21 -0600
+Message-Id: <1386200127-23143-2-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386200127-23143-1-git-send-email-robherring2@gmail.com>
+References: <1386200127-23143-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <rob.herring@calxeda.com>
 
-This series updates the highbank clock code for ECX-3000 series support.     
-The primary functional change is making the PLL max frequency a runtime
-setting. The rest of the changes are enabling building on arm64 and new
-DT bindings.
+Add "calxeda,ecx-3000-pll-clock" compatible property for Calxeda ECX-3000
+series PLLs.
 
-The patch "clk: highbank: prevent glitching when going into bypass mode"
-is a fix needed for ECX-2000 systems and should be applied for 3.13 and
-stable.
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+---
+ Documentation/devicetree/bindings/clock/calxeda.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Rob
-
-Mark Langsdorf (1):
-  clk: highbank: prevent glitching when going into bypass mode
-
-Rob Herring (6):
-  dt-bindings: add Calxeda ECX-3000 clock binding
-  dt-bindings: Add property calxeda,pll-max-hz for Calxeda clocks
-  dt-bindings: Add Calxeda system registers binding
-  clk: highbank: allow for different PLL frequency range
-  clk: highbank: allow enabling by user
-  clk: highbank: add DT match for calxeda,ecx-3000-sregs
-
- .../devicetree/bindings/arm/calxeda/sregs.txt      | 17 +++++++++
- .../devicetree/bindings/clock/calxeda.txt          |  9 ++++-
- arch/arm/mach-highbank/Kconfig                     |  1 +
- drivers/clk/Kconfig                                |  5 +++
- drivers/clk/Makefile                               |  2 +-
- drivers/clk/clk-highbank.c                         | 43 +++++++++++++++-------
- 6 files changed, 61 insertions(+), 16 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/calxeda/sregs.txt
-
+diff --git a/Documentation/devicetree/bindings/clock/calxeda.txt b/Documentation/devicetree/bindings/clock/calxeda.txt
+index 0a6ac1b..7ebc89c 100644
+--- a/Documentation/devicetree/bindings/clock/calxeda.txt
++++ b/Documentation/devicetree/bindings/clock/calxeda.txt
+@@ -6,7 +6,7 @@ This binding uses the common clock binding[1].
+ 
+ Required properties:
+ - compatible : shall be one of the following:
+-	"calxeda,hb-pll-clock" - for a PLL clock
++	"calxeda,ecx-3000-pll-clock" or "calxeda,hb-pll-clock" - for a PLL clock
+ 	"calxeda,hb-a9periph-clock" - The A9 peripheral clock divided from the
+ 		A9 clock.
+ 	"calxeda,hb-a9bus-clock" - The A9 bus clock divided from the A9 clock.
 -- 
 1.8.3.2
 
