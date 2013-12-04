@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab3LDEPx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 23:15:53 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:54606 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752988Ab3LDEPw (ORCPT
+	id S1753589Ab3LDERp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 23:17:45 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:38633 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752098Ab3LDERm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 23:15:52 -0500
-Message-ID: <529EAC61.5080207@gmail.com>
-Date: Tue, 03 Dec 2013 21:15:29 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Arnaldo Melo <acme@ghostprotocols.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH 6/8] perf sched: Introduce timehist command
-References: <1384806771-2945-1-git-send-email-dsahern@gmail.com>	<1384806771-2945-7-git-send-email-dsahern@gmail.com>	<CAM9d7cg4t_HD-225GawXnUHXG1D-f91ZDS_xsfy19baHSM624w@mail.gmail.com>	<529768D3.1000507@gmail.com> <87k3fsowwe.fsf@sejong.aot.lge.com> <5297F4D6.3070408@gmail.com>
-In-Reply-To: <5297F4D6.3070408@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Dec 2013 23:17:42 -0500
+From: Rob Herring <robherring2@gmail.com>
+To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
+Subject: [PATCH v2] checkpatch: add DT compatible string documentation checks
+Date: Tue,  3 Dec 2013 22:17:23 -0600
+Message-Id: <1386130643-19449-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/13, 6:58 PM, David Ahern wrote:
-> On 11/28/13, 5:48 PM, Namhyung Kim wrote:
->> Do we really need to look up the callchain to find out an idle thread?
----8<---
->> It seems every idle/swapper thread for each cpu has a pid of 0.
->
+From: Rob Herring <rob.herring@calxeda.com>
 
-I knew I had this code in there for a reason....
+This adds a simple check that any compatible strings in DeviceTree dts
+files are present in Documentation/devicetree/bindings. Vendor prefixes
+are also checked for existing in vendor-prefixes.txt These should be
+temporary checks until we have more sophisticated binding schema checking.
 
-Older kernels (e.g., RHEL6) show init as the idle task for cpus != 0. 
-So, to be robust across kernel versions the idle check needs to do more 
-than just looking at the swapper thread as the incoming or outgoing 
-task. It needs to walk the first few frames of the callstack looking for 
-a known idle symbol.
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Andy Whitcroft <apw@canonical.com>
+Cc: Joe Perches <joe@perches.com>
+---
+v2:
+- Add vendor string checking against vendor-prefixes.txt
+- Add '_', '.' and '+' as valid compatible string characters
+- Use 'grep -E' instead of egrep
 
-David
+ scripts/checkpatch.pl | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 9c98100..5eea031 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2034,6 +2034,29 @@ sub process {
+ 			     "Use of $flag is deprecated, please use \`$replacement->{$flag} instead.\n" . $herecurr) if ($replacement->{$flag});
+ 		}
+ 
++# check for DT compatible documentation
++		if ($realfile =~ /\.dts/ && $rawline =~ /\+\s*compatible\s*=/) {
++			my @compats = $rawline =~ /\"([a-zA-Z0-9\-\,\.\+_]+)\"/g;
++
++			foreach my $compat (@compats) {
++				my $compat2 = $compat;
++				my $dt_path = "Documentation/devicetree/bindings/";
++				$compat2 =~ s/\,[a-z]*\-/\,<\.\*>\-/;
++				`grep -Erq "$compat|$compat2" $dt_path`;
++				if ( $? >> 8 ) {
++					WARN("UNDOCUMENTED_DT_BINDING",
++					     "DT compatible string \"$compat\" appears un-documented -- check $dt_path\n" . $herecurr);
++				}
++				my $vendor = $compat;
++				$vendor =~ s/^([a-zA-Z0-9]+)\,.*/$1/;
++				`grep -Eq "$vendor" "${dt_path}vendor-prefixes.txt"`;
++				if ( $? >> 8 ) {
++					WARN("UNDOCUMENTED_DT_VENDOR",
++					     "DT compatible string vendor \"$vendor\" appears un-documented -- check ${dt_path}vendor-prefixes.txt\n" . $herecurr);
++				}
++			}
++		}
++
+ # check we are in a valid source file if not then ignore this hunk
+ 		next if ($realfile !~ /\.(h|c|s|S|pl|sh)$/);
+ 
+-- 
+1.8.3.2
 
