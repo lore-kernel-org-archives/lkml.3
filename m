@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932342Ab3LDMrb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 07:47:31 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:34639 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932317Ab3LDMr3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 07:47:29 -0500
-Message-ID: <529F2463.8080907@cogentembedded.com>
-Date: Wed, 04 Dec 2013 16:47:31 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: oliver@schinagl.nl, tj@kernel.org, grant.likely@linaro.org,
-        ob.herring@calxeda.com, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        dev@linux-sunxi.org
-CC: maxime.ripard@free-electrons.com, ijc@hellion.org.uk, hdegoede@redhat.com,
-        oliver+list@schinagl.nl
-Subject: Re: [PATCH 1/3] RFC: AHCI: libahci is missing DMA
-References: <1386159055-10264-1-git-send-email-oliver@schinagl.nl> <1386159055-10264-2-git-send-email-oliver@schinagl.nl>
-In-Reply-To: <1386159055-10264-2-git-send-email-oliver@schinagl.nl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S932366Ab3LDMtB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 07:49:01 -0500
+Received: from mga01.intel.com ([192.55.52.88]:4133 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932232Ab3LDMtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 07:49:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,824,1378882800"; 
+   d="scan'208";a="444460667"
+Message-ID: <1386161310.1871.62.camel@smile>
+Subject: Re: [PATCH 06/39] dma: remove DEFINE_PCI_DEVICE_TABLE macro
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, "'Koul, Vinod'" <vinod.koul@intel.com>,
+        "'Williams, Dan J'" <dan.j.williams@intel.com>,
+        dmaengine@vger.kernel.org, "'Joe Perches'" <joe@perches.com>,
+        "'Jonas Bonn'" <jonas@southpole.se>
+Date: Wed, 04 Dec 2013 14:48:30 +0200
+In-Reply-To: <001501cef086$78d015f0$6a7041d0$%han@samsung.com>
+References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
+	 <001b01ceefb2$ffd995f0$ff8cc1d0$%han@samsung.com>
+	 <1386072642.1871.46.camel@smile>
+	 <001501cef086$78d015f0$6a7041d0$%han@samsung.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, 2013-12-04 at 09:19 +0900, Jingoo Han wrote:
+> On Tuesday, December 03, 2013 9:11 PM, Shevchenko, Andriy wrote:
+> > On Tue, 2013-12-03 at 08:05 +0900, Jingoo Han wrote:
+> > > Don't use DEFINE_PCI_DEVICE_TABLE macro, because this macro
+> > > is not preferred.
+> > 
+> > I'm sorry, but Documentation/PCI/pci.txt still says "is the preferred
+> > method".
+> > 
+> > Is there any link to patch for Documentation and discussion why change
+> > is established?
+> 
+> (+cc Joe Perches, Jonas Bonn)
+> 
+> Since last week, there has been discussion about this.
+> There is no special reason to use DEFINE_PCI_DEVICE_TABLE macro.
+> 
+> According to the Greg Kroah-Hartman,
+> "Yeah, and it's a horrid macro that deserves to be removed,
+> please don't use it in more places."
+> 
+> Currently, there is no other bus that has something like this
+> macro for their device ids. Thus, DEFINE_PCI_DEVICE_TABLE macro
+> should be removed.
+> 
+> Jonas Bonn (author of DEFINE_PCI_DEVICE_TABLE macro) also agreed
+> to remove this macro. According to Jonas Bonn,
+> "Actually, I think I submitted an even uglier macro called 
+> DECLARE_PCI_DEVICE_TABLE... might have been the first kernel
+> Patch I  ever sent?  In any case, it should certainly have been
+> kindly rejected."
+> 
+> After Joe Perches's patch[1] is merged, I will send these patches
+> to each subsystem maintainer.
+> 
+> [1][PATCH] pci/checkpatch: Deprecate DEFINE_PCI_DEVICE_TABLE
+>     (http://lkml.org/lkml/2013/12/2/400)
+> 
+> In this patch, Joe Perches fixed 'Documentation/PCI/pci.txt', and
+> 'scripts/checkpatch.pl', in order to guide to use 'struct pci_device_id'
+> instead of 'DEFINE_PCI_DEVICE_TABLE' macro.
 
-On 04-12-2013 16:10, oliver@schinagl.nl wrote:
+Thanks for the detailed explanation!
 
-> From: Oliver Schinagl <oliver@schinagl.nl>
+Thus, give you my 
 
-> The Allwinner sunxi platforms have patched in the following to enable
-> DMA. This patch enables DMA controllers for the SUNXI Architecture.
+Acked-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-> Signed-off-by: Olliver Schinagl <oliver@schinagl.nl>
-> ---
->   drivers/ata/ahci.h    | 6 ++++++
->   drivers/ata/libahci.c | 8 ++++++++
->   2 files changed, 14 insertions(+)
+for drivers/dma/dw/ part.
 
-> diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-> index 2289efdf..2bf2423 100644
-> --- a/drivers/ata/ahci.h
-> +++ b/drivers/ata/ahci.h
-[...]
-> @@ -209,6 +210,11 @@ enum {
->   	PORT_DEVSLP_DSP		= (1 << 1),       /* DevSlp present */
->   	PORT_DEVSLP_ADSE	= (1 << 0),       /* Aggressive DevSlp enable */
->
-> +	/* PORT_DMA bits */
-> +	PORT_DMA_SETUP_OFFSET	= 8, /* dma setup offset */
-> +	PORT_DMA_SETUP_MASK	= (0xff << PORT_DMA_SETUP_OFFSET),/* dma mask */
-> +	PORT_DMA_SETUP_INIT	= (0x44 << 0),
-
-    Why not shift it right by PORT_DMA_SETUP_OFFSET if you do it in the next 
-file anyway?
-
-[...]
-> diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-> index c482f8c..d697a74 100644
-> --- a/drivers/ata/libahci.c
-> +++ b/drivers/ata/libahci.c
-> @@ -570,6 +570,14 @@ void ahci_start_engine(struct ata_port *ap)
->   	void __iomem *port_mmio = ahci_port_base(ap);
->   	u32 tmp;
->
-> +#ifdef CONFIG_ARCH_SUNXI
-> +	/* Setup DMA before DMA start */
-> +	tmp = readl(port_mmio + PORT_DMA);
-> +	tmp &= ~PORT_DMA_SETUP_MASK;
-> +	tmp |= PORT_DMA_SETUP_INIT << PORT_DMA_SETUP_OFFSET;
-> +	writel(tmp, port_mmio + PORT_DMA);
-> +#endif
-> +
-
-    I don't think #ifdef is appropriate here.
-
-WBR, Sergei
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
 
