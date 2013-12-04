@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755639Ab3LDLa0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 06:30:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47438 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755037Ab3LDLaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 06:30:24 -0500
-Date: Wed, 4 Dec 2013 12:30:24 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Jiri Kosina <jkosina@suse.cz>, Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH?] uprobes: change uprobe_write_opcode() to modify the
-	page directly
-Message-ID: <20131204113024.GB26552@redhat.com>
-References: <20131203184909.GA17571@redhat.com> <CA+55aFw3N=iNW2Ej6w7oksX5JDVis7QL=9X9D7JB_tKZhrjsLw@mail.gmail.com> <529E2F0C.8070405@zytor.com> <20131203200147.GB19083@redhat.com> <529E3D4C.9070403@zytor.com> <20131203203826.GA24812@redhat.com> <e6082bc4-c910-4a36-9e40-624b9319f5fb@email.android.com> <20131203205400.GA25735@redhat.com> <CA+55aFxKk+O4e51sq6iqunVWAwKfNAnZ-3=aZT-VuRpDAZUnzQ@mail.gmail.com> <529E6DA3.5060705@zytor.com>
+	id S932183Ab3LDLc3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 06:32:29 -0500
+Received: from mail.kmu-office.ch ([178.209.48.102]:40154 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932098Ab3LDLc2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 06:32:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <529E6DA3.5060705@zytor.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+Date: Wed, 04 Dec 2013 12:38:03 +0100
+From: Stefan Agner <stefan@agner.ch>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com, dev@lynxeye.de,
+        lgirdwood@gmail.com, broonie@kernel.org,
+        kai.poggensee@avionic-design.de, sameo@linux.intel.com,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 1/3] mfd: tps6586x: add version detection
+In-Reply-To: <20131204100728.GA907@lee--X1>
+References: <cover.1386108712.git.stefan@agner.ch>
+ <77384d24810d9a22fc04cad6f7468f54a9cbaafe.1386108712.git.stefan@agner.ch>
+ <20131204081021.GB7469@lee--X1> <e2ae7b9602d0c1e11f8e56ced17e9da0@agner.ch>
+ <20131204100728.GA907@lee--X1>
+Message-ID: <f1ee272d52d946b211dbcdad68df7815@agner.ch>
+User-Agent: Roundcube Webmail/0.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03, H. Peter Anvin wrote:
->
-> On 12/03/2013 02:01 PM, Linus Torvalds wrote:
-> > On Tue, Dec 3, 2013 at 12:54 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >>
-> >> So do you think the patch I sent is wrong? Why?
-> >
-> > I think the TLB shootdown should guarantee that it's ok on other
-> > CPU's, since that's basically what we do on mmap.
-> >
->
-> I think that is true for other CPUs; however, there are definitely CPUs
-> out there (which Linux supports) for which you have to synchronize the I
-> and D sides "manually" after writing code through memory, at least
-> through the CPU.  That is at least one reason why MIPS has a
-> cacheflush() system call, for example.
+Am 2013-12-04 11:07, schrieb Lee Jones:
+> On Wed, 04 Dec 2013, Stefan Agner wrote:
+> 
+>> Am 2013-12-04 09:10, schrieb Lee Jones:
+>> >> +int tps6586x_get_version(struct device *dev)
+>> >> +{
+>> >> +	struct tps6586x *tps6586x = dev_get_drvdata(dev);
+>> >> +
+>> >> +	return tps6586x->version;
+>> >> +}
+>> >> +EXPORT_SYMBOL_GPL(tps6586x_get_version);
+>> >
+>> > I thought Mark suggested that this routine was converted to a 'static
+>> > inline' and moved into the header? Did you not think this was a good
+>> > idea?
+>> As I pointed out in the comment above, the struct tps6586x is in the C
+>> file, so I would need to move that too. That's why I did not made that
+>> change in the end. What do you think, should I still move (and move the
+>> struct too?)
+> 
+> Why would the struct have to be moved if the function is inline?
 
-OK, probably (with or without the patch I sent) uprobe_write_opcode() needs
-flush_icache_page(). Altough it is nop on x86 and powerpc (architectures
-we currently support).
+True, the inline I could have done without moving the struct and the
+function. Would you like me to create another revision doing this?
 
-But I still can't understand your "There is no architecture-independent
-way to make code globally visible". If this is true, then how, say,
-do_swap_page() can work?
+But moving the function needs moving of the struct tps6586x
+declaration...
 
-So I still think the patch should work (I'll add flush_icache_page).
 
-> > But looking closer at this, I think I see why the old code did what it
-> > did. I think it's breaking shared mmap pages on purpose rather than
-> > dirtying them. Which is probably the right thing to do.
->
-> In other words, treating them as MAP_PRIVATE?  Wouldn't it be better to
-> throw an error if we can't honor the semantics of the mapping that we
-> are using?
-
-Yes, uprobes never writes to MAP_SHARED vmas.
-
-Oleg.
-
+[Sorry, this time with answer all]
