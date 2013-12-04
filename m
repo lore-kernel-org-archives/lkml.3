@@ -1,75 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932410Ab3LDOv0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 09:51:26 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:58089 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932257Ab3LDOvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 09:51:24 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S932486Ab3LDOwD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 09:52:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52297 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932257Ab3LDOwB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 09:52:01 -0500
+Message-ID: <529F418D.3070108@suse.cz>
+Date: Wed, 04 Dec 2013 15:51:57 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Subject: RE: Supporting 4 way connections in LKSCTP
-Date: Wed, 4 Dec 2013 14:50:46 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B745D@saturn3.aculab.com>
-In-Reply-To: <529F395B.9040308@gmail.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Supporting 4 way connections in LKSCTP
-Thread-Index: Ac7w+4yzdrRKKswbQ7CvVC5OYkDJSQAAgdgw
-References: <CAFXGft+CXk3W8=3w=AuYzqYtYnR8nH4Of9=668tUeT+tugD9-A@mail.gmail.com>	<5294BC01.7090605@gmail.com>	<CAFXGftLsKm9a5bmXX4Fe+rnSvYVdBDOyYGwisRP7XMu+ky=DGw@mail.gmail.com>	<CAFXGftLt1p6XpR2eGsMYKjEbbOHvch-LgcFw1sAXThcA2Rtjyw@mail.gmail.com>	<20131127124530.GA23369@hmsreliant.think-freely.org>	<CAFXGftJQV=5Pqs3bhfiS3T1VO1q8jfaMjAUiqm2tDbtSyBCM3A@mail.gmail.com>	<529C9B50.50002@gmail.com>	<CAGugRbXFirQ5P3ek9zN86h4vvO6qsy3eNEooJOApotA+dL+C_g@mail.gmail.com>	<529CB859.9090904@gmail.com>	<CAFXGft+F52p+oaa59=5e5pGfON44N36NA-XMYi5PorzWeybnKw@mail.gmail.com>	<CAFXGft+4o6fT4SYbu3musC+-BEi=xOEGUbZSavF1-0_V1mg6zg@mail.gmail.com>	<529D3BF9.3070208@gmail.com>	<CAFXGftJtCCJ=pVxg_DH-+n2bKmoKXavog0y8mfX+h-1z3hP49Q@mail.gmail.com>	<529DCF42.1070800@gmail.com>	<CAFXGftK5tz90OzObiV7Hi+g080j3zWCNdo217CKdNkOY4JWQUg@mail.gmail.com>	<529DF73E.7060604@gmail.com> <CAFXGftKZD0zN1S=UTa_bYr71-v=7mzU=_CewTNkjPv9CGGB_Fg@mail.gmail.com> <529F395B.9040308@gmail.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Vlad Yasevich" <vyasevich@gmail.com>, "Sun Paul" <paulrbk@gmail.com>
-Cc: <netdev@vger.kernel.org>, <linux-sctp@vger.kernel.org>,
-        "Karl Heiss" <kheiss@gmail.com>, "Neil Horman" <nhorman@tuxdriver.com>,
-        <linux-kernel@vger.kernel.org>
+To: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] mm: compaction: Trace compaction begin and end
+References: <1385389570-11393-1-git-send-email-vbabka@suse.cz> <20131204143045.GZ11295@suse.de>
+In-Reply-To: <20131204143045.GZ11295@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rB4EpsrY001528
 
-> > In normal operation, IP-A sends INIT to IP-X, IP-X returns INIT_ACK to
-> > IP-A. IP-A then sends HB to IP-X, IP-X then returns HB_ACK to IP-A. In
-> > the meantime, IP-B sends HB to IP-Y and IPY returns HB_ACK.
-> >
-> > In case of the path between IP-A and IP-X is broken, IP-B sends INIT
-> > to IP-X, NODE-B uses IP-Y to return INIT_ACK to IP-B. Then IP-B sends
-> > HB to IP-X, and IP-Y returns HB_ACK to IP-B. In the meantime, the HB
-> > communication between IP-B and IP-Y follows the normal flow.
-> >
-> > Can I confirm, is it really valid?
-> 
-> As long as NODE-B knows about both IP-A and IP-B, and NODE-A knows about
-> both IP-X and IP-Y (meaning all the addresses were exchanged inside INIT
-> and INIT-ACK), then this situation is perfectly valid.  In fact, this
-> has been tested an multiple interops.
+On 12/04/2013 03:30 PM, Mel Gorman wrote:
+> This patch adds two tracepoints for compaction begin and end of a zone. Using
+> this it is possible to calculate how much time a workload is spending
+> within compaction and potentially debug problems related to cached pfns
+> for scanning.
 
-There are some network configurations that do cause problems.
-Consider 4 systems with 3 LAN segments:
-A) 10.10.10.1 on LAN X and 192.168.1.1 on LAN Y.
-B) 10.10.10.2 on LAN X and 192.168.1.2 on LAN Y.
-C) 10.10.10.3 on LAN X.
-D) 10.10.10.4 on LAN X and 192.168.1.2 on LAN Z.
-There are no routers between the networks (and none of the systems
-are running IP forwarding).
+I guess for debugging pfns it would be also useful to print their values 
+also in mm_compaction_end.
 
-If A connects to B everything is fine - traffic can use either LAN.
+> In combination with the direct reclaim and slab trace points
+> it should be possible to estimate most allocation-related overhead for
+> a workload.
+>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>   include/trace/events/compaction.h | 42 +++++++++++++++++++++++++++++++++++++++
+>   mm/compaction.c                   |  4 ++++
+>   2 files changed, 46 insertions(+)
+>
+> diff --git a/include/trace/events/compaction.h b/include/trace/events/compaction.h
+> index fde1b3e..f4e115a 100644
+> --- a/include/trace/events/compaction.h
+> +++ b/include/trace/events/compaction.h
+> @@ -67,6 +67,48 @@ TRACE_EVENT(mm_compaction_migratepages,
+>   		__entry->nr_failed)
+>   );
+>
+> +TRACE_EVENT(mm_compaction_begin,
+> +	TP_PROTO(unsigned long zone_start, unsigned long migrate_start,
+> +		unsigned long zone_end, unsigned long free_start),
+> +
+> +	TP_ARGS(zone_start, migrate_start, zone_end, free_start),
 
-Connections from A to C are problematic if C tries to send anything
-(except a HB) to 192.168.1.1 before receiving a HB response.
-One of the SCTP stacks we've used did send messages to an
-inappropriate address, but I've forgotten which one.
+IMHO a better order would be:
+  zone_start, migrate_start, free_start, zone_end
+(well especially in the TP_printk part anyway).
 
-Connections between A and D fail unless the HB errors A receives
-for 192.168.1.2 are ignored.
+> +
+> +	TP_STRUCT__entry(
+> +		__field(unsigned long, zone_start)
+> +		__field(unsigned long, migrate_start)
+> +		__field(unsigned long, zone_end)
+> +		__field(unsigned long, free_start)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->zone_start = zone_start;
+> +		__entry->migrate_start = migrate_start;
+> +		__entry->zone_end = zone_end;
+> +		__entry->free_start = free_start;
+> +	),
+> +
+> +	TP_printk("zone_start=%lu migrate_start=%lu zone_end=%lu free_start=%lu",
+> +		__entry->zone_start,
+> +		__entry->migrate_start,
+> +		__entry->zone_end,
+> +		__entry->free_start)
+> +);
+> +
+> +TRACE_EVENT(mm_compaction_end,
+> +	TP_PROTO(int status),
+> +
+> +	TP_ARGS(status),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(int, status)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->status = status;
+> +	),
+> +
+> +	TP_printk("status=%d", __entry->status)
+> +);
+>
+>   #endif /* _TRACE_COMPACTION_H */
+>
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index c437893..78ff866 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -960,6 +960,8 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+>   	if (compaction_restarting(zone, cc->order) && !current_is_kswapd())
+>   		__reset_isolation_suitable(zone);
+>
+> +	trace_mm_compaction_begin(start_pfn, cc->migrate_pfn, end_pfn, cc->free_pfn);
+> +
+>   	migrate_prep_local();
+>
+>   	while ((ret = compact_finished(zone, cc)) == COMPACT_CONTINUE) {
+> @@ -1005,6 +1007,8 @@ out:
+>   	cc->nr_freepages -= release_freepages(&cc->freepages);
+>   	VM_BUG_ON(cc->nr_freepages != 0);
+>
+> +	trace_mm_compaction_end(ret);
+> +
+>   	return ret;
+>   }
+>
+>
 
-Of course the application could explicitly bind to only the 10.x address
-but that requires the application know the exact network topology
-and may be difficult for incoming calls.
-
-	David
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
