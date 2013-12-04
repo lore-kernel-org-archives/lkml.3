@@ -1,164 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655Ab3LDOMq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 09:12:46 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37168 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932416Ab3LDOMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 09:12:43 -0500
-Message-ID: <529F384A.8040409@ti.com>
-Date: Wed, 4 Dec 2013 10:12:26 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1755815Ab3LDONt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 09:13:49 -0500
+Received: from mail-qe0-f41.google.com ([209.85.128.41]:58485 "EHLO
+	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754079Ab3LDONs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 09:13:48 -0500
+Date: Wed, 4 Dec 2013 09:13:45 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH driver-core-linus] sysfs: bail early from
+ sysfs_bin_mmap() to avoid spurious lockdep warning
+Message-ID: <20131204141345.GJ3158@htj.dyndns.org>
+References: <20131128051223.45739660885@gitolite.kernel.org>
+ <20131203184324.GA11320@redhat.com>
+ <20131203211028.GN8277@htj.dyndns.org>
+ <20131203211515.GA17951@redhat.com>
+ <20131203213649.GO8277@htj.dyndns.org>
+ <20131203221543.GP8277@htj.dyndns.org>
+ <20131204044306.GA13248@redhat.com>
+ <20131204140639.GI3158@htj.dyndns.org>
 MIME-Version: 1.0
-To: Lukasz Majewski <l.majewski@samsung.com>
-CC: Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, <durgadoss.r@intel.com>,
-        <linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH RESEND v10 0/7] cpufreq:boost: CPU Boost mode support
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com> <1385986761-17934-1-git-send-email-l.majewski@samsung.com> <20131204075921.3b9e86fa@amdc2363>
-In-Reply-To: <20131204075921.3b9e86fa@amdc2363>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="a8FjB1E02ahqIw3gP9kPoIoXEuA9UErAw"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131204140639.GI3158@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---a8FjB1E02ahqIw3gP9kPoIoXEuA9UErAw
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, Dec 04, 2013 at 09:06:39AM -0500, Tejun Heo wrote:
+> 027a485d12e0 ("sysfs: use a separate locking class for open files
+> depending on mmap") assigned different lockdep key to
+> sysfs_open_file->mutex depending on whether the file implements mmap
+> or not in an attempt to avoid spurious lockdep warning caused by
+> merging of regular and bin file paths.
+> 
+> While this restored some of the original behavior of using different
+> locks (at least lockdep is concerned) for the different clases of
+> files.  The restoration wasn't full because now the lockdep key
+> assignment depends on whether the file has mmap or not instead of
+> whether it's a regular file or not.
+> 
+> This means that bin files which don't implement mmap will get assigned
+> the same lockdep class as regular files.  This is problematic because
+> file_operations for bin files still implements the mmap file operation
+> and checking whether the sysfs file actually implements mmap happens
+> in the file operation after grabbing @sysfs_open_file->mutex.  We
+> still end up adding locking dependency from mmap locking to
+> sysfs_open_file->mutex to the regular file mutex which triggers
+> spurious circular locking warning.
+> 
+> This can be fixed by either giving sysfs_open_file->mutex different
+> lockdep keys depending on whether the file is regular or bin instead
+> of whether mmap exists or not, or avoiding grabbing
+> sysfs_open_file->mutex from sysfs_bin_mmap() if mmap is not actually
+> implemented.  While the former is simpler for driver-core-linus,
+> driver-core-next already has SYSFS_FLAG_HAS_MMAP in place to implement
+> the latter and doesn't have inherent distinction between regular and
+> bin files.  This patch implements the latter so that the fix is more
+> conducive to driver-core-next.
+> 
+> Because anything beyond sysfs_open_file->sd can't be dereferenced
+> without locking the open file, cache whether mmap is implemented or
+> not in sysfs_open_file->sd->s_flags and update sysfs_bin_mmap() test
+> the flag and bail without grabbing the mutex if not implemented.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Dave Jones <davej@redhat.com>
+> Tested-by: Dave Jones <davej@redhat.com>
+> Link: http://lkml.kernel.org/g/20131203184324.GA11320@redhat.com
 
-On 04-12-2013 02:59, Lukasz Majewski wrote:
-> Hi Rafael,
->=20
->> This patch series introduces support for CPU overclocking technique
->> called Boost.
->>
->> It is a follow up of a LAB governor proposal. Boost is a LAB
->> component:
->> http://thread.gmane.org/gmane.linux.kernel/1484746/match=3Dcpufreq
->>
->> Boost unifies hardware based solution (e.g. Intel Nehalem) with
->> software oriented one (like the one done at Exynos).
->> For this reason cpufreq/freq_table code has been reorganized to
->> include common code.
->>
->> Important design decisions:
->> - Boost related code is compiled-in unconditionally to cpufreq core
->> and disabled by default. The cpufreq_driver is responsibile for
->> setting boost_supported flag and providing set_boost callback(if HW
->> support is needed). For software managed boost, special Kconfig flag -=
+Please forget about this.  This is actually a lot harder to translate
+to kernfs.  I'll prepare another patch.  Sorry about the noise.
 
->>   CONFIG_CPU_FREQ_BOOST_SW has been defined. It will be selected only
->>   when a target platform has thermal framework properly configured.
->>
->> - struct cpufreq_driver has been extended with boost related fields:
->>         -- boost_supported - when driver supports boosting
->>         -- boost_enabled - boost state
->>         -- set_boost - callback to function, which is necessary to
->>            enable/disable boost
->>
->> - Boost sysfs attribute (/sys/devices/system/cpu/cpufreq/boost) is
->> visible _only_ when cpufreq driver supports Boost.
->>
->> - No special spin_lock for Boost was created. The one from cpufreq
->> core was reused.
->>
->> - The Boost code doesn't rely on any policy. When boost state is
->> changed, then the policy list is iterated and proper adjustements are
->> done.
->>
->> - To improve safety level, the thermal framework is also extended to
->> disable software boosting, when thermal trip point is reached. After
->> cooling down the boost can be enabled again. This emulates behaviour
->> similar to HW managed boost (like x86)
->>
->> Tested at HW:
->>        Exynos 4412 3.13-rc2 Linux
->>        Intel Core i7-3770 3.13-rc2 Linux
->>
->> Above patches were posted on top of kernel_pm/bleeding-edge
->> (SHA1: 9483a9f69d5c8f83f1723361bf8340ddfb6475b4)
->>
->=20
-> Rafael, could you pull patches from 1 to 6 of this series? Those are
-> related to cpufreq core and has already been accepted by Viresh at a
-> late August this year.
-> This would facilitate my further cpufreq work.
->=20
-> And about the last patch - related to thermal. It seems that more
-> discussion NOT related to cpufreq will be ongoing.=20
->=20
-> I would prefer to add it as a separate patch to thermal subtree.
+Thanks.
 
-I agree with Lukasz here. The part that touches the thermal driver is
-minimal and the discussion is a simple matter of concept and
-optimization of data structures.
-
->=20
->=20
->=20
->>
->> Lukasz Majewski (7):
->>   cpufreq: Add boost frequency support in core
->>   cpufreq:acpi:x86: Adjust the acpi-cpufreq.c code to work with common=
-
->>     boost solution
->>   cpufreq:boost:Kconfig: Provide support for software managed BOOST
->>   cpufreq:exynos:Extend Exynos cpufreq driver to support boost
->>     framework
->>   Documentation:cpufreq:boost: Update BOOST documentation
->>   cpufreq:exynos4x12: Change L0 driver data to CPUFREQ_BOOST_FREQ
->>   thermal:exynos:boost: Automatic enable/disable of BOOST feature (at
->>     Exynos4412)
->>
->>  Documentation/cpu-freq/boost.txt          |   26 +++----
->>  drivers/cpufreq/Kconfig                   |    4 +
->>  drivers/cpufreq/Kconfig.arm               |   15 ++++
->>  drivers/cpufreq/acpi-cpufreq.c            |   86
->> +++++++-------------- drivers/cpufreq/cpufreq.c                 |
->> 118 ++++++++++++++++++++++++++++-
->> drivers/cpufreq/exynos-cpufreq.c          |    3 +
->> drivers/cpufreq/exynos4x12-cpufreq.c      |    2 +-
->> drivers/cpufreq/freq_table.c              |   56 ++++++++++++--
->> drivers/thermal/samsung/exynos_tmu_data.c |   47 ++++++++++++
->> include/linux/cpufreq.h                   |   24 ++++++ 10 files
->> changed, 302 insertions(+), 79 deletions(-)
->>
->=20
->=20
->=20
-
-
---=20
-You have got to be excited about what you are doing. (L. Lamport)
-
-Eduardo Valentin
-
-
---a8FjB1E02ahqIw3gP9kPoIoXEuA9UErAw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlKfOEoACgkQCXcVR3XQvP3RMAEAuPIso2ItwVZOSfv0l7vRdgOG
-yI/GO8HMGPYMLMn/MdYA/iNzYmVu0+tPpJPk3RKpX6KktZ5EL9zR5zw+kiI4uANc
-=w/sJ
------END PGP SIGNATURE-----
-
---a8FjB1E02ahqIw3gP9kPoIoXEuA9UErAw--
+-- 
+tejun
