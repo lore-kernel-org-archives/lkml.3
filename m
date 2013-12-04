@@ -1,40 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932650Ab3LDPfv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 10:35:51 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:65420 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932254Ab3LDPfu (ORCPT
+	id S932686Ab3LDPhJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 10:37:09 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:48252 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932526Ab3LDPhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 10:35:50 -0500
+	Wed, 4 Dec 2013 10:37:07 -0500
+Date: Wed, 4 Dec 2013 16:37:03 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        kevin.b.smith@intel.com, hjl.tools@gmail.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86-64, build: Always pass in -mno-sse
+Message-ID: <20131204153703.GA5627@gmail.com>
+References: <tip-j21wzqv790q834n7yc6g80j1@git.kernel.org>
+ <20131204085448.GA31778@gmail.com>
+ <8798ec32-5add-4772-9c41-6f69401b16c9@email.android.com>
 MIME-Version: 1.0
-In-Reply-To: <1385983731-13196-2-git-send-email-panchaxari.prasannamurthy@linaro.org>
-References: <1385983731-13196-1-git-send-email-panchaxari.prasannamurthy@linaro.org>
-	<1385983731-13196-2-git-send-email-panchaxari.prasannamurthy@linaro.org>
-Date: Wed, 4 Dec 2013 16:35:49 +0100
-Message-ID: <CACRpkdZ5Bhnfx7e6xWFaqxDp4KqOWMKOUgu==Z4-A7L+K8_CBg@mail.gmail.com>
-Subject: Re: [PATCH] ARM:INTEGRATOR: Default enable ARM_PATCH_PHYS_VIRT, AUTO_ZRELADDR
-From: Linus Walleij <linus.walleij@linaro.org>
-To: panchaxari <panchaxari.prasannamurthy@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Michal Simek <monstr@monstr.eu>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8798ec32-5add-4772-9c41-6f69401b16c9@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 2, 2013 at 12:28 PM, panchaxari
-<panchaxari.prasannamurthy@linaro.org> wrote:
 
-> ARM_PATCH_PHYS_VIRT and AUTO_ZRELADDR has been enabled as default configs
-> to integrator platform.
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
-I have tested this now on Integrator/AP and Integrator/CP and it works
-fine, so I'm queueing this for v3.14.
+> I can regenerate the patch if you want.
 
-Yours,
-Linus Walleij
+No need, I think a separate cleanup patch might be better (in a 
+non-urgent branch), because currently a number of other lines in 
+arch/x86/Makefile are violating this kbuild convention as well.
+
+Thanks,
+
+	Ingo
