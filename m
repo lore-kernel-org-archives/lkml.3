@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab3LDJZd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 04:25:33 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:64492 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754846Ab3LDJZa (ORCPT
+	id S1755163Ab3LDJ2q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 04:28:46 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:44139 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754260Ab3LDJ2m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 04:25:30 -0500
-Date: Wed, 4 Dec 2013 10:24:30 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Stefan Agner <stefan@agner.ch>
-Cc: swarren@wwwdotorg.org, dev@lynxeye.de, lee.jones@linaro.org,
-        lgirdwood@gmail.com, broonie@kernel.org,
-        kai.poggensee@avionic-design.de, sameo@linux.intel.com,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] mfd: tps6586x: add version detection
-Message-ID: <20131204092429.GM19943@ulmo.nvidia.com>
-References: <cover.1386100296.git.stefan@agner.ch>
- <77384d24810d9a22fc04cad6f7468f54a9cbaafe.1386100296.git.stefan@agner.ch>
+	Wed, 4 Dec 2013 04:28:42 -0500
+X-IronPort-AV: E=Sophos;i="4.93,823,1378857600"; 
+   d="scan'208";a="78068766"
+Message-ID: <1386149319.13256.83.camel@kazak.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH RFC] xen-block: correctly define structures
+ in public headers
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: David Vrabel <david.vrabel@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Julien Grall <julien.grall@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xenproject.org>,
+        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>,
+        Roger Pau Monne <roger.pau@citrix.com>
+Date: Wed, 4 Dec 2013 09:28:39 +0000
+In-Reply-To: <20131203201135.GA14243@phenom.dumpdata.com>
+References: <1386068254-1413-1-git-send-email-roger.pau@citrix.com>
+	 <529DBA07.6090108@citrix.com>
+	 <1386068884.13256.9.camel@kazak.uk.xensource.com>
+	 <529DC7BA.7080506@citrix.com>
+	 <1386078108.13256.30.camel@kazak.uk.xensource.com>
+	 <529DF4A0.50103@citrix.com>
+	 <1386083821.13256.42.camel@kazak.uk.xensource.com>
+	 <20131203201135.GA14243@phenom.dumpdata.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MsEL38XAg4rx1uDx"
-Content-Disposition: inline
-In-Reply-To: <77384d24810d9a22fc04cad6f7468f54a9cbaafe.1386100296.git.stefan@agner.ch>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2013-12-03 at 15:11 -0500, Konrad Rzeszutek Wilk wrote:
+> > > If Konrad and Boris agree that breaking the kernel's ABI in this way is
+> > > acceptable in this specific case, I'll defer to them.
+> > 
+> > My opinion as Xen on ARM hypervisor maintainer is that this is the right
+> > thing to do in this case.
+> 
+> Heh. If somebody can guarantee me that (by testing the right variants and
+> mentioning this in the git commit) that this does not break x86, then
+> I am fine.
+> 
+> And by 'break x86' I mean that this combination works:
+>  32-bit domU on 64-bit dom0
+>  64-bit domU on 32-bit dom0
+> 
+> And perhaps also the obvious:
+>  64-bit domU on 64-bit dom0
+>  32-bit domU on 32-bit dom0
 
---MsEL38XAg4rx1uDx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+One way to test this is with gdb on a vmlinux for each arch with
+CONFIG_DEBUG_INFO=y. For each MEMBER of each interesting STRUCT:
+        (gdb) print &((struct STRUCT *)0)->MEMBER
+(this is effectively an open coded offsetof)
 
-On Tue, Dec 03, 2013 at 08:57:27PM +0100, Stefan Agner wrote:
-> Use the VERSIONCRC to determine the exact device version. According to
-> the datasheet this register can be used as device identifier. The
-> identification is needed since some tps6586x regulators use a different
-> voltage table.
->=20
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
-> ---
-> Since the struct tps6586x is inside the c file, I could not easily
-> move the tps6586x_get_version function as inline to the header file.
->=20
-> Changes since v2:
->   - Avoid moving devm_kzalloc
-> ---
->  drivers/mfd/tps6586x.c       | 43 ++++++++++++++++++++++++++++++++++++++=
------
->  include/linux/mfd/tps6586x.h |  7 +++++++
->  2 files changed, 45 insertions(+), 5 deletions(-)
+This could probably even be semi automated by producing a script to feed
+to gdb which run through all of the options and diffing the result.
 
-Reviewed-by: Thierry Reding <treding@nvidia.com>
+If I could have the moon on a stick I would have a tool such as this
+running against the canonical Xen headers, to catch breakage as it is
+introduced upstream and a tool which could run against an arbitrary ELF
+binary to validate it against the upstream results.
+tools/include/xen-foreign/mkchecker.py goes some way towards that but
+isn't really extensible to the extent we would need/want.
 
---MsEL38XAg4rx1uDx
-Content-Type: application/pgp-signature
+While I'm asking for unicorns a gcc __attribute__((warn_on_holes)) which
+could be applied to a struct to enforce the need for explicit padding
+would probably be incredibly useful for this of thing.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+> Since the xen-blkback has its own version of the structs there is no
+> need to change change newer and older version of it.
 
-iQIcBAEBAgAGBQJSnvTNAAoJEN0jrNd/PrOh/oIP/0XcOss0nYe5k3ns1wrZbitV
-YAD+hhJvhjwZMg7OirwXhbft5jCq5hsRw5E3pQU0pEf9edbgAUGei8fQlg9+mfwu
-i1i9edYSsg5bufkaBc4Iz2yQgMTvJhrs3/B0Z+TDggY5TbYziJMBRz/ES5CD3eL8
-qYaZtfueulqg38AcPLe72HoZ1A80SadZUeaTW8X1O1/8KK2uIgLqpq0HtDvR0wkL
-ttUbkzb1iaukcN+t8/ZyQIDmZLYzJuPzTKl3bZv7+MGG6+QNOwj8tQ6T0A5lzCLY
-9e+/tVccLcZKIlgE5KfTyIXv54xHnwvyd/Lu6Kt46U+GiYLE342nIlvS9o4B26SC
-Kn+DNoccJG6Yad//tJA2Do4feytV4HAVdrnTf6B4q5cDTZ7V4ExMC7Un+p0x92Pb
-uepuE7HSRyExtQnd/iKDz+tQXA4V35oXuxKHJ+Jkg095BZjROe12HXNkZWUPeipi
-Vdl9YwOlkIDHiPBEe+EySqwC0DI5PDHU7ogOWVqUdxlysB+DcEvQMio+lI9MOi8W
-RrJazbHlEq6He+Mip2X5Dy7PDP4xrCxFZ665SO2+WzEtT8J6F6+5sTm0a1SkEI1Q
-93fBbesRv/sw8ChyD5h3v8Yb+Xvpl2pfGiJkdoL0yZLC+cJUQOFXZwA8+RWBXkmb
-9N87gDN076MnvMpI5dXs
-=GX7e
------END PGP SIGNATURE-----
+Someone should check that these are producing the right interface on ARM
+though!
 
---MsEL38XAg4rx1uDx--
+> As long as that works I am OK sticking it in.
+
+Thanks.
+
+> I think from the ARM perspective it is still in 'experimental' phase
+> so anything goes to make it work under ARM.
+
+Ian.
+
+
