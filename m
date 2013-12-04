@@ -1,155 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933268Ab3LDTjc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 14:39:32 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:52127 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933131Ab3LDTjS (ORCPT
+	id S933285Ab3LDTj5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 14:39:57 -0500
+Received: from mail-n.franken.de ([193.175.24.27]:42929 "EHLO
+	mail-n.franken.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755995Ab3LDTjx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 14:39:18 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 5/5] ARM: msm: Move MSM's DT based hardware to multi-platform support
-Date: Wed,  4 Dec 2013 11:39:12 -0800
-Message-Id: <1386185952-27259-6-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.5.1.19.gdaad3aa
-In-Reply-To: <1386185952-27259-1-git-send-email-sboyd@codeaurora.org>
-References: <1386185952-27259-1-git-send-email-sboyd@codeaurora.org>
+	Wed, 4 Dec 2013 14:39:53 -0500
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
+Subject: Re: Supporting 4 way connections in LKSCTP
+From: Michael Tuexen <Michael.Tuexen@lurchi.franken.de>
+In-Reply-To: <529F7336.1000007@gmail.com>
+Date: Wed, 4 Dec 2013 20:39:52 +0100
+Cc: David Laight <David.Laight@ACULAB.COM>, Sun Paul <paulrbk@gmail.com>,
+        netdev@vger.kernel.org, linux-sctp@vger.kernel.org,
+        Karl Heiss <kheiss@gmail.com>, Neil Horman <nhorman@tuxdriver.com>,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <61627268-F9ED-4A99-A084-B7AD49500999@lurchi.franken.de>
+References: <CAFXGft+CXk3W8=3w=AuYzqYtYnR8nH4Of9=668tUeT+tugD9-A@mail.gmail.com>	<CAFXGftJQV=5Pqs3bhfiS3T1VO1q8jfaMjAUiqm2tDbtSyBCM3A@mail.gmail.com>	<529C9B50.50002@gmail.com>	<CAGugRbXFirQ5P3ek9zN86h4vvO6qsy3eNEooJOApotA+dL+C_g@mail.gmail.com>	<529CB859.9090904@gmail.com>	<CAFXGft+F52p+oaa59=5e5pGfON44N36NA-XMYi5PorzWeybnKw@mail.gmail.com>	<CAFXGft+4o6fT4SYbu3musC+-BEi=xOEGUbZSavF1-0_V1mg6zg@mail.gmail.com>	<529D3BF9.3070208@gmail.com>	<CAFXGftJtCCJ=pVxg_DH-+n2bKmoKXavog0y8mfX+h-1z3hP49Q@mail.gmail.com>	<529DCF42.1070800@gmail.com>	<CAFXGftK5tz90OzObiV7Hi+g080j3zWCNdo217CKdNkOY4JWQUg@mail.gmail.com>	<529DF73E.7060604@gmail.com> <CAFXGftKZD0zN1S=UTa_bYr71-v=7mzU=_CewTNkjPv9CGGB_Fg@mail.gmail.com> <529F395B.9040308@gmail.com> <AE90C24D6B3A694183C094C60CF0A2F6026B745D@saturn3.aculab.com> <529F4D1A.3050304@gmail.com> <7A4B9BD9-B2BF-4625-A2E5-500CD4A6D399@lurchi.franken.de> <529F5472.9030207@gmail.com> <4F0BC498-2F09-4DB6-83DC-82571645476B@lurchi.franken.de> <529F7336.1000007@gmail.com>
+To: Vlad Yasevich <vyasevich@gmail.com>
+X-Mailer: Apple Mail (2.1510)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DT based MSM platforms can join the multi-platform builds, so
-introduce a DT based ARCH_MSM option. This option allows DT based
-MSM platforms to be built into the multi-platform kernel. Also
-introduce a hidden ARCH_MSM config that both the DT and non-DT
-platform support code select to avoid churn in places that depend
-on CONFIG_ARCH_MSM.
 
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/Kconfig          |  4 ++--
- arch/arm/mach-msm/Kconfig | 61 +++++++++++++++++++++++++----------------------
- 2 files changed, 35 insertions(+), 30 deletions(-)
+On Dec 4, 2013, at 7:23 PM, Vlad Yasevich <vyasevich@gmail.com> wrote:
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 603d661..d056118 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -630,10 +630,10 @@ config ARCH_PXA
- 	help
- 	  Support for Intel/Marvell's PXA2xx/PXA3xx processor line.
- 
--config ARCH_MSM
-+config ARCH_MSM_NODT
- 	bool "Qualcomm MSM"
-+	select ARCH_MSM
- 	select ARCH_REQUIRE_GPIOLIB
--	select CLKSRC_OF if OF
- 	select COMMON_CLK
- 	select GENERIC_CLOCKEVENTS
- 	help
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index 47cd2df..73c7ff3 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -1,12 +1,42 @@
-+config ARCH_MSM
-+	bool
-+
-+config ARCH_MSM_DT
-+	bool "Qualcomm MSM DT support" if ARCH_MULTI_V7
-+	select ARCH_MSM
-+	select ARCH_REQUIRE_GPIOLIB
-+	select CLKSRC_OF
-+	select GENERIC_CLOCKEVENTS
-+	help
-+	  Support for Qualcomm's DT-based MSM systems.
-+
- if ARCH_MSM
- 
--comment "Qualcomm MSM SoC Type"
-+menu "Qualcomm MSM SoC selection"
- 	depends on ARCH_MSM_DT
- 
-+config ARCH_MSM8X60
-+	bool "Enable support for MSM8X60"
-+	select ARM_GIC
-+	select CPU_V7
-+	select HAVE_SMP
-+	select MSM_SCM if SMP
-+	select MSM_TIMER
-+
-+config ARCH_MSM8960
-+	bool "Enable support for MSM8960"
-+	select ARM_GIC
-+	select CPU_V7
-+	select HAVE_SMP
-+	select MSM_SCM if SMP
-+	select MSM_TIMER
-+
-+endmenu
-+
- choice
- 	prompt "Qualcomm MSM SoC Type"
- 	default ARCH_MSM7X00A
--	depends on !ARCH_MSM_DT
-+	depends on ARCH_MSM_NODT
- 
- config ARCH_MSM7X00A
- 	bool "MSM7x00A / MSM7x01A"
-@@ -45,30 +75,6 @@ config ARCH_QSD8X50
- 
- endchoice
- 
--config ARCH_MSM8X60
--	bool "MSM8X60"
--	select ARM_GIC
--	select CPU_V7
--	select GPIO_MSM_V2
--	select HAVE_SMP
--	select MSM_SCM if SMP
--	select MSM_TIMER
--
--config ARCH_MSM8960
--	bool "MSM8960"
--	select ARM_GIC
--	select CPU_V7
--	select HAVE_SMP
--	select GPIO_MSM_V2
--	select MSM_SCM if SMP
--	select MSM_TIMER
--
--config ARCH_MSM_DT
--	def_bool y
--	depends on (ARCH_MSM8X60 || ARCH_MSM8960)
--	select SPARSE_IRQ
--	select USE_OF
--
- config MSM_HAS_DEBUG_UART_HS
- 	bool
- 
-@@ -85,7 +91,7 @@ config  MSM_VIC
- 	bool
- 
- menu "Qualcomm MSM Board Type"
--	depends on !ARCH_MSM_DT
-+	depends on ARCH_MSM_NODT
- 
- config MACH_HALIBUT
- 	depends on ARCH_MSM
-@@ -133,7 +139,6 @@ config MSM_SMD
- 
- config MSM_GPIOMUX
- 	bool
--	depends on !ARCH_MSM_DT
- 	help
- 	  Support for MSM V1 TLMM GPIOMUX architecture.
- 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+> On 12/04/2013 11:25 AM, Michael Tuexen wrote:
+>> On Dec 4, 2013, at 5:12 PM, Vlad Yasevich <vyasevich@gmail.com> wrote:
+>> 
+>>> On 12/04/2013 11:01 AM, Michael Tuexen wrote:
+>>>> On Dec 4, 2013, at 4:41 PM, Vlad Yasevich <vyasevich@gmail.com> wrote:
+>>>> 
+>>>>> On 12/04/2013 09:50 AM, David Laight wrote:
+>>>>>>>> In normal operation, IP-A sends INIT to IP-X, IP-X returns INIT_ACK to
+>>>>>>>> IP-A. IP-A then sends HB to IP-X, IP-X then returns HB_ACK to IP-A. In
+>>>>>>>> the meantime, IP-B sends HB to IP-Y and IPY returns HB_ACK.
+>>>>>>>> 
+>>>>>>>> In case of the path between IP-A and IP-X is broken, IP-B sends INIT
+>>>>>>>> to IP-X, NODE-B uses IP-Y to return INIT_ACK to IP-B. Then IP-B sends
+>>>>>>>> HB to IP-X, and IP-Y returns HB_ACK to IP-B. In the meantime, the HB
+>>>>>>>> communication between IP-B and IP-Y follows the normal flow.
+>>>>>>>> 
+>>>>>>>> Can I confirm, is it really valid?
+>>>>>>> 
+>>>>>>> As long as NODE-B knows about both IP-A and IP-B, and NODE-A knows about
+>>>>>>> both IP-X and IP-Y (meaning all the addresses were exchanged inside INIT
+>>>>>>> and INIT-ACK), then this situation is perfectly valid.  In fact, this
+>>>>>>> has been tested an multiple interops.
+>>>>>> 
+>>>>>> There are some network configurations that do cause problems.
+>>>>>> Consider 4 systems with 3 LAN segments:
+>>>>>> A) 10.10.10.1 on LAN X and 192.168.1.1 on LAN Y.
+>>>>>> B) 10.10.10.2 on LAN X and 192.168.1.2 on LAN Y.
+>>>>>> C) 10.10.10.3 on LAN X.
+>>>>>> D) 10.10.10.4 on LAN X and 192.168.1.2 on LAN Z.
+>>>>>> There are no routers between the networks (and none of the systems
+>>>>>> are running IP forwarding).
+>>>>>> 
+>>>>>> If A connects to B everything is fine - traffic can use either LAN.
+>>>>>> 
+>>>>>> Connections from A to C are problematic if C tries to send anything
+>>>>>> (except a HB) to 192.168.1.1 before receiving a HB response.
+>>>>>> One of the SCTP stacks we've used did send messages to an
+>>>>>> inappropriate address, but I've forgotten which one.
+>>>>> 
+>>>>> I guess that would be problematic if A can not receive traffic for
+>>>>> 192.168.1.1 on the interface connected to LAN X.  I shouldn't
+>>>>> technically be a problem for C as it should mark the path to 192.168.1.1
+>>>>> as down.  For A, as long as it doesn't decide to ABORT the association,
+>>>>> it shouldn't be a problem either.  It would be interesting to know more
+>>>>> about what problems you've observed.
+>>>>> 
+>>>>>> 
+>>>>>> Connections between A and D fail unless the HB errors A receives
+>>>>>> for 192.168.1.2 are ignored.
+>>>>> 
+>>>>> Yes, this configuration is very error prone, especially if system B and
+>>>>> system D are up at the same time.  Any attempts by system A to use
+>>>>> LAN Y will result in an ABORT generated by system B.  I have seen
+>>>>> this issue well in production and we had to renumber system D to solve
+>>>>> it.
+>>>> The point is that address scoping should be used. When sending an
+>>>> INIT from 10.10.10.1 to 10.10.10.4 you should not list 192.168.1.1,
+>>>> since you are transmitting an address to a node which might or might
+>>>> not "be in the same scope". We had IDs for that in the past, but
+>>>> they never made it to RFC state, because they were not progressed enough
+>>>> by the authors. Maybe we should push them again...
+>>> 
+>>> But these 2 are technically in the same scope.  They are both private
+>>> address types.  Also, this will not solve the problem either since
+>> That is correct. But I think you should not transfer a private address
+>> to another private address belonging to a different network.
+>> I don't think this was specified in the older IDs...
+>>> the configured addresses could be:
+>>> System A) 10.0.0.1 on Lan X, 10.10.0.1 on Lan Y
+>>> System B) 10.0.0.2 on Lan X, 10.10.0.2 on Lan Y
+>>> System C) 10.0.0.3 on Lan X, 10.10.0.2 on Lan Z
+>>> 
+>>> Same problem will occur.
+>> Depending on the subnet masks, it might work not not. Are you
+>> configuring them with /8? 
+> 
+> No, /16 :).  With that, Sys A talking to Sys C will get an abort
+> from Sys B when trying to talk to 10.10.0.2.  With /8, it'll be
+> even worse since SysB and SysC will have duplicate addresses
+> within the subnet. :)
+> 
+> The point is that you don't always know that the same private subnet
+> is in reality 2 different subnets with duplicate addresses.
+I agree, you can't do it perfectly right. But you can provide some
+protection.
+> 
+> I've had to debug an actual production issue similar to this where
+> customer had a very similar configuration to above, and their
+> associations kept getting aborted.  When I tried accessing the
+> system that kept sending aborts, I found it was some windows
+> server and not a Diameter station they were expecting.
+Interesting... Availability of SCTP on Windows is quite limited...
+But people seem to use SCTP on Windows.
+
+Best regards
+Michael
+> 
+>>> 
+>>> Btw, were there any IDs other then draft-stewart-tsvwg-sctp-ipv4?
+>> Yes, one for IPv6.
+>> http://tools.ietf.org/html/draft-stewart-tsvwg-sctpipv6-01
+>> They need to be integrated and improved...
+>> 
+> 
+> Ok.  I'll take a look.
+> 
+> Thanks
+> -vlad
+> 
+>> Best regards
+>> Michael
+>>> 
+>>> Thanks
+>>> -vlad
+>>> 
+>>>> 
+>>>> Best regards
+>>>> Michael
+>>>>> 
+>>>>> -vlad
+>>>>>> 
+>>>>>> Of course the application could explicitly bind to only the 10.x address
+>>>>>> but that requires the application know the exact network topology
+>>>>>> and may be difficult for incoming calls.
+>>>>>> 
+>>>>>> 	David
+>>>>>> 
+>>>>> 
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>> 
+>>>> 
+>>> 
+>>> 
+>> 
+> 
+> 
 
