@@ -1,163 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933155Ab3LDSOL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 13:14:11 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52527 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933105Ab3LDSNl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 13:13:41 -0500
-From: Serban Constantinescu <serban.constantinescu@arm.com>
-To: gregkh@linuxfoundation.org, arve@android.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, john.stultz@linaro.org,
-        ccross@android.com, Dave.Butcher@arm.com, irogers@google.com,
-        romlem@android.com
-Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Subject: [PATCH v1 8/9] staging: android: binder: Add binder compat handling to binder.h
-Date: Wed,  4 Dec 2013 18:09:40 +0000
-Message-Id: <1386180581-6710-9-git-send-email-serban.constantinescu@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
-References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
+	id S933203Ab3LDSO4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 13:14:56 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:14129 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932904Ab3LDSOJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 13:14:09 -0500
+X-Greylist: delayed 1198 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Dec 2013 13:14:09 EST
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        <linux-btrfs@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Message-ID: <20131204175350.3449.17368@hit-nxdomain.opendns.com>
+From: Chris Mason <clm@fb.com>
+User-Agent: alot/0.3.5
+Subject: [GIT PULL] Btrfs Maintainer update
+Date: Wed, 4 Dec 2013 12:53:50 -0500
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Spam-Reason: safe
+X-FB-Internal: Safe
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.72,1.0.14,0.0.0000
+ definitions=2013-12-04_07:2013-12-04,2013-12-04,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds all the needed compat structures to binder.h. All the
-structures defined in this patch mirror the structure and size of 32bit
-ones.
+Hi Linus,
 
-Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
----
- drivers/staging/android/binder.h |  109 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 109 insertions(+)
+I'm still getting settled into new devel hardware etc, but I do have one
+commit for the next rc.  Please grab it from my for-linus branch:
 
-diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
-index cbe3451..6c9849d 100644
---- a/drivers/staging/android/binder.h
-+++ b/drivers/staging/android/binder.h
-@@ -22,6 +22,10 @@
- 
- #include <linux/ioctl.h>
- 
-+#ifdef CONFIG_COMPAT
-+#include <linux/compat.h>
-+#endif
-+
- #define B_PACK_CHARS(c1, c2, c3, c4) \
- 	((((c1)<<24)) | (((c2)<<16)) | (((c3)<<8)) | (c4))
- #define B_TYPE_LARGE 0x85
-@@ -326,5 +330,110 @@ enum binder_driver_command_protocol {
- 	 */
- };
- 
-+/* Support for 32bit userspace on a 64bit system */
-+#ifdef CONFIG_COMPAT
-+struct compat_flat_binder_object {
-+	/* 8 bytes for large_flat_header. */
-+	__u32		type;
-+	__u32		flags;
-+
-+	/* 8 bytes of data. */
-+	union {
-+		compat_uptr_t	binder;	/* local object */
-+		__u32	handle;	        /* remote object */
-+	};
-+
-+	/* extra data associated with local object */
-+	compat_uptr_t	cookie;
-+};
-+
-+struct compat_binder_write_read {
-+	compat_size_t	write_size;     /* bytes to write */
-+	compat_size_t	write_consumed;	/* bytes consumed by driver */
-+	compat_ulong_t	write_buffer;
-+	compat_size_t	read_size;      /* bytes to read */
-+	compat_size_t	read_consumed;	/* bytes consumed by driver */
-+	compat_ulong_t	read_buffer;
-+};
-+
-+#define COMPAT_BINDER_WRITE_READ	_IOWR('b', 1, struct compat_binder_write_read)
-+
-+struct compat_binder_transaction_data {
-+	/* The first two are only used for bcTRANSACTION and brTRANSACTION,
-+	 * identifying the target and contents of the transaction.
-+	 */
-+	union {
-+		__u32	handle;		    /* target descriptor of command transaction */
-+		compat_uptr_t	ptr;	/* target descriptor of return transaction */
-+	} target;
-+	compat_uptr_t	cookie;	/* target object cookie */
-+	__u32		code;	    /* transaction command */
-+
-+	/* General information about the transaction. */
-+	__u32	flags;
-+	pid_t	sender_pid;
-+	uid_t	sender_euid;
-+	compat_size_t	data_size;	    /* number of bytes of data */
-+	compat_size_t	offsets_size;	/* number of bytes of offsets */
-+
-+	/* If this transaction is inline, the data immediately
-+	 * follows here; otherwise, it ends with a pointer to
-+	 * the data buffer.
-+	 */
-+	union {
-+		struct {
-+			/* transaction data */
-+			compat_uptr_t	buffer;
-+			/* offsets from buffer to flat_binder_object structs */
-+			compat_uptr_t	offsets;
-+		} ptr;
-+		__u8	buf[8];
-+	} data;
-+};
-+
-+struct compat_binder_ptr_cookie {
-+	compat_uptr_t ptr;
-+	compat_uptr_t cookie;
-+};
-+
-+/* legacy - not used anymore */
-+struct compat_binder_pri_ptr_cookie {
-+	__s32 priority;
-+	compat_uptr_t ptr;
-+	compat_uptr_t cookie;
-+};
-+
-+enum compat_binder_driver_return_protocol {
-+	COMPAT_BR_TRANSACTION = _IOR('r', 2, struct compat_binder_transaction_data),
-+	COMPAT_BR_REPLY = _IOR('r', 3, struct compat_binder_transaction_data),
-+
-+	COMPAT_BR_INCREFS = _IOR('r', 7, struct compat_binder_ptr_cookie),
-+	COMPAT_BR_ACQUIRE = _IOR('r', 8, struct compat_binder_ptr_cookie),
-+	COMPAT_BR_RELEASE = _IOR('r', 9, struct compat_binder_ptr_cookie),
-+	COMPAT_BR_DECREFS = _IOR('r', 10, struct compat_binder_ptr_cookie),
-+
-+	/* legacy - not used anymore */
-+	COMPAT_BR_ATTEMPT_ACQUIRE = _IOR('r', 11, struct compat_binder_pri_ptr_cookie),
-+
-+	COMPAT_BR_DEAD_BINDER = _IOR('r', 15, compat_uptr_t),
-+	COMPAT_BR_CLEAR_DEATH_NOTIFICATION_DONE = _IOR('r', 16, compat_uptr_t),
-+};
-+
-+enum compat_binder_driver_command_protocol {
-+	COMPAT_BC_TRANSACTION = _IOW('c', 0, struct compat_binder_transaction_data),
-+	COMPAT_BC_REPLY = _IOW('c', 1, struct compat_binder_transaction_data),
-+
-+	COMPAT_BC_FREE_BUFFER = _IOW('c', 3, compat_uptr_t),
-+
-+	COMPAT_BC_INCREFS_DONE = _IOW('c', 8, struct compat_binder_ptr_cookie),
-+	COMPAT_BC_ACQUIRE_DONE = _IOW('c', 9, struct compat_binder_ptr_cookie),
-+
-+	COMPAT_BC_REQUEST_DEATH_NOTIFICATION = _IOW('c', 14, struct compat_binder_ptr_cookie),
-+	COMPAT_BC_CLEAR_DEATH_NOTIFICATION = _IOW('c', 15, struct compat_binder_ptr_cookie),
-+
-+	COMPAT_BC_DEAD_BINDER_DONE = _IOW('c', 16, compat_uptr_t),
-+};
-+#endif /* CONFIG_COMPAT */
-+
- #endif /* _LINUX_BINDER_H */
- 
--- 
-1.7.9.5
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
 
+This changes my email over to fb.com, and adds a MAINTAINERS entry for
+Josef as well.
+
+Instead of diffstat etc, I've put the patch below.  The commit is also
+signed, my updated key should be floating around the pgp servers now.
+
+commit c0778e2534b81be6b85b5ee07c0e15ff774f7136
+Author: Chris Mason <clm@fb.com>
+Date:   Tue Dec 3 20:16:03 2013 -0500
+
+    Btrfs: update the MAINTAINERS file
+    
+    Josef and I have new email addresses
+    
+    Signed-off-by: Chris Mason <clm@fb.com>
+    Signed-off-by: Josef Bacik <jbacik@fb.com>
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index ffcaf97..db89b5d 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1921,7 +1921,8 @@ S:	Maintained
+ F:	drivers/gpio/gpio-bt8xx.c
+ 
+ BTRFS FILE SYSTEM
+-M:	Chris Mason <chris.mason@fusionio.com>
++M:	Chris Mason <clm@fb.com>
++M:	Josef Bacik <jbacik@fb.com>
+ L:	linux-btrfs@vger.kernel.org
+ W:	http://btrfs.wiki.kernel.org/
+ Q:	http://patchwork.kernel.org/project/linux-btrfs/list/
