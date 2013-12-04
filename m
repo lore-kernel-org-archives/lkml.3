@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab3LDHjl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 02:39:41 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:27250 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747Ab3LDHjj (ORCPT
+	id S1754776Ab3LDHjz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 02:39:55 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:50191 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754676Ab3LDHjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 02:39:39 -0500
-Date: Wed, 4 Dec 2013 10:38:25 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Aldo Iljazi <mail@aldo.io>
-Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>, w.d.hubbs@gmail.com,
-        chris@the-brannons.com, kirk@reisers.ca, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>
-Subject: Re: [PATCH] Staging: speakup: synth.c: removed a space
-Message-ID: <20131204073824.GP28413@mwanda>
-References: <1386101283-14650-1-git-send-email-mail@aldo.io>
- <20131203221703.GE8138@type>
- <20131204043515.GB6909@linux>
+	Wed, 4 Dec 2013 02:39:41 -0500
+Message-ID: <529EDC36.5050108@hitachi.com>
+Date: Wed, 04 Dec 2013 16:39:34 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131204043515.GB6909@linux>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, namhyung@kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH 2/2] perf probe: Allow user to specify address within
+ executable
+References: <1385942827-11637-1-git-send-email-dsahern@gmail.com> <1385942827-11637-2-git-send-email-dsahern@gmail.com> <529C259D.8010901@hitachi.com> <529C9DDF.1080401@gmail.com> <529CC97A.6000807@gmail.com> <529DA355.9090408@hitachi.com> <529DFF8E.2030806@gmail.com> <529E83C0.1060405@hitachi.com> <529E8903.7060907@gmail.com>
+In-Reply-To: <529E8903.7060907@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 06:35:15AM +0200, Aldo Iljazi wrote:
->  Samuel Thibault wrote:
+(2013/12/04 10:44), David Ahern wrote:
+> On 12/3/13, 6:22 PM, Masami Hiramatsu wrote:
 > 
-> > Err, I'd rather make it really visible that the for loop doesn't have
-> > its first statement?
+>>> I figured out what you meant by uprobe_events interface yesterday. If I
+>>> have to go to that interface for even 1 function I would do it for all
+>>> -- from a user perspective it is just simpler to have 1 command to setup
+>>> probes. I would prefer that 1 command be perf-probe.
+>>
+>> Yeah, but in that case, why you don't ask us adding sym->binding == STB_LOCAL
+>> in filter_available_functions? :)
 > 
-> Wouldn't it be better if you add a comment there? So it would follow the
-> coding style?
+> I did in a separate email -- you said because there can be multiple
+> local functions with the same name.
 
-No.  Adding obvious comments is more annoying than the space.
+Yeah, and this still seems to be a kind of workaround for me. The best way
+to make you requirement enable is to support dwarf for userspace tracing.
+OK I'll try it.
 
-This seems like a small bug in checkpatch.pl.  Joe, the problem is this
-code:
+> But local functions is not the only
+> use case I need.
 
-	for ( ; x; x++) {
+What would you like to do with perf probe? Direct address accessing for
+userspace is not a good way to do, because userspace is relocatable...
 
-It's complaining about the space character before the semicolon.
+> For now I will carry the patch locally. At this point I am 20 patches
+> deep and have probably another 20 to go. What's one more. I'll come back
+> to this when I have more time.
 
-regards,
-dan carpenter
+Would you have any public git repository for that? And could you share
+us what would you like to do before sending patch? We can help you to
+tell the best way.
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
