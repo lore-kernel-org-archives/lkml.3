@@ -1,133 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481Ab3LDNDx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 08:03:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37457 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932385Ab3LDNDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 08:03:15 -0500
-Date: Wed, 4 Dec 2013 14:04:12 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        "Ma, Xindong" <xindong.ma@intel.com>, Michal Hocko <mhocko@suse.cz>,
-        Sameer Nanda <snanda@chromium.org>, Sergey Dyasly <dserrg@gmail.com>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/4] oom_kill: change oom_kill.c to use for_each_thread()
-Message-ID: <20131204130412.GA6005@redhat.com>
+	id S932401Ab3LDNGn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 08:06:43 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:20546 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932250Ab3LDNGk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 08:06:40 -0500
+X-IronPort-AV: E=Sophos;i="4.93,824,1378857600"; 
+   d="scan'208";a="78127531"
+Message-ID: <1386162396.17466.77.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH] xen/pvhvm: If xen_platform_pci=0 is set don't blow up.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <stefano.stabellini@eu.citrix.com>, <xen-devel@lists.xenproject.org>,
+        <linux-kernel@vger.kernel.org>, <boris.ostrovsky@oracle.com>,
+        <leosilva@linux.vnet.ibm.com>, <ashley@ashleylai.com>,
+        <peterhuewe@gmx.de>, <mail@srajiv.net>, <tpmdd@selhorst.net>,
+        <tpmdd@sirrix.com>, <dmitry.torokhov@gmail.com>, <bhelgaas@google.com>,
+        <plagnioj@jcrosoft.com>, <tomi.valkeinen@ti.com>,
+        <tpmdd-devel@lists.sourceforge.net>, <linux-input@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>
+Date: Wed, 4 Dec 2013 13:06:36 +0000
+In-Reply-To: <529F2758.9070304@citrix.com>
+References: <1386105246-14337-1-git-send-email-konrad.wilk@oracle.com>
+	 <529F2758.9070304@citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131204130351.GA5984@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change oom_kill.c to use for_each_thread() rather than the racy
-while_each_thread() which can loop forever if we race with exit.
+On Wed, 2013-12-04 at 13:00 +0000, David Vrabel wrote:
+> On 03/12/13 21:14, Konrad Rzeszutek Wilk wrote:
+> > 
+> > Ian Campbell suggested getting rid of 'xen_platform_pci_unplug'
+> > but unfortunatly the xen-blkfront driver is using it, so we
+> > cannot do it.
+> 
+> I had a look at what blkfront was using this for and it seems dumb.  How
+> did we end up with the frontend driver working around toolstack bugs?
+> If HVM Linux guest didn't want (e.g.,) PV CDROM, the toolstack shouldn't
+> have created one.
 
-Note also that most users were buggy even if while_each_thread()
-was fine, the task can exit even _before_ rcu_read_lock().
+Note that this cdrom stuff is actually nothing to do with the unplug
+variable -- it just happens to be right next to that check.
 
-Fortunately the new for_each_thread() only requires the stable
-task_struct, so this change fixes both problems.
+Not that the use of the unplug var there doesn't also look pretty odd...
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-and-Tested-by: Sergey Dyasly <dserrg@gmail.com>
-Reviewed-by: Sameer Nanda <snanda@chromium.org>
----
- mm/oom_kill.c |   20 ++++++++++----------
- 1 files changed, 10 insertions(+), 10 deletions(-)
-
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 1e4a600..96d7945 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -59,7 +59,7 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
- {
- 	struct task_struct *start = tsk;
- 
--	do {
-+	for_each_thread(start, tsk) {
- 		if (mask) {
- 			/*
- 			 * If this is a mempolicy constrained oom, tsk's
-@@ -77,7 +77,7 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
- 			if (cpuset_mems_allowed_intersects(current, tsk))
- 				return true;
- 		}
--	} while_each_thread(start, tsk);
-+	}
- 
- 	return false;
- }
-@@ -97,14 +97,14 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
-  */
- struct task_struct *find_lock_task_mm(struct task_struct *p)
- {
--	struct task_struct *t = p;
-+	struct task_struct *t;
- 
--	do {
-+	for_each_thread(p, t) {
- 		task_lock(t);
- 		if (likely(t->mm))
- 			return t;
- 		task_unlock(t);
--	} while_each_thread(p, t);
-+	}
- 
- 	return NULL;
- }
-@@ -301,7 +301,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
- 	unsigned long chosen_points = 0;
- 
- 	rcu_read_lock();
--	do_each_thread(g, p) {
-+	for_each_process_thread(g, p) {
- 		unsigned int points;
- 
- 		switch (oom_scan_process_thread(p, totalpages, nodemask,
-@@ -323,7 +323,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
- 			chosen = p;
- 			chosen_points = points;
- 		}
--	} while_each_thread(g, p);
-+	}
- 	if (chosen)
- 		get_task_struct(chosen);
- 	rcu_read_unlock();
-@@ -406,7 +406,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- {
- 	struct task_struct *victim = p;
- 	struct task_struct *child;
--	struct task_struct *t = p;
-+	struct task_struct *t;
- 	struct mm_struct *mm;
- 	unsigned int victim_points = 0;
- 	static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
-@@ -437,7 +437,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 	 * still freeing memory.
- 	 */
- 	read_lock(&tasklist_lock);
--	do {
-+	for_each_thread(p, t) {
- 		list_for_each_entry(child, &t->children, sibling) {
- 			unsigned int child_points;
- 
-@@ -455,7 +455,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 				get_task_struct(victim);
- 			}
- 		}
--	} while_each_thread(p, t);
-+	}
- 	read_unlock(&tasklist_lock);
- 
- 	rcu_read_lock();
--- 
-1.5.5.1
 
