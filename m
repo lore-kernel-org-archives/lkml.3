@@ -1,144 +1,2296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab3LDJtw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 04:49:52 -0500
-Received: from mga01.intel.com ([192.55.52.88]:6504 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755225Ab3LDJts (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 04:49:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,823,1378882800"; 
-   d="scan'208";a="438266794"
-Date: Wed, 4 Dec 2013 11:49:36 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-Cc: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] usb: phy-generic: Add ULPI VBUS support
-Message-ID: <20131204094936.GA21055@xps8300>
-References: <1385967919-13258-1-git-send-email-chris.ruehl@gtsys.com.hk>
- <1385967919-13258-4-git-send-email-chris.ruehl@gtsys.com.hk>
- <20131203081556.GA26423@xps8300>
- <529ED6C5.3000608@gtsys.com.hk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <529ED6C5.3000608@gtsys.com.hk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755399Ab3LDJxZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 04:53:25 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:52644 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755080Ab3LDJxU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 04:53:20 -0500
+From: Gary Rookard <garyrookard@gmail.com>
+To: gregkh@linuxfoundatio.org
+Cc: lisa@xenapiadmin.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Gary Rookard <garyrookard@gmail.com>
+Subject: [PATCH] Staging: bcm: DDRInit: Fixed non_standard kernel style.
+Date: Wed,  4 Dec 2013 04:53:09 -0500
+Message-Id: <1386150789-7431-1-git-send-email-garyrookard@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+Fixed non_standard kernel style.
 
-On Wed, Dec 04, 2013 at 03:16:21PM +0800, Chris Ruehl wrote:
-> On Tuesday, December 03, 2013 04:15 PM, Heikki Krogerus wrote:
-> >On Mon, Dec 02, 2013 at 03:05:19PM +0800, Chris Ruehl wrote:
-> >>@@ -154,6 +164,27 @@ int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_gen_xceiv *nop,
-> >>  {
-> >>  	int err;
-> >>
-> >>+	if (nop->ulpi_vbus>  0) {
-> >>+		unsigned int flags = 0;
-> >>+
-> >>+		if (nop->ulpi_vbus&  0x1)
-> >>+			flags |= ULPI_OTG_DRVVBUS;
-> >>+		if (nop->ulpi_vbus&  0x2)
-> >>+			flags |= ULPI_OTG_DRVVBUS_EXT;
-> >>+		if (nop->ulpi_vbus&  0x4)
-> >>+			flags |= ULPI_OTG_EXTVBUSIND;
-> >>+		if (nop->ulpi_vbus&  0x8)
-> >>+			flags |= ULPI_OTG_CHRGVBUS;
-> >>+
-> >>+		nop->ulpi = otg_ulpi_create(&ulpi_viewport_access_ops, flags);
-> >>+		if (!nop->ulpi) {
-> >>+			dev_err(dev, "Failed create ULPI Phy\n");
-> >>+			return -ENOMEM;
-> >>+		}
-> >>+		dev_dbg(dev, "Create ULPI Phy\n");
-> >>+		nop->ulpi->io_priv =  nop->viewport;
-> >>+	}
-> >
-> >This is so wrong. You are registering one kind of usb phy driver from
-> >an other. Change drivers/usb/phy/ulpi.c to be a platform device. The
-> >whole flag system in it is pretty horrid. While you are at it, change
-> >that so it sets the values based on boolean flags from OF properties
-> >or platform data.
-> >
-> >NAK for the whole set.
-> >
-> >
-> 
-> Heikki,
-> 
-> Thanks for your comments, even not much positive to me.. any how.
-> My intention on the "horrid" path was to reduce kernel code where
-> one of_read32 vs. four of_boolean. And mentioned logic is simple.
-> But that's history.
+Signed off by: Gary Alan Rookard <garyrookard@gmail.com>
+---
+ drivers/staging/bcm/DDRInit.c | 2081 +++++++++++++++++++----------------------
+ 1 file changed, 977 insertions(+), 1104 deletions(-)
 
-I should probable explain why I have problems with them. First of all,
-things like driving the vbus should be a function that can be called
-from upper layers. struct usb_otg has the set_vbus hook for that. You
-can call it for example from your host controller's init routine. I'm
-assuming you have a host controller since you are driving vbus.
-
-You don't need to set the ULPI_OTG_CHRGVBUS. It's used for the VBUS
-pulsing of SRP, which btw. is not anymore supported in OTG&EH2.0 spec,
-so just don't use that bit even if you want to start SRP.
-
-The only of_booleans you should need are for the DRV_VBUS_EXT and
-USE_EXT_VBUS_IND. In my case I could not use even those. My controller
-provides it's own control for them, so even if I set them to my ULPI
-phy, the controller would simply override the values.
-
-Secondly, why those silly flags in the first place. Those flags are
-just bits in the registers. It would have been much easier and cleaner
-to deliver a small struct with default values for the registers
-instead.
-
-> On my way to find a solution for my board I'd look around and found using of
-> phy-ulpi.c functions in phy-tegra-usb.c and don't mind to use them too.
-
-OK, IC. I have not followed what is happening with USB in linux for a
-while.
-
-The whole otg_ulpi_create() thing, and the flags with it, were
-originally planned to be used from platform code. It's evil and it
-should have never been accepted into upstream kernel. The time it was
-introduced I was on vacation and nobody else seemed to care :(. All I
-was able to do was to protest afterwards.
-
-> I accept your NAK and will work on a patch to make phy-ulpi.c
-> working as platform device.
-> 
-> Last question to you. What you don't like on the patch to support
-> chip-select gpio of my patch-set.. I ask because you NAK the whole
-> set.
-> I really need the ChipSelect function to make my hardware work!
-
-OK, I did not explain my problem with that patch. I'm sorry about
-that. It also looks like I made wrong assumption with it. I thought
-that your phy (is was ISP1504 right) is just like isp1704 that I have
-worked with. On isp1704 you only have the chip_sel pin (no reset pin),
-so I thought you can not have any reason to add handler for an other
-gpio to this driver. After a quick look at isp1504 data sheet, it
-looks like you have both reset and chip_sel pins on it, which I guess
-are both connected to gpios on your platform.
-
-So I don't have a problem with that. Though I'm not sure is this
-driver the right place to handle things like these gpios, which are
-pretty phy specific, in the first place. The phy-generic was
-originally meant to be pure NOP phy driver.
-
-One comment about how to handle the gpios. You should move to the new
-gpio descriptor API. The legacy gpio API is now just a wrapper on top
-of it.
-
-
-> Chris
-> 
-
-Thanks,
-
+diff --git a/drivers/staging/bcm/DDRInit.c b/drivers/staging/bcm/DDRInit.c
+index 9f7e30f..2fc3ba9 100644
+--- a/drivers/staging/bcm/DDRInit.c
++++ b/drivers/staging/bcm/DDRInit.c
+@@ -1,977 +1,876 @@
+-#include "headers.h"
+-
++/* File: DDRInit.c */
+ 
++#include "headers.h"
+ 
+ #define DDR_DUMP_INTERNAL_DEVICE_MEMORY 0xBFC02B00
+-#define MIPS_CLOCK_REG 	0x0f000820
+-
+-    //DDR INIT-133Mhz
+-#define T3_SKIP_CLOCK_PROGRAM_DUMP_133MHZ 12  //index for 0x0F007000
+-static struct bcm_ddr_setting asT3_DDRSetting133MHz[]= {//      # DPLL Clock Setting
+-                                        {0x0F000800,0x00007212},
+-                                        {0x0f000820,0x07F13FFF},
+-                                        {0x0f000810,0x00000F95},
+-                                        {0x0f000860,0x00000000},
+-                                        {0x0f000880,0x000003DD},
+-                                        // Changed source for X-bar and MIPS clock to APLL
+-                                        {0x0f000840,0x0FFF1B00},
+-                                        {0x0f000870,0x00000002},
+-                                        {0x0F00a044,0x1fffffff},
+-                                        {0x0F00a040,0x1f000000},
+-                                        {0x0F00a084,0x1Cffffff},
+-                                        {0x0F00a080,0x1C000000},
+-                                        {0x0F00a04C,0x0000000C},
+-                                        //Memcontroller Default values
+-                                        {0x0F007000,0x00010001},
+-                                        {0x0F007004,0x01010100},
+-                                        {0x0F007008,0x01000001},
+-                                        {0x0F00700c,0x00000000},
+-                                        {0x0F007010,0x01000000},
+-                                        {0x0F007014,0x01000100},
+-                                        {0x0F007018,0x01000000},
+-                                        {0x0F00701c,0x01020001},// POP - 0x00020001 Normal 0x01020001
+-                                        {0x0F007020,0x04030107}, //Normal - 0x04030107 POP - 0x05030107
+-                                        {0x0F007024,0x02000007},
+-                                        {0x0F007028,0x02020202},
+-                                        {0x0F00702c,0x0206060a},//ROB- 0x0205050a,//0x0206060a
+-                                        {0x0F007030,0x05000000},
+-                                        {0x0F007034,0x00000003},
+-                                        {0x0F007038,0x110a0200},//ROB - 0x110a0200,//0x180a0200,// 0x1f0a0200
+-                                        {0x0F00703C,0x02101010},//ROB - 0x02101010,//0x02101018},
+-                                        {0x0F007040,0x45751200},//ROB - 0x45751200,//0x450f1200},
+-                                        {0x0F007044,0x110a0d00},//ROB - 0x110a0d00//0x111f0d00
+-                                        {0x0F007048,0x081b0306},
+-                                        {0x0F00704c,0x00000000},
+-                                        {0x0F007050,0x0000001c},
+-                                        {0x0F007054,0x00000000},
+-                                        {0x0F007058,0x00000000},
+-                                        {0x0F00705c,0x00000000},
+-                                        {0x0F007060,0x0010246c},
+-                                        {0x0F007064,0x00000010},
+-                                        {0x0F007068,0x00000000},
+-                                        {0x0F00706c,0x00000001},
+-                                        {0x0F007070,0x00007000},
+-                                        {0x0F007074,0x00000000},
+-                                        {0x0F007078,0x00000000},
+-                                        {0x0F00707C,0x00000000},
+-                                        {0x0F007080,0x00000000},
+-                                        {0x0F007084,0x00000000},
+-                                        //# Enable BW improvement within memory controller
+-                                        {0x0F007094,0x00000104},
+-                                        //# Enable 2 ports within X-bar
+-                                        {0x0F00A000,0x00000016},
+-                                        //# Enable start bit within memory controller
+-                                        {0x0F007018,0x01010000}
+-                                        };
+-//80Mhz
+-#define T3_SKIP_CLOCK_PROGRAM_DUMP_80MHZ 10  //index for 0x0F007000
+-static struct bcm_ddr_setting asT3_DDRSetting80MHz[]= {//   # DPLL Clock Setting
+-                                        {0x0f000810,0x00000F95},
+-                                        {0x0f000820,0x07f1ffff},
+-                                        {0x0f000860,0x00000000},
+-                                        {0x0f000880,0x000003DD},
+-                                        {0x0F00a044,0x1fffffff},
+-                                        {0x0F00a040,0x1f000000},
+-                                        {0x0F00a084,0x1Cffffff},
+-                                        {0x0F00a080,0x1C000000},
+-                                        {0x0F00a000,0x00000016},
+-                                        {0x0F00a04C,0x0000000C},
+-                                //Memcontroller Default values
+-                                        {0x0F007000,0x00010001},
+-                                        {0x0F007004,0x01000000},
+-                                        {0x0F007008,0x01000001},
+-                                        {0x0F00700c,0x00000000},
+-                                        {0x0F007010,0x01000000},
+-                                        {0x0F007014,0x01000100},
+-                                        {0x0F007018,0x01000000},
+-                                        {0x0F00701c,0x01020000},
+-                                        {0x0F007020,0x04020107},
+-                                        {0x0F007024,0x00000007},
+-                                        {0x0F007028,0x02020201},
+-                                        {0x0F00702c,0x0204040a},
+-                                        {0x0F007030,0x04000000},
+-                                        {0x0F007034,0x00000002},
+-                                        {0x0F007038,0x1F060200},
+-                                        {0x0F00703C,0x1C22221F},
+-                                        {0x0F007040,0x8A006600},
+-                                        {0x0F007044,0x221a0800},
+-                                        {0x0F007048,0x02690204},
+-                                        {0x0F00704c,0x00000000},
+-                                        {0x0F007050,0x0000001c},
+-                                        {0x0F007054,0x00000000},
+-                                        {0x0F007058,0x00000000},
+-                                        {0x0F00705c,0x00000000},
+-                                        {0x0F007060,0x000A15D6},
+-                                        {0x0F007064,0x0000000A},
+-                                        {0x0F007068,0x00000000},
+-                                        {0x0F00706c,0x00000001},
+-                                        {0x0F007070,0x00004000},
+-                                        {0x0F007074,0x00000000},
+-                                        {0x0F007078,0x00000000},
+-                                        {0x0F00707C,0x00000000},
+-                                        {0x0F007080,0x00000000},
+-                                        {0x0F007084,0x00000000},
+-                                        {0x0F007094,0x00000104},
+-                                        //# Enable start bit within memory controller
+-										{0x0F007018,0x01010000}
+-                                };
+-//100Mhz
+-#define T3_SKIP_CLOCK_PROGRAM_DUMP_100MHZ 13  //index for 0x0F007000
+-static struct bcm_ddr_setting asT3_DDRSetting100MHz[]= {//  # DPLL Clock Setting
+-                                        {0x0F000800,0x00007008},
+-                                        {0x0f000810,0x00000F95},
+-                                        {0x0f000820,0x07F13E3F},
+-                                        {0x0f000860,0x00000000},
+-                                        {0x0f000880,0x000003DD},
+-                                // Changed source for X-bar and MIPS clock to APLL
+-                                //0x0f000840,0x0FFF1800,
+-                                        {0x0f000840,0x0FFF1B00},
+-                                        {0x0f000870,0x00000002},
+-                                        {0x0F00a044,0x1fffffff},
+-                                        {0x0F00a040,0x1f000000},
+-                                        {0x0F00a084,0x1Cffffff},
+-                                        {0x0F00a080,0x1C000000},
+-                                        {0x0F00a04C,0x0000000C},
+-                                //# Enable 2 ports within X-bar
+-                                        {0x0F00A000,0x00000016},
+-                                //Memcontroller Default values
+-                                        {0x0F007000,0x00010001},
+-                                        {0x0F007004,0x01010100},
+-                                        {0x0F007008,0x01000001},
+-                                        {0x0F00700c,0x00000000},
+-                                        {0x0F007010,0x01000000},
+-                                        {0x0F007014,0x01000100},
+-                                        {0x0F007018,0x01000000},
+-                                        {0x0F00701c,0x01020001}, // POP - 0x00020000 Normal 0x01020000
+-                                        {0x0F007020,0x04020107},//Normal - 0x04030107 POP - 0x05030107
+-                                        {0x0F007024,0x00000007},
+-                                        {0x0F007028,0x01020201},
+-                                        {0x0F00702c,0x0204040A},
+-                                        {0x0F007030,0x06000000},
+-                                        {0x0F007034,0x00000004},
+-                                        {0x0F007038,0x20080200},
+-                                        {0x0F00703C,0x02030320},
+-                                        {0x0F007040,0x6E7F1200},
+-                                        {0x0F007044,0x01190A00},
+-                                        {0x0F007048,0x06120305},//0x02690204 // 0x06120305
+-                                        {0x0F00704c,0x00000000},
+-                                        {0x0F007050,0x0000001C},
+-                                        {0x0F007054,0x00000000},
+-                                        {0x0F007058,0x00000000},
+-                                        {0x0F00705c,0x00000000},
+-                                        {0x0F007060,0x00082ED6},
+-                                        {0x0F007064,0x0000000A},
+-                                        {0x0F007068,0x00000000},
+-                                        {0x0F00706c,0x00000001},
+-                                        {0x0F007070,0x00005000},
+-                                        {0x0F007074,0x00000000},
+-                                        {0x0F007078,0x00000000},
+-                                        {0x0F00707C,0x00000000},
+-                                        {0x0F007080,0x00000000},
+-                                        {0x0F007084,0x00000000},
+-                                //# Enable BW improvement within memory controller
+-                                        {0x0F007094,0x00000104},
+-                                //# Enable start bit within memory controller
+-                                        {0x0F007018,0x01010000}
+-                                };
++#define MIP_CLOCK_REG 0x0F000820
+ 
+-//Net T3B DDR Settings
+-//DDR INIT-133Mhz
++/* DDR INIT-133Mhz */
++#define T3_SKIP_CLOCK_PROGRAM_DUMP_133MHz 12  /* index for 0x0F00700 */
++static struct bcm_ddr_setting asT3_DDRSetting133MHz[] = {  /* DPLL Clock Setting */
++	{0x0F000800, 0x00007212},
++	{0x0F000820, 0x07F13FFF},
++	{0x0F000810, 0x00000F95},
++	{0x0F000860, 0x00000000},
++	{0x0F000880, 0x000003DD},
++	{0x0F000840, 0x0FFF1B00},  /* Changed Source for X-bar and MIPS Clock to APLL */
++	{0xF0000870, 0x00000002},
++	{0x0F00A044, 0x1FFFFFFF},
++	{0x0F00A040, 0x1F000000},
++	{0x0F00A084, 0x1CFFFFFF},
++	{0x0F00A080, 0x1C000000},
++	{0x0F00A04C, 0x0000000C},
++	{0x0F007000, 0x00010001}, /* Memcontroller Default Values */
++	{0x0F007004, 0x01010100},
++	{0x0F007008, 0x01000001},
++	{0x0F00700C, 0x00000000},
++	{0x0F007010, 0x01000000},
++	{0x0F007014, 0x01000100},
++	{0x0F007018, 0x01000000},
++	{0x0F00701C, 0x01020001},  /* POP 0x00020001 Normal 0x01020001 */
++	{0x0F007020, 0x04030107},  /* POP 0x05030107 Normal 0x04030107 */
++	{0x0F007024, 0x02000007},
++	{0x0F007028, 0x02020202},
++	{0x0F00702C, 0x0206060A}, /* ROB 0x025050A,0x0206060A */
++	{0x0F007030, 0x05000000},
++	{0x0F007034, 0x00000003},
++	{0x0F007038, 0x110A0200},  /* ROB 0x110A0200,0x180A0200,0x1F0A0200 */
++	{0x0F00703C, 0x02101010},  /* ROB 0x02101010,0x02101018 */
++	{0x0F007040, 0x45751200},  /* ROB 0x45751200,0x450F1200 */
++	{0x0F007044, 0x110A0D00},  /* ROB 0x110A0D00,0x111F0D00 */
++	{0x0F007048, 0x081B0306},
++	{0x0F00704C, 0x00000000},
++	{0x0F007050, 0x0000001C},
++	{0x0F007054, 0x00000000},
++	{0x0F007058, 0x00000000},
++	{0x0F00705C, 0x00000000},
++	{0x0F007060, 0x0010246C},
++	{0x0F007064, 0x00000010},
++	{0x0F007068, 0x00000000},
++	{0x0F00706C, 0x00000001},
++	{0x0F007070, 0x00007000},
++	{0x0F007074, 0x00000000},
++	{0x0F007078, 0x00000000},
++	{0x0F00707C, 0x00000000},
++	{0x0F007080, 0x00000000},
++	{0x0F007084, 0x00000000},
++	{0x0F007094, 0x00000104},  /* Enable BW Improvement w/in Memory Controller */
++	{0x0F00A000, 0x00000016},  /* Enable 2 Ports w/in X-bar */
++	{0x0F007018, 0x01010000},  /* Enable Start Bit w/in Memory Controller */
++};
++/* 80mhz */
++#define T3_SKIP_CLOCK_PROGRAM_DUMP_80MHZ 10 /* index for 0x0F007000 */
++static struct bcm_ddr_setting asT3_DDRSetting80Mhz[] = { /* DPLL Clock Setting */
++	{0x0F000810, 0x00000F95},
++	{0x0F000820, 0x07F1FFFF},
++	{0x0F000860, 0x00000000},
++	{0x0F000880, 0x000003DD},
++	{0x0F00A044, 0x1FFFFFFF},
++	{0x0F00A040, 0x1F000000},
++	{0x0F00A084, 0x1CFFFFFF},
++	{0x0F00A080, 0x1C000000},
++	{0x0F00A000, 0x00000016},
++	{0x0F00A04C, 0x0000000C},
++	{0x0F007000, 0x00010001},  /* Memcontroller Defult Values */
++	{0x0F007004, 0x01000000},
++	{0x0F007008, 0x01000001},
++	{0x0F00700C, 0x00000000},
++	{0x0F007010, 0x01000000},
++	{0x0F007014, 0x01000100},
++	{0x0F007018, 0x01000000},
++	{0x0F00700C, 0x00000000},
++	{0x0F007020, 0x04020107},
++	{0x0F007024, 0x00000007},
++	{0x0F007028, 0x02020201},
++	{0x0F00702C, 0x0204040A},
++	{0x0F007030, 0x04000000},
++	{0x0F007034, 0x00000002},
++	{0x0F007038, 0x1F060200},
++	{0x0F00703C, 0x1C22221F},
++	{0x0F007040, 0xBA006600},
++	{0x0F007044, 0x221A0800},
++	{0x0F007048, 0x02690204},
++	{0x0F00704C, 0x00000000},
++	{0x0F007050, 0x0000001C},
++	{0x0F007054, 0x00000000},
++	{0x0F007058, 0x00000000},
++	{0x0F00705C, 0x00000000},
++	{0x0F007060, 0x000A15D6},
++	{0x0F007064, 0x0000000A},
++	{0x0F007068, 0x00000000},
++	{0x0F00706C, 0x00000001},
++	{0x0F007070, 0x00004000},
++	{0x0F007074, 0x0000000A},
++	{0x0F007078, 0x00000000},
++	{0x0F00707C, 0x00000000},
++	{0x0F007080, 0x00000000},
++	{0x0F007084, 0x00000000},
++	{0x0F007094, 0x00000104},
++	{0x0F007018, 0x01010000}  /* Enable Start Bit w/in memory controller */
++};
++/* 100MHz-T3 */
++#define T3_SKIP_CLOCK_PROGRAM_DUMP_100MHZ 13  /* index for 0x0F007000 */
++static struct bcm_ddr_setting asT3_DDRSetting100MHz[] = { /* DPLL Clock Setting */
++	{0x0F000800, 0x00007008},
++	{0x0F000810, 0x00000F95},
++	{0x0F000820, 0x07F13E3F},
++	{0x0F000860, 0x00000000},
++	{0x0F000880, 0x000003DD},
++	{0x0F000840, 0x0FFF1B00},  /* Changed Source for X-bar and MIPS Clock to APLL */
++	{0x0F000870, 0x00000002},
++	{0x0F00A044, 0x1FFFFFFF},
++	{0x0F00A040, 0x1F000000},
++	{0x0F00A084, 0x1CFFFFFF},
++	{0x0F00A080, 0x1C000000},
++	{0x0F00A04C, 0x0000000C},
++	{0x0F00A000, 0x00000016},  /* Enable 2 Ports w/in X-bar */
++	{0x0F007000, 0x00010001},  /* Memcontroller Default Values */
++	{0x0F007004, 0x01010100},
++	{0x0F007008, 0x01000001},
++	{0x0F00700C, 0x00000000},
++	{0x0F007010, 0x10000000},
++	{0x0F007014, 0x01000100},
++	{0x0F007018, 0x01000000},
++	{0x0F00701C, 0x01020001},  /* POP 0x00020000 Normal 0x01020000 */
++	{0x0F007020, 0x04040107},  /* POP 0x05030107 Normal 0x04030107 */
++	{0x0F007024, 0x00000007},
++	{0x0F007028, 0x01020201},
++	{0x0F00702C, 0x0200404A},
++	{0x0F007030, 0x06000000},
++	{0x0F007034, 0x00000004},
++	{0x0F007038, 0x20080200},
++	{0x0F00703C, 0x20300320},
++	{0x0F007040, 0x6E7F1200},
++	{0x0F007044, 0x01190A00},
++	{0x0F007048, 0x06120305},
++	{0x0F00704C, 0x00000000},
++	{0x0F007050, 0x0000001C},
++	{0x0F007054, 0x00000000},
++	{0x0F007058, 0x00000000},
++	{0x0F00705C, 0x00000000},
++	{0x0F007060, 0x00082ED6},
++	{0x0F007064, 0x0000000A},
++	{0x0F007068, 0x00000000},
++	{0x0F00706C, 0x00000001},
++	{0x0F007070, 0x00005000},
++	{0x0F007074, 0x00000000},
++	{0x0F007078, 0x00000000},
++	{0x0F00707C, 0x00000000},
++	{0x0F007080, 0x00000000},
++	{0x0F007084, 0x00000000},
++	{0x0F007094, 0x00000140},  /* Enable BW Improvement w/in Memcontroller */
++	{0x0F007018, 0x10100000}   /* Enable Start Bit w/in Memcontroller */
++};
++/* 266Mhz-DPLL */
+ static struct bcm_ddr_setting asDPLL_266MHZ[] = {
+-                                        {0x0F000800,0x00007212},
+-                                        {0x0f000820,0x07F13FFF},
+-                                        {0x0f000810,0x00000F95},
+-                                        {0x0f000860,0x00000000},
+-                                        {0x0f000880,0x000003DD},
+-                                        // Changed source for X-bar and MIPS clock to APLL
+-                                        {0x0f000840,0x0FFF1B00},
+-                                        {0x0f000870,0x00000002}
+-									  };
+-
+-#define T3B_SKIP_CLOCK_PROGRAM_DUMP_133MHZ 11  //index for 0x0F007000
+-static struct bcm_ddr_setting asT3B_DDRSetting133MHz[] = {//      # DPLL Clock Setting
+-                                        {0x0f000810,0x00000F95},
+-                                        {0x0f000810,0x00000F95},
+-                                        {0x0f000810,0x00000F95},
+-                                        {0x0f000820,0x07F13652},
+-                                        {0x0f000840,0x0FFF0800},
+-                                        // Changed source for X-bar and MIPS clock to APLL
+-                                        {0x0f000880,0x000003DD},
+-                                        {0x0f000860,0x00000000},
+-                                        // Changed source for X-bar and MIPS clock to APLL
+-                                        {0x0F00a044,0x1fffffff},
+-                                        {0x0F00a040,0x1f000000},
+-                                        {0x0F00a084,0x1Cffffff},
+-                                        {0x0F00a080,0x1C000000},
+-                                        //# Enable 2 ports within X-bar
+-                                        {0x0F00A000,0x00000016},
+-                                        //Memcontroller Default values
+-                                        {0x0F007000,0x00010001},
+-                                        {0x0F007004,0x01010100},
+-                                        {0x0F007008,0x01000001},
+-                                        {0x0F00700c,0x00000000},
+-                                        {0x0F007010,0x01000000},
+-                                        {0x0F007014,0x01000100},
+-                                        {0x0F007018,0x01000000},
+-                                        {0x0F00701c,0x01020001},// POP - 0x00020001 Normal 0x01020001
+-                                        {0x0F007020,0x04030107}, //Normal - 0x04030107 POP - 0x05030107
+-                                        {0x0F007024,0x02000007},
+-                                        {0x0F007028,0x02020202},
+-                                        {0x0F00702c,0x0206060a},//ROB- 0x0205050a,//0x0206060a
+-                                        {0x0F007030,0x05000000},
+-                                        {0x0F007034,0x00000003},
+-                                        {0x0F007038,0x130a0200},//ROB - 0x110a0200,//0x180a0200,// 0x1f0a0200
+-                                        {0x0F00703C,0x02101012},//ROB - 0x02101010,//0x02101018},
+-                                        {0x0F007040,0x457D1200},//ROB - 0x45751200,//0x450f1200},
+-                                        {0x0F007044,0x11130d00},//ROB - 0x110a0d00//0x111f0d00
+-                                        {0x0F007048,0x040D0306},
+-                                        {0x0F00704c,0x00000000},
+-                                        {0x0F007050,0x0000001c},
+-                                        {0x0F007054,0x00000000},
+-                                        {0x0F007058,0x00000000},
+-                                        {0x0F00705c,0x00000000},
+-                                        {0x0F007060,0x0010246c},
+-                                        {0x0F007064,0x00000012},
+-                                        {0x0F007068,0x00000000},
+-                                        {0x0F00706c,0x00000001},
+-                                        {0x0F007070,0x00007000},
+-                                        {0x0F007074,0x00000000},
+-                                        {0x0F007078,0x00000000},
+-                                        {0x0F00707C,0x00000000},
+-                                        {0x0F007080,0x00000000},
+-                                        {0x0F007084,0x00000000},
+-                                        //# Enable BW improvement within memory controller
+-                                        {0x0F007094,0x00000104},
+-                                        //# Enable start bit within memory controller
+-                                        {0x0F007018,0x01010000},
+-                                        };
+-
+-#define T3B_SKIP_CLOCK_PROGRAM_DUMP_80MHZ 9  //index for 0x0F007000
+-static struct bcm_ddr_setting asT3B_DDRSetting80MHz[] = {//       # DPLL Clock Setting
+-										{0x0f000810,0x00000F95},
+-										{0x0f000820,0x07F13FFF},
+-										{0x0f000840,0x0FFF1F00},
+-										{0x0f000880,0x000003DD},
+-										{0x0f000860,0x00000000},
+-
+-										{0x0F00a044,0x1fffffff},
+-										{0x0F00a040,0x1f000000},
+-										{0x0F00a084,0x1Cffffff},
+-										{0x0F00a080,0x1C000000},
+-										{0x0F00a000,0x00000016},
+-										//Memcontroller Default values
+-										{0x0F007000,0x00010001},
+-										{0x0F007004,0x01000000},
+-										{0x0F007008,0x01000001},
+-										{0x0F00700c,0x00000000},
+-										{0x0F007010,0x01000000},
+-										{0x0F007014,0x01000100},
+-										{0x0F007018,0x01000000},
+-										{0x0F00701c,0x01020000},
+-										{0x0F007020,0x04020107},
+-										{0x0F007024,0x00000007},
+-										{0x0F007028,0x02020201},
+-										{0x0F00702c,0x0204040a},
+-										{0x0F007030,0x04000000},
+-										{0x0F007034,0x02000002},
+-										{0x0F007038,0x1F060202},
+-										{0x0F00703C,0x1C22221F},
+-										{0x0F007040,0x8A006600},
+-										{0x0F007044,0x221a0800},
+-										{0x0F007048,0x02690204},
+-										{0x0F00704c,0x00000000},
+-										{0x0F007050,0x0100001c},
+-										{0x0F007054,0x00000000},
+-										{0x0F007058,0x00000000},
+-										{0x0F00705c,0x00000000},
+-										{0x0F007060,0x000A15D6},
+-										{0x0F007064,0x0000000A},
+-										{0x0F007068,0x00000000},
+-										{0x0F00706c,0x00000001},
+-										{0x0F007070,0x00004000},
+-										{0x0F007074,0x00000000},
+-										{0x0F007078,0x00000000},
+-										{0x0F00707C,0x00000000},
+-										{0x0F007080,0x00000000},
+-										{0x0F007084,0x00000000},
+-										{0x0F007094,0x00000104},
+-										//# Enable start bit within memory controller
+-										{0x0F007018,0x01010000}
+-								};
+-
+-//100Mhz
+-#define T3B_SKIP_CLOCK_PROGRAM_DUMP_100MHZ 9  //index for 0x0F007000
+-static struct bcm_ddr_setting asT3B_DDRSetting100MHz[] = {//      # DPLL Clock Setting
+-										{0x0f000810,0x00000F95},
+-										{0x0f000820,0x07F1369B},
+-										{0x0f000840,0x0FFF0800},
+-										{0x0f000880,0x000003DD},
+-										{0x0f000860,0x00000000},
+-										{0x0F00a044,0x1fffffff},
+-										{0x0F00a040,0x1f000000},
+-										{0x0F00a084,0x1Cffffff},
+-										{0x0F00a080,0x1C000000},
+-										//# Enable 2 ports within X-bar
+-										{0x0F00A000,0x00000016},
+-								//Memcontroller Default values
+-										{0x0F007000,0x00010001},
+-										{0x0F007004,0x01010100},
+-										{0x0F007008,0x01000001},
+-										{0x0F00700c,0x00000000},
+-										{0x0F007010,0x01000000},
+-										{0x0F007014,0x01000100},
+-										{0x0F007018,0x01000000},
+-										{0x0F00701c,0x01020000}, // POP - 0x00020000 Normal 0x01020000
+-										{0x0F007020,0x04020107},//Normal - 0x04030107 POP - 0x05030107
+-										{0x0F007024,0x00000007},
+-										{0x0F007028,0x01020201},
+-										{0x0F00702c,0x0204040A},
+-										{0x0F007030,0x06000000},
+-										{0x0F007034,0x02000004},
+-										{0x0F007038,0x20080200},
+-										{0x0F00703C,0x02030320},
+-										{0x0F007040,0x6E7F1200},
+-										{0x0F007044,0x01190A00},
+-										{0x0F007048,0x06120305},//0x02690204 // 0x06120305
+-										{0x0F00704c,0x00000000},
+-										{0x0F007050,0x0100001C},
+-										{0x0F007054,0x00000000},
+-										{0x0F007058,0x00000000},
+-										{0x0F00705c,0x00000000},
+-										{0x0F007060,0x00082ED6},
+-										{0x0F007064,0x0000000A},
+-										{0x0F007068,0x00000000},
+-										{0x0F00706c,0x00000001},
+-										{0x0F007070,0x00005000},
+-										{0x0F007074,0x00000000},
+-										{0x0F007078,0x00000000},
+-										{0x0F00707C,0x00000000},
+-										{0x0F007080,0x00000000},
+-										{0x0F007084,0x00000000},
+-								//# Enable BW improvement within memory controller
+-										{0x0F007094,0x00000104},
+-								//# Enable start bit within memory controller
+-										{0x0F007018,0x01010000}
+-							};
+-
+-
+-#define T3LP_SKIP_CLOCK_PROGRAM_DUMP_133MHZ 9  //index for 0x0F007000
+-static struct bcm_ddr_setting asT3LP_DDRSetting133MHz[]= {//	# DPLL Clock Setting
+-								{0x0f000820,0x03F1365B},
+-								{0x0f000810,0x00002F95},
+-								{0x0f000880,0x000003DD},
+-								// Changed source for X-bar and MIPS clock to APLL
+-								{0x0f000840,0x0FFF0000},
+-								{0x0f000860,0x00000000},
+-								{0x0F00a044,0x1fffffff},
+-								{0x0F00a040,0x1f000000},
+-								{0x0F00a084,0x1Cffffff},
+-								{0x0F00a080,0x1C000000},
+-								{0x0F00A000,0x00000016},
+-								//Memcontroller Default values
+-								{0x0F007000,0x00010001},
+-								{0x0F007004,0x01010100},
+-								{0x0F007008,0x01000001},
+-								{0x0F00700c,0x00000000},
+-								{0x0F007010,0x01000000},
+-								{0x0F007014,0x01000100},
+-								{0x0F007018,0x01000000},
+-								{0x0F00701c,0x01020001},// POP - 0x00020001 Normal 0x01020001
+-								{0x0F007020,0x04030107}, //Normal - 0x04030107 POP - 0x05030107
+-								{0x0F007024,0x02000007},
+-								{0x0F007028,0x02020200},
+-								{0x0F00702c,0x0206060a},//ROB- 0x0205050a,//0x0206060a
+-								{0x0F007030,0x05000000},
+-								{0x0F007034,0x00000003},
+-								{0x0F007038,0x200a0200},//ROB - 0x110a0200,//0x180a0200,// 0x1f0a0200
+-								{0x0F00703C,0x02101020},//ROB - 0x02101010,//0x02101018,
+-								{0x0F007040,0x45711200},//ROB - 0x45751200,//0x450f1200,
+-								{0x0F007044,0x110D0D00},//ROB - 0x110a0d00//0x111f0d00
+-								{0x0F007048,0x04080306},
+-								{0x0F00704c,0x00000000},
+-								{0x0F007050,0x0100001c},
+-								{0x0F007054,0x00000000},
+-								{0x0F007058,0x00000000},
+-								{0x0F00705c,0x00000000},
+-								{0x0F007060,0x0010245F},
+-								{0x0F007064,0x00000010},
+-								{0x0F007068,0x00000000},
+-								{0x0F00706c,0x00000001},
+-								{0x0F007070,0x00007000},
+-								{0x0F007074,0x00000000},
+-								{0x0F007078,0x00000000},
+-								{0x0F00707C,0x00000000},
+-								{0x0F007080,0x00000000},
+-								{0x0F007084,0x00000000},
+-								{0x0F007088,0x01000001},
+-								{0x0F00708c,0x00000101},
+-								{0x0F007090,0x00000000},
+-								//# Enable BW improvement within memory controller
+-								{0x0F007094,0x00040000},
+-								{0x0F007098,0x00000000},
+-								{0x0F0070c8,0x00000104},
+-								//# Enable 2 ports within X-bar
+-								//# Enable start bit within memory controller
+-								{0x0F007018,0x01010000}
++	{0x0F000800, 0x00007212},
++	{0x0F000820, 0x07F13FFF},
++	{0x0F000810, 0x00000F95},
++	{0x0F000860, 0x00000000},
++	{0x0F000880, 0x000003DD},
++	{0x0F000840, 0x0FFF1B00},  /* Changed Source for X-bar and MIPS clock to APLL */
++	{0x0F000870, 0x00000002},
+ };
+-
+-#define T3LP_SKIP_CLOCK_PROGRAM_DUMP_100MHZ 11  //index for 0x0F007000
+-static struct bcm_ddr_setting asT3LP_DDRSetting100MHz[]= {//	# DPLL Clock Setting
+-								{0x0f000810,0x00002F95},
+-								{0x0f000820,0x03F1369B},
+-								{0x0f000840,0x0fff0000},
+-								{0x0f000860,0x00000000},
+-								{0x0f000880,0x000003DD},
+-								// Changed source for X-bar and MIPS clock to APLL
+-								{0x0f000840,0x0FFF0000},
+-								{0x0F00a044,0x1fffffff},
+-								{0x0F00a040,0x1f000000},
+-								{0x0F00a084,0x1Cffffff},
+-								{0x0F00a080,0x1C000000},
+-								//Memcontroller Default values
+-								{0x0F007000,0x00010001},
+-								{0x0F007004,0x01010100},
+-								{0x0F007008,0x01000001},
+-								{0x0F00700c,0x00000000},
+-								{0x0F007010,0x01000000},
+-								{0x0F007014,0x01000100},
+-								{0x0F007018,0x01000000},
+-								{0x0F00701c,0x01020000},// POP - 0x00020001 Normal 0x01020001
+-								{0x0F007020,0x04020107}, //Normal - 0x04030107 POP - 0x05030107
+-								{0x0F007024,0x00000007},
+-								{0x0F007028,0x01020200},
+-								{0x0F00702c,0x0204040a},//ROB- 0x0205050a,//0x0206060a
+-								{0x0F007030,0x06000000},
+-								{0x0F007034,0x00000004},
+-								{0x0F007038,0x1F080200},//ROB - 0x110a0200,//0x180a0200,// 0x1f0a0200
+-								{0x0F00703C,0x0203031F},//ROB - 0x02101010,//0x02101018,
+-								{0x0F007040,0x6e001200},//ROB - 0x45751200,//0x450f1200,
+-								{0x0F007044,0x011a0a00},//ROB - 0x110a0d00//0x111f0d00
+-								{0x0F007048,0x03000305},
+-								{0x0F00704c,0x00000000},
+-								{0x0F007050,0x0100001c},
+-								{0x0F007054,0x00000000},
+-								{0x0F007058,0x00000000},
+-								{0x0F00705c,0x00000000},
+-								{0x0F007060,0x00082ED6},
+-								{0x0F007064,0x0000000A},
+-								{0x0F007068,0x00000000},
+-								{0x0F00706c,0x00000001},
+-								{0x0F007070,0x00005000},
+-								{0x0F007074,0x00000000},
+-								{0x0F007078,0x00000000},
+-								{0x0F00707C,0x00000000},
+-								{0x0F007080,0x00000000},
+-								{0x0F007084,0x00000000},
+-								{0x0F007088,0x01000001},
+-								{0x0F00708c,0x00000101},
+-								{0x0F007090,0x00000000},
+-								{0x0F007094,0x00010000},
+-								{0x0F007098,0x00000000},
+-								{0x0F0070C8,0x00000104},
+-								//# Enable 2 ports within X-bar
+-								{0x0F00A000,0x00000016},
+-								//# Enable start bit within memory controller
+-								{0x0F007018,0x01010000}
++/* 133MHz-T3B */
++#define T3B_SKIP_CLOCK_PROGRAM_DUMP_133MHZ 11  /* index for 0x0F00700 */
++static struct bcm_ddr_setting asT3B_DDRSetting133MGZ[] = {  /* DPLL Clock Setting */
++	{0x0F000810, 0x00000F95},
++	{0x0F000820, 0x07F13652},
++	{0x0F000840, 0x0FFF0800},
++	{0x0F00A000, 0x00000016},  /* Enable 2 Ports w/in X-bar */
++	{0x0F007000, 0x00010001},  /* Memcontroller Default Values */
++	{0x0F007004, 0x01010100},
++	{0x0F007008, 0x01000001},
++	{0x0F00700C, 0x00000000},
++	{0x0F007010, 0x01000000},
++	{0x0F007014, 0x01000100},
++	{0x0F007018, 0x01000000},
++	{0x0F00701C, 0x01020001},  /* POP 0x00020001 Normal 0x01020001 */
++	{0x0F007020, 0x04030107},  /* POP 0x05030107 Normal 0x04030107 */
++	{0x0F007024, 0x02000007},
++	{0x0F007028, 0x02020202},
++	{0x0F00702C, 0x0206060A},  /* ROB 0x0205050A,0x0206060A */
++	{0x0F007030, 0x05000000},
++	{0x0F007034, 0x00000003},
++	{0x0F007038, 0x130A0200},  /* ROB 0x110A0200,0x180A0200,0x1F0A0200 */
++	{0x0F00703C, 0x02101012},  /* ROB 0x02101010,0x02101018 */
++	{0x0F007040, 0x457D1200},  /* ROB 0x45751200,0x450F1200 */
++	{0x0F007044, 0x11130D00},  /* ROB 0x110A0D00,0x111F0D00 */
++	{0x0F007048, 0x040D0306},
++	{0x0F00704C, 0x00000000},
++	{0x0F007050, 0x0000001C},
++	{0x0F007054, 0x00000000},
++	{0x0F007058, 0x00000000},
++	{0x0F00705C, 0x00000000},
++	{0x0F007060, 0x0010246C},
++	{0x0F007064, 0x00000012},
++	{0x0F007068, 0x00000000},
++	{0x0F00706C, 0x00000001},
++	{0x0F007070, 0x00007000},
++	{0x0F007074, 0x00000000},
++	{0x0F007078, 0x00000000},
++	{0x0F00707C, 0x00000000},
++	{0x0F007080, 0x00000000},
++	{0x0F007084, 0x00000000},
++	{0x0F007094, 0x00000104},  /* Enable BW Improvement w/in Memcontroller */
++	{0x0F007018, 0x01010000}   /* Enable Start Bit w/in Memcontroller */
+ };
+-
+-#define T3LP_SKIP_CLOCK_PROGRAM_DUMP_80MHZ 9  //index for 0x0F007000
+-static struct bcm_ddr_setting asT3LP_DDRSetting80MHz[]= {//	# DPLL Clock Setting
+-								{0x0f000820,0x07F13FFF},
+-								{0x0f000810,0x00002F95},
+-								{0x0f000860,0x00000000},
+-								{0x0f000880,0x000003DD},
+-								{0x0f000840,0x0FFF1F00},
+-								{0x0F00a044,0x1fffffff},
+-								{0x0F00a040,0x1f000000},
+-								{0x0F00a084,0x1Cffffff},
+-								{0x0F00a080,0x1C000000},
+-								{0x0F00A000,0x00000016},
+-								{0x0f007000,0x00010001},
+-								{0x0f007004,0x01000000},
+-								{0x0f007008,0x01000001},
+-								{0x0f00700c,0x00000000},
+-								{0x0f007010,0x01000000},
+-								{0x0f007014,0x01000100},
+-								{0x0f007018,0x01000000},
+-								{0x0f00701c,0x01020000},
+-								{0x0f007020,0x04020107},
+-								{0x0f007024,0x00000007},
+-								{0x0f007028,0x02020200},
+-								{0x0f00702c,0x0204040a},
+-								{0x0f007030,0x04000000},
+-								{0x0f007034,0x00000002},
+-								{0x0f007038,0x1d060200},
+-								{0x0f00703c,0x1c22221d},
+-								{0x0f007040,0x8A116600},
+-								{0x0f007044,0x222d0800},
+-								{0x0f007048,0x02690204},
+-								{0x0f00704c,0x00000000},
+-								{0x0f007050,0x0100001c},
+-								{0x0f007054,0x00000000},
+-								{0x0f007058,0x00000000},
+-								{0x0f00705c,0x00000000},
+-								{0x0f007060,0x000A15D6},
+-								{0x0f007064,0x0000000A},
+-								{0x0f007068,0x00000000},
+-								{0x0f00706c,0x00000001},
+-								{0x0f007070,0x00004000},
+-								{0x0f007074,0x00000000},
+-								{0x0f007078,0x00000000},
+-								{0x0f00707c,0x00000000},
+-								{0x0f007080,0x00000000},
+-								{0x0f007084,0x00000000},
+-								{0x0f007088,0x01000001},
+-								{0x0f00708c,0x00000101},
+-								{0x0f007090,0x00000000},
+-								{0x0f007094,0x00010000},
+-								{0x0f007098,0x00000000},
+-								{0x0F0070C8,0x00000104},
+-								{0x0F007018,0x01010000}
++/* 80MHz-T3B */
++#define T3B_SKIP_CLOCK_PROGRAM_DUMP_80MHZ 9  /* index for 0x0F007000 */
++static struct bcm_ddr_setting asT3B_DDRSetting80MHZ[] = {  /* DPLL Clock Setting */
++	{0x0F000810, 0x00000F95},
++	{0x0F000820, 0x07F13FFF},
++	{0x0F000840, 0x0FFF1F00},
++	{0x0F000880, 0x000003DD},
++	{0x0F000860, 0x00000000},
++	{0x0F00A044, 0x1FFFFFFF},
++	{0x0F00a040, 0x1f000000},
++	{0x0F00A084, 0x1CFFFFFF},
++	{0x0F00A080, 0x1C000000},
++	{0x0F00A000, 0x00000016},
++	{0x0F007000, 0x00010001},  /* Memcontroller Default Values */
++	{0x0F007004, 0x01000000},
++	{0x0F007008, 0x01000001},
++	{0x0F00700C, 0x00000000},
++	{0x0F007010, 0x01000000},
++	{0x0F007014, 0x01000100},
++	{0x0F007018, 0x01000000},
++	{0x0F00701C, 0x01020000},
++	{0x0F007020, 0x04020107},
++	{0x0F007024, 0x00000007},
++	{0x0F007028, 0x02020201},
++	{0x0F00702C, 0x0204040A},
++	{0x0F007030, 0x04000000},
++	{0x0F007034, 0x02000002},
++	{0x0F007038, 0x1F060202},
++	{0x0F00703C, 0x1C22221F},
++	{0x0F007040, 0x8A006600},
++	{0x0F007044, 0x221A0800},
++	{0x0F007048, 0x02690204},
++	{0x0F00704C, 0x00000000},
++	{0x0F007050, 0x0100001C},
++	{0x0F007054, 0x00000000},
++	{0x0F007058, 0x00000000},
++	{0x0F00705C, 0x00000000},
++	{0x0F007060, 0x000A15D6},
++	{0x0F007064, 0x00000004},
++	{0x0F007068, 0x00000000},
++	{0x0F00706C, 0x00000001},
++	{0x0F007070, 0x00004000},
++	{0x0F007074, 0x00000000},
++	{0x0F007078, 0x00000000},
++	{0x0F00707C, 0x00000000},
++	{0x0F007080, 0x00000000},
++	{0x0F007084, 0x00000000},
++	{0x0F007094, 0x00000104},
++	{0x0F007018, 0x01010000}  /* Enable Start Bit w/in Memcontroller */
+ };
+-
+-
+-
+-
+-///T3 LP-B (UMA-B)
+-
+-#define T3LPB_SKIP_CLOCK_PROGRAM_DUMP_160MHZ 7  //index for 0x0F007000
+-static struct bcm_ddr_setting asT3LPB_DDRSetting160MHz[]= {//	# DPLL Clock Setting
+-
+-								{0x0f000820,0x03F137DB},
+-								{0x0f000810,0x01842795},
+-								{0x0f000860,0x00000000},
+-								{0x0f000880,0x000003DD},
+-								{0x0f000840,0x0FFF0400},
+-								{0x0F00a044,0x1fffffff},
+-								{0x0F00a040,0x1f000000},
+-								{0x0f003050,0x00000021},//this is flash/eeprom clock divisor which set the flash clock to 20 MHz
+-								{0x0F00a084,0x1Cffffff},//Now dump from her in internal memory
+-								{0x0F00a080,0x1C000000},
+-								{0x0F00A000,0x00000016},
+-								{0x0f007000,0x00010001},
+-								{0x0f007004,0x01000001},
+-								{0x0f007008,0x01000101},
+-								{0x0f00700c,0x00000000},
+-								{0x0f007010,0x01000100},
+-								{0x0f007014,0x01000100},
+-								{0x0f007018,0x01000000},
+-								{0x0f00701c,0x01020000},
+-								{0x0f007020,0x04030107},
+-								{0x0f007024,0x02000007},
+-								{0x0f007028,0x02020200},
+-								{0x0f00702c,0x0206060a},
+-								{0x0f007030,0x050d0d00},
+-								{0x0f007034,0x00000003},
+-								{0x0f007038,0x170a0200},
+-								{0x0f00703c,0x02101012},
+-								{0x0f007040,0x45161200},
+-								{0x0f007044,0x11250c00},
+-								{0x0f007048,0x04da0307},
+-								{0x0f00704c,0x00000000},
+-								{0x0f007050,0x0000001c},
+-								{0x0f007054,0x00000000},
+-								{0x0f007058,0x00000000},
+-								{0x0f00705c,0x00000000},
+-								{0x0f007060,0x00142bb6},
+-								{0x0f007064,0x20430014},
+-								{0x0f007068,0x00000000},
+-								{0x0f00706c,0x00000001},
+-								{0x0f007070,0x00009000},
+-								{0x0f007074,0x00000000},
+-								{0x0f007078,0x00000000},
+-								{0x0f00707c,0x00000000},
+-								{0x0f007080,0x00000000},
+-								{0x0f007084,0x00000000},
+-								{0x0f007088,0x01000001},
+-								{0x0f00708c,0x00000101},
+-								{0x0f007090,0x00000000},
+-								{0x0f007094,0x00040000},
+-								{0x0f007098,0x00000000},
+-								{0x0F0070C8,0x00000104},
+-								{0x0F007018,0x01010000}
++/* 100MHz-T3B */
++#define T3B_SKIP_CLOCK_PROGRAM_DUMP_100MHZ 9  /* index for 0x0F007000 */
++static struct bcm_ddr_setting asT3B_DDRSetting100MHZ[] = {  /* DPll Clock Setting */
++	{0x0F000810, 0x00000F95},
++	{0x0F000820, 0x07F1369B},
++	{0x0F000840, 0x0FFF0800},
++	{0x0F000880, 0x000003DD},
++	{0x0F000860, 0x00000000},
++	{0x0F00A044, 0x1FFFFFFF},
++	{0x0F00A040, 0x1F000000},
++	{0x0F00A084, 0x1CFFFFFF},
++	{0x0F00A080, 0x1C000000},
++	{0x0F00A000, 0x00000016},  /* Enable 2 Ports w/in X-bar */
++	{0x0F007000, 0x00010001},  /* Memcontroller Default Values */
++	{0x0F007004, 0x01010100},
++	{0x0F007008, 0x01000001},
++	{0x0F00700C, 0x00000000},
++	{0x0F007010, 0x01000000},
++	{0x0F007014, 0x01000100},
++	{0x0F007018, 0x01000000},
++	{0x0F00701C, 0x01020000},
++	{0x0F007020, 0x04020107},
++	{0x0F007024, 0x00000007},
++	{0x0F007028, 0x01020201},
++	{0x0F00702C, 0x0204040A},
++	{0x0F007030, 0x06000000},
++	{0x0F007034, 0x02000004},
++	{0x0F007038, 0x20080200},
++	{0x0F00703C, 0x02030320},
++	{0x0F007040, 0x6E7F1200},
++	{0x0F007044, 0x01190A00},
++	{0x0F007048, 0x06120305},
++	{0x0F00704C, 0x00000000},
++	{0x0F007050, 0x0100001C},
++	{0x0F007054, 0x00000000},
++	{0x0F007058, 0x00000000},
++	{0x0F00705C, 0x00000000},
++	{0x0F007060, 0x00082ED2},
++	{0x0F007064, 0x0000000A},
++	{0x0F007068, 0x00000000},
++	{0x0F00706C, 0x00000001},
++	{0x0F007070, 0x00005000},
++	{0x0F007074, 0x00000000},
++	{0x0F007078, 0x00000000},
++	{0x0F00707C, 0x00000000},
++	{0x0F007080, 0x00000000},
++	{0x0F007084, 0x00000000},
++	{0x0F007094, 0x00000104}, /* Enable BW w/in Memcontroller */
++	{0x0F007018, 0x01010000}  /* Enable Start Bit w/in Memcontroller */
+ };
+-
+-
+-#define T3LPB_SKIP_CLOCK_PROGRAM_DUMP_133MHZ 7  //index for 0x0F007000
+-static struct bcm_ddr_setting asT3LPB_DDRSetting133MHz[]= {//	# DPLL Clock Setting
+-								{0x0f000820,0x03F1365B},
+-								{0x0f000810,0x00002F95},
+-								{0x0f000880,0x000003DD},
+-								// Changed source for X-bar and MIPS clock to APLL
+-								{0x0f000840,0x0FFF0000},
+-								{0x0f000860,0x00000000},
+-								{0x0F00a044,0x1fffffff},
+-								{0x0F00a040,0x1f000000},
+-								{0x0f003050,0x00000021},//flash/eeprom clock divisor which set the flash clock to 20 MHz
+-								{0x0F00a084,0x1Cffffff},//dump from here in internal memory
+-								{0x0F00a080,0x1C000000},
+-								{0x0F00A000,0x00000016},
+-								//Memcontroller Default values
+-								{0x0F007000,0x00010001},
+-								{0x0F007004,0x01010100},
+-								{0x0F007008,0x01000001},
+-								{0x0F00700c,0x00000000},
+-								{0x0F007010,0x01000000},
+-								{0x0F007014,0x01000100},
+-								{0x0F007018,0x01000000},
+-								{0x0F00701c,0x01020001},// POP - 0x00020001 Normal 0x01020001
+-								{0x0F007020,0x04030107}, //Normal - 0x04030107 POP - 0x05030107
+-								{0x0F007024,0x02000007},
+-								{0x0F007028,0x02020200},
+-								{0x0F00702c,0x0206060a},//ROB- 0x0205050a,//0x0206060a
+-								{0x0F007030,0x05000000},
+-								{0x0F007034,0x00000003},
+-								{0x0F007038,0x190a0200},//ROB - 0x110a0200,//0x180a0200,// 0x1f0a0200
+-								{0x0F00703C,0x02101017},//ROB - 0x02101010,//0x02101018,
+-								{0x0F007040,0x45171200},//ROB - 0x45751200,//0x450f1200,
+-								{0x0F007044,0x11290D00},//ROB - 0x110a0d00//0x111f0d00
+-								{0x0F007048,0x04080306},
+-								{0x0F00704c,0x00000000},
+-								{0x0F007050,0x0100001c},
+-								{0x0F007054,0x00000000},
+-								{0x0F007058,0x00000000},
+-								{0x0F00705c,0x00000000},
+-								{0x0F007060,0x0010245F},
+-								{0x0F007064,0x00000010},
+-								{0x0F007068,0x00000000},
+-								{0x0F00706c,0x00000001},
+-								{0x0F007070,0x00007000},
+-								{0x0F007074,0x00000000},
+-								{0x0F007078,0x00000000},
+-								{0x0F00707C,0x00000000},
+-								{0x0F007080,0x00000000},
+-								{0x0F007084,0x00000000},
+-								{0x0F007088,0x01000001},
+-								{0x0F00708c,0x00000101},
+-								{0x0F007090,0x00000000},
+-								//# Enable BW improvement within memory controller
+-								{0x0F007094,0x00040000},
+-								{0x0F007098,0x00000000},
+-								{0x0F0070c8,0x00000104},
+-								//# Enable 2 ports within X-bar
+-								//# Enable start bit within memory controller
+-								{0x0F007018,0x01010000}
++/* 133MHz-T3LP */
++#define T3LP_SKIP_CLOCK_PROGRAM_DUMP_133MHZ 9  /* index for 0x0F007000 */
++static struct bcm_ddr_setting asT3LP_DDRSetting133MHZ[] = {  /* DPLL Clock Settings */
++	{0x0F000820, 0x03F1365B},
++	{0x0F000810, 0x00002F95},
++	{0x0F000880, 0x000003DD},
++	{0x0F000840, 0x0FFF0000},  /* Changed Source for X-bar and MIPS clock to DPLL */
++	{0x0F000860, 0x00000000},
++	{0x0F00A044, 0x1FFFFFFF},
++	{0x0F00A040, 0x1F000000},
++	{0x0F00A084, 0x1CFFFFFF},
++	{0x0F00A080, 0x1C000000},
++	{0x0F00A000, 0x00000016},
++	{0x0F007000, 0x00110001},  /* Memcontroller DEfault Values */
++	{0x0F007004, 0x01010100},
++	{0x0F007008, 0x01000001},
++	{0x0F00700C, 0x00000000},
++	{0x0F007010, 0x01000000},
++	{0x0F007014, 0x01000100},
++	{0x0F007018, 0x01000000},
++	{0x0F00701C, 0x01020001},  /* POP 0x00020001 Normal 0x01020001 */
++	{0x0F007020, 0x04030107},  /* POP 0x05030107 Normal 0x04030107 */
++	{0x0F007024, 0x02000007},
++	{0x0F007028, 0x02020200},
++	{0x0F00702C, 0x0206060A},  /* ROB 0x0205050A,0x0206060A */
++	{0x0F007030, 0x05000000},
++	{0x0F007034, 0x00000003},
++	{0x0F007038, 0x200A0200},  /* ROB 0x110A0200,0x180A0200,0x1F0A0200 */
++	{0x0F00703C, 0x02101020},  /* ROB 0x02101010,0x02101018 */
++	{0x0F007040, 0x45711200},  /* ROB 0x45751200,0x450F1200 */
++	{0x0F007044, 0x110D0D00},  /* ROB 0x110A0D00,0x111F0D00 */
++	{0x0F007048, 0x04080306},
++	{0x0F00704C, 0x00000000},
++	{0x0F007050, 0x0100001C},
++	{0x0F007054, 0x00000000},
++	{0x0F007058, 0x00000000},
++	{0x0F00705C, 0x00000000},
++	{0x0F007060, 0x0010245F},
++	{0x0F007064, 0x00000010},
++	{0x0F007068, 0x00000000},
++	{0x0F00706C, 0x00000001},
++	{0x0F007070, 0x00007000},
++	{0x0F007074, 0x00000000},
++	{0x0F007078, 0x00000000},
++	{0x0F00707C, 0x00000000},
++	{0x0F007080, 0x00000000},
++	{0x0F007084, 0x00000000},
++	{0x0F007088, 0x01000001},
++	{0x0F00708C, 0x00000101},
++	{0x0F007090, 0x00000000},
++	{0x0F007094, 0x00040000},  /* Enable BW Improvement w/in Memcontroller */
++	{0x0F007098, 0x00000000},
++	{0x0F0070C8, 0x00000104},
++	{0x0F007018, 0x01010000}  /* Enable Start Bit w/in Memcontroller */
+ };
+-
+-#define T3LPB_SKIP_CLOCK_PROGRAM_DUMP_100MHZ 8  //index for 0x0F007000
+-static struct bcm_ddr_setting asT3LPB_DDRSetting100MHz[]= {//	# DPLL Clock Setting
+-								{0x0f000810,0x00002F95},
+-								{0x0f000820,0x03F1369B},
+-								{0x0f000840,0x0fff0000},
+-								{0x0f000860,0x00000000},
+-								{0x0f000880,0x000003DD},
+-								// Changed source for X-bar and MIPS clock to APLL
+-								{0x0f000840,0x0FFF0000},
+-								{0x0F00a044,0x1fffffff},
+-								{0x0F00a040,0x1f000000},
+-								{0x0f003050,0x00000021},//flash/eeprom clock divisor which set the flash clock to 20 MHz
+-								{0x0F00a084,0x1Cffffff}, //dump from here in internal memory
+-								{0x0F00a080,0x1C000000},
+-								//Memcontroller Default values
+-								{0x0F007000,0x00010001},
+-								{0x0F007004,0x01010100},
+-								{0x0F007008,0x01000001},
+-								{0x0F00700c,0x00000000},
+-								{0x0F007010,0x01000000},
+-								{0x0F007014,0x01000100},
+-								{0x0F007018,0x01000000},
+-								{0x0F00701c,0x01020000},// POP - 0x00020001 Normal 0x01020001
+-								{0x0F007020,0x04020107}, //Normal - 0x04030107 POP - 0x05030107
+-								{0x0F007024,0x00000007},
+-								{0x0F007028,0x01020200},
+-								{0x0F00702c,0x0204040a},//ROB- 0x0205050a,//0x0206060a
+-								{0x0F007030,0x06000000},
+-								{0x0F007034,0x00000004},
+-								{0x0F007038,0x1F080200},//ROB - 0x110a0200,//0x180a0200,// 0x1f0a0200
+-								{0x0F00703C,0x0203031F},//ROB - 0x02101010,//0x02101018,
+-								{0x0F007040,0x6e001200},//ROB - 0x45751200,//0x450f1200,
+-								{0x0F007044,0x011a0a00},//ROB - 0x110a0d00//0x111f0d00
+-								{0x0F007048,0x03000305},
+-								{0x0F00704c,0x00000000},
+-								{0x0F007050,0x0100001c},
+-								{0x0F007054,0x00000000},
+-								{0x0F007058,0x00000000},
+-								{0x0F00705c,0x00000000},
+-								{0x0F007060,0x00082ED6},
+-								{0x0F007064,0x0000000A},
+-								{0x0F007068,0x00000000},
+-								{0x0F00706c,0x00000001},
+-								{0x0F007070,0x00005000},
+-								{0x0F007074,0x00000000},
+-								{0x0F007078,0x00000000},
+-								{0x0F00707C,0x00000000},
+-								{0x0F007080,0x00000000},
+-								{0x0F007084,0x00000000},
+-								{0x0F007088,0x01000001},
+-								{0x0F00708c,0x00000101},
+-								{0x0F007090,0x00000000},
+-								{0x0F007094,0x00010000},
+-								{0x0F007098,0x00000000},
+-								{0x0F0070C8,0x00000104},
+-								//# Enable 2 ports within X-bar
+-								{0x0F00A000,0x00000016},
+-								//# Enable start bit within memory controller
+-								{0x0F007018,0x01010000}
++/* 100MHz-T3LP */
++#define T3LP_SKIP_CLOCK_PROGRAM_DUMP_100MHZ 11  /* index for 0x0F007000 */
++static struct bcm_ddr_setting asT3LP_DDRSetting100MHZ[] = {  /* DPLL Clock Setting */
++	{0x0F000810, 0x00002F95},
++	{0x0F000820, 0x03F1369B},
++	{0x0F000840, 0x0FFF0000},
++	{0x0F000860, 0x00000000},
++	{0x0F000880, 0x000003DD},
++	{0x0F000840, 0x0FFF0000},   /* Changed Source for X-bar and MIPS clock to APLL */
++	{0x0F00A044, 0x1FFFFFFF},
++	{0x0F00A040, 0x1F000000},
++	{0x0F00A084, 0x1CFFFFFF},
++	{0x0F00A080, 0x1C000000},
++	{0x0F007000, 0x00010001},  /* Memcontroller Default Values */
++	{0x0F007004, 0x01010100},
++	{0x0F007008, 0x01000001},
++	{0x0F00700C, 0x00000000},
++	{0x0F007010, 0x01000000},
++	{0x0F007014, 0x01000100},
++	{0x0F007018, 0x01000000},
++	{0x0F00701C, 0x01020000},  /* POP 0x00020001 Normal 0x01020001 */
++	{0x0F007020, 0x04020107},  /* POP 0x05030107 Normal 0x04030107 */
++	{0x0F007024, 0x00000007},
++	{0x0F007028, 0x01020200},
++	{0x0F00702C, 0x0204040A},  /* ROB 0x0205050A,0x0206060A */
++	{0x0F007030, 0x06000000},
++	{0x0F007034, 0x00000004},
++	{0x0F007038, 0x1F080200},  /* ROB 0x110A0200,0x080A0200,0x1F0A0200 */
++	{0x0F00703C, 0x0203031F},  /* ROB 0x02101010,0x02101018 */
++	{0x0F007040, 0x6E001200},  /* ROB 0x45751200,0x450F1200 */
++	{0x0F007044, 0x011A0A00},  /* ROB 0x110A0D00,0x111F0D00 */
++	{0x0F007048, 0x03000305},
++	{0x0F00704C, 0x00000000},
++	{0x0F007050, 0x0100001C},
++	{0x0F007054, 0x00000000},
++	{0x0F007058, 0x00000000},
++	{0x0F00705C, 0x00000000},
++	{0x0F007060, 0x00082ED6},
++	{0x0F007064, 0x0000000A},
++	{0x0F007068, 0x00000000},
++	{0x0F00706C, 0x00000001},
++	{0x0F007070, 0x00005000},
++	{0x0F007074, 0x00000000},
++	{0x0F007078, 0x00000000},
++	{0x0F00707C, 0x00000000},
++	{0x0F007080, 0x00000000},
++	{0x0F007084, 0x00000000},
++	{0x0F00708C, 0x00000101},
++	{0x0F007090, 0x00000000},
++	{0x0F007094, 0x00010000},
++	{0x0F007098, 0x00000000},
++	{0x0F0070C8, 0x00000104},
++	{0x0F00A000, 0x00000016},  /* Enable 2 Ports w/in X-Bar */
++	{0x0F007018, 0x01010000}  /* Enable Start Bit w/in Memcontroller */
+ };
+-
+-#define T3LPB_SKIP_CLOCK_PROGRAM_DUMP_80MHZ 7  //index for 0x0F007000
+-static struct bcm_ddr_setting asT3LPB_DDRSetting80MHz[]= {//	# DPLL Clock Setting
+-								{0x0f000820,0x07F13FFF},
+-								{0x0f000810,0x00002F95},
+-								{0x0f000860,0x00000000},
+-								{0x0f000880,0x000003DD},
+-								{0x0f000840,0x0FFF1F00},
+-								{0x0F00a044,0x1fffffff},
+-								{0x0F00a040,0x1f000000},
+-								{0x0f003050,0x00000021},//flash/eeprom clock divisor which set the flash clock to 20 MHz
+-								{0x0F00a084,0x1Cffffff},// dump from here in internal memory
+-								{0x0F00a080,0x1C000000},
+-								{0x0F00A000,0x00000016},
+-								{0x0f007000,0x00010001},
+-								{0x0f007004,0x01000000},
+-								{0x0f007008,0x01000001},
+-								{0x0f00700c,0x00000000},
+-								{0x0f007010,0x01000000},
+-								{0x0f007014,0x01000100},
+-								{0x0f007018,0x01000000},
+-								{0x0f00701c,0x01020000},
+-								{0x0f007020,0x04020107},
+-								{0x0f007024,0x00000007},
+-								{0x0f007028,0x02020200},
+-								{0x0f00702c,0x0204040a},
+-								{0x0f007030,0x04000000},
+-								{0x0f007034,0x00000002},
+-								{0x0f007038,0x1d060200},
+-								{0x0f00703c,0x1c22221d},
+-								{0x0f007040,0x8A116600},
+-								{0x0f007044,0x222d0800},
+-								{0x0f007048,0x02690204},
+-								{0x0f00704c,0x00000000},
+-								{0x0f007050,0x0100001c},
+-								{0x0f007054,0x00000000},
+-								{0x0f007058,0x00000000},
+-								{0x0f00705c,0x00000000},
+-								{0x0f007060,0x000A15D6},
+-								{0x0f007064,0x0000000A},
+-								{0x0f007068,0x00000000},
+-								{0x0f00706c,0x00000001},
+-								{0x0f007070,0x00004000},
+-								{0x0f007074,0x00000000},
+-								{0x0f007078,0x00000000},
+-								{0x0f00707c,0x00000000},
+-								{0x0f007080,0x00000000},
+-								{0x0f007084,0x00000000},
+-								{0x0f007088,0x01000001},
+-								{0x0f00708c,0x00000101},
+-								{0x0f007090,0x00000000},
+-								{0x0f007094,0x00010000},
+-								{0x0f007098,0x00000000},
+-								{0x0F0070C8,0x00000104},
+-								{0x0F007018,0x01010000}
++/* 80MHz-T3LP */
++#define T3LP_SKIP_CLOCK_PROGRAM_DUMP_80MHZ 9  /* index for 0x0F007000 */
++static struct bcm_ddr_setting asT3LP_DDRSetting80MHZ[] = {  /* DPLL Clock Setting */
++	{0x0F000820, 0x07F13FFF},
++	{0x0F000810, 0x00002F95},
++	{0x0F000860, 0x00000000},
++	{0x0F000880, 0x000003DD},
++	{0x0F000840, 0x0FFF1F00},
++	{0x0F00A044, 0x1FFFFFFF},
++	{0x0F00A040, 0x1F000000},
++	{0x0F00A080, 0x1C000000},
++	{0x0F00A084, 0x1CFFFFFF},
++	{0x0F00A000, 0x00000016},
++	{0x0F007000, 0x00010001},  /* Memcontroller Default Values */
++	{0x0F007004, 0x01000000},
++	{0x0F007008, 0x01000001},
++	{0x0F00700C, 0x00000000},
++	{0x0F007010, 0x01000000},
++	{0x0F007014, 0x01000100},
++	{0x0F007018, 0x01000000},
++	{0x0F00701C, 0x01020000},
++	{0x0F007020, 0x04020107},
++	{0x0F007024, 0x00000007},
++	{0x0F007028, 0x02020200},
++	{0x0F00702C, 0x0204040A},
++	{0x0F007030, 0x04000000},
++	{0x0F007034, 0x00000002},
++	{0x0F007038, 0x1D060200},
++	{0x0F00703C, 0x1C22221D},
++	{0x0F007040, 0x8A116600},
++	{0x0F007044, 0x222D0800},
++	{0x0F007048, 0x02690204},
++	{0x0F00704C, 0x00000000},
++	{0x0F007050, 0x0100001C},
++	{0x0F007054, 0x00000000},
++	{0x0F007058, 0x00000000},
++	{0x0F00705C, 0x00000000},
++	{0x0F007060, 0x000A15D6},
++	{0x0F007064, 0x0000000A},
++	{0x0F007068, 0x00000000},
++	{0x0F00706C, 0x00000001},
++	{0x0F007070, 0x00004000},
++	{0x0F007074, 0x00000000},
++	{0x0F007078, 0x00000000},
++	{0x0F00707C, 0x00000000},
++	{0x0F007080, 0x00000000},
++	{0x0f007084, 0x00000000},
++	{0x0F007088, 0x01000001},
++	{0x0F00708C, 0x00000101},
++	{0x0F007090, 0x00000000},
++	{0x0F007094, 0x00010000},
++	{0x0F007098, 0x00000000},
++	{0x0F0070C8, 0x00000104},
++	{0x0F007018, 0x01010000}   /* Enable Start Bit w/in Memcontroller */
++};
++/* 160MHz-T3LPB (UMA-B) */
++#define T3LPB_SKIP_CLOCK_PROGRAM_DUMP_160MHZ 7  /* index for 0x0F007000 */
++static struct bcm_ddr_setting asT3LPB_DDRSettings160MHZ[] = {  /* DPLL Clock Setting */
++	{0x0F000820, 0x03F137DB},
++	{0x0F000810, 0x01842795},
++	{0x0F000860, 0x00000000},
++	{0x0F000880, 0x000003DD},
++	{0x0F000840, 0x0FFF0400},
++	{0x0F00A044, 0x1FFFFFFF},
++	{0x0F00A040, 0x1F000000},
++	{0x0F003050, 0x00000021},  /* Flash/EEPROM Clock Div / setting Flash Clock to 20MHz */
++	{0x0F00A084, 0x1CFFFFFF},  /* Dumping from Internal Memory */
++	{0x0F00A080, 0x1C000000},
++	{0x0F00A000, 0x00000016},
++	{0x0F007000, 0x00010001},  /* Memcontroller Default Values */
++	{0x0F007004, 0x01000001},
++	{0x0F007008, 0x01000101},
++	{0x0F00700C, 0x00000000},
++	{0x0F007010, 0x01000101},
++	{0x0F007014, 0x01000101},
++	{0x0F007018, 0x01000000},
++	{0x0F00701C, 0x01020000},
++	{0x0F007020, 0x04030107},
++	{0x0F007024, 0x02000007},
++	{0x0F007028, 0x02020200},
++	{0x0F00702C, 0x0206060A},
++	{0x0F007030, 0x050D0D00},
++	{0x0F007034, 0x00000003},
++	{0x0F007038, 0x170A0200},
++	{0x0F00703C, 0x02101012},
++	{0x0F007040, 0x45161200},
++	{0x0F007044, 0x11250C00},
++	{0x0F007048, 0x04DA0307},
++	{0x0F00704C, 0x00000000},
++	{0x0F007050, 0x0000001C},
++	{0x0F007054, 0x00000000},
++	{0x0F007058, 0x00000000},
++	{0x0F00705C, 0x00000000},
++	{0x0F007060, 0x00142BB6},
++	{0x0F007064, 0x20430014},
++	{0x0F007068, 0x00000000},
++	{0x0F00706C, 0x00000001},
++	{0x0F007070, 0x00009000},
++	{0x0F007074, 0x00000000},
++	{0x0F007078, 0x00000000},
++	{0x0F00707C, 0x00000000},
++	{0x0F007080, 0x00000000},
++	{0x0F007084, 0x00000000},
++	{0x0F007088, 0x01000001},
++	{0x0F00708C, 0x00000101},
++	{0x0F007090, 0x00000000},
++	{0x0F007094, 0x00040000},
++	{0x0F007098, 0x00000000},
++	{0x0F0070C8, 0x00000104},
++	{0x0F007018, 0x01010000}  /* Enable Start Bit w/in Memcontroller */
++};
++/* 133MHz-T3LPB(UMA_B) */
++#define T3LPB_SKIP_CLOCK_PROGRAM_DUMP_133MHZ 7  /* index for 0x0F007000 */
++static struct bcm_ddr_setting asT3LPB_DDRSetting133MHZ[] = {  /*  DPLL Clock Setting */
++	{0x0F000820, 0x03F1356B},
++	{0x0F000810, 0x00002F95},
++	{0x0F000880, 0x000003DD},
++	{0x0F000840, 0x0FFF0000},
++	{0x0F000860, 0x00000000},
++	{0x0F00A044, 0x1FFFFFFF},
++	{0x0F00A040, 0x1F000000},
++	{0x0F003050, 0x00000021},  /* Flash/EEPROM Clock Div / Setting Flash Clock to 20MHz */
++	{0x0F00A084, 0x1CFFFFFF},  /* Dumping from Internal Memory */
++	{0x0F00A080, 0x1C000000},
++	{0x0F00A000, 0x00000016},
++	{0x0F007000, 0x00010001},  /* Memcontroller Default Values */
++	{0x0F007004, 0x01010100},
++	{0x0F007008, 0x01000001},
++	{0x0F00700C, 0x00000000},
++	{0x0F007010, 0x01000000},
++	{0x0F007014, 0x01000100},
++	{0x0F007018, 0x01000000},
++	{0x0F00701C, 0x01020001},  /* POP 0x00020001, Normal 0x01020001 */
++	{0x0F007020, 0x04030107},  /* POP 0x05030107, Normal 0x04030107 */
++	{0x0F007024, 0x02000007},
++	{0x0F007028, 0x02020200},
++	{0x0F00702C, 0x0206060A},  /* ROB 0x0205050A,0x0206060A */
++	{0x0F007030, 0x05000000},
++	{0x0F007034, 0x00000003},
++	{0x0F007038, 0x190A0200},  /* ROB 0x110A0200,0x180A0200,0x1F0A0200 */
++	{0x0F00703C, 0x02101017},  /* ROB 0x02101010,0x02101018 */
++	{0x0F007040, 0x45171200},  /* ROB 0x45751200,0x450F1200 */
++	{0x0F007044, 0x11290D00},  /* ROB 0x110A0D00,0x111F0D00 */
++	{0x0F007048, 0x04080306},
++	{0x0F00704C, 0x00000000},
++	{0x0F007050, 0x0100001C},
++	{0x0F007054, 0x00000000},
++	{0x0F007058, 0x00000000},
++	{0x0F00705C, 0x00000000},
++	{0x0F007060, 0x0010245F},
++	{0x0F007064, 0x00000010},
++	{0x0F007068, 0x00000000},
++	{0x0F00706C, 0x00000001},
++	{0x0F007070, 0x00007000},
++	{0x0F007074, 0x00000000},
++	{0x0F007078, 0x00000000},
++	{0x0F00707C, 0x00000000},
++	{0x0F007080, 0x00000000},
++	{0x0F007084, 0x00000000},
++	{0x0F007088, 0x01000001},
++	{0x0F00708C, 0x00000101},
++	{0x0F007090, 0x00000000},
++	{0x0F007094, 0x00004000},  /* Enable BW Improvement w/in Memcontroller */
++	{0x0F007098, 0x00000000},
++	{0x0F0070C8, 0x00000104},  /* Enable 2 Ports w/in X-Bar */
++	{0x0F007018, 0x01010000}  /* Enable Start Bit w/in Memcontroller */
++};
++/* 100MHz-T3LPB(UMA_B) */
++#define T3LPB_SKIP_CLOCK_PROGRAM_DUMP_100MHZ 8  /* index for 0x0F007000 */
++static struct bcm_ddr_setting asT3LPB_DDRSetting100MHZ[] = {  /* DPLL Clock Settings */
++	{0x0F000810, 0x00002F95},
++	{0x0F000820, 0x03F1369B},
++	{0x0F000840, 0x0FFF0000},
++	{0x0F000860, 0x00000000},
++	{0x0F000880, 0x000003DD},
++	{0x0F00A044, 0x1FFFFFFF},
++	{0x0F00A040, 0x1F000000},
++	{0x0F003050, 0x00000021},
++	{0x0F00A084, 0x1CFFFFFF},
++	{0x0F00A080, 0x1C000000},
++	{0x0F007000, 0x00010001},
++	{0x0F007004, 0x01010100},
++	{0x0F007008, 0x01000001},
++	{0x0F00700C, 0x00000000},
++	{0x0F007010, 0x01000000},
++	{0x0F007014, 0x01000100},
++	{0x0F007018, 0x01000000},
++	{0x0F00701C, 0x01020000},
++	{0x0F007020, 0x04020107},
++	{0x0F007024, 0x00000007},
++	{0x0F007028, 0x01020200},
++	{0x0F00702C, 0x0204040A},
++	{0x0F007030, 0x06000000},
++	{0x0F007034, 0x00000004},
++	{0x0F007038, 0x1F080200},
++	{0x0F00703C, 0x0203021F},
++	{0x0F007040, 0x6E001200},
++	{0x0F007044, 0x011A0A00},
++	{0x0F007048, 0x03000305},
++	{0x0F00704C, 0x00000000},
++	{0x0F007050, 0x0100001C},
++	{0x0F007054, 0x00000000},
++	{0x0F007058, 0x00000000},
++	{0x0F00705C, 0x00000000},
++	{0x0F007060, 0x00082ED6},
++	{0x0F007064, 0x0000000A},
++	{0x0F007068, 0x00000000},
++	{0x0F00706C, 0x00000001},
++	{0x0F007070, 0x00005000},
++	{0x0F007074, 0x00000000},
++	{0x0F007078, 0x00000000},
++	{0x0F00707C, 0x00000000},
++	{0x0F007080, 0x00000000},
++	{0x0F007084, 0x00000000},
++	{0x0F007088, 0x01000001},
++	{0x0F00708C, 0x00000101},
++	{0x0F007090, 0x00000000},
++	{0x0F007094, 0x00010000},
++	{0x0F007098, 0x00000000},
++	{0x0F0070C8, 0x00000104},
++	{0x0F00A000, 0000000016},
++	{0x0F007018, 0x01010000}
++};
++/* 80MHz-T3LPB(UMA_B) */
++#define T3LPB_SKIP_CLOCK_PROGRAM_DUMP_80MHZ 7  /* index for 0x0F007000 */
++static struct bcm_ddr_setting asT3LPB_DDRSetting80MHZ[] = {  /* DPLL Clock Settings */
++	{0x0F000810, 0x00002F95},
++	{0x00F00820, 0x03F1269B},
++	{0x0F000840, 0x0FFF0000},
++	{0x0F000860, 0x00000000},
++	{0x0F000880, 0x000003DD},
++	{0x0F00A044, 0x1FFFFFFF},  /* Changed Source for X-bar and MIPS clock to APLL */
++	{0x0F00A040, 0x1F000000},
++	{0x0F003050, 0x00000021},  /* Flash/EEPROM Clock Div / Setting Flash Clock to 20MHz */
++	{0x0F00A084, 0x1CFFFFFF},  /* Dumping from here in Internal Memory */
++	{0x0F00A080, 0x1C000000},
++	{0x0F00A000, 0x00000016},
++	{0x0F007000, 0x00010001},   /* Memcontroller Default Values */
++	{0x0F007004, 0x01000000},
++	{0x0F007008, 0x01000001},
++	{0x0F00700C, 0x00000000},
++	{0x0F007010, 0x01000000},
++	{0x0F007014, 0x01000100},
++	{0x0F007018, 0x01000000},
++	{0x0F00701C, 0x01020000},
++	{0x0F007020, 0x04020107},
++	{0x0F007024, 0x00000007},
++	{0x0F007028, 0x02020200},
++	{0x0F00702C, 0x0204040A},
++	{0x0F007030, 0x04000000},
++	{0x0F007034, 0x00000002},
++	{0x0F007038, 0x1D060200},
++	{0x0F00703C, 0x1C22221D},
++	{0x0F007040, 0x8A116600},
++	{0x0F007044, 0x222D0800},
++	{0X0F007048, 0x02690204},
++	{0x0F00704C, 0x00000000},
++	{0x0F007050, 0x0100001C},
++	{0x0F007054, 0x00000000},
++	{0x0F007058, 0x00000000},
++	{0x0F00705C, 0x00000000},
++	{0x0F007060, 0x000A15D6},
++	{0x0F007064, 0x0000000A},
++	{0x0F007068, 0x00000000},
++	{0x0F00706C, 0x00000001},
++	{0x0F007070, 0x00004000},
++	{0x0F007074, 0x00000000},
++	{0x0F007078, 0x00000000},
++	{0x0F00707C, 0x00000000},
++	{0x0F007080, 0x00000000},
++	{0x0F007084, 0x00000000},
++	{0x0F007088, 0x01000001},
++	{0x0F00708C, 0x00000101},
++	{0x0F007090, 0x00000000},
++	{0x0F007094, 0x00010000},
++	{0x0F007098, 0x00000000},
++	{0x0F0070C8, 0x00000104},
++	{0x0F007018, 0x01010000}
+ };
+-
+ 
+ int ddr_init(struct bcm_mini_adapter *Adapter)
+ {
+-	struct bcm_ddr_setting *psDDRSetting=NULL;
+-	ULONG RegCount=0;
++	struct bcm_ddr_setting *psDDRSetting = NULL;
++	ULONG RegCount = 0;
+ 	UINT value = 0;
+-	UINT  uiResetValue = 0;
++	UINT uiResetValue = 0;
+ 	UINT uiClockSetting = 0;
+ 	int retval = STATUS_SUCCESS;
+ 
+-    switch (Adapter->chip_id)
+-	{
+-	case 0xbece3200:
+-	    switch (Adapter->DDRSetting)
+-	    {
+-	        case DDR_80_MHZ:
+-				psDDRSetting=asT3LP_DDRSetting80MHz;
+-			    RegCount=(sizeof(asT3LP_DDRSetting80MHz)/
+-			  	sizeof(struct bcm_ddr_setting));
+-			    break;
+-		    case DDR_100_MHZ:
+-				psDDRSetting=asT3LP_DDRSetting100MHz;
+-			    RegCount=(sizeof(asT3LP_DDRSetting100MHz)/
+-			  	sizeof(struct bcm_ddr_setting));
+-			    break;
+-		    case DDR_133_MHZ:
+-				psDDRSetting=asT3LP_DDRSetting133MHz;
+-			    RegCount=(sizeof(asT3LP_DDRSetting133MHz)/
+-		 	  		sizeof(struct bcm_ddr_setting));
+-				if(Adapter->bMipsConfig == MIPS_200_MHZ)
+-				{
++	switch (Adapter->chip_id) {
++	case 0xBECE3200:
++		switch (Adapter->DDRSetting) {
++		case DDR_80_MHZ:
++			psDDRSeting = asT3LP_DDRSetting80MHZ;
++			RegCount = (sizeof(asT3LP_DDRSettings80MHZ)/
++			sizeof(struct bcm_ddr_setting));
++			break;
++		case DDR_100_MHZ:
++			psDDRSetting = asT3LP_DDRSetting100MHZ;
++			RegCount = (sizeof(asT3LP_DDRSetting100MHZ)/
++			sizeof(struct bcm_ddr_setting));
++			break;
++		case DDR_133_MHZ:
++			psDDRSetting = asT3LP_DDRSetting133MHZ;
++			RegCount = (sizeof(asT3LP_DDRSetting133MHZ)/
++			sizeof(struct bcm_ddr_setting));
++				if (Adapter->bMipsConfig == MIPS_200_MHZ)
+ 					uiClockSetting = 0x03F13652;
+-				}
+ 				else
+-				{
+ 					uiClockSetting = 0x03F1365B;
+-				}
+-				break;
+-		    default:
+-			    return -EINVAL;
+-        }
+-
++			break;
++		default:
++			return -EINVAL;
++		}
+ 		break;
+ 	case T3LPB:
+ 	case BCS220_2:
+ 	case BCS220_2BC:
+ 	case BCS250_BC:
+-	case BCS220_3 :
+-		/* Set bit 2 and bit 6 to 1 for BBIC 2mA drive
+-		 * (please check current value and additionally set these bits)
+-		 */
+-		if( (Adapter->chip_id !=  BCS220_2) &&
+-			(Adapter->chip_id !=  BCS220_2BC) &&
+-			(Adapter->chip_id != BCS220_3) )
+-		{
+-				retval= rdmalt(Adapter,(UINT)0x0f000830, &uiResetValue, sizeof(uiResetValue));
+-				if(retval < 0) {
+-					BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
++	case BCS220_3:
++/* Set bit 2 and bit 6 to 1 for BBIC 2mA drive
++ * (please check current value and additonally set these bits
++ */
++		if ((Adapter->chip_id != BCS220_2) &&
++			(Adapter->chip_id != BCS220_2BC) &&
++			(Adapter->chip_id != BCS220_3)) {
++				retval = rdmalt(Adapter, (UINT)0x0f000830, &uiResetValue, sizeof(uiResetValue));
++				if (retval < 0) {
++					BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, DBG_LVL_ALL,
++					"%s:%d RDM failed\n", __func__, __LINE__);
+ 					return retval;
+ 				}
+ 				uiResetValue |= 0x44;
+-				retval = wrmalt(Adapter,(UINT)0x0f000830, &uiResetValue, sizeof(uiResetValue));
+-				if(retval < 0) {
+-					BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
++				retval = wrmalt(Adapter, (UINT)0x0f000830, &uiResetValue, sizeof(uiResetValue));
++				if (retval < 0) {
++					BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, DBG_LVL_ALL,
++					"%s:%d RDM failed\n", __func__, __LINE__);
+ 					return retval;
+ 				}
+ 		}
+-		switch(Adapter->DDRSetting)
+-		{
+-
+-
+-
+-			case DDR_80_MHZ:
+-				psDDRSetting = asT3LPB_DDRSetting80MHz;
+-		        RegCount=(sizeof(asT3B_DDRSetting80MHz)/
+-		                  sizeof(struct bcm_ddr_setting));
++		switch (Adapter->DDRSetting) {
++		case DDR_80_MHZ:
++			psDDRSetting = asT3LPB_DDRSetting80MGZ;
++			RegCount = (sizeof(asT3B_DDRsetting80MHZ)/
++			sizeof(struct bcm_ddr_setting));
+ 			break;
+-            case DDR_100_MHZ:
+-				psDDRSetting=asT3LPB_DDRSetting100MHz;
+-		        RegCount=(sizeof(asT3B_DDRSetting100MHz)/
+-		                 sizeof(struct bcm_ddr_setting));
++		case DDR_100_MHZ:
++			psDDRsetting = asT3LB_DDRSetting100MHZ;
++			RegCount = (sizeof(asT3B_DDRSetting100MHZ)/
++			sizeof(struct bcm_ddr_setting));
+ 			break;
+-            case DDR_133_MHZ:
+-				psDDRSetting = asT3LPB_DDRSetting133MHz;
+-				RegCount=(sizeof(asT3B_DDRSetting133MHz)/
+-						 sizeof(struct bcm_ddr_setting));
+-
+-				if(Adapter->bMipsConfig == MIPS_200_MHZ)
+-				{
++		case DDR_133_MHZ:
++			psDDRSetting = asT3LPB_DDRSetting133MHZ;
++			RegCount = (sizeof(asT3B_DDRSetting133MHZ)/
++			sizeof(struct bcm_ddr_setting));
++				if (Adapter->bMipsConfig == MIPS_200_MHZ)
+ 					uiClockSetting = 0x03F13652;
+-				}
+ 				else
+-				{
+ 					uiClockSetting = 0x03F1365B;
+-				}
+ 			break;
+-
+-			case DDR_160_MHZ:
+-				psDDRSetting = asT3LPB_DDRSetting160MHz;
+-				RegCount = sizeof(asT3LPB_DDRSetting160MHz)/sizeof(struct bcm_ddr_setting);
+-
+-				if(Adapter->bMipsConfig == MIPS_200_MHZ)
+-				{
++		case DDR_160_MHZ:
++			psDDRSetting = asT3LPB_DDRSetting160MHZ;
++			RegCount = (sizeof(asT3LPB_DDRSetting160MHZ)/
++			sizeof(struct bcm_ddr_setting));
++				if (Adapter->bMipsConfig == MIPS_200_MHZ)
+ 					uiClockSetting = 0x03F137D2;
+-				}
+ 				else
+-				{
+ 					uiClockSetting = 0x03F137DB;
+-				}
+-			}
+ 			break;
+-
+-	case 0xbece0110:
+-	case 0xbece0120:
+-	case 0xbece0121:
+-	case 0xbece0130:
+-	case 0xbece0300:
+-		BCM_DEBUG_PRINT(Adapter,DBG_TYPE_INITEXIT, DRV_ENTRY, DBG_LVL_ALL, "DDR Setting: %x\n", Adapter->DDRSetting);
+-	    switch (Adapter->DDRSetting)
+-	    {
+-	        case DDR_80_MHZ:
+-				psDDRSetting = asT3_DDRSetting80MHz;
+-			    RegCount = (sizeof(asT3_DDRSetting80MHz)/
+-			  	sizeof(struct bcm_ddr_setting));
+-			    break;
+-		    case DDR_100_MHZ:
+-				psDDRSetting = asT3_DDRSetting100MHz;
+-			    RegCount = (sizeof(asT3_DDRSetting100MHz)/
+-			  	sizeof(struct bcm_ddr_setting));
+-			    break;
+-		    case DDR_133_MHZ:
+-				psDDRSetting = asT3_DDRSetting133MHz;
+-			    RegCount = (sizeof(asT3_DDRSetting133MHz)/
+-		 	  	sizeof(struct bcm_ddr_setting));
+-				break;
+-		    default:
+-			    return -EINVAL;
+-        }
+-	case 0xbece0310:
+-	{
+-	    switch (Adapter->DDRSetting)
+-	    {
+-	        case DDR_80_MHZ:
+-				psDDRSetting = asT3B_DDRSetting80MHz;
+-		        RegCount=(sizeof(asT3B_DDRSetting80MHz)/
+-		                  sizeof(struct bcm_ddr_setting));
+-		    break;
+-            case DDR_100_MHZ:
+-				psDDRSetting=asT3B_DDRSetting100MHz;
+-		        RegCount=(sizeof(asT3B_DDRSetting100MHz)/
+-		                 sizeof(struct bcm_ddr_setting));
++		default:
++			return -EINVAL;
++		}
++		break;
++	case 0xBECE0110:
++	case 0xBECE0120:
++	case 0xBECE0121:
++	case 0xBECE0130:
++	case 0xBECE0300:
++	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_INITEXIT, DRV_ENTRY,
++	DBG_LVL_ALL, "DDR Setting: %x\n", Adapter->DDRSetting);
++		switch (Adapter->DDRSetting) {
++		case DDR_80_MHZ:
++			psDDRSetting = asT3_DDRSeting80MHZ;
++			RegCount = (sizeof(asT3_DDRSettings80MHZ)/
++			sizeof(struct bcm_ddr_setting));
+ 			break;
+-            case DDR_133_MHZ:
+-
+-				if(Adapter->bDPLLConfig == PLL_266_MHZ)//266Mhz PLL selected.
+-				{
+-					memcpy(asT3B_DDRSetting133MHz, asDPLL_266MHZ,
+-									 sizeof(asDPLL_266MHZ));
+-					psDDRSetting = asT3B_DDRSetting133MHz;
+-					RegCount=(sizeof(asT3B_DDRSetting133MHz)/
+-									sizeof(struct bcm_ddr_setting));
+-				}
+-				else
+-				{
+-					psDDRSetting = asT3B_DDRSetting133MHz;
+-					RegCount=(sizeof(asT3B_DDRSetting133MHz)/
+-									sizeof(struct bcm_ddr_setting));
+-					if(Adapter->bMipsConfig == MIPS_200_MHZ)
+-					{
++		case DDR_100_MHZ:
++			psDDRSetting = asT3_DDRSetting100MHZ;
++			RegCount = (sizeof(asT3_DDRSetting100MHZ)/
++			sizeof(struct bcm_ddr_setting));
++			break;
++		case DDR_133_MHZ:
++			psDDRSetting = asT3_DDRSetting133MHZ;
++			RegCount = (sizeof(asT3_DDRSetting133MHZ)/
++			sizeof(struct bcm_ddr_setting));
++			break;
++		default:
++			return -EINVAL;
++		}
++		break;
++	case 0xBECE0310:
++		switch (Adapter->DDRSetting) {
++		case DDR_80_MHZ:
++			psDDRSetting = asT3B_DDRSetting80MHZ;
++			RegCount = (sizeof(asT3B_DDRSetting80MHZ)/
++			sizeof(struct bcm_ddr_setting));
++			break;
++		case DDR_100_MHZ:
++			psDDRSetting = asT3B_DDRSetting100MHZ;
++			RegCount = (sizeof(asT3B_DDRSetting100MHZ)/
++			sizeof(struct bcm_ddr_setting));
++			break;
++		case DDR_133_MHZ:
++			if (Adapter->bDPLLConfig == PLL_266_MHZ) { /* 266mhz phase locked loop selected */
++				memcpy(asT3B_DDRSettings133MHZ,
++				asDPLL_266MHZ, sizeof(asDPLL_266MHZ));
++				psDDRSetting = asT3B_DDRSetting133MHZ;
++				RegCount = (sizeof(asT3B_DDRSetting133MHZ)/
++				sizeof(struct bcm_ddr_setting));
++			} else {
++				psDDRSettings = asT3B_DDRSettings133MHZ;
++				RegCount = (sizeof(asT3B_DDRSetting133MHZ)/
++				sizeof(struct bcm_ddr_setting));
++					if (Adapter->bMipsConfig == MIPS_200_MHZ)
+ 						uiClockSetting = 0x07F13652;
+-					}
+ 					else
+-					{
+ 						uiClockSetting = 0x07F1365B;
+-					}
+-				}
+-				break;
+-		    default:
+-			    return -EINVAL;
++			}
++			break;
++		default:
++			return -EINVAL;
+ 		}
+ 		break;
+-
+-	}
+ 	default:
+ 		return -EINVAL;
+ 	}
+-
+-	value=0;
+-	BCM_DEBUG_PRINT(Adapter,DBG_TYPE_INITEXIT, DRV_ENTRY, DBG_LVL_ALL, "Register Count is =%lu\n", RegCount);
+-	while(RegCount && !retval)
+-	{
+-		if(uiClockSetting && psDDRSetting->ulRegAddress == MIPS_CLOCK_REG)
+-		{
++	value = 0;
++	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_INITEXIT, DRV_ENTRY,
++	DBG_LVL_ALL, "Register Count is =%lu\n", RegCount);
++	while (RegCount && !retval) {
++		if (uiClockSetting && psDDRSetting->ulRegAddress == MIPS_CLOCK_REG)
+ 			value = uiClockSetting;
+-		}
+ 		else
+-		{
+-			value = psDDRSetting->ulRegValue;
+-		}
++			value = psDDRSetting->ulRegAddress;
+ 		retval = wrmalt(Adapter, psDDRSetting->ulRegAddress, &value, sizeof(value));
+-		if(STATUS_SUCCESS != retval) {
++		if (STATUS_SUCCESS != retval) {
+ 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "%s:%d\n", __func__, __LINE__);
+ 			break;
+ 		}
+@@ -979,116 +878,108 @@ int ddr_init(struct bcm_mini_adapter *Adapter)
+ 		RegCount--;
+ 		psDDRSetting++;
+ 	}
+-
+-	if(Adapter->chip_id >= 0xbece3300  )
+-	{
+-
++	if (Adapter->chip_id >= 0xBECE3300) {
+ 		mdelay(3);
+-		if( (Adapter->chip_id != BCS220_2)&&
+-			(Adapter->chip_id != BCS220_2BC)&&
+-			(Adapter->chip_id != BCS220_3))
+-		{
+-			/* drive MDDR to half in case of UMA-B:	*/
+-			uiResetValue = 0x01010001;
++		if ((Adapter->chip_id != BCS220_2) &&
++			(Adapter->chip_id != BCS220_2BC) &&
++			(Adapter->chip_id != BCS220_3)) {
++			uiResetValue = 0x01010001;  /* drive MDDR to half of UMA_B */
+ 			retval = wrmalt(Adapter, (UINT)0x0F007018, &uiResetValue, sizeof(uiResetValue));
+-			if(retval < 0) {
++			if (retval < 0) {
+ 				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
+ 				return retval;
+ 			}
+ 			uiResetValue = 0x00040020;
+ 			retval = wrmalt(Adapter, (UINT)0x0F007094, &uiResetValue, sizeof(uiResetValue));
+-			if(retval < 0) {
++			if (retval < 0) {
+ 				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
+ 				return retval;
+ 			}
+ 			uiResetValue = 0x01020101;
+ 			retval = wrmalt(Adapter, (UINT)0x0F00701c, &uiResetValue, sizeof(uiResetValue));
+-			if(retval < 0) {
++			if (retval < 0) {
+ 				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
+ 				return retval;
+ 			}
+ 			uiResetValue = 0x01010000;
+ 			retval = wrmalt(Adapter, (UINT)0x0F007018, &uiResetValue, sizeof(uiResetValue));
+-			if(retval < 0) {
++			if (retval < 0) {
+ 				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
+ 				return retval;
+ 			}
+ 		}
+ 		mdelay(3);
+ 
+-		/* DC/DC standby change...
+-		 * This is to be done only for Hybrid PMU mode.
+-		 * with the current h/w there is no way to detect this.
+-		 * and since we dont have internal PMU lets do it under UMA-B chip id.
+-	     * we will change this when we will have internal PMU.
+-	     */
+-		if(Adapter->PmuMode == HYBRID_MODE_7C)
+-		{
+-			retval = rdmalt(Adapter,(UINT)0x0f000c00, &uiResetValue, sizeof(uiResetValue));
+-			if(retval < 0) {
++/* DC/DC standby change...
++ * This is to be done only for Hybrid PMU mode.
++ * with the current h/w there is no way to detect this.
++ * and since we dont have internal PMU lets do it under UMA-B chip id.
++ * we will change this when we will have internal PMU.
++*/
++		if (Adapter->PmuMode == HYBRID_MODE_7C) {
++			retval = rdmalt(Adapter, (UINT)0x0f000c00, &uiResetValue, sizeof(uiResetValue));
++			if (retval < 0) {
+ 				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
+ 				return retval;
+ 			}
+-			retval = rdmalt(Adapter,(UINT)0x0f000c00, &uiResetValue, sizeof(uiResetValue));
+-			if(retval < 0) {
++			retval = rdmalt(Adapter, (UINT)0x0f000c00, &uiResetValue, sizeof(uiResetValue));
++			if (retval < 0) {
+ 				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
+ 				return retval;
+ 			}
+ 			uiResetValue = 0x1322a8;
+ 			retval = wrmalt(Adapter, (UINT)0x0f000d1c, &uiResetValue, sizeof(uiResetValue));
+-			if(retval < 0) {
++			if (retval < 0) {
+ 				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
+ 				return retval;
+ 			}
+-			retval = rdmalt(Adapter,(UINT)0x0f000c00, &uiResetValue, sizeof(uiResetValue));
+-			if(retval < 0) {
++			retval = rdmalt(Adapter, (UINT)0x0f000c00, &uiResetValue, sizeof(uiResetValue));
++			if (retval < 0) {
+ 				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
+ 				return retval;
+ 			}
+-			retval = rdmalt(Adapter,(UINT)0x0f000c00, &uiResetValue, sizeof(uiResetValue));
+-			if(retval < 0) {
++			retval = rdmalt(Adapter, (UINT)0x0f000c00, &uiResetValue, sizeof(uiResetValue));
++			if (retval < 0) {
+ 				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
+ 				return retval;
+ 			}
+ 			uiResetValue = 0x132296;
+ 			retval = wrmalt(Adapter, (UINT)0x0f000d14, &uiResetValue, sizeof(uiResetValue));
+-			if(retval < 0) {
++			if (retval < 0) {
+ 				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
+ 				return retval;
+ 			}
+-		}
+-		else if(Adapter->PmuMode == HYBRID_MODE_6 )
+-		{
++		} else if (Adapter->PmuMode == HYBRID_MODE_6) {
+ 
+-			retval = rdmalt(Adapter,(UINT)0x0f000c00, &uiResetValue, sizeof(uiResetValue));
+-			if(retval < 0) {
++			retval = rdmalt(Adapter, (UINT)0x0f000c00, &uiResetValue, sizeof(uiResetValue));
++			if (retval < 0) {
+ 				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
+ 				return retval;
+ 			}
+-			retval = rdmalt(Adapter,(UINT)0x0f000c00, &uiResetValue, sizeof(uiResetValue));
+-			if(retval < 0) {
++			retval = rdmalt(Adapter, (UINT)0x0f000c00, &uiResetValue, sizeof(uiResetValue));
++			if (retval < 0) {
+ 				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
+ 				return retval;
+ 			}
+ 			uiResetValue = 0x6003229a;
+ 			retval = wrmalt(Adapter, (UINT)0x0f000d14, &uiResetValue, sizeof(uiResetValue));
+-			if(retval < 0) {
++			if (retval < 0) {
+ 				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
+ 				return retval;
+ 			}
+-			retval = rdmalt(Adapter,(UINT)0x0f000c00, &uiResetValue, sizeof(uiResetValue));
+-			if(retval < 0) {
++			retval = rdmalt(Adapter, (UINT)0x0f000c00, &uiResetValue, sizeof(uiResetValue));
++			if (retval < 0) {
+ 				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
+ 				return retval;
+ 			}
+-			retval = rdmalt(Adapter,(UINT)0x0f000c00, &uiResetValue, sizeof(uiResetValue));
+-			if(retval < 0) {
++			retval = rdmalt(Adapter, (UINT)0x0f000c00, &uiResetValue, sizeof(uiResetValue));
++			if (retval < 0) {
+ 				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
+ 				return retval;
+ 			}
+ 			uiResetValue = 0x1322a8;
+ 			retval = wrmalt(Adapter, (UINT)0x0f000d1c, &uiResetValue, sizeof(uiResetValue));
+-			if(retval < 0) {
++			if (retval < 0) {
+ 				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
+ 				return retval;
+ 			}
+@@ -1098,182 +989,166 @@ int ddr_init(struct bcm_mini_adapter *Adapter)
+ 	Adapter->bDDRInitDone = TRUE;
+ 	return retval;
+ }
+-
+ int download_ddr_settings(struct bcm_mini_adapter *Adapter)
+ {
+-	struct bcm_ddr_setting *psDDRSetting=NULL;
+-	ULONG RegCount=0;
++	struct bcm_ddr_setting *psDDRSetting = NULL;
++	ULONG RegCount = 0;
+ 	unsigned long ul_ddr_setting_load_addr = DDR_DUMP_INTERNAL_DEVICE_MEMORY;
+ 	UINT  value = 0;
+ 	int retval = STATUS_SUCCESS;
+ 	bool bOverrideSelfRefresh = false;
+ 
+-	switch (Adapter->chip_id)
+-	{
+-	case 0xbece3200:
+-	    switch (Adapter->DDRSetting)
+-	    {
+-	        case DDR_80_MHZ:
+-				psDDRSetting = asT3LP_DDRSetting80MHz;
+-                RegCount = ARRAY_SIZE(asT3LP_DDRSetting80MHz);
+-				RegCount -= T3LP_SKIP_CLOCK_PROGRAM_DUMP_80MHZ ;
+-                psDDRSetting += T3LP_SKIP_CLOCK_PROGRAM_DUMP_80MHZ;
++	switch (Aapter->chip_id) {
++	case 0xBECE3200:
++		switch (Adapter->DDRSetting) {
++		case DDR_80_MHZ:
++			psDDRSetting = asT3LP_DDRSetting80MHZ;
++			RegCount = ARRAY_SIZE(asT3LP_DDRSetting80MHZ);
++			RegCount -= T3LP_SKIP_CLOCK_PROGRAM_DUMP_80MHZ;
++			psDDRSetting += T3LP_SKIP_CLOCK_PROGRAM_DUMP_80MHZ;
++			break;
++		case DDR_100_MHZ:
++			psDDRSetting = asT3LP_DDRSetting100MHZ;
++			RegCount = ARRAY_SIZE(asT3LP_DDRSetting100MHZ);
++			RegCount -= T3LP_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
++			psDDRSetting += T3LP_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
+ 			break;
+-		    case DDR_100_MHZ:
+-				psDDRSetting = asT3LP_DDRSetting100MHz;
+-			    RegCount = ARRAY_SIZE(asT3LP_DDRSetting100MHz);
+-				RegCount -= T3LP_SKIP_CLOCK_PROGRAM_DUMP_100MHZ ;
+-                psDDRSetting += T3LP_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
+-			    break;
+-		     case DDR_133_MHZ:
+-				bOverrideSelfRefresh = TRUE;
+-				psDDRSetting = asT3LP_DDRSetting133MHz;
+-			    RegCount = ARRAY_SIZE(asT3LP_DDRSetting133MHz);
+-				RegCount -= T3LP_SKIP_CLOCK_PROGRAM_DUMP_133MHZ ;
+-		        psDDRSetting += T3LP_SKIP_CLOCK_PROGRAM_DUMP_133MHZ;
+-				break;
+-			default:
+-			    return -EINVAL;
+-        }
++		case DDR_133_MHZ:
++			bOverrideSelfRefresh = true;
++			psDDRSetting = asT3LP_DDRSetting133MHZ;
++			RegCount = ARRAY_SIZE(asT3LP_DDRSetting133MHZ);
++			RegCount -= T3LP_SKIP_CLOCK_PROGRAM_DUMP_133MHZ;
++			psDDRSetting += T3LP_SKIP_CLOCK_PROGRAM_DUMP_113MHZ;
++			break;
++		default:
++			return -EINVAL;
++		}
+ 		break;
+-
+ 	case T3LPB:
+ 	case BCS220_2:
+ 	case BCS220_2BC:
+-	case BCS250_BC:
+-	case BCS220_3 :
+-	    switch (Adapter->DDRSetting)
+-	    {
+-	        case DDR_80_MHZ:
+-				psDDRSetting = asT3LPB_DDRSetting80MHz;
+-                RegCount=ARRAY_SIZE(asT3LPB_DDRSetting80MHz);
+-				RegCount -= T3LPB_SKIP_CLOCK_PROGRAM_DUMP_80MHZ ;
+-                psDDRSetting += T3LPB_SKIP_CLOCK_PROGRAM_DUMP_80MHZ;
++	case BCS250_BC
++	case BCS220_3:
++		switch (Adapter->DDRSetting) {
++		case DDR_80_MHZ:
++			psDDRSetting = asT3LPB_DDRSetting80MHZ;
++			RegCount = ARRAY_SIZE(asT3LPB_DDRsetting80MHZ);
++			RegCount -= T3LPB_SKIP_CLOCK_PROGRAM_DUMP_80MHZ;
++			psDDRSetting += T3LPB_SKIP_CLOCK_PROGRAM_DUMP_80MHZ;
+ 			break;
+-		    case DDR_100_MHZ:
+-				psDDRSetting = asT3LPB_DDRSetting100MHz;
+-			    RegCount = ARRAY_SIZE(asT3LPB_DDRSetting100MHz);
+-				RegCount -= T3LPB_SKIP_CLOCK_PROGRAM_DUMP_100MHZ ;
+-                psDDRSetting += T3LPB_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
+-			    break;
+-		     case DDR_133_MHZ:
+-				bOverrideSelfRefresh = TRUE;
+-				psDDRSetting = asT3LPB_DDRSetting133MHz;
+-			    RegCount = ARRAY_SIZE(asT3LPB_DDRSetting133MHz);
+-				RegCount -= T3LPB_SKIP_CLOCK_PROGRAM_DUMP_133MHZ ;
+-		        psDDRSetting += T3LPB_SKIP_CLOCK_PROGRAM_DUMP_133MHZ;
+-				break;
+-
+-			case DDR_160_MHZ:
+-					bOverrideSelfRefresh = TRUE;
+-					psDDRSetting = asT3LPB_DDRSetting160MHz;
+-					RegCount = ARRAY_SIZE(asT3LPB_DDRSetting160MHz);
+-					RegCount -= T3LPB_SKIP_CLOCK_PROGRAM_DUMP_160MHZ;
+-					psDDRSetting += T3LPB_SKIP_CLOCK_PROGRAM_DUMP_160MHZ;
+-
+-					break;
+-			default:
+-			    return -EINVAL;
+-        }
++		case DDR_100_MHZ:
++			psDDRSetting = asT3LPB_DDRSetting100MHZ;
++			RegCount = ARRAY_SIZE(asT3LPB_DDRSetting100MHZ);
++			RegCount -= T3LPB_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
++			psDDRSetting += T3LPB_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
++			break;
++		case DDR_133_MHZ:
++			bOverrideSelfRefresh = true;
++			psDDRSetting = asT3LPB_DDRSetting133MHZ;
++			RegCount = ARRAY_SIZE(asT3LPB_DDRSetting133MHZ);
++			RegCount -= T3LPB_SKIP_CLOCK_PROGRAM_DUMP_133MHZ;
++			psDDRsetting += T3LPB_SKIP_CLOCK_PROGRAM_DUMP_133MHZ;
++			break;
++		case DDR_160_MHZ:
++			bOverrideSelfRefresh = true;
++			psDDRSetting = asT3LPB_DDRSetting160MHZ;
++			RegCount = ARRAY_SIZE(asT3LPB_DDRSetting);
++			RegCount -= T3LPB_SKIP_CLOCK_PROGRAM_DUMP_160MHZ;
++			psDDRSetting += T3LPB_SKIP_CLOCK_PROGRAM_DUMP_160MHZ;
++			break;
++		default:
++			return -EINVAL;
++		}
+ 		break;
+-	case 0xbece0300:
+-	    switch (Adapter->DDRSetting)
+-	    {
+-	        case DDR_80_MHZ:
+-				psDDRSetting = asT3_DDRSetting80MHz;
+-                RegCount = ARRAY_SIZE(asT3_DDRSetting80MHz);
+-				RegCount-=T3_SKIP_CLOCK_PROGRAM_DUMP_80MHZ ;
+-                psDDRSetting += T3_SKIP_CLOCK_PROGRAM_DUMP_80MHZ;
++	case 0xBECE0300:
++		switch (Adapter->DDRSetting) {
++		case DDR_80_MHZ:
++			psDDRSetting = asT3_DDRSetting80MHZ;
++			RegCount = ARRAY_SIZE(asT3_DDRSetting80MHZ);
++			RegCount -= T3_SKIP_CLOCK_PROGRAM_DUMP_80MHZ
++			psDDRSetting += T3_SKIP_CLOCK_PROGRAM_DUMP_80MHZ;
+ 			break;
+-		    case DDR_100_MHZ:
+-				psDDRSetting = asT3_DDRSetting100MHz;
+-			    RegCount = ARRAY_SIZE(asT3_DDRSetting100MHz);
+-				RegCount-=T3_SKIP_CLOCK_PROGRAM_DUMP_100MHZ ;
+-                psDDRSetting += T3_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
+-			    break;
+-		     case DDR_133_MHZ:
+-				psDDRSetting = asT3_DDRSetting133MHz;
+-			    RegCount = ARRAY_SIZE(asT3_DDRSetting133MHz);
+-				RegCount-=T3_SKIP_CLOCK_PROGRAM_DUMP_133MHZ ;
+-		        psDDRSetting += T3_SKIP_CLOCK_PROGRAM_DUMP_133MHZ ;
+-				break;
+-			default:
+-			    return -EINVAL;
+-        }
+-	break;
+-	case 0xbece0310:
+-	    {
+-		    switch (Adapter->DDRSetting)
+-		    {
+-		        case DDR_80_MHZ:
+-					psDDRSetting = asT3B_DDRSetting80MHz;
+-                    RegCount = ARRAY_SIZE(asT3B_DDRSetting80MHz);
+-                    RegCount -= T3B_SKIP_CLOCK_PROGRAM_DUMP_80MHZ ;
+-                    psDDRSetting += T3B_SKIP_CLOCK_PROGRAM_DUMP_80MHZ;
+-			        break;
+-		        case DDR_100_MHZ:
+-					psDDRSetting = asT3B_DDRSetting100MHz;
+-			        RegCount = ARRAY_SIZE(asT3B_DDRSetting100MHz);
+-                    RegCount -= T3B_SKIP_CLOCK_PROGRAM_DUMP_100MHZ ;
+-                    psDDRSetting += T3B_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
+-			        break;
+-		        case DDR_133_MHZ:
+-					bOverrideSelfRefresh = TRUE;
+-					psDDRSetting = asT3B_DDRSetting133MHz;
+-			        RegCount = ARRAY_SIZE(asT3B_DDRSetting133MHz);
+-	                RegCount -= T3B_SKIP_CLOCK_PROGRAM_DUMP_133MHZ ;
+-		            psDDRSetting += T3B_SKIP_CLOCK_PROGRAM_DUMP_133MHZ;
+-					break;
+-		      }
+-		      break;
+-	     }
++		case DDR_100_MHZ:
++			psDDRSetting = asT3_DDRSetting;
++			RegCount = ARRAY_SIZE(asT3_DDRSetting100MHZ);
++			RegCount -= T3_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
++			psDDRSetting += T3_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
++			break;
++		case DDR_133_MHZ:
++			psDDRSetting = asT3_DDRSetting133MHZ;
++			RegCount = ARRAY_SIZE(asT3_DDRSetting133MHZ);
++			RegCount -= T3_SKIP_CLOCK_PROGRAM_DUMP_133MHZ;
++			psDDRSetting += T3_SKIP_CLOCK_PROGRAM_DUMP_133MHZ;
++			break;
++		default:
++			return -EINVAL;
++		}
++		break;
++	case 0xBECE0310:
++		switch (Adapter->DDRSetting) {
++		case DDR_80_MHZ:
++			psDDRSetting = asT3B_DDRSetting80MHZ;
++			RegCount = ARRAY_SIZE(asT3B_DDRSetting80MHZ);
++			RegCount -= T3B_SKIP_CLOCK_PROGRAM_DUMP_80MHZ;
++			psDDRSetting += T3B_SKIP_CLOCK_PROGRAM_DUMP_80MHZ;
++			break;
++		case DDR_100_MHZ:
++			psDDRSetting = asT3B_DDRSetting100MHZ;
++			RegCount = ARRAY_SIZE(asT3B_DDRSetting100MHZ);
++			RegCount -= T3B_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
++			psDDRSetting += T3B_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
++			break;
++		case DDR_133_MHZ:
++			bOverrideSelfRefresh = true;
++			psDDRSetting = asT3B_DDRSetting133MHZ;
++			RegCount = ARRAY_SIZE(asT3B_DDRSetting133MHZ);
++			RegCount -= T3B_SKIP_CLOCK_PROGRAM_DUMP_133MHZ;
++			psDDRSetting += T3B_SKIP_CLOCK_PROGRAM_DUMP_133MHZ;
++			break;
++		default:
++			return -EINVAL;
++		}
++		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
+-	//total number of Register that has to be dumped
+-	value =RegCount  ;
++	/* total number of Register that has to be dumped */
++	value = RegCount;
+ 	retval = wrmalt(Adapter, ul_ddr_setting_load_addr, &value, sizeof(value));
+-	if(retval)
+-	{
++	if (retval) {
+ 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "%s:%d\n", __func__, __LINE__);
+ 
+ 		return retval;
+ 	}
+ 	ul_ddr_setting_load_addr += sizeof(ULONG);
+ 	/*signature */
+-	value =(0x1d1e0dd0);
++	value = (0x1d1e0dd0);
+ 	retval = wrmalt(Adapter, ul_ddr_setting_load_addr, &value, sizeof(value));
+-	if(retval)
+-	{
++	if (retval) {
+ 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "%s:%d\n", __func__, __LINE__);
+ 		return retval;
+ 	}
+ 
+ 	ul_ddr_setting_load_addr += sizeof(ULONG);
+-	RegCount*=(sizeof(struct bcm_ddr_setting)/sizeof(ULONG));
++	RegCount *= (sizeof(struct bcm_ddr_setting)/sizeof(ULONG));
+ 
+-	while(RegCount && !retval)
+-	{
+-		value = psDDRSetting->ulRegAddress ;
+-		retval = wrmalt( Adapter, ul_ddr_setting_load_addr, &value, sizeof(value));
++	while (RegCount && !retval) {
++		value = psDDRSetting->ulRegAddress;
++		retval = wrmalt(Adapter, ul_ddr_setting_load_addr, &value, sizeof(value));
+ 		ul_ddr_setting_load_addr += sizeof(ULONG);
+-		if(!retval)
+-		{
+-			if(bOverrideSelfRefresh && (psDDRSetting->ulRegAddress == 0x0F007018))
+-			{
+-				value = (psDDRSetting->ulRegValue |(1<<8));
+-				if(STATUS_SUCCESS != wrmalt(Adapter, ul_ddr_setting_load_addr,
+-						&value, sizeof(value))){
++		if (!retval) {
++			if (bOverrideSelfRefresh && (psDDRSetting->ulRegAddress == 0x0F007018)) {
++				value = (psDDRSetting->ulRegValue | (1<<8));
++				if (STATUS_SUCCESS != wrmalt(Adapter, ul_ddr_setting_load_addr,
++						&value, sizeof(value))) {
+ 					BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "%s:%d\n", __func__, __LINE__);
+ 					break;
+ 				}
+-			}
+-			else
+-			{
++			} else {
+ 				value =  psDDRSetting->ulRegValue;
+ 
+-				if(STATUS_SUCCESS != wrmalt(Adapter, ul_ddr_setting_load_addr ,
+-							&value, sizeof(value))){
++				if (STATUS_SUCCESS != wrmalt(Adapter, ul_ddr_setting_load_addr ,
++							&value, sizeof(value))) {
+ 					BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "%s:%d\n", __func__, __LINE__);
+ 					break;
+ 				}
+@@ -1285,5 +1160,3 @@ int download_ddr_settings(struct bcm_mini_adapter *Adapter)
+ 	}
+ 	return retval;
+ }
+-
+-
 -- 
-heikki
+1.8.4
+
