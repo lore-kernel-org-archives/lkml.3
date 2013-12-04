@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005Ab3LDVZi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 16:25:38 -0500
-Received: from www.linutronix.de ([62.245.132.108]:39164 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753809Ab3LDVZe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 16:25:34 -0500
-Date: Wed, 4 Dec 2013 22:25:30 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Vinayak Kale <vkale@apm.com>
-cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        will.deacon@arm.com, patches@apm.com, jcm@redhat.com,
-        sboyd@codeaurora.org, marc.zyngier@arm.com,
-        Chris Smith <chris.smith@st.com>
-Subject: Re: [PATCH V7 1/2] genirq: Add an accessor for IRQ_PER_CPU flag
-In-Reply-To: <1386151791-4881-2-git-send-email-vkale@apm.com>
-Message-ID: <alpine.DEB.2.02.1312042223310.30673@ionos.tec.linutronix.de>
-References: <1386151791-4881-1-git-send-email-vkale@apm.com> <1386151791-4881-2-git-send-email-vkale@apm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756044Ab3LDV0Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 16:26:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47255 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752298Ab3LDV0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 16:26:23 -0500
+Date: Wed, 4 Dec 2013 22:25:56 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 28/28] perf tools: Add udis86 disassembler feature check
+Message-ID: <20131204212555.GB3374@krava.zyxel.com>
+References: <1386076182-14484-1-git-send-email-jolsa@redhat.com>
+ <1386076182-14484-29-git-send-email-jolsa@redhat.com>
+ <20131204185024.GC14788@ghostprotocols.net>
+ <20131204185302.GD14788@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131204185302.GD14788@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Dec 2013, Vinayak Kale wrote:
+On Wed, Dec 04, 2013 at 03:53:02PM -0300, Arnaldo Carvalho de Melo wrote:
 
-> This patch adds an accessor function for IRQ_PER_CPU flag.
-> The accessor function is useful to determine whether an IRQ is percpu or not.
+SNIP
+
+> Auto-detecting system features:
+> ...                     backtrace: [ on  ]
+> ...                         dwarf: [ on  ]
+> ...                fortify-source: [ on  ]
+> ...                         glibc: [ on  ]
+> ...                          gtk2: [ on  ]
+> ...                  gtk2-infobar: [ on  ]
+> ...                      libaudit: [ on  ]
+> ...                        libbfd: [ on  ]
+> ...                        libelf: [ on  ]
+> ...             libelf-getphdrnum: [ on  ]
+> ...                   libelf-mmap: [ on  ]
+> ...                       libnuma: [ on  ]
+> ...                       libperl: [ on  ]
+> ...                     libpython: [ on  ]
+> ...             libpython-version: [ on  ]
+> ...                      libslang: [ on  ]
+> ...                     libunwind: [ on  ]
+> ...                       on-exit: [ on  ]
+> ...            stackprotector-all: [ on  ]
+> ...                       timerfd: [ on  ]
 > 
-> This patch is based on an older patch posted by Chris Smith here [1].
-> There is a minor change w.r.t. Chris's original patch: The accessor function
-> is renamed as 'irq_is_percpu' instead of 'irq_is_per_cpu'.
+> config/Makefile:421: No udis86 support.
 > 
-> [1]: http://lkml.indiana.edu/hypermail/linux/kernel/1207.3/02955.html
+> ---
 > 
-> Signed-off-by: Chris Smith <chris.smith@st.com>
-> Signed-off-by: Vinayak Kale <vkale@apm.com>
-> Acked-by: Will Deacon <will.deacon@arm.com>
+> Please try to fix it and resubmit. And yes, I don't have udis86-devel
+> installed in this test system.
 
-For the genirq part:
-    Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+hum, I did not make it as the feature check with visible state '[ on ]',
+but I guess check for packages should be on the list.. I'll repost
 
-Please take that through the SoC tree which carries the actual user of
-this.
-
-Thanks,
-
-	tglx
+jirka
