@@ -1,78 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab3LDGZr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 01:25:47 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39683 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab3LDGZq (ORCPT
+	id S1754736Ab3LDG0a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 01:26:30 -0500
+Received: from exprod5og105.obsmtp.com ([64.18.0.180]:54795 "HELO
+	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753845Ab3LDG02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 01:25:46 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <529ECAAB.8040309@jp.fujitsu.com>
-Date: Wed, 04 Dec 2013 15:24:43 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Wed, 4 Dec 2013 01:26:28 -0500
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: "H. Peter Anvin" <hpa@linux.intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Borislav Petkov <bp@alien8.de>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jingbai Ma <jingbai.ma@hp.com>, Jerry Hoemann <jerry.hoemann@hp.com>
-Subject: Re: [PATCH v9] x86, apic, kexec, Documentation: Add disable_cpu_apic
- kernel parameter
-References: <529D34AA.1000809@jp.fujitsu.com> <20131203152536.GE4251@redhat.com> <529E9CA6.5040200@jp.fujitsu.com>
-In-Reply-To: <529E9CA6.5040200@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131203135002.GJ1169@mudshark.cambridge.arm.com>
+References: <1385976843-13280-1-git-send-email-vkale@apm.com>
+	<1385976843-13280-3-git-send-email-vkale@apm.com>
+	<20131203135002.GJ1169@mudshark.cambridge.arm.com>
+Date: Wed, 4 Dec 2013 11:56:27 +0530
+Message-ID: <CAPrCYkewEkD4MvVht88ddW+nUPpzGXd=vCurwzFujiWOJWj2Ow@mail.gmail.com>
+Subject: Re: [PATCH V6 2/2] arm64: perf: add support for percpu pmu interrupt
+From: Vinayak Kale <vkale@apm.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "patches@apm.com" <patches@apm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Tuan Phan <tphan@apm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/04 12:08), HATAYAMA Daisuke wrote:
-> (2013/12/04 0:25), Vivek Goyal wrote:
->> On Tue, Dec 03, 2013 at 10:32:26AM +0900, HATAYAMA Daisuke wrote:
->>
->> [..]
->>>
->>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->>> index 50680a5..dd77bec 100644
->>> --- a/Documentation/kernel-parameters.txt
->>> +++ b/Documentation/kernel-parameters.txt
->>> @@ -774,6 +774,15 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>>       disable=    [IPV6]
->>>               See Documentation/networking/ipv6.txt.
->>>
->>> +    disable_cpu_apicid= [X86,APIC,KEXEC,SMP]
->>
->> Hi Hatayama,
->>
->> We are almost there. A minor nit. Why have we specified KEXEC here. This
->> parameter disabled_cpu_apicid does not seem to dependon CONFIG_KEXEC?
->>
->> Jerry, this patch looks good to me. Does it work on your system?
->>
+On Tue, Dec 3, 2013 at 7:20 PM, Will Deacon <will.deacon@arm.com> wrote:
+> On Mon, Dec 02, 2013 at 09:34:03AM +0000, Vinayak Kale wrote:
+>>  static void
+>> +armpmu_disable_percpu_irq(void *data)
+>> +{
+>> +     struct arm_pmu *armpmu = data;
+>> +     struct platform_device *pmu_device = armpmu->plat_device;
+>> +     int irq = platform_get_irq(pmu_device, 0);
+>> +
+>> +     cpumask_test_and_clear_cpu(smp_processor_id(), &armpmu->active_irqs);
 >
-> Because primary user for the option is currently kexec/kdump only.
+> Why not just cpumask_clear_cpu?
+
+Yes, that would have serve the purpose. It was due to dumb copy/paste
+from non-percpu counterpart.
+
 >
-> I referred to acpi_rsdp description:
+>> +     disable_percpu_irq(irq);
+>> +}
+>> +
+>> +static void
+>>  armpmu_release_hardware(struct arm_pmu *armpmu)
+>>  {
+>> -     int i, irq, irqs;
+>> +     int irq;
+>> +     unsigned int i, irqs;
+>>       struct platform_device *pmu_device = armpmu->plat_device;
+>>
+>>       irqs = min(pmu_device->num_resources, num_possible_cpus());
+>> +     if (!irqs)
+>> +             return;
+>>
+>> -     for (i = 0; i < irqs; ++i) {
+>> -             if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
+>> -                     continue;
+>> -             irq = platform_get_irq(pmu_device, i);
+>> -             if (irq >= 0)
+>> -                     free_irq(irq, armpmu);
+>> +     irq = platform_get_irq(pmu_device, 0);
+>> +     if (irq <= 0)
+>> +             return;
+>> +
+>> +     if (irq_is_percpu(irq)) {
+>> +             on_each_cpu(armpmu_disable_percpu_irq, armpmu, 1);
+>> +             free_percpu_irq(irq, &cpu_hw_events);
+>> +     } else {
+>> +             for (i = 0; i < irqs; ++i) {
+>> +                     if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
+>> +                             continue;
+>> +                     irq = platform_get_irq(pmu_device, i);
+>> +                     if (irq > 0)
+>> +                             free_irq(irq, armpmu);
+>> +             }
+>>       }
+>>  }
+>>
+>> +static void
+>> +armpmu_enable_percpu_irq(void *data)
+>> +{
+>> +     struct arm_pmu *armpmu = data;
+>> +     struct platform_device *pmu_device = armpmu->plat_device;
+>> +     int irq = platform_get_irq(pmu_device, 0);
+>> +
+>> +     enable_percpu_irq(irq, IRQ_TYPE_NONE);
+>> +     cpumask_set_cpu(smp_processor_id(), &armpmu->active_irqs);
 >
->          acpi_rsdp=      [ACPI,EFI,KEXEC]
->                          Pass the RSDP address to the kernel, mostly used
->                          on machines running EFI runtime service to boot the
->                          second kernel for kdump.
+> Hmm, wouldn't it make more sense to pass the irq in data, then deal with the
+> mask in the caller? (since the mask will *always* be updated by each CPU).
 >
+> Similarly for the disable path.
 
-Indo-san, who introduced acpi_rsdp and KEXEC tag, told me that historical reason
-why KEXEC tag was introduced. disable_cpu_apicid is generic at least in the
-current version, so the tag doesn't need to be specified here.
-
-I'll post a new version soon.
-
--- 
-Thanks.
-HATAYAMA, Daisuke
-
+Okay.
