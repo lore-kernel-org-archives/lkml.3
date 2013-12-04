@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab3LDCC6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 21:02:58 -0500
-Received: from mail.fpasia.hk ([202.130.89.98]:41493 "EHLO fpa01n0.fpasia.hk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754461Ab3LDCCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 21:02:54 -0500
-From: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-To: balbi@ti.com
-Cc: gregkh@linuxfoundation.org, swarren@wwwdotorg.org,
-        thierry.reding@gmail.com, linux-usb@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Ruehl <chris.ruehl@gtsys.com.hk>
-Subject: [PATCH] usb: phy-tegra-usb.c: wrong pointer check for remap UTMI
-Date: Wed,  4 Dec 2013 10:02:44 +0800
-Message-Id: <1386122564-4246-1-git-send-email-chris.ruehl@gtsys.com.hk>
-X-Mailer: git-send-email 1.7.10.4
+	id S1755909Ab3LDCDv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 21:03:51 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:39334 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754316Ab3LDCDu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 21:03:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAL-B5D3t=K-m5Y=Vvgv=SnrOLni8rAJC5eW8J1CEBsgafjTemA@mail.gmail.com>
+References: <1385851238-21085-1-git-send-email-yinghai@kernel.org>
+	<CAL-B5D3t=K-m5Y=Vvgv=SnrOLni8rAJC5eW8J1CEBsgafjTemA@mail.gmail.com>
+Date: Tue, 3 Dec 2013 18:03:49 -0800
+X-Google-Sender-Auth: schMZnLoBSsrDYPDTRCMU7xuyJA
+Message-ID: <CAE9FiQVxCykW+LD=UXRbkQvwniBK9-7BdjufjAwRu2E_pPtN5w@mail.gmail.com>
+Subject: Re: [PATCH v3 00/12] PCI: Double removing fix and allocate 64bit mmio pref
+From: Yinghai Lu <yinghai@kernel.org>
+To: Myron Stowe <myron.stowe@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-usb: phy-tegra-usb.c: wrong pointer check for remap UTMI
+On Sun, Dec 1, 2013 at 9:05 AM, Myron Stowe <myron.stowe@gmail.com> wrote:
+> Would you please consider *not* bundling unrelated, or at least
+> non-dependent, patches together in one series.  As a distrobution
+> subsystem maintainer, this type of bundling really complicates trying
+> to identify and isolate key material for bringing in.  It also makes
+> trying to identify the core content for key fixes, which can occur
+> many months or years later, significantly more difficult when they
+> were buried within a series with other unrelated content
 
-A wrong pointer was used to test the result of devm_ioremap()
+ok.
 
-Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-Acked-by: Venu Byravarasu <vbyravarasu@nvidia.com>
----
- drivers/usb/phy/phy-tegra-usb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Will resend them in three patchset.
 
-diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
-index 82232ac..bbe4f8e 100644
---- a/drivers/usb/phy/phy-tegra-usb.c
-+++ b/drivers/usb/phy/phy-tegra-usb.c
-@@ -876,7 +876,7 @@ static int utmi_phy_probe(struct tegra_usb_phy *tegra_phy,
- 
- 	tegra_phy->pad_regs = devm_ioremap(&pdev->dev, res->start,
- 		resource_size(res));
--	if (!tegra_phy->regs) {
-+	if (!tegra_phy->pad_regs) {
- 		dev_err(&pdev->dev, "Failed to remap UTMI Pad regs\n");
- 		return -ENOMEM;
- 	}
--- 
-1.7.10.4
+Thanks
 
+Yinghai
