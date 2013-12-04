@@ -1,128 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932497Ab3LDOGA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 09:06:00 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:62934 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932433Ab3LDOF7 (ORCPT
+	id S932520Ab3LDOGp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 09:06:45 -0500
+Received: from mail-qe0-f47.google.com ([209.85.128.47]:61651 "EHLO
+	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932433Ab3LDOGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 09:05:59 -0500
-Date: Wed, 4 Dec 2013 15:04:59 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Meelis Roos <mroos@linux.ee>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Scott Wood <scottwood@freescale.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [PATCH v2] OF: base: match each node compatible against all
- given matches first
-Message-ID: <20131204140457.GA2272@ulmo.nvidia.com>
-References: <1385663785-8643-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1386078720-8756-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <alpine.SOC.1.00.1312032210480.25191@math.ut.ee>
- <529E614B.3070307@gmail.com>
- <20131204094010.GO19943@ulmo.nvidia.com>
- <alpine.SOC.1.00.1312041506010.8902@math.ut.ee>
+	Wed, 4 Dec 2013 09:06:44 -0500
+Date: Wed, 4 Dec 2013 09:06:39 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org
+Subject: [PATCH driver-core-linus] sysfs: bail early from sysfs_bin_mmap() to
+ avoid spurious lockdep warning
+Message-ID: <20131204140639.GI3158@htj.dyndns.org>
+References: <20131128051223.45739660885@gitolite.kernel.org>
+ <20131203184324.GA11320@redhat.com>
+ <20131203211028.GN8277@htj.dyndns.org>
+ <20131203211515.GA17951@redhat.com>
+ <20131203213649.GO8277@htj.dyndns.org>
+ <20131203221543.GP8277@htj.dyndns.org>
+ <20131204044306.GA13248@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="M9NhX3UHpAaciwkO"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.SOC.1.00.1312041506010.8902@math.ut.ee>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20131204044306.GA13248@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+027a485d12e0 ("sysfs: use a separate locking class for open files
+depending on mmap") assigned different lockdep key to
+sysfs_open_file->mutex depending on whether the file implements mmap
+or not in an attempt to avoid spurious lockdep warning caused by
+merging of regular and bin file paths.
 
---M9NhX3UHpAaciwkO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+While this restored some of the original behavior of using different
+locks (at least lockdep is concerned) for the different clases of
+files.  The restoration wasn't full because now the lockdep key
+assignment depends on whether the file has mmap or not instead of
+whether it's a regular file or not.
 
-On Wed, Dec 04, 2013 at 03:08:39PM +0200, Meelis Roos wrote:
-> > I added Meelis on Cc because he found a regression with my original
-> > proposal (107a84e61cdd "of: match by compatible property first"). That
-> > got later reverted in commit bc51b0c22ceb (Revert "of: match by
-> > compatible property first"). Here's the commit message for reference:
-> >=20
-> > commit bc51b0c22ceb
-> > Author: Linus Torvalds <torvalds@linux-foundation.org>
-> > Date:   Tue Jul 10 12:49:32 2012 -0700
-> >=20
-> >     Revert "of: match by compatible property first"
-> >=20
-> >     This reverts commit 107a84e61cdd3406c842a0e4be7efffd3a05dba6.
-> >=20
-> >     Meelis Roos reports a regression since 3.5-rc5 that stops Sun Fire =
-V100
-> >     and Sun Netra X1 sparc64 machines from booting, hanging after enabl=
-ing
-> >     serial console.  He bisected it to commit 107a84e61cdd.
-> >=20
-> >     Rob Herring explains:
-> >      "The problem is match combinations of compatible plus name and/or =
-type
-> >       fail to match correctly.  I have a fix for this, but given how la=
-te it
-> >       is for 3.5 I think it is best to revert this for now.  There coul=
-d be
-> >       other cases that rely on the current although wrong behavior.  I =
-will
-> >       post an updated version for 3.6."
-> >=20
-> >     Bisected-and-reported-by: Meelis Roos <mroos@linux.ee>
-> >     Requested-by: Rob Herring <rob.herring@calxeda.com>
-> >     Cc: Thierry Reding <thierry.reding@avionic-design.de>
-> >     Cc: Grant Likely <grant.likely@secretlab.ca>
-> >     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> >=20
-> > So if Meelis still has access to the Sun Fire V100 and Sun Netra X1
-> > machines that regressed last time around, it'd be great to get this
-> > patch tested on them to verify that it indeed fixes the problem and
-> > doesn't regress.
->=20
-> OK, I had forgotten about that.
+This means that bin files which don't implement mmap will get assigned
+the same lockdep class as regular files.  This is problematic because
+file_operations for bin files still implements the mmap file operation
+and checking whether the sysfs file actually implements mmap happens
+in the file operation after grabbing @sysfs_open_file->mutex.  We
+still end up adding locking dependency from mmap locking to
+sysfs_open_file->mutex to the regular file mutex which triggers
+spurious circular locking warning.
 
-Yeah, I had always meant to come back to it, but that never quite
-happened, so I'm all the more glad that Sebastian took over.
+This can be fixed by either giving sysfs_open_file->mutex different
+lockdep keys depending on whether the file is regular or bin instead
+of whether mmap exists or not, or avoiding grabbing
+sysfs_open_file->mutex from sysfs_bin_mmap() if mmap is not actually
+implemented.  While the former is simpler for driver-core-linus,
+driver-core-next already has SYSFS_FLAG_HAS_MMAP in place to implement
+the latter and doesn't have inherent distinction between regular and
+bin files.  This patch implements the latter so that the fix is more
+conducive to driver-core-next.
 
-> Tested successfully on the same Sun Fire V100 and Sun Netra X1, on top=20
-> of 3.13-rc2. The sunsu console is detected fine and I see no problem for=
-=20
-> now.
+Because anything beyond sysfs_open_file->sd can't be dereferenced
+without locking the open file, cache whether mmap is implemented or
+not in sysfs_open_file->sd->s_flags and update sysfs_bin_mmap() test
+the flag and bail without grabbing the mutex if not implemented.
 
-Excellent. Thanks for testing!
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Dave Jones <davej@redhat.com>
+Tested-by: Dave Jones <davej@redhat.com>
+Link: http://lkml.kernel.org/g/20131203184324.GA11320@redhat.com
+---
+ fs/sysfs/file.c  |   21 ++++++++++++++++++---
+ fs/sysfs/sysfs.h |    1 +
+ 2 files changed, 19 insertions(+), 3 deletions(-)
 
-Rob, I guess this should be reasonable safe then to take for a spin in
-linux-next?
-
-Thierry
-
---M9NhX3UHpAaciwkO
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSnzaJAAoJEN0jrNd/PrOhvm4QAIpXTYGYgwUTzndgfiMOx1Ax
-j34bf4q2SJSyqxp6TY/7lHpNd3epqsAyK0r5AKh4YX2adJMt6Z4o2WKouP3eAzNa
-9fPvLWSh7j5TKf6KDAAJAuM6SI6X3yH6H6mNn95yz3MyE4aieB7hziXPfRACYWLc
-NO4mmApG5pO7F5+JiMLI81vbfRae23lp/swg1/OSCjc2Cvvw8mQlt3hT7QV8nOMt
-+X125WK0WPstc4ERy3EyUHv5rFpJPQWeuN92j1AIcgOn01tXZFzdJP3oWqmbiFEE
-2BM2ufZaqVpqE8SdMSobNTU5Y+kJJ1yY2uFjGSYq2rlzphwhr6RPJn+qtK2RV95I
-SQLeQVrra6WYtNsN2IDx6vvJL6xmCCBmmGDcWdwFB/MupksPe6NzKLoQlqO/0u7y
-GB9rYSP2dNship0o4TzIcXeg+vA+45kYwCbx2UtTuhX8T39ZJtxZwnW1dorymKsN
-DnxdAEQHJ/GgpKJvkAKKSp/ixsXiZ0uJyIPL5MxOkUeMQdvrJAduO5iyxvN2bc8V
-JRkJyCjDd7MF68XxsQLp14ELwEjujzarPOgGb5SfZnX6hLUb9xqZXS8yNSzALQYk
-hWjkTEh0W7EAZmahu3H2Tm3b63fv6PdQanJk4fDt0K34Z7MsS7kUXyzInQiiRWz6
-dOoqEwHi1vUQXiItKGNZ
-=R4EY
------END PGP SIGNATURE-----
-
---M9NhX3UHpAaciwkO--
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index b94f936..90e9e5d 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -470,6 +470,16 @@ static int sysfs_bin_mmap(struct file *file, struct vm_area_struct *vma)
+ 	struct kobject *kobj = of->sd->s_parent->s_dir.kobj;
+ 	int rc;
+ 
++	/*
++	 * mmap path and of->mutex are prone to triggering spurious lockdep
++	 * warnings and we don't want to add spurious locking dependency
++	 * between the two.  Check whether mmap is actually implemented
++	 * without grabbing @of->mutex by testing HAS_MMAP flag.  See the
++	 * comment in sysfs_open_file() for more details.
++	 */
++	if (!(of->sd->s_flags & SYSFS_FLAG_HAS_MMAP))
++		return -ENODEV;
++
+ 	mutex_lock(&of->mutex);
+ 
+ 	/* need of->sd for battr, its parent for kobj */
+@@ -477,9 +487,6 @@ static int sysfs_bin_mmap(struct file *file, struct vm_area_struct *vma)
+ 	if (!sysfs_get_active(of->sd))
+ 		goto out_unlock;
+ 
+-	if (!battr->mmap)
+-		goto out_put;
+-
+ 	rc = battr->mmap(file, kobj, battr, vma);
+ 	if (rc)
+ 		goto out_put;
+@@ -851,6 +858,14 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+ 	sd->s_attr.attr = (void *)attr;
+ 	sysfs_dirent_init_lockdep(sd);
+ 
++	if (type == SYSFS_KOBJ_BIN_ATTR) {
++		const struct bin_attribute *battr =
++			container_of(attr, struct bin_attribute, attr);
++
++		if (battr->mmap)
++			sd->s_flags |= SYSFS_FLAG_HAS_MMAP;
++	}
++
+ 	sysfs_addrm_start(&acxt);
+ 	rc = sysfs_add_one(&acxt, sd, dir_sd);
+ 	sysfs_addrm_finish(&acxt);
+diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
+index 0af09fb..27c1f7e 100644
+--- a/fs/sysfs/sysfs.h
++++ b/fs/sysfs/sysfs.h
+@@ -96,6 +96,7 @@ struct sysfs_dirent {
+ 
+ #define SYSFS_FLAG_MASK			~(SYSFS_NS_TYPE_MASK|SYSFS_TYPE_MASK)
+ #define SYSFS_FLAG_REMOVED		0x02000
++#define SYSFS_FLAG_HAS_MMAP		0x04000
+ 
+ static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
+ {
