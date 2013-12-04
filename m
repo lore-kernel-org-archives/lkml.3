@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932985Ab3LDQqJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 11:46:09 -0500
-Received: from a9-50.smtp-out.amazonses.com ([54.240.9.50]:55450 "EHLO
-	a9-50.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932508Ab3LDQqG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 11:46:06 -0500
-X-Greylist: delayed 741 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Dec 2013 11:46:06 EST
-Date: Wed, 4 Dec 2013 16:33:43 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joonsoo Kim <js1304@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        azurIt <azurit@pobox.sk>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        cgroups@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Christian Casteyde <casteyde.christian@free.fr>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [patch 2/2] fs: buffer: move allocation failure loop into the
- allocator
-In-Reply-To: <CAAmzW4PwLhMd61ksOktdg=rkj0xHsSGt2Wm_za2Adjh4+tss-g@mail.gmail.com>
-Message-ID: <00000142be753b07-aa0e2354-6704-41f8-8e11-3c856a186af5-000000@email.amazonses.com>
-References: <1381265890-11333-1-git-send-email-hannes@cmpxchg.org> <1381265890-11333-2-git-send-email-hannes@cmpxchg.org> <20131203165910.54d6b4724a1f3e329af52ac6@linux-foundation.org> <20131204015218.GA19709@lge.com> <20131203180717.94c013d1.akpm@linux-foundation.org>
- <00000142be2f1de0-764bb035-adbc-4367-b2b4-bf05498510a6-000000@email.amazonses.com> <CAAmzW4PwLhMd61ksOktdg=rkj0xHsSGt2Wm_za2Adjh4+tss-g@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S933005Ab3LDQqm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 11:46:42 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:35015 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932708Ab3LDQqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 11:46:40 -0500
+Message-ID: <529F5C55.1020707@ti.com>
+Date: Wed, 4 Dec 2013 11:46:13 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.12.04-54.240.9.50
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mm@kvack.org>, Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: Re: [PATCH v2 08/23] mm/memblock: Add memblock memory allocation
+ apis
+References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com> <1386037658-3161-9-git-send-email-santosh.shilimkar@ti.com> <20131203232445.GX8277@htj.dyndns.org> <529F5047.50309@ti.com> <20131204160730.GQ3158@htj.dyndns.org>
+In-Reply-To: <20131204160730.GQ3158@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Dec 2013, Joonsoo Kim wrote:
+On Wednesday 04 December 2013 11:07 AM, Tejun Heo wrote:
+> Hello,
+> 
+> On Wed, Dec 04, 2013 at 10:54:47AM -0500, Santosh Shilimkar wrote:
+>> Well as you know there are architectures still using bootmem even after
+>> this series. Changing MAX_NUMNODES to NUMA_NO_NODE is too invasive and
+>> actually should be done in a separate series. As commented, the best
+>> time to do that would be when all remaining architectures moves to
+>> memblock.
+>>
+>> Just to give you perspective, look at the patch end of the email which
+>> Grygorrii cooked up. It doesn't cover all the users of MAX_NUMNODES
+>> and we are bot even sure whether the change is correct and its
+>> impact on the code which we can't even tests. I would really want to
+>> avoid touching all the architectures and keep the scope of the series
+>> to core code as we aligned initially.
+>>
+>> May be you have better idea to handle this change so do
+>> let us know how to proceed with it. With such a invasive change the
+>> $subject series can easily get into circles again :-(
+> 
+> But we don't have to use MAX_NUMNODES for the new interface, no?  Or
+> do you think that it'd be more confusing because it ends up mixing the
+> two?  
+The issue is memblock code already using MAX_NUMNODES. Please
+look at __next_free_mem_range() and __next_free_mem_range_rev().
+The new API use the above apis and hence use MAX_NUMNODES. If the
+usage of these constant was consistent across bootmem and memblock
+then we wouldn't have had the whole confusion.
 
-> Now we have cpu partial slabs facility, so I think that slowpath isn't really
-> slow. And it doesn't much increase the management overhead in the node
-> partial lists, because of cpu partial slabs.
+It kinda really bothers me this patchset is expanding the usage
+> of the wrong constant with only very far-out plan to fix that.  All
+> archs converting to nobootmem will take a *long* time, that is, if
+> that happens at all.  I don't really care about the order of things
+> happening but "this is gonna be fixed when everyone moves off
+> MAX_NUMNODES" really isn't good enough.
+> 
+Fair enough though the patchset continue to use the constant
+which is already used by few memblock APIs ;-)
 
-Well yes that may address some of the issues here.
+If we can fix the __next_free_mem_range() and __next_free_mem_range_rev()
+to not use MAX_NUMNODES then we can potentially avoid the wrong
+usage of constant.
 
-> And larger frame may cause more slab_lock contention or cmpxchg contention
-> if there are parallel freeings.
->
-> But, I don't know which one is better. Is larger frame still better? :)
+regards,
+Santosh
 
-Could you run some tests to figure this one out? There are also
-some situations in which we disable the per cpu partial pages though.
-F.e. for low latency/realtime. I posted in kernel synthetic
-benchmarks for slab a while back. That maybe something to start with.
+
 
 
