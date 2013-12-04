@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab3LDUIP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 15:08:15 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:59444 "EHLO
+	id S1756041Ab3LDUIN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 15:08:13 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:59445 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933332Ab3LDUHY (ORCPT
+	with ESMTP id S933333Ab3LDUHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Dec 2013 15:07:24 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 21/38] perf tools: Add trace-event global object for tracepoint interface
-Date: Wed,  4 Dec 2013 17:06:45 -0300
-Message-Id: <1386187622-2928-22-git-send-email-acme@infradead.org>
+Subject: [PATCH 16/38] tools lib traceevent: Change pevent_parse_format to include pevent handle
+Date: Wed,  4 Dec 2013 17:06:40 -0300
+Message-Id: <1386187622-2928-17-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1386187622-2928-1-git-send-email-acme@infradead.org>
 References: <1386187622-2928-1-git-send-email-acme@infradead.org>
@@ -31,15 +31,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-In order to get the proper plugins processing we need to use full
-trace-event interface when creating tracepoint events. So far we were
-using shortcut to get the parsed format.
+Changing the pevent_parse_format interface to include the pevent handle.
 
-Moving current 'event_format__new' function into trace-event object as
-'trace_event__tp_format'.
+The goal is to always use pevent object when dealing with traceevent
+library. The reason is that we might need additional processing (like
+plugins), which is not possible otherwise.
 
-This function uses properly initialized global trace-event object,
-ensuring proper plugins processing.
+Patches follow to make this happen completely.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -50,199 +48,127 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1386076182-14484-11-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1386076182-14484-6-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c    |  5 ++--
- tools/perf/util/evsel.c       | 44 ++-----------------------------
- tools/perf/util/trace-event.c | 61 +++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/trace-event.h |  2 ++
- 4 files changed, 68 insertions(+), 44 deletions(-)
+ tools/lib/traceevent/event-parse.c | 56 ++++++++++++++++++++++++--------------
+ tools/lib/traceevent/event-parse.h |  4 ++-
+ tools/perf/util/evsel.c            |  2 +-
+ 3 files changed, 39 insertions(+), 23 deletions(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 9f2a242fa79c..56afe339661a 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -11,6 +11,7 @@
- #include "util/intlist.h"
- #include "util/thread_map.h"
- #include "util/stat.h"
-+#include "trace-event.h"
- 
- #include <libaudit.h>
- #include <stdlib.h>
-@@ -1430,11 +1431,11 @@ static int trace__read_syscall_info(struct trace *trace, int id)
- 	sc->fmt  = syscall_fmt__find(sc->name);
- 
- 	snprintf(tp_name, sizeof(tp_name), "sys_enter_%s", sc->name);
--	sc->tp_format = event_format__new("syscalls", tp_name);
-+	sc->tp_format = trace_event__tp_format("syscalls", tp_name);
- 
- 	if (sc->tp_format == NULL && sc->fmt && sc->fmt->alias) {
- 		snprintf(tp_name, sizeof(tp_name), "sys_enter_%s", sc->fmt->alias);
--		sc->tp_format = event_format__new("syscalls", tp_name);
-+		sc->tp_format = trace_event__tp_format("syscalls", tp_name);
- 	}
- 
- 	if (sc->tp_format == NULL)
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 6a046ed73f98..7b510fd1f08d 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -23,6 +23,7 @@
- #include "target.h"
- #include "perf_regs.h"
- #include "debug.h"
-+#include "trace-event.h"
- 
- static struct {
- 	bool sample_id_all;
-@@ -180,47 +181,6 @@ struct perf_evsel *perf_evsel__new_idx(struct perf_event_attr *attr, int idx)
- 	return evsel;
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 900fca01bdd3..9849873265d4 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -5121,8 +5121,38 @@ enum pevent_errno __pevent_parse_format(struct event_format **eventp,
+ 	return ret;
  }
  
--struct event_format *event_format__new(const char *sys, const char *name)
--{
--	int fd, n;
--	char *filename;
--	void *bf = NULL, *nbf;
--	size_t size = 0, alloc_size = 0;
--	struct event_format *format = NULL;
--
--	if (asprintf(&filename, "%s/%s/%s/format", tracing_events_path, sys, name) < 0)
--		goto out;
--
--	fd = open(filename, O_RDONLY);
--	if (fd < 0)
--		goto out_free_filename;
--
--	do {
--		if (size == alloc_size) {
--			alloc_size += BUFSIZ;
--			nbf = realloc(bf, alloc_size);
--			if (nbf == NULL)
--				goto out_free_bf;
--			bf = nbf;
--		}
--
--		n = read(fd, bf + size, alloc_size - size);
--		if (n < 0)
--			goto out_free_bf;
--		size += n;
--	} while (n > 0);
--
--	pevent_parse_format(NULL, &format, bf, size, sys);
--
--out_free_bf:
--	free(bf);
--	close(fd);
--out_free_filename:
--	free(filename);
--out:
--	return format;
--}
--
- struct perf_evsel *perf_evsel__newtp_idx(const char *sys, const char *name, int idx)
- {
- 	struct perf_evsel *evsel = zalloc(sizeof(*evsel));
-@@ -235,7 +195,7 @@ struct perf_evsel *perf_evsel__newtp_idx(const char *sys, const char *name, int
- 		if (asprintf(&evsel->name, "%s:%s", sys, name) < 0)
- 			goto out_free;
- 
--		evsel->tp_format = event_format__new(sys, name);
-+		evsel->tp_format = trace_event__tp_format(sys, name);
- 		if (evsel->tp_format == NULL)
- 			goto out_free;
- 
-diff --git a/tools/perf/util/trace-event.c b/tools/perf/util/trace-event.c
-index a155a77f3023..d9f5f6137ab3 100644
---- a/tools/perf/util/trace-event.c
-+++ b/tools/perf/util/trace-event.c
-@@ -1,6 +1,24 @@
- 
-+#include <stdio.h>
-+#include <unistd.h>
-+#include <stdlib.h>
-+#include <errno.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <fcntl.h>
-+#include <linux/kernel.h>
- #include <traceevent/event-parse.h>
- #include "trace-event.h"
-+#include "util.h"
-+
-+/*
-+ * global trace_event object used by trace_event__tp_format
-+ *
-+ * TODO There's no cleanup call for this. Add some sort of
-+ * __exit function support and call trace_event__cleanup
-+ * there.
-+ */
-+static struct trace_event tevent;
- 
- int trace_event__init(struct trace_event *t)
- {
-@@ -19,3 +37,46 @@ void trace_event__cleanup(struct trace_event *t)
- 	pevent_free(t->pevent);
- 	traceevent_unload_plugins(t->plugin_list);
- }
-+
-+static struct event_format*
-+tp_format(const char *sys, const char *name)
++static enum pevent_errno
++__pevent_parse_event(struct pevent *pevent,
++		     struct event_format **eventp,
++		     const char *buf, unsigned long size,
++		     const char *sys)
 +{
-+	struct pevent *pevent = tevent.pevent;
-+	struct event_format *event = NULL;
-+	char path[PATH_MAX];
-+	size_t size;
-+	char *data;
++	int ret = __pevent_parse_format(eventp, pevent, buf, size, sys);
++	struct event_format *event = *eventp;
 +
-+	scnprintf(path, PATH_MAX, "%s/%s/%s/format",
-+		  tracing_events_path, sys, name);
++	if (event == NULL)
++		return ret;
 +
-+	if (filename__read_str(path, &data, &size))
-+		return NULL;
-+
-+	pevent_parse_format(pevent, &event, data, size, sys);
-+
-+	free(data);
-+	return event;
-+}
-+
-+struct event_format*
-+trace_event__tp_format(const char *sys, const char *name)
-+{
-+	static bool initialized;
-+
-+	if (!initialized) {
-+		int be = traceevent_host_bigendian();
-+		struct pevent *pevent;
-+
-+		if (trace_event__init(&tevent))
-+			return NULL;
-+
-+		pevent = tevent.pevent;
-+		pevent_set_flag(pevent, PEVENT_NSEC_OUTPUT);
-+		pevent_set_file_bigendian(pevent, be);
-+		pevent_set_host_bigendian(pevent, be);
-+		initialized = true;
++	if (pevent && add_event(pevent, event)) {
++		ret = PEVENT_ERRNO__MEM_ALLOC_FAILED;
++		goto event_add_failed;
 +	}
 +
-+	return tp_format(sys, name);
++#define PRINT_ARGS 0
++	if (PRINT_ARGS && event->print_fmt.args)
++		print_args(event->print_fmt.args);
++
++	return 0;
++
++event_add_failed:
++	pevent_free_format(event);
++	return ret;
 +}
-diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
-index 75dded36a2f1..3a01618c5b87 100644
---- a/tools/perf/util/trace-event.h
-+++ b/tools/perf/util/trace-event.h
-@@ -18,6 +18,8 @@ struct trace_event {
++
+ /**
+  * pevent_parse_format - parse the event format
++ * @pevent: the handle to the pevent
++ * @eventp: returned format
+  * @buf: the buffer storing the event format string
+  * @size: the size of @buf
+  * @sys: the system the event belongs to
+@@ -5134,10 +5164,12 @@ enum pevent_errno __pevent_parse_format(struct event_format **eventp,
+  *
+  * /sys/kernel/debug/tracing/events/.../.../format
+  */
+-enum pevent_errno pevent_parse_format(struct event_format **eventp, const char *buf,
++enum pevent_errno pevent_parse_format(struct pevent *pevent,
++				      struct event_format **eventp,
++				      const char *buf,
+ 				      unsigned long size, const char *sys)
+ {
+-	return __pevent_parse_format(eventp, NULL, buf, size, sys);
++	return __pevent_parse_event(pevent, eventp, buf, size, sys);
+ }
  
- int trace_event__init(struct trace_event *t);
- void trace_event__cleanup(struct trace_event *t);
-+struct event_format*
-+trace_event__tp_format(const char *sys, const char *name);
+ /**
+@@ -5158,25 +5190,7 @@ enum pevent_errno pevent_parse_event(struct pevent *pevent, const char *buf,
+ 				     unsigned long size, const char *sys)
+ {
+ 	struct event_format *event = NULL;
+-	int ret = __pevent_parse_format(&event, pevent, buf, size, sys);
+-
+-	if (event == NULL)
+-		return ret;
+-
+-	if (add_event(pevent, event)) {
+-		ret = PEVENT_ERRNO__MEM_ALLOC_FAILED;
+-		goto event_add_failed;
+-	}
+-
+-#define PRINT_ARGS 0
+-	if (PRINT_ARGS && event->print_fmt.args)
+-		print_args(event->print_fmt.args);
+-
+-	return 0;
+-
+-event_add_failed:
+-	pevent_free_format(event);
+-	return ret;
++	return __pevent_parse_event(pevent, &event, buf, size, sys);
+ }
  
- int bigendian(void);
+ #undef _PE
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index 54273c0ec544..620c27a72960 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -562,7 +562,9 @@ int pevent_parse_header_page(struct pevent *pevent, char *buf, unsigned long siz
  
+ enum pevent_errno pevent_parse_event(struct pevent *pevent, const char *buf,
+ 				     unsigned long size, const char *sys);
+-enum pevent_errno pevent_parse_format(struct event_format **eventp, const char *buf,
++enum pevent_errno pevent_parse_format(struct pevent *pevent,
++				      struct event_format **eventp,
++				      const char *buf,
+ 				      unsigned long size, const char *sys);
+ void pevent_free_format(struct event_format *event);
+ 
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index b5fe7f9b2e15..6a046ed73f98 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -210,7 +210,7 @@ struct event_format *event_format__new(const char *sys, const char *name)
+ 		size += n;
+ 	} while (n > 0);
+ 
+-	pevent_parse_format(&format, bf, size, sys);
++	pevent_parse_format(NULL, &format, bf, size, sys);
+ 
+ out_free_bf:
+ 	free(bf);
 -- 
 1.8.1.4
 
