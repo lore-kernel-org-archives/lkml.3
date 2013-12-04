@@ -1,105 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933152Ab3LDRNn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 12:13:43 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:13518 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933022Ab3LDRNi (ORCPT
+	id S933168Ab3LDRNs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 12:13:48 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:55794 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933145Ab3LDRNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 12:13:38 -0500
-X-AuditID: cbfee61a-b7f796d000004313-a1-529f62c1b109
+	Wed, 4 Dec 2013 12:13:43 -0500
+X-AuditID: cbfee61b-b7f006d000003e1f-82-529f62c5eeb4
 From: Sylwester Nawrocki <s.nawrocki@samsung.com>
 To: mturquette@linaro.org, linux-arm-kernel@lists.infradead.org
 Cc: linux@arm.linux.org.uk, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org, jiada_wang@mentor.com,
         laurent.pinchart@ideasonboard.com, kyungmin.park@samsung.com,
         Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [RESEND PATCH v7 3/5] clkdev: Fix race condition in clock lookup from
- device tree
-Date: Wed, 04 Dec 2013 18:12:05 +0100
-Message-id: <1386177127-2894-4-git-send-email-s.nawrocki@samsung.com>
+Subject: [RESEND PATCH v7 4/5] clk: Add common __clk_get(),
+ __clk_put() implementations
+Date: Wed, 04 Dec 2013 18:12:06 +0100
+Message-id: <1386177127-2894-5-git-send-email-s.nawrocki@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1386177127-2894-1-git-send-email-s.nawrocki@samsung.com>
 References: <1386177127-2894-1-git-send-email-s.nawrocki@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKLMWRmVeSWpSXmKPExsVy+t9jAd2DSfODDHbMFrTo+VNpcbbpDbtF
-	58Ql7BabHl9jtbi8aw6bRc+GrawWty/zWjydcJHN4vCbdlYHTo+W5h42j9kdM1k97lzbw+ax
-	eUm9x+6vTYwefVtWMXp83iQXwB7FZZOSmpNZllqkb5fAldHY+4Cp4Dp/xabNd9gaGL/ydDFy
-	ckgImEj87rnBCGGLSVy4t56ti5GLQ0hgEaPElwmnmSCcDiaJpe9OsINUsQkYSvQe7QPrEBGw
-	l2hveQHWwSxwl1Hi+bmHYAlhgRiJtlnrwWwWAVWJU1O62UBsXgFXidf3/wPZHEDrFCTmTLIB
-	CXMKuEnsm7GFBcQWAio5v/Mx+wRG3gWMDKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxggPv
-	mdQOxpUNFocYBTgYlXh4XyTODxJiTSwrrsw9xCjBwawkwjs5ECjEm5JYWZValB9fVJqTWnyI
-	UZqDRUmc90CrdaCQQHpiSWp2ampBahFMlomDU6qBUefucVEpD+kHS32fr1Pr2B1jyhLF82bb
-	pO67txYGKro8t4/9fPH83twJK869PXFqvbn53aZf7JwPdWqLn768U7b545QV/ApzTOoCHKak
-	t+8w3nJ1reP8R8l7JG/XGFf0Pe51FpSRi3tTsORu8vf7iyO1KxekCfaeMkk7/GGBwaQOWaPr
-	x35JxiixFGckGmoxFxUnAgCH09ggOAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMLMWRmVeSWpSXmKPExsVy+t9jAd1jSfODDDa9ZrPo+VNpcbbpDbtF
+	58Ql7BabHl9jtbi8aw5QfMNWVovbl3ktnk64yGZx+E07qwOnR0tzD5vH7I6ZrB53ru1h89i8
+	pN5j99cmRo++LasYPT5vkgtgj+KySUnNySxLLdK3S+DKOHFoJlPBPK2Kxg9L2RsY9yp1MXJw
+	SAiYSOzdEtXFyAlkiklcuLeerYuRi0NIYBGjxM/XzxkhnA4miRkd/5hAqtgEDCV6j/Yxgtgi
+	AvYS7S0vwDqYBe4ySjw/9xAsISwQKbHi6yVmEJtFQFXi0ZpGdpBtvAKuEj9PeEAsVpCYM8kG
+	pIJTwE1i34wtLCC2EFDF+Z2P2Scw8i5gZFjFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERx0
+	z6R3MK5qsDjEKMDBqMTD+yJxfpAQa2JZcWXuIUYJDmYlEd7JgUAh3pTEyqrUovz4otKc1OJD
+	jNIcLErivAdbrQOFBNITS1KzU1MLUotgskwcnFINjBsUJC1EhVOniMxik37RoLyGPeaQAYvM
+	sSlvOG++q3riHL1ju0eM05/vy8Kyn3xeKTk5ekqk/bR1FjIfz8m9/xAXuvLyb4Nbh7+YJ/Hb
+	HNcwaIyrrjvgXqzHfcvQ51bHaq/FbwPvTN7n02bw84ZEXuuL/xMD+wvV1BrTHvvL3WGbNKOC
+	Qah+jhJLcUaioRZzUXEiACH9vts2AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is currently a race condition in the device tree part of clk_get()
-function, since the pointer returned from of_clk_get_by_name() may become
-invalid before __clk_get() call. E.g. due to the clock provider driver
-remove() callback being called in between of_clk_get_by_name() and
-__clk_get().
+This patch adds common __clk_get(), __clk_put() clkdev helpers that
+replace their platform specific counterparts when the common clock
+API is used.
 
-Fix this by doing both the look up and __clk_get() operations with the
-clock providers list mutex held. This ensures that the clock pointer
-returned from __of_clk_get_from_provider() call and passed to __clk_get()
-is valid, as long as the clock supplier module first removes its clock
-provider instance and then does clk_unregister() on the corresponding
-clocks.
+The owner module pointer field is added to struct clk so a reference
+to the clock supplier module can be taken by the clock consumers.
+
+The owner module is assigned while the clock is being registered,
+in functions _clk_register() and __clk_register().
 
 Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Reviewed-by: Mike Turquette <mturquette@linaro.org>
 Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
+Changes since v6:
+ - squashed into this one the patch assigning module owner
+   to struct clk.
+
+Changes since v4:
+ - dropped unnecessary struct module forward declaration from
+   clk-provider.h
+
+Changes since v3:
+ - dropped exporting of __clk_get(), __clk_put().
+
 Changes since v2:
- - none.
-
-Changes since v1:
- - include "clk.h".
+ - fixed handling of NULL clock pointers in __clk_get(), __clk_put();
 ---
- drivers/clk/clkdev.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ arch/arm/include/asm/clkdev.h      |    2 ++
+ arch/blackfin/include/asm/clkdev.h |    2 ++
+ arch/mips/include/asm/clkdev.h     |    2 ++
+ arch/sh/include/asm/clkdev.h       |    2 ++
+ drivers/clk/clk.c                  |   26 ++++++++++++++++++++++++++
+ include/linux/clk-private.h        |    3 +++
+ include/linux/clkdev.h             |    5 +++++
+ 7 files changed, 42 insertions(+)
 
-diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-index 442a313..48f6721 100644
---- a/drivers/clk/clkdev.c
-+++ b/drivers/clk/clkdev.c
-@@ -21,6 +21,8 @@
- #include <linux/clkdev.h>
- #include <linux/of.h>
+diff --git a/arch/arm/include/asm/clkdev.h b/arch/arm/include/asm/clkdev.h
+index 80751c1..4e8a4b2 100644
+--- a/arch/arm/include/asm/clkdev.h
++++ b/arch/arm/include/asm/clkdev.h
+@@ -14,12 +14,14 @@
  
-+#include "clk.h"
-+
- static LIST_HEAD(clocks);
- static DEFINE_MUTEX(clocks_mutex);
+ #include <linux/slab.h>
  
-@@ -39,7 +41,13 @@ struct clk *of_clk_get(struct device_node *np, int index)
- 	if (rc)
- 		return ERR_PTR(rc);
++#ifndef CONFIG_COMMON_CLK
+ #ifdef CONFIG_HAVE_MACH_CLKDEV
+ #include <mach/clkdev.h>
+ #else
+ #define __clk_get(clk)	({ 1; })
+ #define __clk_put(clk)	do { } while (0)
+ #endif
++#endif
  
--	clk = of_clk_get_from_provider(&clkspec);
-+	of_clk_lock();
-+	clk = __of_clk_get_from_provider(&clkspec);
-+
-+	if (!IS_ERR(clk) && !__clk_get(clk))
-+		clk = ERR_PTR(-ENOENT);
-+
-+	of_clk_unlock();
- 	of_node_put(clkspec.np);
- 	return clk;
+ static inline struct clk_lookup_alloc *__clkdev_alloc(size_t size)
+ {
+diff --git a/arch/blackfin/include/asm/clkdev.h b/arch/blackfin/include/asm/clkdev.h
+index 9053bed..7ac2436 100644
+--- a/arch/blackfin/include/asm/clkdev.h
++++ b/arch/blackfin/include/asm/clkdev.h
+@@ -8,7 +8,9 @@ static inline struct clk_lookup_alloc *__clkdev_alloc(size_t size)
+ 	return kzalloc(size, GFP_KERNEL);
  }
-@@ -157,7 +165,7 @@ struct clk *clk_get(struct device *dev, const char *con_id)
  
- 	if (dev) {
- 		clk = of_clk_get_by_name(dev->of_node, con_id);
--		if (!IS_ERR(clk) && __clk_get(clk))
-+		if (!IS_ERR(clk))
- 			return clk;
++#ifndef CONFIG_COMMON_CLK
+ #define __clk_put(clk)
+ #define __clk_get(clk) ({ 1; })
++#endif
+ 
+ #endif
+diff --git a/arch/mips/include/asm/clkdev.h b/arch/mips/include/asm/clkdev.h
+index 2624754..1b3ad7b 100644
+--- a/arch/mips/include/asm/clkdev.h
++++ b/arch/mips/include/asm/clkdev.h
+@@ -14,8 +14,10 @@
+ 
+ #include <linux/slab.h>
+ 
++#ifndef CONFIG_COMMON_CLK
+ #define __clk_get(clk)	({ 1; })
+ #define __clk_put(clk)	do { } while (0)
++#endif
+ 
+ static inline struct clk_lookup_alloc *__clkdev_alloc(size_t size)
+ {
+diff --git a/arch/sh/include/asm/clkdev.h b/arch/sh/include/asm/clkdev.h
+index 6ba9186..c419014 100644
+--- a/arch/sh/include/asm/clkdev.h
++++ b/arch/sh/include/asm/clkdev.h
+@@ -25,7 +25,9 @@ static inline struct clk_lookup_alloc *__clkdev_alloc(size_t size)
+ 		return kzalloc(size, GFP_KERNEL);
+ }
+ 
++#ifndef CONFIG_COMMON_CLK
+ #define __clk_put(clk)
+ #define __clk_get(clk) ({ 1; })
++#endif
+ 
+ #endif /* __CLKDEV_H__ */
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index c687dc8..baa2f66 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1813,6 +1813,10 @@ struct clk *__clk_register(struct device *dev, struct clk_hw *hw)
+ 	clk->flags = hw->init->flags;
+ 	clk->parent_names = hw->init->parent_names;
+ 	clk->num_parents = hw->init->num_parents;
++	if (dev && dev->driver)
++		clk->owner = dev->driver->owner;
++	else
++		clk->owner = NULL;
+ 
+ 	ret = __clk_init(dev, clk);
+ 	if (ret)
+@@ -1833,6 +1837,8 @@ static int _clk_register(struct device *dev, struct clk_hw *hw, struct clk *clk)
+ 		goto fail_name;
  	}
+ 	clk->ops = hw->init->ops;
++	if (dev && dev->driver)
++		clk->owner = dev->driver->owner;
+ 	clk->hw = hw;
+ 	clk->flags = hw->init->flags;
+ 	clk->num_parents = hw->init->num_parents;
+@@ -1973,6 +1979,26 @@ void devm_clk_unregister(struct device *dev, struct clk *clk)
+ }
+ EXPORT_SYMBOL_GPL(devm_clk_unregister);
  
++/*
++ * clkdev helpers
++ */
++int __clk_get(struct clk *clk)
++{
++	if (clk && !try_module_get(clk->owner))
++		return 0;
++
++	return 1;
++}
++
++void __clk_put(struct clk *clk)
++{
++	if (WARN_ON_ONCE(IS_ERR(clk)))
++		return;
++
++	if (clk)
++		module_put(clk->owner);
++}
++
+ /***        clk rate change notifiers        ***/
+ 
+ /**
+diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
+index 8138c94..8cb1865 100644
+--- a/include/linux/clk-private.h
++++ b/include/linux/clk-private.h
+@@ -25,10 +25,13 @@
+ 
+ #ifdef CONFIG_COMMON_CLK
+ 
++struct module;
++
+ struct clk {
+ 	const char		*name;
+ 	const struct clk_ops	*ops;
+ 	struct clk_hw		*hw;
++	struct module		*owner;
+ 	struct clk		*parent;
+ 	const char		**parent_names;
+ 	struct clk		**parents;
+diff --git a/include/linux/clkdev.h b/include/linux/clkdev.h
+index a6a6f60..94bad77 100644
+--- a/include/linux/clkdev.h
++++ b/include/linux/clkdev.h
+@@ -43,4 +43,9 @@ int clk_add_alias(const char *, const char *, char *, struct device *);
+ int clk_register_clkdev(struct clk *, const char *, const char *, ...);
+ int clk_register_clkdevs(struct clk *, struct clk_lookup *, size_t);
+ 
++#ifdef CONFIG_COMMON_CLK
++int __clk_get(struct clk *clk);
++void __clk_put(struct clk *clk);
++#endif
++
+ #endif
 -- 
 1.7.9.5
 
