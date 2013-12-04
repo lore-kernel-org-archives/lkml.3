@@ -1,89 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459Ab3LDBne (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 20:43:34 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:57653 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755110Ab3LDBnc (ORCPT
+	id S1755479Ab3LDBor (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 20:44:47 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:40210 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753015Ab3LDBoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 20:43:32 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>
-CC: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>, Joel F <joelf@ti.com>,
-        <linux-crypto@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH] crypto: omap-aes: add error check for pm_runtime_get_sync
-Date: Tue, 3 Dec 2013 19:43:13 -0600
-Message-ID: <1386121393-32464-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 3 Dec 2013 20:44:44 -0500
+Message-ID: <529E8903.7060907@gmail.com>
+Date: Tue, 03 Dec 2013 18:44:35 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, namhyung@kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH 2/2] perf probe: Allow user to specify address within
+ executable
+References: <1385942827-11637-1-git-send-email-dsahern@gmail.com> <1385942827-11637-2-git-send-email-dsahern@gmail.com> <529C259D.8010901@hitachi.com> <529C9DDF.1080401@gmail.com> <529CC97A.6000807@gmail.com> <529DA355.9090408@hitachi.com> <529DFF8E.2030806@gmail.com> <529E83C0.1060405@hitachi.com>
+In-Reply-To: <529E83C0.1060405@hitachi.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The AES driver currently assumes that pm_runtime_get_sync will always
-succeed, which may not always be true, so add error handling for the
-same.
+On 12/3/13, 6:22 PM, Masami Hiramatsu wrote:
 
-This scenario was reported in the following bug:
-place.  https://bugzilla.kernel.org/show_bug.cgi?id=66441
+>> I figured out what you meant by uprobe_events interface yesterday. If I
+>> have to go to that interface for even 1 function I would do it for all
+>> -- from a user perspective it is just simpler to have 1 command to setup
+>> probes. I would prefer that 1 command be perf-probe.
+> 
+> Yeah, but in that case, why you don't ask us adding sym->binding == STB_LOCAL
+> in filter_available_functions? :)
 
-Reported-by: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
+I did in a separate email -- you said because there can be multiple
+local functions with the same name. But local functions is not the only
+use case I need.
 
-Note: the bug in OMAP pm_domain layer is addressed here:
-https://patchwork.kernel.org/patch/3280531/
+For now I will carry the patch locally. At this point I am 20 patches
+deep and have probably another 20 to go. What's one more. I'll come back
+to this when I have more time.
 
-Proper fixes required to make this work is part of the series:
-http://marc.info/?l=linux-kernel&m=138541594910233&w=2
+Thanks,
 
- drivers/crypto/omap-aes.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/crypto/omap-aes.c b/drivers/crypto/omap-aes.c
-index a9ccbf1..dde41f1d 100644
---- a/drivers/crypto/omap-aes.c
-+++ b/drivers/crypto/omap-aes.c
-@@ -784,6 +784,7 @@ static int omap_aes_ctr_decrypt(struct ablkcipher_request *req)
- static int omap_aes_cra_init(struct crypto_tfm *tfm)
- {
- 	struct omap_aes_dev *dd = NULL;
-+	int err;
- 
- 	/* Find AES device, currently picks the first device */
- 	spin_lock_bh(&list_lock);
-@@ -792,7 +793,13 @@ static int omap_aes_cra_init(struct crypto_tfm *tfm)
- 	}
- 	spin_unlock_bh(&list_lock);
- 
--	pm_runtime_get_sync(dd->dev);
-+	err = pm_runtime_get_sync(dd->dev);
-+	if (err < 0) {
-+		dev_err(dd->dev, "%s: failed to get_sync(%d)\n",
-+			__func__, err);
-+		return err;
-+	}
-+
- 	tfm->crt_ablkcipher.reqsize = sizeof(struct omap_aes_reqctx);
- 
- 	return 0;
-@@ -1182,7 +1189,12 @@ static int omap_aes_probe(struct platform_device *pdev)
- 	dd->phys_base = res.start;
- 
- 	pm_runtime_enable(dev);
--	pm_runtime_get_sync(dev);
-+	err = pm_runtime_get_sync(dev);
-+	if (err < 0) {
-+		dev_err(dev, "%s: failed to get_sync(%d)\n",
-+			__func__, err);
-+		goto err_res;
-+	}
- 
- 	omap_aes_dma_stop(dd);
- 
--- 
-1.7.9.5
-
+David
