@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab3LDKHl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 05:07:41 -0500
-Received: from mail-yh0-f41.google.com ([209.85.213.41]:64106 "EHLO
-	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755051Ab3LDKHh (ORCPT
+	id S1755432Ab3LDKI6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 05:08:58 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:35218 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755036Ab3LDKIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 05:07:37 -0500
-Date: Wed, 4 Dec 2013 10:07:28 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Stefan Agner <stefan@agner.ch>
-Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com, dev@lynxeye.de,
-        lgirdwood@gmail.com, broonie@kernel.org,
-        kai.poggensee@avionic-design.de, sameo@linux.intel.com,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 1/3] mfd: tps6586x: add version detection
-Message-ID: <20131204100728.GA907@lee--X1>
-References: <cover.1386108712.git.stefan@agner.ch>
- <77384d24810d9a22fc04cad6f7468f54a9cbaafe.1386108712.git.stefan@agner.ch>
- <20131204081021.GB7469@lee--X1>
- <e2ae7b9602d0c1e11f8e56ced17e9da0@agner.ch>
+	Wed, 4 Dec 2013 05:08:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <e2ae7b9602d0c1e11f8e56ced17e9da0@agner.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <529EDB41.8030505@parallels.com>
+References: <1385989693-28788-1-git-send-email-vdavydov@parallels.com>
+	<20131202181501.GA5524@dhcp22.suse.cz>
+	<CAA6-i6rWsZNQmFY5L-=yc6TaTGyg4hP4qn9gMZVsu8wWJ=1ywg@mail.gmail.com>
+	<529CDDB3.3090301@parallels.com>
+	<CAA6-i6q+WooWMSbJwLS=ByVu=fgAQuep99iP7tAXiuLABu2gVA@mail.gmail.com>
+	<529D9100.4070207@parallels.com>
+	<CAA6-i6q2viRkbjYOHcoiCHgvdfbfo-4j0k9gj9AA4SH1YToqVg@mail.gmail.com>
+	<529EDB41.8030505@parallels.com>
+Date: Wed, 4 Dec 2013 14:08:53 +0400
+Message-ID: <CAA6-i6o+ZuM_fq+PdQJZ40S0d7K35cBvbTELg49+SgLKP5F0xA@mail.gmail.com>
+Subject: Re: [PATCH] memcg: remove KMEM_ACCOUNTED_ACTIVATED
+From: Glauber Costa <glommer@gmail.com>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        cgroups@vger.kernel.org, devel@openvz.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 04 Dec 2013, Stefan Agner wrote:
+>>
+>> Could you do something clever with just one flag? Probably yes. But I
+>> doubt it would
+>> be that much cleaner, this is just the way that patching sites work.
+>
+> Thank you for spending your time to listen to me.
+>
+Don't worry! I thank you for carrying this forward.
 
-> Am 2013-12-04 09:10, schrieb Lee Jones:
-> >> +int tps6586x_get_version(struct device *dev)
-> >> +{
-> >> +	struct tps6586x *tps6586x = dev_get_drvdata(dev);
-> >> +
-> >> +	return tps6586x->version;
-> >> +}
-> >> +EXPORT_SYMBOL_GPL(tps6586x_get_version);
-> > 
-> > I thought Mark suggested that this routine was converted to a 'static
-> > inline' and moved into the header? Did you not think this was a good
-> > idea?
-> As I pointed out in the comment above, the struct tps6586x is in the C
-> file, so I would need to move that too. That's why I did not made that
-> change in the end. What do you think, should I still move (and move the
-> struct too?) 
+> Let me try to explain what is bothering me.
+>
+> We have two state bits for each memcg, 'active' and 'activated'. There
+> are two scenarios where the bits can be modified:
+>
+> 1) The kmem limit is set on a memcg for the first time -
+> memcg_update_kmem_limit(). Here we call memcg_update_cache_sizes(),
+> which sets the 'activated' bit on success, then update static branching,
+> then set the 'active' bit. All three actions are done atomically in
+> respect to other tasks setting the limit due to the set_limit_mutex.
+> After both bits are set, they never get cleared for the memcg.
+>
+So far so good. But again, note how you yourself describe it:
+the cations are done atomically  *in respect to other tasks setting the limit*
 
-Why would the struct have to be moved if the function is inline?
+But there are also tasks that are running its courses naturally and
+just allocating
+memory. For those, some call sites will be on, some will be off. We need to make
+sure that *none* of them uses the patched site until *all* of them are patched.
+This has nothing to do with updates, this is all about the readers.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> 2) When a subgroup of a kmem-active cgroup is created -
+> memcg_propagate_kmem(). Here we copy kmem_account_flags from the parent,
+> then increase static branching refcounter, then call
+> memcg_update_cache_sizes() for the new memcg, which may clear the
+> 'activated' bit on failure. After successful execution, the state bits
+> never get cleared for the new memcg.
+>
+> In scenario 2 there is no need bothering about the flags setting order,
+> because we don't have any tasks in the cgroup yet - the tasks can be
+> moved in only after css_online finishes when we have both of the bits
+> set and the static branching enabled. Actually, we already do not bother
+> about it, because we have both bits set before the cgroup is fully
+> initialized (memcg_update_cache_sizes() is called).
+>
+Yes, after the first cgroup is set none of that matters. But it is just easier
+and less error prone just to follow the same path every time. As I have said,
+if you can come up with a more clever way to deal with the problem above
+that doesn't involve the double flag - and you can prove it works - I
+am definitely
+fine with it. But this is subtle code, and in the past - Michal can
+attest this - we've
+changed this being sure it would work just to see it explode in our faces.
+
+So although I am willing to review every patch for correctness on that
+front (I never
+said I liked the 2-flags scheme...), unless you have a bug or real
+problem on it,
+I would advise against changing it if its just to make it more readable.
+
+But again, don't take me too seriously on this. If you and Michal think you can
+come up with something better, I'm all for it.
