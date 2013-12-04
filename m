@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab3LDSdU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 13:33:20 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60546 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752889Ab3LDSdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 13:33:19 -0500
-Message-ID: <529F7527.5040201@zytor.com>
-Date: Wed, 04 Dec 2013 10:32:07 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Oleg Nesterov <oleg@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Kosina <jkosina@suse.cz>,
-        Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH?] uprobes: change uprobe_write_opcode() to modify the
- page directly
-References: <CA+55aFw3N=iNW2Ej6w7oksX5JDVis7QL=9X9D7JB_tKZhrjsLw@mail.gmail.com>	<529E2F0C.8070405@zytor.com>	<20131203200147.GB19083@redhat.com>	<529E3D4C.9070403@zytor.com>	<20131203203826.GA24812@redhat.com>	<e6082bc4-c910-4a36-9e40-624b9319f5fb@email.android.com>	<20131203205400.GA25735@redhat.com>	<CA+55aFxKk+O4e51sq6iqunVWAwKfNAnZ-3=aZT-VuRpDAZUnzQ@mail.gmail.com>	<20131204111125.GA26552@redhat.com>	<529F51D9.7010001@zytor.com>	<20131204164817.GA5271@redhat.com>	<529F5E47.3040108@zytor.com> <CA+55aFyMx74jiKgS-o0axuuTBw7295UEMSf_vYDQCAghk3Vr=w@mail.gmail.com>
-In-Reply-To: <CA+55aFyMx74jiKgS-o0axuuTBw7295UEMSf_vYDQCAghk3Vr=w@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755993Ab3LDSdi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 13:33:38 -0500
+Received: from denmail01-v4020.amcc.com ([192.195.68.30]:37638 "EHLO
+	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752889Ab3LDSdh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 13:33:37 -0500
+From: Feng Kan <fkan@apm.com>
+To: patches@apm.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Feng Kan <fkan@apm.com>
+Subject: [PATCH 0/4] Add missing components for X-Gene reboot drivers.
+Date: Wed,  4 Dec 2013 10:32:59 -0800
+Message-Id: <1386181979-26547-1-git-send-email-fkan@apm.com>
+X-Mailer: git-send-email 1.7.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2013 09:15 AM, Linus Torvalds wrote:
-> On Wed, Dec 4, 2013 at 8:54 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->>
->> That is why I talk about the atomic instruction word... most (but not
->> *all*) architectures have a fundamental minimum unit of instructions
->> which is aligned and can be atomically written.  Typically this is 1, 2,
->> or 4 bytes.
-> 
-> Note that it's not just about the "atomically written", it's also
-> about the guarantee that it's atomically *read*.
-> 
-> x86 can certainly atomically write a 4-byte instruction too, it's just
-> that there's no guarantee - even if the instruction is aligned etc -
-> that the actual instruction decoding always ends up reading it that
-> way. It might re-read an instruction after encountering a prefix byte
-> etc etc. So even if it's all properly aligned, the reading side might
-> do something odd.
-> 
+Add dts node for X-Gene reboot driver. Apply documentation dts binding.
+Some minor compile warning fix and enable reboot driver by default.
 
-True, at least in theory, but the atomic instruction quantum on x86 is a
-byte.
+Feng Kan (4):
+  Documentation: add dts binding for X-Gene reboot dts node.
+  arm64: add missing dts entry for X-Gene platform.
+  arm64: Enable system reset via arch Kconfig for X-Gene system.
+  arm64: removed using of the mask attribute in the dts for reset bit.
 
-	-hpa
+ .../devicetree/bindings/arm64/xgene/reboot.txt     |   11 +++++++++++
+ arch/arm64/Kconfig                                 |    1 +
+ arch/arm64/boot/dts/apm-storm.dtsi                 |    5 +++++
+ drivers/power/reset/xgene-reboot.c                 |    5 ++---
+ 4 files changed, 19 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm64/xgene/reboot.txt
 
+-- 
+1.7.6.1
 
