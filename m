@@ -1,124 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755883Ab3LDBLh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 20:11:37 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:57598 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754677Ab3LDBLg (ORCPT
+	id S1755922Ab3LDBNG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 20:13:06 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:52654 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754679Ab3LDBNB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 20:11:36 -0500
-Date: Tue, 3 Dec 2013 20:11:33 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [RFC PATCH tip 4/5] use BPF in tracing filters
-Message-ID: <20131203201133.52934a02@gandalf.local.home>
-In-Reply-To: <529E7BEC.70509@hitachi.com>
-References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
-	<1386044930-15149-5-git-send-email-ast@plumgrid.com>
-	<529E7BEC.70509@hitachi.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Tue, 3 Dec 2013 20:13:01 -0500
+Date: Tue, 3 Dec 2013 17:12:55 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH 22/41] rcu: Replace __this_cpu_ptr uses with raw_cpu_ptr
+Message-ID: <20131204011255.GB15492@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131203233232.928771708@linux.com>
+ <20131203233256.509969629@linux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131203233256.509969629@linux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120401-6688-0000-0000-0000042470D0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 04 Dec 2013 09:48:44 +0900
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-
-> (2013/12/03 13:28), Alexei Starovoitov wrote:
-> > Such filters can be written in C and allow safe read-only access to
-> > any kernel data structure.
-> > Like systemtap but with safety guaranteed by kernel.
-> > 
-> > The user can do:
-> > cat bpf_program > /sys/kernel/debug/tracing/.../filter
-> > if tracing event is either static or dynamic via kprobe_events.
-> > 
-> > The program can be anything as long as bpf_check() can verify its safety.
-> > For example, the user can create kprobe_event on dst_discard()
-> > and use logically following code inside BPF filter:
-> >       skb = (struct sk_buff *)ctx->regs.di;
-> >       dev = bpf_load_pointer(&skb->dev);
-> > to access 'struct net_device'
-> > Since its prototype is 'int dst_discard(struct sk_buff *skb);'
-> > 'skb' pointer is in 'rdi' register on x86_64
-> > bpf_load_pointer() will try to fetch 'dev' field of 'sk_buff'
-> > structure and will suppress page-fault if pointer is incorrect.
+On Tue, Dec 03, 2013 at 05:32:54PM -0600, Christoph Lameter wrote:
+> __this_cpu_ptr is being phased out.
 > 
-> Hmm, I doubt it is a good way to integrate with ftrace.
-> I prefer to use this for replacing current ftrace filter,
+> One special case is increment_cpu_stall_ticks().
+> A per cpu variable is incremented so use raw_cpu_inc().
+> 
+> Cc: Dipankar Sarma <dipankar@in.ibm.com>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-I'm not sure how we can do that. Especially since the bpf is very arch
-specific, and the current filters work for all archs.
+This does not build on 3.13-rc2.  Ah, need a couple of patches earlier
+in the series.
 
-> fetch functions and actions. In that case, we can continue
-> to use current interface but much faster to trace.
-> Also, we can see what filter/arguments/actions are set
-> on each event.
+But...  But...  Didn't we recently change -to- __this_cpu_ptr() from
+the older __get_cpu_var()?
 
-There's also the problem that the current filters work with the results
-of what is written to the buffer, not what is passed in by the trace
-point, as that isn't even displayed to the user.
+							Thanx, Paul
 
-For example, sched_switch gets passed struct task_struct *prev, and
-*next, from that we save prev_comm, prev_pid, prev_prio, prev_state,
-next_comm, next_prio and next_state. These are expressed to the user
-by the format file of the event:
+------------------------------------------------------------------------
+/media/homes/git/linux-2.6-tip/kernel/rcu/tree.c: In function ‘rcu_adopt_orphan_cbs’:
+/media/homes/git/linux-2.6-tip/kernel/rcu/tree.c:1943:9: error: implicit declaration of function ‘raw_cpu_ptr’ [-Werror=implicit-function-declaration]
+/media/homes/git/linux-2.6-tip/kernel/rcu/tree.c:1943:25: warning: initialization makes pointer from integer without a cast [enabled by default]
+/media/homes/git/linux-2.6-tip/kernel/rcu/tree.c: In function ‘__rcu_process_callbacks’:
+/media/homes/git/linux-2.6-tip/kernel/rcu/tree.c:2322:25: warning: initialization makes pointer from integer without a cast [enabled by default]
+/media/homes/git/linux-2.6-tip/kernel/rcu/tree.c: In function ‘rcu_barrier_func’:
+/media/homes/git/linux-2.6-tip/kernel/rcu/tree.c:2923:25: warning: initialization makes pointer from integer without a cast [enabled by default]
+In file included from /media/homes/git/linux-2.6-tip/kernel/rcu/tree.c:3467:0:
+/media/homes/git/linux-2.6-tip/kernel/rcu/tree_plugin.h: In function ‘rcu_oom_notify_cpu’:
+/media/homes/git/linux-2.6-tip/kernel/rcu/tree_plugin.h:1846:7: warning: assignment makes pointer from integer without a cast [enabled by default]
+/media/homes/git/linux-2.6-tip/kernel/rcu/tree_plugin.h: In function ‘increment_cpu_stall_ticks’:
+/media/homes/git/linux-2.6-tip/kernel/rcu/tree_plugin.h:1988:3: error: implicit declaration of function ‘raw_cpu_inc’ [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
+make[2]: *** [kernel/rcu/tree.o] Error 1
+make[1]: *** [kernel/rcu/tree.o] Error 2
+make: *** [sub-make] Error 2
 
-	field:char prev_comm[32];	offset:16;
-	size:16;	signed:1; field:pid_t prev_pid;
-	offset:32;	size:4;	signed:1; field:int
-	prev_prio;	offset:36;	size:4;	signed:1;
-	field:long prev_state;	offset:40;	size:8;
-	signed:1; field:char next_comm[32];	offset:48;
-	size:16;	signed:1; field:pid_t next_pid;
-	offset:64;	size:4;	signed:1; field:int
-	next_prio;	offset:68;	size:4; signed:1;
-
-And the filters can check "next_prio > 10" and what not. The bpf
-program needs to access next->prio. There's nothing that shows the user
-what is passed to the tracepoint, and from that, what structure member
-to use from there. The user would be required to look at the source
-code of the given kernel. A requirement not needed by the current
-implementation.
-
-Also, there's results that can not be trivially converted. Taking a
-quick look at some TRACE_EVENT() structures, I found bcache_bio that
-has this:
-
-        TP_fast_assign(
-                __entry->dev            = bio->bi_bdev->bd_dev;
-                __entry->sector         = bio->bi_sector;
-                __entry->nr_sector      = bio->bi_size >> 9;
-                blk_fill_rwbs(__entry->rwbs, bio->bi_rw, bio->bi_size);
-        ),
-
-Where the blk_fill_rwbs() updates the status of the entry->rwbs based
-on the bi_rw field. A filter must remain backward compatible to
-something like:
-
-	rwbs == "w"  or rwbs =~ '*w*'
-
-
-Now maybe we can make the filter code use some of the bpf if possible,
-but to get the result, it still needs to write to the ring buffer, and
-discard it if it is incorrect. Which will not make it any faster than
-the original trace, but perhaps faster than the trace + current filter.
-
-The speed up that was shown was because we were processing the
-parameters of the trace point and not the result. That currently
-requires the user to have full access to the source of the kernel they
-are tracing.
-
--- Steve
