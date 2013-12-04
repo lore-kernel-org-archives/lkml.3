@@ -1,449 +1,991 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab3LDKeH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 05:34:07 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:46739 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932142Ab3LDKd6 (ORCPT
+	id S932218Ab3LDKeL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 05:34:11 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:47654 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932167Ab3LDKeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 05:33:58 -0500
+	Wed, 4 Dec 2013 05:34:07 -0500
 From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
 Cc: michael@ellerman.id.au, mikey@neuling.org, sukadev@linux.vnet.ibm.com,
         eranian@google.com, acme@ghostprotocols.net, ak@linux.intel.com,
         mingo@kernel.org
-Subject: [PATCH V4 08/10] powerpc, perf: Enable SW filtering in branch stack sampling framework
-Date: Wed,  4 Dec 2013 16:02:40 +0530
-Message-Id: <1386153162-11225-9-git-send-email-khandual@linux.vnet.ibm.com>
+Subject: [PATCH V4 00/10] perf: New conditional branch filter
+Date: Wed,  4 Dec 2013 16:02:32 +0530
+Message-Id: <1386153162-11225-1-git-send-email-khandual@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1386153162-11225-1-git-send-email-khandual@linux.vnet.ibm.com>
-References: <1386153162-11225-1-git-send-email-khandual@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120410-5816-0000-0000-00000B30B026
+x-cbid: 13120410-2674-0000-0000-00000BC243C8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables SW based post processing of BHRB captured branches
-to be able to meet more user defined branch filtration criteria in perf
-branch stack sampling framework. These changes increase the number of
-branch filters and their valid combinations on any powerpc64 server
-platform with BHRB support. Find the summary of code changes here.
+		This patchset is the re-spin of the original branch stack sampling
+patchset which introduced new PERF_SAMPLE_BRANCH_COND branch filter. This patchset
+also enables SW based branch filtering support for book3s powerpc platforms which
+have PMU HW backed branch stack sampling support. 
 
-(1) struct cpu_hw_events
+Summary of code changes in this patchset:
 
-	Introduced two new variables track various filter values and mask
+(1) Introduces a new PERF_SAMPLE_BRANCH_COND branch filter
+(2) Add the "cond" branch filter options in the "perf record" tool
+(3) Enable PERF_SAMPLE_BRANCH_COND in X86 platforms
+(4) Enable PERF_SAMPLE_BRANCH_COND in POWER8 platform 
+(5) Update the documentation regarding "perf record" tool
+(6) Add some new powerpc instruction analysis functions in code-patching library
+(7) Enable SW based branch filter support for powerpc book3s
+(8) Changed BHRB configuration in POWER8 to accommodate SW branch filters 
 
-	(a) bhrb_sw_filter	Tracks SW implemented branch filter flags
-	(b) filter_mask		Tracks both (SW and HW) branch filter flags
+With this new SW enablement, the branch filter support for book3s platforms have
+been extended to include all these combinations discussed below with a sample test
+application program (included here).
 
-(2) Event creation
+Changes in V2
+=============
+(1) Enabled PPC64 SW branch filtering support
+(2) Incorporated changes required for all previous comments
 
-	Kernel will figure out supported BHRB branch filters through a PMU call
-	back 'bhrb_filter_map'. This function will find out how many of the
-	requested branch filters can be supported in the PMU HW. It will not
-	try to invalidate any branch filter combinations. Event creation will not
-	error out because of lack of HW based branch filters. Meanwhile it will
-	track the overall supported branch filters in the "filter_mask" variable.
+Changes in V3
+=============
+(1) Split the SW branch filter enablement into multiple patches
+(2) Added PMU neutral SW branch filtering code, PMU specific HW branch filtering code
+(3) Added new instruction analysis functionality into powerpc code-patching library
+(4) Changed name for some of the functions
+(5) Fixed couple of spelling mistakes
+(6) Changed code documentation in multiple places
 
-	Once the PMU call back returns kernel will process the user branch filter
-	request against available SW filters while looking at the "filter_mask".
-	During this phase all the branch filters which are still pending from the
-	user requested list will have to be supported in SW failing which the
-	event creation will error out.
+Changes in V4
+=============
+(1) Changed the commit message for patch (01/10)
+(2) Changed the patch (02/10) to accommodate review comments from Michael Ellerman
+(3) Rebased the patchset against latest Linus's tree
 
-(3) SW branch filter
+PMU HW branch filters
+=====================
+(1) perf record -j any_call -e branch-misses:u ./cprog
+# Overhead  Command  Source Shared Object          Source Symbol  Target Shared Object             Target Symbol
+# ........  .......  ....................  .....................  ....................  ........................
+#
+     7.00%    cprog  cprog                 [.] sw_3_1             cprog                 [.] sw_3_1_2            
+     6.99%    cprog  cprog                 [.] hw_1_1             cprog                 [.] symbol1             
+     6.52%    cprog  cprog                 [.] sw_3_1             cprog                 [.] success_3_1_2       
+     5.41%    cprog  cprog                 [.] sw_3_1             cprog                 [.] sw_3_1_3            
+     5.40%    cprog  cprog                 [.] hw_1_2             cprog                 [.] symbol2             
+     5.40%    cprog  cprog                 [.] callme             cprog                 [.] hw_1_2              
+     5.40%    cprog  cprog                 [.] sw_3_1             cprog                 [.] success_3_1_1       
+     5.40%    cprog  cprog                 [.] callme             cprog                 [.] hw_1_1              
+     5.39%    cprog  cprog                 [.] sw_3_1             cprog                 [.] sw_3_1_1            
+     5.39%    cprog  cprog                 [.] sw_4_2             cprog                 [.] lr_addr             
+     5.39%    cprog  cprog                 [.] callme             cprog                 [.] sw_4_2              
+     5.37%    cprog  [unknown]             [.] 00000000           cprog                 [.] ctr_addr            
+     4.30%    cprog  cprog                 [.] callme             cprog                 [.] hw_2_1              
+     4.28%    cprog  cprog                 [.] callme             cprog                 [.] sw_3_1              
+     3.82%    cprog  cprog                 [.] sw_3_1             cprog                 [.] success_3_1_3       
+     3.81%    cprog  cprog                 [.] callme             cprog                 [.] hw_2_2              
+     3.81%    cprog  cprog                 [.] callme             cprog                 [.] sw_3_2              
+     2.71%    cprog  [unknown]             [.] 00000000           cprog                 [.] lr_addr             
+     2.70%    cprog  cprog                 [.] main               cprog                 [.] callme              
+     2.70%    cprog  cprog                 [.] sw_4_1             cprog                 [.] ctr_addr            
+     2.70%    cprog  cprog                 [.] callme             cprog                 [.] sw_4_1              
+     0.08%    cprog  [unknown]             [.] 0xf78676c4         [unknown]             [.] 0xf78522c0          
+     0.02%    cprog  [unknown]             [k] 00000000           cprog                 [k] ctr_addr            
+     0.01%    cprog  [kernel.kallsyms]     [.] .power_pmu_enable  [kernel.kallsyms]     [.] .power8_compute_mmcr
+     0.00%    cprog  ld-2.11.2.so          [.] malloc             [unknown]             [.] 0xf786b380          
+     0.00%    cprog  ld-2.11.2.so          [.] calloc             [unknown]             [.] 0xf786b390          
+     0.00%    cprog  cprog                 [.] main               [unknown]             [.] 0x10000950          
+     0.00%    cprog  [unknown]             [.] 00000000           [kernel.kallsyms]     [.] .power_pmu_enable  
+    
+(2) perf record -j cond -e branch-misses:u ./cprog
 
-	During the BHRB data capture inside the PMU interrupt context, each
-	of the captured 'perf_branch_entry.from' will be checked for compliance
-	with applicable SW branch filters. If the entry does not conform to the
-	filter requirements, it will be discarded from the final perf branch
-	stack buffer.
+# Overhead  Command  Source Shared Object            Source Symbol  Target Shared Object            Target Symbol
+# ........  .......  ....................  .......................  ....................  .......................
+#
+    27.73%    cprog  [unknown]             [.] 00000000             cprog                 [.] callme             
+    13.03%    cprog  cprog                 [.] sw_3_1               cprog                 [.] sw_3_1             
+     5.64%    cprog  [unknown]             [.] 00000000             cprog                 [.] main               
+     5.62%    cprog  [unknown]             [.] 00000000             cprog                 [.] sw_4_2             
+     5.46%    cprog  cprog                 [.] sw_4_2               cprog                 [.] lr_addr            
+     5.40%    cprog  [unknown]             [.] 00000000             cprog                 [.] sw_4_1             
+     3.72%    cprog  cprog                 [.] hw_2_1               cprog                 [.] callme             
+     3.71%    cprog  cprog                 [.] main                 cprog                 [.] hw_1_1             
+     3.71%    cprog  cprog                 [.] sw_3_1_2             cprog                 [.] sw_3_1             
+     3.70%    cprog  cprog                 [.] sw_3_1_3             cprog                 [.] sw_3_1             
+     3.70%    cprog  cprog                 [.] sw_4_1               cprog                 [.] ctr_addr           
+     3.69%    cprog  cprog                 [.] hw_1_2               cprog                 [.] hw_1_2             
+     3.69%    cprog  cprog                 [.] hw_2_2               cprog                 [.] callme             
+     3.68%    cprog  cprog                 [.] sw_3_1_1             cprog                 [.] sw_3_1             
+     1.93%    cprog  [unknown]             [.] 00000000             cprog                 [.] lr_addr            
+     1.78%    cprog  [unknown]             [.] 00000000             cprog                 [.] hw_1_2             
+     1.78%    cprog  [unknown]             [.] 00000000             cprog                 [.] sw_3_1             
+     1.76%    cprog  [unknown]             [.] 00000000             cprog                 [.] hw_1_1             
+     0.12%    cprog  [unknown]             [.] 0xf7bb25dc           [unknown]             [.] 0xf7bb27e4         
+     0.07%    cprog  [unknown]             [k] 00000000             cprog                 [k] callme             
+     0.07%    cprog  [unknown]             [k] 00000000             cprog                 [k] sw_4_1             
+     0.00%    cprog  libc-2.11.2.so        [.] _IO_file_doallocate  libc-2.11.2.so        [.] _IO_file_doallocate
+     0.00%    cprog  libc-2.11.2.so        [.] _IO_file_doallocate  libc-2.11.2.so        [.] isatty             
+     0.00%    cprog  [unknown]             [.] 00000000             libc-2.11.2.so        [.] _IO_file_doallocate
 
-(4) Supported SW based branch filters
+SW based branch filters
+=======================
+(3) perf record -j any_ret -e branch-misses:u ./cprog 
 
-	(a) PERF_SAMPLE_BRANCH_ANY_RETURN
-	(b) PERF_SAMPLE_BRANCH_IND_CALL
-	(c) PERF_SAMPLE_BRANCH_ANY_CALL
-	(d) PERF_SAMPLE_BRANCH_COND
+# Overhead  Command  Source Shared Object         Source Symbol  Target Shared Object          Target Symbol
+# ........  .......  ....................  ....................  ....................  .....................
+#
+    15.37%    cprog  [unknown]             [.] 00000000          cprog                 [.] sw_3_1           
+     6.46%    cprog  cprog                 [.] success_3_1_3     cprog                 [.] sw_3_1           
+     6.45%    cprog  cprog                 [.] symbol1           cprog                 [.] hw_1_1           
+     6.41%    cprog  [unknown]             [.] 00000000          cprog                 [.] callme           
+     6.39%    cprog  cprog                 [.] ctr_addr          cprog                 [.] sw_4_1           
+     6.37%    cprog  cprog                 [.] symbol2           cprog                 [.] hw_1_2           
+     6.36%    cprog  cprog                 [.] sw_4_2            cprog                 [.] callme           
+     6.35%    cprog  cprog                 [.] lr_addr           cprog                 [.] sw_4_2           
+     3.97%    cprog  cprog                 [.] back1             cprog                 [.] callme           
+     3.93%    cprog  cprog                 [.] sw_3_1_2          cprog                 [.] sw_3_1           
+     3.93%    cprog  cprog                 [.] sw_3_1            cprog                 [.] callme           
+     3.86%    cprog  cprog                 [.] sw_3_1_3          cprog                 [.] sw_3_1           
+     3.84%    cprog  cprog                 [.] sw_3_1_1          cprog                 [.] sw_3_1           
+     2.54%    cprog  cprog                 [.] success_3_1_1     cprog                 [.] sw_3_1           
+     2.54%    cprog  cprog                 [.] sw_4_1            cprog                 [.] callme           
+     2.54%    cprog  cprog                 [.] hw_1_1            cprog                 [.] callme           
+     2.53%    cprog  cprog                 [.] sw_3_2            cprog                 [.] callme           
+     2.52%    cprog  cprog                 [.] callme            cprog                 [.] main             
+     2.51%    cprog  cprog                 [.] hw_1_2            cprog                 [.] callme           
+     2.51%    cprog  cprog                 [.] back2             cprog                 [.] callme           
+     2.51%    cprog  cprog                 [.] success_3_1_2     cprog                 [.] sw_3_1           
+     0.07%    cprog  [unknown]             [k] 00000000          cprog                 [k] callme           
+     0.02%    cprog  [unknown]             [.] 00000000          [unknown]             [.] 0xf7e5c004       
+     0.01%    cprog  libc-2.11.2.so        [.] __errno_location  libc-2.11.2.so        [.] vfprintf         
+     0.01%    cprog  [unknown]             [.] 00000000          libc-2.11.2.so        [.] _IO_file_overflow
 
-	Please refer patch to understand the classification of instructions into
-	these branch filter categories.
+(4) perf record -j ind_call  -e branch-misses:u ./cprog
 
-(5) Multiple branch filter semantics
+# Overhead  Command  Source Shared Object        Source Symbol  Target Shared Object          Target Symbol
+# ........  .......  ....................  ...................  ....................  .....................
+#
+    48.04%    cprog  [unknown]             [.] 00000000         cprog                 [.] sw_3_1           
+    19.96%    cprog  cprog                 [.] sw_4_2           cprog                 [.] lr_addr          
+    19.69%    cprog  [unknown]             [.] 00000000         cprog                 [.] callme           
+    12.04%    cprog  cprog                 [.] sw_4_1           cprog                 [.] ctr_addr         
+     0.18%    cprog  [unknown]             [k] 00000000         cprog                 [k] callme           
+     0.02%    cprog  libc-2.11.2.so        [.] _IO_file_xsputn  libc-2.11.2.so        [.] _IO_file_overflow
+     0.02%    cprog  [unknown]             [.] 00000000         libc-2.11.2.so        [.] _IO_file_xsputn  
+     0.02%    cprog  [unknown]             [.] 00000000         ld-2.11.2.so          [.] malloc           
+     0.02%    cprog  [unknown]             [k] 00000000         cprog                 [k] sw_3_1           
 
-	Book3 sever implementation follows the same OR semantics (as implemented in
-	x86) while dealing with multiple branch filters at any point of time. SW
-	branch filter analysis is carried on the data set captured in the PMU HW.
-	So the resulting set of data (after applying the SW filters) will inherently
-	be an AND with the HW captured set. Hence any combination of HW and SW branch
-	filters will be invalid. HW based branch filters are more efficient and faster
-	compared to SW implemented branch filters. So at first the PMU should decide
-	whether it can support all the requested branch filters itself or not. In case
-	it can support all the branch filters in an OR manner, we dont apply any SW
-	branch filter on top of the HW captured set (which is the final set). This
-	preserves the OR semantic of multiple branch filters as required. But in case
-	where the PMU cannot support all the requested branch filters in an OR manner,
-	it should not apply any it's filters and leave it upto the SW to handle them
-	all. Its the PMU code's responsibility to uphold this protocol to be able to
-	conform to the overall OR semantic of perf branch stack sampling framework.
+(5) perf record -j any_call,any_ret -e branch-misses:u ./cprog
 
-Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
----
+# Overhead  Command  Source Shared Object            Source Symbol  Target Shared Object            Target Symbol
+# ........  .......  ....................  .......................  ....................  .......................
+#
+    10.36%    cprog  [unknown]             [.] 00000000             cprog                 [.] sw_3_1             
+     4.18%    cprog  cprog                 [.] symbol1              cprog                 [.] hw_1_1             
+     4.18%    cprog  cprog                 [.] success_3_1_3        cprog                 [.] sw_3_1             
+     4.17%    cprog  cprog                 [.] sw_4_2               cprog                 [.] lr_addr            
+     4.16%    cprog  cprog                 [.] sw_4_2               cprog                 [.] callme             
+     4.15%    cprog  cprog                 [.] ctr_addr             cprog                 [.] sw_4_1             
+     4.15%    cprog  cprog                 [.] lr_addr              cprog                 [.] sw_4_2             
+     4.14%    cprog  cprog                 [.] symbol2              cprog                 [.] hw_1_2             
+     4.14%    cprog  [unknown]             [.] 00000000             cprog                 [.] callme             
+     2.15%    cprog  cprog                 [.] sw_3_1               cprog                 [.] callme             
+     2.14%    cprog  cprog                 [.] hw_1_1               cprog                 [.] symbol1            
+     2.14%    cprog  cprog                 [.] callme               cprog                 [.] hw_1_1             
+     2.14%    cprog  cprog                 [.] callme               cprog                 [.] sw_4_2             
+     2.13%    cprog  cprog                 [.] back1                cprog                 [.] callme             
+     2.12%    cprog  cprog                 [.] sw_3_1_2             cprog                 [.] sw_3_1             
+     2.12%    cprog  cprog                 [.] sw_3_1               cprog                 [.] sw_3_1_2           
+     2.11%    cprog  cprog                 [.] sw_3_1_3             cprog                 [.] sw_3_1             
+     2.11%    cprog  cprog                 [.] sw_3_1               cprog                 [.] sw_3_1_3           
+     2.11%    cprog  cprog                 [.] sw_4_1               cprog                 [.] ctr_addr           
+     2.10%    cprog  cprog                 [.] hw_1_2               cprog                 [.] symbol2            
+     2.10%    cprog  cprog                 [.] sw_3_1_1             cprog                 [.] sw_3_1             
+     2.10%    cprog  cprog                 [.] sw_3_1               cprog                 [.] sw_3_1_1           
+     2.10%    cprog  cprog                 [.] callme               cprog                 [.] hw_1_2             
+     2.10%    cprog  cprog                 [.] callme               cprog                 [.] sw_3_1             
+     2.05%    cprog  cprog                 [.] success_3_1_1        cprog                 [.] sw_3_1             
+     2.05%    cprog  cprog                 [.] sw_3_1               cprog                 [.] success_3_1_1      
+     2.05%    cprog  cprog                 [.] success_3_1_2        cprog                 [.] sw_3_1             
+     2.05%    cprog  cprog                 [.] sw_3_1               cprog                 [.] success_3_1_2      
+     2.04%    cprog  cprog                 [.] hw_1_1               cprog                 [.] callme             
+     2.04%    cprog  cprog                 [.] back2                cprog                 [.] callme             
+     2.04%    cprog  cprog                 [.] sw_4_1               cprog                 [.] callme             
+     2.04%    cprog  cprog                 [.] callme               cprog                 [.] main               
+     2.04%    cprog  cprog                 [.] hw_1_2               cprog                 [.] callme             
+     2.04%    cprog  cprog                 [.] sw_3_2               cprog                 [.] callme             
+     2.04%    cprog  cprog                 [.] callme               cprog                 [.] sw_3_2             
+     2.03%    cprog  cprog                 [.] sw_3_1               cprog                 [.] success_3_1_3      
+     0.03%    cprog  [unknown]             [k] 00000000             cprog                 [k] callme             
+     0.01%    cprog  [unknown]             [.] 0xf7e79bb0           [unknown]             [.] 0xf7e64088         
+     0.00%    cprog  libc-2.11.2.so        [.] _IO_file_doallocate  libc-2.11.2.so        [.] mmap               
+     0.00%    cprog  libc-2.11.2.so        [.] mmap                 libc-2.11.2.so        [.] _IO_file_doallocate
+     0.00%    cprog  [unknown]             [.] 0xf7e7589c           libc-2.11.2.so        [.] printf             
+     0.00%    cprog  [unknown]             [k] 00000000             cprog                 [k] sw_3_1          
+
+(6) perf record -j any_call,ind_call -e branch-misses:u ./cprog
+
+# Overhead  Command  Source Shared Object   Source Symbol  Target Shared Object      Target Symbol
+# ........  .......  ....................  ..............  ....................  .................
+#
+    23.09%    cprog  [unknown]             [.] 00000000    cprog                 [.] sw_3_1       
+     8.99%    cprog  cprog                 [.] sw_4_2      cprog                 [.] lr_addr      
+     8.92%    cprog  [unknown]             [.] 00000000    cprog                 [.] callme       
+     5.18%    cprog  cprog                 [.] sw_3_1      cprog                 [.] success_3_1_2
+     5.16%    cprog  cprog                 [.] sw_3_1      cprog                 [.] success_3_1_1
+     5.16%    cprog  cprog                 [.] callme      cprog                 [.] sw_3_2       
+     5.12%    cprog  cprog                 [.] sw_3_1      cprog                 [.] success_3_1_3
+     3.85%    cprog  cprog                 [.] sw_3_1      cprog                 [.] sw_3_1_1     
+     3.85%    cprog  cprog                 [.] callme      cprog                 [.] sw_3_1       
+     3.84%    cprog  cprog                 [.] sw_4_1      cprog                 [.] ctr_addr     
+     3.82%    cprog  cprog                 [.] hw_1_1      cprog                 [.] symbol1      
+     3.82%    cprog  cprog                 [.] sw_3_1      cprog                 [.] sw_3_1_2     
+     3.82%    cprog  cprog                 [.] sw_3_1      cprog                 [.] sw_3_1_3     
+     3.82%    cprog  cprog                 [.] callme      cprog                 [.] hw_1_1       
+     3.81%    cprog  cprog                 [.] hw_1_2      cprog                 [.] symbol2      
+     3.81%    cprog  cprog                 [.] callme      cprog                 [.] hw_1_2       
+     3.81%    cprog  cprog                 [.] callme      cprog                 [.] sw_4_2       
+     0.05%    cprog  [unknown]             [k] 00000000    cprog                 [k] callme       
+     0.03%    cprog  [unknown]             [.] 0xf7f7232c  [unknown]             [.] 0xf7f72334   
+     0.01%    cprog  ld-2.11.2.so          [.] malloc      [unknown]             [.] 0xf7f8b380   
+     0.01%    cprog  cprog                 [.] main        [unknown]             [.] 0x10000950   
+     0.01%    cprog  [unknown]             [.] 00000000    ld-2.11.2.so          [.] malloc       
+     0.01%    cprog  [unknown]             [.] 00000000    cprog                 [.] main         
+
+(7) perf record -j cond,any_ret -e branch-misses:u ./cprog
+
+# Overhead  Command  Source Shared Object          Source Symbol  Target Shared Object          Target Symbol
+# ........  .......  ....................  .....................  ....................  .....................
+#
+    12.18%    cprog  [unknown]             [.] 00000000           cprog                 [.] sw_3_1           
+     4.90%    cprog  cprog                 [.] sw_4_2             cprog                 [.] lr_addr          
+     4.88%    cprog  [unknown]             [.] 00000000           cprog                 [.] callme           
+     4.88%    cprog  cprog                 [.] lr_addr            cprog                 [.] sw_4_2           
+     4.88%    cprog  cprog                 [.] sw_4_2             cprog                 [.] callme           
+     4.86%    cprog  cprog                 [.] symbol1            cprog                 [.] hw_1_1           
+     4.86%    cprog  cprog                 [.] success_3_1_3      cprog                 [.] sw_3_1           
+     4.85%    cprog  cprog                 [.] symbol2            cprog                 [.] hw_1_2           
+     4.85%    cprog  cprog                 [.] ctr_addr           cprog                 [.] sw_4_1           
+     2.47%    cprog  cprog                 [.] sw_3_1_3           cprog                 [.] sw_3_1           
+     2.46%    cprog  cprog                 [.] back1              cprog                 [.] callme           
+     2.45%    cprog  cprog                 [.] hw_1_1             cprog                 [.] callme           
+     2.45%    cprog  cprog                 [.] hw_2_1             cprog                 [.] address1         
+     2.44%    cprog  cprog                 [.] hw_1_2             cprog                 [.] symbol2          
+     2.44%    cprog  cprog                 [.] sw_3_1_1           cprog                 [.] sw_3_1           
+     2.44%    cprog  cprog                 [.] sw_3_2             cprog                 [.] callme           
+     2.44%    cprog  cprog                 [.] success_3_1_1      cprog                 [.] sw_3_1           
+     2.44%    cprog  cprog                 [.] sw_3_1             cprog                 [.] success_3_1_1    
+     2.44%    cprog  cprog                 [.] sw_3_1             cprog                 [.] success_3_1_3    
+     2.43%    cprog  cprog                 [.] callme             cprog                 [.] main             
+     2.43%    cprog  cprog                 [.] hw_2_2             cprog                 [.] address2         
+     2.43%    cprog  cprog                 [.] sw_3_1_2           cprog                 [.] sw_3_1           
+     2.43%    cprog  cprog                 [.] success_3_1_2      cprog                 [.] sw_3_1           
+     2.43%    cprog  cprog                 [.] sw_3_1             cprog                 [.] success_3_1_2    
+     2.43%    cprog  cprog                 [.] sw_4_1             cprog                 [.] callme           
+     2.42%    cprog  cprog                 [.] sw_3_1             cprog                 [.] callme           
+     2.42%    cprog  cprog                 [.] sw_4_1             cprog                 [.] ctr_addr         
+     2.42%    cprog  cprog                 [.] back2              cprog                 [.] callme           
+     2.40%    cprog  cprog                 [.] hw_1_2             cprog                 [.] callme           
+     0.10%    cprog  [unknown]             [.] 0xf78923e0         [unknown]             [.] 0xf78923c0       
+     0.03%    cprog  [unknown]             [k] 00000000           cprog                 [k] callme           
+     0.01%    cprog  [unknown]             [k] 00000000           cprog                 [k] sw_3_1           
+     0.01%    cprog  libc-2.11.2.so        [.] vfprintf           libc-2.11.2.so        [.] vfprintf         
+     0.01%    cprog  libc-2.11.2.so        [.] _IO_file_overflow  [unknown]             [.] 0x0fee0100       
+     0.01%    cprog  libc-2.11.2.so        [.] strchrnul          libc-2.11.2.so        [.] vfprintf         
+     0.01%    cprog  libc-2.11.2.so        [.] strchrnul          libc-2.11.2.so        [.] strchrnul        
+     0.01%    cprog  [unknown]             [.] 00000000           libc-2.11.2.so        [.] _IO_file_overflow
+
+
+(8) perf record -j cond,ind_call -e branch-misses:u ./cprog
+
+# Overhead  Command  Source Shared Object   Source Symbol  Target Shared Object        Target Symbol
+# ........  .......  ....................  ..............  ....................  ...................
+#
+    26.21%    cprog  [unknown]             [.] 00000000    cprog                 [.] sw_3_1         
+    10.50%    cprog  cprog                 [.] sw_4_2      cprog                 [.] lr_addr        
+    10.38%    cprog  [unknown]             [.] 00000000    cprog                 [.] callme         
+     5.31%    cprog  cprog                 [.] sw_3_1_2    cprog                 [.] sw_3_1         
+     5.30%    cprog  cprog                 [.] sw_3_1_1    cprog                 [.] sw_3_1         
+     5.27%    cprog  cprog                 [.] sw_3_1      cprog                 [.] success_3_1_2  
+     5.26%    cprog  cprog                 [.] hw_2_2      cprog                 [.] address2       
+     5.25%    cprog  cprog                 [.] hw_1_2      cprog                 [.] symbol2        
+     5.25%    cprog  cprog                 [.] sw_3_1      cprog                 [.] success_3_1_3  
+     5.24%    cprog  cprog                 [.] hw_2_1      cprog                 [.] address1       
+     5.23%    cprog  cprog                 [.] sw_4_1      cprog                 [.] ctr_addr       
+     5.20%    cprog  cprog                 [.] sw_3_1_3    cprog                 [.] sw_3_1         
+     5.19%    cprog  cprog                 [.] sw_3_1      cprog                 [.] success_3_1_1  
+     0.24%    cprog  [unknown]             [.] 0xf7cf23e0  [unknown]             [.] 0xf7cf23c0     
+     0.11%    cprog  [unknown]             [k] 00000000    cprog                 [k] callme         
+     0.01%    cprog  libc-2.11.2.so        [.] vfprintf    libc-2.11.2.so        [.] vfprintf       
+     0.01%    cprog  libc-2.11.2.so        [.] vfprintf    libc-2.11.2.so        [.] _IO_file_xsputn
+     0.01%    cprog  [unknown]             [.] 00000000    libc-2.11.2.so        [.] vfprintf       
+     0.01%    cprog  [unknown]             [k] 00000000    cprog                 [k] sw_3_1         
+
+(9) perf record -j any_call,cond,any_ret -e branch-misses:u ./cprog
+
+# Overhead  Command  Source Shared Object      Source Symbol  Target Shared Object          Target Symbol
+# ........  .......  ....................  .................  ....................  .....................
+#
+     9.96%    cprog  [unknown]             [.] 00000000       cprog                 [.] sw_3_1           
+     4.06%    cprog  cprog                 [.] sw_4_2         cprog                 [.] lr_addr          
+     4.04%    cprog  cprog                 [.] lr_addr        cprog                 [.] sw_4_2           
+     4.03%    cprog  cprog                 [.] symbol1        cprog                 [.] hw_1_1           
+     4.02%    cprog  [unknown]             [.] 00000000       cprog                 [.] callme           
+     3.96%    cprog  cprog                 [.] ctr_addr       cprog                 [.] sw_4_1           
+     3.94%    cprog  cprog                 [.] symbol2        cprog                 [.] hw_1_2           
+     3.94%    cprog  cprog                 [.] success_3_1_3  cprog                 [.] sw_3_1           
+     3.93%    cprog  cprog                 [.] sw_4_2         cprog                 [.] callme           
+     2.08%    cprog  cprog                 [.] sw_3_2         cprog                 [.] callme           
+     2.08%    cprog  cprog                 [.] callme         cprog                 [.] sw_3_2           
+     2.07%    cprog  cprog                 [.] hw_2_2         cprog                 [.] address2         
+     2.07%    cprog  cprog                 [.] success_3_1_2  cprog                 [.] sw_3_1           
+     2.07%    cprog  cprog                 [.] sw_3_1         cprog                 [.] success_3_1_2    
+     2.07%    cprog  cprog                 [.] back2          cprog                 [.] callme           
+     2.06%    cprog  cprog                 [.] hw_1_1         cprog                 [.] callme           
+     1.99%    cprog  cprog                 [.] sw_4_1         cprog                 [.] ctr_addr         
+     1.98%    cprog  cprog                 [.] sw_3_1_3       cprog                 [.] sw_3_1           
+     1.98%    cprog  cprog                 [.] success_3_1_1  cprog                 [.] sw_3_1           
+     1.98%    cprog  cprog                 [.] sw_3_1         cprog                 [.] sw_3_1_3         
+     1.98%    cprog  cprog                 [.] sw_3_1         cprog                 [.] success_3_1_1    
+     1.98%    cprog  cprog                 [.] callme         cprog                 [.] sw_4_2           
+     1.98%    cprog  cprog                 [.] back1          cprog                 [.] callme           
+     1.97%    cprog  cprog                 [.] hw_1_1         cprog                 [.] symbol1          
+     1.97%    cprog  cprog                 [.] hw_2_1         cprog                 [.] address1         
+     1.97%    cprog  cprog                 [.] sw_3_1_1       cprog                 [.] sw_3_1           
+     1.97%    cprog  cprog                 [.] sw_3_1         cprog                 [.] sw_3_1_1         
+     1.97%    cprog  cprog                 [.] sw_3_1         cprog                 [.] success_3_1_3    
+     1.97%    cprog  cprog                 [.] callme         cprog                 [.] hw_1_1           
+     1.97%    cprog  cprog                 [.] callme         cprog                 [.] sw_3_1           
+     1.97%    cprog  cprog                 [.] hw_1_2         cprog                 [.] symbol2          
+     1.97%    cprog  cprog                 [.] hw_1_2         cprog                 [.] callme           
+     1.97%    cprog  cprog                 [.] sw_4_1         cprog                 [.] callme           
+     1.97%    cprog  cprog                 [.] callme         cprog                 [.] main             
+     1.97%    cprog  cprog                 [.] callme         cprog                 [.] hw_1_2           
+     1.96%    cprog  cprog                 [.] sw_3_1         cprog                 [.] callme           
+     1.96%    cprog  cprog                 [.] sw_3_1_2       cprog                 [.] sw_3_1           
+     1.96%    cprog  cprog                 [.] sw_3_1         cprog                 [.] sw_3_1_2         
+     0.12%    cprog  [unknown]             [.] 0xf7ab23e0     [unknown]             [.] 0xf7ab23c0       
+     0.04%    cprog  [unknown]             [k] 00000000       cprog                 [k] callme           
+     0.01%    cprog  [unknown]             [k] 00000000       cprog                 [k] sw_3_1           
+     0.00%    cprog  libc-2.11.2.so        [.] vfprintf       libc-2.11.2.so        [.] vfprintf         
+     0.00%    cprog  libc-2.11.2.so        [.] _IO_do_write   libc-2.11.2.so        [.] _IO_do_write     
+     0.00%    cprog  libc-2.11.2.so        [.] _IO_do_write   libc-2.11.2.so        [.] _IO_file_overflow
+     0.00%    cprog  libc-2.11.2.so        [.] strchrnul      libc-2.11.2.so        [.] vfprintf         
+     0.00%    cprog  libc-2.11.2.so        [.] strchrnul      libc-2.11.2.so        [.] strchrnul        
+     0.00%    cprog  cprog                 [.] callme         cprog                 [.] hw_2_2           
+     0.00%    cprog  [unknown]             [.] 00000000       libc-2.11.2.so        [.] _IO_do_write     
+
+(10) perf record -j any_call,cond,ind_call -e branch-misses:u ./cprog
+
+# Overhead  Command  Source Shared Object          Source Symbol  Target Shared Object          Target Symbol
+# ........  .......  ....................  .....................  ....................  .....................
+#
+    17.81%    cprog  [unknown]             [.] 00000000           cprog                 [.] sw_3_1           
+     7.19%    cprog  cprog                 [.] sw_4_2             cprog                 [.] lr_addr          
+     7.12%    cprog  [unknown]             [.] 00000000           cprog                 [.] callme           
+     3.71%    cprog  cprog                 [.] sw_3_1             cprog                 [.] success_3_1_2    
+     3.68%    cprog  cprog                 [.] callme             cprog                 [.] sw_3_2           
+     3.67%    cprog  cprog                 [.] hw_2_2             cprog                 [.] address2         
+     3.57%    cprog  cprog                 [.] hw_2_1             cprog                 [.] address1         
+     3.55%    cprog  cprog                 [.] hw_1_1             cprog                 [.] symbol1          
+     3.55%    cprog  cprog                 [.] sw_3_1             cprog                 [.] success_3_1_1    
+     3.55%    cprog  cprog                 [.] callme             cprog                 [.] hw_1_1           
+     3.54%    cprog  cprog                 [.] sw_3_1_1           cprog                 [.] sw_3_1           
+     3.54%    cprog  cprog                 [.] sw_3_1             cprog                 [.] sw_3_1_1         
+     3.54%    cprog  cprog                 [.] sw_4_1             cprog                 [.] ctr_addr         
+     3.54%    cprog  cprog                 [.] callme             cprog                 [.] sw_3_1           
+     3.52%    cprog  cprog                 [.] sw_3_1_3           cprog                 [.] sw_3_1           
+     3.52%    cprog  cprog                 [.] sw_3_1             cprog                 [.] sw_3_1_3         
+     3.52%    cprog  cprog                 [.] sw_3_1             cprog                 [.] success_3_1_3    
+     3.52%    cprog  cprog                 [.] sw_3_1_2           cprog                 [.] sw_3_1           
+     3.52%    cprog  cprog                 [.] sw_3_1             cprog                 [.] sw_3_1_2         
+     3.51%    cprog  cprog                 [.] hw_1_2             cprog                 [.] symbol2          
+     3.51%    cprog  cprog                 [.] callme             cprog                 [.] hw_1_2           
+     3.49%    cprog  cprog                 [.] callme             cprog                 [.] sw_4_2           
+     0.22%    cprog  [unknown]             [.] 0xf7ca23f4         [unknown]             [.] 0xf7ca25d0       
+     0.05%    cprog  [unknown]             [k] 00000000           cprog                 [k] callme           
+     0.01%    cprog  libc-2.11.2.so        [.] vfprintf           libc-2.11.2.so        [.] vfprintf         
+     0.01%    cprog  libc-2.11.2.so        [.] vfprintf           libc-2.11.2.so        [.] strchrnul        
+     0.01%    cprog  libc-2.11.2.so        [.] _IO_file_overflow  libc-2.11.2.so        [.] _IO_file_overflow
+     0.01%    cprog  libc-2.11.2.so        [.] strchrnul          libc-2.11.2.so        [.] strchrnul        
+     0.01%    cprog  [unknown]             [.] 00000000           libc-2.11.2.so        [.] _IO_file_overflow
+     0.01%    cprog  [unknown]             [k] 00000000           cprog                 [k] sw_3_1        
+
+(11) perf record -j any_call,cond,any_ret,ind_call -e branch-misses:u ./cprog
+
+# Overhead  Command  Source Shared Object      Source Symbol  Target Shared Object        Target Symbol
+# ........  .......  ....................  .................  ....................  ...................
+#
+     9.72%    cprog  [unknown]             [.] 00000000       cprog                 [.] sw_3_1         
+     3.99%    cprog  cprog                 [.] ctr_addr       cprog                 [.] sw_4_1         
+     3.98%    cprog  cprog                 [.] success_3_1_3  cprog                 [.] sw_3_1         
+     3.98%    cprog  cprog                 [.] symbol1        cprog                 [.] hw_1_1         
+     3.98%    cprog  cprog                 [.] symbol2        cprog                 [.] hw_1_2         
+     3.98%    cprog  cprog                 [.] sw_4_2         cprog                 [.] lr_addr        
+     3.98%    cprog  cprog                 [.] sw_4_2         cprog                 [.] callme         
+     3.97%    cprog  cprog                 [.] lr_addr        cprog                 [.] sw_4_2         
+     3.91%    cprog  [unknown]             [.] 00000000       cprog                 [.] callme         
+     2.22%    cprog  cprog                 [.] sw_4_1         cprog                 [.] ctr_addr       
+     2.22%    cprog  cprog                 [.] callme         cprog                 [.] sw_4_2         
+     2.22%    cprog  cprog                 [.] hw_2_1         cprog                 [.] address1       
+     2.22%    cprog  cprog                 [.] back1          cprog                 [.] callme         
+     2.21%    cprog  cprog                 [.] hw_1_2         cprog                 [.] symbol2        
+     2.21%    cprog  cprog                 [.] sw_3_1         cprog                 [.] callme         
+     2.21%    cprog  cprog                 [.] callme         cprog                 [.] hw_1_2         
+     2.21%    cprog  cprog                 [.] sw_3_1_1       cprog                 [.] sw_3_1         
+     2.21%    cprog  cprog                 [.] sw_3_1_3       cprog                 [.] sw_3_1         
+     2.21%    cprog  cprog                 [.] sw_3_1         cprog                 [.] sw_3_1_1       
+     2.21%    cprog  cprog                 [.] sw_3_1         cprog                 [.] sw_3_1_3       
+     2.21%    cprog  cprog                 [.] callme         cprog                 [.] sw_3_1         
+     2.20%    cprog  cprog                 [.] hw_1_1         cprog                 [.] symbol1        
+     2.20%    cprog  cprog                 [.] sw_3_1_2       cprog                 [.] sw_3_1         
+     2.20%    cprog  cprog                 [.] sw_3_1         cprog                 [.] sw_3_1_2       
+     2.20%    cprog  cprog                 [.] callme         cprog                 [.] hw_1_1         
+     1.77%    cprog  cprog                 [.] hw_1_1         cprog                 [.] callme         
+     1.77%    cprog  cprog                 [.] success_3_1_1  cprog                 [.] sw_3_1         
+     1.77%    cprog  cprog                 [.] sw_3_1         cprog                 [.] success_3_1_1  
+     1.77%    cprog  cprog                 [.] success_3_1_2  cprog                 [.] sw_3_1         
+     1.77%    cprog  cprog                 [.] sw_3_1         cprog                 [.] success_3_1_2  
+     1.77%    cprog  cprog                 [.] sw_3_1         cprog                 [.] success_3_1_3  
+     1.76%    cprog  cprog                 [.] hw_1_2         cprog                 [.] callme         
+     1.76%    cprog  cprog                 [.] sw_4_1         cprog                 [.] callme         
+     1.76%    cprog  cprog                 [.] sw_3_2         cprog                 [.] callme         
+     1.76%    cprog  cprog                 [.] callme         cprog                 [.] main           
+     1.76%    cprog  cprog                 [.] callme         cprog                 [.] sw_3_2         
+     1.75%    cprog  cprog                 [.] hw_2_2         cprog                 [.] address2       
+     1.75%    cprog  cprog                 [.] back2          cprog                 [.] callme         
+     0.13%    cprog  [unknown]             [.] 0xf7dd23e0     [unknown]             [.] 0xf7dd23c0     
+     0.07%    cprog  [unknown]             [k] 00000000       cprog                 [k] callme         
+     0.00%    cprog  libc-2.11.2.so        [.] vfprintf       libc-2.11.2.so        [.] vfprintf       
+     0.00%    cprog  libc-2.11.2.so        [.] vfprintf       libc-2.11.2.so        [.] _IO_file_xsputn
+     0.00%    cprog  [unknown]             [.] 00000000       libc-2.11.2.so        [.] vfprintf       
+
+Test application program
+========================
+(1) Makefile:
+--------------------------------------------
+all: sample.o cprog of.cprog of.sample
+
+sample.o: sample.s
+        as -o sample.o sample.s
+cprog: cprog.c sample.o
+        gcc -o cprog cprog.c sample.o
+of.sample: sample.o
+        objdump -d sample.o > of.sample
+of.cprog: cprog
+        objdump -d cprog > of.cprog
+clean:
+        rm sample.o cprog of.sample of.cprog
+---------------------------------------------
+(2) cprog.c
+---------------------------------------------
+#include <stdio.h>
+#define LOOP_COUNT 10000
+
+extern void callme(void);
+
+int main(int argc, char *argv[])
+{
+        int i;
+        for(i = 0; i < LOOP_COUNT; i++)
+                callme();
+
+        printf("end");
+        return 0;
+}
+---------------------------------------------
+(3) sample.S
+---------------------------------------------
+# r25, r26, r27 will be used as first level, second level
+# and third level stack for LR. Register r20, r21, r22, r23
+# r24 will be used for general programming purpose.
+
+.data
+
+msg:
+	.string "BHRB filter tests\n"
+	len = . - msg
+msg_1_1:
+	.string "Test: hw_1_1\n"
+	len_1_1 = 13
+msg_1_2:
+	.string "Test: hw_1_2\n"
+	len_1_2 = 13
+msg_2_1:
+	.string "Test: hw_2_1\n"
+	len_2_1 = 13
+msg_2_2:
+	.string "Test: hw_2_2\n"
+	len_2_2 = 13
+msg_3_1:
+	.string "Test: sw_3_1\n"
+	len_3_1 = 13
+msg_3_1_1:
+	.string "Test: sw_3_1_1\n"
+	len_3_1_1 = 15
+msg_3_1_2:
+	.string "Test: sw_3_1_2\n"
+	len_3_1_2 = 15
+msg_3_1_3:
+        .string "Test: sw_3_1_3\n"
+        len_3_1_3 = 15
+msg_3_2:
+	.string "Test: sw_3_2\n"
+	len_3_3 = 13
+msg_4_1:
+	.string "Test: sw_4_1\n"
+	len_4_1 = 13
+msg_4_2:
+	.string "Test: sw_4_2\n"
+	len_4_2 = 13
+
+hw_3_1_1_passed:
+	.string "\thw_3_1_1_passed\n\n"
+	len_hw_3_1_1_passed = 18
+hw_3_1_2_passed:
+	.string "\thw_3_1_2_passed\n\n"
+	len_hw_3_1_2_passed = 18
+hw_3_1_3_passed:
+	.string "\thw_3_1_3_passed\n\n"
+	len_hw_3_1_3_passed = 18
+
+hw_2_1_passed:
+	.string "\thw_2_1_passed\n\n"
+	len_hw_2_1_passed = 16
+
+hw_2_2_passed:
+	.string "\thw_2_2_passed\n\n"
+	len_hw_2_2_passed = 16
+
+hw_1_1_passed:
+	.string "\thw_1_1_passed\n\n"
+	len_hw_1_1_passed = 16
+
+hw_1_2_passed:
+	.string "\thw_1_2_passed\n\n"
+	len_hw_1_2_passed = 16
+
+hw_4_1_passed:
+	.string "\thw_4_1_passed\n\n"
+	len_hw_4_1_passed = 16
+
+hw_4_2_passed:
+	.string "\thw_4_2_passed\n\n"
+	len_hw_4_2_passed = 16
+
+msg_error:
+	.string "\tError\n"
+	len_error = 7
+.text
+	.global callme
+	.global hw_1_1
+	.global hw_1_2
+	.global hw_2_1
+	.global hw_2_2
+
+# HW filter test symbols
+symbol1:
+	# Print "hw_1_1_passed"
+	li      0, 4
+	li      3, 1
+	lis     4, hw_1_1_passed@ha
+	addi    4, 4, hw_1_1_passed@l
+	li      5, len_hw_1_1_passed
+	sc
+
+	blr				# PERF_SAMPLE_BRANCH_ANY_RET
+
+hw_1_1:
+        # Save LR - second level
+        mflr 26
+
+	# Print "hw_1_1 called"
+	li      0, 4
+	li      3, 1
+	lis     4, msg_1_1@ha
+	addi    4, 4, msg_1_1@l
+	li      5, len_1_1
+	sc
+
+	bl symbol1			# PERF_SAMPLE_BRANCH_ANY_CALL
+
+	# Restore LR
+	mtlr 26
+	blr				# PERF_SAMPLE_BRANCH_ANY_RET
+
+symbol2:
+        # Print "Symbol2 taken"
+        li      0, 4
+        li      3, 1
+        lis     4, hw_1_2_passed@ha
+        addi    4, 4, hw_1_2_passed@l
+        li      5, len_hw_1_2_passed
+        sc
+
+	blr				# PERF_SAMPLE_BRANCH_ANY_RET
+hw_1_2:
+	# Save LR - second level
+	mflr 26
+
+        # Print "hw_1_2 called"
+        li      0, 4
+        li      3, 1
+        lis     4, msg_1_2@ha
+        addi    4, 4, msg_1_2@l
+        li      5, len_1_2
+        sc
+
+	li 4,20
+	cmpi 0,4,20
+	bcl 12, 4*cr0+2, symbol2	# PERF_SAMPLE_BRANCH_ANY_CALL | PERF_SAMPLE_BRANCH_COND
+
+	mtlr 26
+	blr				# PERF_SAMPLE_BRANCH_ANY_RET
+
+# HW filter test
+
+address1: 
+	# Print "hw_2_1_passed"
+        li      0, 4
+        li      3, 1
+        lis     4, hw_2_1_passed@ha
+        addi    4, 4, hw_2_1_passed@l
+        li      5, len_hw_2_1_passed
+        sc
+	b  back1			# PERF_SAMPLE_BRANCH_ANY
+
+hw_2_1:
+	# Print "hw_2_1 called"
+	li      0, 4
+	li      3, 1
+	lis     4, msg_2_1@ha
+	addi    4, 4, msg_2_1@l
+	li      5, len_2_1
+	sc
+	
+	# Simple conditional branch (equal)
+	li	20, 12
+	cmpi	3, 20, 12
+	bc	12, 4*cr3+2, address1	# PERF_SAMPLE_BRANCH_COND
+
+back1:
+	blr				# PERF_SAMPLE_BRANCH_ANY_RET
+
+address2:
+        # Print "hw_2_2_passed"
+        li      0, 4
+        li      3, 1
+        lis     4, hw_2_2_passed@ha
+        addi    4, 4, hw_2_2_passed@l
+        li      5, len_hw_2_2_passed
+        sc
+        b  back2			# PERF_SAMPLE_BRANCH_ANY
+
+hw_2_2:
+        # Print "hw_2_2 called"
+	li      0, 4
+	li      3, 1
+	lis     4, msg_2_2@ha
+	addi    4, 4, msg_2_2@l
+	li      5, len_2_2
+	sc
+
+	# Simple conditional branch (less than)
+	li	20, 12
+	cmpi	4, 20, 20
+	bc	12, 4*cr4+0, address2	# PERF_SAMPLE_BRANCH_COND
+back2:
+	blr				# PERF_SAMPLE_BRANCH_ANY_RET
+
+# SW filter test symbols
+sw_3_1_1:
+	# Print "Test: sw_3_1_1"
+        li      0, 4
+        li      3, 1
+        lis     4, msg_3_1_1@ha
+        addi    4, 4, msg_3_1_1@l
+        li      5, len_3_1_1
+        sc
+
+	li	22,0
+	# Test the condition and return
+	li	21, 10
+	cmpi	0, 21, 10
+	bclr	12, 2			# PERF_SAMPLE_BRANCH_ANY_RET | PERF_SAMPLE_BRANCH_COND
+
+	# Should not have come here
+	li      0, 4
+	li      3, 1
+        lis     4, msg_error@ha
+        addi    4, 4, msg_error@l
+        li      5, len_error
+        sc
+	
+	# Mark the error
+	li 	22, 1
+	
+	# Safe fall back
+	blr				# PERF_SAMPLE_BRANCH_ANY_RET
+
+sw_3_1_2:
+        # Print "Test: sw_3_1_2"
+        li      0, 4
+        li      3, 1
+        lis     4, msg_3_1_2@ha
+        addi    4, 4, msg_3_1_2@l
+        li      5, len_3_1_2
+        sc
+
+	li	23, 0
+	# Test the condition and return
+	li	21, 10
+	cmpi	0, 21, 20
+	bclr	12, 0			# PERF_SAMPLE_BRANCH_ANY_RET | PERF_SAMPLE_BRANCH_COND
+        
+	# Should not have come here
+	li      0, 4
+	li      3, 1
+        lis     4, msg_error@ha
+        addi    4, 4, msg_error@l
+        li      5, len_error
+        sc
+
+	# Mark the error
+	li 	23, 1
+
+	# Safe fall back
+	blr				# PERF_SAMPLE_BRANCH_ANY_RET
+
+sw_3_1_3:
+	# Print "Test: sw_3_1_3"
+        li      0, 4
+        li      3, 1
+        lis     4, msg_3_1_3@ha
+        addi    4, 4, msg_3_1_3@l
+        li      5, len_3_1_3
+        sc
+
+	li	24, 0
+	# Test the condition and return
+	li	21, 10
+	cmpi	0, 21, 5
+	bclr	12, 1			# PERF_SAMPLE_BRANCH_ANY_RET | PERF_SAMPLE_BRANCH_COND
+	
+	# Mark the error
+	li 	24, 1
+
+	# Should not have come here
+	li      0, 4
+	li      3, 1
+        lis     4, msg_error@ha
+        addi    4, 4, msg_error@l
+        li      5, len_error
+        sc
+
+	# Safe fall back
+	blr				# PERF_SAMPLE_BRANCH_ANY_RET
+
+success_3_1_1:
+	li      0, 4
+	li      3, 1
+        lis     4, hw_3_1_1_passed@ha
+        addi    4, 4, hw_3_1_1_passed@l
+        li      5, len_hw_3_1_1_passed
+        sc
+	blr
+
+success_3_1_2:
+	li      0, 4
+	li      3, 1
+        lis     4, hw_3_1_2_passed@ha
+        addi    4, 4, hw_3_1_2_passed@l
+        li      5, len_hw_3_1_2_passed
+        sc
+	blr
+
+success_3_1_3:
+	li      0, 4
+	li      3, 1
+        lis     4, hw_3_1_3_passed@ha
+        addi    4, 4, hw_3_1_3_passed@l
+        li      5, len_hw_3_1_3_passed
+        sc
+	blr
+
+sw_3_1:
+	# Save LR
+	mflr 26
+
+        # Print "Test: sw_3_1"
+        li      0, 4
+        li      3, 1
+        lis     4, msg_3_1@ha
+        addi    4, 4, msg_3_1@l
+        li      5, len_3_1
+        sc
+
+	# Equal comparison condition
+	bl sw_3_1_1			# PERF_SAMPLE_BRANCH_ANY_CALL
+	cmpi	0, 22, 0
+	bcl	12, 2, success_3_1_1	# PERF_SAMPLE_BRANCH_ANY_CALL | PERF_SAMPLE_BRANCH_COND
+
+	# LT comparison condition
+	bl sw_3_1_2			# PERF_SAMPLE_BRANCH_ANY_CALL
+	cmpi	0, 23, 0
+	bcl	12, 2, success_3_1_2	# PERF_SAMPLE_BRANCH_ANY_CALL | PERF_SAMPLE_BRANCH_COND
+
+	# GT comparison condition
+	bl sw_3_1_3			# PERF_SAMPLE_BRANCH_ANY_CALL
+	cmpi	0, 24, 0
+	bcl	12, 2, success_3_1_3	# PERF_SAMPLE_BRANCH_ANY_CALL | PERF_SAMPLE_BRANCH_COND
+
+	mtlr 26
+	blr				# PERF_SAMPLE_BRANCH_ANY_RET
+sw_3_2:
+	# Print "Test: sw_3_2"
+	li      0, 4
+	li      3, 1
+	lis     4, msg_3_2@ha
+	addi    4, 4, msg_3_2@l
+	li      5, len_3_1
+	sc
+
+	# FIXME: Anything more here ?
+	blr				# PERF_SAMPLE_BRANCH_ANY_RET
+
+# Indirect call tests
+
+# CTR
+ctr_addr:
+        # Print "bcctr taken"
+        li      0, 4
+        li      3, 1
+        lis     4, hw_4_1_passed@ha
+        addi    4, 4, hw_4_1_passed@l
+        li      5, len_hw_4_1_passed
+        sc
+
+	blr				# PERF_SAMPLE_BRANCH_ANY_RET
+sw_4_1:
+	# Save LR
+	mflr	26
+
+	# Print "sw_4_1 called"
+        li      0, 4
+        li      3, 1
+        lis     4, msg_4_1@ha
+        addi    4, 4, msg_4_1@l
+        li      5, len_4_1
+        sc
+
+	# Save address in CTR
+	lis 	20, ctr_addr@ha
+	addi	20, 20, ctr_addr@l
+	mtctr   20
+
+
+	# Compare and jump to CTR
+	li 	21, 10
+	cmpi	0, 21, 10
+	bcctrl  12, 4*cr0+2		# PERF_SAMPLE_BRANCH_IND_CALL
+
+	mtlr	26
+	blr				# PERF_SAMPLE_BRANCH_ANY_RET
+# LR
+lr_addr:
+	# Print "bclrl taken"
+	li      0, 4
+	li      3, 1
+	lis     4, hw_4_2_passed@ha
+	addi    4, 4, hw_4_2_passed@l
+	li      5, len_hw_4_2_passed
+	sc
+
+	blr				# PERF_SAMPLE_BRANCH_ANY_RET
+
+sw_4_2:
+	# Save LR
+	mflr	26
+
+        # Print "Test: sw_4_2"
+        li      0, 4
+        li      3, 1
+        lis     4, msg_4_2@ha
+        addi    4, 4, msg_4_2@l
+        li      5, len_4_2
+        sc
+
+	# Save address in LR
+	lis 	20, lr_addr@ha
+	addi	20, 20, lr_addr@l
+	mtlr	20
+
+
+	# Compare and jump to CTR
+	li 	21, 10
+	cmpi	0, 21, 10
+	bclrl   12, 4*cr0+2		# PERF_SAMPLE_BRANCH_IND_CALL
+
+	# Restore LR
+	mtlr	26	
+	blr				# PERF_SAMPLE_BRANCH_ANY_RET
+
+callme:
+	# Save LR
+	mflr	25
+
+	# Print "Branch filter Test"
+	li	0, 4
+	li	3, 1
+	lis 	4, msg@ha
+	addi	4, 4, msg@l
+	li	5, len
+	sc
+
+	# PERF_SAMPLE_BRANCH_ANY_CALL
+	bl hw_1_1			# PERF_SAMPLE_BRANCH_ANY_CALL
+	bl hw_1_2			# PERF_SAMPLE_BRANCH_ANY_CALL
+	# PERF_SAMPLE_BRANCH_COND
+	bl hw_2_1			# PERF_SAMPLE_BRANCH_ANY_CALL
+	bl hw_2_2			# PERF_SAMPLE_BRANCH_ANY_CALL
+
+	# PERF_SAMPLE_BRANCH_ANY_RET
+	bl sw_3_1			# PERF_SAMPLE_BRANCH_ANY_CALL
+	bl sw_3_2			# PERF_SAMPLE_BRANCH_ANY_CALL
+	# PERF_SAMPLE_BRANCH_IND_CALL
+	bl sw_4_1			# PERF_SAMPLE_BRANCH_ANY_CALL
+	bl sw_4_2			# PERF_SAMPLE_BRANCH_ANY_CALL
+
+	# Restore LR
+	mtlr 25
+	blr				# PERF_SAMPLE_BRANCH_ANY_RET
+--------------------------------------------------------------------
+
+Anshuman Khandual (10):
+  perf: Add PERF_SAMPLE_BRANCH_COND
+  powerpc, perf: Enable conditional branch filter for POWER8
+  perf, tool: Conditional branch filter 'cond' added to perf record
+  x86, perf: Add conditional branch filtering support
+  perf, documentation: Description for conditional branch filter
+  powerpc, perf: Change the name of HW PMU branch filter tracking
+    variable
+  powerpc, lib: Add new branch instruction analysis support functions
+  powerpc, perf: Enable SW filtering in branch stack sampling framework
+  power8, perf: Change BHRB branch filter configuration
+  powerpc, perf: Cleanup SW branch filter list look up
+
+ arch/powerpc/include/asm/code-patching.h     |  30 ++++
  arch/powerpc/include/asm/perf_event_server.h |   6 +-
- arch/powerpc/perf/core-book3s.c              | 266 ++++++++++++++++++++++++++-
- arch/powerpc/perf/power8-pmu.c               |   2 +-
- 3 files changed, 262 insertions(+), 12 deletions(-)
+ arch/powerpc/lib/code-patching.c             |  54 +++++-
+ arch/powerpc/perf/core-book3s.c              | 260 +++++++++++++++++++++++++--
+ arch/powerpc/perf/power8-pmu.c               |  75 ++++++--
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c   |   5 +
+ include/uapi/linux/perf_event.h              |   3 +-
+ tools/perf/Documentation/perf-record.txt     |   3 +-
+ tools/perf/builtin-record.c                  |   1 +
+ 9 files changed, 404 insertions(+), 33 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/perf_event_server.h b/arch/powerpc/include/asm/perf_event_server.h
-index 3fd2f1b..846d710 100644
---- a/arch/powerpc/include/asm/perf_event_server.h
-+++ b/arch/powerpc/include/asm/perf_event_server.h
-@@ -18,6 +18,10 @@
- #define MAX_EVENT_ALTERNATIVES	8
- #define MAX_LIMITED_HWCOUNTERS	2
- 
-+#define for_each_branch_sample_type(x) \
-+        for ((x) = PERF_SAMPLE_BRANCH_USER; \
-+             (x) < PERF_SAMPLE_BRANCH_MAX; (x) <<= 1)
-+
- /*
-  * This struct provides the constants and functions needed to
-  * describe the PMU on a particular POWER-family CPU.
-@@ -34,7 +38,7 @@ struct power_pmu {
- 				unsigned long *valp);
- 	int		(*get_alternatives)(u64 event_id, unsigned int flags,
- 				u64 alt[]);
--	u64             (*bhrb_filter_map)(u64 branch_sample_type);
-+	u64             (*bhrb_filter_map)(u64 branch_sample_type, u64 *filter_mask);
- 	void            (*config_bhrb)(u64 pmu_bhrb_filter);
- 	void		(*disable_pmc)(unsigned int pmc, unsigned long mmcr[]);
- 	int		(*limited_pmc_event)(u64 event_id);
-diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-index 2de7d48..54d39a5 100644
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -48,6 +48,8 @@ struct cpu_hw_events {
- 
- 	/* BHRB bits */
- 	u64				bhrb_hw_filter;	/* BHRB HW branch filter */
-+	u64				bhrb_sw_filter;	/* BHRB SW branch filter */
-+	u64				filter_mask;	/* Branch filter mask */
- 	int				bhrb_users;
- 	void				*bhrb_context;
- 	struct	perf_branch_stack	bhrb_stack;
-@@ -400,6 +402,228 @@ static __u64 power_pmu_bhrb_to(u64 addr)
- 	return target - (unsigned long)&instr + addr;
- }
- 
-+/*
-+ * Instruction opcode analysis
-+ *
-+ * Analyse instruction opcodes and classify them
-+ * into various branch filter options available.
-+ * This follows the standard semantics of OR which
-+ * means that instructions which conforms to `any`
-+ * of the requested branch filters get picked up.
-+ */
-+static bool validate_instruction(unsigned int *addr, u64 bhrb_sw_filter)
-+{
-+	bool result = false;
-+
-+	if (bhrb_sw_filter & PERF_SAMPLE_BRANCH_ANY_RETURN) {
-+
-+		/* XL-form instruction */
-+		if (instr_is_branch_xlform(*addr)) {
-+
-+			/* LR should not be set */
-+			if (!is_branch_link_set(*addr)) {
-+				/*
-+			 	 * Conditional and unconditional
-+			 	 * branch to LR register.
-+			 	 */
-+				if (is_xlform_lr(*addr))
-+					result = true;
-+			}
-+		}
-+	}
-+
-+	if (bhrb_sw_filter & PERF_SAMPLE_BRANCH_IND_CALL) {
-+		/* XL-form instruction */
-+		if (instr_is_branch_xlform(*addr)) {
-+
-+			/* LR should be set */
-+			if (is_branch_link_set(*addr)) {
-+				/*
-+			 	 * Conditional and unconditional
-+			 	 * branch to CTR.
-+			 	 */
-+				if (is_xlform_ctr(*addr))
-+					result = true;
-+
-+				/*
-+			 	 * Conditional and unconditional
-+			 	 * branch to LR.
-+			 	 */
-+				if (is_xlform_lr(*addr))
-+					result = true;
-+
-+				/*
-+			 	 * Conditional and unconditional
-+			 	 * branch to TAR.
-+			 	 */
-+				if (is_xlform_tar(*addr))
-+					result = true;
-+			}
-+		}
-+	}
-+
-+	/* Any-form branch */
-+	if (bhrb_sw_filter & PERF_SAMPLE_BRANCH_ANY_CALL) {
-+		/* LR should be set */
-+		if (is_branch_link_set(*addr))
-+			result = true;
-+	}
-+
-+	if (bhrb_sw_filter & PERF_SAMPLE_BRANCH_COND) {
-+
-+		/* I-form instruction - excluded */
-+		if (instr_is_branch_iform(*addr))
-+			goto out;
-+
-+		/* B-form or XL-form instruction */
-+		if (instr_is_branch_bform(*addr) || instr_is_branch_xlform(*addr))  {
-+
-+			/* Not branch always  */
-+			if (!is_bo_always(*addr)) {
-+
-+				/* Conditional branch to CTR register */
-+				if (is_bo_ctr(*addr))
-+					goto out;
-+
-+				/* CR[BI] conditional branch with static hint */
-+				if (is_bo_crbi_off(*addr) || is_bo_crbi_on(*addr)) {
-+					if (is_bo_crbi_hint(*addr))
-+						goto out;
-+				}
-+
-+				result = true;
-+			}
-+		}
-+	}
-+out:
-+	return result;
-+}
-+
-+static bool check_instruction(u64 addr, u64 bhrb_sw_filter)
-+{
-+	unsigned int instr;
-+	bool ret;
-+
-+	if (bhrb_sw_filter == 0)
-+		return true;
-+
-+	if (is_kernel_addr(addr)) {
-+		ret = validate_instruction((unsigned int *) addr, bhrb_sw_filter);
-+	} else {
-+		/*
-+		 * Userspace address needs to be
-+		 * copied first before analysis.
-+		 */
-+		pagefault_disable();
-+		ret =  __get_user_inatomic(instr, (unsigned int __user *)addr);
-+
-+		/*
-+		 * If the instruction could not be accessible
-+		 * from user space, we still 'okay' the entry.
-+		 */
-+		if (ret) {
-+			pagefault_enable();
-+			return true;
-+		}
-+		pagefault_enable();
-+		ret = validate_instruction(&instr, bhrb_sw_filter);
-+	}
-+	return ret;
-+}
-+
-+/*
-+ * Validate whether all requested branch filters
-+ * are getting processed either in the PMU or in SW.
-+ */
-+static int match_filters(u64 branch_sample_type, u64 filter_mask)
-+{
-+	u64 x;
-+
-+	if (filter_mask == PERF_SAMPLE_BRANCH_ANY)
-+		return true;
-+
-+	for_each_branch_sample_type(x) {
-+		if (!(branch_sample_type & x))
-+			continue;
-+		/*
-+		 * Privilege filter requests have been already
-+		 * taken care during the base PMU configuration.
-+		 */
-+		if (x == PERF_SAMPLE_BRANCH_USER)
-+			continue;
-+		if (x == PERF_SAMPLE_BRANCH_KERNEL)
-+			continue;
-+		if (x == PERF_SAMPLE_BRANCH_HV)
-+			continue;
-+
-+		/*
-+		 * Requested filter not available either
-+		 * in PMU or in SW.
-+		 */
-+		if (!(filter_mask & x))
-+			return false;
-+	}
-+	return true;
-+}
-+
-+/*
-+ * Required SW based branch filters
-+ *
-+ * This is called after figuring out what all branch filters the
-+ * PMU HW supports for the requested branch filter set. Here we
-+ * will go through all the SW implemented branch filters one by
-+ * one and pick them up if its not already supported in the PMU.
-+ */
-+static u64 branch_filter_map(u64 branch_sample_type, u64 pmu_bhrb_filter,
-+			     					u64 *filter_mask)
-+{
-+	u64 branch_sw_filter = 0;
-+
-+	/* No branch filter requested */
-+	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY) {
-+		WARN_ON(pmu_bhrb_filter != 0);
-+		WARN_ON(*filter_mask != PERF_SAMPLE_BRANCH_ANY);
-+		return branch_sw_filter;
-+	}
-+
-+	/*
-+	 * PMU supported branch filters must also be implemented in SW
-+	 * in the event when the PMU is unable to process them for some
-+	 * reason. This all those branch filters can be satisfied with
-+	 * SW implemented filters. But right now, there is now way to
-+	 * initimate the user about this decision.
-+	 */
-+	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY_CALL) {
-+		if (!(pmu_bhrb_filter & PERF_SAMPLE_BRANCH_ANY_CALL)) {
-+			branch_sw_filter |= PERF_SAMPLE_BRANCH_ANY_CALL;
-+			*filter_mask |= PERF_SAMPLE_BRANCH_ANY_CALL;
-+		}
-+	}
-+
-+	if (branch_sample_type & PERF_SAMPLE_BRANCH_COND) {
-+		if (!(pmu_bhrb_filter & PERF_SAMPLE_BRANCH_COND)) {
-+			branch_sw_filter |= PERF_SAMPLE_BRANCH_COND;
-+			*filter_mask |= PERF_SAMPLE_BRANCH_COND;
-+		}
-+	}
-+
-+	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY_RETURN) {
-+		if (!(pmu_bhrb_filter & PERF_SAMPLE_BRANCH_ANY_RETURN)) {
-+			branch_sw_filter |= PERF_SAMPLE_BRANCH_ANY_RETURN;
-+			*filter_mask |= PERF_SAMPLE_BRANCH_ANY_RETURN;
-+		}
-+	}
-+
-+	if (branch_sample_type & PERF_SAMPLE_BRANCH_IND_CALL) {
-+		if (!(pmu_bhrb_filter & PERF_SAMPLE_BRANCH_IND_CALL)) {
-+			branch_sw_filter |= PERF_SAMPLE_BRANCH_IND_CALL;
-+			*filter_mask |= PERF_SAMPLE_BRANCH_IND_CALL;
-+		}
-+	}
-+
-+	return branch_sw_filter;
-+}
-+
- /* Processing BHRB entries */
- void power_pmu_bhrb_read(struct cpu_hw_events *cpuhw)
- {
-@@ -459,17 +683,29 @@ void power_pmu_bhrb_read(struct cpu_hw_events *cpuhw)
- 					addr = 0;
- 				}
- 				cpuhw->bhrb_entries[u_index].from = addr;
-+
-+				if (!check_instruction(cpuhw->
-+						bhrb_entries[u_index].from,
-+							cpuhw->bhrb_sw_filter))
-+					u_index--;
- 			} else {
- 				/* Branches to immediate field 
- 				   (ie I or B form) */
- 				cpuhw->bhrb_entries[u_index].from = addr;
--				cpuhw->bhrb_entries[u_index].to =
--					power_pmu_bhrb_to(addr);
--				cpuhw->bhrb_entries[u_index].mispred = pred;
--				cpuhw->bhrb_entries[u_index].predicted = ~pred;
-+				if (check_instruction(cpuhw->
-+						bhrb_entries[u_index].from,
-+						cpuhw->bhrb_sw_filter)) {
-+					cpuhw->bhrb_entries[u_index].
-+						to = power_pmu_bhrb_to(addr);
-+					cpuhw->bhrb_entries[u_index].
-+						mispred = pred;
-+					cpuhw->bhrb_entries[u_index].
-+						predicted = ~pred;
-+				} else {
-+					u_index--;
-+				}
- 			}
- 			u_index++;
--
- 		}
- 	}
- 	cpuhw->bhrb_stack.nr = u_index;
-@@ -1255,7 +1491,11 @@ nocheck:
- 	if (has_branch_stack(event)) {
- 		power_pmu_bhrb_enable(event);
- 		cpuhw->bhrb_hw_filter = ppmu->bhrb_filter_map(
--					event->attr.branch_sample_type);
-+					event->attr.branch_sample_type,
-+					&cpuhw->filter_mask);
-+		cpuhw->bhrb_sw_filter = branch_filter_map
-+					(event->attr.branch_sample_type,
-+					cpuhw->bhrb_hw_filter, &cpuhw->filter_mask);
- 	}
- 
- 	perf_pmu_enable(event->pmu);
-@@ -1637,10 +1877,16 @@ static int power_pmu_event_init(struct perf_event *event)
- 	err = power_check_constraints(cpuhw, events, cflags, n + 1);
- 
- 	if (has_branch_stack(event)) {
--		cpuhw->bhrb_hw_filter = ppmu->bhrb_filter_map(
--					event->attr.branch_sample_type);
--
--		if(cpuhw->bhrb_hw_filter == -1)
-+		cpuhw->bhrb_hw_filter = ppmu->bhrb_filter_map
-+				(event->attr.branch_sample_type,
-+				&cpuhw->filter_mask);
-+		cpuhw->bhrb_sw_filter = branch_filter_map
-+				(event->attr.branch_sample_type,
-+				cpuhw->bhrb_hw_filter,
-+				&cpuhw->filter_mask);
-+
-+		if(!match_filters(event->attr.branch_sample_type,
-+						cpuhw->filter_mask))
- 			return -EOPNOTSUPP;
- 	}
- 
-diff --git a/arch/powerpc/perf/power8-pmu.c b/arch/powerpc/perf/power8-pmu.c
-index e88b9cb..03c5b8d 100644
---- a/arch/powerpc/perf/power8-pmu.c
-+++ b/arch/powerpc/perf/power8-pmu.c
-@@ -559,7 +559,7 @@ static int power8_generic_events[] = {
- 	[PERF_COUNT_HW_BRANCH_MISSES] =			PM_BR_MPRED_CMPL,
- };
- 
--static u64 power8_bhrb_filter_map(u64 branch_sample_type)
-+static u64 power8_bhrb_filter_map(u64 branch_sample_type, u64 *filter_mask)
- {
- 	u64 pmu_bhrb_filter = 0;
- 
 -- 
 1.7.11.7
 
