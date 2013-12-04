@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab3LDJ3V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 04:29:21 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:60366 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754521Ab3LDJ3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 04:29:17 -0500
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [PATCH 2/2] macvtap: remove unused paramter in macvtap_do_read()
-Date: Wed,  4 Dec 2013 17:29:01 +0800
-Message-Id: <1386149341-10485-2-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1386149341-10485-1-git-send-email-zwu.kernel@gmail.com>
-References: <1386149341-10485-1-git-send-email-zwu.kernel@gmail.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120409-0320-0000-0000-000001E2DB07
+	id S1755330Ab3LDJ3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 04:29:33 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:62788 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754521Ab3LDJ3a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 04:29:30 -0500
+From: dt.tangr@gmail.com
+To: trivial@kernel.org
+Cc: Daniel Tang <dt.tangr@gmail.com>, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv2 1/2] clocksource: zevio-timer: fix compile-time warnings 
+Date: Wed,  4 Dec 2013 20:29:10 +1100
+Message-Id: <1386149351-15269-1-git-send-email-dt.tangr@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+From: Daniel Tang <dt.tangr@gmail.com>
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Fix incorrect function definition of zevio_timer_add so the correct function 
+pointer is passed to CLOCKSOURCE_OF_DECLARE.
+
+Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
 ---
- drivers/net/macvtap.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/clocksource/zevio-timer.c | 19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index 957cc5c..c0d412e 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -823,7 +823,7 @@ done:
- 	return ret ? ret : copied;
+diff --git a/drivers/clocksource/zevio-timer.c b/drivers/clocksource/zevio-timer.c
+index ca81809..a1bd107 100644
+--- a/drivers/clocksource/zevio-timer.c
++++ b/drivers/clocksource/zevio-timer.c
+@@ -122,28 +122,27 @@ static irqreturn_t zevio_timer_interrupt(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
  }
- 
--static ssize_t macvtap_do_read(struct macvtap_queue *q, struct kiocb *iocb,
-+static ssize_t macvtap_do_read(struct macvtap_queue *q,
- 			       const struct iovec *iv, unsigned long len,
- 			       int noblock)
+
+-static int __init zevio_timer_add(struct device_node *node)
++static void __init zevio_timer_add(struct device_node *node)
  {
-@@ -874,7 +874,7 @@ static ssize_t macvtap_aio_read(struct kiocb *iocb, const struct iovec *iv,
- 		goto out;
+ 	struct zevio_timer *timer;
+ 	struct resource res;
+-	int irqnr, ret;
++	int irqnr;
+
+ 	timer = kzalloc(sizeof(*timer), GFP_KERNEL);
+ 	if (!timer)
+-		return -ENOMEM;
++		return;
+
+ 	timer->base = of_iomap(node, 0);
+-	if (!timer->base) {
+-		ret = -EINVAL;
++	if (!timer->base)
+ 		goto error_free;
+-	}
++
+ 	timer->timer1 = timer->base + IO_TIMER1;
+ 	timer->timer2 = timer->base + IO_TIMER2;
+
+ 	timer->clk = of_clk_get(node, 0);
+ 	if (IS_ERR(timer->clk)) {
+-		ret = PTR_ERR(timer->clk);
+-		pr_err("Timer clock not found! (error %d)\n", ret);
++		pr_err("Timer clock not found! (error %d)\n",
++				(int)PTR_ERR(timer->clk));
+ 		goto error_unmap;
  	}
- 
--	ret = macvtap_do_read(q, iocb, iv, len, file->f_flags & O_NONBLOCK);
-+	ret = macvtap_do_read(q, iv, len, file->f_flags & O_NONBLOCK);
- 	ret = min_t(ssize_t, ret, len); /* XXX copied from tun.c. Why? */
- 	if (ret > 0)
- 		iocb->ki_pos = ret;
-@@ -1108,7 +1108,7 @@ static int macvtap_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	int ret;
- 	if (flags & ~(MSG_DONTWAIT|MSG_TRUNC))
- 		return -EINVAL;
--	ret = macvtap_do_read(q, iocb, m->msg_iov, total_len,
-+	ret = macvtap_do_read(q, m->msg_iov, total_len,
- 			  flags & MSG_DONTWAIT);
- 	if (ret > total_len) {
- 		m->msg_flags |= MSG_TRUNC;
--- 
-1.7.6.5
+
+@@ -204,12 +203,12 @@ static int __init zevio_timer_add(struct device_node *node)
+
+ 	pr_info("Added %s as clocksource\n", timer->clocksource_name);
+
+-	return 0;
++	return;
+ error_unmap:
+ 	iounmap(timer->base);
+ error_free:
+ 	kfree(timer);
+-	return ret;
++	return;
+ }
+
+ CLOCKSOURCE_OF_DECLARE(zevio_timer, "lsi,zevio-timer", zevio_timer_add);
+--
+1.8.1.3
 
