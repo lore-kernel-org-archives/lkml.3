@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589Ab3LDD5D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 22:57:03 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:55998 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752314Ab3LDD5A (ORCPT
+	id S1754028Ab3LDD5T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 22:57:19 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:57580 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753667Ab3LDD5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 22:57:00 -0500
-Message-ID: <529EA80A.60801@linaro.org>
-Date: Tue, 03 Dec 2013 21:56:58 -0600
+	Tue, 3 Dec 2013 22:57:10 -0500
+Message-ID: <529EA813.2070208@linaro.org>
+Date: Tue, 03 Dec 2013 21:57:07 -0600
 From: Alex Elder <alex.elder@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
@@ -22,7 +22,7 @@ To: Christian Daudt <bcm@fixthebug.org>,
 CC: bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] clk: bcm281xx: define kona clock binding
+Subject: [PATCH 3/3] ARM: dts: bcm281xx: define real clocks
 References: <529EA78E.7060904@linaro.org>
 In-Reply-To: <529EA78E.7060904@linaro.org>
 X-Enigmail-Version: 1.5.2
@@ -32,104 +32,184 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the device tree binding for Broadcom Kona architecture
-clock control units and clocks.  Kona device nodes are represented
-with compatible strings having "bcm11351" in their name.
-
-Kona clocks are managed by "clock control units" (CCUs).  Each CCU
-has a device tree node, and within that node are defined the names
-of the clocks provided by the CCU.
-
-The BCM281xx family of SoCs use Kona CCUs and clocks.
+Replace the "fake" clocks defined in the "bcm11351.dtsi" device tree
+file with real definitions backed by the new BCM281xx clock driver..
 
 Signed-off-by: Alex Elder <elder@linaro.org>
 Reviewed-by: Matt Porter <matt.porter@linaro.org>
 Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
 ---
- .../devicetree/bindings/clock/bcm-kona-clock.txt   |   95
-++++++++++++++++++++
- 1 file changed, 95 insertions(+)
- create mode 100644
-Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
+ arch/arm/boot/dts/bcm11351.dtsi |  222
+++++++++++++++++++++++++++++-----------
+ 1 file changed, 161 insertions(+), 61 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
-b/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
-new file mode 100644
-index 0000000..0cafd6a
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
-@@ -0,0 +1,95 @@
-+Broadcom Kona Family Clocks
+diff --git a/arch/arm/boot/dts/bcm11351.dtsi
+b/arch/arm/boot/dts/bcm11351.dtsi
+index 1246885..b3a0535 100644
+--- a/arch/arm/boot/dts/bcm11351.dtsi
++++ b/arch/arm/boot/dts/bcm11351.dtsi
+@@ -14,6 +14,8 @@
+ #include <dt-bindings/interrupt-controller/arm-gic.h>
+ #include <dt-bindings/interrupt-controller/irq.h>
+
++#include "dt-bindings/clock/bcm281xx.h"
 +
-+This binding is associated with Broadcom SoCs having "Kona" style
-+clock control units (CCUs).  A CCU is a clock provider that manages
-+a set of clock signals.  Each CCU is represented by a node in the
-+device tree.
-+
-+This binding uses the common clock binding:
-+    Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+Many source clocks are described using the "fixed-clock" binding:
-+    Documentation/devicetree/bindings/clock/fixed-clock.txt
-+
-+Required properties:
-+- compatible
-+	Shall have a value "brcm,bcm11351-<which>-ccu", where
-+	<which> identifies the particular CCU (see below).
-+- reg
-+	Shall define the base and range of the address space
-+	containing clock control registers
-+- #clock-cells
-+	Shall have the value <1>
-+- clock-output-names
-+	Shall be an ordered list of strings defining the names of
-+	the clocks provided by the CCU.
-+
-+Clock consumers refer to a particular clock supplied by a CCU using
-+a phandle and specifier pair, using the phandle for the CCU device
-+tree node and the clock's symbolic specifier.  The clock specifier
-+is a CCU-unique 0-based index value.
-+
-+
-+BCM281XX family SoCs use Kona CCUs.  The following table defines
-+the set of CCUs and clock specifiers for BCM281XX clocks.  The
-+compatible string for the CCU uses the name in the "CCU" column
-+below as it's <which> value.
-+
-+    CCU     Clock           Type    Index   Specifier
-+    ---     -----           ----    -----   ---------
-+    root    frac_1m         peri      0     BCM281XX_ROOT_CCU_FRAC_1M
-+
-+    aon     hub_timer       peri      0     BCM281XX_AON_CCU_HUB_TIMER
-+    aon     pmu_bsc         peri      1     BCM281XX_AON_CCU_PMU_BSC
-+    aon     pmu_bsc_var     peri      2     BCM281XX_AON_CCU_PMU_BSC_VAR
-+
-+    hub     tmon_1m         peri      0     BCM281XX_HUB_CCU_TMON_1M
-+
-+    master  sdio1           peri      0     BCM281XX_MASTER_CCU_SDIO1
-+    master  sdio2           peri      1     BCM281XX_MASTER_CCU_SDIO2
-+    master  sdio3           peri      2     BCM281XX_MASTER_CCU_SDIO3
-+    master  sdio4           peri      3     BCM281XX_MASTER_CCU_SDIO4
-+    master  dmac            peri      4     BCM281XX_MASTER_CCU_DMAC
-+    master  usb_ic          peri      5     BCM281XX_MASTER_CCU_USB_IC
-+    master  hsic2_48m       peri      6     BCM281XX_MASTER_CCU_HSIC_48M
-+    master  hsic2_12m       peri      7     BCM281XX_MASTER_CCU_HSIC_12M
-+
-+    slave   uartb           peri      0     BCM281XX_SLAVE_CCU_UARTB
-+    slave   uartb2          peri      1     BCM281XX_SLAVE_CCU_UARTB2
-+    slave   uartb3          peri      2     BCM281XX_SLAVE_CCU_UARTB3
-+    slave   uartb4          peri      3     BCM281XX_SLAVE_CCU_UARTB4
-+    slave   ssp0            peri      4     BCM281XX_SLAVE_CCU_SSP0
-+    slave   ssp2            peri      5     BCM281XX_SLAVE_CCU_SSP2
-+    slave   bsc1            peri      6     BCM281XX_SLAVE_CCU_BSC1
-+    slave   bsc2            peri      7     BCM281XX_SLAVE_CCU_BSC2
-+    slave   bsc3            peri      8     BCM281XX_SLAVE_CCU_BSC3
-+    slave   pwm             peri      9     BCM281XX_SLAVE_CCU_PWM
-+
-+
-+Device tree example:
-+
-+	clocks {
+ #include "skeleton.dtsi"
+
+ / {
+@@ -43,7 +45,7 @@
+ 		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
+ 		status = "disabled";
+ 		reg = <0x3e000000 0x1000>;
+-		clocks = <&uartb_clk>;
++		clocks = <&slave_ccu BCM281XX_SLAVE_CCU_UARTB>;
+ 		interrupts = <GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+@@ -53,7 +55,7 @@
+ 		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
+ 		status = "disabled";
+ 		reg = <0x3e001000 0x1000>;
+-		clocks = <&uartb2_clk>;
++		clocks = <&slave_ccu BCM281XX_SLAVE_CCU_UARTB2>;
+ 		interrupts = <GIC_SPI 66 IRQ_TYPE_LEVEL_HIGH>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+@@ -63,7 +65,7 @@
+ 		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
+ 		status = "disabled";
+ 		reg = <0x3e002000 0x1000>;
+-		clocks = <&uartb3_clk>;
++		clocks = <&slave_ccu BCM281XX_SLAVE_CCU_UARTB3>;
+ 		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+@@ -73,7 +75,7 @@
+ 		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
+ 		status = "disabled";
+ 		reg = <0x3e003000 0x1000>;
+-		clocks = <&uartb4_clk>;
++		clocks = <&slave_ccu BCM281XX_SLAVE_CCU_UARTB4>;
+ 		interrupts = <GIC_SPI 64 IRQ_TYPE_LEVEL_HIGH>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+@@ -95,7 +97,7 @@
+ 		compatible = "brcm,kona-timer";
+ 		reg = <0x35006000 0x1000>;
+ 		interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
+-		clocks = <&hub_timer_clk>;
++		clocks = <&aon_ccu BCM281XX_AON_CCU_HUB_TIMER>;
+ 	};
+
+ 	gpio: gpio@35003000 {
+@@ -118,7 +120,7 @@
+ 		compatible = "brcm,kona-sdhci";
+ 		reg = <0x3f180000 0x10000>;
+ 		interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
+-		clocks = <&sdio1_clk>;
++		clocks = <&master_ccu BCM281XX_MASTER_CCU_SDIO1>;
+ 		status = "disabled";
+ 	};
+
+@@ -126,7 +128,7 @@
+ 		compatible = "brcm,kona-sdhci";
+ 		reg = <0x3f190000 0x10000>;
+ 		interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>;
+-		clocks = <&sdio2_clk>;
++		clocks = <&master_ccu BCM281XX_MASTER_CCU_SDIO2>;
+ 		status = "disabled";
+ 	};
+
+@@ -134,7 +136,7 @@
+ 		compatible = "brcm,kona-sdhci";
+ 		reg = <0x3f1a0000 0x10000>;
+ 		interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
+-		clocks = <&sdio3_clk>;
++		clocks = <&master_ccu BCM281XX_MASTER_CCU_SDIO3>;
+ 		status = "disabled";
+ 	};
+
+@@ -142,99 +144,137 @@
+ 		compatible = "brcm,kona-sdhci";
+ 		reg = <0x3f1b0000 0x10000>;
+ 		interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>;
+-		clocks = <&sdio4_clk>;
++		clocks = <&master_ccu BCM281XX_MASTER_CCU_SDIO4>;
+ 		status = "disabled";
+ 	};
+
+ 	clocks {
+-		bsc1_clk: bsc1 {
+-			compatible = "fixed-clock";
+-			clock-frequency = <13000000>;
+-			#clock-cells = <0>;
+-		};
+-
+-		bsc2_clk: bsc2 {
+-			compatible = "fixed-clock";
+-			clock-frequency = <13000000>;
+-			#clock-cells = <0>;
+-		};
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
+
+-		bsc3_clk: bsc3 {
+-			compatible = "fixed-clock";
+-			clock-frequency = <13000000>;
+-			#clock-cells = <0>;
++		root_ccu: root_ccu {
++			compatible = "brcm,bcm11351-root-ccu";
++			reg = <0x35001000 0x0f00>;
++			#clock-cells = <1>;
++			clock-output-names = "frac_1m";
+ 		};
+
+-		pmu_bsc_clk: pmu_bsc {
+-			compatible = "fixed-clock";
+-			clock-frequency = <13000000>;
+-			#clock-cells = <0>;
++		hub_ccu: hub_ccu {
++			compatible = "brcm,bcm11351-hub-ccu";
++			reg = <0x34000000 0x0f00>;
++			#clock-cells = <1>;
++			clock-output-names = "tmon_1m";
+ 		};
+
+-		hub_timer_clk: hub_timer {
+-			compatible = "fixed-clock";
+-			clock-frequency = <32768>;
+-			#clock-cells = <0>;
++		aon_ccu: aon_ccu {
++			compatible = "brcm,bcm11351-aon-ccu";
++			reg = <0x35002000 0x0f00>;
++			#clock-cells = <1>;
++			clock-output-names = "hub_timer",
++					     "pmu_bsc",
++					     "pmu_bsc_var";
+ 		};
+
+-		pwm_clk: pwm {
+-			compatible = "fixed-clock";
+-			clock-frequency = <26000000>;
+-			#clock-cells = <0>;
++		master_ccu: master_ccu {
++			compatible = "brcm,bcm11351-master-ccu";
++			reg = <0x3f001000 0x0f00>;
++			#clock-cells = <1>;
++			clock-output-names = "sdio1",
++					     "sdio2",
++					     "sdio3",
++					     "sdio4",
++					     "usb_ic",
++					     "hsic2_48m",
++					     "hsic2_12m";
+ 		};
+
+-		sdio1_clk: sdio1 {
+-			compatible = "fixed-clock";
+-			clock-frequency = <48000000>;
+-			#clock-cells = <0>;
 +		slave_ccu: slave_ccu {
 +			compatible = "brcm,bcm11351-slave-ccu";
 +			reg = <0x3e011000 0x0f00>;
@@ -137,22 +217,174 @@ index 0000000..0cafd6a
 +			clock-output-names = "uartb",
 +					     "uartb2",
 +					     "uartb3",
-+					     "uartb4";
++					     "uartb4",
++					     "ssp0",
++					     "ssp2",
++					     "bsc1",
++					     "bsc2",
++					     "bsc3",
++					     "pwm";
+ 		};
+
+-		sdio2_clk: sdio2 {
+-			compatible = "fixed-clock";
+-			clock-frequency = <48000000>;
++		/*
++		    * This is a place-holder clock for peripheral
++		    * clocks that set their parent clock to an
++		    * out-of-range value to explicitly select
++		    * "no clock" as a parent.
++		    */
++		not_selected_clk: not_selected {
+ 			#clock-cells = <0>;
+-		};
+-
+-		sdio3_clk: sdio3 {
+ 			compatible = "fixed-clock";
+-			clock-frequency = <48000000>;
+-			#clock-cells = <0>;
++			clock-frequency = <0>;
+ 		};
+
+-		sdio4_clk: sdio4 {
+-			compatible = "fixed-clock";
+-			clock-frequency = <48000000>;
++		ref_1m_clk: ref_1m {
+ 			#clock-cells = <0>;
+-		};
+-
+-		tmon_1m_clk: tmon_1m {
+ 			compatible = "fixed-clock";
+ 			clock-frequency = <1000000>;
 +		};
++
++		ref_32k_clk: ref_32k {
+ 			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <32768>;
+ 		};
+
+-		uartb_clk: uartb {
++		bbl_32k_clk: bbl_32k {
++			#clock-cells = <0>;
+ 			compatible = "fixed-clock";
+-			clock-frequency = <13000000>;
++			clock-frequency = <32768>;
++		};
++
++		ref_13m_clk: ref_13m {
+ 			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <13000000>;
+ 		};
+
+-		uartb2_clk: uartb2 {
++		var_13m_clk: var_13m {
++			#clock-cells = <0>;
+ 			compatible = "fixed-clock";
+ 			clock-frequency = <13000000>;
++		};
++
++		dft_19_5m_clk: dft_19_5m {
+ 			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <19500000>;
+ 		};
+
+-		uartb3_clk: uartb3 {
 +		ref_crystal_clk: ref_crystal {
 +			#clock-cells = <0>;
-+			compatible = "fixed-clock";
+ 			compatible = "fixed-clock";
+-			clock-frequency = <13000000>;
 +			clock-frequency = <26000000>;
 +		};
-+	};
-+	uart@3e002000 {
-+		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
-+		status = "disabled";
-+		reg = <0x3e002000 0x1000>;
-+		clocks = <&slave_ccu BCM281XX_SLAVE_CCU_UARTB3>;
-+		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
-+		reg-shift = <2>;
-+		reg-io-width = <4>;
-+	};
++
++		ref_cx40_clk: ref_cx40 {
+ 			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <40000000>;
+ 		};
+
+-		uartb4_clk: uartb4 {
++		ref_52m_clk: ref_52m {
++			#clock-cells = <0>;
+ 			compatible = "fixed-clock";
+-			clock-frequency = <13000000>;
++			clock-frequency = <52000000>;
++		};
++
++		var_52m_clk: var_52m {
+ 			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <52000000>;
+ 		};
+
+ 		usb_otg_ahb_clk: usb_otg_ahb {
+@@ -242,5 +282,65 @@
+ 			clock-frequency = <52000000>;
+ 			#clock-cells = <0>;
+ 		};
++
++		ref_96m_clk: ref_96m {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <96000000>;
++		};
++
++		var_96m_clk: var_96m {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <96000000>;
++		};
++
++		ref_104m_clk: ref_104m {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <104000000>;
++		};
++
++		var_104m_clk: var_104m {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <104000000>;
++		};
++
++		ref_156m_clk: ref_156m {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <156000000>;
++		};
++
++		var_156m_clk: var_156m {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <156000000>;
++		};
++
++		ref_208m_clk: ref_208m {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <208000000>;
++		};
++
++		var_208m_clk: var_208m {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <208000000>;
++		};
++
++		ref_312m_clk: ref_312m {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <312000000>;
++		};
++
++		var_312m_clk: var_312m {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <312000000>;
++		};
+ 	};
+ };
 -- 1.7.9.5
 
