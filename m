@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270Ab3LDIkb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 03:40:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58425 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754762Ab3LDIk3 (ORCPT
+	id S1754802Ab3LDIp5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 03:45:57 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:49809 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753516Ab3LDIpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 03:40:29 -0500
-Date: Wed, 4 Dec 2013 00:41:25 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] mm readahead: Fix the readahead fail in case of
- empty numa node
-Message-Id: <20131204004125.a06f7dfc.akpm@linux-foundation.org>
-In-Reply-To: <529EE811.5050306@linux.vnet.ibm.com>
-References: <1386066977-17368-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-	<20131203143841.11b71e387dc1db3a8ab0974c@linux-foundation.org>
-	<529EE811.5050306@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Dec 2013 03:45:55 -0500
+Date: Wed, 4 Dec 2013 09:45:51 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v4 0/6] kprobes: introduce NOKPROBE_SYMBOL() and
+ fixes crash bugs
+Message-ID: <20131204084551.GA31772@gmail.com>
+References: <20131204012841.22118.82992.stgit@kbuild-fedora.novalocal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131204012841.22118.82992.stgit@kbuild-fedora.novalocal>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 04 Dec 2013 14:00:09 +0530 Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
 
-> > I don't recall the rationale for the current code and of course we
-> > didn't document it.  It might be in the changelogs somewhere - could
-> > you please do the git digging and see if you can find out?
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+
+> Hi,
+> Here is the version 4 of NOKPORBE_SYMBOL series.
 > 
-> Unfaortunately, from my search, I saw that the code belonged to pre git
-> time, so could not get much information on that.
+> In this version, I removed the cleanup patches and
+> add bugfixes I've found, since those bugs will be
+> critical.
+>
+> Rest of the cleanup and visible blacklists will be proposed later in 
+> another series.
 
-Here: https://lkml.org/lkml/2004/8/20/242
+Ok, let me make it clear: we need _both_ the conceptual cleanups and 
+the bug fixes.
 
-It seems it was done as a rather thoughtless performance optimisation. 
-I'd say it's time to reimplement max_sane_readahead() from scratch.
+Right now kprobes are restricted to root, and they are unsafe and 
+buggy, and rather fundamentally so, because probing cannot be done 
+safely without potentially crashing the kernel. So there's no 
+'regression' to be fixed, it's mostly about pre-existing bugs - so 
+there's no requirement for them to come before maintainability 
+cleanups.
 
+So we need both a maintainable and a sane/safe solution, and I'd like 
+to apply the whole thing at once and be at ease that the solution is 
+round. We should have done this years ago.
+
+So could you please send a whole series that I can apply to -tip as a 
+work in progress tree, and then we can see what is left to be solved?
+
+Thanks,
+
+	Ingo
