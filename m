@@ -1,121 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932247Ab3LDWpg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 17:45:36 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:44433 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756109Ab3LDWpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 17:45:32 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch 1/2] mm: memcg: fix race condition between memcg teardown and swapin
-Date: Wed,  4 Dec 2013 17:45:13 -0500
-Message-Id: <1386197114-5317-2-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1386197114-5317-1-git-send-email-hannes@cmpxchg.org>
-References: <1386197114-5317-1-git-send-email-hannes@cmpxchg.org>
+	id S1756155Ab3LDWqi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 17:46:38 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:45068 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755146Ab3LDWqg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 17:46:36 -0500
+Date: Wed, 4 Dec 2013 14:46:28 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: [PATCH v4 tip/core/locking 0/4] Memory-barrier documentation updates
+Message-ID: <20131204224628.GA30159@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120422-7164-0000-0000-000003F23335
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a race condition between a memcg being torn down and a swapin
-triggered from a different memcg of a page that was recorded to belong
-to the exiting memcg on swapout (with CONFIG_MEMCG_SWAP extension).
-The result is unreclaimable pages pointing to dead memcgs, which can
-lead to anything from endless loops in later memcg teardown (the page
-is charged to all hierarchical parents but is not on any LRU list) or
-crashes from following the dangling memcg pointer.
+Hello!
 
-Memcgs with tasks in them can not be torn down and usually charges
-don't show up in memcgs without tasks.  Swapin with the
-CONFIG_MEMCG_SWAP extension is the notable exception because it
-charges the cgroup that was recorded as owner during swapout, which
-may be empty and in the process of being torn down when a task in
-another memcg triggers the swapin:
+This series applies some long-needed updates to memory-barriers.txt:
 
-  teardown:                 swapin:
+1.	Add ACCESS_ONCE() calls where needed to ensure their inclusion
+	in code copy-and-pasted from this file.
 
-                            lookup_swap_cgroup_id()
-                            rcu_read_lock()
-                            mem_cgroup_lookup()
-                            css_tryget()
-                            rcu_read_unlock()
-  disable css_tryget()
-  call_rcu()
-    offline_css()
-      reparent_charges()
-                            res_counter_charge() (hierarchical!)
-                            css_put()
-                              css_free()
-                            pc->mem_cgroup = dead memcg
-                            add page to dead lru
+2.	Add long atomic examples alongside the existing atomics.
 
-Add a final reparenting step into css_free() to make sure any such
-raced charges are moved out of the memcg before it's finally freed.
+3.	Prohibit architectures supporting the Linux kernel from
+	speculating stores.
 
-In the longer term it would be cleaner to have the css_tryget() and
-the res_counter charge under the same RCU lock section so that the
-charge reparenting is deferred until the last charge whose tryget
-succeeded is visible.  But this will require more invasive changes
-that will be harder to evaluate and backport into stable, so better
-defer them to a separate change set.
+4.	Document what ACCESS_ONCE() does along with a number of situations
+	requiring its use.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: <stable@kernel.org>
----
- mm/memcontrol.c | 36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
+Changes from v3:
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index e3aff0175d4c..f6a63f5b3827 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6355,6 +6355,42 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
- static void mem_cgroup_css_free(struct cgroup_subsys_state *css)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
-+	/*
-+	 * XXX: css_offline() would be where we should reparent all
-+	 * memory to prepare the cgroup for destruction.  However,
-+	 * memcg does not do css_tryget() and res_counter charging
-+	 * under the same RCU lock region, which means that charging
-+	 * could race with offlining.  Offlining only happens to
-+	 * cgroups with no tasks in them but charges can show up
-+	 * without any tasks from the swapin path when the target
-+	 * memcg is looked up from the swapout record and not from the
-+	 * current task as it usually is.  A race like this can leak
-+	 * charges and put pages with stale cgroup pointers into
-+	 * circulation:
-+	 *
-+	 * #0                        #1
-+	 *                           lookup_swap_cgroup_id()
-+	 *                           rcu_read_lock()
-+	 *                           mem_cgroup_lookup()
-+	 *                           css_tryget()
-+	 *                           rcu_read_unlock()
-+	 * disable css_tryget()
-+	 * call_rcu()
-+	 *   offline_css()
-+	 *     reparent_charges()
-+	 *                           res_counter_charge()
-+	 *                           css_put()
-+	 *                             css_free()
-+	 *                           pc->mem_cgroup = dead memcg
-+	 *                           add page to lru
-+	 *
-+	 * The bulk of the charges are still moved in offline_css() to
-+	 * avoid pinning a lot of pages in case a long-term reference
-+	 * like a swapout record is deferring the css_free() to long
-+	 * after offlining.  But this makes sure we catch any charges
-+	 * made after offlining:
-+	 */
-+	mem_cgroup_reparent_charges(memcg);
- 
- 	memcg_destroy_kmem(memcg);
- 	__mem_cgroup_free(memcg);
--- 
-1.8.4.2
+o	Fix typos noted by Peter Zijlstra.
+
+o	Added the documentation about ACCESS_ONCE(), which expands on
+	http://thread.gmane.org/gmane.linux.kernel.mm/82891/focus=14696,
+	ably summarized by Jon Corbet at http://lwn.net/Articles/508991/.
+
+Changes from v2:
+
+o	Update examples so that that load against which the subsequent
+	store is to be ordered is part of the "if" condition.
+
+o	Add an example showing how the compiler can remove "if"
+	conditions and how to prevent it from doing so.
+
+o	Add ACCESS_ONCE() to the compiler-barrier section.
+
+o	Add a sentence noting that transitivity requires smp_mb().
+
+Changes from v1:
+
+o	Combined with Peter Zijlstra's speculative-store-prohibition patch.
+
+o	Added more pitfalls to avoid when prohibiting speculative
+	stores, along with how to avoid them.
+
+o	Applied Josh Triplett's review comments.
+
+							Thanx, Paul
+
+
+ b/Documentation/memory-barriers.txt |  666 ++++++++++++++++++++++++++++--------
+ 1 file changed, 533 insertions(+), 133 deletions(-)
 
