@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932800Ab3LDPhM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 10:37:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54413 "EHLO mx2.suse.de"
+	id S932803Ab3LDPhz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 10:37:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54428 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932591Ab3LDPhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 10:37:09 -0500
-Date: Wed, 4 Dec 2013 16:37:06 +0100
+	id S932525Ab3LDPhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 10:37:54 -0500
+Date: Wed, 4 Dec 2013 16:37:53 +0100
 From: Michal Hocko <mhocko@suse.cz>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -17,127 +17,96 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         "Ma, Xindong" <xindong.ma@intel.com>,
         Sameer Nanda <snanda@chromium.org>, Sergey Dyasly <dserrg@gmail.com>,
         "Tu, Xiaobing" <xiaobing.tu@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] oom_kill: change oom_kill.c to use
- for_each_thread()
-Message-ID: <20131204153706.GG8410@dhcp22.suse.cz>
+Subject: Re: [PATCH v2 3/4] oom_kill: has_intersects_mems_allowed() needs
+ rcu_read_lock()
+Message-ID: <20131204153753.GH8410@dhcp22.suse.cz>
 References: <20131204130351.GA5984@redhat.com>
- <20131204130412.GA6005@redhat.com>
+ <20131204130416.GA6014@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131204130412.GA6005@redhat.com>
+In-Reply-To: <20131204130416.GA6014@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 04-12-13 14:04:12, Oleg Nesterov wrote:
-> Change oom_kill.c to use for_each_thread() rather than the racy
-> while_each_thread() which can loop forever if we race with exit.
+On Wed 04-12-13 14:04:16, Oleg Nesterov wrote:
+> At least out_of_memory() calls has_intersects_mems_allowed()
+> without even rcu_read_lock(), this is obviously buggy.
 > 
-> Note also that most users were buggy even if while_each_thread()
-> was fine, the task can exit even _before_ rcu_read_lock().
+> Add the necessary rcu_read_lock(). This means that we can not
+> simply return from the loop, we need "bool ret" and "break".
 > 
-> Fortunately the new for_each_thread() only requires the stable
-> task_struct, so this change fixes both problems.
+> While at it, swap the names of task_struct's (the argument and
+> the local). This cleanups the code a little bit and avoids the
+> unnecessary initialization.
 > 
 > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 > Reviewed-and-Tested-by: Sergey Dyasly <dserrg@gmail.com>
 > Reviewed-by: Sameer Nanda <snanda@chromium.org>
 
-Looks good to me
 Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
 Thanks!
 > ---
->  mm/oom_kill.c |   20 ++++++++++----------
->  1 files changed, 10 insertions(+), 10 deletions(-)
+>  mm/oom_kill.c |   19 +++++++++++--------
+>  1 files changed, 11 insertions(+), 8 deletions(-)
 > 
 > diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> index 1e4a600..96d7945 100644
+> index 96d7945..0d8ad1e 100644
 > --- a/mm/oom_kill.c
 > +++ b/mm/oom_kill.c
-> @@ -59,7 +59,7 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
+> @@ -47,18 +47,20 @@ static DEFINE_SPINLOCK(zone_scan_lock);
+>  #ifdef CONFIG_NUMA
+>  /**
+>   * has_intersects_mems_allowed() - check task eligiblity for kill
+> - * @tsk: task struct of which task to consider
+> + * @start: task struct of which task to consider
+>   * @mask: nodemask passed to page allocator for mempolicy ooms
+>   *
+>   * Task eligibility is determined by whether or not a candidate task, @tsk,
+>   * shares the same mempolicy nodes as current if it is bound by such a policy
+>   * and whether or not it has the same set of allowed cpuset nodes.
+>   */
+> -static bool has_intersects_mems_allowed(struct task_struct *tsk,
+> +static bool has_intersects_mems_allowed(struct task_struct *start,
+>  					const nodemask_t *mask)
 >  {
->  	struct task_struct *start = tsk;
+> -	struct task_struct *start = tsk;
+> +	struct task_struct *tsk;
+> +	bool ret = false;
 >  
-> -	do {
-> +	for_each_thread(start, tsk) {
+> +	rcu_read_lock();
+>  	for_each_thread(start, tsk) {
 >  		if (mask) {
 >  			/*
->  			 * If this is a mempolicy constrained oom, tsk's
-> @@ -77,7 +77,7 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
->  			if (cpuset_mems_allowed_intersects(current, tsk))
->  				return true;
+> @@ -67,19 +69,20 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
+>  			 * mempolicy intersects current, otherwise it may be
+>  			 * needlessly killed.
+>  			 */
+> -			if (mempolicy_nodemask_intersects(tsk, mask))
+> -				return true;
+> +			ret = mempolicy_nodemask_intersects(tsk, mask);
+>  		} else {
+>  			/*
+>  			 * This is not a mempolicy constrained oom, so only
+>  			 * check the mems of tsk's cpuset.
+>  			 */
+> -			if (cpuset_mems_allowed_intersects(current, tsk))
+> -				return true;
+> +			ret = cpuset_mems_allowed_intersects(current, tsk);
 >  		}
-> -	} while_each_thread(start, tsk);
-> +	}
+> +		if (ret)
+> +			break;
+>  	}
+> +	rcu_read_unlock();
 >  
->  	return false;
+> -	return false;
+> +	return ret;
 >  }
-> @@ -97,14 +97,14 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
->   */
->  struct task_struct *find_lock_task_mm(struct task_struct *p)
->  {
-> -	struct task_struct *t = p;
-> +	struct task_struct *t;
->  
-> -	do {
-> +	for_each_thread(p, t) {
->  		task_lock(t);
->  		if (likely(t->mm))
->  			return t;
->  		task_unlock(t);
-> -	} while_each_thread(p, t);
-> +	}
->  
->  	return NULL;
->  }
-> @@ -301,7 +301,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
->  	unsigned long chosen_points = 0;
->  
->  	rcu_read_lock();
-> -	do_each_thread(g, p) {
-> +	for_each_process_thread(g, p) {
->  		unsigned int points;
->  
->  		switch (oom_scan_process_thread(p, totalpages, nodemask,
-> @@ -323,7 +323,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
->  			chosen = p;
->  			chosen_points = points;
->  		}
-> -	} while_each_thread(g, p);
-> +	}
->  	if (chosen)
->  		get_task_struct(chosen);
->  	rcu_read_unlock();
-> @@ -406,7 +406,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
->  {
->  	struct task_struct *victim = p;
->  	struct task_struct *child;
-> -	struct task_struct *t = p;
-> +	struct task_struct *t;
->  	struct mm_struct *mm;
->  	unsigned int victim_points = 0;
->  	static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
-> @@ -437,7 +437,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
->  	 * still freeing memory.
->  	 */
->  	read_lock(&tasklist_lock);
-> -	do {
-> +	for_each_thread(p, t) {
->  		list_for_each_entry(child, &t->children, sibling) {
->  			unsigned int child_points;
->  
-> @@ -455,7 +455,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
->  				get_task_struct(victim);
->  			}
->  		}
-> -	} while_each_thread(p, t);
-> +	}
->  	read_unlock(&tasklist_lock);
->  
->  	rcu_read_lock();
+>  #else
+>  static bool has_intersects_mems_allowed(struct task_struct *tsk,
 > -- 
 > 1.5.5.1
 > 
