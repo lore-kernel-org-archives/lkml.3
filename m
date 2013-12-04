@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755842Ab3LDALb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 19:11:31 -0500
+	id S1755892Ab3LDALs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 19:11:48 -0500
 Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54050 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754848Ab3LDAKV (ORCPT
+	with ESMTP id S1754744Ab3LDAKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 19:10:21 -0500
-X-AuditID: 9c93016f-b7c57ae0000070d3-38-529e72e8edd6
+	Tue, 3 Dec 2013 19:10:19 -0500
+X-AuditID: 9c93016f-b7c57ae0000070d3-25-529e72e696ce
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
@@ -16,9 +16,9 @@ Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, Joonsoo Kim <js1304@gmail.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 5/9] mm/rmap: extend rmap_walk_xxx() to cope with different cases
-Date: Wed,  4 Dec 2013 09:12:16 +0900
-Message-Id: <1386115940-21425-6-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 3/9] mm/rmap: factor lock function out of rmap_walk_anon()
+Date: Wed,  4 Dec 2013 09:12:14 +0900
+Message-Id: <1386115940-21425-4-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386115940-21425-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1386115940-21425-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -27,158 +27,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are a lot of common parts in traversing functions, but there are
-also a little of uncommon parts in it. By assigning proper function
-pointer on each rmap_walker_control, we can handle these difference
-correctly.
+When we traverse anon_vma, we need to take a read-side anon_lock.
+But there is subtle difference in the situation so that we can't use
+same method to take a lock in each cases. Therefore, we need to make
+rmap_walk_anon() taking difference lock function.
 
-Following are differences we should handle.
+This patch is the first step, factoring lock function for anon_lock out
+of rmap_walk_anon(). It will be used in case of removing migration entry
+and in default of rmap_walk_anon().
 
-1. difference of lock function in anon mapping case
-2. nonlinear handling in file mapping case
-3. prechecked condition:
-	checking memcg in page_referenced(),
-	checking VM_SHARE in page_mkclean()
-	checking temporary vma in try_to_unmap()
-4. exit condition:
-	checking page_mapped() in try_to_unmap()
-
-So, in this patch, I introduce 4 function pointers to
-handle above differences.
-
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index 6a456ce..616aa4d 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -235,10 +235,25 @@ struct anon_vma *page_lock_anon_vma_read(struct page *page);
- void page_unlock_anon_vma_read(struct anon_vma *anon_vma);
- int page_mapped_in_vma(struct page *page, struct vm_area_struct *vma);
- 
-+/*
-+ * rmap_walk_control: To control rmap traversing for specific needs
-+ *
-+ * arg: passed to rmap_one() and invalid_vma()
-+ * rmap_one: executed on each vma where page is mapped
-+ * done: for checking traversing termination condition
-+ * file_nonlinear: for handling file nonlinear mapping
-+ * anon_lock: for getting anon_lock by optimized way rather than default
-+ * invalid_vma: for skipping uninterested vma
-+ */
- struct rmap_walk_control {
- 	void *arg;
- 	int (*rmap_one)(struct page *page, struct vm_area_struct *vma,
- 					unsigned long addr, void *arg);
-+	int (*done)(struct page *page);
-+	int (*file_nonlinear)(struct page *, struct address_space *,
-+					struct vm_area_struct *vma);
-+	struct anon_vma *(*anon_lock)(struct page *page);
-+	bool (*invalid_vma)(struct vm_area_struct *vma, void *arg);
- };
- 
- /*
-diff --git a/mm/ksm.c b/mm/ksm.c
-index c3035fe..91b8cb3 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -2032,12 +2032,19 @@ again:
- 			if ((rmap_item->mm == vma->vm_mm) == search_new_forks)
- 				continue;
- 
-+			if (rwc->invalid_vma && rwc->invalid_vma(vma, rwc->arg))
-+				continue;
-+
- 			ret = rwc->rmap_one(page, vma,
- 					rmap_item->address, rwc->arg);
- 			if (ret != SWAP_AGAIN) {
- 				anon_vma_unlock_read(anon_vma);
- 				goto out;
- 			}
-+			if (rwc->done && rwc->done(page)) {
-+				anon_vma_unlock_read(anon_vma);
-+				goto out;
-+			}
- 		}
- 		anon_vma_unlock_read(anon_vma);
- 	}
 diff --git a/mm/rmap.c b/mm/rmap.c
-index 1ef74e2..a292707 100644
+index a387c44..91c73c4 100644
 --- a/mm/rmap.c
 +++ b/mm/rmap.c
-@@ -1680,10 +1680,14 @@ void __put_anon_vma(struct anon_vma *anon_vma)
+@@ -1680,6 +1680,24 @@ void __put_anon_vma(struct anon_vma *anon_vma)
  }
  
  #ifdef CONFIG_MIGRATION
--static struct anon_vma *rmap_walk_anon_lock(struct page *page)
-+static struct anon_vma *rmap_walk_anon_lock(struct page *page,
-+					struct rmap_walk_control *rwc)
- {
- 	struct anon_vma *anon_vma;
- 
-+	if (rwc->anon_lock)
-+		return rwc->anon_lock(page);
++static struct anon_vma *rmap_walk_anon_lock(struct page *page)
++{
++	struct anon_vma *anon_vma;
 +
- 	/*
- 	 * Note: remove_migration_ptes() cannot use page_lock_anon_vma_read()
- 	 * because that depends on page_mapped(); but not all its usages
-@@ -1709,16 +1713,22 @@ static int rmap_walk_anon(struct page *page, struct rmap_walk_control *rwc)
++	/*
++	 * Note: remove_migration_ptes() cannot use page_lock_anon_vma_read()
++	 * because that depends on page_mapped(); but not all its usages
++	 * are holding mmap_sem. Users without mmap_sem are required to
++	 * take a reference count to prevent the anon_vma disappearing
++	 */
++	anon_vma = page_anon_vma(page);
++	if (!anon_vma)
++		return NULL;
++
++	anon_vma_lock_read(anon_vma);
++	return anon_vma;
++}
++
+ /*
+  * rmap_walk() and its helpers rmap_walk_anon() and rmap_walk_file():
+  * Called by migrate.c to remove migration ptes, but might be used more later.
+@@ -1692,16 +1710,10 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
  	struct anon_vma_chain *avc;
  	int ret = SWAP_AGAIN;
  
--	anon_vma = rmap_walk_anon_lock(page);
-+	anon_vma = rmap_walk_anon_lock(page, rwc);
+-	/*
+-	 * Note: remove_migration_ptes() cannot use page_lock_anon_vma_read()
+-	 * because that depends on page_mapped(); but not all its usages
+-	 * are holding mmap_sem. Users without mmap_sem are required to
+-	 * take a reference count to prevent the anon_vma disappearing
+-	 */
+-	anon_vma = page_anon_vma(page);
++	anon_vma = rmap_walk_anon_lock(page);
  	if (!anon_vma)
  		return ret;
- 
+-	anon_vma_lock_read(anon_vma);
++
  	anon_vma_interval_tree_foreach(avc, &anon_vma->rb_root, pgoff, pgoff) {
  		struct vm_area_struct *vma = avc->vma;
  		unsigned long address = vma_address(page, vma);
-+
-+		if (rwc->invalid_vma && rwc->invalid_vma(vma, rwc->arg))
-+			continue;
-+
- 		ret = rwc->rmap_one(page, vma, address, rwc->arg);
- 		if (ret != SWAP_AGAIN)
- 			break;
-+		if (rwc->done && rwc->done(page))
-+			break;
- 	}
- 	anon_vma_unlock_read(anon_vma);
- 	return ret;
-@@ -1736,15 +1746,26 @@ static int rmap_walk_file(struct page *page, struct rmap_walk_control *rwc)
- 	mutex_lock(&mapping->i_mmap_mutex);
- 	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
- 		unsigned long address = vma_address(page, vma);
-+
-+		if (rwc->invalid_vma && rwc->invalid_vma(vma, rwc->arg))
-+			continue;
-+
- 		ret = rwc->rmap_one(page, vma, address, rwc->arg);
- 		if (ret != SWAP_AGAIN)
--			break;
-+			goto done;
-+		if (rwc->done && rwc->done(page))
-+			goto done;
- 	}
--	/*
--	 * No nonlinear handling: being always shared, nonlinear vmas
--	 * never contain migration ptes.  Decide what to do about this
--	 * limitation to linear when we need rmap_walk() on nonlinear.
--	 */
-+
-+	if (!rwc->file_nonlinear)
-+		goto done;
-+
-+	if (list_empty(&mapping->i_mmap_nonlinear))
-+		goto done;
-+
-+	ret = rwc->file_nonlinear(page, mapping, vma);
-+
-+done:
- 	mutex_unlock(&mapping->i_mmap_mutex);
- 	return ret;
- }
 -- 
 1.7.9.5
 
