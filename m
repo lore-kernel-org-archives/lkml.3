@@ -1,118 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932314Ab3LDMrO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 07:47:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47390 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932182Ab3LDMrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 07:47:13 -0500
-Subject: Re: [BUG] ftrace: support for SOFT_DISABLE to syscall events
- caused huge slowdown of ftrace startup test
-From: Petr Mladek <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Tom Zanussi <tom.zanussi@linux.intel.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20131203124120.427b9661@gandalf.local.home>
-References: <1386090969.1603.72.camel@pathway.suse.cz>
-	 <20131203124120.427b9661@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Dec 2013 13:47:10 +0100
-Message-ID: <1386161230.1603.74.camel@pathway.suse.cz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S932342Ab3LDMrb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 07:47:31 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:34639 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932317Ab3LDMr3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 07:47:29 -0500
+Message-ID: <529F2463.8080907@cogentembedded.com>
+Date: Wed, 04 Dec 2013 16:47:31 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: oliver@schinagl.nl, tj@kernel.org, grant.likely@linaro.org,
+        ob.herring@calxeda.com, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        dev@linux-sunxi.org
+CC: maxime.ripard@free-electrons.com, ijc@hellion.org.uk, hdegoede@redhat.com,
+        oliver+list@schinagl.nl
+Subject: Re: [PATCH 1/3] RFC: AHCI: libahci is missing DMA
+References: <1386159055-10264-1-git-send-email-oliver@schinagl.nl> <1386159055-10264-2-git-send-email-oliver@schinagl.nl>
+In-Reply-To: <1386159055-10264-2-git-send-email-oliver@schinagl.nl>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt píše v Út 03. 12. 2013 v 12:41 -0500:
-> On Tue, 03 Dec 2013 18:16:09 +0100
-> Petr Mladek <pmladek@suse.cz> wrote:
-> 
-> > Hi,
-> > 
-> > I tested my ftrace-related patches and enabled also the startup test:
-> > 
-> >   CONFIG_FTRACE_SELFTEST=y
-> >   CONFIG_FTRACE_STARTUP_TEST=y
-> > 
-> > On today's kernel/git/tip/tip.git, the boot "freezed" for 1 minute when
-> > doing "Testing event system syscalls".
-> > 
-> > A bisect pointed finger to the commit d562aff93bfb530b099 (tracing: Add
-> > support for SOFT_DISABLE to syscall events).
-> > 
-> > It seems that the culprit are the "synchronize_sched" calls added to
-> > "unreg_event_syscall_enter" and "unreg_event_syscall_exit" functions.
-> > They are called 2312 times during the boot here and are responsible for
-> > the delay.
-> > 
-> > I wonder if it might cause slowdown also at runtime.
-> > 
-> > I am going to look deeper into the code and eventually come up with a
-> > solution. But it might take some time. I am still newbie in the kernel
-> > development. Any hints or tips are welcome ;-)
-> > 
-> 
-> Yeah, the synchronize_sched() at all disabling of syscall events seems
-> rather extreme. Perhaps this is good enough.
-> 
-> Dose this work for you?
+Hello.
 
-I could confirm that it removes the delay and looks fine to me.
+On 04-12-2013 16:10, oliver@schinagl.nl wrote:
 
-Acked-by: Petr Mladek <pmladek@suse.cz>
+> From: Oliver Schinagl <oliver@schinagl.nl>
 
-> Tom, do you see anything wrong with this. I'm assuming that the
-> synchronize_sched() within the event unregistering, was there for
-> deleting of trace instances. By placing the synchronize_sched() only
-> within the deletion code, this should be good enough.
-> 
-> -- Steve
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-> index f919a2e..a11800a 100644
-> --- a/kernel/trace/trace_events.c
-> +++ b/kernel/trace/trace_events.c
-> @@ -2314,6 +2314,9 @@ int event_trace_del_tracer(struct trace_array *tr)
->  	/* Disable any running events */
->  	__ftrace_set_clr_event_nolock(tr, NULL, NULL, NULL, 0);
->  
-> +	/* Access to events are within rcu_read_lock_sched() */
-> +	synchronize_sched();
+> The Allwinner sunxi platforms have patched in the following to enable
+> DMA. This patch enables DMA controllers for the SUNXI Architecture.
+
+> Signed-off-by: Olliver Schinagl <oliver@schinagl.nl>
+> ---
+>   drivers/ata/ahci.h    | 6 ++++++
+>   drivers/ata/libahci.c | 8 ++++++++
+>   2 files changed, 14 insertions(+)
+
+> diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+> index 2289efdf..2bf2423 100644
+> --- a/drivers/ata/ahci.h
+> +++ b/drivers/ata/ahci.h
+[...]
+> @@ -209,6 +210,11 @@ enum {
+>   	PORT_DEVSLP_DSP		= (1 << 1),       /* DevSlp present */
+>   	PORT_DEVSLP_ADSE	= (1 << 0),       /* Aggressive DevSlp enable */
+>
+> +	/* PORT_DMA bits */
+> +	PORT_DMA_SETUP_OFFSET	= 8, /* dma setup offset */
+> +	PORT_DMA_SETUP_MASK	= (0xff << PORT_DMA_SETUP_OFFSET),/* dma mask */
+> +	PORT_DMA_SETUP_INIT	= (0x44 << 0),
+
+    Why not shift it right by PORT_DMA_SETUP_OFFSET if you do it in the next 
+file anyway?
+
+[...]
+> diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
+> index c482f8c..d697a74 100644
+> --- a/drivers/ata/libahci.c
+> +++ b/drivers/ata/libahci.c
+> @@ -570,6 +570,14 @@ void ahci_start_engine(struct ata_port *ap)
+>   	void __iomem *port_mmio = ahci_port_base(ap);
+>   	u32 tmp;
+>
+> +#ifdef CONFIG_ARCH_SUNXI
+> +	/* Setup DMA before DMA start */
+> +	tmp = readl(port_mmio + PORT_DMA);
+> +	tmp &= ~PORT_DMA_SETUP_MASK;
+> +	tmp |= PORT_DMA_SETUP_INIT << PORT_DMA_SETUP_OFFSET;
+> +	writel(tmp, port_mmio + PORT_DMA);
+> +#endif
 > +
->  	down_write(&trace_event_sem);
->  	__trace_remove_event_dirs(tr);
->  	debugfs_remove_recursive(tr->event_dir);
-> diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-> index e4b6d11..ea90eb5 100644
-> --- a/kernel/trace/trace_syscalls.c
-> +++ b/kernel/trace/trace_syscalls.c
-> @@ -431,11 +431,6 @@ static void unreg_event_syscall_enter(struct ftrace_event_file *file,
->  	if (!tr->sys_refcount_enter)
->  		unregister_trace_sys_enter(ftrace_syscall_enter, tr);
->  	mutex_unlock(&syscall_trace_lock);
-> -	/*
-> -	 * Callers expect the event to be completely disabled on
-> -	 * return, so wait for current handlers to finish.
-> -	 */
-> -	synchronize_sched();
->  }
->  
->  static int reg_event_syscall_exit(struct ftrace_event_file *file,
-> @@ -474,11 +469,6 @@ static void unreg_event_syscall_exit(struct ftrace_event_file *file,
->  	if (!tr->sys_refcount_exit)
->  		unregister_trace_sys_exit(ftrace_syscall_exit, tr);
->  	mutex_unlock(&syscall_trace_lock);
-> -	/*
-> -	 * Callers expect the event to be completely disabled on
-> -	 * return, so wait for current handlers to finish.
-> -	 */
-> -	synchronize_sched();
->  }
->  
->  static int __init init_syscall_trace(struct ftrace_event_call *call)
 
+    I don't think #ifdef is appropriate here.
+
+WBR, Sergei
 
