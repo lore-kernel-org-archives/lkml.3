@@ -1,114 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755942Ab3LDA7P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 19:59:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55576 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754748Ab3LDA7M (ORCPT
+	id S1755485Ab3LDBDk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 20:03:40 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:26785 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754129Ab3LDBDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 19:59:12 -0500
-Date: Tue, 3 Dec 2013 16:59:10 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>, azurIt <azurit@pobox.sk>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Christian Casteyde <casteyde.christian@free.fr>,
-        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>
-Subject: Re: [patch 2/2] fs: buffer: move allocation failure loop into the
- allocator
-Message-Id: <20131203165910.54d6b4724a1f3e329af52ac6@linux-foundation.org>
-In-Reply-To: <1381265890-11333-2-git-send-email-hannes@cmpxchg.org>
-References: <1381265890-11333-1-git-send-email-hannes@cmpxchg.org>
-	<1381265890-11333-2-git-send-email-hannes@cmpxchg.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Tue, 3 Dec 2013 20:03:39 -0500
+Message-ID: <1386119012.2836.2.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] ipc: avoid overflow of semop undo (semadj) value
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
+Date: Tue, 03 Dec 2013 17:03:32 -0800
+In-Reply-To: <1386063865-23966-1-git-send-email-pmladek@suse.cz>
+References: <1386063865-23966-1-git-send-email-pmladek@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  8 Oct 2013 16:58:10 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
-
-> Buffer allocation has a very crude indefinite loop around waking the
-> flusher threads and performing global NOFS direct reclaim because it
-> can not handle allocation failures.
+On Tue, 2013-12-03 at 10:44 +0100, Petr Mladek wrote:
+> When trying to understand semop code, I found a small mistake in the check for
+> semadj (undo) value overflow. The new undo value is not stored immediately
+> and next potential checks are done against the old value.
 > 
-> The most immediate problem with this is that the allocation may fail
-> due to a memory cgroup limit, where flushers + direct reclaim might
-> not make any progress towards resolving the situation at all.  Because
-> unlike the global case, a memory cgroup may not have any cache at all,
-> only anonymous pages but no swap.  This situation will lead to a
-> reclaim livelock with insane IO from waking the flushers and thrashing
-> unrelated filesystem cache in a tight loop.
+> The failing scenario is not much practical. One semop call has to do more
+> operations on the same semaphore. Also semval and semadj must have different
+> values, so there has to be some operations without SEM_UNDO flag. For example:
 > 
-> Use __GFP_NOFAIL allocations for buffers for now.  This makes sure
-> that any looping happens in the page allocator, which knows how to
-> orchestrate kswapd, direct reclaim, and the flushers sensibly.  It
-> also allows memory cgroups to detect allocations that can't handle
-> failure and will allow them to ultimately bypass the limit if reclaim
-> can not make progress.
+> 	struct sembuf depositor_op[1];
+> 	struct sembuf collector_op[2];
+> 
+> 	depositor_op[0].sem_num = 0;
+> 	depositor_op[0].sem_op = 20000;
+> 	depositor_op[0].sem_flg = 0;
+> 
+> 	collector_op[0].sem_num = 0;
+> 	collector_op[0].sem_op = -10000;
+> 	collector_op[0].sem_flg = SEM_UNDO;
+> 	collector_op[1].sem_num = 0;
+> 	collector_op[1].sem_op = -10000;
+> 	collector_op[1].sem_flg = SEM_UNDO;
+> 
+> 	if (semop(semid, depositor_op, 1) == -1)
+> 		{ perror("Failed to do 1st deposit"); return 1; }
+> 
+> 	if (semop(semid, collector_op, 2) == -1)
+> 		{ perror("Failed to do 1st collect"); return 1; }
+> 
+> 	if (semop(semid, depositor_op, 1) == -1)
+> 		{ perror("Failed to do 2nd deposit"); return 1; }
+> 
+> 	if (semop(semid, collector_op, 2) == -1)
+> 		{ perror("Failed to do 2nd collect"); return 1; }
+> 
+> 	return 0;
+> 
+> It passes without error now but the semadj value has overflown in the
+> 2nd collector operation.
+> 
+> Signed-off-by: Petr Mladek <pmladek@suse.cz>
 
-Problem.
+Seems sane.
 
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -1005,9 +1005,19 @@ grow_dev_page(struct block_device *bdev, sector_t block,
->  	struct buffer_head *bh;
->  	sector_t end_block;
->  	int ret = 0;		/* Will call free_more_memory() */
-> +	gfp_t gfp_mask;
+Acked-by: Davidlohr Bueso <davidlohr@hp.com>
+
+> ---
+>  ipc/sem.c | 22 ++++++++++++----------
+>  1 file changed, 12 insertions(+), 10 deletions(-)
+> 
+> diff --git a/ipc/sem.c b/ipc/sem.c
+> index db9d241af133..0d4375761449 100644
+> --- a/ipc/sem.c
+> +++ b/ipc/sem.c
+> @@ -599,7 +599,7 @@ SYSCALL_DEFINE3(semget, key_t, key, int, nsems, int, semflg)
+>  static int perform_atomic_semop(struct sem_array *sma, struct sembuf *sops,
+>  			     int nsops, struct sem_undo *un, int pid)
+>  {
+> -	int result, sem_op;
+> +	int result, undo, sem_op;
+>  	struct sembuf *sop;
+>  	struct sem * curr;
 >  
-> -	page = find_or_create_page(inode->i_mapping, index,
-> -		(mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS)|__GFP_MOVABLE);
-> +	gfp_mask = mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS;
-> +	gfp_mask |= __GFP_MOVABLE;
+> @@ -607,7 +607,7 @@ static int perform_atomic_semop(struct sem_array *sma, struct sembuf *sops,
+>  		curr = sma->sem_base + sop->sem_num;
+>  		sem_op = sop->sem_op;
+>  		result = curr->semval;
+> -  
+> +
+>  		if (!sem_op && result)
+>  			goto would_block;
+>  
+> @@ -616,25 +616,24 @@ static int perform_atomic_semop(struct sem_array *sma, struct sembuf *sops,
+>  			goto would_block;
+>  		if (result > SEMVMX)
+>  			goto out_of_range;
+> +
+>  		if (sop->sem_flg & SEM_UNDO) {
+> -			int undo = un->semadj[sop->sem_num] - sem_op;
+> -			/*
+> -	 		 *	Exceeding the undo range is an error.
+> -			 */
+> +			undo = un->semadj[sop->sem_num] - sem_op;
+> +			/* Exceeding the undo range is an error. */
+>  			if (undo < (-SEMAEM - 1) || undo > SEMAEM)
+>  				goto out_of_range;
+> +			un->semadj[sop->sem_num] = undo;
+>  		}
+> +
+>  		curr->semval = result;
+>  	}
+>  
+>  	sop--;
+>  	while (sop >= sops) {
+>  		sma->sem_base[sop->sem_num].sempid = pid;
+> -		if (sop->sem_flg & SEM_UNDO)
+> -			un->semadj[sop->sem_num] -= sop->sem_op;
+>  		sop--;
+>  	}
+> -	
+> +
+>  	return 0;
+>  
+>  out_of_range:
+> @@ -650,7 +649,10 @@ would_block:
+>  undo:
+>  	sop--;
+>  	while (sop >= sops) {
+> -		sma->sem_base[sop->sem_num].semval -= sop->sem_op;
+> +		sem_op = sop->sem_op;
+> +		sma->sem_base[sop->sem_num].semval -= sem_op;
+> +		if (sop->sem_flg & SEM_UNDO)
+> +			un->semadj[sop->sem_num] += sem_op;
+>  		sop--;
+>  	}
+>  
 
-https://bugzilla.kernel.org/show_bug.cgi?id=65991
-
-WARNING: CPU: 0 PID: 1 at mm/page_alloc.c:1539 get_page_from_freelist+0x8a9/0x8c0()
-Modules linked in:
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.13.0-rc1 #42
-Hardware name: Acer Aspire 7750G/JE70_HR, BIOS V1.07 03/02/2011
- 0000000000000009 ffff8801c6121650 ffffffff81898d39 0000000000000000
- ffff8801c6121688 ffffffff8107dc43 0000000000000002 0000000000000001
- 0000000000284850 0000000000000000 ffff8801cec04680 ffff8801c6121698
-Call Trace:
- [<ffffffff81898d39>] dump_stack+0x4e/0x7a
- [<ffffffff8107dc43>] warn_slowpath_common+0x73/0x90
- [<ffffffff8107dd15>] warn_slowpath_null+0x15/0x20
- [<ffffffff81116f69>] get_page_from_freelist+0x8a9/0x8c0
- [<ffffffff81330cdd>] ? trace_hardirqs_off_thunk+0x3a/0x3c
- [<ffffffff81117070>] __alloc_pages_nodemask+0xf0/0x770
- [<ffffffff81330cdd>] ? trace_hardirqs_off_thunk+0x3a/0x3c
- [<ffffffff81156823>] kmemcheck_alloc_shadow+0x53/0xf0
- [<ffffffff81152495>] new_slab+0x345/0x3e0
- [<ffffffff81897712>] __slab_alloc.isra.57+0x215/0x535
- [<ffffffff81328030>] ? __radix_tree_preload+0x60/0xf0
- [<ffffffff811545c8>] kmem_cache_alloc+0x118/0x150
- [<ffffffff81328030>] ? __radix_tree_preload+0x60/0xf0
- [<ffffffff81328030>] __radix_tree_preload+0x60/0xf0
- [<ffffffff81328125>] radix_tree_maybe_preload+0x25/0x30
- [<ffffffff8110faf7>] add_to_page_cache_locked+0x37/0x100
- [<ffffffff8110fbd5>] add_to_page_cache_lru+0x15/0x40
- [<ffffffff8110ff37>] find_or_create_page+0x57/0x90
- [<ffffffff8118e630>] __getblk+0xf0/0x2f0
-
-That __GFP_NOFAIL is getting down into
-radix_tree_preload->kmem_cache_alloc() and I expect that in its
-boundless stupidity, slab has decided to inappropriately go and use an
-unnecessarily massive page size for radix_tree_node_cachep's underlying
-memory allocations.  So we end up using GFP_NOFAIL for an order=2 (or
-more) allocation, which is unacceptably risky, methinks.
-
-I really really wish slab wouldn't do this.  The benefit is surely very
-small and these unnecessary higher-order allocations are quite abusive
-of the page allocator.
-
-Can we please make slab stop doing this?
-
-radix_tree_nodes are 560 bytes and the kernel often allocates them in
-times of extreme memory stress.  We really really want them to be
-backed by order=0 pages.
 
