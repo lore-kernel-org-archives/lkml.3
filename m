@@ -1,43 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755975Ab3LDBiF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 20:38:05 -0500
-Received: from mail.fpasia.hk ([202.130.89.98]:51112 "EHLO fpa01n0.fpasia.hk"
+	id S1755248Ab3LDBjr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 20:39:47 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37432 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753139Ab3LDBiC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 20:38:02 -0500
-Message-ID: <529E8773.1010505@gtsys.com.hk>
-Date: Wed, 04 Dec 2013 09:37:55 +0800
-From: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11 ThunderBrowse/3.8
+	id S1754164Ab3LDBjq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 20:39:46 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>,
+        Tobias Jakobi <tjakobi@math.uni-bielefeld.de>, Joel F <joelf@ti.com>,
+        Nishanth Menon <nm@ti.com>
+Subject: [PATCH] ARM: OMAP2+: omap_device: add fail hook for runtime_pm when bad data is detected
+Date: Tue, 3 Dec 2013 19:39:13 -0600
+Message-ID: <1386121153-32351-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: peter.chen@freescale.com, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3 v4] usb: chipidea: Reallocate regmap only if lpm is
- detected
-References: <1386057710-3848-1-git-send-email-chris.ruehl@gtsys.com.hk> <529DBC81.5030805@pengutronix.de>
-In-Reply-To: <529DBC81.5030805@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> @@ -642,6 +643,10 @@ static int ci_hdrc_probe(struct platform_device *pdev)
->>   			: CI_ROLE_GADGET;
->>   	}
->>
->> +	/* only update vbus status for peripheral */
->> +	if (ci->role == CI_ROLE_GADGET)
->> +		ci_handle_vbus_change(ci);
->> +
->
-> This change seems unrelated to me.
->
-> Marc
+Due to the cross dependencies between hwmod for automanaged device
+information for OMAP and dts node definitions, we can run into scenarios
+where the dts node is defined, however it's hwmod entry is yet to be
+added. In these cases:
+a) omap_device does not register a pm_domain (since it cannot find
+   hwmod entry).
+b) driver does not know about (a), does a pm_runtime_get_sync which
+   never fails
+c) It then tries to do some operation on the device (such as read the
+  revision register (as part of probe) without clock or adequate OMAP
+  generic PM operation performed for enabling the module.
 
-My fault I test a patch from Fabio on the wrong working branch. I must be
-more careful.
+This causes a crash such as that reported in:
+https://bugzilla.kernel.org/show_bug.cgi?id=66441
 
-Chris
+When 'ti,hwmod' is provided in dt node, it is expected that the device
+will not function without the OMAP's power automanagement. Hence, when
+we hit a fail condition (due to hwmod entries not present or other
+similar scenario), fail at pm_domain level due to lack of data, provide
+enough information for it to be fixed, however, it allows for the driver
+to take appropriate measures to prevent crash.
+
+Reported-by: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ arch/arm/mach-omap2/omap_device.c |   24 ++++++++++++++++++++++++
+ arch/arm/mach-omap2/omap_device.h |    1 +
+ 2 files changed, 25 insertions(+)
+
+diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+index 53f0735..e0a398c 100644
+--- a/arch/arm/mach-omap2/omap_device.c
++++ b/arch/arm/mach-omap2/omap_device.c
+@@ -183,6 +183,10 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
+ odbfd_exit1:
+ 	kfree(hwmods);
+ odbfd_exit:
++	/* if data/we are at fault.. load up a fail handler */
++	if (ret)
++		pdev->dev.pm_domain = &omap_device_fail_pm_domain;
++
+ 	return ret;
+ }
+ 
+@@ -604,6 +608,19 @@ static int _od_runtime_resume(struct device *dev)
+ 
+ 	return pm_generic_runtime_resume(dev);
+ }
++
++static int _od_fail_runtime_suspend(struct device *dev)
++{
++	dev_warn(dev, "%s: FIXME: missing hwmod/omap_dev info\n", __func__);
++	return -ENODEV;
++}
++
++static int _od_fail_runtime_resume(struct device *dev)
++{
++	dev_warn(dev, "%s: FIXME: missing hwmod/omap_dev info\n", __func__);
++	return -ENODEV;
++}
++
+ #endif
+ 
+ #ifdef CONFIG_SUSPEND
+@@ -657,6 +674,13 @@ static int _od_resume_noirq(struct device *dev)
+ #define _od_resume_noirq NULL
+ #endif
+ 
++struct dev_pm_domain omap_device_fail_pm_domain = {
++	.ops = {
++		SET_RUNTIME_PM_OPS(_od_fail_runtime_suspend,
++				   _od_fail_runtime_resume, NULL)
++	}
++};
++
+ struct dev_pm_domain omap_device_pm_domain = {
+ 	.ops = {
+ 		SET_RUNTIME_PM_OPS(_od_runtime_suspend, _od_runtime_resume,
+diff --git a/arch/arm/mach-omap2/omap_device.h b/arch/arm/mach-omap2/omap_device.h
+index 17ca1ae..78c02b3 100644
+--- a/arch/arm/mach-omap2/omap_device.h
++++ b/arch/arm/mach-omap2/omap_device.h
+@@ -29,6 +29,7 @@
+ #include "omap_hwmod.h"
+ 
+ extern struct dev_pm_domain omap_device_pm_domain;
++extern struct dev_pm_domain omap_device_fail_pm_domain;
+ 
+ /* omap_device._state values */
+ #define OMAP_DEVICE_STATE_UNKNOWN	0
+-- 
+1.7.9.5
+
