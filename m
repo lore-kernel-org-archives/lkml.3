@@ -1,92 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287Ab3LDLfO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 06:35:14 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:50481 "EHLO bear.ext.ti.com"
+	id S1755027Ab3LDLk1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 06:40:27 -0500
+Received: from ns.iliad.fr ([212.27.33.1]:45042 "EHLO ns.iliad.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932252Ab3LDLfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 06:35:03 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <linus.walleij@linaro.org>
-CC: <tony@atomide.com>, <peter.ujfalusi@ti.com>, <nm@ti.com>,
-        <tomi.valkeinen@ti.com>, <balbi@ti.com>, <linux-gpio@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH 1/1] gpio: twl4030: Fix regression for twl gpio LED output
-Date: Wed, 4 Dec 2013 13:34:31 +0200
-Message-ID: <1386156871-7639-2-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386156871-7639-1-git-send-email-rogerq@ti.com>
-References: <1386156871-7639-1-git-send-email-rogerq@ti.com>
+	id S1754550Ab3LDLk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 06:40:26 -0500
+Message-ID: <529F14A8.3020109@freebox.fr>
+Date: Wed, 04 Dec 2013 12:40:24 +0100
+From: Nicolas Schichan <nschichan@freebox.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Leigh Brown <leigh@solinno.co.uk>
+CC: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Florian Fainelli <florian@openwrt.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Spurious timeouts in mvmdio
+References: <529CA42A.3040504@freebox.fr> <20131203122346.GD29282@titan.lakedaemon.net> <20131203124033.GT16735@n2100.arm.linux.org.uk> <abe249f5cba5c267e2c536bd62c57908@doppler.thel33t.co.uk> <529E5F03.8040607@gmail.com> <8d65780eb7bfe49bb0734a09f05f70a6@doppler.thel33t.co.uk> <529E66A4.4050000@gmail.com> <ae69666fd3b61411d7bbd9ac993cec13@doppler.thel33t.co.uk> <20131203234209.GW16735@n2100.arm.linux.org.uk>
+In-Reply-To: <20131203234209.GW16735@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 0b2aa8be introduced a regression that causes failure
-in setting LED GPO direction to OUT.
+On 12/04/2013 12:42 AM, Russell King - ARM Linux wrote:
+>> This will make it correct when using interrupts but it will make the
+>> loop wait one jiffie longer than it should when polling.
+>
+> Alternatively, code it like this instead.
+>
+>   drivers/net/ethernet/marvell/mvmdio.c |   32 +++++++++++++++-----------------
+>   1 files changed, 15 insertions(+), 17 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/marvell/mvmdio.c b/drivers/net/ethernet/marvell/mvmdio.c
+> index 7354960b583b..a6f59831fc5b 100644
+> --- a/drivers/net/ethernet/marvell/mvmdio.c
+> +++ b/drivers/net/ethernet/marvell/mvmdio.c
+> @@ -76,31 +76,29 @@ static int orion_mdio_wait_ready(struct mii_bus *bus)
+>   {
+>   	struct orion_mdio_dev *dev = bus->priv;
+>   	unsigned long timeout = usecs_to_jiffies(MVMDIO_SMI_TIMEOUT);
+> -	unsigned long end = jiffies + timeout;
+> -	int timedout = 0;
+>
+> -	while (1) {
+> -	        if (orion_mdio_smi_is_done(dev))
+> +	if (dev->err_interrupt > 0) {
+> +		if (wait_event_timeout(dev->smi_busy_wait,
+> +				       orion_mdio_smi_is_done(dev),
+> +				       1 + timeout))
+>   			return 0;
+> -	        else if (timedout)
+> -			break;
+> +	} else {
+> +		unsigned long end = jiffies + timeout;
+>
+> -	        if (dev->err_interrupt <= 0) {
+> -			usleep_range(MVMDIO_SMI_POLL_INTERVAL_MIN,
+> -				     MVMDIO_SMI_POLL_INTERVAL_MAX);
+> +		while (1) {
+> +	        	if (orion_mdio_smi_is_done(dev))
+> +				return 0;
+>
+>   			if (time_is_before_jiffies(end))
+> -				++timedout;
+> -	        } else {
+> -			wait_event_timeout(dev->smi_busy_wait,
+> -				           orion_mdio_smi_is_done(dev),
+> -				           timeout);
+> -
+> -			++timedout;
+> -	        }
+> +				break;
+> +
+> +			usleep_range(MVMDIO_SMI_POLL_INTERVAL_MIN,
+> +				     MVMDIO_SMI_POLL_INTERVAL_MAX);
+> +		}
+>   	}
+>
+>   	dev_err(bus->parent, "Timeout: SMI busy for too long\n");
+> +
+>   	return  -ETIMEDOUT;
+>   }
 
-This causes USB host probe failures for Beagleboard C4.
+Hi Russell,
 
-[    2.075469] platform usb_phy_gen_xceiv.2: Driver usb_phy_gen_xceiv requests probe deferral
-[    2.090454] hsusb2_vcc: Failed to request enable GPIO510: -22
-[    2.100982] reg-fixed-voltage reg-fixed-voltage.0.auto: Failed to register regulator: -22
-[    2.109954] reg-fixed-voltage: probe of reg-fixed-voltage.0.auto failed with error -22
+I have just tested your patch on MV88F6281 and MV88F6282 both in polling and 
+irq mode and it works just fine.
 
-direction_out/direction_in must return 0 if the operation succeeded.
+I had a similar patch almost ready to submit but you were faster than me.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- drivers/gpio/gpio-twl4030.c | 15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+Feel free to add my:
 
-diff --git a/drivers/gpio/gpio-twl4030.c b/drivers/gpio/gpio-twl4030.c
-index b97d6a6..0999ed1 100644
---- a/drivers/gpio/gpio-twl4030.c
-+++ b/drivers/gpio/gpio-twl4030.c
-@@ -294,13 +294,13 @@ out:
- static int twl_direction_in(struct gpio_chip *chip, unsigned offset)
- {
- 	struct gpio_twl4030_priv *priv = to_gpio_twl4030(chip);
--	int ret;
-+	int ret = 0;
- 
- 	mutex_lock(&priv->mutex);
- 	if (offset < TWL4030_GPIO_MAX)
--		ret = twl4030_set_gpio_direction(offset, 1);
-+		twl4030_set_gpio_direction(offset, 1);
- 	else
--		ret = -EINVAL;
-+		ret = -EINVAL;	/* LED outputs can't be set as input */
- 
- 	if (!ret)
- 		priv->direction &= ~BIT(offset);
-@@ -354,18 +354,21 @@ static void twl_set(struct gpio_chip *chip, unsigned offset, int value)
- static int twl_direction_out(struct gpio_chip *chip, unsigned offset, int value)
- {
- 	struct gpio_twl4030_priv *priv = to_gpio_twl4030(chip);
--	int ret = -EINVAL;
- 
- 	mutex_lock(&priv->mutex);
- 	if (offset < TWL4030_GPIO_MAX)
--		ret = twl4030_set_gpio_direction(offset, 0);
-+		twl4030_set_gpio_direction(offset, 0);
-+
-+	/*
-+	 *  LED gpio's i.e. offset >= TWL4030_GPIO_MAX are always output
-+	 */
- 
- 	priv->direction |= BIT(offset);
- 	mutex_unlock(&priv->mutex);
- 
- 	twl_set(chip, offset, value);
- 
--	return ret;
-+	return 0;
- }
- 
- static int twl_to_irq(struct gpio_chip *chip, unsigned offset)
+Tested-by: Nicolas Schichan <nschichan@freebox.fr>
+
+Thanks,
+
 -- 
-1.8.3.2
-
+Nicolas Schichan
+Freebox SAS
