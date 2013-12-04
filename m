@@ -1,189 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751246Ab3LDFIE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 00:08:04 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:39908 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897Ab3LDFH7 (ORCPT
+	id S1751570Ab3LDFKW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 00:10:22 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:50055 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab3LDFKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 00:07:59 -0500
-Message-ID: <529EB8FC.4070308@oracle.com>
-Date: Wed, 04 Dec 2013 13:09:16 +0800
-From: DuanZhenzhong <zhenzhong.duan@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Thunderbird 2.0.0.24 (X11/20101209)
+	Wed, 4 Dec 2013 00:10:19 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <529EB936.20605@roeck-us.net>
+Date: Tue, 03 Dec 2013 21:10:14 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        xen-devel@lists.xenproject.org
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
-Subject: [PATCH] Update x86_msi.restore_msi_irqs API param
+To: Christophe Leroy <christophe.leroy@c-s.fr>,
+        Wim Van Sebroeck <wim@iguana.be>, scottwood@freescale.com
+CC: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2] watchdog: mpc8xxx_wdt convert to watchdog core
+References: <20131203133140.5E9DF1A2BEA@localhost.localdomain>
+In-Reply-To: <20131203133140.5E9DF1A2BEA@localhost.localdomain>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change x86_msi.restore_msi_irqs(struct pci_dev *dev, int irq) to
-x86_msi.restore_msi_irqs(struct pci_dev *dev)
+On 12/03/2013 05:31 AM, Christophe Leroy wrote:
+> Convert mpc8xxx_wdt.c to the new watchdog API.
+>
+> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+>
+> diff -ur a/drivers/watchdog/mpc8xxx_wdt.c b/drivers/watchdog/mpc8xxx_wdt.c
+> --- a/drivers/watchdog/mpc8xxx_wdt.c	2013-05-11 22:57:46.000000000 +0200
+> +++ b/drivers/watchdog/mpc8xxx_wdt.c	2013-11-30 16:14:53.803495472 +0100
+> @@ -72,53 +72,36 @@
+>    * to 0
+>    */
+>   static int prescale = 1;
+> -static unsigned int timeout_sec;
+>
+> -static unsigned long wdt_is_open;
+>   static DEFINE_SPINLOCK(wdt_spinlock);
+>
+> -static void mpc8xxx_wdt_keepalive(void)
+> +static int mpc8xxx_wdt_ping(struct watchdog_device *w)
+>   {
+>   	/* Ping the WDT */
+>   	spin_lock(&wdt_spinlock);
+>   	out_be16(&wd_base->swsrr, 0x556c);
+>   	out_be16(&wd_base->swsrr, 0xaa39);
+>   	spin_unlock(&wdt_spinlock);
+> +	return 0;
+>   }
+>
 
->From its naming, restore_msi_irqs is used to restore multiple msix irqs,
-param 'int irq' is unneeded. This could make code looks consistent in vm
-and bare metal.
+Ok, now I understand a bit better.
 
-Dom0 msix restore code could also be optimized as XEN only has a hypercall
-to restore all MSIX vectors in one time.
+I think it would be better to keep the original mpc8xxx_wdt_keepalive()
+function and add
 
-Tested-by: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
-Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/include/asm/pci.h      |    2 +-
- arch/x86/include/asm/x86_init.h |    2 +-
- arch/x86/kernel/x86_init.c      |    4 ++--
- arch/x86/pci/xen.c              |    2 +-
- drivers/pci/msi.c               |   19 ++++++++++++++-----
- include/linux/msi.h             |    4 ++--
- 6 files changed, 21 insertions(+), 12 deletions(-)
+static int mpc8xxx_wdt_ping(struct watchdog_device *w)
+{
+	mpc8xxx_wdt_keepalive();
+}
 
-diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
-index 947b5c4..0de52c5 100644
---- a/arch/x86/include/asm/pci.h
-+++ b/arch/x86/include/asm/pci.h
-@@ -104,7 +104,7 @@ extern void pci_iommu_alloc(void);
- struct msi_desc;
- int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
- void native_teardown_msi_irq(unsigned int irq);
--void native_restore_msi_irqs(struct pci_dev *dev, int irq);
-+void native_restore_msi_irqs(struct pci_dev *dev);
- int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
- 		  unsigned int irq_base, unsigned int irq_offset);
- #else
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index 0f1be11..e45e4da 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -181,7 +181,7 @@ struct x86_msi_ops {
- 			       u8 hpet_id);
- 	void (*teardown_msi_irq)(unsigned int irq);
- 	void (*teardown_msi_irqs)(struct pci_dev *dev);
--	void (*restore_msi_irqs)(struct pci_dev *dev, int irq);
-+	void (*restore_msi_irqs)(struct pci_dev *dev);
- 	int  (*setup_hpet_msi)(unsigned int irq, unsigned int id);
- 	u32 (*msi_mask_irq)(struct msi_desc *desc, u32 mask, u32 flag);
- 	u32 (*msix_mask_irq)(struct msi_desc *desc, u32 flag);
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index 021783b..e48b674 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -136,9 +136,9 @@ void arch_teardown_msi_irq(unsigned int irq)
- 	x86_msi.teardown_msi_irq(irq);
- }
- 
--void arch_restore_msi_irqs(struct pci_dev *dev, int irq)
-+void arch_restore_msi_irqs(struct pci_dev *dev)
- {
--	x86_msi.restore_msi_irqs(dev, irq);
-+	x86_msi.restore_msi_irqs(dev);
- }
- u32 arch_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
- {
-diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-index 5eee495..103e702 100644
---- a/arch/x86/pci/xen.c
-+++ b/arch/x86/pci/xen.c
-@@ -337,7 +337,7 @@ out:
- 	return ret;
- }
- 
--static void xen_initdom_restore_msi_irqs(struct pci_dev *dev, int irq)
-+static void xen_initdom_restore_msi_irqs(struct pci_dev *dev)
- {
- 	int ret = 0;
- 
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 3fcd67a..ed7310d 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -116,7 +116,7 @@ void __weak arch_teardown_msi_irqs(struct pci_dev *dev)
- 	return default_teardown_msi_irqs(dev);
- }
- 
--void default_restore_msi_irqs(struct pci_dev *dev, int irq)
-+void default_restore_msi_irq(struct pci_dev *dev, int irq)
- {
- 	struct msi_desc *entry;
- 
-@@ -134,9 +134,9 @@ void default_restore_msi_irqs(struct pci_dev *dev, int irq)
- 		write_msi_msg(irq, &entry->msg);
- }
- 
--void __weak arch_restore_msi_irqs(struct pci_dev *dev, int irq)
-+void __weak arch_restore_msi_irqs(struct pci_dev *dev)
- {
--	return default_restore_msi_irqs(dev, irq);
-+	return default_restore_msi_irqs(dev);
- }
- 
- static void msi_set_enable(struct pci_dev *dev, int enable)
-@@ -262,6 +262,15 @@ void unmask_msi_irq(struct irq_data *data)
- 	msi_set_mask_bit(data, 0);
- }
- 
-+void default_restore_msi_irqs(struct pci_dev *dev)
-+{
-+	struct msi_desc *entry;
-+
-+	list_for_each_entry(entry, &dev->msi_list, list) {
-+		default_restore_msi_irq(dev, entry->irq);
-+	}
-+}
-+
- void __read_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
- {
- 	BUG_ON(entry->dev->current_state != PCI_D0);
-@@ -430,7 +439,7 @@ static void __pci_restore_msi_state(struct pci_dev *dev)
- 
- 	pci_intx_for_msi(dev, 0);
- 	msi_set_enable(dev, 0);
--	arch_restore_msi_irqs(dev, dev->irq);
-+	arch_restore_msi_irqs(dev);
- 
- 	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &control);
- 	msi_mask_irq(entry, msi_capable_mask(control), entry->masked);
-@@ -455,8 +464,8 @@ static void __pci_restore_msix_state(struct pci_dev *dev)
- 	control |= PCI_MSIX_FLAGS_ENABLE | PCI_MSIX_FLAGS_MASKALL;
- 	pci_write_config_word(dev, dev->msix_cap + PCI_MSIX_FLAGS, control);
- 
-+	arch_restore_msi_irqs(dev);
- 	list_for_each_entry(entry, &dev->msi_list, list) {
--		arch_restore_msi_irqs(dev, entry->irq);
- 		msix_mask_irq(entry, entry->masked);
- 	}
- 
-diff --git a/include/linux/msi.h b/include/linux/msi.h
-index 009b024..92a2f99 100644
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -60,10 +60,10 @@ void arch_teardown_msi_irq(unsigned int irq);
- int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
- void arch_teardown_msi_irqs(struct pci_dev *dev);
- int arch_msi_check_device(struct pci_dev* dev, int nvec, int type);
--void arch_restore_msi_irqs(struct pci_dev *dev, int irq);
-+void arch_restore_msi_irqs(struct pci_dev *dev);
- 
- void default_teardown_msi_irqs(struct pci_dev *dev);
--void default_restore_msi_irqs(struct pci_dev *dev, int irq);
-+void default_restore_msi_irqs(struct pci_dev *dev);
- u32 default_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag);
- u32 default_msix_mask_irq(struct msi_desc *desc, u32 flag);
- 
--- 
-1.7.3
+since the parameter is not used. Then you can call mpc8xxx_wdt_keepalive()
+from mpc8xxx_wdt_timer_ping(), and you don't have to add the dummy argument.
 
+Otherwise looks good.
+
+Note there is a problem in the probe function with
+	u32 freq = fsl_get_sys_freq();
+and
+	if (!freq || freq == -1)
+		     ^^^^^^^^^^^
+
+but fixing that would be a different patch.	
+
+Guenter
+
+> +static struct watchdog_device mpc8xxx_wdt_dev;
+>   static void mpc8xxx_wdt_timer_ping(unsigned long arg);
+> -static DEFINE_TIMER(wdt_timer, mpc8xxx_wdt_timer_ping, 0, 0);
+> +static DEFINE_TIMER(wdt_timer, mpc8xxx_wdt_timer_ping, 0,
+> +		(unsigned long)&mpc8xxx_wdt_dev);
+>
+>   static void mpc8xxx_wdt_timer_ping(unsigned long arg)
+>   {
+> -	mpc8xxx_wdt_keepalive();
+> -	/* We're pinging it twice faster than needed, just to be sure. */
+> -	mod_timer(&wdt_timer, jiffies + HZ * timeout_sec / 2);
+> -}
+> +	struct watchdog_device *w = (struct watchdog_device *)arg;
+>
+> -static void mpc8xxx_wdt_pr_warn(const char *msg)
+> -{
+> -	pr_crit("%s, expect the %s soon!\n", msg,
+> -		reset ? "reset" : "machine check exception");
+> -}
+> -
+> -static ssize_t mpc8xxx_wdt_write(struct file *file, const char __user *buf,
+> -				 size_t count, loff_t *ppos)
+> -{
+> -	if (count)
+> -		mpc8xxx_wdt_keepalive();
+> -	return count;
+> +	mpc8xxx_wdt_ping(w);
+> +	/* We're pinging it twice faster than needed, just to be sure. */
+> +	mod_timer(&wdt_timer, jiffies + HZ * w->timeout / 2);
+>   }
+>
+> -static int mpc8xxx_wdt_open(struct inode *inode, struct file *file)
+> +static int mpc8xxx_wdt_start(struct watchdog_device *w)
+>   {
+>   	u32 tmp = SWCRR_SWEN;
+> -	if (test_and_set_bit(0, &wdt_is_open))
+> -		return -EBUSY;
+> -
+> -	/* Once we start the watchdog we can't stop it */
+> -	if (nowayout)
+> -		__module_get(THIS_MODULE);
+>
+>   	/* Good, fire up the show */
+>   	if (prescale)
+> @@ -132,59 +115,31 @@
+>
+>   	del_timer_sync(&wdt_timer);
+>
+> -	return nonseekable_open(inode, file);
+> +	return 0;
+>   }
+>
+> -static int mpc8xxx_wdt_release(struct inode *inode, struct file *file)
+> +static int mpc8xxx_wdt_stop(struct watchdog_device *w)
+>   {
+> -	if (!nowayout)
+> -		mpc8xxx_wdt_timer_ping(0);
+> -	else
+> -		mpc8xxx_wdt_pr_warn("watchdog closed");
+> -	clear_bit(0, &wdt_is_open);
+> +	mod_timer(&wdt_timer, jiffies);
+>   	return 0;
+>   }
+>
+> -static long mpc8xxx_wdt_ioctl(struct file *file, unsigned int cmd,
+> -							unsigned long arg)
+> -{
+> -	void __user *argp = (void __user *)arg;
+> -	int __user *p = argp;
+> -	static const struct watchdog_info ident = {
+> -		.options = WDIOF_KEEPALIVEPING,
+> -		.firmware_version = 1,
+> -		.identity = "MPC8xxx",
+> -	};
+> -
+> -	switch (cmd) {
+> -	case WDIOC_GETSUPPORT:
+> -		return copy_to_user(argp, &ident, sizeof(ident)) ? -EFAULT : 0;
+> -	case WDIOC_GETSTATUS:
+> -	case WDIOC_GETBOOTSTATUS:
+> -		return put_user(0, p);
+> -	case WDIOC_KEEPALIVE:
+> -		mpc8xxx_wdt_keepalive();
+> -		return 0;
+> -	case WDIOC_GETTIMEOUT:
+> -		return put_user(timeout_sec, p);
+> -	default:
+> -		return -ENOTTY;
+> -	}
+> -}
+> +static struct watchdog_info mpc8xxx_wdt_info = {
+> +	.options = WDIOF_KEEPALIVEPING,
+> +	.firmware_version = 1,
+> +	.identity = "MPC8xxx",
+> +};
+>
+> -static const struct file_operations mpc8xxx_wdt_fops = {
+> -	.owner		= THIS_MODULE,
+> -	.llseek		= no_llseek,
+> -	.write		= mpc8xxx_wdt_write,
+> -	.unlocked_ioctl	= mpc8xxx_wdt_ioctl,
+> -	.open		= mpc8xxx_wdt_open,
+> -	.release	= mpc8xxx_wdt_release,
+> +static struct watchdog_ops mpc8xxx_wdt_ops = {
+> +	.owner = THIS_MODULE,
+> +	.start = mpc8xxx_wdt_start,
+> +	.ping = mpc8xxx_wdt_ping,
+> +	.stop = mpc8xxx_wdt_stop,
+>   };
+>
+> -static struct miscdevice mpc8xxx_wdt_miscdev = {
+> -	.minor	= WATCHDOG_MINOR,
+> -	.name	= "watchdog",
+> -	.fops	= &mpc8xxx_wdt_fops,
+> +static struct watchdog_device mpc8xxx_wdt_dev = {
+> +	.info = &mpc8xxx_wdt_info,
+> +	.ops = &mpc8xxx_wdt_ops,
+>   };
+>
+>   static const struct of_device_id mpc8xxx_wdt_match[];
+> @@ -196,6 +151,7 @@
+>   	const struct mpc8xxx_wdt_type *wdt_type;
+>   	u32 freq = fsl_get_sys_freq();
+>   	bool enabled;
+> +	unsigned int timeout_sec;
+>
+>   	match = of_match_device(mpc8xxx_wdt_match, &ofdev->dev);
+>   	if (!match)
+> @@ -222,6 +178,7 @@
+>   	else
+>   		timeout_sec = timeout / freq;
+>
+> +	mpc8xxx_wdt_dev.timeout = timeout_sec;
+>   #ifdef MODULE
+>   	ret = mpc8xxx_wdt_init_late();
+>   	if (ret)
+> @@ -237,7 +194,7 @@
+>   	 * userspace handles it.
+>   	 */
+>   	if (enabled)
+> -		mpc8xxx_wdt_timer_ping(0);
+> +		mod_timer(&wdt_timer, jiffies);
+>   	return 0;
+>   err_unmap:
+>   	iounmap(wd_base);
+> @@ -247,9 +204,10 @@
+>
+>   static int mpc8xxx_wdt_remove(struct platform_device *ofdev)
+>   {
+> -	mpc8xxx_wdt_pr_warn("watchdog removed");
+> +	pr_crit("Watchdog removed, expect the %s soon!\n",
+> +		reset ? "reset" : "machine check exception");
+>   	del_timer_sync(&wdt_timer);
+> -	misc_deregister(&mpc8xxx_wdt_miscdev);
+> +	watchdog_unregister_device(&mpc8xxx_wdt_dev);
+>   	iounmap(wd_base);
+>
+>   	return 0;
+> @@ -301,10 +259,11 @@
+>   	if (!wd_base)
+>   		return -ENODEV;
+>
+> -	ret = misc_register(&mpc8xxx_wdt_miscdev);
+> +	watchdog_set_nowayout(&mpc8xxx_wdt_dev, nowayout);
+> +
+> +	ret = watchdog_register_device(&mpc8xxx_wdt_dev);
+>   	if (ret) {
+> -		pr_err("cannot register miscdev on minor=%d (err=%d)\n",
+> -		       WATCHDOG_MINOR, ret);
+> +		pr_err("cannot register watchdog device (err=%d)\n", ret);
+>   		return ret;
+>   	}
+>   	return 0;
+> diff -ur a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -1146,6 +1146,7 @@
+>   config 8xxx_WDT
+>   	tristate "MPC8xxx Platform Watchdog Timer"
+>   	depends on PPC_8xx || PPC_83xx || PPC_86xx
+> +	select WATCHDOG_CORE
+>   	help
+>   	  This driver is for a SoC level watchdog that exists on some
+>   	  Freescale PowerPC processors. So far this driver supports:
+>
+>
 
