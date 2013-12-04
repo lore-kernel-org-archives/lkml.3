@@ -1,47 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755076Ab3LDIfN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 03:35:13 -0500
-Received: from mail.kmu-office.ch ([178.209.48.102]:37120 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754762Ab3LDIfL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 03:35:11 -0500
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1755164Ab3LDIfe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 03:35:34 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:44523 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755081Ab3LDIfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 03:35:30 -0500
+Message-ID: <1386146037.16040.13.camel@iivanov-dev.int.mm-sol.com>
+Subject: Re: [PATCH 1/4] usb: chipidea: msm: Add device tree binding
+ information
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Peter Chen <peter.chen@freescale.com>
+Cc: alexander.shishkin@linux.intel.com, gregkh@linuxfoundation.org,
+        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
+        davidb@codeaurora.org, linux-usb@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Date: Wed, 04 Dec 2013 10:33:57 +0200
+In-Reply-To: <20131204054003.GB29552@shlinux1.ap.freescale.net>
+References: <1384176937-1658-1-git-send-email-iivanov@mm-sol.com>
+	 <1384176937-1658-2-git-send-email-iivanov@mm-sol.com>
+	 <20131204054003.GB29552@shlinux1.ap.freescale.net>
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-Date: Wed, 04 Dec 2013 09:40:46 +0100
-From: Stefan Agner <stefan@agner.ch>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com, dev@lynxeye.de,
-        lgirdwood@gmail.com, broonie@kernel.org,
-        kai.poggensee@avionic-design.de, sameo@linux.intel.com,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 1/3] mfd: tps6586x: add version detection
-In-Reply-To: <20131204081021.GB7469@lee--X1>
-References: <cover.1386108712.git.stefan@agner.ch>
- <77384d24810d9a22fc04cad6f7468f54a9cbaafe.1386108712.git.stefan@agner.ch>
- <20131204081021.GB7469@lee--X1>
-Message-ID: <e2ae7b9602d0c1e11f8e56ced17e9da0@agner.ch>
-User-Agent: Roundcube Webmail/0.9.5
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2013-12-04 09:10, schrieb Lee Jones:
->> +int tps6586x_get_version(struct device *dev)
->> +{
->> +	struct tps6586x *tps6586x = dev_get_drvdata(dev);
->> +
->> +	return tps6586x->version;
->> +}
->> +EXPORT_SYMBOL_GPL(tps6586x_get_version);
+Hi Peter, 
+
+Thank you for reviewing this patch.
+
+On Wed, 2013-12-04 at 13:40 +0800, Peter Chen wrote: 
+> On Mon, Nov 11, 2013 at 03:35:34PM +0200, Ivan T. Ivanov wrote:
+> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> > 
 > 
-> I thought Mark suggested that this routine was converted to a 'static
-> inline' and moved into the header? Did you not think this was a good
-> idea?
-As I pointed out in the comment above, the struct tps6586x is in the C
-file, so I would need to move that too. That's why I did not made that
-change in the end. What do you think, should I still move (and move the
-struct too?) 
+> Please add something in commit log
+> 
+> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > Cc: devicetree@vger.kernel.org
+> > ---
+> >  .../devicetree/bindings/usb/msm-hsusb.txt          |   16 ++++++++++++++++
+> >  1 file changed, 16 insertions(+)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/usb/msm-hsusb.txt b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
+> > index 5ea26c6..0a85eba 100644
+> > --- a/Documentation/devicetree/bindings/usb/msm-hsusb.txt
+> > +++ b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
+> > @@ -15,3 +15,19 @@ Example EHCI controller device node:
+> >  		usb-phy = <&usb_otg>;
+> >  	};
+> >  
+> > +CI13xxx (Chipidea) USB controllers
+> > +
+> 
+> We have already renamed ci13xxx to ci_hdrc.
+
+Yes, but the chip is still CI13XXX. Freescale documentations is also 
+referring to actual chip family.
+
+> 
+> > +Required properties:
+> > +- compatible: 	should contain "qcom,ci-hdrc"
+> > +- reg: 			offset and length of the register set in the memory map
+> > +- interrupts: 	interrupt-specifier for the controller interrupt.
+> > +- usb-phy:		phandle for the PHY device
+> > +- dr_mode: 		Sould be "peripheral"
+> > +
+> 
+> Please keep alignment for "reg"
+> 
+
+It looks aligned in editor with smart-tab support.
+
+Regards,
+Ivan
+
+> Peter
+> 
+> > +	gadget@f9a55000 {
+> > +		compatible = "qcom,ci-hdrc";
+> > +		reg = <0xf9a55000 0x400>;
+> > +		dr_mode = "peripheral";
+> > +		interrupts = <0 134 0>;
+> > +		usb-phy = <&usb_otg>;
+> > +	};
+> > \ No newline at end of file
+> > -- 
+> > 1.7.9.5
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
+> 
+
+
