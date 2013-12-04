@@ -1,61 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab3LDHJs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 02:09:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57817 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753192Ab3LDHJe (ORCPT
+	id S1753891Ab3LDHPK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 02:15:10 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:61378 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753199Ab3LDHPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 02:09:34 -0500
-Date: Tue, 3 Dec 2013 23:10:37 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Rob Landley <rob@landley.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] devtmpfs: Calling delete_path() only when necessary
-Message-ID: <20131204071037.GB32026@kroah.com>
-References: <1384589723.7840.1.camel@phoenix>
- <1386125959.1974.309@driftwood>
- <CAFRkauAzR=BqJGrMzN0i-tvi5mcQvyB9Kihk0YvxMpk=SWGvFA@mail.gmail.com>
+	Wed, 4 Dec 2013 02:15:09 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <529ED678.1080401@roeck-us.net>
+Date: Tue, 03 Dec 2013 23:15:04 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFRkauAzR=BqJGrMzN0i-tvi5mcQvyB9Kihk0YvxMpk=SWGvFA@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Christophe Leroy <christophe.leroy@c-s.fr>,
+        Wim Van Sebroeck <wim@iguana.be>, scottwood@freescale.com
+CC: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v3] watchdog: mpc8xxx_wdt convert to watchdog core
+References: <20131204063214.D1DB01A2BEA@localhost.localdomain>
+In-Reply-To: <20131204063214.D1DB01A2BEA@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 02:44:14PM +0800, Axel Lin wrote:
-> 2013/12/4 Rob Landley <rob@landley.net>:
-> > On 11/16/2013 02:15:23 AM, Axel Lin wrote:
-> >>
-> >> The deleted variable is always 1 in current code.
-> >> Initialize deleted variable to be 0, so delete_path() will be called only
-> >> when
-> >> necessary.
-> >>
-> >> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> >
-> >
-> > I'm not seeing this in linux-next, or a reply on the web archive. Assuming
-> > nobody's objected to this, you might want to forward it to
-> > trivial@kernel.org.
-> >
-> > That said, you could describe what it _does_ a little more?
-> 
-> I was expecting Greg to pick up this patch.
-> 
-> I thought the description is pretty clear.
-> What the patch does is changing the init value of deleted variable to 0.
-> The intention of this change is to avoid unnecessary delete_path() call.
-> 
-> Hi Greg,
-> Would you pick up this patch?
-> If a re-send or a v2 is required, please just let me know.
+On 12/03/2013 10:32 PM, Christophe Leroy wrote:
+> Convert mpc8xxx_wdt.c to the new watchdog API.
+>
+> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+>
 
-It's in my queue to get to, sorry, it's huge and slowly going down, it's
-not lost...
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 
-greg k-h
