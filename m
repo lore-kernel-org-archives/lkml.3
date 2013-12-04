@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755841Ab3LDCkb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 21:40:31 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:62873 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754373Ab3LDCk2 (ORCPT
+	id S1756050Ab3LDCk7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 21:40:59 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:63760 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754373Ab3LDCk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 21:40:28 -0500
-Message-ID: <529E96A1.3060400@gmail.com>
-Date: Wed, 04 Dec 2013 10:42:41 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: rkuo <rkuo@codeaurora.org>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Bart Van Assche <bvanassche@acm.org>, Bottomley@parallels.com,
-        linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] drivers: scsi: scsi_lib.c: use SG_POOL instead of SP
-References: <528AEFB7.4060301@gmail.com> <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com> <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com> <52955913.3060809@gmail.com> <529B60FF.7030601@acm.org> <529BD584.7060504@gmail.com> <1385945387.20150.2.camel@dabdike.int.hansenpartnership.com> <529C5D89.8050809@gmail.com> <20131202213243.GA20646@codeaurora.org>
-In-Reply-To: <20131202213243.GA20646@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 3 Dec 2013 21:40:58 -0500
+Date: Tue, 3 Dec 2013 21:40:56 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [ANNOUNCE] 3.4.71-rt88
+Message-ID: <20131203214056.02092503@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the macro SP is too common to make conflict with others, so recommend
-to use another more readable and non-conflict macro SG_POOL instead of
-(and recommend others do not use SP either).
 
-The related warning (with allmodconfig for hexagon):
+Dear RT Folks,
 
-    CC [M]  drivers/scsi/scsi_lib.o
-  drivers/scsi/scsi_lib.c:46:0: warning: "SP" redefined [enabled by default]
-  arch/hexagon/include/uapi/asm/registers.h:9:0: note: this is the location of the previous definition
+I'm pleased to announce the 3.4.71-rt88 stable release.
 
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- drivers/scsi/scsi_lib.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+This release is just an update to the new stable 3.4.71 version
+and no RT specific changes have been made.
 
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 7bd7f0d..19967fa 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -43,28 +43,28 @@ struct scsi_host_sg_pool {
- 	mempool_t	*pool;
- };
- 
--#define SP(x) { x, "sgpool-" __stringify(x) }
-+#define SG_POOL(x) { x, "sgpool-" __stringify(x) }
- #if (SCSI_MAX_SG_SEGMENTS < 32)
- #error SCSI_MAX_SG_SEGMENTS is too small (must be 32 or greater)
- #endif
- static struct scsi_host_sg_pool scsi_sg_pools[] = {
--	SP(8),
--	SP(16),
-+	SG_POOL(8),
-+	SG_POOL(16),
- #if (SCSI_MAX_SG_SEGMENTS > 32)
--	SP(32),
-+	SG_POOL(32),
- #if (SCSI_MAX_SG_SEGMENTS > 64)
--	SP(64),
-+	SG_POOL(64),
- #if (SCSI_MAX_SG_SEGMENTS > 128)
--	SP(128),
-+	SG_POOL(128),
- #if (SCSI_MAX_SG_SEGMENTS > 256)
- #error SCSI_MAX_SG_SEGMENTS is too large (256 MAX)
- #endif
- #endif
- #endif
- #endif
--	SP(SCSI_MAX_SG_SEGMENTS)
-+	SG_POOL(SCSI_MAX_SG_SEGMENTS)
- };
--#undef SP
-+#undef SG_POOL
- 
- struct kmem_cache *scsi_sdb_cache;
- 
--- 
-1.7.7.6
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  branch: v3.4-rt
+  Head SHA1: 488e8453a2c6061ab43f42de60f9025eba327335
+
+
+Or to build 3.4.71-rt88 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.71.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.71-rt88.patch.xz
+
+
+
+
+Enjoy,
+
+-- Steve
+
