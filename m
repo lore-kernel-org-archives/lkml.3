@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933748Ab3LDUQl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 15:16:41 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:59319 "EHLO
+	id S933735Ab3LDUQj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 15:16:39 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:59324 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933207Ab3LDUHQ (ORCPT
+	with ESMTP id S933208Ab3LDUHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 15:07:16 -0500
+	Wed, 4 Dec 2013 15:07:17 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/38] perf symbols: Retain symbol source file name to lookup source line numbers
-Date: Wed,  4 Dec 2013 17:06:27 -0300
-Message-Id: <1386187622-2928-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 07/38] perf target: Move the checking of which map function to call into function.
+Date: Wed,  4 Dec 2013 17:06:31 -0300
+Message-Id: <1386187622-2928-8-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1386187622-2928-1-git-send-email-acme@infradead.org>
 References: <1386187622-2928-1-git-send-email-acme@infradead.org>
@@ -30,93 +26,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 
-Currently, lookup of an ip's source file name and line number is done
-using the dso file name.
+Check for cpu_map__dummy_new() or cpu_map__new() to be called in
+perf_evlist__create_maps() is more complicated.
 
-Instead retain the file name used to lookup the dso's symbols and use
-that.
+This patch moves the checking work into target.h, combining two
+conditions and making perf_evlist__create_maps() more readable.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1386055390-13757-6-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/b8c41f1fd2c4f0df71eb7b19aea74fb64d46cdda.1386197481.git.yangds.fnst@cn.fujitsu.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/dso.c     | 1 +
- tools/perf/util/dso.h     | 1 +
- tools/perf/util/srcline.c | 7 ++++++-
- tools/perf/util/symbol.c  | 2 ++
- 4 files changed, 10 insertions(+), 1 deletion(-)
+ tools/perf/util/evlist.c |  8 +-------
+ tools/perf/util/target.h | 13 +++++++++++++
+ 2 files changed, 14 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 68aa55aa5c17..49da9684f635 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -470,6 +470,7 @@ void dso__delete(struct dso *dso)
- 		free(dso->long_name);
- 	dso_cache__free(&dso->cache);
- 	dso__free_a2l(dso);
-+	free(dso->symsrc_filename);
- 	free(dso);
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 76fa76431329..7bb6ee1ca19f 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -819,13 +819,7 @@ int perf_evlist__create_maps(struct perf_evlist *evlist, struct target *target)
+ 	if (evlist->threads == NULL)
+ 		return -1;
+ 
+-	if (target->default_per_cpu)
+-		evlist->cpus = target->per_thread ?
+-					cpu_map__dummy_new() :
+-					cpu_map__new(target->cpu_list);
+-	else if (target__has_task(target))
+-		evlist->cpus = cpu_map__dummy_new();
+-	else if (!target__has_cpu(target) && !target->uses_mmap)
++	if (target__uses_dummy_map(target))
+ 		evlist->cpus = cpu_map__dummy_new();
+ 	else
+ 		evlist->cpus = cpu_map__new(target->cpu_list);
+diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
+index 31dd2e9a27d0..7381b1ca4041 100644
+--- a/tools/perf/util/target.h
++++ b/tools/perf/util/target.h
+@@ -63,4 +63,17 @@ static inline bool target__none(struct target *target)
+ 	return !target__has_task(target) && !target__has_cpu(target);
  }
  
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index d8613dc3ca8f..7142e5261266 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -78,6 +78,7 @@ struct dso {
- 	struct rb_root	 symbol_names[MAP__NR_TYPES];
- 	struct rb_root	 cache;
- 	void		 *a2l;
-+	char		 *symsrc_filename;
- 	enum dso_kernel_type	kernel;
- 	enum dso_swap_type	needs_swap;
- 	enum dso_binary_type	symtab_type;
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index 25b85b28301b..93795f9c2480 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -249,11 +249,16 @@ char *get_srcline(struct dso *dso, unsigned long addr)
- 	char *file = NULL;
- 	unsigned line = 0;
- 	char *srcline;
--	char *dso_name = dso->long_name;
-+	char *dso_name;
- 
- 	if (!dso->has_srcline)
- 		return SRCLINE_UNKNOWN;
- 
-+	if (dso->symsrc_filename)
-+		dso_name = dso->symsrc_filename;
-+	else
-+		dso_name = dso->long_name;
++static inline bool target__uses_dummy_map(struct target *target)
++{
++	bool use_dummy = false;
 +
- 	if (dso_name[0] == '[')
- 		goto out;
- 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 360eefecb81d..de87dbac50a0 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1336,6 +1336,8 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 		if (!syms_ss && symsrc__has_symtab(ss)) {
- 			syms_ss = ss;
- 			next_slot = true;
-+			if (!dso->symsrc_filename)
-+				dso->symsrc_filename = strdup(name);
- 		}
- 
- 		if (!runtime_ss && symsrc__possibly_runtime(ss)) {
++	if (target->default_per_cpu)
++		use_dummy = target->per_thread ? true : false;
++	else if (target__has_task(target) ||
++	         (!target__has_cpu(target) && !target->uses_mmap))
++		use_dummy = true;
++
++	return use_dummy;
++}
++
+ #endif /* _PERF_TARGET_H */
 -- 
 1.8.1.4
 
