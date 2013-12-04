@@ -1,113 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab3LDGKV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 01:10:21 -0500
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:41001 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753483Ab3LDGKT (ORCPT
+	id S1754103Ab3LDGMn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 01:12:43 -0500
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:63170 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751040Ab3LDGMl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 01:10:19 -0500
-Date: Tue, 3 Dec 2013 22:10:15 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Dave Chinner <david@fromorbit.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcg: do not declare OOM from __GFP_NOFAIL
- allocations
-In-Reply-To: <20131204052542.GY3556@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1312032204270.2597@chino.kir.corp.google.com>
-References: <20131127225340.GE3556@cmpxchg.org> <alpine.DEB.2.02.1311271526080.22848@chino.kir.corp.google.com> <20131128102049.GF2761@dhcp22.suse.cz> <alpine.DEB.2.02.1311291543400.22413@chino.kir.corp.google.com> <20131202132201.GC18838@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312021452510.13465@chino.kir.corp.google.com> <20131203222511.GU3556@cmpxchg.org> <alpine.DEB.2.02.1312031531510.5946@chino.kir.corp.google.com> <20131204030101.GV3556@cmpxchg.org> <20131204043417.GM10988@dastard>
- <20131204052542.GY3556@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 4 Dec 2013 01:12:41 -0500
+From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+CC: "bhe@redhat.com" <bhe@redhat.com>, "tom.vaden@hp.com" <tom.vaden@hp.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "ptesarik@suse.cz" <ptesarik@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lisa.mitchell@hp.com" <lisa.mitchell@hp.com>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>,
+        "anderson@redhat.com" <anderson@redhat.com>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "jingbai.ma@hp.com" <jingbai.ma@hp.com>
+Subject: Re: [PATCH 0/3] makedumpfile: hugepage filtering for vmcore dump
+Thread-Topic: [PATCH 0/3] makedumpfile: hugepage filtering for vmcore dump
+Thread-Index: Ac7v67RO1kksR0zQtUinUJVDkNQRF///n0aA//4+FoA=
+Date: Wed, 4 Dec 2013 06:08:54 +0000
+Message-ID: <0910DD04CBD6DE4193FCF86B9C00BE971CAC5D@BPXM01GP.gisp.nec.co.jp>
+References: <0910DD04CBD6DE4193FCF86B9C00BE971CA130@BPXM01GP.gisp.nec.co.jp>
+ <529D9ECB.1060402@jp.fujitsu.com>
+In-Reply-To: <529D9ECB.1060402@jp.fujitsu.com>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.21.40.240]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Dec 2013, Johannes Weiner wrote:
-
-> However, the GFP_NOFS | __GFP_NOFAIL task stuck in the page allocator
-> may hold filesystem locks that could prevent a third party from
-> freeing memory and/or exiting, so we can not guarantee that only the
-> __GFP_NOFAIL task is getting stuck, it might well trap other tasks.
-> The same applies to open-coded GFP_NOFS allocation loops of course
-> unless they cycle the filesystem locks while looping.
+On 2013/12/03 18:06:13, kexec <kexec-bounces@lists.infradead.org> wrote:
+> >> This is a suggestion from different point of view...
+> >>
+> >> In general, data on crash dump can be corrupted. Thus, order contained in a page
+> >> descriptor can also be corrupted. For example, if the corrupted value were a huge
+> >> number, wide range of pages after buddy page would be filtered falsely.
+> >>
+> >> So, actually we should sanity check data in crash dump before using them for application
+> >> level feature. I've picked up order contained in page descriptor, so there would be other
+> >> data used in makedumpfile that are not checked.
+> > 
+> > What you said is reasonable, but how will you do such sanity check ?
+> > Certain standard values are necessary for sanity check, how will
+> > you prepare such values ?
+> > (Get them from kernel source and hard-code them in makedumpfile ?)
+> > 
+> >> Unlike diskdump, we no longer need to care about kernel/hardware level data integrity
+> >> outside of user-land, but we still care about data its own integrity.
+> >>
+> >> On the other hand, if we do it, we might face some difficulty, for example, hardness of
+> >> maintenance or performance bottleneck; it might be the reason why we don't see sanity
+> >> check in makedumpfile now.
+> > 
+> > There are many values which should be checked, e.g. page.flags, page._count,
+> > page.mapping, list_head.next and so on.
+> > If we introduce sanity check for them, the issues you mentioned will be appear
+> > distinctly.
+> > 
+> > So I think makedumpfile has to trust crash dump in practice.
+> > 
 > 
+> Yes, I don't mean such very drastic checking; I understand hardness because I often
+> handle/write this kind of code; I don't want to fight tremendously many dependencies...
+> 
+> So we need to concentrate on things that can affect makedumpfile's behavior significantly,
+> e.g. infinite loop caused by broken linked list objects, buffer overrun cauesd by large values
+> from broken data, etc. We should be able to deal with them by carefully handling
+> dump data against makedumpfile's runtime data structure, e.g., buffer size.
+> 
+> Is it OK to consider this is a policy of makedumpfile for data corruption?
 
-Yup.  I think we should do this:
+Right. 
+Of course, if there is a very simple and effective check for a dump data, 
+then we can take it.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2631,6 +2631,11 @@ rebalance:
- 						pages_reclaimed)) {
- 		/* Wait for some write requests to complete then retry */
- 		wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
-+
-+		/* Allocations that cannot fail must allocate from somewhere */
-+		if (gfp_mask & __GFP_NOFAIL)
-+			alloc_flags |= ALLOC_HARDER;
-+
- 		goto rebalance;
- 	} else {
- 		/*
 
-so that it gets the same behavior as GFP_ATOMIC and is allowed to allocate 
-from memory reserves (although not enough to totally deplete memory).  We 
-need to leave some memory reserves around in case another process with 
-__GFP_FS invokes the oom killer and the victim needs memory to exit since 
-the GFP_NOFS | __GFP_NOFAIL failure wasn't only because reclaim was 
-limited due to !__GFP_FS.
+Thanks
+Atsushi Kumagai
 
-The only downside of this is that it might become harder in the future to 
-ever make a case to remove __GFP_NOFAIL entirely since the behavior of the 
-page allocator is changed with this and it's not equivalent to coding the 
-retry directly in the caller.
-
-On a tangent, GFP_NOWAIT | __GFP_NOFAIL and GFP_ATOMIC | __GFP_NOFAIL 
-actually allows allocations to fail.  Nothing currently does that, but I 
-wonder if we should do this for correctness:
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2535,17 +2535,19 @@ rebalance:
- 		}
- 	}
- 
--	/* Atomic allocations - we can't balance anything */
--	if (!wait)
--		goto nopage;
--
--	/* Avoid recursion of direct reclaim */
--	if (current->flags & PF_MEMALLOC)
--		goto nopage;
--
--	/* Avoid allocations with no watermarks from looping endlessly */
--	if (test_thread_flag(TIF_MEMDIE) && !(gfp_mask & __GFP_NOFAIL))
--		goto nopage;
-+	if (likely(!(gfp_mask & __GFP_NOFAIL))) {
-+		/* Atomic allocations - we can't balance anything */
-+		if (!wait)
-+			goto nopage;
-+
-+		/* Avoid recursion of direct reclaim */
-+		if (current->flags & PF_MEMALLOC)
-+			goto nopage;
-+
-+		/* Avoid allocations without watermarks from looping forever */
-+		if (test_thread_flag(TIF_MEMDIE))
-+			goto nopage;
-+	}
- 
- 	/*
- 	 * Try direct compaction. The first pass is asynchronous. Subsequent
-
-It can be likely() because the __GFP_NOFAIL restart from the first patch 
-above will likely now succeed since there's access to memory reserves and 
-we never actually get here but once for __GFP_NOFAIL.  Thoughts on either 
-patch?
+> -- 
+> Thanks.
+> HATAYAMA, Daisuke
+> 
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
+> 
