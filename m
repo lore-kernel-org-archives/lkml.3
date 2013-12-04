@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933005Ab3LDQqm (ORCPT <rfc822;w@1wt.eu>);
+	id S933030Ab3LDQqr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 11:46:47 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:44689 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932990Ab3LDQqm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Dec 2013 11:46:42 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:35015 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932708Ab3LDQqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 11:46:40 -0500
-Message-ID: <529F5C55.1020707@ti.com>
-Date: Wed, 4 Dec 2013 11:46:13 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+Date: Wed, 4 Dec 2013 08:46:27 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        Robert Richter <rric@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        David Daney <david.daney@cavium.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: smp_call_function_single with wait=0 considered harmful
+Message-ID: <20131204164627.GA27677@infradead.org>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mm@kvack.org>, Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: Re: [PATCH v2 08/23] mm/memblock: Add memblock memory allocation
- apis
-References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com> <1386037658-3161-9-git-send-email-santosh.shilimkar@ti.com> <20131203232445.GX8277@htj.dyndns.org> <529F5047.50309@ti.com> <20131204160730.GQ3158@htj.dyndns.org>
-In-Reply-To: <20131204160730.GQ3158@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 04 December 2013 11:07 AM, Tejun Heo wrote:
-> Hello,
-> 
-> On Wed, Dec 04, 2013 at 10:54:47AM -0500, Santosh Shilimkar wrote:
->> Well as you know there are architectures still using bootmem even after
->> this series. Changing MAX_NUMNODES to NUMA_NO_NODE is too invasive and
->> actually should be done in a separate series. As commented, the best
->> time to do that would be when all remaining architectures moves to
->> memblock.
->>
->> Just to give you perspective, look at the patch end of the email which
->> Grygorrii cooked up. It doesn't cover all the users of MAX_NUMNODES
->> and we are bot even sure whether the change is correct and its
->> impact on the code which we can't even tests. I would really want to
->> avoid touching all the architectures and keep the scope of the series
->> to core code as we aligned initially.
->>
->> May be you have better idea to handle this change so do
->> let us know how to proceed with it. With such a invasive change the
->> $subject series can easily get into circles again :-(
-> 
-> But we don't have to use MAX_NUMNODES for the new interface, no?  Or
-> do you think that it'd be more confusing because it ends up mixing the
-> two?  
-The issue is memblock code already using MAX_NUMNODES. Please
-look at __next_free_mem_range() and __next_free_mem_range_rev().
-The new API use the above apis and hence use MAX_NUMNODES. If the
-usage of these constant was consistent across bootmem and memblock
-then we wouldn't have had the whole confusion.
+While doing my recent work on the generic smp function calls I noticed
+that smp_call_function_single without the wait flag can't work, as
+it allocates struct call_single_data on stack, and without the wait
+flag will happily return before the IPI has been executed.
 
-It kinda really bothers me this patchset is expanding the usage
-> of the wrong constant with only very far-out plan to fix that.  All
-> archs converting to nobootmem will take a *long* time, that is, if
-> that happens at all.  I don't really care about the order of things
-> happening but "this is gonna be fixed when everyone moves off
-> MAX_NUMNODES" really isn't good enough.
-> 
-Fair enough though the patchset continue to use the constant
-which is already used by few memblock APIs ;-)
+This affects the following callers:
 
-If we can fix the __next_free_mem_range() and __next_free_mem_range_rev()
-to not use MAX_NUMNODES then we can potentially avoid the wrong
-usage of constant.
+  arch/ia64/kernel/mca.c:mca_cpu_callback()
+  arch/ia64/kernel/smpboot.c:ia64_sync_itc()
+  arch/x86/kernel/kvm.c:kvm_cpu_notify()
+  arch/x86/oprofile/nmi_int.c:oprofile_cpu_notifier()
+  arch/x86/pci/amd_bus.c:amd_cpu_notify()
+  drivers/staging/octeon/ethernet-rx.c:cvm_oct_enable_one_cpu()
+  kernel/stop_machine.c:stop_two_cpus()
 
-regards,
-Santosh
+It would be good to get these fixed so that we could remove the
+parameter.  Either convert them to wait, or use a preallocated
+call_single_data and __smp_call_function_single.
 
-
-
-
+After that I'd like to remove the wait argument to prevent further
+abuses.
