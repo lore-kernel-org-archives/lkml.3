@@ -1,105 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932920Ab3LDRFm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 12:05:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33849 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932556Ab3LDRFj (ORCPT
+	id S932992Ab3LDRGp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 12:06:45 -0500
+Received: from mail-n.franken.de ([193.175.24.27]:53329 "EHLO
+	mail-n.franken.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932556Ab3LDRGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 12:05:39 -0500
-Date: Wed, 4 Dec 2013 09:05:38 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Adrien =?iso-8859-1?Q?Verg=E9?= <adrienverge@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: [PATCH 3/3] ARM Coresight: Add PID control support for ETM
- tracing
-Message-ID: <20131204170538.GA14773@kroah.com>
-References: <CANsc=4Vy911xcf7fYEjyeV_CNGp8POje9BZrLSP8xrk4YAfSNA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANsc=4Vy911xcf7fYEjyeV_CNGp8POje9BZrLSP8xrk4YAfSNA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 4 Dec 2013 12:06:43 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
+Subject: Re: Supporting 4 way connections in LKSCTP
+From: Michael Tuexen <Michael.Tuexen@lurchi.franken.de>
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B745F@saturn3.aculab.com>
+Date: Wed, 4 Dec 2013 18:06:41 +0100
+Cc: "Vlad Yasevich" <vyasevich@gmail.com>, "Sun Paul" <paulrbk@gmail.com>,
+        <netdev@vger.kernel.org>, <linux-sctp@vger.kernel.org>,
+        "Karl Heiss" <kheiss@gmail.com>, "Neil Horman" <nhorman@tuxdriver.com>,
+        <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 7bit
+Message-Id: <32BF466D-E562-480D-8897-63286F90CCC1@lurchi.franken.de>
+References: <CAFXGft+CXk3W8=3w=AuYzqYtYnR8nH4Of9=668tUeT+tugD9-A@mail.gmail.com>	<20131127124530.GA23369@hmsreliant.think-freely.org>	<CAFXGftJQV=5Pqs3bhfiS3T1VO1q8jfaMjAUiqm2tDbtSyBCM3A@mail.gmail.com>	<529C9B50.50002@gmail.com>	<CAGugRbXFirQ5P3ek9zN86h4vvO6qsy3eNEooJOApotA+dL+C_g@mail.gmail.com>	<529CB859.9090904@gmail.com>	<CAFXGft+F52p+oaa59=5e5pGfON44N36NA-XMYi5PorzWeybnKw@mail.gmail.com>	<CAFXGft+4o6fT4SYbu3musC+-BEi=xOEGUbZSavF1-0_V1mg6zg@mail.gmail.com>	<529D3BF9.3070208@gmail.com>	<CAFXGftJtCCJ=pVxg_DH-+n2bKmoKXavog0y8mfX+h-1z3hP49Q@mail.gmail.com>	<529DCF42.1070800@gmail.com>	<CAFXGftK5tz90OzObiV7Hi+g080j3zWCNdo217CKdNkOY4JWQUg@mail.gmail.com>	<529DF73E.7060604@gmail.com> <CAFXGftKZD0zN1S=UTa_bYr71-v=7mzU=_CewTNkjPv9CGGB_Fg@mail.gmail.com> <529F395B.9040308@gmail.com> <AE90C24D6B3A694183C094C60CF0A2F6026B745D@saturn3.aculab.com> <529F4D1A.3050304@gmail.com> <7A4B9BD9-B2BF-4625-A2E5-500CD4A6D399@lurchi.franken.de> <529F5472.9030207@gmail.com> <AE90C24D6B3A694183C094C60CF0A2F6026B745F@saturn3.aculab.com>
+To: David Laight <David.Laight@ACULAB.COM>
+X-Mailer: Apple Mail (2.1510)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 11:40:59PM -0500, Adrien Vergé wrote:
-> In the same manner as for enabling tracing, an entry is created in
-> sysfs to set the PID that triggers tracing. This change requires
-> CONFIG_PID_IN_CONTEXTIDR to be set when using on-chip ETM.
-> 
-> Signed-off-by: Adrien Vergé <adrienverge@gmail.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Ben Dooks <ben.dooks@codethink.co.uk>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Randy Dunlap <rdunlap@infradead.org>
-> ---
->  arch/arm/Kconfig.debug                    |  1 +
->  arch/arm/include/asm/hardware/coresight.h |  3 ++
->  arch/arm/kernel/etm.c                     | 73 ++++++++++++++++++++++++++++---
->  3 files changed, 70 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-> index 5765abf..fef32e15 100644
-> --- a/arch/arm/Kconfig.debug
-> +++ b/arch/arm/Kconfig.debug
-> @@ -1130,6 +1130,7 @@ config EARLY_PRINTK
->  config OC_ETM
->   bool "On-chip ETM and ETB"
->   depends on ARM_AMBA
-> + select PID_IN_CONTEXTIDR
->   help
->    Enables the on-chip embedded trace macrocell and embedded trace
->    buffer driver that will allow you to collect traces of the
-> diff --git a/arch/arm/include/asm/hardware/coresight.h
-> b/arch/arm/include/asm/hardware/coresight.h
-> index 8c50cf6..009cdf9 100644
-> --- a/arch/arm/include/asm/hardware/coresight.h
-> +++ b/arch/arm/include/asm/hardware/coresight.h
-> @@ -98,6 +98,9 @@
->  #define ETMR_ADDRCOMP_VAL(x) (0x40 + (x) * 4)
->  #define ETMR_ADDRCOMP_ACC_TYPE(x) (0x80 + (x) * 4)
-> 
-> +#define ETMR_CTXIDCOMP_VAL(x) (0x1b0 + (x) * 4)
-> +#define ETMR_CTXIDCOMP_MASK (0x1bc)
-> +
->  /* ETM status register, "ETM Architecture", 3.3.2 */
->  #define ETMR_STATUS (0x10)
->  #define ETMST_OVERFLOW BIT(0)
-> diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
-> index a72382b..18afed1 100644
-> --- a/arch/arm/kernel/etm.c
-> +++ b/arch/arm/kernel/etm.c
-> @@ -40,12 +40,14 @@ struct tracectx {
->   void __iomem *etm_regs;
->   unsigned long flags;
->   int naddrcmppairs;
-> + int nctxidcmp;
->   int etm_portsz;
->   struct device *dev;
->   struct clk *emu_clk;
->   struct mutex mutex;
->   unsigned long addrrange_start;
->   unsigned long addrrange_end;
-> + long pid;
+On Dec 4, 2013, at 5:48 PM, David Laight <David.Laight@ACULAB.COM> wrote:
 
-pid is not a long, your code is totally broken for pid namespaces, and
-really, I don't know how you would fix it given that you don't have a
-way to specify the pid namespace with this interface.
+>> The point is that address scoping should be used. When sending an
+>> INIT from 10.10.10.1 to 10.10.10.4 you should not list 192.168.1.1,
+>> since you are transmitting an address to a node which might or might
+>> not "be in the same scope".
+> 
+> You might have two machines that are connected via the public
+> internet and also via a private network.
+> The two sets of cabling being completely separate giving you
+> resilience to network failure.
+> In which case you definitely don't want address scoping.
+Well, if you give the SCTP stack a hint when initiating
+the association, it can do the right thing.
+Calling sctp_connect(private_address) should work. It will list
+the public address without any problems.
+One can debate that sctp_connectx(private_address, public_address)
+will result in sending an INIT to the public_address listing the
+private one. However, calling sctp_connect(public_address) should
+not list the private_address.
 
-sorry,
+Best regards
+Michael
+> 
+> While you may not want the SCTP traffic on the public network
+> itself, it could easily be routed separately.
+> 
+> We have systems that 'sort of' designate one interface for SIP/RTP
+> and the other for 'management'. They might run M3UA/SCTP but no one
+> has really thought enough about which interface(s) the M3UA traffic
+> should use.
+> (Think of an ISUP/SIP gateway using M3UA for ISUP signalling.)
+> 
+> 	David
+> 
+> 
+> 
+> 
 
-greg k-h
