@@ -1,173 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262Ab3LDBtw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 20:49:52 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:55024 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755046Ab3LDBtt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 20:49:49 -0500
-X-AuditID: 9c93016f-b7c57ae0000070d3-4a-529e8a3bfdec
-Date: Wed, 4 Dec 2013 10:52:18 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        azurIt <azurit@pobox.sk>, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Christian Casteyde <casteyde.christian@free.fr>,
-        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>
-Subject: Re: [patch 2/2] fs: buffer: move allocation failure loop into the
- allocator
-Message-ID: <20131204015218.GA19709@lge.com>
-References: <1381265890-11333-1-git-send-email-hannes@cmpxchg.org>
- <1381265890-11333-2-git-send-email-hannes@cmpxchg.org>
- <20131203165910.54d6b4724a1f3e329af52ac6@linux-foundation.org>
+	id S1755274Ab3LDBv7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 20:51:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49893 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754373Ab3LDBv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 20:51:58 -0500
+Date: Wed, 4 Dec 2013 09:51:27 +0800
+From: Baoquan He <bhe@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: mjg59@srcf.ucam.org, greg@kroah.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, ebiederm@xmission.com, hpa@zytor.com
+Subject: Re: [PATCH 6/6] kexec: Support for Kexec on panic using new system
+ call
+Message-ID: <20131204015127.GC3298@localhost.localdomain>
+References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
+ <1384969851-7251-7-git-send-email-vgoyal@redhat.com>
+ <20131128112816.GC4318@dhcp-16-252.nay.redhat.com>
+ <20131202153037.GD18642@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131203165910.54d6b4724a1f3e329af52ac6@linux-foundation.org>
+In-Reply-To: <20131202153037.GD18642@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 04:59:10PM -0800, Andrew Morton wrote:
-> On Tue,  8 Oct 2013 16:58:10 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
+On 12/02/13 at 10:30am, Vivek Goyal wrote:
+> On Thu, Nov 28, 2013 at 07:28:16PM +0800, Baoquan He wrote:
 > 
-> > Buffer allocation has a very crude indefinite loop around waking the
-> > flusher threads and performing global NOFS direct reclaim because it
-> > can not handle allocation failures.
+> [..]
+> > > +int crash_copy_backup_region(struct kimage *image)
+> > > +{
 > > 
-> > The most immediate problem with this is that the allocation may fail
-> > due to a memory cgroup limit, where flushers + direct reclaim might
-> > not make any progress towards resolving the situation at all.  Because
-> > unlike the global case, a memory cgroup may not have any cache at all,
-> > only anonymous pages but no swap.  This situation will lead to a
-> > reclaim livelock with insane IO from waking the flushers and thrashing
-> > unrelated filesystem cache in a tight loop.
+> > Why need this func be called, backup region has been added into crash
+> > segment by kexec_add_buffer, and then buffer copy is done in
+> > kimage_load_crash_segment. I think this copy is handled twice. Please
+> > correct me if I am wrong.
 > > 
-> > Use __GFP_NOFAIL allocations for buffers for now.  This makes sure
-> > that any looping happens in the page allocator, which knows how to
-> > orchestrate kswapd, direct reclaim, and the flushers sensibly.  It
-> > also allows memory cgroups to detect allocations that can't handle
-> > failure and will allow them to ultimately bypass the limit if reclaim
-> > can not make progress.
 > 
-> Problem.
+> Hi Bao,
 > 
-> > --- a/fs/buffer.c
-> > +++ b/fs/buffer.c
-> > @@ -1005,9 +1005,19 @@ grow_dev_page(struct block_device *bdev, sector_t block,
-> >  	struct buffer_head *bh;
-> >  	sector_t end_block;
-> >  	int ret = 0;		/* Will call free_more_memory() */
-> > +	gfp_t gfp_mask;
-> >  
-> > -	page = find_or_create_page(inode->i_mapping, index,
-> > -		(mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS)|__GFP_MOVABLE);
-> > +	gfp_mask = mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS;
-> > +	gfp_mask |= __GFP_MOVABLE;
+> kexec_add_buffer() will copy the backup region but it will happen when
+> crash kernel is loaded. We want snapshot of backup region at the time
+> of crash and that's why this second call to copy backup region and it
+> is executed after the crash.
+
+Did we do this before? And will this region  be changed after 1st kernel
+boot
+
+
 > 
-> https://bugzilla.kernel.org/show_bug.cgi?id=65991
+> Thanks
+> Vivek
 > 
-> WARNING: CPU: 0 PID: 1 at mm/page_alloc.c:1539 get_page_from_freelist+0x8a9/0x8c0()
-> Modules linked in:
-> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.13.0-rc1 #42
-> Hardware name: Acer Aspire 7750G/JE70_HR, BIOS V1.07 03/02/2011
->  0000000000000009 ffff8801c6121650 ffffffff81898d39 0000000000000000
->  ffff8801c6121688 ffffffff8107dc43 0000000000000002 0000000000000001
->  0000000000284850 0000000000000000 ffff8801cec04680 ffff8801c6121698
-> Call Trace:
->  [<ffffffff81898d39>] dump_stack+0x4e/0x7a
->  [<ffffffff8107dc43>] warn_slowpath_common+0x73/0x90
->  [<ffffffff8107dd15>] warn_slowpath_null+0x15/0x20
->  [<ffffffff81116f69>] get_page_from_freelist+0x8a9/0x8c0
->  [<ffffffff81330cdd>] ? trace_hardirqs_off_thunk+0x3a/0x3c
->  [<ffffffff81117070>] __alloc_pages_nodemask+0xf0/0x770
->  [<ffffffff81330cdd>] ? trace_hardirqs_off_thunk+0x3a/0x3c
->  [<ffffffff81156823>] kmemcheck_alloc_shadow+0x53/0xf0
->  [<ffffffff81152495>] new_slab+0x345/0x3e0
->  [<ffffffff81897712>] __slab_alloc.isra.57+0x215/0x535
->  [<ffffffff81328030>] ? __radix_tree_preload+0x60/0xf0
->  [<ffffffff811545c8>] kmem_cache_alloc+0x118/0x150
->  [<ffffffff81328030>] ? __radix_tree_preload+0x60/0xf0
->  [<ffffffff81328030>] __radix_tree_preload+0x60/0xf0
->  [<ffffffff81328125>] radix_tree_maybe_preload+0x25/0x30
->  [<ffffffff8110faf7>] add_to_page_cache_locked+0x37/0x100
->  [<ffffffff8110fbd5>] add_to_page_cache_lru+0x15/0x40
->  [<ffffffff8110ff37>] find_or_create_page+0x57/0x90
->  [<ffffffff8118e630>] __getblk+0xf0/0x2f0
-> 
-> That __GFP_NOFAIL is getting down into
-> radix_tree_preload->kmem_cache_alloc() and I expect that in its
-> boundless stupidity, slab has decided to inappropriately go and use an
-> unnecessarily massive page size for radix_tree_node_cachep's underlying
-> memory allocations.  So we end up using GFP_NOFAIL for an order=2 (or
-> more) allocation, which is unacceptably risky, methinks.
-> 
-> I really really wish slab wouldn't do this.  The benefit is surely very
-> small and these unnecessary higher-order allocations are quite abusive
-> of the page allocator.
-> 
-> Can we please make slab stop doing this?
-> 
-> radix_tree_nodes are 560 bytes and the kernel often allocates them in
-> times of extreme memory stress.  We really really want them to be
-> backed by order=0 pages.
-
-Hello, Andrew.
-
-Following patch would fix this problem.
-
-Thanks.
-
--------------------8<------------------------
->From 7f21232d1eeffccdbd0f6d79c04d297cf95a713e Mon Sep 17 00:00:00 2001
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Date: Wed, 4 Dec 2013 10:36:11 +0900
-Subject: [PATCH] slub: fix high order page allocation problem with
- __GFP_NOFAIL
-
-SLUB already try to allocate high order page with clearing __GFP_NOFAIL.
-But, when allocating shadow page for kmemcheck, it missed clearing
-the flag. This trigger WARN_ON_ONCE() reported by Christian Casteyde.
-
-https://bugzilla.kernel.org/show_bug.cgi?id=65991
-
-This patch fix this situation by using same allocation flag as original
-allocation.
-
-Reported-by: Christian Casteyde <casteyde.christian@free.fr>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-diff --git a/mm/slub.c b/mm/slub.c
-index 545a170..3dd28b1 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1335,11 +1335,12 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
- 	page = alloc_slab_page(alloc_gfp, node, oo);
- 	if (unlikely(!page)) {
- 		oo = s->min;
-+		alloc_gfp = flags;
- 		/*
- 		 * Allocation may have failed due to fragmentation.
- 		 * Try a lower order alloc if possible
- 		 */
--		page = alloc_slab_page(flags, node, oo);
-+		page = alloc_slab_page(alloc_gfp, node, oo);
- 
- 		if (page)
- 			stat(s, ORDER_FALLBACK);
-@@ -1349,7 +1350,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
- 		&& !(s->flags & (SLAB_NOTRACK | DEBUG_DEFAULT_FLAGS))) {
- 		int pages = 1 << oo_order(oo);
- 
--		kmemcheck_alloc_shadow(page, oo_order(oo), flags, node);
-+		kmemcheck_alloc_shadow(page, oo_order(oo), alloc_gfp, node);
- 
- 		/*
- 		 * Objects from caches that have a constructor don't get
--- 
-1.7.9.5
-
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
