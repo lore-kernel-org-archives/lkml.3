@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933187Ab3LDSOP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 13:14:15 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52515 "EHLO
+	id S933155Ab3LDSOL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 13:14:11 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52527 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933075Ab3LDSNg (ORCPT
+	by vger.kernel.org with ESMTP id S933105Ab3LDSNl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 13:13:36 -0500
+	Wed, 4 Dec 2013 13:13:41 -0500
 From: Serban Constantinescu <serban.constantinescu@arm.com>
 To: gregkh@linuxfoundation.org, arve@android.com, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, john.stultz@linaro.org,
         ccross@android.com, Dave.Butcher@arm.com, irogers@google.com,
         romlem@android.com
 Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Subject: [PATCH v1 7/9] staging: android: binder: Add copy_flat_binder_object()
-Date: Wed,  4 Dec 2013 18:09:39 +0000
-Message-Id: <1386180581-6710-8-git-send-email-serban.constantinescu@arm.com>
+Subject: [PATCH v1 8/9] staging: android: binder: Add binder compat handling to binder.h
+Date: Wed,  4 Dec 2013 18:09:40 +0000
+Message-Id: <1386180581-6710-9-git-send-email-serban.constantinescu@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
 References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
@@ -23,52 +23,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds copy_flat_binder_object macro() that will help
-dereference struct flat_binder_object on 64bit systems where the
-structure differs between 32bit and 64bit userspace.
-
-This patch is a temporary patch that will be extended with 32bit compat
-handling.
+This patch adds all the needed compat structures to binder.h. All the
+structures defined in this patch mirror the structure and size of 32bit
+ones.
 
 Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
 ---
- drivers/staging/android/binder.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/staging/android/binder.h |  109 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 109 insertions(+)
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index 6d22717..855d348 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -144,6 +144,11 @@ module_param_call(stop_on_user_error, binder_set_stop_on_user_error,
- #define deref_helper(ptr)	    (*(typeof(size_t *))ptr)
- #define size_helper(x)		    sizeof(x)
+diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
+index cbe3451..6c9849d 100644
+--- a/drivers/staging/android/binder.h
++++ b/drivers/staging/android/binder.h
+@@ -22,6 +22,10 @@
  
-+static inline struct flat_binder_object *copy_flat_binder_object(void __user *ptr)
-+{
-+	return (struct flat_binder_object *)ptr;
-+}
+ #include <linux/ioctl.h>
+ 
++#ifdef CONFIG_COMPAT
++#include <linux/compat.h>
++#endif
 +
- enum binder_stat_types {
- 	BINDER_STAT_PROC,
- 	BINDER_STAT_THREAD,
-@@ -1257,7 +1262,7 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
- 			 debug_id, deref_helper(offp), buffer->data_size);
- 			continue;
- 		}
--		fp = (struct flat_binder_object *)(buffer->data + deref_helper(offp));
-+		fp = copy_flat_binder_object(buffer->data + deref_helper(offp));
- 		switch (fp->type) {
- 		case BINDER_TYPE_BINDER:
- 		case BINDER_TYPE_WEAK_BINDER: {
-@@ -1507,7 +1512,7 @@ static void binder_transaction(struct binder_proc *proc,
- 			return_error = BR_FAILED_REPLY;
- 			goto err_bad_offset;
- 		}
--		fp = (struct flat_binder_object *)(t->buffer->data + deref_helper(offp));
-+		fp = copy_flat_binder_object(t->buffer->data + deref_helper(offp));
- 		switch (fp->type) {
- 		case BINDER_TYPE_BINDER:
- 		case BINDER_TYPE_WEAK_BINDER: {
+ #define B_PACK_CHARS(c1, c2, c3, c4) \
+ 	((((c1)<<24)) | (((c2)<<16)) | (((c3)<<8)) | (c4))
+ #define B_TYPE_LARGE 0x85
+@@ -326,5 +330,110 @@ enum binder_driver_command_protocol {
+ 	 */
+ };
+ 
++/* Support for 32bit userspace on a 64bit system */
++#ifdef CONFIG_COMPAT
++struct compat_flat_binder_object {
++	/* 8 bytes for large_flat_header. */
++	__u32		type;
++	__u32		flags;
++
++	/* 8 bytes of data. */
++	union {
++		compat_uptr_t	binder;	/* local object */
++		__u32	handle;	        /* remote object */
++	};
++
++	/* extra data associated with local object */
++	compat_uptr_t	cookie;
++};
++
++struct compat_binder_write_read {
++	compat_size_t	write_size;     /* bytes to write */
++	compat_size_t	write_consumed;	/* bytes consumed by driver */
++	compat_ulong_t	write_buffer;
++	compat_size_t	read_size;      /* bytes to read */
++	compat_size_t	read_consumed;	/* bytes consumed by driver */
++	compat_ulong_t	read_buffer;
++};
++
++#define COMPAT_BINDER_WRITE_READ	_IOWR('b', 1, struct compat_binder_write_read)
++
++struct compat_binder_transaction_data {
++	/* The first two are only used for bcTRANSACTION and brTRANSACTION,
++	 * identifying the target and contents of the transaction.
++	 */
++	union {
++		__u32	handle;		    /* target descriptor of command transaction */
++		compat_uptr_t	ptr;	/* target descriptor of return transaction */
++	} target;
++	compat_uptr_t	cookie;	/* target object cookie */
++	__u32		code;	    /* transaction command */
++
++	/* General information about the transaction. */
++	__u32	flags;
++	pid_t	sender_pid;
++	uid_t	sender_euid;
++	compat_size_t	data_size;	    /* number of bytes of data */
++	compat_size_t	offsets_size;	/* number of bytes of offsets */
++
++	/* If this transaction is inline, the data immediately
++	 * follows here; otherwise, it ends with a pointer to
++	 * the data buffer.
++	 */
++	union {
++		struct {
++			/* transaction data */
++			compat_uptr_t	buffer;
++			/* offsets from buffer to flat_binder_object structs */
++			compat_uptr_t	offsets;
++		} ptr;
++		__u8	buf[8];
++	} data;
++};
++
++struct compat_binder_ptr_cookie {
++	compat_uptr_t ptr;
++	compat_uptr_t cookie;
++};
++
++/* legacy - not used anymore */
++struct compat_binder_pri_ptr_cookie {
++	__s32 priority;
++	compat_uptr_t ptr;
++	compat_uptr_t cookie;
++};
++
++enum compat_binder_driver_return_protocol {
++	COMPAT_BR_TRANSACTION = _IOR('r', 2, struct compat_binder_transaction_data),
++	COMPAT_BR_REPLY = _IOR('r', 3, struct compat_binder_transaction_data),
++
++	COMPAT_BR_INCREFS = _IOR('r', 7, struct compat_binder_ptr_cookie),
++	COMPAT_BR_ACQUIRE = _IOR('r', 8, struct compat_binder_ptr_cookie),
++	COMPAT_BR_RELEASE = _IOR('r', 9, struct compat_binder_ptr_cookie),
++	COMPAT_BR_DECREFS = _IOR('r', 10, struct compat_binder_ptr_cookie),
++
++	/* legacy - not used anymore */
++	COMPAT_BR_ATTEMPT_ACQUIRE = _IOR('r', 11, struct compat_binder_pri_ptr_cookie),
++
++	COMPAT_BR_DEAD_BINDER = _IOR('r', 15, compat_uptr_t),
++	COMPAT_BR_CLEAR_DEATH_NOTIFICATION_DONE = _IOR('r', 16, compat_uptr_t),
++};
++
++enum compat_binder_driver_command_protocol {
++	COMPAT_BC_TRANSACTION = _IOW('c', 0, struct compat_binder_transaction_data),
++	COMPAT_BC_REPLY = _IOW('c', 1, struct compat_binder_transaction_data),
++
++	COMPAT_BC_FREE_BUFFER = _IOW('c', 3, compat_uptr_t),
++
++	COMPAT_BC_INCREFS_DONE = _IOW('c', 8, struct compat_binder_ptr_cookie),
++	COMPAT_BC_ACQUIRE_DONE = _IOW('c', 9, struct compat_binder_ptr_cookie),
++
++	COMPAT_BC_REQUEST_DEATH_NOTIFICATION = _IOW('c', 14, struct compat_binder_ptr_cookie),
++	COMPAT_BC_CLEAR_DEATH_NOTIFICATION = _IOW('c', 15, struct compat_binder_ptr_cookie),
++
++	COMPAT_BC_DEAD_BINDER_DONE = _IOW('c', 16, compat_uptr_t),
++};
++#endif /* CONFIG_COMPAT */
++
+ #endif /* _LINUX_BINDER_H */
+ 
 -- 
 1.7.9.5
 
