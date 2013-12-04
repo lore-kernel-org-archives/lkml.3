@@ -1,107 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab3LDUdT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 15:33:19 -0500
-Received: from omr-m01.mx.aol.com ([64.12.143.75]:56739 "EHLO
-	omr-m01.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754377Ab3LDUdQ (ORCPT
+	id S933264Ab3LDUhh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 15:37:37 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:39051 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932999Ab3LDUhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 15:33:16 -0500
-Message-ID: <529F917C.3070501@netscape.net>
-Date: Wed, 04 Dec 2013 21:33:00 +0100
-From: Manuel Krause <manuelkrause@netscape.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>, linux-input@vger.kernel.org,
-        linux-serial <linux-serial@vger.kernel.org>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: 3.12.x looses serial mouse over hibernate + resume
-References: <52951E69.7090602@netscape.net> <529B591F.1020909@hurleysoftware.com> <529CB07C.2040609@netscape.net> <19253701.sgP3OieFUq@dtor-d630.eng.vmware.com> <20131202164525.GA32406@core.coreip.homeip.net> <529CD303.4040103@netscape.net> <20131202190730.GA5245@core.coreip.homeip.net> <529CF034.1060505@netscape.net> <20131204171626.GD8838@core.coreip.homeip.net>
-In-Reply-To: <20131204171626.GD8838@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-x-aol-global-disposition: G
-x-aol-sid: 3039ac1d33c2529f91894030
-X-AOL-IP: 93.218.243.230
+	Wed, 4 Dec 2013 15:37:32 -0500
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: khilman@linaro.org, arnd@arndb.de, linux-sh@vger.kernel.org,
+        daniel.lezcano@linaro.org, horms@verge.net.au, john.stultz@linaro.org,
+        olof@lixom.net, Magnus Damm <magnus.damm@gmail.com>,
+        tglx@linutronix.de
+Date: Thu, 05 Dec 2013 05:38:18 +0900
+Message-Id: <20131204203818.19090.92396.sendpatchset@w520>
+Subject: [PATCH v3 00/03] clocksource: Consolidate SH and ARM mach-shmobile Kconfig bits
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-12-04 18:16, Dmitry Torokhov wrote:
-> On Mon, Dec 02, 2013 at 09:40:20PM +0100, Manuel Krause wrote:
->> On 2013-12-02 20:07, Dmitry Torokhov wrote:
->>>
->>> Thank you Manuel, but IO think the patch is not complete as we need to
->>> re-enable PNP devices after we make a snapshot to make sure they are
->>> working and can handle saving the data. Coudl you please try the patch
->>> below?
->>>
->>
->> PNP: fix restoring devices after hibernation
->>
->> From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->>
->> On returning from hibernation 'restore; callback is called, not
->> 'resume'.
->> This fixes breakage introduced by commit
->> eaf140b60ec961252083ab8adaf67aef29a362dd
->>
->> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->> ---
->>   drivers/pnp/driver.c |   12 +++++++++++-
->>   1 file changed, 11 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/pnp/driver.c b/drivers/pnp/driver.c
->> index a39ee38..2bd5c5f 100644
->> --- a/drivers/pnp/driver.c
->> +++ b/drivers/pnp/driver.c
->> @@ -197,6 +197,11 @@ static int pnp_bus_freeze(struct device *dev)
->>   	return __pnp_bus_suspend(dev, PMSG_FREEZE);
->>   }
->>
->> +static int pnp_bus_poweroff(struct device *dev)
->> +{
->> +	return __pnp_bus_suspend(dev, PMSG_HIBERNATE);
->> +}
->> +
->>   static int pnp_bus_resume(struct device *dev)
->>   {
->>   	struct pnp_dev *pnp_dev = to_pnp_dev(dev);
->> @@ -234,9 +239,14 @@ static int pnp_bus_resume(struct device *dev)
->>   }
->>
->>   static const struct dev_pm_ops pnp_bus_dev_pm_ops = {
->> +	/* Suspend callbacks */
->>   	.suspend = pnp_bus_suspend,
->> -	.freeze = pnp_bus_freeze,
->>   	.resume = pnp_bus_resume,
->> +	/* Hibernate callbacks */
->> +	.freeze = pnp_bus_freeze,
->> +	.thaw = pnp_bus_resume,
->> +	.poweroff = pnp_bus_poweroff,
->> +	.restore = pnp_bus_resume,
->>   };
->>
->>   struct bus_type pnp_bus_type = {
->>
->> ALSO, YES, this second patch version does cure the issue, on here,
->> too.
->
-> Rafael,
->
-> Will you please take this patch in? It would also make sense to add it
-> to stable I think.
->
-> Thanks.
->
+clocksource: Consolidate SH and ARM mach-shmobile Kconfig bits (v3)
 
-This patch works very well for many following hibernate/resume 
-cyles, now, since the patch is applied. And it doesn't show any 
-side-effects for me.
-Thank you for "taking it in".
+[PATCH v3 01/03] clocksource: Add Kconfig entries for CMT, MTU2, TMU and STI
+[PATCH v3 02/03] ARM: shmobile: Remove CMT, TMU and STI Kconfig entries
+[PATCH v2 03/03] sh: Remove Kconfig entries for TMU, CMT and MTU2
 
-Best regards, Manuel Krause
+This is V3 of the SH and ARM mach-shmobile clocksource Kconfig
+consolidation series.
 
+By sharing Kconfig entires in drivers/clocksource/Kconfig we
+can get rid of duplicated bits that do not belong under arch/.
+
+With this series applied it is possible to build the timer
+drivers for CMT, MTU2, TMU and STI in case of SH or ARM. The timer
+drivers are automatically selected by default. It is also possible
+to select and/or deselect freely when COMPILE_TEST has been selected.
+
+Since last time this has been broken out into 3 separate patches,
+where [PATCH v3 01/03] needs to go first, and the other patches
+can be merged any time after without any build or configuration
+issues.
+
+Thanks to Daniel, John and Arnd for feedback!
+
+This version tries to find a middle ground by:
+ - Not allowing user selection of timers by default
+ - Automaticlally select available drivers using SYS_SUPPORTS_xxx.
+ - Allow manual override in case of COMPILE_TEST (select and deselect)
+ - The system will boot regardless of these settigns
+ - In this version the special case menu tand if have been dropped
+
+Slightly different and/or not really handled in this version:
+ - The acronym soup is kept as-is for now
+ - Allow select _and_ deselect in case of COMPILE_TEST (not only select)
+ - Follow same style as SH and select per-SoC SYS_SUPPORTS_xxx
+
+Signed-off-by: Magnus Damm <damm@opensource.se>
+---
+
+ Written against renesas.git tag renesas-devel-v3.13-rc2-20131202
+
+ arch/arm/mach-shmobile/Kconfig |   35 +++++++++++++++++------------------
+ arch/sh/Kconfig                |   21 ---------------------
+ drivers/clocksource/Kconfig    |   36 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 53 insertions(+), 39 deletions(-)
