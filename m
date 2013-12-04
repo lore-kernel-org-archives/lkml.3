@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933709Ab3LDUQd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 15:16:33 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:59331 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933235Ab3LDUHR (ORCPT
+	id S933159Ab3LDUVO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 15:21:14 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:35385 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753390Ab3LDUVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 15:07:17 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 08/38] perf kvm: Add more detail about buildid-list in man page
-Date: Wed,  4 Dec 2013 17:06:32 -0300
-Message-Id: <1386187622-2928-9-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1386187622-2928-1-git-send-email-acme@infradead.org>
-References: <1386187622-2928-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 4 Dec 2013 15:21:10 -0500
+Date: Wed, 4 Dec 2013 13:21:04 -0700
+From: Jerry.Hoemann@hp.com
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Borislav Petkov <bp@alien8.de>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jingbai Ma <jingbai.ma@hp.com>
+Subject: Re: [PATCH v9] x86, apic, kexec, Documentation: Add disable_cpu_apic
+ kernel parameter
+Message-ID: <20131204202104.GA6348@anatevka.fc.hp.com>
+Reply-To: Jerry.Hoemann@hp.com
+References: <529D34AA.1000809@jp.fujitsu.com>
+ <20131203152536.GE4251@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131203152536.GE4251@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+On Tue, Dec 03, 2013 at 10:25:36AM -0500, Vivek Goyal wrote:
+> 
+> Hi Hatayama, 
+> 
+> We are almost there. A minor nit. Why have we specified KEXEC here. This
+> parameter disabled_cpu_apicid does not seem to dependon CONFIG_KEXEC?
+> 
+> Jerry, this patch looks good to me. Does it work on your system?
+> 
+> Thanks
+> Vivek
 
-As the buildid is read from /sys/kernel/notes, then if we use perf kvm
-buildid-list with a perf data file captured by perf kvm record with
---guestkallsyms and --guestmodules, there is no result in output.
 
-This patch add a explanation about it and add a limit of using perf kvm
-buildid-list.
+Vivek,  Hatayama,
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/d605a805486340b53bc261aa64d7632ad0a8cf53.1386197481.git.yangds.fnst@cn.fujitsu.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Documentation/perf-kvm.txt | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+I've back ported v9 of this patch to 2.6.32 and 3.0.80 based kernels to
+test with existing distros.
 
-diff --git a/tools/perf/Documentation/perf-kvm.txt b/tools/perf/Documentation/perf-kvm.txt
-index 6a06cefe9642..f52f94d9f66b 100644
---- a/tools/perf/Documentation/perf-kvm.txt
-+++ b/tools/perf/Documentation/perf-kvm.txt
-@@ -37,7 +37,9 @@ There are a couple of variants of perf kvm:
- 
-   'perf kvm buildid-list' to  display the buildids found in a perf data file,
-   so that other tools can be used to fetch packages with matching symbol tables
--  for use by perf report.
-+  for use by perf report. As buildid is read from /sys/kernel/notes in os, then
-+  if you want to list the buildid for guest, please make sure your perf data file
-+  was captured with --guestmount in perf kvm record.
- 
-   'perf kvm stat <command>' to run a command and gather performance counter
-   statistics.
+I've tested on our smaller prototype server specifying nr_cpus=8/maxcpus=8
+to the capture kernel.  One hundred iterations (echo c > /proc/sysrq-trigger)
+varying target cpu and system load to each kernel.
+
+The 2.6.32 based distro kernel showed the < 5% soft lockup
+(still unresolved) during boot of capture kernel.  This is
+something i've seen on all versions of the patch that i've tested.
+
+The 3.0.80 based distro kernel has had zero failures.
+
+I have not had a chance to test upstream kernels or on
+our larger prototype configuration.
+
+We still plan to test on our larger prototype.  Testing of
+prior versions of the patch on the larger systems didn't show
+problems w/ this functionality and I don't anticipate we'll
+find anything this time either.
+
+I am okay with this patch being accepted upstream and working
+the intermittent 2.6.32 failures separately.
+
+
+Jerry
+
+
 -- 
-1.8.1.4
+
+----------------------------------------------------------------------------
+Jerry Hoemann            Software Engineer              Hewlett-Packard
+
+3404 E Harmony Rd. MS 57                        phone:  (970) 898-1022
+Ft. Collins, CO 80528                           FAX:    (970) 898-XXXX
+                                                email:  jerry.hoemann@hp.com
+----------------------------------------------------------------------------
 
