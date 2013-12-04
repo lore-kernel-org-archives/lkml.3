@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932790Ab3LDP7z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 10:59:55 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:9194 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932404Ab3LDP7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 10:59:53 -0500
-From: Qais Yousef <qais.yousef@imgtec.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Qais Yousef <qais.yousef@imgtec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Vivek Goyal <vgoyal@redhat.com>, <linux-mips@linux-mips.org>,
-        <stable@vger.kernel.org>
-Subject: [PATCH] crash_dump: fix compilation error (on MIPS at least)
-Date: Wed, 4 Dec 2013 15:58:22 +0000
-Message-ID: <1386172702-31266-1-git-send-email-qais.yousef@imgtec.com>
-X-Mailer: git-send-email 1.7.1
+	id S932811Ab3LDQCS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 11:02:18 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:48313 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932644Ab3LDQCR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 11:02:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [192.168.154.36]
-X-SEF-Processed: 7_3_0_01192__2013_12_04_15_59_50
+In-Reply-To: <00000142be2f1de0-764bb035-adbc-4367-b2b4-bf05498510a6-000000@email.amazonses.com>
+References: <1381265890-11333-1-git-send-email-hannes@cmpxchg.org>
+	<1381265890-11333-2-git-send-email-hannes@cmpxchg.org>
+	<20131203165910.54d6b4724a1f3e329af52ac6@linux-foundation.org>
+	<20131204015218.GA19709@lge.com>
+	<20131203180717.94c013d1.akpm@linux-foundation.org>
+	<00000142be2f1de0-764bb035-adbc-4367-b2b4-bf05498510a6-000000@email.amazonses.com>
+Date: Thu, 5 Dec 2013 01:02:15 +0900
+Message-ID: <CAAmzW4PwLhMd61ksOktdg=rkj0xHsSGt2Wm_za2Adjh4+tss-g@mail.gmail.com>
+Subject: Re: [patch 2/2] fs: buffer: move allocation failure loop into the allocator
+From: Joonsoo Kim <js1304@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        azurIt <azurit@pobox.sk>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        cgroups@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Christian Casteyde <casteyde.christian@free.fr>,
+        Pekka Enberg <penberg@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  In file included from kernel/crash_dump.c:2:0:
-  include/linux/crash_dump.h:22:27: error: unknown type name ‘pgprot_t’
+2013/12/5 Christoph Lameter <cl@linux.com>:
+> On Tue, 3 Dec 2013, Andrew Morton wrote:
+>
+>> >     page = alloc_slab_page(alloc_gfp, node, oo);
+>> >     if (unlikely(!page)) {
+>> >             oo = s->min;
+>>
+>> What is the value of s->min?  Please tell me it's zero.
+>
+> It usually is.
+>
+>> > @@ -1349,7 +1350,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+>> >             && !(s->flags & (SLAB_NOTRACK | DEBUG_DEFAULT_FLAGS))) {
+>> >             int pages = 1 << oo_order(oo);
+>> >
+>> > -           kmemcheck_alloc_shadow(page, oo_order(oo), flags, node);
+>> > +           kmemcheck_alloc_shadow(page, oo_order(oo), alloc_gfp, node);
+>>
+>> That seems reasonable, assuming kmemcheck can handle the allocation
+>> failure.
+>>
+>>
+>> Still I dislike this practice of using unnecessarily large allocations.
+>> What does it gain us?  Slightly improved object packing density.
+>> Anything else?
+>
+> The fastpath for slub works only within the bounds of a single slab page.
+> Therefore a larger frame increases the number of allocation possible from
+> the fastpath without having to use the slowpath and also reduces the
+> management overhead in the partial lists.
 
-when CONFIG_CRASH_DUMP=y
+Hello Christoph.
 
-The error was traced back to this commit:
+Now we have cpu partial slabs facility, so I think that slowpath isn't really
+slow. And it doesn't much increase the management overhead in the node
+partial lists, because of cpu partial slabs.
 
-  9cb218131de1 vmcore: introduce remap_oldmem_pfn_range()
+And larger frame may cause more slab_lock contention or cmpxchg contention
+if there are parallel freeings.
 
-include <asm/pgtable.h> to get the missing definition
+But, I don't know which one is better. Is larger frame still better? :)
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: <linux-mips@linux-mips.org>
-Cc: <stable@vger.kernel.org> # 3.12
-Reviewed-by: James Hogan <james.hogan@imgtec.com>
-Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
----
-I haven't tried any other architecture except mips.
-If OK this should be considered for stable 3.12 (CCed).
-
- include/linux/crash_dump.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/crash_dump.h b/include/linux/crash_dump.h
-index fe68a5a..7032518 100644
---- a/include/linux/crash_dump.h
-+++ b/include/linux/crash_dump.h
-@@ -6,6 +6,8 @@
- #include <linux/proc_fs.h>
- #include <linux/elf.h>
- 
-+#include <asm/pgtable.h> /* for pgprot_t */
-+
- #define ELFCORE_ADDR_MAX	(-1ULL)
- #define ELFCORE_ADDR_ERR	(-2ULL)
- 
--- 
-1.7.1
-
-
+Thanks.
