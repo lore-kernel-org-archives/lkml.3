@@ -1,90 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab3LDBfy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 20:35:54 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:34684 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755000Ab3LDBec (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 20:34:32 -0500
-Subject: [PATCH -tip v4 3/6] [BUGFIX] kprobes/x86: Prohibit probing on
- debug_stack_*
-To: Ingo Molnar <mingo@kernel.org>
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@suse.de>, "David S. Miller" <davem@davemloft.net>
-Date: Wed, 04 Dec 2013 01:28:49 +0000
-Message-ID: <20131204012849.22118.70043.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20131204012841.22118.82992.stgit@kbuild-fedora.novalocal>
-References: <20131204012841.22118.82992.stgit@kbuild-fedora.novalocal>
-User-Agent: StGit/0.16
+	id S1755920Ab3LDBgG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 20:36:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41060 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755000Ab3LDBgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 20:36:00 -0500
+Date: Wed, 4 Dec 2013 09:35:29 +0800
+From: Baoquan He <bhe@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: mjg59@srcf.ucam.org, greg@kroah.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, ebiederm@xmission.com, hpa@zytor.com
+Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in
+ kernel kexec
+Message-ID: <20131204013529.GA3298@localhost.localdomain>
+References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
+ <1384969851-7251-5-git-send-email-vgoyal@redhat.com>
+ <20131129031048.GE4318@dhcp-16-252.nay.redhat.com>
+ <20131202154437.GF18642@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131202154437.GF18642@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prohibit probing on debug_stack_reset and debug_stack_set_zero.
-Since the both functions are called from TRACE_IRQS_ON/OFF_DEBUG
-macros which run in int3 ist entry, probing it may cause a soft
-lockup.
+On 12/02/13 at 10:44am, Vivek Goyal wrote:
+> On Fri, Nov 29, 2013 at 11:10:48AM +0800, Baoquan He wrote:
+> 
+> [..]
+> > > +void *arch_kexec_kernel_image_load(struct kimage *image, char *kernel,
+> > > +			unsigned long kernel_len, char *initrd,
+> > > +			unsigned long initrd_len, char *cmdline,
+> > > +			unsigned long cmdline_len)
+> > > +{
+> > > +	int idx = image->file_handler_idx;
+> > > +
+> > > +	if (idx < 0)
+> > > +		return ERR_PTR(-ENOEXEC);
+> > > +
+> > > +	return kexec_file_type[idx].load(image, kernel, kernel_len, initrd,
+> > > +					initrd_len, cmdline, cmdline_len);
+> > > +}
+> > > +
+> > > +int arch_image_file_post_load_cleanup(struct kimage *image)
+> > > +{
+> > 
+> > Hi Vivek,
+> > 
+> > This function is defined as one of arch specific fucntion set, why don't
+> > we name it in a unified prefix as others.
+> 
+> I am using "arch_" prefix. What else to use?
 
-This happens when the kernel built with CONFIG_DYNAMIC_FTRACE=y
-and CONFIG_TRACE_IRQFLAGS=y.
+I mean in this function series, other functions have name like
+arch_kexec_kernel_image_xxx, why this function is lonely, and is named
+as arch_kimage_xxx. And here what does the 'k' mean in "kimage", kexec
+image or kernel image, I am confused.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
----
- arch/x86/kernel/cpu/common.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 6abc172..220de22 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -8,6 +8,7 @@
- #include <linux/delay.h>
- #include <linux/sched.h>
- #include <linux/init.h>
-+#include <linux/kprobes.h>
- #include <linux/kgdb.h>
- #include <linux/smp.h>
- #include <linux/io.h>
-@@ -1153,6 +1154,7 @@ int is_debug_stack(unsigned long addr)
- 		(addr <= __get_cpu_var(debug_stack_addr) &&
- 		 addr > (__get_cpu_var(debug_stack_addr) - DEBUG_STKSZ));
- }
-+NOKPROBE_SYMBOL(is_debug_stack);
- 
- DEFINE_PER_CPU(u32, debug_idt_ctr);
- 
-@@ -1161,6 +1163,7 @@ void debug_stack_set_zero(void)
- 	this_cpu_inc(debug_idt_ctr);
- 	load_current_idt();
- }
-+NOKPROBE_SYMBOL(debug_stack_set_zero);
- 
- void debug_stack_reset(void)
- {
-@@ -1169,6 +1172,7 @@ void debug_stack_reset(void)
- 	if (this_cpu_dec_return(debug_idt_ctr) == 0)
- 		load_current_idt();
- }
-+NOKPROBE_SYMBOL(debug_stack_reset);
- 
- #else	/* CONFIG_X86_64 */
- 
-
-
+> 
+> > 
+> > And name of the default dummy function in kernel/kexec.c is not consistent
+> > with the arch specific one, so currently
+> > arch_image_file_post_load_cleanup of x86 arch is not called. Please
+> > consider wihch one need be changed.
+> 
+> Good catch Bao. I should change arch_image_file_post_load_cleanup() to
+> arch_kimage_file_post_load_cleanup(), otherwise it never gets called and
+> memory leaks.
+> 
+> Thanks
+> Vivek
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
