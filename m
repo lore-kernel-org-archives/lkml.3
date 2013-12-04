@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab3LDJAA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 04:00:00 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:43837 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755254Ab3LDI75 (ORCPT
+	id S1755317Ab3LDJAV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 04:00:21 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:50524 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754947Ab3LDJAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 03:59:57 -0500
-Date: Wed, 4 Dec 2013 09:59:53 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Regression due to 0c44c2d0f459 x86: Use asm goto to implement
- better modify_and_test() functions
-Message-ID: <20131204085953.GC31778@gmail.com>
-References: <529E8719.4070202@zytor.com>
+	Wed, 4 Dec 2013 04:00:19 -0500
+Message-ID: <529EF0FB.2050808@linux.vnet.ibm.com>
+Date: Wed, 04 Dec 2013 14:38:11 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <529E8719.4070202@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] mm readahead: Fix the readahead fail in case of empty
+ numa node
+References: <1386066977-17368-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20131203143841.11b71e387dc1db3a8ab0974c@linux-foundation.org> <529EE811.5050306@linux.vnet.ibm.com> <20131204004125.a06f7dfc.akpm@linux-foundation.org>
+In-Reply-To: <20131204004125.a06f7dfc.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120409-2674-0000-0000-00000BC170D2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/04/2013 02:11 PM, Andrew Morton wrote:
+> On Wed, 04 Dec 2013 14:00:09 +0530 Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
+>
+>> Unfaortunately, from my search, I saw that the code belonged to pre git
+>> time, so could not get much information on that.
+>
+> Here: https://lkml.org/lkml/2004/8/20/242
+>
+> It seems it was done as a rather thoughtless performance optimisation.
+> I'd say it's time to reimplement max_sane_readahead() from scratch.
+>
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+Ok. Thanks for the link. I think after that,
+Here it was changed to pernode:
+https://lkml.org/lkml/2004/8/21/9 to avoid iteration all over.
 
-> Hi guys,
-> 
-> 0c44c2d0f459 x86: Use asm goto to implement better modify_and_test()
-> functions
-> 
-> causes a regression, because it incorrectly changed the constraints of
-> bitops.
-> 
-> Specifically, the GEN_BINARY_RMWcc() hardcodes a constraint as "er", but
-> it needs to be "Ir" for the bitops themselves.  "I" is correct (as
-> opposed to "J" even on 64 bits, because we only generate the 64-bit
-> version when we have a register operand.
-> 
-> Unfortunately there isn't a way we can get gcc+gas to generate a version
-> with an offset pointer.
+do you think above patch (+comments) with some sanitized nr (thus
+avoiding iteration over nodes in remote numa readahead case) does look
+better?
+or should we iterate all memory.
 
-Does the regression manifest itself in any actual breakage - if yes, 
-how does it look like? (People experiencing similar symptoms will be 
-helped by seeing a fix matching their problems.)
 
-Thanks,
 
-	ngo
+
