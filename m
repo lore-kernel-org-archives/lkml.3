@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab3LDCls (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 21:41:48 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:30663 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753423Ab3LDClr (ORCPT
+	id S1756106Ab3LDCm3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 21:42:29 -0500
+Received: from mdfmta009.mxout.tch.inty.net ([91.221.169.50]:50018 "EHLO
+	smtp.demon.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755317Ab3LDCm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 21:41:47 -0500
-Date: Tue, 3 Dec 2013 21:41:46 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [ANNOUNCE] 3.2.53-rt75
-Message-ID: <20131203214146.046ccfdf@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 3 Dec 2013 21:42:26 -0500
+Message-ID: <529E968D.7010108@lougher.demon.co.uk>
+Date: Wed, 04 Dec 2013 02:42:21 +0000
+From: Phillip Lougher <phillip@lougher.demon.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Squashfs bug fixes for 3.13
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+X-MDF-HostID: 22
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
-Dear RT Folks,
+Please consider pulling the following Squashfs bug fix.
 
-I'm pleased to announce the 3.2.53-rt75 stable release.
+Thanks
 
+Phillip
 
-This release is just an update to the new stable 3.2.53 version
-and no RT specific changes have been made.
+The following changes since commit ed4f381ec15e5f11724cdbc68cffd2c22d1eaebd:
 
+   Squashfs: Check stream is not NULL in decompressor_multi.c (2013-11-20 03:59:20 +0000)
 
-You can get this release via the git tree at:
+are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+   git://git.kernel.org/pub/scm/linux/kernel/git/pkl/squashfs-next.git tags/squashfs-fixes
 
-  branch: v3.2-rt
-  Head SHA1: 31851e0bb2263c249a09a95e10eca720b5cdc4dd
+for you to fetch changes up to 6d565409503f4e1f74ac30de14e8c91a2b826cd8:
 
+   Squashfs: fix failure to unlock pages on decompress error (2013-11-24 01:02:50 +0000)
 
-Or to build 3.2.53-rt75 directly, the following patches should be applied:
+----------------------------------------------------------------
+Just a single bug fix to the new "directly decompress into the
+page cache" code.
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
+----------------------------------------------------------------
+Phillip Lougher (1):
+       Squashfs: fix failure to unlock pages on decompress error
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.53.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.53-rt75.patch.xz
-
-
-
-
-Enjoy,
-
--- Steve
-
+  fs/squashfs/file_direct.c | 5 ++++-
+  1 file changed, 4 insertions(+), 1 deletion(-)
