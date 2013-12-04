@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932281Ab3LDMFe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 07:05:34 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:47746 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932255Ab3LDMFA (ORCPT
+	id S1755268Ab3LDMKX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 07:10:23 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:13923 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704Ab3LDMKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 07:05:00 -0500
-From: Magnus Damm <magnus.damm@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-sh@vger.kernel.org, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, horms@verge.net.au,
-        Magnus Damm <magnus.damm@gmail.com>, tglx@linutronix.de
-Date: Wed, 04 Dec 2013 21:05:46 +0900
-Message-Id: <20131204120546.29642.15772.sendpatchset@w520>
-In-Reply-To: <20131204120537.29642.942.sendpatchset@w520>
-References: <20131204120537.29642.942.sendpatchset@w520>
-Subject: [PATCH 01/02] irqchip: renesas-irqc: Use lazy disable
+	Wed, 4 Dec 2013 07:10:22 -0500
+X-IronPort-AV: E=Sophos;i="4.93,824,1378857600"; 
+   d="scan'208";a="78112462"
+Message-ID: <1386159015.17466.60.camel@kazak.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH RFC] xen-block: correctly define structures
+ in public headers
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Julien Grall <julien.grall@linaro.org>, <linux-kernel@vger.kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        <xen-devel@lists.xenproject.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Roger Pau Monne <roger.pau@citrix.com>
+Date: Wed, 4 Dec 2013 12:10:15 +0000
+In-Reply-To: <1386149319.13256.83.camel@kazak.uk.xensource.com>
+References: <1386068254-1413-1-git-send-email-roger.pau@citrix.com>
+	 <529DBA07.6090108@citrix.com>
+	 <1386068884.13256.9.camel@kazak.uk.xensource.com>
+	 <529DC7BA.7080506@citrix.com>
+	 <1386078108.13256.30.camel@kazak.uk.xensource.com>
+	 <529DF4A0.50103@citrix.com>
+	 <1386083821.13256.42.camel@kazak.uk.xensource.com>
+	 <20131203201135.GA14243@phenom.dumpdata.com>
+	 <1386149319.13256.83.camel@kazak.uk.xensource.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Magnus Damm <damm@opensource.se>
+On Wed, 2013-12-04 at 09:28 +0000, Ian Campbell wrote:
+> This could probably even be semi automated by producing a script to feed
+> to gdb which run through all of the options and diffing the result.
+> 
+> If I could have the moon on a stick I would have a tool such as this
+> running against the canonical Xen headers, to catch breakage as it is
+> introduced upstream and a tool which could run against an arbitrary ELF
+> binary to validate it against the upstream results.
+> tools/include/xen-foreign/mkchecker.py goes some way towards that but
+> isn't really extensible to the extent we would need/want.
 
-Set the ->irq_enable() and ->irq_disable() methods to NULL
-to enable lazy disable of interrupts. This by itself provides
-some level of optimization, but is mainly enabled as ground
-work for future Suspend-to-RAM wake up support.
+Perhaps the gdb python extensions are what we need:
+http://stackoverflow.com/questions/9788679/how-to-get-the-relative-adress-of-a-field-in-a-structure-dump-c
 
-Signed-off-by: Magnus Damm <damm@opensource.se>
----
+or perhaps
+http://turtle.ee.ncku.edu.tw/docs/perl/manual/utils/c2ph.html
 
- drivers/irqchip/irq-renesas-irqc.c |    2 --
- 1 file changed, 2 deletions(-)
 
---- 0001/drivers/irqchip/irq-renesas-irqc.c
-+++ work/drivers/irqchip/irq-renesas-irqc.c	2013-12-04 18:12:45.000000000 +0900
-@@ -212,8 +212,6 @@ static int irqc_probe(struct platform_de
- 	irq_chip->name = name;
- 	irq_chip->irq_mask = irqc_irq_disable;
- 	irq_chip->irq_unmask = irqc_irq_enable;
--	irq_chip->irq_enable = irqc_irq_enable;
--	irq_chip->irq_disable = irqc_irq_disable;
- 	irq_chip->irq_set_type = irqc_irq_set_type;
- 	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE;
- 
+
