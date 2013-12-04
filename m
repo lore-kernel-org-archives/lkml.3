@@ -1,258 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932375Ab3LDNhb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 08:37:31 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:54532 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754072Ab3LDNha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 08:37:30 -0500
-Date: Wed, 4 Dec 2013 07:37:02 -0600
-From: Nishanth Menon <nm@ti.com>
-To: Joel Fernandes <joelf@ti.com>
-CC: Tony Lindgren <tony@atomide.com>,
-        Tobias Jakobi <tjakobi@math.uni-bielefeld.de>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: OMAP2+: omap_device: add fail hook for runtime_pm
- when bad data is detected
-Message-ID: <20131204133702.GA7828@kahuna>
-References: <1386121153-32351-1-git-send-email-nm@ti.com>
- <529EE305.70001@ti.com>
- <529F12F4.70304@ti.com>
- <529F2391.8070202@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <529F2391.8070202@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932438Ab3LDNh7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 08:37:59 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:39901 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755506Ab3LDNh5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 08:37:57 -0500
+X-AuditID: cbfec7f4-b7f966d0000003d9-9f-529f30322d3b
+Message-id: <1386164272.6195.3.camel@AMDC1943>
+Subject: Re: [PATCH v6 3/3] mfd: max14577: Add device tree bindings document
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Date: Wed, 04 Dec 2013 14:37:52 +0100
+In-reply-to: <20131204112039.GC907@lee--X1>
+References: <1386153615-25456-1-git-send-email-k.kozlowski@samsung.com>
+ <1386153615-25456-4-git-send-email-k.kozlowski@samsung.com>
+ <20131204112039.GC907@lee--X1>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLIsWRmVeSWpSXmKPExsVy+t/xK7pGBvODDK62aVoc3KppsXHGelaL
+	qQ+fsFlc//Kc1WL+kXOsFhNXTma2OPdqJaPF2aY37Bb3vx5ltPh2pYPJYtPja6wWC9uWsFhc
+	3jWHzWLtkbvsFkuvX2SymDB9LYvF4RUHmCzWvZzOYvHqYBuLg7DHmnlrGD0WfL7C7jGh/xOj
+	x85Zd9k9Vi7/wuaxeYWWx6ZVnWwer1bPZPW4c20PUGhJvUffllWMHp83yXlsnBsawBvFZZOS
+	mpNZllqkb5fAlfFlC19Bl2jF+fv3WRoYnwt0MXJySAiYSGzqnsEIYYtJXLi3nq2LkYtDSGAp
+	o8SPJcuZIJzPjBLT1rwHquLg4BXQk1h8XRWkQVjAR6LxzBtmEJtNwFhi8/IlbCAlIgIqEufe
+	mIO0MgvsYJVY1r6JBaSGRUBVYvPuJawgNqeAtsTUmVeh5i9jlJh09DxYEbOAusSkeYuYIS5S
+	ktjd3skOEZeX2LzmLVicV0BQ4sfkeywTGAVmIWmZhaRsFpKyBYzMqxhFU0uTC4qT0nMN9YoT
+	c4tL89L1kvNzNzFCovTLDsbFx6wOMQpwMCrx8HKwzwsSYk0sK67MPcQowcGsJMK7XHd+kBBv
+	SmJlVWpRfnxRaU5q8SFGJg5OqQZGI9tVk/aZ+RfMmP/qS9gxrxu3dJWzPi2LO+fnWyH9d/3/
+	oBnBoqY9rqbrQ5+ZGtT+27/ixTtlxomfXC/sDl65ZfZfh7deopHP8j9vX/5s2dTXs6WOTWRX
+	rcs7eES68YfTl6SjWYs3J54+cfP6Ut+Lat8L16/9uVz7Q+W/zNxEGcsDTYlrVpbmliuxFGck
+	GmoxFxUnAgApXfMcsAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18:14-20131204, Joel Fernandes wrote:
-> On 12/04/2013 05:03 PM, Nishanth Menon wrote:
-> > On 12/04/2013 02:08 AM, Joel Fernandes wrote:
-> >> On 12/04/2013 07:09 AM, Nishanth Menon wrote:
-> >>> Due to the cross dependencies between hwmod for automanaged device
-> >>> information for OMAP and dts node definitions, we can run into scenarios
-> >>> where the dts node is defined, however it's hwmod entry is yet to be
-> >>> added. In these cases:
-> >>> a) omap_device does not register a pm_domain (since it cannot find
-> >>>     hwmod entry).
-> >>> b) driver does not know about (a), does a pm_runtime_get_sync which
-> >>>     never fails
-> >>> c) It then tries to do some operation on the device (such as read the
-> >>>    revision register (as part of probe) without clock or adequate OMAP
-> >>>    generic PM operation performed for enabling the module.
-> >>>
-> >>> This causes a crash such as that reported in:
-> >>> https://bugzilla.kernel.org/show_bug.cgi?id=66441
-> >>>
-> >>> When 'ti,hwmod' is provided in dt node, it is expected that the device
-> >>> will not function without the OMAP's power automanagement. Hence, when
-> >>> we hit a fail condition (due to hwmod entries not present or other
-> >>> similar scenario), fail at pm_domain level due to lack of data, provide
-> >>> enough information for it to be fixed, however, it allows for the driver
-> >>> to take appropriate measures to prevent crash.
-> >>>
-> >>> Reported-by: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>
-> >>> Signed-off-by: Nishanth Menon <nm@ti.com>
-> >>> ---
-> >>>   arch/arm/mach-omap2/omap_device.c |   24 ++++++++++++++++++++++++
-> >>>   arch/arm/mach-omap2/omap_device.h |    1 +
-> >>>   2 files changed, 25 insertions(+)
-> >>>
-> >>> diff --git a/arch/arm/mach-omap2/omap_device.c
-> >>> b/arch/arm/mach-omap2/omap_device.c
-> >>> index 53f0735..e0a398c 100644
-> >>> --- a/arch/arm/mach-omap2/omap_device.c
-> >>> +++ b/arch/arm/mach-omap2/omap_device.c
-> >>> @@ -183,6 +183,10 @@ static int omap_device_build_from_dt(struct
-> >>> platform_device *pdev)
-> >>>   odbfd_exit1:
-> >>>       kfree(hwmods);
-> >>>   odbfd_exit:
-> >>> +    /* if data/we are at fault.. load up a fail handler */
-> >>> +    if (ret)
-> >>> +        pdev->dev.pm_domain = &omap_device_fail_pm_domain;
-> >>> +
-> >>>       return ret;
-> >>>   }
-> >>>
-> >>
-> >> Just wondering, can't we just print the warning here instead of registering new
-> >> pm_domain callbacks?
-> >>
+On Wed, 2013-12-04 at 11:20 +0000, Lee Jones wrote:
+> > Add document describing device tree bindings for MAX14577 MFD driver.
 > > 
-> > I suggest you might want to read the commit message again.. but lets try once
-> > again:
-> 
-> I know what your patch does and what the problem you're trying to solve is.. Was
-> just trying to see if there's a better way of doing what you're trying to do..
-Thanks for clarifying.
-
-> 
-> >>> b) driver does not know about (a), does a pm_runtime_get_sync which
-> >>>     never fails"
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > ---
+> >  Documentation/devicetree/bindings/mfd/max14577.txt |   48 ++++++++++++++++++++
+> >  1 file changed, 48 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
 > > 
-> > A device node stated it will have hwmod to adequately control it, but in
-> > reality, as in this case, it does not. how does printing a warning alone help
-> > the driver which is not aware of these? The driver's attempt at pm_runtime_sync
-> > should fail, as that is what "ti,hwmod" property controls.
+> > diff --git a/Documentation/devicetree/bindings/mfd/max14577.txt b/Documentation/devicetree/bindings/mfd/max14577.txt
+> > new file mode 100644
+> > index 000000000000..f4fd16360b6b
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/mfd/max14577.txt
+> > @@ -0,0 +1,48 @@
+> > +MAXIM MAX14577 multi-function device
 > 
-> Why not do the following?
+> Why is Maxim capitalised in such a way?
 > 
-> Assign pm_domain as omap_device_pm_domain always regardless of error or not.
+> If you're going to use the term Multi-Function Device, please
+> capitalise it.
 > 
-> Then in the _od_runtime_resume, check if the od or hwmods exists. If not, print
-> the warning. That way you don't need to register additional special callbacks
-> just to print a warning and will prolly be fewer LoC fwiw.
+> > +MAX14577 is a Multi-function device with Micro-USB Interface Circuit, Li+
 > 
-> That may be harder to do and may require additional checks in omap_device_enable
-> etc, not sure. In that case, your approach is certainly the next best way. Just
-> thought its worth looking into :)
+> Same here.
 
-fair enough, The moment we use the generic omap_device_pm_domain, the
-remaining code which assumes od will be valid will need checking.. (so,
-we got to do that for all functions where usage is present - fine, that
-can be done too)[1] - and yes, it will take care of the pm_runtime handling
-However, lets look at the side effect, omap_device_pm_domain also
-registers generic suspend_noirq and resume_noirq, and _od_suspend_noirq will
-also fail -> as a result device will fail to even attempt to suspend.
+I'll fix this. The MAXIM capitalization came from other drivers.
 
-That IMHO, is a wrong behavior, So, that explains why we'd need a
-omap_device_fail_pm_domain. Keeps the error handling completely
-seperated from regular code.
+> > +Battery Charger and SFOUT LDO output for powering USB devices. It is
+> > +interfaced to host controller using I2C.
+> > +
+> > +Required properties:
+> > +- compatible : Must be "maxim,max14577".
+> > +- reg : I2C slave address for the max14577 chip.
+> > +- interrupts : IRQ line for the max14577 chip.
+> > +- interrupt-parent :  The parent interrupt controller.
+> > +
+> > +Optional nodes:
+> > +- regulators :
+> > +  Required child node properties:
+> > +  - compatible : "maxim,max14577-regulator"
+> > +
+> > +  Optional child nodes:
+> > +    Each child node representing a regulator, following standard regulator
+> > +    bindings. Valid names for a regulator are: "CHARGER" and "SAFEOUT".
+> > +    The SAFEOUT is a constant voltage regulator so there is no need
+> 
+> s/constant/fixed
+OK.
+
+> > +    to specify voltages for it.
+> 
+> The whole of the "Optional nodes" explaination isn't as clear as it
+> could otherwise be. 
+> 
+> > +	[*] refer Documentation/devicetree/bindings/regulator/regulator.txt
+> > +
+> > +Example:
+> > +	max14577@25 {
+> > +		compatible = "maxim,max14577";
+> > +		reg = <0x25>;
+> > +		interrupt-parent = <&gpx1>;
+> > +		interrupts = <5 0>;
+> 
+> I'm gussing this is IRQ5 and the 0 is flags? If so, please use
+> #defines for the flags.
+
+This is a standard interrupt binding. The max14577 MFD core driver
+ignores the interrupt flags and always uses IRQF_TRIGGER_FALLING. I can
+fix this with new patch for drivers/mfd/max14577.c but still I don't see
+what should be added in documentation.
 
 
-[1]
-diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
-index 53f0735..029f076 100644
---- a/arch/arm/mach-omap2/omap_device.c
-+++ b/arch/arm/mach-omap2/omap_device.c
-@@ -173,7 +173,6 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
- 			r->name = dev_name(&pdev->dev);
- 	}
- 
--	pdev->dev.pm_domain = &omap_device_pm_domain;
- 
- 	if (device_active) {
- 		omap_device_enable(pdev);
-@@ -183,6 +182,7 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
- odbfd_exit1:
- 	kfree(hwmods);
- odbfd_exit:
-+	pdev->dev.pm_domain = &omap_device_pm_domain;
- 	return ret;
- }
- 
-@@ -267,6 +267,10 @@ int omap_device_get_context_loss_count(struct platform_device *pdev)
- 	u32 ret = 0;
- 
- 	od = to_omap_device(pdev);
-+	if (!od) {
-+		dev_err(&pdev->dev, "%s: Missing od data\n", __func__);
-+		return -ENODEV;
-+	}
- 
- 	if (od->hwmods_cnt)
- 		ret = omap_hwmod_get_context_loss_count(od->hwmods[0]);
-@@ -587,6 +591,12 @@ static int _od_runtime_suspend(struct device *dev)
- {
- 	struct platform_device *pdev = to_platform_device(dev);
- 	int ret;
-+	struct omap_device *od = to_omap_device(pdev);
-+
-+	if (!od) {
-+		dev_err(dev, "%s: Missing od data\n", __func__);
-+		return -ENODEV;
-+	}
- 
- 	ret = pm_generic_runtime_suspend(dev);
- 
-@@ -599,6 +609,12 @@ static int _od_runtime_suspend(struct device *dev)
- static int _od_runtime_resume(struct device *dev)
- {
- 	struct platform_device *pdev = to_platform_device(dev);
-+	struct omap_device *od = to_omap_device(pdev);
-+
-+	if (!od) {
-+		dev_err(dev, "%s: Missing od data\n", __func__);
-+		return -ENODEV;
-+	}
- 
- 	omap_device_enable(pdev);
- 
-@@ -613,6 +629,11 @@ static int _od_suspend_noirq(struct device *dev)
- 	struct omap_device *od = to_omap_device(pdev);
- 	int ret;
- 
-+	if (!od) {
-+		dev_err(dev, "%s: Missing od data\n", __func__);
-+		return -ENODEV;
-+	}
-+
- 	/* Don't attempt late suspend on a driver that is not bound */
- 	if (od->_driver_status != BUS_NOTIFY_BOUND_DRIVER)
- 		return 0;
-@@ -635,6 +656,11 @@ static int _od_resume_noirq(struct device *dev)
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct omap_device *od = to_omap_device(pdev);
- 
-+	if (!od) {
-+		dev_err(dev, "%s: Missing od data\n", __func__);
-+		return -ENODEV;
-+	}
-+
- 	if (od->flags & OMAP_DEVICE_SUSPENDED) {
- 		od->flags &= ~OMAP_DEVICE_SUSPENDED;
- 		omap_device_enable(pdev);
-@@ -704,6 +730,10 @@ int omap_device_enable(struct platform_device *pdev)
- 	struct omap_device *od;
- 
- 	od = to_omap_device(pdev);
-+	if (!od) {
-+		dev_err(&pdev->dev, "%s: Missing od data\n", __func__);
-+		return -ENODEV;
-+	}
- 
- 	if (od->_state == OMAP_DEVICE_STATE_ENABLED) {
- 		dev_warn(&pdev->dev,
-@@ -734,6 +764,10 @@ int omap_device_idle(struct platform_device *pdev)
- 	struct omap_device *od;
- 
- 	od = to_omap_device(pdev);
-+	if (!od) {
-+		dev_err(&pdev->dev, "%s: Missing od data\n", __func__);
-+		return -ENODEV;
-+	}
- 
- 	if (od->_state != OMAP_DEVICE_STATE_ENABLED) {
- 		dev_warn(&pdev->dev,
-@@ -767,6 +801,11 @@ int omap_device_assert_hardreset(struct platform_device *pdev, const char *name)
- 	int ret = 0;
- 	int i;
- 
-+	if (!od) {
-+		dev_err(&pdev->dev, "%s: Missing od data\n", __func__);
-+		return -ENODEV;
-+	}
-+
- 	for (i = 0; i < od->hwmods_cnt; i++) {
- 		ret = omap_hwmod_assert_hardreset(od->hwmods[i], name);
- 		if (ret)
-@@ -795,6 +834,11 @@ int omap_device_deassert_hardreset(struct platform_device *pdev,
- 	int ret = 0;
- 	int i;
- 
-+	if (!od) {
-+		dev_err(&pdev->dev, "%s: Missing od data\n", __func__);
-+		return -ENODEV;
-+	}
-+
- 	for (i = 0; i < od->hwmods_cnt; i++) {
- 		ret = omap_hwmod_deassert_hardreset(od->hwmods[i], name);
- 		if (ret)
--- 
-Regards,
-Nishanth Menon
+Best regards,
+Krzysztof
+
