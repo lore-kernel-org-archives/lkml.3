@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab3LDALs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 19:11:48 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54050 "EHLO
+	id S1755864Ab3LDALn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 19:11:43 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:56612 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754744Ab3LDAKT (ORCPT
+	with ESMTP id S1754778Ab3LDAKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 19:10:19 -0500
-X-AuditID: 9c93016f-b7c57ae0000070d3-25-529e72e696ce
+	Tue, 3 Dec 2013 19:10:20 -0500
+X-AuditID: 9c93016f-b7c57ae0000070d3-2b-529e72e796be
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
@@ -16,9 +16,9 @@ Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, Joonsoo Kim <js1304@gmail.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 3/9] mm/rmap: factor lock function out of rmap_walk_anon()
-Date: Wed,  4 Dec 2013 09:12:14 +0900
-Message-Id: <1386115940-21425-4-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 4/9] mm/rmap: make rmap_walk to get the rmap_walk_control argument
+Date: Wed,  4 Dec 2013 09:12:15 +0900
+Message-Id: <1386115940-21425-5-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386115940-21425-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1386115940-21425-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -27,66 +27,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we traverse anon_vma, we need to take a read-side anon_lock.
-But there is subtle difference in the situation so that we can't use
-same method to take a lock in each cases. Therefore, we need to make
-rmap_walk_anon() taking difference lock function.
+In each rmap traverse case, there is some difference so that we need
+function pointers and arguments to them in order to handle these
+difference properly.
 
-This patch is the first step, factoring lock function for anon_lock out
-of rmap_walk_anon(). It will be used in case of removing migration entry
-and in default of rmap_walk_anon().
+For this purpose, struct rmap_walk_control is introduced in this patch,
+and will be extended in following patch. Introducing and extending are
+separate, because it clarify changes.
 
 Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-diff --git a/mm/rmap.c b/mm/rmap.c
-index a387c44..91c73c4 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1680,6 +1680,24 @@ void __put_anon_vma(struct anon_vma *anon_vma)
+diff --git a/include/linux/ksm.h b/include/linux/ksm.h
+index 45c9b6a..0eef8cb 100644
+--- a/include/linux/ksm.h
++++ b/include/linux/ksm.h
+@@ -76,8 +76,7 @@ struct page *ksm_might_need_to_copy(struct page *page,
+ int page_referenced_ksm(struct page *page,
+ 			struct mem_cgroup *memcg, unsigned long *vm_flags);
+ int try_to_unmap_ksm(struct page *page, enum ttu_flags flags);
+-int rmap_walk_ksm(struct page *page, int (*rmap_one)(struct page *,
+-		  struct vm_area_struct *, unsigned long, void *), void *arg);
++int rmap_walk_ksm(struct page *page, struct rmap_walk_control *rwc);
+ void ksm_migrate_page(struct page *newpage, struct page *oldpage);
+ 
+ #else  /* !CONFIG_KSM */
+@@ -120,8 +119,8 @@ static inline int try_to_unmap_ksm(struct page *page, enum ttu_flags flags)
+ 	return 0;
+ }
+ 
+-static inline int rmap_walk_ksm(struct page *page, int (*rmap_one)(struct page*,
+-		struct vm_area_struct *, unsigned long, void *), void *arg)
++static inline int rmap_walk_ksm(struct page *page,
++			struct rmap_walk_control *rwc)
+ {
+ 	return 0;
+ }
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index 6dacb93..6a456ce 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -235,11 +235,16 @@ struct anon_vma *page_lock_anon_vma_read(struct page *page);
+ void page_unlock_anon_vma_read(struct anon_vma *anon_vma);
+ int page_mapped_in_vma(struct page *page, struct vm_area_struct *vma);
+ 
++struct rmap_walk_control {
++	void *arg;
++	int (*rmap_one)(struct page *page, struct vm_area_struct *vma,
++					unsigned long addr, void *arg);
++};
++
+ /*
+  * Called by migrate.c to remove migration ptes, but might be used more later.
+  */
+-int rmap_walk(struct page *page, int (*rmap_one)(struct page *,
+-		struct vm_area_struct *, unsigned long, void *), void *arg);
++int rmap_walk(struct page *page, struct rmap_walk_control *rwc);
+ 
+ #else	/* !CONFIG_MMU */
+ 
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 175fff7..c3035fe 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -1997,8 +1997,7 @@ out:
  }
  
  #ifdef CONFIG_MIGRATION
-+static struct anon_vma *rmap_walk_anon_lock(struct page *page)
-+{
-+	struct anon_vma *anon_vma;
+-int rmap_walk_ksm(struct page *page, int (*rmap_one)(struct page *,
+-		  struct vm_area_struct *, unsigned long, void *), void *arg)
++int rmap_walk_ksm(struct page *page, struct rmap_walk_control *rwc)
+ {
+ 	struct stable_node *stable_node;
+ 	struct rmap_item *rmap_item;
+@@ -2033,7 +2032,8 @@ again:
+ 			if ((rmap_item->mm == vma->vm_mm) == search_new_forks)
+ 				continue;
+ 
+-			ret = rmap_one(page, vma, rmap_item->address, arg);
++			ret = rwc->rmap_one(page, vma,
++					rmap_item->address, rwc->arg);
+ 			if (ret != SWAP_AGAIN) {
+ 				anon_vma_unlock_read(anon_vma);
+ 				goto out;
+diff --git a/mm/migrate.c b/mm/migrate.c
+index bb94004..3747fcd 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -198,7 +198,12 @@ out:
+  */
+ static void remove_migration_ptes(struct page *old, struct page *new)
+ {
+-	rmap_walk(new, remove_migration_pte, old);
++	struct rmap_walk_control rwc = {
++		.rmap_one = remove_migration_pte,
++		.arg = old,
++	};
 +
-+	/*
-+	 * Note: remove_migration_ptes() cannot use page_lock_anon_vma_read()
-+	 * because that depends on page_mapped(); but not all its usages
-+	 * are holding mmap_sem. Users without mmap_sem are required to
-+	 * take a reference count to prevent the anon_vma disappearing
-+	 */
-+	anon_vma = page_anon_vma(page);
-+	if (!anon_vma)
-+		return NULL;
-+
-+	anon_vma_lock_read(anon_vma);
-+	return anon_vma;
-+}
-+
++	rmap_walk(new, &rwc);
+ }
+ 
  /*
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 91c73c4..1ef74e2 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1702,8 +1702,7 @@ static struct anon_vma *rmap_walk_anon_lock(struct page *page)
   * rmap_walk() and its helpers rmap_walk_anon() and rmap_walk_file():
   * Called by migrate.c to remove migration ptes, but might be used more later.
-@@ -1692,16 +1710,10 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
- 	struct anon_vma_chain *avc;
- 	int ret = SWAP_AGAIN;
- 
--	/*
--	 * Note: remove_migration_ptes() cannot use page_lock_anon_vma_read()
--	 * because that depends on page_mapped(); but not all its usages
--	 * are holding mmap_sem. Users without mmap_sem are required to
--	 * take a reference count to prevent the anon_vma disappearing
--	 */
--	anon_vma = page_anon_vma(page);
-+	anon_vma = rmap_walk_anon_lock(page);
- 	if (!anon_vma)
- 		return ret;
--	anon_vma_lock_read(anon_vma);
-+
+  */
+-static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
+-		struct vm_area_struct *, unsigned long, void *), void *arg)
++static int rmap_walk_anon(struct page *page, struct rmap_walk_control *rwc)
+ {
+ 	struct anon_vma *anon_vma;
+ 	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+@@ -1717,7 +1716,7 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
  	anon_vma_interval_tree_foreach(avc, &anon_vma->rb_root, pgoff, pgoff) {
  		struct vm_area_struct *vma = avc->vma;
  		unsigned long address = vma_address(page, vma);
+-		ret = rmap_one(page, vma, address, arg);
++		ret = rwc->rmap_one(page, vma, address, rwc->arg);
+ 		if (ret != SWAP_AGAIN)
+ 			break;
+ 	}
+@@ -1725,8 +1724,7 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
+ 	return ret;
+ }
+ 
+-static int rmap_walk_file(struct page *page, int (*rmap_one)(struct page *,
+-		struct vm_area_struct *, unsigned long, void *), void *arg)
++static int rmap_walk_file(struct page *page, struct rmap_walk_control *rwc)
+ {
+ 	struct address_space *mapping = page->mapping;
+ 	pgoff_t pgoff = page->index << compound_order(page);
+@@ -1738,7 +1736,7 @@ static int rmap_walk_file(struct page *page, int (*rmap_one)(struct page *,
+ 	mutex_lock(&mapping->i_mmap_mutex);
+ 	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
+ 		unsigned long address = vma_address(page, vma);
+-		ret = rmap_one(page, vma, address, arg);
++		ret = rwc->rmap_one(page, vma, address, rwc->arg);
+ 		if (ret != SWAP_AGAIN)
+ 			break;
+ 	}
+@@ -1751,17 +1749,16 @@ static int rmap_walk_file(struct page *page, int (*rmap_one)(struct page *,
+ 	return ret;
+ }
+ 
+-int rmap_walk(struct page *page, int (*rmap_one)(struct page *,
+-		struct vm_area_struct *, unsigned long, void *), void *arg)
++int rmap_walk(struct page *page, struct rmap_walk_control *rwc)
+ {
+ 	VM_BUG_ON(!PageLocked(page));
+ 
+ 	if (unlikely(PageKsm(page)))
+-		return rmap_walk_ksm(page, rmap_one, arg);
++		return rmap_walk_ksm(page, rwc);
+ 	else if (PageAnon(page))
+-		return rmap_walk_anon(page, rmap_one, arg);
++		return rmap_walk_anon(page, rwc);
+ 	else
+-		return rmap_walk_file(page, rmap_one, arg);
++		return rmap_walk_file(page, rwc);
+ }
+ #endif /* CONFIG_MIGRATION */
+ 
 -- 
 1.7.9.5
 
