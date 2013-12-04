@@ -1,110 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933120Ab3LDTHd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 14:07:33 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:41912 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755899Ab3LDTH2 (ORCPT
+	id S1756003Ab3LDTOX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 14:14:23 -0500
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:45555 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755983Ab3LDTOV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 14:07:28 -0500
-Message-ID: <529F7D43.2030707@ti.com>
-Date: Wed, 4 Dec 2013 21:06:43 +0200
-From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Wed, 4 Dec 2013 14:14:21 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Sekhar Nori <nsekhar@ti.com>, Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
-        <wim@iguana.be>, <linux-watchdog@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <Pawel.Moll@arm.com>,
-        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
-        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
-        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
-        <grygorii.strashko@ti.com>
-Subject: Re: [PATCH v4 1/5] watchdog: davinci: change driver to use WDT core
-References: <1385556508-3935-1-git-send-email-ivan.khoronzhuk@ti.com> <1385556508-3935-2-git-send-email-ivan.khoronzhuk@ti.com> <529F6EBE.5050703@ti.com> <20131204182824.GA14499@roeck-us.net> <529F7797.4080100@ti.com> <20131204185837.GA16166@roeck-us.net>
-In-Reply-To: <20131204185837.GA16166@roeck-us.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.122]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Transfer-Encoding: 8BIT
+To: Jason Cooper <jason@lakedaemon.net>,
+        "boris brezillon" <b.brezillon@overkiz.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <20131202031558.GB29282@titan.lakedaemon.net>
+Cc: "Rob Landley" <rob@landley.net>, "Rob Herring" <rob.herring@calxeda.com>,
+        "Pawel Moll" <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        "Stephen Warren" <swarren@wwwdotorg.org>,
+        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "Nicolas Ferre" <nicolas.ferre@atmel.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+References: <1385556285-19180-1-git-send-email-b.brezillon@overkiz.com>
+ <1385556285-19180-3-git-send-email-b.brezillon@overkiz.com>
+ <20131127145620.GR2879@titan.lakedaemon.net> <5296298C.9040300@overkiz.com>
+ <20131127181042.16819.36364@quantum> <5296F8B2.9080807@overkiz.com>
+ <20131202031558.GB29282@titan.lakedaemon.net>
+Message-ID: <20131204191410.29850.32443@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v2 2/2] clk: add accuracy support for fixed clock
+Date: Wed, 04 Dec 2013 11:14:10 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2013 08:58 PM, Guenter Roeck wrote:
-> On Wed, Dec 04, 2013 at 08:42:31PM +0200, ivan.khoronzhuk wrote:
->> On 12/04/2013 08:28 PM, Guenter Roeck wrote:
->>> On Wed, Dec 04, 2013 at 11:34:46PM +0530, Sekhar Nori wrote:
->>>> On 11/27/2013 6:18 PM, Ivan Khoronzhuk wrote:
->>>>> To reduce code duplicate and increase code readability use WDT core
->>>>> code to handle WDT interface.
->>>>>
->>>>> Remove io_lock as the WDT core uses mutex to lock each wdt device.
->>>>> Remove wdt_state as the WDT core tracks state with its own variable.
->>>>>
->>>>> The watchdog_init_timeout() can read timeout value from timeout-sec
->>>>> property if the passed value is out of bounds. The heartbeat is
->>>>> initialized in next way. If heartbeat is not set thought module
->>>>> parameter, try to read it's value from WDT node timeout-sec property.
->>>>> If node has no one, use default value.
->>>>>
->>>>> The heartbeat is hold in wdd->timeout by WDT core, so use it in
->>>>> order to set timeout period.
->>>>>
->>>>> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>>>> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
->>>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->>>>> ---
->>>>>    drivers/watchdog/Kconfig       |    2 +
->>>>>    drivers/watchdog/davinci_wdt.c |  147 ++++++++++------------------------------
->>>>>    2 files changed, 37 insertions(+), 112 deletions(-)
->>>>>
->>>>> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
->>>>> index 5be6e91..eb8c89d 100644
->>>>> --- a/drivers/watchdog/Kconfig
->>>>> +++ b/drivers/watchdog/Kconfig
->>>>> @@ -271,6 +271,8 @@ config IOP_WATCHDOG
->>>>>    config DAVINCI_WATCHDOG
->>>>>    	tristate "DaVinci watchdog"
->>>>>    	depends on ARCH_DAVINCI
->>>>> +	select WATCHDOG_CORE
->>>>> +	select WATCHDOG_NOWAYOUT
->>>>
->>>> Its not clear for change log why NOWAYOUT needs to be forced on all the
->>>> time for all users of DaVinci watchdog.
->>
->> ... you are right
->>
->>>>
->>> Actually, thinking about it, it is not necessary and can be replaced with
->>>
->>> 	watchdog_set_nowayout(wdd, 1);
->>
->> Good idea, I'll replace watchdog_set_nowayout(wdd, WATCHDOG_NOWAYOUT) on it.
->> And delete "select WATCHDOG_NOWAYOUT"
->>
->>>
->>> In other words, there is no need to force NOWAYOUT on _other_ watchdogs which
->>> may be present in the system. Still, you are right, it would be nice to explain
->>> in the changelog (or maybe even better as comment in the code) why it is
->>> enforced.
->>>
->>> Guenter
->>>
->>
->> Only question, should I repost only this patch or whole series?
->>
-> Reposting only this patch should be sufficient if the others did not change.
->
-> Thanks,
-> Guenter
->
+Quoting Jason Cooper (2013-12-01 19:15:58)
+> On Thu, Nov 28, 2013 at 09:02:58AM +0100, boris brezillon wrote:
+> > On 27/11/2013 19:10, Mike Turquette wrote:
+> > >Quoting boris brezillon (2013-11-27 09:19:08)
+> > >>>On Wed, Nov 27, 2013 at 01:44:45PM +0100, Boris BREZILLON wrote:
+> ...
+> > >>>I would also prefer to see an unknown accuracy be -1.
+> > >>I decided to keep 0 as a default value for unimplemented recalc_accuracy
+> > >>(or unspecified fixed accuracy) to keep existing implementation coherent.
+> > >>
+> > >>0 means the clk is perfect, and I thought it would be easier to handle a
+> > >>perfect clk (even if this is not really the case) than handling an error
+> > >>case.
+> > >>
+> > >>Another aspect is the propagation of the clk accuracy accross the clk tree.
+> > >>Returning -1 in the middle of the clk chain will drop the previous clk
+> > >>accuracy
+> > >>calculation.
+> > >>
+> > >>Anyway, I can change this if you think this is more appropriate.
+> > >What about the absence of the property?
+> > >Instead of requiring a -1 value
+> > >can we simply detect that the property does not exist? This is nicer for
+> > >backwards compatibility with existing DTS.
+> > 
+> > I already handle the absence of the clock-accuracy property.
+> > In this case the clock is considered perfect (accuracy = 0 ppb).
+> 
+> Yeah, in order to calculate the theoretical accuracy of a leaf node, a
+> missing accuracy in the middle of the chain really derails things.
+> Since my previous concern (modelling the real accuracy of the clocks) is
+> not an issue here, I think assuming the absent accuracy is 0 is fine.
+> Especially since all Boris is trying to do is avoid the RC clocks.
 
-Thanks.
-It is a pity, but along with this patch I have to change 2 patches,
-so I'll send whole series.
+Agreed. If accuracy data must exist along the entire chain for the
+calculation to be successful then the feature will be useless due to
+lack of adoption of the accuracy data.
 
--- 
 Regards,
-Ivan Khoronzhuk
+Mike
+
+> 
+> thx,
+> 
+> Jason.
