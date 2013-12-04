@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451Ab3LDCqV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 21:46:21 -0500
-Received: from mga02.intel.com ([134.134.136.20]:32520 "EHLO mga02.intel.com"
+	id S1755968Ab3LDCrH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 21:47:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2038 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752764Ab3LDCqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 21:46:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,821,1378882800"; 
-   d="scan'208";a="446425294"
-Date: Tue, 3 Dec 2013 18:44:52 -0800
-From: "David E. Box" <david.e.box@linux.intel.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCHv2 2/2] ACPI/platform: Add ACPI ID for Intel MBI device
-Message-ID: <20131204024452.GB8282@linux.intel.com>
-References: <1385100357-5459-1-git-send-email-david.e.box@linux.intel.com>
- <1386115178-7559-1-git-send-email-david.e.box@linux.intel.com>
- <1386115178-7559-3-git-send-email-david.e.box@linux.intel.com>
- <20131204013001.GA25037@srcf.ucam.org>
- <20131204021703.GA8282@linux.intel.com>
- <20131204022130.GA26084@srcf.ucam.org>
+	id S1752764Ab3LDCrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 21:47:04 -0500
+Date: Wed, 4 Dec 2013 10:46:10 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.infradead.org, greg@kroah.com, matt@console-pimps.org
+Subject: Re: [PATCH v4 07/12] efi: passing kexec necessary efi data via
+ setup_data
+Message-ID: <20131204024610.GA3764@dhcp-16-126.nay.redhat.com>
+References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
+ <1385445477-9665-8-git-send-email-dyoung@redhat.com>
+ <20131127140732.GD32267@pd.tnic>
+ <20131129091415.GH4186@dhcp-16-126.nay.redhat.com>
+ <1386023600.1791.201.camel@misato.fc.hp.com>
+ <1386034289.1791.210.camel@misato.fc.hp.com>
+ <20131203015613.GB3980@dhcp-16-126.nay.redhat.com>
+ <1386085140.1791.218.camel@misato.fc.hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131204022130.GA26084@srcf.ucam.org>
+In-Reply-To: <1386085140.1791.218.camel@misato.fc.hp.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 02:21:30AM +0000, Matthew Garrett wrote:
-> On Tue, Dec 03, 2013 at 06:17:03PM -0800, David E. Box wrote:
-> > This is per the requirement in Documentation/acpi/enumeration.txt:
-> > 
-> > "Currently the kernel is not able to automatically determine from which ACPI
-> > device it should make the corresponding platform device so we need to add
-> > the ACPI device explicitly to acpi_platform_device_ids list defined in
-> > drivers/acpi/acpi_platform.c"
-> 
-> Well sure, but why do you need to be a platform device at all? This 
-> functionality was intended for cases where we already have a driver for 
-> the part that enumerated it via some other mechanism. If the driver's 
-> only intended for ACPI systems then why not just be an ACPI device?
-> 
+Hi, Toshi
 
-It was my understanding that with ACPI 5.0 it was becoming more common to use
-ACPI ID's exclusively for device enumeration. I originally wrote this as an
-acpi_bus driver but Rafeal advised me that the model is being phased out and
-suggeted the platform model instead.
+> Oh, I think I now understand what the issue was.  The z420 firmware
+> updates the SMBIOS table address in the EFI system table to a virtual
+> address after calling EFI SetVirtualAddressMap.  So, you are passing the
+> original physical address of the SMBIOS table from the 1st kernel to the
+> 2nd kernel to put it back to physical.  Is that right? 
 
-> -- 
-> Matthew Garrett | mjg59@srcf.ucam.org
+Right.
+
+Thanks
+Dave
