@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471Ab3LDND0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 08:03:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3474 "EHLO mx1.redhat.com"
+	id S932481Ab3LDNDx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 08:03:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37457 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932246Ab3LDNDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 08:03:23 -0500
-Date: Wed, 4 Dec 2013 14:04:20 +0100
+	id S932385Ab3LDNDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 08:03:15 -0500
+Date: Wed, 4 Dec 2013 14:04:12 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: David Rientjes <rientjes@google.com>,
@@ -16,9 +16,8 @@ Cc: David Rientjes <rientjes@google.com>,
         "Ma, Xindong" <xindong.ma@intel.com>, Michal Hocko <mhocko@suse.cz>,
         Sameer Nanda <snanda@chromium.org>, Sergey Dyasly <dserrg@gmail.com>,
         "Tu, Xiaobing" <xiaobing.tu@intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 4/4] oom_kill: add rcu_read_lock() into
-	find_lock_task_mm()
-Message-ID: <20131204130420.GA6017@redhat.com>
+Subject: [PATCH v2 2/4] oom_kill: change oom_kill.c to use for_each_thread()
+Message-ID: <20131204130412.GA6005@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,64 +27,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-find_lock_task_mm() expects it is called under rcu or tasklist lock,
-but it seems that at least oom_unkillable_task()->task_in_mem_cgroup()
-and mem_cgroup_out_of_memory()->oom_badness() can call it lockless.
+Change oom_kill.c to use for_each_thread() rather than the racy
+while_each_thread() which can loop forever if we race with exit.
 
-Perhaps we could fix the callers, but this patch simply adds rcu lock
-into find_lock_task_mm(). This also allows to simplify a bit one of its
-callers, oom_kill_process().
+Note also that most users were buggy even if while_each_thread()
+was fine, the task can exit even _before_ rcu_read_lock().
+
+Fortunately the new for_each_thread() only requires the stable
+task_struct, so this change fixes both problems.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reviewed-and-Tested-by: Sergey Dyasly <dserrg@gmail.com>
+Reviewed-by: Sameer Nanda <snanda@chromium.org>
 ---
- mm/oom_kill.c |   12 ++++++++----
- 1 files changed, 8 insertions(+), 4 deletions(-)
+ mm/oom_kill.c |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
 
 diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 0d8ad1e..054ff47 100644
+index 1e4a600..96d7945 100644
 --- a/mm/oom_kill.c
 +++ b/mm/oom_kill.c
-@@ -102,14 +102,19 @@ struct task_struct *find_lock_task_mm(struct task_struct *p)
+@@ -59,7 +59,7 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
  {
- 	struct task_struct *t;
+ 	struct task_struct *start = tsk;
  
-+	rcu_read_lock();
-+
- 	for_each_thread(p, t) {
+-	do {
++	for_each_thread(start, tsk) {
+ 		if (mask) {
+ 			/*
+ 			 * If this is a mempolicy constrained oom, tsk's
+@@ -77,7 +77,7 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
+ 			if (cpuset_mems_allowed_intersects(current, tsk))
+ 				return true;
+ 		}
+-	} while_each_thread(start, tsk);
++	}
+ 
+ 	return false;
+ }
+@@ -97,14 +97,14 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
+  */
+ struct task_struct *find_lock_task_mm(struct task_struct *p)
+ {
+-	struct task_struct *t = p;
++	struct task_struct *t;
+ 
+-	do {
++	for_each_thread(p, t) {
  		task_lock(t);
  		if (likely(t->mm))
--			return t;
-+			goto found;
+ 			return t;
  		task_unlock(t);
- 	}
-+	t = NULL;
-+found:
-+	rcu_read_unlock();
+-	} while_each_thread(p, t);
++	}
  
--	return NULL;
-+	return t;
+ 	return NULL;
  }
+@@ -301,7 +301,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+ 	unsigned long chosen_points = 0;
  
- /* return true if the task is not adequate as candidate victim task. */
-@@ -461,10 +466,8 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 	}
+ 	rcu_read_lock();
+-	do_each_thread(g, p) {
++	for_each_process_thread(g, p) {
+ 		unsigned int points;
+ 
+ 		switch (oom_scan_process_thread(p, totalpages, nodemask,
+@@ -323,7 +323,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+ 			chosen = p;
+ 			chosen_points = points;
+ 		}
+-	} while_each_thread(g, p);
++	}
+ 	if (chosen)
+ 		get_task_struct(chosen);
+ 	rcu_read_unlock();
+@@ -406,7 +406,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ {
+ 	struct task_struct *victim = p;
+ 	struct task_struct *child;
+-	struct task_struct *t = p;
++	struct task_struct *t;
+ 	struct mm_struct *mm;
+ 	unsigned int victim_points = 0;
+ 	static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
+@@ -437,7 +437,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 	 * still freeing memory.
+ 	 */
+ 	read_lock(&tasklist_lock);
+-	do {
++	for_each_thread(p, t) {
+ 		list_for_each_entry(child, &t->children, sibling) {
+ 			unsigned int child_points;
+ 
+@@ -455,7 +455,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 				get_task_struct(victim);
+ 			}
+ 		}
+-	} while_each_thread(p, t);
++	}
  	read_unlock(&tasklist_lock);
  
--	rcu_read_lock();
- 	p = find_lock_task_mm(victim);
- 	if (!p) {
--		rcu_read_unlock();
- 		put_task_struct(victim);
- 		return;
- 	} else if (victim != p) {
-@@ -490,6 +493,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 	 * That thread will now get access to memory reserves since it has a
- 	 * pending fatal signal.
- 	 */
-+	rcu_read_lock();
- 	for_each_process(p)
- 		if (p->mm == mm && !same_thread_group(p, victim) &&
- 		    !(p->flags & PF_KTHREAD)) {
+ 	rcu_read_lock();
 -- 
 1.5.5.1
 
