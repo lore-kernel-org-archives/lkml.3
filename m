@@ -1,92 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932466Ab3LDPHN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 10:07:13 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48034 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932178Ab3LDPHL (ORCPT
+	id S1755697Ab3LDPL1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 10:11:27 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:35464 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754074Ab3LDPLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 10:07:11 -0500
-Date: Wed, 4 Dec 2013 15:07:09 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Jon Masters <jonathan@jonmasters.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [RFC part3 PATCH 2/2] ARM64 / clocksource: Use
- arch_timer_acpi_init()
-Message-ID: <20131204150709.GF29200@e106331-lin.cambridge.arm.com>
-References: <1386088891-2917-1-git-send-email-hanjun.guo@linaro.org>
- <1386088891-2917-3-git-send-email-hanjun.guo@linaro.org>
- <20131203170815.GB16025@e106331-lin.cambridge.arm.com>
- <529F3BCA.1020908@linaro.org>
+	Wed, 4 Dec 2013 10:11:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <529F3BCA.1020908@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAD6G_RR=toq_6tCav6Y9=EprK9LC3YfGO=scvWpcGfDpWwJbRA@mail.gmail.com>
+References: <CAD6G_RT0S43BrOeXxJ6d3p1ALbXkGumZCSPBaK1Bz=2pX3hHYQ@mail.gmail.com>
+ <CAErSpo4DNqUpA6Cb_tanW3uRJ3J-4utCQwtRz3eYZETCMtniUQ@mail.gmail.com> <CAD6G_RR=toq_6tCav6Y9=EprK9LC3YfGO=scvWpcGfDpWwJbRA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 4 Dec 2013 08:11:04 -0700
+Message-ID: <CAErSpo57gPPY73nCHbfGVynZRde0jj9_kjpR=FKwY-uTXzY2cw@mail.gmail.com>
+Subject: Re: Need help on Linux PCIe
+To: Jagan Teki <jagannadh.teki@gmail.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 02:27:22PM +0000, Hanjun Guo wrote:
-> On 2013年12月04日 01:08, Mark Rutland wrote:
-> > On Tue, Dec 03, 2013 at 04:41:31PM +0000, Hanjun Guo wrote:
-> >> Use arch_timer_acpi_init() on ARM64 to initialise arch timer
-> >> in ACPI way when DT is not available.
-> >>
-> >> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> >> ---
-> >>   arch/arm64/kernel/time.c |    4 ++++
-> >>   1 file changed, 4 insertions(+)
-> >>
-> >> diff --git a/arch/arm64/kernel/time.c b/arch/arm64/kernel/time.c
-> >> index 29c39d5..fb009da 100644
-> >> --- a/arch/arm64/kernel/time.c
-> >> +++ b/arch/arm64/kernel/time.c
-> >> @@ -67,6 +67,10 @@ void __init time_init(void)
-> >>   
-> >>   	clocksource_of_init();
-> >>   
-> >> +	/* if can't be initialised from DT, try ACPI way */
-> >> +	if (!arch_timer_get_rate())
-> >> +		arch_timer_acpi_init();
-> >> +
-> > As mentioned on the previous patch, I think for the timebeing we should
-> > rely on CNTFREQ.
-> >
-> > Additionally, if you need to do this we should have an analagous
-> > mechanism to clocksource_of_init() that performs this initialisation for
-> > ACPI, and here we can call a clocksource_*_init function that does the
-> > right thing.
-> >
-> > There's no need for this file to know anything about ACPI.
-> 
-> Oh, Amit already have some patches to introduce clocksource_acpi_init()
-> like clocksource_of_init() did, please refer to the link below.
-> 
-> http://marc.info/?l=linaro-acpi&m=138131929721943&w=2
-> 
-> is this the idea you mentioned in your comments?
+On Tue, Dec 3, 2013 at 11:20 PM, Jagan Teki <jagannadh.teki@gmail.com> wrote:
+> Thanks for your quick response.
+> Please find my comments below.
+>
+> On Tue, Dec 3, 2013 at 11:09 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Tue, Dec 3, 2013 at 4:24 AM, Jagan Teki <jagannadh.teki@gmail.com> wrote:
+>>> Hi,
+>>>
+>>> I have few question on Linux PCIe subsystem, I am trying to understand
+>>> the PCIe on ARM platform.
+>>> 1. Compared to PCI, PCIe have an extra port functionalists/services
+>>> which is implemented drivers/pci/pcie/* is it true?
+>>
+>> Yes.
+>>
+>>> 2. PCIe root complex is same as Host controller drivers in linux drivers/host/*
+>>
+>> Yes.
+>>
+>>> 3. As individual endpoint drivers are registered to pci_core as
+>>> pci_driver_register, then what is the common call for registering
+>>> individual HC driver to pci-core?
+>>
+>> The host controller-PCI core interface is not as mature as the
+>> pci_register_driver() interface.  The basic interface is
+>> pci_scan_root_bus().  If you skim through the drivers in
+>> drivers/pci/host/* and drivers/acpi/pci_root.c, the interface to the
+>> PCI core will be fairly obvious.  And you'll learn what the existing
+>> practices are in case you need to add or modify something.
+>
+> OK.
+>
+> I understand the flow as below - please correct if am wrong.
+>
+> From low level (hw) - HC driver has a platform registration using
+> platform_driver_register() to lower layer
+> and then pci_scan_root_bus() --> pci_common_init_dev() registration to
+> upper layer as PCI - BIOS and then ends.
 
-Something along those lines is far better than hardcoding
-arch_timer_acpi_init here.
+Yes.  Sometime HC drivers use platform_driver_register(); other use
+something else depending on how the HC device is enumerated.  For
+example, drivers/acpi/pci_root.c uses something else to deal with host
+bridges in the ACPI namespace.
 
-Thanks,
-Mark.
+> From upper level (app) - each endpoint driver has
+> pci_driver_register() call to PCI Core for lower level
+
+Yes.
+
+> and then the upper level registration is based on endpoint().
+
+I don't know what you mean here (I don't know of a function named
+"endpoint()").  But the driver model matches drivers to PCI functions
+based on vendor and device IDs.  A Linux "pci_dev" is what the PCI
+specs refer to as a "function."
+
+> What is the connection here for PCI-BIOS and PCI-Core here, does these
+> are two different entities means there is no common call for these?
+> I see for ARM - "arch/arm/kernel/bios32.c" is PCI-BIOS is it correct?
+> does we have separate BIOS codes for architectures?
+
+The "pcibios_*" functions are architecture-specific things called by
+the generic PCI core.  Generally, things specified by the PCI specs
+are architecture-independent and should be in the PCI core
+(drivers/pci/*).
+
+Bjorn
