@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab3LDJAV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 04:00:21 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:50524 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754947Ab3LDJAT (ORCPT
+	id S1755347Ab3LDJAd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 04:00:33 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:62821 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755041Ab3LDJA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 04:00:19 -0500
-Message-ID: <529EF0FB.2050808@linux.vnet.ibm.com>
-Date: Wed, 04 Dec 2013 14:38:11 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 4 Dec 2013 04:00:28 -0500
+Date: Wed, 4 Dec 2013 10:00:28 +0100
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, ak@linux.intel.com, jolsa@redhat.com,
+        zheng.z.yan@intel.com
+Subject: [PATCH] perf/x86: fix bug in event constraint end marker macro
+Message-ID: <20131204090028.GA9724@quad>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] mm readahead: Fix the readahead fail in case of empty
- numa node
-References: <1386066977-17368-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20131203143841.11b71e387dc1db3a8ab0974c@linux-foundation.org> <529EE811.5050306@linux.vnet.ibm.com> <20131204004125.a06f7dfc.akpm@linux-foundation.org>
-In-Reply-To: <20131204004125.a06f7dfc.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120409-2674-0000-0000-00000BC170D2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2013 02:11 PM, Andrew Morton wrote:
-> On Wed, 04 Dec 2013 14:00:09 +0530 Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
->
->> Unfaortunately, from my search, I saw that the code belonged to pre git
->> time, so could not get much information on that.
->
-> Here: https://lkml.org/lkml/2004/8/20/242
->
-> It seems it was done as a rather thoughtless performance optimisation.
-> I'd say it's time to reimplement max_sane_readahead() from scratch.
->
+[repost because typo in Ingo's email address]
 
-Ok. Thanks for the link. I think after that,
-Here it was changed to pernode:
-https://lkml.org/lkml/2004/8/21/9 to avoid iteration all over.
+The EVENT_CONSTRAINT_END macro defines the end marker as
+a constraint with a weight of zero. This was all fine
+until we blacklisted the corrupting memory events on
+Intel IvyBridge. These events are blacklisted by using
+a counter bitmask of zero. Thus, they also get a constraint
+weight of zero.
 
-do you think above patch (+comments) with some sanitized nr (thus
-avoiding iteration over nodes in remote numa readahead case) does look
-better?
-or should we iterate all memory.
+The iteration macro: for_each_constraint tests the weight==0.
+Therefore, it was stopping at the first blacklisted event, i.e.,
+0xd0. The corrupting events were therefore considered as
+unconstrained and were scheduled on any of the generic counters.
 
+This patch fixes the end marker to have a weight of -1. With this,
+the blacklisted events get an empty constraint and cannot be
+scheduled which is what we want for now.
 
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event.h | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index fd00bb2..7c900c9 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -263,10 +263,16 @@ struct cpu_hw_events {
+ 			  HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_ST_HSW)
+ 
+ #define EVENT_CONSTRAINT_END		\
+-	EVENT_CONSTRAINT(0, 0, 0)
++	{ .idxmsk64 = 0,		\
++	  .code = 0,			\
++	  .cmask = 0,			\
++	  .weight = -1,			\
++	  .overlap = 0,			\
++	  .flags = 0,			\
++}
+ 
+ #define for_each_event_constraint(e, c)	\
+-	for ((e) = (c); (e)->weight; (e)++)
++	for ((e) = (c); (e)->weight != -1; (e)++)
+ 
+ /*
+  * Extra registers for specific events.
+-- 
+1.8.1.2
 
