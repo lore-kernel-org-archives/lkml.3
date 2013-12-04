@@ -1,97 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755741Ab3LDNTY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 08:19:24 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:50365 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755713Ab3LDNTX (ORCPT
+	id S932391Ab3LDNXS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 08:23:18 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:37315 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753679Ab3LDNXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 08:19:23 -0500
-Message-ID: <529F2BD9.5080808@linaro.org>
-Date: Wed, 04 Dec 2013 07:19:21 -0600
-From: Alex Elder <alex.elder@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Christian Daudt <bcm@fixthebug.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Pawel Moll <Pawel.Moll@arm.com>,
+	Wed, 4 Dec 2013 08:23:16 -0500
+Date: Wed, 4 Dec 2013 08:23:12 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Olliver Schinagl <oliver+list@schinagl.nl>
+Cc: Oliver Schinagl <oliver@schinagl.nl>, grant.likely@linaro.org,
         "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        "bcm-kernel-feedback-list@broadcom.com" 
-	<bcm-kernel-feedback-list@broadcom.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] ARM: dts: bcm281xx: define real clocks
-References: <529EA78E.7060904@linaro.org> <529EA813.2070208@linaro.org> <20131204111906.GG16025@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20131204111906.GG16025@e106331-lin.cambridge.arm.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, dev@linux-sunxi.org,
+        maxime.ripard@free-electrons.com, ijc@hellion.org.uk,
+        hdegoede@redhat.com, Richard Zhu <r65037@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH 2/3] ARM: sunxi: Add an ahci-platform compatible AHCI
+ driver for the Allwinner SUNXi series of SoCs
+Message-ID: <20131204132312.GH3158@htj.dyndns.org>
+References: <1386159055-10264-1-git-send-email-oliver@schinagl.nl>
+ <1386159055-10264-3-git-send-email-oliver@schinagl.nl>
+ <20131204123708.GD3158@htj.dyndns.org>
+ <529F2677.3070208@schinagl.nl>
+ <20131204131402.GG3158@htj.dyndns.org>
+ <529F2B41.8090009@schinagl.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <529F2B41.8090009@schinagl.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2013 05:19 AM, Mark Rutland wrote:
-> On Wed, Dec 04, 2013 at 03:57:07AM +0000, Alex Elder wrote:
->> Replace the "fake" clocks defined in the "bcm11351.dtsi" device tree
->> file with real definitions backed by the new BCM281xx clock driver..
->>
->> Signed-off-by: Alex Elder <elder@linaro.org>
->> Reviewed-by: Matt Porter <matt.porter@linaro.org>
->> Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
->> ---
->>  arch/arm/boot/dts/bcm11351.dtsi |  222
->> ++++++++++++++++++++++++++++-----------
->>  1 file changed, 161 insertions(+), 61 deletions(-)
+Hello,
+
+(cc'ing Richard and Shawn, hi!)
+
+On Wed, Dec 04, 2013 at 02:16:49PM +0100, Olliver Schinagl wrote:
+> On 04-12-13 14:14, Tejun Heo wrote:
+> >Hello,
+> >
+> >On Wed, Dec 04, 2013 at 01:56:23PM +0100, Oliver Schinagl wrote:
+> >>I took the imx driver as example, as I wasn't sure on where to
+> >>start. But I don't think it's possible yet without improving
+> >>ahci_platform as I suggested in the cover letter. So if
+> >>ahci_platform needs to be improved, I guess a separate patch series
+> >>would be more appropriate?
+> >>
+> >>So would it be acceptable to have this as the 2nd (and last?)
+> >>ahci_platform driver and go from there? Or do you want to block new
+> >>ahci_XXX drivers until ahci_platform has been improved?
+> >
+> >I don't want to block new drivers unconditionally but at least I want
+> >to know which direction we're headed in the longer term.  Right now it
+> >feels like we could be at the beginning of an uncoordinated explosion
+> >of these drivers which will take a hell lot mpore effort to clean up
+> >after the fact.  I could be wrong and these could actually be
+> >different enough to justify separate drivers and there isn't gonna be
+> >an avalanche of these but again I at least want to know the general
+> >direction things are headed before making any decisions.
+> I'd be happy to pour it in any form that's needed. I even do the
+> modification/rewrite of ahci_platform if I get enough help as it
+> might be a little over my head initially ;)
 > 
-> [...]
+> That said, I don't think it's much different at all and I do think
+> it could be much simpler. In my mind, the sunxi_ahci driver wouldn't
+> need to be much bigger then a few lines that are specific to the SoC
+> (hardware init) and registerd to the ahci_platform framework via
+> platform_ahci_register() instead of platform_device_register().
 > 
->> +		/*
->> +		    * This is a place-holder clock for peripheral
->> +		    * clocks that set their parent clock to an
->> +		    * out-of-range value to explicitly select
->> +		    * "no clock" as a parent.
->> +		    */
->> +		not_selected_clk: not_selected {
->>  			#clock-cells = <0>;
->> -		};
-> 
-> Huh? This doesn't seem to be used at all in this series. Why is this
-> here?
+> But again, point me (for dummies ;) in the right direction and I'll
+> work on it with some help.
 
-This has been the source of confusion before.
+Richard and Shawn recently worked on ahci_imx.  Can you guys please
+talk with each other and figure out what can be done to share as much
+as possible among these new platform-specific drivers?  I'd really
+like to see the common things factored out as much as possible with
+only the actual hardware differences described for each device.
 
-You're right, it's not used in the current patch.  And
-because of this, I'll delete it, and add it back once
-we have a clock supported that requires it.
+Thanks a lot!
 
-But while we're on the subject, here's what it's for.
-
-Each clock has a defined set of parent clocks, and
-each has a small integer value that represents it in
-a register that controls their selection.  In some
-cases the reset value of that register field is a
-(specific) value that has no defined clock associated
-with it.
-
-Here's an example.  There's a clock "hub_clk_ssp3_audio",
-which has three parent clocks:  "ref_crystal" (selector
-value 0),  "ref_312m" (selector value 1), and "cx40"
-(selector value 2).  But on reset, the value in that
-selector field is 3.
-
-This clock is used to represent that "none selected" value.
-
-> Thanks,
-> Mark.
-> 
-
-Thank you.  I really appreciate the reviews Mark.
-
-					-Alex
+-- 
+tejun
