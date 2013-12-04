@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab3LDHjX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 02:39:23 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:50934 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658Ab3LDHjU (ORCPT
+	id S1754735Ab3LDHjl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 02:39:41 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:27250 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753747Ab3LDHjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 02:39:20 -0500
+	Wed, 4 Dec 2013 02:39:39 -0500
+Date: Wed, 4 Dec 2013 10:38:25 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Aldo Iljazi <mail@aldo.io>
+Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>, w.d.hubbs@gmail.com,
+        chris@the-brannons.com, kirk@reisers.ca, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>
+Subject: Re: [PATCH] Staging: speakup: synth.c: removed a space
+Message-ID: <20131204073824.GP28413@mwanda>
+References: <1386101283-14650-1-git-send-email-mail@aldo.io>
+ <20131203221703.GE8138@type>
+ <20131204043515.GB6909@linux>
 MIME-Version: 1.0
-In-Reply-To: <1386053006-6480-4-git-send-email-j-keerthy@ti.com>
-References: <1386053006-6480-1-git-send-email-j-keerthy@ti.com>
-	<1386053006-6480-4-git-send-email-j-keerthy@ti.com>
-Date: Wed, 4 Dec 2013 13:09:20 +0530
-Message-ID: <CAKDJKT6TMHEboET4=iVEM2qbi6Bz7kCyyjutLfym2pwrwtEGVg@mail.gmail.com>
-Subject: Re: [PATCH 3/4] Regulators: TPS65218: Add Regulator driver for
- TPS65218 PMIC
-From: Manish Badarkhe <badarkhe.manish@gmail.com>
-To: Keerthy <j-keerthy@ti.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, pawel.moll@arm.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, ijc+devicetree@hellion.org.uk,
-        Rob Landley <rob@landley.net>, sameo@linux.intel.com,
-        lee.jones@linaro.org, grant.likely@linaro.org,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-omap@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131204043515.GB6909@linux>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Keerthy,
+On Wed, Dec 04, 2013 at 06:35:15AM +0200, Aldo Iljazi wrote:
+>  Samuel Thibault wrote:
+> 
+> > Err, I'd rather make it really visible that the for loop doesn't have
+> > its first statement?
+> 
+> Wouldn't it be better if you add a comment there? So it would follow the
+> coding style?
 
-> +       rdev = regulator_register(&regulators[id], &config);
+No.  Adding obvious comments is more annoying than the space.
 
-Can you make use of "devm_regulator_register" instead?
+This seems like a small bug in checkpatch.pl.  Joe, the problem is this
+code:
 
-> +       if (IS_ERR(rdev)) {
-> +               dev_err(tps->dev, "failed to register %s regulator\n",
-> +                       pdev->name);
-> +               return PTR_ERR(rdev);
-> +       }
-> +
-> +       /* Save regulator */
-> +       tps->rdev[id] = rdev;
-> +
-> +       return 0;
-> +}
+	for ( ; x; x++) {
 
+It's complaining about the space character before the semicolon.
 
-Best Regards
-Manish Badarkhe
+regards,
+dan carpenter
