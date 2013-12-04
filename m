@@ -1,43 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755181Ab3LDIXP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 03:23:15 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:34450 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754588Ab3LDIXK (ORCPT
+	id S1754839Ab3LDIZQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 03:25:16 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:33246 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753522Ab3LDIZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 03:23:10 -0500
-Date: Wed, 4 Dec 2013 11:21:37 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Joe Perches <joe@perches.com>
-Cc: Aldo Iljazi <mail@aldo.io>, Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        w.d.hubbs@gmail.com, chris@the-brannons.com, kirk@reisers.ca,
-        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
-Subject: Re: [PATCH] Staging: speakup: synth.c: removed a space
-Message-ID: <20131204082137.GR5443@mwanda>
-References: <1386101283-14650-1-git-send-email-mail@aldo.io>
- <20131203221703.GE8138@type>
- <20131204043515.GB6909@linux>
- <20131204073824.GP28413@mwanda>
- <1386143115.30493.48.camel@joe-AO722>
+	Wed, 4 Dec 2013 03:25:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386143115.30493.48.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1386143213.75864.YahooMailNeo@web163902.mail.gq1.yahoo.com>
+References: <1386143213.75864.YahooMailNeo@web163902.mail.gq1.yahoo.com>
+Date: Wed, 4 Dec 2013 09:25:13 +0100
+Message-ID: <CAFLxGvy55j+6T0jsKwThUdVxSkDWdBErVWE-MW+4ZKwPO-eHrA@mail.gmail.com>
+Subject: Re: How to change erasesize of a partition
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Suki Buryani <sukiburyani@yahoo.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "uclinux-dev@uclinux.org" <uclinux-dev@uclinux.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You and I generally agree on style preferences...  I think the warning
-should be limited to grep " ;$".
+On Wed, Dec 4, 2013 at 8:46 AM, Suki Buryani <sukiburyani@yahoo.com> wrote:
+> hi,
+>
+> i have few changes in my mtd partitions, i want to change the erasesize of a partition. can any one tell me where i should look to change erasesize of mtd3...
 
-I did a grep on the kernel for ' ;' and found 8000 results.  6000 of
-them are caught by my semicolon before the newline rule.  The remaining
-2000 are assembly, macros, and crappy for loops.
+The erase size is defined by the MTD device, you cannot change it.
 
-regards,
-dan carpenter
-
+-- 
+Thanks,
+//richard
