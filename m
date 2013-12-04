@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909Ab3LDHJf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 02:09:35 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:34703 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752576Ab3LDHJd (ORCPT
+	id S1754370Ab3LDHJs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 02:09:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57817 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753192Ab3LDHJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 02:09:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <528EB4EE.309@nvidia.com>
-References: <1385001613-19098-1-git-send-email-acourbot@nvidia.com>
- <528E6D58.6050503@wwwdotorg.org> <528EB4EE.309@nvidia.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Wed, 4 Dec 2013 16:09:13 +0900
-Message-ID: <CAAVeFuJpHXCANRO=AT5mKGpHzJRpmQoOuX4hjsctEMMAMjgqnQ@mail.gmail.com>
-Subject: Re: [PATCH v2] ARM: tegra: switch FUSE clock on before usage
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+	Wed, 4 Dec 2013 02:09:34 -0500
+Date: Tue, 3 Dec 2013 23:10:37 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Rob Landley <rob@landley.net>, Al Viro <viro@zeniv.linux.org.uk>,
+        Kay Sievers <kay.sievers@vrfy.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH] devtmpfs: Calling delete_path() only when necessary
+Message-ID: <20131204071037.GB32026@kroah.com>
+References: <1384589723.7840.1.camel@phoenix>
+ <1386125959.1974.309@driftwood>
+ <CAFRkauAzR=BqJGrMzN0i-tvi5mcQvyB9Kihk0YvxMpk=SWGvFA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFRkauAzR=BqJGrMzN0i-tvi5mcQvyB9Kihk0YvxMpk=SWGvFA@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Wed, Dec 04, 2013 at 02:44:14PM +0800, Axel Lin wrote:
+> 2013/12/4 Rob Landley <rob@landley.net>:
+> > On 11/16/2013 02:15:23 AM, Axel Lin wrote:
+> >>
+> >> The deleted variable is always 1 in current code.
+> >> Initialize deleted variable to be 0, so delete_path() will be called only
+> >> when
+> >> necessary.
+> >>
+> >> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> >
+> >
+> > I'm not seeing this in linux-next, or a reply on the web archive. Assuming
+> > nobody's objected to this, you might want to forward it to
+> > trivial@kernel.org.
+> >
+> > That said, you could describe what it _does_ a little more?
+> 
+> I was expecting Greg to pick up this patch.
+> 
+> I thought the description is pretty clear.
+> What the patch does is changing the init value of deleted variable to 0.
+> The intention of this change is to avoid unnecessary delete_path() call.
+> 
+> Hi Greg,
+> Would you pick up this patch?
+> If a re-send or a v2 is required, please just let me know.
 
-On Fri, Nov 22, 2013 at 10:35 AM, Alex Courbot <acourbot@nvidia.com> wrote:
-> On 11/22/2013 05:30 AM, Stephen Warren wrote:
->>
->> On 11/20/2013 07:40 PM, Alexandre Courbot wrote:
->>>
->>> FUSE clock is enabled by most bootloaders, but we cannot expect it to be
->>> on in all contexts (e.g. kexec).
->>>
->>> Ensure the FUSE clock is enabled before any of its registers is touched.
->>> Since FUSE is touched very early during system boot (before the clock
->>> devices are registered), directly manipulate the clock register bit in
->>> case the clock device cannot be acquired.
->>
->>
->> This looks reasonable to me. I'll apply it soon after -rc1.
->
->
-> Thanks. Be careful as I noticed I misformatted my commit message. The part
-> after the "--" will not be stripped by git am as I intended it to be. I
-> understood what I did wrong and will hopefully not make that mistake again.
->
-> Sorry for the inconvenience.
+It's in my queue to get to, sorry, it's huge and slowly going down, it's
+not lost...
 
-I am not seeing this in your tree, have you applied it somewhere already?
+greg k-h
