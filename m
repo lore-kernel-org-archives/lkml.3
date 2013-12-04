@@ -1,174 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab3LDUIN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 15:08:13 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:59445 "EHLO
+	id S1756009Ab3LDUIM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 15:08:12 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:59454 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933333Ab3LDUHY (ORCPT
+	with ESMTP id S933334Ab3LDUH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 15:07:24 -0500
+	Wed, 4 Dec 2013 15:07:26 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Jiri Olsa <jolsa@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 16/38] tools lib traceevent: Change pevent_parse_format to include pevent handle
-Date: Wed,  4 Dec 2013 17:06:40 -0300
-Message-Id: <1386187622-2928-17-git-send-email-acme@infradead.org>
+Subject: [GIT PULL 00/38] perf/core improvements and fixes
+Date: Wed,  4 Dec 2013 17:06:24 -0300
+Message-Id: <1386187622-2928-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1386187622-2928-1-git-send-email-acme@infradead.org>
-References: <1386187622-2928-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 
-Changing the pevent_parse_format interface to include the pevent handle.
+Hi Ingo,
 
-The goal is to always use pevent object when dealing with traceevent
-library. The reason is that we might need additional processing (like
-plugins), which is not possible otherwise.
+	Please consider pulling,
 
-Patches follow to make this happen completely.
+- Arnaldo
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1386076182-14484-6-git-send-email-jolsa@redhat.com
+The following changes since commit 89e3bbd58a6186b832fe2b9419ac2f9ab90e9089:
+
+  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2013-12-04 10:17:17 +0100)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+
+for you to fetch changes up to 6d65894bc028d0342829ea1e64c9e9efad571124:
+
+  tools lib traceevent: Update kvm plugin with is_writable_pte helper (2013-12-04 15:38:14 -0300)
+
+----------------------------------------------------------------
+perf/core improvements and fixes:
+
+. Backport libtraceevent plugin support from trace-cmd repository, with
+  plugins for jbd2, hrtimer, kmem, kvm, mac80211, sched_switch, function,
+  xen, scsi, cfg80211. From Jiri Olsa.
+
+. Retain bfd reference to lookup source line numbers, greatly optimizing, among
+  other use cases, 'perf report -s srcline', from Adrian Hunter.
+
+. Do not disable source line lookup just because of 1 failure, from Adrian Hunter.
+
+. Fix random fd closing with no libelf, from Adrian Hunter.
+
+. Do not call perf_event__preprocess_sample() twice in 'perf script,
+  from Adrian Hunter.
+
+. Several 'perf kvm' man page corrections, from Dongsheng Yang.
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/lib/traceevent/event-parse.c | 56 ++++++++++++++++++++++++--------------
- tools/lib/traceevent/event-parse.h |  4 ++-
- tools/perf/util/evsel.c            |  2 +-
- 3 files changed, 39 insertions(+), 23 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 900fca01bdd3..9849873265d4 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -5121,8 +5121,38 @@ enum pevent_errno __pevent_parse_format(struct event_format **eventp,
- 	return ret;
- }
- 
-+static enum pevent_errno
-+__pevent_parse_event(struct pevent *pevent,
-+		     struct event_format **eventp,
-+		     const char *buf, unsigned long size,
-+		     const char *sys)
-+{
-+	int ret = __pevent_parse_format(eventp, pevent, buf, size, sys);
-+	struct event_format *event = *eventp;
-+
-+	if (event == NULL)
-+		return ret;
-+
-+	if (pevent && add_event(pevent, event)) {
-+		ret = PEVENT_ERRNO__MEM_ALLOC_FAILED;
-+		goto event_add_failed;
-+	}
-+
-+#define PRINT_ARGS 0
-+	if (PRINT_ARGS && event->print_fmt.args)
-+		print_args(event->print_fmt.args);
-+
-+	return 0;
-+
-+event_add_failed:
-+	pevent_free_format(event);
-+	return ret;
-+}
-+
- /**
-  * pevent_parse_format - parse the event format
-+ * @pevent: the handle to the pevent
-+ * @eventp: returned format
-  * @buf: the buffer storing the event format string
-  * @size: the size of @buf
-  * @sys: the system the event belongs to
-@@ -5134,10 +5164,12 @@ enum pevent_errno __pevent_parse_format(struct event_format **eventp,
-  *
-  * /sys/kernel/debug/tracing/events/.../.../format
-  */
--enum pevent_errno pevent_parse_format(struct event_format **eventp, const char *buf,
-+enum pevent_errno pevent_parse_format(struct pevent *pevent,
-+				      struct event_format **eventp,
-+				      const char *buf,
- 				      unsigned long size, const char *sys)
- {
--	return __pevent_parse_format(eventp, NULL, buf, size, sys);
-+	return __pevent_parse_event(pevent, eventp, buf, size, sys);
- }
- 
- /**
-@@ -5158,25 +5190,7 @@ enum pevent_errno pevent_parse_event(struct pevent *pevent, const char *buf,
- 				     unsigned long size, const char *sys)
- {
- 	struct event_format *event = NULL;
--	int ret = __pevent_parse_format(&event, pevent, buf, size, sys);
--
--	if (event == NULL)
--		return ret;
--
--	if (add_event(pevent, event)) {
--		ret = PEVENT_ERRNO__MEM_ALLOC_FAILED;
--		goto event_add_failed;
--	}
--
--#define PRINT_ARGS 0
--	if (PRINT_ARGS && event->print_fmt.args)
--		print_args(event->print_fmt.args);
--
--	return 0;
--
--event_add_failed:
--	pevent_free_format(event);
--	return ret;
-+	return __pevent_parse_event(pevent, &event, buf, size, sys);
- }
- 
- #undef _PE
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 54273c0ec544..620c27a72960 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -562,7 +562,9 @@ int pevent_parse_header_page(struct pevent *pevent, char *buf, unsigned long siz
- 
- enum pevent_errno pevent_parse_event(struct pevent *pevent, const char *buf,
- 				     unsigned long size, const char *sys);
--enum pevent_errno pevent_parse_format(struct event_format **eventp, const char *buf,
-+enum pevent_errno pevent_parse_format(struct pevent *pevent,
-+				      struct event_format **eventp,
-+				      const char *buf,
- 				      unsigned long size, const char *sys);
- void pevent_free_format(struct event_format *event);
- 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index b5fe7f9b2e15..6a046ed73f98 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -210,7 +210,7 @@ struct event_format *event_format__new(const char *sys, const char *name)
- 		size += n;
- 	} while (n > 0);
- 
--	pevent_parse_format(&format, bf, size, sys);
-+	pevent_parse_format(NULL, &format, bf, size, sys);
- 
- out_free_bf:
- 	free(bf);
--- 
-1.8.1.4
+----------------------------------------------------------------
+Adrian Hunter (6):
+      perf tools: Use asprintf instead of malloc plus snprintf
+      perf symbols: Retain bfd reference to lookup source line numbers
+      perf symbols: Retain symbol source file name to lookup source line numbers
+      perf tools: Do not disable source line lookup just because of 1 failure
+      perf symbols: Fix random fd closing with no libelf
+      perf script: Do not call perf_event__preprocess_sample() twice)
 
+Dongsheng Yang (5):
+      perf tools: Remove condition in machine__get_kernel_start_addr.
+      perf target: Move the checking of which map function to call into function.
+      perf kvm: Add more detail about buildid-list in man page
+      perf kvm: Fix spurious '=' use in man page
+      perf kvm: Update the 'record' man page entry for new --guest/--host behavior
+
+Jiri Olsa (27):
+      perf tools: Remove stackprotector feature check
+      tools lib traceevent: Add plugin support
+      tools lib traceevent: Add plugin build support
+      tools lib traceevent: Add traceevent_host_bigendian function
+      tools lib traceevent: Change pevent_parse_format to include pevent handle
+      tools lib traceevent: Harmonize the install messages in lib-traceevent
+      perf tools: Add build and install plugins targets
+      perf tools: Add filename__read_str util function
+      perf tools: Add trace-event object
+      perf tools: Add trace-event global object for tracepoint interface
+      perf tools: Overload pr_stat traceevent print function
+      tools lib traceevent: Add jbd2 plugin
+      tools lib traceevent: Add hrtimer plugin
+      tools lib traceevent: Add kmem plugin
+      tools lib traceevent: Add kvm plugin
+      tools lib traceevent: Add mac80211 plugin
+      tools lib traceevent: Add sched_switch plugin
+      tools lib traceevent: Add function plugin
+      tools lib traceevent: Add xen plugin
+      tools lib traceevent: Add scsi plugin
+      tools lib traceevent: Add cfg80211 plugin
+      tools lib traceevent: Remove malloc_or_die from event-plugin.c
+      tools lib traceevent: Use static functions in jbd2 plugin
+      tools lib traceevent: Use pevent_print_func_field in hrtimer_start handler
+      tools lib traceevent: Several cleanups for function plugin
+      tools lib traceevent: Remove malloc_or_die from plugin_function.c
+      tools lib traceevent: Update kvm plugin with is_writable_pte helper
+
+ tools/lib/traceevent/Makefile                      |  71 +++-
+ tools/lib/traceevent/event-parse.c                 |  56 ++-
+ tools/lib/traceevent/event-parse.h                 |  19 +-
+ tools/lib/traceevent/event-plugin.c                | 215 ++++++++++
+ tools/lib/traceevent/plugin_cfg80211.c             |  24 ++
+ tools/lib/traceevent/plugin_function.c             | 160 ++++++++
+ tools/lib/traceevent/plugin_hrtimer.c              |  78 ++++
+ tools/lib/traceevent/plugin_jbd2.c                 |  68 ++++
+ tools/lib/traceevent/plugin_kmem.c                 |  72 ++++
+ tools/lib/traceevent/plugin_kvm.c                  | 436 +++++++++++++++++++++
+ tools/lib/traceevent/plugin_mac80211.c             |  95 +++++
+ tools/lib/traceevent/plugin_sched_switch.c         | 148 +++++++
+ tools/lib/traceevent/plugin_scsi.c                 | 423 ++++++++++++++++++++
+ tools/lib/traceevent/plugin_xen.c                  | 130 ++++++
+ tools/perf/Documentation/perf-kvm.txt              |  27 +-
+ tools/perf/Makefile.perf                           |  18 +-
+ tools/perf/builtin-script.c                        |  13 +-
+ tools/perf/builtin-trace.c                         |   5 +-
+ tools/perf/config/Makefile                         |  13 +-
+ tools/perf/config/feature-checks/Makefile          |   6 +-
+ .../config/feature-checks/test-stackprotector.c    |   6 -
+ tools/perf/util/debug.c                            |  30 +-
+ tools/perf/util/debug.h                            |   2 +
+ tools/perf/util/dso.c                              |   3 +
+ tools/perf/util/dso.h                              |   5 +
+ tools/perf/util/evlist.c                           |   8 +-
+ tools/perf/util/evsel.c                            |  44 +--
+ tools/perf/util/header.c                           |   8 +-
+ tools/perf/util/machine.c                          |  14 +-
+ tools/perf/util/python-ext-sources                 |   1 +
+ tools/perf/util/session.c                          |  31 +-
+ tools/perf/util/session.h                          |   7 +-
+ tools/perf/util/srcline.c                          |  66 +++-
+ tools/perf/util/symbol-minimal.c                   |   1 +
+ tools/perf/util/symbol.c                           |   2 +
+ tools/perf/util/target.h                           |  13 +
+ tools/perf/util/trace-event-parse.c                |  13 -
+ tools/perf/util/trace-event-read.c                 |  20 +-
+ tools/perf/util/trace-event.c                      |  82 ++++
+ tools/perf/util/trace-event.h                      |  15 +-
+ tools/perf/util/util.c                             |  49 +++
+ tools/perf/util/util.h                             |   1 +
+ 42 files changed, 2305 insertions(+), 193 deletions(-)
+ create mode 100644 tools/lib/traceevent/event-plugin.c
+ create mode 100644 tools/lib/traceevent/plugin_cfg80211.c
+ create mode 100644 tools/lib/traceevent/plugin_function.c
+ create mode 100644 tools/lib/traceevent/plugin_hrtimer.c
+ create mode 100644 tools/lib/traceevent/plugin_jbd2.c
+ create mode 100644 tools/lib/traceevent/plugin_kmem.c
+ create mode 100644 tools/lib/traceevent/plugin_kvm.c
+ create mode 100644 tools/lib/traceevent/plugin_mac80211.c
+ create mode 100644 tools/lib/traceevent/plugin_sched_switch.c
+ create mode 100644 tools/lib/traceevent/plugin_scsi.c
+ create mode 100644 tools/lib/traceevent/plugin_xen.c
+ delete mode 100644 tools/perf/config/feature-checks/test-stackprotector.c
+ create mode 100644 tools/perf/util/trace-event.c
