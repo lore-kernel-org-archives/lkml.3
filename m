@@ -1,111 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755685Ab3LDMof (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 07:44:35 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:43436 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754872Ab3LDMod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 07:44:33 -0500
-Message-ID: <529F2391.8070202@ti.com>
-Date: Wed, 4 Dec 2013 18:14:01 +0530
-From: Joel Fernandes <joelf@ti.com>
+	id S932236Ab3LDMph (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 07:45:37 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:48409 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932176Ab3LDMpf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 07:45:35 -0500
+Message-ID: <529F23EC.20306@linaro.org>
+Date: Wed, 04 Dec 2013 06:45:32 -0600
+From: Alex Elder <alex.elder@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: <nm@ti.com>, Tony Lindgren <tony@atomide.com>
-CC: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: OMAP2+: omap_device: add fail hook for runtime_pm
- when bad data is detected
-References: <1386121153-32351-1-git-send-email-nm@ti.com> <529EE305.70001@ti.com> <529F12F4.70304@ti.com>
-In-Reply-To: <529F12F4.70304@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Christian Daudt <bcm@fixthebug.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        "bcm-kernel-feedback-list@broadcom.com" 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] clk: bcm281xx: define kona clock binding
+References: <529EA78E.7060904@linaro.org> <529EA80A.60801@linaro.org> <20131204093911.GE16025@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20131204093911.GE16025@e106331-lin.cambridge.arm.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2013 05:03 PM, Nishanth Menon wrote:
-> On 12/04/2013 02:08 AM, Joel Fernandes wrote:
->> On 12/04/2013 07:09 AM, Nishanth Menon wrote:
->>> Due to the cross dependencies between hwmod for automanaged device
->>> information for OMAP and dts node definitions, we can run into scenarios
->>> where the dts node is defined, however it's hwmod entry is yet to be
->>> added. In these cases:
->>> a) omap_device does not register a pm_domain (since it cannot find
->>>     hwmod entry).
->>> b) driver does not know about (a), does a pm_runtime_get_sync which
->>>     never fails
->>> c) It then tries to do some operation on the device (such as read the
->>>    revision register (as part of probe) without clock or adequate OMAP
->>>    generic PM operation performed for enabling the module.
->>>
->>> This causes a crash such as that reported in:
->>> https://bugzilla.kernel.org/show_bug.cgi?id=66441
->>>
->>> When 'ti,hwmod' is provided in dt node, it is expected that the device
->>> will not function without the OMAP's power automanagement. Hence, when
->>> we hit a fail condition (due to hwmod entries not present or other
->>> similar scenario), fail at pm_domain level due to lack of data, provide
->>> enough information for it to be fixed, however, it allows for the driver
->>> to take appropriate measures to prevent crash.
->>>
->>> Reported-by: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>
->>> Signed-off-by: Nishanth Menon <nm@ti.com>
->>> ---
->>>   arch/arm/mach-omap2/omap_device.c |   24 ++++++++++++++++++++++++
->>>   arch/arm/mach-omap2/omap_device.h |    1 +
->>>   2 files changed, 25 insertions(+)
->>>
->>> diff --git a/arch/arm/mach-omap2/omap_device.c
->>> b/arch/arm/mach-omap2/omap_device.c
->>> index 53f0735..e0a398c 100644
->>> --- a/arch/arm/mach-omap2/omap_device.c
->>> +++ b/arch/arm/mach-omap2/omap_device.c
->>> @@ -183,6 +183,10 @@ static int omap_device_build_from_dt(struct
->>> platform_device *pdev)
->>>   odbfd_exit1:
->>>       kfree(hwmods);
->>>   odbfd_exit:
->>> +    /* if data/we are at fault.. load up a fail handler */
->>> +    if (ret)
->>> +        pdev->dev.pm_domain = &omap_device_fail_pm_domain;
->>> +
->>>       return ret;
->>>   }
->>>
+On 12/04/2013 03:39 AM, Mark Rutland wrote:
+> On Wed, Dec 04, 2013 at 03:56:58AM +0000, Alex Elder wrote:
+>> Document the device tree binding for Broadcom Kona architecture
+>> clock control units and clocks.  Kona device nodes are represented
+>> with compatible strings having "bcm11351" in their name.
 >>
->> Just wondering, can't we just print the warning here instead of registering new
->> pm_domain callbacks?
+>> Kona clocks are managed by "clock control units" (CCUs).  Each CCU
+>> has a device tree node, and within that node are defined the names
+>> of the clocks provided by the CCU.
 >>
+>> The BCM281xx family of SoCs use Kona CCUs and clocks.
+>>
+>> Signed-off-by: Alex Elder <elder@linaro.org>
+>> Reviewed-by: Matt Porter <matt.porter@linaro.org>
+>> Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
+>> ---
+>>  .../devicetree/bindings/clock/bcm-kona-clock.txt   |   95
+>> ++++++++++++++++++++
+>>  1 file changed, 95 insertions(+)
+>>  create mode 100644
+>> Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
+>> b/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
+>> new file mode 100644
+>> index 0000000..0cafd6a
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
+>> @@ -0,0 +1,95 @@
+>> +Broadcom Kona Family Clocks
+>> +
+>> +This binding is associated with Broadcom SoCs having "Kona" style
+>> +clock control units (CCUs).  A CCU is a clock provider that manages
+>> +a set of clock signals.  Each CCU is represented by a node in the
+>> +device tree.
+>> +
+>> +This binding uses the common clock binding:
+>> +    Documentation/devicetree/bindings/clock/clock-bindings.txt
+>> +
+>> +Many source clocks are described using the "fixed-clock" binding:
+>> +    Documentation/devicetree/bindings/clock/fixed-clock.txt
 > 
-> I suggest you might want to read the commit message again.. but lets try once
-> again:
+> Is this necessary? While this describes the device it doesn't describe
+> this binding.
 
-I know what your patch does and what the problem you're trying to solve is.. Was
-just trying to see if there's a better way of doing what you're trying to do..
+It's probably gratuitous.  I will remove it.
 
->>> b) driver does not know about (a), does a pm_runtime_get_sync which
->>>     never fails"
+>> +Required properties:
+>> +- compatible
+>> +	Shall have a value "brcm,bcm11351-<which>-ccu", where
+>> +	<which> identifies the particular CCU (see below).
 > 
-> A device node stated it will have hwmod to adequately control it, but in
-> reality, as in this case, it does not. how does printing a warning alone help
-> the driver which is not aware of these? The driver's attempt at pm_runtime_sync
-> should fail, as that is what "ti,hwmod" property controls.
+> It would be nice to have a full list here, as that makes finding the
+> file easier. Something like:
+> 
+> - compatible: should contain one of:
+>    * "brcm,bcm11351-root-ccu"
+>    * "brcm,bcm11351-aon-ccu"
+>    * "brcm,bcm11351-hub-ccu"
+>    * "brcm,bcm11351-master-ccu"
+>   The differences between these are described in greater detail below.
 
-Why not do the following?
+I got this suggestion in internal review.  I gambled,
+and lost. :)  I'll add the list as you suggest.
 
-Assign pm_domain as omap_device_pm_domain always regardless of error or not.
+>> +- reg
+>> +	Shall define the base and range of the address space
+>> +	containing clock control registers
+>> +- #clock-cells
+>> +	Shall have the value <1>
+> 
+> How about:
+> 
+> - #clock-cells: Should be <1>. The permitted clock-specifier values are
+>   defined below.
 
-Then in the _od_runtime_resume, check if the od or hwmods exists. If not, print
-the warning. That way you don't need to register additional special callbacks
-just to print a warning and will prolly be fewer LoC fwiw.
+OK.
 
-That may be harder to do and may require additional checks in omap_device_enable
-etc, not sure. In that case, your approach is certainly the next best way. Just
-thought its worth looking into :)
+>> +- clock-output-names
+>> +	Shall be an ordered list of strings defining the names of
+>> +	the clocks provided by the CCU.
+>> +
+>> +Clock consumers refer to a particular clock supplied by a CCU using
+>> +a phandle and specifier pair, using the phandle for the CCU device
+>> +tree node and the clock's symbolic specifier.  The clock specifier
+>> +is a CCU-unique 0-based index value.
+> 
+> This is redundant given the common clock binding and the description of
+> #clock-cells above.
 
-regards,
+OK.  I'll delete this paragraph.
 
--Joel
+>> +
+>> +
+>> +BCM281XX family SoCs use Kona CCUs.  The following table defines
+>> +the set of CCUs and clock specifiers for BCM281XX clocks.  The
+>> +compatible string for the CCU uses the name in the "CCU" column
+>> +below as it's <which> value.
+>> +
+>> +    CCU     Clock           Type    Index   Specifier
+>> +    ---     -----           ----    -----   ---------
+>> +    root    frac_1m         peri      0     BCM281XX_ROOT_CCU_FRAC_1M
+>> +
+>> +    aon     hub_timer       peri      0     BCM281XX_AON_CCU_HUB_TIMER
+>> +    aon     pmu_bsc         peri      1     BCM281XX_AON_CCU_PMU_BSC
+>> +    aon     pmu_bsc_var     peri      2     BCM281XX_AON_CCU_PMU_BSC_VAR
+>> +
+>> +    hub     tmon_1m         peri      0     BCM281XX_HUB_CCU_TMON_1M
+>> +
+>> +    master  sdio1           peri      0     BCM281XX_MASTER_CCU_SDIO1
+>> +    master  sdio2           peri      1     BCM281XX_MASTER_CCU_SDIO2
+>> +    master  sdio3           peri      2     BCM281XX_MASTER_CCU_SDIO3
+>> +    master  sdio4           peri      3     BCM281XX_MASTER_CCU_SDIO4
+>> +    master  dmac            peri      4     BCM281XX_MASTER_CCU_DMAC
+>> +    master  usb_ic          peri      5     BCM281XX_MASTER_CCU_USB_IC
+>> +    master  hsic2_48m       peri      6     BCM281XX_MASTER_CCU_HSIC_48M
+>> +    master  hsic2_12m       peri      7     BCM281XX_MASTER_CCU_HSIC_12M
+>> +
+>> +    slave   uartb           peri      0     BCM281XX_SLAVE_CCU_UARTB
+>> +    slave   uartb2          peri      1     BCM281XX_SLAVE_CCU_UARTB2
+>> +    slave   uartb3          peri      2     BCM281XX_SLAVE_CCU_UARTB3
+>> +    slave   uartb4          peri      3     BCM281XX_SLAVE_CCU_UARTB4
+>> +    slave   ssp0            peri      4     BCM281XX_SLAVE_CCU_SSP0
+>> +    slave   ssp2            peri      5     BCM281XX_SLAVE_CCU_SSP2
+>> +    slave   bsc1            peri      6     BCM281XX_SLAVE_CCU_BSC1
+>> +    slave   bsc2            peri      7     BCM281XX_SLAVE_CCU_BSC2
+>> +    slave   bsc3            peri      8     BCM281XX_SLAVE_CCU_BSC3
+>> +    slave   pwm             peri      9     BCM281XX_SLAVE_CCU_PWM
+> 
+> I guess the Specifier column is referring to some defines in a header
+> file? It would be good to mention which header file these are in.
+
+Yes.  I will add a reference to it.
+
+> The Index is also a specifier, it just happens to not be symbolic.
+
+Yes it is, but I was having trouble trying to describe
+them.  "Symbolic specifier" got to be unwieldy.  The paragraph
+that talked about the "0-based index value" (which I said I
+would delete) was an attempt to at least give it some sort of
+name.  If someone has a suggestion for how best to describe
+this I'm totally open.
+
+>> +
+>> +
+>> +Device tree example:
+>> +
+>> +	clocks {
+>> +		slave_ccu: slave_ccu {
+>> +			compatible = "brcm,bcm11351-slave-ccu";
+>> +			reg = <0x3e011000 0x0f00>;
+>> +			#clock-cells = <1>;
+>> +			clock-output-names = "uartb",
+>> +					     "uartb2",
+>> +					     "uartb3",
+>> +					     "uartb4";
+>> +		};
+>> +		ref_crystal_clk: ref_crystal {
+>> +			#clock-cells = <0>;
+>> +			compatible = "fixed-clock";
+>> +			clock-frequency = <26000000>;
+>> +		};
+>> +	};
+> 
+> This is wrong, as the clocks container node us not defined as any type
+> of bus, and does not have the requisite #address-cells and #size-cells.
+
+Sorry, I didn't realize it was wrong.  I intentionally used
+it simply for groiuping.
+
+> Really this should _not_ be probed, as the kernel does not know anything
+> about the clocks node. It could be some non-MMIO bus that it doesn't
+> understand, or one which requires other clocks.
+> 
+> I think the current way that we probe clocks is somewhat broken in this
+> regard.
+> 
+> There's no reason to put the clocks in this container at all; just put
+> them under the root. If you really want to use a container, please at
+> least use a simple-bus with the requisite #address-cells, #size-cells,
+> and ranges properties.
+
+No, I'll just pull them all out of the container.
+
+Thank you very much for the quick review.  (And on
+to the next one...)
+
+					-Alex
+
+> 
+> Thanks,
+> Mark.
+> 
 
