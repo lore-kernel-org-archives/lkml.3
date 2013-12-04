@@ -1,88 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159Ab3LDUVO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 15:21:14 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:35385 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390Ab3LDUVK (ORCPT
+	id S1756023Ab3LDUdT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 15:33:19 -0500
+Received: from omr-m01.mx.aol.com ([64.12.143.75]:56739 "EHLO
+	omr-m01.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754377Ab3LDUdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 15:21:10 -0500
-Date: Wed, 4 Dec 2013 13:21:04 -0700
-From: Jerry.Hoemann@hp.com
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Borislav Petkov <bp@alien8.de>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jingbai Ma <jingbai.ma@hp.com>
-Subject: Re: [PATCH v9] x86, apic, kexec, Documentation: Add disable_cpu_apic
- kernel parameter
-Message-ID: <20131204202104.GA6348@anatevka.fc.hp.com>
-Reply-To: Jerry.Hoemann@hp.com
-References: <529D34AA.1000809@jp.fujitsu.com>
- <20131203152536.GE4251@redhat.com>
+	Wed, 4 Dec 2013 15:33:16 -0500
+Message-ID: <529F917C.3070501@netscape.net>
+Date: Wed, 04 Dec 2013 21:33:00 +0100
+From: Manuel Krause <manuelkrause@netscape.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131203152536.GE4251@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        Greg KH <gregkh@linuxfoundation.org>, linux-input@vger.kernel.org,
+        linux-serial <linux-serial@vger.kernel.org>,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: 3.12.x looses serial mouse over hibernate + resume
+References: <52951E69.7090602@netscape.net> <529B591F.1020909@hurleysoftware.com> <529CB07C.2040609@netscape.net> <19253701.sgP3OieFUq@dtor-d630.eng.vmware.com> <20131202164525.GA32406@core.coreip.homeip.net> <529CD303.4040103@netscape.net> <20131202190730.GA5245@core.coreip.homeip.net> <529CF034.1060505@netscape.net> <20131204171626.GD8838@core.coreip.homeip.net>
+In-Reply-To: <20131204171626.GD8838@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+x-aol-global-disposition: G
+x-aol-sid: 3039ac1d33c2529f91894030
+X-AOL-IP: 93.218.243.230
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 10:25:36AM -0500, Vivek Goyal wrote:
-> 
-> Hi Hatayama, 
-> 
-> We are almost there. A minor nit. Why have we specified KEXEC here. This
-> parameter disabled_cpu_apicid does not seem to dependon CONFIG_KEXEC?
-> 
-> Jerry, this patch looks good to me. Does it work on your system?
-> 
-> Thanks
-> Vivek
+On 2013-12-04 18:16, Dmitry Torokhov wrote:
+> On Mon, Dec 02, 2013 at 09:40:20PM +0100, Manuel Krause wrote:
+>> On 2013-12-02 20:07, Dmitry Torokhov wrote:
+>>>
+>>> Thank you Manuel, but IO think the patch is not complete as we need to
+>>> re-enable PNP devices after we make a snapshot to make sure they are
+>>> working and can handle saving the data. Coudl you please try the patch
+>>> below?
+>>>
+>>
+>> PNP: fix restoring devices after hibernation
+>>
+>> From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>>
+>> On returning from hibernation 'restore; callback is called, not
+>> 'resume'.
+>> This fixes breakage introduced by commit
+>> eaf140b60ec961252083ab8adaf67aef29a362dd
+>>
+>> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>> ---
+>>   drivers/pnp/driver.c |   12 +++++++++++-
+>>   1 file changed, 11 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/pnp/driver.c b/drivers/pnp/driver.c
+>> index a39ee38..2bd5c5f 100644
+>> --- a/drivers/pnp/driver.c
+>> +++ b/drivers/pnp/driver.c
+>> @@ -197,6 +197,11 @@ static int pnp_bus_freeze(struct device *dev)
+>>   	return __pnp_bus_suspend(dev, PMSG_FREEZE);
+>>   }
+>>
+>> +static int pnp_bus_poweroff(struct device *dev)
+>> +{
+>> +	return __pnp_bus_suspend(dev, PMSG_HIBERNATE);
+>> +}
+>> +
+>>   static int pnp_bus_resume(struct device *dev)
+>>   {
+>>   	struct pnp_dev *pnp_dev = to_pnp_dev(dev);
+>> @@ -234,9 +239,14 @@ static int pnp_bus_resume(struct device *dev)
+>>   }
+>>
+>>   static const struct dev_pm_ops pnp_bus_dev_pm_ops = {
+>> +	/* Suspend callbacks */
+>>   	.suspend = pnp_bus_suspend,
+>> -	.freeze = pnp_bus_freeze,
+>>   	.resume = pnp_bus_resume,
+>> +	/* Hibernate callbacks */
+>> +	.freeze = pnp_bus_freeze,
+>> +	.thaw = pnp_bus_resume,
+>> +	.poweroff = pnp_bus_poweroff,
+>> +	.restore = pnp_bus_resume,
+>>   };
+>>
+>>   struct bus_type pnp_bus_type = {
+>>
+>> ALSO, YES, this second patch version does cure the issue, on here,
+>> too.
+>
+> Rafael,
+>
+> Will you please take this patch in? It would also make sense to add it
+> to stable I think.
+>
+> Thanks.
+>
 
+This patch works very well for many following hibernate/resume 
+cyles, now, since the patch is applied. And it doesn't show any 
+side-effects for me.
+Thank you for "taking it in".
 
-Vivek,  Hatayama,
-
-I've back ported v9 of this patch to 2.6.32 and 3.0.80 based kernels to
-test with existing distros.
-
-I've tested on our smaller prototype server specifying nr_cpus=8/maxcpus=8
-to the capture kernel.  One hundred iterations (echo c > /proc/sysrq-trigger)
-varying target cpu and system load to each kernel.
-
-The 2.6.32 based distro kernel showed the < 5% soft lockup
-(still unresolved) during boot of capture kernel.  This is
-something i've seen on all versions of the patch that i've tested.
-
-The 3.0.80 based distro kernel has had zero failures.
-
-I have not had a chance to test upstream kernels or on
-our larger prototype configuration.
-
-We still plan to test on our larger prototype.  Testing of
-prior versions of the patch on the larger systems didn't show
-problems w/ this functionality and I don't anticipate we'll
-find anything this time either.
-
-I am okay with this patch being accepted upstream and working
-the intermittent 2.6.32 failures separately.
-
-
-Jerry
-
-
--- 
-
-----------------------------------------------------------------------------
-Jerry Hoemann            Software Engineer              Hewlett-Packard
-
-3404 E Harmony Rd. MS 57                        phone:  (970) 898-1022
-Ft. Collins, CO 80528                           FAX:    (970) 898-XXXX
-                                                email:  jerry.hoemann@hp.com
-----------------------------------------------------------------------------
+Best regards, Manuel Krause
 
