@@ -1,125 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226Ab3LDLdO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 06:33:14 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:47821 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932104Ab3LDLdM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 06:33:12 -0500
-Message-ID: <529F12F4.70304@ti.com>
-Date: Wed, 04 Dec 2013 05:33:08 -0600
-From: Nishanth Menon <nm@ti.com>
-Reply-To: nm@ti.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S932245Ab3LDLds (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 06:33:48 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:56987 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932104Ab3LDLdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 06:33:46 -0500
+X-IronPort-AV: E=Sophos;i="4.93,824,1378857600"; 
+   d="scan'208";a="80451726"
+Date: Wed, 4 Dec 2013 11:33:25 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Julien Grall <julien.grall@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xenproject.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Roger Pau Monne <roger.pau@citrix.com>
+Subject: Re: [Xen-devel] [PATCH RFC] xen-block: correctly define structures
+ in public headers
+In-Reply-To: <alpine.DEB.2.02.1312041058130.7093@kaball.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1312041128280.7093@kaball.uk.xensource.com>
+References: <1386068254-1413-1-git-send-email-roger.pau@citrix.com> <529DBA07.6090108@citrix.com> <1386068884.13256.9.camel@kazak.uk.xensource.com> <529DC7BA.7080506@citrix.com> <1386078108.13256.30.camel@kazak.uk.xensource.com> <529DF4A0.50103@citrix.com>
+ <1386083821.13256.42.camel@kazak.uk.xensource.com> <20131203201135.GA14243@phenom.dumpdata.com> <alpine.DEB.2.02.1312041058130.7093@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Joel Fernandes <joelf@ti.com>, Tony Lindgren <tony@atomide.com>
-CC: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: OMAP2+: omap_device: add fail hook for runtime_pm
- when bad data is detected
-References: <1386121153-32351-1-git-send-email-nm@ti.com> <529EE305.70001@ti.com>
-In-Reply-To: <529EE305.70001@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2013 02:08 AM, Joel Fernandes wrote:
-> On 12/04/2013 07:09 AM, Nishanth Menon wrote:
->> Due to the cross dependencies between hwmod for automanaged device
->> information for OMAP and dts node definitions, we can run into scenarios
->> where the dts node is defined, however it's hwmod entry is yet to be
->> added. In these cases:
->> a) omap_device does not register a pm_domain (since it cannot find
->>     hwmod entry).
->> b) driver does not know about (a), does a pm_runtime_get_sync which
->>     never fails
->> c) It then tries to do some operation on the device (such as read the
->>    revision register (as part of probe) without clock or adequate OMAP
->>    generic PM operation performed for enabling the module.
->>
->> This causes a crash such as that reported in:
->> https://bugzilla.kernel.org/show_bug.cgi?id=66441
->>
->> When 'ti,hwmod' is provided in dt node, it is expected that the device
->> will not function without the OMAP's power automanagement. Hence, when
->> we hit a fail condition (due to hwmod entries not present or other
->> similar scenario), fail at pm_domain level due to lack of data, provide
->> enough information for it to be fixed, however, it allows for the driver
->> to take appropriate measures to prevent crash.
->>
->> Reported-by: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>
->> Signed-off-by: Nishanth Menon <nm@ti.com>
->> ---
->>   arch/arm/mach-omap2/omap_device.c |   24 ++++++++++++++++++++++++
->>   arch/arm/mach-omap2/omap_device.h |    1 +
->>   2 files changed, 25 insertions(+)
->>
->> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
->> index 53f0735..e0a398c 100644
->> --- a/arch/arm/mach-omap2/omap_device.c
->> +++ b/arch/arm/mach-omap2/omap_device.c
->> @@ -183,6 +183,10 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
->>   odbfd_exit1:
->>   	kfree(hwmods);
->>   odbfd_exit:
->> +	/* if data/we are at fault.. load up a fail handler */
->> +	if (ret)
->> +		pdev->dev.pm_domain = &omap_device_fail_pm_domain;
->> +
->>   	return ret;
->>   }
->>
->
-> Just wondering, can't we just print the warning here instead of registering new
-> pm_domain callbacks?
->
+On Wed, 4 Dec 2013, Stefano Stabellini wrote:
+> On Tue, 3 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> > > > If Konrad and Boris agree that breaking the kernel's ABI in this way is
+> > > > acceptable in this specific case, I'll defer to them.
+> > > 
+> > > My opinion as Xen on ARM hypervisor maintainer is that this is the right
+> > > thing to do in this case.
+> > 
+> > Heh. If somebody can guarantee me that (by testing the right variants and
+> > mentioning this in the git commit) that this does not break x86, then
+> > I am fine.
+> > 
+> > And by 'break x86' I mean that this combination works:
+> >  32-bit domU on 64-bit dom0
+> >  64-bit domU on 32-bit dom0
+> > 
+> > And perhaps also the obvious:
+> >  64-bit domU on 64-bit dom0
+> >  32-bit domU on 32-bit dom0
+> > 
+> > Since the xen-blkback has its own version of the structs there is no
+> > need to change change newer and older version of it.
+> > 
+> > As long as that works I am OK sticking it in.
+> > 
+> > I think from the ARM perspective it is still in 'experimental' phase
+> > so anything goes to make it work under ARM.
+> 
+> To be honest I am unhappy about this, but I don't want to clutter even
+> more a code path already plagued by an ifdef infestation.
+> 
+> Even if the ARM port is experimental, I would prefer to retain
+> compatibility if it was possible to do so with a couple of lines fix.
+> Otherwise I would rather break ABI compatibility than introducing
+> another half a dozen ifdefs.
 
-I suggest you might want to read the commit message again.. but lets try 
-once again:
+Let me rephrase this as it can be misinterpreted as a NACK for this
+patch while it is not.
 
-As you see in dmesg log 
-https://bugzilla.kernel.org/attachment.cgi?id=117311 pointed in the bug 
-https://bugzilla.kernel.org/show_bug.cgi?id=66441,
-
-
-you already have
-"
-[    0.176940] platform 4b501000.aes: Cannot lookup hwmod 'aes'
-[    0.177215] platform 480a5000.des: Cannot lookup hwmod 'des'"
-
-Now, printing that warning does not help, as I already explained in the 
-commit log,
-"
- >> b) driver does not know about (a), does a pm_runtime_get_sync which
- >>     never fails"
-
-A device node stated it will have hwmod to adequately control it, but in 
-reality, as in this case, it does not. how does printing a warning alone 
-help the driver which is not aware of these? The driver's attempt at 
-pm_runtime_sync should fail, as that is what "ti,hwmod" property controls.
-
-
-> Concerned that all this LOC may end up being dead code when the "ti,hwmods"
-> property becomes obsolete anyway.
-
-we detected we have a bug with 3.13-rc2 - this is a fix for kernel 
-(probably a stable candidate too). ti,hwmod property might become 
-eventually obsolete (and we are working towards that), but the 
-functionality that it provides today is necessary for the transition 
-from mixed dt-hwmod world to pure dt world. - remember we are moving 
-from data structure which is used to describe hardware to another which 
-again describes hardware in a different form - the kind of bugs we see 
-now are expected to be fixed for transition to be smooth for everyone.
-
-without providing adequate warnings, bugs like 
-https://bugzilla.kernel.org/show_bug.cgi?id=66441 will need pretty nasty 
-debug.
-
-I hope this helps convince you that error code is worth the LoC.
-
---
-Regards,
-Nishanth Menon
+I would like not to break existing ARM guests.
+However we do need to fix this and I can't see a decent way to do so
+retaining compatibility with the broken interface that we are currently
+implementing.  Therefore I am OK with the patch.
