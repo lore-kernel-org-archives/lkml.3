@@ -1,90 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932241Ab3LDLzu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 06:55:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45680 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932099Ab3LDLzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 06:55:48 -0500
-Date: Wed, 4 Dec 2013 11:55:44 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Jeff Mahoney <jeffm@suse.com>, David Sterba <dsterba@suse.cz>
-Subject: btrfs deadlocks under stress up until 3.12
-Message-ID: <20131204115544.GA8473@suse.de>
+	id S932269Ab3LDL4d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 06:56:33 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44381 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932099Ab3LDL4a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 06:56:30 -0500
+Date: Wed, 4 Dec 2013 11:56:28 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Alan Tull <delicious.quinoa@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Jamie Iles <jamie@jamieiles.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>
+Subject: Re: [PATCH v8] gpio: add a driver for the Synopsys DesignWare APB
+ GPIO block
+Message-ID: <20131204115628.GL16025@e106331-lin.cambridge.arm.com>
+References: <1386088876-29205-1-git-send-email-delicious.quinoa@gmail.com>
+ <1386088876-29205-2-git-send-email-delicious.quinoa@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1386088876-29205-2-git-send-email-delicious.quinoa@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Dec 03, 2013 at 04:41:16PM +0000, Alan Tull wrote:
+> From: Jamie Iles <jamie@jamieiles.com>
+> 
+> The Synopsys DesignWare block is used in some ARM devices (picoxcell)
+> and can be configured to provide multiple banks of GPIO pins.
+> 
+> Signed-off-by: Alan Tull <atull@altera.com>
+> Reviewed-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> 
+> v8:     - remove socfpga.dtsi changes
+>         - minor cleanup in devicetree documentation
+> v7:     - use irq_generic_chip
+>         - support one irq per gpio line or one irq for many
+>         - s/bank/port/ and other cleanup
+> v6:     - (atull) squash the set of patches
+>         - use linear irq domain
+>         - build fixes. Original driver was reviewed on v3.2.
+>         - Fix setting irq edge type for 'rising' and 'both'.
+>         - Support as a loadable module.
+>         - Use bgpio_chip's spinlock during register access.
+>         - Clean up register names to match spec
+>         - s/bank/port/ because register names use the word 'port'
+>         - s/nr-gpio/nr-gpios/
+>         - don't get/put the of_node
+>         - remove signoffs/acked-by's because of changes
+>         - other cleanup
+> v5:     - handle sparse bank population correctly
+> v3:     - depend on rather than select IRQ_DOMAIN
+>         - split IRQ support into a separate patch
+> v2:     - use Rob Herring's irqdomain in generic irq chip patches
+>         - use reg property to indicate bank index
+>         - support irqs on both edges based on LinusW's u300 driver
+> ---
+>  .../devicetree/bindings/gpio/snps-dwapb-gpio.txt   |   57 +++
+>  drivers/gpio/Kconfig                               |    9 +
+>  drivers/gpio/Makefile                              |    1 +
+>  drivers/gpio/gpio-dwapb.c                          |  426 ++++++++++++++++++++
+>  4 files changed, 493 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt
+>  create mode 100644 drivers/gpio/gpio-dwapb.c
+> 
+> diff --git a/Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt b/Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt
+> new file mode 100644
+> index 0000000..e7f144f
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt
+> @@ -0,0 +1,57 @@
+> +* Synopsys DesignWare APB GPIO controller
+> +
+> +Required properties:
+> +- compatible : Should be "snps,dw-apb-gpio"
 
-I queued up a number of tests including IO stress tests a few weeks ago
-and had noticed that some of the btrfs tests failed to complete but only
-looked today.  Specfically, stress tests with reaims alltests configuration
-on btrfs failed up until 3.12 with a console log that looked like
+s/be/contain/
 
-[ 2882.975251] INFO: task btrfs-transacti:2816 blocked for more than 480 seconds.
-[ 2882.994789] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 2883.015070] btrfs-transacti D ffff88023fc13600     0  2816      2 0x00000000
-[ 2883.034734]  ffff880234539dc0 0000000000000046 ffff880234539fd8 0000000000013600
-[ 2883.054847]  ffff880234539fd8 0000000000013600 ffff880230a44540 ffff8801c97868b8
-[ 2883.075027]  ffff8802346be9e8 ffff8802346be9e8 0000000000000000 ffff8801ef4a6770
-[ 2883.095256] Call Trace:
-[ 2883.110170]  [<ffffffff815de804>] schedule+0x24/0x70
-[ 2883.127723]  [<ffffffff8128460f>] wait_current_trans.isra.18+0xaf/0x110
-[ 2883.147034]  [<ffffffff810741f0>] ? wake_up_atomic_t+0x30/0x30
-[ 2883.165492]  [<ffffffff81285c70>] start_transaction+0x270/0x510
-[ 2883.184214]  [<ffffffff81285fc2>] btrfs_attach_transaction+0x12/0x20
-[ 2883.203282]  [<ffffffff8127cb74>] transaction_kthread+0x74/0x220
-[ 2883.221941]  [<ffffffff8127cb00>] ? verify_parent_transid+0x170/0x170
-[ 2883.241048]  [<ffffffff8107347b>] kthread+0xbb/0xc0
-[ 2883.258423]  [<ffffffff810733c0>] ? kthread_create_on_node+0x110/0x110
-[ 2883.277654]  [<ffffffff815e7efc>] ret_from_fork+0x7c/0xb0
-[ 2883.295561]  [<ffffffff810733c0>] ? kthread_create_on_node+0x110/0x110
-[ 2883.314535] INFO: task kworker/u16:3:21786 blocked for more than 480 seconds.
-[ 2883.334131] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 2883.354587] kworker/u16:3   D ffff88023fc13600     0 21786      2 0x00000000
-[ 2883.374274] Workqueue: writeback bdi_writeback_workfn (flush-btrfs-1)
-[ 2883.393428]  ffff8801d450bbb0 0000000000000046 ffff8801d450bfd8 0000000000013600
-[ 2883.413681]  ffff8801d450bfd8 0000000000013600 ffff8801f540a440 ffff88021c9473b0
-[ 2883.433798]  ffff88023463a000 ffff8801d450bbd0 ffff8801c97868b8 ffff8801c9786928
-[ 2883.453815] Call Trace:
-[ 2883.468366]  [<ffffffff815de804>] schedule+0x24/0x70
-[ 2883.485395]  [<ffffffff81285305>] btrfs_commit_transaction+0x265/0x960
-[ 2883.503928]  [<ffffffff810741f0>] ? wake_up_atomic_t+0x30/0x30
-[ 2883.521745]  [<ffffffff81292140>] btrfs_write_inode+0x70/0xb0
-[ 2883.539623]  [<ffffffff811aa317>] __writeback_single_inode+0x167/0x220
-[ 2883.558528]  [<ffffffff811aae5f>] writeback_sb_inodes+0x19f/0x400
-[ 2883.577137]  [<ffffffff811ab273>] wb_writeback+0xe3/0x2b0
-[ 2883.595184]  [<ffffffff8106efe1>] ? set_worker_desc+0x71/0x80
-[ 2883.613730]  [<ffffffff811ace00>] bdi_writeback_workfn+0x100/0x3d0
-[ 2883.632837]  [<ffffffff8106c0a8>] process_one_work+0x178/0x410
-[ 2883.651553]  [<ffffffff8106ccb9>] worker_thread+0x119/0x3a0
-[ 2883.669822]  [<ffffffff8106cba0>] ? rescuer_thread+0x360/0x360
-[ 2883.688338]  [<ffffffff8107347b>] kthread+0xbb/0xc0
-[ 2883.705761]  [<ffffffff810733c0>] ? kthread_create_on_node+0x110/0x110
-[ 2883.724865]  [<ffffffff815e7efc>] ret_from_fork+0x7c/0xb0
-[ 2883.742994]  [<ffffffff810733c0>] ? kthread_create_on_node+0x110/0x110
+> +- reg : Address and length of the register set for the device
 
-Tests were executed by mmtests using the
-configs/config-global-dhp__reaim-stress-alltests as a baseline but with
-the following parameters added to use a test partition
+As this has children with reg entries, it should have #address-cells and
+#size-cells (as the example does).
 
-export TESTDISK_PARTITION=/dev/sda6
-export TESTDISK_FILESYSTEM=btrfs
-export TESTDISK_MKFS_PARAM="-f"
-export TESTDISK_MOUNT_ARGS=
+> +
+> +The GPIO controller has a configurable number of ports, each of which are
+> +represented as child nodes with the following properties:
+> +
+> +Required properties:
+> +- compatible : "snps,dw-apb-gpio-port"
+> +- gpio-controller : Marks the device node as a gpio controller.
+> +- #gpio-cells : Should be two.  The first cell is the pin number and
+> +  the second cell is used to specify optional parameters (currently
+> +  unused).
+> +- reg : The integer port index of the port, a single cell.
+> +
+> +Optional properties:
+> +- interrupt-controller : The first port may be configured to be an interrupt
+> +controller.
+> +- #interrupt-cells : Specifies the number of cells needed to encode an
+> +interrupt.  Shall be set to 2.  The first cell defines the interrupt number,
+> +the second encodes the triger flags encoded as described in
+> +Documentation/devicetree/bindings/interrupts.txt
+> +- interrupt-parent : The parent interrupt controller.
+> +- interrupts : The interrupts to the parent controller raised when GPIOs
+> +generate the interrupts.
+> +- snps,nr-gpios : The number of pins in the port, a single cell.
+> +
+> +Example:
+> +
+> +gpio: gpio@20000 {
+> +       compatible = "snps,dw-apb-gpio";
+> +       reg = <0x20000 0x1000>;
+> +       #address-cells = <1>;
+> +       #size-cells = <0>;
+> +
+> +       porta: gpio-controller@0 {
+> +               compatible = "snps,dw-apb-gpio-port";
+> +               gpio-controller;
+> +               #gpio-cells = <2>;
+> +               snps,nr-gpio = <8>;
+> +               reg = <0>;
+> +               interrupt-controller;
+> +               #interrupt-cells = <2>;
+> +               interrupt-parent = <&vic1>;
+> +               interrupts = <0 1 2 3 4 5 6 7>;
 
-While it is apparently fixed at the moment, any distribution using btrfs
-with 3.10-longterm or 3.11 may file bugs and nag about the general stability
-of btrfs even though the issues are already resolved.  I note there are
-a number of deadlock-related fixes merged for btrfs between 3.11 and
-3.12. Are there plans to backport them?
+Nit: please bracket list entries individually.
 
--- 
-Mel Gorman
-SUSE Labs
+Otherwise this looks fine to me.
+
+Thanks,
+Mark.
