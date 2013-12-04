@@ -1,41 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932657Ab3LDPVy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 10:21:54 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:50838 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932545Ab3LDPVw (ORCPT
+	id S932603Ab3LDPZA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 10:25:00 -0500
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:37282 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932319Ab3LDPY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 10:21:52 -0500
-Date: Wed, 4 Dec 2013 10:21:51 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: boris brezillon <b.brezillon@overkiz.com>
-cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 3/3] usb: ohci-at91: use device managed clk retrieval
-In-Reply-To: <529EE8A5.7010806@overkiz.com>
-Message-ID: <Pine.LNX.4.44L0.1312041021120.1329-100000@iolanthe.rowland.org>
+	Wed, 4 Dec 2013 10:24:59 -0500
+Date: Wed, 4 Dec 2013 10:24:55 -0500
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
+        bhelgaas@google.com
+Subject: Re: [PATCHSET REPOST driver-core-next] kernfs: implement trusted.*
+ xattr support
+Message-ID: <20131204152455.GP3158@htj.dyndns.org>
+References: <1385246402-1407-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385246402-1407-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Dec 2013, boris brezillon wrote:
+FYI, these two patches still apply as-is on top of the current
+driver-core-next e756bc5670d0 ("kobject: fix kset sample error path").
 
-> > The patches look fine to me.  But only the 1/3 patch fixes a bug; the
-> > others merely change the resource management.
-> 
-> Do you want me to split this series ?
->   1) the 1st patch that should be merged in 3.13
->   2) patches 2 to 4 that might be applied later
+Thanks.
 
-That probably would make Greg happier.
-
-Alan Stern
-
+-- 
+tejun
