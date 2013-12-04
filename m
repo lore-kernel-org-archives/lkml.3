@@ -1,80 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920Ab3LDBgG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 20:36:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41060 "EHLO mx1.redhat.com"
+	id S1755966Ab3LDBhB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 20:37:01 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50525 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755000Ab3LDBgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 20:36:00 -0500
-Date: Wed, 4 Dec 2013 09:35:29 +0800
-From: Baoquan He <bhe@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: mjg59@srcf.ucam.org, greg@kroah.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com, hpa@zytor.com
-Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in
- kernel kexec
-Message-ID: <20131204013529.GA3298@localhost.localdomain>
-References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
- <1384969851-7251-5-git-send-email-vgoyal@redhat.com>
- <20131129031048.GE4318@dhcp-16-252.nay.redhat.com>
- <20131202154437.GF18642@redhat.com>
+	id S1755000Ab3LDBhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 20:37:00 -0500
+Message-ID: <529E8719.4070202@zytor.com>
+Date: Tue, 03 Dec 2013 17:36:25 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131202154437.GF18642@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Regression due to 0c44c2d0f459 x86: Use asm goto to implement better
+ modify_and_test() functions
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/13 at 10:44am, Vivek Goyal wrote:
-> On Fri, Nov 29, 2013 at 11:10:48AM +0800, Baoquan He wrote:
-> 
-> [..]
-> > > +void *arch_kexec_kernel_image_load(struct kimage *image, char *kernel,
-> > > +			unsigned long kernel_len, char *initrd,
-> > > +			unsigned long initrd_len, char *cmdline,
-> > > +			unsigned long cmdline_len)
-> > > +{
-> > > +	int idx = image->file_handler_idx;
-> > > +
-> > > +	if (idx < 0)
-> > > +		return ERR_PTR(-ENOEXEC);
-> > > +
-> > > +	return kexec_file_type[idx].load(image, kernel, kernel_len, initrd,
-> > > +					initrd_len, cmdline, cmdline_len);
-> > > +}
-> > > +
-> > > +int arch_image_file_post_load_cleanup(struct kimage *image)
-> > > +{
-> > 
-> > Hi Vivek,
-> > 
-> > This function is defined as one of arch specific fucntion set, why don't
-> > we name it in a unified prefix as others.
-> 
-> I am using "arch_" prefix. What else to use?
+Hi guys,
 
-I mean in this function series, other functions have name like
-arch_kexec_kernel_image_xxx, why this function is lonely, and is named
-as arch_kimage_xxx. And here what does the 'k' mean in "kimage", kexec
-image or kernel image, I am confused.
+0c44c2d0f459 x86: Use asm goto to implement better modify_and_test()
+functions
 
-> 
-> > 
-> > And name of the default dummy function in kernel/kexec.c is not consistent
-> > with the arch specific one, so currently
-> > arch_image_file_post_load_cleanup of x86 arch is not called. Please
-> > consider wihch one need be changed.
-> 
-> Good catch Bao. I should change arch_image_file_post_load_cleanup() to
-> arch_kimage_file_post_load_cleanup(), otherwise it never gets called and
-> memory leaks.
-> 
-> Thanks
-> Vivek
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
+causes a regression, because it incorrectly changed the constraints of
+bitops.
+
+Specifically, the GEN_BINARY_RMWcc() hardcodes a constraint as "er", but
+it needs to be "Ir" for the bitops themselves.  "I" is correct (as
+opposed to "J" even on 64 bits, because we only generate the 64-bit
+version when we have a register operand.
+
+Unfortunately there isn't a way we can get gcc+gas to generate a version
+with an offset pointer.
+
+	-hpa
+
+
