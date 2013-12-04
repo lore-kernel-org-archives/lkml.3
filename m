@@ -1,71 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab3LDHjz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 02:39:55 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:50191 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754676Ab3LDHjl (ORCPT
+	id S1754805Ab3LDHkk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 02:40:40 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:16155 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754300Ab3LDHki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 02:39:41 -0500
-Message-ID: <529EDC36.5050108@hitachi.com>
-Date: Wed, 04 Dec 2013 16:39:34 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 4 Dec 2013 02:40:38 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 03 Dec 2013 23:37:40 -0800
+Date: Wed, 4 Dec 2013 09:40:27 +0200
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "joro@8bytes.org" <joro@8bytes.org>
+CC: "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "lorenzo.pieralisi@arm.com" <lorenzo.pieralisi@arm.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv6 05/13] iommu/core: add ops->{bound,unbind}_driver()
+Message-ID: <20131204094027.dad1288aec14551ec42f3743@nvidia.com>
+In-Reply-To: <20131125154937.d6dbe9aedc16aab335d92f99@nvidia.com>
+References: <1385041249-7705-1-git-send-email-hdoyu@nvidia.com>
+	<1385041249-7705-6-git-send-email-hdoyu@nvidia.com>
+	<20131125154937.d6dbe9aedc16aab335d92f99@nvidia.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, namhyung@kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH 2/2] perf probe: Allow user to specify address within
- executable
-References: <1385942827-11637-1-git-send-email-dsahern@gmail.com> <1385942827-11637-2-git-send-email-dsahern@gmail.com> <529C259D.8010901@hitachi.com> <529C9DDF.1080401@gmail.com> <529CC97A.6000807@gmail.com> <529DA355.9090408@hitachi.com> <529DFF8E.2030806@gmail.com> <529E83C0.1060405@hitachi.com> <529E8903.7060907@gmail.com>
-In-Reply-To: <529E8903.7060907@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/04 10:44), David Ahern wrote:
-> On 12/3/13, 6:22 PM, Masami Hiramatsu wrote:
+On Mon, 25 Nov 2013 14:49:37 +0100
+Hiroshi Doyu <hdoyu@nvidia.com> wrote:
+
+> Hi Joerg,
 > 
->>> I figured out what you meant by uprobe_events interface yesterday. If I
->>> have to go to that interface for even 1 function I would do it for all
->>> -- from a user perspective it is just simpler to have 1 command to setup
->>> probes. I would prefer that 1 command be perf-probe.
->>
->> Yeah, but in that case, why you don't ask us adding sym->binding == STB_LOCAL
->> in filter_available_functions? :)
+> Do you have some time to review this patch along with the following ones?
 > 
-> I did in a separate email -- you said because there can be multiple
-> local functions with the same name.
+>   [PATCHv6 02/13] iommu/of: introduce a global iommu device list
+>   http://lists.linuxfoundation.org/pipermail/iommu/2013-November/007050.html
+> 
+>   [PATCHv6 03/13] iommu/of: check if dependee iommu is ready or not
+>   http://lists.linuxfoundation.org/pipermail/iommu/2013-November/007051.html
 
-Yeah, and this still seems to be a kind of workaround for me. The best way
-to make you requirement enable is to support dwarf for userspace tracing.
-OK I'll try it.
+Any chance to get some feedback on them?
 
-> But local functions is not the only
-> use case I need.
-
-What would you like to do with perf probe? Direct address accessing for
-userspace is not a good way to do, because userspace is relocatable...
-
-> For now I will carry the patch locally. At this point I am 20 patches
-> deep and have probably another 20 to go. What's one more. I'll come back
-> to this when I have more time.
-
-Would you have any public git repository for that? And could you share
-us what would you like to do before sending patch? We can help you to
-tell the best way.
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+> With those patches, now I'm trying to populate iommu master devices
+> after an IOMMU device is populated. Originally [PATCHv6 02/13] was
+> proposed by Thierry. I'm a bit afraid of adding new IOMMU API as
+> this, but I think that this new {bound,unbind}_driver() is the right
+> timiing that depeding devices are populated instead of add_device()
+> since, even after add_device, a device won't be populated. I'm not so
+> sure how this affects on the existing IOMMUs.
+> 
+> It would be nice if you give some feedback on this.
+> 
+> On Thu, 21 Nov 2013 14:40:41 +0100
+> Hiroshi Doyu <hdoyu@nvidia.com> wrote:
+> 
+> > ops->{bound,unbind}_driver() functions are called at
+> > BUS_NOTIFY_{BOUND,UNBIND}_DRIVER respectively.
+> > 
+> > This is necessary to control the device population order. IOMMU master
+> > devices depend on an IOMMU device instanciation. IOMMU master devices
+> > can be registered to an IOMMU only after it's successfully
+> > populated. This IOMMU registration is done via
+> > ops->bound_driver(). Currently this population can be deferred if
+> > depending IOMMU device hasn't yet been populated in driver core. This
+> > cannot be done via ops->add_device() since after add_device() device's
+> > population/instanciation can be still deferred via probe().
+> > 
+> > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> > ---
+> > v6:
+> > New for v6.
+> > ---
+> >  drivers/iommu/iommu.c | 13 +++++++++++--
+> >  include/linux/iommu.h |  4 ++++
+> >  2 files changed, 15 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+> > index e5555fc..5469d36 100644
+> > --- a/drivers/iommu/iommu.c
+> > +++ b/drivers/iommu/iommu.c
+> > @@ -540,14 +540,23 @@ static int iommu_bus_notifier(struct notifier_block *nb,
+> >  	 * ADD/DEL call into iommu driver ops if provided, which may
+> >  	 * result in ADD/DEL notifiers to group->notifier
+> >  	 */
+> > -	if (action == BUS_NOTIFY_ADD_DEVICE) {
+> > +	switch (action) {
+> > +	case BUS_NOTIFY_ADD_DEVICE:
+> >  		if (ops->add_device)
+> >  			return ops->add_device(dev);
+> > -	} else if (action == BUS_NOTIFY_DEL_DEVICE) {
+> > +	case BUS_NOTIFY_DEL_DEVICE:
+> >  		if (ops->remove_device && dev->iommu_group) {
+> >  			ops->remove_device(dev);
+> >  			return 0;
+> >  		}
+> > +	case BUS_NOTIFY_BOUND_DRIVER:
+> > +		if (ops->bound_driver)
+> > +			ops->bound_driver(dev);
+> > +		break;
+> > +	case BUS_NOTIFY_UNBIND_DRIVER:
+> > +		if (ops->unbind_driver)
+> > +			ops->unbind_driver(dev);
+> > +		break;
+> >  	}
+> >  
+> >  	/*
+> > diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+> > index a444c79..a0e92be 100644
+> > --- a/include/linux/iommu.h
+> > +++ b/include/linux/iommu.h
+> > @@ -96,6 +96,8 @@ enum iommu_attr {
+> >   * @domain_has_cap: domain capabilities query
+> >   * @add_device: add device to iommu grouping
+> >   * @remove_device: remove device from iommu grouping
+> > + * @bound_driver: called at BUS_NOTIFY_BOUND_DRIVER
+> > + * @unbind_driver: called at BUS_NOTIFY_UNBIND_DRIVER
+> >   * @domain_get_attr: Query domain attributes
+> >   * @domain_set_attr: Change domain attributes
+> >   * @pgsize_bitmap: bitmap of supported page sizes
+> > @@ -114,6 +116,8 @@ struct iommu_ops {
+> >  			      unsigned long cap);
+> >  	int (*add_device)(struct device *dev);
+> >  	void (*remove_device)(struct device *dev);
+> > +	int (*bound_driver)(struct device *dev);
+> > +	void (*unbind_driver)(struct device *dev);
+> >  	int (*device_group)(struct device *dev, unsigned int *groupid);
+> >  	int (*domain_get_attr)(struct iommu_domain *domain,
+> >  			       enum iommu_attr attr, void *data);
+> > -- 
+> > 1.8.1.5
+> > 
+> _______________________________________________
+> iommu mailing list
+> iommu@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/iommu
