@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755903Ab3LDCU1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 21:20:27 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36148 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754244Ab3LDCU0 (ORCPT
+	id S1755949Ab3LDCVf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 21:21:35 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:41656 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752764Ab3LDCVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 21:20:26 -0500
-Date: Tue, 3 Dec 2013 19:20:16 -0700
-From: Jens Axboe <axboe@kernel.dk>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 21/41] block: Replace __this_cpu_ptr with raw_cpu_ptr
-Message-ID: <20131204022016.GE5051@kernel.dk>
-References: <20131203233232.928771708@linux.com>
- <20131203233255.999121189@linux.com>
+	Tue, 3 Dec 2013 21:21:32 -0500
+Date: Wed, 4 Dec 2013 02:21:30 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "David E. Box" <david.e.box@linux.intel.com>
+Cc: rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCHv2 2/2] ACPI/platform: Add ACPI ID for Intel MBI device
+Message-ID: <20131204022130.GA26084@srcf.ucam.org>
+References: <1385100357-5459-1-git-send-email-david.e.box@linux.intel.com>
+ <1386115178-7559-1-git-send-email-david.e.box@linux.intel.com>
+ <1386115178-7559-3-git-send-email-david.e.box@linux.intel.com>
+ <20131204013001.GA25037@srcf.ucam.org>
+ <20131204021703.GA8282@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131203233255.999121189@linux.com>
+In-Reply-To: <20131204021703.GA8282@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03 2013, Christoph Lameter wrote:
-> __this_cpu_ptr is being phased out.
+On Tue, Dec 03, 2013 at 06:17:03PM -0800, David E. Box wrote:
+> This is per the requirement in Documentation/acpi/enumeration.txt:
 > 
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> Index: linux/fs/ext4/mballoc.c
-> ===================================================================
-> --- linux.orig/fs/ext4/mballoc.c	2013-12-02 16:07:53.574528512 -0600
-> +++ linux/fs/ext4/mballoc.c	2013-12-02 16:07:53.574528512 -0600
-> @@ -4085,7 +4085,7 @@ static void ext4_mb_group_or_file(struct
->  	 * per cpu locality group is to reduce the contention between block
->  	 * request from multiple CPUs.
->  	 */
-> -	ac->ac_lg = __this_cpu_ptr(sbi->s_locality_groups);
-> +	ac->ac_lg = raw_cpu_ptr(sbi->s_locality_groups);
->  
->  	/* we're going to use group allocation */
->  	ac->ac_flags |= EXT4_MB_HINT_GROUP_ALLOC;
-> Index: linux/fs/buffer.c
-> ===================================================================
-> --- linux.orig/fs/buffer.c	2013-12-02 16:07:53.574528512 -0600
-> +++ linux/fs/buffer.c	2013-12-02 16:07:53.574528512 -0600
-> @@ -1312,7 +1312,7 @@ static void bh_lru_install(struct buffer
->  		}
->  		while (out < BH_LRU_SIZE)
->  			bhs[out++] = NULL;
-> -		memcpy(__this_cpu_ptr(&bh_lrus.bhs), bhs, sizeof(bhs));
-> +		memcpy(this_cpu_ptr(&bh_lrus.bhs), bhs, sizeof(bhs));
->  	}
->  	bh_lru_unlock();
+> "Currently the kernel is not able to automatically determine from which ACPI
+> device it should make the corresponding platform device so we need to add
+> the ACPI device explicitly to acpi_platform_device_ids list defined in
+> drivers/acpi/acpi_platform.c"
 
-Christoph, I applied the fs/buffer.c bit, the ext4 one should probably
-go through Ted.
+Well sure, but why do you need to be a platform device at all? This 
+functionality was intended for cases where we already have a driver for 
+the part that enumerated it via some other mechanism. If the driver's 
+only intended for ACPI systems then why not just be an ACPI device?
 
 -- 
-Jens Axboe
-
+Matthew Garrett | mjg59@srcf.ucam.org
