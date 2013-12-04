@@ -1,107 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932665Ab3LDPcL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 10:32:11 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58130 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932546Ab3LDPcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 10:32:09 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20131204085448.GA31778@gmail.com>
-References: <tip-j21wzqv790q834n7yc6g80j1@git.kernel.org> <20131204085448.GA31778@gmail.com>
+	id S932705Ab3LDPce (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 10:32:34 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:42404 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932545Ab3LDPcc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 10:32:32 -0500
+Message-ID: <529F4B0F.2020801@linaro.org>
+Date: Wed, 04 Dec 2013 09:32:31 -0600
+From: Alex Elder <alex.elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [tip:x86/urgent] x86-64, build: Always pass in -mno-sse
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 04 Dec 2013 07:31:28 -0800
-To: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, kevin.b.smith@intel.com,
-        hjl.tools@gmail.com
-CC: linux-tip-commits@vger.kernel.org
-Message-ID: <8798ec32-5add-4772-9c41-6f69401b16c9@email.android.com>
+To: Christian Daudt <bcm@fixthebug.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Mike Turquette <mturquette@linaro.org>
+CC: "bcm-kernel-feedback-list@broadcom.com" 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 0/3] clk: bcm281xx: define Broadcom kona clocks
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I can regenerate the patch if you want.
+This series adds support for Kona clock control units (CCUs) and
+clocks, used by Broadcom BCM281xx family SoCs.  Kona CCUs are
+represented by nodes in the device tree, and the names of the clocks
+provided by a CCU are included in its node.  Implementation details
+of those clocks are defined in a C file separate from the code that
+implements the functionality used by most of the common clock
+framework.
 
-Ingo Molnar <mingo@kernel.org> wrote:
->
->* tip-bot for H. Peter Anvin <tipbot@zytor.com> wrote:
->
->> Commit-ID:  5551a34e5aeab868f8d37f70d8754868921b4ee5
->> Gitweb:    
->http://git.kernel.org/tip/5551a34e5aeab868f8d37f70d8754868921b4ee5
->> Author:     H. Peter Anvin <hpa@linux.intel.com>
->> AuthorDate: Wed, 20 Nov 2013 13:31:49 -0800
->> Committer:  H. Peter Anvin <hpa@linux.intel.com>
->> CommitDate: Tue, 3 Dec 2013 17:40:22 -0800
->> 
->> x86-64, build: Always pass in -mno-sse
->> 
->> Always pass in the -mno-sse argument, regardless if
->> -preferred-stack-boundary is supported.  We never want to generate
->SSE
->> instructions in the kernel unless we *really* know what we're doing.
->> 
->> According to H. J. Lu, any version of gcc new enough that we support
->> it at all should handle the -mno-sse option, so just add it
->> unconditionally.
->> 
->> Reported-by: Kevin B. Smith <kevin.b.smith@intel.com>
->> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
->> Cc: H. J. Lu <hjl.tools@gmail.com>
->> Link:
->http://lkml.kernel.org/n/tip-j21wzqv790q834n7yc6g80j1@git.kernel.org
->> Cc: <stable@vger.kernel.org> # build fix only
->> ---
->>  arch/x86/Makefile | 8 +++++++-
->>  1 file changed, 7 insertions(+), 1 deletion(-)
->> 
->> diff --git a/arch/x86/Makefile b/arch/x86/Makefile
->> index 41250fb..eda00f9 100644
->> --- a/arch/x86/Makefile
->> +++ b/arch/x86/Makefile
->> @@ -31,6 +31,9 @@ ifeq ($(CONFIG_X86_32),y)
->>  
->>          KBUILD_CFLAGS += -msoft-float -mregparm=3
->-freg-struct-return
->>  
->> +        # Don't autogenerate SSE instructions
->> +	KBUILD_CFLAGS += -mno-sse
->> +
->>          # Never want PIC in a 32-bit kernel, prevent breakage with
->GCC built
->>          # with nonstandard options
->>          KBUILD_CFLAGS += -fno-pic
->> @@ -57,8 +60,11 @@ else
->>          KBUILD_AFLAGS += -m64
->>          KBUILD_CFLAGS += -m64
->>  
->> +        # Don't autogenerate SSE instructions
->> +	KBUILD_CFLAGS += -mno-sse
->> +
->>  	# Use -mpreferred-stack-boundary=3 if supported.
->> -	KBUILD_CFLAGS += $(call cc-option,-mno-sse
->-mpreferred-stack-boundary=3)
->> +	KBUILD_CFLAGS += $(call cc-option,-mpreferred-stack-boundary=3)
->>  
->>          # FIXME - should be integrated in Makefile.cpu
->(Makefile_32.cpu)
->>          cflags-$(CONFIG_MK8) += $(call cc-option,-march=k8)
->
->Just a detail I noticed: in kbuild we intentionally use 8 spaces for 
->tabs in Makefiles and only use tabs for commands where tabs are 
->required.
->
->The above code introduces tabs in the middle of 8-space sequences. It 
->works but is inconsistent.
->
->Thanks,
->
->	Ingo
+This series depends on:
+    "Update Kona drivers to use clocks"
+    https://lkml.org/lkml/2013/11/14/450
+
+This series (along with a version of those prerequisite patches) is
+available in the "review/bcm-kona-clocks-v2" branch of this git
+repository:
+    git://git.linaro.org/people/elder/linux.git
+
+Updates:
+v2: - Address all issues raised by Mark Rutland.
+
+					-Alex
+
+Alex Elder (3):
+  clk: bcm281xx: define kona clock binding
+  clk: bcm281xx: add initial clock framework support
+  ARM: dts: bcm281xx: define real clocks
+
+ .../devicetree/bindings/clock/bcm-kona-clock.txt   |   93 ++
+ arch/arm/boot/dts/bcm11351.dtsi                    |  240 +++--
+ drivers/clk/Kconfig                                |    1 +
+ drivers/clk/Makefile                               |    1 +
+ drivers/clk/bcm/Kconfig                            |    8 +
+ drivers/clk/bcm/Makefile                           |    3 +
+ drivers/clk/bcm/clk-bcm281xx.c                     |  416 ++++++++
+ drivers/clk/bcm/clk-kona-setup.c                   |  769 +++++++++++++++
+ drivers/clk/bcm/clk-kona.c                         | 1033
+++++++++++++++++++++
+ drivers/clk/bcm/clk-kona.h                         |  414 ++++++++
+ include/dt-bindings/clock/bcm281xx.h               |   65 ++
+ 11 files changed, 2967 insertions(+), 76 deletions(-)
+ create mode 100644
+Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
+ create mode 100644 drivers/clk/bcm/Kconfig
+ create mode 100644 drivers/clk/bcm/Makefile
+ create mode 100644 drivers/clk/bcm/clk-bcm281xx.c
+ create mode 100644 drivers/clk/bcm/clk-kona-setup.c
+ create mode 100644 drivers/clk/bcm/clk-kona.c
+ create mode 100644 drivers/clk/bcm/clk-kona.h
+ create mode 100644 include/dt-bindings/clock/bcm281xx.h
 
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+1.7.9.5
+
