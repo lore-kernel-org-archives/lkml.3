@@ -1,167 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932278Ab3LDMXQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 07:23:16 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:55027 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932258Ab3LDMXO (ORCPT
+	id S1755689Ab3LDM0U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 07:26:20 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45039 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753994Ab3LDM0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 07:23:14 -0500
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-doc@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Rob Landley <rob@landley.net>, Mark Brown <broonie@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH] Documentation: start documenting driver design patterns
-Date: Wed,  4 Dec 2013 13:22:37 +0100
-Message-Id: <1386159757-29966-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.8.3.1
+	Wed, 4 Dec 2013 07:26:18 -0500
+Date: Wed, 4 Dec 2013 12:26:02 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: "oliver@schinagl.nl" <oliver@schinagl.nl>
+Cc: "tj@kernel.org" <tj@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "ob.herring@calxeda.com" <ob.herring@calxeda.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "dev@linux-sunxi.org" <dev@linux-sunxi.org>,
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
+        "ijc@hellion.org.uk" <ijc@hellion.org.uk>,
+        "hdegoede@redhat.com" <hdegoede@redhat.com>,
+        "oliver+list@schinagl.nl" <oliver+list@schinagl.nl>
+Subject: Re: [PATCH 2/3] ARM: sunxi: Add an ahci-platform compatible AHCI
+ driver for the Allwinner SUNXi series of SoCs
+Message-ID: <20131204122602.GN16025@e106331-lin.cambridge.arm.com>
+References: <1386159055-10264-1-git-send-email-oliver@schinagl.nl>
+ <1386159055-10264-3-git-send-email-oliver@schinagl.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386159055-10264-3-git-send-email-oliver@schinagl.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After realizing that we tend to tell developers the same thing over
-and over, let's attempt to document some commin design patterns
-used in the device drivers. The idea is that this can be extended
-so I just start out with two well-known design patterns.
+On Wed, Dec 04, 2013 at 12:10:54PM +0000, oliver@schinagl.nl wrote:
+> From: Oliver Schinagl <oliver@schinagl.nl>
+> 
+> This patch adds support for the sunxi series of SoC's by allwinner. It
+> plugs into the ahci-platform framework.
+> 
+> Note: Currently it uses a somewhat hackish approach that probably needs
+> a lot more work, but does the same as the IMX SoC's.
+> 
+> Signed-off-by: Olliver Schinagl <oliver@schinagl.nl>
+> ---
+>  .../devicetree/bindings/ata/ahci-sunxi.txt         |  24 ++
+>  drivers/ata/Kconfig                                |   9 +
+>  drivers/ata/Makefile                               |   1 +
+>  drivers/ata/ahci_platform.c                        |  12 +
+>  drivers/ata/ahci_sunxi.c                           | 305 +++++++++++++++++++++
+>  5 files changed, 351 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/ata/ahci-sunxi.txt
+>  create mode 100644 drivers/ata/ahci_sunxi.c
+> 
+> diff --git a/Documentation/devicetree/bindings/ata/ahci-sunxi.txt b/Documentation/devicetree/bindings/ata/ahci-sunxi.txt
+> new file mode 100644
+> index 0000000..0792fa5
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/ata/ahci-sunxi.txt
+> @@ -0,0 +1,24 @@
+> +Allwinner SUNXI AHCI SATA Controller
+> +
+> +SATA nodes are defined to describe on-chip Serial ATA controllers.
+> +Each SATA controller should have its own node.
+> +
+> +Required properties:
+> +- compatible   : compatible list, contains "allwinner,sun4i-a10-ahci"
 
-Cc: Rob Landley <rob@landley.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Mark Brown <broonie@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@linaro.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
-I guess this goes to Greg for merging through the device core
-tree if it is liked, let's see.
----
- Documentation/driver-model/design-patterns.txt | 116 +++++++++++++++++++++++++
- 1 file changed, 116 insertions(+)
- create mode 100644 Documentation/driver-model/design-patterns.txt
+- compatible: Should contain "allwinner,sun4i-a10-ahci"
 
-diff --git a/Documentation/driver-model/design-patterns.txt b/Documentation/driver-model/design-patterns.txt
-new file mode 100644
-index 000000000000..9ef8c1684558
---- /dev/null
-+++ b/Documentation/driver-model/design-patterns.txt
-@@ -0,0 +1,116 @@
-+
-+Device Driver Design Patterns
-+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+
-+This document describes a few common design patterns found in device drivers.
-+It is likely that subsystem maintainers will ask driver developers to
-+conform to these design patterns.
-+
-+1. State Container
-+2. container_of()
-+
-+
-+1. State Container
-+~~~~~~~~~~~~~~~~~~
-+
-+While the kernel contains a few device drivers that assume that they will
-+only be probed() once on a certain system (singletons), it is custom to assume
-+that the device the driver binds to will appear in several instances. This
-+means that the probe() function and all callbacks need to be reentrant.
-+
-+The most common way to achieve this is to use the state container design
-+pattern. It usually has this form:
-+
-+struct foo {
-+    spinlock_t lock; /* Example member */
-+    (...)
-+};
-+
-+static int foo_probe(...)
-+{
-+    struct foo *foo;
-+
-+    foo = devm_kzalloc(dev, sizeof(*foo), GFP_KERNEL);
-+    if (!foo)
-+        return -ENOMEM;
-+    spin_lock_init(&foo->lock);
-+    (...)
-+}
-+
-+This will create an instance of struct foo in memory every time probe() is
-+called. This is our state container for this instance of the device driver.
-+Of course it is then necessary to always pass this instance of the
-+state around to all functions that need access to the state and its members.
-+
-+For example, if the driver is registering an interrupt handler, you would
-+pass around a pointer to struct foo like this:
-+
-+static irqreturn_t foo_handler(int irq, void *arg)
-+{
-+    struct foo *foo = arg;
-+    (...)
-+}
-+
-+static int foo_probe(...)
-+{
-+    struct foo *foo;
-+
-+    (...)
-+    ret = request_irq(irq, foo_handler, 0, "foo", foo);
-+}
-+
-+This way you always get a pointer back to the correct instance of foo in
-+your interrupt handler.
-+
-+
-+2. container_of()
-+~~~~~~~~~~~~~~~~~
-+
-+Continuing on the above example we add a offloaded work:
-+
-+struct foo {
-+    spinlock_t lock;
-+    struct workqueue_struct *wq;
-+    struct work_struct offload;
-+    (...)
-+};
-+
-+static void foo_work(struct work_struct *work)
-+{
-+    struct foo *foo = container_of(work, struct foo, offload);
-+
-+    (...)
-+}
-+
-+static irqreturn_t foo_handler(int irq, void *arg)
-+{
-+    struct foo *foo = arg;
-+
-+    queue_work(foo->wq, &foo->offload);
-+    (...)
-+}
-+
-+static int foo_probe(...)
-+{
-+    struct foo *foo;
-+
-+    foo->wq = create_singlethread_workqueue("foo-wq");
-+    INIT_WORK(&foo->offload, foo_work);
-+    (...)
-+}
-+
-+The design pattern is the same for a a hrtimer or something similar that will
-+return a single argument which is a pointer to a struct member in the
-+callback.
-+
-+container_of() is a macro defined in <linux/kernel.h>
-+
-+What container_of() does is to obtain a pointer to the containing struct from
-+a pointer to a member by a simple subtraction using the offsetof() macro from
-+standard C, which allows something similar to object oriented behaviours.
-+Notice that the contained member must not be a pointer, but an actual member
-+for this to work.
-+
-+We can see here that we avoid having global pointers to our struct foo *
-+instance this way, while still keeping the number of parameters passed to the
-+work function to a single pointer.
--- 
-1.8.3.1
+> +- reg          : <registers mapping>
 
+- reg: The offset and length of the MMIO registers.
+
+> +- interrupts   : <interrupt mapping for AHCI IRQ>
+
+- interrupts: An interrupt-specifier for the ACHI interrupt
+
+> +- clocks       : clocks for ACHI
+> +- clock-names  : clock names for AHCI
+
+Please _define_ the set of clock-names you expect. This binding is
+meaningless without it. If you require clock-names, define the clocks
+property in terms of it.
+
+Thanks,
+Mark.
