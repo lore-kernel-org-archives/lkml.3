@@ -1,87 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab3LDBnU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 20:43:20 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50588 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752823Ab3LDBnQ (ORCPT
+	id S1755459Ab3LDBne (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 20:43:34 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:57653 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755110Ab3LDBnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 20:43:16 -0500
-Date: Tue, 3 Dec 2013 17:42:56 -0800
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-j21wzqv790q834n7yc6g80j1@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, hjl.tools@gmail.com,
-        kevin.b.smith@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, kevin.b.smith@intel.com,
-        hjl.tools@gmail.com
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86-64, build: Always pass in -mno-sse
-Git-Commit-ID: 5551a34e5aeab868f8d37f70d8754868921b4ee5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 3 Dec 2013 20:43:32 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>
+CC: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>, Joel F <joelf@ti.com>,
+        <linux-crypto@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Nishanth Menon <nm@ti.com>
+Subject: [PATCH] crypto: omap-aes: add error check for pm_runtime_get_sync
+Date: Tue, 3 Dec 2013 19:43:13 -0600
+Message-ID: <1386121393-32464-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 03 Dec 2013 17:43:02 -0800 (PST)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5551a34e5aeab868f8d37f70d8754868921b4ee5
-Gitweb:     http://git.kernel.org/tip/5551a34e5aeab868f8d37f70d8754868921b4ee5
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Wed, 20 Nov 2013 13:31:49 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 3 Dec 2013 17:40:22 -0800
+The AES driver currently assumes that pm_runtime_get_sync will always
+succeed, which may not always be true, so add error handling for the
+same.
 
-x86-64, build: Always pass in -mno-sse
+This scenario was reported in the following bug:
+place.  https://bugzilla.kernel.org/show_bug.cgi?id=66441
 
-Always pass in the -mno-sse argument, regardless if
--preferred-stack-boundary is supported.  We never want to generate SSE
-instructions in the kernel unless we *really* know what we're doing.
-
-According to H. J. Lu, any version of gcc new enough that we support
-it at all should handle the -mno-sse option, so just add it
-unconditionally.
-
-Reported-by: Kevin B. Smith <kevin.b.smith@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: H. J. Lu <hjl.tools@gmail.com>
-Link: http://lkml.kernel.org/n/tip-j21wzqv790q834n7yc6g80j1@git.kernel.org
-Cc: <stable@vger.kernel.org> # build fix only
+Reported-by: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>
+Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- arch/x86/Makefile | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 41250fb..eda00f9 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -31,6 +31,9 @@ ifeq ($(CONFIG_X86_32),y)
+Note: the bug in OMAP pm_domain layer is addressed here:
+https://patchwork.kernel.org/patch/3280531/
+
+Proper fixes required to make this work is part of the series:
+http://marc.info/?l=linux-kernel&m=138541594910233&w=2
+
+ drivers/crypto/omap-aes.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/crypto/omap-aes.c b/drivers/crypto/omap-aes.c
+index a9ccbf1..dde41f1d 100644
+--- a/drivers/crypto/omap-aes.c
++++ b/drivers/crypto/omap-aes.c
+@@ -784,6 +784,7 @@ static int omap_aes_ctr_decrypt(struct ablkcipher_request *req)
+ static int omap_aes_cra_init(struct crypto_tfm *tfm)
+ {
+ 	struct omap_aes_dev *dd = NULL;
++	int err;
  
-         KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
+ 	/* Find AES device, currently picks the first device */
+ 	spin_lock_bh(&list_lock);
+@@ -792,7 +793,13 @@ static int omap_aes_cra_init(struct crypto_tfm *tfm)
+ 	}
+ 	spin_unlock_bh(&list_lock);
  
-+        # Don't autogenerate SSE instructions
-+	KBUILD_CFLAGS += -mno-sse
+-	pm_runtime_get_sync(dd->dev);
++	err = pm_runtime_get_sync(dd->dev);
++	if (err < 0) {
++		dev_err(dd->dev, "%s: failed to get_sync(%d)\n",
++			__func__, err);
++		return err;
++	}
 +
-         # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
-         # with nonstandard options
-         KBUILD_CFLAGS += -fno-pic
-@@ -57,8 +60,11 @@ else
-         KBUILD_AFLAGS += -m64
-         KBUILD_CFLAGS += -m64
+ 	tfm->crt_ablkcipher.reqsize = sizeof(struct omap_aes_reqctx);
  
-+        # Don't autogenerate SSE instructions
-+	KBUILD_CFLAGS += -mno-sse
-+
- 	# Use -mpreferred-stack-boundary=3 if supported.
--	KBUILD_CFLAGS += $(call cc-option,-mno-sse -mpreferred-stack-boundary=3)
-+	KBUILD_CFLAGS += $(call cc-option,-mpreferred-stack-boundary=3)
+ 	return 0;
+@@ -1182,7 +1189,12 @@ static int omap_aes_probe(struct platform_device *pdev)
+ 	dd->phys_base = res.start;
  
-         # FIXME - should be integrated in Makefile.cpu (Makefile_32.cpu)
-         cflags-$(CONFIG_MK8) += $(call cc-option,-march=k8)
+ 	pm_runtime_enable(dev);
+-	pm_runtime_get_sync(dev);
++	err = pm_runtime_get_sync(dev);
++	if (err < 0) {
++		dev_err(dev, "%s: failed to get_sync(%d)\n",
++			__func__, err);
++		goto err_res;
++	}
+ 
+ 	omap_aes_dma_stop(dd);
+ 
+-- 
+1.7.9.5
+
