@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933264Ab3LDUhh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 15:37:37 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:39051 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932999Ab3LDUhc (ORCPT
+	id S933295Ab3LDUhs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 15:37:48 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:55892 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754351Ab3LDUhm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 15:37:32 -0500
+	Wed, 4 Dec 2013 15:37:42 -0500
 From: Magnus Damm <magnus.damm@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: khilman@linaro.org, arnd@arndb.de, linux-sh@vger.kernel.org,
         daniel.lezcano@linaro.org, horms@verge.net.au, john.stultz@linaro.org,
         olof@lixom.net, Magnus Damm <magnus.damm@gmail.com>,
         tglx@linutronix.de
-Date: Thu, 05 Dec 2013 05:38:18 +0900
-Message-Id: <20131204203818.19090.92396.sendpatchset@w520>
-Subject: [PATCH v3 00/03] clocksource: Consolidate SH and ARM mach-shmobile Kconfig bits
+Date: Thu, 05 Dec 2013 05:38:27 +0900
+Message-Id: <20131204203827.19090.98268.sendpatchset@w520>
+In-Reply-To: <20131204203818.19090.92396.sendpatchset@w520>
+References: <20131204203818.19090.92396.sendpatchset@w520>
+Subject: [PATCH v3 01/03] clocksource: Add Kconfig entries for CMT, MTU2, TMU and STI
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-clocksource: Consolidate SH and ARM mach-shmobile Kconfig bits (v3)
+From: Magnus Damm <damm@opensource.se>
 
-[PATCH v3 01/03] clocksource: Add Kconfig entries for CMT, MTU2, TMU and STI
-[PATCH v3 02/03] ARM: shmobile: Remove CMT, TMU and STI Kconfig entries
-[PATCH v2 03/03] sh: Remove Kconfig entries for TMU, CMT and MTU2
-
-This is V3 of the SH and ARM mach-shmobile clocksource Kconfig
-consolidation series.
-
-By sharing Kconfig entires in drivers/clocksource/Kconfig we
-can get rid of duplicated bits that do not belong under arch/.
-
-With this series applied it is possible to build the timer
-drivers for CMT, MTU2, TMU and STI in case of SH or ARM. The timer
-drivers are automatically selected by default. It is also possible
-to select and/or deselect freely when COMPILE_TEST has been selected.
-
-Since last time this has been broken out into 3 separate patches,
-where [PATCH v3 01/03] needs to go first, and the other patches
-can be merged any time after without any build or configuration
-issues.
-
-Thanks to Daniel, John and Arnd for feedback!
-
-This version tries to find a middle ground by:
- - Not allowing user selection of timers by default
- - Automaticlally select available drivers using SYS_SUPPORTS_xxx.
- - Allow manual override in case of COMPILE_TEST (select and deselect)
- - The system will boot regardless of these settigns
- - In this version the special case menu tand if have been dropped
-
-Slightly different and/or not really handled in this version:
- - The acronym soup is kept as-is for now
- - Allow select _and_ deselect in case of COMPILE_TEST (not only select)
- - Follow same style as SH and select per-SoC SYS_SUPPORTS_xxx
+Add Kconfig entries for CMT, MTU2, TMU and STI to
+drivers/clocksource/Kconfig. This will allow us to
+get rid of duplicated entires in architecture code
+such as arch/sh and arch/arm/mach-shmobile.
 
 Signed-off-by: Magnus Damm <damm@opensource.se>
 ---
 
- Written against renesas.git tag renesas-devel-v3.13-rc2-20131202
+ drivers/clocksource/Kconfig |   36 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
- arch/arm/mach-shmobile/Kconfig |   35 +++++++++++++++++------------------
- arch/sh/Kconfig                |   21 ---------------------
- drivers/clocksource/Kconfig    |   36 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 53 insertions(+), 39 deletions(-)
+--- 0001/drivers/clocksource/Kconfig
++++ work/drivers/clocksource/Kconfig	2013-12-04 22:14:29.000000000 +0900
+@@ -134,3 +134,39 @@ config VF_PIT_TIMER
+ 	bool
+ 	help
+ 	  Support for Period Interrupt Timer on Freescale Vybrid Family SoCs.
++
++config SYS_SUPPORTS_CMT
++        bool
++
++config SYS_SUPPORTS_TMU
++        bool
++
++config SYS_SUPPORTS_MTU2
++        bool
++
++config SYS_SUPPORTS_STI
++        bool
++
++config SH_TIMER_CMT
++	bool "Renesas CMT timer driver" if COMPILE_TEST
++	default SYS_SUPPORTS_CMT
++	help
++	  This enables build of the CMT timer driver.
++
++config SH_TIMER_MTU2
++	bool "Renesas MTU2 timer driver" if COMPILE_TEST
++	default SYS_SUPPORTS_MTU2
++	help
++	  This enables build of the MTU2 timer driver.
++
++config SH_TIMER_TMU
++	bool "Renesas TMU timer driver" if COMPILE_TEST
++	default SYS_SUPPORTS_TMU
++	help
++	  This enables build of the TMU timer driver.
++
++config EM_TIMER_STI
++	bool "Renesas STI timer driver" if COMPILE_TEST
++	default SYS_SUPPORTS_STI
++	help
++	  This enables build of the STI timer driver.
