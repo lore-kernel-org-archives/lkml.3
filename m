@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617Ab3LDNL7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 08:11:59 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:48924 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753193Ab3LDNL6 (ORCPT
+	id S932384Ab3LDNOJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 08:14:09 -0500
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:42364 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932290Ab3LDNOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 08:11:58 -0500
+	Wed, 4 Dec 2013 08:14:06 -0500
+Date: Wed, 4 Dec 2013 08:14:02 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Oliver Schinagl <oliver@schinagl.nl>
+Cc: grant.likely@linaro.org,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, dev@linux-sunxi.org,
+        maxime.ripard@free-electrons.com, ijc@hellion.org.uk,
+        hdegoede@redhat.com, oliver+list@schinagl.nl
+Subject: Re: [PATCH 2/3] ARM: sunxi: Add an ahci-platform compatible AHCI
+ driver for the Allwinner SUNXi series of SoCs
+Message-ID: <20131204131402.GG3158@htj.dyndns.org>
+References: <1386159055-10264-1-git-send-email-oliver@schinagl.nl>
+ <1386159055-10264-3-git-send-email-oliver@schinagl.nl>
+ <20131204123708.GD3158@htj.dyndns.org>
+ <529F2677.3070208@schinagl.nl>
 MIME-Version: 1.0
-In-Reply-To: <20131204125904.GB6359@ghostprotocols.net>
-References: <1385732192-27713-1-git-send-email-artagnon@gmail.com>
- <1385732192-27713-3-git-send-email-artagnon@gmail.com> <20131201195634.GB1215@krava.brq.redhat.com>
- <20131202193502.GA3706@infradead.org> <CALkWK0nBDqHSWxCVYtU5NMZ4J4=DHGXqk0ZHzM2z8rS1ohjwRw@mail.gmail.com>
- <20131204125904.GB6359@ghostprotocols.net>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Wed, 4 Dec 2013 18:41:18 +0530
-Message-ID: <CALkWK0m_W0c7AhCOZmMObq2MUjL83jL+YsM-qUmXz8j0MOFLiw@mail.gmail.com>
-Subject: Re: [PATCH v4 2/3] perf diff: color the Ratio column
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <529F2677.3070208@schinagl.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo Carvalho de Melo wrote:
->> The issue with this suggestion is that the prototype of
->> percent_color_snprintf() is:
->>
->>   int percent_color_snprintf(char *bf, size_t size, const char *fmt, ...)
->>
->> So, I can only pass value_color_snprintf() a va_list, making its prototype:
->>
->>   int value_color_snprintf(char *bf, size_t size, const char *fmt, va_list args)
->>
->> Is this worth the minor rename?
->
-> That is ok, I'd say. Or if that would be a problem one could consider
-> using a macro, perhaps.
+Hello,
 
-If value_color_snprintf has the prototype mentioned above, I'd have to
-build a va_list at each callsite; how is that convenient? Considering
-the macro, can we just do
+On Wed, Dec 04, 2013 at 01:56:23PM +0100, Oliver Schinagl wrote:
+> I took the imx driver as example, as I wasn't sure on where to
+> start. But I don't think it's possible yet without improving
+> ahci_platform as I suggested in the cover letter. So if
+> ahci_platform needs to be improved, I guess a separate patch series
+> would be more appropriate?
+> 
+> So would it be acceptable to have this as the 2nd (and last?)
+> ahci_platform driver and go from there? Or do you want to block new
+> ahci_XXX drivers until ahci_platform has been improved?
 
-  #define percent_color_snprintf value_color_snprintf
+I don't want to block new drivers unconditionally but at least I want
+to know which direction we're headed in the longer term.  Right now it
+feels like we could be at the beginning of an uncoordinated explosion
+of these drivers which will take a hell lot mpore effort to clean up
+after the fact.  I could be wrong and these could actually be
+different enough to justify separate drivers and there isn't gonna be
+an avalanche of these but again I at least want to know the general
+direction things are headed before making any decisions.
 
-in color.h?
+Thanks.
 
->> On a related note, does percent_color_snprintf() need to be a variadic
->> function? It only seems to process one percent value.
->
-> I think that there are places where it is passed as a pointer that
-> expects it to have that prototype, this is from memory, so please check.
-
-I meant that the function body itself seems to be wrong:
-
-  va_start(args, fmt);
-  percent = va_arg(args, double);
-  va_end(args);
-  color = get_percent_color(percent);
-  return color_snprintf(bf, size, color, fmt, percent);
-
-Unless I've misunderstood something horribly, doesn't `percent' just
-get assigned to the last argument in the `args' va_list?
+-- 
+tejun
