@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab3LDABq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 19:01:46 -0500
-Received: from mga09.intel.com ([134.134.136.24]:58341 "EHLO mga09.intel.com"
+	id S1755606Ab3LDACV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 19:02:21 -0500
+Received: from mga02.intel.com ([134.134.136.20]:1239 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754277Ab3LDABP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 19:01:15 -0500
+	id S1754662Ab3LDACS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 19:02:18 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,821,1378882800"; 
-   d="scan'208";a="418891281"
-From: "David E. Box" <david.e.box@linux.intel.com>
-To: mjg59@srcf.ucam.org, rjw@rjwysocki.net
-Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        linux-acpi@vger.kernel.org,
-        "David E. Box" <david.e.box@linux.intel.com>
-Subject: [PATCHv2 2/2] ACPI/platform: Add ACPI ID for Intel MBI device
-Date: Tue,  3 Dec 2013 15:59:38 -0800
-Message-Id: <1386115178-7559-3-git-send-email-david.e.box@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1386115178-7559-1-git-send-email-david.e.box@linux.intel.com>
-References: <1385100357-5459-1-git-send-email-david.e.box@linux.intel.com>
- <1386115178-7559-1-git-send-email-david.e.box@linux.intel.com>
+   d="scan'208";a="438034817"
+From: Andi Kleen <andi@firstfloor.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
+References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
+Date: Tue, 03 Dec 2013 16:01:59 -0800
+In-Reply-To: <1386044930-15149-1-git-send-email-ast@plumgrid.com> (Alexei
+	Starovoitov's message of "Mon, 2 Dec 2013 20:28:45 -0800")
+Message-ID: <87fvq9cwlk.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "David E. Box" <david.e.box@linux.intel.com>
+Alexei Starovoitov <ast@plumgrid.com> writes:
 
-Adds ACPI ID for Intel IOSF-SB MailBox device found in BayTrail platforms.
+Can you do some performance comparison compared to e.g. ktap?
+How much faster is it?
 
-Signed-off-by: David E. Box <david.e.box@linux.intel.com>
----
- drivers/acpi/acpi_platform.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+While it sounds interesting, I would strongly advise to make this
+capability only available to root. Traditionally lots of complex byte
+code languages which were designed to be "safe" and verifiable weren't
+really. e.g. i managed to crash things with "safe" systemtap multiple
+times. And we all know what happened to Java.
 
-diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
-index 1bde127..12aa55c 100644
---- a/drivers/acpi/acpi_platform.c
-+++ b/drivers/acpi/acpi_platform.c
-@@ -29,7 +29,8 @@ ACPI_MODULE_NAME("platform");
- static const struct acpi_device_id acpi_platform_device_ids[] = {
+So the likelyhood of this having some hole somewhere (either in
+the byte code or in some library function) is high.
  
- 	{ "PNP0D40" },
--
-+	/* Intel IOSF-SB Message Bus */
-+	{ "INT33BD" },
- 	{ }
- };
- 
--- 
-1.7.10.4
-
+-Andi 
