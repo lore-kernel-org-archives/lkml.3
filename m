@@ -1,127 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab3LDGB6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 01:01:58 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:47105 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754572Ab3LDGB4 (ORCPT
+	id S1753783Ab3LDGG0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 01:06:26 -0500
+Received: from mail-db8lp0188.outbound.messaging.microsoft.com ([213.199.154.188]:54214
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750897Ab3LDGGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 01:01:56 -0500
-X-AuditID: cbfee61b-b7f006d000003e1f-00-529ec5539d7a
-From: Chao Yu <chao2.yu@samsung.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
-        linux-fsdevel@vger.kernel.org,
-        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
-References: <1385792739-31405-1-git-send-email-jaegeuk.kim@samsung.com>
- <1385972847.2417.113.camel@kjgkr>
-In-reply-to: <1385972847.2417.113.camel@kjgkr>
-Subject: RE: [f2fs-dev] [PATCH v2] f2fs: refactor bio-related operations
-Date: Wed, 04 Dec 2013 14:01:05 +0800
-Message-id: <001101cef0b6$562766e0$027634a0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=gb2312
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQGw7XbXFfvWzLj+WigF+tBDCO33/AJ1cP7KmmvawzA=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNLMWRmVeSWpSXmKPExsVy+t9jQd3go/OCDJovS1hc3/WXyeLSIneL
-	PXtPslhc3jWHzaJ14XlmB1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxvHNt1gK
-	lglVrLm/hLmB8RRfFyMnh4SAicTB04dZIWwxiQv31rN1MXJxCAlMZ5R49XQ6C4Tzg1FiWvsN
-	dpAqNgEVieUd/5lAbBEBaYlZn+aBFTELTGOUWDr5AFCCA6gjW+LIa3WQGk4BPYmpd16wgdjC
-	Ah4SM6/0M4LYLAKqEgcezgSbwytgKbHo0nRWCFtQ4sfkeywgNrOAhkT/og1sELa8xOY1b5kh
-	LlWQ2HH2NSPEDVYSe869ZIWoEZfYeOQWywRGoVlIRs1CMmoWklGzkLQsYGRZxSiaWpBcUJyU
-	nmukV5yYW1yal66XnJ+7iREcBc+kdzCuarA4xCjAwajEw5vAOS9IiDWxrLgy9xCjBAezkgiv
-	TRlQiDclsbIqtSg/vqg0J7X4EKM0B4uSOO/BVutAIYH0xJLU7NTUgtQimCwTB6dUA2Pcm4lq
-	Xv/bHUqn8F6+/cX8dLP3xQmMcwMZZz1tEru+9ME7tSs+qQX2IVe9Gub93r9h0rapNR7tjrU/
-	HmR/5363Z7/3qvM3ZmQHM8uvnBRx3j3gFe/RNJYLi1cd2862+unjJQuaHC6vfnA64U5T2Cxh
-	4TM7TsWkdPcLrA98oOmz7/s+x1uxB0/qK7EUZyQaajEXFScCAFL5DS1+AgAA
+	Wed, 4 Dec 2013 01:06:24 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(z579eh551biz98dI936eI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1155h)
+Date: Wed, 4 Dec 2013 13:37:11 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: <alexander.shishkin@linux.intel.com>, <gregkh@linuxfoundation.org>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <davidb@codeaurora.org>,
+        <linux-usb@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] usb: chipidea: msm: Use USB PHY API to control PHY
+ state
+Message-ID: <20131204053710.GA29552@shlinux1.ap.freescale.net>
+References: <1384176937-1658-1-git-send-email-iivanov@mm-sol.com>
+ <1384176937-1658-5-git-send-email-iivanov@mm-sol.com>
+ <20131111135931.GB21746@shlinux1.ap.freescale.net>
+ <1384180569.23605.21.camel@iivanov-dev.int.mm-sol.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1384180569.23605.21.camel@iivanov-dev.int.mm-sol.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Comment as following.
-
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
-> Sent: Monday, December 02, 2013 4:27 PM
-> To: linux-fsdevel@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net
-> Subject: Re: [f2fs-dev] [PATCH v2] f2fs: refactor bio-related operations
+On Mon, Nov 11, 2013 at 04:36:09PM +0200, Ivan T. Ivanov wrote:
 > 
-> Change log from v1:
->  o remove redundant codes
+> Hi Peter,
 > 
-> >From a480dfc915490f4bca7275f6fbb44fa34aa00eaa Mon Sep 17 00:00:00 2001
-> From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-> Date: Sat, 30 Nov 2013 12:51:14 +0900
-> Subject: [PATCH] f2fs: refactor bio-related operations
-> Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+> On Mon, 2013-11-11 at 21:59 +0800, Peter Chen wrote: 
+> > On Mon, Nov 11, 2013 at 03:35:37PM +0200, Ivan T. Ivanov wrote:
+> > > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> > > 
+> > > PHY drivers keep track of the current state of the hardware,
+> > > so don't change PHY settings under it.
+> > > 
+> > > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > > ---
+> > >  drivers/usb/chipidea/ci_hdrc_msm.c |    9 ++-------
+> > >  1 file changed, 2 insertions(+), 7 deletions(-)
+> > > 
+> > > diff --git a/drivers/usb/chipidea/ci_hdrc_msm.c b/drivers/usb/chipidea/ci_hdrc_msm.c
+> > > index e9624f3..338b209 100644
+> > > --- a/drivers/usb/chipidea/ci_hdrc_msm.c
+> > > +++ b/drivers/usb/chipidea/ci_hdrc_msm.c
+> > > @@ -20,13 +20,11 @@
+> > >  static void ci_hdrc_msm_notify_event(struct ci_hdrc *ci, unsigned event)
+> > >  {
+> > >  	struct device *dev = ci->gadget.dev.parent;
+> > > -	int val;
+> > >  
+> > >  	switch (event) {
+> > >  	case CI_HDRC_CONTROLLER_RESET_EVENT:
+> > >  		dev_dbg(dev, "CI_HDRC_CONTROLLER_RESET_EVENT received\n");
+> > > -		writel(0, USB_AHBBURST);
+> > > -		writel(0, USB_AHBMODE);
+> > > +		usb_phy_init(ci->transceiver);
+> > 
+> > It will reset the PHY,  but your comment is "don't change PHY settings under it"
 > 
-> This patch integrates redundant bio operations on read and write IOs.
+> :-). This function is exported by PHY drivers, so they will know how
+> to handle this change.
 > 
-> 1. Move bio-related codes to the top of data.c.
-> 2. Replace f2fs_submit_bio with f2fs_submit_merged_bio, which handles read
->    bios additionally.
-> 3. Introduce __submit_merged_bio to submit the merged bio.
-> 4. Change f2fs_readpage to f2fs_submit_page_bio.
-> 5. Introduce f2fs_submit_page_mbio to integrate previous submit_read_page and
->    submit_write_page.
+> > 
+> > >  		break;
+> > >  	case CI_HDRC_CONTROLLER_STOPPED_EVENT:
+> > >  		dev_dbg(dev, "CI_HDRC_CONTROLLER_STOPPED_EVENT received\n");
+> > > @@ -34,10 +32,7 @@ static void ci_hdrc_msm_notify_event(struct ci_hdrc *ci, unsigned event)
+> > >  		 * Put the transceiver in non-driving mode. Otherwise host
+> > >  		 * may not detect soft-disconnection.
+> > >  		 */
+> > > -		val = usb_phy_io_read(ci->transceiver, ULPI_FUNC_CTRL);
+> > > -		val &= ~ULPI_FUNC_CTRL_OPMODE_MASK;
+> > > -		val |= ULPI_FUNC_CTRL_OPMODE_NONDRIVING;
+> > > -		usb_phy_io_write(ci->transceiver, val, ULPI_FUNC_CTRL);
+> > > +		usb_phy_notify_disconnect(ci->transceiver, USB_SPEED_UNKNOWN);
+> > 
+> > Where you have implemented .notify_disconnect?
+> > I have not found it at your phy driver.
+> 
+> Yep, I will post PHY driver changes shortly. Meanwhile this should
+> not break existing board file based platforms, because not of them
+> could be compiled (HTC Dream, Halibut Board) and DT based platforms 
+> are sill work in progress.
+> 
 
-[snip]
+Hi Ivan, I am going to apply this msm chipidea patchset, but the change
+in this file is different with its original meaning. Have you
+tested at existing platforms?
 
-> +static void __submit_merged_bio(struct f2fs_sb_info *sbi,
-> +				struct f2fs_bio_info *io,
-> +				enum page_type type, bool sync, int rw)
-> +{
-> +	enum page_type btype = PAGE_TYPE_OF_BIO(type);
-> +
-> +	if (!io->bio)
-> +		return;
-> +
-> +	if (btype == META)
-> +		rw |= REQ_META;
-> +
-> +	if (is_read_io(rw)) {
-> +		if (sync)
-> +			rw |= READ_SYNC;
-> +		submit_bio(rw, io->bio);
-> +		trace_f2fs_submit_read_bio(sbi->sb, rw, type, io->bio);
-> +		io->bio = NULL;
-> +		return;
-> +	}
-> +
-> +	if (sync)
-> +		rw |= WRITE_SYNC;
+-- 
 
-rw = WRITE_SYNC; ?
-
-> +	if (type >= META_FLUSH)
-> +		rw |= WRITE_FLUSH_FUA;
-
-rw = WRITE_FLUSH_FUA; ?
-
-> +
-> +	/*
-> +	 * META_FLUSH is only from the checkpoint procedure, and we should wait
-> +	 * this metadata bio for FS consistency.
-> +	 */
-> +	if (type == META_FLUSH) {
-> +		DECLARE_COMPLETION_ONSTACK(wait);
-> +		io->bio->bi_private = &wait;
-> +		submit_bio(rw, io->bio);
-> +		wait_for_completion(&wait);
-> +	} else {
-> +		submit_bio(rw, io->bio);
-> +	}
-> +	trace_f2fs_submit_write_bio(sbi->sb, rw, btype, io->bio);
-> +	io->bio = NULL;
-> +}
-
-[snip]
-
-Thanks,
-Yu
+Best Regards,
+Peter Chen
 
