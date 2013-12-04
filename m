@@ -1,60 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933149Ab3LDSji (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 13:39:38 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:59794 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933131Ab3LDSjf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 13:39:35 -0500
+	id S933075Ab3LDSnR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 13:43:17 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49819 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752975Ab3LDSnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 13:43:14 -0500
+Message-ID: <529F7797.4080100@ti.com>
+Date: Wed, 4 Dec 2013 20:42:31 +0200
+From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-In-Reply-To: <20131204090336.GA31973@gmail.com>
-References: <20131204090028.GA9724@quad>
-	<20131204090336.GA31973@gmail.com>
-Date: Wed, 4 Dec 2013 19:39:33 +0100
-Message-ID: <CABPqkBR4PWFB2z9xhMa9qiJxBXxV5kq8k93PdxWfdj-3EmGb9Q@mail.gmail.com>
-Subject: Re: [PATCH] perf/x86: fix bug in event constraint end marker macro
-From: Stephane Eranian <eranian@google.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Guenter Roeck <linux@roeck-us.net>, Sekhar Nori <nsekhar@ti.com>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
+        <wim@iguana.be>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <Pawel.Moll@arm.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
+        <grygorii.strashko@ti.com>
+Subject: Re: [PATCH v4 1/5] watchdog: davinci: change driver to use WDT core
+References: <1385556508-3935-1-git-send-email-ivan.khoronzhuk@ti.com> <1385556508-3935-2-git-send-email-ivan.khoronzhuk@ti.com> <529F6EBE.5050703@ti.com> <20131204182824.GA14499@roeck-us.net>
+In-Reply-To: <20131204182824.GA14499@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.122]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+On 12/04/2013 08:28 PM, Guenter Roeck wrote:
+> On Wed, Dec 04, 2013 at 11:34:46PM +0530, Sekhar Nori wrote:
+>> On 11/27/2013 6:18 PM, Ivan Khoronzhuk wrote:
+>>> To reduce code duplicate and increase code readability use WDT core
+>>> code to handle WDT interface.
+>>>
+>>> Remove io_lock as the WDT core uses mutex to lock each wdt device.
+>>> Remove wdt_state as the WDT core tracks state with its own variable.
+>>>
+>>> The watchdog_init_timeout() can read timeout value from timeout-sec
+>>> property if the passed value is out of bounds. The heartbeat is
+>>> initialized in next way. If heartbeat is not set thought module
+>>> parameter, try to read it's value from WDT node timeout-sec property.
+>>> If node has no one, use default value.
+>>>
+>>> The heartbeat is hold in wdd->timeout by WDT core, so use it in
+>>> order to set timeout period.
+>>>
+>>> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>>> ---
+>>>   drivers/watchdog/Kconfig       |    2 +
+>>>   drivers/watchdog/davinci_wdt.c |  147 ++++++++++------------------------------
+>>>   2 files changed, 37 insertions(+), 112 deletions(-)
+>>>
+>>> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+>>> index 5be6e91..eb8c89d 100644
+>>> --- a/drivers/watchdog/Kconfig
+>>> +++ b/drivers/watchdog/Kconfig
+>>> @@ -271,6 +271,8 @@ config IOP_WATCHDOG
+>>>   config DAVINCI_WATCHDOG
+>>>   	tristate "DaVinci watchdog"
+>>>   	depends on ARCH_DAVINCI
+>>> +	select WATCHDOG_CORE
+>>> +	select WATCHDOG_NOWAYOUT
+>>
+>> Its not clear for change log why NOWAYOUT needs to be forced on all the
+>> time for all users of DaVinci watchdog.
 
-Ok, I have asked Maria to clean the patch up add more comments and
-repost a new version of the
-patch. She will repost ASAP.
+... you are right
 
-Thanks.
+>>
+> Actually, thinking about it, it is not necessary and can be replaced with
+> 
+> 	watchdog_set_nowayout(wdd, 1);
 
-On Wed, Dec 4, 2013 at 10:03 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Stephane Eranian <eranian@google.com> wrote:
->
->>  #define EVENT_CONSTRAINT_END         \
->> -     EVENT_CONSTRAINT(0, 0, 0)
->> +     { .idxmsk64 = 0,                \
->> +       .code = 0,                    \
->> +       .cmask = 0,                   \
->> +       .weight = -1,                 \
->> +       .overlap = 0,                 \
->> +       .flags = 0,                   \
->> +}
->
-> A nit, simply writing:
->
-> #define EVENT_CONSTRAINT_END { .weight = -1, }
->
-> ... should be enough as initialization to zero is guaranteed for the
-> other fields.
->
-> Thanks,
->
->         Ingo
+Good idea, I'll replace watchdog_set_nowayout(wdd, WATCHDOG_NOWAYOUT) on it.
+And delete "select WATCHDOG_NOWAYOUT"
+
+> 
+> In other words, there is no need to force NOWAYOUT on _other_ watchdogs which
+> may be present in the system. Still, you are right, it would be nice to explain
+> in the changelog (or maybe even better as comment in the code) why it is
+> enforced.
+> 
+> Guenter
+> 
+
+Only question, should I repost only this patch or whole series?
+
+-- 
+Regards,
+Ivan Khoronzhuk
