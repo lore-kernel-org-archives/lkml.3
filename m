@@ -1,62 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932183Ab3LDLc3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 06:32:29 -0500
-Received: from mail.kmu-office.ch ([178.209.48.102]:40154 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932098Ab3LDLc2 (ORCPT
+	id S932226Ab3LDLdO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 06:33:14 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:47821 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932104Ab3LDLdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 06:32:28 -0500
+	Wed, 4 Dec 2013 06:33:12 -0500
+Message-ID: <529F12F4.70304@ti.com>
+Date: Wed, 04 Dec 2013 05:33:08 -0600
+From: Nishanth Menon <nm@ti.com>
+Reply-To: nm@ti.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Joel Fernandes <joelf@ti.com>, Tony Lindgren <tony@atomide.com>
+CC: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: OMAP2+: omap_device: add fail hook for runtime_pm
+ when bad data is detected
+References: <1386121153-32351-1-git-send-email-nm@ti.com> <529EE305.70001@ti.com>
+In-Reply-To: <529EE305.70001@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Wed, 04 Dec 2013 12:38:03 +0100
-From: Stefan Agner <stefan@agner.ch>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com, dev@lynxeye.de,
-        lgirdwood@gmail.com, broonie@kernel.org,
-        kai.poggensee@avionic-design.de, sameo@linux.intel.com,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 1/3] mfd: tps6586x: add version detection
-In-Reply-To: <20131204100728.GA907@lee--X1>
-References: <cover.1386108712.git.stefan@agner.ch>
- <77384d24810d9a22fc04cad6f7468f54a9cbaafe.1386108712.git.stefan@agner.ch>
- <20131204081021.GB7469@lee--X1> <e2ae7b9602d0c1e11f8e56ced17e9da0@agner.ch>
- <20131204100728.GA907@lee--X1>
-Message-ID: <f1ee272d52d946b211dbcdad68df7815@agner.ch>
-User-Agent: Roundcube Webmail/0.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2013-12-04 11:07, schrieb Lee Jones:
-> On Wed, 04 Dec 2013, Stefan Agner wrote:
-> 
->> Am 2013-12-04 09:10, schrieb Lee Jones:
->> >> +int tps6586x_get_version(struct device *dev)
->> >> +{
->> >> +	struct tps6586x *tps6586x = dev_get_drvdata(dev);
->> >> +
->> >> +	return tps6586x->version;
->> >> +}
->> >> +EXPORT_SYMBOL_GPL(tps6586x_get_version);
->> >
->> > I thought Mark suggested that this routine was converted to a 'static
->> > inline' and moved into the header? Did you not think this was a good
->> > idea?
->> As I pointed out in the comment above, the struct tps6586x is in the C
->> file, so I would need to move that too. That's why I did not made that
->> change in the end. What do you think, should I still move (and move the
->> struct too?)
-> 
-> Why would the struct have to be moved if the function is inline?
+On 12/04/2013 02:08 AM, Joel Fernandes wrote:
+> On 12/04/2013 07:09 AM, Nishanth Menon wrote:
+>> Due to the cross dependencies between hwmod for automanaged device
+>> information for OMAP and dts node definitions, we can run into scenarios
+>> where the dts node is defined, however it's hwmod entry is yet to be
+>> added. In these cases:
+>> a) omap_device does not register a pm_domain (since it cannot find
+>>     hwmod entry).
+>> b) driver does not know about (a), does a pm_runtime_get_sync which
+>>     never fails
+>> c) It then tries to do some operation on the device (such as read the
+>>    revision register (as part of probe) without clock or adequate OMAP
+>>    generic PM operation performed for enabling the module.
+>>
+>> This causes a crash such as that reported in:
+>> https://bugzilla.kernel.org/show_bug.cgi?id=66441
+>>
+>> When 'ti,hwmod' is provided in dt node, it is expected that the device
+>> will not function without the OMAP's power automanagement. Hence, when
+>> we hit a fail condition (due to hwmod entries not present or other
+>> similar scenario), fail at pm_domain level due to lack of data, provide
+>> enough information for it to be fixed, however, it allows for the driver
+>> to take appropriate measures to prevent crash.
+>>
+>> Reported-by: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>
+>> Signed-off-by: Nishanth Menon <nm@ti.com>
+>> ---
+>>   arch/arm/mach-omap2/omap_device.c |   24 ++++++++++++++++++++++++
+>>   arch/arm/mach-omap2/omap_device.h |    1 +
+>>   2 files changed, 25 insertions(+)
+>>
+>> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+>> index 53f0735..e0a398c 100644
+>> --- a/arch/arm/mach-omap2/omap_device.c
+>> +++ b/arch/arm/mach-omap2/omap_device.c
+>> @@ -183,6 +183,10 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
+>>   odbfd_exit1:
+>>   	kfree(hwmods);
+>>   odbfd_exit:
+>> +	/* if data/we are at fault.. load up a fail handler */
+>> +	if (ret)
+>> +		pdev->dev.pm_domain = &omap_device_fail_pm_domain;
+>> +
+>>   	return ret;
+>>   }
+>>
+>
+> Just wondering, can't we just print the warning here instead of registering new
+> pm_domain callbacks?
+>
 
-True, the inline I could have done without moving the struct and the
-function. Would you like me to create another revision doing this?
+I suggest you might want to read the commit message again.. but lets try 
+once again:
 
-But moving the function needs moving of the struct tps6586x
-declaration...
+As you see in dmesg log 
+https://bugzilla.kernel.org/attachment.cgi?id=117311 pointed in the bug 
+https://bugzilla.kernel.org/show_bug.cgi?id=66441,
 
 
-[Sorry, this time with answer all]
+you already have
+"
+[    0.176940] platform 4b501000.aes: Cannot lookup hwmod 'aes'
+[    0.177215] platform 480a5000.des: Cannot lookup hwmod 'des'"
+
+Now, printing that warning does not help, as I already explained in the 
+commit log,
+"
+ >> b) driver does not know about (a), does a pm_runtime_get_sync which
+ >>     never fails"
+
+A device node stated it will have hwmod to adequately control it, but in 
+reality, as in this case, it does not. how does printing a warning alone 
+help the driver which is not aware of these? The driver's attempt at 
+pm_runtime_sync should fail, as that is what "ti,hwmod" property controls.
+
+
+> Concerned that all this LOC may end up being dead code when the "ti,hwmods"
+> property becomes obsolete anyway.
+
+we detected we have a bug with 3.13-rc2 - this is a fix for kernel 
+(probably a stable candidate too). ti,hwmod property might become 
+eventually obsolete (and we are working towards that), but the 
+functionality that it provides today is necessary for the transition 
+from mixed dt-hwmod world to pure dt world. - remember we are moving 
+from data structure which is used to describe hardware to another which 
+again describes hardware in a different form - the kind of bugs we see 
+now are expected to be fixed for transition to be smooth for everyone.
+
+without providing adequate warnings, bugs like 
+https://bugzilla.kernel.org/show_bug.cgi?id=66441 will need pretty nasty 
+debug.
+
+I hope this helps convince you that error code is worth the LoC.
+
+--
+Regards,
+Nishanth Menon
