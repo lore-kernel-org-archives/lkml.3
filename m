@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755677Ab3LDLtp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 06:49:45 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60711 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754783Ab3LDLtn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 06:49:43 -0500
-Date: Wed, 4 Dec 2013 11:49:09 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Stefan Agner <stefan@agner.ch>, swarren@wwwdotorg.org,
-        thierry.reding@gmail.com, dev@lynxeye.de, lgirdwood@gmail.com,
-        kai.poggensee@avionic-design.de, sameo@linux.intel.com,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20131204114909.GK29268@sirena.org.uk>
-References: <cover.1386108712.git.stefan@agner.ch>
- <77384d24810d9a22fc04cad6f7468f54a9cbaafe.1386108712.git.stefan@agner.ch>
- <20131204081021.GB7469@lee--X1>
- <e2ae7b9602d0c1e11f8e56ced17e9da0@agner.ch>
- <20131204100728.GA907@lee--X1>
+	id S932197Ab3LDLv6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 06:51:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61496 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932099Ab3LDLv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 06:51:56 -0500
+Message-ID: <529F174D.3030805@redhat.com>
+Date: Wed, 04 Dec 2013 06:51:41 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5dNcufZ4prhark0F"
-Content-Disposition: inline
-In-Reply-To: <20131204100728.GA907@lee--X1>
-X-Cookie: It's clever, but is it art?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4 1/3] mfd: tps6586x: add version detection
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>
+Subject: Re: [PATCH 1/3] Introduce FW_INFO* functions and messages
+References: <1385997579-22240-1-git-send-email-prarit@redhat.com>	<1385997579-22240-2-git-send-email-prarit@redhat.com> <20131203132120.6a7ab2cd7cc99720712cbe6a@linux-foundation.org>
+In-Reply-To: <20131203132120.6a7ab2cd7cc99720712cbe6a@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---5dNcufZ4prhark0F
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, Dec 04, 2013 at 10:07:28AM +0000, Lee Jones wrote:
-> On Wed, 04 Dec 2013, Stefan Agner wrote:
+On 12/03/2013 04:21 PM, Andrew Morton wrote:
+> On Mon,  2 Dec 2013 10:19:37 -0500 Prarit Bhargava <prarit@redhat.com> wrote:
+> A slight simplification:
+> 
+>> +static inline char *dump_hadware_arch_desc(void)
+>> +{
+>> +	return NULL;
+>> +}
+> 
+> 	return "unavailable";
+> 
+>> +void warn_slowpath_fmt_dev(const char *file, int line,
+>> +			   struct device *dev, int level, const char *fmt, ...)
+>> +{
+>> +	struct slowpath_args args;
+>> +	static char fw_str[16] = "\0";
+>> +
+>> +	switch (level) {
+>> +	case 1:
+>> +		strcpy(fw_str, "[Firmware Info]");
+>> +		break;
+>> +	case 2:
+>> +		strcpy(fw_str, "[Firmware Warn]");
+>> +		break;
+>> +	case 3:
+>> +		strcpy(fw_str, "[Firmware Bug]");
+> 
+> What's With The Crazy Capitalization In This Code?  It's Illiterate!
 
-> > As I pointed out in the comment above, the struct tps6586x is in the C
-> > file, so I would need to move that too. That's why I did not made that
-> > change in the end. What do you think, should I still move (and move the
-> > struct too?)=20
+Heh :) it's what the original FW_* strings were defined as.  I was hoping it was
+okay to change them but wasn't 100% sure if I should.  I'll definitely take that
+(and the suggestion above) into v2.
 
-> Why would the struct have to be moved if the function is inline?
+<snip>
 
-If the function is in the header and trying to use a struct that's only
-defined in the C file then it's not going to build - keeping the struct
-in the C file only does seem like a worthwhile thing for encapsulation.
+> 
+> The general thrust of the patchset seems useful and important.  I do
+> agree with Joe's suggestion regarding the presentation, although it
+> isn't a show-stopper.
 
---5dNcufZ4prhark0F
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+In V2, I'll take Joe's suggestion into account.  It isn't that difficult to
+rework those chunks of the patch into a single patch.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+> 
+> I do wonder if it all should be generalised a bit - it creates a bunch
+> of infrastructure which is specific to system firmware issues, but
+> what's so special about firmware?  Why can't I use this infrastructure
+> to log netdev errors or acpi errors or PM errors or...?  But I didn't
+> think about it much ;)
 
-iQIcBAEBAgAGBQJSnxayAAoJELSic+t+oim9WCwQAIqChvlA28rjAv+Gzq5no6eA
-8vZYtMyPqA9ZynXD4vrTt6CA79VUt0ne9dQM6lUDkMllUhQX+N6nws0Jljv7xh2v
-42buB5qt31gUH5PgnQzLdf03eC/nk4R0Xc/usvApkX1iz4p6fLAivj9J9rEoLvNs
-uOWvZluHxnIEcJIEGzimPDi28TwpP91sFrF3ZiBQ2WJXJe9N/U3XYt6HFxk0Rp3n
-Ymw/evDiweL/UnHsbe2nnSOtBbUEeXX5z+3NzFiACv7DGvPTc0gTVFk76kO3kxqL
-IURQaV+lHmt2jLlvwKvsPnM9xstsZLTn5lrh8Dn9Iv0ITCmLWAvXJGuR0nxClKTV
-ipgu01ZF0IpNTKCWENbkzNl/559dVQn/QRcrb6awmDeRu7UmF1jL6enf1L0u0UuR
-QsU++HCq1RAMdGQS/NpKfw3QgOZu2VGyVG8tZ4ykzVjQdKT4DKtswFLDW7ym9CA+
-qWVLvxjdMGvyiZDyrRLXsdKtfDK0fWllfnx0reitsNFcWOZZ5EzqgDer79ErbVav
-Rwd4N0D244olcz9JvjvY/dXx+4cVZuffWKN1Je9ftTOCg6ERrZ009fz0YY0cNd5q
-ZHAIEgIxl6vCFt1dWjuWpj17XHDif+aoShUB1J5zk6m41h4Askczw+qF2Efqx0Lh
-I+YKO7czoms/MoSsNUV/
-=ajwe
------END PGP SIGNATURE-----
+Well ... I was thinking about this.  Some drivers do keep track of firmware
+versions for their devices and I think there is probably a way to unify all that.
 
---5dNcufZ4prhark0F--
+Also, I think after this initial change goes in I'm going to grep through the
+PCI & ACPI code to see what FW_* changes need to be made there.  AFAICT there
+are many locations in those areas which should be FW_*.
+
+I'll get a [v2] out in a little while.  Thanks Joe & Andrew for looking.
+
+P.
+> 
+> 
