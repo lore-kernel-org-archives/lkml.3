@@ -1,87 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933388Ab3LDTmH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 14:42:07 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52570 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933339Ab3LDTld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 14:41:33 -0500
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
-        <wim@iguana.be>, <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <Pawel.Moll@arm.com>,
-        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
-        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
-        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
-        <grygorii.strashko@ti.com>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [PATCH v5 3/5] watchdog: davinci: add GET_TIMELEFT option support
-Date: Wed, 4 Dec 2013 21:39:28 +0200
-Message-ID: <1386185970-14488-4-git-send-email-ivan.khoronzhuk@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386185970-14488-1-git-send-email-ivan.khoronzhuk@ti.com>
-References: <1386185970-14488-1-git-send-email-ivan.khoronzhuk@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S933310Ab3LDTkx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 14:40:53 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:52111 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933112Ab3LDTjR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 14:39:17 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 4/5] ARM: msm: Only build timer.c if required
+Date: Wed,  4 Dec 2013 11:39:11 -0800
+Message-Id: <1386185952-27259-5-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.5.1.19.gdaad3aa
+In-Reply-To: <1386185952-27259-1-git-send-email-sboyd@codeaurora.org>
+References: <1386185952-27259-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the davinci watchdog can be read while counting,
-so we can add ability to report the remaining time before
-the system will reboot.
+The MSM timer is only used on MSM devices that don't have the
+architected timers. Introduce a hidden Kconfig option for this
+driver so that we don't build it on the platforms that don't need
+it.
 
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/watchdog/davinci_wdt.c |   26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+ arch/arm/mach-msm/Kconfig  | 9 +++++++++
+ arch/arm/mach-msm/Makefile | 2 +-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
-index b6b82d1d..cd6ff9d 100644
---- a/drivers/watchdog/davinci_wdt.c
-+++ b/drivers/watchdog/davinci_wdt.c
-@@ -116,6 +116,31 @@ static int davinci_wdt_ping(struct watchdog_device *wdd)
- 	return 0;
- }
+diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+index 2586c28..47cd2df 100644
+--- a/arch/arm/mach-msm/Kconfig
++++ b/arch/arm/mach-msm/Kconfig
+@@ -16,6 +16,7 @@ config ARCH_MSM7X00A
+ 	select MACH_TROUT if !MACH_HALIBUT
+ 	select MSM_PROC_COMM
+ 	select MSM_SMD
++	select MSM_TIMER
+ 	select MSM_SMD_PKG3
  
-+static unsigned int davinci_wdt_get_timeleft(struct watchdog_device *wdd)
-+{
-+	u64 timer_counter;
-+	unsigned long freq;
-+	u32 val;
-+	struct davinci_wdt_device *davinci_wdt = watchdog_get_drvdata(wdd);
-+
-+	/* if timeout has occured then return 0 */
-+	val = ioread32(davinci_wdt->base + WDTCR);
-+	if (val & WDFLAG)
-+		return 0;
-+
-+	freq = clk_get_rate(davinci_wdt->clk);
-+
-+	if (!freq)
-+		return 0;
-+
-+	timer_counter = ioread32(davinci_wdt->base + TIM12);
-+	timer_counter |= ((u64)ioread32(davinci_wdt->base + TIM34) << 32);
-+
-+	do_div(timer_counter, freq);
-+
-+	return wdd->timeout - timer_counter;
-+}
-+
- static const struct watchdog_info davinci_wdt_info = {
- 	.options = WDIOF_KEEPALIVEPING,
- 	.identity = "DaVinci Watchdog",
-@@ -126,6 +151,7 @@ static const struct watchdog_ops davinci_wdt_ops = {
- 	.start		= davinci_wdt_start,
- 	.stop		= davinci_wdt_ping,
- 	.ping		= davinci_wdt_ping,
-+	.get_timeleft	= davinci_wdt_get_timeleft,
- };
+ config ARCH_MSM7X30
+@@ -27,6 +28,7 @@ config ARCH_MSM7X30
+ 	select MSM_GPIOMUX
+ 	select MSM_PROC_COMM
+ 	select MSM_SMD
++	select MSM_TIMER
+ 	select MSM_VIC
  
- static int davinci_wdt_probe(struct platform_device *pdev)
+ config ARCH_QSD8X50
+@@ -38,6 +40,7 @@ config ARCH_QSD8X50
+ 	select MSM_GPIOMUX
+ 	select MSM_PROC_COMM
+ 	select MSM_SMD
++	select MSM_TIMER
+ 	select MSM_VIC
+ 
+ endchoice
+@@ -49,6 +52,7 @@ config ARCH_MSM8X60
+ 	select GPIO_MSM_V2
+ 	select HAVE_SMP
+ 	select MSM_SCM if SMP
++	select MSM_TIMER
+ 
+ config ARCH_MSM8960
+ 	bool "MSM8960"
+@@ -57,6 +61,7 @@ config ARCH_MSM8960
+ 	select HAVE_SMP
+ 	select GPIO_MSM_V2
+ 	select MSM_SCM if SMP
++	select MSM_TIMER
+ 
+ config ARCH_MSM_DT
+ 	def_bool y
+@@ -134,4 +139,8 @@ config MSM_GPIOMUX
+ 
+ config MSM_SCM
+ 	bool
++
++config MSM_TIMER
++	bool
++
+ endif
+diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
+index 6baae6e..8e307a10 100644
+--- a/arch/arm/mach-msm/Makefile
++++ b/arch/arm/mach-msm/Makefile
+@@ -1,4 +1,4 @@
+-obj-y += timer.o
++obj-$(CONFIG_MSM_TIMER) += timer.o
+ obj-$(CONFIG_MSM_PROC_COMM) += clock.o
+ 
+ obj-$(CONFIG_MSM_VIC) += irq-vic.o
 -- 
-1.7.9.5
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
