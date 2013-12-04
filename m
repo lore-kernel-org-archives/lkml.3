@@ -1,222 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab3LDVGw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 16:06:52 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:45918 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752263Ab3LDVGs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 16:06:48 -0500
+	id S1754400Ab3LDVHE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 16:07:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16614 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752263Ab3LDVG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 16:06:58 -0500
+Date: Wed, 4 Dec 2013 16:06:08 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Borislav Petkov <bp@alien8.de>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jingbai Ma <jingbai.ma@hp.com>
+Subject: Re: [PATCH v10] x86, apic, kexec, Documentation: Add
+ disable_cpu_apic kernel parameter
+Message-ID: <20131204210608.GG19087@redhat.com>
+References: <529EE392.6060400@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20131202210719.GQ24997@rocoto.smurfnet.nu>
-References: <1385656883-4420-1-git-send-email-leif.lindholm@linaro.org>
-	<1385656883-4420-2-git-send-email-leif.lindholm@linaro.org>
-	<CAHCPf3t5dEzVWbYZ6DWcFCENNO2dbrx-YeZvKRk0MkEsJMTE3A@mail.gmail.com>
-	<20131202210719.GQ24997@rocoto.smurfnet.nu>
-Date: Wed, 4 Dec 2013 15:06:47 -0600
-Message-ID: <CAHCPf3tsWdV+dJGm6mX6N4Ou5EQoGukdLyRvsRX6VQFjtKgxtg@mail.gmail.com>
-Subject: Re: [PATCH v3 1/3] Documentation: arm: add UEFI support documentation
-From: Matt Sealey <neko@bakuhatsu.net>
-To: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-efi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, matt.fleming@intel.com,
-        Grant Likely <grant.likely@linaro.org>,
-        Roy Franz <roy.franz@linaro.org>, Mark Salter <msalter@redhat.com>,
-        Patch Tracking <patches@linaro.org>, linaro-uefi@lists.linaro.org,
-        Mark Rutland <mark.rutland@arm.com>, Rob Landley <rob@landley.net>,
-        linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <529EE392.6060400@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 2, 2013 at 3:07 PM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
-> On Mon, Dec 02, 2013 at 01:51:22PM -0600, Matt Sealey wrote:
->> Here's where I think this whole thing falls down as being the weirdest
->> possible implementation of this. It defies logic to put this
->> information in the device tree /chosen node while also attempting to
->> boot the kernel using an EFI stub; the stub is going to have this
->> information because it is going to have the pointer to the system
->> System Table (since it was called by StartImage()). Why not stash the
->> System Table pointer somewhere safe in the stub?
->
-> We do. In the DT.
+On Wed, Dec 04, 2013 at 05:10:58PM +0900, HATAYAMA Daisuke wrote:
+> This patch set is to allow kdump 2nd kernel to wake up multiple CPUs,
+> a continueing work from:
+> 
+>   [PATCH v3 0/2] x86, apic, kdump: Disable BSP if boot cpu is AP
+>   https://lkml.org/lkml/2013/10/16/300.
+> 
+> At v4, basic design has changed. Now users need to figure out initial
+> APIC ID of BSP in the 1st kernel and configures kernel parameter for
+> the 2nd kernel manually using disable_cpu_apicid kernel parameter,
+> which is newly introduced by this patch set. This design is more
+> flexible than the previous version in that we no longer have to rely
+> on ACPI/MP table to get initial APIC ID of BSP.
+> 
+> Sorry, this patch set have not include in-source documentation
+> requested by Borislav Petkov yet, but I'll post it later separately,
+> which would be better to focus on documentation reviewing.
+> 
+> ChangeLog
+> 
+> v9 => v10)
 
-Hang on... see way below about "reinventing the wheel"
+This patch looks good to me. Works well on my machine. Brought up 3 cpus
+in second kernel and skipped BSP.
 
->> The information in the device tree is all accessible from Boot
->> Services and as long as the System Table isn't being thrown away (my
->> suggestion would be.. stuff it in r2, and set r1 = "EFI\0" then work
->> with arch/arm/kernel/head{-common,}.S code to do the right thing)
->
-> You left out the bit of redefining the kernel boot protocol to permit
-> calling it with caches, MMU and interrupts enabled - also known as
-> before ExitBootServices().
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-And that's a horrible idea because of what?
+Thanks
+Vivek
 
-What's evident here is there could be two major ways to generate an
-image that boots from a UEFI implementation;
-
-* one whereby UEFI is jostled or coerced by second stage bootloader to
-load a plain zImage and you lose all information about UEFI except in
-the event that that information is preserved in the device tree by the
-firmware
-* one whereby a 'stock' UEFI is used and it boots only on UEFI because
-it is in a format very reasonably only capable of being booted by UEFI
-and, subordinately,
- - one where that plain zImage got glued to an EFI stub just like the
-decompressor is glued to the Image
- - one where the kernel needs to be built with support for UEFI and
-that somewhat changes the boot path
-
-By the time we get half-way through arm/kernel/head.S the cache and
-MMU has been turned off and on and off again by the decompressor, and
-after a large amount of guesswork and arbitrary restriction-based
-implementation, there's no guarantee that the kernel hasn't been
-decompressed over some important UEFI feature or some memory hasn't
-been trashed. You can't make that guarantee because by entering the
-plain zImage, you forfeited that information. This is at worst case
-going to be lots of blank screens and blinking serial console prompts
-and little more than frustration..
-
-Most of the guessing is ideally not required to be a guess at all, the
-restrictions are purely to deal with the lack of trust for the
-bootloader environment. Why can't we trust UEFI? Or at least hold it
-to a higher standard. If someone ships a broken UEFI, they screw a
-feature or have a horrible bug and ship it, laud the fact Linux
-doesn't boot on it and the fact that it's their fault - over their
-head. It actually works these days, Linux actually has "market share,"
-companies really go out of their way to rescue their "image" and
-resolve the situation when someone blogs about a serious UEFI bug on
-their $1300 laptops, or even $300 tablets.
-
-> Which is what we are going to implement anyway in order to permit
-> firmware to supply DT hardware description in the same way as with
-> ACPI. Yes, we could pass the system table pointer directly - but that
-> doesn't get us the memory map.
-
-Boot Services gives you the ability to get the memory map.. and the
-kinds of things that live in those spots in the memory map. It's at
-least a better guess than "I am located at a specific place and can
-infer from linker data and masking off the bottom bits that there's
-probably this amount of RAM that starts at this location or
-thereabouts". It at least gives the ability to 'allocate' memory to
-put the page table instead of having a firmware call walk all over it,
-or having the kernel walk over some parts of firmware, or even not
-have to do anything except link in a decompressor (eh, sure, it means
-duplicating decompressor code in some cases, but I also don't think
-it's a sane requirement to include the entire decompression suite in
-the kernel proper if it only gets used once at early boot).
-
-> I prefer to see it as a way to not reinvent things that do not need
-> reinventing, while not adding more special-case code to the kernel.
-
-Isn't putting the System Table pointer in the DT specifically
-reinventing the UEFI boot process?
-
-Booting from UEFI is a special case in itself.. the EFI stub here is
-putting a round block in a square hole.
-
-There are two much, much better solutions: put the round block in a
-round hole. Put a square block in that square hole. We could do so
-much better than gluing the round block into the square hole.
-
->> What that meant is nobody bothered to implement working, re-entrant,
->> re-locatable firmware to a great degree. This ended up being a
->> self-fulfilling prophecy of "don't trust the bootloader" and "get rid
->> of it as soon as we can," which essentially meant Linux never took
->> advantage of the resources available. In OF's case, the CIF sucked by
->> specification. In UEFI's case here, it's been implemented in Linux in
->> such a way that guarantees poor-performing firmware code with huge
->> penalties to call them, which isn't even required by UEFI if the
->> earlier boot code did the right things in the first place.
->
-> I don't follow. In which way does this implementation result in poor
-> performance or reduced functionality?
-
-I believe what I am trying to object to is this weird process of
-getting to a state where you can get to UEFI, and why anyone would
-bother gluing the existing Linux kernel image to the back of an
-externally-built stub, only to do some really quite obnoxious tricks
-to enable it to go into a decompressor and then through, kernel setup
-head, that make a bunch of assumptions about the bootloader interface,
-then to try and recover the information that got thrown away and THEN
-attempt to reinstate some kind of UEFI functionality.
-
-If your platform has UEFI, then your platform has UEFI - if you built
-a multiplatform kernel that needs to boot on U-Boot, then you glued an
-EFI stub to it to make it boot. At some point between the stub and the
-runtime services driver, you're going through 10,000 lines of code
-with the information that it *is* running on top of UEFI completely
-lost to the boot process.
-
-I believe I am also objecting to the idea that the way this is BEST
-implemented is to take a stock zImage (decompressor+Image payload) and
-glue a stub in front to resolve the interface issue when the
-implication is extra complication to the boot process.
-
-By not actually using it, nobody actually bothered to improve the
-firmware or fix bugs in the places where it could have been used. This
-ends up as a self-fulfilling prophecy of exhausting amounts of broken
-and unoptimized firmware.
-
-Nobody in firmware-land has any impetus to fix those bugs or add
-useful optional features.
-
-By "by not actually using it," I do mean the case where someone has
-UEFI and somehow boots a plain zImage and a DTB modified to include
-the System Table pointer. Because that door is completely wide open..
-
-Personally I think having a well known environment at StartImage()
-jumping to your EFI application entry point is a great place to
-simplify the decompressor by integrating it into the stub.
-
-At the point you then jump into kernel/head.S - you can still know
-you're on UEFI, with data in r1 and r2 strongly implying this is UEFI,
-you can branch to a much, MUCH simpler path for initialization where
-quite a lot of the work it's trying to do may have already been
-performed by the stub., and quite a lot of the bare-metalling doesn't
-need to be done.
-
-I am sure, even if modifying head.S for any reason than to fix a bug
-or implement some architectural requirement is somehow frowned upon,
-that comparing r1 to a known constant machine id and branching to a
-uefi_start() (which, at that point, may as well be a C function, if
-the stub saw fit to keep around/throw in an early stack) is not going
-to cause anyone any problems (even if it does add 4 instructions to
-the entry and slow everyone else down by a nanosecond or two).
-
-Everybody keeps their absolutely fixed entry point to the image
-proper, that way, so you can still glue your stub (with or without the
-decompressor as part of the stub) to the front with no changes to the
-build process for the image or the code path for non-UEFI.. one
-conditional branch and you can gain a lot of much, much easier to
-maintain boot process..
-
-> We deal with a highly quirky set of requirements for calling
-> SetVirtualAddressMap() in a clunky way - after which calls into UEFI
-> are direct and cachable.
-
-If the kernel boot process now has been derived from years upon years
-of trial and error and engineering, then it does seem a shame to go do
-things a different way, you would be right to say it would be a shame
-not to promote code-reuse of the existing process by not touching the
-zImage stuff or core kernel boot, and just working on the glue and
-some not-so-early-init code.
-
-But what it does is make the boot process *more* complicated than it's
-already complicated implementation, in the face of a very nice
-specification of the correct way to deal with booting something from a
-UEFI implementation..
-
-What might be a much better route to take could be to define a nice,
-shiny new way of getting Linux to the point that it has full control
-over it's own destiny which does a hell of a lot less, with a less
-schizophrenic view of using UEFI or not.
-
-Ta,
-Matt Sealey <neko@bakuhatsu.net>
+> 
+> - Remove KEXEC tag from the description of disable_cpu_apicid since
+>   the parameter is generic, independent of CONFIG_KEXEC, at least in
+>   this version.
+> 
+> v8 => v9)
+> 
+> - Rebased on top of v3.13-rc2
+> 
+> - Call read_apic_id() in case of disable_cpu_apiid only in
+>   generic_processor_info().
+> 
+> v7 => v8)
+> 
+> - Merge the patch that adds new descption in
+>   Documentations/kernel-parameters.txt in the first patch.
+> 
+> - Call read_apic_id() directly in generic_processor_info() instead of
+>   overriding global boot_cpu_physical_apicid with the local variable
+>   with the same name.
+> 
+> v6 => v7)
+> 
+> - Rebased on top of v3.13-rc1
+> 
+> - Remove a patch that cleans up the code around
+>   x86_cpu_physical_apicid. Instead, use read_apic_id() directly in
+>   generic_processor_info(). The clean up removed here will be done in
+>   different patch set.
+> 
+> v5 => v6)
+> 
+> - Remove use of rdmsr(IA32_APIC_BASE) to initialize
+>   bsp_physical_apicid since the MSR doesn't work well on some cluster
+>   systems, suggested by HPA. Also, current users of the variable
+>   expects the initial apicid reported through MP table only; removing
+>   the use of the MSR is not problematic.
+> 
+> - Rename bsp_physical_apicid as bios_bsp_physical_apicid to make it
+>   clear that the apidid contained there is the one reported from some
+>   BIOS table. Also, initialize it not only by MP table but also by
+>   ACPI MADT.
+> 
+> - Change message displayed when specified cpu is disabled from:
+> 
+>   ACPI: Disable specified CPU. Processor 0/0x0 ignored.
+> 
+>   to:
+> 
+>   ACPI: Disabling requested cpu. Processor 0/0x0 ignored.
+> 
+> v4 => v5)
+> 
+> - Rebased on top of v3.12
+> 
+> - Introduce bsp_physical_apicid that has the initial APIC ID for the
+>   processor with BSP flag on IA32_APIC_BASE MSR. Without this,
+>   boot_cpu_physical_apicid has temporarilly the value around MP table
+>   related codes, although it's designed to have the initial APIC ID
+>   for the processor that is doing the boot up. Use the
+>   bsp_physical_apicid in MP table related codes; no impact on
+>   semantics at runtime there.
+> 
+> v3 => v4)
+> 
+> - Rebased on top of v3.12-rc6
+> 
+> - Basic design has been changed. Now users need to figure out initial
+>   APIC ID of BSP in the 1st kernel and configures kernel parameter for
+>   the 2nd kernel manually using disable_cpu_apic kernel parameter to
+>   be newly introduced in this patch set. This design is more flexible
+>   than the previous version in that we no longer have to rely on
+>   ACPI/MP table to get initial APIC ID of BSP.
+> 
+> v2 => v3)
+> 
+> - Change default value of boot_cpu_is_bsp to true.
+> 
+> - Before executing rdmsr(MSR_IA32_APICBASE), check if the number of
+>   processor family is larger than or equal to 6 in order to avoid
+>   invalid opcode exception on processors where MSR_IA32_APICBASE is
+>   not supported.
+> 
+> v1 => v2)
+> 
+> - Rebased on top of v3.12-rc5.
+> 
+> - Fix linking time error of boot_cpu_is_bsp_init() in case of
+>   CONFIG_LOCAL_APIC disabled by adding empty static inline function
+>   instead.
+> 
+> - Fix missing feature check by means of cpu_has_apic macro in
+>   boot_cpu_is_bsp_init() before calling rdmsr_safe(MSR_IA32_APICBASE).
+> 
+>   NOTE: I've checked local apic-present case only; I don't have any
+>   x86 processor without local apic.
+> 
+> - Add __init annotation to boot_cpu_is_bsp_init().
+> 
+> Test
+> 
+> - built with and without CONFIG_LOCAL_APIC
+> - tested x86_64 in case of acpi and MP table
+> - tested disable_cpu_apicid=<n> to disable both AP and BSP
+> 
+> 
+> >From d03e159d9479755b36ac7d4a7d323b3ce95481be Mon Sep 17 00:00:00 2001
+> From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+> Date: Tue, 3 Dec 2013 09:21:56 +0900
+> Subject: [PATCH] x86, apic, kexec, Documentation: Add disable_cpu_apicid
+>  kernel parameter
+> 
+> Add disable_cpu_apicid kernel parameter. To use this kernel parameter,
+> specify an initial APIC ID of the corresponding CPU you want to
+> disable.
+> 
+> This is mostly used for the kdump 2nd kernel to disable BSP to wake up
+> multiple CPUs without causing system reset or hang due to sending INIT
+> from AP to BSP.
+> 
+> Kdump users first figure out initial APIC ID of the BSP, CPU0 in the
+> 1st kernel, for example from /proc/cpuinfo and then set up this kernel
+> parameter for the 2nd kernel using the obtained APIC ID.
+> 
+> However, doing this procedure at each boot time manually is awkward,
+> which should be automatically done by user-land service scripts, for
+> example, kexec-tools on fedora/RHEL distributions.
+> 
+> This design is more flexible than disabling BSP in kernel boot time
+> automatically in that in kernel boot time we have no choice but
+> referring to ACPI/MP table to obtain initial APIC ID for BSP, meaning
+> that the method is not applicable to the systems without such BIOS
+> tables.
+> 
+> One assumption behind this design is that users get initial APIC ID of
+> the BSP in still healthy state and so BSP is uniquely kept in
+> CPU0. Thus, through the kernel parameter, only one initial APIC ID can
+> be specified.
+> 
+> In a comparison with disabled_cpu_apicid, we use read_apic_id(), not
+> boot_cpu_physical_apicid, because on some platforms, the variable is
+> modified to the apicid reported as BSP through MP table and this
+> function is executed with the temporarily modified
+> boot_cpu_physical_apicid. As a result, disabled_cpu_apicid kernel
+> parameter doesn't work well for apicids of APs.
+> 
+> Fixing the wrong handling of boot_cpu_physical_apicid requires some
+> reviews and tests beyond some platforms and it could take some
+> time. The fix here is a kind of workaround to focus on the main topic
+> of this patch.
+> 
+> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+> ---
+>  Documentation/kernel-parameters.txt |  9 +++++++
+>  arch/x86/kernel/apic/apic.c         | 49 +++++++++++++++++++++++++++++++++++++
+>  2 files changed, 58 insertions(+)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 50680a5..4e5528c 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -774,6 +774,15 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  	disable=	[IPV6]
+>  			See Documentation/networking/ipv6.txt.
+>  
+> +	disable_cpu_apicid= [X86,APIC,SMP]
+> +			Format: <int>
+> +			The number of initial APIC ID for the
+> +			corresponding CPU to be disabled at boot,
+> +			mostly used for the kdump 2nd kernel to
+> +			disable BSP to wake up multiple CPUs without
+> +			causing system reset or hang due to sending
+> +			INIT from AP to BSP.
+> +
+>  	disable_ddw     [PPC/PSERIES]
+>  			Disable Dynamic DMA Window support. Use this if
+>  			to workaround buggy firmware.
+> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> index d278736..6c0b7d5 100644
+> --- a/arch/x86/kernel/apic/apic.c
+> +++ b/arch/x86/kernel/apic/apic.c
+> @@ -75,6 +75,13 @@ unsigned int max_physical_apicid;
+>  physid_mask_t phys_cpu_present_map;
+>  
+>  /*
+> + * Processor to be disabled specified by kernel parameter
+> + * disable_cpu_apicid=<int>, mostly used for the kdump 2nd kernel to
+> + * avoid undefined behaviour caused by sending INIT from AP to BSP.
+> + */
+> +unsigned int disabled_cpu_apicid = BAD_APICID;
+> +
+> +/*
+>   * Map cpu index to physical APIC ID
+>   */
+>  DEFINE_EARLY_PER_CPU_READ_MOSTLY(u16, x86_cpu_to_apicid, BAD_APICID);
+> @@ -2115,6 +2122,39 @@ int generic_processor_info(int apicid, int version)
+>  				phys_cpu_present_map);
+>  
+>  	/*
+> +	 * boot_cpu_physical_apicid is designed to have the apicid
+> +	 * returned by read_apic_id(), i.e, the apicid of the
+> +	 * currently booting-up processor. However, on some platforms,
+> +	 * it is temporarilly modified by the apicid reported as BSP
+> +	 * through MP table. Concretely:
+> +	 *
+> +	 * - arch/x86/kernel/mpparse.c: MP_processor_info()
+> +	 * - arch/x86/mm/amdtopology.c: amd_numa_init()
+> +	 * - arch/x86/platform/visws/visws_quirks.c: MP_processor_info()
+> +	 *
+> +	 * This function is executed with the modified
+> +	 * boot_cpu_physical_apicid. So, disabled_cpu_apicid kernel
+> +	 * parameter doesn't work to disable APs on kdump 2nd kernel.
+> +	 *
+> +	 * Since fixing handling of boot_cpu_physical_apicid requires
+> +	 * another discussion and tests on each platform, we leave it
+> +	 * for now and here we use read_apic_id() directly in this
+> +	 * function, generic_processor_info().
+> +	 */
+> +	if (disabled_cpu_apicid != BAD_APICID &&
+> +	    disabled_cpu_apicid != read_apic_id() &&
+> +	    disabled_cpu_apicid == apicid) {
+> +		int thiscpu = num_processors + disabled_cpus;
+> +
+> +		pr_warning("ACPI: Disabling requested cpu."
+> +			   " Processor %d/0x%x ignored.\n",
+> +			   thiscpu, apicid);
+> +
+> +		disabled_cpus++;
+> +		return -ENODEV;
+> +	}
+> +
+> +	/*
+>  	 * If boot cpu has not been detected yet, then only allow upto
+>  	 * nr_cpu_ids - 1 processors and keep one slot free for boot cpu
+>  	 */
+> @@ -2592,3 +2632,12 @@ static int __init lapic_insert_resource(void)
+>   * that is using request_resource
+>   */
+>  late_initcall(lapic_insert_resource);
+> +
+> +static int __init apic_set_disabled_cpu_apicid(char *arg)
+> +{
+> +	if (!arg || !get_option(&arg, &disabled_cpu_apicid))
+> +		return -EINVAL;
+> +
+> +	return 0;
+> +}
+> +early_param("disable_cpu_apicid", apic_set_disabled_cpu_apicid);
+> -- 
+> 1.8.3.1
+> 
+> -- 
+> Thanks.
+> HATAYAMA, Daisuke
