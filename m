@@ -1,91 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933180Ab3LDS6N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 13:58:13 -0500
-Received: from smtp42.i.mail.ru ([94.100.177.102]:50609 "EHLO smtp42.i.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933089Ab3LDS6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 13:58:11 -0500
-X-Greylist: delayed 85153 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Dec 2013 13:58:11 EST
-Message-ID: <529F7B35.4050509@list.ru>
-Date: Wed, 04 Dec 2013 22:57:57 +0400
-From: Stas Sergeev <stsp@list.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S933195Ab3LDS6n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 13:58:43 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:54989 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933015Ab3LDS6k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 13:58:40 -0500
+Date: Wed, 4 Dec 2013 10:58:37 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+Cc: Sekhar Nori <nsekhar@ti.com>, Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-arm-kernel@lists.infradead.org, mark.rutland@arm.com,
+        wim@iguana.be, linux-watchdog@vger.kernel.org,
+        devicetree@vger.kernel.org, Pawel.Moll@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, galak@kernel.crashing.org,
+        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
+        grant.likely@linaro.org, grygorii.strashko@ti.com
+Subject: Re: [PATCH v4 1/5] watchdog: davinci: change driver to use WDT core
+Message-ID: <20131204185837.GA16166@roeck-us.net>
+References: <1385556508-3935-1-git-send-email-ivan.khoronzhuk@ti.com>
+ <1385556508-3935-2-git-send-email-ivan.khoronzhuk@ti.com>
+ <529F6EBE.5050703@ti.com>
+ <20131204182824.GA14499@roeck-us.net>
+ <529F7797.4080100@ti.com>
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Margarita Manterola <margamanterola@gmail.com>,
-        Maximiliano Curia <maxy@gnuservers.com.ar>,
-        Stas Sergeev <stsp@users.sourceforge.net>, Pavel Machek <pavel@ucw.cz>,
-        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Caylan Van Larson <i@caylan.net>
-Subject: Re: Large pastes into readline enabled programs causes breakage from
- v2.6.31 onwards
-References: <5291E92F.7010609@hurleysoftware.com> <1385428582-5577-1-git-send-email-peter@hurleysoftware.com> <529D236E.4020002@hurleysoftware.com> <529D9DCD.5080003@list.ru> <529E0E1F.4010303@hurleysoftware.com> <529E2E92.4010004@list.ru> <529E6F02.70506@hurleysoftware.com>
-In-Reply-To: <529E6F02.70506@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Spam: Not detected
-X-Mras: Ok
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <529F7797.4080100@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-04.12.2013 03:53, Peter Hurley пишет:
-> On 12/03/2013 02:18 PM, Stas Sergeev wrote:
->> 03.12.2013 21:00, Peter Hurley пишет:
->>> Any unit test is specifically designed to break the code under test.
->>> This unit test does in fact break a possible input: note specifically
->>> that the writer is not changing the termios so has no control over
->>> the timing of when the input is received.
->>>
->>> Also note that the test is a simulation; the patch will break any
->>> input stream under the following conditions:
->>> 1. The writer writes an EOF-terminated buffer
->>> 2. All the input is received _except_ the EOF; this is strictly
->>>    timing-related and not controllable.
->>> 3. The reader changes the termios from non-canon -> canon.
->>>
->>> At that point the damage is done; the read_flags will indicate
->>> 2 EOFs and the 2nd EOF will be interpreted as end-of-file because
->>> it will appear to begin on a new line.
->> How is this different from the unpatched kernel?
->> In the unpatched kernel, if you happen on reader side
->> to enable icanon while n_tty received all but VEOF (is this possible 
->> at all?),
->> then the buffer will be flushed, and the remaining VEOF
->> will get you a nice EOF.
->> So, in the unpatched kernel you get EOF because the buffer
->> gets wiped.
->
-> ???
->
-> Testcase output from 3.12 w/o patch:
-OK, sorry, after a year of rot of my patch in bugzilla, I've
-completely forgot the pre-conditions, which is that the
-buffer is not discarded, just not pushed.
+On Wed, Dec 04, 2013 at 08:42:31PM +0200, ivan.khoronzhuk wrote:
+> On 12/04/2013 08:28 PM, Guenter Roeck wrote:
+> > On Wed, Dec 04, 2013 at 11:34:46PM +0530, Sekhar Nori wrote:
+> >> On 11/27/2013 6:18 PM, Ivan Khoronzhuk wrote:
+> >>> To reduce code duplicate and increase code readability use WDT core
+> >>> code to handle WDT interface.
+> >>>
+> >>> Remove io_lock as the WDT core uses mutex to lock each wdt device.
+> >>> Remove wdt_state as the WDT core tracks state with its own variable.
+> >>>
+> >>> The watchdog_init_timeout() can read timeout value from timeout-sec
+> >>> property if the passed value is out of bounds. The heartbeat is
+> >>> initialized in next way. If heartbeat is not set thought module
+> >>> parameter, try to read it's value from WDT node timeout-sec property.
+> >>> If node has no one, use default value.
+> >>>
+> >>> The heartbeat is hold in wdd->timeout by WDT core, so use it in
+> >>> order to set timeout period.
+> >>>
+> >>> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> >>> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+> >>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> >>> ---
+> >>>   drivers/watchdog/Kconfig       |    2 +
+> >>>   drivers/watchdog/davinci_wdt.c |  147 ++++++++++------------------------------
+> >>>   2 files changed, 37 insertions(+), 112 deletions(-)
+> >>>
+> >>> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> >>> index 5be6e91..eb8c89d 100644
+> >>> --- a/drivers/watchdog/Kconfig
+> >>> +++ b/drivers/watchdog/Kconfig
+> >>> @@ -271,6 +271,8 @@ config IOP_WATCHDOG
+> >>>   config DAVINCI_WATCHDOG
+> >>>   	tristate "DaVinci watchdog"
+> >>>   	depends on ARCH_DAVINCI
+> >>> +	select WATCHDOG_CORE
+> >>> +	select WATCHDOG_NOWAYOUT
+> >>
+> >> Its not clear for change log why NOWAYOUT needs to be forced on all the
+> >> time for all users of DaVinci watchdog.
+> 
+> ... you are right
+> 
+> >>
+> > Actually, thinking about it, it is not necessary and can be replaced with
+> > 
+> > 	watchdog_set_nowayout(wdd, 1);
+> 
+> Good idea, I'll replace watchdog_set_nowayout(wdd, WATCHDOG_NOWAYOUT) on it.
+> And delete "select WATCHDOG_NOWAYOUT"
+> 
+> > 
+> > In other words, there is no need to force NOWAYOUT on _other_ watchdogs which
+> > may be present in the system. Still, you are right, it would be nice to explain
+> > in the changelog (or maybe even better as comment in the code) why it is
+> > enforced.
+> > 
+> > Guenter
+> > 
+> 
+> Only question, should I repost only this patch or whole series?
+> 
+Reposting only this patch should be sufficient if the others did not change.
 
-> Consider the total brute-force approach; a shadow read_flags that
-> distinguishes a real EOF receive from the fake EOF push initiated
-> by the patch.
-What is to do with them?
-Remove all "fake" EOFs on receiving the real one?
-But that will depend on whether the reader happened to
-read everything before the real one arrived.
-I think that changing termios on reader side while another
-process is writing, is full of surprises. For example, even in
-your test-case (without the patch) the writer could expect
-that the reader would receive the VEOF char in raw mode.
-But the reader switced icanon and the VEOF char is not being read.
-And I am sure there are other oddities to suspect, so why
-the unexpected EOF is any worse?
-
-> That would work, but I'm looking for a solution more
-> space-efficient and simpler than a duplicate 256-byte buffer 
-I think "fake" EOFs do not need the entire bitmap.
-It is only important to remember the position where icanon was
-enabled the last time I suppose, even if it was switched many
-times.
+Thanks,
+Guenter
