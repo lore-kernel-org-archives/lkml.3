@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366Ab3LDCKe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 21:10:34 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:45017 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753925Ab3LDCKa (ORCPT
+	id S1755148Ab3LDCMQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 21:12:16 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:59059 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753423Ab3LDCMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 21:10:30 -0500
-Message-ID: <529E8F90.1020205@gmail.com>
-Date: Wed, 04 Dec 2013 10:12:32 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 3 Dec 2013 21:12:13 -0500
 MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: Joe Perches <joe@perches.com>, "John W. Linville" <linville@tuxdriver.com>,
-        rkuo <rkuo@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, linux-wireless@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH] net: mac80211: tx.c: be sure of 'sdata->vif.type' must
- be NL80211_IFTYPE_AP when be in NL80211_IFTYPE_AP case
-References: <528AEFB7.4060301@gmail.com>  <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com>  <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com>  <52957ADA.2080704@gmail.com>  (sfid-20131127_055211_558798_A7DF5684) <1385739487.8656.1.camel@jlt4.sipsolutions.net>  <5299D306.7070701@gmail.com>  (sfid-20131130_125901_519610_EDA4068E) <1385816013.4327.1.camel@jlt4.sipsolutions.net>  <5299ED38.4090509@gmail.com> <5299EFDD.6060405@gmail.com>  (sfid-20131130_150205_984535_068F14A9) <1385842134.6108.4.camel@jlt4.sipsolutions.net>  <1385843940.2664.4.camel@joe-AO722>  <1385890523.4171.1.camel@jlt4.sipsolutions.net>  <1385937499.2664.21.camel@joe-AO722> <1385995738.20277.4.camel@jlt4.sipsolutions.net>
-In-Reply-To: <1385995738.20277.4.camel@jlt4.sipsolutions.net>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAErSpo7R4nsP7G0DQ+1yzgd-8ZRLJfvzUZk4gno-x2yhhEMqOA@mail.gmail.com>
+References: <1385851238-21085-1-git-send-email-yinghai@kernel.org>
+	<1385851238-21085-12-git-send-email-yinghai@kernel.org>
+	<CAErSpo7R4nsP7G0DQ+1yzgd-8ZRLJfvzUZk4gno-x2yhhEMqOA@mail.gmail.com>
+Date: Tue, 3 Dec 2013 18:12:12 -0800
+X-Google-Sender-Auth: lqnotsp-YqyIwMpo-5cKpkkdg5o
+Message-ID: <CAE9FiQWsv=wqMfxjnvRJR1YwzUSxeWPp63FnQEX6tFc-Qt0foQ@mail.gmail.com>
+Subject: Re: [PATCH v3 11/12] PCI: Sort pci root bus resources list
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2013 10:48 PM, Johannes Berg wrote:
-> On Sun, 2013-12-01 at 14:38 -0800, Joe Perches wrote:
->> On Sun, 2013-12-01 at 10:35 +0100, Johannes Berg wrote:
->>> Good try, but no, now ap_sdata isn't even assigned. :)
+On Mon, Dec 2, 2013 at 3:11 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Sat, Nov 30, 2013 at 3:40 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> Some x86 systems expose above 4G 64bit mmio in _CRS as non-pref mmio range.
+>> [   49.415281] PCI host bridge to bus 0000:00
+>> [   49.419921] pci_bus 0000:00: root bus resource [bus 00-1e]
+>> [   49.426107] pci_bus 0000:00: root bus resource [io  0x0000-0x0cf7]
+>> [   49.433041] pci_bus 0000:00: root bus resource [io  0x1000-0x5fff]
+>> [   49.440010] pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bffff]
+>> [   49.447768] pci_bus 0000:00: root bus resource [mem 0xfed8c000-0xfedfffff]
+>> [   49.455532] pci_bus 0000:00: root bus resource [mem 0x90000000-0x9fffbfff]
+>> [   49.463259] pci_bus 0000:00: root bus resource [mem 0x380000000000-0x381fffffffff]
 >>
->> Right.  Oh well.  There's no improving this without
->> significant rewrite.  Even then, there may not be much
->> overall improvement.
-> 
-> I could see an improvement if we were to actually make changes to assign
-> the pointer based on the iftype, when that changes, so that each
-> function only has to handle the right type and we don't need the switch
-> statement at all...
-> 
+>> During assign unassigned 64bit mmio resource, it will go through
+>> every non-pref mmio for root bus in pci_bus_alloc_resource().
+>> As the loop is with pci_bus_for_each_resource(), and could have chance
+>> to use under 4G mmio range instead of above 4G mmio range if the requested
+>> range is not big enough, even it could handle above 4G 64bit pref mmio.
+>>
+>> For root bus, we can order list from high to low in pci_add_resource_offset(),
+>> during creating root bus, it will still keep the same order in final bus
+>> resource list.
+>>         pci_acpi_scan_root
+>>                 ==> add_resources
+>>                         ==> pci_add_resource_offset: # Add to temp resources
+>>                 ==> pci_create_root_bus
+>>                         ==> pci_bus_add_resource # add to final bus resources.
+>>
+>> After that, we can make sure 64bit pref mmio for pci bridges will be allocated
+>> higest of mmio non-pref, and in this case it is above 4G instead of under 4G.
+>
+> It really irritates me when I ask a question [1] and you just repost
+> the patch without even trying to answer it.
+>
+> [1] http://lkml.kernel.org/r/CAErSpo4r6eJhgmfpth7haKDiKzDB+ZnEq0p_qdfTPo+kqySGgg@mail.gmail.com
 
-OK, thanks, it is one of good ideas to me (which I can not find).  :-)
+I expanded the changelog quite a bit, and thought it should have
+answered your concern.
 
+The old nehalem-ex and westmere-ex platform have specify above 4g mmio as
+pref, but new ivybridge-ex platform only keep above 4g mmio as mmio as non-pref.
 
-> But that's tricky to get right and I'm between vacations and holidays
-> and all that ...
-> 
+so we need allocation code to try the above 4G range for pref
+allocation at first to
+avoid mmio pref taking under 4G mmio range.
 
-It is really not urgent, and for keeping quality, it is necessary to
-spend suitable time resource (e.g 1 hour or more) to  make, review and
-test this kind of patch carefully by oneself.
+We may need to backport it to old kernel or stable kernel, but should
+wait a while after it get into linus's tree for a while.
 
-So could you please help improve it when you have suitable related time
-resources?
+Thanks
 
-
-Thanks.
--- 
-Chen Gang
+Yinghai
