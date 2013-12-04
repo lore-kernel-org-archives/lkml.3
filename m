@@ -1,55 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932575Ab3LDPVK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 10:21:10 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:50824 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932443Ab3LDPVJ (ORCPT
+	id S932635Ab3LDPVW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 10:21:22 -0500
+Received: from b232-131.smtp-out.amazonses.com ([199.127.232.131]:22190 "EHLO
+	b232-131.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932609Ab3LDPVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 10:21:09 -0500
-Date: Wed, 4 Dec 2013 10:21:07 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Julius Werner <jwerner@chromium.org>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Subject: Re: [PATCH] usb: core: Abort deauthorization if unsetting configuration
- fails
-In-Reply-To: <1386116201-22131-1-git-send-email-jwerner@chromium.org>
-Message-ID: <Pine.LNX.4.44L0.1312041014460.1329-100000@iolanthe.rowland.org>
+	Wed, 4 Dec 2013 10:21:20 -0500
+Date: Wed, 4 Dec 2013 15:21:19 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: David Rientjes <rientjes@google.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Pekka Enberg <penberg@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch 2/8] mm, mempolicy: rename slab_node for clarity
+In-Reply-To: <alpine.DEB.2.02.1312032117330.29733@chino.kir.corp.google.com>
+Message-ID: <00000142be32f445-c4b31577-3ad8-42c4-bfd5-6387662ffa70-000000@email.amazonses.com>
+References: <20131119131400.GC20655@dhcp22.suse.cz> <20131119134007.GD20655@dhcp22.suse.cz> <alpine.DEB.2.02.1311192352070.20752@chino.kir.corp.google.com> <20131120152251.GA18809@dhcp22.suse.cz> <alpine.DEB.2.02.1311201917520.7167@chino.kir.corp.google.com>
+ <20131128115458.GK2761@dhcp22.suse.cz> <alpine.DEB.2.02.1312021504170.13465@chino.kir.corp.google.com> <alpine.DEB.2.02.1312032116440.29733@chino.kir.corp.google.com> <alpine.DEB.2.02.1312032117330.29733@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.127.232.131
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Dec 2013, Julius Werner wrote:
+On Tue, 3 Dec 2013, David Rientjes wrote:
 
-> usb_deauthorize_device() tries to unset the configuration of a USB
-> device and then unconditionally blows away the configuration descriptors
-> with usb_destroy_configuration(). This is bad if the
-> usb_set_configuration() call failed before the configuration could be
-> correctly unset, since pointers like udev->actconfig can keep pointing
-> to the now invalid memory. We have encountered hard to reproduce crashes
-> from devices disconnected during suspend due to this, where khubd's
-> disconnect handling races with userspace tools that change authorization
-> on resume.
-> 
-> This patch ensures that usb_deauthorize_device() aborts when
-> usb_set_configuration() fails, and the underlying status code (such as
-> ENODEV) is returned to userspace.
+> slab_node() is actually a mempolicy function, so rename it to
+> mempolicy_slab_node() to make it clearer that it used for processes with
+> mempolicies.
 
-I don't like this approach at all.  It should always be possible to
-deauthorize a device, no matter what.
-
-Instead, how about changing usb_set_configuration() so that it will
-never fail when the new config is -1?  Except perhaps for -ENODEV 
-errors (the device has been disconnected), which 
-usb_deauthorize_device() could check for.
-
-Alan Stern
-
+Acked-by: Christoph Lameter <cl@linux.com>
