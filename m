@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933602Ab3LDUMd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 15:12:33 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:59361 "EHLO
+	id S933577Ab3LDUM0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 15:12:26 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:59374 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933266Ab3LDUHT (ORCPT
+	with ESMTP id S933276Ab3LDUHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 15:07:19 -0500
+	Wed, 4 Dec 2013 15:07:20 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 05/38] perf tools: Remove stackprotector feature check
-Date: Wed,  4 Dec 2013 17:06:29 -0300
-Message-Id: <1386187622-2928-6-git-send-email-acme@infradead.org>
+Subject: [PATCH 18/38] perf tools: Add build and install plugins targets
+Date: Wed,  4 Dec 2013 17:06:42 -0300
+Message-Id: <1386187622-2928-19-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1386187622-2928-1-git-send-email-acme@infradead.org>
 References: <1386187622-2928-1-git-send-email-acme@infradead.org>
@@ -31,12 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-We use -fstack-protector-all option to enable stack protecting for all
-available functions. There's no reason for enabling -Wstack-protector to
-get warning for unprotected functions.
+Adding 'plugins' target along with the libtraceevent.a, so plugins are
+built together with traceevent library.
 
-Removing stackprotector feature check which was used to enable the
--Wstack-protector option.
+Adding 'install-traceevent-plugins' Makefile install target, instructing
+perf to install plugins into:
+
+  $(HOME)/.traceevent/plugins
+    - If installed localy under $HOME
+
+  $(DESTDIR)/$(prefix)/$(libdir)/traceevent/plugins
+    - If installed globally
+
+Examples:
+  $ make install
+  ...
+  $ find ~/.traceevent/plugins/
+  /home/jolsa/.traceevent/plugins/
+  /home/jolsa/.traceevent/plugins/plugin_mac80211.so
+  /home/jolsa/.traceevent/plugins/plugin_kvm.so
+  /home/jolsa/.traceevent/plugins/plugin_scsi.so
+  /home/jolsa/.traceevent/plugins/plugin_sched_switch.so
+  /home/jolsa/.traceevent/plugins/plugin_xen.so
+  /home/jolsa/.traceevent/plugins/plugin_cfg80211.so
+  /home/jolsa/.traceevent/plugins/plugin_function.so
+  /home/jolsa/.traceevent/plugins/plugin_kmem.so
+  /home/jolsa/.traceevent/plugins/plugin_hrtimer.so
+  /home/jolsa/.traceevent/plugins/plugin_jbd2.so
+
+  $ sudo make install DESTDIR=/opt/perf/
+  ...
+  $ find /opt/perf/lib64/traceevent/plugins/
+  /opt/perf/lib64/traceevent/plugins/
+  /opt/perf/lib64/traceevent/plugins/plugin_kvm.so
+  /opt/perf/lib64/traceevent/plugins/plugin_scsi.so
+  /opt/perf/lib64/traceevent/plugins/plugin_mac80211.so
+  /opt/perf/lib64/traceevent/plugins/plugin_hrtimer.so
+  /opt/perf/lib64/traceevent/plugins/plugin_kmem.so
+  /opt/perf/lib64/traceevent/plugins/plugin_jbd2.so
+  /opt/perf/lib64/traceevent/plugins/plugin_sched_switch.so
+  /opt/perf/lib64/traceevent/plugins/plugin_function.so
+  /opt/perf/lib64/traceevent/plugins/plugin_cfg80211.so
+  /opt/perf/lib64/traceevent/plugins/plugin_xen.so
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -47,81 +83,83 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1386076182-14484-2-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1386076182-14484-8-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/config/Makefile                             | 5 -----
- tools/perf/config/feature-checks/Makefile              | 6 +-----
- tools/perf/config/feature-checks/test-stackprotector.c | 6 ------
- 3 files changed, 1 insertion(+), 16 deletions(-)
- delete mode 100644 tools/perf/config/feature-checks/test-stackprotector.c
+ tools/perf/Makefile.perf   | 17 ++++++++++++-----
+ tools/perf/config/Makefile |  8 ++++++++
+ 2 files changed, 20 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 36e66ac40abc..0761d57e5fb6 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -141,7 +141,6 @@ CORE_FEATURE_TESTS =			\
- 	libslang			\
- 	libunwind			\
- 	on-exit				\
--	stackprotector			\
- 	stackprotector-all		\
- 	timerfd
- 
-@@ -209,10 +208,6 @@ ifeq ($(feature-stackprotector-all), 1)
-   CFLAGS += -fstack-protector-all
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index e416ccc7d831..abc7ac3713ad 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -105,7 +105,7 @@ ifeq ($(config),1)
+ include config/Makefile
  endif
  
--ifeq ($(feature-stackprotector), 1)
--  CFLAGS += -Wstack-protector
--endif
--
- ifeq ($(DEBUG),0)
-   ifeq ($(feature-fortify-source), 1)
-     CFLAGS += -D_FORTIFY_SOURCE=2
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 87e790017c69..b8bb749c3392 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -26,7 +26,6 @@ FILES=					\
- 	test-libunwind-debug-frame	\
- 	test-on-exit			\
- 	test-stackprotector-all		\
--	test-stackprotector		\
- 	test-timerfd
+-export prefix bindir sharedir sysconfdir
++export prefix bindir sharedir sysconfdir DESTDIR
  
- CC := $(CC) -MD
-@@ -38,7 +37,7 @@ BUILD = $(CC) $(CFLAGS) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
- ###############################
+ # sparse is architecture-neutral, which means that we need to tell it
+ # explicitly what architecture to check for. Fix this up for yours..
+@@ -710,13 +710,20 @@ $(LIB_FILE): $(LIB_OBJS)
+ # libtraceevent.a
+ TE_SOURCES = $(wildcard $(TRACE_EVENT_DIR)*.[ch])
  
- test-all:
--	$(BUILD) -Werror -fstack-protector -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma $(LIBUNWIND_LIBS) -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
-+	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma $(LIBUNWIND_LIBS) -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
+-$(LIBTRACEEVENT): $(TE_SOURCES)
+-	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) CFLAGS="-g -Wall $(EXTRA_CFLAGS)" libtraceevent.a
++LIBTRACEEVENT_FLAGS  = $(QUIET_SUBDIR1) O=$(OUTPUT)
++LIBTRACEEVENT_FLAGS += CFLAGS="-g -Wall $(EXTRA_CFLAGS)"
++LIBTRACEEVENT_FLAGS += plugin_dir=$(plugindir_SQ)
++
++$(LIBTRACEEVENT): $(TE_SOURCES) $(OUTPUT)PERF-CFLAGS
++	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) libtraceevent.a plugins
  
- test-hello:
- 	$(BUILD)
-@@ -46,9 +45,6 @@ test-hello:
- test-stackprotector-all:
- 	$(BUILD) -Werror -fstack-protector-all
+ $(LIBTRACEEVENT)-clean:
+ 	$(call QUIET_CLEAN, libtraceevent)
+ 	@$(MAKE) -C $(TRACE_EVENT_DIR) O=$(OUTPUT) clean >/dev/null
  
--test-stackprotector:
--	$(BUILD) -Werror -fstack-protector -Wstack-protector
--
- test-fortify-source:
- 	$(BUILD) -O2 -Werror -D_FORTIFY_SOURCE=2
++install-traceevent-plugins:
++	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) install_plugins
++
+ LIBLK_SOURCES = $(wildcard $(LK_PATH)*.[ch])
  
-diff --git a/tools/perf/config/feature-checks/test-stackprotector.c b/tools/perf/config/feature-checks/test-stackprotector.c
-deleted file mode 100644
-index c9f398d87868..000000000000
---- a/tools/perf/config/feature-checks/test-stackprotector.c
-+++ /dev/null
-@@ -1,6 +0,0 @@
--#include <stdio.h>
--
--int main(void)
--{
--	return puts("hi");
--}
+ # if subdir is set, we've been called from above so target has been built
+@@ -785,7 +792,7 @@ cscope:
+ 
+ ### Detect prefix changes
+ TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):\
+-             $(bindir_SQ):$(perfexecdir_SQ):$(template_dir_SQ):$(prefix_SQ)
++             $(bindir_SQ):$(perfexecdir_SQ):$(template_dir_SQ):$(prefix_SQ):$(plugindir_SQ)
+ 
+ $(OUTPUT)PERF-CFLAGS: .FORCE-PERF-CFLAGS
+ 	@FLAGS='$(TRACK_CFLAGS)'; \
+@@ -849,7 +856,7 @@ endif
+ 		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests/attr'; \
+ 		$(INSTALL) tests/attr/* '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests/attr'
+ 
+-install: install-bin try-install-man
++install: install-bin try-install-man install-traceevent-plugins
+ 
+ install-python_ext:
+ 	$(PYTHON_WORD) util/setup.py --quiet install --root='/$(DESTDIR_SQ)'
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 0761d57e5fb6..bae10720a136 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -593,3 +593,11 @@ else
+ perfexec_instdir = $(prefix)/$(perfexecdir)
+ endif
+ perfexec_instdir_SQ = $(subst ','\'',$(perfexec_instdir))
++
++# If we install to $(HOME) we keep the traceevent default:
++# $(HOME)/.traceevent/plugins
++# Otherwise we install plugins into the global $(libdir).
++ifdef DESTDIR
++plugindir=$(libdir)/traceevent/plugins
++plugindir_SQ= $(subst ','\'',$(prefix)/$(plugindir))
++endif
 -- 
 1.8.1.4
 
