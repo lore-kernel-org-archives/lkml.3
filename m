@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755881Ab3LDRCf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 12:02:35 -0500
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:57644 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752782Ab3LDRCe (ORCPT
+	id S1755915Ab3LDRD3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 12:03:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33833 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755837Ab3LDRD1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 12:02:34 -0500
-Date: Wed, 4 Dec 2013 18:02:27 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 00/41] percpu: Consistent per cpu operations V1
-Message-ID: <20131204170227.GB6415@gmail.com>
-References: <20131203233232.928771708@linux.com>
- <20131204084020.GB31737@gmail.com>
- <00000142be7e005c-7ec3b0da-e975-438e-9203-7fa7ed80c891-000000@email.amazonses.com>
+	Wed, 4 Dec 2013 12:03:27 -0500
+Date: Wed, 4 Dec 2013 09:03:26 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH 3.12 000/212] 3.12.3-stable review
+Message-ID: <20131204170326.GC14367@kroah.com>
+References: <20131202191248.517975703@linuxfoundation.org>
+ <529E52D9.4080103@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <00000142be7e005c-7ec3b0da-e975-438e-9203-7fa7ed80c891-000000@email.amazonses.com>
+In-Reply-To: <529E52D9.4080103@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Christoph Lameter <cl@linux.com> wrote:
-
-> On Wed, 4 Dec 2013, Ingo Molnar wrote:
+On Tue, Dec 03, 2013 at 02:53:29PM -0700, Shuah Khan wrote:
+> On 12/02/2013 12:13 PM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.12.3 release.
+> >There are 212 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Responses should be made by Wed Dec  4 19:11:18 UTC 2013.
+> >Anything received after that time might be too late.
+> >
+> >The whole patch series can be found in one patch at:
+> >	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.12.3-rc1.gz
+> >and the diffstat can be found below.
+> >
+> >thanks,
+> >
+> >greg k-h
+> >
 > 
-> >
-> > * Christoph Lameter <cl@linux.com> wrote:
-> >
-> > > The kernel has never been audited to ensure that this_cpu operations
-> > > are consistently used throughout the kernel. The code generated in
-> > > many places can be improved through the use of this_cpu operations
-> > > (which uses a segment register for relocation of per cpu offsets
-> > > instead of performing address calculations).
-> >
-> > Your series lacks the this_cpu ops preempt debugging patches that you
-> > worked on before, what happened to them?
+> Patch applied with warnings:
 > 
-> They are included. Please read the complete description. Patches 13 
-> 14 and 18 implement the preemption checks.
+>  git apply --index ../stable_tree_project/patch-3.12.3-rc1
+> ../stable_tree_project/patch-3.12.3-rc1:8684: space before tab in
+> indent. * Anon maps don't have the execname.
+> ../stable_tree_project/patch-3.12.3-rc1:8685: space before tab in
+> indent. */ warning: 2 lines add whitespace errors.
+> 
+> Problem patch:
+> 
+> Don Zickus <dzickus@redhat.com> perf tools: Synthesize anon MMAP
+> records again
+> 
+> http://lkml.indiana.edu/hypermail/linux/kernel/1311.1/03602.html
 
-Indeed I missed them. They should probably go first in the series.
+Yeah, I took the upstream version directly, whitespace issues and all :)
 
-Other than that they are looking fine now.
+thanks for testing this, and the other 2 kernels, and letting me know.
 
-Thanks,
-
-	Ingo
+greg k-h
