@@ -1,159 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab3LDJhk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 04:37:40 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:41432 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754849Ab3LDJhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 04:37:33 -0500
-X-IronPort-AV: E=Sophos;i="4.93,823,1378857600"; 
-   d="scan'208";a="80425667"
-Message-ID: <1386149848.13256.86.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH] xen/pvhvm: If xen_platform_pci=0 is set don't blow up.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <stefano.stabellini@eu.citrix.com>, <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>, <boris.ostrovsky@oracle.com>,
-        <david.vrabel@citrix.com>, <leosilva@linux.vnet.ibm.com>,
-        <ashley@ashleylai.com>, <peterhuewe@gmx.de>, <mail@srajiv.net>,
-        <tpmdd@selhorst.net>, <tpmdd@sirrix.com>, <dmitry.torokhov@gmail.com>,
-        <bhelgaas@google.com>, <plagnioj@jcrosoft.com>,
-        <tomi.valkeinen@ti.com>, <tpmdd-devel@lists.sourceforge.net>,
-        <linux-input@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <linux-fbdev@vger.kernel.org>
-Date: Wed, 4 Dec 2013 09:37:28 +0000
-In-Reply-To: <1386105246-14337-1-git-send-email-konrad.wilk@oracle.com>
-References: <1386105246-14337-1-git-send-email-konrad.wilk@oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	id S1755444Ab3LDJjU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 04:39:20 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40250 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754800Ab3LDJjQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 04:39:16 -0500
+Date: Wed, 4 Dec 2013 09:39:11 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Alex Elder <alex.elder@linaro.org>
+Cc: Christian Daudt <bcm@fixthebug.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        "bcm-kernel-feedback-list@broadcom.com" 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] clk: bcm281xx: define kona clock binding
+Message-ID: <20131204093911.GE16025@e106331-lin.cambridge.arm.com>
+References: <529EA78E.7060904@linaro.org>
+ <529EA80A.60801@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <529EA80A.60801@linaro.org>
+Thread-Topic: [PATCH 1/3] clk: bcm281xx: define kona clock binding
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-03 at 16:14 -0500, Konrad Rzeszutek Wilk wrote:
-> The user has the option of disabling the platform driver:
-> 00:02.0 Unassigned class [ff80]: XenSource, Inc. Xen Platform Device (rev 01)
+On Wed, Dec 04, 2013 at 03:56:58AM +0000, Alex Elder wrote:
+> Document the device tree binding for Broadcom Kona architecture
+> clock control units and clocks.  Kona device nodes are represented
+> with compatible strings having "bcm11351" in their name.
 > 
-> which is used to unplug the emulated drivers (IDE, Realtek 8169, etc)
-> and allow the PV drivers to take over. If the user wishes
-> to disable that they can set:
+> Kona clocks are managed by "clock control units" (CCUs).  Each CCU
+> has a device tree node, and within that node are defined the names
+> of the clocks provided by the CCU.
 > 
->   xen_platform_pci=0
->   (in the guest config file)
+> The BCM281xx family of SoCs use Kona CCUs and clocks.
 > 
-> or
->   xen_emul_unplug=never
->   (on the Linux command line)
-> 
-> except it does not work properly. The PV drivers still try to
-> load and since the Xen platform driver is not run - and it
-> has not initialized the grant tables, most of the PV drivers
-> stumble upon:
-> 
-> input: Xen Virtual Keyboard as /devices/virtual/input/input5
-> input: Xen Virtual Pointer as /devices/virtual/input/input6M
-> ------------[ cut here ]------------
-> kernel BUG at /home/konrad/ssd/konrad/linux/drivers/xen/grant-table.c:1206!
-> invalid opcode: 0000 [#1] SMP
-> Modules linked in: xen_kbdfront(+) xenfs xen_privcmd
-> CPU: 6 PID: 1389 Comm: modprobe Not tainted 3.13.0-rc1upstream-00021-ga6c892b-dirty #1
-> Hardware name: Xen HVM domU, BIOS 4.4-unstable 11/26/2013
-> RIP: 0010:[<ffffffff813ddc40>]  [<ffffffff813ddc40>] get_free_entries+0x2e0/0x300
-> Call Trace:
->  [<ffffffff8150d9a3>] ? evdev_connect+0x1e3/0x240
->  [<ffffffff813ddd0e>] gnttab_grant_foreign_access+0x2e/0x70
->  [<ffffffffa0010081>] xenkbd_connect_backend+0x41/0x290 [xen_kbdfront]
->  [<ffffffffa0010a12>] xenkbd_probe+0x2f2/0x324 [xen_kbdfront]
->  [<ffffffff813e5757>] xenbus_dev_probe+0x77/0x130
->  [<ffffffff813e7217>] xenbus_frontend_dev_probe+0x47/0x50
->  [<ffffffff8145e9a9>] driver_probe_device+0x89/0x230
->  [<ffffffff8145ebeb>] __driver_attach+0x9b/0xa0
->  [<ffffffff8145eb50>] ? driver_probe_device+0x230/0x230
->  [<ffffffff8145eb50>] ? driver_probe_device+0x230/0x230
->  [<ffffffff8145cf1c>] bus_for_each_dev+0x8c/0xb0
->  [<ffffffff8145e7d9>] driver_attach+0x19/0x20
->  [<ffffffff8145e260>] bus_add_driver+0x1a0/0x220
->  [<ffffffff8145f1ff>] driver_register+0x5f/0xf0
->  [<ffffffff813e55c5>] xenbus_register_driver_common+0x15/0x20
->  [<ffffffff813e76b3>] xenbus_register_frontend+0x23/0x40
->  [<ffffffffa0015000>] ? 0xffffffffa0014fff
->  [<ffffffffa001502b>] xenkbd_init+0x2b/0x1000 [xen_kbdfront]
->  [<ffffffff81002049>] do_one_initcall+0x49/0x170
-> 
-> .. snip..
-> 
-> which is hardly nice. This patch fixes this by having each
-> PV driver check for:
->  - if running in PV, then it is fine to execute (as that is their
->    native environment).
->  - if running in HVM, check if user wanted 'xen_emul_unplug=never',
->    in which case bail out and don't load PV drivers.
->  - if running in HVM, and if PCI device 5853:0001 (xen_platform_pci)
->    does not exist, then bail out and not load PV drivers.
-> 
-> P.S.
-> Ian Campbell suggested getting rid of 'xen_platform_pci_unplug'
-> but unfortunatly the xen-blkfront driver is using it, so we
-> cannot do it.
-
-It might still be nice to expose a suitable semantic interface (i.e.
-some relevant predicate) rather than the raw value for blkfront to use.
-But that can be a future thing I think.
-
-> Reported-by: Sander Eikelenboom <linux@eikelenboom.it
-> Reported-by: Anthony PERARD <anthony.perard@citrix.com>
-> Reported-by: Fabio Fantoni <fabio.fantoni@m2r.biz>
+> Signed-off-by: Alex Elder <elder@linaro.org>
+> Reviewed-by: Matt Porter <matt.porter@linaro.org>
+> Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
 > ---
->  arch/x86/xen/platform-pci-unplug.c         | 18 ++++++++++++++++++
->  drivers/block/xen-blkfront.c               |  2 +-
->  drivers/char/tpm/xen-tpmfront.c            |  4 ++++
->  drivers/input/misc/xen-kbdfront.c          |  4 ++++
->  drivers/net/xen-netfront.c                 |  2 +-
->  drivers/pci/xen-pcifront.c                 |  4 ++++
->  drivers/video/xen-fbfront.c                |  4 ++++
->  drivers/xen/xenbus/xenbus_probe_frontend.c |  2 +-
->  include/xen/platform_pci.h                 | 13 ++++++++++++-
->  9 files changed, 49 insertions(+), 4 deletions(-)
+>  .../devicetree/bindings/clock/bcm-kona-clock.txt   |   95
+> ++++++++++++++++++++
+>  1 file changed, 95 insertions(+)
+>  create mode 100644
+> Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
 > 
-> diff --git a/arch/x86/xen/platform-pci-unplug.c b/arch/x86/xen/platform-pci-unplug.c
-> index 0a78524..087dfeb 100644
-> --- a/arch/x86/xen/platform-pci-unplug.c
-> +++ b/arch/x86/xen/platform-pci-unplug.c
-> @@ -69,6 +69,24 @@ static int check_platform_magic(void)
->  	return 0;
->  }
->  
-> +bool xen_has_pv_devices(void)
-> +{
-> +	if (!xen_domain())
-> +		return false;
+> diff --git a/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
+> b/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
+> new file mode 100644
+> index 0000000..0cafd6a
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
+> @@ -0,0 +1,95 @@
+> +Broadcom Kona Family Clocks
 > +
-> +	if (xen_hvm_domain()) {
-> +		/* User requested no unplug, so no PV drivers. */
-> +		if (xen_emul_unplug & XEN_UNPLUG_NEVER)
-> +			return false;
-
-I think you need
-		if (xen_emul_unpug & XEN_UNPLUG_UNNECESSARY)
-			return true;
-don't you?
-
-> +		/* And user has xen_platform_pci=0 set in guest config as
-> +		 * driver did not modify the value. */
-> +		if (!xen_platform_pci_unplug)
-> +			return false;
-> +	}
-> +	return true;
-> +}
-> +EXPORT_SYMBOL_GPL(xen_has_pv_devices);
+> +This binding is associated with Broadcom SoCs having "Kona" style
+> +clock control units (CCUs).  A CCU is a clock provider that manages
+> +a set of clock signals.  Each CCU is represented by a node in the
+> +device tree.
 > +
->  void xen_unplug_emulated_devices(void)
->  {
->  	int r;
+> +This binding uses the common clock binding:
+> +    Documentation/devicetree/bindings/clock/clock-bindings.txt
+> +
+> +Many source clocks are described using the "fixed-clock" binding:
+> +    Documentation/devicetree/bindings/clock/fixed-clock.txt
 
+Is this necessary? While this describes the device it doesn't describe
+this binding.
 
+> +
+> +Required properties:
+> +- compatible
+> +	Shall have a value "brcm,bcm11351-<which>-ccu", where
+> +	<which> identifies the particular CCU (see below).
+
+It would be nice to have a full list here, as that makes finding the
+file easier. Something like:
+
+- compatible: should contain one of:
+   * "brcm,bcm11351-root-ccu"
+   * "brcm,bcm11351-aon-ccu"
+   * "brcm,bcm11351-hub-ccu"
+   * "brcm,bcm11351-master-ccu"
+  The differences between these are described in greater detail below.
+
+> +- reg
+> +	Shall define the base and range of the address space
+> +	containing clock control registers
+> +- #clock-cells
+> +	Shall have the value <1>
+
+How about:
+
+- #clock-cells: Should be <1>. The permitted clock-specifier values are
+  defined below.
+
+> +- clock-output-names
+> +	Shall be an ordered list of strings defining the names of
+> +	the clocks provided by the CCU.
+> +
+> +Clock consumers refer to a particular clock supplied by a CCU using
+> +a phandle and specifier pair, using the phandle for the CCU device
+> +tree node and the clock's symbolic specifier.  The clock specifier
+> +is a CCU-unique 0-based index value.
+
+This is redundant given the common clock binding and the description of
+#clock-cells above.
+
+> +
+> +
+> +BCM281XX family SoCs use Kona CCUs.  The following table defines
+> +the set of CCUs and clock specifiers for BCM281XX clocks.  The
+> +compatible string for the CCU uses the name in the "CCU" column
+> +below as it's <which> value.
+> +
+> +    CCU     Clock           Type    Index   Specifier
+> +    ---     -----           ----    -----   ---------
+> +    root    frac_1m         peri      0     BCM281XX_ROOT_CCU_FRAC_1M
+> +
+> +    aon     hub_timer       peri      0     BCM281XX_AON_CCU_HUB_TIMER
+> +    aon     pmu_bsc         peri      1     BCM281XX_AON_CCU_PMU_BSC
+> +    aon     pmu_bsc_var     peri      2     BCM281XX_AON_CCU_PMU_BSC_VAR
+> +
+> +    hub     tmon_1m         peri      0     BCM281XX_HUB_CCU_TMON_1M
+> +
+> +    master  sdio1           peri      0     BCM281XX_MASTER_CCU_SDIO1
+> +    master  sdio2           peri      1     BCM281XX_MASTER_CCU_SDIO2
+> +    master  sdio3           peri      2     BCM281XX_MASTER_CCU_SDIO3
+> +    master  sdio4           peri      3     BCM281XX_MASTER_CCU_SDIO4
+> +    master  dmac            peri      4     BCM281XX_MASTER_CCU_DMAC
+> +    master  usb_ic          peri      5     BCM281XX_MASTER_CCU_USB_IC
+> +    master  hsic2_48m       peri      6     BCM281XX_MASTER_CCU_HSIC_48M
+> +    master  hsic2_12m       peri      7     BCM281XX_MASTER_CCU_HSIC_12M
+> +
+> +    slave   uartb           peri      0     BCM281XX_SLAVE_CCU_UARTB
+> +    slave   uartb2          peri      1     BCM281XX_SLAVE_CCU_UARTB2
+> +    slave   uartb3          peri      2     BCM281XX_SLAVE_CCU_UARTB3
+> +    slave   uartb4          peri      3     BCM281XX_SLAVE_CCU_UARTB4
+> +    slave   ssp0            peri      4     BCM281XX_SLAVE_CCU_SSP0
+> +    slave   ssp2            peri      5     BCM281XX_SLAVE_CCU_SSP2
+> +    slave   bsc1            peri      6     BCM281XX_SLAVE_CCU_BSC1
+> +    slave   bsc2            peri      7     BCM281XX_SLAVE_CCU_BSC2
+> +    slave   bsc3            peri      8     BCM281XX_SLAVE_CCU_BSC3
+> +    slave   pwm             peri      9     BCM281XX_SLAVE_CCU_PWM
+
+I guess the Specifier column is referring to some defines in a header
+file? It would be good to mention which header file these are in.
+
+The Index is also a specifier, it just happens to not be symbolic.
+
+> +
+> +
+> +Device tree example:
+> +
+> +	clocks {
+> +		slave_ccu: slave_ccu {
+> +			compatible = "brcm,bcm11351-slave-ccu";
+> +			reg = <0x3e011000 0x0f00>;
+> +			#clock-cells = <1>;
+> +			clock-output-names = "uartb",
+> +					     "uartb2",
+> +					     "uartb3",
+> +					     "uartb4";
+> +		};
+> +		ref_crystal_clk: ref_crystal {
+> +			#clock-cells = <0>;
+> +			compatible = "fixed-clock";
+> +			clock-frequency = <26000000>;
+> +		};
+> +	};
+
+This is wrong, as the clocks container node us not defined as any type
+of bus, and does not have the requisite #address-cells and #size-cells.
+Really this should _not_ be probed, as the kernel does not know anything
+about the clocks node. It could be some non-MMIO bus that it doesn't
+understand, or one which requires other clocks.
+
+I think the current way that we probe clocks is somewhat broken in this
+regard.
+
+There's no reason to put the clocks in this container at all; just put
+them under the root. If you really want to use a container, please at
+least use a simple-bus with the requisite #address-cells, #size-cells,
+and ranges properties.
+
+Thanks,
+Mark.
