@@ -1,146 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932821Ab3LDRmm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 12:42:42 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:44758 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932167Ab3LDRmk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 12:42:40 -0500
-Message-ID: <529F698C.6040603@hurleysoftware.com>
-Date: Wed, 04 Dec 2013 12:42:36 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1755907Ab3LDRnY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 12:43:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61379 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752632Ab3LDRnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 12:43:23 -0500
+Date: Wed, 4 Dec 2013 18:43:28 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Kosina <jkosina@suse.cz>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Borislav Petkov <bp@alien8.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [PATCH?] uprobes: change uprobe_write_opcode() to modify the
+	page directly
+Message-ID: <20131204174328.GA8082@redhat.com>
+References: <529E3D4C.9070403@zytor.com> <20131203203826.GA24812@redhat.com> <e6082bc4-c910-4a36-9e40-624b9319f5fb@email.android.com> <20131203205400.GA25735@redhat.com> <CA+55aFxKk+O4e51sq6iqunVWAwKfNAnZ-3=aZT-VuRpDAZUnzQ@mail.gmail.com> <20131204111125.GA26552@redhat.com> <529F51D9.7010001@zytor.com> <20131204164817.GA5271@redhat.com> <529F5E47.3040108@zytor.com> <CA+55aFyMx74jiKgS-o0axuuTBw7295UEMSf_vYDQCAghk3Vr=w@mail.gmail.com>
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH tty-next 0/4] tty: Fix ^C echo
-References: <1386018725-4781-1-git-send-email-peter@hurleysoftware.com>	<20131203000116.0d512b59@alan.etchedpixels.co.uk>	<529D4E58.9020101@hurleysoftware.com> <20131203142011.371067ea@alan.etchedpixels.co.uk>
-In-Reply-To: <20131203142011.371067ea@alan.etchedpixels.co.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyMx74jiKgS-o0axuuTBw7295UEMSf_vYDQCAghk3Vr=w@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2013 09:20 AM, One Thousand Gnomes wrote:
->> These types of nested lock problems are common when different layers use
->> the same interface (the fb subsystem's use of the vt driver is another
->> example).
->
-> They are, and they end up nasty and eventually become impossible to fix.
-> Better to fix the underlying fundamental error as and when we can. The
-> current state of vt and fb and drm and handling accelerated scrolling of
-> a quota warning on drm on fb on vt is a testimony to what happens if you
-> don't go back and fix it properly now and then.
->
-> In this case I would argue there is a fundamental error. That is trying to
-> combine locking of the structures for buffers and locking the receive
-> path. It's a mistake and I don't see how you can properly clean up the
-> tty layer with that mix of high and low level lock in one. It's already
-> turned into a hackfest with buf->priority.
->
-> The old code wasn't the right answer either but did isolate the locks
-> better.
->
->
-> We've got three confused locks IMHO all stuck in as one
->
-> - integrity of the buffer queue
-> - lifetime of a buffer (don't free a buffer as someone else is
->    processing it)
-> - serialization of flush_to_ldisc
+Peter, Linus, I got lost.
 
-Not so much confused as simply merged. Input processing is inherently
-single-threaded; it makes sense to rely on that at the highest level
-possible.
+So what do you finally think about this change? Please see v2 below:
 
-On smp, locked instructions and cache-line contention on the tty_buffer
-list ptrs and read_buf indices account for more than 90% of the time cost
-in the read path for real hardware (and over 95% for ptys).
+	- update the comment above gup(write, force)
 
-Firewire, which is capable of sustained throughput in excess of 40MB/sec,
-struggles to get over 5MB/sec through the tty layer. [And drm output
-is orders-of-magnitude slower than that, which is just sad...]
+	- add flush_icache_page() before set_pte_at() (nop on x86
+	  and powerpc)
 
-buf->priority isn't a hackfest; it's a zero-cost-in-read-path mechanism
-for interrupting input processing, similar to the clock (or generation)
-approach.
+	- fix the returned value, and with this change it seems
+	  to work although I do not trust my testing.
 
-Although using locks is satisfyingly symmetrical, input processing vs.
-buffer flush is an asymmetric problem.
+I am attaching the code:
 
-> (as an aside it was historically always required that a low_latency
-> caller correctly implemented its own serialization because you can't
-> really get that locking totally clean except in the driver either)
->
->
-> It's a bit of a drastic rethink of the idiom but the networking layer
-> basically does this, and has to solve exactly the same problem space
->
->
-> 	while((buf = tty_buffer_dequeue(port)) != NULL) {
-> 		if (receive_buf(tty, buf) < 0) {
-> 			tty_buffer_requeue_head(port, buf);
-> 			break;
-> 		}
-> 	}
->
-> tty_buffer_dequeue is trivial enough, tty_buffer_requeue_head is also
-> trivial because we are single threading flush_to_ldisc. Flushing just
-> requires ensuring we don't requeue the buffer so we have
->
-> 	tty_buffer_requeue_head(port, buf)
-> 	{
-> 		lock(&port->buf.lock);
-> 		if (port->buf.clock == buf->clock)
-> 			requeue;
-> 		else
-> 			kfree
-> 	}
->
-> 	tty_buffer_flush(port)
-> 	{
-> 		port->buf.clock++;
-> 		free buffers in queue
-> 	}
->
-> Flush is trivial - increment clock, empty queue. The lifetime handling
-> will ensure the current buffer is either processed or returned but not
-> requeued.
->
-> Queuing data is also trivial - we just add to the buffer that is at the
-> end of the queue, or start a new buffer if empty. The requeue_head will
-> deal with the rest of it automagically
->
-> Downsides - slightly more locking, probably several things I've missed.
->
-> Upsides - tty buffer locking is clear and self contained, we invoke
-> flush_to_ldisc without holding what are really low level locks, queue
-> manipulation in flush_to_ldisc works just like anywhere else. The buffer
-> is owned by the tty which means the tty must free it, which means the tty
-> can 'borrow' a buffer for ldisc internal queueing without having to copy
-> all the bytes and we get the backpressure on the queue for free as the
-> network layer does.
->
-> It does mean touching every ldisc but as far as I can see with the
-> exception of n_tty the change in each case is (as usual) trivial.
+	int uprobe_write_opcode(struct mm_struct *mm, unsigned long vaddr,
+				uprobe_opcode_t opcode)
+	{
+		struct page *page;
+		struct vm_area_struct *vma;
+		pte_t *ptep, entry;
+		spinlock_t *ptlp;
+		int ret;
 
-While that would work, it's expensive extra locking in a path that 99.999%
-of the time doesn't need it. I'd rather explore other solutions.
+		/* Read the page with vaddr into memory */
+		ret = get_user_pages(NULL, mm, vaddr, 1, 0, 1, &page, NULL);
+		if (ret < 0)
+			return ret;
 
-The clock/generation method seems like it might yield a lockless solution
-for this problem, but maybe creates another one because the driver-side
-would need to stamp the buffer (in essence, a flush could affect data
-that has not yet been copied from the driver).
+		ret = verify_opcode(page, vaddr, &opcode);
+		if (ret < 0)
+			goto put;
 
-Still, it might be worth seeing if a solution lies in scheduling only
-one flush_to_ldisc() per tty_buffer (per port) and letting it sleep
-if receive_buf() can't accept more data [N_TTY would awaken the worker
-instead of queueing it].
+	 retry:
+		put_page(page);
+		/* Break the mapping unless the page is already anonymous */
+		ret = get_user_pages(NULL, mm, vaddr, 1, 1, 1, &page, &vma);
+		if (ret <= 0)
+			goto put;
 
-Regards,
-Peter Hurley
+		ptep = page_check_address(page, mm, vaddr, &ptlp, 0);
+		if (!ptep)
+			goto retry;
+
+		/* Unmap this page to ensure that nobody can execute it */
+		flush_cache_page(vma, vaddr, pte_pfn(*ptep));
+		entry = ptep_clear_flush(vma, vaddr, ptep);
+
+		/* Nobody can fault in this page, modify it */
+		copy_to_page(page, vaddr, &opcode, UPROBE_SWBP_INSN_SIZE);
+
+		/* Restore the old mapping */
+		entry = pte_mkdirty(entry);
+		flush_icache_page(vma, page);
+		set_pte_at(mm, vaddr, ptep, entry);
+		update_mmu_cache(vma, vaddr, ptep);
+		pte_unmap_unlock(ptep, ptlp);
+		ret = 0;
+	 put:
+		put_page(page);
+		return ret;
+	}
+
+And/Or. Are you still saying that on x86 (and powerpc?) we do not need
+these pte games at all and uprobe_write_opcode() can simply do:
+
+		/* Break the mapping unless the page is already anonymous */
+		ret = get_user_pages(NULL, mm, vaddr, 1, 1, 1, &page, &vma);
+
+		// this page can't be swapped out due to page_freeze_refs()
+		copy_to_page(page, vaddr, &opcode, UPROBE_SWBP_INSN_SIZE);
+		
+		set_page_dirty_lock(page);
+
+Just in case... I have no idea if this matters or not, but
+uprobe_write_opcode() is also used to restore the original insn which
+can even cross the page. We still write a single (1st) byte in this
+case, the byte which was previously replaced by int3.
+
+Oleg.
+
+
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -114,65 +114,6 @@ static loff_t vaddr_to_offset(struct vm_area_struct *vma, unsigned long vaddr)
+ }
+ 
+ /**
+- * __replace_page - replace page in vma by new page.
+- * based on replace_page in mm/ksm.c
+- *
+- * @vma:      vma that holds the pte pointing to page
+- * @addr:     address the old @page is mapped at
+- * @page:     the cowed page we are replacing by kpage
+- * @kpage:    the modified page we replace page by
+- *
+- * Returns 0 on success, -EFAULT on failure.
+- */
+-static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
+-				struct page *page, struct page *kpage)
+-{
+-	struct mm_struct *mm = vma->vm_mm;
+-	spinlock_t *ptl;
+-	pte_t *ptep;
+-	int err;
+-	/* For mmu_notifiers */
+-	const unsigned long mmun_start = addr;
+-	const unsigned long mmun_end   = addr + PAGE_SIZE;
+-
+-	/* For try_to_free_swap() and munlock_vma_page() below */
+-	lock_page(page);
+-
+-	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
+-	err = -EAGAIN;
+-	ptep = page_check_address(page, mm, addr, &ptl, 0);
+-	if (!ptep)
+-		goto unlock;
+-
+-	get_page(kpage);
+-	page_add_new_anon_rmap(kpage, vma, addr);
+-
+-	if (!PageAnon(page)) {
+-		dec_mm_counter(mm, MM_FILEPAGES);
+-		inc_mm_counter(mm, MM_ANONPAGES);
+-	}
+-
+-	flush_cache_page(vma, addr, pte_pfn(*ptep));
+-	ptep_clear_flush(vma, addr, ptep);
+-	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
+-
+-	page_remove_rmap(page);
+-	if (!page_mapped(page))
+-		try_to_free_swap(page);
+-	pte_unmap_unlock(ptep, ptl);
+-
+-	if (vma->vm_flags & VM_LOCKED)
+-		munlock_vma_page(page);
+-	put_page(page);
+-
+-	err = 0;
+- unlock:
+-	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
+-	unlock_page(page);
+-	return err;
+-}
+-
+-/**
+  * is_swbp_insn - check if instruction is breakpoint instruction.
+  * @insn: instruction to be checked.
+  * Default implementation of is_swbp_insn
+@@ -264,43 +205,48 @@ static int verify_opcode(struct page *page, unsigned long vaddr, uprobe_opcode_t
+ int uprobe_write_opcode(struct mm_struct *mm, unsigned long vaddr,
+ 			uprobe_opcode_t opcode)
+ {
+-	struct page *old_page, *new_page;
++	struct page *page;
+ 	struct vm_area_struct *vma;
++	pte_t *ptep, entry;
++	spinlock_t *ptlp;
+ 	int ret;
+ 
+-retry:
+ 	/* Read the page with vaddr into memory */
+-	ret = get_user_pages(NULL, mm, vaddr, 1, 0, 1, &old_page, &vma);
+-	if (ret <= 0)
++	ret = get_user_pages(NULL, mm, vaddr, 1, 0, 1, &page, NULL);
++	if (ret < 0)
+ 		return ret;
+ 
+-	ret = verify_opcode(old_page, vaddr, &opcode);
+-	if (ret <= 0)
+-		goto put_old;
+-
+-	ret = -ENOMEM;
+-	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, vaddr);
+-	if (!new_page)
+-		goto put_old;
+-
+-	__SetPageUptodate(new_page);
+-
+-	copy_highpage(new_page, old_page);
+-	copy_to_page(new_page, vaddr, &opcode, UPROBE_SWBP_INSN_SIZE);
+-
+-	ret = anon_vma_prepare(vma);
+-	if (ret)
+-		goto put_new;
+-
+-	ret = __replace_page(vma, vaddr, old_page, new_page);
++	ret = verify_opcode(page, vaddr, &opcode);
++	if (ret < 0)
++		goto put;
+ 
+-put_new:
+-	page_cache_release(new_page);
+-put_old:
+-	put_page(old_page);
++ retry:
++	put_page(page);
++	/* Break the mapping unless the page is already anonymous */
++	ret = get_user_pages(NULL, mm, vaddr, 1, 1, 1, &page, &vma);
++	if (ret <= 0)
++		goto put;
+ 
+-	if (unlikely(ret == -EAGAIN))
++	ptep = page_check_address(page, mm, vaddr, &ptlp, 0);
++	if (!ptep)
+ 		goto retry;
++
++	/* Unmap this page to ensure that nobody can execute it */
++	flush_cache_page(vma, vaddr, pte_pfn(*ptep));
++	entry = ptep_clear_flush(vma, vaddr, ptep);
++
++	/* Nobody can fault in this page, modify it */
++	copy_to_page(page, vaddr, &opcode, UPROBE_SWBP_INSN_SIZE);
++
++	/* Restore the old mapping */
++	entry = pte_mkdirty(entry);
++	flush_icache_page(vma, page);
++	set_pte_at(mm, vaddr, ptep, entry);
++	update_mmu_cache(vma, vaddr, ptep);
++	pte_unmap_unlock(ptep, ptlp);
++	ret = 0;
++ put:
++	put_page(page);
+ 	return ret;
+ }
+ 
+
