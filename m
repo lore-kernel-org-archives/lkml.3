@@ -1,80 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab3LDWcK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 17:32:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56504 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756027Ab3LDWcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 17:32:08 -0500
-Message-ID: <1386196283.1861.115.camel@deneb.redhat.com>
-Subject: Re: [PATCH v3 1/3] Documentation: arm: add UEFI support
- documentation
-From: Mark Salter <msalter@redhat.com>
-To: Matt Sealey <neko@bakuhatsu.net>
-Cc: Leif Lindholm <leif.lindholm@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-efi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, matt.fleming@intel.com,
-        Grant Likely <grant.likely@linaro.org>,
-        Roy Franz <roy.franz@linaro.org>, Patch Tracking <patches@linaro.org>,
-        linaro-uefi@lists.linaro.org, Mark Rutland <mark.rutland@arm.com>,
-        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org
-Date: Wed, 04 Dec 2013 17:31:23 -0500
-In-Reply-To: <CAHCPf3tsWdV+dJGm6mX6N4Ou5EQoGukdLyRvsRX6VQFjtKgxtg@mail.gmail.com>
-References: <1385656883-4420-1-git-send-email-leif.lindholm@linaro.org>
-	 <1385656883-4420-2-git-send-email-leif.lindholm@linaro.org>
-	 <CAHCPf3t5dEzVWbYZ6DWcFCENNO2dbrx-YeZvKRk0MkEsJMTE3A@mail.gmail.com>
-	 <20131202210719.GQ24997@rocoto.smurfnet.nu>
-	 <CAHCPf3tsWdV+dJGm6mX6N4Ou5EQoGukdLyRvsRX6VQFjtKgxtg@mail.gmail.com>
-Organization: Red Hat, Inc
+	id S1756121Ab3LDWdO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 17:33:14 -0500
+Received: from www17.your-server.de ([213.133.104.17]:57553 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756099Ab3LDWdK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 17:33:10 -0500
+Message-ID: <1386196384.5023.0.camel@localhost.localdomain>
+Subject: Re: [i915] BUG: Bad page state in process Xorg
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Rob Clark <robdclark@gmail.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Dave Airlie <airlied@linux.ie>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 04 Dec 2013 23:33:04 +0100
+In-Reply-To: <CAF6AEGs9fFQe8_tsDmrWAFH3tvA1a2Bcn62JOCjQ9pD874GNMA@mail.gmail.com>
+References: <E1Vkw2k-00015V-Ao@www17.your-server.de>
+	 <CAF6AEGsdK4MUm9G8ruX84V5omhej+in7vP5E8skMAoTjRgh7nw@mail.gmail.com>
+	 <1385800414.7279.3.camel@localhost.localdomain>
+	 <CAF6AEGs9fFQe8_tsDmrWAFH3tvA1a2Bcn62JOCjQ9pD874GNMA@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-12-04 at 15:06 -0600, Matt Sealey wrote:
-> On Mon, Dec 2, 2013 at 3:07 PM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
-> > On Mon, Dec 02, 2013 at 01:51:22PM -0600, Matt Sealey wrote:
-> >> Here's where I think this whole thing falls down as being the weirdest
-> >> possible implementation of this. It defies logic to put this
-> >> information in the device tree /chosen node while also attempting to
-> >> boot the kernel using an EFI stub; the stub is going to have this
-> >> information because it is going to have the pointer to the system
-> >> System Table (since it was called by StartImage()). Why not stash the
-> >> System Table pointer somewhere safe in the stub?
+Am Samstag, den 30.11.2013, 08:55 -0500 schrieb Rob Clark:
+> On Sat, Nov 30, 2013 at 3:33 AM, Thomas Meyer <thomas@m3y3r.de> wrote:
+> > Am Montag, den 25.11.2013, 08:23 -0500 schrieb Rob Clark:
+> >> oh, hmm.. are you importing buffers from i915?  It looks like this part:
 > >
-> > We do. In the DT.
-> 
-> Hang on... see way below about "reinventing the wheel"
-> 
-> >> The information in the device tree is all accessible from Boot
-> >> Services and as long as the System Table isn't being thrown away (my
-> >> suggestion would be.. stuff it in r2, and set r1 = "EFI\0" then work
-> >> with arch/arm/kernel/head{-common,}.S code to do the right thing)
+> > My computer has an i915 graphic card and I use an USB docking station,
+> > that has an unconnected UDL device inside.
 > >
-> > You left out the bit of redefining the kernel boot protocol to permit
-> > calling it with caches, MMU and interrupts enabled - also known as
-> > before ExitBootServices().
+> >>
+> >> - if (obj->base.import_attach) {
+> >> - drm_free_large(obj->pages);
+> >> - obj->pages = NULL;
+> >> - return;
+> >> - }
+> >>
+> >> should not have been removed from udl_gem_put_pages()..
+> >
+> > Do you want me to test this? Can this please be fixed in the stable
+> > tree?
+> > I removed the UDL driver from my config for now, as I don't use it.
 > 
-> And that's a horrible idea because of what?
+> It would be nice if you could test that (I can send you a patch if you
+> prefer)..  I don't actually have any UDL device to confirm.  If this
+> fixes the problem, send the patch to stable as well should not be a
+> problem.
 
-Talk about reinventing the wheel.
+I did a quick test and above code makes the bad page bug disappear.
 
-I look at it like this. UEFI applications have a specific boot protocol.
-The kernel has a different boot protocol. The purpose of the stub is to
-go from the UEFI protocol to the kernel protocol. The kernel protocol
-doesn't currently include an explicit way to pass UEFI info (system table
-and memory map). It does have a way to pass a DT. Much like x86 and ia64
-pass the UEFI info in an already existing boot_params block, arm and arm64
-pass that info in the device tree. Not changing the kernel boot protocol
-seems like the simplest and best way to get the job done. Maybe x86 and
-now arm are going about the wrong way and should be doing it differently,
-but so far, I'm not convinced that is the case.
+> 
+> BR,
+> -R
+> 
+> 
+> >       *
+> > best regards
+> > thomas
+> >
+> >>
+> >> BR,
+> >> -R
+> >>
+> >> On Mon, Nov 25, 2013 at 8:17 AM,  <thomas@m3y3r.de> wrote:
+> >> > Hi,
+> >> >
+> >> > It turns out that this seems to be a bug in udl DRM driver.
+> >> >
+> >> > I bisected the problem to this patch:
+> >> >
+> >> > https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/drivers/gpu/drm/udl?id=5dc9e1e87229cb786a5bb58ddd0d60fee6eb4641
+> >> >
+> >> > With kind regards
+> >> > Thomas
+> >> >
+> >> > Am 22.11.2013 17:18 schrieb Daniel Vetter <daniel@ffwll.ch>:
+> >> >>
+> >> >> On Fri, Nov 22, 2013 at 4:54 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
+> >> >> >> Am 22.11.2013 um 11:55 schrieb Daniel Vetter <daniel@ffwll.ch>:
+> >> >> >>
+> >> >> >> On Fri, Nov 22, 2013 at 11:36 AM, Dave Airlie <airlied@linux.ie> wrote:
+> >> >> >>>> Hi,
+> >> >> >>>
+> >> >> >>> cc'ing mailing list,
+> >> >> >>>
+> >> >> >>> Daniel any ideas?
+> >> >> >>
+> >> >> >> Nope, not really :( And no ideas how to triage this further - if it
+> >> >> >> takes 9 days to hit it eventually we'll have a real hard time. Or does
+> >> >> >> this happen even after just a short X run?
+> >> >> >
+> >> >> > Seems to happen every time while stopping the x server. Also after a short run time.
+> >> >> >
+> >> >> > The current fedora 3.11 kernel doesn't show this bug. I'm using fedora 19, with a self compiled kernel.
+> >> >> >
+> >> >> > I did turn on config-debug-pagealloc but this didn't show any wrongness.
+> >> >>
+> >> >> In that case I think the bisect is the fastest way to insight - atm
+> >> >> I'm really at loss what could be wrong here.
+> >> >> -Daniel
+> >> >> --
+> >> >> Daniel Vetter
+> >> >> Software Engineer, Intel Corporation
+> >> >> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+> >
+> >
+> >
 
---Mark
 
 
