@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755844Ab3LDBVm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 20:21:42 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:46503 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754571Ab3LDBVj convert rfc822-to-8bit (ORCPT
+	id S1755809Ab3LDBWR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 20:22:17 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:37510 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754146Ab3LDBWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 20:21:39 -0500
+	Tue, 3 Dec 2013 20:22:16 -0500
+Message-ID: <529E83C0.1060405@hitachi.com>
+Date: Wed, 04 Dec 2013 10:22:08 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <20131203173557.636c3d41@lwn.net>
-References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
-	<1386044930-15149-6-git-send-email-ast@plumgrid.com>
-	<20131203173557.636c3d41@lwn.net>
-Date: Tue, 3 Dec 2013 17:21:37 -0800
-Message-ID: <CAMEtUuxhmxMcK88Mqw5ZGohhHtR=AtMDnpZOUpuZX_-ygWk1CQ@mail.gmail.com>
-Subject: Re: [RFC PATCH tip 5/5] tracing filter examples in BPF
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, namhyung@kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH 2/2] perf probe: Allow user to specify address within
+ executable
+References: <1385942827-11637-1-git-send-email-dsahern@gmail.com> <1385942827-11637-2-git-send-email-dsahern@gmail.com> <529C259D.8010901@hitachi.com> <529C9DDF.1080401@gmail.com> <529CC97A.6000807@gmail.com> <529DA355.9090408@hitachi.com> <529DFF8E.2030806@gmail.com>
+In-Reply-To: <529DFF8E.2030806@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 3, 2013 at 4:35 PM, Jonathan Corbet <corbet@lwn.net> wrote:
-> On Mon,  2 Dec 2013 20:28:50 -0800
-> Alexei Starovoitov <ast@plumgrid.com> wrote:
->
->>  GCC-BPF backend is available on github
->>  (since gcc plugin infrastructure doesn't allow for out-of-tree backends)
->
-> Do you have a pointer to where this backend can be found?  I've
-> done a bit of digging around but seem to be unable to find it…
+(2013/12/04 0:58), David Ahern wrote:
+> On 12/3/13, 2:24 AM, Masami Hiramatsu wrote:
+>> I don't want to make perf-probe just a wrapper of the ftrace dynamic
+>> event interface, because it doesn't add any "value" for users.
+> 
+> Sure it does -- a consistent user experience in using a single command
+> (perf probe ...) for setting up userspace probes.
+> 
+> Specifying the address directly is really on par with perf-record having
+> the rNNN interface for directly passing the raw event id to the kernel.
 
-here it is:
-https://github.com/iovisor/bpf_gcc/commit/9e7223f8f09c822ecc6e18309e89a574a23dbf63
+No, since the perf interface is not directly exposed to users
+the perftools need to provide such raw interface. But the dynamic
+event has it on debugfs.
 
-It's quite small comparing to normal backend:
- config.me                          |    3 +
- config.sub                         |   12 +-
- gcc/common/config/bpf/bpf-common.c |   39 ++
- gcc/config.gcc                     |   18 +
- gcc/config/bpf/bpf-modes.def       |   22 +
- gcc/config/bpf/bpf-protos.h        |   60 ++
- gcc/config/bpf/bpf.c               | 1063 ++++++++++++++++++++++++++++++++++++
- gcc/config/bpf/bpf.h               |  746 +++++++++++++++++++++++++
- gcc/config/bpf/bpf.md              |  895 ++++++++++++++++++++++++++++++
- gcc/config/bpf/linux.h             |   67 +++
- 10 files changed, 2922 insertions(+), 3 deletions(-)
+>>>>> In that case, you should use uprobe_events interface directly.
+>>>>
+>>>> How do I do that within the context of perf?
+>>
+>> No way, but here, you can save this script as perf-uprobe and
+>> can use it for that purpose. :)
+> 
+> I figured out what you meant by uprobe_events interface yesterday. If I
+> have to go to that interface for even 1 function I would do it for all
+> -- from a user perspective it is just simpler to have 1 command to setup
+> probes. I would prefer that 1 command be perf-probe.
 
-Instruction emission is in bpf.md in functions like:
-(define_insn "adddi3"
-  [(set (match_operand:DI 0 "int_reg_operand" "=r, r")
-  (plus:DI (match_operand:DI 1 "int_reg_operand" "0, 0")
-    (match_operand:DI 2 "int_reg_or_const_operand" "r, K")))]
-  ""
-  "@
-   BPF_INSN_ALU(BPF_ADD, %0, %2), // %0 += %2
-   BPF_INSN_ALU_IMM(BPF_ADD, %0, %2), // %0 += %2"
-[(set_attr "type" "arith,arith") ])
+Yeah, but in that case, why you don't ask us adding sym->binding == STB_LOCAL
+in filter_available_functions? :)
 
-So it takes C and emits BPF_* macros from include/linux/bpf.h
-tools/bpf/trace/ examples were generated by it.
-Eventually it will be changed to emit binary hex directly, but macros
-are much easier to understand for now.
+Thank you,
 
-Thanks
-Alexei
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
