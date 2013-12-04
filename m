@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755707Ab3LDLMr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 06:12:47 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:62642 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755516Ab3LDLMq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 06:12:46 -0500
+	id S932215Ab3LDLNY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 06:13:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44147 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932073Ab3LDLNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 06:13:21 -0500
+Date: Wed, 4 Dec 2013 12:13:18 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+Message-ID: <20131204111318.GE8410@dhcp22.suse.cz>
+References: <alpine.DEB.2.02.1311141525440.30112@chino.kir.corp.google.com>
+ <20131118154115.GA3556@cmpxchg.org>
+ <20131118165110.GE32623@dhcp22.suse.cz>
+ <20131122165100.GN3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311261648570.21003@chino.kir.corp.google.com>
+ <20131127163435.GA3556@cmpxchg.org>
+ <20131202200221.GC5524@dhcp22.suse.cz>
+ <20131202212500.GN22729@cmpxchg.org>
+ <20131203120454.GA12758@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312031544530.5946@chino.kir.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <529F033E.9020608@gmail.com>
-References: <1386152565-26524-1-git-send-email-thierry.reding@gmail.com>
-	<529F033E.9020608@gmail.com>
-Date: Wed, 4 Dec 2013 19:12:45 +0800
-Message-ID: <CAN1soZwWGUfg1sq4TquTBL4_JtEdy7VGoXA42cqhpN7kQew6nQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: pxa: Remove unused variables
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Daniel Mack <zonque@gmail.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1312031544530.5946@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 4, 2013 at 6:26 PM, Daniel Mack <zonque@gmail.com> wrote:
-> On 12/04/2013 11:22 AM, Thierry Reding wrote:
->> The conf and of_id variables are assigned but never used, so they may as
->> well just be removed.
->>
->> Signed-off-by: Thierry Reding <thierry.reding@gmail.com>
->
-> Acked-by: Daniel Mack <zonque@gmail.com>
->
->> ---
->>  arch/arm/mach-pxa/irq.c | 4 ----
->>  1 file changed, 4 deletions(-)
->>
->> diff --git a/arch/arm/mach-pxa/irq.c b/arch/arm/mach-pxa/irq.c
->> index b6cc1816463e..0eecd83c624e 100644
->> --- a/arch/arm/mach-pxa/irq.c
->> +++ b/arch/arm/mach-pxa/irq.c
->> @@ -235,8 +235,6 @@ static const struct of_device_id intc_ids[] __initconst = {
->>  void __init pxa_dt_irq_init(int (*fn)(struct irq_data *, unsigned int))
->>  {
->>       struct device_node *node;
->> -     const struct of_device_id *of_id;
->> -     struct pxa_intc_conf *conf;
->>       struct resource res;
->>       int n, ret;
->>
->> @@ -245,8 +243,6 @@ void __init pxa_dt_irq_init(int (*fn)(struct irq_data *, unsigned int))
->>               pr_err("Failed to find interrupt controller in arch-pxa\n");
->>               return;
->>       }
->> -     of_id = of_match_node(intc_ids, node);
->> -     conf = of_id->data;
->>
->>       ret = of_property_read_u32(node, "marvell,intc-nr-irqs",
->>                                  &pxa_internal_irq_nr);
->>
->
+On Tue 03-12-13 15:50:41, David Rientjes wrote:
+> On Tue, 3 Dec 2013, Michal Hocko wrote:
+> 
+> > OK, as it seems that the notification part is too controversial, how
+> > would you like the following? It reverts the notification part and still
+> > solves the fault on exit path. I will prepare the full patch with the
+> > changelog if this looks reasonable:
+> 
+> Um, no, that's not satisfactory because it obviously does the check after 
+> mem_cgroup_oom_notify().  There is absolutely no reason why userspace 
+> should be woken up when current simply needs access to memory reserves to 
+> exit. 
 
-Applied.
+Let me repeat, that the only reason I liked the patch was that it solves
+the fault during exit with oom disabled issue which I am really worried
+about.
+A nice side effect was that it moves the TIF_MEMDIE logic into a common
+place. It seems that you are selling the side effect as a primary
+feature.
+Johannes is obviously against such a change for the reasons I won't
+repeat here again. It is true that such a change wouldn't give us the
+"notify only when an action is taken" semantic because oom path might
+bail out few more times before killing anything.  Until we have that,
+or agree what is the actual semantic that makes the most sense let's
+backout with this and fix the actual bug which is real and drop the
+tweak that just it only half way.
 
-Thanks
-Haojian
+> You can already get such notification by memory thresholds at the 
+> memcg limit.
+> 
+> I'll repeat: Section 10 of Documentation/cgroups/memory.txt specifies what 
+> userspace should do when waking up; one of those options is not "check if 
+> the memcg is still actually oom in a short period of time once a charging 
+> task with a pending SIGKILL or in the exit path has been able to exit."
+> Users of this interface typically also disable the memcg oom killer 
+> through the same file, it's ludicrous to put the responsibility on 
+> userspace to determine if the wakeup is actionable and requires it to 
+> intervene in one of the methods listed in section 10.
+
+David, you would need to show us that such a condition happens in real
+loads often enough that such a tweak is worth it. Repeating that a race
+exists doesn't help, because yeah it does and it will after your patch
+as well. So show us that it happens considerably less often with this
+check.
+ 
+[...]
+-- 
+Michal Hocko
+SUSE Labs
