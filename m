@@ -1,90 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755689Ab3LDM0U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 07:26:20 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45039 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753994Ab3LDM0S (ORCPT
+	id S1755716Ab3LDM2o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 07:28:44 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:54646 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755037Ab3LDM2m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 07:26:18 -0500
-Date: Wed, 4 Dec 2013 12:26:02 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: "oliver@schinagl.nl" <oliver@schinagl.nl>
-Cc: "tj@kernel.org" <tj@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "ob.herring@calxeda.com" <ob.herring@calxeda.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "dev@linux-sunxi.org" <dev@linux-sunxi.org>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "ijc@hellion.org.uk" <ijc@hellion.org.uk>,
-        "hdegoede@redhat.com" <hdegoede@redhat.com>,
-        "oliver+list@schinagl.nl" <oliver+list@schinagl.nl>
-Subject: Re: [PATCH 2/3] ARM: sunxi: Add an ahci-platform compatible AHCI
- driver for the Allwinner SUNXi series of SoCs
-Message-ID: <20131204122602.GN16025@e106331-lin.cambridge.arm.com>
-References: <1386159055-10264-1-git-send-email-oliver@schinagl.nl>
- <1386159055-10264-3-git-send-email-oliver@schinagl.nl>
+	Wed, 4 Dec 2013 07:28:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386159055-10264-3-git-send-email-oliver@schinagl.nl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1385980079-20175-1-git-send-email-jonas.jensen@gmail.com>
+References: <1385723494-8033-1-git-send-email-jonas.jensen@gmail.com>
+	<1385980079-20175-1-git-send-email-jonas.jensen@gmail.com>
+Date: Wed, 4 Dec 2013 13:28:41 +0100
+Message-ID: <CACRpkdaT2fmfAwuyPTuF2Pim-_g5Avd_ViwQ069qRLFM9YBvWQ@mail.gmail.com>
+Subject: Re: [PATCH] gpio: MOXA ART: rename moxart_gpio_base to base
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 12:10:54PM +0000, oliver@schinagl.nl wrote:
-> From: Oliver Schinagl <oliver@schinagl.nl>
-> 
-> This patch adds support for the sunxi series of SoC's by allwinner. It
-> plugs into the ahci-platform framework.
-> 
-> Note: Currently it uses a somewhat hackish approach that probably needs
-> a lot more work, but does the same as the IMX SoC's.
-> 
-> Signed-off-by: Olliver Schinagl <oliver@schinagl.nl>
-> ---
->  .../devicetree/bindings/ata/ahci-sunxi.txt         |  24 ++
->  drivers/ata/Kconfig                                |   9 +
->  drivers/ata/Makefile                               |   1 +
->  drivers/ata/ahci_platform.c                        |  12 +
->  drivers/ata/ahci_sunxi.c                           | 305 +++++++++++++++++++++
->  5 files changed, 351 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/ata/ahci-sunxi.txt
->  create mode 100644 drivers/ata/ahci_sunxi.c
-> 
-> diff --git a/Documentation/devicetree/bindings/ata/ahci-sunxi.txt b/Documentation/devicetree/bindings/ata/ahci-sunxi.txt
-> new file mode 100644
-> index 0000000..0792fa5
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/ata/ahci-sunxi.txt
-> @@ -0,0 +1,24 @@
-> +Allwinner SUNXI AHCI SATA Controller
-> +
-> +SATA nodes are defined to describe on-chip Serial ATA controllers.
-> +Each SATA controller should have its own node.
-> +
-> +Required properties:
-> +- compatible   : compatible list, contains "allwinner,sun4i-a10-ahci"
+On Mon, Dec 2, 2013 at 11:27 AM, Jonas Jensen <jonas.jensen@gmail.com> wrote:
 
-- compatible: Should contain "allwinner,sun4i-a10-ahci"
+> Renaming "moxart_gpio_base" to "base" allows better fit,
+> remove line breaks in moxart_gpio_get().
+>
+> While doing trivial cleanup, also remove fields initialized
+> with zero in moxart_template_chip.
+>
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
 
-> +- reg          : <registers mapping>
+Patch applied!
 
-- reg: The offset and length of the MMIO registers.
-
-> +- interrupts   : <interrupt mapping for AHCI IRQ>
-
-- interrupts: An interrupt-specifier for the ACHI interrupt
-
-> +- clocks       : clocks for ACHI
-> +- clock-names  : clock names for AHCI
-
-Please _define_ the set of clock-names you expect. This binding is
-meaningless without it. If you require clock-names, define the clocks
-property in terms of it.
-
-Thanks,
-Mark.
+Thanks!
+Linus Walleij
