@@ -1,79 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875Ab3LDHed (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 02:34:33 -0500
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:24749
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751212Ab3LDHeb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 02:34:31 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 5
-X-BigFish: VS5(z579ehz1432I78fbmzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh109h2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2184h21a6h2216h22d0h2336hbe9i1155h)
-From: Peter Chen <Peter.Chen@freescale.com>
-To: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/3 v5] usb: chipidea: Reallocate regmap only if lpm is
- detected
-Thread-Topic: [PATCH 1/3 v5] usb: chipidea: Reallocate regmap only if lpm is
- detected
-Thread-Index: AQHO8JQRGvy4ktC3W0ma6K3OtG0v55pDpPcA
-Date: Wed, 4 Dec 2013 07:34:27 +0000
-Message-ID: <F281D0F91ED19E4D8E63A7504E8A649804142A30@039-SN2MPN1-021.039d.mgd.msft.net>
-References: <1386122179-4158-1-git-send-email-chris.ruehl@gtsys.com.hk>
-In-Reply-To: <1386122179-4158-1-git-send-email-chris.ruehl@gtsys.com.hk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.242.15]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754621Ab3LDHfm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 02:35:42 -0500
+Received: from relay.parallels.com ([195.214.232.42]:50581 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754112Ab3LDHfk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 02:35:40 -0500
+Message-ID: <529EDB41.8030505@parallels.com>
+Date: Wed, 4 Dec 2013 11:35:29 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Glauber Costa <glommer@gmail.com>
+CC: Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] memcg: remove KMEM_ACCOUNTED_ACTIVATED
+References: <1385989693-28788-1-git-send-email-vdavydov@parallels.com> <20131202181501.GA5524@dhcp22.suse.cz> <CAA6-i6rWsZNQmFY5L-=yc6TaTGyg4hP4qn9gMZVsu8wWJ=1ywg@mail.gmail.com> <529CDDB3.3090301@parallels.com> <CAA6-i6q+WooWMSbJwLS=ByVu=fgAQuep99iP7tAXiuLABu2gVA@mail.gmail.com> <529D9100.4070207@parallels.com> <CAA6-i6q2viRkbjYOHcoiCHgvdfbfo-4j0k9gj9AA4SH1YToqVg@mail.gmail.com>
+In-Reply-To: <CAA6-i6q2viRkbjYOHcoiCHgvdfbfo-4j0k9gj9AA4SH1YToqVg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/04/2013 02:38 AM, Glauber Costa wrote:
+>> In memcg_update_kmem_limit() we do the whole process of limit
+>> initialization under a mutex so the situation we need protection from in
+>> tcp_update_limit() is impossible. BTW once set, the 'activated' flag is
+>> never cleared and never checked alone, only along with the 'active'
+>> flag, that's why I doubt we need it at all.
+> The updates are protected by a mutex, but the readers are not, and should not.
+> So we can still be patching the readers, and the double-flag was
+> initially used so
+> we can make sure that both flags are only set after the static branches are in.
+>
+> Note that one of the flags is set inside memcg_update_cache_sizes(). After that,
+> we call static_key_slow_inc(). At this point, someone whose code is
+> patched in could
+> start accounting, but it shouldn't - because not all sites are patched in.
+>
+> So after the update is done, we set the other flag, and now everybody
+> will start going
+> through.
+>
+> Could you do something clever with just one flag? Probably yes. But I
+> doubt it would
+> be that much cleaner, this is just the way that patching sites work.
 
+Thank you for spending your time to listen to me.
 
- 
-> usb: chipidea: Reallocate regmap only if lpm is detected
-> 
-> The regmap only needs to reallocate if the hw_read on the CAP register
-> shows
-> lpm is used. Therefore the if() statement check the change.
-> 
-> Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-> Acked-by: Peter Chen <peter.chen@freescale.com>
-> ---
->  drivers/usb/chipidea/core.c |    7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
-> index 5d8981c..9a5ef20 100644
-> --- a/drivers/usb/chipidea/core.c
-> +++ b/drivers/usb/chipidea/core.c
-> @@ -208,7 +208,8 @@ static int hw_device_init(struct ci_hdrc *ci, void
-> __iomem *base)
->  	reg = hw_read(ci, CAP_HCCPARAMS, HCCPARAMS_LEN) >>
->  		__ffs(HCCPARAMS_LEN);
->  	ci->hw_bank.lpm  = reg;
-> -	hw_alloc_regmap(ci, !!reg);
-> +	if (reg)
-> +		hw_alloc_regmap(ci, !!reg);
->  	ci->hw_bank.size = ci->hw_bank.op - ci->hw_bank.abs;
->  	ci->hw_bank.size += OP_LAST;
->  	ci->hw_bank.size /= sizeof(u32);
-> --
-> 1.7.10.4
-> 
+Let me try to explain what is bothering me.
 
-Applied, Thanks.
-Please do not add subject to commit log next time :)
+We have two state bits for each memcg, 'active' and 'activated'. There
+are two scenarios where the bits can be modified:
 
-Peter
+1) The kmem limit is set on a memcg for the first time -
+memcg_update_kmem_limit(). Here we call memcg_update_cache_sizes(),
+which sets the 'activated' bit on success, then update static branching,
+then set the 'active' bit. All three actions are done atomically in
+respect to other tasks setting the limit due to the set_limit_mutex.
+After both bits are set, they never get cleared for the memcg.
 
+2) When a subgroup of a kmem-active cgroup is created -
+memcg_propagate_kmem(). Here we copy kmem_account_flags from the parent,
+then increase static branching refcounter, then call
+memcg_update_cache_sizes() for the new memcg, which may clear the
+'activated' bit on failure. After successful execution, the state bits
+never get cleared for the new memcg.
+
+In scenario 2 there is no need bothering about the flags setting order,
+because we don't have any tasks in the cgroup yet - the tasks can be
+moved in only after css_online finishes when we have both of the bits
+set and the static branching enabled. Actually, we already do not bother
+about it, because we have both bits set before the cgroup is fully
+initialized (memcg_update_cache_sizes() is called).
+
+Let's look at scenario 1. There we have two bits - 'activated' and
+'active' - the latter is always set after the former and after the
+static branching is enabled. Moreover, none of the bits is cleared once
+it's set. That said checking if both bits are set - I mean
+memcg_can_account_kmem() - is equivalent to checking if the 'acitve' bit
+is set. Next, the 'activated' bit is never checked alone, only along
+with the 'active' bit in memcg_can_account_kmem() - I do not count
+(!memcg->kmem_account_flags) check in memcg_update_kmem_limit(), because
+it is done under the set_limit_mutex. What's the deal having it then?
+
+Thanks and sorry for disturbing you.
