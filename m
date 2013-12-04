@@ -1,204 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab3LDVFg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 16:05:36 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:45727 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103Ab3LDVFb (ORCPT
+	id S1753411Ab3LDVGw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 16:06:52 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:45918 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752263Ab3LDVGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 16:05:31 -0500
-Message-ID: <1386191125.20519.80.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [RFC][PATCH 4/4] ima: added support for new kernel cmdline
- parameter ima_template_fmt
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Roberto Sassu <roberto.sassu@polito.it>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ima-devel@lists.sourceforge.net, zohar@us.ibm.com,
-        d.kasatkin@samsung.com, james.l.morris@oracle.com
-Date: Wed, 04 Dec 2013 16:05:25 -0500
-In-Reply-To: <1383832849-17125-5-git-send-email-roberto.sassu@polito.it>
-References: <1383832849-17125-1-git-send-email-roberto.sassu@polito.it>
-	 <1383832849-17125-5-git-send-email-roberto.sassu@polito.it>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120421-7164-0000-0000-000003F195E2
+	Wed, 4 Dec 2013 16:06:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131202210719.GQ24997@rocoto.smurfnet.nu>
+References: <1385656883-4420-1-git-send-email-leif.lindholm@linaro.org>
+	<1385656883-4420-2-git-send-email-leif.lindholm@linaro.org>
+	<CAHCPf3t5dEzVWbYZ6DWcFCENNO2dbrx-YeZvKRk0MkEsJMTE3A@mail.gmail.com>
+	<20131202210719.GQ24997@rocoto.smurfnet.nu>
+Date: Wed, 4 Dec 2013 15:06:47 -0600
+Message-ID: <CAHCPf3tsWdV+dJGm6mX6N4Ou5EQoGukdLyRvsRX6VQFjtKgxtg@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] Documentation: arm: add UEFI support documentation
+From: Matt Sealey <neko@bakuhatsu.net>
+To: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-efi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, matt.fleming@intel.com,
+        Grant Likely <grant.likely@linaro.org>,
+        Roy Franz <roy.franz@linaro.org>, Mark Salter <msalter@redhat.com>,
+        Patch Tracking <patches@linaro.org>, linaro-uefi@lists.linaro.org,
+        Mark Rutland <mark.rutland@arm.com>, Rob Landley <rob@landley.net>,
+        linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-11-07 at 15:00 +0100, Roberto Sassu wrote:
-> This patch allows users to provide a custom template format through the
-> new kernel command line parameter 'ima_template_fmt'. If the supplied
-> format is not valid, IMA uses the default template descriptor.
-> 
-> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-> ---
->  Documentation/kernel-parameters.txt      |  4 +++
->  Documentation/security/IMA-templates.txt | 29 +++++++++---------
->  security/integrity/ima/ima_template.c    | 50 ++++++++++++++++++++++++++++++++
->  3 files changed, 68 insertions(+), 15 deletions(-)
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 1e8761c..27b14b2 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -1199,6 +1199,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  			Formats: { "ima" | "ima-ng" }
->  			Default: "ima-ng"
-> 
-> +	ima_template_fmt=
-> +	                [IMA] Define a custom template format.
-> +			Format: { "field1|...|fieldN" }
-> +
->  	init=		[KNL]
->  			Format: <full_path>
->  			Run specified binary instead of /sbin/init as init
-> diff --git a/Documentation/security/IMA-templates.txt b/Documentation/security/IMA-templates.txt
-> index a777e5f..08ea2da 100644
-> --- a/Documentation/security/IMA-templates.txt
-> +++ b/Documentation/security/IMA-templates.txt
-> @@ -27,25 +27,22 @@ Managing templates with these structures is very simple. To support
->  a new data type, developers define the field identifier and implement
->  two functions, init() and show(), respectively to generate and display
->  measurement entries. Defining a new template descriptor requires
-> -specifying the template format, a string of field identifiers separated
-> -by the '|' character. While in the current implementation it is possible
-> -to define new template descriptors only by adding their definition in the
-> -template specific code (ima_template.c), in a future version it will be
-> -possible to register a new template on a running kernel by supplying to IMA
-> -the desired format string. In this version, IMA initializes at boot time
-> -all defined template descriptors by translating the format into an array
-> -of template fields structures taken from the set of the supported ones.
-> +specifying the template format (a string of field identifiers separated
-> +by the '|' character) through the 'ima_template_fmt' kernel command line
-> +parameter. At boot time, IMA initializes all defined template descriptors
-> +by translating the format into an array of template fields structures taken
-> +from the set of the supported ones.
-> 
->  After the initialization step, IMA will call ima_alloc_init_template()
->  (new function defined within the patches for the new template management
->  mechanism) to generate a new measurement entry by using the template
->  descriptor chosen through the kernel configuration or through the newly
-> -introduced 'ima_template=' kernel command line parameter. It is during this
-> -phase that the advantages of the new architecture are clearly shown:
-> -the latter function will not contain specific code to handle a given template
-> -but, instead, it simply calls the init() method of the template fields
-> -associated to the chosen template descriptor and store the result (pointer
-> -to allocated data and data length) in the measurement entry structure.
-> +introduced 'ima_template' and 'ima_template_fmt' kernel command line parameters.
-> +It is during this phase that the advantages of the new architecture are
-> +clearly shown: the latter function will not contain specific code to handle
-> +a given template but, instead, it simply calls the init() method of the template
-> +fields associated to the chosen template descriptor and store the result
-> +(pointer to allocated data and data length) in the measurement entry structure.
-> 
->  The same mechanism is employed to display measurements entries.
->  The functions ima[_ascii]_measurements_show() retrieve, for each entry,
-> @@ -84,4 +81,6 @@ currently the following methods are supported:
->   - select a template descriptor among those supported in the kernel
->     configuration ('ima-ng' is the default choice);
->   - specify a template descriptor name from the kernel command line through
-> -   the 'ima_template=' parameter.
-> +   the 'ima_template=' parameter;
-> + - register a new template descriptor with custom format through the kernel
-> +   command line parameter 'ima_template_fmt='.
-> diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
-> index bb33576..5a95d06 100644
-> --- a/security/integrity/ima/ima_template.c
-> +++ b/security/integrity/ima/ima_template.c
-> @@ -21,6 +21,7 @@ static struct ima_template_desc defined_templates[] = {
->  	{.name = IMA_TEMPLATE_IMA_NAME, .fmt = IMA_TEMPLATE_IMA_FMT},
->  	{.name = "ima-ng",.fmt = "d-ng|n-ng"},
->  	{.name = "ima-sig",.fmt = "d-ng|n-ng|sig"},
-> +	{.name = "",.fmt = ""},	/* placeholder for a custom format */
->  };
-> 
->  static struct ima_template_field supported_fields[] = {
-> @@ -38,12 +39,16 @@ static struct ima_template_field supported_fields[] = {
-> 
->  static struct ima_template_desc *ima_template;
->  static struct ima_template_desc *lookup_template_desc(const char *name);
-> +static struct ima_template_field *lookup_template_field(const char *field_id);
-> 
->  static int __init ima_template_setup(char *str)
->  {
->  	struct ima_template_desc *template_desc;
->  	int template_len = strlen(str);
-> 
-> +	if (ima_template)
-> +		return 1;
-> +
->  	/*
->  	 * Verify that a template with the supplied name exists.
->  	 * If not, use CONFIG_IMA_DEFAULT_TEMPLATE.
-> @@ -70,6 +75,48 @@ static int __init ima_template_setup(char *str)
->  }
->  __setup("ima_template=", ima_template_setup);
-> 
-> +static int __init ima_template_fmt_setup(char *str)
-> +{
-> +	int num_templates = ARRAY_SIZE(defined_templates);
-> +	char *str_ptr_start = str;
-> +	char *str_ptr_end = str_ptr_start;
-> +
-> +	if (ima_template)
-> +		return 1;
-> +
-> +	while (str_ptr_start != NULL) {
-> +		char field_id[IMA_TEMPLATE_FIELD_ID_MAX_LEN];
-> +		int len;
-> +
-> +		str_ptr_end = strpbrk(str_ptr_start, "|");
-> +		if (str_ptr_end == NULL)
-> +			len = str + strlen(str) - str_ptr_start;
-> +		else
-> +			len = str_ptr_end++ - str_ptr_start;
-> +
-> +		if (len >= IMA_TEMPLATE_FIELD_ID_MAX_LEN) {
-> +			pr_err("IMA: field too long, using template %s\n",
-> +			       CONFIG_IMA_DEFAULT_TEMPLATE);
-> +			return 1;
-> +		}
-> +
-> +		memcpy(field_id, str_ptr_start, len);
-> +		field_id[len] = '\0';
-> +		if (lookup_template_field(field_id) == NULL) {
-> +			pr_err("IMA: field '%s' not found, using template %s\n",
-> +			       field_id, CONFIG_IMA_DEFAULT_TEMPLATE);
-> +			return 1;
-> +		}
-> +
-> +		str_ptr_start = str_ptr_end;
-> +	}
-> +
+On Mon, Dec 2, 2013 at 3:07 PM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
+> On Mon, Dec 02, 2013 at 01:51:22PM -0600, Matt Sealey wrote:
+>> Here's where I think this whole thing falls down as being the weirdest
+>> possible implementation of this. It defies logic to put this
+>> information in the device tree /chosen node while also attempting to
+>> boot the kernel using an EFI stub; the stub is going to have this
+>> information because it is going to have the pointer to the system
+>> System Table (since it was called by StartImage()). Why not stash the
+>> System Table pointer somewhere safe in the stub?
+>
+> We do. In the DT.
 
-Roberto, looking this over again, I think this can be simplified by
-using strsep().
+Hang on... see way below about "reinventing the wheel"
 
-Mimi
+>> The information in the device tree is all accessible from Boot
+>> Services and as long as the System Table isn't being thrown away (my
+>> suggestion would be.. stuff it in r2, and set r1 = "EFI\0" then work
+>> with arch/arm/kernel/head{-common,}.S code to do the right thing)
+>
+> You left out the bit of redefining the kernel boot protocol to permit
+> calling it with caches, MMU and interrupts enabled - also known as
+> before ExitBootServices().
 
-> +	defined_templates[num_templates - 1].fmt = str;
-> +	ima_template = defined_templates + num_templates - 1;
-> +	return 1;
-> +}
-> +__setup("ima_template_fmt=", ima_template_fmt_setup);
-> +
->  static struct ima_template_desc *lookup_template_desc(const char *name)
->  {
->  	int i;
-> @@ -160,6 +207,9 @@ static int init_defined_templates(void)
->  	for (i = 0; i < ARRAY_SIZE(defined_templates); i++) {
->  		struct ima_template_desc *template = &defined_templates[i];
-> 
-> +		if (strlen(template->fmt) == 0)
-> +			continue;
-> +
->  		result = template_desc_init_fields(template->fmt,
->  						   &(template->fields),
->  						   &(template->num_fields));
+And that's a horrible idea because of what?
 
+What's evident here is there could be two major ways to generate an
+image that boots from a UEFI implementation;
 
+* one whereby UEFI is jostled or coerced by second stage bootloader to
+load a plain zImage and you lose all information about UEFI except in
+the event that that information is preserved in the device tree by the
+firmware
+* one whereby a 'stock' UEFI is used and it boots only on UEFI because
+it is in a format very reasonably only capable of being booted by UEFI
+and, subordinately,
+ - one where that plain zImage got glued to an EFI stub just like the
+decompressor is glued to the Image
+ - one where the kernel needs to be built with support for UEFI and
+that somewhat changes the boot path
+
+By the time we get half-way through arm/kernel/head.S the cache and
+MMU has been turned off and on and off again by the decompressor, and
+after a large amount of guesswork and arbitrary restriction-based
+implementation, there's no guarantee that the kernel hasn't been
+decompressed over some important UEFI feature or some memory hasn't
+been trashed. You can't make that guarantee because by entering the
+plain zImage, you forfeited that information. This is at worst case
+going to be lots of blank screens and blinking serial console prompts
+and little more than frustration..
+
+Most of the guessing is ideally not required to be a guess at all, the
+restrictions are purely to deal with the lack of trust for the
+bootloader environment. Why can't we trust UEFI? Or at least hold it
+to a higher standard. If someone ships a broken UEFI, they screw a
+feature or have a horrible bug and ship it, laud the fact Linux
+doesn't boot on it and the fact that it's their fault - over their
+head. It actually works these days, Linux actually has "market share,"
+companies really go out of their way to rescue their "image" and
+resolve the situation when someone blogs about a serious UEFI bug on
+their $1300 laptops, or even $300 tablets.
+
+> Which is what we are going to implement anyway in order to permit
+> firmware to supply DT hardware description in the same way as with
+> ACPI. Yes, we could pass the system table pointer directly - but that
+> doesn't get us the memory map.
+
+Boot Services gives you the ability to get the memory map.. and the
+kinds of things that live in those spots in the memory map. It's at
+least a better guess than "I am located at a specific place and can
+infer from linker data and masking off the bottom bits that there's
+probably this amount of RAM that starts at this location or
+thereabouts". It at least gives the ability to 'allocate' memory to
+put the page table instead of having a firmware call walk all over it,
+or having the kernel walk over some parts of firmware, or even not
+have to do anything except link in a decompressor (eh, sure, it means
+duplicating decompressor code in some cases, but I also don't think
+it's a sane requirement to include the entire decompression suite in
+the kernel proper if it only gets used once at early boot).
+
+> I prefer to see it as a way to not reinvent things that do not need
+> reinventing, while not adding more special-case code to the kernel.
+
+Isn't putting the System Table pointer in the DT specifically
+reinventing the UEFI boot process?
+
+Booting from UEFI is a special case in itself.. the EFI stub here is
+putting a round block in a square hole.
+
+There are two much, much better solutions: put the round block in a
+round hole. Put a square block in that square hole. We could do so
+much better than gluing the round block into the square hole.
+
+>> What that meant is nobody bothered to implement working, re-entrant,
+>> re-locatable firmware to a great degree. This ended up being a
+>> self-fulfilling prophecy of "don't trust the bootloader" and "get rid
+>> of it as soon as we can," which essentially meant Linux never took
+>> advantage of the resources available. In OF's case, the CIF sucked by
+>> specification. In UEFI's case here, it's been implemented in Linux in
+>> such a way that guarantees poor-performing firmware code with huge
+>> penalties to call them, which isn't even required by UEFI if the
+>> earlier boot code did the right things in the first place.
+>
+> I don't follow. In which way does this implementation result in poor
+> performance or reduced functionality?
+
+I believe what I am trying to object to is this weird process of
+getting to a state where you can get to UEFI, and why anyone would
+bother gluing the existing Linux kernel image to the back of an
+externally-built stub, only to do some really quite obnoxious tricks
+to enable it to go into a decompressor and then through, kernel setup
+head, that make a bunch of assumptions about the bootloader interface,
+then to try and recover the information that got thrown away and THEN
+attempt to reinstate some kind of UEFI functionality.
+
+If your platform has UEFI, then your platform has UEFI - if you built
+a multiplatform kernel that needs to boot on U-Boot, then you glued an
+EFI stub to it to make it boot. At some point between the stub and the
+runtime services driver, you're going through 10,000 lines of code
+with the information that it *is* running on top of UEFI completely
+lost to the boot process.
+
+I believe I am also objecting to the idea that the way this is BEST
+implemented is to take a stock zImage (decompressor+Image payload) and
+glue a stub in front to resolve the interface issue when the
+implication is extra complication to the boot process.
+
+By not actually using it, nobody actually bothered to improve the
+firmware or fix bugs in the places where it could have been used. This
+ends up as a self-fulfilling prophecy of exhausting amounts of broken
+and unoptimized firmware.
+
+Nobody in firmware-land has any impetus to fix those bugs or add
+useful optional features.
+
+By "by not actually using it," I do mean the case where someone has
+UEFI and somehow boots a plain zImage and a DTB modified to include
+the System Table pointer. Because that door is completely wide open..
+
+Personally I think having a well known environment at StartImage()
+jumping to your EFI application entry point is a great place to
+simplify the decompressor by integrating it into the stub.
+
+At the point you then jump into kernel/head.S - you can still know
+you're on UEFI, with data in r1 and r2 strongly implying this is UEFI,
+you can branch to a much, MUCH simpler path for initialization where
+quite a lot of the work it's trying to do may have already been
+performed by the stub., and quite a lot of the bare-metalling doesn't
+need to be done.
+
+I am sure, even if modifying head.S for any reason than to fix a bug
+or implement some architectural requirement is somehow frowned upon,
+that comparing r1 to a known constant machine id and branching to a
+uefi_start() (which, at that point, may as well be a C function, if
+the stub saw fit to keep around/throw in an early stack) is not going
+to cause anyone any problems (even if it does add 4 instructions to
+the entry and slow everyone else down by a nanosecond or two).
+
+Everybody keeps their absolutely fixed entry point to the image
+proper, that way, so you can still glue your stub (with or without the
+decompressor as part of the stub) to the front with no changes to the
+build process for the image or the code path for non-UEFI.. one
+conditional branch and you can gain a lot of much, much easier to
+maintain boot process..
+
+> We deal with a highly quirky set of requirements for calling
+> SetVirtualAddressMap() in a clunky way - after which calls into UEFI
+> are direct and cachable.
+
+If the kernel boot process now has been derived from years upon years
+of trial and error and engineering, then it does seem a shame to go do
+things a different way, you would be right to say it would be a shame
+not to promote code-reuse of the existing process by not touching the
+zImage stuff or core kernel boot, and just working on the glue and
+some not-so-early-init code.
+
+But what it does is make the boot process *more* complicated than it's
+already complicated implementation, in the face of a very nice
+specification of the correct way to deal with booting something from a
+UEFI implementation..
+
+What might be a much better route to take could be to define a nice,
+shiny new way of getting Linux to the point that it has full control
+over it's own destiny which does a hell of a lot less, with a less
+schizophrenic view of using UEFI or not.
+
+Ta,
+Matt Sealey <neko@bakuhatsu.net>
