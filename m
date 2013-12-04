@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933203Ab3LDSO4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 13:14:56 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:14129 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932904Ab3LDSOJ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 13:14:09 -0500
-X-Greylist: delayed 1198 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Dec 2013 13:14:09 EST
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-btrfs@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Message-ID: <20131204175350.3449.17368@hit-nxdomain.opendns.com>
-From: Chris Mason <clm@fb.com>
-User-Agent: alot/0.3.5
-Subject: [GIT PULL] Btrfs Maintainer update
-Date: Wed, 4 Dec 2013 12:53:50 -0500
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Spam-Reason: safe
-X-FB-Internal: Safe
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.72,1.0.14,0.0.0000
- definitions=2013-12-04_07:2013-12-04,2013-12-04,1970-01-01 signatures=0
+	id S933230Ab3LDSPb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 13:15:31 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52508 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933067Ab3LDSNe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 13:13:34 -0500
+From: Serban Constantinescu <serban.constantinescu@arm.com>
+To: gregkh@linuxfoundation.org, arve@android.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, john.stultz@linaro.org,
+        ccross@android.com, Dave.Butcher@arm.com, irogers@google.com,
+        romlem@android.com
+Cc: Serban Constantinescu <serban.constantinescu@arm.com>
+Subject: [PATCH v1 4/9] staging: android: binder: Add align_helper() macro
+Date: Wed,  4 Dec 2013 18:09:36 +0000
+Message-Id: <1386180581-6710-5-git-send-email-serban.constantinescu@arm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
+References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+This patch adds align_helper() macro that will be used for enforcing
+the desired alignment on 64bit systems where the alignment will differ
+depending on the userspace used (32bit /64bit).
 
-I'm still getting settled into new devel hardware etc, but I do have one
-commit for the next rc.  Please grab it from my for-linus branch:
+This patch is a temporary patch that will be extended with 32bit compat
+handling.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
+---
+ drivers/staging/android/binder.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-This changes my email over to fb.com, and adds a MAINTAINERS entry for
-Josef as well.
-
-Instead of diffstat etc, I've put the patch below.  The commit is also
-signed, my updated key should be floating around the pgp servers now.
-
-commit c0778e2534b81be6b85b5ee07c0e15ff774f7136
-Author: Chris Mason <clm@fb.com>
-Date:   Tue Dec 3 20:16:03 2013 -0500
-
-    Btrfs: update the MAINTAINERS file
-    
-    Josef and I have new email addresses
-    
-    Signed-off-by: Chris Mason <clm@fb.com>
-    Signed-off-by: Josef Bacik <jbacik@fb.com>
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index ffcaf97..db89b5d 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1921,7 +1921,8 @@ S:	Maintained
- F:	drivers/gpio/gpio-bt8xx.c
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index 16109cd..6719a53 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -140,6 +140,8 @@ module_param_call(stop_on_user_error, binder_set_stop_on_user_error,
+ 			binder_stop_on_user_error = 2; \
+ 	} while (0)
  
- BTRFS FILE SYSTEM
--M:	Chris Mason <chris.mason@fusionio.com>
-+M:	Chris Mason <clm@fb.com>
-+M:	Josef Bacik <jbacik@fb.com>
- L:	linux-btrfs@vger.kernel.org
- W:	http://btrfs.wiki.kernel.org/
- Q:	http://patchwork.kernel.org/project/linux-btrfs/list/
++#define align_helper(ptr)	    ALIGN(ptr, sizeof(void *))
++
+ enum binder_stat_types {
+ 	BINDER_STAT_PROC,
+ 	BINDER_STAT_THREAD,
+@@ -1239,7 +1241,7 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
+ 	if (buffer->target_node)
+ 		binder_dec_node(buffer->target_node, 1, 0);
+ 
+-	offp = (size_t *)(buffer->data + ALIGN(buffer->data_size, sizeof(void *)));
++	offp = (size_t *)(buffer->data + align_helper(buffer->data_size));
+ 	if (failed_at)
+ 		off_end = failed_at;
+ 	else
+@@ -1472,7 +1474,7 @@ static void binder_transaction(struct binder_proc *proc,
+ 	if (target_node)
+ 		binder_inc_node(target_node, 1, 0, NULL);
+ 
+-	offp = (size_t *)(t->buffer->data + ALIGN(tr->data_size, sizeof(void *)));
++	offp = (size_t *)(t->buffer->data + align_helper(tr->data_size));
+ 
+ 	if (copy_from_user(t->buffer->data, tr->data.ptr.buffer, tr->data_size)) {
+ 		binder_user_error("%d:%d got transaction with invalid data ptr\n",
+@@ -2378,8 +2380,7 @@ retry:
+ 		tr.data.ptr.buffer = (void *)t->buffer->data +
+ 					proc->user_buffer_offset;
+ 		tr.data.ptr.offsets = tr.data.ptr.buffer +
+-					ALIGN(t->buffer->data_size,
+-					    sizeof(void *));
++					align_helper(t->buffer->data_size);
+ 
+ 		if (binder_copy_to_user(cmd, &tr, &ptr, sizeof(struct binder_transaction_data)))
+ 			return -EFAULT;
+-- 
+1.7.9.5
+
