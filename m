@@ -1,212 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933473Ab3LDUIa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 15:08:30 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:59421 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933260Ab3LDUHX (ORCPT
+	id S933518Ab3LDUJI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 15:09:08 -0500
+Received: from www.linutronix.de ([62.245.132.108]:38857 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933504Ab3LDUJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 15:07:23 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 12/38] perf script: Do not call perf_event__preprocess_sample() twice)
-Date: Wed,  4 Dec 2013 17:06:36 -0300
-Message-Id: <1386187622-2928-13-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1386187622-2928-1-git-send-email-acme@infradead.org>
-References: <1386187622-2928-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 4 Dec 2013 15:09:03 -0500
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-parport@lists.infradead.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Lee Howard <lee.howard@mainpine.com>
+Subject: [PATCH] parport: parport_pc: fix id print of a device
+Date: Wed,  4 Dec 2013 21:08:55 +0100
+Message-Id: <1386187735-13900-1-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.8.4.4
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+Since commit 7106b4e3 ("8250: Oxford Semiconductor Devices") the debug
+print of the device id does no longer match the real device if it is
+located in the "enum" behind oxsemi_pcie_pport. The reason is that the
+code assumes that each id contains one entry in the PCI table.
+The fix is to lookup the currently used id from the id-> parameter.
 
-The perf_event__preprocess_sample() function is called in
-process_sample_event().  Instead of calling it again in
-perf_evsel__print_ip(), pass through the resultant addr_location.
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/529F3944.9050007@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Lee Howard <lee.howard@mainpine.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- tools/perf/builtin-script.c | 11 ++++++-----
- tools/perf/util/session.c   | 31 ++++++++++++++-----------------
- tools/perf/util/session.h   |  4 ++--
- 3 files changed, 22 insertions(+), 24 deletions(-)
+ drivers/parport/parport_pc.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 952dce979252..c555bddfccd7 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -414,7 +414,8 @@ static void print_sample_bts(union perf_event *event,
- 			     struct perf_sample *sample,
- 			     struct perf_evsel *evsel,
- 			     struct machine *machine,
--			     struct thread *thread)
-+			     struct thread *thread,
-+			     struct addr_location *al)
- {
- 	struct perf_event_attr *attr = &evsel->attr;
- 
-@@ -424,7 +425,7 @@ static void print_sample_bts(union perf_event *event,
- 			printf(" ");
- 		else
- 			printf("\n");
--		perf_evsel__print_ip(evsel, event, sample, machine,
-+		perf_evsel__print_ip(evsel, sample, machine, al,
- 				     output[attr->type].print_ip_opts,
- 				     PERF_MAX_STACK_DEPTH);
- 	}
-@@ -443,7 +444,7 @@ static void print_sample_bts(union perf_event *event,
- static void process_event(union perf_event *event, struct perf_sample *sample,
- 			  struct perf_evsel *evsel, struct machine *machine,
- 			  struct thread *thread,
--			  struct addr_location *al __maybe_unused)
-+			  struct addr_location *al)
- {
- 	struct perf_event_attr *attr = &evsel->attr;
- 
-@@ -458,7 +459,7 @@ static void process_event(union perf_event *event, struct perf_sample *sample,
- 	}
- 
- 	if (is_bts_event(attr)) {
--		print_sample_bts(event, sample, evsel, machine, thread);
-+		print_sample_bts(event, sample, evsel, machine, thread, al);
- 		return;
- 	}
- 
-@@ -474,7 +475,7 @@ static void process_event(union perf_event *event, struct perf_sample *sample,
- 		else
- 			printf("\n");
- 
--		perf_evsel__print_ip(evsel, event, sample, machine,
-+		perf_evsel__print_ip(evsel, sample, machine, al,
- 				     output[attr->type].print_ip_opts,
- 				     PERF_MAX_STACK_DEPTH);
- 	}
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 4ce146bae552..8a7da6f4a569 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1487,11 +1487,10 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
- 	return NULL;
- }
- 
--void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
--			  struct perf_sample *sample, struct machine *machine,
-+void perf_evsel__print_ip(struct perf_evsel *evsel, struct perf_sample *sample,
-+			  struct machine *machine, struct addr_location *al,
- 			  unsigned int print_opts, unsigned int stack_depth)
- {
--	struct addr_location al;
- 	struct callchain_cursor_node *node;
- 	int print_ip = print_opts & PRINT_IP_OPT_IP;
- 	int print_sym = print_opts & PRINT_IP_OPT_SYM;
-@@ -1500,15 +1499,10 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
- 	int print_oneline = print_opts & PRINT_IP_OPT_ONELINE;
- 	char s = print_oneline ? ' ' : '\t';
- 
--	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
--		error("problem processing %d event, skipping it.\n",
--			event->header.type);
--		return;
--	}
--
- 	if (symbol_conf.use_callchain && sample->callchain) {
-+		struct addr_location node_al;
- 
--		if (machine__resolve_callchain(machine, evsel, al.thread,
-+		if (machine__resolve_callchain(machine, evsel, al->thread,
- 					       sample, NULL, NULL,
- 					       PERF_MAX_STACK_DEPTH) != 0) {
- 			if (verbose)
-@@ -1517,6 +1511,9 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
+diff --git a/drivers/parport/parport_pc.c b/drivers/parport/parport_pc.c
+index b0a0d53..3cdb60d 100644
+--- a/drivers/parport/parport_pc.c
++++ b/drivers/parport/parport_pc.c
+@@ -2817,16 +2817,12 @@ static int parport_pc_pci_probe(struct pci_dev *dev,
+ 		if (irq == IRQ_NONE) {
+ 			printk(KERN_DEBUG
+ 	"PCI parallel port detected: %04x:%04x, I/O at %#lx(%#lx)\n",
+-				parport_pc_pci_tbl[i + last_sio].vendor,
+-				parport_pc_pci_tbl[i + last_sio].device,
+-				io_lo, io_hi);
++				id->vendor, id->device, io_lo, io_hi);
+ 			irq = PARPORT_IRQ_NONE;
+ 		} else {
+ 			printk(KERN_DEBUG
+ 	"PCI parallel port detected: %04x:%04x, I/O at %#lx(%#lx), IRQ %d\n",
+-				parport_pc_pci_tbl[i + last_sio].vendor,
+-				parport_pc_pci_tbl[i + last_sio].device,
+-				io_lo, io_hi, irq);
++				id->vendor, id->device, io_lo, io_hi, irq);
  		}
- 		callchain_cursor_commit(&callchain_cursor);
- 
-+		if (print_symoffset)
-+			node_al = *al;
-+
- 		while (stack_depth) {
- 			node = callchain_cursor_current(&callchain_cursor);
- 			if (!node)
-@@ -1531,9 +1528,9 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
- 			if (print_sym) {
- 				printf(" ");
- 				if (print_symoffset) {
--					al.addr = node->ip;
--					al.map  = node->map;
--					symbol__fprintf_symname_offs(node->sym, &al, stdout);
-+					node_al.addr = node->ip;
-+					node_al.map  = node->map;
-+					symbol__fprintf_symname_offs(node->sym, &node_al, stdout);
- 				} else
- 					symbol__fprintf_symname(node->sym, stdout);
- 			}
-@@ -1553,7 +1550,7 @@ next:
- 		}
- 
- 	} else {
--		if (al.sym && al.sym->ignore)
-+		if (al->sym && al->sym->ignore)
- 			return;
- 
- 		if (print_ip)
-@@ -1562,15 +1559,15 @@ next:
- 		if (print_sym) {
- 			printf(" ");
- 			if (print_symoffset)
--				symbol__fprintf_symname_offs(al.sym, &al,
-+				symbol__fprintf_symname_offs(al->sym, al,
- 							     stdout);
- 			else
--				symbol__fprintf_symname(al.sym, stdout);
-+				symbol__fprintf_symname(al->sym, stdout);
- 		}
- 
- 		if (print_dso) {
- 			printf(" (");
--			map__fprintf_dsoname(al.map, stdout);
-+			map__fprintf_dsoname(al->map, stdout);
- 			printf(")");
- 		}
- 	}
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 50f640958f0f..7e5d43986474 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -105,8 +105,8 @@ size_t perf_session__fprintf_nr_events(struct perf_session *session, FILE *fp);
- struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
- 					    unsigned int type);
- 
--void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
--			  struct perf_sample *sample, struct machine *machine,
-+void perf_evsel__print_ip(struct perf_evsel *evsel, struct perf_sample *sample,
-+			  struct machine *machine, struct addr_location *al,
- 			  unsigned int print_opts, unsigned int stack_depth);
- 
- int perf_session__cpu_bitmap(struct perf_session *session,
+ 		data->ports[count] =
+ 			parport_pc_probe_port(io_lo, io_hi, irq,
 -- 
-1.8.1.4
+1.8.4.4
 
