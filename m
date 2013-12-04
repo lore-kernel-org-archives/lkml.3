@@ -1,95 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602Ab3LDGYz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 01:24:55 -0500
-Received: from smtprelay0057.hostedemail.com ([216.40.44.57]:56913 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753483Ab3LDGYy (ORCPT
+	id S1754665Ab3LDGZr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 01:25:47 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39683 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab3LDGZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 01:24:54 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:2914:3138:3139:3140:3141:3142:3353:3622:3653:3865:3866:3867:3868:3870:3871:3872:3874:4250:4321:5007:6119:7576:7652:7875:7901:7903:8957:10004:10400:10848:11026:11232:11473:11658:11914:12043:12438:12517:12519:12740:13095,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: crown34_2a8f87f3d002e
-X-Filterd-Recvd-Size: 3321
-Message-ID: <1386138291.30493.45.camel@joe-AO722>
-Subject: Re: [PATCH v2] checkpatch: add DT compatible string documentation
- checks
-From: Joe Perches <joe@perches.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andy Whitcroft <apw@canonical.com>
-Date: Tue, 03 Dec 2013 22:24:51 -0800
-In-Reply-To: <1386130643-19449-1-git-send-email-robherring2@gmail.com>
-References: <1386130643-19449-1-git-send-email-robherring2@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	Wed, 4 Dec 2013 01:25:46 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <529ECAAB.8040309@jp.fujitsu.com>
+Date: Wed, 04 Dec 2013 15:24:43 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Borislav Petkov <bp@alien8.de>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jingbai Ma <jingbai.ma@hp.com>, Jerry Hoemann <jerry.hoemann@hp.com>
+Subject: Re: [PATCH v9] x86, apic, kexec, Documentation: Add disable_cpu_apic
+ kernel parameter
+References: <529D34AA.1000809@jp.fujitsu.com> <20131203152536.GE4251@redhat.com> <529E9CA6.5040200@jp.fujitsu.com>
+In-Reply-To: <529E9CA6.5040200@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-03 at 22:17 -0600, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> This adds a simple check that any compatible strings in DeviceTree dts
-> files are present in Documentation/devicetree/bindings. Vendor prefixes
-> are also checked for existing in vendor-prefixes.txt These should be
-> temporary checks until we have more sophisticated binding schema checking.
-> 
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Andy Whitcroft <apw@canonical.com>
-> Cc: Joe Perches <joe@perches.com>
-> ---
-> v2:
-> - Add vendor string checking against vendor-prefixes.txt
-> - Add '_', '.' and '+' as valid compatible string characters
-> - Use 'grep -E' instead of egrep
+(2013/12/04 12:08), HATAYAMA Daisuke wrote:
+> (2013/12/04 0:25), Vivek Goyal wrote:
+>> On Tue, Dec 03, 2013 at 10:32:26AM +0900, HATAYAMA Daisuke wrote:
+>>
+>> [..]
+>>>
+>>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>>> index 50680a5..dd77bec 100644
+>>> --- a/Documentation/kernel-parameters.txt
+>>> +++ b/Documentation/kernel-parameters.txt
+>>> @@ -774,6 +774,15 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>>>       disable=    [IPV6]
+>>>               See Documentation/networking/ipv6.txt.
+>>>
+>>> +    disable_cpu_apicid= [X86,APIC,KEXEC,SMP]
+>>
+>> Hi Hatayama,
+>>
+>> We are almost there. A minor nit. Why have we specified KEXEC here. This
+>> parameter disabled_cpu_apicid does not seem to dependon CONFIG_KEXEC?
+>>
+>> Jerry, this patch looks good to me. Does it work on your system?
+>>
+>
+> Because primary user for the option is currently kexec/kdump only.
+>
+> I referred to acpi_rsdp description:
+>
+>          acpi_rsdp=      [ACPI,EFI,KEXEC]
+>                          Pass the RSDP address to the kernel, mostly used
+>                          on machines running EFI runtime service to boot the
+>                          second kernel for kdump.
+>
 
-Some more trivial notes:
+Indo-san, who introduced acpi_rsdp and KEXEC tag, told me that historical reason
+why KEXEC tag was introduced. disable_cpu_apicid is generic at least in the
+current version, so the tag doesn't need to be specified here.
 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-[]
-> @@ -2034,6 +2034,29 @@ sub process {
->  			     "Use of $flag is deprecated, please use \`$replacement->{$flag} instead.\n" . $herecurr) if ($replacement->{$flag});
->  		}
->  
-> +# check for DT compatible documentation
-> +		if ($realfile =~ /\.dts/ && $rawline =~ /\+\s*compatible\s*=/) {
+I'll post a new version soon.
 
-this should probably be $rawline =~ /^\+\s*compatible...
-
-> +			my @compats = $rawline =~ /\"([a-zA-Z0-9\-\,\.\+_]+)\"/g;
-> +
-> +			foreach my $compat (@compats) {
-> +				my $compat2 = $compat;
-> +				my $dt_path = "Documentation/devicetree/bindings/";
-> +				$compat2 =~ s/\,[a-z]*\-/\,<\.\*>\-/;
-> +				`grep -Erq "$compat|$compat2" $dt_path`;
-> +				if ( $? >> 8 ) {
-> +					WARN("UNDOCUMENTED_DT_BINDING",
-> +					     "DT compatible string \"$compat\" appears un-documented -- check $dt_path\n" . $herecurr);
-> +				}
-> +				my $vendor = $compat;
-> +				$vendor =~ s/^([a-zA-Z0-9]+)\,.*/$1/;
-> +				`grep -Eq "$vendor" "${dt_path}vendor-prefixes.txt"`;
-
-It maybe simpler to read as:
-
-	my $vendor_path = $dt_path . "vendor-prefixes.txt";
-	`grep -Eq $vendor $vendor_path`;
-
-> +				if ( $? >> 8 ) {
-> +					WARN("UNDOCUMENTED_DT_VENDOR",
-> +					     "DT compatible string vendor \"$vendor\" appears un-documented -- check ${dt_path}vendor-prefixes.txt\n" . $herecurr);
-
-					     "DT compatible string vendor \"$vendor\" appears un-documented -- check $vendor_path\n" . $herecurr)
-
-Also I suggest using the same message type
-instead of 2 distinct ones.
-
-Maybe "UNDOCUMENTED_DT_STRING"
+-- 
+Thanks.
+HATAYAMA, Daisuke
 
