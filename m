@@ -1,86 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932864Ab3LDPlW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 10:41:22 -0500
-Received: from mail-yh0-f53.google.com ([209.85.213.53]:45671 "EHLO
-	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932404Ab3LDPlS (ORCPT
+	id S932878Ab3LDPla (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 10:41:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58290 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932773Ab3LDPl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 10:41:18 -0500
-Message-ID: <529F4D1A.3050304@gmail.com>
-Date: Wed, 04 Dec 2013 10:41:14 -0500
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Wed, 4 Dec 2013 10:41:26 -0500
+Date: Wed, 4 Dec 2013 07:40:41 -0800
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-6f9a317f2a2d4950880ecfa7eea53ed79f85255f@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, efault@gmx.de,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, efault@gmx.de, peterz@infradead.org,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
+In-Reply-To: <1385634619-8129-6-git-send-email-jolsa@redhat.com>
+References: <1385634619-8129-6-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Add perf_data_file__write interface
+Git-Commit-ID: 6f9a317f2a2d4950880ecfa7eea53ed79f85255f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: David Laight <David.Laight@ACULAB.COM>, Sun Paul <paulrbk@gmail.com>
-CC: netdev@vger.kernel.org, linux-sctp@vger.kernel.org,
-        Karl Heiss <kheiss@gmail.com>, Neil Horman <nhorman@tuxdriver.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Supporting 4 way connections in LKSCTP
-References: <CAFXGft+CXk3W8=3w=AuYzqYtYnR8nH4Of9=668tUeT+tugD9-A@mail.gmail.com>	<CAFXGftLsKm9a5bmXX4Fe+rnSvYVdBDOyYGwisRP7XMu+ky=DGw@mail.gmail.com>	<CAFXGftLt1p6XpR2eGsMYKjEbbOHvch-LgcFw1sAXThcA2Rtjyw@mail.gmail.com>	<20131127124530.GA23369@hmsreliant.think-freely.org>	<CAFXGftJQV=5Pqs3bhfiS3T1VO1q8jfaMjAUiqm2tDbtSyBCM3A@mail.gmail.com>	<529C9B50.50002@gmail.com>	<CAGugRbXFirQ5P3ek9zN86h4vvO6qsy3eNEooJOApotA+dL+C_g@mail.gmail.com>	<529CB859.9090904@gmail.com>	<CAFXGft+F52p+oaa59=5e5pGfON44N36NA-XMYi5PorzWeybnKw@mail.gmail.com>	<CAFXGft+4o6fT4SYbu3musC+-BEi=xOEGUbZSavF1-0_V1mg6zg@mail.gmail.com>	<529D3BF9.3070208@gmail.com>	<CAFXGftJtCCJ=pVxg_DH-+n2bKmoKXavog0y8mfX+h-1z3hP49Q@mail.gmail.com>	<529DCF42.1070800@gmail.com>	<CAFXGftK5tz90OzObiV7Hi+g080j3zWCNdo217CKdNkOY4JWQUg@mail.gmail.com>	<529DF73E.7060604@gmail.com> <CAFXGftKZD0zN1S=UTa_bYr71-v=7mzU=_CewTNkjPv9CGGB_Fg@mail.gmail.com> <529F395B.9040308@gmail.com> <AE90C24D6B3A694183C094C60CF0A2F6026B745D@saturn3.aculab.com>
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B745D@saturn3.aculab.com>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 04 Dec 2013 07:40:48 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2013 09:50 AM, David Laight wrote:
->>> In normal operation, IP-A sends INIT to IP-X, IP-X returns INIT_ACK to
->>> IP-A. IP-A then sends HB to IP-X, IP-X then returns HB_ACK to IP-A. In
->>> the meantime, IP-B sends HB to IP-Y and IPY returns HB_ACK.
->>>
->>> In case of the path between IP-A and IP-X is broken, IP-B sends INIT
->>> to IP-X, NODE-B uses IP-Y to return INIT_ACK to IP-B. Then IP-B sends
->>> HB to IP-X, and IP-Y returns HB_ACK to IP-B. In the meantime, the HB
->>> communication between IP-B and IP-Y follows the normal flow.
->>>
->>> Can I confirm, is it really valid?
->>
->> As long as NODE-B knows about both IP-A and IP-B, and NODE-A knows about
->> both IP-X and IP-Y (meaning all the addresses were exchanged inside INIT
->> and INIT-ACK), then this situation is perfectly valid.  In fact, this
->> has been tested an multiple interops.
-> 
-> There are some network configurations that do cause problems.
-> Consider 4 systems with 3 LAN segments:
-> A) 10.10.10.1 on LAN X and 192.168.1.1 on LAN Y.
-> B) 10.10.10.2 on LAN X and 192.168.1.2 on LAN Y.
-> C) 10.10.10.3 on LAN X.
-> D) 10.10.10.4 on LAN X and 192.168.1.2 on LAN Z.
-> There are no routers between the networks (and none of the systems
-> are running IP forwarding).
-> 
-> If A connects to B everything is fine - traffic can use either LAN.
-> 
-> Connections from A to C are problematic if C tries to send anything
-> (except a HB) to 192.168.1.1 before receiving a HB response.
-> One of the SCTP stacks we've used did send messages to an
-> inappropriate address, but I've forgotten which one.
+Commit-ID:  6f9a317f2a2d4950880ecfa7eea53ed79f85255f
+Gitweb:     http://git.kernel.org/tip/6f9a317f2a2d4950880ecfa7eea53ed79f85255f
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Thu, 28 Nov 2013 11:30:17 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 2 Dec 2013 09:22:46 -0300
 
-I guess that would be problematic if A can not receive traffic for
-192.168.1.1 on the interface connected to LAN X.  I shouldn't
-technically be a problem for C as it should mark the path to 192.168.1.1
-as down.  For A, as long as it doesn't decide to ABORT the association,
-it shouldn't be a problem either.  It would be interesting to know more
-about what problems you've observed.
+perf tools: Add perf_data_file__write interface
 
-> 
-> Connections between A and D fail unless the HB errors A receives
-> for 192.168.1.2 are ignored.
+Adding perf_data_file__write interface to centralize output to files.
+The function prototype is:
 
-Yes, this configuration is very error prone, especially if system B and
-system D are up at the same time.  Any attempts by system A to use
-LAN Y will result in an ABORT generated by system B.  I have seen
-this issue well in production and we had to renumber system D to solve
-it.
+  ssize_t perf_data_file__write(struct perf_data_file *file,
+                                void *buf, size_t size);
 
--vlad
-> 
-> Of course the application could explicitly bind to only the 10.x address
-> but that requires the application know the exact network topology
-> and may be difficult for incoming calls.
-> 
-> 	David
-> 
+Returns number of bytes written or -1 in case of error.
 
+NOTE: Also indenting 'struct perf_data_file' members, no functional
+      change done.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1385634619-8129-6-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/data.c |  6 ++++++
+ tools/perf/util/data.h | 14 ++++++++------
+ 2 files changed, 14 insertions(+), 6 deletions(-)
+
+diff --git a/tools/perf/util/data.c b/tools/perf/util/data.c
+index 7d09faf..1fbcd8b 100644
+--- a/tools/perf/util/data.c
++++ b/tools/perf/util/data.c
+@@ -118,3 +118,9 @@ void perf_data_file__close(struct perf_data_file *file)
+ {
+ 	close(file->fd);
+ }
++
++ssize_t perf_data_file__write(struct perf_data_file *file,
++			      void *buf, size_t size)
++{
++	return writen(file->fd, buf, size);
++}
+diff --git a/tools/perf/util/data.h b/tools/perf/util/data.h
+index 8c2df80..2b15d0c 100644
+--- a/tools/perf/util/data.h
++++ b/tools/perf/util/data.h
+@@ -9,12 +9,12 @@ enum perf_data_mode {
+ };
+ 
+ struct perf_data_file {
+-	const char *path;
+-	int fd;
+-	bool is_pipe;
+-	bool force;
+-	unsigned long size;
+-	enum perf_data_mode mode;
++	const char		*path;
++	int			 fd;
++	bool			 is_pipe;
++	bool			 force;
++	unsigned long		 size;
++	enum perf_data_mode	 mode;
+ };
+ 
+ static inline bool perf_data_file__is_read(struct perf_data_file *file)
+@@ -44,5 +44,7 @@ static inline unsigned long perf_data_file__size(struct perf_data_file *file)
+ 
+ int perf_data_file__open(struct perf_data_file *file);
+ void perf_data_file__close(struct perf_data_file *file);
++ssize_t perf_data_file__write(struct perf_data_file *file,
++			      void *buf, size_t size);
+ 
+ #endif /* __PERF_DATA_H */
