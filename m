@@ -1,109 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525Ab3LDKBB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 05:01:01 -0500
-Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:57870 "EHLO
-	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755048Ab3LDKA5 (ORCPT
+	id S1755550Ab3LDKBX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 05:01:23 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:48087 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755048Ab3LDKBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 05:00:57 -0500
-Subject: Re: [PATCH 1/6] GenWQE PCI support, health monitoring and recovery
-From: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Reply-To: haver@linux.vnet.ibm.com
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        cody@linux.vnet.ibm.com, schwidefsky@de.ibm.com, utz.bacher@de.ibm.com,
-        mmarek@suse.cz, rmallon@gmail.com, jsvogt@de.ibm.com,
-        MIJUNG@de.ibm.com, cascardo@linux.vnet.ibm.com, michael@ibmra.de
-In-Reply-To: <201312031605.38972.arnd@arndb.de>
-References: <1383741943-14609-1-git-send-email-haver@linux.vnet.ibm.com>
-	 <20131203143010.GB3521@kroah.com>
-	 <1386082011.29309.2.camel@oc7383187364.ibm.com>
-	 <201312031605.38972.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Wed, 04 Dec 2013 10:59:33 +0100
-Message-ID: <1386151173.7883.13.camel@oc7383187364.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120410-6892-0000-0000-00000719FB3F
+	Wed, 4 Dec 2013 05:01:20 -0500
+Message-ID: <529EFD42.9070507@ti.com>
+Date: Wed, 4 Dec 2013 12:00:34 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Roger Quadros <rogerq@ti.com>, <bcousson@baylibre.com>, <paul@pwsan.com>,
+        <tony@atomide.com>
+CC: <balbi@ti.com>, <sr@denx.de>, <David.Laight@ACULAB.COM>,
+        <michael@amarulasolutions.com>, <bigeasy@linutronix.de>,
+        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/3] ARM: OMAP2+: USB Host bug fixes for 3.13 rc
+References: <1386080748-17005-1-git-send-email-rogerq@ti.com>
+In-Reply-To: <1386080748-17005-1-git-send-email-rogerq@ti.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="OlG45Btx7612tT4vMH3sXPukUoLiuM8Sg"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+--OlG45Btx7612tT4vMH3sXPukUoLiuM8Sg
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-thanks for helping to review the code.
+On 2013-12-03 16:25, Roger Quadros wrote:
+> Hi,
+>=20
+> This is a follow up solution to the original series in [1]
+>=20
+> The first patch fixes the OMAP4 Panda USB detection problems on 3.13-rc=
+1
+> with u-boot v2013.10.
+>=20
+> The remaining 2 patches are required if SOFTRESET needs to be done for =
+the
+> USB Host module on OMAP3 platforms.
+>=20
+> Patch 2 fixes the hwmod RESET logic to prevent multiple SOFTRESETs
+> being issued to the modules. This multiple SOFTRESET was causing proble=
+ms
+> with OMAP3 USB Host module. On Beagleboard C4 this is seen as failure t=
+o
+> mount NFS root over external USB to Ethernet device.
+>=20
+> This might be the reason why HWMOD_INIT_NO_RESET was used for the OMAP
+> USB host module in OMAP3 hwmod data and just carried forward in OMAP4
+> and OMAP5 hwmod data as well.
+>=20
+> cheers,
+> -roger
 
-Am Dienstag, den 03.12.2013, 16:05 +0100 schrieb Arnd Bergmann:
-> On Tuesday 03 December 2013, Frank Haverkamp wrote:
-> > Ohh, sorry __u64 of course:
-> > 
-> > /* common struct for chip image exchange */
-> > struct genwqe_bitstream {
-> >         __u64 data_addr;                /* pointer to image data */
-> >         __u32 size;                     /* size of image file */
-> >         __u32 crc;                      /* crc of this image */
-> >         __u8  partition;                /* '0', '1', or 'v' */
-> >         __u64 target_addr;              /* starting address in Flash */
-> >         __u8  uid;                      /* 1=host/x=dram */
-> > 
-> >         __u64 slu_id;                   /* informational/sim: SluID */
-> >         __u64 app_id;                   /* informational/sim: AppID */
-> > 
-> >         __u16 retc;                     /* returned from processing */
-> >         __u16 attn;                     /* attention code from
-> > processing */
-> >         __u32 progress;                 /* progress code from processing
-> > */
-> > };
-> > 
-> > and than I do in my userspace application:
-> > 
-> >         load.data_addr = (unsigned long)buf;
-> > 
-> > Is that ok, or must I consider more?
-> > 
-> 
-> I haven't followed the recent discussions, jumping into the middle here:
-> The structure above is not safe for a generic ioctl interface because it
-> has different padding on x86-32 and x86-64, where __u64 has different
-> alignment.
-> 
-> You can try to avoid the implicit padding by sorting the members by size,
-> by making some lignments for 32-bit and 64-bit. I avoid umembers larger or by adding explicit padding.
-> 
-> 	Arnd
-> 
+Tested on Panda and Beagle xM. Works fine for me.
 
-Ok, let me try to sort my entries a little differently and modify some
-sizes, to avoid different alignments for 32-bit and 64-bit. I avoid
-using __u8 now such that I always have nice 64-bit blocks. Would the
-following version work?
+ Tomi
 
-struct genwqe_bitstream {
-	__u64 data_addr;		/* pointer to image data */
-	__u32 size;			/* size of image file */
-	__u32 crc;			/* crc of this image */
-	__u64 target_addr;		/* starting address in Flash */
-	__u32 partition;		/* '0', '1', or 'v' */
-	__u32 uid;			/* 1=host/x=dram */
 
-	__u64 slu_id;			/* informational/sim: SluID */
-	__u64 app_id;			/* informational/sim: AppID */
 
-	__u16 retc;			/* returned from processing */
-	__u16 attn;			/* attention code from processing */
-	__u32 progress;			/* progress code from processing */
-};
+--OlG45Btx7612tT4vMH3sXPukUoLiuM8Sg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-If not, I might have missed something, and I would appreciate if you
-could make up an example how a good version should look like.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-Thanks
+iQIcBAEBAgAGBQJSnv1CAAoJEPo9qoy8lh71BcAP/AiVK9B3kkLA4l6o4jOpbq5+
+HjZkW3vQMd6PgS1fdPy3Y3OLPF4uROVMXAxiEP0MTmeJz5b/WcxpGsqboO7qZsT3
+/qYa4xceNyYsj0sOpc5r5wyB714GSgHI9DSrqAYRXdJmA9NMriipfoHo6oHMXsm7
+7dC72AwWc9wcwnmzBGlwoXI+7llE9+Cj/jRoy3TI0ZLobivfKKl/EmrCVplAjAfz
+LAdfHtQ5SVqwY3LOk2roUuAzlx8B//qgw6aBb7bo4XbqQOweNV7sk7DD9pBimESC
+dF58KQsXgJIE0HAGSVOYIZ2yyEQo5Hex6y8BiiVdlvlVanRpTm1yASCtQMN0pRr/
++shNSLN5/8yOaZtn02KT3XyDrzc5y2KONB4d2pLgGHuJm0O+l1Z6JKwyk6W8rzIF
+iVL/h0sCz8IVZblFl3Lg52hZWbp2BX2aFE6lIv/Y9ra1VvG5gDpFDWFm2MzGONqk
+GFt9ZOYDAptg61O+pU4tpa9gZHgQEEFnn01phTHD+D2OqzTgmWi0EaZlVPWm0wIe
+uydd0+RTGUgYhdjsUK5YL5MW9K/LwioeZiVS5c6G/cdcKWUEh7IO6RM3ohUhaSZ3
+RXn6NmXBi2o+pgIt7UnnUv/QLN23qEB6WbzyTjFqeOJ3uwFJ/j49JkNzxMoZAXUd
+RLgNB8rzgYAZVzPxAZXg
+=Q/KQ
+-----END PGP SIGNATURE-----
 
-Frank
-
+--OlG45Btx7612tT4vMH3sXPukUoLiuM8Sg--
