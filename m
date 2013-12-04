@@ -1,102 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932847Ab3LDQMu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 11:12:50 -0500
-Received: from smtprelay0236.hostedemail.com ([216.40.44.236]:44255 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753258Ab3LDQMs (ORCPT
+	id S932868Ab3LDQNk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 11:13:40 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:54602 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932602Ab3LDQNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 11:12:48 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:2903:2914:3138:3139:3140:3141:3142:3354:3622:3653:3865:3866:3867:3868:3870:3871:3874:4250:4321:5007:6119:7576:7652:7875:7901:7903:8957:10004:10400:10848:11026:11232:11473:11658:11914:12043:12291:12438:12517:12519:12555:12740:13019:13095,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: spy94_5228af79b881a
-X-Filterd-Recvd-Size: 3513
-Message-ID: <1386173563.30493.72.camel@joe-AO722>
-Subject: Re: [PATCH v3] checkpatch: add DT compatible string documentation
- checks
-From: Joe Perches <joe@perches.com>
-To: Rob Herring <robherring2@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andy Whitcroft <apw@canonical.com>
-Date: Wed, 04 Dec 2013 08:12:43 -0800
-In-Reply-To: <1386173031-17867-1-git-send-email-robherring2@gmail.com>
-References: <1386173031-17867-1-git-send-email-robherring2@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Dec 2013 11:13:39 -0500
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@kernel.org>
+Cc: Jiang Liu <liuj97@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
+        Wang YanQing <udknight@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: [RFC PATCH v3 00/19] simplify generic cross CPU function call implementation
+Date: Thu,  5 Dec 2013 00:12:51 +0800
+Message-Id: <1386173591-28514-1-git-send-email-liuj97@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-12-04 at 10:03 -0600, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> This adds a simple check that any compatible strings in DeviceTree dts
-> files are present in Documentation/devicetree/bindings. Vendor prefixes
-> are also checked for existing in vendor-prefixes.txt These should be
-> temporary checks until we have more sophisticated binding schema checking.
-> 
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Andy Whitcroft <apw@canonical.com>
-> Cc: Joe Perches <joe@perches.com>
+Resend for v3.14 merge window. Patch for ARC, MIPS and PARISC has been
+merged into v3.13.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+Since commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use
+logic similar to smp_call_function_single()", single and multiple
+(mask version) cross CPU function calls are handled in the same way,
+and generic_smp_call_function_interrupt() becomes an aliases of
+generic_smp_call_function_single_interrupt(), so only one interrupt
+is needed for arch code to support generic SMP function call interfaces.
+This patch series simplifies arch code by killing the redundant
+interrupt for cross CPU function calls.
 
-> ---
-> v3:
-> - Use a single message type UNDOCUMENTED_DT_STRING
-> - Ensure '+' is at beginning of the line
-> - Move vendor-prefixes.txt to variable
-> 
-> v2:
-> - Add vendor string checking against vendor-prefixes.txt
-> - Add '_', '.' and '+' as valid compatible string characters
-> - Use 'grep -E' instead of egrep
-> 
->  scripts/checkpatch.pl | 25 +++++++++++++++++++++++++
->  1 file changed, 25 insertions(+)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 9c98100..3696366 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -2034,6 +2034,31 @@ sub process {
->  			     "Use of $flag is deprecated, please use \`$replacement->{$flag} instead.\n" . $herecurr) if ($replacement->{$flag});
->  		}
->  
-> +# check for DT compatible documentation
-> +		if ($realfile =~ /\.dts/ && $rawline =~ /^\+\s*compatible\s*=/) {
-> +			my @compats = $rawline =~ /\"([a-zA-Z0-9\-\,\.\+_]+)\"/g;
-> +
-> +			foreach my $compat (@compats) {
-> +				my $compat2 = $compat;
-> +				my $dt_path = "Documentation/devicetree/bindings/";
-> +				$compat2 =~ s/\,[a-z]*\-/\,<\.\*>\-/;
-> +				`grep -Erq "$compat|$compat2" $dt_path`;
-> +				if ( $? >> 8 ) {
-> +					WARN("UNDOCUMENTED_DT_STRING",
-> +					     "DT compatible string \"$compat\" appears un-documented -- check $dt_path\n" . $herecurr);
-> +				}
-> +
-> +				my $vendor = $compat;
-> +				my $vendor_path = $dt_path . "vendor-prefixes.txt";
-> +				$vendor =~ s/^([a-zA-Z0-9]+)\,.*/$1/;
-> +				`grep -Eq "$vendor" $vendor_path`;
-> +				if ( $? >> 8 ) {
-> +					WARN("UNDOCUMENTED_DT_STRING",
-> +					     "DT compatible string vendor \"$vendor\" appears un-documented -- check $vendor_path\n" . $herecurr);
-> +				}
-> +			}
-> +		}
-> +
->  # check we are in a valid source file if not then ignore this hunk
->  		next if ($realfile !~ /\.(h|c|s|S|pl|sh)$/);
->  
+We choose to keep generic_smp_call_function_interrupt() instead of
+generic_smp_call_function_single_interrupt() because the former is
+more generic.
 
+Jiang Liu (19):
+  Revert "kernel/smp.c: free related resources when failure occurs in
+    hotplug_cfd()"
+  Revert "smp: Fix SMP function call empty cpu mask race"
+  smp, alpha: kill SMP single function call interrupt
+  smp, ARM: kill SMP single function call interrupt
+  smp, ARM64: kill SMP single function call interrupt
+  smp, blackfin: kill SMP single function call interrupt
+  smp, hexagon: kill SMP single function call interrupt
+  smp, IA64: kill SMP single function call interrupt
+  smp, m32r: kill SMP single function call interrupt
+  smp, metag: kill SMP single function call interrupt
+  smp, mn10300: kill SMP single function call interrupt
+  smp, mn10300: enable arch_send_call_function_ipi_mask()
+  smp, s390: prepare for killing
+    generic_smp_call_function_single_interrupt()
+  smp, sh: kill SMP single function call interrupt
+  smp, sparc64: kill SMP single function call interrupt
+  smp, sparc: kill SMP single function call interrupt
+  smp, tile: kill SMP single function call interrupt
+  smp, tile: kill SMP single function call interrupt
+  smp, x86: kill SMP single function call interrupt
 
+ arch/alpha/kernel/smp.c                  |  8 +------
+ arch/arm/include/asm/hardirq.h           |  2 +-
+ arch/arm/kernel/smp.c                    | 10 +--------
+ arch/arm64/include/asm/hardirq.h         |  2 +-
+ arch/arm64/kernel/smp.c                  | 10 +--------
+ arch/blackfin/mach-common/smp.c          |  6 +-----
+ arch/hexagon/include/asm/smp.h           |  1 -
+ arch/hexagon/kernel/smp.c                |  6 +-----
+ arch/ia64/kernel/smp.c                   |  8 ++-----
+ arch/m32r/include/asm/smp.h              |  1 -
+ arch/m32r/kernel/smp.c                   |  9 +-------
+ arch/m32r/kernel/traps.c                 |  3 +--
+ arch/metag/include/asm/smp.h             |  2 --
+ arch/metag/kernel/smp.c                  |  6 +-----
+ arch/mn10300/include/asm/smp.h           |  2 +-
+ arch/mn10300/kernel/smp.c                | 19 ++++++++--------
+ arch/s390/kernel/smp.c                   | 10 ++++-----
+ arch/sh/include/asm/smp.h                |  1 -
+ arch/sh/kernel/smp.c                     |  5 +----
+ arch/sparc/include/asm/pil.h             |  5 ++---
+ arch/sparc/include/asm/smp_32.h          |  4 +---
+ arch/sparc/kernel/entry.S                | 10 ++-------
+ arch/sparc/kernel/leon_smp.c             | 31 ++++++--------------------
+ arch/sparc/kernel/smp_32.c               | 14 ++----------
+ arch/sparc/kernel/smp_64.c               | 11 +---------
+ arch/sparc/kernel/sun4d_smp.c            | 31 ++++++--------------------
+ arch/sparc/kernel/sun4m_smp.c            | 11 ++--------
+ arch/sparc/kernel/ttable_64.S            | 12 ++++-------
+ arch/sparc/mm/ultra.S                    |  5 -----
+ arch/tile/include/asm/smp.h              |  7 +++---
+ arch/tile/kernel/smp.c                   |  6 +-----
+ arch/x86/include/asm/entry_arch.h        |  1 -
+ arch/x86/include/asm/hw_irq.h            |  3 ---
+ arch/x86/include/asm/irq_vectors.h       |  7 +++---
+ arch/x86/include/asm/trace/irq_vectors.h |  6 ------
+ arch/x86/include/asm/xen/events.h        |  1 -
+ arch/x86/kernel/entry_64.S               |  2 --
+ arch/x86/kernel/irqinit.c                |  4 ----
+ arch/x86/kernel/smp.c                    | 24 +--------------------
+ arch/x86/xen/smp.c                       | 37 +-------------------------------
+ kernel/smp.c                             | 19 ++--------------
+ 41 files changed, 67 insertions(+), 295 deletions(-)
+
+-- 
+1.8.1.2
 
