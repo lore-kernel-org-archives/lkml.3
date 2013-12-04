@@ -1,79 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab3LDKfg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 05:35:36 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:52155 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754217Ab3LDKfc (ORCPT
+	id S932237Ab3LDKfz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 05:35:55 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:47556 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755528Ab3LDKdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 05:35:32 -0500
-Date: Wed, 4 Dec 2013 11:34:32 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Milo Kim <milo.kim@ti.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-pwm@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v4 0/4] LP3943 MFD driver for a GPIO expander and a PWM
- generator
-Message-ID: <20131204103431.GC26589@ulmo.nvidia.com>
-References: <1380082975-6022-1-git-send-email-milo.kim@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CblX+4bnyfN0pR09"
-Content-Disposition: inline
-In-Reply-To: <1380082975-6022-1-git-send-email-milo.kim@ti.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Wed, 4 Dec 2013 05:33:55 -0500
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Cc: michael@ellerman.id.au, mikey@neuling.org, sukadev@linux.vnet.ibm.com,
+        eranian@google.com, acme@ghostprotocols.net, ak@linux.intel.com,
+        mingo@kernel.org
+Subject: [PATCH V4 07/10] powerpc, lib: Add new branch instruction analysis support functions
+Date: Wed,  4 Dec 2013 16:02:39 +0530
+Message-Id: <1386153162-11225-8-git-send-email-khandual@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1386153162-11225-1-git-send-email-khandual@linux.vnet.ibm.com>
+References: <1386153162-11225-1-git-send-email-khandual@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120410-2674-0000-0000-00000BC2437C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Generic powerpc branch instruction analysis support added in the code
+patching library which will help the subsequent patch on SW based
+filtering of branch records in perf. This patch also converts and
+exports some of the existing local static functions through the header
+file to be used else where.
 
---CblX+4bnyfN0pR09
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+---
+ arch/powerpc/include/asm/code-patching.h | 30 ++++++++++++++++++
+ arch/powerpc/lib/code-patching.c         | 54 ++++++++++++++++++++++++++++++--
+ 2 files changed, 82 insertions(+), 2 deletions(-)
 
-On Wed, Sep 25, 2013 at 01:22:55PM +0900, Milo Kim wrote:
-> LP3943 is an integrated device capable of driving 16 output channels.
-> It can be used for GPIO expander and PWM generators.
-> LP3493 registers are controlled via the I2C interface.
->=20
-> This patch-set consists of four parts - MFD, GPIO, PWM and documents.
->=20
-> Update from v3 to v4:
->   Move the driver description from the documentation to the MFD driver fi=
-le.
->=20
-> Milo Kim (4):
->   mfd: add LP3943 MFD driver
->   gpio: add LP3943 I2C GPIO expander driver
->   pwm: add LP3943 PWM driver
->   Documentation: add LP3943 DT bindings and document
+diff --git a/arch/powerpc/include/asm/code-patching.h b/arch/powerpc/include/asm/code-patching.h
+index a6f8c7a..8bab417 100644
+--- a/arch/powerpc/include/asm/code-patching.h
++++ b/arch/powerpc/include/asm/code-patching.h
+@@ -22,6 +22,36 @@
+ #define BRANCH_SET_LINK	0x1
+ #define BRANCH_ABSOLUTE	0x2
+ 
++#define XL_FORM_LR  0x4C000020
++#define XL_FORM_CTR 0x4C000420
++#define XL_FORM_TAR 0x4C000460
++
++#define BO_ALWAYS    0x02800000
++#define BO_CTR       0x02000000
++#define BO_CRBI_OFF  0x00800000
++#define BO_CRBI_ON   0x01800000
++#define BO_CRBI_HINT 0x00400000
++
++/* Forms of branch instruction */
++int instr_is_branch_iform(unsigned int instr);
++int instr_is_branch_bform(unsigned int instr);
++int instr_is_branch_xlform(unsigned int instr);
++
++/* Classification of XL-form instruction */
++int is_xlform_lr(unsigned int instr);
++int is_xlform_ctr(unsigned int instr);
++int is_xlform_tar(unsigned int instr);
++
++/* Branch instruction is a call */
++int is_branch_link_set(unsigned int instr);
++
++/* BO field analysis (B-form or XL-form) */
++int is_bo_always(unsigned int instr);
++int is_bo_ctr(unsigned int instr);
++int is_bo_crbi_off(unsigned int instr);
++int is_bo_crbi_on(unsigned int instr);
++int is_bo_crbi_hint(unsigned int instr);
++
+ unsigned int create_branch(const unsigned int *addr,
+ 			   unsigned long target, int flags);
+ unsigned int create_cond_branch(const unsigned int *addr,
+diff --git a/arch/powerpc/lib/code-patching.c b/arch/powerpc/lib/code-patching.c
+index 17e5b23..cb62bd8 100644
+--- a/arch/powerpc/lib/code-patching.c
++++ b/arch/powerpc/lib/code-patching.c
+@@ -77,16 +77,66 @@ static unsigned int branch_opcode(unsigned int instr)
+ 	return (instr >> 26) & 0x3F;
+ }
+ 
+-static int instr_is_branch_iform(unsigned int instr)
++int instr_is_branch_iform(unsigned int instr)
+ {
+ 	return branch_opcode(instr) == 18;
+ }
+ 
+-static int instr_is_branch_bform(unsigned int instr)
++int instr_is_branch_bform(unsigned int instr)
+ {
+ 	return branch_opcode(instr) == 16;
+ }
+ 
++int instr_is_branch_xlform(unsigned int instr)
++{
++	return branch_opcode(instr) == 19;
++}
++
++int is_xlform_lr(unsigned int instr)
++{
++	return (instr & XL_FORM_LR) == XL_FORM_LR;
++}
++
++int is_xlform_ctr(unsigned int instr)
++{
++	return (instr & XL_FORM_CTR) == XL_FORM_CTR;
++}
++
++int is_xlform_tar(unsigned int instr)
++{
++	return (instr & XL_FORM_TAR) == XL_FORM_TAR;
++}
++
++int is_branch_link_set(unsigned int instr)
++{
++	return (instr & BRANCH_SET_LINK) == BRANCH_SET_LINK;
++}
++
++int is_bo_always(unsigned int instr)
++{
++	return (instr & BO_ALWAYS) == BO_ALWAYS;
++}
++
++int is_bo_ctr(unsigned int instr)
++{
++	return (instr & BO_CTR) == BO_CTR;
++}
++
++int is_bo_crbi_off(unsigned int instr)
++{
++	return (instr & BO_CRBI_OFF) == BO_CRBI_OFF;
++}
++
++int is_bo_crbi_on(unsigned int instr)
++{
++	return (instr & BO_CRBI_ON) == BO_CRBI_ON;
++}
++
++int is_bo_crbi_hint(unsigned int instr)
++{
++	return (instr & BO_CRBI_HINT) == BO_CRBI_HINT;
++}
++
+ int instr_is_relative_branch(unsigned int instr)
+ {
+ 	if (instr & BRANCH_ABSOLUTE)
+-- 
+1.7.11.7
 
-I suspect that given the build-time dependencies Lee may want to take
-all four patches through the MFD tree, so I've acked the PWM parts.
-
-Thierry
-
---CblX+4bnyfN0pR09
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSnwU3AAoJEN0jrNd/PrOh7oUP/ivmm5ud0khS1wkyAYvT9w4Q
-ZLiIUS4+GIT2kHq9WArXn+69wkw4w9+t4CtWTIpoMBpLWPnVYpWe3ZSiysbk0E1R
-v2dM5KYeorjEEoHS5voRynfVzOt58XUZ9QfODv8Nn0HOCgkmzCl+uPo21MX/KA14
-iUeXV++lg7TMj+leMMaJaWClwMapLHg7q5U+x53DLMT2Qjw2lKdhjr5NqXKghuw+
-KiCL0evwe6JCAQc/5TJDJZrsYaKM1MW/+hSistDB8Deh9v3MzV0xMvPD13Pw7Coo
-nvezs7HawicHpihMkqG4oJxxARa0eFr9s62OcE9znU25twQbsXSQSnkT8g8StlA5
-f9ECApLfciCG9awJl3Nq2QB66HxSAbW3Mz+3FmD00swYcvzSNT9xTu4sWPmhjdX0
-9ZLGMMCH3pLp8TGfsGfDEGEDnbl/ZAesAxu2HWI+P3n2EkDCX6NLT+D2LmjfLOwo
-HAttQ9gnZymTfN7ejhIIsO6gJObcyEsuOE8eArMaOYAXDtnznMbziDI0CcuFgcHT
-o6nhQzuPnRdObfOZPnyeN2A5pZb2yLinklz/MURdKtFbJhgtVt2cBKGt08BUI5eL
-W4tqyEkkzy96iyyBlRGGFPS93jEBm6m5j7RIEh4gg6ZjfcZ8vjtjV4hDMm4v/cgK
-4paYhbBQzKXSU7bObC/5
-=m/Iq
------END PGP SIGNATURE-----
-
---CblX+4bnyfN0pR09--
