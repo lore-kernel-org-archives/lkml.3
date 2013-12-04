@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537Ab3LDPPz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 10:15:55 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:36577 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074Ab3LDPPy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 10:15:54 -0500
-Date: Wed, 4 Dec 2013 16:15:50 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-Cc: intel-gfx@lists.freedesktop.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/6] x86: Add Intel graphics stolen memory quirk for
- gen2 platforms
-Message-ID: <20131204151550.GA5502@gmail.com>
-References: <1386085793-317-1-git-send-email-ville.syrjala@linux.intel.com>
- <1386085793-317-3-git-send-email-ville.syrjala@linux.intel.com>
- <20131204090814.GA32218@gmail.com>
- <20131204151213.GW10036@intel.com>
+	id S932573Ab3LDPP7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 10:15:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34035 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932542Ab3LDPP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 10:15:56 -0500
+Message-ID: <529F4728.20500@redhat.com>
+Date: Wed, 04 Dec 2013 10:15:52 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131204151213.GW10036@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>
+Subject: Re: [PATCH] x86: Add check for number of available vectors before
+ CPU down
+References: <1384878243-5086-1-git-send-email-prarit@redhat.com> <3E5A0FA7E9CA944F9D5414FEC6C712205A59505E@ORSMSX106.amr.corp.intel.com>
+In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C712205A59505E@ORSMSX106.amr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Ville Syrjälä <ville.syrjala@linux.intel.com> wrote:
 
-> On Wed, Dec 04, 2013 at 10:08:14AM +0100, Ingo Molnar wrote:
-> > 
-> > * ville.syrjala@linux.intel.com <ville.syrjala@linux.intel.com> wrote:
-> > 
-> > > v2: Rewrite to use the TOM-TSEG_SIZE-stolen_size and TOUD methods
-> > 
-> > I guess v2 is a reaction to my review feedback? I got no reply to my 
-> > mail from you so I'm not sure and I'd like to know whether all 
-> > feedback was addressed.
+On 12/03/2013 06:42 PM, Yu, Fenghua wrote:
 > 
-> Actually this was mostly insipired by a private mail from hpa. I forgot
-> to reply to your mail, sorry about that.
 > 
-> But anyways, I think apart from your comment about the KB/MB macros,
-> the rest of the comments no longer apply. [...]
+>> -----Original Message-----
+>> From: Prarit Bhargava [mailto:prarit@redhat.com]
+>>
+>> Second try at this ...
+>>
+>> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64791
+>>
+>> When a cpu is downed on a system, the irqs on the cpu are assigned to
+>> other cpus.  It is possible, however, that when a cpu is downed there
+>> aren't enough free vectors on the remaining cpus to account for the
+>> vectors from the cpu that is being downed.
+>>
+>> This results in an interesting "overflow" condition where irqs are
+>> "assigned" to a CPU but are not handled.
+>>
+>> For example, when downing cpus on a 1-64 logical processor system:
+>>
+>> +			if (per_cpu(vector_irq, cpu)[vector] < 0)
+>> +				count++;
+> 
+> But later on fixup_irqs will set some of vector_irq vector as -1 on this
+> to-be-disabled cpu. That will release vectors assigned to this cpu. So
+> checking vector_irq at this point before fixup_irqs doesn't make sense, right?
+> 
 
-Ok.
+Fenghua, IIUC the purpose of fixup_irqs() is to migrate irqs from the
+to-be-disabled cpu to other cpus by using affinity, etc..  The to-be-disabled
+cpus' irqs are set to -1, however, only after they are migrated off to an
+enabled cpu.
 
-> [...] And as far as those macros go, there seem to be similar macros 
-> already sprinkled around in various places, so I'm not sure how big 
-> of a fallout we'd have if I just stick them into kernel.h.
+This check I'm introducing is well before that stage in effort to determine
+whether or not the system has "room" for the irqs on the remaining cpus.
 
-That was a separate suggestion, outside the scope of this series.
+So I think that the check is in the right spot.  We should do it early.  I
+suppose an argument could be made to do the check in fixup_irqs(), however, my
+feeling is by then it is very late in the process of downing the cpu.
 
-Anyway, this v2 series looks good.
+I noticed a subtle bug in my patch that I will send with a [v2].  I'm not taking
+into account per-cpu interrupts in the check_vectors() function.
 
-Thanks,
+P.
 
-	Ingo
+> Thanks.
+> 
+> -Fenghua
+> 
