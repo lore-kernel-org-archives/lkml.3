@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508Ab3LDKAO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 05:00:14 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:50485 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755168Ab3LDKAJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 05:00:09 -0500
-Date: Wed, 4 Dec 2013 11:00:05 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Pekka Enberg <penberg@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Pekka Enberg <penberg@iki.fi>
-Subject: Re: [PATCH 1/3] perf tools: Record total sampling time
-Message-ID: <20131204100005.GA2363@gmail.com>
-References: <1385967199-3759-1-git-send-email-namhyung@kernel.org>
- <1385967199-3759-2-git-send-email-namhyung@kernel.org>
- <20131202124527.GB22212@gmail.com>
- <20131202125709.GA22404@gmail.com>
- <1385999009.1710.72.camel@leonhard>
- <20131202163620.GC27781@gmail.com>
- <20131202202459.GF17149@ghostprotocols.net>
- <87y542mqts.fsf@sejong.aot.lge.com>
- <529DEAEE.6020708@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <529DEAEE.6020708@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755470Ab3LDJ7v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 04:59:51 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:40117 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755206Ab3LDJ6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 04:58:31 -0500
+X-IronPort-AV: E=Sophos;i="4.93,823,1378828800"; 
+   d="scan'208";a="9189161"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: dsahern@gmail.com, jolsa@redhat.com, acme@ghostprotocols.net,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, paulus@samba.org
+Cc: linux-kernel@vger.kernel.org, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH 2/5] perf tools: Move the checking of which map function to call into function.
+Date: Wed, 4 Dec 2013 17:56:40 -0500
+Message-Id: <b8c41f1fd2c4f0df71eb7b19aea74fb64d46cdda.1386197481.git.yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <cover.1386197481.git.yangds.fnst@cn.fujitsu.com>
+References: <cover.1386197481.git.yangds.fnst@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/04 17:58:18,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/04 17:58:21,
+	Serialize complete at 2013/12/04 17:58:21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Check for cpu_map__dummy_new() or cpu_map__new() to be called in
+perf_evlist__create_maps() is more complicated. This patch moves
+the checking work into target.h, combining two conditions and making
+perf_evlist__create_maps() more readable.
 
-* David Ahern <dsahern@gmail.com> wrote:
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+---
+ tools/perf/util/evlist.c |  8 +-------
+ tools/perf/util/target.h | 13 +++++++++++++
+ 2 files changed, 14 insertions(+), 7 deletions(-)
 
-> On 12/2/13, 10:44 PM, Namhyung Kim wrote:
-> >>Right now 'perf stat -i' i used for '--no-inherit', perhaps we can just
-> >>have --no-inherit have no short option and grab -i to have the same
-> >>meaning as in 'report', 'script', etc.
-> >
-> >Agreed.  Maybe we could change it to plain --inherit.
-> 
-> yes: https://lkml.org/lkml/2013/11/19/330
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 76fa764..7bb6ee1 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -819,13 +819,7 @@ int perf_evlist__create_maps(struct perf_evlist *evlist, struct target *target)
+ 	if (evlist->threads == NULL)
+ 		return -1;
+ 
+-	if (target->default_per_cpu)
+-		evlist->cpus = target->per_thread ?
+-					cpu_map__dummy_new() :
+-					cpu_map__new(target->cpu_list);
+-	else if (target__has_task(target))
+-		evlist->cpus = cpu_map__dummy_new();
+-	else if (!target__has_cpu(target) && !target->uses_mmap)
++	if (target__uses_dummy_map(target))
+ 		evlist->cpus = cpu_map__dummy_new();
+ 	else
+ 		evlist->cpus = cpu_map__new(target->cpu_list);
+diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
+index 31dd2e9..7381b1c 100644
+--- a/tools/perf/util/target.h
++++ b/tools/perf/util/target.h
+@@ -63,4 +63,17 @@ static inline bool target__none(struct target *target)
+ 	return !target__has_task(target) && !target__has_cpu(target);
+ }
+ 
++static inline bool target__uses_dummy_map(struct target *target)
++{
++	bool use_dummy = false;
++
++	if (target->default_per_cpu)
++		use_dummy = target->per_thread ? true : false;
++	else if (target__has_task(target) ||
++	         (!target__has_cpu(target) && !target->uses_mmap))
++		use_dummy = true;
++
++	return use_dummy;
++}
++
+ #endif /* _PERF_TARGET_H */
+-- 
+1.8.2.1
 
-agreed.
-
-Thanks,
-
-	Ingo
