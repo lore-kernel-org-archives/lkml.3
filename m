@@ -1,45 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933141Ab3LDTBx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 14:01:53 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62282 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753590Ab3LDTBt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 14:01:49 -0500
-Date: Wed, 4 Dec 2013 20:01:45 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Subject: Re: [PATCH] perf/x86: fix bug in event constraint end marker macro
-Message-ID: <20131204190145.GA9093@gmail.com>
-References: <20131204090028.GA9724@quad>
- <20131204090336.GA31973@gmail.com>
- <CABPqkBR4PWFB2z9xhMa9qiJxBXxV5kq8k93PdxWfdj-3EmGb9Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBR4PWFB2z9xhMa9qiJxBXxV5kq8k93PdxWfdj-3EmGb9Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933190Ab3LDTDj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 14:03:39 -0500
+Received: from mga02.intel.com ([134.134.136.20]:49773 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933089Ab3LDTDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 14:03:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,826,1378882800"; 
+   d="scan'208";a="446927863"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Andrey Wagin <avagin@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH] thp: move preallocated PTE page table on move_huge_pmd()
+Date: Wed,  4 Dec 2013 21:03:06 +0200
+Message-Id: <1386183786-9400-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Andrey Wagin reported crash on VM_BUG_ON() in pgtable_pmd_page_dtor()
+with fallowing backtrace:
 
-* Stephane Eranian <eranian@google.com> wrote:
+  [<ffffffff8119427f>] free_pgd_range+0x2bf/0x410
+  [<ffffffff8119449e>] free_pgtables+0xce/0x120
+  [<ffffffff8119b900>] unmap_region+0xe0/0x120
+  [<ffffffff811a0036>] ? move_page_tables+0x526/0x6b0
+  [<ffffffff8119d6a9>] do_munmap+0x249/0x360
+  [<ffffffff811a0304>] move_vma+0x144/0x270
+  [<ffffffff811a07e9>] SyS_mremap+0x3b9/0x510
+  [<ffffffff8172d512>] system_call_fastpath+0x16/0x1b
 
-> Ingo,
-> 
-> Ok, I have asked Maria to clean the patch up add more comments and
-> repost a new version of the
-> patch. She will repost ASAP.
+The crash can be reproduce with this test case:
 
-Ok!
+  #define _GNU_SOURCE
+  #include <sys/mman.h>
+  #include <stdio.h>
+  #include <unistd.h>
 
-Thanks,
+  #define MB (1024 * 1024UL)
+  #define GB (1024 * MB)
 
-	Ingo
+  int main(int argc, char **argv)
+  {
+	char *p;
+	int i;
+
+	p = mmap((void *) GB, 10 * MB, PROT_READ | PROT_WRITE,
+			MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+	for (i = 0; i < 10 * MB; i += 4096)
+		p[i] = 1;
+	mremap(p, 10 * MB, 10 * MB, MREMAP_FIXED | MREMAP_MAYMOVE, 2 * GB);
+	return 0;
+  }
+
+Due to split PMD lock, we now store preallocated PTE tables for THP
+pages per-PMD table.  It means we need to move them to other PMD table
+if huge PMD moved there.
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Reported-by: Andrey Vagin <avagin@openvz.org>
+---
+ mm/huge_memory.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index bccd5a628ea6..33a5dc492810 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1481,8 +1481,18 @@ int move_huge_pmd(struct vm_area_struct *vma, struct vm_area_struct *new_vma,
+ 		pmd = pmdp_get_and_clear(mm, old_addr, old_pmd);
+ 		VM_BUG_ON(!pmd_none(*new_pmd));
+ 		set_pmd_at(mm, new_addr, new_pmd, pmd_mksoft_dirty(pmd));
+-		if (new_ptl != old_ptl)
++		if (new_ptl != old_ptl) {
++			pgtable_t pgtable;
++
++			/*
++			 * Move preallocated PTE page table if new_pmd is on
++			 * different PMD page table.
++			 */
++			pgtable = pgtable_trans_huge_withdraw(mm, old_pmd);
++			pgtable_trans_huge_deposit(mm, new_pmd, pgtable);
++
+ 			spin_unlock(new_ptl);
++		}
+ 		spin_unlock(old_ptl);
+ 	}
+ out:
+-- 
+1.8.4.4
+
