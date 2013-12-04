@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755702Ab3LDAKe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 19:10:34 -0500
+	id S1755842Ab3LDALb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 19:11:31 -0500
 Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54050 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755197Ab3LDAKY (ORCPT
+	with ESMTP id S1754848Ab3LDAKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 19:10:24 -0500
-X-AuditID: 9c93016f-b7c57ae0000070d3-50-529e72eb30d7
+	Tue, 3 Dec 2013 19:10:21 -0500
+X-AuditID: 9c93016f-b7c57ae0000070d3-38-529e72e8edd6
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
@@ -16,9 +16,9 @@ Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, Joonsoo Kim <js1304@gmail.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 9/9] mm/rmap: use rmap_walk() in page_mkclean()
-Date: Wed,  4 Dec 2013 09:12:20 +0900
-Message-Id: <1386115940-21425-10-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 5/9] mm/rmap: extend rmap_walk_xxx() to cope with different cases
+Date: Wed,  4 Dec 2013 09:12:16 +0900
+Message-Id: <1386115940-21425-6-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386115940-21425-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1386115940-21425-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -27,108 +27,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, we have an infrastructure in rmap_walk() to handle difference
-from variants of rmap traversing functions.
+There are a lot of common parts in traversing functions, but there are
+also a little of uncommon parts in it. By assigning proper function
+pointer on each rmap_walker_control, we can handle these difference
+correctly.
 
-So, just use it in page_mkclean().
+Following are differences we should handle.
 
-In this patch, I change following things.
+1. difference of lock function in anon mapping case
+2. nonlinear handling in file mapping case
+3. prechecked condition:
+	checking memcg in page_referenced(),
+	checking VM_SHARE in page_mkclean()
+	checking temporary vma in try_to_unmap()
+4. exit condition:
+	checking page_mapped() in try_to_unmap()
 
-1. remove some variants of rmap traversing functions.
-    cf> page_mkclean_file
-2. mechanical change to use rmap_walk() in page_mkclean().
+So, in this patch, I introduce 4 function pointers to
+handle above differences.
 
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index 6a456ce..616aa4d 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -235,10 +235,25 @@ struct anon_vma *page_lock_anon_vma_read(struct page *page);
+ void page_unlock_anon_vma_read(struct anon_vma *anon_vma);
+ int page_mapped_in_vma(struct page *page, struct vm_area_struct *vma);
+ 
++/*
++ * rmap_walk_control: To control rmap traversing for specific needs
++ *
++ * arg: passed to rmap_one() and invalid_vma()
++ * rmap_one: executed on each vma where page is mapped
++ * done: for checking traversing termination condition
++ * file_nonlinear: for handling file nonlinear mapping
++ * anon_lock: for getting anon_lock by optimized way rather than default
++ * invalid_vma: for skipping uninterested vma
++ */
+ struct rmap_walk_control {
+ 	void *arg;
+ 	int (*rmap_one)(struct page *page, struct vm_area_struct *vma,
+ 					unsigned long addr, void *arg);
++	int (*done)(struct page *page);
++	int (*file_nonlinear)(struct page *, struct address_space *,
++					struct vm_area_struct *vma);
++	struct anon_vma *(*anon_lock)(struct page *page);
++	bool (*invalid_vma)(struct vm_area_struct *vma, void *arg);
+ };
+ 
+ /*
+diff --git a/mm/ksm.c b/mm/ksm.c
+index c3035fe..91b8cb3 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -2032,12 +2032,19 @@ again:
+ 			if ((rmap_item->mm == vma->vm_mm) == search_new_forks)
+ 				continue;
+ 
++			if (rwc->invalid_vma && rwc->invalid_vma(vma, rwc->arg))
++				continue;
++
+ 			ret = rwc->rmap_one(page, vma,
+ 					rmap_item->address, rwc->arg);
+ 			if (ret != SWAP_AGAIN) {
+ 				anon_vma_unlock_read(anon_vma);
+ 				goto out;
+ 			}
++			if (rwc->done && rwc->done(page)) {
++				anon_vma_unlock_read(anon_vma);
++				goto out;
++			}
+ 		}
+ 		anon_vma_unlock_read(anon_vma);
+ 	}
 diff --git a/mm/rmap.c b/mm/rmap.c
-index 7944d4b..d792e71 100644
+index 1ef74e2..a292707 100644
 --- a/mm/rmap.c
 +++ b/mm/rmap.c
-@@ -808,12 +808,13 @@ int page_referenced(struct page *page,
+@@ -1680,10 +1680,14 @@ void __put_anon_vma(struct anon_vma *anon_vma)
  }
  
- static int page_mkclean_one(struct page *page, struct vm_area_struct *vma,
--			    unsigned long address)
-+			    unsigned long address, void *arg)
+ #ifdef CONFIG_MIGRATION
+-static struct anon_vma *rmap_walk_anon_lock(struct page *page)
++static struct anon_vma *rmap_walk_anon_lock(struct page *page,
++					struct rmap_walk_control *rwc)
  {
- 	struct mm_struct *mm = vma->vm_mm;
- 	pte_t *pte;
- 	spinlock_t *ptl;
- 	int ret = 0;
-+	int *cleaned = arg;
+ 	struct anon_vma *anon_vma;
  
- 	pte = page_check_address(page, mm, address, &ptl, 1);
- 	if (!pte)
-@@ -832,44 +833,44 @@ static int page_mkclean_one(struct page *page, struct vm_area_struct *vma,
- 
- 	pte_unmap_unlock(pte, ptl);
- 
--	if (ret)
-+	if (ret) {
- 		mmu_notifier_invalidate_page(mm, address);
-+		(*cleaned)++;
-+	}
- out:
--	return ret;
-+	return SWAP_AGAIN;
- }
- 
--static int page_mkclean_file(struct address_space *mapping, struct page *page)
-+static bool invalid_mkclean_vma(struct vm_area_struct *vma, void *arg)
- {
--	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
--	struct vm_area_struct *vma;
--	int ret = 0;
--
--	BUG_ON(PageAnon(page));
-+	if (vma->vm_flags & VM_SHARED)
-+		return 0;
- 
--	mutex_lock(&mapping->i_mmap_mutex);
--	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
--		if (vma->vm_flags & VM_SHARED) {
--			unsigned long address = vma_address(page, vma);
--			ret += page_mkclean_one(page, vma, address);
--		}
--	}
--	mutex_unlock(&mapping->i_mmap_mutex);
--	return ret;
-+	return 1;
- }
- 
- int page_mkclean(struct page *page)
- {
--	int ret = 0;
-+	int cleaned = 0;
-+	struct address_space *mapping;
-+	struct rmap_walk_control rwc = {
-+		.arg = (void *)&cleaned,
-+		.rmap_one = page_mkclean_one,
-+		.invalid_vma = invalid_mkclean_vma,
-+	};
- 
- 	BUG_ON(!PageLocked(page));
- 
--	if (page_mapped(page)) {
--		struct address_space *mapping = page_mapping(page);
--		if (mapping)
--			ret = page_mkclean_file(mapping, page);
--	}
-+	if (!page_mapped(page))
-+		return 0;
- 
--	return ret;
-+	mapping = page_mapping(page);
-+	if (!mapping)
-+		return 0;
++	if (rwc->anon_lock)
++		return rwc->anon_lock(page);
 +
-+	rmap_walk(page, &rwc);
-+
-+	return cleaned;
- }
- EXPORT_SYMBOL_GPL(page_mkclean);
+ 	/*
+ 	 * Note: remove_migration_ptes() cannot use page_lock_anon_vma_read()
+ 	 * because that depends on page_mapped(); but not all its usages
+@@ -1709,16 +1713,22 @@ static int rmap_walk_anon(struct page *page, struct rmap_walk_control *rwc)
+ 	struct anon_vma_chain *avc;
+ 	int ret = SWAP_AGAIN;
  
+-	anon_vma = rmap_walk_anon_lock(page);
++	anon_vma = rmap_walk_anon_lock(page, rwc);
+ 	if (!anon_vma)
+ 		return ret;
+ 
+ 	anon_vma_interval_tree_foreach(avc, &anon_vma->rb_root, pgoff, pgoff) {
+ 		struct vm_area_struct *vma = avc->vma;
+ 		unsigned long address = vma_address(page, vma);
++
++		if (rwc->invalid_vma && rwc->invalid_vma(vma, rwc->arg))
++			continue;
++
+ 		ret = rwc->rmap_one(page, vma, address, rwc->arg);
+ 		if (ret != SWAP_AGAIN)
+ 			break;
++		if (rwc->done && rwc->done(page))
++			break;
+ 	}
+ 	anon_vma_unlock_read(anon_vma);
+ 	return ret;
+@@ -1736,15 +1746,26 @@ static int rmap_walk_file(struct page *page, struct rmap_walk_control *rwc)
+ 	mutex_lock(&mapping->i_mmap_mutex);
+ 	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
+ 		unsigned long address = vma_address(page, vma);
++
++		if (rwc->invalid_vma && rwc->invalid_vma(vma, rwc->arg))
++			continue;
++
+ 		ret = rwc->rmap_one(page, vma, address, rwc->arg);
+ 		if (ret != SWAP_AGAIN)
+-			break;
++			goto done;
++		if (rwc->done && rwc->done(page))
++			goto done;
+ 	}
+-	/*
+-	 * No nonlinear handling: being always shared, nonlinear vmas
+-	 * never contain migration ptes.  Decide what to do about this
+-	 * limitation to linear when we need rmap_walk() on nonlinear.
+-	 */
++
++	if (!rwc->file_nonlinear)
++		goto done;
++
++	if (list_empty(&mapping->i_mmap_nonlinear))
++		goto done;
++
++	ret = rwc->file_nonlinear(page, mapping, vma);
++
++done:
+ 	mutex_unlock(&mapping->i_mmap_mutex);
+ 	return ret;
+ }
 -- 
 1.7.9.5
 
