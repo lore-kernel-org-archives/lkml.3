@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932957Ab3LDQPZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 11:15:25 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:48519 "EHLO
+	id S932982Ab3LDQPk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 11:15:40 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:64577 "EHLO
 	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932648Ab3LDQPU (ORCPT
+	with ESMTP id S932648Ab3LDQPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 11:15:20 -0500
+	Wed, 4 Dec 2013 11:15:36 -0500
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>, Nicolas Pitre <nico@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Javi Merino <javi.merino@arm.com>, Marc Zyngier <marc.zyngier@arm.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Jiang Liu <liuj97@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
         Wang YanQing <udknight@gmail.com>, linux-arch@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
         Arnd Bergmann <arnd@arndb.de>
-Subject: [RFC PATCH v3 04/19] smp, ARM: kill SMP single function call interrupt
-Date: Thu,  5 Dec 2013 00:12:55 +0800
-Message-Id: <1386173591-28514-5-git-send-email-liuj97@gmail.com>
+Subject: [RFC PATCH v3 05/19] smp, ARM64: kill SMP single function call interrupt
+Date: Thu,  5 Dec 2013 00:12:56 +0800
+Message-Id: <1386173591-28514-6-git-send-email-liuj97@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1386173591-28514-1-git-send-email-liuj97@gmail.com>
 References: <1386173591-28514-1-git-send-email-liuj97@gmail.com>
@@ -46,41 +44,38 @@ Cc: Catalin Marinas <catalin.marinas@arm.com>
 Cc: Will Deacon <will.deacon@arm.com>
 Cc: Arnd Bergmann <arnd@arndb.de>
 Cc: linux-arm-kernel@lists.infradead.org
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- arch/arm/include/asm/hardirq.h |  2 +-
- arch/arm/kernel/smp.c          | 10 +---------
+ arch/arm64/include/asm/hardirq.h |  2 +-
+ arch/arm64/kernel/smp.c          | 10 +---------
  2 files changed, 2 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/include/asm/hardirq.h b/arch/arm/include/asm/hardirq.h
-index fe3ea77..3d7351c 100644
---- a/arch/arm/include/asm/hardirq.h
-+++ b/arch/arm/include/asm/hardirq.h
-@@ -5,7 +5,7 @@
+diff --git a/arch/arm64/include/asm/hardirq.h b/arch/arm64/include/asm/hardirq.h
+index 990c051..3be64c8 100644
+--- a/arch/arm64/include/asm/hardirq.h
++++ b/arch/arm64/include/asm/hardirq.h
+@@ -20,7 +20,7 @@
  #include <linux/threads.h>
  #include <asm/irq.h>
  
--#define NR_IPI	8
-+#define NR_IPI	7
+-#define NR_IPI	4
++#define NR_IPI	3
  
  typedef struct {
  	unsigned int __softirq_pending;
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index dc894ab..e24a23d 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -65,7 +65,6 @@ enum ipi_msg_type {
- 	IPI_TIMER,
+diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
+index a0c2ca6..ea3e9ab 100644
+--- a/arch/arm64/kernel/smp.c
++++ b/arch/arm64/kernel/smp.c
+@@ -59,7 +59,6 @@ struct secondary_data secondary_data;
+ enum ipi_msg_type {
  	IPI_RESCHEDULE,
  	IPI_CALL_FUNC,
 -	IPI_CALL_FUNC_SINGLE,
  	IPI_CPU_STOP,
- 	IPI_IRQ_WORK,
- 	IPI_COMPLETION,
-@@ -448,7 +447,7 @@ void arch_send_wakeup_ipi_mask(const struct cpumask *mask)
+ };
+ 
+@@ -438,14 +437,13 @@ void arch_send_call_function_ipi_mask(const struct cpumask *mask)
  
  void arch_send_call_function_single_ipi(int cpu)
  {
@@ -88,16 +83,15 @@ index dc894ab..e24a23d 100644
 +	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC);
  }
  
- #ifdef CONFIG_IRQ_WORK
-@@ -465,7 +464,6 @@ static const char *ipi_types[NR_IPI] = {
- 	S(IPI_TIMER, "Timer broadcast interrupts"),
+ static const char *ipi_types[NR_IPI] = {
+ #define S(x,s)	[x - IPI_RESCHEDULE] = s
  	S(IPI_RESCHEDULE, "Rescheduling interrupts"),
  	S(IPI_CALL_FUNC, "Function call interrupts"),
 -	S(IPI_CALL_FUNC_SINGLE, "Single function call interrupts"),
  	S(IPI_CPU_STOP, "CPU stop interrupts"),
- 	S(IPI_IRQ_WORK, "IRQ work interrupts"),
- 	S(IPI_COMPLETION, "completion interrupts"),
-@@ -579,12 +577,6 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+ };
+ 
+@@ -520,12 +518,6 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
  		irq_exit();
  		break;
  
