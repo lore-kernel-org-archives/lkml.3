@@ -1,126 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933212Ab3LDTXv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 14:23:51 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:58591 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755964Ab3LDTXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 14:23:34 -0500
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        David Howells <dhowells@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, keescook@chromium.org
-Subject: [PATCH v3 1/2] test: add minimal module for verification testing
-Date: Wed,  4 Dec 2013 11:22:48 -0800
-Message-Id: <1386184969-29750-2-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386184969-29750-1-git-send-email-keescook@chromium.org>
-References: <1386184969-29750-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S933237Ab3LDTX6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 14:23:58 -0500
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:41239 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933214Ab3LDTXx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 14:23:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <1386078720-8756-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1385663785-8643-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1386078720-8756-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Date: Wed, 4 Dec 2013 13:23:52 -0600
+Message-ID: <CAL_JsqLNWRWxfD0qLsQ9crRa3_-TtykwUjuQvJQZC2E_xLhywg@mail.gmail.com>
+Subject: Re: [PATCH v2] OF: base: match each node compatible against all given
+ matches first
+From: Rob Herring <robherring2@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Meelis Roos <mroos@linux.ee>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Scott Wood <scottwood@freescale.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When doing module loading verification tests (for example, with module
-singing, or LSM hooks), it is very handy to have a module that can be
-built on all systems under test, isn't auto-loaded at boot, and has
-no device or similar dependencies. This creates the "test_module.ko"
-module for that purpose, which only reports its load and unload to printk.
+On Tue, Dec 3, 2013 at 7:52 AM, Sebastian Hesselbarth
+<sebastian.hesselbarth@gmail.com> wrote:
+> Currently, of_match_node compares each given match against all node's
+> compatible strings with of_device_is_compatible.
+>
+> To achieve multiple compatible strings per node with ordering from
+> specific to generic, this requires given matches to be ordered from
+> specific to generic. For most of the drivers this is not true and also
+> an alphabetical ordering is more sane there.
+>
+> Therefore, this patch modifies of_match_node to match each of the node's
+> compatible strings against all given matches first, before checking the
+> next compatible string. This implies that node's compatibles are ordered
+> from specific to generic while given matches can be in any order.
+>
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Changelog:
+> v1->v2:
+> - Allow checks against nodes with no compatible (Reported by Rob Herring)
+> - Add some comments
+>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Thierry Reding <thierry.reding@gmail.com>
+> Cc: Meelis Roos <mroos@linux.ee>
+> Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+> Cc: Scott Wood <scottwood@freescale.com>
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/of/base.c |   53 +++++++++++++++++++++++++++++++++++++----------------
+>  1 files changed, 37 insertions(+), 16 deletions(-)
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
-v3:
- - use KBUILD_MODNAME; Rusty Russell
-v2:
- - use pr_warn, better comment, add headers explicitly, move to lib/; akpm.
----
- lib/Kconfig.debug |   14 ++++++++++++++
- lib/Makefile      |    1 +
- lib/test_module.c |   33 +++++++++++++++++++++++++++++++++
- 3 files changed, 48 insertions(+)
- create mode 100644 lib/test_module.c
+Applied.
 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index db25707aa41b..81882335c625 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1578,6 +1578,20 @@ config DMA_API_DEBUG
- 	  This option causes a performance degredation.  Use only if you want
- 	  to debug device drivers. If unsure, say N.
- 
-+config TEST_MODULE
-+	tristate "Test module loading with 'hello world' module"
-+	default n
-+	depends on m
-+	help
-+	  This builds the "test_module" module that emits "Hello, world"
-+	  on printk when loaded. It is designed to be used for basic
-+	  evaluation of the module loading subsystem (for example when
-+	  validating module verification). It lacks any extra dependencies,
-+	  and will not normally be loaded by the system unless explicitly
-+	  requested by name.
-+
-+	  If unsure, say N.
-+
- source "samples/Kconfig"
- 
- source "lib/Kconfig.kgdb"
-diff --git a/lib/Makefile b/lib/Makefile
-index a459c31e8c6b..b494b9af631c 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -31,6 +31,7 @@ obj-y += string_helpers.o
- obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
- obj-y += kstrtox.o
- obj-$(CONFIG_TEST_KSTRTOX) += test-kstrtox.o
-+obj-$(CONFIG_TEST_MODULE) += test_module.o
- 
- ifeq ($(CONFIG_DEBUG_KOBJECT),y)
- CFLAGS_kobject.o += -DDEBUG
-diff --git a/lib/test_module.c b/lib/test_module.c
-new file mode 100644
-index 000000000000..319b66f1ff61
---- /dev/null
-+++ b/lib/test_module.c
-@@ -0,0 +1,33 @@
-+/*
-+ * This module emits "Hello, world" on printk when loaded.
-+ *
-+ * It is designed to be used for basic evaluation of the module loading
-+ * subsystem (for example when validating module signing/verification). It
-+ * lacks any extra dependencies, and will not normally be loaded by the
-+ * system unless explicitly requested by name.
-+ */
-+
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/printk.h>
-+
-+static int __init test_module_init(void)
-+{
-+	pr_warn("Hello, world\n");
-+
-+	return 0;
-+}
-+
-+module_init(test_module_init);
-+
-+static void __exit test_module_exit(void)
-+{
-+	pr_warn("Goodbye\n");
-+}
-+
-+module_exit(test_module_exit);
-+
-+MODULE_AUTHOR("Kees Cook <keescook@chromium.org>");
-+MODULE_LICENSE("GPL");
--- 
-1.7.9.5
-
+Rob
