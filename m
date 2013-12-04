@@ -1,56 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab3LDKbw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 05:31:52 -0500
-Received: from www.linutronix.de ([62.245.132.108]:34310 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754217Ab3LDKbu (ORCPT
+	id S1755502Ab3LDKc3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 05:32:29 -0500
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:65020 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755471Ab3LDKc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 05:31:50 -0500
-Date: Wed, 4 Dec 2013 11:31:49 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Daniel Tang <dt.tangr@gmail.com>
-cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCHv2 RESEND] irqchip: Add support for TI-NSPIRE irqchip
-In-Reply-To: <1385352167-94223-1-git-send-email-dt.tangr@gmail.com>
-Message-ID: <alpine.DEB.2.02.1312041128290.30673@ionos.tec.linutronix.de>
-References: <1385352167-94223-1-git-send-email-dt.tangr@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 4 Dec 2013 05:32:27 -0500
+Date: Wed, 4 Dec 2013 11:31:27 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Milo Kim <milo.kim@ti.com>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-pwm@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v4 3/4] pwm: add LP3943 PWM driver
+Message-ID: <20131204103125.GA26589@ulmo.nvidia.com>
+References: <1380083078-6212-1-git-send-email-milo.kim@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="17pEHd4RhPHOinZp"
+Content-Disposition: inline
+In-Reply-To: <1380083078-6212-1-git-send-email-milo.kim@ti.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Nov 2013, dt.tangr@gmail.com wrote:
-> diff --git a/drivers/irqchip/irq-zevio.c b/drivers/irqchip/irq-zevio.c
-> +static void zevio_irq_ack(struct irq_data *irqd)
-> +{
-> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(irqd);
-> +	struct irq_chip_regs *regs =
-> +		&container_of(irqd->chip, struct irq_chip_type, chip)->regs;
-> +
-> +	irq_gc_lock(gc);
 
-Why do you need to lock here? You are reading the ack register and not
-modifying it. You are neither storing the value in the gc itself. So
-what are you trying to protect?
+--17pEHd4RhPHOinZp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> +	readl(gc->reg_base + regs->ack);
-> +	irq_gc_unlock(gc);
-> +}
-> +
-> +static void init_base(void __iomem *base)
+On Wed, Sep 25, 2013 at 01:24:38PM +0900, Milo Kim wrote:
+> This is the other of the LP3943 MFD driver.
+> LP3943 can be used as a PWM generator, up to 2 channels.
+>=20
+> * Two PWM generators supported
+>=20
+> * Supported PWM operations
+>   request, free, config, enable and disable
+>=20
+> * Pin assignment
+>   A driver data, 'pin_used' is checked when a PWM is requested.
+>   If the output pin is already assigned, then returns as failure.
+>   If the pin is available, 'pin_used' is set.
+>   When the PWM is not used anymore, then it is cleared.
+>   It is defined as unsigned long type for atomic bit operation APIs,
+>   but only LSB 16bits are used because LP3943 has 16 outputs.
+>=20
+> Cc: Thierry Reding <thierry.reding@gmail.com>
+> Signed-off-by: Milo Kim <milo.kim@ti.com>
+> ---
+> * Patch v4
+>   No update, same as v3.
+>=20
+> * Patch v3
+>   Manual polarity not supported any more.
+>   Add encapsulation functions for accessing internal data structure.
+>   Use pwm_set_chip_data() and pwm_get_chip_data().
+>   And other code fixes based on Thierry's feedback.
+>=20
+>  drivers/pwm/Kconfig      |   10 ++
+>  drivers/pwm/Makefile     |    1 +
+>  drivers/pwm/pwm-lp3943.c |  314 ++++++++++++++++++++++++++++++++++++++++=
+++++++
+>  3 files changed, 325 insertions(+)
+>  create mode 100644 drivers/pwm/pwm-lp3943.c
 
-Shouldnt that be marked __init ?
+Acked-by: Thierry Reding <thierry.reding@gmail.com>
 
-> +{
-> +	/* Disable all interrupts */
-> +	writel(~0, base + IO_DISABLE);
+--17pEHd4RhPHOinZp
+Content-Type: application/pgp-signature
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-	tglx
+iQIcBAEBAgAGBQJSnwR9AAoJEN0jrNd/PrOhFuQQAJMR6YUUxg6LrOAgRxmc9CbX
+xJlEi4FWtpKnET0LWO2oy5/vFM0kMVAs9mZorAOBY5ksPLpF7ALY24zen1lAjA0i
+dKmkpfwylyPSjZKFfO2DBKPmxGsxBBK8aabfty9kAzNRvR/CTUVXbGcESmzu5N44
+7Kihowb2IXp+AtPkmuliWiFPSiPNVRWlBKwtiLifrQVEZCCTg4OQZ97UBIe9JzEt
+ZC24W9w/kYCKBFosadvN9p2r3CotKQnKfCfIGISa/KeTpdzJ7FGxnTJefHxtn5L/
+Fv1Ik1xcYUerzWX0KKxKaYCbT5HkkMMEvpr39VnKLLcv5cg0XfcxcTRzPnIKXNcw
+02zPC1WPbrkq7gdEkP68O8S4GQXQfYRUanMiJ4DnS0GKwZT7GVEuL4uz21AwFZlt
+snaY7tEjiUmJecw7hr/p+9fbdJ05J+50rZCxxT85awH7b9LnD9JVYhVr94z5Z6YW
+EPDIH8bWfzHowTAaS1uGqhjOkFZS8n3+h4XFJVAOnF+vsgJqL4HhOF2DosnKXvD8
+S5ODejxfUMOvqQoSQtHcTb+8mwEnBxaU45UpyFPTRwko3Es2Ags9/C5Ty28hqTVG
+iJpzzdNuEecZkUp6pCgoJVgw+qBWSx4ISmgThDE3KODKm7uAGOsXWHtq4rmu3TKo
+hAwiF2a9RfAyIf3tFLj4
+=Sx4D
+-----END PGP SIGNATURE-----
+
+--17pEHd4RhPHOinZp--
