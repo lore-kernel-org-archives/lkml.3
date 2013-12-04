@@ -1,402 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab3LDWrK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 17:47:10 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:59177 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755146Ab3LDWrG (ORCPT
+	id S932230Ab3LDWwZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 17:52:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35447 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753613Ab3LDWwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 17:47:06 -0500
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/locking 1/4] Documentation/memory-barriers.txt: Add needed ACCESS_ONCE() calls to memory-barriers.txt
-Date: Wed,  4 Dec 2013 14:46:56 -0800
-Message-Id: <1386197219-31964-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <20131204224628.GA30159@linux.vnet.ibm.com>
-References: <20131204224628.GA30159@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120422-0928-0000-0000-00000413A988
+	Wed, 4 Dec 2013 17:52:21 -0500
+Date: Wed, 4 Dec 2013 14:51:40 -0800
+From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
+Message-ID: <tip-e0f6dec35f9286e78879fe1ac92803fd69fc4fdc@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, jesse.brandeburg@intel.com,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, hpa@linux.intel.com,
+        jesse.brandeburg@intel.com
+In-Reply-To: <529E8719.4070202@zytor.com>
+References: <529E8719.4070202@zytor.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, bitops:
+  Correct the assembly constraints to testing bitops
+Git-Commit-ID: e0f6dec35f9286e78879fe1ac92803fd69fc4fdc
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 04 Dec 2013 14:51:47 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Commit-ID:  e0f6dec35f9286e78879fe1ac92803fd69fc4fdc
+Gitweb:     http://git.kernel.org/tip/e0f6dec35f9286e78879fe1ac92803fd69fc4fdc
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Wed, 4 Dec 2013 14:31:28 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 4 Dec 2013 14:31:28 -0800
 
-The Documentation/memory-barriers.txt file was written before the need
-for ACCESS_ONCE() was fully appreciated.  It therefore contains no
-ACCESS_ONCE() calls, which can be a problem when people lift examples
-from it.  This commit therefore adds ACCESS_ONCE() calls.
+x86, bitops: Correct the assembly constraints to testing bitops
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
+In checkin:
+
+0c44c2d0f459 x86: Use asm goto to implement better modify_and_test() functions
+
+the various functions which do modify and test were unified and
+optimized using "asm goto".  However, this change missed the detail
+that the bitops require an "Ir" constraint rather than an "er"
+constraint ("I" = integer constant from 0-31, "e" = signed 32-bit
+integer constant).  This would cause code to miscompile if these
+functions were used on constant bit positions 32-255 and the build to
+fail if used on constant bit positions above 255.
+
+Add the constraints as a parameter to the GEN_BINARY_RMWcc() macro to
+avoid this problem.
+
+Reported-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/529E8719.4070202@zytor.com
 ---
- Documentation/memory-barriers.txt | 206 +++++++++++++++++++++++---------------
- 1 file changed, 126 insertions(+), 80 deletions(-)
+ arch/x86/include/asm/atomic.h      | 4 ++--
+ arch/x86/include/asm/atomic64_64.h | 4 ++--
+ arch/x86/include/asm/bitops.h      | 6 +++---
+ arch/x86/include/asm/local.h       | 4 ++--
+ arch/x86/include/asm/rmwcc.h       | 8 ++++----
+ 5 files changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-index 020cccdbdd0c..1d067235b0bc 100644
---- a/Documentation/memory-barriers.txt
-+++ b/Documentation/memory-barriers.txt
-@@ -194,18 +194,22 @@ There are some minimal guarantees that may be expected of a CPU:
-  (*) On any given CPU, dependent memory accesses will be issued in order, with
-      respect to itself.  This means that for:
+diff --git a/arch/x86/include/asm/atomic.h b/arch/x86/include/asm/atomic.h
+index da31c8b..b17f4f4 100644
+--- a/arch/x86/include/asm/atomic.h
++++ b/arch/x86/include/asm/atomic.h
+@@ -77,7 +77,7 @@ static inline void atomic_sub(int i, atomic_t *v)
+  */
+ static inline int atomic_sub_and_test(int i, atomic_t *v)
+ {
+-	GEN_BINARY_RMWcc(LOCK_PREFIX "subl", v->counter, i, "%0", "e");
++	GEN_BINARY_RMWcc(LOCK_PREFIX "subl", v->counter, "er", i, "%0", "e");
+ }
  
--	Q = P; D = *Q;
-+	ACCESS_ONCE(Q) = P; smp_read_barrier_depends(); D = ACCESS_ONCE(*Q);
+ /**
+@@ -141,7 +141,7 @@ static inline int atomic_inc_and_test(atomic_t *v)
+  */
+ static inline int atomic_add_negative(int i, atomic_t *v)
+ {
+-	GEN_BINARY_RMWcc(LOCK_PREFIX "addl", v->counter, i, "%0", "s");
++	GEN_BINARY_RMWcc(LOCK_PREFIX "addl", v->counter, "er", i, "%0", "s");
+ }
  
-      the CPU will issue the following memory operations:
+ /**
+diff --git a/arch/x86/include/asm/atomic64_64.h b/arch/x86/include/asm/atomic64_64.h
+index 3f065c9..46e9052 100644
+--- a/arch/x86/include/asm/atomic64_64.h
++++ b/arch/x86/include/asm/atomic64_64.h
+@@ -72,7 +72,7 @@ static inline void atomic64_sub(long i, atomic64_t *v)
+  */
+ static inline int atomic64_sub_and_test(long i, atomic64_t *v)
+ {
+-	GEN_BINARY_RMWcc(LOCK_PREFIX "subq", v->counter, i, "%0", "e");
++	GEN_BINARY_RMWcc(LOCK_PREFIX "subq", v->counter, "er", i, "%0", "e");
+ }
  
- 	Q = LOAD P, D = LOAD *Q
+ /**
+@@ -138,7 +138,7 @@ static inline int atomic64_inc_and_test(atomic64_t *v)
+  */
+ static inline int atomic64_add_negative(long i, atomic64_t *v)
+ {
+-	GEN_BINARY_RMWcc(LOCK_PREFIX "addq", v->counter, i, "%0", "s");
++	GEN_BINARY_RMWcc(LOCK_PREFIX "addq", v->counter, "er", i, "%0", "s");
+ }
  
--     and always in that order.
-+     and always in that order.  On most systems, smp_read_barrier_depends()
-+     does nothing, but it is required for DEC Alpha.  The ACCESS_ONCE()
-+     is required to prevent compiler mischief.  Please note that you
-+     should normally use something like rcu_dereference() instead of
-+     open-coding smp_read_barrier_depends().
+ /**
+diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
+index 6d76d09..9fc1af7 100644
+--- a/arch/x86/include/asm/bitops.h
++++ b/arch/x86/include/asm/bitops.h
+@@ -205,7 +205,7 @@ static inline void change_bit(long nr, volatile unsigned long *addr)
+  */
+ static inline int test_and_set_bit(long nr, volatile unsigned long *addr)
+ {
+-	GEN_BINARY_RMWcc(LOCK_PREFIX "bts", *addr, nr, "%0", "c");
++	GEN_BINARY_RMWcc(LOCK_PREFIX "bts", *addr, "Ir", nr, "%0", "c");
+ }
  
-  (*) Overlapping loads and stores within a particular CPU will appear to be
-      ordered within that CPU.  This means that for:
+ /**
+@@ -251,7 +251,7 @@ static inline int __test_and_set_bit(long nr, volatile unsigned long *addr)
+  */
+ static inline int test_and_clear_bit(long nr, volatile unsigned long *addr)
+ {
+-	GEN_BINARY_RMWcc(LOCK_PREFIX "btr", *addr, nr, "%0", "c");
++	GEN_BINARY_RMWcc(LOCK_PREFIX "btr", *addr, "Ir", nr, "%0", "c");
+ }
  
--	a = *X; *X = b;
-+	a = ACCESS_ONCE(*X); ACCESS_ONCE(*X) = b;
+ /**
+@@ -304,7 +304,7 @@ static inline int __test_and_change_bit(long nr, volatile unsigned long *addr)
+  */
+ static inline int test_and_change_bit(long nr, volatile unsigned long *addr)
+ {
+-	GEN_BINARY_RMWcc(LOCK_PREFIX "btc", *addr, nr, "%0", "c");
++	GEN_BINARY_RMWcc(LOCK_PREFIX "btc", *addr, "Ir", nr, "%0", "c");
+ }
  
-      the CPU will only issue the following sequence of memory operations:
+ static __always_inline int constant_test_bit(long nr, const volatile unsigned long *addr)
+diff --git a/arch/x86/include/asm/local.h b/arch/x86/include/asm/local.h
+index 5b23e60..4ad6560 100644
+--- a/arch/x86/include/asm/local.h
++++ b/arch/x86/include/asm/local.h
+@@ -52,7 +52,7 @@ static inline void local_sub(long i, local_t *l)
+  */
+ static inline int local_sub_and_test(long i, local_t *l)
+ {
+-	GEN_BINARY_RMWcc(_ASM_SUB, l->a.counter, i, "%0", "e");
++	GEN_BINARY_RMWcc(_ASM_SUB, l->a.counter, "er", i, "%0", "e");
+ }
  
-@@ -213,7 +217,7 @@ There are some minimal guarantees that may be expected of a CPU:
+ /**
+@@ -92,7 +92,7 @@ static inline int local_inc_and_test(local_t *l)
+  */
+ static inline int local_add_negative(long i, local_t *l)
+ {
+-	GEN_BINARY_RMWcc(_ASM_ADD, l->a.counter, i, "%0", "s");
++	GEN_BINARY_RMWcc(_ASM_ADD, l->a.counter, "er", i, "%0", "s");
+ }
  
-      And for:
+ /**
+diff --git a/arch/x86/include/asm/rmwcc.h b/arch/x86/include/asm/rmwcc.h
+index 1ff990f..8f7866a 100644
+--- a/arch/x86/include/asm/rmwcc.h
++++ b/arch/x86/include/asm/rmwcc.h
+@@ -16,8 +16,8 @@ cc_label:								\
+ #define GEN_UNARY_RMWcc(op, var, arg0, cc) 				\
+ 	__GEN_RMWcc(op " " arg0, var, cc)
  
--	*X = c; d = *X;
-+	ACCESS_ONCE(*X) = c; d = ACCESS_ONCE(*X);
+-#define GEN_BINARY_RMWcc(op, var, val, arg0, cc)			\
+-	__GEN_RMWcc(op " %1, " arg0, var, cc, "er" (val))
++#define GEN_BINARY_RMWcc(op, var, vcon, val, arg0, cc)			\
++	__GEN_RMWcc(op " %1, " arg0, var, cc, vcon (val))
  
-      the CPU will only issue:
+ #else /* !CC_HAVE_ASM_GOTO */
  
-@@ -224,6 +228,41 @@ There are some minimal guarantees that may be expected of a CPU:
+@@ -33,8 +33,8 @@ do {									\
+ #define GEN_UNARY_RMWcc(op, var, arg0, cc)				\
+ 	__GEN_RMWcc(op " " arg0, var, cc)
  
- And there are a number of things that _must_ or _must_not_ be assumed:
+-#define GEN_BINARY_RMWcc(op, var, val, arg0, cc)			\
+-	__GEN_RMWcc(op " %2, " arg0, var, cc, "er" (val))
++#define GEN_BINARY_RMWcc(op, var, vcon, val, arg0, cc)			\
++	__GEN_RMWcc(op " %2, " arg0, var, cc, vcon (val))
  
-+ (*) It _must_not_ be assumed that the compiler will do what you want with
-+     memory references that are not protected by ACCESS_ONCE().  Without
-+     ACCESS_ONCE(), the compiler is within its rights to do all sorts
-+     of "creative" transformations:
-+
-+     (-) Repeat the load, possibly getting a different value on the second
-+         and subsequent loads.  This is especially prone to happen when
-+	 register pressure is high.
-+
-+     (-) Merge adjacent loads and stores to the same location.  The most
-+         familiar example is the transformation from:
-+
-+		while (a)
-+			do_something();
-+
-+         to something like:
-+
-+		if (a)
-+			for (;;)
-+				do_something();
-+
-+         Using ACCESS_ONCE() as follows prevents this sort of optimization:
-+
-+		while (ACCESS_ONCE(a))
-+			do_something();
-+
-+     (-) "Store tearing", where a single store in the source code is split
-+         into smaller stores in the object code.  Note that gcc really
-+	 will do this on some architectures when storing certain constants.
-+	 It can be cheaper to do a series of immediate stores than to
-+	 form the constant in a register and then to store that register.
-+
-+     (-) "Load tearing", which splits loads in a manner analogous to
-+     	 store tearing.
-+
-  (*) It _must_not_ be assumed that independent loads and stores will be issued
-      in the order given.  This means that for:
+ #endif /* CC_HAVE_ASM_GOTO */
  
-@@ -450,14 +489,14 @@ The usage requirements of data dependency barriers are a little subtle, and
- it's not always obvious that they're needed.  To illustrate, consider the
- following sequence of events:
- 
--	CPU 1		CPU 2
--	===============	===============
-+	CPU 1		      CPU 2
-+	===============	      ===============
- 	{ A == 1, B == 2, C = 3, P == &A, Q == &C }
- 	B = 4;
- 	<write barrier>
--	P = &B
--			Q = P;
--			D = *Q;
-+	ACCESS_ONCE(P) = &B
-+			      Q = ACCESS_ONCE(P);
-+			      D = *Q;
- 
- There's a clear data dependency here, and it would seem that by the end of the
- sequence, Q must be either &A or &B, and that:
-@@ -477,15 +516,15 @@ Alpha).
- To deal with this, a data dependency barrier or better must be inserted
- between the address load and the data load:
- 
--	CPU 1		CPU 2
--	===============	===============
-+	CPU 1		      CPU 2
-+	===============	      ===============
- 	{ A == 1, B == 2, C = 3, P == &A, Q == &C }
- 	B = 4;
- 	<write barrier>
--	P = &B
--			Q = P;
--			<data dependency barrier>
--			D = *Q;
-+	ACCESS_ONCE(P) = &B
-+			      Q = ACCESS_ONCE(P);
-+			      <data dependency barrier>
-+			      D = *Q;
- 
- This enforces the occurrence of one of the two implications, and prevents the
- third possibility from arising.
-@@ -504,21 +543,22 @@ Another example of where data dependency barriers might be required is where a
- number is read from memory and then used to calculate the index for an array
- access:
- 
--	CPU 1		CPU 2
--	===============	===============
-+	CPU 1		      CPU 2
-+	===============	      ===============
- 	{ M[0] == 1, M[1] == 2, M[3] = 3, P == 0, Q == 3 }
- 	M[1] = 4;
- 	<write barrier>
--	P = 1
--			Q = P;
--			<data dependency barrier>
--			D = M[Q];
-+	ACCESS_ONCE(P) = 1
-+			      Q = ACCESS_ONCE(P);
-+			      <data dependency barrier>
-+			      D = M[Q];
- 
- 
--The data dependency barrier is very important to the RCU system, for example.
--See rcu_dereference() in include/linux/rcupdate.h.  This permits the current
--target of an RCU'd pointer to be replaced with a new modified target, without
--the replacement target appearing to be incompletely initialised.
-+The data dependency barrier is very important to the RCU system,
-+for example.  See rcu_assign_pointer() and rcu_dereference() in
-+include/linux/rcupdate.h.  This permits the current target of an RCU'd
-+pointer to be replaced with a new modified target, without the replacement
-+target appearing to be incompletely initialised.
- 
- See also the subsection on "Cache Coherency" for a more thorough example.
- 
-@@ -530,22 +570,23 @@ A control dependency requires a full read memory barrier, not simply a data
- dependency barrier to make it work correctly.  Consider the following bit of
- code:
- 
--	q = &a;
-+	q = ACCESS_ONCE(a);
- 	if (p) {
- 		<data dependency barrier>
--		q = &b;
-+		q = ACCESS_ONCE(b);
- 	}
- 	x = *q;
- 
- This will not have the desired effect because there is no actual data
--dependency, but rather a control dependency that the CPU may short-circuit by
--attempting to predict the outcome in advance.  In such a case what's actually
--required is:
-+dependency, but rather a control dependency that the CPU may short-circuit
-+by attempting to predict the outcome in advance, so that other CPUs see
-+the load from b as having happened before the load from a.  In such a
-+case what's actually required is:
- 
--	q = &a;
-+	q = ACCESS_ONCE(a);
- 	if (p) {
- 		<read barrier>
--		q = &b;
-+		q = ACCESS_ONCE(b);
- 	}
- 	x = *q;
- 
-@@ -561,23 +602,23 @@ barrier, though a general barrier would also be viable.  Similarly a read
- barrier or a data dependency barrier should always be paired with at least an
- write barrier, though, again, a general barrier is viable:
- 
--	CPU 1		CPU 2
--	===============	===============
--	a = 1;
-+	CPU 1		      CPU 2
-+	===============	      ===============
-+	ACCESS_ONCE(a) = 1;
- 	<write barrier>
--	b = 2;		x = b;
--			<read barrier>
--			y = a;
-+	ACCESS_ONCE(b) = 2;   x = ACCESS_ONCE(b);
-+			      <read barrier>
-+			      y = ACCESS_ONCE(a);
- 
- Or:
- 
--	CPU 1		CPU 2
--	===============	===============================
-+	CPU 1		      CPU 2
-+	===============	      ===============================
- 	a = 1;
- 	<write barrier>
--	b = &a;		x = b;
--			<data dependency barrier>
--			y = *x;
-+	ACCESS_ONCE(b) = &a;  x = ACCESS_ONCE(b);
-+			      <data dependency barrier>
-+			      y = *x;
- 
- Basically, the read barrier always has to be there, even though it can be of
- the "weaker" type.
-@@ -586,13 +627,13 @@ the "weaker" type.
- match the loads after the read barrier or the data dependency barrier, and vice
- versa:
- 
--	CPU 1                           CPU 2
--	===============                 ===============
--	a = 1;           }----   --->{  v = c
--	b = 2;           }    \ /    {  w = d
--	<write barrier>        \        <read barrier>
--	c = 3;           }    / \    {  x = a;
--	d = 4;           }----   --->{  y = b;
-+	CPU 1                               CPU 2
-+	===================                 ===================
-+	ACCESS_ONCE(a) = 1;  }----   --->{  v = ACCESS_ONCE(c);
-+	ACCESS_ONCE(b) = 2;  }    \ /    {  w = ACCESS_ONCE(d);
-+	<write barrier>            \        <read barrier>
-+	ACCESS_ONCE(c) = 3;  }    / \    {  x = ACCESS_ONCE(a);
-+	ACCESS_ONCE(d) = 4;  }----   --->{  y = ACCESS_ONCE(b);
- 
- 
- EXAMPLES OF MEMORY BARRIER SEQUENCES
-@@ -1435,12 +1476,12 @@ three CPUs; then should the following sequence of events occur:
- 
- 	CPU 1				CPU 2
- 	===============================	===============================
--	*A = a;				*E = e;
-+	ACCESS_ONCE(*A) = a;		ACCESS_ONCE(*E) = e;
- 	LOCK M				LOCK Q
--	*B = b;				*F = f;
--	*C = c;				*G = g;
-+	ACCESS_ONCE(*B) = b;		ACCESS_ONCE(*F) = f;
-+	ACCESS_ONCE(*C) = c;		ACCESS_ONCE(*G) = g;
- 	UNLOCK M			UNLOCK Q
--	*D = d;				*H = h;
-+	ACCESS_ONCE(*D) = d;		ACCESS_ONCE(*H) = h;
- 
- Then there is no guarantee as to what order CPU 3 will see the accesses to *A
- through *H occur in, other than the constraints imposed by the separate locks
-@@ -1460,17 +1501,17 @@ However, if the following occurs:
- 
- 	CPU 1				CPU 2
- 	===============================	===============================
--	*A = a;
--	LOCK M		[1]
--	*B = b;
--	*C = c;
--	UNLOCK M	[1]
--	*D = d;				*E = e;
--					LOCK M		[2]
--					*F = f;
--					*G = g;
--					UNLOCK M	[2]
--					*H = h;
-+	ACCESS_ONCE(*A) = a;
-+	LOCK M		     [1]
-+	ACCESS_ONCE(*B) = b;
-+	ACCESS_ONCE(*C) = c;
-+	UNLOCK M	     [1]
-+	ACCESS_ONCE(*D) = d;		ACCESS_ONCE(*E) = e;
-+					LOCK M		     [2]
-+					ACCESS_ONCE(*F) = f;
-+					ACCESS_ONCE(*G) = g;
-+					UNLOCK M	     [2]
-+					ACCESS_ONCE(*H) = h;
- 
- CPU 3 might see:
- 
-@@ -2177,11 +2218,11 @@ A programmer might take it for granted that the CPU will perform memory
- operations in exactly the order specified, so that if the CPU is, for example,
- given the following piece of code to execute:
- 
--	a = *A;
--	*B = b;
--	c = *C;
--	d = *D;
--	*E = e;
-+	a = ACCESS_ONCE(*A);
-+	ACCESS_ONCE(*B) = b;
-+	c = ACCESS_ONCE(*C);
-+	d = ACCESS_ONCE(*D);
-+	ACCESS_ONCE(*E) = e;
- 
- they would then expect that the CPU will complete the memory operation for each
- instruction before moving on to the next one, leading to a definite sequence of
-@@ -2228,12 +2269,12 @@ However, it is guaranteed that a CPU will be self-consistent: it will see its
- _own_ accesses appear to be correctly ordered, without the need for a memory
- barrier.  For instance with the following code:
- 
--	U = *A;
--	*A = V;
--	*A = W;
--	X = *A;
--	*A = Y;
--	Z = *A;
-+	U = ACCESS_ONCE(*A);
-+	ACCESS_ONCE(*A) = V;
-+	ACCESS_ONCE(*A) = W;
-+	X = ACCESS_ONCE(*A);
-+	ACCESS_ONCE(*A) = Y;
-+	Z = ACCESS_ONCE(*A);
- 
- and assuming no intervention by an external influence, it can be assumed that
- the final result will appear to be:
-@@ -2250,7 +2291,12 @@ accesses:
- 
- in that order, but, without intervention, the sequence may have almost any
- combination of elements combined or discarded, provided the program's view of
--the world remains consistent.
-+the world remains consistent.  Note that ACCESS_ONCE() is -not- optional
-+in the above example, as there are architectures where a given CPU might
-+interchange successive loads to the same location.  On such architectures,
-+ACCESS_ONCE() does whatever is necessary to prevent this, for example, on
-+Itanium the volatile casts used by ACCESS_ONCE() cause GCC to emit the
-+special ld.acq and st.rel instructions that prevent such reordering.
- 
- The compiler may also combine, discard or defer elements of the sequence before
- the CPU even sees them.
-@@ -2264,13 +2310,13 @@ may be reduced to:
- 
- 	*A = W;
- 
--since, without a write barrier, it can be assumed that the effect of the
--storage of V to *A is lost.  Similarly:
-+since, without either a write barrier or an ACCESS_ONCE(), it can be
-+assumed that the effect of the storage of V to *A is lost.  Similarly:
- 
- 	*A = Y;
- 	Z = *A;
- 
--may, without a memory barrier, be reduced to:
-+may, without a memory barrier or an ACCESS_ONCE(), be reduced to:
- 
- 	*A = Y;
- 	Z = Y;
--- 
-1.8.1.5
-
