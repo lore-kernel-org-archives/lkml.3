@@ -1,46 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932887Ab3LDQtQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 11:49:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13973 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932510Ab3LDQtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 11:49:15 -0500
-Date: Wed, 4 Dec 2013 17:48:17 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Jiri Kosina <jkosina@suse.cz>, Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH?] uprobes: change uprobe_write_opcode() to modify the
-	page directly
-Message-ID: <20131204164817.GA5271@redhat.com>
-References: <CA+55aFw3N=iNW2Ej6w7oksX5JDVis7QL=9X9D7JB_tKZhrjsLw@mail.gmail.com> <529E2F0C.8070405@zytor.com> <20131203200147.GB19083@redhat.com> <529E3D4C.9070403@zytor.com> <20131203203826.GA24812@redhat.com> <e6082bc4-c910-4a36-9e40-624b9319f5fb@email.android.com> <20131203205400.GA25735@redhat.com> <CA+55aFxKk+O4e51sq6iqunVWAwKfNAnZ-3=aZT-VuRpDAZUnzQ@mail.gmail.com> <20131204111125.GA26552@redhat.com> <529F51D9.7010001@zytor.com>
+	id S933041Ab3LDQts (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 11:49:48 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:47924 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932510Ab3LDQtp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 11:49:45 -0500
+Date: Wed, 4 Dec 2013 11:48:03 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: stefano.stabellini@eu.citrix.com, ian.campbell@citrix.com,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        leosilva@linux.vnet.ibm.com, ashley@ashleylai.com, peterhuewe@gmx.de,
+        mail@srajiv.net, tpmdd@selhorst.net, tpmdd@sirrix.com,
+        bhelgaas@google.com, plagnioj@jcrosoft.com, tomi.valkeinen@ti.com,
+        tpmdd-devel@lists.sourceforge.net, linux-input@vger.kernel.org,
+        netdev@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH] xen/pvhvm: If xen_platform_pci=0 is set don't blow up.
+Message-ID: <20131204164802.GG391@pegasus.dumpdata.com>
+References: <1386105246-14337-1-git-send-email-konrad.wilk@oracle.com>
+ <20131204164218.GA8838@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <529F51D9.7010001@zytor.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20131204164218.GA8838@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04, H. Peter Anvin wrote:
->
-> On 12/04/2013 03:11 AM, Oleg Nesterov wrote:
-> >
-> > It is still not clear to me if we can simply change a single byte on
-> > x86 or not, but at least on powerpc we need to update 4 bytes. Perhaps
-> > we can conditionalize these pte games later.
-> >
->
-> But 4 aligned bytes can be written as a single transaction.
+> > which is hardly nice. This patch fixes this by having each
+> > PV driver check for:
+> >  - if running in PV, then it is fine to execute (as that is their
+> >    native environment).
+> >  - if running in HVM, check if user wanted 'xen_emul_unplug=never',
+> >    in which case bail out and don't load PV drivers.
+> >  - if running in HVM, and if PCI device 5853:0001 (xen_platform_pci)
+> >    does not exist, then bail out and not load PV drivers.
+> > 
+> > P.S.
+> > Ian Campbell suggested getting rid of 'xen_platform_pci_unplug'
+> > but unfortunatly the xen-blkfront driver is using it, so we
+> > cannot do it.
+> > 
+> > Reported-by: Sander Eikelenboom <linux@eikelenboom.it
+> > Reported-by: Anthony PERARD <anthony.perard@citrix.com>
+> > Reported-by: Fabio Fantoni <fabio.fantoni@m2r.biz>
+> 
+> For input:
+> 
+> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-Ah yes, this is true.
+Thank you. I need to do some extra changes to the other subsystems but
+for the fb/kbd itshould be still throught the same function as this
+patch has exposed. I will repost it and include your Ack if you are OK
+with that?
+> 
+> ...
+> 
+> > +#if defined(CONFIG_XEN_PVHVM)
+> > +extern bool xen_has_pv_devices(void);
+> > +#else
+> > +static inline bool xen_has_pv_devices(void)
+> > +{
+> > +#if defined(CONFIG_XEN)
+> > +	return true;
+> > +#else
+> > +	return false;
+> > +#endif
+> 
+> 	return IS_ENABLED(CONFIG_XEN);
+> 
+> ?
 
-Oleg.
-
+Oh, awesome!  Thanks!
