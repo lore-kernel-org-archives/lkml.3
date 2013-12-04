@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932573Ab3LDPP7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 10:15:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34035 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932542Ab3LDPP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 10:15:56 -0500
-Message-ID: <529F4728.20500@redhat.com>
-Date: Wed, 04 Dec 2013 10:15:52 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S932312Ab3LDPRL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 10:17:11 -0500
+Received: from b232-35.smtp-out.amazonses.com ([199.127.232.35]:49487 "EHLO
+	b232-35.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932254Ab3LDPRJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 10:17:09 -0500
+Date: Wed, 4 Dec 2013 15:17:08 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, azurIt <azurit@pobox.sk>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Christian Casteyde <casteyde.christian@free.fr>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [patch 2/2] fs: buffer: move allocation failure loop into the
+ allocator
+In-Reply-To: <20131203180717.94c013d1.akpm@linux-foundation.org>
+Message-ID: <00000142be2f1de0-764bb035-adbc-4367-b2b4-bf05498510a6-000000@email.amazonses.com>
+References: <1381265890-11333-1-git-send-email-hannes@cmpxchg.org> <1381265890-11333-2-git-send-email-hannes@cmpxchg.org> <20131203165910.54d6b4724a1f3e329af52ac6@linux-foundation.org> <20131204015218.GA19709@lge.com>
+ <20131203180717.94c013d1.akpm@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH] x86: Add check for number of available vectors before
- CPU down
-References: <1384878243-5086-1-git-send-email-prarit@redhat.com> <3E5A0FA7E9CA944F9D5414FEC6C712205A59505E@ORSMSX106.amr.corp.intel.com>
-In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C712205A59505E@ORSMSX106.amr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.127.232.35
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 3 Dec 2013, Andrew Morton wrote:
 
+> >  	page = alloc_slab_page(alloc_gfp, node, oo);
+> >  	if (unlikely(!page)) {
+> >  		oo = s->min;
+>
+> What is the value of s->min?  Please tell me it's zero.
 
-On 12/03/2013 06:42 PM, Yu, Fenghua wrote:
-> 
-> 
->> -----Original Message-----
->> From: Prarit Bhargava [mailto:prarit@redhat.com]
->>
->> Second try at this ...
->>
->> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64791
->>
->> When a cpu is downed on a system, the irqs on the cpu are assigned to
->> other cpus.  It is possible, however, that when a cpu is downed there
->> aren't enough free vectors on the remaining cpus to account for the
->> vectors from the cpu that is being downed.
->>
->> This results in an interesting "overflow" condition where irqs are
->> "assigned" to a CPU but are not handled.
->>
->> For example, when downing cpus on a 1-64 logical processor system:
->>
->> +			if (per_cpu(vector_irq, cpu)[vector] < 0)
->> +				count++;
-> 
-> But later on fixup_irqs will set some of vector_irq vector as -1 on this
-> to-be-disabled cpu. That will release vectors assigned to this cpu. So
-> checking vector_irq at this point before fixup_irqs doesn't make sense, right?
-> 
+It usually is.
 
-Fenghua, IIUC the purpose of fixup_irqs() is to migrate irqs from the
-to-be-disabled cpu to other cpus by using affinity, etc..  The to-be-disabled
-cpus' irqs are set to -1, however, only after they are migrated off to an
-enabled cpu.
+> > @@ -1349,7 +1350,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+> >  		&& !(s->flags & (SLAB_NOTRACK | DEBUG_DEFAULT_FLAGS))) {
+> >  		int pages = 1 << oo_order(oo);
+> >
+> > -		kmemcheck_alloc_shadow(page, oo_order(oo), flags, node);
+> > +		kmemcheck_alloc_shadow(page, oo_order(oo), alloc_gfp, node);
+>
+> That seems reasonable, assuming kmemcheck can handle the allocation
+> failure.
+>
+>
+> Still I dislike this practice of using unnecessarily large allocations.
+> What does it gain us?  Slightly improved object packing density.
+> Anything else?
 
-This check I'm introducing is well before that stage in effort to determine
-whether or not the system has "room" for the irqs on the remaining cpus.
+The fastpath for slub works only within the bounds of a single slab page.
+Therefore a larger frame increases the number of allocation possible from
+the fastpath without having to use the slowpath and also reduces the
+management overhead in the partial lists.
 
-So I think that the check is in the right spot.  We should do it early.  I
-suppose an argument could be made to do the check in fixup_irqs(), however, my
-feeling is by then it is very late in the process of downing the cpu.
+There is a kernel parameter that can be used to control the maximum order
 
-I noticed a subtle bug in my patch that I will send with a [v2].  I'm not taking
-into account per-cpu interrupts in the check_vectors() function.
+	slub_max_order
 
-P.
+The default is PAGE_ALLOC_COSTLY_ORDER. See also
+Documentation/vm/slub.txt.
 
-> Thanks.
-> 
-> -Fenghua
-> 
+Booting with slub_max_order=1 will force order 0/1 pages.
+
