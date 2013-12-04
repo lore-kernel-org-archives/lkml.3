@@ -1,101 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220Ab3LDMhc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 07:37:32 -0500
-Received: from 7of9.schinagl.nl ([88.159.158.68]:33382 "EHLO 7of9.schinagl.nl"
+	id S1755685Ab3LDMof (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 07:44:35 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:43436 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932128Ab3LDMha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 07:37:30 -0500
-Message-ID: <529F21B6.1020909@schinagl.nl>
-Date: Wed, 04 Dec 2013 13:36:06 +0100
-From: Oliver Schinagl <oliver@schinagl.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1754872Ab3LDMod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 07:44:33 -0500
+Message-ID: <529F2391.8070202@ti.com>
+Date: Wed, 4 Dec 2013 18:14:01 +0530
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: grant.likely@linaro.org, rob.herring@calxeda.com,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, dev@linux-sunxi.org,
-        maxime.ripard@free-electrons.com, ijc@hellion.org.uk,
-        hdegoede@redhat.com, oliver+list@schinagl.nl
-Subject: Re: [PATCH 1/3] RFC: AHCI: libahci is missing DMA
-References: <1386159055-10264-1-git-send-email-oliver@schinagl.nl> <1386159055-10264-2-git-send-email-oliver@schinagl.nl> <20131204123234.GC3158@htj.dyndns.org>
-In-Reply-To: <20131204123234.GC3158@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: <nm@ti.com>, Tony Lindgren <tony@atomide.com>
+CC: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: OMAP2+: omap_device: add fail hook for runtime_pm
+ when bad data is detected
+References: <1386121153-32351-1-git-send-email-nm@ti.com> <529EE305.70001@ti.com> <529F12F4.70304@ti.com>
+In-Reply-To: <529F12F4.70304@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Tejun Heo,
-
-On 04-12-13 13:32, Tejun Heo wrote:
-> On Wed, Dec 04, 2013 at 01:10:53PM +0100, oliver@schinagl.nl wrote:
->> From: Oliver Schinagl <oliver@schinagl.nl>
+On 12/04/2013 05:03 PM, Nishanth Menon wrote:
+> On 12/04/2013 02:08 AM, Joel Fernandes wrote:
+>> On 12/04/2013 07:09 AM, Nishanth Menon wrote:
+>>> Due to the cross dependencies between hwmod for automanaged device
+>>> information for OMAP and dts node definitions, we can run into scenarios
+>>> where the dts node is defined, however it's hwmod entry is yet to be
+>>> added. In these cases:
+>>> a) omap_device does not register a pm_domain (since it cannot find
+>>>     hwmod entry).
+>>> b) driver does not know about (a), does a pm_runtime_get_sync which
+>>>     never fails
+>>> c) It then tries to do some operation on the device (such as read the
+>>>    revision register (as part of probe) without clock or adequate OMAP
+>>>    generic PM operation performed for enabling the module.
+>>>
+>>> This causes a crash such as that reported in:
+>>> https://bugzilla.kernel.org/show_bug.cgi?id=66441
+>>>
+>>> When 'ti,hwmod' is provided in dt node, it is expected that the device
+>>> will not function without the OMAP's power automanagement. Hence, when
+>>> we hit a fail condition (due to hwmod entries not present or other
+>>> similar scenario), fail at pm_domain level due to lack of data, provide
+>>> enough information for it to be fixed, however, it allows for the driver
+>>> to take appropriate measures to prevent crash.
+>>>
+>>> Reported-by: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>
+>>> Signed-off-by: Nishanth Menon <nm@ti.com>
+>>> ---
+>>>   arch/arm/mach-omap2/omap_device.c |   24 ++++++++++++++++++++++++
+>>>   arch/arm/mach-omap2/omap_device.h |    1 +
+>>>   2 files changed, 25 insertions(+)
+>>>
+>>> diff --git a/arch/arm/mach-omap2/omap_device.c
+>>> b/arch/arm/mach-omap2/omap_device.c
+>>> index 53f0735..e0a398c 100644
+>>> --- a/arch/arm/mach-omap2/omap_device.c
+>>> +++ b/arch/arm/mach-omap2/omap_device.c
+>>> @@ -183,6 +183,10 @@ static int omap_device_build_from_dt(struct
+>>> platform_device *pdev)
+>>>   odbfd_exit1:
+>>>       kfree(hwmods);
+>>>   odbfd_exit:
+>>> +    /* if data/we are at fault.. load up a fail handler */
+>>> +    if (ret)
+>>> +        pdev->dev.pm_domain = &omap_device_fail_pm_domain;
+>>> +
+>>>       return ret;
+>>>   }
+>>>
 >>
->> The Allwinner sunxi platforms have patched in the following to enable
->> DMA. This patch enables DMA controllers for the SUNXI Architecture.
+>> Just wondering, can't we just print the warning here instead of registering new
+>> pm_domain callbacks?
 >>
->> Signed-off-by: Olliver Schinagl <oliver@schinagl.nl>
->> ---
->>   drivers/ata/ahci.h    | 6 ++++++
->>   drivers/ata/libahci.c | 8 ++++++++
->>   2 files changed, 14 insertions(+)
->>
->> diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
->> index 2289efdf..2bf2423 100644
->> --- a/drivers/ata/ahci.h
->> +++ b/drivers/ata/ahci.h
->> @@ -138,6 +138,7 @@ enum {
->>   	PORT_SCR_NTF		= 0x3c, /* SATA phy register: SNotification */
->>   	PORT_FBS		= 0x40, /* FIS-based Switching */
->>   	PORT_DEVSLP		= 0x44, /* device sleep */
->> +	PORT_DMA		= 0x70, /* direct memory access */
->>   
->>   	/* PORT_IRQ_{STAT,MASK} bits */
->>   	PORT_IRQ_COLD_PRES	= (1 << 31), /* cold presence detect */
->> @@ -209,6 +210,11 @@ enum {
->>   	PORT_DEVSLP_DSP		= (1 << 1),       /* DevSlp present */
->>   	PORT_DEVSLP_ADSE	= (1 << 0),       /* Aggressive DevSlp enable */
->>   
->> +	/* PORT_DMA bits */
->> +	PORT_DMA_SETUP_OFFSET	= 8, /* dma setup offset */
->> +	PORT_DMA_SETUP_MASK	= (0xff << PORT_DMA_SETUP_OFFSET),/* dma mask */
->> +	PORT_DMA_SETUP_INIT	= (0x44 << 0),
-> Ummm... this doesn't belong to ahci proper, right?
-I have no idea why Allwinner added that and what it really does. We have 
-no documentation, only code drops.
+> 
+> I suggest you might want to read the commit message again.. but lets try once
+> again:
 
-I had high hopes someone around here knows what it could mean and where 
-it does belong.
->
->> +
->>   	/* hpriv->flags bits */
->>   
->>   #define AHCI_HFLAGS(flags)		.private_data	= (void *)(flags)
->> diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
->> index c482f8c..d697a74 100644
->> --- a/drivers/ata/libahci.c
->> +++ b/drivers/ata/libahci.c
->> @@ -570,6 +570,14 @@ void ahci_start_engine(struct ata_port *ap)
->>   	void __iomem *port_mmio = ahci_port_base(ap);
->>   	u32 tmp;
->>   
->> +#ifdef CONFIG_ARCH_SUNXI
->> +	/* Setup DMA before DMA start */
->> +	tmp = readl(port_mmio + PORT_DMA);
->> +	tmp &= ~PORT_DMA_SETUP_MASK;
->> +	tmp |= PORT_DMA_SETUP_INIT << PORT_DMA_SETUP_OFFSET;
->> +	writel(tmp, port_mmio + PORT_DMA);
->> +#endif
-> If this is something platform device specific, wouldn't overriding
-> ->port_start() which wraps around ahci_port_start() make more sense?
-Again, I don't know, this is where Allwinner had put it. We don't even 
-know who's IP they use. I'm happy to start experimenting moving this 
-around a bit and will take your clue to figure out what you mean and if 
-it could work.
+I know what your patch does and what the problem you're trying to solve is.. Was
+just trying to see if there's a better way of doing what you're trying to do..
 
-Oliver
->
-> Thanks.
->
+>>> b) driver does not know about (a), does a pm_runtime_get_sync which
+>>>     never fails"
+> 
+> A device node stated it will have hwmod to adequately control it, but in
+> reality, as in this case, it does not. how does printing a warning alone help
+> the driver which is not aware of these? The driver's attempt at pm_runtime_sync
+> should fail, as that is what "ti,hwmod" property controls.
+
+Why not do the following?
+
+Assign pm_domain as omap_device_pm_domain always regardless of error or not.
+
+Then in the _od_runtime_resume, check if the od or hwmods exists. If not, print
+the warning. That way you don't need to register additional special callbacks
+just to print a warning and will prolly be fewer LoC fwiw.
+
+That may be harder to do and may require additional checks in omap_device_enable
+etc, not sure. In that case, your approach is certainly the next best way. Just
+thought its worth looking into :)
+
+regards,
+
+-Joel
 
