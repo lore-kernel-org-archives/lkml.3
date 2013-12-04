@@ -1,93 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621Ab3LDHfm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 02:35:42 -0500
-Received: from relay.parallels.com ([195.214.232.42]:50581 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754112Ab3LDHfk (ORCPT
+	id S1754527Ab3LDHjJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 02:39:09 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:37878 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158Ab3LDHjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 02:35:40 -0500
-Message-ID: <529EDB41.8030505@parallels.com>
-Date: Wed, 4 Dec 2013 11:35:29 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+	Wed, 4 Dec 2013 02:39:07 -0500
+Message-ID: <529EDC14.5070700@hitachi.com>
+Date: Wed, 04 Dec 2013 16:39:00 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Glauber Costa <glommer@gmail.com>
-CC: Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] memcg: remove KMEM_ACCOUNTED_ACTIVATED
-References: <1385989693-28788-1-git-send-email-vdavydov@parallels.com> <20131202181501.GA5524@dhcp22.suse.cz> <CAA6-i6rWsZNQmFY5L-=yc6TaTGyg4hP4qn9gMZVsu8wWJ=1ywg@mail.gmail.com> <529CDDB3.3090301@parallels.com> <CAA6-i6q+WooWMSbJwLS=ByVu=fgAQuep99iP7tAXiuLABu2gVA@mail.gmail.com> <529D9100.4070207@parallels.com> <CAA6-i6q2viRkbjYOHcoiCHgvdfbfo-4j0k9gj9AA4SH1YToqVg@mail.gmail.com>
-In-Reply-To: <CAA6-i6q2viRkbjYOHcoiCHgvdfbfo-4j0k9gj9AA4SH1YToqVg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v4 0/6] kprobes: introduce NOKPROBE_SYMBOL() and
+ fixes crash bugs
+References: <20131204012841.22118.82992.stgit@kbuild-fedora.novalocal> <CA+b37P3R7r6DoJCX7GQD+BREGsb+s2WBc71c03TVFCPi6=-mkw@mail.gmail.com>
+In-Reply-To: <CA+b37P3R7r6DoJCX7GQD+BREGsb+s2WBc71c03TVFCPi6=-mkw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2013 02:38 AM, Glauber Costa wrote:
->> In memcg_update_kmem_limit() we do the whole process of limit
->> initialization under a mutex so the situation we need protection from in
->> tcp_update_limit() is impossible. BTW once set, the 'activated' flag is
->> never cleared and never checked alone, only along with the 'active'
->> flag, that's why I doubt we need it at all.
-> The updates are protected by a mutex, but the readers are not, and should not.
-> So we can still be patching the readers, and the double-flag was
-> initially used so
-> we can make sure that both flags are only set after the static branches are in.
->
-> Note that one of the flags is set inside memcg_update_cache_sizes(). After that,
-> we call static_key_slow_inc(). At this point, someone whose code is
-> patched in could
-> start accounting, but it shouldn't - because not all sites are patched in.
->
-> So after the update is done, we set the other flag, and now everybody
-> will start going
-> through.
->
-> Could you do something clever with just one flag? Probably yes. But I
-> doubt it would
-> be that much cleaner, this is just the way that patching sites work.
+(2013/12/04 11:54), Sandeepa Prabhu wrote:
+> On 4 December 2013 06:58, Masami Hiramatsu
+> <masami.hiramatsu.pt@hitachi.com> wrote:
+>> Hi,
+>> Here is the version 4 of NOKPORBE_SYMBOL series.
+>>
+>> In this version, I removed the cleanup patches and
+>> add bugfixes I've found, since those bugs will be
+>> critical.
+>> Rest of the cleanup and visible blacklists will be
+>> proposed later in another series.
+>>
+>> Oh, just one new thing, I added a new RFC patch which
+>> removes the dependency of notify_die() from kprobes
+>> miss-hit/recovery path. Since the notify_die() involves
+>> locking and lockdep code which invokes a lot of heavy
+>> printk functions etc. This helped me to minimize the
+>> blacklist and provides more stability for kprobes.
+>> Actually, most of int3 handlers are already called
+>> from do_int3 directly, I think this change is acceptable
+>> too.
+>>
+>> Here is the updates about NOKPROBE_SYMBOL().
+>>  - Now _ASM_NOKPROBE() macro is introduced for assembly
+>>    symbols on x86.
+>>  - Rename kprobe_blackpoint to kprobe_blacklist_entry
+>>    and simplify it. Also NOKPROBE_SYMBOL() macro just
+>>    saves the address of non-probe-able symbols.
+>>
+>> ---
+>>
+>> Masami Hiramatsu (6):
+> 
+>>       kprobes: Prohibit probing on .entry.text code
+>>       kprobes: Introduce NOKPROBE_SYMBOL() macro for blacklist
+> Hi Masami,
+> Is it good idea to split  "arch/x86" code from generic kernel changes?
+> Then we just need to take above two patches for verifying it on arm64
+> or other platforms.
 
-Thank you for spending your time to listen to me.
+Yeah, it can be.
+However I think you can apply it without any problem on arm64 tree too,
+since it "just adds" an asm macro in arch/x86/include/asm/asm.h.
+It should not have any effect for other arch. Could you try it? :)
 
-Let me try to explain what is bothering me.
+Thank you,
 
-We have two state bits for each memcg, 'active' and 'activated'. There
-are two scenarios where the bits can be modified:
 
-1) The kmem limit is set on a memcg for the first time -
-memcg_update_kmem_limit(). Here we call memcg_update_cache_sizes(),
-which sets the 'activated' bit on success, then update static branching,
-then set the 'active' bit. All three actions are done atomically in
-respect to other tasks setting the limit due to the set_limit_mutex.
-After both bits are set, they never get cleared for the memcg.
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-2) When a subgroup of a kmem-active cgroup is created -
-memcg_propagate_kmem(). Here we copy kmem_account_flags from the parent,
-then increase static branching refcounter, then call
-memcg_update_cache_sizes() for the new memcg, which may clear the
-'activated' bit on failure. After successful execution, the state bits
-never get cleared for the new memcg.
 
-In scenario 2 there is no need bothering about the flags setting order,
-because we don't have any tasks in the cgroup yet - the tasks can be
-moved in only after css_online finishes when we have both of the bits
-set and the static branching enabled. Actually, we already do not bother
-about it, because we have both bits set before the cgroup is fully
-initialized (memcg_update_cache_sizes() is called).
-
-Let's look at scenario 1. There we have two bits - 'activated' and
-'active' - the latter is always set after the former and after the
-static branching is enabled. Moreover, none of the bits is cleared once
-it's set. That said checking if both bits are set - I mean
-memcg_can_account_kmem() - is equivalent to checking if the 'acitve' bit
-is set. Next, the 'activated' bit is never checked alone, only along
-with the 'active' bit in memcg_can_account_kmem() - I do not count
-(!memcg->kmem_account_flags) check in memcg_update_kmem_limit(), because
-it is done under the set_limit_mutex. What's the deal having it then?
-
-Thanks and sorry for disturbing you.
