@@ -1,48 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549Ab3LDEnT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 23:43:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12483 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753811Ab3LDEnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 23:43:17 -0500
-Date: Tue, 3 Dec 2013 23:43:06 -0500
-From: Dave Jones <davej@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        gregkh@linuxfoundation.org
-Subject: Re: sysfs: use a separate locking class for open files depending on
- mmap
-Message-ID: <20131204044306.GA13248@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, Tejun Heo <tj@kernel.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	gregkh@linuxfoundation.org
-References: <20131128051223.45739660885@gitolite.kernel.org>
- <20131203184324.GA11320@redhat.com>
- <20131203211028.GN8277@htj.dyndns.org>
- <20131203211515.GA17951@redhat.com>
- <20131203213649.GO8277@htj.dyndns.org>
- <20131203221543.GP8277@htj.dyndns.org>
+	id S1753538Ab3LDEv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 23:51:56 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:45725 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752477Ab3LDEvy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 23:51:54 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlsHALiznlJ5LHyk/2dsb2JhbABagweDMbB+hU+BHRd0giUBAQQBDhkTHA8UBQsIAw4KCSUPBSUDIRMbh2AFwUAXFo5oB4QzA5gTkhSDPSg
+Date: Wed, 4 Dec 2013 15:51:47 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: hannes@cmpxchg.org, mhocko@suse.cz, dchinner@redhat.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups@vger.kernel.org, devel@openvz.org,
+        glommer@openvz.org, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v12 09/18] vmscan: shrink slab on memcg pressure
+Message-ID: <20131204045147.GN10988@dastard>
+References: <cover.1385974612.git.vdavydov@parallels.com>
+ <be01fd9afeedb7d5c7979347f4d6ddaf67c9082d.1385974612.git.vdavydov@parallels.com>
+ <20131203104849.GD8803@dastard>
+ <529DCB7D.10205@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131203221543.GP8277@htj.dyndns.org>
+In-Reply-To: <529DCB7D.10205@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 05:15:43PM -0500, Tejun Heo wrote:
- > Hello,
- > 
- > Can you please test whether this patch makes the lockdep warning go
- > away?
- > 
- > Thanks a lot!
- 
-been running a few hours now, looks good.
+On Tue, Dec 03, 2013 at 04:15:57PM +0400, Vladimir Davydov wrote:
+> On 12/03/2013 02:48 PM, Dave Chinner wrote:
+> >> @@ -236,11 +236,17 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+> >>  		return 0;
+> >>  
+> >>  	/*
+> >> -	 * copy the current shrinker scan count into a local variable
+> >> -	 * and zero it so that other concurrent shrinker invocations
+> >> -	 * don't also do this scanning work.
+> >> +	 * Do not touch global counter of deferred objects on memcg pressure to
+> >> +	 * avoid isolation issues. Ideally the counter should be per-memcg.
+> >>  	 */
+> >> -	nr = atomic_long_xchg(&shrinker->nr_deferred[nid], 0);
+> >> +	if (!shrinkctl->target_mem_cgroup) {
+> >> +		/*
+> >> +		 * copy the current shrinker scan count into a local variable
+> >> +		 * and zero it so that other concurrent shrinker invocations
+> >> +		 * don't also do this scanning work.
+> >> +		 */
+> >> +		nr = atomic_long_xchg(&shrinker->nr_deferred[nid], 0);
+> >> +	}
+> > That's ugly. Effectively it means that memcg reclaim is going to be
+> > completely ineffective when large numbers of allocations and hence
+> > reclaim attempts are done under GFP_NOFS context.
+> >
+> > The only thing that keeps filesystem caches in balance when there is
+> > lots of filesystem work going on (i.e. lots of GFP_NOFS allocations)
+> > is the deferal of reclaim work to a context that can do something
+> > about it.
+> 
+> Imagine the situation: a memcg issues a GFP_NOFS allocation and goes to
+> shrink_slab() where it defers them to the global counter; then another
+> memcg issues a GFP_KERNEL allocation, also goes to shrink_slab() where
+> it sees a huge number of deferred objects and starts shrinking them,
+> which is not good IMHO.
 
-Tested-by: Dave Jones <davej@fedoraproject.org>
+That's exactly what the deferred mechanism is for - we know we have
+to do the work, but we can't do it right now so let someone else do
+it who can.
 
-	Dave
+In most cases, deferral is handled by kswapd, because when a
+filesystem workload is causing memory pressure then most allocations
+are done in GFP_NOFS conditions. Hence the only memory reclaim that
+can make progress here is kswapd.
 
+Right now, you aren't deferring any of this memory pressure to some
+other agent, so it just does not get done. That's a massive problem
+- it's a design flaw - and instead I see lots of crazy hacks being
+added to do stuff that should simply be deferred to kswapd like is
+done for global memory pressure.
+
+Hell, kswapd shoul dbe allowed to walk memcg LRU lists and trim
+them, just like it does for the global lists. We only need a single
+"deferred work" counter per node for that - just let kswapd
+proportion the deferred work over the per-node LRU and the
+memcgs....
+
+> I understand that nr_deferred is necessary, but
+> I think it should be per-memcg. What do you think about moving it to
+> list_lru?
+
+It's part of the shrinker state that is used to calculate how much
+work the shrinker needs to do. We can't hold it in the LRU, because
+there is no guarantee that a shrinker actually uses a list_lru, and
+shrinkers can be memcg aware without using list_lru infrastructure.
+
+So, no, moving it to the list-lru is not a solution....
+
+> > So, if the memcg can't make progress, why wouldn't you defer the
+> > work to the global scan? Or can't a global scan trim memcg LRUs?
+> > And if it can't, then isn't that a major design flaw? Why not just
+> > allow kswapd to walk memcg LRUs in the background?
+> >
+> > /me just looked at patch 13
+> >
+> > Yeah, this goes some way to explaining why something like patch 13
+> > is necessary - slab shrinkers are not keeping up with page cache
+> > reclaim because of GFP_NOFS allocations, and so the page cache
+> > empties only leaving slab caches to be trimmed....
+> >
+> >
+> >> +static unsigned long
+> >> +shrink_slab_memcg(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+> >> +		  unsigned long fraction, unsigned long denominator)
+> > what's this function got to do with memcgs? Why did you rename it
+> > from the self explanitory shrink_slab_one() name that Glauber gave
+> > it?
+> 
+> When I sent the previous version, Johannes Weiner disliked the name that
+> was why I renamed it, now you don't like the new name and ask for the
+> old one :-) But why do you think that shrink_slab_one() is
+> self-explanatory while shrink_slab_memcg() is not? I mean
+> shrink_slab_memcg() means "shrink slab accounted to a memcg" just like
+
+But it's not shrinking a slab accounted to a memcg - the memcg can
+be null. All it's is doing is executing a shrinker scan...
+
+> shrink_slab_node() means "shrink slab on the node" while seeing
+> shrink_slab_one() I would ask "one what?".
+
+It's running a shrinker scan on *one* shrinker. It doesn't matter if
+the shrinker is memcg aware, or numa aware, it's just running one
+shrinker....
+
+So, while shrink_slab_one() might not be the best name, it's
+certainly more correct than shrink_slab_memcg(). Perhaps it would be
+better named run_shrinker()....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
