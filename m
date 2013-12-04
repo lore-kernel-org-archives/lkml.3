@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932854Ab3LDQsp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 11:48:45 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:20782 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932448Ab3LDQsn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 11:48:43 -0500
-Message-ID: <1386175428.1791.225.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v4 07/12] efi: passing kexec necessary efi data via
- setup_data
-From: Toshi Kani <toshi.kani@hp.com>
-To: Dave Young <dyoung@redhat.com>
-Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
-        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.infradead.org, greg@kroah.com, matt@console-pimps.org
-Date: Wed, 04 Dec 2013 09:43:48 -0700
-In-Reply-To: <20131204024610.GA3764@dhcp-16-126.nay.redhat.com>
-References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
-	 <1385445477-9665-8-git-send-email-dyoung@redhat.com>
-	 <20131127140732.GD32267@pd.tnic>
-	 <20131129091415.GH4186@dhcp-16-126.nay.redhat.com>
-	 <1386023600.1791.201.camel@misato.fc.hp.com>
-	 <1386034289.1791.210.camel@misato.fc.hp.com>
-	 <20131203015613.GB3980@dhcp-16-126.nay.redhat.com>
-	 <1386085140.1791.218.camel@misato.fc.hp.com>
-	 <20131204024610.GA3764@dhcp-16-126.nay.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932887Ab3LDQtQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 11:49:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13973 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932510Ab3LDQtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 11:49:15 -0500
+Date: Wed, 4 Dec 2013 17:48:17 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Jiri Kosina <jkosina@suse.cz>, Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH?] uprobes: change uprobe_write_opcode() to modify the
+	page directly
+Message-ID: <20131204164817.GA5271@redhat.com>
+References: <CA+55aFw3N=iNW2Ej6w7oksX5JDVis7QL=9X9D7JB_tKZhrjsLw@mail.gmail.com> <529E2F0C.8070405@zytor.com> <20131203200147.GB19083@redhat.com> <529E3D4C.9070403@zytor.com> <20131203203826.GA24812@redhat.com> <e6082bc4-c910-4a36-9e40-624b9319f5fb@email.android.com> <20131203205400.GA25735@redhat.com> <CA+55aFxKk+O4e51sq6iqunVWAwKfNAnZ-3=aZT-VuRpDAZUnzQ@mail.gmail.com> <20131204111125.GA26552@redhat.com> <529F51D9.7010001@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <529F51D9.7010001@zytor.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-12-04 at 10:46 +0800, Dave Young wrote:
-> Hi, Toshi
-> 
-> > Oh, I think I now understand what the issue was.  The z420 firmware
-> > updates the SMBIOS table address in the EFI system table to a virtual
-> > address after calling EFI SetVirtualAddressMap.  So, you are passing the
-> > original physical address of the SMBIOS table from the 1st kernel to the
-> > 2nd kernel to put it back to physical.  Is that right? 
-> 
-> Right.
+On 12/04, H. Peter Anvin wrote:
+>
+> On 12/04/2013 03:11 AM, Oleg Nesterov wrote:
+> >
+> > It is still not clear to me if we can simply change a single byte on
+> > x86 or not, but at least on powerpc we need to update 4 bytes. Perhaps
+> > we can conditionalize these pte games later.
+> >
+>
+> But 4 aligned bytes can be written as a single transaction.
 
-Hi Dave,
+Ah yes, this is true.
 
-The z420 firmware is based on some UEFI core that may be used by other
-vendors as well.  Since this handling is totally harmless (just
-redundant), I'd suggest not to have a platform check on this handling.
-
-Thanks,
--Toshi
+Oleg.
 
