@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755743Ab3LDCTc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 21:19:32 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:40404 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753505Ab3LDCT3 (ORCPT
+	id S1755903Ab3LDCU1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 21:20:27 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36148 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754244Ab3LDCU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 21:19:29 -0500
+	Tue, 3 Dec 2013 21:20:26 -0500
+Date: Tue, 3 Dec 2013 19:20:16 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 21/41] block: Replace __this_cpu_ptr with raw_cpu_ptr
+Message-ID: <20131204022016.GE5051@kernel.dk>
+References: <20131203233232.928771708@linux.com>
+ <20131203233255.999121189@linux.com>
 MIME-Version: 1.0
-In-Reply-To: <2691826.V0kc3nrim3@vostro.rjw.lan>
-References: <1385851238-21085-1-git-send-email-yinghai@kernel.org>
-	<1385851238-21085-5-git-send-email-yinghai@kernel.org>
-	<2691826.V0kc3nrim3@vostro.rjw.lan>
-Date: Tue, 3 Dec 2013 18:19:28 -0800
-X-Google-Sender-Auth: QOmjhYwIPZesxLFfkjaRiKoC-Ro
-Message-ID: <CAE9FiQUURT40gXGFhPxqHvWTxVdWbm=70uh14U=dp=FgTOGt-g@mail.gmail.com>
-Subject: Re: [PATCH v3 04/12] PCI: Destroy pci dev only once
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131203233255.999121189@linux.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 30, 2013 at 5:05 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Saturday, November 30, 2013 02:40:30 PM Yinghai Lu wrote:
->
-> And this is not enough as I said, can you please stop ignoring me openly?
->
-> You've already commented the last patch I posted, so why don't we finish
-> that discussion first?
+On Tue, Dec 03 2013, Christoph Lameter wrote:
+> __this_cpu_ptr is being phased out.
+> 
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> Index: linux/fs/ext4/mballoc.c
+> ===================================================================
+> --- linux.orig/fs/ext4/mballoc.c	2013-12-02 16:07:53.574528512 -0600
+> +++ linux/fs/ext4/mballoc.c	2013-12-02 16:07:53.574528512 -0600
+> @@ -4085,7 +4085,7 @@ static void ext4_mb_group_or_file(struct
+>  	 * per cpu locality group is to reduce the contention between block
+>  	 * request from multiple CPUs.
+>  	 */
+> -	ac->ac_lg = __this_cpu_ptr(sbi->s_locality_groups);
+> +	ac->ac_lg = raw_cpu_ptr(sbi->s_locality_groups);
+>  
+>  	/* we're going to use group allocation */
+>  	ac->ac_flags |= EXT4_MB_HINT_GROUP_ALLOC;
+> Index: linux/fs/buffer.c
+> ===================================================================
+> --- linux.orig/fs/buffer.c	2013-12-02 16:07:53.574528512 -0600
+> +++ linux/fs/buffer.c	2013-12-02 16:07:53.574528512 -0600
+> @@ -1312,7 +1312,7 @@ static void bh_lru_install(struct buffer
+>  		}
+>  		while (out < BH_LRU_SIZE)
+>  			bhs[out++] = NULL;
+> -		memcpy(__this_cpu_ptr(&bh_lrus.bhs), bhs, sizeof(bhs));
+> +		memcpy(this_cpu_ptr(&bh_lrus.bhs), bhs, sizeof(bhs));
+>  	}
+>  	bh_lru_unlock();
 
-No, i did not mean that.
+Christoph, I applied the fs/buffer.c bit, the ext4 one should probably
+go through Ted.
 
-I resent the whole patchset as I added pci_clip_resource() and that
-will need to revise several critial patches, and Bjorn does not like
-to have patches to be attached format.
+-- 
+Jens Axboe
 
-Also in the patcheset head mail, i did state that you have another
-solution using
-lock.
-
-And your patch is quite big, please give me some time to digest it.
-
-Thanks
-
-Yinghai
