@@ -1,58 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933052Ab3LDQuj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 11:50:39 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:33566 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932683Ab3LDQug convert rfc822-to-8bit (ORCPT
+	id S932928Ab3LDQwA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 11:52:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58163 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755669Ab3LDQv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 11:50:36 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Wed, 4 Dec 2013 11:51:58 -0500
+Date: Wed, 4 Dec 2013 16:51:53 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: stable@vger.kernel.org, akpm@linux-foundation.org, athorlton@sgi.com,
+        riel@redhat.com, gregkh@linuxfoundation.org,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: numa: return the number of base pages altered by
+ protection changes
+Message-ID: <20131204165153.GA2672@hercules>
+References: <1385922957129@kroah.com>
+ <20131203150400.GR11295@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: Supporting 4 way connections in LKSCTP
-Date: Wed, 4 Dec 2013 16:48:16 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B745F@saturn3.aculab.com>
-In-Reply-To: <529F5472.9030207@gmail.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Supporting 4 way connections in LKSCTP
-Thread-Index: Ac7xC5WgrfiMRHW+SaOftYwHGsLhWAAA3jEA
-References: <CAFXGft+CXk3W8=3w=AuYzqYtYnR8nH4Of9=668tUeT+tugD9-A@mail.gmail.com>	<20131127124530.GA23369@hmsreliant.think-freely.org>	<CAFXGftJQV=5Pqs3bhfiS3T1VO1q8jfaMjAUiqm2tDbtSyBCM3A@mail.gmail.com>	<529C9B50.50002@gmail.com>	<CAGugRbXFirQ5P3ek9zN86h4vvO6qsy3eNEooJOApotA+dL+C_g@mail.gmail.com>	<529CB859.9090904@gmail.com>	<CAFXGft+F52p+oaa59=5e5pGfON44N36NA-XMYi5PorzWeybnKw@mail.gmail.com>	<CAFXGft+4o6fT4SYbu3musC+-BEi=xOEGUbZSavF1-0_V1mg6zg@mail.gmail.com>	<529D3BF9.3070208@gmail.com>	<CAFXGftJtCCJ=pVxg_DH-+n2bKmoKXavog0y8mfX+h-1z3hP49Q@mail.gmail.com>	<529DCF42.1070800@gmail.com>	<CAFXGftK5tz90OzObiV7Hi+g080j3zWCNdo217CKdNkOY4JWQUg@mail.gmail.com>	<529DF73E.7060604@gmail.com> <CAFXGftKZD0zN1S=UTa_bYr71-v=7mzU=_CewTNkjPv9CGGB_Fg@mail.gmail.com> <529F395B.9040308@gmail.com> <AE90C24D6B3A694183C094C60CF0A2F6026B745D@saturn3.aculab.com> <529F4D1A.3050304@gmail.com> <7A4B9BD9-B2BF-4625-A2E5-500CD4A6D399@lurchi.franken.de> <529F5472.9030207@gmail.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Vlad Yasevich" <vyasevich@gmail.com>,
-        "Michael Tuexen" <Michael.Tuexen@lurchi.franken.de>
-Cc: "Sun Paul" <paulrbk@gmail.com>, <netdev@vger.kernel.org>,
-        <linux-sctp@vger.kernel.org>, "Karl Heiss" <kheiss@gmail.com>,
-        "Neil Horman" <nhorman@tuxdriver.com>, <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131203150400.GR11295@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The point is that address scoping should be used. When sending an
-> INIT from 10.10.10.1 to 10.10.10.4 you should not list 192.168.1.1,
-> since you are transmitting an address to a node which might or might
-> not "be in the same scope".
+On Tue, Dec 03, 2013 at 03:04:00PM +0000, Mel Gorman wrote:
+> commit 72403b4a0fbdf433c1fe0127e49864658f6f6468 upstream.
 
-You might have two machines that are connected via the public
-internet and also via a private network.
-The two sets of cabling being completely separate giving you
-resilience to network failure.
-In which case you definitely don't want address scoping.
+Thank you Mel, I'll queue this backport for the 3.11 kernel.
 
-While you may not want the SCTP traffic on the public network
-itself, it could easily be routed separately.
-
-We have systems that 'sort of' designate one interface for SIP/RTP
-and the other for 'management'. They might run M3UA/SCTP but no one
-has really thought enough about which interface(s) the M3UA traffic
-should use.
-(Think of an ISUP/SIP gateway using M3UA for ISUP signalling.)
-
-	David
+Cheers,
+--
+Luis
 
 
-
+> 
+> Commit 0255d4918480 ("mm: Account for a THP NUMA hinting update as
+> one PTE update") was added to account for the number of PTE updates
+> when marking pages prot_numa.  task_numa_work was using the old
+> return value to track how much address space had been updated.
+> Altering the return value causes the scanner to do more work than it
+> is configured or documented to in a single unit of work.
+> 
+> This patch reverts that commit and accounts for the number of THP
+> updates separately in vmstat.  It is up to the administrator to
+> interpret the pair of values correctly.  This is a straight-forward
+> operation and likely to only be of interest when actively debugging NUMA
+> balancing problems.
+> 
+> The impact of this patch is that the NUMA PTE scanner will scan slower
+> when THP is enabled and workloads may converge slower as a result.  On
+> the flip size system CPU usage should be lower than recent tests
+> reported.  This is an illustrative example of a short single JVM specjbb
+> test
+> 
+> specjbb
+>                        3.12.0                3.12.0
+>                       vanilla      acctupdates
+> TPut 1      26143.00 (  0.00%)     25747.00 ( -1.51%)
+> TPut 7     185257.00 (  0.00%)    183202.00 ( -1.11%)
+> TPut 13    329760.00 (  0.00%)    346577.00 (  5.10%)
+> TPut 19    442502.00 (  0.00%)    460146.00 (  3.99%)
+> TPut 25    540634.00 (  0.00%)    549053.00 (  1.56%)
+> TPut 31    512098.00 (  0.00%)    519611.00 (  1.47%)
+> TPut 37    461276.00 (  0.00%)    474973.00 (  2.97%)
+> TPut 43    403089.00 (  0.00%)    414172.00 (  2.75%)
+> 
+>               3.12.0      3.12.0
+>              vanillaacctupdates
+> User         5169.64     5184.14
+> System        100.45       80.02
+> Elapsed       252.75      251.85
+> 
+> Performance is similar but note the reduction in system CPU time.  While
+> this showed a performance gain, it will not be universal but at least
+> it'll be behaving as documented.  The vmstats are obviously different but
+> here is an obvious interpretation of them from mmtests.
+> 
+>                                 3.12.0      3.12.0
+>                                vanillaacctupdates
+> NUMA page range updates        1408326    11043064
+> NUMA huge PMD updates                0       21040
+> NUMA PTE updates               1408326      291624
+> 
+> "NUMA page range updates" == nr_pte_updates and is the value returned to
+> the NUMA pte scanner.  NUMA huge PMD updates were the number of THP
+> updates which in combination can be used to calculate how many ptes were
+> updated from userspace.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Reported-by: Alex Thorlton <athorlton@sgi.com>
+> Reviewed-by: Rik van Riel <riel@redhat.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  include/linux/vm_event_item.h | 1 +
+>  mm/mprotect.c                 | 7 ++++++-
+>  mm/vmstat.c                   | 1 +
+>  3 files changed, 8 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+> index 1855f0a..c557c6d 100644
+> --- a/include/linux/vm_event_item.h
+> +++ b/include/linux/vm_event_item.h
+> @@ -39,6 +39,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+>  		PAGEOUTRUN, ALLOCSTALL, PGROTATED,
+>  #ifdef CONFIG_NUMA_BALANCING
+>  		NUMA_PTE_UPDATES,
+> +		NUMA_HUGE_PTE_UPDATES,
+>  		NUMA_HINT_FAULTS,
+>  		NUMA_HINT_FAULTS_LOCAL,
+>  		NUMA_PAGE_MIGRATE,
+> diff --git a/mm/mprotect.c b/mm/mprotect.c
+> index 412ba2b..6c3f56f 100644
+> --- a/mm/mprotect.c
+> +++ b/mm/mprotect.c
+> @@ -138,6 +138,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+>  	pmd_t *pmd;
+>  	unsigned long next;
+>  	unsigned long pages = 0;
+> +	unsigned long nr_huge_updates = 0;
+>  	bool all_same_node;
+>  
+>  	pmd = pmd_offset(pud, addr);
+> @@ -148,7 +149,8 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+>  				split_huge_page_pmd(vma, addr, pmd);
+>  			else if (change_huge_pmd(vma, pmd, addr, newprot,
+>  						 prot_numa)) {
+> -				pages++;
+> +				pages += HPAGE_PMD_NR;
+> +				nr_huge_updates++;
+>  				continue;
+>  			}
+>  			/* fall through */
+> @@ -168,6 +170,9 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+>  			change_pmd_protnuma(vma->vm_mm, addr, pmd);
+>  	} while (pmd++, addr = next, addr != end);
+>  
+> +	if (nr_huge_updates)
+> +		count_vm_numa_events(NUMA_HUGE_PTE_UPDATES, nr_huge_updates);
+> +
+>  	return pages;
+>  }
+>  
+> diff --git a/mm/vmstat.c b/mm/vmstat.c
+> index 9bb3145..5a442a7 100644
+> --- a/mm/vmstat.c
+> +++ b/mm/vmstat.c
+> @@ -812,6 +812,7 @@ const char * const vmstat_text[] = {
+>  
+>  #ifdef CONFIG_NUMA_BALANCING
+>  	"numa_pte_updates",
+> +	"numa_huge_pte_updates",
+>  	"numa_hint_faults",
+>  	"numa_hint_faults_local",
+>  	"numa_pages_migrated",
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
