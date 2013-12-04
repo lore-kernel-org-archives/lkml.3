@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755678Ab3LDM7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 07:59:12 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:48878 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755506Ab3LDM7L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 07:59:11 -0500
-Date: Wed, 4 Dec 2013 09:59:04 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 2/3] perf diff: color the Ratio column
-Message-ID: <20131204125904.GB6359@ghostprotocols.net>
-References: <1385732192-27713-1-git-send-email-artagnon@gmail.com>
- <1385732192-27713-3-git-send-email-artagnon@gmail.com>
- <20131201195634.GB1215@krava.brq.redhat.com>
- <20131202193502.GA3706@infradead.org>
- <CALkWK0nBDqHSWxCVYtU5NMZ4J4=DHGXqk0ZHzM2z8rS1ohjwRw@mail.gmail.com>
+	id S932406Ab3LDNAQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 08:00:16 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:47592 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932201Ab3LDNAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 08:00:13 -0500
+X-IronPort-AV: E=Sophos;i="4.93,824,1378857600"; 
+   d="scan'208";a="80473227"
+Message-ID: <529F2758.9070304@citrix.com>
+Date: Wed, 4 Dec 2013 13:00:08 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALkWK0nBDqHSWxCVYtU5NMZ4J4=DHGXqk0ZHzM2z8rS1ohjwRw@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <stefano.stabellini@eu.citrix.com>, <ian.campbell@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        <boris.ostrovsky@oracle.com>, <leosilva@linux.vnet.ibm.com>,
+        <ashley@ashleylai.com>, <peterhuewe@gmx.de>, <mail@srajiv.net>,
+        <tpmdd@selhorst.net>, <tpmdd@sirrix.com>, <dmitry.torokhov@gmail.com>,
+        <bhelgaas@google.com>, <plagnioj@jcrosoft.com>,
+        <tomi.valkeinen@ti.com>, <tpmdd-devel@lists.sourceforge.net>,
+        <linux-input@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <linux-fbdev@vger.kernel.org>
+Subject: Re: [PATCH] xen/pvhvm: If xen_platform_pci=0 is set don't blow up.
+References: <1386105246-14337-1-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1386105246-14337-1-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Dec 04, 2013 at 03:40:25PM +0530, Ramkumar Ramachandra escreveu:
-> Arnaldo Carvalho de Melo wrote:
-> > static inline percent_color_snprintf(...)
-> > {
-> >         return value_color_snprintf(...);
-> > }
+On 03/12/13 21:14, Konrad Rzeszutek Wilk wrote:
 > 
-> The issue with this suggestion is that the prototype of
-> percent_color_snprintf() is:
-> 
->   int percent_color_snprintf(char *bf, size_t size, const char *fmt, ...)
-> 
-> So, I can only pass value_color_snprintf() a va_list, making its prototype:
-> 
->   int value_color_snprintf(char *bf, size_t size, const char *fmt, va_list args)
-> 
-> Is this worth the minor rename?
+> Ian Campbell suggested getting rid of 'xen_platform_pci_unplug'
+> but unfortunatly the xen-blkfront driver is using it, so we
+> cannot do it.
 
-That is ok, I'd say. Or if that would be a problem one could consider
-using a macro, perhaps.
- 
-> On a related note, does percent_color_snprintf() need to be a variadic
-> function? It only seems to process one percent value.
+I had a look at what blkfront was using this for and it seems dumb.  How
+did we end up with the frontend driver working around toolstack bugs?
+If HVM Linux guest didn't want (e.g.,) PV CDROM, the toolstack shouldn't
+have created one.
 
-I think that there are places where it is passed as a pointer that
-expects it to have that prototype, this is from memory, so please check.
+And perhaps more importantly, if you actually want a PV CDROM in a HVM
+guest, it's not possible.
 
-- Arnaldo
+David
