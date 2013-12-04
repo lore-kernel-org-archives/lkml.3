@@ -1,87 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391Ab3LDNXS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 08:23:18 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:37315 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753679Ab3LDNXQ (ORCPT
+	id S932426Ab3LDNZe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 08:25:34 -0500
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:43566 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754072Ab3LDNZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 08:23:16 -0500
-Date: Wed, 4 Dec 2013 08:23:12 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Olliver Schinagl <oliver+list@schinagl.nl>
-Cc: Oliver Schinagl <oliver@schinagl.nl>, grant.likely@linaro.org,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, dev@linux-sunxi.org,
-        maxime.ripard@free-electrons.com, ijc@hellion.org.uk,
-        hdegoede@redhat.com, Richard Zhu <r65037@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH 2/3] ARM: sunxi: Add an ahci-platform compatible AHCI
- driver for the Allwinner SUNXi series of SoCs
-Message-ID: <20131204132312.GH3158@htj.dyndns.org>
-References: <1386159055-10264-1-git-send-email-oliver@schinagl.nl>
- <1386159055-10264-3-git-send-email-oliver@schinagl.nl>
- <20131204123708.GD3158@htj.dyndns.org>
- <529F2677.3070208@schinagl.nl>
- <20131204131402.GG3158@htj.dyndns.org>
- <529F2B41.8090009@schinagl.nl>
+	Wed, 4 Dec 2013 08:25:32 -0500
+Date: Wed, 4 Dec 2013 11:25:27 -0200
+From: Gustavo Padovan <gustavo@padovan.org>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth-next 2013-12-04
+Message-ID: <20131204132527.GD1608@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6c2NcOVqGQ03X4Wi"
 Content-Disposition: inline
-In-Reply-To: <529F2B41.8090009@schinagl.nl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-(cc'ing Richard and Shawn, hi!)
+--6c2NcOVqGQ03X4Wi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Wed, Dec 04, 2013 at 02:16:49PM +0100, Olliver Schinagl wrote:
-> On 04-12-13 14:14, Tejun Heo wrote:
-> >Hello,
-> >
-> >On Wed, Dec 04, 2013 at 01:56:23PM +0100, Oliver Schinagl wrote:
-> >>I took the imx driver as example, as I wasn't sure on where to
-> >>start. But I don't think it's possible yet without improving
-> >>ahci_platform as I suggested in the cover letter. So if
-> >>ahci_platform needs to be improved, I guess a separate patch series
-> >>would be more appropriate?
-> >>
-> >>So would it be acceptable to have this as the 2nd (and last?)
-> >>ahci_platform driver and go from there? Or do you want to block new
-> >>ahci_XXX drivers until ahci_platform has been improved?
-> >
-> >I don't want to block new drivers unconditionally but at least I want
-> >to know which direction we're headed in the longer term.  Right now it
-> >feels like we could be at the beginning of an uncoordinated explosion
-> >of these drivers which will take a hell lot mpore effort to clean up
-> >after the fact.  I could be wrong and these could actually be
-> >different enough to justify separate drivers and there isn't gonna be
-> >an avalanche of these but again I at least want to know the general
-> >direction things are headed before making any decisions.
-> I'd be happy to pour it in any form that's needed. I even do the
-> modification/rewrite of ahci_platform if I get enough help as it
-> might be a little over my head initially ;)
-> 
-> That said, I don't think it's much different at all and I do think
-> it could be much simpler. In my mind, the sunxi_ahci driver wouldn't
-> need to be much bigger then a few lines that are specific to the SoC
-> (hardware init) and registerd to the ahci_platform framework via
-> platform_ahci_register() instead of platform_device_register().
-> 
-> But again, point me (for dummies ;) in the right direction and I'll
-> work on it with some help.
+Hi John,
 
-Richard and Shawn recently worked on ahci_imx.  Can you guys please
-talk with each other and figure out what can be done to share as much
-as possible among these new platform-specific drivers?  I'd really
-like to see the common things factored out as much as possible with
-only the actual hardware differences described for each device.
+This is the first batch of patches intended for 3.14. There is nothing big here.
+Most of the code are refactors, clean up, small fixes, plus some new device id
+support.
 
-Thanks a lot!
+Please pull or let me know of any problems! Thanks.
 
--- 
-tejun
+	Gustavo
+
+---
+The following changes since commit 4b074b07625f603d40d4d04937f8874a00415dc4:
+
+  Merge branch 'for-john' of git://git.kernel.org/pub/scm/linux/kernel/git/jberg/mac80211-next (2013-12-02 14:25:38 -0500)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
+
+for you to fetch changes up to 201a5929c8c788f9ef53b010065c9ce70c9c06f0:
+
+  Bluetooth: Remove dead code from SMP encryption function (2013-12-04 11:09:05 -0200)
+
+----------------------------------------------------------------
+Andre Guedes (5):
+      Bluetooth: Check address in mgmt_disconnect_failed()
+      Bluetooth: Add an extra check in mgmt_device_disconnected()
+      Bluetooth: Remove link type check in hci_disconn_complete_evt()
+      Bluetooth: Remove unneeded check in hci_disconn_complete_evt()
+      Bluetooth: Refactor hci_disconn_complete_evt
+
+Bing Zhao (3):
+      Bluetooth: btmrvl: operate on 16-bit opcodes instead of ogf/ocf
+      Bluetooth: btmrvl: use cal-data from device-tree instead of conf file
+      Bluetooth: btmrvl: remove cal-data byte swapping and redundant mem copy
+
+Johan Hedberg (3):
+      Bluetooth: Remove unnecessary 'send' parameter from smp_failure()
+      Bluetooth: Remove useless smp_rand function
+      Bluetooth: Remove dead code from SMP encryption function
+
+Marcel Holtmann (4):
+      Bluetooth: Fix limited discoverable mode for Zeevo modules
+      Bluetooth: Set default own address type only during controller setup
+      Bluetooth: Remove debug statement for features complete event
+      Bluetooth: Store supported commands only during setup procedure
+
+Sujith Manoharan (2):
+      Bluetooth: ath3k: Add support for another AR3012 card
+      Bluetooth: ath3k: Add support for a new AR3012 device
+
+Tedd Ho-Jeong An (2):
+      Bluetooth: Add support for Intel Bluetooth device [8087:0a2a]
+      Bluetooth: Enable autosuspend for Intel Bluetooth device
+
+ drivers/bluetooth/ath3k.c       |   4 ++
+ drivers/bluetooth/btmrvl_drv.h  |  25 +++++-----
+ drivers/bluetooth/btmrvl_main.c | 130 ++++++++++++---------------------------------------
+ drivers/bluetooth/btmrvl_sdio.c |   9 +---
+ drivers/bluetooth/btmrvl_sdio.h |   2 -
+ drivers/bluetooth/btusb.c       |   7 ++-
+ net/bluetooth/hci_core.c        |  20 ++++----
+ net/bluetooth/hci_event.c       |  72 +++++++++++++---------------
+ net/bluetooth/mgmt.c            |  17 ++++++-
+ net/bluetooth/smp.c             |  40 +++++-----------
+ 10 files changed, 124 insertions(+), 202 deletions(-)
+
+
+--6c2NcOVqGQ03X4Wi
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSny1HAAoJEPs3PUX4s20oN78P/19j7gjAyV3fpN6MKwGAOed2
+PRSfOhF+wamFApivrWFmceF3aEnUkSV7F4dJUshUEQ25GiubD9Nkx6eiISpJ6xtM
+2jC8Zf//ntdSWwwFzuULeWI3xVT2McOOk2BnPU4jAXOBZLeRZuwujFi9pNFt63AE
+sdseeUIumrit47o5589oNRTduOUaPX2Tl+niqWIRh3Eqc2JTDadp5Ny61k7fzctz
+C4MUdO8YRO59MPIDmLLx9M40ApUZvNO12aaZlNIIZLio21D6912Oe2tWf0R2WE3O
+wOCqq+UsalSSgOMYfTqMDLvj86C7OsIP9oN87lBjNzfhGoR9O0Li6nIlV7nqq2cA
+IDjFkk9ysGkSLTkN31DazDJkjted2FawjzOyqp9ReW89kts1w3+6d4bt2PaSgN1X
+x2BS0SX0IpVUNEdO6L9POAyq0jG3jBSwoIrWJXKjCUFlYscgCEZMWU/V4HSQLEDe
+ZMNwS5WcDzUGnTnPktrfSbQe3nYilz31lBRDhXF6cuGAy3Fw8PXtcOWppBXpd9wI
+NX1/HfPgjkwf/4PaHnoTnOcUR66JK9KPyagHrYq13YGyzPHsevF0t/7bZ0ua2FNi
+p71ucuPSbM/FAgyS+W0a9crnIEH82F/uixvtiPXl6HBlpTf8pw3f6uyeUCi8T/5U
+Uw2e4vyQEL+fnSI0RTb6
+=aM32
+-----END PGP SIGNATURE-----
+
+--6c2NcOVqGQ03X4Wi--
