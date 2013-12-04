@@ -1,90 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755684Ab3LDLIS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 06:08:18 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:52677 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755485Ab3LDLIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 06:08:16 -0500
-X-IronPort-AV: E=Sophos;i="4.93,824,1378857600"; 
-   d="scan'208";a="80446932"
-Message-ID: <1386155291.17466.19.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH] xen/pvhvm: If xen_platform_pci=0 is set don't blow up.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
-        <leosilva@linux.vnet.ibm.com>, <ashley@ashleylai.com>,
-        <peterhuewe@gmx.de>, <mail@srajiv.net>, <tpmdd@selhorst.net>,
-        <tpmdd@sirrix.com>, <dmitry.torokhov@gmail.com>, <bhelgaas@google.com>,
-        <plagnioj@jcrosoft.com>, <tomi.valkeinen@ti.com>,
-        <tpmdd-devel@lists.sourceforge.net>, <linux-input@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>
-Date: Wed, 4 Dec 2013 11:08:11 +0000
-In-Reply-To: <alpine.DEB.2.02.1312041104110.7093@kaball.uk.xensource.com>
-References: <1386105246-14337-1-git-send-email-konrad.wilk@oracle.com>
-	  <1386149848.13256.86.camel@kazak.uk.xensource.com>
-	  <alpine.DEB.2.02.1312041049310.7093@kaball.uk.xensource.com>
-	 <1386154783.17466.14.camel@kazak.uk.xensource.com>
-	 <alpine.DEB.2.02.1312041104110.7093@kaball.uk.xensource.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA2
+	id S932158Ab3LDLJV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 06:09:21 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:10986 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073Ab3LDLJS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 06:09:18 -0500
+X-AuditID: cbfee691-b7fd26d000003f7b-66-529f0d5d146b
+Message-id: <529F0D5E.4060202@samsung.com>
+Date: Wed, 04 Dec 2013 20:09:18 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH v6 3/3] mfd: max14577: Add device tree bindings document
+References: <1386153615-25456-1-git-send-email-k.kozlowski@samsung.com>
+ <1386153615-25456-4-git-send-email-k.kozlowski@samsung.com>
+ <529F08DD.2090005@samsung.com> <1386154579.25938.2.camel@AMDC1943>
+ <529F0B75.5040004@samsung.com> <1386155011.25938.4.camel@AMDC1943>
+In-reply-to: <1386155011.25938.4.camel@AMDC1943>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsWyRsSkSDeWd36QwaTTYhYHt2pabJyxntVi
+	6sMnbBbzj5xjtZi4cjKzxblXKxktXr8wtDjb9Ibd4v7Xo4wW3650MFlsenyN1WJh2xIWi8u7
+	5rBZrD1yl91i6fWLTBYTpq9lsTi84gCTxbqX01ksXh1sY3EQ9lgzbw2jx4LPV9g9JvR/YvTY
+	Oesuu8fK5V/YPDav0PLYtKqTzePV6pmsHneu7QEKLan36NuyitHj8yY5j41zQwN4o7hsUlJz
+	MstSi/TtErgy7q0/z1SwiaviTO985gbG6RxdjJwcEgImEr8bJzFC2GISF+6tZ+ti5OAQEljK
+	KPGhHKbkz8pHQGEuoPAiRomXl/ZDOa8YJW7+OMYCUsUroCWxetossEEsAqoSWxc3gtlsQPH9
+	L26wgdiiAmESK6dfgaoXlPgx+R6YLSJgKHFw93YmkKHMAptYJS7eeQeWEBbwkWg884YZYls/
+	k8TUl3+ZQRKcAgYSE/uOgBUxC6hLTJq3iBnClpfYvOYtWIOEwA0Oia7VK1ghThKQ+Db5EAvI
+	bxICshKbDjBD/CYpcXDFDZYJjGKzkBw1C8nYWUjGLmBkXsUomlqQXFCclF5kqlecmFtcmpeu
+	l5yfu4kRmDZO/3s2cQfj/QPWhxiTgVZOZJYSTc4Hpp28knhDYzMjC1MTU2Mjc0sz0oSVxHnT
+	HyUFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamA8NiFBzHLrmn/aWydG+Xr//nphh4/C/cu3
+	vc4suJhaoCm188J/F9f8Ocffnpm8hMEj5/J1zY0p9sfc5ymErq6e2JX8fF5vEcdkt7up7usv
+	2+0PvcMktPqn4uljGe4mU9um6HqU8+n/aBB52cm5S9nV22J5qYZURP58Q9lvBYEbHQ5kJGW+
+	t9qkxFKckWioxVxUnAgAaJLPczEDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLKsWRmVeSWpSXmKPExsVy+t9jAd1Y3vlBBl1zeC0ObtW02DhjPavF
+	1IdP2CzmHznHajFx5WRmi3OvVjJavH5haHG26Q27xf2vRxktvl3pYLLY9Pgaq8XCtiUsFpd3
+	zWGzWHvkLrvF0usXmSwmTF/LYnF4xQEmi3Uvp7NYvDrYxuIg7LFm3hpGjwWfr7B7TOj/xOix
+	c9Zddo+Vy7+weWxeoeWxaVUnm8er1TNZPe5c2wMUWlLv0bdlFaPH501yHhvnhgbwRjUw2mSk
+	JqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAvamkUJaYUwoU
+	CkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxhzLi3/jxTwSauijO985kbGKdzdDFyckgI
+	mEj8WfmIDcIWk7hwbz2QzcUhJLCIUeLlpf1QzitGiZs/jrGAVPEKaEmsnjaLEcRmEVCV2Lq4
+	EcxmA4rvf3EDbJKoQJjEyulXoOoFJX5MvgdmiwgYShzcvZ0JZCizwCZWiYt33oElhAV8JBrP
+	vGGG2NbPJDH15V9mkASngIHExL4jYEXMAuoSk+YtYoaw5SU2r3nLPIFRYBaSJbOQlM1CUraA
+	kXkVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnBieia9g3FVg8UhRgEORiUe3gTOeUFCrIll
+	xZW5hxglOJiVRHi3sM0PEuJNSaysSi3Kjy8qzUktPsSYDAyDicxSosn5wKSZVxJvaGxiZmRp
+	ZG5oYWRsTpqwkjjvwVbrQCGB9MSS1OzU1ILUIpgtTBycUg2McUccav9axySvTf6dYVAdf2zH
+	g9sC9woE46LDjv988Fi98pFWI98M+6MdG0Mf/f9i53opt2Bijrdzwa/bq0yPiy17aRwkJuHy
+	5mGV1SQh5R1qz/aLmekwxh45Iu/xaeMxv4mxTzNPrFy3aDd/StzVOc7HFJcveapU5KtscOxW
+	yM7LX1tZMqZuVmIpzkg01GIuKk4EAHV6IQ+QAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-12-04 at 11:05 +0000, Stefano Stabellini wrote:
-> On Wed, 4 Dec 2013, Ian Campbell wrote:
-> > On Wed, 2013-12-04 at 10:51 +0000, Stefano Stabellini wrote:
-> > > On Wed, 4 Dec 2013, Ian Campbell wrote:
-> > > > > +bool xen_has_pv_devices(void)
-> > > > > +{
-> > > > > +	if (!xen_domain())
-> > > > > +		return false;
-> > > > > +
-> > > > > +	if (xen_hvm_domain()) {
-> > > > > +		/* User requested no unplug, so no PV drivers. */
-> > > > > +		if (xen_emul_unplug & XEN_UNPLUG_NEVER)
-> > > > > +			return false;
-> > > > 
-> > > > I think you need
-> > > > 		if (xen_emul_unpug & XEN_UNPLUG_UNNECESSARY)
-> > > > 			return true;
-> > > > don't you?
-> > > 
-> > > XEN_UNPLUG_UNNECESSARY was introduced to enable the platform PCI device
-> > > even if it didn't respond properly to the unplug protocol.
-> > > The corresponding parameter is called "unnecessary" because if you pass
-> > > it to the kernel you mean that it is unnecessary to unplug the emulated
-> > > devices but you can use the pv devices anyway.
-> > > 
-> > > So no, we shouldn't check for XEN_UNPLUG_UNNECESSARY here.
-> > 
-> > Oh, we will eventually fall through to the return true, so it does
-> > actually work out OK.
-> > 
-> > I'd still be in favour of handling each option explicitly, for clarity.
-> > Which means checking for XEN_UNPLUG_UNNECESSARY.
+On 12/04/2013 08:03 PM, Krzysztof Kozlowski wrote:
+> On Wed, 2013-12-04 at 20:01 +0900, Chanwoo Choi wrote:
+>> On 12/04/2013 07:56 PM, Krzysztof Kozlowski wrote:
+>>> On Wed, 2013-12-04 at 19:50 +0900, Chanwoo Choi wrote:
+> (...)
+>>>>
+>>>> I prefer to add dt data about max14577-muic on following:
+>>>> If extcon consumer driver need to use muic device, dts should provide following dt data.
+>>>>
+>>>> 		muic: max14577-muic {
+>>>> 			compatible = "maxim, max14577-muic";
+>>>> 		};
+>>>>> +	};
+>>>>>
+>>>> For example,
+>>>> If fuel-gauge want to use extcon subsystem, dt data of fuel-gauge add 'extcon' property as following:
+>>>>
+>>>> 	fuel-gague@ {
+>>>> 		compatible = "...";
+>>>> 		extcon = <&muic>;
+>>>> 	}
+>>>>
+>>> Hi,
+>>>
+>>> The extcon driver itself does not use the binding. It is only needed for
+>>> consumers. Is it a common practice to add to documentation such notice
+>>> for consumers only?
+>>
+>> As you comment, It is only for extcon consumer.
+>> But extcon provider driver always is operated with extcon consumer driver.
+>> If dts file don't support upper dt data about extcon provider driver,
+>> all of extcon consumer drivers could not use extcon subsystem.
+>>
+>> I thinks it is common dt data for muic device.
 > 
-> I think is wrong to check for any xen_emul_unpug options in this function.
-> The xen_emul_unpug options should be used to set the right value of
-> xen_platform_pci_unplug. (See my other reply.)
+> OK, I'll add it.
+> 
 
-Whichever one we check we should still be checking explicitly for the
-"unnecessary" case, for clarity if nothing else.
+Thanks,
 
-TBH I think the split between xen_emul_unplug and
-xen_platform_pci_unplug is a bit artificial. There should be one value
-which is static to platform-pci-unplug.c and accessor functions should
-be provided for other code to use. Open coding all those accesses to
-xen_platform_pci_unplug in every driver is just too error prone.
-
-Ian.
+Best Regards,
+Chanwoo Choi
 
