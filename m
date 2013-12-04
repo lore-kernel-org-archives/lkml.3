@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932299Ab3LDM43 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 07:56:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12070 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932201Ab3LDM42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 07:56:28 -0500
-Date: Wed, 4 Dec 2013 13:57:28 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Sameer Nanda <snanda@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        "Ma, Xindong" <xindong.ma@intel.com>, Michal Hocko <mhocko@suse.cz>,
-        Sergey Dyasly <dserrg@gmail.com>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] oom_kill: change oom_kill.c to use
-	for_each_thread()
-Message-ID: <20131204125728.GA2549@redhat.com>
-References: <20131202152423.GA10878@redhat.com> <20131202152440.GA10900@redhat.com> <CANMivWbMmra05sqAgZb7AP+W0qAs8z3jGgsMPPML=3v5TZfFwA@mail.gmail.com>
+	id S932335Ab3LDM46 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 07:56:58 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:27892 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932201Ab3LDM44 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 07:56:56 -0500
+Date: Wed, 4 Dec 2013 15:56:47 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Gary Rookard <garyrookard@gmail.com>
+Cc: gregkh@linuxfoundatio.org, devel@driverdev.osuosl.org,
+        lisa@xenapiadmin.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: bcm: DDRInit: Fixed non_standard kernel style.
+Message-ID: <20131204125646.GQ28413@mwanda>
+References: <1386150789-7431-1-git-send-email-garyrookard@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANMivWbMmra05sqAgZb7AP+W0qAs8z3jGgsMPPML=3v5TZfFwA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1386150789-7431-1-git-send-email-garyrookard@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sameer, I didn't notice this part yesterday.
+On Wed, Dec 04, 2013 at 04:53:09AM -0500, Gary Rookard wrote:
+> Fixed non_standard kernel style.
+> 
 
-On 12/03, Sameer Nanda wrote:
->
-> > @@ -406,7 +409,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
-> >  {
-> >         struct task_struct *victim = p;
-> >         struct task_struct *child;
-> > -       struct task_struct *t = p;
-> > +       struct task_struct *t;
-> >         struct mm_struct *mm;
-> >         unsigned int victim_points = 0;
-> >         static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
-> > @@ -437,7 +440,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
-> >          * still freeing memory.
-> >          */
-> >         read_lock(&tasklist_lock);
-> This can be a rcu_read_lock now, I think?
+You're doing too many things at once, it needs to be broken into
+a patch series which do one type of change at a time.
 
-No, we need tasklist for list_for_each_entry(t->children), it
-is not rcu-safe.
+The changelog is useless.
 
-Oleg.
+> Signed off by: Gary Alan Rookard <garyrookard@gmail.com>
+> ---
+>  drivers/staging/bcm/DDRInit.c | 2081 +++++++++++++++++++----------------------
+>  1 file changed, 977 insertions(+), 1104 deletions(-)
+> 
+> diff --git a/drivers/staging/bcm/DDRInit.c b/drivers/staging/bcm/DDRInit.c
+> index 9f7e30f..2fc3ba9 100644
+> --- a/drivers/staging/bcm/DDRInit.c
+> +++ b/drivers/staging/bcm/DDRInit.c
+> @@ -1,977 +1,876 @@
+> -#include "headers.h"
+> -
+> +/* File: DDRInit.c */
 
+This isn't useful.
+
+> +	{0x0F000840, 0x0FFF1B00},  /* Changed Source for X-bar and MIPS Clock to APLL */
+> +	{0xF0000870, 0x00000002},
+> +	{0x0F00A044, 0x1FFFFFFF},
+> +	{0x0F00A040, 0x1F000000},
+
+One of these is not like the others.  You have introduced a bug with
+0xF0000870 vs 0x0F000870.
+
+regards,
+dan carpenter
