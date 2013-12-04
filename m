@@ -1,115 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933216Ab3LDSP2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 13:15:28 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52512 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933069Ab3LDSNf (ORCPT
+	id S933247Ab3LDSPw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 13:15:52 -0500
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:52514 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932674Ab3LDSPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 13:13:35 -0500
-From: Serban Constantinescu <serban.constantinescu@arm.com>
-To: gregkh@linuxfoundation.org, arve@android.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, john.stultz@linaro.org,
-        ccross@android.com, Dave.Butcher@arm.com, irogers@google.com,
-        romlem@android.com
-Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Subject: [PATCH v1 5/9] staging: android: binder: Add deref_helper() macro
-Date: Wed,  4 Dec 2013 18:09:37 +0000
-Message-Id: <1386180581-6710-6-git-send-email-serban.constantinescu@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
-References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
+	Wed, 4 Dec 2013 13:15:47 -0500
+Message-ID: <529F7150.8080604@gmail.com>
+Date: Wed, 04 Dec 2013 13:15:44 -0500
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Sun Paul <paulrbk@gmail.com>, David Laight <David.Laight@aculab.com>
+CC: netdev@vger.kernel.org, linux-sctp@vger.kernel.org,
+        Karl Heiss <kheiss@gmail.com>, Neil Horman <nhorman@tuxdriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Supporting 4 way connections in LKSCTP
+References: <CAFXGft+CXk3W8=3w=AuYzqYtYnR8nH4Of9=668tUeT+tugD9-A@mail.gmail.com>	<CAFXGftLt1p6XpR2eGsMYKjEbbOHvch-LgcFw1sAXThcA2Rtjyw@mail.gmail.com>	<20131127124530.GA23369@hmsreliant.think-freely.org>	<CAFXGftJQV=5Pqs3bhfiS3T1VO1q8jfaMjAUiqm2tDbtSyBCM3A@mail.gmail.com>	<529C9B50.50002@gmail.com>	<CAGugRbXFirQ5P3ek9zN86h4vvO6qsy3eNEooJOApotA+dL+C_g@mail.gmail.com>	<529CB859.9090904@gmail.com>	<CAFXGft+F52p+oaa59=5e5pGfON44N36NA-XMYi5PorzWeybnKw@mail.gmail.com>	<CAFXGft+4o6fT4SYbu3musC+-BEi=xOEGUbZSavF1-0_V1mg6zg@mail.gmail.com>	<529D3BF9.3070208@gmail.com>	<CAFXGftJtCCJ=pVxg_DH-+n2bKmoKXavog0y8mfX+h-1z3hP49Q@mail.gmail.com>	<529DCF42.1070800@gmail.com>	<CAFXGftK5tz90OzObiV7Hi+g080j3zWCNdo217CKdNkOY4JWQUg@mail.gmail.com>	<529DF73E.7060604@gmail.com>	<CAFXGftKZD0zN1S=UTa_bYr71-v=7mzU=_CewTNkjPv9CGGB_Fg@mail.gmail.com>	<529F395B.9040308@gmail.com>	<AE90C24D6B3A694183C094C60CF0A2F6026B745D@saturn3.aculab.com> <CAFXGftJsVzR8XgdEmcRKP8DePZoF+xGbaeS-RPgr2XNo7snF3g@mail.gmail.com>
+In-Reply-To: <CAFXGftJsVzR8XgdEmcRKP8DePZoF+xGbaeS-RPgr2XNo7snF3g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a deref_helper() macro that will be used to dereference
-the binder offsets on 64bit systems where the offset is either a 32bit
-or a 64bit value, depending on the userpace used (32bit /64bit)
+On 12/04/2013 12:57 PM, Sun Paul wrote:
+> As I know, the A to C and A to D case must have a router in between to form
+> SCTP multihome topology.
 
-This patch is a temporary patch that will be extended with 32bit compat
-handling.
+Not necessary.  I've produced proper multihoming topologies with just
+VLANs and different subnet assignment.  You can even remove VLANs
+if you correctly set your arp_ignore and arp_announce values.
 
-Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
----
- drivers/staging/android/binder.c |   25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+-vlad
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index 6719a53..95c2581 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -141,6 +141,7 @@ module_param_call(stop_on_user_error, binder_set_stop_on_user_error,
- 	} while (0)
- 
- #define align_helper(ptr)	    ALIGN(ptr, sizeof(void *))
-+#define deref_helper(ptr)	    (*(typeof(size_t *))ptr)
- 
- enum binder_stat_types {
- 	BINDER_STAT_PROC,
-@@ -1230,7 +1231,7 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
- 					      struct binder_buffer *buffer,
- 					      size_t *failed_at)
- {
--	size_t *offp, *off_end;
-+	void *offp, *off_end;
- 	int debug_id = buffer->debug_id;
- 
- 	binder_debug(BINDER_DEBUG_TRANSACTION,
-@@ -1246,16 +1247,16 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
- 		off_end = failed_at;
- 	else
- 		off_end = (void *)offp + buffer->offsets_size;
--	for (; offp < off_end; offp++) {
-+	for (; offp < off_end; offp += sizeof(size_t)) {
- 		struct flat_binder_object *fp;
--		if (*offp > buffer->data_size - sizeof(*fp) ||
-+		if (deref_helper(offp) > buffer->data_size - sizeof(*fp) ||
- 		    buffer->data_size < sizeof(*fp) ||
--		    !IS_ALIGNED(*offp, sizeof(u32))) {
-+		    !IS_ALIGNED(deref_helper(offp), sizeof(u32))) {
- 			pr_err("transaction release %d bad offset %zd, size %zd\n",
--			 debug_id, *offp, buffer->data_size);
-+			 debug_id, deref_helper(offp), buffer->data_size);
- 			continue;
- 		}
--		fp = (struct flat_binder_object *)(buffer->data + *offp);
-+		fp = (struct flat_binder_object *)(buffer->data + deref_helper(offp));
- 		switch (fp->type) {
- 		case BINDER_TYPE_BINDER:
- 		case BINDER_TYPE_WEAK_BINDER: {
-@@ -1305,7 +1306,7 @@ static void binder_transaction(struct binder_proc *proc,
- {
- 	struct binder_transaction *t;
- 	struct binder_work *tcomplete;
--	size_t *offp, *off_end;
-+	void *offp, *off_end;
- 	struct binder_proc *target_proc;
- 	struct binder_thread *target_thread = NULL;
- 	struct binder_node *target_node = NULL;
-@@ -1495,17 +1496,17 @@ static void binder_transaction(struct binder_proc *proc,
- 		goto err_bad_offset;
- 	}
- 	off_end = (void *)offp + tr->offsets_size;
--	for (; offp < off_end; offp++) {
-+	for (; offp < off_end; offp += sizeof(size_t)) {
- 		struct flat_binder_object *fp;
--		if (*offp > t->buffer->data_size - sizeof(*fp) ||
-+		if (deref_helper(offp) > t->buffer->data_size - sizeof(*fp) ||
- 		    t->buffer->data_size < sizeof(*fp) ||
--		    !IS_ALIGNED(*offp, sizeof(u32))) {
-+		    !IS_ALIGNED(deref_helper(offp), sizeof(u32))) {
- 			binder_user_error("%d:%d got transaction with invalid offset, %zd\n",
--					proc->pid, thread->pid, *offp);
-+					proc->pid, thread->pid, deref_helper(offp));
- 			return_error = BR_FAILED_REPLY;
- 			goto err_bad_offset;
- 		}
--		fp = (struct flat_binder_object *)(t->buffer->data + *offp);
-+		fp = (struct flat_binder_object *)(t->buffer->data + deref_helper(offp));
- 		switch (fp->type) {
- 		case BINDER_TYPE_BINDER:
- 		case BINDER_TYPE_WEAK_BINDER: {
--- 
-1.7.9.5
+> On Dec 4, 2013 10:51 PM, "David Laight" <David.Laight@aculab.com> wrote:
+> 
+>>>> In normal operation, IP-A sends INIT to IP-X, IP-X returns INIT_ACK to
+>>>> IP-A. IP-A then sends HB to IP-X, IP-X then returns HB_ACK to IP-A. In
+>>>> the meantime, IP-B sends HB to IP-Y and IPY returns HB_ACK.
+>>>>
+>>>> In case of the path between IP-A and IP-X is broken, IP-B sends INIT
+>>>> to IP-X, NODE-B uses IP-Y to return INIT_ACK to IP-B. Then IP-B sends
+>>>> HB to IP-X, and IP-Y returns HB_ACK to IP-B. In the meantime, the HB
+>>>> communication between IP-B and IP-Y follows the normal flow.
+>>>>
+>>>> Can I confirm, is it really valid?
+>>>
+>>> As long as NODE-B knows about both IP-A and IP-B, and NODE-A knows about
+>>> both IP-X and IP-Y (meaning all the addresses were exchanged inside INIT
+>>> and INIT-ACK), then this situation is perfectly valid.  In fact, this
+>>> has been tested an multiple interops.
+>>
+>> There are some network configurations that do cause problems.
+>> Consider 4 systems with 3 LAN segments:
+>> A) 10.10.10.1 on LAN X and 192.168.1.1 on LAN Y.
+>> B) 10.10.10.2 on LAN X and 192.168.1.2 on LAN Y.
+>> C) 10.10.10.3 on LAN X.
+>> D) 10.10.10.4 on LAN X and 192.168.1.2 on LAN Z.
+>> There are no routers between the networks (and none of the systems
+>> are running IP forwarding).
+>>
+>> If A connects to B everything is fine - traffic can use either LAN.
+>>
+>> Connections from A to C are problematic if C tries to send anything
+>> (except a HB) to 192.168.1.1 before receiving a HB response.
+>> One of the SCTP stacks we've used did send messages to an
+>> inappropriate address, but I've forgotten which one.
+>>
+>> Connections between A and D fail unless the HB errors A receives
+>> for 192.168.1.2 are ignored.
+>>
+>> Of course the application could explicitly bind to only the 10.x address
+>> but that requires the application know the exact network topology
+>> and may be difficult for incoming calls.
+>>
+>>         David
+>>
+>>
+> 
 
