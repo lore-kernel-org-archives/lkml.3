@@ -1,116 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601Ab3LDFZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 00:25:57 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:44244 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751046Ab3LDFZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 00:25:54 -0500
-Date: Wed, 4 Dec 2013 00:25:42 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcg: do not declare OOM from __GFP_NOFAIL
- allocations
-Message-ID: <20131204052542.GY3556@cmpxchg.org>
-References: <20131127225340.GE3556@cmpxchg.org>
- <alpine.DEB.2.02.1311271526080.22848@chino.kir.corp.google.com>
- <20131128102049.GF2761@dhcp22.suse.cz>
- <alpine.DEB.2.02.1311291543400.22413@chino.kir.corp.google.com>
- <20131202132201.GC18838@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312021452510.13465@chino.kir.corp.google.com>
- <20131203222511.GU3556@cmpxchg.org>
- <alpine.DEB.2.02.1312031531510.5946@chino.kir.corp.google.com>
- <20131204030101.GV3556@cmpxchg.org>
- <20131204043417.GM10988@dastard>
+	id S1751931Ab3LDFpf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 00:45:35 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44929 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370Ab3LDFpc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 00:45:32 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <529EC0FC.1010400@jp.fujitsu.com>
+Date: Wed, 4 Dec 2013 14:43:24 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131204043417.GM10988@dastard>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        "Moore, Robert" <robert.moore@intel.com>,
+        Toshi Kani <toshi.kani@hp.com>, Yinghai Lu <yinghai@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Lv Zheng <lv.zheng@intel.com>
+Subject: Re: [PATCH 7/10] ACPI / hotplug: Move container-specific code out
+ of the core
+References: <1421028.Rsfpmhnym3@vostro.rjw.lan> <1554480.uCR6qUxJk9@vostro.rjw.lan> <529D4600.6040601@jp.fujitsu.com> <81535269.SKoBMiGyoU@vostro.rjw.lan>
+In-Reply-To: <81535269.SKoBMiGyoU@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 03:34:17PM +1100, Dave Chinner wrote:
-> On Tue, Dec 03, 2013 at 10:01:01PM -0500, Johannes Weiner wrote:
-> > On Tue, Dec 03, 2013 at 03:40:13PM -0800, David Rientjes wrote:
-> > > On Tue, 3 Dec 2013, Johannes Weiner wrote:
-> > > I believe the page allocator would be susceptible to the same deadlock if 
-> > > nothing else on the system can reclaim memory and that belief comes from 
-> > > code inspection that shows __GFP_NOFAIL is not guaranteed to ever succeed 
-> > > in the page allocator as their charges now are (with your patch) in memcg.  
-> > > I do not have an example of such an incident.
-> > 
-> > Me neither.
-> 
-> Is this the sort of thing that you expect to see when GFP_NOFS |
-> GFP_NOFAIL type allocations continualy fail?
-> 
-> http://oss.sgi.com/archives/xfs/2013-12/msg00095.html
-> 
-> XFS doesn't use GFP_NOFAIL, it does it's own loop with GFP_NOWARN in
-> kmem_alloc() so that if we get stuck for more than 100 attempts to
-> allocate it throws a warning. i.e. only when we really are stuck and
-> reclaim is not making any progress.
-> 
-> This specific case is due to memory fragmentation preventing a 64k
-> memory allocation (due to the filesystem being configured with a 64k
-> directory block size), but GFP_NOFS | GFP_NOFAIL allocations happen
-> *all the time* in filesystems.
+(2013/12/03 22:15), Rafael J. Wysocki wrote:
+> On Tuesday, December 03, 2013 11:46:24 AM Yasuaki Ishimatsu wrote:
+>> (2013/11/29 22:08), Rafael J. Wysocki wrote:
+>>> On Friday, November 29, 2013 11:36:55 AM Yasuaki Ishimatsu wrote:
+>>>> Hi Rafael,
+>>>
+>>> Hi,
+>>>
+>>>> Replying to this mail may be wrong.
+>>>
+>>> OK, so this particular patch doesn't break things any more?
+>>
+>> Yes.
+>>
+>>>
+>>>> Do you remember following your patch?
+>>>> http://lkml.org/lkml/2013/2/23/97
+>>>>
+>>>> I want to add autoeject variable in acpi_hotplug_profile structure and
+>>>> set autoecjet of container device "false".
+>>>
+>>> Then after the series the $subject patch belongs to it will work almost the
+>>> same way as /sys/firmware/acpi/container/enabled (hot add will still work after
+>>> patch [4/10] if "enabled" is 0), but only for containers.
+>>>
+>>>> Currently, I have a problem on ejecting container device. Since linux-3.12,
+>>>> container device is removed by acpi_scan_hot_remove.
+>>>>
+>>>> I think this has two problems.
+>>>>
+>>>>      1. easily fail
+>>>>         My container device has CPU device and Memory device, and maximum size of
+>>>>         memory is 3Tbyte. In my environment, hot removing container device fails
+>>>>         on offlining memory if memory is used by application.
+>>>>         I think if offlininig memory, we must retly to offline memory several
+>>>>         times.
+>>>
+>>> Yes, that's correct.  But then you can try to offline the memory upfront
+>>> and only remove the container after that has been successful.
+>>>
+>>>>      2. cannot work with userland's application
+>>>>         Hot removing CPU and memory on container device, we need take care of
+>>>>         userland application. Before linux-3.12, container device just notifies
+>>>>         KOBJ_OFFLINE to udev. So by using udev, if application binds to removed
+>>>>         CPU or node, applications can change them before hot removing container
+>>>>         device.
+>>>>         Currently, KOBJ_OFFLINE is notified to udev. But acpi_scan_hot_remove
+>>>>         also runs simultaneously for hot removing container device. So when
+>>>>         applications runs for corresponding to the deletion of the devices,
+>>>>         the devices may have been deleted.
+>>>
+>>
+>>> So the expectation is that the container will refuse to offline, but instead
+>>> it will emit KOBJ_OFFLINE so that user space can do some cleanup and offline
+>>> it through the "eject" attribute, right?
+>>
+>> Yes, that's right.
+>>
+>>>
+>>>> I don't know what devices are on hotpluggable conatainer device of other
+>>>> vendors. At least, my container device cannot be hot removed correctly.
+>>>> Then I want to add autoeject variable in acpi_hotplug_profile so that user
+>>>> can change the parameter to "true" or "false".
+>>>
+>>> I have a different idea.
+>>>
+>>> Why don't we create a bus type for containers in analogy with CPUs and memory
+>>> and make it support offline.  Then, the container scan handler will create a
+>>> "physical" container device under that bus type and the new bus type code will
+>>> implement the logic you need (that is, it will have a sysfs flag that will
+>>> cause the offline to fail emitting a uevent of some sort if set and will allow
+>>> the offline to happen when unset).  That "physical" container device will go
+>>> away (again, via the container scan handler) during container removal.
+>>>
+>>
+>>> The eject work flow can be:
+>>>     (1) an eject event occurs,
+>>>     (2) the container "physical" device fails offline in acpi_scan_hot_remove()
+>>>         emmitting, say, KOBJ_CHANGE for the "physical" device,
+>>>     (3) user space notices the KOBJ_CHANGE and does the cleanup as needed,
+>>>     (4) user space changes the "physical" container device flag controlling
+>>>         offline to 0,
+>>>     (5) user space uses the sysfs "eject" attribute of the ACPI container object
+>>>         to finally eject the container,
+>>>     (6) the offline in acpi_scan_hot_remove() is now successful, because the
+>>>         flag controlling it has been set to 0 in step (4),
+>>>     (7) the "physical" container device goes away before executing _EJ0,
+>>>     (8) the container is ejected.
+>>>
+>>> Of course, if the flag controlling container offline is 0 to start with, step
+>>> (6) will now occur directly after (1), so whoever wants containers to be
+>>> hot-removed automatically may just clear that flag for all of them on boot.
+>>>
+>>> How does that sound?
+>>
+>>
+>> The above ideas are almost O.K. I want kernel to notify user space of KOBJ_OFFLINE.
+>> Even if user space catches "KOBJ_CHANGE", user doesn't know whether the notification
+>> is offline or not.
+>
 
-Yes, the question is whether this in itself is a practical problem,
-regardless of whether you use __GFP_NOFAIL or a manual loop.
+> It is easy to figure out, though.  Since the KOBJ_CHANGE will be emitted for
+> container devices only in that situation, user space can see that (1) it is
+> from a container and (2) it is KOBJ_CHANGE, so it must mean "container offline
+> has been attempted".
+>
+> My concern with using KOBJ_OFFLINE for that is that device_offline() emits it
+> too on success and it may be easily confused with the one emitted on failure
+> for containers.
 
-> > > > > So, my question again: why not bypass the per-zone min watermarks in the 
-> > > > > page allocator?
-> > > > 
-> > > > I don't even know what your argument is supposed to be.  The fact that
-> > > > we don't do it in the page allocator means that there can't be a bug
-> > > > in memcg?
-> > > > 
-> > > 
-> > > I'm asking if we should allow GFP_NOFS | __GFP_NOFAIL allocations in the 
-> > > page allocator to bypass per-zone min watermarks after reclaim has failed 
-> > > since the oom killer cannot be called in such a context so that the page 
-> > > allocator is not susceptible to the same deadlock without a complete 
-> > > depletion of memory reserves?
-> > 
-> > Yes, I think so.
-> 
-> There be dragons. If memcg's deadlock in low memory conditions in
-> the presence of GFP_NOFS | GFP_NOFAIL allocations, then we need to
-> make the memcg reclaim design more robust, not work around it by
-> allowing filesystems to drain critical memory reserves needed for
-> other situations....
+I have no objection.
 
-The problems in the page allocator and memcg are entirely unrelated.
-What we do in the memcg does not affect the page allocator and vice
-versa.  However, they are problems of the same type, so we are trying
-to find out whether both instances can have the same solution:
+Thanks,
+Yasuaki Ishimatsu
 
-If GFP_NOFS | __GFP_NOFAIL allocations can not make forward progress
-in direct reclaim, they are screwed: can't reclaim memory, can't OOM
-kill, can't return NULL.  They are essentially stuck until a third
-party intervenes.  This applies to both the page allocator and memcg.
+>
+> Thanks,
+> Rafael
+>
 
-In memcg, I fixed it by allowing the __GFP_NOFAIL task to bypass the
-user-defined memory limit after reclaim fails.
 
-David asks whether we should do the equivalent in the page allocator
-and allow __GFP_NOFAIL allocations to dip into the emergency memory
-reserves for the same reason.
-
-I suggested that the situations are not entirely the same.  A memcg
-might only have one or two tasks and so third party intervention to
-reduce memory usage in the memcg can be unlikely to impossible,
-whereas in the case of the page allocator, the likelihood of any task
-in the system releasing or reclaiming memory is higher.
-
-However, the GFP_NOFS | __GFP_NOFAIL task stuck in the page allocator
-may hold filesystem locks that could prevent a third party from
-freeing memory and/or exiting, so we can not guarantee that only the
-__GFP_NOFAIL task is getting stuck, it might well trap other tasks.
-The same applies to open-coded GFP_NOFS allocation loops of course
-unless they cycle the filesystem locks while looping.
