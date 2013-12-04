@@ -1,50 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903Ab3LDIam (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 03:30:42 -0500
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:55217 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754174Ab3LDIal (ORCPT
+	id S1754976Ab3LDIay (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 03:30:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58231 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754916Ab3LDIaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 03:30:41 -0500
-Date: Wed, 4 Dec 2013 08:30:37 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Andres Salomon <dilinger@queued.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: Fix memory leak in mfd_add_devices()
-Message-ID: <20131204083037.GE7469@lee--X1>
-References: <1383058042-22706-1-git-send-email-geert@linux-m68k.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1383058042-22706-1-git-send-email-geert@linux-m68k.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 4 Dec 2013 03:30:52 -0500
+Date: Wed, 4 Dec 2013 00:31:47 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: BUG: sleeping function called from invalid context at
+ kernel/locking/mutex.c:616
+Message-Id: <20131204003147.454534da.akpm@linux-foundation.org>
+In-Reply-To: <1386144811.16763.2.camel@phoenix>
+References: <1385895217.3994.2.camel@phoenix>
+	<1386144811.16763.2.camel@phoenix>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Oct 2013, Geert Uytterhoeven wrote:
+On Wed, 04 Dec 2013 16:13:31 +0800 Axel Lin <axel.lin@ingics.com> wrote:
 
-> If the first call to mfd_add_device() fails, no child devices have been
-> registered to the parent yet, and thus mfd_remove_devices() won't find
-> anything to remove nor free.
-> Hence the previously allocated array of atomic_t objects will leak.
+> I can constantly hit this issue:
 > 
-> Free the array instead of calling mfd_remove_devices() on failure during
-> the first loop iteration to fix this.
+> I trace it to mm/filemap.c: add_to_page_cache_locked
+> I print the in_atomic status at BEGIN and END of add_to_page_cache_locked call.
+> Then I got in_atomic is true at the end of add_to_page_cache_locked call.
 > 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->  drivers/mfd/mfd-core.c |   12 ++++++++----
->  1 file changed, 8 insertions(+), 4 deletions(-)
+> int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
+>                 pgoff_t offset, gfp_t gfp_mask)
+> {
+>         int error;
+> 
+>         VM_BUG_ON(!PageLocked(page));
+>         VM_BUG_ON(PageSwapBacked(page));
+> 
+> pr_info(" ##add_to_page_cache_locked BEGIN in_atomic=%d\n", in_atomic());
+>         error = mem_cgroup_cache_charge(page, current->mm,
+>                                         gfp_mask & GFP_RECLAIM_MASK);
+>         if (error)
+>                 return error;
+> 
+>         error = radix_tree_maybe_preload(gfp_mask & ~__GFP_HIGHMEM);
+>         if (error) {
+>                 mem_cgroup_uncharge_cache_page(page);
+>                 return error;
+>         }
+> 
+>         page_cache_get(page);
+>         page->mapping = mapping;
+>         page->index = offset;
+> 
+>         spin_lock_irq(&mapping->tree_lock);
+>         error = radix_tree_insert(&mapping->page_tree, offset, page);
+>         radix_tree_preload_end();
+>         if (unlikely(error))
+>                 goto err_insert;
+>         mapping->nrpages++;
+>         __inc_zone_page_state(page, NR_FILE_PAGES);
+>         spin_unlock_irq(&mapping->tree_lock);
+>         trace_mm_filemap_add_to_page_cache(page);
+> pr_info(" ##add_to_page_cache_locked END in_atomic=%d\n", in_atomic());
+>         return 0;
+> err_insert:
+>         page->mapping = NULL;
+>         /* Leave page->index set: truncation relies upon it */
+>         spin_unlock_irq(&mapping->tree_lock);
+>         mem_cgroup_uncharge_cache_page(page);
+>         page_cache_release(page);
+> pr_info(" ##add_to_page_cache_locked ERR in_atomic=%d\n", in_atomic());
+>         return error;
+> }
+> 
+> Then I got below messages:
+>  ##add_to_page_cache_locked BEGIN in_atomic=0
+>  ##add_to_page_cache_locked END in_atomic=0
+>  ##add_to_page_cache_locked BEGIN in_atomic=0
+>  ##add_to_page_cache_locked END in_atomic=0
+>  ##add_to_page_cache_locked BEGIN in_atomic=0
+>  ##add_to_page_cache_locked END in_atomic=1
 
-Hmm... I didn't see my reply to this, but it has been applied for a
-while.
+huh.  I can't spot it.  mem_cgroup_cache_charge() is by far the most
+complex callee.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Is tracing enabled?
+
+Is memcg in use?
+
+Please add a lot more printk's so we can narrow it down further?  I'd
+use something like 
+
+	printk(%d: %d\n", __LINE__, preempt_count());
+
+(note: preempt_count(), not in_atomic())
+
+Paste that all over the place so we can see which statement is doing
+the wrong thing.  
+
+Thanks.
