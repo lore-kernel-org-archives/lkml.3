@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932455Ab3LDOki (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 09:40:38 -0500
-Received: from mga03.intel.com ([143.182.124.21]:6779 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932254Ab3LDOkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 09:40:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,824,1378882800"; 
-   d="scan'208";a="438414299"
-Date: Wed, 4 Dec 2013 16:40:27 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>, balbi@ti.com
-Cc: bcousson@baylibre.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, rob.herring@calxeda.com, pawel.moll@arm.com,
-        mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, rob@landley.net, tony@atomide.com,
-        linux@arm.linux.org.uk, gregkh@linuxfoundation.org,
-        grant.likely@linaro.org, s.nawrocki@samsung.com, galak@codeaurora.org
-Subject: Re: [PATCH v3 04/10] usb: dwc3: use quirks to know if a particualr
- platform doesn't have PHY
-Message-ID: <20131204144027.GB21055@xps8300>
-References: <1385373690-12170-1-git-send-email-kishon@ti.com>
- <1385373690-12170-5-git-send-email-kishon@ti.com>
+	id S932410Ab3LDOv0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 09:51:26 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:58089 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932257Ab3LDOvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 09:51:24 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385373690-12170-5-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="UTF-8"
+Subject: RE: Supporting 4 way connections in LKSCTP
+Date: Wed, 4 Dec 2013 14:50:46 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B745D@saturn3.aculab.com>
+In-Reply-To: <529F395B.9040308@gmail.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: Supporting 4 way connections in LKSCTP
+Thread-Index: Ac7w+4yzdrRKKswbQ7CvVC5OYkDJSQAAgdgw
+References: <CAFXGft+CXk3W8=3w=AuYzqYtYnR8nH4Of9=668tUeT+tugD9-A@mail.gmail.com>	<5294BC01.7090605@gmail.com>	<CAFXGftLsKm9a5bmXX4Fe+rnSvYVdBDOyYGwisRP7XMu+ky=DGw@mail.gmail.com>	<CAFXGftLt1p6XpR2eGsMYKjEbbOHvch-LgcFw1sAXThcA2Rtjyw@mail.gmail.com>	<20131127124530.GA23369@hmsreliant.think-freely.org>	<CAFXGftJQV=5Pqs3bhfiS3T1VO1q8jfaMjAUiqm2tDbtSyBCM3A@mail.gmail.com>	<529C9B50.50002@gmail.com>	<CAGugRbXFirQ5P3ek9zN86h4vvO6qsy3eNEooJOApotA+dL+C_g@mail.gmail.com>	<529CB859.9090904@gmail.com>	<CAFXGft+F52p+oaa59=5e5pGfON44N36NA-XMYi5PorzWeybnKw@mail.gmail.com>	<CAFXGft+4o6fT4SYbu3musC+-BEi=xOEGUbZSavF1-0_V1mg6zg@mail.gmail.com>	<529D3BF9.3070208@gmail.com>	<CAFXGftJtCCJ=pVxg_DH-+n2bKmoKXavog0y8mfX+h-1z3hP49Q@mail.gmail.com>	<529DCF42.1070800@gmail.com>	<CAFXGftK5tz90OzObiV7Hi+g080j3zWCNdo217CKdNkOY4JWQUg@mail.gmail.com>	<529DF73E.7060604@gmail.com> <CAFXGftKZD0zN1S=UTa_bYr71-v=7mzU=_CewTNkjPv9CGGB_Fg@mail.gmail.com> <529F395B.9040308@gmail.com>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Vlad Yasevich" <vyasevich@gmail.com>, "Sun Paul" <paulrbk@gmail.com>
+Cc: <netdev@vger.kernel.org>, <linux-sctp@vger.kernel.org>,
+        "Karl Heiss" <kheiss@gmail.com>, "Neil Horman" <nhorman@tuxdriver.com>,
+        <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rB4EpsrY001528
 
-Hi guys,
+> > In normal operation, IP-A sends INIT to IP-X, IP-X returns INIT_ACK to
+> > IP-A. IP-A then sends HB to IP-X, IP-X then returns HB_ACK to IP-A. In
+> > the meantime, IP-B sends HB to IP-Y and IPY returns HB_ACK.
+> >
+> > In case of the path between IP-A and IP-X is broken, IP-B sends INIT
+> > to IP-X, NODE-B uses IP-Y to return INIT_ACK to IP-B. Then IP-B sends
+> > HB to IP-X, and IP-Y returns HB_ACK to IP-B. In the meantime, the HB
+> > communication between IP-B and IP-Y follows the normal flow.
+> >
+> > Can I confirm, is it really valid?
+> 
+> As long as NODE-B knows about both IP-A and IP-B, and NODE-A knows about
+> both IP-X and IP-Y (meaning all the addresses were exchanged inside INIT
+> and INIT-ACK), then this situation is perfectly valid.  In fact, this
+> has been tested an multiple interops.
 
-Kishon, sorry I did not see this v3 set.
+There are some network configurations that do cause problems.
+Consider 4 systems with 3 LAN segments:
+A) 10.10.10.1 on LAN X and 192.168.1.1 on LAN Y.
+B) 10.10.10.2 on LAN X and 192.168.1.2 on LAN Y.
+C) 10.10.10.3 on LAN X.
+D) 10.10.10.4 on LAN X and 192.168.1.2 on LAN Z.
+There are no routers between the networks (and none of the systems
+are running IP forwarding).
 
-On Mon, Nov 25, 2013 at 03:31:24PM +0530, Kishon Vijay Abraham I wrote:
-> There can be systems which does not have an external phy, so get
-> phy only if no quirks are added that indicates the PHY is not present.
-> Introduced two quirk flags to indicate the *absence* of usb2 phy and
-> usb3 phy. Also remove checking if return value is -ENXIO since it's now
-> changed to always enable usb_phy layer.
+If A connects to B everything is fine - traffic can use either LAN.
 
-Can you guys explain why is something like this needed? Like with
-clocks and gpios, the device drivers shouldn't need to care any more
-if the platform has the phys or not. -ENODEV tells you your platform
-does not have them, so go ahead and continue when getting the phy.
+Connections from A to C are problematic if C tries to send anything
+(except a HB) to 192.168.1.1 before receiving a HB response.
+One of the SCTP stacks we've used did send messages to an
+inappropriate address, but I've forgotten which one.
 
-I just tested removing the phy registering from dwc3-pci.c and all I
-had to do was to add IS_ERR(<phy>) checks where the old usb phys were
-used and everything worked fine?
+Connections between A and D fail unless the HB errors A receives
+for 192.168.1.2 are ignored.
 
-What am I missing?
+Of course the application could explicitly bind to only the 10.x address
+but that requires the application know the exact network topology
+and may be difficult for incoming calls.
 
-Br,
+	David
 
--- 
-heikki
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
