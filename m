@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab3CACt7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 21:49:59 -0500
-Received: from mail.swrs.ap.gov.in ([110.234.138.54]:46349 "EHLO
-	mail.swrs.ap.gov.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985Ab3CACt5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 21:49:57 -0500
-X-Greylist: delayed 61609 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Feb 2013 21:49:57 EST
-Content-Type: text/plain; charset="utf-8"
+	id S1754767Ab3BDMsd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 07:48:33 -0500
+Received: from asix.com.tw ([210.243.224.51]:63121 "EHLO asix.com.tw"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754433Ab3BDMsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 07:48:31 -0500
+From: "Freddy" <freddy@asix.com.tw>
+To: "'Daniel J Blueman'" <daniel@quora.org>
+Cc: "'Linux Kernel'" <linux-kernel@vger.kernel.org>
+References: <CAMVG2suXHz2ZhikrTa0j3gFc+_c7rdu0qFrXD3sve9JwfyzFAQ@mail.gmail.com>
+In-Reply-To: <CAMVG2suXHz2ZhikrTa0j3gFc+_c7rdu0qFrXD3sve9JwfyzFAQ@mail.gmail.com>
+Subject: RE: [PATCH, resubmit] ax88179_178a: ASIX AX88179_178A USB 3.0/2.0 to gigabit ethernet adapter driver
+Date: Wed, 4 Dec 2013 20:48:24 +0800
+Message-ID: <002901cef0ef$1f4a0e00$5dde2a00$@asix.com.tw>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Re: Hello
-To: info-noreply@ourvis.com
-From: "Wenzhou Ourvis" <info-noreply@ourvis.com>
-Date: Wed, 27 Feb 2013 05:35:23 -0500
-Message-Id: <20130227104122.51BCE4DAA108@mail.swrs.ap.gov.in>
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQHKWZaTfbymrurcvG6QlDIOeXD7gZpNJB7Q
+Content-Language: zh-tw
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear E-mail User,
 
 
-  This is to immediately inform you that your email address with Micros ID: IDJT-32238-EHI-676GI-8ED has won you 2,485,000.00 GBP and a brand new Range Rover SUV from the Wenzhou Ourvis yearly draw promo.
+-----Original Message-----
+From: Daniel J Blueman [mailto:daniel@quora.org] 
+Sent: Sunday, February 03, 2013 10:22 PM
+To: Freddy Xin
+Cc: Linux Kernel
+Subject: Re: [PATCH, resubmit] ax88179_178a: ASIX AX88179_178A USB 3.0/2.0
+to gigabit ethernet adapter driver
 
-Use the details below to login and fill in the claim form to immediately begin your claims.
+> Hi Freddy,
 
+> Michael, could you give me more information about how do you test this
+driver?
+> I have tried to reproduce the issue by using "ifconfig ethX mtu 1500", but
+I didn't confront the same issue.
+> Thank you in advance for your help.
 
+> I found the same by just starting with 'ifconfig eth0 1500' and testing as
+high as 4000; pinging another host with a large payload of size mtu-40
+starts failing; after ~30s, I see the transmit time out trace [1].
 
-WEBSITE: www.wenzhourvis.cla.fr
-USERNAME: SI03JK78
-PASSWORD: XN043P
+> Of course, a default MTU size of 1500 is essential to avoid fragmentation
+issues, so should be fixed too. Jumbo frames support is essential these days
+too.
 
+Hi Daniel,
 
-Regards,
-Dr. Warren Payne,
-Wenzhou Ourvis Company.
-European Zonal Coordinator,
-United Kingdom.
+The default MTU size will be change to 1500 and the HW jumbo frame function
+will be enabled in the next submission of the driver.
+Thanks for your help.
+
+Freddy
+
