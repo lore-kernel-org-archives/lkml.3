@@ -1,115 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab3LDJck (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 04:32:40 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:60328 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754549Ab3LDJcg (ORCPT
+	id S1755335Ab3LDJeZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 04:34:25 -0500
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:43390 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754279Ab3LDJeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 04:32:36 -0500
-Date: Wed, 4 Dec 2013 10:31:36 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Stefan Agner <stefan@agner.ch>
-Cc: swarren@wwwdotorg.org, dev@lynxeye.de, lee.jones@linaro.org,
-        lgirdwood@gmail.com, broonie@kernel.org,
-        kai.poggensee@avionic-design.de, sameo@linux.intel.com,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/3] regulator: tps6586x: add and use correct voltage
- table
-Message-ID: <20131204093136.GN19943@ulmo.nvidia.com>
-References: <cover.1386100296.git.stefan@agner.ch>
- <c70dc80179c8cfaa18c2665c342ce1bcd827d923.1386100296.git.stefan@agner.ch>
+	Wed, 4 Dec 2013 04:34:21 -0500
+Date: Wed, 4 Dec 2013 10:34:17 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>, Pekka Enberg <penberg@iki.fi>,
+        "David S. Miller" <davem@davemloft.net>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
+Message-ID: <20131204093417.GC32531@gmail.com>
+References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
+ <20131203091655.GB20179@gmail.com>
+ <CAMEtUuziP0zVe63HSxF0uVs1pnP--1HBs1-WsR2xfLOTyBaHSQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kK1uqZGE6pgsGNyR"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <c70dc80179c8cfaa18c2665c342ce1bcd827d923.1386100296.git.stefan@agner.ch>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <CAMEtUuziP0zVe63HSxF0uVs1pnP--1HBs1-WsR2xfLOTyBaHSQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---kK1uqZGE6pgsGNyR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Alexei Starovoitov <ast@plumgrid.com> wrote:
 
-On Tue, Dec 03, 2013 at 08:57:28PM +0100, Stefan Agner wrote:
-[...]
-> Changes since v2:
->   - Removed reg_ from reg_version
->   - Moved walk through version dependent tables to find_regulator_info,
->     removed the inline definition. This reduces .o size and encapsulates
->     the logic of finding the right regulator into one function. It comes
->     with a slight code duplication, the table search now appears twice.
+> On Tue, Dec 3, 2013 at 1:16 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > Very cool! (Added various other folks who might be interested in 
+> > this to the Cc: list.)
+> >
+> > I have one generic concern:
+> >
+> > It would be important to make it easy to extract loaded BPF code 
+> > from the kernel in source code equivalent form, which compiles to 
+> > the same BPF code.
+> >
+> > I.e. I think it would be fundamentally important to make sure that 
+> > this is all within the kernel's license domain, to make it very 
+> > clear there can be no 'binary only' BPF scripts.
+> >
+> > By up-loading BPF into a kernel the person loading it agrees to 
+> > make that code available to all users of that system who can 
+> > access it, under the same license as the kernel's code (or under a 
+> > more permissive license).
+> >
+> > The last thing we want is people getting funny ideas and writing 
+> > drivers in BPF and hiding the code or making license claims over 
+> > it
+> 
+> all makes sense. In case of kernel modules all export_symbols are 
+> accessible and module has to have kernel compatible license. Same 
+> licensing terms apply to anything else that interacts with kernel 
+> functions. In case of BPF the list of accessible functions is tiny, 
+> so it's much easier to enforce specific limited use case. For 
+> tracing filters it's just bpf_load_xx/trace_printk/dump_stack. Even 
+> if someone has funny ideas they cannot be brought to life, since 
+> drivers need a lot more than this set of functions and BPF checker 
+> will reject any attempts to call something outside of this tiny 
+> list. imo the same applies to existing BPF as well. Meaning that 
+> tcpdump filter string and seccomp filters, if distributed, has to 
+> have their source code available.
 
-Well, the table was searched twice in the original patch, too, so this
-variant isn't any worse, really.
+I mean more than that, I mean the licensing of BFP filters a user can 
+find on his own system's kernel should be very clear: by the act of 
+loading a BFP script into the kernel the user doing the 'upload' gives 
+permission for it to be redistributed on kernel-compatible license 
+terms.
 
-> ---
->  arch/arm/boot/dts/tegra20-colibri-512.dtsi |  4 +-
->  drivers/regulator/tps6586x-regulator.c     | 91 +++++++++++++++++++++++-=
-------
->  2 files changed, 74 insertions(+), 21 deletions(-)
->=20
-> diff --git a/arch/arm/boot/dts/tegra20-colibri-512.dtsi b/arch/arm/boot/d=
-ts/tegra20-colibri-512.dtsi
-[...]
-> -static inline struct tps6586x_regulator *find_regulator_info(int id)
-> +static struct tps6586x_regulator *find_regulator_info(int id, int versio=
-n)
->  {
->  	struct tps6586x_regulator *ri;
-> +	struct tps6586x_regulator *table =3D NULL;
-> +	int num;
->  	int i;
-> =20
-> +	switch (version) {
-> +	case TPS658623:
-> +		table =3D tps658623_regulator;
-> +		num =3D ARRAY_SIZE(tps658623_regulator);
-> +		break;
-> +	case TPS658643:
-> +		table =3D tps658643_regulator;
-> +		num =3D ARRAY_SIZE(tps658643_regulator);
-> +		break;
-> +	}
-> +
+The easiest way to achieve that is to make sure that all loaded BFP 
+scripts are 'registered' and are dumpable, viewable and reusable. 
+That's good for debugging and it's good for transparency.
 
-I think you still need to check for table to be valid here. Depending on
-the version it might still be NULL.
+This means a minimal BFP decoder will have to be in the kernel as 
+well, but that's OK, we actually have several x86 instruction decoder 
+in the kernel already, so there's no complexity threshold.
 
-> +	/* Search version specific table first */
-> +	for (i =3D 0; i < num; i++) {
-> +		ri =3D &table[i];
-> +		if (ri->desc.id =3D=3D id)
-> +			return ri;
-> +	}
+> > I.e. we want to allow flexible plugins technologically, but make 
+> > sure people who run into such a plugin can modify and improve it 
+> > under the same license as they can modify and improve the kernel 
+> > itself!
+> 
+> wow. I guess if the whole thing takes off, we would need an 
+> in-kernel directory to store upstreamed bpf filters as well :)
 
-So this would need to be wrapped in an "if (table) { }" block.
+I see no reason why not, but more importantly all currently loaded BFP 
+scripts should be dumpable, displayable and reusable in a kernel 
+license compatible fashion.
 
+Thanks,
 
---kK1uqZGE6pgsGNyR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSnvZ3AAoJEN0jrNd/PrOhF/kP/jO0dNw7Rf6gY7qLGqHyZvND
-CiZawp7NqwVvtMta5A4pWeK4jCXLe7xz1MZhL88OASMaKWqE+ixgB1qSC6e3rvEK
-3THKBedtybRQUulhUtg4o9FRYKc8IMMNL9cVA1qv7PSt1uuS+Wf6oqArSF/JvSTf
-UF9+xeXGdR8ux/fjEy1J28jDqaJrxoUUaoaTB7czIxbWU1E7NmNdsJ3KNBnHOHX6
-PIzBN5GlAC3978wqJejSTdmxCfZXMSaqjl/NqzPzM6WHWvScC7hlsYEemJoCYbpv
-ybYlKLHc/VRsJMavtSMma+AxVr3buXmzkJDr3Ulba62U3dCSJ1mWw+ICLT9r3ciR
-eCTajh7hH/YL0o3v+aazeFg3WJb3pxNE9/9Cgq0mMDbj1+j2NUxJsc+n/7Lq81CC
-FGJNhqCaz0CwOkYLhKlomxhJUSUNSzEflsMiwErX9EVI6fq0doRrSpRFf63EPHVw
-5yYKlC/Xit7blZt+OKpenS2rrf6S9O91D9mTYnjUi4xBADywl6x4OIXDYsBKSo7b
-WDgTH1AhHZojCfC4xdWFfSLgc59riYqTrrWCKVotyRJPwQll0O73U/Ltbm2qT1Kv
-UpDcsC71shJwX9NZvbdSYOX+Jcwkb/Z90cPiJxaSS4XnAxPowRatLyeh5uQFZ3b5
-lgg4kmeb5sUXFbKOCt+4
-=YUF3
------END PGP SIGNATURE-----
-
---kK1uqZGE6pgsGNyR--
+	Ingo
