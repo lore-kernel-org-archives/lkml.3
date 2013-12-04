@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab3LDEiA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 23:38:00 -0500
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:59380 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752611Ab3LDEh7 convert rfc822-to-8bit (ORCPT
+	id S1753845Ab3LDEjZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 23:39:25 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:60001 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752783Ab3LDEjW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 23:37:59 -0500
+	Tue, 3 Dec 2013 23:39:22 -0500
 MIME-Version: 1.0
-Date: Tue, 3 Dec 2013 23:37:58 -0500
-Message-ID: <CANsc=4X_C53AHe5p5sRiHDGPA0+P4NgtGWrhOe0h27MZ9LwWbQ@mail.gmail.com>
-Subject: ARM Coresight: Enhance ETM tracing control
+Date: Tue, 3 Dec 2013 23:39:21 -0500
+Message-ID: <CANsc=4VRLWhaVA15HrBEeM+FJC0tS+b5KKopDb7bP8nxzR8=zA@mail.gmail.com>
+Subject: [PATCH 0/3] ARM Coresight: Enhance ETM tracing control
 From: =?UTF-8?Q?Adrien_Verg=C3=A9?= <adrienverge@gmail.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Russell King <linux@arm.linux.org.uk>,
