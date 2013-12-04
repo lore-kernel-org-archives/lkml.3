@@ -1,89 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932403Ab3LDMv1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 07:51:27 -0500
-Received: from 7of9.schinagl.nl ([88.159.158.68]:33895 "EHLO 7of9.schinagl.nl"
+	id S932299Ab3LDM43 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 07:56:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12070 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932184Ab3LDMvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 07:51:25 -0500
-Message-ID: <529F24F7.40309@schinagl.nl>
-Date: Wed, 04 Dec 2013 13:49:59 +0100
-From: Oliver Schinagl <oliver@schinagl.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S932201Ab3LDM42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 07:56:28 -0500
+Date: Wed, 4 Dec 2013 13:57:28 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Sameer Nanda <snanda@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        "Ma, Xindong" <xindong.ma@intel.com>, Michal Hocko <mhocko@suse.cz>,
+        Sergey Dyasly <dserrg@gmail.com>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] oom_kill: change oom_kill.c to use
+	for_each_thread()
+Message-ID: <20131204125728.GA2549@redhat.com>
+References: <20131202152423.GA10878@redhat.com> <20131202152440.GA10900@redhat.com> <CANMivWbMmra05sqAgZb7AP+W0qAs8z3jGgsMPPML=3v5TZfFwA@mail.gmail.com>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "tj@kernel.org" <tj@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "dev@linux-sunxi.org" <dev@linux-sunxi.org>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "ijc@hellion.org.uk" <ijc@hellion.org.uk>,
-        "hdegoede@redhat.com" <hdegoede@redhat.com>,
-        "oliver+list@schinagl.nl" <oliver+list@schinagl.nl>
-Subject: Re: [PATCH 2/3] ARM: sunxi: Add an ahci-platform compatible AHCI
- driver for the Allwinner SUNXi series of SoCs
-References: <1386159055-10264-1-git-send-email-oliver@schinagl.nl> <1386159055-10264-3-git-send-email-oliver@schinagl.nl> <20131204122602.GN16025@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20131204122602.GN16025@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANMivWbMmra05sqAgZb7AP+W0qAs8z3jGgsMPPML=3v5TZfFwA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sameer, I didn't notice this part yesterday.
 
-On 04-12-13 13:26, Mark Rutland wrote:
-> On Wed, Dec 04, 2013 at 12:10:54PM +0000, oliver@schinagl.nl wrote:
->> From: Oliver Schinagl <oliver@schinagl.nl>
->>
->> This patch adds support for the sunxi series of SoC's by allwinner. It
->> plugs into the ahci-platform framework.
->>
->> Note: Currently it uses a somewhat hackish approach that probably needs
->> a lot more work, but does the same as the IMX SoC's.
->>
->> Signed-off-by: Olliver Schinagl <oliver@schinagl.nl>
->> ---
->>   .../devicetree/bindings/ata/ahci-sunxi.txt         |  24 ++
->>   drivers/ata/Kconfig                                |   9 +
->>   drivers/ata/Makefile                               |   1 +
->>   drivers/ata/ahci_platform.c                        |  12 +
->>   drivers/ata/ahci_sunxi.c                           | 305 +++++++++++++++++++++
->>   5 files changed, 351 insertions(+)
->>   create mode 100644 Documentation/devicetree/bindings/ata/ahci-sunxi.txt
->>   create mode 100644 drivers/ata/ahci_sunxi.c
->>
->> diff --git a/Documentation/devicetree/bindings/ata/ahci-sunxi.txt b/Documentation/devicetree/bindings/ata/ahci-sunxi.txt
->> new file mode 100644
->> index 0000000..0792fa5
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/ata/ahci-sunxi.txt
->> @@ -0,0 +1,24 @@
->> +Allwinner SUNXI AHCI SATA Controller
->> +
->> +SATA nodes are defined to describe on-chip Serial ATA controllers.
->> +Each SATA controller should have its own node.
->> +
->> +Required properties:
->> +- compatible   : compatible list, contains "allwinner,sun4i-a10-ahci"
-> - compatible: Should contain "allwinner,sun4i-a10-ahci"
+On 12/03, Sameer Nanda wrote:
 >
->> +- reg          : <registers mapping>
-> - reg: The offset and length of the MMIO registers.
->
->> +- interrupts   : <interrupt mapping for AHCI IRQ>
-> - interrupts: An interrupt-specifier for the ACHI interrupt
->
->> +- clocks       : clocks for ACHI
->> +- clock-names  : clock names for AHCI
-> Please _define_ the set of clock-names you expect. This binding is
-> meaningless without it. If you require clock-names, define the clocks
-> property in terms of it.
-I copied ahci_platform.txt and filled in the missing bits, I will 
-improve all the above. Appologies!
->
-> Thanks,
-> Mark.
+> > @@ -406,7 +409,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+> >  {
+> >         struct task_struct *victim = p;
+> >         struct task_struct *child;
+> > -       struct task_struct *t = p;
+> > +       struct task_struct *t;
+> >         struct mm_struct *mm;
+> >         unsigned int victim_points = 0;
+> >         static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
+> > @@ -437,7 +440,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+> >          * still freeing memory.
+> >          */
+> >         read_lock(&tasklist_lock);
+> This can be a rcu_read_lock now, I think?
+
+No, we need tasklist for list_for_each_entry(t->children), it
+is not rcu-safe.
+
+Oleg.
 
