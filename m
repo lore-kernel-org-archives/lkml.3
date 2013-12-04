@@ -1,85 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932473Ab3LDN2g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 08:28:36 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:33083 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753806Ab3LDN2e (ORCPT
+	id S932485Ab3LDN3m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 08:29:42 -0500
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:33919 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932320Ab3LDN3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 08:28:34 -0500
-Date: Wed, 4 Dec 2013 14:28:29 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        "Ma, Xindong" <xindong.ma@intel.com>, Michal Hocko <mhocko@suse.cz>,
-        Sameer Nanda <snanda@chromium.org>, Sergey Dyasly <dserrg@gmail.com>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/4] introduce for_each_thread() to replace the buggy
- while_each_thread()
-Message-ID: <20131204132828.GC4530@localhost.localdomain>
-References: <20131204130351.GA5984@redhat.com>
- <20131204130409.GA5998@redhat.com>
+	Wed, 4 Dec 2013 08:29:40 -0500
+Date: Wed, 4 Dec 2013 10:29:32 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 22/28] tools lib traceevent: Remove malloc_or_die from
+ event-plugin.c
+Message-ID: <20131204132932.GE6359@ghostprotocols.net>
+References: <1386076182-14484-1-git-send-email-jolsa@redhat.com>
+ <1386076182-14484-23-git-send-email-jolsa@redhat.com>
+ <20131203111601.540ed5f7@gandalf.local.home>
+ <20131204092934.GB1219@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131204130409.GA5998@redhat.com>
+In-Reply-To: <20131204092934.GB1219@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 02:04:09PM +0100, Oleg Nesterov wrote:
-> while_each_thread() and next_thread() should die, almost every
-> lockless usage is wrong.
-> 
-> 1. Unless g == current, the lockless while_each_thread() is not safe.
-> 
->    while_each_thread(g, t) can loop forever if g exits, next_thread()
->    can't reach the unhashed thread in this case. Note that this can
->    happen even if g is the group leader, it can exec.
-> 
-> 2. Even if while_each_thread() itself was correct, people often use
->    it wrongly.
-> 
->    It was never safe to just take rcu_read_lock() and loop unless
->    you verify that pid_alive(g) == T, even the first next_thread()
->    can point to the already freed/reused memory.
-> 
-> This patch adds signal_struct->thread_head and task->thread_node
-> to create the normal rcu-safe list with the stable head. The new
-> for_each_thread(g, t) helper is always safe under rcu_read_lock()
-> as long as this task_struct can't go away.
+Em Wed, Dec 04, 2013 at 10:29:34AM +0100, Jiri Olsa escreveu:
+> On Tue, Dec 03, 2013 at 11:16:01AM -0500, Steven Rostedt wrote:
+> > On Tue,  3 Dec 2013 14:09:36 +0100 Jiri Olsa <jolsa@redhat.com> wrote:
 
-Thanks, it looks indeed much saner to put the head in the signal struct!
+> > > Removing malloc_or_die calls from event-plugin.c,
+> > > replacing them with standard malloc and error path.
 
-> 
-> Note: of course it is ugly to have both task_struct->thread_node
-> and the old task_struct->thread_group, we will kill it later, after
-> we change the users of while_each_thread() to use for_each_thread().
-> 
-> Perhaps we can kill it even before we convert all users, we can
-> reimplement next_thread(t) using the new thread_head/thread_node.
-> But we can't do this right now because this will lead to subtle
-> behavioural changes. For example, do/while_each_thread() always
-> sees at least one task, while for_each_thread() can do nothing if
-> the whole thread group has died.
+> > > Suggested-by: Namhyung Kim <namhyung@kernel.org>
 
-Would it be safe to have for_each_thread_continue() instead?
+> > > +++ b/tools/lib/traceevent/event-plugin.c
+> > > @@ -47,7 +47,11 @@ load_plugin(struct pevent *pevent, const char *path,
 
-> Or thread_group_empty(), currently
-> its semantics is not clear unless thread_group_leader(p) and we
-> need to audit the callers before we can change it.
-> 
-> So this patch adds the new interface which has to coexist with the
-> old one for some time, hopefully the next changes will be more or
-> less straightforward and the old one will go away soon.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> Reviewed-and-Tested-by: Sergey Dyasly <dserrg@gmail.com>
-> Reviewed-by: Sameer Nanda <snanda@chromium.org>
-> ---
+> > > -	plugin = malloc_or_die(strlen(path) + strlen(file) + 2);
+> > > +	plugin = malloc(strlen(path) + strlen(file) + 2);
+> > > +	if (!plugin) {
+> > > +		warning("could not allocate plugin memory\n");
+> > > +		return;
 
-Yeah if the conversion needs careful audit, it makes sense to switch incrementally.
+> > This should be changed to return an error code. Yes it will require
+> > other places to change for that update as well.
+
+> Any chance this could be a separated feature? ;-)
+
+> AFACIS there's no technical problem with the current code.  If the
+> load_plugin fails (due to ENOMEM or interface error) it's not added on
+> the plugin_list, which is the output/handle of plugin interface (and
+> there's warning ;-)).
+ 
+> I think we need some complex/unified error handling for the whole
+> library and add that globally.
+
+Yeah, I also have some reservations about adding more globals (the
+trace_event stuff just to associate a plugins list with pevent, probably
+pevent should have that list, haven't looked 100% at the code), but in
+general probably this patchset is OK, I think we should take it in and
+then address those other problems in a followup patchset, d'accord?
+
+- Arnaldo
