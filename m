@@ -1,158 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab3LDGBl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 01:01:41 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:28500 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750897Ab3LDGBi convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 01:01:38 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z551biz1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de097hz2dh109h2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2184h21a6h2216h22d0h2336hbe9i1155h)
-From: Li Xiubo <Li.Xiubo@freescale.com>
-To: Mark Rutland <mark.rutland@arm.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "galak@codeaurora.org" <galak@codeaurora.org>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Shawn Guo <Shawn.Guo@freescale.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "t.figa@samsung.com" <t.figa@samsung.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "rob@landley.net" <rob@landley.net>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Huan Wang <Huan.Wang@freescale.com>,
-        Jingchang Lu <jingchang.lu@freescale.com>
-Subject: RE: [PATCHv6 1/4] pwm: Add Freescale FTM PWM driver support
-Thread-Topic: [PATCHv6 1/4] pwm: Add Freescale FTM PWM driver support
-Thread-Index: AQHO304NjulFCIkIhEyiDysSHbIEFZo7QgeAgAAUJ4CABYdDAIACsfQQ
-Date: Wed, 4 Dec 2013 06:01:29 +0000
-Message-ID: <1DD289F6464F0949A2FCA5AA6DC23F828E66C5@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1384220218-12716-1-git-send-email-Li.Xiubo@freescale.com>
- <1384220218-12716-2-git-send-email-Li.Xiubo@freescale.com>
- <20131128212510.GC14689@mithrandir> <20131128223719.GG14689@mithrandir>
- <20131202110243.GD12952@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20131202110243.GD12952@e106331-lin.cambridge.arm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.78]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1754616Ab3LDGB6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 01:01:58 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:47105 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754572Ab3LDGB4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 01:01:56 -0500
+X-AuditID: cbfee61b-b7f006d000003e1f-00-529ec5539d7a
+From: Chao Yu <chao2.yu@samsung.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
+        linux-fsdevel@vger.kernel.org,
+        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
+References: <1385792739-31405-1-git-send-email-jaegeuk.kim@samsung.com>
+ <1385972847.2417.113.camel@kjgkr>
+In-reply-to: <1385972847.2417.113.camel@kjgkr>
+Subject: RE: [f2fs-dev] [PATCH v2] f2fs: refactor bio-related operations
+Date: Wed, 04 Dec 2013 14:01:05 +0800
+Message-id: <001101cef0b6$562766e0$027634a0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=gb2312
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQGw7XbXFfvWzLj+WigF+tBDCO33/AJ1cP7KmmvawzA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNLMWRmVeSWpSXmKPExsVy+t9jQd3go/OCDJovS1hc3/WXyeLSIneL
+	PXtPslhc3jWHzaJ14XlmB1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxvHNt1gK
+	lglVrLm/hLmB8RRfFyMnh4SAicTB04dZIWwxiQv31rN1MXJxCAlMZ5R49XQ6C4Tzg1FiWvsN
+	dpAqNgEVieUd/5lAbBEBaYlZn+aBFTELTGOUWDr5AFCCA6gjW+LIa3WQGk4BPYmpd16wgdjC
+	Ah4SM6/0M4LYLAKqEgcezgSbwytgKbHo0nRWCFtQ4sfkeywgNrOAhkT/og1sELa8xOY1b5kh
+	LlWQ2HH2NSPEDVYSe869ZIWoEZfYeOQWywRGoVlIRs1CMmoWklGzkLQsYGRZxSiaWpBcUJyU
+	nmukV5yYW1yal66XnJ+7iREcBc+kdzCuarA4xCjAwajEw5vAOS9IiDWxrLgy9xCjBAezkgiv
+	TRlQiDclsbIqtSg/vqg0J7X4EKM0B4uSOO/BVutAIYH0xJLU7NTUgtQimCwTB6dUA2Pcm4lq
+	Xv/bHUqn8F6+/cX8dLP3xQmMcwMZZz1tEru+9ME7tSs+qQX2IVe9Gub93r9h0rapNR7tjrU/
+	HmR/5363Z7/3qvM3ZmQHM8uvnBRx3j3gFe/RNJYLi1cd2862+unjJQuaHC6vfnA64U5T2Cxh
+	4TM7TsWkdPcLrA98oOmz7/s+x1uxB0/qK7EUZyQaajEXFScCAFL5DS1+AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > +static int fsl_pwm_parse_clk_ps(struct fsl_pwm_chip *fpc)
-> > > > +{
-> > > > +	int ret;
-> > > > +	struct of_phandle_args clkspec;
-> > > > +	struct device_node *np = fpc->chip.dev->of_node;
-> > > > +
-> > > > +	fpc->sys_clk = devm_clk_get(fpc->chip.dev, "ftm0");
-> > > > +	if (IS_ERR(fpc->sys_clk)) {
-> > > > +		ret = PTR_ERR(fpc->sys_clk);
-> > > > +		dev_err(fpc->chip.dev,
-> > > > +				"failed to get \"ftm0\" clock %d\n", ret);
-> > > > +		return ret;
-> > > > +	}
-> > > > +
-> > > > +	fpc->counter_clk = devm_clk_get(fpc->chip.dev, "ftm0_counter");
-> > > > +	if (IS_ERR(fpc->counter_clk)) {
-> > > > +		ret = PTR_ERR(fpc->counter_clk);
-> > > > +		dev_err(fpc->chip.dev,
-> > > > +				"failed to get \"ftm0_counter\" clock %d\n",
-> > > > +				ret);
-> > > > +		return ret;
-> > > > +	}
-> > > > +
-> > > > +	ret = of_parse_phandle_with_args(np, "clocks", "#clock-cells",
-> 1,
-> > > > +					&clkspec);
-> > > > +	if (ret)
-> > > > +		return ret;
-> > > > +
-> > > > +	fpc->counter_clk_select = clkspec.args[0];
-> > >
-> > > This isn't at all pretty. But given that once you have access to a
-> > > struct clk there's no way to identify it, I don't know of a better
-> > > alternative.
-> >
-> > Hi Mike,
-> >
-> > I've seen this crop up a number of times now, to varying degrees of
-> > gravity. In this particular case, the driver needs to know the type of a
-> > clock because it needs to program this hardware differently depending on
-> > which clock feeds the counter. Since there is no way to obtain any kind
-> > of identifying information from a struct clk, drivers need to rely on
-> > hacks like this and manually reach into the device tree to obtain that
-> > information.
+Hi,
+
+Comment as following.
+
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> Sent: Monday, December 02, 2013 4:27 PM
+> To: linux-fsdevel@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net
+> Subject: Re: [f2fs-dev] [PATCH v2] f2fs: refactor bio-related operations
 > 
-> Which property of the clock is the consumer concerned with in this case?
+> Change log from v1:
+>  o remove redundant codes
 > 
-
-The "ftm0_counter" clock.
-
-
-> From a quick look at the driver it looks like there are actually a
-> number of different input lines to the device that share the clock-name
-> "ftm0_counter", though they are actually separate and each has a
-> different divider. Have I got that right?
+> >From a480dfc915490f4bca7275f6fbb44fa34aa00eaa Mon Sep 17 00:00:00 2001
+> From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> Date: Sat, 30 Nov 2013 12:51:14 +0900
+> Subject: [PATCH] f2fs: refactor bio-related operations
+> Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
 > 
-
-Yes mostly, there are three different input lines wired to the counter
-clock, but they share only one divider. And between the three lines and
-the divider there is one mux inside of the FTM IP block.
-The three clock sources are:
-"ftm0",
-"ftm0-fix",
-"ftm0-ext".
-		 _____________________________________________________
-		|									|
-		|   +++++++++++		FTM Module				|
-ftm0 -------|-->+         +							|
-		|   +         +     +++++++++++++     ++++++++++++++	|
-ftm0-fix ---|-->+   MUX   +---->+  divider  +---->+  counter   +	|
-		|   +         +     +++++++++++++     ++++++++++++++	|
-ftm0-ext ---|-->+         +							|
-		|   +++++++++++							|
-		|_____________________________________________________|
-
-
-
-> If that's the case, having a unique clock-names value for each of those
-> lines would be the solution I'd expect. Then you just have to list the
-> one(s) that are wired up, and the driver can figure out the appropriate
-> line to use either by requesting by name until it finds a match or
-> inspecting the clock-names property.
+> This patch integrates redundant bio operations on read and write IOs.
 > 
+> 1. Move bio-related codes to the top of data.c.
+> 2. Replace f2fs_submit_bio with f2fs_submit_merged_bio, which handles read
+>    bios additionally.
+> 3. Introduce __submit_merged_bio to submit the merged bio.
+> 4. Change f2fs_readpage to f2fs_submit_page_bio.
+> 5. Introduce f2fs_submit_page_mbio to integrate previous submit_read_page and
+>    submit_write_page.
 
-Hi Kumar,
-In the list archives for mails of "[RFC][PATCHv5 4/4] Documentation: Add
-device tree bindings for Freescale FTM PWM.",we have discussed about this.
-Is there any different with your suggestions or ideas? 
+[snip]
 
+> +static void __submit_merged_bio(struct f2fs_sb_info *sbi,
+> +				struct f2fs_bio_info *io,
+> +				enum page_type type, bool sync, int rw)
+> +{
+> +	enum page_type btype = PAGE_TYPE_OF_BIO(type);
+> +
+> +	if (!io->bio)
+> +		return;
+> +
+> +	if (btype == META)
+> +		rw |= REQ_META;
+> +
+> +	if (is_read_io(rw)) {
+> +		if (sync)
+> +			rw |= READ_SYNC;
+> +		submit_bio(rw, io->bio);
+> +		trace_f2fs_submit_read_bio(sbi->sb, rw, type, io->bio);
+> +		io->bio = NULL;
+> +		return;
+> +	}
+> +
+> +	if (sync)
+> +		rw |= WRITE_SYNC;
 
-> Is there some other property of the parent that we care about here?
-> 
+rw = WRITE_SYNC; ?
 
-As I know, not yet.
+> +	if (type >= META_FLUSH)
+> +		rw |= WRITE_FLUSH_FUA;
 
---
-Best Regards,
- 
+rw = WRITE_FLUSH_FUA; ?
+
+> +
+> +	/*
+> +	 * META_FLUSH is only from the checkpoint procedure, and we should wait
+> +	 * this metadata bio for FS consistency.
+> +	 */
+> +	if (type == META_FLUSH) {
+> +		DECLARE_COMPLETION_ONSTACK(wait);
+> +		io->bio->bi_private = &wait;
+> +		submit_bio(rw, io->bio);
+> +		wait_for_completion(&wait);
+> +	} else {
+> +		submit_bio(rw, io->bio);
+> +	}
+> +	trace_f2fs_submit_write_bio(sbi->sb, rw, btype, io->bio);
+> +	io->bio = NULL;
+> +}
+
+[snip]
+
+Thanks,
+Yu
 
