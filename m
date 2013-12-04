@@ -1,238 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932730Ab3LDPdQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 10:33:16 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:49233 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932528Ab3LDPdN (ORCPT
+	id S932745Ab3LDPdW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 10:33:22 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:60640 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932628Ab3LDPdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 10:33:13 -0500
-Message-ID: <529F4B2A.6060508@linaro.org>
-Date: Wed, 04 Dec 2013 23:32:58 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Wed, 4 Dec 2013 10:33:18 -0500
+Message-ID: <529F4B3C.4020608@linaro.org>
+Date: Wed, 04 Dec 2013 09:33:16 -0600
+From: Alex Elder <alex.elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Jon Masters <jonathan@jonmasters.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
+To: Christian Daudt <bcm@fixthebug.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Mike Turquette <mturquette@linaro.org>
+CC: "bcm-kernel-feedback-list@broadcom.com" 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC part2 PATCH 9/9] ACPI / GIC: Initialize GIC using the information
- in MADT
-References: <1386088753-2850-1-git-send-email-hanjun.guo@linaro.org> <1386088753-2850-10-git-send-email-hanjun.guo@linaro.org> <529E1443.9040509@arm.com>
-In-Reply-To: <529E1443.9040509@arm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 1/3] clk: bcm281xx: define kona clock binding
+References: <529F4B0F.2020801@linaro.org>
+In-Reply-To: <529F4B0F.2020801@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年12月04日 01:26, Marc Zyngier wrote:
-> Hi Hanjun,
->
-> On 03/12/13 16:39, Hanjun Guo wrote:
->> In MADT table, there are GIC cpu interface base address and
->> GIC distributor base address, use them to convert GIC to ACPI.
->>
->> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->> ---
->>   arch/arm64/kernel/irq.c      |    5 ++++
->>   drivers/acpi/plat/arm-core.c |   66 ++++++++++++++++++++++++++++++++++++------
->>   include/linux/acpi.h         |    6 ++++
->>   3 files changed, 68 insertions(+), 9 deletions(-)
->>
->> diff --git a/arch/arm64/kernel/irq.c b/arch/arm64/kernel/irq.c
->> index 473e5db..a9e68bf 100644
->> --- a/arch/arm64/kernel/irq.c
->> +++ b/arch/arm64/kernel/irq.c
->> @@ -25,6 +25,7 @@
->>   #include <linux/irq.h>
->>   #include <linux/smp.h>
->>   #include <linux/init.h>
->> +#include <linux/acpi.h>
->>   #include <linux/irqchip.h>
->>   #include <linux/seq_file.h>
->>   #include <linux/ratelimit.h>
->> @@ -78,6 +79,10 @@ void __init set_handle_irq(void (*handle_irq)(struct pt_regs *))
->>   void __init init_IRQ(void)
->>   {
->>   	irqchip_init();
->> +
->> +	if (!handle_arch_irq)
->> +		acpi_gic_init();
->> +
-> Why is the GIC hardcoded?
+Document the device tree binding for Broadcom Kona architecture
+clock control units and clocks.  Kona device nodes are represented
+with compatible strings having "bcm11351" in their name.
 
-Very good question, thanks. I considered GIC only in my patch set.
-I have no idea how to handle the GIC hardcoded problem here for
-now, but I will figure it out later.
+Kona clocks are managed by "clock control units" (CCUs).  Each CCU
+has a device tree node, and within that node are defined the names
+of the clocks provided by the CCU.
 
-If any suggestion, I will appreciate a lot.
+The BCM281xx family of SoCs use Kona CCUs and clocks.
 
-> How are you going to support other interrupt
-> controllers?
+Signed-off-by: Alex Elder <elder@linaro.org>
+Reviewed-by: Matt Porter <matt.porter@linaro.org>
+Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
+---
+v2: - list all CCU compatible strings explicitly
+    - reworded a few things, and deleted some text
+    - CCUs and clocks are now defined at the root level
+    - added reference to header file that defines specifiers
 
-ACPI 5.0 supports GICv2 only for now, if we want to
-support other interrupt controller, we should introduce
-some OEM table and parsing it, and it will not covered
-by this patch set.
+ .../devicetree/bindings/clock/bcm-kona-clock.txt   |   93
+++++++++++++++++++++
+ 1 file changed, 93 insertions(+)
+ create mode 100644
+Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
 
->>   	if (!handle_arch_irq)
->>   		panic("No interrupt controller found.");
->>   }
->> diff --git a/drivers/acpi/plat/arm-core.c b/drivers/acpi/plat/arm-core.c
->> index 17c99e1..509b847 100644
->> --- a/drivers/acpi/plat/arm-core.c
->> +++ b/drivers/acpi/plat/arm-core.c
->> @@ -29,6 +29,7 @@
->>   #include <linux/module.h>
->>   #include <linux/irq.h>
->>   #include <linux/irqdomain.h>
->> +#include <linux/irqchip/arm-gic.h>
->>   #include <linux/slab.h>
->>   #include <linux/bootmem.h>
->>   #include <linux/ioport.h>
->> @@ -211,11 +212,21 @@ acpi_parse_gic(struct acpi_subtable_header *header, const unsigned long end)
->>   	return 0;
->>   }
->>   
->> +#ifdef CONFIG_ARM_GIC
->> +/*
->> + * Hard code here, we can not get memory size from MADT (but FDT does),
->> + * this size is described in ARMv8 foudation model's User Guide
->> + */
->> +#define GIC_DISTRIBUTOR_MEMORY_SIZE (SZ_8K)
->> +#define GIC_CPU_INTERFACE_MEMORY_SIZE (SZ_4K)
-> Aside from the incorrect sizes, how do you plan to address the other
-> regions that the GICv2 specification describes?
+diff --git a/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
+b/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
+new file mode 100644
+index 0000000..56d1f49
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
+@@ -0,0 +1,93 @@
++Broadcom Kona Family Clocks
++
++This binding is associated with Broadcom SoCs having "Kona" style
++clock control units (CCUs).  A CCU is a clock provider that manages
++a set of clock signals.  Each CCU is represented by a node in the
++device tree.
++
++This binding uses the common clock binding:
++    Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++Required properties:
++- compatible
++	Shall have one of the following values:
++	- "brcm,bcm11351-root-ccu"
++	- "brcm,bcm11351-aon-ccu"
++	- "brcm,bcm11351-hub-ccu"
++	- "brcm,bcm11351-master-ccu"
++	- "brcm,bcm11351-slave-ccu"
++- reg
++	Shall define the base and range of the address space
++	containing clock control registers
++- #clock-cells
++	Shall have value <1>.  The permitted clock-specifier values
++	are defined below.
++- clock-output-names
++	Shall be an ordered list of strings defining the names of
++	the clocks provided by the CCU.
++
++
++BCM281XX family SoCs use Kona CCUs.  The following table defines
++the set of CCUs and clock specifiers for BCM281XX clocks.  When
++a clock consumer references a clocks, its symbolic specifier
++(rather than its numeric index value) should be used.  These
++specifiers are defined in "include/dt-bindings/clock/bcm281xx.h".
++
++    CCU     Clock           Type    Index   Specifier
++    ---     -----           ----    -----   ---------
++    root    frac_1m         peri      0     BCM281XX_ROOT_CCU_FRAC_1M
++
++    aon     hub_timer       peri      0     BCM281XX_AON_CCU_HUB_TIMER
++    aon     pmu_bsc         peri      1     BCM281XX_AON_CCU_PMU_BSC
++    aon     pmu_bsc_var     peri      2     BCM281XX_AON_CCU_PMU_BSC_VAR
++
++    hub     tmon_1m         peri      0     BCM281XX_HUB_CCU_TMON_1M
++
++    master  sdio1           peri      0     BCM281XX_MASTER_CCU_SDIO1
++    master  sdio2           peri      1     BCM281XX_MASTER_CCU_SDIO2
++    master  sdio3           peri      2     BCM281XX_MASTER_CCU_SDIO3
++    master  sdio4           peri      3     BCM281XX_MASTER_CCU_SDIO4
++    master  dmac            peri      4     BCM281XX_MASTER_CCU_DMAC
++    master  usb_ic          peri      5     BCM281XX_MASTER_CCU_USB_IC
++    master  hsic2_48m       peri      6     BCM281XX_MASTER_CCU_HSIC_48M
++    master  hsic2_12m       peri      7     BCM281XX_MASTER_CCU_HSIC_12M
++
++    slave   uartb           peri      0     BCM281XX_SLAVE_CCU_UARTB
++    slave   uartb2          peri      1     BCM281XX_SLAVE_CCU_UARTB2
++    slave   uartb3          peri      2     BCM281XX_SLAVE_CCU_UARTB3
++    slave   uartb4          peri      3     BCM281XX_SLAVE_CCU_UARTB4
++    slave   ssp0            peri      4     BCM281XX_SLAVE_CCU_SSP0
++    slave   ssp2            peri      5     BCM281XX_SLAVE_CCU_SSP2
++    slave   bsc1            peri      6     BCM281XX_SLAVE_CCU_BSC1
++    slave   bsc2            peri      7     BCM281XX_SLAVE_CCU_BSC2
++    slave   bsc3            peri      8     BCM281XX_SLAVE_CCU_BSC3
++    slave   pwm             peri      9     BCM281XX_SLAVE_CCU_PWM
++
++
++Device tree example:
++
++	slave_ccu: slave_ccu {
++		compatible = "brcm,bcm11351-slave-ccu";
++		reg = <0x3e011000 0x0f00>;
++		#clock-cells = <1>;
++		clock-output-names = "uartb",
++				     "uartb2",
++				     "uartb3",
++				     "uartb4";
++	};
++
++	ref_crystal_clk: ref_crystal {
++		#clock-cells = <0>;
++		compatible = "fixed-clock";
++		clock-frequency = <26000000>;
++	};
++
++	uart@3e002000 {
++		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
++		status = "disabled";
++		reg = <0x3e002000 0x1000>;
++		clocks = <&slave_ccu BCM281XX_SLAVE_CCU_UARTB3>;
++		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
++		reg-shift = <2>;
++		reg-io-width = <4>;
++	};
+-- 
+1.7.9.5
 
-Did these regions have the same base address? I mean the same
-as GIC distributor base address and GIC cpu interface base address.
-
-if yes, since the base address is stored in gic_init(), it can be for 
-furture
-use. if I misunderstood your question, please let me know.
-
->>   static int __init
->>   acpi_parse_gic_distributor(struct acpi_subtable_header *header,
->>   				const unsigned long end)
->>   {
->>   	struct acpi_madt_generic_distributor *distributor = NULL;
->> +	void __iomem *dist_base = NULL;
->> +	void __iomem *cpu_base = NULL;
->>   
->>   	distributor = (struct acpi_madt_generic_distributor *)header;
->>   
->> @@ -224,8 +235,43 @@ acpi_parse_gic_distributor(struct acpi_subtable_header *header,
->>   
->>   	acpi_table_print_madt_entry(header);
->>   
->> +	/* GIC is initialised after page_init(), no need for early_ioremap */
->> +	dist_base = ioremap(distributor->base_address,
->> +				GIC_CPU_INTERFACE_MEMORY_SIZE);
->> +	if (!dist_base) {
->> +		pr_warn(PREFIX "unable to map gic dist registers\n");
->> +		return -ENOMEM;
->> +	}
->> +
->> +	/*
->> +	 * acpi_lapic_addr is stored in acpi_parse_madt(),
->> +	 * so we can use it here for GIC init
->> +	 */
->> +	if (acpi_lapic_addr) {
->> +		iounmap(dist_base);
->> +		pr_warn(PREFIX "Invalid GIC cpu interface base address\n");
->> +		return -EINVAL;
->> +	}
->> +
->> +	cpu_base = ioremap(acpi_lapic_addr, GIC_CPU_INTERFACE_MEMORY_SIZE);
->> +	if (!cpu_base) {
->> +		iounmap(dist_base);
->> +		pr_warn(PREFIX "unable to map gic cpu registers\n");
->> +		return -ENOMEM;
->> +	}
->> +
->> +	gic_init(distributor->gic_id, -1, dist_base, cpu_base);
->> +
->>   	return 0;
->>   }
->> +#else
->> +static int __init
->> +acpi_parse_gic_distributor(struct acpi_subtable_header *header,
->> +				const unsigned long end)
->> +{
->> +	return -ENODEV;
->> +}
->> +#endif /* CONFIG_ARM_GIC */
->>   
->>   /*
->>    * Parse GIC cpu interface related entries in MADT
->> @@ -234,7 +280,7 @@ acpi_parse_gic_distributor(struct acpi_subtable_header *header,
->>   static int __init acpi_parse_madt_gic_entries(void)
->>   {
->>   	int count;
->> -
->> +
->>   	/*
->>   	 * do a partial walk of MADT to determine how many CPUs
->>   	 * we have including disabled CPUs
->> @@ -468,19 +514,21 @@ static void __init acpi_process_madt(void)
->>   		 * Parse MADT GIC cpu interface entries
->>   		 */
->>   		error = acpi_parse_madt_gic_entries();
->> -		if (!error) {
->> -			/*
->> -			 * Parse MADT GIC distributor entries
->> -			 */
->> -			acpi_parse_madt_gic_distributor_entries();
->> -		}
->> +		if (!error)
->> +			pr_info("Using ACPI for processor (GIC) configuration information\n");
->>   	}
->>   
->> -	pr_info("Using ACPI for processor (GIC) configuration information\n");
->> -
->>   	return;
->>   }
->>   
->> +int __init acpi_gic_init(void)
->> +{
->> +	/*
->> +	 * Parse MADT GIC distributor entries
->> +	 */
->> +	return acpi_parse_madt_gic_distributor_entries();
->> +}
->> +
-> Why can't you do the GIC init in the GIC code? We've tried hard to make
-> interrupt controllers discoverable and self contained.
-
-thanks for your suggestion, Rob also had the same suggestion,
-will try to update it in next version.
-
-> What are you
-> going to do when ACPI adds GICv3 to the mix? I don't really think this
-> model (shoving everything into the core ACPI code) is sustainable in the
-> long run...
-
-Since GICv3 related ACPI proposal is not public and not goes into ACPI
-spec, my suggestion is that we implement GICv2 only for now and post
-another patches for GICv3 when the new ACPI spec is available.
-
-Thanks
-Hanjun
