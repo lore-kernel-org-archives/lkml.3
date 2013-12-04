@@ -1,166 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932745Ab3LDPdW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 10:33:22 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:60640 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932628Ab3LDPdS (ORCPT
+	id S932762Ab3LDPdi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 10:33:38 -0500
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:64914 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932580Ab3LDPdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 10:33:18 -0500
-Message-ID: <529F4B3C.4020608@linaro.org>
-Date: Wed, 04 Dec 2013 09:33:16 -0600
-From: Alex Elder <alex.elder@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Wed, 4 Dec 2013 10:33:36 -0500
 MIME-Version: 1.0
-To: Christian Daudt <bcm@fixthebug.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Mike Turquette <mturquette@linaro.org>
-CC: "bcm-kernel-feedback-list@broadcom.com" 
-	<bcm-kernel-feedback-list@broadcom.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+In-Reply-To: <1386069328-22502-2-git-send-email-hanjun.guo@linaro.org>
+References: <1386069328-22502-1-git-send-email-hanjun.guo@linaro.org>
+	<1386069328-22502-2-git-send-email-hanjun.guo@linaro.org>
+Date: Wed, 4 Dec 2013 09:33:35 -0600
+Message-ID: <CAL_JsqJYUasvVDZjkuFwEiMxWhXNEzhhSP2ni1KKDeQQjmnzjg@mail.gmail.com>
+Subject: Re: [RFC part3 PATCH 1/2] clocksource / arch_timer: Use ACPI GTDT
+ table to initialize arch timer
+From: Rob Herring <robherring2@gmail.com>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        linux-acpi@vger.kernel.org, Linaro Patches <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, linaro-acpi@lists.linaro.org,
+        Olof Johansson <olof@lixom.net>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 1/3] clk: bcm281xx: define kona clock binding
-References: <529F4B0F.2020801@linaro.org>
-In-Reply-To: <529F4B0F.2020801@linaro.org>
-X-Enigmail-Version: 1.5.2
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the device tree binding for Broadcom Kona architecture
-clock control units and clocks.  Kona device nodes are represented
-with compatible strings having "bcm11351" in their name.
+On Tue, Dec 3, 2013 at 5:15 AM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+> ACPI GTDT (Generic Timer Description Table) contains information for
+> arch timer initialization, this patch use this table to probe arm timer.
+>
+> GTDT table is used for ARM/ARM64 only, please refer to chapter 5.2.24
+> of ACPI 5.0 spec for detailed inforamtion
+>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> ---
+>  drivers/clocksource/arm_arch_timer.c |  129 ++++++++++++++++++++++++++++++----
+>  include/clocksource/arm_arch_timer.h |    7 +-
+>  2 files changed, 120 insertions(+), 16 deletions(-)
+>
+> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+> index 95fb944..c968041 100644
+> --- a/drivers/clocksource/arm_arch_timer.c
+> +++ b/drivers/clocksource/arm_arch_timer.c
+> @@ -21,6 +21,7 @@
+>  #include <linux/io.h>
+>  #include <linux/slab.h>
+>  #include <linux/sched_clock.h>
+> +#include <linux/acpi.h>
+>
+>  #include <asm/arch_timer.h>
+>  #include <asm/virt.h>
+> @@ -632,20 +633,8 @@ static void __init arch_timer_common_init(void)
+>         arch_timer_arch_init();
+>  }
+>
+> -static void __init arch_timer_init(struct device_node *np)
+> +static void __init arch_timer_init(void)
+>  {
+> -       int i;
+> -
+> -       if (arch_timers_present & ARCH_CP15_TIMER) {
+> -               pr_warn("arch_timer: multiple nodes in dt, skipping\n");
+> -               return;
+> -       }
+> -
+> -       arch_timers_present |= ARCH_CP15_TIMER;
+> -       for (i = PHYS_SECURE_PPI; i < MAX_TIMER_PPI; i++)
+> -               arch_timer_ppi[i] = irq_of_parse_and_map(np, i);
+> -       arch_timer_detect_rate(NULL, np);
+> -
+>         /*
+>          * If HYP mode is available, we know that the physical timer
+>          * has been configured to be accessible from PL1. Use it, so
+> @@ -667,8 +656,118 @@ static void __init arch_timer_init(struct device_node *np)
+>         arch_timer_register();
+>         arch_timer_common_init();
+>  }
+> -CLOCKSOURCE_OF_DECLARE(armv7_arch_timer, "arm,armv7-timer", arch_timer_init);
+> -CLOCKSOURCE_OF_DECLARE(armv8_arch_timer, "arm,armv8-timer", arch_timer_init);
+> +
+> +static void __init arch_timer_of_init(struct device_node *np)
+> +{
+> +       int i;
+> +
+> +       if (arch_timers_present & ARCH_CP15_TIMER) {
+> +               pr_warn("arch_timer: multiple nodes in dt, skipping\n");
+> +               return;
+> +       }
+> +
+> +       arch_timers_present |= ARCH_CP15_TIMER;
+> +       for (i = PHYS_SECURE_PPI; i < MAX_TIMER_PPI; i++)
+> +               arch_timer_ppi[i] = irq_of_parse_and_map(np, i);
+> +       arch_timer_detect_rate(NULL, np);
+> +
+> +       arch_timer_init();
+> +}
+> +CLOCKSOURCE_OF_DECLARE(armv7_arch_timer, "arm,armv7-timer", arch_timer_of_init);
+> +CLOCKSOURCE_OF_DECLARE(armv8_arch_timer, "arm,armv8-timer", arch_timer_of_init);
+> +
+> +#ifdef CONFIG_ACPI
+> +void __init arch_timer_acpi_init(void)
+> +{
+> +       struct acpi_table_gtdt *gtdt;
+> +       acpi_size tbl_size;
+> +       int trigger, polarity;
+> +       void __iomem *base = NULL;
+> +
+> +       if (acpi_disabled)
 
-Kona clocks are managed by "clock control units" (CCUs).  Each CCU
-has a device tree node, and within that node are defined the names
-of the clocks provided by the CCU.
+Wouldn't the core ACPI code never call this function if ACPI is disabled?
 
-The BCM281xx family of SoCs use Kona CCUs and clocks.
+> +               return;
+> +
+> +       if (arch_timers_present & ARCH_CP15_TIMER) {
+> +               pr_warn("arch_timer: already initialized, skipping\n");
+> +               return;
+> +       }
+> +
+> +       if (ACPI_FAILURE(acpi_get_table_with_size(ACPI_SIG_GTDT, 0,
+> +                       (struct acpi_table_header **)&gtdt, &tbl_size))) {
+> +               pr_err("arch_timer: GTDT table not defined\n");
+> +               return;
+> +       }
+> +
+> +       arch_timers_present |= ARCH_CP15_TIMER;
 
-Signed-off-by: Alex Elder <elder@linaro.org>
-Reviewed-by: Matt Porter <matt.porter@linaro.org>
-Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
----
-v2: - list all CCU compatible strings explicitly
-    - reworded a few things, and deleted some text
-    - CCUs and clocks are now defined at the root level
-    - added reference to header file that defines specifiers
+So you have marked the timer as initialized, but then may fail on
+error later on here.
 
- .../devicetree/bindings/clock/bcm-kona-clock.txt   |   93
-++++++++++++++++++++
- 1 file changed, 93 insertions(+)
- create mode 100644
-Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
+> +
+> +       /*
+> +        * Get the timer frequency. Since there is no frequency info
+> +        * in the GTDT table, so we should read it from CNTFREG register
+> +        * or hard code here to wait for the new ACPI spec available.
+> +        */
+> +       if (!gtdt->address) {
+> +               arch_timer_rate = arch_timer_get_cntfrq();
+> +       } else {
+> +               base = ioremap(gtdt->address, CNTFRQ);
+> +               if (!base) {
+> +                       pr_warn("arch_timer: unable to map arch timer base address\n");
+> +                       return;
+> +               }
+> +
+> +               arch_timer_rate = readl_relaxed(base + CNTFRQ);
+> +               iounmap(base);
 
-diff --git a/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
-b/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
-new file mode 100644
-index 0000000..56d1f49
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
-@@ -0,0 +1,93 @@
-+Broadcom Kona Family Clocks
-+
-+This binding is associated with Broadcom SoCs having "Kona" style
-+clock control units (CCUs).  A CCU is a clock provider that manages
-+a set of clock signals.  Each CCU is represented by a node in the
-+device tree.
-+
-+This binding uses the common clock binding:
-+    Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+Required properties:
-+- compatible
-+	Shall have one of the following values:
-+	- "brcm,bcm11351-root-ccu"
-+	- "brcm,bcm11351-aon-ccu"
-+	- "brcm,bcm11351-hub-ccu"
-+	- "brcm,bcm11351-master-ccu"
-+	- "brcm,bcm11351-slave-ccu"
-+- reg
-+	Shall define the base and range of the address space
-+	containing clock control registers
-+- #clock-cells
-+	Shall have value <1>.  The permitted clock-specifier values
-+	are defined below.
-+- clock-output-names
-+	Shall be an ordered list of strings defining the names of
-+	the clocks provided by the CCU.
-+
-+
-+BCM281XX family SoCs use Kona CCUs.  The following table defines
-+the set of CCUs and clock specifiers for BCM281XX clocks.  When
-+a clock consumer references a clocks, its symbolic specifier
-+(rather than its numeric index value) should be used.  These
-+specifiers are defined in "include/dt-bindings/clock/bcm281xx.h".
-+
-+    CCU     Clock           Type    Index   Specifier
-+    ---     -----           ----    -----   ---------
-+    root    frac_1m         peri      0     BCM281XX_ROOT_CCU_FRAC_1M
-+
-+    aon     hub_timer       peri      0     BCM281XX_AON_CCU_HUB_TIMER
-+    aon     pmu_bsc         peri      1     BCM281XX_AON_CCU_PMU_BSC
-+    aon     pmu_bsc_var     peri      2     BCM281XX_AON_CCU_PMU_BSC_VAR
-+
-+    hub     tmon_1m         peri      0     BCM281XX_HUB_CCU_TMON_1M
-+
-+    master  sdio1           peri      0     BCM281XX_MASTER_CCU_SDIO1
-+    master  sdio2           peri      1     BCM281XX_MASTER_CCU_SDIO2
-+    master  sdio3           peri      2     BCM281XX_MASTER_CCU_SDIO3
-+    master  sdio4           peri      3     BCM281XX_MASTER_CCU_SDIO4
-+    master  dmac            peri      4     BCM281XX_MASTER_CCU_DMAC
-+    master  usb_ic          peri      5     BCM281XX_MASTER_CCU_USB_IC
-+    master  hsic2_48m       peri      6     BCM281XX_MASTER_CCU_HSIC_48M
-+    master  hsic2_12m       peri      7     BCM281XX_MASTER_CCU_HSIC_12M
-+
-+    slave   uartb           peri      0     BCM281XX_SLAVE_CCU_UARTB
-+    slave   uartb2          peri      1     BCM281XX_SLAVE_CCU_UARTB2
-+    slave   uartb3          peri      2     BCM281XX_SLAVE_CCU_UARTB3
-+    slave   uartb4          peri      3     BCM281XX_SLAVE_CCU_UARTB4
-+    slave   ssp0            peri      4     BCM281XX_SLAVE_CCU_SSP0
-+    slave   ssp2            peri      5     BCM281XX_SLAVE_CCU_SSP2
-+    slave   bsc1            peri      6     BCM281XX_SLAVE_CCU_BSC1
-+    slave   bsc2            peri      7     BCM281XX_SLAVE_CCU_BSC2
-+    slave   bsc3            peri      8     BCM281XX_SLAVE_CCU_BSC3
-+    slave   pwm             peri      9     BCM281XX_SLAVE_CCU_PWM
-+
-+
-+Device tree example:
-+
-+	slave_ccu: slave_ccu {
-+		compatible = "brcm,bcm11351-slave-ccu";
-+		reg = <0x3e011000 0x0f00>;
-+		#clock-cells = <1>;
-+		clock-output-names = "uartb",
-+				     "uartb2",
-+				     "uartb3",
-+				     "uartb4";
-+	};
-+
-+	ref_crystal_clk: ref_crystal {
-+		#clock-cells = <0>;
-+		compatible = "fixed-clock";
-+		clock-frequency = <26000000>;
-+	};
-+
-+	uart@3e002000 {
-+		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
-+		status = "disabled";
-+		reg = <0x3e002000 0x1000>;
-+		clocks = <&slave_ccu BCM281XX_SLAVE_CCU_UARTB3>;
-+		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
-+		reg-shift = <2>;
-+		reg-io-width = <4>;
-+	};
--- 
-1.7.9.5
+This is for memory mapped timer? If so, then isn't setting
+ARCH_CP15_TIMER the wrong thing to do?
 
+> +       }
+> +
+> +       if (!arch_timer_rate) {
+> +               /* Hard code here to set frequence ? */
+> +               pr_warn("arch_timer: Could not get frequency from GTDT table or CNTFREG\n");
+> +       }
+> +
+> +       if (gtdt->secure_pl1_interrupt) {
+
+Really, I think the kernel should just ignore the secure interrupt.
+The DT code has the same issue, but that doesn't affect the code size.
+
+> +               trigger = (gtdt->secure_pl1_flags & ACPI_GTDT_INTERRUPT_MODE) ?
+> +                       ACPI_EDGE_SENSITIVE : ACPI_LEVEL_SENSITIVE;
+
+Why not use the already defined linux irq trigger types here and make
+acpi_register_gsi use them?
+
+> +               polarity =
+> +                       (gtdt->secure_pl1_flags & ACPI_GTDT_INTERRUPT_POLARITY)
+> +                       ? ACPI_ACTIVE_LOW : ACPI_ACTIVE_HIGH;
+> +               arch_timer_ppi[0] = acpi_register_gsi(NULL,
+> +                               gtdt->secure_pl1_interrupt, trigger, polarity);
+> +       }
+> +       if (gtdt->non_secure_pl1_interrupt) {
+> +               trigger =
+> +                       (gtdt->non_secure_pl1_flags & ACPI_GTDT_INTERRUPT_MODE)
+> +                       ? ACPI_EDGE_SENSITIVE : ACPI_LEVEL_SENSITIVE;
+> +               polarity =
+> +               (gtdt->non_secure_pl1_flags & ACPI_GTDT_INTERRUPT_POLARITY)
+> +                       ? ACPI_ACTIVE_LOW : ACPI_ACTIVE_HIGH;
+> +               arch_timer_ppi[1] = acpi_register_gsi(NULL,
+> +                       gtdt->non_secure_pl1_interrupt, trigger, polarity);
+> +       }
+> +       if (gtdt->virtual_timer_interrupt) {
+> +               trigger = (gtdt->virtual_timer_flags & ACPI_GTDT_INTERRUPT_MODE)
+> +                       ? ACPI_EDGE_SENSITIVE : ACPI_LEVEL_SENSITIVE;
+> +               polarity =
+> +               (gtdt->virtual_timer_flags & ACPI_GTDT_INTERRUPT_POLARITY)
+> +                       ? ACPI_ACTIVE_LOW : ACPI_ACTIVE_HIGH;
+> +               arch_timer_ppi[2] = acpi_register_gsi(NULL,
+> +                       gtdt->virtual_timer_interrupt, trigger, polarity);
+> +       }
+> +       if (gtdt->non_secure_pl2_interrupt) {
+> +               trigger =
+> +                       (gtdt->non_secure_pl2_flags & ACPI_GTDT_INTERRUPT_MODE)
+> +                       ? ACPI_EDGE_SENSITIVE : ACPI_LEVEL_SENSITIVE;
+> +               polarity =
+> +               (gtdt->non_secure_pl2_flags & ACPI_GTDT_INTERRUPT_POLARITY)
+> +                       ? ACPI_ACTIVE_LOW : ACPI_ACTIVE_HIGH;
+> +               arch_timer_ppi[3] = acpi_register_gsi(NULL,
+> +                       gtdt->non_secure_pl2_interrupt, trigger, polarity);
+> +       }
+> +
+> +       early_acpi_os_unmap_memory(gtdt, tbl_size);
+
+Who did the mapping? acpi_get_table_with_size? I think the core code
+should handle the mapping and unmapping of ACPI tables. We don't want
+to have to duplicate this in every initialization function. This seems
+error prone.
+
+Rob
