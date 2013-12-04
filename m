@@ -1,78 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932811Ab3LDQCS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 11:02:18 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:48313 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932644Ab3LDQCR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 11:02:17 -0500
+	id S932827Ab3LDQDE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 11:03:04 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58682 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932602Ab3LDQDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 11:03:02 -0500
+Message-ID: <529F51D9.7010001@zytor.com>
+Date: Wed, 04 Dec 2013 08:01:29 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <00000142be2f1de0-764bb035-adbc-4367-b2b4-bf05498510a6-000000@email.amazonses.com>
-References: <1381265890-11333-1-git-send-email-hannes@cmpxchg.org>
-	<1381265890-11333-2-git-send-email-hannes@cmpxchg.org>
-	<20131203165910.54d6b4724a1f3e329af52ac6@linux-foundation.org>
-	<20131204015218.GA19709@lge.com>
-	<20131203180717.94c013d1.akpm@linux-foundation.org>
-	<00000142be2f1de0-764bb035-adbc-4367-b2b4-bf05498510a6-000000@email.amazonses.com>
-Date: Thu, 5 Dec 2013 01:02:15 +0900
-Message-ID: <CAAmzW4PwLhMd61ksOktdg=rkj0xHsSGt2Wm_za2Adjh4+tss-g@mail.gmail.com>
-Subject: Re: [patch 2/2] fs: buffer: move allocation failure loop into the allocator
-From: Joonsoo Kim <js1304@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        azurIt <azurit@pobox.sk>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        cgroups@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Christian Casteyde <casteyde.christian@free.fr>,
-        Pekka Enberg <penberg@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Jiri Kosina <jkosina@suse.cz>, Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH?] uprobes: change uprobe_write_opcode() to modify the
+ page directly
+References: <CA+55aFxJGidV4=ot0z_Va8+y2QWTDYghTm1Gin84StZ+R1SfXg@mail.gmail.com> <20131203184909.GA17571@redhat.com> <CA+55aFw3N=iNW2Ej6w7oksX5JDVis7QL=9X9D7JB_tKZhrjsLw@mail.gmail.com> <529E2F0C.8070405@zytor.com> <20131203200147.GB19083@redhat.com> <529E3D4C.9070403@zytor.com> <20131203203826.GA24812@redhat.com> <e6082bc4-c910-4a36-9e40-624b9319f5fb@email.android.com> <20131203205400.GA25735@redhat.com> <CA+55aFxKk+O4e51sq6iqunVWAwKfNAnZ-3=aZT-VuRpDAZUnzQ@mail.gmail.com> <20131204111125.GA26552@redhat.com>
+In-Reply-To: <20131204111125.GA26552@redhat.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/12/5 Christoph Lameter <cl@linux.com>:
-> On Tue, 3 Dec 2013, Andrew Morton wrote:
->
->> >     page = alloc_slab_page(alloc_gfp, node, oo);
->> >     if (unlikely(!page)) {
->> >             oo = s->min;
->>
->> What is the value of s->min?  Please tell me it's zero.
->
-> It usually is.
->
->> > @@ -1349,7 +1350,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
->> >             && !(s->flags & (SLAB_NOTRACK | DEBUG_DEFAULT_FLAGS))) {
->> >             int pages = 1 << oo_order(oo);
->> >
->> > -           kmemcheck_alloc_shadow(page, oo_order(oo), flags, node);
->> > +           kmemcheck_alloc_shadow(page, oo_order(oo), alloc_gfp, node);
->>
->> That seems reasonable, assuming kmemcheck can handle the allocation
->> failure.
->>
->>
->> Still I dislike this practice of using unnecessarily large allocations.
->> What does it gain us?  Slightly improved object packing density.
->> Anything else?
->
-> The fastpath for slub works only within the bounds of a single slab page.
-> Therefore a larger frame increases the number of allocation possible from
-> the fastpath without having to use the slowpath and also reduces the
-> management overhead in the partial lists.
+On 12/04/2013 03:11 AM, Oleg Nesterov wrote:
+> 
+> It is still not clear to me if we can simply change a single byte on
+> x86 or not, but at least on powerpc we need to update 4 bytes. Perhaps
+> we can conditionalize these pte games later.
+> 
 
-Hello Christoph.
+But 4 aligned bytes can be written as a single transaction.
 
-Now we have cpu partial slabs facility, so I think that slowpath isn't really
-slow. And it doesn't much increase the management overhead in the node
-partial lists, because of cpu partial slabs.
+	-hpa
 
-And larger frame may cause more slab_lock contention or cmpxchg contention
-if there are parallel freeings.
-
-But, I don't know which one is better. Is larger frame still better? :)
-
-Thanks.
