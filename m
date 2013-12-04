@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933182Ab3LDUFo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 15:05:44 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:60087 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755833Ab3LDUFn (ORCPT
+	id S933313Ab3LDUHW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 15:07:22 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:59359 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933260Ab3LDUHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 15:05:43 -0500
-Message-ID: <529F9928.9090407@cogentembedded.com>
-Date: Thu, 05 Dec 2013 00:05:44 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: David Miller <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Mugunthan V N <mugunthanvnm@ti.com>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFCv2 5/6] net: phy: suspend unused PHYs on mdio_bus in
- late_initcall
-References: <1384978913-8052-1-git-send-email-sebastian.hesselbarth@gmail.com> <1386171888-28190-6-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1386171888-28190-6-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Dec 2013 15:07:19 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 11/38] perf symbols: Fix random fd closing with no libelf
+Date: Wed,  4 Dec 2013 17:06:35 -0300
+Message-Id: <1386187622-2928-12-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1386187622-2928-1-git-send-email-acme@infradead.org>
+References: <1386187622-2928-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-On 12/04/2013 06:44 PM, Sebastian Hesselbarth wrote:
+When built without libelf, perf tools was failing to initialize a file
+descriptor, but nevertheless closing it.  That sometimes resulted in the
+output being truncated because the stdout file descriptor got closed.
 
-> Since phy_attach ensures PHYs are resumed, we can now suspend all
-> PHYs that have no attached netdev after initcalls.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1386166981-30197-1-git-send-email-adrian.hunter@intel.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/symbol-minimal.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Changelog:
-> RFCv1->RFCv2:
-> - only check for phydev->attached_dev and let phy_suspend decide on
->    performing suspend or not (Suggested by Florian)
-
-> @Florian: You suggested to 'make sure that the MDIO bus suspend policy
-> was set to "auto"'. I wasn't able to find any clue how to check that,
-> so I ignored that for now.
-
-> Cc: David Miller <davem@davemloft.net>
-> Cc: Florian Fainelli <f.fainelli@gmail.com>
-> Cc: Mugunthan V N <mugunthanvnm@ti.com>
-> Cc: netdev@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->   drivers/net/phy/mdio_bus.c |   25 +++++++++++++++++++++++++
->   1 files changed, 25 insertions(+), 0 deletions(-)
-
-> diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
-> index 5617876..f533d17 100644
-> --- a/drivers/net/phy/mdio_bus.c
-> +++ b/drivers/net/phy/mdio_bus.c
-> @@ -320,6 +320,31 @@ static int mdio_bus_match(struct device *dev, struct device_driver *drv)
->   		(phydev->phy_id & phydrv->phy_id_mask));
->   }
->
-> +static int mdio_bus_suspend_unused(struct device *busdev, void *data)
-> +{
-> +	struct mii_bus *bus = to_mii_bus(busdev);
-> +	struct phy_device *phydev;
-> +	int i;
-> +
-> +	for (i = 0; i < PHY_MAX_ADDR; i++) {
-> +		if (!bus->phy_map[i])
-> +			continue;
-> +
-> +		phydev = to_phy_device(&bus->phy_map[i]->dev);
-
-    Why so complex? 'bus->phy_map[i]' already gives you 'phydev'.
-
-> +		if (!phydev->attached_dev)
-> +			phy_suspend(phydev);
-> +	}
-> +
-> +	return 0;
-> +}
-
-WBR, Sergei
+diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
+index 2d2dd0532b5a..ac7070a2f2b6 100644
+--- a/tools/perf/util/symbol-minimal.c
++++ b/tools/perf/util/symbol-minimal.c
+@@ -253,6 +253,7 @@ int symsrc__init(struct symsrc *ss, struct dso *dso __maybe_unused,
+ 	if (!ss->name)
+ 		goto out_close;
+ 
++	ss->fd = fd;
+ 	ss->type = type;
+ 
+ 	return 0;
+-- 
+1.8.1.4
 
