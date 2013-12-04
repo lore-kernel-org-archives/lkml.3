@@ -1,93 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755011Ab3LDIyx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 03:54:53 -0500
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:38617 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754668Ab3LDIyw (ORCPT
+	id S1755185Ab3LDI6l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 03:58:41 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:42396 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754672Ab3LDI6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 03:54:52 -0500
-Date: Wed, 4 Dec 2013 09:54:48 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: hpa@zytor.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        hpa@linux.intel.com, kevin.b.smith@intel.com, hjl.tools@gmail.com
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86-64, build: Always pass in -mno-sse
-Message-ID: <20131204085448.GA31778@gmail.com>
-References: <tip-j21wzqv790q834n7yc6g80j1@git.kernel.org>
+	Wed, 4 Dec 2013 03:58:39 -0500
+Message-ID: <529EEF44.1020008@gmail.com>
+Date: Wed, 04 Dec 2013 17:00:52 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-j21wzqv790q834n7yc6g80j1@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: Joe Perches <joe@perches.com>, "John W. Linville" <linville@tuxdriver.com>,
+        rkuo <rkuo@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, linux-wireless@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH] net: mac80211: tx.c: be sure of 'sdata->vif.type' must
+ be NL80211_IFTYPE_AP when be in NL80211_IFTYPE_AP case
+References: <528AEFB7.4060301@gmail.com>    <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com>    <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com>    <52957ADA.2080704@gmail.com>    (sfid-20131127_055211_558798_A7DF5684) <1385739487.8656.1.camel@jlt4.sipsolutions.net>    <5299D306.7070701@gmail.com>    (sfid-20131130_125901_519610_EDA4068E) <1385816013.4327.1.camel@jlt4.sipsolutions.net>    <5299ED38.4090509@gmail.com> <5299EFDD.6060405@gmail.com>    (sfid-20131130_150205_984535_068F14A9) <1385842134.6108.4.camel@jlt4.sipsolutions.net>    <1385843940.2664.4.camel@joe-AO722>    <1385890523.4171.1.camel@jlt4.sipsolutions.net>    <1385937499.2664.21.camel@joe-AO722>   <1385995738.20277.4.camel@jlt4.sipsolutions.net>   <529E8F90.1020205@gmail.com>  (sfid-20131204_031032_173575_B927B340) <1386144281.4284.0.camel@jlt4.sipsolutions.net>  <529EEAC1.3010203@gmail.com> (sfid-20131204_093928_179625_C1EF906B) <1386146977.4284.11.camel@jlt4.sipsolutions.net>
+In-Reply-To: <1386146977.4284.11.camel@jlt4.sipsolutions.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* tip-bot for H. Peter Anvin <tipbot@zytor.com> wrote:
-
-> Commit-ID:  5551a34e5aeab868f8d37f70d8754868921b4ee5
-> Gitweb:     http://git.kernel.org/tip/5551a34e5aeab868f8d37f70d8754868921b4ee5
-> Author:     H. Peter Anvin <hpa@linux.intel.com>
-> AuthorDate: Wed, 20 Nov 2013 13:31:49 -0800
-> Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> CommitDate: Tue, 3 Dec 2013 17:40:22 -0800
+On 12/04/2013 04:49 PM, Johannes Berg wrote:
+> On Wed, 2013-12-04 at 16:41 +0800, Chen Gang wrote:
 > 
-> x86-64, build: Always pass in -mno-sse
+>> According to our original discussion, it seems we agree that I am not
+>> the suitable member to finish it, so I suggest you or another members to
+>> try.
 > 
-> Always pass in the -mno-sse argument, regardless if
-> -preferred-stack-boundary is supported.  We never want to generate SSE
-> instructions in the kernel unless we *really* know what we're doing.
+> There's nothing to finish here. The code is fine. The compiler is wrong,
+> but we haven't found a way to shut up the compiler without breaking the
+> code. Please let's just let it rest.
 > 
-> According to H. J. Lu, any version of gcc new enough that we support
-> it at all should handle the -mno-sse option, so just add it
-> unconditionally.
-> 
-> Reported-by: Kevin B. Smith <kevin.b.smith@intel.com>
-> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> Cc: H. J. Lu <hjl.tools@gmail.com>
-> Link: http://lkml.kernel.org/n/tip-j21wzqv790q834n7yc6g80j1@git.kernel.org
-> Cc: <stable@vger.kernel.org> # build fix only
-> ---
->  arch/x86/Makefile | 8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-> index 41250fb..eda00f9 100644
-> --- a/arch/x86/Makefile
-> +++ b/arch/x86/Makefile
-> @@ -31,6 +31,9 @@ ifeq ($(CONFIG_X86_32),y)
->  
->          KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
->  
-> +        # Don't autogenerate SSE instructions
-> +	KBUILD_CFLAGS += -mno-sse
-> +
->          # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
->          # with nonstandard options
->          KBUILD_CFLAGS += -fno-pic
-> @@ -57,8 +60,11 @@ else
->          KBUILD_AFLAGS += -m64
->          KBUILD_CFLAGS += -m64
->  
-> +        # Don't autogenerate SSE instructions
-> +	KBUILD_CFLAGS += -mno-sse
-> +
->  	# Use -mpreferred-stack-boundary=3 if supported.
-> -	KBUILD_CFLAGS += $(call cc-option,-mno-sse -mpreferred-stack-boundary=3)
-> +	KBUILD_CFLAGS += $(call cc-option,-mpreferred-stack-boundary=3)
->  
->          # FIXME - should be integrated in Makefile.cpu (Makefile_32.cpu)
->          cflags-$(CONFIG_MK8) += $(call cc-option,-march=k8)
 
-Just a detail I noticed: in kbuild we intentionally use 8 spaces for 
-tabs in Makefiles and only use tabs for commands where tabs are 
-required.
+For me, I still stick to the code can be improved, although it is not
+urgent.
 
-The above code introduces tabs in the middle of 8-space sequences. It 
-works but is inconsistent.
+But just like you said, we can just stop discussing -- every members can
+save their own opinions.
 
-Thanks,
+And I am not the related maintainer, so if no additional suggestions,
+discussions or completions, I will/should stop here.
 
-	Ingo
+
+Thanks.
+-- 
+Chen Gang
