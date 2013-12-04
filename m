@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932970Ab3LDS2c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 13:28:32 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:39289 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753590Ab3LDS23 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 13:28:29 -0500
-Date: Wed, 4 Dec 2013 10:28:24 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-arm-kernel@lists.infradead.org, mark.rutland@arm.com,
-        wim@iguana.be, linux-watchdog@vger.kernel.org,
-        devicetree@vger.kernel.org, Pawel.Moll@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, galak@kernel.crashing.org,
-        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
-        grant.likely@linaro.org, grygorii.strashko@ti.com
-Subject: Re: [PATCH v4 1/5] watchdog: davinci: change driver to use WDT core
-Message-ID: <20131204182824.GA14499@roeck-us.net>
-References: <1385556508-3935-1-git-send-email-ivan.khoronzhuk@ti.com>
- <1385556508-3935-2-git-send-email-ivan.khoronzhuk@ti.com>
- <529F6EBE.5050703@ti.com>
+	id S1755978Ab3LDSdU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 13:33:20 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60546 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752889Ab3LDSdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 13:33:19 -0500
+Message-ID: <529F7527.5040201@zytor.com>
+Date: Wed, 04 Dec 2013 10:32:07 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <529F6EBE.5050703@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Oleg Nesterov <oleg@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Kosina <jkosina@suse.cz>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH?] uprobes: change uprobe_write_opcode() to modify the
+ page directly
+References: <CA+55aFw3N=iNW2Ej6w7oksX5JDVis7QL=9X9D7JB_tKZhrjsLw@mail.gmail.com>	<529E2F0C.8070405@zytor.com>	<20131203200147.GB19083@redhat.com>	<529E3D4C.9070403@zytor.com>	<20131203203826.GA24812@redhat.com>	<e6082bc4-c910-4a36-9e40-624b9319f5fb@email.android.com>	<20131203205400.GA25735@redhat.com>	<CA+55aFxKk+O4e51sq6iqunVWAwKfNAnZ-3=aZT-VuRpDAZUnzQ@mail.gmail.com>	<20131204111125.GA26552@redhat.com>	<529F51D9.7010001@zytor.com>	<20131204164817.GA5271@redhat.com>	<529F5E47.3040108@zytor.com> <CA+55aFyMx74jiKgS-o0axuuTBw7295UEMSf_vYDQCAghk3Vr=w@mail.gmail.com>
+In-Reply-To: <CA+55aFyMx74jiKgS-o0axuuTBw7295UEMSf_vYDQCAghk3Vr=w@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 11:34:46PM +0530, Sekhar Nori wrote:
-> On 11/27/2013 6:18 PM, Ivan Khoronzhuk wrote:
-> > To reduce code duplicate and increase code readability use WDT core
-> > code to handle WDT interface.
-> > 
-> > Remove io_lock as the WDT core uses mutex to lock each wdt device.
-> > Remove wdt_state as the WDT core tracks state with its own variable.
-> > 
-> > The watchdog_init_timeout() can read timeout value from timeout-sec
-> > property if the passed value is out of bounds. The heartbeat is
-> > initialized in next way. If heartbeat is not set thought module
-> > parameter, try to read it's value from WDT node timeout-sec property.
-> > If node has no one, use default value.
-> > 
-> > The heartbeat is hold in wdd->timeout by WDT core, so use it in
-> > order to set timeout period.
-> > 
-> > Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> > Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-> > Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-> > ---
-> >  drivers/watchdog/Kconfig       |    2 +
-> >  drivers/watchdog/davinci_wdt.c |  147 ++++++++++------------------------------
-> >  2 files changed, 37 insertions(+), 112 deletions(-)
-> > 
-> > diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> > index 5be6e91..eb8c89d 100644
-> > --- a/drivers/watchdog/Kconfig
-> > +++ b/drivers/watchdog/Kconfig
-> > @@ -271,6 +271,8 @@ config IOP_WATCHDOG
-> >  config DAVINCI_WATCHDOG
-> >  	tristate "DaVinci watchdog"
-> >  	depends on ARCH_DAVINCI
-> > +	select WATCHDOG_CORE
-> > +	select WATCHDOG_NOWAYOUT
+On 12/04/2013 09:15 AM, Linus Torvalds wrote:
+> On Wed, Dec 4, 2013 at 8:54 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>
+>> That is why I talk about the atomic instruction word... most (but not
+>> *all*) architectures have a fundamental minimum unit of instructions
+>> which is aligned and can be atomically written.  Typically this is 1, 2,
+>> or 4 bytes.
 > 
-> Its not clear for change log why NOWAYOUT needs to be forced on all the
-> time for all users of DaVinci watchdog.
+> Note that it's not just about the "atomically written", it's also
+> about the guarantee that it's atomically *read*.
 > 
-Actually, thinking about it, it is not necessary and can be replaced with
+> x86 can certainly atomically write a 4-byte instruction too, it's just
+> that there's no guarantee - even if the instruction is aligned etc -
+> that the actual instruction decoding always ends up reading it that
+> way. It might re-read an instruction after encountering a prefix byte
+> etc etc. So even if it's all properly aligned, the reading side might
+> do something odd.
+> 
 
-	watchdog_set_nowayout(wdd, 1);
+True, at least in theory, but the atomic instruction quantum on x86 is a
+byte.
 
-In other words, there is no need to force NOWAYOUT on _other_ watchdogs which
-may be present in the system. Still, you are right, it would be nice to explain
-in the changelog (or maybe even better as comment in the code) why it is
-enforced.
+	-hpa
 
-Guenter
+
