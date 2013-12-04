@@ -1,60 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab3LDX3i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 18:29:38 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:60689 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756217Ab3LDX3e (ORCPT
+	id S1756177Ab3LDXcX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 18:32:23 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:58356 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280Ab3LDXcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 18:29:34 -0500
-From: Brian Norris <computersforpeace@gmail.com>
-To: <linux-mtd@lists.infradead.org>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 2/2] MAINTAINERS: mtd: add PXA3xx NAND driver to MAINTAINERS
-Date: Wed,  4 Dec 2013 15:28:46 -0800
-Message-Id: <1386199726-28074-3-git-send-email-computersforpeace@gmail.com>
-X-Mailer: git-send-email 1.8.5
-In-Reply-To: <1386199726-28074-1-git-send-email-computersforpeace@gmail.com>
-References: <1386199726-28074-1-git-send-email-computersforpeace@gmail.com>
+	Wed, 4 Dec 2013 18:32:21 -0500
+Message-ID: <529FBB7D.3030100@hitachi.com>
+Date: Thu, 05 Dec 2013 08:32:13 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: Re: [PATCH -tip v4 0/6] kprobes: introduce NOKPROBE_SYMBOL()
+ and fixes crash bugs
+References: <20131204012841.22118.82992.stgit@kbuild-fedora.novalocal> <CA+b37P3R7r6DoJCX7GQD+BREGsb+s2WBc71c03TVFCPi6=-mkw@mail.gmail.com> <529EDC14.5070700@hitachi.com> <CA+b37P1msx3fSEe_UG=oR458fOoryv=Y_kv5Hg+HzofzgT8KZg@mail.gmail.com>
+In-Reply-To: <CA+b37P1msx3fSEe_UG=oR458fOoryv=Y_kv5Hg+HzofzgT8KZg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+(2013/12/04 17:46), Sandeepa Prabhu wrote:
+> On 4 December 2013 13:09, Masami Hiramatsu
+> <masami.hiramatsu.pt@hitachi.com> wrote:
+>> (2013/12/04 11:54), Sandeepa Prabhu wrote:
+>>> On 4 December 2013 06:58, Masami Hiramatsu
+>>> <masami.hiramatsu.pt@hitachi.com> wrote:
+>>>> Hi,
+>>>> Here is the version 4 of NOKPORBE_SYMBOL series.
+>>>>
+>>>> In this version, I removed the cleanup patches and
+>>>> add bugfixes I've found, since those bugs will be
+>>>> critical.
+>>>> Rest of the cleanup and visible blacklists will be
+>>>> proposed later in another series.
+>>>>
+>>>> Oh, just one new thing, I added a new RFC patch which
+>>>> removes the dependency of notify_die() from kprobes
+>>>> miss-hit/recovery path. Since the notify_die() involves
+>>>> locking and lockdep code which invokes a lot of heavy
+>>>> printk functions etc. This helped me to minimize the
+>>>> blacklist and provides more stability for kprobes.
+>>>> Actually, most of int3 handlers are already called
+>>>> from do_int3 directly, I think this change is acceptable
+>>>> too.
+>>>>
+>>>> Here is the updates about NOKPROBE_SYMBOL().
+>>>>  - Now _ASM_NOKPROBE() macro is introduced for assembly
+>>>>    symbols on x86.
+>>>>  - Rename kprobe_blackpoint to kprobe_blacklist_entry
+>>>>    and simplify it. Also NOKPROBE_SYMBOL() macro just
+>>>>    saves the address of non-probe-able symbols.
+>>>>
+>>>> ---
+>>>>
+>>>> Masami Hiramatsu (6):
+>>>
+>>>>       kprobes: Prohibit probing on .entry.text code
+>>>>       kprobes: Introduce NOKPROBE_SYMBOL() macro for blacklist
+>>> Hi Masami,
+>>> Is it good idea to split  "arch/x86" code from generic kernel changes?
+>>> Then we just need to take above two patches for verifying it on arm64
+>>> or other platforms.
+>>
+>> Yeah, it can be.
+>> However I think you can apply it without any problem on arm64 tree too,
+>> since it "just adds" an asm macro in arch/x86/include/asm/asm.h.
+>> It should not have any effect for other arch. Could you try it? :)
+> Hmm, for the second patch, git am failed with: "error: patch failed:
+> kernel/sched/core.c:2662",
+> manually patched to resolve it.  aarch64 tree is right now at Linux 3.13-rc2.
 
-Add the pxa3xx-nand driver which supports PXA3xx and Armada 370/XP SoC
-family to MAINTAINERS to ensure I get proper Cc on patches.
+Ah I see, that must be changed because it is the change related to introducing
+new blacklist itself. It is not solved by splitting arch/x86 change.
 
-Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
----
-v1 -> v2: (Brian) placed into semi-alphabetical order; MMP SUPPORT is
-                  out-of-place...
+Thank you,
 
- MAINTAINERS | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 9a7f53bee1cf..99870552637a 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6825,6 +6825,12 @@ F:	include/sound/pxa2xx-lib.h
- F:	sound/arm/pxa*
- F:	sound/soc/pxa/
- 
-+PXA3xx NAND FLASH DRIVER
-+M:	Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-+L:	linux-mtd@lists.infradead.org
-+S:	Maintained
-+F:	drivers/mtd/nand/pxa3xx-nand.c
-+
- MMP SUPPORT
- M:	Eric Miao <eric.y.miao@gmail.com>
- M:	Haojian Zhuang <haojian.zhuang@gmail.com>
 -- 
-1.8.5
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
