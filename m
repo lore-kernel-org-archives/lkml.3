@@ -1,106 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932799Ab3LDQk1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 11:40:27 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:42750 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755669Ab3LDQkY convert rfc822-to-8bit (ORCPT
+	id S932859Ab3LDQmb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 11:42:31 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:43056 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754074Ab3LDQmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 11:40:24 -0500
-Message-ID: <529F5ACF.7010105@arm.com>
-Date: Wed, 04 Dec 2013 16:39:43 +0000
-From: Jonathan Austin <jonathan.austin@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	Wed, 4 Dec 2013 11:42:25 -0500
+Date: Wed, 4 Dec 2013 08:42:18 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: stefano.stabellini@eu.citrix.com, ian.campbell@citrix.com,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        leosilva@linux.vnet.ibm.com, ashley@ashleylai.com, peterhuewe@gmx.de,
+        mail@srajiv.net, tpmdd@selhorst.net, tpmdd@sirrix.com,
+        bhelgaas@google.com, plagnioj@jcrosoft.com, tomi.valkeinen@ti.com,
+        tpmdd-devel@lists.sourceforge.net, linux-input@vger.kernel.org,
+        netdev@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH] xen/pvhvm: If xen_platform_pci=0 is set don't blow up.
+Message-ID: <20131204164218.GA8838@core.coreip.homeip.net>
+References: <1386105246-14337-1-git-send-email-konrad.wilk@oracle.com>
 MIME-Version: 1.0
-To: Jonathan Austin <jonathan.austin@arm.com>
-CC: Ming Lei <tom.leiming@gmail.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] ARM: default PHYS_OFFSET if !MMU
-References: <1384341351-4110-1-git-send-email-tom.leiming@gmail.com> <1384341351-4110-2-git-send-email-tom.leiming@gmail.com> <528366A9.7060504@arm.com>
-In-Reply-To: <528366A9.7060504@arm.com>
-X-OriginalArrivalTime: 04 Dec 2013 16:40:22.0208 (UTC) FILETIME=[8667DC00:01CEF10F]
-X-MC-Unique: 113120416402210401
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386105246-14337-1-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Hi Konrad,
 
-On 13/11/13 11:46, Jonathan Austin wrote:
-> Hi Ming,
->
-> On 13/11/13 11:15, Ming Lei wrote:
->> From: Jonathan Austin <jonathan.austin@arm.com>
->>
->> Set CONFIG_PAGE_OFFSET as PHYS_OFFSET when !MMU so that
->> we can keep CONFIG_PAGE_OFFSET same with PAGE_OFFSET.
->>
->
-> I'm not so sure about this commit message - I don't think
-> it makes sense...Should it not be more like:
->
-> ------->8-------
-> Subject: ARM: set PAGE_OFFSET = PHYS_OFFSET if !MMU
->
-> With !MMU we still set PAGE_OFFSET to 0xC0000000, which
-> makes little sense and causes a regression on !MMU after
-> f6537f2f0eba4eba ("scripts/kallsyms: filter symbols not
-> kernel address space")
->
-> This patch sets PAGE_OFFSET to PHYS_OFFSET in the !MMU
-> case, fixing the regression (Tested on Cortex-R7/Vexpress)
-> --------8<---------
->
-> Russell: Will you pick this patch up from the list or does
-> it need to go in through the patch system?
+On Tue, Dec 03, 2013 at 04:14:06PM -0500, Konrad Rzeszutek Wilk wrote:
+> The user has the option of disabling the platform driver:
+> 00:02.0 Unassigned class [ff80]: XenSource, Inc. Xen Platform Device (rev 01)
+> 
+> which is used to unplug the emulated drivers (IDE, Realtek 8169, etc)
+> and allow the PV drivers to take over. If the user wishes
+> to disable that they can set:
+> 
+>   xen_platform_pci=0
+>   (in the guest config file)
+> 
+> or
+>   xen_emul_unplug=never
+>   (on the Linux command line)
+> 
+> except it does not work properly. The PV drivers still try to
+> load and since the Xen platform driver is not run - and it
+> has not initialized the grant tables, most of the PV drivers
+> stumble upon:
+> 
+> input: Xen Virtual Keyboard as /devices/virtual/input/input5
+> input: Xen Virtual Pointer as /devices/virtual/input/input6M
+> ------------[ cut here ]------------
+> kernel BUG at /home/konrad/ssd/konrad/linux/drivers/xen/grant-table.c:1206!
+> invalid opcode: 0000 [#1] SMP
+> Modules linked in: xen_kbdfront(+) xenfs xen_privcmd
+> CPU: 6 PID: 1389 Comm: modprobe Not tainted 3.13.0-rc1upstream-00021-ga6c892b-dirty #1
+> Hardware name: Xen HVM domU, BIOS 4.4-unstable 11/26/2013
+> RIP: 0010:[<ffffffff813ddc40>]  [<ffffffff813ddc40>] get_free_entries+0x2e0/0x300
+> Call Trace:
+>  [<ffffffff8150d9a3>] ? evdev_connect+0x1e3/0x240
+>  [<ffffffff813ddd0e>] gnttab_grant_foreign_access+0x2e/0x70
+>  [<ffffffffa0010081>] xenkbd_connect_backend+0x41/0x290 [xen_kbdfront]
+>  [<ffffffffa0010a12>] xenkbd_probe+0x2f2/0x324 [xen_kbdfront]
+>  [<ffffffff813e5757>] xenbus_dev_probe+0x77/0x130
+>  [<ffffffff813e7217>] xenbus_frontend_dev_probe+0x47/0x50
+>  [<ffffffff8145e9a9>] driver_probe_device+0x89/0x230
+>  [<ffffffff8145ebeb>] __driver_attach+0x9b/0xa0
+>  [<ffffffff8145eb50>] ? driver_probe_device+0x230/0x230
+>  [<ffffffff8145eb50>] ? driver_probe_device+0x230/0x230
+>  [<ffffffff8145cf1c>] bus_for_each_dev+0x8c/0xb0
+>  [<ffffffff8145e7d9>] driver_attach+0x19/0x20
+>  [<ffffffff8145e260>] bus_add_driver+0x1a0/0x220
+>  [<ffffffff8145f1ff>] driver_register+0x5f/0xf0
+>  [<ffffffff813e55c5>] xenbus_register_driver_common+0x15/0x20
+>  [<ffffffff813e76b3>] xenbus_register_frontend+0x23/0x40
+>  [<ffffffffa0015000>] ? 0xffffffffa0014fff
+>  [<ffffffffa001502b>] xenkbd_init+0x2b/0x1000 [xen_kbdfront]
+>  [<ffffffff81002049>] do_one_initcall+0x49/0x170
+> 
+> .. snip..
+> 
+> which is hardly nice. This patch fixes this by having each
+> PV driver check for:
+>  - if running in PV, then it is fine to execute (as that is their
+>    native environment).
+>  - if running in HVM, check if user wanted 'xen_emul_unplug=never',
+>    in which case bail out and don't load PV drivers.
+>  - if running in HVM, and if PCI device 5853:0001 (xen_platform_pci)
+>    does not exist, then bail out and not load PV drivers.
+> 
+> P.S.
+> Ian Campbell suggested getting rid of 'xen_platform_pci_unplug'
+> but unfortunatly the xen-blkfront driver is using it, so we
+> cannot do it.
+> 
+> Reported-by: Sander Eikelenboom <linux@eikelenboom.it
+> Reported-by: Anthony PERARD <anthony.perard@citrix.com>
+> Reported-by: Fabio Fantoni <fabio.fantoni@m2r.biz>
 
+For input:
 
-What's the status of this patch? Shall I put it in the patch system with 
-the commit message above? Or is it going via someone else?
+Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-Jonny
+...
 
->
-> Jonny
->
->> This patch and patch 2/2 fix regression on !MMU by
->> f6537f2f0eba4eba("scripts/kallsyms: filter symbols not
->> in kernel address space")
->>
->> Cc: <stable@vger.kernel.org>
->> Signed-off-by: Jonathan Austin <jonathan.austin@arm.com>
->> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
->> ---
->>    arch/arm/Kconfig |    1 +
->>    1 file changed, 1 insertion(+)
->>
->> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
->> index 799ef94..db708c4 100644
->> --- a/arch/arm/Kconfig
->> +++ b/arch/arm/Kconfig
->> @@ -1560,6 +1560,7 @@ endchoice
->>
->>    config PAGE_OFFSET
->>    	hex
->> +	default PHYS_OFFSET if !MMU
->>    	default 0x40000000 if VMSPLIT_1G
->>    	default 0x80000000 if VMSPLIT_2G
->>    	default 0xC0000000
->>
->
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->
+> +#if defined(CONFIG_XEN_PVHVM)
+> +extern bool xen_has_pv_devices(void);
+> +#else
+> +static inline bool xen_has_pv_devices(void)
+> +{
+> +#if defined(CONFIG_XEN)
+> +	return true;
+> +#else
+> +	return false;
+> +#endif
 
+	return IS_ENABLED(CONFIG_XEN);
 
+?
+
+Thanks.
+
+-- 
+Dmitry
