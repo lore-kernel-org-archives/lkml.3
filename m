@@ -1,101 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933310Ab3LDTkx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 14:40:53 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:52111 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933112Ab3LDTjR (ORCPT
+	id S933215Ab3LDTsD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 14:48:03 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:46434 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933067Ab3LDTr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 14:39:17 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 4/5] ARM: msm: Only build timer.c if required
-Date: Wed,  4 Dec 2013 11:39:11 -0800
-Message-Id: <1386185952-27259-5-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.5.1.19.gdaad3aa
-In-Reply-To: <1386185952-27259-1-git-send-email-sboyd@codeaurora.org>
-References: <1386185952-27259-1-git-send-email-sboyd@codeaurora.org>
+	Wed, 4 Dec 2013 14:47:58 -0500
+Message-ID: <529F86EA.4010805@linaro.org>
+Date: Wed, 04 Dec 2013 12:47:54 -0700
+From: Al Stone <al.stone@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Hanjun Guo <hanjun.guo@linaro.org>, "Zheng, Lv" <lv.zheng@intel.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Jon Masters <jonathan@jonmasters.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Graeme Gregory <graeme.gregory@linaro.org>
+Subject: Re: [RFC part1 PATCH 5/7] ARM64 / ACPI: Introduce arm_core.c and
+ its related head file
+References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org> <1386088611-2801-6-git-send-email-hanjun.guo@linaro.org> <1AE640813FDE7649BE1B193DEA596E88024941A4@SHSMSX101.ccr.corp.intel.com> <529F5013.4050502@linaro.org>
+In-Reply-To: <529F5013.4050502@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MSM timer is only used on MSM devices that don't have the
-architected timers. Introduce a hidden Kconfig option for this
-driver so that we don't build it on the platforms that don't need
-it.
+On 12/04/2013 08:53 AM, Hanjun Guo wrote:
+> On 2013年12月04日 13:46, Zheng, Lv wrote:
+>>> From: linux-acpi-owner@vger.kernel.org
+>>> [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Hanjun Guo
+>>> Sent: Wednesday, December 04, 2013 12:37 AM
+>>>
+>>> introduce arm_core.c and its related head file, after this patch,
+>>> we can get ACPI tables from BIOS on ARM64 now.
+>>>
+>>> Signed-off-by: Al Stone <al.stone@linaro.org>
+>>> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+>>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>>> ---
+>>>   arch/arm64/include/asm/acpi.h |   57 +++++++++++
+>>>   arch/arm64/kernel/setup.c     |    8 ++
+>>>   drivers/acpi/Makefile         |    2 +
+>>>   drivers/acpi/plat/Makefile    |    1 +
+>>>   drivers/acpi/plat/arm-core.c  |  219
+>>> +++++++++++++++++++++++++++++++++++++++++
+>>>   5 files changed, 287 insertions(+)
+>>>   create mode 100644 drivers/acpi/plat/Makefile
+>>>   create mode 100644 drivers/acpi/plat/arm-core.c
+>>>
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/mach-msm/Kconfig  | 9 +++++++++
- arch/arm/mach-msm/Makefile | 2 +-
- 2 files changed, 10 insertions(+), 1 deletion(-)
+[...]
 
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index 2586c28..47cd2df 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -16,6 +16,7 @@ config ARCH_MSM7X00A
- 	select MACH_TROUT if !MACH_HALIBUT
- 	select MSM_PROC_COMM
- 	select MSM_SMD
-+	select MSM_TIMER
- 	select MSM_SMD_PKG3
- 
- config ARCH_MSM7X30
-@@ -27,6 +28,7 @@ config ARCH_MSM7X30
- 	select MSM_GPIOMUX
- 	select MSM_PROC_COMM
- 	select MSM_SMD
-+	select MSM_TIMER
- 	select MSM_VIC
- 
- config ARCH_QSD8X50
-@@ -38,6 +40,7 @@ config ARCH_QSD8X50
- 	select MSM_GPIOMUX
- 	select MSM_PROC_COMM
- 	select MSM_SMD
-+	select MSM_TIMER
- 	select MSM_VIC
- 
- endchoice
-@@ -49,6 +52,7 @@ config ARCH_MSM8X60
- 	select GPIO_MSM_V2
- 	select HAVE_SMP
- 	select MSM_SCM if SMP
-+	select MSM_TIMER
- 
- config ARCH_MSM8960
- 	bool "MSM8960"
-@@ -57,6 +61,7 @@ config ARCH_MSM8960
- 	select HAVE_SMP
- 	select GPIO_MSM_V2
- 	select MSM_SCM if SMP
-+	select MSM_TIMER
- 
- config ARCH_MSM_DT
- 	def_bool y
-@@ -134,4 +139,8 @@ config MSM_GPIOMUX
- 
- config MSM_SCM
- 	bool
-+
-+config MSM_TIMER
-+	bool
-+
- endif
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 6baae6e..8e307a10 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -1,4 +1,4 @@
--obj-y += timer.o
-+obj-$(CONFIG_MSM_TIMER) += timer.o
- obj-$(CONFIG_MSM_PROC_COMM) += clock.o
- 
- obj-$(CONFIG_MSM_VIC) += irq-vic.o
+>>
+>> I'm not sure if all global lock code blocks are not referenced by
+>> ACPI_REDUCED_HARDWARE and I'm not sure what mechanism is implemented
+>> on ARM ACPI platforms to offer the synchronization mechanism between
+>> firmware and OSPM.  So you may need to implement the following
+>> synchronization protocol in <asm/acpi.h>:
+>> 58 #define ACPI_ACQUIRE_GLOBAL_LOCK(facs, Acq)
+>> 61 #define ACPI_RELEASE_GLOBAL_LOCK(facs, Acq)
+>
+> In reduced hardware mode, No hardware resource sharing between
+> OSPM and other asynchronous operating environments, such as
+> UEFI Runtime Services or System Management Mode. (The Global Lock
+> is not supported)
+>
+> please refer to chapter 3.11.1 of ACPI 5.0.
+
+I agree with Hanjun; the spec clearly states that the ACPI global lock
+is not supported in reduced HW mode.  The only similar lock I recall
+from the spec is for ECs (Embedded Controllers, section 12) but is very
+specific to controlling the interaction with the EC.
+
+If the intent is to use SMI, again, in reduced HW mode, 3.11.1 does
+not allow SMI_CMD, and 5.2.9 indicates SMI_CMD is to be ignored.
+
+
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+ciao,
+al
+-----------------------------------
+Al Stone
+Software Engineer
+Linaro Enterprise Group
+al.stone@linaro.org
+-----------------------------------
