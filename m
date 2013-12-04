@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932767Ab3LDR5T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 12:57:19 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:58580 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755681Ab3LDR5S (ORCPT
+	id S1754327Ab3LDSDa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 13:03:30 -0500
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:47599 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753599Ab3LDSD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 12:57:18 -0500
+	Wed, 4 Dec 2013 13:03:29 -0500
+Date: Wed, 4 Dec 2013 18:03:21 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>, alsa-devel@alsa-project.org,
+        Mark Brown <broonie@kernel.org>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH 07/10] ASoC: ux500: Store DMA data in the DAI differently
+ in the pdata and DT case
+Message-ID: <20131204180321.GE26581@lee--X1>
+References: <1384859269-19801-1-git-send-email-lee.jones@linaro.org>
+ <1384859269-19801-8-git-send-email-lee.jones@linaro.org>
+ <CAGa+x85c3y5+VXFjHAZYpUM0+2Tfnra6QKad7-aeUdwjSwo+Vg@mail.gmail.com>
 MIME-Version: 1.0
-Date: Wed, 4 Dec 2013 12:57:15 -0500
-Message-ID: <CA+X2d=AHdivGF+s_uOC2ns5okoOdZHX1kEg4iuB32zUkBjsszg@mail.gmail.com>
-Subject: Re: [PATCHv2] drivers/input/mouse: add support for newer elantech
- touchpads (released ca. August 2013);
-From: Matt Walker <matt.g.d.walker@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: backports@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=001a11c223deba01c804ecb92415
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGa+x85c3y5+VXFjHAZYpUM0+2Tfnra6QKad7-aeUdwjSwo+Vg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c223deba01c804ecb92415
-Content-Type: text/plain; charset=ISO-8859-1
+> Today's next (next-20131204) has a new boot failure[1] on
+> ux500/snowball which bisected down to this commit.  Full boot log
+> attached.
 
-From: Matt Walker <matt.g.d.walker@gmail.com>
+Right.
 
-Added detection for newer Elantech touchpads, so that kernel doesn't
-fall-back to default PS/2 driver. Supports touchpads released after
-~August 2013.  Fixes bug:
-https://lists.launchpad.net/kernel-packages/msg18481.html
+Anyone not on CC (which I think you are Kevin) can follow the fun here:
+  http://www.spinics.net/lists/arm-kernel/msg291374.html
 
-Signed-off by: Matt Walker <matt.g.d.walker@gmail.com> on an Acer
-Aspire S7-392-6302
+> It doesn't find the alsa device which in turn seems to prevent the
+> emmc rootfs from being mounted.  It boots fine to an initramfs.
 
-----
+<snip>
 
-Thanks to Hauke for the reference on how to submit a patch properly.
-Thanks to Dmitry for correction to Signed-off line.
+> of_dma_request_slave_channel: dma-names property of node '/soc/msp@80124000' missing or empty
+> of_dma_request_slave_channel: dma-names property of node '/soc/msp@80124000' missing or empty
+> of_dma_request_slave_channel: dma-names property of node '/soc/msp@80125000' missing or empty
+> mmc1: new high speed MMC card at address 0001
+> of_dma_request_slave_channel: dma-names property of node '/soc/msp@80125000' missing or empty
+> mmcblk0: mmc1:0001  7.28 GiB 
+> mmcblk0boot0: mmc1:0001  partition 1 2.00 MiB
+> mmcblk0boot1: mmc1:0001  partition 2 2.00 MiB
+> mmcblk0rpmb: mmc1:0001  partition 3 128 KiB
+> dma dma0chan22: [d40_config_memcpy] No memcpy
+> dma dma0chan22: [d40_alloc_chan_resources] Failed to configure memcpy channel
+> ux500-msp-i2s ux500-msp-i2s.1: Missing dma channel for stream: 0
+> ux500-msp-i2s ux500-msp-i2s.1: ASoC: pcm constructor failed: -22
+> snd-soc-mop500 snd-soc-mop500.0: ASoC: can't create pcm ab8500_0 :-22
+> snd-soc-mop500 snd-soc-mop500.0: ASoC: failed to instantiate card -22
+> snd-soc-mop500 snd-soc-mop500.0: Error: snd_soc_register_card failed (-22)!
+> snd-soc-mop500: probe of snd-soc-mop500.0 failed with error -22
 
-Diff Output:
+<snip>
 
---- linux-3.13-rc1/drivers/input/
-mouse/elantech.c.orig    2013-12-03
-12:14:52.829173656 -0500
-+++ linux-3.13-rc1/drivers/input/mouse/elantech.c    2013-12-03
-12:15:11.833173880 -0500
-@@ -1313,6 +1313,7 @@ static int elantech_set_properties(struc
-             break;
-         case 6:
-         case 7:
-+        case 8:
-             etd->hw_version = 4;
-             break;
-         default:
+> mmci-pl18x sdi4: error during DMA transfer!
+> mmcblk0rpmb: error -110 transferring data, sector 0, nr 8, cmd response 0x900, card status 0x0
+> mmcblk0rpmb: retrying using single block read
 
---001a11c223deba01c804ecb92415
-Content-Type: application/octet-stream; name=patch
-Content-Disposition: attachment; filename=patch
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hosvo7380
+It's interesting that the MSP failure has managed to fudge the entire
+DMA Controller. I have absolutely no idea how that can even happen?
 
-LS0tIGxpbnV4LTMuMTMtcmMxL2RyaXZlcnMvaW5wdXQvbW91c2UvZWxhbnRlY2guYy5vcmlnCTIw
-MTMtMTItMDMgMTI6MTQ6NTIuODI5MTczNjU2IC0wNTAwCisrKyBsaW51eC0zLjEzLXJjMS9kcml2
-ZXJzL2lucHV0L21vdXNlL2VsYW50ZWNoLmMJMjAxMy0xMi0wMyAxMjoxNToxMS44MzMxNzM4ODAg
-LTA1MDAKQEAgLTEzMTMsNiArMTMxMyw3IEBAIHN0YXRpYyBpbnQgZWxhbnRlY2hfc2V0X3Byb3Bl
-cnRpZXMoc3RydWMKIAkJCWJyZWFrOwogCQljYXNlIDY6CiAJCWNhc2UgNzoKKwkJY2FzZSA4Ogog
-CQkJZXRkLT5od192ZXJzaW9uID0gNDsKIAkJCWJyZWFrOwogCQlkZWZhdWx0Ogo=
---001a11c223deba01c804ecb92415--
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
