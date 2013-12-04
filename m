@@ -1,54 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab3LDSXR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 13:23:17 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:61082 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932511Ab3LDSXO (ORCPT
+	id S1755887Ab3LDSX6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 13:23:58 -0500
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:60682 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755860Ab3LDSXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 13:23:14 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/3] Introduce FW_INFO* functions and messages
-Date: Wed, 4 Dec 2013 19:22:57 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-References: <1385997579-22240-1-git-send-email-prarit@redhat.com> <1385997579-22240-2-git-send-email-prarit@redhat.com> <20131203132120.6a7ab2cd7cc99720712cbe6a@linux-foundation.org>
-In-Reply-To: <20131203132120.6a7ab2cd7cc99720712cbe6a@linux-foundation.org>
+	Wed, 4 Dec 2013 13:23:55 -0500
+Message-ID: <529F7336.1000007@gmail.com>
+Date: Wed, 04 Dec 2013 13:23:50 -0500
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Michael Tuexen <Michael.Tuexen@lurchi.franken.de>
+CC: David Laight <David.Laight@ACULAB.COM>, Sun Paul <paulrbk@gmail.com>,
+        netdev@vger.kernel.org, linux-sctp@vger.kernel.org,
+        Karl Heiss <kheiss@gmail.com>, Neil Horman <nhorman@tuxdriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Supporting 4 way connections in LKSCTP
+References: <CAFXGft+CXk3W8=3w=AuYzqYtYnR8nH4Of9=668tUeT+tugD9-A@mail.gmail.com>	<CAFXGftJQV=5Pqs3bhfiS3T1VO1q8jfaMjAUiqm2tDbtSyBCM3A@mail.gmail.com>	<529C9B50.50002@gmail.com>	<CAGugRbXFirQ5P3ek9zN86h4vvO6qsy3eNEooJOApotA+dL+C_g@mail.gmail.com>	<529CB859.9090904@gmail.com>	<CAFXGft+F52p+oaa59=5e5pGfON44N36NA-XMYi5PorzWeybnKw@mail.gmail.com>	<CAFXGft+4o6fT4SYbu3musC+-BEi=xOEGUbZSavF1-0_V1mg6zg@mail.gmail.com>	<529D3BF9.3070208@gmail.com>	<CAFXGftJtCCJ=pVxg_DH-+n2bKmoKXavog0y8mfX+h-1z3hP49Q@mail.gmail.com>	<529DCF42.1070800@gmail.com>	<CAFXGftK5tz90OzObiV7Hi+g080j3zWCNdo217CKdNkOY4JWQUg@mail.gmail.com>	<529DF73E.7060604@gmail.com> <CAFXGftKZD0zN1S=UTa_bYr71-v=7mzU=_CewTNkjPv9CGGB_Fg@mail.gmail.com> <529F395B.9040308@gmail.com> <AE90C24D6B3A694183C094C60CF0A2F6026B745D@saturn3.aculab.com> <529F4D1A.3050304@gmail.com> <7A4B9BD9-B2BF-4625-A2E5-500CD4A6D399@lurchi.franken.de> <529F5472.9030207@gmail.com> <4F0BC498-2F09-4DB6-83DC-82571645476B@lurchi.franken.de>
+In-Reply-To: <4F0BC498-2F09-4DB6-83DC-82571645476B@lurchi.franken.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201312041922.59181.arnd@arndb.de>
-X-Provags-ID: V02:K0:qNTbuQ7uQW384AeM8uHV1A7HiITrs3qMl/Q9tWN6Chf
- lsBgKbeo1TfbGQiGQzIT4RwVJfTmzfMQMiEqxuteOcHb1u6N5M
- TYeyKMIEAGMAPRb8wG4VJ9TXo9dsAaNyxJNKIOSMW1/Uw1IpN2
- hJqId6MVKw8pk6xBBFhXWYA/CQBIgoHJkH2WosKfGVS47tcHZ9
- bi/z+JxbbuyxfgyBWzKMXnugMIX4n0OB8RwTvbS/R3O8QOSVyi
- Nrf8wh0iawbe68FgPPE/cFCu0ERyw+zmgPGKGbL0SG3CiG7QXT
- 5YovZD3inWG5MEZqFuFHgUBVv1Esty6GpFlNs9uAH9B7mKJTXh
- WiIaOEOl8LbLEFeEvkog=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 03 December 2013, Andrew Morton wrote:
-> I do wonder if it all should be generalised a bit - it creates a bunch
-> of infrastructure which is specific to system firmware issues, but
-> what's so special about firmware?  Why can't I use this infrastructure
-> to log netdev errors or acpi errors or PM errors or...?  But I didn't
-> think about it much ;)
+On 12/04/2013 11:25 AM, Michael Tuexen wrote:
+> On Dec 4, 2013, at 5:12 PM, Vlad Yasevich <vyasevich@gmail.com> wrote:
+> 
+>> On 12/04/2013 11:01 AM, Michael Tuexen wrote:
+>>> On Dec 4, 2013, at 4:41 PM, Vlad Yasevich <vyasevich@gmail.com> wrote:
+>>>
+>>>> On 12/04/2013 09:50 AM, David Laight wrote:
+>>>>>>> In normal operation, IP-A sends INIT to IP-X, IP-X returns INIT_ACK to
+>>>>>>> IP-A. IP-A then sends HB to IP-X, IP-X then returns HB_ACK to IP-A. In
+>>>>>>> the meantime, IP-B sends HB to IP-Y and IPY returns HB_ACK.
+>>>>>>>
+>>>>>>> In case of the path between IP-A and IP-X is broken, IP-B sends INIT
+>>>>>>> to IP-X, NODE-B uses IP-Y to return INIT_ACK to IP-B. Then IP-B sends
+>>>>>>> HB to IP-X, and IP-Y returns HB_ACK to IP-B. In the meantime, the HB
+>>>>>>> communication between IP-B and IP-Y follows the normal flow.
+>>>>>>>
+>>>>>>> Can I confirm, is it really valid?
+>>>>>>
+>>>>>> As long as NODE-B knows about both IP-A and IP-B, and NODE-A knows about
+>>>>>> both IP-X and IP-Y (meaning all the addresses were exchanged inside INIT
+>>>>>> and INIT-ACK), then this situation is perfectly valid.  In fact, this
+>>>>>> has been tested an multiple interops.
+>>>>>
+>>>>> There are some network configurations that do cause problems.
+>>>>> Consider 4 systems with 3 LAN segments:
+>>>>> A) 10.10.10.1 on LAN X and 192.168.1.1 on LAN Y.
+>>>>> B) 10.10.10.2 on LAN X and 192.168.1.2 on LAN Y.
+>>>>> C) 10.10.10.3 on LAN X.
+>>>>> D) 10.10.10.4 on LAN X and 192.168.1.2 on LAN Z.
+>>>>> There are no routers between the networks (and none of the systems
+>>>>> are running IP forwarding).
+>>>>>
+>>>>> If A connects to B everything is fine - traffic can use either LAN.
+>>>>>
+>>>>> Connections from A to C are problematic if C tries to send anything
+>>>>> (except a HB) to 192.168.1.1 before receiving a HB response.
+>>>>> One of the SCTP stacks we've used did send messages to an
+>>>>> inappropriate address, but I've forgotten which one.
+>>>>
+>>>> I guess that would be problematic if A can not receive traffic for
+>>>> 192.168.1.1 on the interface connected to LAN X.  I shouldn't
+>>>> technically be a problem for C as it should mark the path to 192.168.1.1
+>>>> as down.  For A, as long as it doesn't decide to ABORT the association,
+>>>> it shouldn't be a problem either.  It would be interesting to know more
+>>>> about what problems you've observed.
+>>>>
+>>>>>
+>>>>> Connections between A and D fail unless the HB errors A receives
+>>>>> for 192.168.1.2 are ignored.
+>>>>
+>>>> Yes, this configuration is very error prone, especially if system B and
+>>>> system D are up at the same time.  Any attempts by system A to use
+>>>> LAN Y will result in an ABORT generated by system B.  I have seen
+>>>> this issue well in production and we had to renumber system D to solve
+>>>> it.
+>>> The point is that address scoping should be used. When sending an
+>>> INIT from 10.10.10.1 to 10.10.10.4 you should not list 192.168.1.1,
+>>> since you are transmitting an address to a node which might or might
+>>> not "be in the same scope". We had IDs for that in the past, but
+>>> they never made it to RFC state, because they were not progressed enough
+>>> by the authors. Maybe we should push them again...
+>>
+>> But these 2 are technically in the same scope.  They are both private
+>> address types.  Also, this will not solve the problem either since
+> That is correct. But I think you should not transfer a private address
+> to another private address belonging to a different network.
+> I don't think this was specified in the older IDs...
+>> the configured addresses could be:
+>> System A) 10.0.0.1 on Lan X, 10.10.0.1 on Lan Y
+>> System B) 10.0.0.2 on Lan X, 10.10.0.2 on Lan Y
+>> System C) 10.0.0.3 on Lan X, 10.10.0.2 on Lan Z
+>>
+>> Same problem will occur.
+> Depending on the subnet masks, it might work not not. Are you
+> configuring them with /8? 
 
-I had similar thoughts when I read this, but I can also remember a bunch
-of very overdesigned attempts to reorganize and structure the kernel
-logging code. I lot of time was wasted in the past for things that
-ended up being too invasive or inconsistent.
+No, /16 :).  With that, Sys A talking to Sys C will get an abort
+from Sys B when trying to talk to 10.10.0.2.  With /8, it'll be
+even worse since SysB and SysC will have duplicate addresses
+within the subnet. :)
 
-The other part I noticed about this particular patchset is that it's
-not really "firmware" as such, but specifically PC wiht ACPI that
-gets covered here. So rather than generalizing the code, another
-option would be to narrow down the scope and make it
-acpi_{warn,info,dbg} instead.
+The point is that you don't always know that the same private subnet
+is in reality 2 different subnets with duplicate addresses.
 
-	Arnd
+I've had to debug an actual production issue similar to this where
+customer had a very similar configuration to above, and their
+associations kept getting aborted.  When I tried accessing the
+system that kept sending aborts, I found it was some windows
+server and not a Diameter station they were expecting.
+
+>>
+>> Btw, were there any IDs other then draft-stewart-tsvwg-sctp-ipv4?
+> Yes, one for IPv6.
+> http://tools.ietf.org/html/draft-stewart-tsvwg-sctpipv6-01
+> They need to be integrated and improved...
+> 
+
+Ok.  I'll take a look.
+
+Thanks
+-vlad
+
+> Best regards
+> Michael
+>>
+>> Thanks
+>> -vlad
+>>
+>>>
+>>> Best regards
+>>> Michael
+>>>>
+>>>> -vlad
+>>>>>
+>>>>> Of course the application could explicitly bind to only the 10.x address
+>>>>> but that requires the application know the exact network topology
+>>>>> and may be difficult for incoming calls.
+>>>>>
+>>>>> 	David
+>>>>>
+>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>
+>>>
+>>
+>>
+> 
+
