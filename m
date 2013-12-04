@@ -1,102 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab3LDKC2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 05:02:28 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:63806 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755153Ab3LDKCZ (ORCPT
+	id S1755458Ab3LDKDT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 05:03:19 -0500
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:49638 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755037Ab3LDKDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 05:02:25 -0500
-Date: Wed, 4 Dec 2013 11:02:21 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Namhyung Kim <namhyung@kernel.org>, Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Pekka Enberg <penberg@iki.fi>
-Subject: Re: [PATCH 1/3] perf tools: Record total sampling time
-Message-ID: <20131204100221.GB2363@gmail.com>
-References: <1385967199-3759-1-git-send-email-namhyung@kernel.org>
- <1385967199-3759-2-git-send-email-namhyung@kernel.org>
- <20131202124527.GB22212@gmail.com>
- <20131202125709.GA22404@gmail.com>
- <1385999009.1710.72.camel@leonhard>
- <20131202163620.GC27781@gmail.com>
- <20131202202459.GF17149@ghostprotocols.net>
+	Wed, 4 Dec 2013 05:03:16 -0500
+Date: Wed, 4 Dec 2013 11:02:14 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+Cc: balbi@ti.com, gregkh@linuxfoundation.org, swarren@wwwdotorg.org,
+        linux-usb@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: phy-tegra-usb.c: wrong pointer check for remap UTMI
+Message-ID: <20131204100214.GT19943@ulmo.nvidia.com>
+References: <1386122564-4246-1-git-send-email-chris.ruehl@gtsys.com.hk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lzfPtAjrR1KYNfg0"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131202202459.GF17149@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1386122564-4246-1-git-send-email-chris.ruehl@gtsys.com.hk>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+--lzfPtAjrR1KYNfg0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Em Mon, Dec 02, 2013 at 05:36:20PM +0100, Ingo Molnar escreveu:
-> > * Namhyung Kim <namhyung@kernel.org> wrote:
-> > > 2013-12-02 (월), 13:57 +0100, Ingo Molnar:
-> > > > So basically, in the end I think it should be possible to have the 
-> > > > following behavior:
-> 
-> > > >    perf record -a -e cycles sleep 1
-> 
-> > > >    perf report stat              # Reports as if we ran: 'perf stat -a -e cycles sleep 1'
-> > > >    perf report                   # Reports the usual histogram
-> 
-> > > >    perf report --stat            # Reports the perf stat output and the histogram
-> 
-> > > > or so.
-> 
-> > > I don't think we need both of 'perf report stat' and 'perf report
-> > > --stat'.  At least it looks somewhat confusing to users IMHO.
->  
-> > Okay. Maybe the --stat option would be the more logical choice, 
-> > because '--' options can be added arbitrarily, while it would be weird 
-> > to add multiple subcommand options.
->  
-> > So basically there would be two options:
->  
-> >    --show-stat         [--no-show-stat]
-> >    --show-histogram    [--no-show-histogram]
->  
-> > Today --show-histogram is the only one enabled by default.
->  
-> > Running:
->  
-> >    perf report --no-show-histogram --show-stat
-> 
-> Why not:
-> 
-> perf stat -i perf.data
-> 
-> and make it be an optional argument, so plain:
-> 
-> perf stat -i
-> 
-> would process perf.data, i.e. would get the samples, accrue the periods,
-> calculate the time, etc and then present it as 'perf stat <some
-> target>'.
-> 
-> Right now 'perf stat -i' i used for '--no-inherit', perhaps we can just
-> have --no-inherit have no short option and grab -i to have the same
-> meaning as in 'report', 'script', etc.
+On Wed, Dec 04, 2013 at 10:02:44AM +0800, Chris Ruehl wrote:
+> usb: phy-tegra-usb.c: wrong pointer check for remap UTMI
+>=20
+> A wrong pointer was used to test the result of devm_ioremap()
+>=20
+> Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+> Acked-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> ---
+>  drivers/usb/phy/phy-tegra-usb.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Sounds good to me! It's (much) better than complicating the perf 
-report UI with non-histogram formatting. perf record would have to be 
-enhanced to make sure all events are 'perf stat' extractable by 
-default, but that's it I think.
+Reviewed-by: Thierry Reding <treding@nvidia.com>
 
-The only downside is that I now cannot get Namhyung to implement this 
-nice feature as a side effect of the perf report feature he wants ;-)
+--lzfPtAjrR1KYNfg0
+Content-Type: application/pgp-signature
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-	Ingo
+iQIcBAEBAgAGBQJSnv2mAAoJEN0jrNd/PrOheQgP/iOJBZYnhUHhM7Vq/KTLMuWB
+qIrTPPIl+gm1a9f8kmuaxLWDVqBDR8ECB9dD2zdjquAoXF4HWj8OJyTLt40bwlke
+PPrvcyHXPHv8Q/A/RZWZvXvt1FnVoQYn0dobc/1ZoViNo7a92SmFCJfaPuQLcA9l
+Q4/SjtizMkVFfVyZ0DJhxQXsPaHrbFuk+s8zTr75KTqjMvt2TGU67oA7DngcrmbV
+nVrnSkKiUIqux3XI8nmoakdt045mM37NOjs17cbHg/R5Gj5DI2rfpHBPSlH4RGz2
+TEhNhDOwhkpQYzO+PjrfYKirIrw79nCYx2i5aLVQF39Epg/mU3GLIff+iWwXCXpc
+D+MASJ/stFxdcDvQwXbh1mzStk7L2p8SipDKSEbjHPjvqlbTCLbPNJel/SRsKuiZ
+jJ/2tsVTULKpFoRAJyAgYs3mhxROEw1jFD1BnPVlhRPPqPbtXaFbTM3Vq37T5bwf
+gq6BHLyL0AyS95Ldrt3+M+hScMphKPv5vvzufYrx+/8OHAv3kDyFHGXSjkWt3vZ+
+CXZdzQsSoPFjkWGEaYwIA21EGnqWxXo9mKRq8GwiJBlS3KdpHBH5jOwXxt+HrC14
+YkzYA2P32opweUrbjNXy1zd7JUSKlFg7l3ICAfX5RU4eaHJkWgYV/TGSJA0Pdyfx
++nhKm7U45ohXUJz/d2qR
+=wQp6
+-----END PGP SIGNATURE-----
+
+--lzfPtAjrR1KYNfg0--
