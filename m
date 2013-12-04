@@ -1,55 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932785Ab3LDPvx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 10:51:53 -0500
-Received: from smtp.infotech.no ([82.134.31.41]:52802 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932508Ab3LDPvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 10:51:51 -0500
-Message-ID: <529F4F73.7060706@interlog.com>
-Date: Wed, 04 Dec 2013 16:51:15 +0100
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S932736Ab3LDPyI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 10:54:08 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:51171 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932165Ab3LDPyF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 10:54:05 -0500
+Message-ID: <529F5013.4050502@linaro.org>
+Date: Wed, 04 Dec 2013 23:53:55 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>,
-        boris brezillon <b.brezillon@overkiz.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/3] usb: ohci-at91: use device managed clk retrieval
-References: <Pine.LNX.4.44L0.1312041021120.1329-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1312041021120.1329-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: "Zheng, Lv" <lv.zheng@intel.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Jon Masters <jonathan@jonmasters.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Al Stone <al.stone@linaro.org>,
+        Graeme Gregory <graeme.gregory@linaro.org>
+Subject: Re: [RFC part1 PATCH 5/7] ARM64 / ACPI: Introduce arm_core.c and
+ its related head file
+References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org> <1386088611-2801-6-git-send-email-hanjun.guo@linaro.org> <1AE640813FDE7649BE1B193DEA596E88024941A4@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88024941A4@SHSMSX101.ccr.corp.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-12-04 04:21 PM, Alan Stern wrote:
-> On Wed, 4 Dec 2013, boris brezillon wrote:
->
->>> The patches look fine to me.  But only the 1/3 patch fixes a bug; the
->>> others merely change the resource management.
+On 2013年12月04日 13:46, Zheng, Lv wrote:
+>> From: linux-acpi-owner@vger.kernel.org [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Hanjun Guo
+>> Sent: Wednesday, December 04, 2013 12:37 AM
 >>
->> Do you want me to split this series ?
->>    1) the 1st patch that should be merged in 3.13
->>    2) patches 2 to 4 that might be applied later
+>> introduce arm_core.c and its related head file, after this patch,
+>> we can get ACPI tables from BIOS on ARM64 now.
+>>
+>> Signed-off-by: Al Stone <al.stone@linaro.org>
+>> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>> ---
+>>   arch/arm64/include/asm/acpi.h |   57 +++++++++++
+>>   arch/arm64/kernel/setup.c     |    8 ++
+>>   drivers/acpi/Makefile         |    2 +
+>>   drivers/acpi/plat/Makefile    |    1 +
+>>   drivers/acpi/plat/arm-core.c  |  219 +++++++++++++++++++++++++++++++++++++++++
+>>   5 files changed, 287 insertions(+)
+>>   create mode 100644 drivers/acpi/plat/Makefile
+>>   create mode 100644 drivers/acpi/plat/arm-core.c
+>>
+>> diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
+>> index c186f5b..e9444e4 100644
+>> --- a/arch/arm64/include/asm/acpi.h
+>> +++ b/arch/arm64/include/asm/acpi.h
+>> @@ -19,6 +19,43 @@
+>>   #ifndef _ASM_ARM_ACPI_H
+>>   #define _ASM_ARM_ACPI_H
+>>
+>> +#include <asm/cacheflush.h>
+>> +
+>> +#include <linux/init.h>
+>> +
+>> +#define COMPILER_DEPENDENT_INT64	long long
+>> +#define COMPILER_DEPENDENT_UINT64	unsigned long long
+>> +
+>> +/*
+>> + * Calling conventions:
+>> + *
+>> + * ACPI_SYSTEM_XFACE        - Interfaces to host OS (handlers, threads)
+>> + * ACPI_EXTERNAL_XFACE      - External ACPI interfaces
+>> + * ACPI_INTERNAL_XFACE      - Internal ACPI interfaces
+>> + * ACPI_INTERNAL_VAR_XFACE  - Internal variable-parameter list interfaces
+>> + */
+>> +#define ACPI_SYSTEM_XFACE
+>> +#define ACPI_EXTERNAL_XFACE
+>> +#define ACPI_INTERNAL_XFACE
+>> +#define ACPI_INTERNAL_VAR_XFACE
+>> +
+>> +/* Asm macros */
+>> +#define ACPI_FLUSH_CPU_CACHE() flush_cache_all()
+> Well, you may need to check the following environments defined in <acpi/platform/aclinux.h> is sufficient for ARM targets:
+> 49 #define ACPI_USE_SYSTEM_CLIBRARY
+> 50 #define ACPI_USE_DO_WHILE_0
+> 51 #define ACPI_MUTEX_TYPE             ACPI_BINARY_SEMAPHORE
 >
-> That probably would make Greg happier.
+> 70 #define ACPI_MACHINE_WIDTH          BITS_PER_LONG
+> Will this zap IO addresses on ARM32 platforms?
 
-Putting my initial reporter hat on, USB OHCI is
-completely broken in lk 3.13.0 rc1 and rc2 for AT91
-family members. So it is difficult to make the
-situation worse. IMO the whole 4 patches should go
-in, since it only impacts that family. Also the kernel
-is more than a month away from release. Perhaps the
-naysayers should be looking around for whatever else
-the "of/irq: Pass trigger type in IRQ resource flags"
-patch has broken.
+In this patch set, we only implemented ACPI for ARM64, and ARM32 is
+not included in this patch set.
 
-Doug Gilbert
+My bad, sorry for the vague changelog.
 
+> And following default settings in <acpi/platform/acenv.h> and <acpi/acxxx.h> is sufficient for ARM targets:
+> 179 #if defined (__IA64__) || defined (__ia64__)
+> 180 #define ACPI_MISALIGNMENT_NOT_SUPPORTED
+> 181 #endif
+> Will this cause any exceptions on ARM by executing ACPICA name functions?
+>
+> 444 #if ACPI_MACHINE_WIDTH == 64
+> 445 #define ACPI_USE_NATIVE_DIVIDE  /* Use compiler native 64-bit divide */
+> 446 #endif
+> I think you may see build breakage on ARM32 as you haven't implemented the following ACPICA macros for ARM:
+> 67 #define ACPI_DIV_64_BY_32(n_hi, n_lo, d32, q32, r32)
+> 74 #define ACPI_SHIFT_RIGHT_64(n_hi, n_lo)
+> Have you tested this yet?
+
+Yes, we tested on ARM32 and it works fine on linaro-acpi, but patches
+for ARM32 is not sent out for upstream yet, that's why you can't see
+the code you needed.
+
+
+>
+> I'm not sure if all global lock code blocks are not referenced by ACPI_REDUCED_HARDWARE and I'm not sure what mechanism is implemented on ARM ACPI platforms to offer the synchronization mechanism between firmware and OSPM.  So you may need to implement the following synchronization protocol in <asm/acpi.h>:
+> 58 #define ACPI_ACQUIRE_GLOBAL_LOCK(facs, Acq)
+> 61 #define ACPI_RELEASE_GLOBAL_LOCK(facs, Acq)
+
+In reduced hardware mode, No hardware resource sharing between
+OSPM and other asynchronous operating environments, such as
+UEFI Runtime Services or System Management Mode. (The Global Lock
+is not supported)
+  
+please refer to chapter 3.11.1 of ACPI 5.0.
+
+
+>
+> I only reviewed the ACPICA stuffs in <asm/acpi.h>, I didn't take a look at your Linux ACPI stuff in <asm/acpi.h>.  You may need more instructions on the porting issues from Linux ACPI guys.
+
+Yes, I will. Thank you for the review and guidance, and you are the expert
+for ACPICA, we need your instructions too
+
+Thanks
+Hanjun
 
