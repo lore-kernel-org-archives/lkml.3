@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884Ab3LDGoW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 01:44:22 -0500
-Received: from mga02.intel.com ([134.134.136.20]:11972 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753300Ab3LDGoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753546Ab3LDGoT (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 4 Dec 2013 01:44:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,822,1378882800"; 
-   d="scan'208";a="446513959"
-From: Andi Kleen <andi@firstfloor.org>
-To: "David E. Box" <david.e.box@linux.intel.com>
-Cc: mjg59@srcf.ucam.org, rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCHv2 1/2] New Driver for IOSF-SB MBI access on Intel SOCs
-References: <1385100357-5459-1-git-send-email-david.e.box@linux.intel.com>
-	<1386115178-7559-1-git-send-email-david.e.box@linux.intel.com>
-	<1386115178-7559-2-git-send-email-david.e.box@linux.intel.com>
-Date: Tue, 03 Dec 2013 22:44:18 -0800
-In-Reply-To: <1386115178-7559-2-git-send-email-david.e.box@linux.intel.com>
-	(David E. Box's message of "Tue, 3 Dec 2013 15:59:37 -0800")
-Message-ID: <877gblcdz1.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:43747 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238Ab3LDGoR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 01:44:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+X-Originating-IP: [111.240.61.77]
+In-Reply-To: <1386125959.1974.309@driftwood>
+References: <1384589723.7840.1.camel@phoenix>
+	<1386125959.1974.309@driftwood>
+Date: Wed, 4 Dec 2013 14:44:14 +0800
+Message-ID: <CAFRkauAzR=BqJGrMzN0i-tvi5mcQvyB9Kihk0YvxMpk=SWGvFA@mail.gmail.com>
+Subject: Re: [PATCH] devtmpfs: Calling delete_path() only when necessary
+From: Axel Lin <axel.lin@ingics.com>
+To: Rob Landley <rob@landley.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Kay Sievers <kay.sievers@vrfy.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"David E. Box" <david.e.box@linux.intel.com> writes:
->  
-> +config X86_IOSF_MBI
-> +	tristate "IOSF-SB MailBox Interface access support for Intel
-> SOCs"
+2013/12/4 Rob Landley <rob@landley.net>:
+> On 11/16/2013 02:15:23 AM, Axel Lin wrote:
+>>
+>> The deleted variable is always 1 in current code.
+>> Initialize deleted variable to be 0, so delete_path() will be called only
+>> when
+>> necessary.
+>>
+>> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+>
+>
+> I'm not seeing this in linux-next, or a reply on the web archive. Assuming
+> nobody's objected to this, you might want to forward it to
+> trivial@kernel.org.
+>
+> That said, you could describe what it _does_ a little more?
 
-This is only implicitly used by other drivers, right?
+I was expecting Greg to pick up this patch.
 
-Please make it not user visible (drop the string after tristate), as users 
-will not know when to enable it.
+I thought the description is pretty clear.
+What the patch does is changing the init value of deleted variable to 0.
+The intention of this change is to avoid unnecessary delete_path() call.
 
-The other drivers using it should always select it instead.
+Hi Greg,
+Would you pick up this patch?
+If a re-send or a v2 is required, please just let me know.
 
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+Thanks,
+Axel
