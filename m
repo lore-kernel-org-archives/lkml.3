@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798Ab3LDI1z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 03:27:55 -0500
-Received: from nm45-vm5.bullet.mail.gq1.yahoo.com ([67.195.87.163]:24816 "HELO
-	nm45-vm5.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754383Ab3LDI1x convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 03:27:53 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 226910.55490.bm@omp1031.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=LdzdcoSQEoJbLHADNfhYvUnIecjeF5UEmhY/AcFaZ8bEbMdMT33+vnAI8BM7s+hZpRtaUw5Kx0D1O5/1GYyACHehNIOFctQ6M/znoPNlmugMekJ2e4qFcXoWbDYtns7c111P3whZeTOX1anH5nBW/fUMg4Ofwyl/UJEeoam2H8s=;
-X-YMail-OSG: MuBAlaQVM1lpheTxVjv1SXo3h.8QWZJXuBcP47I7QXXJ3HF
- ccclxmkuwd5GxRz3ReAGpewJ2eRvF1cDTk5qpuLGU8GuXhL05B_WEOpxv6..
- a0btjNfRKMV6RCUgBQL_iK3Fa84T.XD1XazSa2AWOiA1JwTGFdwjpNLp7Hfz
- RZv5ypc8jtI07U33qlbm7WWKN0ks4fuuIrcS.ZPksCrjQoEx.uXkkhcGVsma
- CdXDqAUsMAiYtYGNpMphWfePQ.awwom0k88IMoBLxppm_AoIgRxstZQY95Mp
- hdfhsnxHvDHoTl2BW65UhKh7T8Favm9Yep79Z0chGvWg01FUV0Ml0diVRHVR
- WWVVoFsQ325UPR.0I9RmWX9khCoY7tr86bntapuENKZcKMkSoQOmxB.2H82x
- eaFMa8QPX_x9FgL8UZ4WS5hcvxrqIJIAvCCIPhvt6OtQQMYT.tWuDCyMW6GR
- JurlSZ1Dm7iLyf..SwLGobRhTRLd_ERuigW6Px3N9ymzveG1PI5cqnPZRucV
- v8vE3ENGOeqjV3YGmeQDY.9DX.ySXfIYZyJuP025n3r9_gY.xyr7LpOTHChw
- uO7yz3KFE3EGWyZ37pg--
-X-Rocket-MIMEInfo: 002.001,SSB0aG91Z2ggaXQgd291bGQgYmUgY29uZmlndXJhYmxlIHNvbWUgd2hlcmUgaW4ga2VybmVsCgoKCgoKT24gV2VkbmVzZGF5LCBEZWNlbWJlciA0LCAyMDEzIDE6MjUgUE0sIFJpY2hhcmQgV2VpbmJlcmdlciA8cmljaGFyZC53ZWluYmVyZ2VyQGdtYWlsLmNvbT4gd3JvdGU6Ck9uIFdlZCwgRGVjIDQsIDIwMTMgYXQgODo0NiBBTSwgU3VraSBCdXJ5YW5pIDxzdWtpYnVyeWFuaUB5YWhvby5jb20.IHdyb3RlOgo.IGhpLAo.Cj4gaSBoYXZlIGZldyBjaGFuZ2VzIGluIG15IG10ZCBwYXJ0aXRpb25zLCBpIHdhbnQBMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.167.602
-References: <1386143213.75864.YahooMailNeo@web163902.mail.gq1.yahoo.com> <CAFLxGvy55j+6T0jsKwThUdVxSkDWdBErVWE-MW+4ZKwPO-eHrA@mail.gmail.com>
-Message-ID: <1386145673.59745.YahooMailNeo@web163904.mail.gq1.yahoo.com>
-Date: Wed, 4 Dec 2013 00:27:53 -0800 (PST)
-From: Suki Buryani <sukiburyani@yahoo.com>
-Reply-To: Suki Buryani <sukiburyani@yahoo.com>
-Subject: Re: How to change erasesize of a partition
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "uclinux-dev@uclinux.org" <uclinux-dev@uclinux.org>
-In-Reply-To: <CAFLxGvy55j+6T0jsKwThUdVxSkDWdBErVWE-MW+4ZKwPO-eHrA@mail.gmail.com>
+	id S1754815Ab3LDIaI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 03:30:08 -0500
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:60090 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586Ab3LDIaG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 03:30:06 -0500
+Date: Wed, 4 Dec 2013 08:30:01 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Andres Salomon <dilinger@queued.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] mfd: Stop setting refcounting pointers in original
+ mfd_cell arrays
+Message-ID: <20131204083001.GD7469@lee--X1>
+References: <1383037384-30079-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1383037384-30079-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I though it would be configurable some where in kernel
+On Tue, 29 Oct 2013, Geert Uytterhoeven wrote:
 
+> Commit 1e29af62f2b285bd18685da93c3ce8c33ca2d1db ("mfd: Add refcounting
+> support to mfd_cells") had to drop the "const" keyword on the "cell"
+> parameter of mfd_add_devices(), as it added the refcounting pointers
+> to the objects of the passed mfd_cell array itself.
+> 
+> However, the mfd core code operates on copies of the mfd_cell objects,
+> so there's no need to modify the originally passed objects.
+> 
+> Hence, move the setting of the refcounting pointers from mfd_add_devices()
+> to mfd_platform_add_cell(), where the copy of the mfd_cell objects is made.
+> mfd_clone_cell() can just pass (a copy of) the original usage_count
+> pointer.
+> 
+> This allows to make the "cell" parameter of mfd_add_devices() "const"
+> again, and avoids future race conditions when registering multiple
+> instances of the same device in parallel.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+> Ever since this "const" keyword was removed, I was wondering what was
+> really going on with these reference counts. My main use case involved
+> multiple instances of the same device, where the registration of each
+> successive instance would overwrite the refcounting pointer of the
+> previous one.
+> Finally I found some time to dive into it, and create this patch.
+> If it is accepted, I'll create a follow-up patch to add
+> "const" keywords to the various mfd_cell arrays.
+> 
+> Note that there's another issue in mfd_add_devices(): if the first call to
+> mfd_add_device() fails, the array of atomic_t objects will never be freed,
+> as no child devices have been registered to the parent yet, and thus
+> mfd_remove_devices() won't find anything to remove nor free.
+> 
+>  drivers/mfd/mfd-core.c   |   17 +++++++++--------
+>  include/linux/mfd/core.h |    2 +-
+>  2 files changed, 10 insertions(+), 9 deletions(-)
 
-
-
-
-On Wednesday, December 4, 2013 1:25 PM, Richard Weinberger <richard.weinberger@gmail.com> wrote:
-On Wed, Dec 4, 2013 at 8:46 AM, Suki Buryani <sukiburyani@yahoo.com> wrote:
-> hi,
->
-> i have few changes in my mtd partitions, i want to change the erasesize of a partition. can any one tell me where i should look to change erasesize of mtd3...
-
-The erase size is defined by the MTD device, you cannot change it.
+Hmm... I didn't see my reply to this, but it has been applied for a
+while.
 
 -- 
-Thanks,
-//richard
-
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
