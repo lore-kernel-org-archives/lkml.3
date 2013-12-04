@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274Ab3LDBv7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 20:51:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49893 "EHLO mx1.redhat.com"
+	id S1755735Ab3LDB4r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 20:56:47 -0500
+Received: from mail.fpasia.hk ([202.130.89.98]:51216 "EHLO fpa01n0.fpasia.hk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754373Ab3LDBv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 20:51:58 -0500
-Date: Wed, 4 Dec 2013 09:51:27 +0800
-From: Baoquan He <bhe@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: mjg59@srcf.ucam.org, greg@kroah.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com, hpa@zytor.com
-Subject: Re: [PATCH 6/6] kexec: Support for Kexec on panic using new system
- call
-Message-ID: <20131204015127.GC3298@localhost.localdomain>
-References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
- <1384969851-7251-7-git-send-email-vgoyal@redhat.com>
- <20131128112816.GC4318@dhcp-16-252.nay.redhat.com>
- <20131202153037.GD18642@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131202153037.GD18642@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754244Ab3LDB4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Dec 2013 20:56:37 -0500
+From: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+To: peter.chen@freescale.com
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chris Ruehl <chris.ruehl@gtsys.com.hk>
+Subject: [PATCH 3/3 v5] usb: chipidea: put hw_phymode_configure before  ci_usb_phy_init
+Date: Wed,  4 Dec 2013 09:56:19 +0800
+Message-Id: <1386122179-4158-3-git-send-email-chris.ruehl@gtsys.com.hk>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1386122179-4158-1-git-send-email-chris.ruehl@gtsys.com.hk>
+References: <1386122179-4158-1-git-send-email-chris.ruehl@gtsys.com.hk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/13 at 10:30am, Vivek Goyal wrote:
-> On Thu, Nov 28, 2013 at 07:28:16PM +0800, Baoquan He wrote:
-> 
-> [..]
-> > > +int crash_copy_backup_region(struct kimage *image)
-> > > +{
-> > 
-> > Why need this func be called, backup region has been added into crash
-> > segment by kexec_add_buffer, and then buffer copy is done in
-> > kimage_load_crash_segment. I think this copy is handled twice. Please
-> > correct me if I am wrong.
-> > 
-> 
-> Hi Bao,
-> 
-> kexec_add_buffer() will copy the backup region but it will happen when
-> crash kernel is loaded. We want snapshot of backup region at the time
-> of crash and that's why this second call to copy backup region and it
-> is executed after the crash.
+usb: chipidea: put hw_phymode_configure before ci_usb_phy_init
 
-Did we do this before? And will this region  be changed after 1st kernel
-boot
+hw_phymode_configure configures the PORTSC registers and allow the
+following phy_inits to operate on the right parameters. This fix a problem
+where the UPLI (ISP1504) could not be detected, because the Viewport was not
+available and read the viewport return 0's only.
 
+Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+Acked-by: Peter Chen <peter.chen@freescale.com>
+---
+ drivers/usb/chipidea/core.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> 
-> Thanks
-> Vivek
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
+diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
+index 2834801..43897dd 100644
+--- a/drivers/usb/chipidea/core.c
++++ b/drivers/usb/chipidea/core.c
+@@ -564,6 +564,8 @@ static int ci_hdrc_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
++	hw_phymode_configure(ci);
++
+ 	ret = ci_usb_phy_init(ci);
+ 	if (ret) {
+ 		dev_err(dev, "unable to init phy: %d\n", ret);
+@@ -581,8 +583,6 @@ static int ci_hdrc_probe(struct platform_device *pdev)
+ 
+ 	ci_get_otg_capable(ci);
+ 
+-	hw_phymode_configure(ci);
+-
+ 	dr_mode = ci->platdata->dr_mode;
+ 	/* initialize role(s) before the interrupt is requested */
+ 	if (dr_mode == USB_DR_MODE_OTG || dr_mode == USB_DR_MODE_HOST) {
+-- 
+1.7.10.4
+
