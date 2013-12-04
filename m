@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab3LDDJV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Dec 2013 22:09:21 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49856 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753830Ab3LDDJQ (ORCPT
+	id S1755434Ab3LDDJr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Dec 2013 22:09:47 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:64767 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753830Ab3LDDJp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Dec 2013 22:09:16 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <529E9CA6.5040200@jp.fujitsu.com>
-Date: Wed, 04 Dec 2013 12:08:22 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Tue, 3 Dec 2013 22:09:45 -0500
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: "H. Peter Anvin" <hpa@linux.intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Borislav Petkov <bp@alien8.de>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jingbai Ma <jingbai.ma@hp.com>, Jerry Hoemann <jerry.hoemann@hp.com>
-Subject: Re: [PATCH v9] x86, apic, kexec, Documentation: Add disable_cpu_apic
- kernel parameter
-References: <529D34AA.1000809@jp.fujitsu.com> <20131203152536.GE4251@redhat.com>
-In-Reply-To: <20131203152536.GE4251@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <87fvq9cwlk.fsf@tassilo.jf.intel.com>
+References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
+	<87fvq9cwlk.fsf@tassilo.jf.intel.com>
+Date: Tue, 3 Dec 2013 19:09:44 -0800
+Message-ID: <CAMEtUuzweYxqwoaYH+J5a2uRM+PFcBH+Pb8Z_ALPUMp+QFz1tQ@mail.gmail.com>
+Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/04 0:25), Vivek Goyal wrote:
-> On Tue, Dec 03, 2013 at 10:32:26AM +0900, HATAYAMA Daisuke wrote:
+On Tue, Dec 3, 2013 at 4:01 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> Alexei Starovoitov <ast@plumgrid.com> writes:
 >
-> [..]
->>
->> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->> index 50680a5..dd77bec 100644
->> --- a/Documentation/kernel-parameters.txt
->> +++ b/Documentation/kernel-parameters.txt
->> @@ -774,6 +774,15 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>   	disable=	[IPV6]
->>   			See Documentation/networking/ipv6.txt.
->>
->> +	disable_cpu_apicid= [X86,APIC,KEXEC,SMP]
+> Can you do some performance comparison compared to e.g. ktap?
+> How much faster is it?
+
+imo the most interesting ktap scripts (like kmalloc-top.kp) need
+tables and timers.
+tables are almost ready for prime time, but timers I prefer to keep
+out of kernel.
+I would like bpf filter to fill tables with interesting data in kernel
+up to predefined limit
+and periodically read and clear the tables from userspace.
+This way I will be able to do nettop.stp, iotop.stp like programs.
+So I'm still thinking what should be clean kernel/user interface for
+bpf-defined tables.
+Format of keys and elements of the table is defined within bpf program.
+During load of bpf program, the tables are allocated and bpf program
+can now lookup/update into them. At the same time corresponding
+userspace program can read tables of this particular bpf program over
+netlink.
+Creating its own debugfs files for every filter feels too slow and
+feature limited, since files are all or nothing interface. Netlink
+access to bpf tables feels cleaner. Userspace will use libmnl to
+access them. Other ideas?
+
+In the mean time I'll do some simple
+  trace probe:xx { print }
+performance test…
+
+> While it sounds interesting, I would strongly advise to make this
+> capability only available to root. Traditionally lots of complex byte
+> code languages which were designed to be "safe" and verifiable weren't
+> really. e.g. i managed to crash things with "safe" systemtap multiple
+> times. And we all know what happened to Java.
 >
-> Hi Hatayama,
->
-> We are almost there. A minor nit. Why have we specified KEXEC here. This
-> parameter disabled_cpu_apicid does not seem to dependon CONFIG_KEXEC?
->
-> Jerry, this patch looks good to me. Does it work on your system?
->
+> So the likelyhood of this having some hole somewhere (either in
+> the byte code or in some library function) is high.
 
-Because primary user for the option is currently kexec/kdump only.
-
-I referred to acpi_rsdp description:
-
-         acpi_rsdp=      [ACPI,EFI,KEXEC]
-                         Pass the RSDP address to the kernel, mostly used
-                         on machines running EFI runtime service to boot the
-                         second kernel for kdump.
-
--- 
-Thanks.
-HATAYAMA, Daisuke
-
+Tracing filters are for root only today and should stay this way.
+As far as safety of bpf… hard to argue systemtap point ;)
+Though existing bpf is generally accepted to be safe.
+extended bpf needs time to prove itself.
