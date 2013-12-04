@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932889Ab3LDPlv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 10:41:51 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58321 "EHLO
+	id S932906Ab3LDPlz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 10:41:55 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58326 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932700Ab3LDPls (ORCPT
+	with ESMTP id S932700Ab3LDPlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 10:41:48 -0500
-Date: Wed, 4 Dec 2013 07:40:52 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-0iah65pq796ezbk5u1lzwy1k@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, stfomichev@yandex-team.ru, adrian.hunter@intel.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, stfomichev@yandex-team.ru, dsahern@gmail.com,
-        adrian.hunter@intel.com, tglx@linutronix.de
+	Wed, 4 Dec 2013 10:41:51 -0500
+Date: Wed, 4 Dec 2013 07:41:31 -0800
+From: tip-bot for Dongsheng Yang <tipbot@zytor.com>
+Message-ID: <tip-6305edfc4079668ce02e360a6e5aeea88b9dd279@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, peter@hurleysoftware.com, tglx@linutronix.de,
+        yangds.fnst@cn.fujitsu.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, tglx@linutronix.de, peter@hurleysoftware.com,
+        yangds.fnst@cn.fujitsu.com
+In-Reply-To: <1385998008-6851-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+References: <1385998008-6851-1-git-send-email-yangds.fnst@cn.fujitsu.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf timechart: Introduce tool struct
-Git-Commit-ID: 985b12e633246750b5424f0a28d5f8cea04de07a
+Subject: [tip:perf/core] perf tools:
+  Correct the message in feature-libnuma checking.
+Git-Commit-ID: 6305edfc4079668ce02e360a6e5aeea88b9dd279
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,608 +30,45 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 04 Dec 2013 07:41:00 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 04 Dec 2013 07:41:37 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  985b12e633246750b5424f0a28d5f8cea04de07a
-Gitweb:     http://git.kernel.org/tip/985b12e633246750b5424f0a28d5f8cea04de07a
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 28 Nov 2013 11:25:19 -0300
+Commit-ID:  6305edfc4079668ce02e360a6e5aeea88b9dd279
+Gitweb:     http://git.kernel.org/tip/6305edfc4079668ce02e360a6e5aeea88b9dd279
+Author:     Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+AuthorDate: Mon, 2 Dec 2013 10:26:48 -0500
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 2 Dec 2013 09:22:46 -0300
+CommitDate: Mon, 2 Dec 2013 09:26:39 -0300
 
-perf timechart: Introduce tool struct
+perf tools: Correct the message in feature-libnuma checking.
 
-To avoid having all those global variables and to use the interface to
-event processing that is based on passing a 'perf_tool' struct that
-should be embedded in a per tool specific struct passed to all the
-sample processing callbacks.
+The package required for numa is named numactl-devel in Fedora or RHEL,
+and libnuma-devel in OpenSuSE, and libnuma-dev in Ubuntu.
 
-There are some more globals to move, next patches will do it.
+This patch corrects the package name in warning message in
+feature-libnuma checking.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-0iah65pq796ezbk5u1lzwy1k@git.kernel.org
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Acked-by: Peter Hurley <peter@hurleysoftware.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>
+Link: http://lkml.kernel.org/r/1385998008-6851-1-git-send-email-yangds.fnst@cn.fujitsu.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-timechart.c | 216 ++++++++++++++++++++++-------------------
- 1 file changed, 114 insertions(+), 102 deletions(-)
+ tools/perf/config/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 680632d..e2d62f1 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -41,19 +41,18 @@
- #define SUPPORT_OLD_POWER_EVENTS 1
- #define PWR_EVENT_EXIT -1
- 
--static int proc_num = 15;
--
--static unsigned int	numcpus;
--static u64		min_freq;	/* Lowest CPU frequency seen */
--static u64		max_freq;	/* Highest CPU frequency seen */
--static u64		turbo_frequency;
--
--static u64		first_time, last_time;
--
--static bool		power_only;
--static bool		tasks_only;
--static bool		with_backtrace;
--
-+struct timechart {
-+	struct perf_tool	tool;
-+	int			proc_num;
-+	unsigned int		numcpus;
-+	u64			min_freq,	/* Lowest CPU frequency seen */
-+				max_freq,	/* Highest CPU frequency seen */
-+				turbo_frequency,
-+				first_time, last_time;
-+	bool			power_only,
-+				tasks_only,
-+				with_backtrace;
-+};
- 
- struct per_pidcomm;
- struct cpu_sample;
-@@ -326,7 +325,7 @@ static void c_state_end(int cpu, u64 timestamp)
- 	power_events = pwr;
- }
- 
--static void p_state_change(int cpu, u64 timestamp, u64 new_freq)
-+static void p_state_change(struct timechart *tchart, int cpu, u64 timestamp, u64 new_freq)
- {
- 	struct power_event *pwr;
- 
-@@ -345,21 +344,21 @@ static void p_state_change(int cpu, u64 timestamp, u64 new_freq)
- 	pwr->next = power_events;
- 
- 	if (!pwr->start_time)
--		pwr->start_time = first_time;
-+		pwr->start_time = tchart->first_time;
- 
- 	power_events = pwr;
- 
- 	cpus_pstate_state[cpu] = new_freq;
- 	cpus_pstate_start_times[cpu] = timestamp;
- 
--	if ((u64)new_freq > max_freq)
--		max_freq = new_freq;
-+	if ((u64)new_freq > tchart->max_freq)
-+		tchart->max_freq = new_freq;
- 
--	if (new_freq < min_freq || min_freq == 0)
--		min_freq = new_freq;
-+	if (new_freq < tchart->min_freq || tchart->min_freq == 0)
-+		tchart->min_freq = new_freq;
- 
--	if (new_freq == max_freq - 1000)
--			turbo_frequency = max_freq;
-+	if (new_freq == tchart->max_freq - 1000)
-+		tchart->turbo_frequency = tchart->max_freq;
- }
- 
- static void sched_wakeup(int cpu, u64 timestamp, int waker, int wakee,
-@@ -506,36 +505,40 @@ exit:
- 	return p;
- }
- 
--typedef int (*tracepoint_handler)(struct perf_evsel *evsel,
-+typedef int (*tracepoint_handler)(struct timechart *tchart,
-+				  struct perf_evsel *evsel,
- 				  struct perf_sample *sample,
- 				  const char *backtrace);
- 
--static int process_sample_event(struct perf_tool *tool __maybe_unused,
-+static int process_sample_event(struct perf_tool *tool,
- 				union perf_event *event,
- 				struct perf_sample *sample,
- 				struct perf_evsel *evsel,
--				struct machine *machine __maybe_unused)
-+				struct machine *machine)
- {
-+	struct timechart *tchart = container_of(tool, struct timechart, tool);
-+
- 	if (evsel->attr.sample_type & PERF_SAMPLE_TIME) {
--		if (!first_time || first_time > sample->time)
--			first_time = sample->time;
--		if (last_time < sample->time)
--			last_time = sample->time;
-+		if (!tchart->first_time || tchart->first_time > sample->time)
-+			tchart->first_time = sample->time;
-+		if (tchart->last_time < sample->time)
-+			tchart->last_time = sample->time;
- 	}
- 
--	if (sample->cpu > numcpus)
--		numcpus = sample->cpu;
-+	if (sample->cpu > tchart->numcpus)
-+		tchart->numcpus = sample->cpu;
- 
- 	if (evsel->handler != NULL) {
- 		tracepoint_handler f = evsel->handler;
--		return f(evsel, sample, cat_backtrace(event, sample, machine));
-+		return f(tchart, evsel, sample, cat_backtrace(event, sample, machine));
- 	}
- 
- 	return 0;
- }
- 
- static int
--process_sample_cpu_idle(struct perf_evsel *evsel,
-+process_sample_cpu_idle(struct timechart *tchart __maybe_unused,
-+			struct perf_evsel *evsel,
- 			struct perf_sample *sample,
- 			const char *backtrace __maybe_unused)
- {
-@@ -550,19 +553,21 @@ process_sample_cpu_idle(struct perf_evsel *evsel,
- }
- 
- static int
--process_sample_cpu_frequency(struct perf_evsel *evsel,
-+process_sample_cpu_frequency(struct timechart *tchart,
-+			     struct perf_evsel *evsel,
- 			     struct perf_sample *sample,
- 			     const char *backtrace __maybe_unused)
- {
- 	u32 state = perf_evsel__intval(evsel, sample, "state");
- 	u32 cpu_id = perf_evsel__intval(evsel, sample, "cpu_id");
- 
--	p_state_change(cpu_id, sample->time, state);
-+	p_state_change(tchart, cpu_id, sample->time, state);
- 	return 0;
- }
- 
- static int
--process_sample_sched_wakeup(struct perf_evsel *evsel,
-+process_sample_sched_wakeup(struct timechart *tchart __maybe_unused,
-+			    struct perf_evsel *evsel,
- 			    struct perf_sample *sample,
- 			    const char *backtrace)
- {
-@@ -575,7 +580,8 @@ process_sample_sched_wakeup(struct perf_evsel *evsel,
- }
- 
- static int
--process_sample_sched_switch(struct perf_evsel *evsel,
-+process_sample_sched_switch(struct timechart *tchart __maybe_unused,
-+			    struct perf_evsel *evsel,
- 			    struct perf_sample *sample,
- 			    const char *backtrace)
- {
-@@ -590,7 +596,8 @@ process_sample_sched_switch(struct perf_evsel *evsel,
- 
- #ifdef SUPPORT_OLD_POWER_EVENTS
- static int
--process_sample_power_start(struct perf_evsel *evsel,
-+process_sample_power_start(struct timechart *tchart __maybe_unused,
-+			   struct perf_evsel *evsel,
- 			   struct perf_sample *sample,
- 			   const char *backtrace __maybe_unused)
- {
-@@ -602,7 +609,8 @@ process_sample_power_start(struct perf_evsel *evsel,
- }
- 
- static int
--process_sample_power_end(struct perf_evsel *evsel __maybe_unused,
-+process_sample_power_end(struct timechart *tchart __maybe_unused,
-+			 struct perf_evsel *evsel __maybe_unused,
- 			 struct perf_sample *sample,
- 			 const char *backtrace __maybe_unused)
- {
-@@ -611,14 +619,15 @@ process_sample_power_end(struct perf_evsel *evsel __maybe_unused,
- }
- 
- static int
--process_sample_power_frequency(struct perf_evsel *evsel,
-+process_sample_power_frequency(struct timechart *tchart,
-+			       struct perf_evsel *evsel,
- 			       struct perf_sample *sample,
- 			       const char *backtrace __maybe_unused)
- {
- 	u64 cpu_id = perf_evsel__intval(evsel, sample, "cpu_id");
- 	u64 value = perf_evsel__intval(evsel, sample, "value");
- 
--	p_state_change(cpu_id, sample->time, value);
-+	p_state_change(tchart, cpu_id, sample->time, value);
- 	return 0;
- }
- #endif /* SUPPORT_OLD_POWER_EVENTS */
-@@ -627,12 +636,12 @@ process_sample_power_frequency(struct perf_evsel *evsel,
-  * After the last sample we need to wrap up the current C/P state
-  * and close out each CPU for these.
-  */
--static void end_sample_processing(void)
-+static void end_sample_processing(struct timechart *tchart)
- {
- 	u64 cpu;
- 	struct power_event *pwr;
- 
--	for (cpu = 0; cpu <= numcpus; cpu++) {
-+	for (cpu = 0; cpu <= tchart->numcpus; cpu++) {
- 		/* C state */
- #if 0
- 		pwr = zalloc(sizeof(*pwr));
-@@ -641,7 +650,7 @@ static void end_sample_processing(void)
- 
- 		pwr->state = cpus_cstate_state[cpu];
- 		pwr->start_time = cpus_cstate_start_times[cpu];
--		pwr->end_time = last_time;
-+		pwr->end_time = tchart->last_time;
- 		pwr->cpu = cpu;
- 		pwr->type = CSTATE;
- 		pwr->next = power_events;
-@@ -656,15 +665,15 @@ static void end_sample_processing(void)
- 
- 		pwr->state = cpus_pstate_state[cpu];
- 		pwr->start_time = cpus_pstate_start_times[cpu];
--		pwr->end_time = last_time;
-+		pwr->end_time = tchart->last_time;
- 		pwr->cpu = cpu;
- 		pwr->type = PSTATE;
- 		pwr->next = power_events;
- 
- 		if (!pwr->start_time)
--			pwr->start_time = first_time;
-+			pwr->start_time = tchart->first_time;
- 		if (!pwr->state)
--			pwr->state = min_freq;
-+			pwr->state = tchart->min_freq;
- 		power_events = pwr;
- 	}
- }
-@@ -718,7 +727,7 @@ static void sort_pids(void)
- }
- 
- 
--static void draw_c_p_states(void)
-+static void draw_c_p_states(struct timechart *tchart)
- {
- 	struct power_event *pwr;
- 	pwr = power_events;
-@@ -736,7 +745,7 @@ static void draw_c_p_states(void)
- 	while (pwr) {
- 		if (pwr->type == PSTATE) {
- 			if (!pwr->state)
--				pwr->state = min_freq;
-+				pwr->state = tchart->min_freq;
- 			svg_pstate(pwr->cpu, pwr->start_time, pwr->end_time, pwr->state);
- 		}
- 		pwr = pwr->next;
-@@ -833,14 +842,14 @@ static void draw_cpu_usage(void)
- 	}
- }
- 
--static void draw_process_bars(void)
-+static void draw_process_bars(struct timechart *tchart)
- {
- 	struct per_pid *p;
- 	struct per_pidcomm *c;
- 	struct cpu_sample *sample;
- 	int Y = 0;
- 
--	Y = 2 * numcpus + 2;
-+	Y = 2 * tchart->numcpus + 2;
- 
- 	p = all_data;
- 	while (p) {
-@@ -922,7 +931,7 @@ static int passes_filter(struct per_pid *p, struct per_pidcomm *c)
- 	return 0;
- }
- 
--static int determine_display_tasks_filtered(void)
-+static int determine_display_tasks_filtered(struct timechart *tchart)
- {
- 	struct per_pid *p;
- 	struct per_pidcomm *c;
-@@ -932,11 +941,11 @@ static int determine_display_tasks_filtered(void)
- 	while (p) {
- 		p->display = 0;
- 		if (p->start_time == 1)
--			p->start_time = first_time;
-+			p->start_time = tchart->first_time;
- 
- 		/* no exit marker, task kept running to the end */
- 		if (p->end_time == 0)
--			p->end_time = last_time;
-+			p->end_time = tchart->last_time;
- 
- 		c = p->all;
- 
-@@ -944,7 +953,7 @@ static int determine_display_tasks_filtered(void)
- 			c->display = 0;
- 
- 			if (c->start_time == 1)
--				c->start_time = first_time;
-+				c->start_time = tchart->first_time;
- 
- 			if (passes_filter(p, c)) {
- 				c->display = 1;
-@@ -953,7 +962,7 @@ static int determine_display_tasks_filtered(void)
- 			}
- 
- 			if (c->end_time == 0)
--				c->end_time = last_time;
-+				c->end_time = tchart->last_time;
- 
- 			c = c->next;
- 		}
-@@ -962,24 +971,24 @@ static int determine_display_tasks_filtered(void)
- 	return count;
- }
- 
--static int determine_display_tasks(u64 threshold)
-+static int determine_display_tasks(struct timechart *tchart, u64 threshold)
- {
- 	struct per_pid *p;
- 	struct per_pidcomm *c;
- 	int count = 0;
- 
- 	if (process_filter)
--		return determine_display_tasks_filtered();
-+		return determine_display_tasks_filtered(tchart);
- 
- 	p = all_data;
- 	while (p) {
- 		p->display = 0;
- 		if (p->start_time == 1)
--			p->start_time = first_time;
-+			p->start_time = tchart->first_time;
- 
- 		/* no exit marker, task kept running to the end */
- 		if (p->end_time == 0)
--			p->end_time = last_time;
-+			p->end_time = tchart->last_time;
- 		if (p->total_time >= threshold)
- 			p->display = 1;
- 
-@@ -989,7 +998,7 @@ static int determine_display_tasks(u64 threshold)
- 			c->display = 0;
- 
- 			if (c->start_time == 1)
--				c->start_time = first_time;
-+				c->start_time = tchart->first_time;
- 
- 			if (c->total_time >= threshold) {
- 				c->display = 1;
-@@ -997,7 +1006,7 @@ static int determine_display_tasks(u64 threshold)
- 			}
- 
- 			if (c->end_time == 0)
--				c->end_time = last_time;
-+				c->end_time = tchart->last_time;
- 
- 			c = c->next;
- 		}
-@@ -1010,52 +1019,45 @@ static int determine_display_tasks(u64 threshold)
- 
- #define TIME_THRESH 10000000
- 
--static void write_svg_file(const char *filename)
-+static void write_svg_file(struct timechart *tchart, const char *filename)
- {
- 	u64 i;
- 	int count;
- 	int thresh = TIME_THRESH;
- 
--	numcpus++;
-+	tchart->numcpus++;
- 
--	if (power_only)
--		proc_num = 0;
-+	if (tchart->power_only)
-+		tchart->proc_num = 0;
- 
- 	/* We'd like to show at least proc_num tasks;
- 	 * be less picky if we have fewer */
- 	do {
--		count = determine_display_tasks(thresh);
-+		count = determine_display_tasks(tchart, thresh);
- 		thresh /= 10;
--	} while (!process_filter && thresh && count < proc_num);
-+	} while (!process_filter && thresh && count < tchart->proc_num);
- 
--	open_svg(filename, numcpus, count, first_time, last_time);
-+	open_svg(filename, tchart->numcpus, count, tchart->first_time, tchart->last_time);
- 
- 	svg_time_grid();
- 	svg_legenda();
- 
--	for (i = 0; i < numcpus; i++)
--		svg_cpu_box(i, max_freq, turbo_frequency);
-+	for (i = 0; i < tchart->numcpus; i++)
-+		svg_cpu_box(i, tchart->max_freq, tchart->turbo_frequency);
- 
- 	draw_cpu_usage();
--	if (proc_num)
--		draw_process_bars();
--	if (!tasks_only)
--		draw_c_p_states();
--	if (proc_num)
-+	if (tchart->proc_num)
-+		draw_process_bars(tchart);
-+	if (!tchart->tasks_only)
-+		draw_c_p_states(tchart);
-+	if (tchart->proc_num)
- 		draw_wakeups();
- 
- 	svg_close();
- }
- 
--static int __cmd_timechart(const char *output_name)
-+static int __cmd_timechart(struct timechart *tchart, const char *output_name)
- {
--	struct perf_tool perf_timechart = {
--		.comm		 = process_comm_event,
--		.fork		 = process_fork_event,
--		.exit		 = process_exit_event,
--		.sample		 = process_sample_event,
--		.ordered_samples = true,
--	};
- 	const struct perf_evsel_str_handler power_tracepoints[] = {
- 		{ "power:cpu_idle",		process_sample_cpu_idle },
- 		{ "power:cpu_frequency",	process_sample_cpu_frequency },
-@@ -1073,7 +1075,7 @@ static int __cmd_timechart(const char *output_name)
- 	};
- 
- 	struct perf_session *session = perf_session__new(&file, false,
--							 &perf_timechart);
-+							 &tchart->tool);
- 	int ret = -EINVAL;
- 
- 	if (session == NULL)
-@@ -1088,24 +1090,24 @@ static int __cmd_timechart(const char *output_name)
- 		goto out_delete;
- 	}
- 
--	ret = perf_session__process_events(session, &perf_timechart);
-+	ret = perf_session__process_events(session, &tchart->tool);
- 	if (ret)
- 		goto out_delete;
- 
--	end_sample_processing();
-+	end_sample_processing(tchart);
- 
- 	sort_pids();
- 
--	write_svg_file(output_name);
-+	write_svg_file(tchart, output_name);
- 
- 	pr_info("Written %2.1f seconds of trace to %s.\n",
--		(last_time - first_time) / 1000000000.0, output_name);
-+		(tchart->last_time - tchart->first_time) / 1000000000.0, output_name);
- out_delete:
- 	perf_session__delete(session);
- 	return ret;
- }
- 
--static int __cmd_record(int argc, const char **argv)
-+static int timechart__record(struct timechart *tchart, int argc, const char **argv)
- {
- 	unsigned int rec_argc, i, j;
- 	const char **rec_argv;
-@@ -1153,15 +1155,15 @@ static int __cmd_record(int argc, const char **argv)
- 	}
- #endif
- 
--	if (power_only)
-+	if (tchart->power_only)
- 		tasks_args_nr = 0;
- 
--	if (tasks_only) {
-+	if (tchart->tasks_only) {
- 		power_args_nr = 0;
- 		old_power_args_nr = 0;
- 	}
- 
--	if (!with_backtrace)
-+	if (!tchart->with_backtrace)
- 		backtrace_args_no = 0;
- 
- 	record_elems = common_args_nr + tasks_args_nr +
-@@ -1207,20 +1209,30 @@ parse_process(const struct option *opt __maybe_unused, const char *arg,
- int cmd_timechart(int argc, const char **argv,
- 		  const char *prefix __maybe_unused)
- {
-+	struct timechart tchart = {
-+		.tool = {
-+			.comm		 = process_comm_event,
-+			.fork		 = process_fork_event,
-+			.exit		 = process_exit_event,
-+			.sample		 = process_sample_event,
-+			.ordered_samples = true,
-+		},
-+		.proc_num = 15,
-+	};
- 	const char *output_name = "output.svg";
- 	const struct option timechart_options[] = {
- 	OPT_STRING('i', "input", &input_name, "file", "input file name"),
- 	OPT_STRING('o', "output", &output_name, "file", "output file name"),
- 	OPT_INTEGER('w', "width", &svg_page_width, "page width"),
--	OPT_BOOLEAN('P', "power-only", &power_only, "output power data only"),
--	OPT_BOOLEAN('T', "tasks-only", &tasks_only,
-+	OPT_BOOLEAN('P', "power-only", &tchart.power_only, "output power data only"),
-+	OPT_BOOLEAN('T', "tasks-only", &tchart.tasks_only,
- 		    "output processes data only"),
- 	OPT_CALLBACK('p', "process", NULL, "process",
- 		      "process selector. Pass a pid or process name.",
- 		       parse_process),
- 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
- 		    "Look for files with symbols relative to this directory"),
--	OPT_INTEGER('n', "proc-num", &proc_num,
-+	OPT_INTEGER('n', "proc-num", &tchart.proc_num,
- 		    "min. number of tasks to print"),
- 	OPT_END()
- 	};
-@@ -1230,10 +1242,10 @@ int cmd_timechart(int argc, const char **argv,
- 	};
- 
- 	const struct option record_options[] = {
--	OPT_BOOLEAN('P', "power-only", &power_only, "output power data only"),
--	OPT_BOOLEAN('T', "tasks-only", &tasks_only,
-+	OPT_BOOLEAN('P', "power-only", &tchart.power_only, "output power data only"),
-+	OPT_BOOLEAN('T', "tasks-only", &tchart.tasks_only,
- 		    "output processes data only"),
--	OPT_BOOLEAN('g', "callchain", &with_backtrace, "record callchain"),
-+	OPT_BOOLEAN('g', "callchain", &tchart.with_backtrace, "record callchain"),
- 	OPT_END()
- 	};
- 	const char * const record_usage[] = {
-@@ -1243,7 +1255,7 @@ int cmd_timechart(int argc, const char **argv,
- 	argc = parse_options(argc, argv, timechart_options, timechart_usage,
- 			PARSE_OPT_STOP_AT_NON_OPTION);
- 
--	if (power_only && tasks_only) {
-+	if (tchart.power_only && tchart.tasks_only) {
- 		pr_err("-P and -T options cannot be used at the same time.\n");
- 		return -1;
- 	}
-@@ -1254,16 +1266,16 @@ int cmd_timechart(int argc, const char **argv,
- 		argc = parse_options(argc, argv, record_options, record_usage,
- 				     PARSE_OPT_STOP_AT_NON_OPTION);
- 
--		if (power_only && tasks_only) {
-+		if (tchart.power_only && tchart.tasks_only) {
- 			pr_err("-P and -T options cannot be used at the same time.\n");
- 			return -1;
- 		}
- 
--		return __cmd_record(argc, argv);
-+		return timechart__record(&tchart, argc, argv);
- 	} else if (argc)
- 		usage_with_options(timechart_usage, timechart_options);
- 
- 	setup_pager();
- 
--	return __cmd_timechart(output_name);
-+	return __cmd_timechart(&tchart, output_name);
- }
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index f7d11a8..36e66ac 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -533,7 +533,7 @@ endif
+ 
+ ifndef NO_LIBNUMA
+   ifeq ($(feature-libnuma), 0)
+-    msg := $(warning No numa.h found, disables 'perf bench numa mem' benchmark, please install numa-libs-devel or libnuma-dev);
++    msg := $(warning No numa.h found, disables 'perf bench numa mem' benchmark, please install numactl-devel/libnuma-devel/libnuma-dev);
+     NO_LIBNUMA := 1
+   else
+     CFLAGS += -DHAVE_LIBNUMA_SUPPORT
