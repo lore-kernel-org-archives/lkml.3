@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475Ab3LDFyR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 00:54:17 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:13241 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040Ab3LDFyP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 00:54:15 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 03 Dec 2013 21:51:18 -0800
-Message-ID: <529EC2E5.5050909@nvidia.com>
-Date: Wed, 4 Dec 2013 11:21:33 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ARM: tegra: convert device tree file of Dalmore to
- use pinctrl defines
-References: <1385992502-12771-1-git-send-email-ldewangan@nvidia.com> <1385992502-12771-2-git-send-email-ldewangan@nvidia.com> <529E3A6E.1050003@wwwdotorg.org>
-In-Reply-To: <529E3A6E.1050003@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1753987Ab3LDF4M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 00:56:12 -0500
+Received: from mga01.intel.com ([192.55.52.88]:14304 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752477Ab3LDF4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 00:56:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,822,1378882800"; 
+   d="scan'208";a="444270640"
+Subject: [PATCH] locking: Giving mutex warning more precisely in case of
+ !lock->owner
+From: Chuansheng Liu <chuansheng.liu@intel.com>
+To: peterz@infradead.org, mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 Dec 2013 13:58:13 +0800
+Message-ID: <1386136693.3650.48.camel@cliu38-desktop-build>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 04 December 2013 01:39 AM, Stephen Warren wrote:
-> On 12/02/2013 06:55 AM, Laxman Dewangan wrote:
->> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> Patch description?
->
-> BTW, did you compile all the Tegra DT files before and after this
-> change, and make sure that there's zero difference between them (i.e.
-> they're identical byte-for-byte when compiled)? I don't feel like
-> manually double-checking this entire patch...
 
-I just made changes for the Dalmore only. Not touched Tegra30 and 
-Tegra20_ platform dts.
+When enabling mutex debugging, in case the imbalanced mutex_unlock()
+is called, we still get the warning like below:
+[  364.208284] DEBUG_LOCKS_WARN_ON(lock->owner != current)
 
-For Dalmore, I compare the binary before and after this change as well 
-dts generated back from dtb using dtc.
-It is same.
+But in that case, it is due to imbalanced mutex_unlock calling, and
+the lock->owner is NULL.
+
+Here we can enhance the case to give the warning as below:
+ DEBUG_LOCKS_WARN_ON(lock->owner == NULL)
+
+Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
+---
+ kernel/locking/mutex-debug.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/locking/mutex-debug.c b/kernel/locking/mutex-debug.c
+index 7e3443f..b2a1b96 100644
+--- a/kernel/locking/mutex-debug.c
++++ b/kernel/locking/mutex-debug.c
+@@ -75,7 +75,12 @@ void debug_mutex_unlock(struct mutex *lock)
+ 		return;
+ 
+ 	DEBUG_LOCKS_WARN_ON(lock->magic != lock);
+-	DEBUG_LOCKS_WARN_ON(lock->owner != current);
++
++	if (!lock->owner)
++		DEBUG_LOCKS_WARN_ON(lock->owner == NULL);
++	else
++		DEBUG_LOCKS_WARN_ON(lock->owner != current);
++
+ 	DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
+ 	mutex_clear_owner(lock);
+ }
+-- 
+1.7.9.5
+
+
+
