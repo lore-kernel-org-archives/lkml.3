@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933393Ab3LECuf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 21:50:35 -0500
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:41363 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756492Ab3LECub (ORCPT
+	id S933425Ab3LECup (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 21:50:45 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:52795 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933408Ab3LECul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 21:50:31 -0500
-Date: Wed, 4 Dec 2013 21:50:26 -0500
-From: Tejun Heo <tj@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org
-Subject: Re: [patch 7/8] mm, memcg: allow processes handling oom
- notifications to access reserves
-Message-ID: <20131205025026.GA26777@htj.dyndns.org>
-References: <20131119134007.GD20655@dhcp22.suse.cz>
- <alpine.DEB.2.02.1311192352070.20752@chino.kir.corp.google.com>
- <20131120152251.GA18809@dhcp22.suse.cz>
- <alpine.DEB.2.02.1311201917520.7167@chino.kir.corp.google.com>
- <20131128115458.GK2761@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312021504170.13465@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1312032116440.29733@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1312032118570.29733@chino.kir.corp.google.com>
- <20131204054533.GZ3556@cmpxchg.org>
- <alpine.DEB.2.02.1312041742560.20115@chino.kir.corp.google.com>
+	Wed, 4 Dec 2013 21:50:41 -0500
+Date: Wed, 4 Dec 2013 18:50:37 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Will CPU 0 be forever prohibited from NO_HZ_FULL status?
+Message-ID: <20131205025037.GM15492@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131204193957.GA2847@linux.vnet.ibm.com>
+ <20131205012053.GC6683@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1312041742560.20115@chino.kir.corp.google.com>
+In-Reply-To: <20131205012053.GC6683@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120502-0928-0000-0000-0000045563B7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Dec 05, 2013 at 02:20:55AM +0100, Frederic Weisbecker wrote:
+> On Wed, Dec 04, 2013 at 11:39:57AM -0800, Paul E. McKenney wrote:
+> > Hello, Frederic,
+> > 
+> > Just realized that I could further decrease RT latency of one of my "shut
+> > up RCU on NO_HZ_FULL CPUs" patches if I relied on CPU 0 always having
+> > a scheduling-clock tick unless the entire system is idle.  The trick
+> > is that I could then rely on CPU 0 to detect RCU CPU stall warnings,
+> > and remove the checking from the other CPUs.
+> > 
+> > Thoughts?
+> 
+> You're right on time as I'm currently working on that :)
+> So the plan is to allow timekeeping to be handled by a set of CPUs (cpu_housekeeping_mask
+> which I guess should be ~nohz_full_mask & cpu_online_mask). I think it will be better
+> for powersaving. I guess you could balance the RCU stall checks in this
+> set of housekeeping CPUs?
+> 
+> It should be very easy to make the rcu sysidle stuff to support that housekeeping set,
+> I just looked into it and all we need to do is to turn the several "cpu == tick_do_timer"
+> checks into something like is_housekeeping_cpu(cpu). And may be a few easy details, like which
+> CPU from the housekeeping set should get the kick IPI, well the first one available should be a good start,
+> of course I expect some issues with cpu hotplug.
+> But other than that, RCU sysidle detection is mostly ready to support tracking only a given subset
+> of CPUs instead of all of them. That's in fact what it already does currently by excluding the
+> fixed boot timekeeping CPU.
+> 
+> So I'm working on that and should have some patches ready soon.
 
-On Wed, Dec 04, 2013 at 05:49:04PM -0800, David Rientjes wrote:
-> That's not what this series is addressing, though, and in fact it's quite 
-> the opposite.  It acknowledges that userspace oom handlers need to 
-> allocate and that anything else would be too difficult to maintain 
-> (thereby agreeing with the above), so we must set aside memory that they 
-> are exclusively allowed to access.  For the vast majority of users who 
-> will not use userspace oom handlers, they can just use the default value 
-> of memory.oom_reserve_in_bytes == 0 and they incur absolutely no side-
-> effects as a result of this series.
+Thank you for the info!  Nice to know that RCU will continue to be able
+to rely on there being at least one housekeeping CPU.  ;-)
 
-Umm.. without delving into details, aren't you basically creating a
-memory cgroup inside a memory cgroup?  Doesn't sound like a
-particularly well thought-out plan to me.
+At that point, tick_nohz_full_cpu() would still be a good way for RCU
+to distinguish housekeeping CPUs from working CPUs, correct?
 
-> For those who do use userspace oom handlers, like Google, this allows us 
-> to set aside memory to allow the userspace oom handlers to kill a process, 
-> dump the heap, send a signal, drop caches, etc. when waking up.
+> In fact I just realized that all the sysidle detection infrastructure is there and working
+> but we forgot to plug it in the tick engine, and thus we are still running
+> with periodic CPU 0 even with CONFIG_NO_HZ_FULL_SYSIDLE=y. Anyway I have a few changes
+> ready to enable that, lets hope testing will be ok :)
 
-Seems kinda obvious.  Put it in a separate cgroup?  You're basically
-saying it doesn't want to be under the same memory limit as the
-processes that it's looking over.  That's like the definition of being
-in a different cgroup.
+Indeed!  ;-)
 
-Thanks.
+The CONFIG_NO_HZ_FULL_SYSIDLE=y might complicate things a bit.  But I
+guess the problem would be a corner case -- the system entered sysidle
+mode with a grace period pending, which should eventually wake up the
+corresponding grace-period kthread, which might be prevented from ever
+running due to high load or something.  If that problem arises, I will
+fix it.
 
--- 
-tejun
+So there!  ;-)
+
+							Thanx, Paul
+
