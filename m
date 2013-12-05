@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab3LEXRO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 18:17:14 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:39380 "EHLO
+	id S1755837Ab3LEXRp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 18:17:45 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39015 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754095Ab3LEXRL (ORCPT
+	with ESMTP id S1752097Ab3LEXRn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 18:17:11 -0500
-Message-ID: <52A10973.5000101@wwwdotorg.org>
-Date: Thu, 05 Dec 2013 16:17:07 -0700
+	Thu, 5 Dec 2013 18:17:43 -0500
+Message-ID: <52A10993.2020901@wwwdotorg.org>
+Date: Thu, 05 Dec 2013 16:17:39 -0700
 From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
@@ -18,10 +18,10 @@ CC: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
         grant.likely@linaro.org, devicetree@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-tegra@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/4] pinctrl: tegra: Add devicetree binding document for
- Tegra124
-References: <1386241070-4350-1-git-send-email-ldewangan@nvidia.com> <1386241070-4350-2-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1386241070-4350-2-git-send-email-ldewangan@nvidia.com>
+Subject: Re: [PATCH 3/4] ARM: tegra: select PINCTRL_TEGRA124 for Tegra124
+ SoC
+References: <1386241070-4350-1-git-send-email-ldewangan@nvidia.com> <1386241070-4350-4-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1386241070-4350-4-git-send-email-ldewangan@nvidia.com>
 X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -30,9 +30,8 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 12/05/2013 03:57 AM, Laxman Dewangan wrote:
-> This device tree binding document describes the Tegra124 pincontrol
-> DT bindings. This document lists all valid properties, names, mux
-> options of Tegra124 pins.
+> The pincontrol driver for Tegra124 is build through config
+> PINCTRL_TEGRA124. Select this config option whenever Tegra124
+> SoC is enabled.
 
-Is this a repost of what Ashwini sent a few weeks back, or V2? If V2,
-it'd be useful to know what changed...
+I already sent this patch too.
