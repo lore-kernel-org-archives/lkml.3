@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595Ab3LEUxF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 15:53:05 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:40899 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751382Ab3LEUxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 15:53:00 -0500
-Date: Thu, 5 Dec 2013 21:52:50 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Toshi Kani <toshi.kani@hp.com>, Dave Young <dyoung@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        greg@kroah.com, matt@console-pimps.org
-Subject: Re: [PATCH v4 07/12] efi: passing kexec necessary efi data via
- setup_data
-Message-ID: <20131205205250.GF14407@pd.tnic>
-References: <20131129091415.GH4186@dhcp-16-126.nay.redhat.com>
- <1386023600.1791.201.camel@misato.fc.hp.com>
- <1386034289.1791.210.camel@misato.fc.hp.com>
- <20131203015613.GB3980@dhcp-16-126.nay.redhat.com>
- <1386085140.1791.218.camel@misato.fc.hp.com>
- <20131204024610.GA3764@dhcp-16-126.nay.redhat.com>
- <1386175428.1791.225.camel@misato.fc.hp.com>
- <20131205015615.GC3736@dhcp-16-126.nay.redhat.com>
- <20131205115124.GC14407@pd.tnic>
- <1386258962.1791.268.camel@misato.fc.hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1386258962.1791.268.camel@misato.fc.hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753074Ab3LEU4N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 15:56:13 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:29133 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751414Ab3LEU4K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 15:56:10 -0500
+Date: Thu, 5 Dec 2013 15:56:07 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tony Lu <zlu@tilera.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>, <fengguang.wu@intel.com>,
+        Jamie Iles <jamie.iles@oracle.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ftrace: default to tilegx if ARCH=tile is specified
+Message-ID: <20131205155607.5b87d90e@gandalf.local.home>
+In-Reply-To: <201312052045.rB5KjrBv019932@farm-0012.internal.tilera.com>
+References: <201312052045.rB5KjrBv019932@farm-0012.internal.tilera.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 08:56:02AM -0700, Toshi Kani wrote:
-> The smbios in efi_setup_data is necessary for kexec to pass the physical
-> address of the SMBIOS table from the 1st kernel to the 2nd kernel.
+On Thu, 5 Dec 2013 15:36:54 -0500
+Tony Lu <zlu@tilera.com> wrote:
+
+> This matches the existing behavior in arch/tile/Makefile for defconfig.
 > 
-> The kernel boot sequence proceeds in the following order.  Step 2
-> requires efi.smbios to be the physical address.  However, Dave found
-> that EFI system table has a virtual address of SMBIOS in step 1.  Hence,
-> he sets it back to the physical address with the smbios in
-> efi_setup_data.  (When it is still the physical address, it simply sets
-> the same value.)
+
+If you want to pull this in through the tile tree, you can add my:
+
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+
+Or I can take it. Either way is fine with me.
+
+-- Steve
+
+> Reported-by: fengguang.wu@intel.com
+> Signed-off-by: Tony Lu <zlu@tilera.com>
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> ---
+> Chris Metcalf will push this change via the tile tree.
 > 
-> 1. efi_init() - Set efi.smbios from EFI system table
-> 2. dmi_scan_machine() - Temporary map efi.smbios to access SMBIOS table
-> 3. efi_enter_virtual_mode() - Map EFI ranges
+>  scripts/recordmcount.pl | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/scripts/recordmcount.pl b/scripts/recordmcount.pl
+> index d0da66396f62..91280b82da08 100755
+> --- a/scripts/recordmcount.pl
+> +++ b/scripts/recordmcount.pl
+> @@ -364,7 +364,8 @@ if ($arch eq "x86_64") {
+>  } elsif ($arch eq "blackfin") {
+>      $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\s__mcount\$";
+>      $mcount_adjust = -4;
+> -} elsif ($arch eq "tilegx") {
+> +} elsif ($arch eq "tilegx" || $arch eq "tile") {
+> +    # Default to the newer TILE-Gx architecture if only "tile" is given.
+>      $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\s__mcount\$";
+>      $type = ".quad";
+>      $alignment = 8;
 
-Thanks Toshi, it is all clear now.
-
-@Dave: you might want to put Toshi's explanation in the commit message
-of your patch so that we know *why* the change is needed.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
