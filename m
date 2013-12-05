@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157Ab3LEHeK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 02:34:10 -0500
-Received: from mga14.intel.com ([143.182.124.37]:38716 "EHLO mga14.intel.com"
+	id S1752568Ab3LEHgM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 02:36:12 -0500
+Received: from mga11.intel.com ([192.55.52.93]:10901 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751779Ab3LEHeI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 02:34:08 -0500
+	id S1752184Ab3LEHgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 02:36:11 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,831,1378882800"; 
-   d="scan'208";a="438930993"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [char-misc-next] mei: add 9 series PCH mei device ids
-Thread-Topic: [char-misc-next] mei: add 9 series PCH mei device ids
-Thread-Index: AQHO8XEKSg/ku3ZvTky/fxOhHc7lHZpFNLdg
-Date: Thu, 5 Dec 2013 07:34:04 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AF2461B@HASMSX106.ger.corp.intel.com>
-References: <1386068489-19511-1-git-send-email-tomas.winkler@intel.com>
- <20131205041913.GA4975@kroah.com>
-In-Reply-To: <20131205041913.GA4975@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+   d="scan'208";a="445002277"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next] mei: add 9 series PCH mei device ids
+Date: Thu,  5 Dec 2013 09:34:44 +0200
+Message-Id: <1386228884-30978-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >
-> > diff --git a/drivers/misc/mei/hw-me-regs.h b/drivers/misc/mei/hw-me-regs.h
-> > index 6c0fde5..f83bc80 100644
-> > --- a/drivers/misc/mei/hw-me-regs.h
-> > +++ b/drivers/misc/mei/hw-me-regs.h
-> > @@ -110,8 +110,12 @@
-> >  #define MEI_DEV_ID_PPT_3      0x1DBA  /* Panther Point */
-> >
-> >  #define MEI_DEV_ID_LPT        0x8C3A  /* Lynx Point */
-> > +#define MEI_DEV_ID_LPT_H      0x8C3A  /* Lynx Point H */
-> 
-> Why duplicate this #define?
+And Lynx Point H Refresh and Wildcat Point LP
+device ids.
 
-> And, now that you changed it, why keep the "old" one around, it's no
-> longer used anywhere else?
-> 
-The correct name is LPT_H so  I've just missed to remove the line, sending V2.
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+V2: remove duplicated  LPT entry
 
-Thanks
-Tomas
+ drivers/misc/mei/hw-me-regs.h | 5 ++++-
+ drivers/misc/mei/pci-me.c     | 4 +++-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/misc/mei/hw-me-regs.h b/drivers/misc/mei/hw-me-regs.h
+index 6c0fde5..66f411a 100644
+--- a/drivers/misc/mei/hw-me-regs.h
++++ b/drivers/misc/mei/hw-me-regs.h
+@@ -109,9 +109,12 @@
+ #define MEI_DEV_ID_PPT_2      0x1CBA  /* Panther Point */
+ #define MEI_DEV_ID_PPT_3      0x1DBA  /* Panther Point */
+ 
+-#define MEI_DEV_ID_LPT        0x8C3A  /* Lynx Point */
++#define MEI_DEV_ID_LPT_H      0x8C3A  /* Lynx Point H */
+ #define MEI_DEV_ID_LPT_W      0x8D3A  /* Lynx Point - Wellsburg */
+ #define MEI_DEV_ID_LPT_LP     0x9C3A  /* Lynx Point LP */
++#define MEI_DEV_ID_LPT_HR     0x8CBA  /* Lynx Point H Refresh */
++
++#define MEI_DEV_ID_WPT_LP     0x9CBA  /* Wildcat Point LP */
+ /*
+  * MEI HW Section
+  */
+diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
+index 3bfae38..7dfaa32 100644
+--- a/drivers/misc/mei/pci-me.c
++++ b/drivers/misc/mei/pci-me.c
+@@ -76,9 +76,11 @@ static DEFINE_PCI_DEVICE_TABLE(mei_me_pci_tbl) = {
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_1)},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_2)},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_3)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT)},
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_H)},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_W)},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_LP)},
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_HR)},
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_WPT_LP)},
+ 
+ 	/* required last entry */
+ 	{0, }
+-- 
+1.8.3.1
+
