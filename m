@@ -1,104 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191Ab3LEAEj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 19:04:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36375 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756160Ab3LEAEi (ORCPT
+	id S1756229Ab3LEAFv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 19:05:51 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:34744 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752805Ab3LEAFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 19:04:38 -0500
-Date: Wed, 4 Dec 2013 16:02:32 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Colin Cross <ccross@android.com>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Rogers <irogers@google.com>,
-        Serban Constantinescu <serban.constantinescu@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>, romlem@android.com,
-        David Butcher <Dave.Butcher@arm.com>
-Subject: Re: [PATCH v1 9/9] staging: android: binder: Add binder compat layer
-Message-ID: <20131205000232.GA19810@kroah.com>
-References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
- <1386180581-6710-10-git-send-email-serban.constantinescu@arm.com>
- <20131204183554.GA16693@kroah.com>
- <CAMbhsRRP=ccdMb5PNwyYab+JoMdh+rmo2qF1naEDGBFCdMz9=A@mail.gmail.com>
- <20131204214325.GA19565@kroah.com>
- <CAMbhsRSkYuNBOt57PothjUO_6=vyJQAYsLmasq4Y-QVCT7fqZA@mail.gmail.com>
- <20131204220247.GA22031@kroah.com>
- <CAMbhsRQnY6+Ahs-itSeALNQ27tsWAJT8wUtXNGZE--44URp2-A@mail.gmail.com>
+	Wed, 4 Dec 2013 19:05:46 -0500
+Message-ID: <529FC352.7090004@hitachi.com>
+Date: Thu, 05 Dec 2013 09:05:38 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMbhsRQnY6+Ahs-itSeALNQ27tsWAJT8wUtXNGZE--44URp2-A@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [RFC PATCH tip 4/5] use BPF in tracing filters
+References: <1386044930-15149-1-git-send-email-ast@plumgrid.com> <1386044930-15149-5-git-send-email-ast@plumgrid.com> <529E7BEC.70509@hitachi.com> <20131203201133.52934a02@gandalf.local.home>
+In-Reply-To: <20131203201133.52934a02@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 02:22:13PM -0800, Colin Cross wrote:
-> On Wed, Dec 4, 2013 at 2:02 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Wed, Dec 04, 2013 at 01:55:34PM -0800, Colin Cross wrote:
-> >> On Wed, Dec 4, 2013 at 1:43 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> > On Wed, Dec 04, 2013 at 12:46:42PM -0800, Colin Cross wrote:
-> >> >> On Wed, Dec 4, 2013 at 10:35 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> >> <snip>
-> >> >>
-> >> >> > And finally, is this all really needed?  Why not just fix the structures
-> >> >> > to be "correct", and then fix userspace to use the correct structures as
-> >> >> > well, thereby not needing a compat layer at all?
-> >> >>
-> >> >> Some of the binder ioctls take userspace pointers.  Are you suggesting
-> >> >> storing those pointers in a __u64 to avoid having to have a
-> >> >> compat_ioctl?
-> >> >
-> >> > Yes, that's the best way to solve the issue, right?
-> >>
-> >> It's the least code, but in exchange you lose all the type safety and
-> >> warnings when copying in and out of the pointers, as well as sparse
-> >> checking on the __user attribute.
-> >
-> > Not if you make the cast right at the beginning, when you first "touch"
-> > the data, but yes, it does take some of the type saftey away, at the
-> > expense of simpler code to mess up :)
-> >
-> >> That doesn't seem like a good tradeoff to me.  In addition it requires
-> >> modifying the existing heavily used 32 bit api, which means a
-> >> mostly-equivalent compat layer added in libbinder to support old
-> >> kernels.
-> >
-> > Wait, I thought that libbinder would have to be changed anyway here, to
-> > handle 64bit kernels (in both 32 and 64bit userspace).  Since you are
-> > already changing it, why not just "do it correctly"?
+(2013/12/04 10:11), Steven Rostedt wrote:
+> On Wed, 04 Dec 2013 09:48:44 +0900
+> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 > 
-> libbinder will need changes to support 64-bit userspace and especially
-> a mixed 64-bit and 32-bit userspace, but this patch series is only
-> addressing a pure 32-bit userspace on a 64-bit kernel.  Support for a
-> 64-bit userspace in Android is obviously going to require a future
-> version of Android including, among other things, libbinder changes.
-> As far as I know, those changes won't need to change the ioctl api,
-> only the layout of the buffers that are passed through the ioctl api.
-
-"only" means you can rearrange things at that point in time, as you will
-have to be doing that anyway :)
-
-> > Or does this patch series mean that no userspace code is changed?  Is
-> > that a "requirement" here?
+>> (2013/12/03 13:28), Alexei Starovoitov wrote:
+>>> Such filters can be written in C and allow safe read-only access to
+>>> any kernel data structure.
+>>> Like systemtap but with safety guaranteed by kernel.
+>>>
+>>> The user can do:
+>>> cat bpf_program > /sys/kernel/debug/tracing/.../filter
+>>> if tracing event is either static or dynamic via kprobe_events.
+>>>
+>>> The program can be anything as long as bpf_check() can verify its safety.
+>>> For example, the user can create kprobe_event on dst_discard()
+>>> and use logically following code inside BPF filter:
+>>>       skb = (struct sk_buff *)ctx->regs.di;
+>>>       dev = bpf_load_pointer(&skb->dev);
+>>> to access 'struct net_device'
+>>> Since its prototype is 'int dst_discard(struct sk_buff *skb);'
+>>> 'skb' pointer is in 'rdi' register on x86_64
+>>> bpf_load_pointer() will try to fetch 'dev' field of 'sk_buff'
+>>> structure and will suppress page-fault if pointer is incorrect.
+>>
+>> Hmm, I doubt it is a good way to integrate with ftrace.
+>> I prefer to use this for replacing current ftrace filter,
 > 
-> Since this series only addresses 32-bit userspace on 64-bit kernel
-> support there are no associated userspace changes.  Changing the
-> 32-bit api here means that combining the KitKat branch from
-> http://android.googlesource.com with a newer kernel version will not
-> work.
+> I'm not sure how we can do that. Especially since the bpf is very arch
+> specific, and the current filters work for all archs.
 
-Is that something that anyone has said would work in the past?  It seems
-that other parts of the Android userspace are pretty tied to specific
-kernel features / versions, is this anything new if the binder code had
-to change?
+My idea is to use BPF for the arch specific optimization for
+ftrace filter. For the other arch, filter works with current
+code. So the ftrace holds filter_preds and compile it in
+BPF bytecode if possible.
+And this backend optimization also can be done for fetch methods.
 
-Anyway, the code as submitted has problems, see my response to the
-second patch, so it's not ready yet anyway :(
+>> fetch functions and actions. In that case, we can continue
+>> to use current interface but much faster to trace.
+>> Also, we can see what filter/arguments/actions are set
+>> on each event.
+> 
+> There's also the problem that the current filters work with the results
+> of what is written to the buffer, not what is passed in by the trace
+> point, as that isn't even displayed to the user.
 
-thanks,
+Agreed, so I've said I doubt this implementation is a good
+shape to integrate. Ktap style is better, since it just gets
+parameters from perf buffer entry (using event format).
 
-greg k-h
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
