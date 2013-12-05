@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138Ab3LET0V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 14:26:21 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:50360 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab3LET0U (ORCPT
+	id S1752334Ab3LET1K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 14:27:10 -0500
+Received: from qemu.weilnetz.de ([37.221.198.45]:57593 "EHLO
+	v2201305906712890.yourvserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751190Ab3LET1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 14:26:20 -0500
-Date: Thu, 5 Dec 2013 20:30:50 +0100
-From: Sima Baymani <sima.baymani@gmail.com>
-To: linux-mm@kvack.org, rientjes@google.com
-Cc: tangchen@cn.fujitsu.com, akpm@linux-foundation.org, aquini@redhat.com,
-        linux-kernel@vger.kernel.org, gang.chen@asianux.com,
-        aneesh.kumar@linux.vnet.ibm.com, isimatu.yasuaki@jp.fujitsu.com,
-        kirill.shutemov@linux.intel.com, sjenning@linux.vnet.ibm.com,
-        darrick.wong@oracle.com
-Subject: [PATCH] mm: Add missing dependency in Kconfig
-Message-ID: <20131205193050.GA13476@lovelace>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 5 Dec 2013 14:27:08 -0500
+X-Greylist: delayed 554 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Dec 2013 14:27:08 EST
+From: Stefan Weil <sw@weilnetz.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-rpi-kernel@lists.infradead.org,
+        Stefan Weil <sw@weilnetz.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jiri Kosina <trivial@kernel.org>
+Subject: [PATCH] ARM: bcm2835: Fix grammar in help message
+Date: Thu,  5 Dec 2013 20:17:40 +0100
+Message-Id: <1386271060-2375-1-git-send-email-sw@weilnetz.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eliminate the following (rand)config warning by adding missing PROC_FS
-dependency:
-warning: (HWPOISON_INJECT && MEM_SOFT_DIRTY) selects PROC_PAGE_MONITOR
-which has unmet direct dependencies (PROC_FS && MMU)
+Replace "is use" by "is used" and remove a comma.
 
-Suggested-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Sima Baymani <sima.baymani@gmail.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jiri Kosina <trivial@kernel.org>
+Signed-off-by: Stefan Weil <sw@weilnetz.de>
 ---
- mm/Kconfig |    2 +-
+ arch/arm/mach-bcm2835/Kconfig |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/Kconfig b/mm/Kconfig
-index eb69f35..723bbe0 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -543,7 +543,7 @@ config ZSWAP
- 
- config MEM_SOFT_DIRTY
- 	bool "Track memory changes"
--	depends on CHECKPOINT_RESTORE && HAVE_ARCH_SOFT_DIRTY
-+	depends on CHECKPOINT_RESTORE && HAVE_ARCH_SOFT_DIRTY && PROC_FS
- 	select PROC_PAGE_MONITOR
+diff --git a/arch/arm/mach-bcm2835/Kconfig b/arch/arm/mach-bcm2835/Kconfig
+index 560045c..d1f9612 100644
+--- a/arch/arm/mach-bcm2835/Kconfig
++++ b/arch/arm/mach-bcm2835/Kconfig
+@@ -12,4 +12,4 @@ config ARCH_BCM2835
+ 	select PINCTRL_BCM2835
  	help
- 	  This option enables memory changes tracking by introducing a
+ 	  This enables support for the Broadcom BCM2835 SoC. This SoC is
+-	  use in the Raspberry Pi, and Roku 2 devices.
++	  used in the Raspberry Pi and Roku 2 devices.
 -- 
 1.7.10.4
 
