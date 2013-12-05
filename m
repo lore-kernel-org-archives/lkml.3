@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab3LENJv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 08:09:51 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:34518 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756735Ab3LENJt (ORCPT
+	id S1756767Ab3LENKQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 08:10:16 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:54948 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756132Ab3LENKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 08:09:49 -0500
-Message-ID: <52A07B09.9010007@linaro.org>
-Date: Thu, 05 Dec 2013 21:09:29 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+	Thu, 5 Dec 2013 08:10:12 -0500
+X-AuditID: cbfec7f4-b7f966d0000003d9-fd-52a07b32b06a
+Message-id: <1386249008.17844.48.camel@buzz>
+Subject: Re: [PATCH 2/2] ARM: fix framepointer check in unwind_frame
+From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Jon Masters <jonathan@jonmasters.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [RFC part3 PATCH 2/2] ARM64 / clocksource: Use arch_timer_acpi_init()
-References: <1386088891-2917-1-git-send-email-hanjun.guo@linaro.org> <1386088891-2917-3-git-send-email-hanjun.guo@linaro.org> <20131203170815.GB16025@e106331-lin.cambridge.arm.com> <529F3BCA.1020908@linaro.org> <20131204150709.GF29200@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20131204150709.GF29200@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+        Will Deacon <will.deacon@arm.com>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>
+Date: Thu, 05 Dec 2013 17:10:08 +0400
+In-reply-to: <CAFrcx1kCAjoMxBeqaO+iS2CGzX6omuW1reL636Lyj=bg5DB1Rg@mail.gmail.com>
+References: <20131205083424.32632.51618.stgit@buzz>
+ <20131205083430.32632.11103.stgit@buzz>
+ <CAFrcx1kCAjoMxBeqaO+iS2CGzX6omuW1reL636Lyj=bg5DB1Rg@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.8.5-2+b1
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHLMWRmVeSWpSXmKPExsVy+t/xK7pG1QuCDD5+57DouryHxWLT42us
+	Fpd3zWGzuH2Z12LqjB/sFi8/nmBxYPNYM28No0dLcw+bx51re9g8Ni+p9+jbsorR4/MmuQC2
+	KC6blNSczLLUIn27BK6M0y9vsxR08FY8aVvO1MD4krOLkZNDQsBEouXhRHYIW0ziwr31bF2M
+	XBxCAksZJT68fsgK4XxklJjR3cACUsUroCOxeudNJhBbWMBFYkZrF1g3m4CZxLZ9txlBbBEB
+	NYl7/2cygjQzC3QxSUxffwisgUVAVeLkgxY2EJtTIFhi26KvLBAbljBKLJjxkxUkwSygLjFp
+	3iJmiJvkJNZvW8MGsVlQ4sfkeywQNfISm9e8ZZ7AKDALScssJGWzkJQtYGRexSiaWppcUJyU
+	nmuoV5yYW1yal66XnJ+7iRES5l92MC4+ZnWIUYCDUYmH90f+/CAh1sSy4srcQ4wSHMxKIrzC
+	OQuChHhTEiurUovy44tKc1KLDzEycXBKNTDqWSy/xsDla3fRsINp0Z5Kt6CsL3vFJ16es7F8
+	9qaKWtFNNveM2I8ErWSYZ95TGW1auiNzZbHCWkOV6obUBQZXfk+1UGbbaO207qafv1a2Vk1k
+	8LcO58/xO+5nu+1T2mu+JHX5U4OvqUJ+DxLWcFZs8DvV6XU/lOuygs3xkkmW2xrZmpsV4pRY
+	ijMSDbWYi4oTAQWYXW9RAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年12月04日 23:07, Mark Rutland wrote:
-> On Wed, Dec 04, 2013 at 02:27:22PM +0000, Hanjun Guo wrote:
->> On 2013年12月04日 01:08, Mark Rutland wrote:
->>> On Tue, Dec 03, 2013 at 04:41:31PM +0000, Hanjun Guo wrote:
->>>> Use arch_timer_acpi_init() on ARM64 to initialise arch timer
->>>> in ACPI way when DT is not available.
->>>>
->>>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->>>> ---
->>>>    arch/arm64/kernel/time.c |    4 ++++
->>>>    1 file changed, 4 insertions(+)
->>>>
->>>> diff --git a/arch/arm64/kernel/time.c b/arch/arm64/kernel/time.c
->>>> index 29c39d5..fb009da 100644
->>>> --- a/arch/arm64/kernel/time.c
->>>> +++ b/arch/arm64/kernel/time.c
->>>> @@ -67,6 +67,10 @@ void __init time_init(void)
->>>>    
->>>>    	clocksource_of_init();
->>>>    
->>>> +	/* if can't be initialised from DT, try ACPI way */
->>>> +	if (!arch_timer_get_rate())
->>>> +		arch_timer_acpi_init();
->>>> +
->>> As mentioned on the previous patch, I think for the timebeing we should
->>> rely on CNTFREQ.
->>>
->>> Additionally, if you need to do this we should have an analagous
->>> mechanism to clocksource_of_init() that performs this initialisation for
->>> ACPI, and here we can call a clocksource_*_init function that does the
->>> right thing.
->>>
->>> There's no need for this file to know anything about ACPI.
->> Oh, Amit already have some patches to introduce clocksource_acpi_init()
->> like clocksource_of_init() did, please refer to the link below.
->>
->> http://marc.info/?l=linaro-acpi&m=138131929721943&w=2
->>
->> is this the idea you mentioned in your comments?
-> Something along those lines is far better than hardcoding
-> arch_timer_acpi_init here.
+On Thu, 2013-12-05 at 13:45 +0100, Jean Pihet wrote:
+> On 5 December 2013 09:34, Konstantin Khlebnikov
+> <k.khlebnikov@samsung.com> wrote:
+> > This patch fixes corner case when (fp + 4) overflows unsigned long,
+> > for example: fp = 0xFFFFFFFF -> fp + 4 == 3.
+> >
+> > Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+> > ---
+> >  arch/arm/kernel/stacktrace.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/arch/arm/kernel/stacktrace.c b/arch/arm/kernel/stacktrace.c
+> > index 00f79e5..af4e8c8 100644
+> > --- a/arch/arm/kernel/stacktrace.c
+> > +++ b/arch/arm/kernel/stacktrace.c
+> > @@ -31,7 +31,7 @@ int notrace unwind_frame(struct stackframe *frame)
+> >         high = ALIGN(low, THREAD_SIZE);
+> >
+> >         /* check current frame pointer is within bounds */
+> > -       if (fp < (low + 12) || fp + 4 >= high)
+> > +       if (fp < low + 12 || fp > high - 4)
+> Shouldn't that use the '>=' comparison?
 
-Thanks for the suggestion, will update it.
+nope, fp == high-4 is fine:
 
-Hanjun
+-------------------+ 
+... -5 -4 -3 -2 -1 | -0
+-------------------+
+        ^             ^
+        +---- fp      +----- high
+ 
+stack frame contains four 'unsigned long' values: {fp, sp, lr, pc}.
+'fp' points to 'pc', so totally there are 16 bytes: fp-12..fp+3
+
+> 
+> Jean
+> >                 return -EINVAL;
+> >
+> >         /* restore the registers from the stack frame */
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+
+
