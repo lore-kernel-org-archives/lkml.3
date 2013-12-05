@@ -1,96 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932299Ab3LENst (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 08:48:49 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:52832 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756132Ab3LENss (ORCPT
+	id S932347Ab3LENuv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 08:50:51 -0500
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:37771 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756132Ab3LENut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 08:48:48 -0500
-From: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-To: dhowells@redhat.com
-Cc: brueckner@linux.vnet.ibm.com, heiko.carstens@de.ibm.com,
-        schwidefsky@de.ibm.com, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Subject: [PATCH] KEYS: correct alignment of system_certificate_list content in assembly file
-Date: Thu,  5 Dec 2013 14:48:22 +0100
-Message-Id: <1386251302-6345-1-git-send-email-brueckner@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120513-3548-0000-0000-00000760CB84
+	Thu, 5 Dec 2013 08:50:49 -0500
+Date: Thu, 5 Dec 2013 10:50:39 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH 4/4] perf trace: Add option to specify machine type
+Message-ID: <20131205135039.GB10333@ghostprotocols.net>
+References: <1386211302-31303-1-git-send-email-dsahern@gmail.com>
+ <1386211302-31303-5-git-send-email-dsahern@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386211302-31303-5-git-send-email-dsahern@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apart from data-type specific alignment constraints, there are also
-architecture-specific alignment requirements.
-For example, on s390 symbols must be on even addresses implying a 2-byte
-alignment.  If the system_certificate_list_end symbol is on an odd address
-and if this address is loaded, the least-significant bit is ignored.  As a
-result, the load_system_certificate_list() fails to load the certificates
-because of a wrong certificate length calculation.
+Em Wed, Dec 04, 2013 at 07:41:42PM -0700, David Ahern escreveu:
+> Perhaps there is a better way to do this; I could not think of one and
+> I don't see any field in the tracepoint that can be leveraged. So ...
+> 
+> perf-trace autodetects the machine type (e.g., i386, x86_64, etc) via
+> libaudit.
 
-To be safe, align system_certificate_list on an 8-byte boundary.  Also improve
-the length calculation of the system_certificate_list content.  Introduce a
-system_certificate_list_size (8-byte aligned because of unsigned long) variable
-that stores the length.  Let the linker calculate this size by introducing
-a start and end label for the certificate content.
+And that means that using perf.data files from another machine, say,
+ARM, will produce completely bogus results :-\
 
-Signed-off-by: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
----
- kernel/system_certificates.S |   14 ++++++++++++--
- kernel/system_keyring.c      |    4 ++--
- 2 files changed, 14 insertions(+), 4 deletions(-)
+We need a way to store this info in the perf.data header, i.e. use the
+same algorithm that libaudit uses in audit_detect_machine() (and set the
+open_id as well, btw) at 'perf record' time and store it somewhere.
 
-diff --git a/kernel/system_certificates.S b/kernel/system_certificates.S
-index 4aef390..3e9868d47 100644
---- a/kernel/system_certificates.S
-+++ b/kernel/system_certificates.S
-@@ -3,8 +3,18 @@
- 
- 	__INITRODATA
- 
-+	.align 8
- 	.globl VMLINUX_SYMBOL(system_certificate_list)
- VMLINUX_SYMBOL(system_certificate_list):
-+__cert_list_start:
- 	.incbin "kernel/x509_certificate_list"
--	.globl VMLINUX_SYMBOL(system_certificate_list_end)
--VMLINUX_SYMBOL(system_certificate_list_end):
-+__cert_list_end:
-+
-+	.align 8
-+	.globl VMLINUX_SYMBOL(system_certificate_list_size)
-+VMLINUX_SYMBOL(system_certificate_list_size):
-+#ifdef CONFIG_64BIT
-+	.quad __cert_list_end - __cert_list_start
-+#else
-+	.long __cert_list_end - __cert_list_start
-+#endif
-diff --git a/kernel/system_keyring.c b/kernel/system_keyring.c
-index 564dd93..52ebc70 100644
---- a/kernel/system_keyring.c
-+++ b/kernel/system_keyring.c
-@@ -22,7 +22,7 @@ struct key *system_trusted_keyring;
- EXPORT_SYMBOL_GPL(system_trusted_keyring);
- 
- extern __initconst const u8 system_certificate_list[];
--extern __initconst const u8 system_certificate_list_end[];
-+extern __initconst const unsigned long system_certificate_list_size;
- 
- /*
-  * Load the compiled-in keys
-@@ -60,8 +60,8 @@ static __init int load_system_certificate_list(void)
- 
- 	pr_notice("Loading compiled-in X.509 certificates\n");
- 
--	end = system_certificate_list_end;
- 	p = system_certificate_list;
-+	end = p + system_certificate_list_size;
- 	while (p < end) {
- 		/* Each cert begins with an ASN.1 SEQUENCE tag and must be more
- 		 * than 256 bytes in size.
--- 
-1.7.5.4
+What we have now that could be used?
 
+Lets see:
+
+[acme@zoo linux]$ perf report | grep 'arch'
+# arch : x86_64
+[acme@zoo linux]$
+
+Would that be enough? Stephane?
+
+- Arnaldo
+
+> When running 32-bit apps on a 64-bit kernel the wrong machine
+> type is used to convert syscall numbers to names leading to wrong information
+> getting displayed to the user. This option allows the user to override
+> the machine type to use.
+> 
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/builtin-trace.c | 14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
+> 
+> diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+> index 0203324fe585..4a78a39b684a 100644
+> --- a/tools/perf/builtin-trace.c
+> +++ b/tools/perf/builtin-trace.c
+> @@ -2274,6 +2274,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+>  	};
+>  	const char *output_name = NULL;
+>  	const char *ev_qualifier_str = NULL;
+> +	const char *machine_str = NULL;
+>  	const struct option trace_options[] = {
+>  	OPT_BOOLEAN(0, "comm", &trace.show_comm,
+>  		    "show the thread COMM next to its id"),
+> @@ -2308,6 +2309,8 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+>  		    "Show only syscall summary with statistics"),
+>  	OPT_BOOLEAN('S', "with-summary", &trace.summary,
+>  		    "Show all syscalls and summary with statistics"),
+> +	OPT_STRING('M', NULL, &machine_str, "x86|x86_64",
+> +		     "Advanced: machine type for converting system calls: x86, x86_64"),
+>  	OPT_END()
+>  	};
+>  	int err;
+> @@ -2318,6 +2321,17 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+>  
+>  	argc = parse_options(argc, argv, trace_options, trace_usage, 0);
+>  
+> +	if (machine_str) {
+> +		if (strcmp(machine_str, "x86") == 0)
+> +			trace.audit.machine = MACH_X86;
+> +		else if (strcmp(machine_str, "x86_64") == 0)
+> +			trace.audit.machine = MACH_86_64;
+> +		else {
+> +			pr_err("Invalid machine type\n");
+> +			return -EINVAL;
+> +		}
+> +	}
+> +
+>  	/* summary_only implies summary option, but don't overwrite summary if set */
+>  	if (trace.summary_only)
+>  		trace.summary = trace.summary_only;
+> -- 
+> 1.8.3.4 (Apple Git-47)
