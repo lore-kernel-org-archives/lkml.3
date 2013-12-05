@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932362Ab3LEOQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 09:16:59 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:44335 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756749Ab3LEOQz (ORCPT
+	id S932433Ab3LEOR2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 09:17:28 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:58888 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756681Ab3LEOQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 09:16:55 -0500
-Date: Thu, 5 Dec 2013 09:16:52 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Nicholas Mc Guire <der.herr@hofr.at>
-Subject: [PATCH RT] cpu hotplug: Document why PREEMPT_RT uses a spinlock
-Message-ID: <20131205091652.0523f2c3@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Thu, 5 Dec 2013 09:16:13 -0500
+From: Frank Haverkamp <haver@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, gregkh@linuxfoundation.org, cody@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
+        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
+        cascardo@linux.vnet.ibm.com, michael@ibmra.de,
+        haver@linux.vnet.ibm.com
+Subject: [PATCH 0/6] Generic WorkQueue Engine (GenWQE) device driver (v9)
+Date: Thu,  5 Dec 2013 15:15:55 +0100
+Message-Id: <1386252961-2679-1-git-send-email-haver@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120514-4966-0000-0000-000007BA17EE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch:
+The GenWQE device is a PCIe card used to acclerate different tasks.
+Since it is configurable, it can be adjusted to different purposes.
+Our initial task for the card is to do zlib style compression/decompression
+RFC1950, RFC1951, and RFC1952.
 
-    cpu: Make hotplug.lock a "sleeping" spinlock on RT
-    
-    Tasks can block on hotplug.lock in pin_current_cpu(), but their
-    state might be != RUNNING. So the mutex wakeup will set the state
-    unconditionally to RUNNING. That might cause spurious unexpected
-    wakeups. We could provide a state preserving mutex_lock() function,
-    but this is semantically backwards. So instead we convert the
-    hotplug.lock() to a spinlock for RT, which has the state preserving
-    semantics already.
+I kindly ask for your feedback on the code, such that I can do
+any change which helps me to get it integrated smoothly.
 
-Fixed a bug where the hotplug lock on PREEMPT_RT can be called after a
-task set its state to TASK_UNINTERRUPTIBLE and before it called
-schedule. If the hotplug_lock used a mutex, and there was contention,
-the current task's state would be turned to TASK_RUNNABLE and the
-schedule call will not sleep. This caused unexpected results.
+The genwqe driver has a user-space interface described in
+linux/include/genwqe/genwqe_card.h. There are several ioctls which can
+be used to talk to the driver.
 
-Although the patch had a description of the change, the code had no
-comments about it. This causes confusion to those that review the code,
-and as PREEMPT_RT is held in a quilt queue and not git, it's not as easy
-to see why a change was made. Even if it was in git, the code should
-still have a comment for something as subtle as this.
+In addition there are some sysfs entries where information can be
+exchanged with user-space. The sysfs interface is described in
+Documentation/ABI/testing/sysfs-driver-genwqe.
 
-Document the rational for using a spinlock on PREEMPT_RT in the hotplug
-lock code.
+Now the driver has also a debugfs interface. This is described in
+Documentation/ABI/testing/debugfs-driver-genwqe.
 
-Reported-by: Nicholas Mc Guire <der.herr@hofr.at>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Frank Haverkamp (6):
+  GenWQE PCI support, health monitoring and recovery
+  GenWQE Character device and DDCB queue
+  GenWQE Utility functions
+  GenWQE Debugfs interfaces
+  GenWQE Sysfs interfaces
+  GenWQE Enable driver
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 063c2bb..c3014f1 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -80,6 +80,14 @@ struct hotplug_pcp {
- 	struct completion synced;
- 	struct completion unplug_wait;
- #ifdef CONFIG_PREEMPT_RT_FULL
-+	/*
-+	 * Note, on PREEMPT_RT, the hotplug lock must save the state of
-+	 * the task, otherwise the mutex will cause the task to fail
-+	 * to sleep when required. (Because it's called from migrate_disable())
-+	 *
-+	 * The spinlock_t on PREEMPT_RT is a mutex that saves the task's
-+	 * state.
-+	 */
- 	spinlock_t lock;
- #else
- 	struct mutex mutex;
+ Documentation/ABI/testing/debugfs-driver-genwqe |   91 ++
+ Documentation/ABI/testing/sysfs-driver-genwqe   |   62 +
+ drivers/misc/Kconfig                            |    1 +
+ drivers/misc/Makefile                           |    1 +
+ drivers/misc/genwqe/Kconfig                     |   13 +
+ drivers/misc/genwqe/Makefile                    |    7 +
+ drivers/misc/genwqe/card_base.c                 | 1205 +++++++++++++++++++
+ drivers/misc/genwqe/card_base.h                 |  563 +++++++++
+ drivers/misc/genwqe/card_ddcb.c                 | 1373 +++++++++++++++++++++
+ drivers/misc/genwqe/card_ddcb.h                 |  188 +++
+ drivers/misc/genwqe/card_debugfs.c              |  500 ++++++++
+ drivers/misc/genwqe/card_dev.c                  | 1464 +++++++++++++++++++++++
+ drivers/misc/genwqe/card_sysfs.c                |  288 +++++
+ drivers/misc/genwqe/card_utils.c                |  947 +++++++++++++++
+ drivers/misc/genwqe/genwqe_driver.h             |   74 ++
+ include/uapi/linux/genwqe/genwqe_card.h         |  500 ++++++++
+ 16 files changed, 7277 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/debugfs-driver-genwqe
+ create mode 100644 Documentation/ABI/testing/sysfs-driver-genwqe
+ create mode 100644 drivers/misc/genwqe/Kconfig
+ create mode 100644 drivers/misc/genwqe/Makefile
+ create mode 100644 drivers/misc/genwqe/card_base.c
+ create mode 100644 drivers/misc/genwqe/card_base.h
+ create mode 100644 drivers/misc/genwqe/card_ddcb.c
+ create mode 100644 drivers/misc/genwqe/card_ddcb.h
+ create mode 100644 drivers/misc/genwqe/card_debugfs.c
+ create mode 100644 drivers/misc/genwqe/card_dev.c
+ create mode 100644 drivers/misc/genwqe/card_sysfs.c
+ create mode 100644 drivers/misc/genwqe/card_utils.c
+ create mode 100644 drivers/misc/genwqe/genwqe_driver.h
+ create mode 100644 include/uapi/linux/genwqe/genwqe_card.h
+
