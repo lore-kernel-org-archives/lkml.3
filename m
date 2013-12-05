@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab3LELAX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 06:00:23 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:45648 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755298Ab3LELAW (ORCPT
+	id S1755945Ab3LELBP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 06:01:15 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:4024 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755689Ab3LELBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 06:00:22 -0500
-Date: Thu, 5 Dec 2013 11:59:28 +0100
-From: Henrik Austad <henrik@austad.us>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH v4 tip/core/locking 0/4] Memory-barrier documentation
- updates
-Message-ID: <20131205105928.GA27382@austad.us>
-References: <20131204224628.GA30159@linux.vnet.ibm.com>
+	Thu, 5 Dec 2013 06:01:10 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 05 Dec 2013 02:54:27 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <swarren@wwwdotorg.org>, <linus.walleij@linaro.org>
+CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <thierry.reding@gmail.com>,
+        <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 3/4] ARM: tegra: select PINCTRL_TEGRA124 for Tegra124 SoC
+Date: Thu, 5 Dec 2013 16:27:49 +0530
+Message-ID: <1386241070-4350-4-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1386241070-4350-1-git-send-email-ldewangan@nvidia.com>
+References: <1386241070-4350-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131204224628.GA30159@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 02:46:28PM -0800, Paul E. McKenney wrote:
-> Hello!
+The pincontrol driver for Tegra124 is build through config
+PINCTRL_TEGRA124. Select this config option whenever Tegra124
+SoC is enabled.
 
-Hi Paul,
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ arch/arm/mach-tegra/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-> This series applies some long-needed updates to memory-barriers.txt:
-> 
-> 1.	Add ACCESS_ONCE() calls where needed to ensure their inclusion
-> 	in code copy-and-pasted from this file.
-> 
-> 2.	Add long atomic examples alongside the existing atomics.
-> 
-> 3.	Prohibit architectures supporting the Linux kernel from
-> 	speculating stores.
-
-Just me, or is the 3rd patch missing from lkml?
-
-> 4.	Document what ACCESS_ONCE() does along with a number of situations
-> 	requiring its use.
-
-This was very useful, thanks! :)
-
+diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
+index 09e740f..807e7bc 100644
+--- a/arch/arm/mach-tegra/Kconfig
++++ b/arch/arm/mach-tegra/Kconfig
+@@ -63,6 +63,7 @@ config ARCH_TEGRA_124_SOC
+ 	bool "Enable support for Tegra124 family"
+ 	select ARM_L1_CACHE_SHIFT_6
+ 	select HAVE_ARM_ARCH_TIMER
++	select PINCTRL_TEGRA124
+ 	help
+ 	  Support for NVIDIA Tegra T124 processor family, based on the
+ 	  ARM CortexA15MP CPU
 -- 
-Henrik Austad
+1.7.1.1
+
