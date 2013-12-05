@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756603Ab3LECoY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 21:44:24 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:41531 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756250Ab3LECoU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 21:44:20 -0500
-Date: Wed, 4 Dec 2013 18:44:14 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: lots of brief rcu stalls.
-Message-ID: <20131205024414.GL15492@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131204232838.GA25592@redhat.com>
- <20131205001614.GI15492@linux.vnet.ibm.com>
- <20131205012206.GA31349@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131205012206.GA31349@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120502-7164-0000-0000-000003F3D3A5
+	id S1756526Ab3LECqu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 21:46:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43175 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756462Ab3LECqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 21:46:46 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>,
+        Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Subject: [PATCH 0/3] audit: remove audit_log_start() contention in AUDIT_USER type calls
+Date: Wed,  4 Dec 2013 21:45:53 -0500
+Message-Id: <cover.1386206544.git.rgb@redhat.com>
+In-Reply-To: <1382713941.2954.19.camel@flatline.rdu.redhat.com>
+References: <1382713941.2954.19.camel@flatline.rdu.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 08:22:06PM -0500, Dave Jones wrote:
-> On Wed, Dec 04, 2013 at 04:16:14PM -0800, Paul E. McKenney wrote:
->  > On Wed, Dec 04, 2013 at 06:28:38PM -0500, Dave Jones wrote:
->  > > Paul,
->  > > I'm seeing this happening more and more lately...
->  > > 
->  > > [  771.786462] INFO: rcu_preempt detected stalls on CPUs/tasks:
->  > > [  771.786552] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [  771.786574] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [  771.786595] 	(detected by 0, t=6502 jiffies, g=20611, c=20610, q=0)
->  > > [  771.786620] INFO: Stall ended before state dump start
->  > > [  966.724546] INFO: rcu_preempt detected stalls on CPUs/tasks:
->  > > [  966.724854] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [  966.724931] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [  966.725005] 	(detected by 0, t=26007 jiffies, g=20611, c=20610, q=0)
->  > > [  966.725093] INFO: Stall ended before state dump start
->  > > [ 1161.661459] INFO: rcu_preempt detected stalls on CPUs/tasks:
->  > > [ 1161.661763] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [ 1161.661840] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [ 1161.661915] 	(detected by 0, t=45512 jiffies, g=20611, c=20610, q=0)
->  > > [ 1161.662001] INFO: Stall ended before state dump start
->  > > [ 1356.598205] INFO: rcu_preempt detected stalls on CPUs/tasks:
->  > > [ 1356.598513] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [ 1356.598590] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [ 1356.598664] 	(detected by 0, t=65017 jiffies, g=20611, c=20610, q=0)
->  > > [ 1356.598751] INFO: Stall ended before state dump start
->  > > [ 1551.536099] INFO: rcu_preempt detected stalls on CPUs/tasks:
->  > > [ 1551.536408] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [ 1551.536485] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [ 1551.536559] 	(detected by 0, t=84522 jiffies, g=20611, c=20610, q=0)
->  > > [ 1551.536645] INFO: Stall ended before state dump start
->  > > 
->  > > While it's apparently a non-problem, it's pretty noisy.
->  > > Any ideas?
->  > 
->  > Does the following help?
-> 
-> Seems so so far!
+There is a race condition between systemd and auditd:
 
-Keeping fingers firmly crossed...
+systemd                                    |auditd
+-------------------------------------------+-----------------------------------
+...                                        |
+-> audit_receive                           |...
+   -> mutex_lock(&audit_cmd_mutex)         |-> audit_receive
+      ... -> audit_log_start               |   -> mutex_lock(&audit_cmd_mutex)
+             -> wait_for_auditd            |      // wait for systemd
+                -> schedule_timeout(60*HZ) |
 
-							Thanx, Paul
+This fix will take care of systemd and anything USING audit.  It still means
+that we could race with something configuring audit and auditd shutting down.
+
+The idea of dropping the lock at the top of audit_receive_msg() isn't as clean
+as I had hoped, with AUDIT_ADD_RULE, AUDIT_TRIM, AUDIT_MAKE_EQUIV all
+potentially allocating additional audit buffers indirectly through
+trim_marked().  It may make sense to have trim_marked() send its queue through
+a new thread.
+
+Richard Guy Briggs (3):
+  selinux: call WARN_ONCE() instead of calling audit_log_start()
+  smack: call WARN_ONCE() instead of calling audit_log_start()
+  audit: drop audit_cmd_lock in AUDIT_USER family of cases
+
+ kernel/audit.c                 |    2 ++
+ security/selinux/ss/services.c |   12 ++++--------
+ security/smack/smack_lsm.c     |    5 ++---
+ 3 files changed, 8 insertions(+), 11 deletions(-)
 
