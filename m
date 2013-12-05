@@ -1,90 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344Ab3LEKiF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 05:38:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6430 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754302Ab3LEKiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 05:38:01 -0500
-Date: Thu, 5 Dec 2013 11:37:07 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
+	id S1755462Ab3LEKit (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 05:38:49 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:48949 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510Ab3LEKip (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 05:38:45 -0500
+Date: Thu, 5 Dec 2013 11:38:40 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/38] perf/core improvements and fixes
-Message-ID: <20131205103707.GC21600@krava.brq.redhat.com>
-References: <1386187622-2928-1-git-send-email-acme@infradead.org>
- <20131205100429.GC16749@gmail.com>
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>, Pekka Enberg <penberg@iki.fi>,
+        "David S. Miller" <davem@davemloft.net>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
+Message-ID: <20131205103840.GA20283@gmail.com>
+References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
+ <20131203091655.GB20179@gmail.com>
+ <CAMEtUuziP0zVe63HSxF0uVs1pnP--1HBs1-WsR2xfLOTyBaHSQ@mail.gmail.com>
+ <20131204093417.GC32531@gmail.com>
+ <CAMEtUuwMGwQEtX4p1RyNTSZBA_9j-XQ4aEtM7L5hrqPkS2szfw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131205100429.GC16749@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMEtUuwMGwQEtX4p1RyNTSZBA_9j-XQ4aEtM7L5hrqPkS2szfw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 11:04:29AM +0100, Ingo Molnar wrote:
-> 
-> * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-> 
-> > From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> > 
-> > Hi Ingo,
-> > 
-> > 	Please consider pulling,
-> > 
-> > - Arnaldo
-> > 
-> > The following changes since commit 89e3bbd58a6186b832fe2b9419ac2f9ab90e9089:
-> > 
-> >   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2013-12-04 10:17:17 +0100)
-> > 
-> > are available in the git repository at:
-> > 
-> > 
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-> 
-> Hm, I saw such a build failure:
-> 
->   CC FPIC  plugin_kmem.o
->   BUILD    PLUGIN plugin_jbd2.so
-> plugin_jbd2.o: file not recognized: File truncated
-> collect2: error: ld returned 1 exit status
-> make[2]: *** [plugin_jbd2.so] Error 1
-> make[1]: *** [install-traceevent-plugins] Error 2
-> make[1]: *** Waiting for unfinished jobs....
->   CC FPIC  plugin_kvm.o
->   CC FPIC  plugin_mac80211.o
-> 
-> which suggests some sort of build race ...
-> 
-> I was doing several 'make clean; make install' runs - and the second 
-> run failed. Unfortunately the failure was not reproducible after that 
-> point - and I tried dozens of times. The test system has 12 CPUs.
-> 
-> The following loop attempts to build until a failure occurs:
-> 
->   cd tools/perf/
->   while make install; do make clean; done
-> 
-> Any ideas?
 
-never saw that one.. starting your test on 24 CPUs server now
+* Alexei Starovoitov <ast@plumgrid.com> wrote:
 
-jirka
+> > I mean more than that, I mean the licensing of BFP filters a user 
+> > can find on his own system's kernel should be very clear: by the 
+> > act of loading a BFP script into the kernel the user doing the 
+> > 'upload' gives permission for it to be redistributed on 
+> > kernel-compatible license terms.
+> >
+> > The easiest way to achieve that is to make sure that all loaded 
+> > BFP scripts are 'registered' and are dumpable, viewable and 
+> > reusable. That's good for debugging and it's good for 
+> > transparency.
+> >
+> > This means a minimal BFP decoder will have to be in the kernel as 
+> > well, but that's OK, we actually have several x86 instruction 
+> > decoder in the kernel already, so there's no complexity threshold.
+> 
+> sure. there is pr_info_bpf_insn() in bpf_run.c that dumps bpf insn in
+> human readable format.
+> I'll hook it up to trace_seq, so that "cat
+> /sys/kernel/debug/.../filter" will dump it.
+> 
+> Also I'm thinking to add 'license_string' section to bpf binary format
+> and call license_is_gpl_compatible() on it during load.
+> If false, then just reject it…. not even messing with taint flags...
+> That would be way stronger indication of bpf licensing terms than what
+> we have for .ko
+
+But will BFP tools generate such gpl-compatible license tags by 
+default? If yes then this might work, combined with the facility 
+below. If not then it's just a nuisance to users.
+
+Also, 'tainting' is a non-issue here, as we don't want the kernel to 
+load license-incompatible scripts at all. This should be made clear in 
+the design of the facility and the tooling itself.
+
+> >> wow. I guess if the whole thing takes off, we would need an 
+> >> in-kernel directory to store upstreamed bpf filters as well :)
+> >
+> > I see no reason why not, but more importantly all currently loaded 
+> > BFP scripts should be dumpable, displayable and reusable in a 
+> > kernel license compatible fashion.
+> 
+> ok. will add global bpf list as well (was hesitating to do something 
+> like this because of central lock)
+
+A lock + list is no big issue here I think, we do such central lookup 
+locks all the time. If it ever becomes measurable it can be made 
+scalable via numerous techniques.
+
+> and something in debugfs that dumps bodies of all currently loaded 
+> filters.
+> 
+> Will that solve the concern?
+
+My concern would be solved by adding a facility to always be able to 
+dump source code as well, i.e. trivially transform it to C or so, so 
+that people can review it - or just edit it on the fly, recompile and 
+reinsert? Most BFP scripts ought to be pretty simple.
+
+(For example the most common way to load OpenGL shaders is to load the 
+GLSL source code and that source code can be queried after insertion 
+as well, so this is not an unusual model for small plugin-alike 
+scriptlets.)
+
+Thanks,
+
+	Ingo
