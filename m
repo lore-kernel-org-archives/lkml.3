@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757379Ab3LERht (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:37:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38294 "EHLO
+	id S1757619Ab3LERrE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:47:04 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38347 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757301Ab3LERhe (ORCPT
+	with ESMTP id S1757366Ab3LERhs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:37:34 -0500
+	Thu, 5 Dec 2013 12:37:48 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Mathias Krause <minipli@googlemail.com>,
-        Richard Guy Briggs <rgb@redhat.com>,
+Cc: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 52/90] audit: fix info leak in AUDIT_GET requests
-Date: Thu,  5 Dec 2013 17:35:34 +0000
-Message-Id: <1386264972-5399-53-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 63/90] avr32: setup crt for early panic()
+Date: Thu,  5 Dec 2013 17:35:45 +0000
+Message-Id: <1386264972-5399-64-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,35 +31,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>
 
-commit 64fbff9ae0a0a843365d922e0057fc785f23f0e3 upstream.
+commit 7a2a74f4b856993218aa7cdeeb6c3103101340db upstream.
 
-We leak 4 bytes of kernel stack in response to an AUDIT_GET request as
-we miss to initialize the mask member of status_set. Fix that.
+Before the CRT was (fully) set up in kernel_entry (bss cleared before in
+_start, but also not before jump to panic() in no_tag_table case).
 
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+This patch fixes this up to have a fully working CRT when branching to panic()
+in no_tag_table.
+
+Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/audit.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/avr32/boot/u-boot/head.S | 30 +++++++++++++++++++++++++-----
+ arch/avr32/kernel/head.S      | 20 --------------------
+ 2 files changed, 25 insertions(+), 25 deletions(-)
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index f02d3fc..39b0438 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -684,6 +684,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+diff --git a/arch/avr32/boot/u-boot/head.S b/arch/avr32/boot/u-boot/head.S
+index 4488fa2..d36d865 100644
+--- a/arch/avr32/boot/u-boot/head.S
++++ b/arch/avr32/boot/u-boot/head.S
+@@ -8,6 +8,8 @@
+  * published by the Free Software Foundation.
+  */
+ #include <asm/setup.h>
++#include <asm/thread_info.h>
++#include <asm/sysreg.h>
  
- 	switch (msg_type) {
- 	case AUDIT_GET:
-+		status_set.mask		 = 0;
- 		status_set.enabled	 = audit_enabled;
- 		status_set.failure	 = audit_failure;
- 		status_set.pid		 = audit_pid;
+ 	/*
+ 	 * The kernel is loaded where we want it to be and all caches
+@@ -20,11 +22,6 @@
+ 	.section .init.text,"ax"
+ 	.global _start
+ _start:
+-	/* Check if the boot loader actually provided a tag table */
+-	lddpc	r0, magic_number
+-	cp.w	r12, r0
+-	brne	no_tag_table
+-
+ 	/* Initialize .bss */
+ 	lddpc	r2, bss_start_addr
+ 	lddpc   r3, end_addr
+@@ -34,6 +31,25 @@ _start:
+ 	cp      r2, r3
+ 	brlo    1b
+ 
++	/* Initialize status register */
++	lddpc	r0, init_sr
++	mtsr	SYSREG_SR, r0
++
++	/* Set initial stack pointer */
++	lddpc	sp, stack_addr
++	sub	sp, -THREAD_SIZE
++
++#ifdef CONFIG_FRAME_POINTER
++	/* Mark last stack frame */
++	mov	lr, 0
++	mov	r7, 0
++#endif
++
++	/* Check if the boot loader actually provided a tag table */
++	lddpc	r0, magic_number
++	cp.w	r12, r0
++	brne	no_tag_table
++
+ 	/*
+ 	 * Save the tag table address for later use. This must be done
+ 	 * _after_ .bss has been initialized...
+@@ -53,6 +69,10 @@ bss_start_addr:
+ 	.long   __bss_start
+ end_addr:
+ 	.long   _end
++init_sr:
++	.long	0x007f0000	/* Supervisor mode, everything masked */
++stack_addr:
++	.long	init_thread_union
+ 
+ no_tag_table:
+ 	sub	r12, pc, (. - 2f)
+diff --git a/arch/avr32/kernel/head.S b/arch/avr32/kernel/head.S
+index 6163bd0..59eae6d 100644
+--- a/arch/avr32/kernel/head.S
++++ b/arch/avr32/kernel/head.S
+@@ -10,33 +10,13 @@
+ #include <linux/linkage.h>
+ 
+ #include <asm/page.h>
+-#include <asm/thread_info.h>
+-#include <asm/sysreg.h>
+ 
+ 	.section .init.text,"ax"
+ 	.global kernel_entry
+ kernel_entry:
+-	/* Initialize status register */
+-	lddpc   r0, init_sr
+-	mtsr	SYSREG_SR, r0
+-
+-	/* Set initial stack pointer */
+-	lddpc   sp, stack_addr
+-	sub	sp, -THREAD_SIZE
+-
+-#ifdef CONFIG_FRAME_POINTER
+-	/* Mark last stack frame */
+-	mov	lr, 0
+-	mov	r7, 0
+-#endif
+-
+ 	/* Start the show */
+ 	lddpc   pc, kernel_start_addr
+ 
+ 	.align  2
+-init_sr:
+-	.long   0x007f0000	/* Supervisor mode, everything masked */
+-stack_addr:
+-	.long   init_thread_union
+ kernel_start_addr:
+ 	.long   start_kernel
 -- 
 1.8.3.2
 
