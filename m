@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933525Ab3LERjv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:39:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38472 "EHLO
+	id S1757515Ab3LERju (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:39:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38464 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933458Ab3LERiU (ORCPT
+	with ESMTP id S933448Ab3LERiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:38:20 -0500
+	Thu, 5 Dec 2013 12:38:18 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: John Stultz <john.stultz@linaro.org>, Mel Gorman <mgorman@suse.de>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+Cc: Malcolm Priestley <tvboxspy@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 84/90] cpuset: Fix memory allocator deadlock
-Date: Thu,  5 Dec 2013 17:36:06 +0000
-Message-Id: <1386264972-5399-85-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 85/90] staging: vt6656: [BUG] Fix for TX USB resets from vendors driver.
+Date: Thu,  5 Dec 2013 17:36:07 +0000
+Message-Id: <1386264972-5399-86-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -28,93 +28,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 0fc0287c9ed1ffd3706f8b4d9b314aa102ef1245 upstream.
+commit 9df682927c2e3a92f43803d6b52095992e3b2ab8 upstream.
 
-Juri hit the below lockdep report:
+This fixes resets on heavy TX data traffic.
 
-[    4.303391] ======================================================
-[    4.303392] [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
-[    4.303394] 3.12.0-dl-peterz+ #144 Not tainted
-[    4.303395] ------------------------------------------------------
-[    4.303397] kworker/u4:3/689 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
-[    4.303399]  (&p->mems_allowed_seq){+.+...}, at: [<ffffffff8114e63c>] new_slab+0x6c/0x290
-[    4.303417]
-[    4.303417] and this task is already holding:
-[    4.303418]  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff812d2dfb>] blk_execute_rq_nowait+0x5b/0x100
-[    4.303431] which would create a new lock dependency:
-[    4.303432]  (&(&q->__queue_lock)->rlock){..-...} -> (&p->mems_allowed_seq){+.+...}
-[    4.303436]
+Vendor driver
+VT6656_Linux_src_v1.21.03_x86_11.04.zip
+http://www.viaembedded.com/servlet/downloadSvl?id=1890&download_file_id=14704
+This is GPL-licensed code.
 
-[    4.303898] the dependencies between the lock to be acquired and SOFTIRQ-irq-unsafe lock:
-[    4.303918] -> (&p->mems_allowed_seq){+.+...} ops: 2762 {
-[    4.303922]    HARDIRQ-ON-W at:
-[    4.303923]                     [<ffffffff8108ab9a>] __lock_acquire+0x65a/0x1ff0
-[    4.303926]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
-[    4.303929]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
-[    4.303931]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
-[    4.303933]    SOFTIRQ-ON-W at:
-[    4.303933]                     [<ffffffff8108abcc>] __lock_acquire+0x68c/0x1ff0
-[    4.303935]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
-[    4.303940]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
-[    4.303955]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
-[    4.303959]    INITIAL USE at:
-[    4.303960]                    [<ffffffff8108a884>] __lock_acquire+0x344/0x1ff0
-[    4.303963]                    [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
-[    4.303966]                    [<ffffffff81063dd6>] kthreadd+0x86/0x180
-[    4.303969]                    [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
-[    4.303972]  }
+original code
+BBbVT3184Init
+...
+//2007-0725, RobertChang add, Enable Squelch detect reset option(SQ_RST_Opt), USB (register4, bit1)
+CONTROLnsRequestIn(pDevice,
+                                 MESSAGE_TYPE_READ,
+                                 (WORD)0x600+4,     // USB's Reg4's bit1
+                                 MESSAGE_REQUEST_MEM,
+                                 1,
+                                 (PBYTE) &byData);
+byData = byData|2 ;
+CONTROLnsRequestOut(pDevice,
+                              MESSAGE_TYPE_WRITE,
+                              (WORD)0x600+4,     // USB's Reg4's bit1
+                              MESSAGE_REQUEST_MEM,
+                              1,
+                              (PBYTE) &byData);
 
-Which reports that we take mems_allowed_seq with interrupts enabled. A
-little digging found that this can only be from
-cpuset_change_task_nodemask().
+return TRUE;//ntStatus;
+....
 
-This is an actual deadlock because an interrupt doing an allocation will
-hit get_mems_allowed()->...->__read_seqcount_begin(), which will spin
-forever waiting for the write side to complete.
+A back port patch is needed for kernels less than 3.10.
 
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Reported-by: Juri Lelli <juri.lelli@gmail.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Tested-by: Juri Lelli <juri.lelli@gmail.com>
-Acked-by: Li Zefan <lizefan@huawei.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/cpuset.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/staging/vt6656/baseband.c | 11 +++++++++++
+ drivers/staging/vt6656/rndis.h    |  1 +
+ 2 files changed, 12 insertions(+)
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 4611da5..2627f0d0 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -983,8 +983,10 @@ static void cpuset_change_task_nodemask(struct task_struct *tsk,
- 	need_loop = task_has_mempolicy(tsk) ||
- 			!nodes_intersects(*newmems, tsk->mems_allowed);
+diff --git a/drivers/staging/vt6656/baseband.c b/drivers/staging/vt6656/baseband.c
+index 06f27f6..858e2a8 100644
+--- a/drivers/staging/vt6656/baseband.c
++++ b/drivers/staging/vt6656/baseband.c
+@@ -976,6 +976,7 @@ BOOL BBbVT3184Init(PSDevice pDevice)
+     PBYTE                   pbyAgc;
+     WORD                    wLengthAgc;
+     BYTE                    abyArray[256];
++	u8 data;
  
--	if (need_loop)
-+	if (need_loop) {
-+		local_irq_disable();
- 		write_seqcount_begin(&tsk->mems_allowed_seq);
-+	}
+     ntStatus = CONTROLnsRequestIn(pDevice,
+                                   MESSAGE_TYPE_READ,
+@@ -1144,6 +1145,16 @@ else {
+     ControlvWriteByte(pDevice,MESSAGE_REQUEST_BBREG,0x0D,0x01);
  
- 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
- 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
-@@ -992,8 +994,10 @@ static void cpuset_change_task_nodemask(struct task_struct *tsk,
- 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP2);
- 	tsk->mems_allowed = *newmems;
- 
--	if (need_loop)
-+	if (need_loop) {
- 		write_seqcount_end(&tsk->mems_allowed_seq);
-+		local_irq_enable();
-+	}
- 
- 	task_unlock(tsk);
+     RFbRFTableDownload(pDevice);
++
++	/* Fix for TX USB resets from vendors driver */
++	CONTROLnsRequestIn(pDevice, MESSAGE_TYPE_READ, USB_REG4,
++		MESSAGE_REQUEST_MEM, sizeof(data), &data);
++
++	data |= 0x2;
++
++	CONTROLnsRequestOut(pDevice, MESSAGE_TYPE_WRITE, USB_REG4,
++		MESSAGE_REQUEST_MEM, sizeof(data), &data);
++
+     return TRUE;//ntStatus;
  }
+ 
+diff --git a/drivers/staging/vt6656/rndis.h b/drivers/staging/vt6656/rndis.h
+index fccf7e9..dcf7bf5 100644
+--- a/drivers/staging/vt6656/rndis.h
++++ b/drivers/staging/vt6656/rndis.h
+@@ -69,6 +69,7 @@
+ 
+ #define VIAUSB20_PACKET_HEADER          0x04
+ 
++#define USB_REG4	0x604
+ 
+ /*---------------------  Export Classes  ----------------------------*/
+ 
 -- 
 1.8.3.2
 
