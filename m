@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756803Ab3LEOQu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 09:16:50 -0500
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:48892 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756749Ab3LEOQq (ORCPT
+	id S932362Ab3LEOQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 09:16:59 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:44335 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756749Ab3LEOQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 09:16:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <871u1wenwk.fsf@devron.myhome.or.jp>
-References: <1384688303-2969-1-git-send-email-linkinjeon@gmail.com>
-	<871u1wenwk.fsf@devron.myhome.or.jp>
-Date: Thu, 5 Dec 2013 23:16:44 +0900
-Message-ID: <CAKYAXd8vXgG-n1f7Mm73+i_BPR+AaQt6H0cMG0kZZxS00y6=zw@mail.gmail.com>
-Subject: Re: [PATCH v2 4/5] fat: fallback to buffered write in case of
- fallocatded region on direct IO
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 5 Dec 2013 09:16:55 -0500
+Date: Thu, 5 Dec 2013 09:16:52 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Nicholas Mc Guire <der.herr@hofr.at>
+Subject: [PATCH RT] cpu hotplug: Document why PREEMPT_RT uses a spinlock
+Message-ID: <20131205091652.0523f2c3@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/12/1, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->> diff --git a/fs/fat/inode.c b/fs/fat/inode.c
->> index 12a37a9..c9fb9b6 100644
->> --- a/fs/fat/inode.c
->> +++ b/fs/fat/inode.c
->> @@ -217,6 +217,14 @@ static ssize_t fat_direct_IO(int rw, struct kiocb
->> *iocb,
->>  		loff_t size = offset + iov_iter_count(iter);
->>  		if (MSDOS_I(inode)->mmu_private < size)
->>  			return 0;
->> +
->> +		/*
->> +		 * In case of writing in fallocated region, return 0 and
->> +		 * fallback to buffered write.
->> +		 */
->> +		if (MSDOS_I(inode)->i_disksize >
->> +		    round_up(i_size_read(inode), inode->i_sb->s_blocksize))
->> +			return 0;
->
-> ->mmu_private works instead of i_size?
-Yes, I will change it.
-Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+The patch:
+
+    cpu: Make hotplug.lock a "sleeping" spinlock on RT
+    
+    Tasks can block on hotplug.lock in pin_current_cpu(), but their
+    state might be != RUNNING. So the mutex wakeup will set the state
+    unconditionally to RUNNING. That might cause spurious unexpected
+    wakeups. We could provide a state preserving mutex_lock() function,
+    but this is semantically backwards. So instead we convert the
+    hotplug.lock() to a spinlock for RT, which has the state preserving
+    semantics already.
+
+Fixed a bug where the hotplug lock on PREEMPT_RT can be called after a
+task set its state to TASK_UNINTERRUPTIBLE and before it called
+schedule. If the hotplug_lock used a mutex, and there was contention,
+the current task's state would be turned to TASK_RUNNABLE and the
+schedule call will not sleep. This caused unexpected results.
+
+Although the patch had a description of the change, the code had no
+comments about it. This causes confusion to those that review the code,
+and as PREEMPT_RT is held in a quilt queue and not git, it's not as easy
+to see why a change was made. Even if it was in git, the code should
+still have a comment for something as subtle as this.
+
+Document the rational for using a spinlock on PREEMPT_RT in the hotplug
+lock code.
+
+Reported-by: Nicholas Mc Guire <der.herr@hofr.at>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 063c2bb..c3014f1 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -80,6 +80,14 @@ struct hotplug_pcp {
+ 	struct completion synced;
+ 	struct completion unplug_wait;
+ #ifdef CONFIG_PREEMPT_RT_FULL
++	/*
++	 * Note, on PREEMPT_RT, the hotplug lock must save the state of
++	 * the task, otherwise the mutex will cause the task to fail
++	 * to sleep when required. (Because it's called from migrate_disable())
++	 *
++	 * The spinlock_t on PREEMPT_RT is a mutex that saves the task's
++	 * state.
++	 */
+ 	spinlock_t lock;
+ #else
+ 	struct mutex mutex;
