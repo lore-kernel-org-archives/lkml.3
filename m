@@ -1,111 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933409Ab3LEEKj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 23:10:39 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:56867 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752867Ab3LEEKg (ORCPT
+	id S933441Ab3LEELs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 23:11:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37803 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932390Ab3LEELq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 23:10:36 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org, hpa@zytor.com,
-        mjg59@srcf.ucam.org, greg@kroah.com
-References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
-	<8761rl73s7.fsf@xmission.com> <20131122015518.GA31921@redhat.com>
-	<87txf4y304.fsf@xmission.com> <20131122141945.GE4046@redhat.com>
-	<87li0fvm10.fsf@xmission.com> <20131204193430.GF19087@redhat.com>
-Date: Wed, 04 Dec 2013 20:10:22 -0800
-In-Reply-To: <20131204193430.GF19087@redhat.com> (Vivek Goyal's message of
-	"Wed, 4 Dec 2013 14:34:31 -0500")
-Message-ID: <87siu8545t.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 4 Dec 2013 23:11:46 -0500
+Date: Wed, 4 Dec 2013 20:12:51 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Sergei Ianovich <ynvich@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Jiri Slaby <jslaby@suse.cz>,
+        "open list:SERIAL DRIVERS" <linux-serial@vger.kernel.org>
+Subject: Re: [PATCH 01/11] resolve PXA<->8250 serial device address conflict
+Message-ID: <20131205041251.GA24906@kroah.com>
+References: <1385879185-22455-1-git-send-email-ynvich@gmail.com>
+ <1385879185-22455-2-git-send-email-ynvich@gmail.com>
+ <20131202090253.GE3942@xps8300>
+ <1385976238.12531.8.camel@host5.omatika.ru>
+ <20131202094932.GF3942@xps8300>
+ <1385980005.12531.21.camel@host5.omatika.ru>
+ <20131202141033.GK3942@xps8300>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+N2K0zzpm9glUWHJFBoF4Co7HGubQbMMw=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0230]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Vivek Goyal <vgoyal@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel loading
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131202141033.GK3942@xps8300>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+On Mon, Dec 02, 2013 at 04:10:33PM +0200, Heikki Krogerus wrote:
+> Hi,
+> 
+> On Mon, Dec 02, 2013 at 02:26:45PM +0400, Sergei Ianovich wrote:
+> > On Mon, 2013-12-02 at 11:49 +0200, Heikki Krogerus wrote:
+> > > On Mon, Dec 02, 2013 at 01:23:58PM +0400, Sergei Ianovich wrote:
+> > > > On Mon, 2013-12-02 at 11:02 +0200, Heikki Krogerus wrote:
+> > > > > 
+> > > > > If drivers/tty/serial/pxa.c was converted to an other probe driver for
+> > > > > the 8250, this would not be an issue.
+> > > > 
+> > > > It seems that my patch is not going to be accepted. However, there is a
+> > > > device which has both PXA ports and a additional 8250 accent chip. As a
+> > > > result, there is a device allocation conflict. For the device to be
+> > > > usable the conflict needs to be resolved.
+> > > > 
+> > > > Do you mean that drivers/tty/serial/pxa.c needs to be rewritten to
+> > > > support lp8x4x special case?
+> > > 
+> > > Sorry I was not clear. I was suggesting that drivers/tty/serial/pxa.c
+> > > would be converted to drivers/tty/serial/8250/8250_pxa.c since it
+> > > looks to me like just an other 16x50 compatible UART. That would fix
+> > > the issue with the name conflict. You would then simply register 8250
+> > > ports from two probe drivers (drivers/tty/serial/8250/8250_pxa.c and
+> > > drivers/tty/serial/8250/8250_lp8x4x.c).
+> > > 
+> > > Depending on the order you register your platform devices (which you
+> > > decide in your platform code), but let's say the pxa gets registered
+> > > first and let's say it only has one port. You will then have in your
+> > > system /dev/ttyS0 for the pxa port and /dev/ttyS[1-4] for the other
+> > > UART.
+> > > 
+> > > I hope I was able to explain what I mean this time :)
+> > 
+> > Sorry, I wasn't clear as well. I got it right the first time. You mean
+> > pxa.c needs to merged into 8250. This will solve the conflict in
+> > question, and do it the right way. However, this will be a *much* bigger
+> > patch, and it will affect everyone on pxa.
+> > 
+> > Who makes the decision which way to go?
+> 
+> Greg and Russel make this decision. By having the pxa driver simply
+> register 8250 ports would probable reduce the code. Thats about the
+> biggest benefit from it.
+> 
+> It would still be something nice to have IMO. Ideally all the
+> 8250/16x50 UARTs should register the ports with 8250_core.c, and not
+> create complete uart driver on their own.
 
-> Hi Eric,
->
-> So you want a separate purgatory code and that purgatory should be self
-> contained and should not share any code with rest of the kernel. No
-> inclusion of header files, no linking against kernel libraries? That means
-> even re-implementing sha256 functions separately (like user space)?
+I agree, this is the best way to resolve this, having a separate uart
+driver isn't that good at all to be doing, if at all possible.
 
-Call only trivial sharing of code with the rest of the kernel.   But only
-as much as say the kernel decompressor has.  
+thanks,
 
-> If code maintenance is a concern, then I think I can reimplement some
-> of the functions to calculate sha256 in separate crash files and invoke
-> those to reduce code sharing with rest of the kernel. And we should be
-> able to link against the kernel and not have to create separate
-> relocatable purgatory object and relocate it.
-
-It is both code maintenance and the fact that we have a strong
-expectation that where purgatory lives should not be corrupted.
-Plus what I have seen there maintenance becomes much simpler if there is
-a little bit of C code that lives between the two kernels.  At that
-point people don't have to grok assembly to be able to touch anything,
-and by simply living their it enforces separation of concerns
-from the kernel in a way that is trivial and obvious.
-
-Plus we already have all of the code in userspace to do all of this work
-so it is not something you would need to write from scrach merely
-something that you would need to adapt.
-
-> IOW, does purgatory still have to be a relocatable object?
-
-Fundamentally purgatory does need to be a relocatable object.
-
-> I think
-> user space had no choice but given the fact that we are implementing
-> thing in kernel, I should be able to implement my own hash calculation
-> and segment verification code and link it to existing kernel and invoke
-> these outside purgatory. 
-
-Doing this outside of purgatory and linking to the rest of the kernel is
-almost certainly enough to get someone to perform an obvious cleanup
-that will undermine the purpose of the code.  Or perhaps it will be
-merely a reference to the GOT table behind our backs in the C code
-generated by the compiler that will undermine this checking.
-
-Linking to our sanity checks to the rest of the kernel leaves me
-profoundly uncomfortable.
-
-> Anyway, we call so many other functions after
-> crash to stop cpus, save registers, etc.
-
-There is no other possible place to stop cpus, and save the cpu
-registers.  As much as possible that should be the only justification
-for the code we run on the kexec on panic code path.
-
-Honestly calling so many other functions on that code path is a good
-reason to see about removing them.  In addition to my other reasons
-adding the hash calculation on that path will likely confuse issues
-more than helping them.
-
-Eric
-
+greg k-h
