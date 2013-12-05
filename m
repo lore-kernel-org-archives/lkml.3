@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756406Ab3LEBVq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 20:21:46 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:10047 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756359Ab3LEBVm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 20:21:42 -0500
-X-IronPort-AV: E=Sophos;i="4.93,829,1378828800"; 
-   d="scan'208";a="9193798"
-Message-ID: <529FD388.7030907@cn.fujitsu.com>
-Date: Thu, 05 Dec 2013 09:14:48 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1756445Ab3LEBWb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 20:22:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61557 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756355Ab3LEBW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 20:22:28 -0500
+Date: Wed, 4 Dec 2013 20:22:06 -0500
+From: Dave Jones <davej@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: lots of brief rcu stalls.
+Message-ID: <20131205012206.GA31349@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20131204232838.GA25592@redhat.com>
+ <20131205001614.GI15492@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Benjamin <bcrl@kvack.org>,
-        linux-aio@kvack.org, fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Kent <kmo@daterainc.com>,
-        Kristian Nielsen <knielsen@knielsen-hq.org>
-Subject: Re: [PATCH] aio: clean up aio ring in the fail path
-References: <529F019A.2040401@cn.fujitsu.com> <20131204145416.GA22438@redhat.com>
-In-Reply-To: <20131204145416.GA22438@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/05 09:21:26,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/05 09:21:32
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131205001614.GI15492@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On Wed, Dec 04, 2013 at 04:16:14PM -0800, Paul E. McKenney wrote:
+ > On Wed, Dec 04, 2013 at 06:28:38PM -0500, Dave Jones wrote:
+ > > Paul,
+ > > I'm seeing this happening more and more lately...
+ > > 
+ > > [  771.786462] INFO: rcu_preempt detected stalls on CPUs/tasks:
+ > > [  771.786552] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+ > > [  771.786574] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+ > > [  771.786595] 	(detected by 0, t=6502 jiffies, g=20611, c=20610, q=0)
+ > > [  771.786620] INFO: Stall ended before state dump start
+ > > [  966.724546] INFO: rcu_preempt detected stalls on CPUs/tasks:
+ > > [  966.724854] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+ > > [  966.724931] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+ > > [  966.725005] 	(detected by 0, t=26007 jiffies, g=20611, c=20610, q=0)
+ > > [  966.725093] INFO: Stall ended before state dump start
+ > > [ 1161.661459] INFO: rcu_preempt detected stalls on CPUs/tasks:
+ > > [ 1161.661763] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+ > > [ 1161.661840] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+ > > [ 1161.661915] 	(detected by 0, t=45512 jiffies, g=20611, c=20610, q=0)
+ > > [ 1161.662001] INFO: Stall ended before state dump start
+ > > [ 1356.598205] INFO: rcu_preempt detected stalls on CPUs/tasks:
+ > > [ 1356.598513] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+ > > [ 1356.598590] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+ > > [ 1356.598664] 	(detected by 0, t=65017 jiffies, g=20611, c=20610, q=0)
+ > > [ 1356.598751] INFO: Stall ended before state dump start
+ > > [ 1551.536099] INFO: rcu_preempt detected stalls on CPUs/tasks:
+ > > [ 1551.536408] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+ > > [ 1551.536485] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+ > > [ 1551.536559] 	(detected by 0, t=84522 jiffies, g=20611, c=20610, q=0)
+ > > [ 1551.536645] INFO: Stall ended before state dump start
+ > > 
+ > > While it's apparently a non-problem, it's pretty noisy.
+ > > Any ideas?
+ > 
+ > Does the following help?
 
-On 12/04/2013 10:54 PM, Dave Jones wrote:
+Seems so so far!
 
-> On Wed, Dec 04, 2013 at 06:19:06PM +0800, Gu Zheng wrote:
->  > Clean up the aio ring file in the fail path of aio_setup_ring
->  > and ioctx_alloc. And maybe it can fix the GPF issue reported by
->  > Dave Jones:
->  > https://lkml.org/lkml/2013/11/25/898
->  > 
->  > 
->  > Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
->  > ---
->  >  fs/aio.c |    8 ++++++--
->  >  1 files changed, 6 insertions(+), 2 deletions(-)
->  > 
->  > diff --git a/fs/aio.c b/fs/aio.c
->  > index 08159ed..6efb7f6 100644
->  > --- a/fs/aio.c
->  > +++ b/fs/aio.c
->  > @@ -367,8 +367,10 @@ static int aio_setup_ring(struct kioctx *ctx)
->  >  	if (nr_pages > AIO_RING_PAGES) {
->  >  		ctx->ring_pages = kcalloc(nr_pages, sizeof(struct page *),
->  >  					  GFP_KERNEL);
->  > -		if (!ctx->ring_pages)
->  > +		if (!ctx->ring_pages) {
->  > +			put_aio_ring_file(ctx);
->  >  			return -ENOMEM;
->  > +		}
->  >  	}
->  >  
-> 
->   CC      fs/aio.o
-> fs/aio.c: In function ‘aio_setup_ring’:
-> fs/aio.c:363:4: error: implicit declaration of function ‘put_aio_ring_file’ [-Werror=implicit-function-declaration]
->     put_aio_ring_file(ctx);
-> 
-> 
-> Is this dependant on another patch ?
-
-It's applied on 3.12-rc2. Please ignore the previous defective patch I sent
-before, and try again.
-
-Regards,
-Gu
-
-> 
-> 	Dave
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+	Dave
 
