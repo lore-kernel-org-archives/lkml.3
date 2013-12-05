@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933403Ab3LERwx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:52:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38250 "EHLO
+	id S1757795Ab3LERxZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:53:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38223 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933324Ab3LERhX (ORCPT
+	with ESMTP id S933262Ab3LERhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:37:23 -0500
+	Thu, 5 Dec 2013 12:37:15 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Nishanth Menon <nm@ti.com>, Tony Lindgren <tony@atomide.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 44/90] rtlwifi: rtl8192se: Fix incorrect signal strength for unassociated AP
-Date: Thu,  5 Dec 2013 17:35:26 +0000
-Message-Id: <1386264972-5399-45-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 39/90] ARM: OMAP2+: omap_device: maintain sane runtime pm status around suspend/resume
+Date: Thu,  5 Dec 2013 17:35:21 +0000
+Message-Id: <1386264972-5399-40-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -28,40 +27,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Nishanth Menon <nm@ti.com>
 
-commit b4ade797668e33b4e8353c2701ce01d7084dfafa upstream.
+commit 3522bf7bfa248b99eafa2f4872190699a808c7d9 upstream.
 
-The routine that processes received frames was returning the RSSI value for the
-signal strength; however, that value is available only for associated APs. As
-a result, the strength was the absurd value of 10 dBm. As a result, scans
-return incorrect values for the strength, which causes unwanted attempts to roam.
+OMAP device hooks around suspend|resume_noirq ensures that hwmod
+devices are forced to idle using omap_device_idle/enable as part of
+the last stage of suspend activity.
 
-This patch fixes https://bugzilla.kernel.org/show_bug.cgi?id=63881.
+For a device such as i2c who uses autosuspend, it is possible to enter
+the suspend path with dev->power.runtime_status = RPM_ACTIVE.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Reported-by: Matthieu Baerts <matttbe@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+As part of the suspend flow, the generic runtime logic would increment
+it's dev->power.disable_depth to 1. This should prevent further
+pm_runtime_get_sync from succeeding once the runtime_status has been
+set to RPM_SUSPENDED.
+
+Now, as part of the suspend_noirq handler in omap_device, we force the
+following: if the device status is !suspended, we force the device
+to idle using omap_device_idle (clocks are cut etc..). This ensures
+that from a hardware perspective, the device is "suspended". However,
+runtime_status is left to be active.
+
+*if* an operation is attempted after this point to
+pm_runtime_get_sync, runtime framework depends on runtime_status to
+indicate accurately the device status, and since it sees it to be
+ACTIVE, it assumes the module is functional and returns a non-error
+value. As a result the user will see pm_runtime_get succeed, however a
+register access will crash due to the lack of clocks.
+
+To prevent this from happening, we should ensure that runtime_status
+exactly indicates the device status. As a result of this change
+any further calls to pm_runtime_get* would return -EACCES (since
+disable_depth is 1). On resume, we restore the clocks and runtime
+status exactly as we suspended with. These operations are not expected
+to fail as we update the states after the core runtime framework has
+suspended itself and restore before the core runtime framework has
+resumed.
+
+Reported-by: J Keerthy <j-keerthy@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Acked-by: Rajendra Nayak <rnayak@ti.com>
+Acked-by: Kevin Hilman <khilman@linaro.org>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 [ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8192se/trx.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/arm/plat-omap/omap_device.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/trx.c b/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
-index 812b585..4e4bb57 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
-@@ -583,8 +583,7 @@ bool rtl92se_rx_query_desc(struct ieee80211_hw *hw, struct rtl_stats *stats,
+diff --git a/arch/arm/plat-omap/omap_device.c b/arch/arm/plat-omap/omap_device.c
+index c490240..ccc4536 100644
+--- a/arch/arm/plat-omap/omap_device.c
++++ b/arch/arm/plat-omap/omap_device.c
+@@ -756,6 +756,7 @@ static int _od_suspend_noirq(struct device *dev)
+ 
+ 	if (!ret && !pm_runtime_status_suspended(dev)) {
+ 		if (pm_generic_runtime_suspend(dev) == 0) {
++			pm_runtime_set_suspended(dev);
+ 			if (!(od->flags & OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
+ 				omap_device_idle(pdev);
+ 			od->flags |= OMAP_DEVICE_SUSPENDED;
+@@ -770,11 +771,19 @@ static int _od_resume_noirq(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct omap_device *od = to_omap_device(pdev);
+ 
+-	if ((od->flags & OMAP_DEVICE_SUSPENDED) &&
+-	    !pm_runtime_status_suspended(dev)) {
++	if (od->flags & OMAP_DEVICE_SUSPENDED) {
+ 		od->flags &= ~OMAP_DEVICE_SUSPENDED;
+ 		if (!(od->flags & OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
+ 			omap_device_enable(pdev);
++		/*
++		 * XXX: we run before core runtime pm has resumed itself. At
++		 * this point in time, we just restore the runtime pm state and
++		 * considering symmetric operations in resume, we donot expect
++		 * to fail. If we failed, something changed in core runtime_pm
++		 * framework OR some device driver messed things up, hence, WARN
++		 */
++		WARN(pm_runtime_set_active(dev),
++		     "Could not set %s runtime state active\n", dev_name(dev));
+ 		pm_generic_runtime_resume(dev);
  	}
  
- 	/*rx_status->qual = stats->signal; */
--	rx_status->signal = stats->rssi + 10;
--	/*rx_status->noise = -stats->noise; */
-+	rx_status->signal = stats->recvsignalpower + 10;
- 
- 	return true;
- }
 -- 
 1.8.3.2
 
