@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933200Ab3LERhK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:37:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38168 "EHLO
+	id S1757866Ab3LERzI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:55:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38200 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933155Ab3LERhA (ORCPT
+	with ESMTP id S933182Ab3LERhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:37:00 -0500
+	Thu, 5 Dec 2013 12:37:09 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Renninger <trenn@suse.de>, Ingo Molnar <mingo@kernel.org>,
+Cc: Nicolin Chen <b42378@freescale.com>, Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 28/90] x86/microcode/amd: Tone down printk(), don't treat a missing firmware file as an error
-Date: Thu,  5 Dec 2013 17:35:10 +0000
-Message-Id: <1386264972-5399-29-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 35/90] ASoC: wm8962: Turn on regcache_cache_only before disabling regulator
+Date: Thu,  5 Dec 2013 17:35:17 +0000
+Message-Id: <1386264972-5399-36-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -27,40 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Renninger <trenn@suse.de>
+From: Nicolin Chen <b42378@freescale.com>
 
-commit 11f918d3e2d3861b6931e97b3aa778e4984935aa upstream.
+commit 50bfcf2df2fadf77e143d6099150e6fa7ef4d78c upstream.
 
-Do it the same way as done in microcode_intel.c: use pr_debug()
-for missing firmware files.
+It's safer to turn on regcache_cache_only before disabling regulator since
+the driver will turn off the regcache_cache_only after enabling regulator.
 
-There seem to be CPUs out there for which no microcode update
-has been submitted to kernel-firmware repo yet resulting in
-scary sounding error messages in dmesg:
+If we remain cache_only false, some command like 'amixer cset' would get
+failure if being run before wm8962_resume().
 
-  microcode: failed to load file amd-ucode/microcode_amd_fam16h.bin
-
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-Acked-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1384274383-43510-1-git-send-email-trenn@suse.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Nicolin Chen <b42378@freescale.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/microcode_amd.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/codecs/wm8962.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
-index 5d8cf0d..b316ffe 100644
---- a/arch/x86/kernel/microcode_amd.c
-+++ b/arch/x86/kernel/microcode_amd.c
-@@ -338,7 +338,7 @@ static enum ucode_state request_microcode_amd(int cpu, struct device *device)
- 		snprintf(fw_name, sizeof(fw_name), "amd-ucode/microcode_amd_fam%.2xh.bin", c->x86);
+diff --git a/sound/soc/codecs/wm8962.c b/sound/soc/codecs/wm8962.c
+index bff98fb..c4afa36 100644
+--- a/sound/soc/codecs/wm8962.c
++++ b/sound/soc/codecs/wm8962.c
+@@ -3687,6 +3687,8 @@ static __devinit int wm8962_i2c_probe(struct i2c_client *i2c,
+ 	if (ret < 0)
+ 		goto err_regmap;
  
- 	if (request_firmware(&fw, (const char *)fw_name, device)) {
--		pr_err("failed to load file %s\n", fw_name);
-+		pr_debug("failed to load file %s\n", fw_name);
- 		goto out;
- 	}
++	regcache_cache_only(wm8962->regmap, true);
++
+ 	/* The drivers should power up as needed */
+ 	regulator_bulk_disable(ARRAY_SIZE(wm8962->supplies), wm8962->supplies);
  
 -- 
 1.8.3.2
