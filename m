@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932807Ab3LEPsg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 10:48:36 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:53101 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932355Ab3LEPsf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 10:48:35 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v2 5/5] fat: permit to return phy block number by fibmap in fallocated region
-References: <1384688316-3003-1-git-send-email-linkinjeon@gmail.com>
-	<87wqjod97k.fsf@devron.myhome.or.jp>
-	<CAKYAXd8NS56AYO-EGs4SM9jVn7AfsQbKznxXP2t7Xf2qDXUo1g@mail.gmail.com>
-Date: Fri, 06 Dec 2013 00:48:18 +0900
-In-Reply-To: <CAKYAXd8NS56AYO-EGs4SM9jVn7AfsQbKznxXP2t7Xf2qDXUo1g@mail.gmail.com>
-	(Namjae Jeon's message of "Thu, 5 Dec 2013 23:20:19 +0900")
-Message-ID: <8738m7fge5.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932736Ab3LEPxP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 10:53:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12231 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756764Ab3LEPxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 10:53:12 -0500
+Message-ID: <1386258761.1861.137.camel@deneb.redhat.com>
+Subject: Re: [PATCH 3/3] arm64: add EFI runtime services
+From: Mark Salter <msalter@redhat.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        "roy.franz@linaro.org" <roy.franz@linaro.org>
+Date: Thu, 05 Dec 2013 10:52:41 -0500
+In-Reply-To: <20131205152510.GB974@darko.cambridge.arm.com>
+References: <1385762712-17043-1-git-send-email-msalter@redhat.com>
+	 <1385762712-17043-4-git-send-email-msalter@redhat.com>
+	 <20131205152510.GB974@darko.cambridge.arm.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+On Thu, 2013-12-05 at 15:25 +0000, Catalin Marinas wrote:
+> I lost track of the early_ioremap status for arm/arm64? Was there more
+> progress since October (I think)?
 
->> ->i_mutex doesn't work for swapfile.
-> Sorry, Actually, I don't understand why it is related with swapfile.
-> Could you elaborate more ?
+See the two patch series:
 
-swapfile.c calls ->bmap to know physical address in swapfile. However,
-swapfile.c calls ->bmap under inode->i_mutex.
+ https://lkml.org/lkml/2013/11/25/474
 
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+and
+
+ https://lkml.org/lkml/2013/11/27/621
+
+The latter early_ioremap depends on the first although there are no
+arm64 bits in the first. All of the arm64 early_ioremap stuff is in
+the latter.
+
+--Mark
+
+
