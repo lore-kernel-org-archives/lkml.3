@@ -1,109 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933312Ab3LEBtM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 20:49:12 -0500
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:43382 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756199Ab3LEBtJ (ORCPT
+	id S933405Ab3LEBzE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 20:55:04 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:31689 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756228Ab3LEBzB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 20:49:09 -0500
-Date: Wed, 4 Dec 2013 17:49:04 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org
-Subject: Re: [patch 7/8] mm, memcg: allow processes handling oom notifications
- to access reserves
-In-Reply-To: <20131204054533.GZ3556@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1312041742560.20115@chino.kir.corp.google.com>
-References: <20131119131400.GC20655@dhcp22.suse.cz> <20131119134007.GD20655@dhcp22.suse.cz> <alpine.DEB.2.02.1311192352070.20752@chino.kir.corp.google.com> <20131120152251.GA18809@dhcp22.suse.cz> <alpine.DEB.2.02.1311201917520.7167@chino.kir.corp.google.com>
- <20131128115458.GK2761@dhcp22.suse.cz> <alpine.DEB.2.02.1312021504170.13465@chino.kir.corp.google.com> <alpine.DEB.2.02.1312032116440.29733@chino.kir.corp.google.com> <alpine.DEB.2.02.1312032118570.29733@chino.kir.corp.google.com>
- <20131204054533.GZ3556@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 4 Dec 2013 20:55:01 -0500
+X-AuditID: cbfee61b-b7f006d000003e1f-76-529fdceffd7f
+From: Chao Yu <chao2.yu@samsung.com>
+To: ??? <jaegeuk.kim@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
+Subject: [f2fs-dev] [PATCH 1/3] f2fs: use inner macro GFP_F2FS_ZERO for
+ simplification
+Date: Thu, 05 Dec 2013 09:54:00 +0800
+Message-id: <001601cef15c$fd1a7d60$f74f7820$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=gb2312
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac7xViD0C5aBsyeWR8eoQBusHIUMVQ==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jAd33d+YHGWy7KmxxfddfJotLi9wt
+	9uw9yWJxedccNovWheeZHVg9di/4zOTRt2UVo8fnTXIBzFFcNimpOZllqUX6dglcGf/WzGcv
+	uM1Tse/hbdYGxhVcXYwcHBICJhJPXip3MXICmWISF+6tZ+ti5OIQEljEKLF0xhUo5wejxIbJ
+	HWwgVWwCKhLLO/4zgdgiAooSG95vYAcpYhaYwShxeO4/VpCEsECExOR57xhBbBYBVYmrn3ex
+	gGzjFbCU+HY7BSTMKyAo8WPyPRYQm1lAQ6J/0QY2CFteYvOat8wQFylI7Dj7mhFil57E1f2T
+	oGrEJTYeucUygVFgFpJRs5CMmoVk1CwkLQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525i
+	BIf0M+kdjKsaLA4xCnAwKvHwvkicHyTEmlhWXJl7iFGCg1lJhLf+KlCINyWxsiq1KD++qDQn
+	tfgQozQHi5I478FW60AhgfTEktTs1NSC1CKYLBMHp1QDY2vFw4kzTsXd6lzkEHywtffQ8/5p
+	zye8MYg4arnirYDB3xP+gimne4Q8JzX+rZ3sxuhVcyH55OsLFr45Ho9KX7r3cOvnNIptk570
+	MFwlOXvjcYviiRofmp8dUHY52SqkvnNjC0OhwqSITum+MzmK6Ww6X42SV+VEvNzSs7zPu3uh
+	wLYCJdUPSizFGYmGWsxFxYkAKolfyGUCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Dec 2013, Johannes Weiner wrote:
+Use inner macro GFP_F2FS_ZERO to instead of GFP_NOFS | __GFP_ZERO for
+simplification of code.
 
-> > Now that a per-process flag is available, define it for processes that
-> > handle userspace oom notifications.  This is an optimization to avoid
-> > mantaining a list of such processes attached to a memcg at any given time
-> > and iterating it at charge time.
-> > 
-> > This flag gets set whenever a process has registered for an oom
-> > notification and is cleared whenever it unregisters.
-> > 
-> > When memcg reclaim has failed to free any memory, it is necessary for
-> > userspace oom handlers to be able to dip into reserves to pagefault text,
-> > allocate kernel memory to read the "tasks" file, allocate heap, etc.
-> 
-> The task handling the OOM of a memcg can obviously not be part of that
-> same memcg.
-> 
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/node.c     |    2 +-
+ fs/f2fs/recovery.c |    2 +-
+ fs/f2fs/super.c    |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-Not without memory.oom_reserve_in_bytes that this series adds, that's 
-true.  Michal expressed interest in the idea of memcg oom reserves in the 
-past, so I thought I'd share the series.
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index 0855168..099f06f 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -1577,7 +1577,7 @@ static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
+ 
+ 	for (; page_idx < start + nrpages; page_idx++) {
+ 		/* alloc temporal page for read node summary info*/
+-		page = alloc_page(GFP_NOFS | __GFP_ZERO);
++		page = alloc_page(GFP_F2FS_ZERO);
+ 		if (!page) {
+ 			struct page *tmp;
+ 			list_for_each_entry_safe(page, tmp, pages, lru) {
+diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+index c209b86..7dda1f28 100644
+--- a/fs/f2fs/recovery.c
++++ b/fs/f2fs/recovery.c
+@@ -377,7 +377,7 @@ static int recover_data(struct f2fs_sb_info *sbi,
+ 	blkaddr = NEXT_FREE_BLKADDR(sbi, curseg);
+ 
+ 	/* read node page */
+-	page = alloc_page(GFP_NOFS | __GFP_ZERO);
++	page = alloc_page(GFP_F2FS_ZERO);
+ 	if (!page)
+ 		return -ENOMEM;
+ 
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index dd55074..22b07c3 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -332,7 +332,7 @@ static struct inode *f2fs_alloc_inode(struct super_block *sb)
+ {
+ 	struct f2fs_inode_info *fi;
+ 
+-	fi = kmem_cache_alloc(f2fs_inode_cachep, GFP_NOFS | __GFP_ZERO);
++	fi = kmem_cache_alloc(f2fs_inode_cachep, GFP_F2FS_ZERO);
+ 	if (!fi)
+ 		return NULL;
+ 
+-- 
+1.7.9.5
 
-> On Tue, 3 Dec 2013 at 15:35:48 +0800, Li Zefan wrote:
-> > On Mon, 2 Dec 2013 at 11:44:06 -0500, Johannes Weiner wrote:
-> > > On Fri, Nov 29, 2013 at 03:05:25PM -0500, Tejun Heo wrote:
-> > > > Whoa, so we support oom handler inside the memcg that it handles?
-> > > > Does that work reliably?  Changing the above detail in this patch
-> > > > isn't difficult (and we'll later need to update kernfs too) but
-> > > > supporting such setup properly would be a *lot* of commitment and I'm
-> > > > very doubtful we'd be able to achieve that by just carefully avoiding
-> > > > memory allocation in the operations that usreland oom handler uses -
-> > > > that set is destined to expand over time, extremely fragile and will
-> > > > be hellish to maintain.
-> > > > 
-
-It works reliably with this patch series, yes.  I'm not sure what change 
-this is referring to that would avoid memory allocation for userspace oom 
-handlers, and I'd agree that it would be difficult to maintain a 
-no-allocation policy for a subset of processes that are destined to handle 
-oom handlers.
-
-That's not what this series is addressing, though, and in fact it's quite 
-the opposite.  It acknowledges that userspace oom handlers need to 
-allocate and that anything else would be too difficult to maintain 
-(thereby agreeing with the above), so we must set aside memory that they 
-are exclusively allowed to access.  For the vast majority of users who 
-will not use userspace oom handlers, they can just use the default value 
-of memory.oom_reserve_in_bytes == 0 and they incur absolutely no side-
-effects as a result of this series.
-
-For those who do use userspace oom handlers, like Google, this allows us 
-to set aside memory to allow the userspace oom handlers to kill a process, 
-dump the heap, send a signal, drop caches, etc. when waking up.
-
-> > > > So, I'm not at all excited about commiting to this guarantee.  This
-> > > > one is an easy one but it looks like the first step onto dizzying
-> > > > slippery slope.
-> > > > 
-> > > > Am I misunderstanding something here?  Are you and Johannes firm on
-> > > > supporting this?
-> > >
-> > > Handling a memcg OOM from userspace running inside that OOM memcg is
-> > > completely crazy.  I mean, think about this for just two seconds...
-> > > Really?
-> > >
-> > > I get that people are doing it right now, and if you can get away with
-> > > it for now, good for you.  But you have to be aware how crazy this is
-> > > and if it breaks you get to keep the pieces and we are not going to
-> > > accomodate this in the kernel.  Fix your crazy userspace.
-> > 
-
-The rest of this email communicates only one thing: someone thinks it's 
-crazy.  And I agree it would be crazy if we don't allow that class of 
-process to have access to a pre-defined amount of memory to handle the 
-situation, which this series adds.
