@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753197Ab3LEUfn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 15:35:43 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:38805 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752325Ab3LEUfl (ORCPT
+	id S1752849Ab3LEUlU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 15:41:20 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:51703 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739Ab3LEUlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 15:35:41 -0500
-Date: Thu, 5 Dec 2013 20:35:19 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+	Thu, 5 Dec 2013 15:41:17 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Subject: Re: [RFC part1 PATCH 5/7] ARM64 / ACPI: Introduce arm_core.c and its related head file
+Date: Thu, 5 Dec 2013 21:40:42 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Will Deacon <will.deacon@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Message-ID: <20131205203519.GA29268@sirena.org.uk>
-References: <1386202994-30784-1-git-send-email-robherring2@gmail.com>
- <1386202994-30784-2-git-send-email-robherring2@gmail.com>
- <20131205181606.GY29268@sirena.org.uk>
- <52A0DC28.1040001@gmail.com>
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, linaro-kernel@lists.linaro.org,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Al Stone <al.stone@linaro.org>, patches@linaro.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, linaro-acpi@lists.linaro.org,
+        linux-acpi@vger.kernel.org, Jon Masters <jonathan@jonmasters.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org> <201312050438.05117.arnd@arndb.de> <52A084EB.5010103@linaro.org>
+In-Reply-To: <52A084EB.5010103@linaro.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8MNCZdTuKvcKRZar"
-Content-Disposition: inline
-In-Reply-To: <52A0DC28.1040001@gmail.com>
-X-Cookie: It's clever, but is it art?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] cpufreq: enable ARM drivers on arm64
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201312052140.42269.arnd@arndb.de>
+X-Provags-ID: V02:K0:M6y8Yc8XZNpYlHtYek3ez89PU4TEAEGOdWPWIjPK0ev
+ QPpwWDT3yvs9V8AGCEYIHNZLn7jid9G4ld/GjWNB+bdEnDdGLy
+ dPI+p3HKwJRkpqoHEAEVL0mKQe3aAoPYPm6Rm42udlAqXcgu7z
+ fCt6DAUpU3DdrMdomDutosDPJfE5rSvNSN+LFk7xh1yYGVyJOd
+ tUdjSPYVKHTW0bZkWGIBL7aMAHffVGEs/bGVNY1f5PYFDtEMjU
+ WtLk5vM3JmqXTXoFLlpbVdhY1RNWP61OBOuUSaozRoY08J1jVg
+ Bnov9m8GLG1bHGY7HWmmqaNhz8SCkndMzin6KeMBeYtUUIsaCR
+ z3FGxOra4ZHRuHCmIEWg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 05 December 2013, Hanjun Guo wrote:
+> On 2013年12月05日 11:38, Arnd Bergmann wrote:
+> > On Tuesday 03 December 2013, Hanjun Guo wrote:
+> >> +static unsigned int gsi_to_irq(unsigned int gsi)
+> >> +{
+> >> +       int irq = irq_create_mapping(NULL, gsi);
+> >> +
+> >> +       return irq;
+> >> +}
+> > I think this could use a comment regarding your plans for IRQ domains.
+> >
+> > Do you expect that all ACPI systems would have only a single GIC IRQ
+> > controller and a single domain, or do you plan to add irqdomain code
+> > later?
+> 
+> we added irqdomain code in the part2 patch set, is that the code ok
+> with you?
 
---8MNCZdTuKvcKRZar
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I don't see where it gets added. Do you mean "[RFC part2 PATCH 8/9] ACPI /
+ARM64: Update acpi_register_gsi to register with the core IRQ subsystem"?
+That still just uses a single domain.
 
-On Thu, Dec 05, 2013 at 02:03:52PM -0600, Rob Herring wrote:
+When we talked about ACPI support at Linaro connect, someone mentioned
+that the ACPI spec does have the concept of IRQ domains, but it seems
+they are not implemented by Linux.
 
-> Will do, but I'm surprised we're at the point on arm64 of needing LSK.
+How do you get a mapping for an IRQ on a secondary irqchip such as
+a GPIO extender?
 
-ARMv8 isn't just for servers, and of course there's the desire to have
-the software as ready as early as it can be!
-
-> There's a couple of subsystems that need enabling. I've posted EDAC
-> patches (need to send v3). cpuidle is another. Probably some more I
-> haven't looked at.
-
-Right, cpuidle is in progress - Lorenzo has been posting patches for
-that: =20
-
-   http://lwn.net/Articles/574950/
-
-There's some active work in the trace and debug area too.
-
---8MNCZdTuKvcKRZar
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSoOOEAAoJELSic+t+oim98xoP/0TLsIEw/QlwHgf4/RvQ3X9L
-3LG1saF/8gxwabEiYdnKCqDPYVCTlcVOHnUUUOIGmC87wCcrP0saIfMVSQcAUOVZ
-030yjm/XlRXgECGqnOVG1Bw4lQElnDEM25rA7mdjQcs95llSabNcGY4LKf04s6Me
-x6qN/qfc4bBBLjmPplG/QU/2HLVe1QSDAS0DgC76jWNkgx4+iciE3hebrqjlDytM
-jKcx9iCMMIYdqnFC7BCCg1M/52nITeIGM7+09IwAVOgJl9y7Pc8Wi9YBbr/Fw3Ti
-9NXKsCQDISSauLe8GuYhUN9neUCHOMX6YKZnhQV2KbXAlHpp7oPej1qQaN4UbEfm
-A6np9/PWtwFU1d4Q7Q81usfLLoWGuAPBcu8UrVM3lPbOfLDSWXatBE5kY0HaJ3oY
-xZ4S/7/WpBjoWv7BtNYPK+v7A2Vq09qnrexii12LVXffU9pVEk1EY2mS66qZfaes
-C0kcPodwxjYi0VOlILAV/l7qGIjfkY9ujzM9mVA1ECAwke3x+Mg79JIo9FrPpMws
-slX+uM7cJRaajVMwH83M6cF5jMwkx3vk0gmYAwsFRoRCBwKNdQ/E7XgztO6Xdm4v
-79s41efqAAF1YYGHFkHp6v1W3g51NZldFD0ZRZHbp/kIV/DQl3KwMHY9RgH/aBW/
-jrufQPkMWOx83/uOnE0W
-=qoqq
------END PGP SIGNATURE-----
-
---8MNCZdTuKvcKRZar--
+	Arnd
