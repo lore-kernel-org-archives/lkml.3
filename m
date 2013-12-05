@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757497Ab3LESqE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 13:46:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15413 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756950Ab3LESqC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 13:46:02 -0500
-Date: Thu, 5 Dec 2013 19:45:50 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Kosina <jkosina@suse.cz>,
-        Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [PATCH?] uprobes: change uprobe_write_opcode() to modify the
-	page directly
-Message-ID: <20131205184550.GA28159@redhat.com>
-References: <20131203205400.GA25735@redhat.com> <CA+55aFxKk+O4e51sq6iqunVWAwKfNAnZ-3=aZT-VuRpDAZUnzQ@mail.gmail.com> <20131204111125.GA26552@redhat.com> <529F51D9.7010001@zytor.com> <20131204164817.GA5271@redhat.com> <529F5E47.3040108@zytor.com> <CA+55aFyMx74jiKgS-o0axuuTBw7295UEMSf_vYDQCAghk3Vr=w@mail.gmail.com> <20131204174328.GA8082@redhat.com> <20131205172355.GA25780@redhat.com> <20131205174923.GE14407@pd.tnic>
+	id S1757529Ab3LESqR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 13:46:17 -0500
+Received: from a9-46.smtp-out.amazonses.com ([54.240.9.46]:50392 "EHLO
+	a9-46.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757141Ab3LESqO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 13:46:14 -0500
+Date: Thu, 5 Dec 2013 18:46:12 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>
+Subject: Re: [PATCH 11/41] parisc: Replace __get_cpu_var uses for address
+ calculation
+In-Reply-To: <1386115809.2166.126.camel@dabdike.int.hansenpartnership.com>
+Message-ID: <00000142c414e1b5-4ce53e2e-bc1a-44f6-971c-3a22d5e63809-000000@email.amazonses.com>
+References: <20131203233232.928771708@linux.com> <20131203233250.717784556@linux.com> <1386115809.2166.126.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131205174923.GE14407@pd.tnic>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.12.05-54.240.9.46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05, Borislav Petkov wrote:
->
-> On Thu, Dec 05, 2013 at 06:23:55PM +0100, Oleg Nesterov wrote:
-> > This is almost off-topic, but I am wondering if (in the long term) we
-> > can avoid this "insert the bp into every mm" altogether.
+On Tue, 3 Dec 2013, James Bottomley wrote:
+
+> On Tue, 2013-12-03 at 17:32 -0600, Christoph Lameter wrote:
+> > Convert to the use of this_cpu_ptr().
 > >
-> > Instead, uprobe_write_opcode() should only unmap this page and set
+> > Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+> > Cc: Helge Deller <deller@gmx.de>
+> > Cc: linux-parisc@vger.kernel.org
 >
-> Ok, sorry if I'm completely off base here but have you guys tried
-> unmapping the page from all other VMs,
+> You say this in the commit, but the linux-parisc list isn't cc'd on the
+> email ...
 
-This is what I meant, but we can't simply clear this pte,
+Weird my testoutput before the patchset was sent out shows that it
+was included then :
 
-> and causing all
-> the VMs to refault
+>From cl@linux.com Tue Dec  3 16:11:39 2013
+Message-Id: <20131203221139.732299837@linux.com>
+User-Agent: quilt/0.50-1
+Date: Tue, 03 Dec 2013 16:11:37 -0600
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org,
+ rostedt@goodmis.org,
+ linux-kernel@vger.kernel.org,
+ Ingo Molnar <mingo@kernel.org>,
+ Peter Zijlstra <peterz@infradead.org>,
+ Thomas Gleixner <tglx@linutronix.de>,
+ "James E.J. Bottomley" <jejb@parisc-linux.org>,
+ Helge Deller <deller@gmx.de>,
+ linux-parisc@vger.kernel.org
+Subject: [PATCH 11/41] parisc: Replace __get_cpu_var uses for address calculation
+References: <20131203221126.513027172@linux.com>
+Content-Disposition: inline; filename=this_parisc
 
-why? it would be better to install the page on demand.
+Convert to the use of this_cpu_ptr().
 
-> patching you'd probably need to cause the #PF handler to "loop" until
-> patching is complete though.
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+Cc: Helge Deller <deller@gmx.de>
+Cc: linux-parisc@vger.kernel.org
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-We can't do this, but I do not think we need to block #PF handler.
-
-However, somehow the #PF handler should know that it should install
-the patched page owned by uprobes. That is why I talked about
-SWP_UPROBE_ENTRY (or something similar)
-
-But again, in any case this is not trivial.
-
-And perhaps I misundestood you... If you actually want to cause
-all the VMs to refault, then why we can't unmap + refault every
-mm like the patch I sent does? Just in case, note that we can't
-share the same page anyway without more complications.
-
-Oleg.
 
