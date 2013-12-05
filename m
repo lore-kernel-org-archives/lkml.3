@@ -1,98 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933574Ab3LERrm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:47:42 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55311 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933421Ab3LERrk (ORCPT
+	id S1757345Ab3LERhn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:37:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38301 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757303Ab3LERhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:47:40 -0500
-Date: Thu, 5 Dec 2013 14:47:25 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Pekka Enberg <penberg@kernel.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 0/2] perf tool: Carve out fs.* stuff
-Message-ID: <20131205174725.GF10333@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386260752-16436-1-git-send-email-bp@alien8.de>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 5 Dec 2013 12:37:35 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Mathias Krause <minipli@googlemail.com>,
+        Richard Guy Briggs <rgb@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 53/90] audit: use nlmsg_len() to get message payload length
+Date: Thu,  5 Dec 2013 17:35:35 +0000
+Message-Id: <1386264972-5399-54-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
+References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, some editing problem happened here... Now with proper subject
-line.
+3.5.7.27 -stable review patch.  If anyone has any objections, please let me know.
 
-- Arnaldo
+------------------
 
-Em Thu, Dec 05, 2013 at 05:25:50PM +0100, Borislav Petkov escreveu:
-> From: Borislav Petkov <bp@suse.de>
-> 
-> Ok,
-> 
-> step one: carve out fs-related stuff into a libapikfs.a library.
+From: Mathias Krause <minipli@googlemail.com>
 
-Adding some more people to the CC list, but from a quick look, this
-is in line with what we discussed so far, so I'm ok with it.
+commit 4d8fe7376a12bf4524783dd95cbc00f1fece6232 upstream.
 
-For those people in the CC list, Acked-by would be really, really
-appreciated.
+Using the nlmsg_len member of the netlink header to test if the message
+is valid is wrong as it includes the size of the netlink header itself.
+Thereby allowing to send short netlink messages that pass those checks.
 
-- Arnaldo
+Use nlmsg_len() instead to test for the right message length. The result
+of nlmsg_len() is guaranteed to be non-negative as the netlink message
+already passed the checks of nlmsg_ok().
+
+Also switch to min_t() to please checkpatch.pl.
+
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+[ luis: backported to 3.5:
+  - adjusted 2nd hunk context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ kernel/audit.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 39b0438..03900ab 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -696,7 +696,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 				 &status_set, sizeof(status_set));
+ 		break;
+ 	case AUDIT_SET:
+-		if (nlh->nlmsg_len < sizeof(struct audit_status))
++		if (nlmsg_len(nlh) < sizeof(struct audit_status))
+ 			return -EINVAL;
+ 		status_get   = (struct audit_status *)data;
+ 		if (status_get->mask & AUDIT_STATUS_ENABLED) {
+@@ -900,7 +900,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 		struct task_struct *tsk;
+ 		unsigned long flags;
  
-> Borislav Petkov (2):
->   tools/: Convert to new topic libraries
->   perf: Move fs.* to lib/api/fs/
-> 
->  tools/Makefile                                     | 12 ++++----
->  tools/lib/{lk => api}/Makefile                     |  8 ++++--
->  tools/lib/{lk => api/fs}/debugfs.c                 |  0
->  tools/lib/{lk => api/fs}/debugfs.h                 |  6 ++--
->  tools/{perf/util => lib/api/fs}/fs.c               | 11 ++++++--
->  .../util/include/linux/magic.h => lib/api/fs/fs.h} | 12 ++++----
->  tools/perf/Makefile.perf                           | 33 ++++++++++------------
->  tools/perf/builtin-kvm.c                           |  2 +-
->  tools/perf/builtin-probe.c                         |  2 +-
->  tools/perf/perf.c                                  |  2 +-
->  tools/perf/tests/parse-events.c                    |  4 +--
->  tools/perf/util/cpumap.c                           |  2 +-
->  tools/perf/util/evlist.c                           |  2 +-
->  tools/perf/util/evsel.c                            |  2 +-
->  tools/perf/util/fs.h                               |  7 -----
->  tools/perf/util/parse-events.c                     |  2 +-
->  tools/perf/util/pmu.c                              |  2 +-
->  tools/perf/util/probe-event.c                      |  2 +-
->  tools/perf/util/python-ext-sources                 |  2 +-
->  tools/perf/util/record.c                           |  2 +-
->  tools/perf/util/setup.py                           |  4 +--
->  tools/perf/util/trace-event-info.c                 |  2 +-
->  tools/perf/util/util.h                             |  2 +-
->  tools/vm/Makefile                                  | 14 ++++-----
->  tools/vm/page-types.c                              |  2 +-
->  25 files changed, 67 insertions(+), 72 deletions(-)
->  rename tools/lib/{lk => api}/Makefile (85%)
->  rename tools/lib/{lk => api/fs}/debugfs.c (100%)
->  rename tools/lib/{lk => api/fs}/debugfs.h (86%)
->  rename tools/{perf/util => lib/api/fs}/fs.c (91%)
->  rename tools/{perf/util/include/linux/magic.h => lib/api/fs/fs.h} (50%)
->  delete mode 100644 tools/perf/util/fs.h
-> 
-> -- 
-> 1.8.4
+-		if (nlh->nlmsg_len < sizeof(struct audit_tty_status))
++		if (nlmsg_len(nlh) < sizeof(struct audit_tty_status))
+ 			return -EINVAL;
+ 		s = data;
+ 		if (s->enabled != 0 && s->enabled != 1)
+-- 
+1.8.3.2
+
