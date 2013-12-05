@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683Ab3LEMaM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 07:30:12 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:65433 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756580Ab3LEMaC (ORCPT
+	id S1756707Ab3LEMaY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 07:30:24 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:51163 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756580Ab3LEMaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 07:30:02 -0500
-X-AuditID: cbfee61a-b7f796d000004313-54-52a071c811f9
+	Thu, 5 Dec 2013 07:30:17 -0500
+X-AuditID: cbfee61a-b7f796d000004313-76-52a071d6c917
 From: Kamil Debski <k.debski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         linux-usb@vger.kernel.org, devicetree@vger.kernel.org
@@ -17,97 +17,1049 @@ Cc: kyungmin.park@samsung.com, kishon@ti.com, t.figa@samsung.com,
         yulgon.kim@samsung.com, p.paneri@samsung.com,
         av.tikhomirov@samsung.com, jg1.han@samsung.com, galak@codeaurora.org,
         matt.porter@linaro.org, Kamil Debski <k.debski@samsung.com>
-Subject: [PATCH 1/9] phy: core: Change the way of_phy_get is called
-Date: Thu, 05 Dec 2013 13:29:31 +0100
-Message-id: <1386246579-25141-2-git-send-email-k.debski@samsung.com>
+Subject: [PATCH v4 3/9] phy: Add new Exynos USB PHY driver
+Date: Thu, 05 Dec 2013 13:29:33 +0100
+Message-id: <1386246579-25141-4-git-send-email-k.debski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1386246579-25141-1-git-send-email-k.debski@samsung.com>
 References: <1386246579-25141-1-git-send-email-k.debski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jQd0ThQuCDG62WVss2X2D1WL+kXOs
-	Fv1vFrJatF05yG5xeeElVosfry+wWVx42sNmcbbpDVBs1xw2ixnn9zFZLFrWymyx9shddouz
-	/bfZLCY2TWO3OL+lk8ni8Jt2Vov1M16zWHScPcjuIORxua+XyWPnrLvsHneu7WHz6NuyitHj
-	+I3tTB6fN8kFsEVx2aSk5mSWpRbp2yVwZfRv+8RY8Fy44m7POZYGxhUCXYwcHBICJhIXvkp0
-	MXICmWISF+6tZ+ti5OIQEpjOKLH0zh8WCKeDSeL6jAPsIA1sApoSq+55gDSICNRITLl1hR3E
-	Zha4yySxeqMWiC0s4CzRPfkmE4jNIqAq8WHnQzYQm1fAReL8wX5WiL0KEnMm2YCEOQVcJVZO
-	PMwGEhYCKllzRXMCI+8CRoZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMFh/ExqB+PKBotD
-	jAIcjEo8vC8S5wcJsSaWFVfmHmKU4GBWEuEVzlkQJMSbklhZlVqUH19UmpNafIhRmoNFSZz3
-	QKt1oJBAemJJanZqakFqEUyWiYNTqoFxaYHm3zNFmxv/XbEqmej2fo6npNZPrtI/ZqvPzKwM
-	XPvlzj9Nbt6XkjmiOoKnFA7seMd9+apkscWya18Zj+7vmOBaGVJ1bcWSb1uXKcV9Oqq1YXNs
-	cPMVJqks01n2Tm8ra+c7Znisfe/MsKM86qKokwr/64t7BVq9vz5xWjijMtr8oPvFqMZSJZbi
-	jERDLeai4kQA6eq5dF8CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jQd3rhQuCDCZO5rRYsvsGq8X8I+dY
+	LfrfLGS1aLtykN3i8sJLrBY/Xl9gs7jwtIfN4mzTG6DYrjlsFjPO72OyWLSsldli7ZG77BZn
+	+2+zWUxsmsZucX5LJ5PF4TftrBbrZ7xmseg4e5DdQcjjcl8vk8fOWXfZPe5c28Pm0bdlFaPH
+	8RvbmTw+b5ILYIvisklJzcksSy3St0vgyrjx8xZrwczPjBUtr7pZGxi7TzF2MXJwSAiYSPz/
+	F9HFyAlkiklcuLeerYuRi0NIYDqjxJE9x1hBEkICHUwS2z54g9SzCWhKrLrnARIWEaiRmHLr
+	CjuIzSxwl0li9UYtEFtYwEri2a/fTCA2i4CqxPznSxhBbF4BF4nnky5CrVWQmDPJBiTMKeAq
+	sXLiYTaQsBBQyZormhMYeRcwMqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECA7kZ1I7GFc2
+	WBxiFOBgVOLhfZE4P0iINbGsuDL3EKMEB7OSCK9wzoIgId6UxMqq1KL8+KLSnNTiQ4zSHCxK
+	4rwHWq0DhQTSE0tSs1NTC1KLYLJMHJxSDYzaBw6ue7vY6efh6+fEV+a/ejsvJW5b0YuT0s7T
+	nEwV376/ZPd7x2teoUdmhS+676+L7pj22425SCxBM4jlrNTuhEV3hH+9/p5s0Lop94z6AX9r
+	N7kls7MPLJ9RxPto5Vqlq/6Zy/NiTZJWW4dPffVeXiKkrHzHrl+dW/wC5F//efz0UJ/ch2M7
+	lViKMxINtZiLihMBdBAG2mACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously the of_phy_get function took a struct device * and
-was declared static. It was impossible to call it from
-another driver and thus it was impossible to get phy defined
-for a given node.
+Add a new driver for the Exynos USB PHY. The new driver uses the generic
+PHY framework. The driver includes support for the Exynos 4x10 and 4x12
+SoC families.
 
 Signed-off-by: Kamil Debski <k.debski@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/phy/phy-core.c  |   12 +++++-------
- include/linux/phy/phy.h |    1 +
- 2 files changed, 6 insertions(+), 7 deletions(-)
+ .../devicetree/bindings/phy/samsung-usbphy.txt     |   54 ++++
+ drivers/phy/Kconfig                                |   20 ++
+ drivers/phy/Makefile                               |    3 +
+ drivers/phy/phy-exynos4210-usb2.c                  |  264 +++++++++++++++++
+ drivers/phy/phy-exynos4212-usb2.c                  |  312 ++++++++++++++++++++
+ drivers/phy/phy-samsung-usb2.c                     |  228 ++++++++++++++
+ drivers/phy/phy-samsung-usb2.h                     |   72 +++++
+ 7 files changed, 953 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/samsung-usbphy.txt
+ create mode 100644 drivers/phy/phy-exynos4210-usb2.c
+ create mode 100644 drivers/phy/phy-exynos4212-usb2.c
+ create mode 100644 drivers/phy/phy-samsung-usb2.c
+ create mode 100644 drivers/phy/phy-samsung-usb2.h
 
-diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index 03cf8fb..7fb3474 100644
---- a/drivers/phy/phy-core.c
-+++ b/drivers/phy/phy-core.c
-@@ -250,20 +250,17 @@ EXPORT_SYMBOL_GPL(phy_power_off);
-  * not yet loaded. This function uses of_xlate call back function provided
-  * while registering the phy_provider to find the phy instance.
-  */
--static struct phy *of_phy_get(struct device *dev, int index)
-+struct phy *of_phy_get(struct device_node *np, int index)
- {
- 	int ret;
- 	struct phy_provider *phy_provider;
- 	struct phy *phy = NULL;
- 	struct of_phandle_args args;
+diff --git a/Documentation/devicetree/bindings/phy/samsung-usbphy.txt b/Documentation/devicetree/bindings/phy/samsung-usbphy.txt
+new file mode 100644
+index 0000000..cadbf70
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/samsung-usbphy.txt
+@@ -0,0 +1,54 @@
++Samsung S5P/EXYNOS SoC series USB PHY
++-------------------------------------------------
++
++Required properties:
++- compatible : should be one of the listed compatibles:
++	- "samsung,exynos4210-usb2-phy"
++	- "samsung,exynos4212-usb2-phy"
++- reg : a list of registers used by phy driver
++	- first and obligatory is the location of phy modules registers
++- samsung,sysreg-phandle - handle to syscon used to control the system registers
++- samsung,pmureg-phandle - handle to syscon used to control PMU registers
++- #phy-cells : from the generic phy bindings, must be 1;
++- clocks and clock-names:
++	- the "phy" clocks is required by the phy module
++	- next for each of the phys a clock has to be assidned, this clock
++	  will be used to determine clocking frequency for the phys
++	  (the labels are specified in the paragraph below)
++
++The first phandle argument in the PHY specifier identifies the PHY, its
++meaning is compatible dependent. For the currently supported SoCs (Exynos 4210
++and Exynos 4212) it is as follows:
++  0 - USB device ("device"),
++  1 - USB host ("host"),
++  2 - HSIC0 ("hsic0"),
++  3 - HSIC1 ("hsic1"),
++
++Exynos 4210 and Exynos 4212 use mode switching and require that mode switch
++register is supplied.
++
++Example:
++
++For Exynos 4412 (compatible with Exynos 4212):
++
++usbphy: phy@125B0000 {
++	compatible = "samsung,exynos4212-usb2-phy";
++	reg = <0x125B0000 0x100 0x10020704 0x0c 0x1001021c 0x4>;
++	clocks = <&clock 305>, <&clock 2>, <&clock 2>, <&clock 2>,
++							<&clock 2>;
++	clock-names = "phy", "device", "host", "hsic0", "hsic1";
++	status = "okay";
++	#phy-cells = <1>;
++	samsung,sysreg-phandle = <&sys_reg>;
++	samsung,pmureg-phandle = <&pmu_reg>;
++};
++
++Then the PHY can be used in other nodes such as:
++
++phy-consumer@12340000 {
++	phys = <&usbphy 2>;
++	phy-names = "phy";
++};
++
++Refer to DT bindings documentation of particular PHY consumer devices for more
++information about required PHYs and the way of specification.
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index a344f3d..b29018f 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -51,4 +51,24 @@ config PHY_EXYNOS_DP_VIDEO
+ 	help
+ 	  Support for Display Port PHY found on Samsung EXYNOS SoCs.
  
--	ret = of_parse_phandle_with_args(dev->of_node, "phys", "#phy-cells",
-+	ret = of_parse_phandle_with_args(np, "phys", "#phy-cells",
- 		index, &args);
--	if (ret) {
--		dev_dbg(dev, "failed to get phy in %s node\n",
--			dev->of_node->full_name);
++config PHY_SAMSUNG_USB2
++	tristate "Samsung USB 2.0 PHY driver"
++	help
++	  Enable this to support Samsung USB phy helper driver for Samsung SoCs.
++	  This driver provides common interface to interact, for Samsung
++	  USB 2.0 PHY driver.
++
++config PHY_EXYNOS4210_USB2
++	bool "Support for Exynos 4210"
++	depends on PHY_SAMSUNG_USB2
++	depends on CPU_EXYNOS4210
++	help
++	  Enable USB PHY support for Exynos 4210
++
++config PHY_EXYNOS4212_USB2
++	bool "Support for Exynos 4212"
++	depends on PHY_SAMSUNG_USB2
++	depends on (SOC_EXYNOS4212 || SOC_EXYNOS4412)
++	help
++	  Enable USB PHY support for Exynos 4212
+ endmenu
+diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+index d0caae9..9f4befd 100644
+--- a/drivers/phy/Makefile
++++ b/drivers/phy/Makefile
+@@ -7,3 +7,6 @@ obj-$(CONFIG_PHY_EXYNOS_DP_VIDEO)	+= phy-exynos-dp-video.o
+ obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)	+= phy-exynos-mipi-video.o
+ obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
+ obj-$(CONFIG_TWL4030_USB)		+= phy-twl4030-usb.o
++obj-$(CONFIG_PHY_SAMSUNG_USB2)		+= phy-samsung-usb2.o
++obj-$(CONFIG_PHY_EXYNOS4210_USB2)	+= phy-exynos4210-usb2.o
++obj-$(CONFIG_PHY_EXYNOS4212_USB2)	+= phy-exynos4212-usb2.o
+diff --git a/drivers/phy/phy-exynos4210-usb2.c b/drivers/phy/phy-exynos4210-usb2.c
+new file mode 100644
+index 0000000..a02e5c2
+--- /dev/null
++++ b/drivers/phy/phy-exynos4210-usb2.c
+@@ -0,0 +1,264 @@
++/*
++ * Samsung SoC USB 1.1/2.0 PHY driver - Exynos 4210 support
++ *
++ * Copyright (C) 2013 Samsung Electronics Co., Ltd.
++ * Author: Kamil Debski <k.debski@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/clk.h>
++#include <linux/delay.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/phy/phy.h>
++#include <linux/platform_device.h>
++#include <linux/regmap.h>
++#include <linux/spinlock.h>
++#include "phy-samsung-usb2.h"
++
++/* Exynos USB PHY registers */
++
++/* PHY power control */
++#define EXYNOS_4210_UPHYPWR			0x0
++
++#define EXYNOS_4210_UPHYPWR_PHY0_SUSPEND	(1 << 0)
++#define EXYNOS_4210_UPHYPWR_PHY0_PWR		(1 << 3)
++#define EXYNOS_4210_UPHYPWR_PHY0_OTG_PWR	(1 << 4)
++#define EXYNOS_4210_UPHYPWR_PHY0_SLEEP		(1 << 5)
++#define EXYNOS_4210_UPHYPWR_PHY0	( \
++	EXYNOS_4210_UPHYPWR_PHY0_SUSPEND | \
++	EXYNOS_4210_UPHYPWR_PHY0_PWR | \
++	EXYNOS_4210_UPHYPWR_PHY0_OTG_PWR | \
++	EXYNOS_4210_UPHYPWR_PHY0_SLEEP)
++
++#define EXYNOS_4210_UPHYPWR_PHY1_SUSPEND	(1 << 6)
++#define EXYNOS_4210_UPHYPWR_PHY1_PWR		(1 << 7)
++#define EXYNOS_4210_UPHYPWR_PHY1_SLEEP		(1 << 8)
++#define EXYNOS_4210_UPHYPWR_PHY1 ( \
++	EXYNOS_4210_UPHYPWR_PHY1_SUSPEND | \
++	EXYNOS_4210_UPHYPWR_PHY1_PWR | \
++	EXYNOS_4210_UPHYPWR_PHY1_SLEEP)
++
++#define EXYNOS_4210_UPHYPWR_HSCI0_SUSPEND	(1 << 9)
++#define EXYNOS_4210_UPHYPWR_HSCI0_SLEEP		(1 << 10)
++#define EXYNOS_4210_UPHYPWR_HSCI0 ( \
++	EXYNOS_4210_UPHYPWR_HSCI0_SUSPEND | \
++	EXYNOS_4210_UPHYPWR_HSCI0_SLEEP)
++
++#define EXYNOS_4210_UPHYPWR_HSCI1_SUSPEND	(1 << 11)
++#define EXYNOS_4210_UPHYPWR_HSCI1_SLEEP		(1 << 12)
++#define EXYNOS_4210_UPHYPWR_HSCI1 ( \
++	EXYNOS_4210_UPHYPWR_HSCI1_SUSPEND | \
++	EXYNOS_4210_UPHYPWR_HSCI1_SLEEP)
++
++/* PHY clock control */
++#define EXYNOS_4210_UPHYCLK			0x4
++
++#define EXYNOS_4210_UPHYCLK_PHYFSEL_MASK	(0x3 << 0)
++#define EXYNOS_4210_UPHYCLK_PHYFSEL_48MHZ	(0x0 << 0)
++#define EXYNOS_4210_UPHYCLK_PHYFSEL_24MHZ	(0x3 << 0)
++#define EXYNOS_4210_UPHYCLK_PHYFSEL_12MHZ	(0x2 << 0)
++
++#define EXYNOS_4210_UPHYCLK_PHY0_ID_PULLUP	(0x1 << 2)
++#define EXYNOS_4210_UPHYCLK_PHY0_COMMON_ON	(0x1 << 4)
++#define EXYNOS_4210_UPHYCLK_PHY1_COMMON_ON	(0x1 << 7)
++
++/* PHY reset control */
++#define EXYNOS_4210_UPHYRST			0x8
++
++#define EXYNOS_4210_URSTCON_PHY0		(1 << 0)
++#define EXYNOS_4210_URSTCON_OTG_HLINK		(1 << 1)
++#define EXYNOS_4210_URSTCON_OTG_PHYLINK		(1 << 2)
++#define EXYNOS_4210_URSTCON_PHY1_ALL		(1 << 3)
++#define EXYNOS_4210_URSTCON_PHY1_P0		(1 << 4)
++#define EXYNOS_4210_URSTCON_PHY1_P1P2		(1 << 5)
++#define EXYNOS_4210_URSTCON_HOST_LINK_ALL	(1 << 6)
++#define EXYNOS_4210_URSTCON_HOST_LINK_P0	(1 << 7)
++#define EXYNOS_4210_URSTCON_HOST_LINK_P1	(1 << 8)
++#define EXYNOS_4210_URSTCON_HOST_LINK_P2	(1 << 9)
++
++/* Isolation, configured in the power management unit */
++#define EXYNOS_4210_USB_ISOL_DEVICE_OFFSET	0x704
++#define EXYNOS_4210_USB_ISOL_DEVICE		(1 << 0)
++#define EXYNOS_4210_USB_ISOL_HOST_OFFSET	0x708
++#define EXYNOS_4210_USB_ISOL_HOST		(1 << 0)
++
++/* USBYPHY1 Floating prevention */
++#define EXYNOS_4210_UPHY1CON			0x34
++#define EXYNOS_4210_UPHY1CON_FLOAT_PREVENTION	0x1
++
++/* Mode switching SUB Device <-> Host */
++#define EXYNOS_4210_MODE_SWITCH_OFFSET		0x21c
++#define EXYNOS_4210_MODE_SWITCH_MASK		1
++#define EXYNOS_4210_MODE_SWITCH_DEVICE		0
++#define EXYNOS_4210_MODE_SWITCH_HOST		1
++
++enum exynos4210_phy_id {
++	EXYNOS4210_DEVICE,
++	EXYNOS4210_HOST,
++	EXYNOS4210_HSIC0,
++	EXYNOS4210_HSIC1,
++	EXYNOS4210_NUM_PHYS,
++};
++
++/*
++ * exynos4210_rate_to_clk() converts the supplied clock rate to the value that
++ * can be written to the phy register.
++ */
++static int exynos4210_rate_to_clk(unsigned long rate, u32 *reg)
++{
++	switch (rate) {
++	case 12 * MHZ:
++		*reg = EXYNOS_4210_UPHYCLK_PHYFSEL_12MHZ;
++		break;
++	case 24 * MHZ:
++		*reg = EXYNOS_4210_UPHYCLK_PHYFSEL_24MHZ;
++		break;
++	case 48 * MHZ:
++		reg = EXYNOS_4210_UPHYCLK_PHYFSEL_48MHZ;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static void exynos4210_isol(struct samsung_usb2_phy_instance *inst, bool on)
++{
++	struct samsung_usb2_phy_driver *drv = inst->drv;
++	u32 offset;
++	u32 mask;
++
++	switch (inst->cfg->id) {
++	case EXYNOS4210_DEVICE:
++		offset = EXYNOS_4210_USB_ISOL_DEVICE_OFFSET;
++		mask = EXYNOS_4210_USB_ISOL_DEVICE;
++		break;
++	case EXYNOS4210_HOST:
++		offset = EXYNOS_4210_USB_ISOL_HOST_OFFSET;
++		mask = EXYNOS_4210_USB_ISOL_HOST;
++		break;
++	default:
++		return;
++	};
++
++	regmap_update_bits(drv->reg_pmu, offset, mask, on ? 0 : mask);
++}
++
++static void exynos4210_phy_pwr(struct samsung_usb2_phy_instance *inst, bool on)
++{
++	struct samsung_usb2_phy_driver *drv = inst->drv;
++	u32 rstbits = 0;
++	u32 phypwr = 0;
++	u32 rst;
++	u32 pwr;
++
++	switch (inst->cfg->id) {
++	case EXYNOS4210_DEVICE:
++		phypwr =	EXYNOS_4210_UPHYPWR_PHY0;
++		rstbits =	EXYNOS_4210_URSTCON_PHY0;
++		break;
++	case EXYNOS4210_HOST:
++		phypwr =	EXYNOS_4210_UPHYPWR_PHY1;
++		rstbits =	EXYNOS_4210_URSTCON_PHY1_ALL |
++				EXYNOS_4210_URSTCON_PHY1_P0 |
++				EXYNOS_4210_URSTCON_PHY1_P1P2 |
++				EXYNOS_4210_URSTCON_HOST_LINK_ALL |
++				EXYNOS_4210_URSTCON_HOST_LINK_P0;
++		writel(on, drv->reg_phy + EXYNOS_4210_UPHY1CON);
++		break;
++	case EXYNOS4210_HSIC0:
++		phypwr =	EXYNOS_4210_UPHYPWR_HSCI0;
++		rstbits =	EXYNOS_4210_URSTCON_PHY1_P1P2 |
++				EXYNOS_4210_URSTCON_HOST_LINK_P1;
++		break;
++	case EXYNOS4210_HSIC1:
++		phypwr =	EXYNOS_4210_UPHYPWR_HSCI1;
++		rstbits =	EXYNOS_4210_URSTCON_PHY1_P1P2 |
++				EXYNOS_4210_URSTCON_HOST_LINK_P2;
++		break;
++	};
++
++	if (on) {
++		writel(inst->clk_reg_val, drv->reg_phy + EXYNOS_4210_UPHYCLK);
++
++		pwr = readl(drv->reg_phy + EXYNOS_4210_UPHYPWR);
++		pwr &= ~phypwr;
++		writel(pwr, drv->reg_phy + EXYNOS_4210_UPHYPWR);
++
++		rst = readl(drv->reg_phy + EXYNOS_4210_UPHYRST);
++		rst |= rstbits;
++		writel(rst, drv->reg_phy + EXYNOS_4210_UPHYRST);
++		udelay(10);
++		rst &= ~rstbits;
++		writel(rst, drv->reg_phy + EXYNOS_4210_UPHYRST);
++	} else {
++		pwr = readl(drv->reg_phy + EXYNOS_4210_UPHYPWR);
++		pwr |= phypwr;
++		writel(pwr, drv->reg_phy + EXYNOS_4210_UPHYPWR);
++	}
++}
++
++static int exynos4210_power_on(struct samsung_usb2_phy_instance *inst)
++{
++	/* Order of initialisation is important - first power then isolation */
++	exynos4210_phy_pwr(inst, 1);
++	exynos4210_isol(inst, 0);
++
++	return 0;
++}
++
++static int exynos4210_power_off(struct samsung_usb2_phy_instance *inst)
++{
++	exynos4210_isol(inst, 1);
++	exynos4210_phy_pwr(inst, 0);
++
++	return 0;
++}
++
++
++static const struct samsung_usb2_common_phy exynos4210_phys[] = {
++	{
++		.label		= "device",
++		.id		= EXYNOS4210_DEVICE,
++		.rate_to_clk	= exynos4210_rate_to_clk,
++		.power_on	= exynos4210_power_on,
++		.power_off	= exynos4210_power_off,
++	},
++	{
++		.label		= "host",
++		.id		= EXYNOS4210_HOST,
++		.rate_to_clk	= exynos4210_rate_to_clk,
++		.power_on	= exynos4210_power_on,
++		.power_off	= exynos4210_power_off,
++	},
++	{
++		.label		= "hsic0",
++		.id		= EXYNOS4210_HSIC0,
++		.rate_to_clk	= exynos4210_rate_to_clk,
++		.power_on	= exynos4210_power_on,
++		.power_off	= exynos4210_power_off,
++	},
++	{
++		.label		= "hsic1",
++		.id		= EXYNOS4210_HSIC1,
++		.rate_to_clk	= exynos4210_rate_to_clk,
++		.power_on	= exynos4210_power_on,
++		.power_off	= exynos4210_power_off,
++	},
++	{},
++};
++
++const struct samsung_usb2_phy_config exynos4210_usb2_phy_config = {
++	.num_phys		= EXYNOS4210_NUM_PHYS,
++	.phys			= exynos4210_phys,
++	.has_mode_switch	= 1,
++};
++
+diff --git a/drivers/phy/phy-exynos4212-usb2.c b/drivers/phy/phy-exynos4212-usb2.c
+new file mode 100644
+index 0000000..375ece0
+--- /dev/null
++++ b/drivers/phy/phy-exynos4212-usb2.c
+@@ -0,0 +1,312 @@
++/*
++ * Samsung S5P/EXYNOS SoC series USB PHY driver - Exynos 4212 support
++ *
++ * Copyright (C) 2013 Samsung Electronics Co., Ltd.
++ * Author: Kamil Debski <k.debski@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/clk.h>
++#include <linux/delay.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/phy/phy.h>
++#include <linux/platform_device.h>
++#include <linux/regmap.h>
++#include <linux/spinlock.h>
++#include "phy-samsung-usb2.h"
++
++/* Exynos USB PHY registers */
++
++/* PHY power control */
++#define EXYNOS_4212_UPHYPWR			0x0
++
++#define EXYNOS_4212_UPHYPWR_DEV_SUSPEND		(1 << 0)
++#define EXYNOS_4212_UPHYPWR_DEV_PWR		(1 << 3)
++#define EXYNOS_4212_UPHYPWR_DEV_OTG_PWR		(1 << 4)
++#define EXYNOS_4212_UPHYPWR_DEV_SLEEP		(1 << 5)
++#define EXYNOS_4212_UPHYPWR_DEV	( \
++	EXYNOS_4212_UPHYPWR_DEV_SUSPEND | \
++	EXYNOS_4212_UPHYPWR_DEV_PWR | \
++	EXYNOS_4212_UPHYPWR_DEV_OTG_PWR | \
++	EXYNOS_4212_UPHYPWR_DEV_SLEEP)
++
++#define EXYNOS_4212_UPHYPWR_HOST_SUSPEND	(1 << 6)
++#define EXYNOS_4212_UPHYPWR_HOST_PWR		(1 << 7)
++#define EXYNOS_4212_UPHYPWR_HOST_SLEEP		(1 << 8)
++#define EXYNOS_4212_UPHYPWR_HOST ( \
++	EXYNOS_4212_UPHYPWR_HOST_SUSPEND | \
++	EXYNOS_4212_UPHYPWR_HOST_PWR | \
++	EXYNOS_4212_UPHYPWR_HOST_SLEEP)
++
++#define EXYNOS_4212_UPHYPWR_HSCI0_SUSPEND	(1 << 9)
++#define EXYNOS_4212_UPHYPWR_HSCI0_PWR		(1 << 10)
++#define EXYNOS_4212_UPHYPWR_HSCI0_SLEEP		(1 << 11)
++#define EXYNOS_4212_UPHYPWR_HSCI0 ( \
++	EXYNOS_4212_UPHYPWR_HSCI0_SUSPEND | \
++	EXYNOS_4212_UPHYPWR_HSCI0_PWR | \
++	EXYNOS_4212_UPHYPWR_HSCI0_SLEEP)
++
++#define EXYNOS_4212_UPHYPWR_HSCI1_SUSPEND	(1 << 12)
++#define EXYNOS_4212_UPHYPWR_HSCI1_PWR		(1 << 13)
++#define EXYNOS_4212_UPHYPWR_HSCI1_SLEEP		(1 << 14)
++#define EXYNOS_4212_UPHYPWR_HSCI1 ( \
++	EXYNOS_4212_UPHYPWR_HSCI1_SUSPEND | \
++	EXYNOS_4212_UPHYPWR_HSCI1_PWR | \
++	EXYNOS_4212_UPHYPWR_HSCI1_SLEEP)
++
++/* PHY clock control */
++#define EXYNOS_4212_UPHYCLK			0x4
++
++#define EXYNOS_4212_UPHYCLK_PHYFSEL_MASK	(0x7 << 0)
++#define EXYNOS_4212_UPHYCLK_PHYFSEL_9MHZ6	(0x0 << 0)
++#define EXYNOS_4212_UPHYCLK_PHYFSEL_10MHZ	(0x1 << 0)
++#define EXYNOS_4212_UPHYCLK_PHYFSEL_12MHZ	(0x2 << 0)
++#define EXYNOS_4212_UPHYCLK_PHYFSEL_19MHZ2	(0x3 << 0)
++#define EXYNOS_4212_UPHYCLK_PHYFSEL_20MHZ	(0x4 << 0)
++#define EXYNOS_4212_UPHYCLK_PHYFSEL_24MHZ	(0x5 << 0)
++#define EXYNOS_4212_UPHYCLK_PHYFSEL_50MHZ	(0x7 << 0)
++
++#define EXYNOS_4212_UPHYCLK_PHY0_ID_PULLUP	(0x1 << 3)
++#define EXYNOS_4212_UPHYCLK_PHY0_COMMON_ON	(0x1 << 4)
++#define EXYNOS_4212_UPHYCLK_PHY1_COMMON_ON	(0x1 << 7)
++
++#define EXYNOS_4212_UPHYCLK_HSIC_REFCLK_MASK	(0x7f << 10)
++#define EXYNOS_4212_UPHYCLK_HSIC_REFCLK_12MHZ	(0x24 << 10)
++#define EXYNOS_4212_UPHYCLK_HSIC_REFCLK_15MHZ	(0x1c << 10)
++#define EXYNOS_4212_UPHYCLK_HSIC_REFCLK_16MHZ	(0x1a << 10)
++#define EXYNOS_4212_UPHYCLK_HSIC_REFCLK_19MHZ2	(0x15 << 10)
++#define EXYNOS_4212_UPHYCLK_HSIC_REFCLK_20MHZ	(0x14 << 10)
++
++/* PHY reset control */
++#define EXYNOS_4212_UPHYRST			0x8
++
++#define EXYNOS_4212_URSTCON_DEVICE		(1 << 0)
++#define EXYNOS_4212_URSTCON_OTG_HLINK		(1 << 1)
++#define EXYNOS_4212_URSTCON_OTG_PHYLINK		(1 << 2)
++#define EXYNOS_4212_URSTCON_HOST_PHY		(1 << 3)
++#define EXYNOS_4212_URSTCON_PHY1		(1 << 4)
++#define EXYNOS_4212_URSTCON_HSIC0		(1 << 5)
++#define EXYNOS_4212_URSTCON_HSIC1		(1 << 6)
++#define EXYNOS_4212_URSTCON_HOST_LINK_ALL	(1 << 7)
++#define EXYNOS_4212_URSTCON_HOST_LINK_P0	(1 << 8)
++#define EXYNOS_4212_URSTCON_HOST_LINK_P1	(1 << 9)
++#define EXYNOS_4212_URSTCON_HOST_LINK_P2	(1 << 10)
++
++/* Isolation, configured in the power management unit */
++#define EXYNOS_4212_USB_ISOL_OFFSET		0x704
++#define EXYNOS_4212_USB_ISOL_OTG		(1 << 0)
++#define EXYNOS_4212_USB_ISOL_HSIC0_OFFSET	0x708
++#define EXYNOS_4212_USB_ISOL_HSIC0		(1 << 0)
++#define EXYNOS_4212_USB_ISOL_HSIC1_OFFSET	0x70c
++#define EXYNOS_4212_USB_ISOL_HSIC1		(1 << 0)
++
++/* Mode switching SUB Device <-> Host */
++#define EXYNOS_4212_MODE_SWITCH_OFFSET		0x21c
++#define EXYNOS_4212_MODE_SWITCH_MASK		1
++#define EXYNOS_4212_MODE_SWITCH_DEVICE		0
++#define EXYNOS_4212_MODE_SWITCH_HOST		1
++
++enum exynos4x12_phy_id {
++	EXYNOS4212_DEVICE,
++	EXYNOS4212_HOST,
++	EXYNOS4212_HSIC0,
++	EXYNOS4212_HSIC1,
++	EXYNOS4212_NUM_PHYS,
++};
++
++/*
++ * exynos4212_rate_to_clk() converts the supplied clock rate to the value that
++ * can be written to the phy register.
++ */
++static int exynos4212_rate_to_clk(unsigned long rate, u32 *reg)
++{
++	/* EXYNOS_4212_UPHYCLK_PHYFSEL_MASK */
++
++	switch (rate) {
++	case 9600 * KHZ:
++		*reg = EXYNOS_4212_UPHYCLK_PHYFSEL_9MHZ6;
++		break;
++	case 10 * MHZ:
++		*reg = EXYNOS_4212_UPHYCLK_PHYFSEL_10MHZ;
++		break;
++	case 12 * MHZ:
++		*reg = EXYNOS_4212_UPHYCLK_PHYFSEL_12MHZ;
++		break;
++	case 19200 * KHZ:
++		*reg = EXYNOS_4212_UPHYCLK_PHYFSEL_19MHZ2;
++		break;
++	case 20 * MHZ:
++		*reg = EXYNOS_4212_UPHYCLK_PHYFSEL_20MHZ;
++		break;
++	case 24 * MHZ:
++		*reg = EXYNOS_4212_UPHYCLK_PHYFSEL_24MHZ;
++		break;
++	case 50 * MHZ:
++		*reg = EXYNOS_4212_UPHYCLK_PHYFSEL_50MHZ;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static void exynos4212_isol(struct samsung_usb2_phy_instance *inst, bool on)
++{
++	struct samsung_usb2_phy_driver *drv = inst->drv;
++	u32 offset;
++	u32 mask;
++
++	switch (inst->cfg->id) {
++	case EXYNOS4212_DEVICE:
++	case EXYNOS4212_HOST:
++		offset = EXYNOS_4212_USB_ISOL_OFFSET;
++		mask = EXYNOS_4212_USB_ISOL_OTG;
++		break;
++	case EXYNOS4212_HSIC0:
++		offset = EXYNOS_4212_USB_ISOL_HSIC0_OFFSET;
++		mask = EXYNOS_4212_USB_ISOL_HSIC0;
++		break;
++	case EXYNOS4212_HSIC1:
++		offset = EXYNOS_4212_USB_ISOL_HSIC1_OFFSET;
++		mask = EXYNOS_4212_USB_ISOL_HSIC1;
++		break;
++	default:
++		return;
++	};
++
++	regmap_update_bits(drv->reg_pmu, offset, mask, on ? 0 : mask);
++}
++
++static void exynos4212_phy_pwr(struct samsung_usb2_phy_instance *inst, bool on)
++{
++	struct samsung_usb2_phy_driver *drv = inst->drv;
++	u32 rstbits = 0;
++	u32 phypwr = 0;
++	u32 rst;
++	u32 pwr;
++
++	switch (inst->cfg->id) {
++	case EXYNOS4212_DEVICE:
++		phypwr =	EXYNOS_4212_UPHYPWR_DEV;
++		rstbits =	EXYNOS_4212_URSTCON_DEVICE;
++		break;
++	case EXYNOS4212_HOST:
++		phypwr =	EXYNOS_4212_UPHYPWR_HOST;
++		rstbits =	EXYNOS_4212_URSTCON_HOST_PHY;
++		break;
++	case EXYNOS4212_HSIC0:
++		phypwr =	EXYNOS_4212_UPHYPWR_HSCI0;
++		rstbits =	EXYNOS_4212_URSTCON_HSIC1 |
++				EXYNOS_4212_URSTCON_HOST_LINK_P0 |
++				EXYNOS_4212_URSTCON_HOST_PHY;
++		break;
++	case EXYNOS4212_HSIC1:
++		phypwr =	EXYNOS_4212_UPHYPWR_HSCI1;
++		rstbits =	EXYNOS_4212_URSTCON_HSIC1 |
++				EXYNOS_4212_URSTCON_HOST_LINK_P1;
++		break;
++	};
++
++	if (on) {
++		writel(inst->clk_reg_val, drv->reg_phy + EXYNOS_4212_UPHYCLK);
++
++		pwr = readl(drv->reg_phy + EXYNOS_4212_UPHYPWR);
++		pwr &= ~phypwr;
++		writel(pwr, drv->reg_phy + EXYNOS_4212_UPHYPWR);
++
++		rst = readl(drv->reg_phy + EXYNOS_4212_UPHYRST);
++		rst |= rstbits;
++		writel(rst, drv->reg_phy + EXYNOS_4212_UPHYRST);
++		udelay(10);
++		rst &= ~rstbits;
++		writel(rst, drv->reg_phy + EXYNOS_4212_UPHYRST);
++	} else {
++		pwr = readl(drv->reg_phy + EXYNOS_4212_UPHYPWR);
++		pwr |= phypwr;
++		writel(pwr, drv->reg_phy + EXYNOS_4212_UPHYPWR);
++	}
++}
++
++static int exynos4212_power_on(struct samsung_usb2_phy_instance *inst)
++{
++	struct samsung_usb2_phy_driver *drv = inst->drv;
++
++	inst->enabled = 1;
++	exynos4212_phy_pwr(inst, 1);
++	exynos4212_isol(inst, 0);
++
++	/* Power on the device, as it is necessary for HSIC to work */
++	if (inst->cfg->id == EXYNOS4212_HSIC0) {
++		struct samsung_usb2_phy_instance *device =
++					&drv->instances[EXYNOS4212_DEVICE];
++		exynos4212_phy_pwr(device, 1);
++		exynos4212_isol(device, 0);
++	}
++
++	return 0;
++}
++
++static int exynos4212_power_off(struct samsung_usb2_phy_instance *inst)
++{
++	struct samsung_usb2_phy_driver *drv = inst->drv;
++	struct samsung_usb2_phy_instance *device = &drv->instances[EXYNOS4212_DEVICE];
++
++	inst->enabled = 0;
++	exynos4212_isol(inst, 1);
++	exynos4212_phy_pwr(inst, 0);
++
++	if (inst->cfg->id == EXYNOS4212_HSIC0 && !device->enabled) {
++		exynos4212_isol(device, 1);
++		exynos4212_phy_pwr(device, 0);
++	}
++
++	return 0;
++}
++
++
++static const struct samsung_usb2_common_phy exynos4212_phys[] = {
++	{
++		.label		= "device",
++		.id		= EXYNOS4212_DEVICE,
++		.rate_to_clk	= exynos4212_rate_to_clk,
++		.power_on	= exynos4212_power_on,
++		.power_off	= exynos4212_power_off,
++	},
++	{
++		.label		= "host",
++		.id		= EXYNOS4212_HOST,
++		.rate_to_clk	= exynos4212_rate_to_clk,
++		.power_on	= exynos4212_power_on,
++		.power_off	= exynos4212_power_off,
++	},
++	{
++		.label		= "hsic0",
++		.id		= EXYNOS4212_HSIC0,
++		.rate_to_clk	= exynos4212_rate_to_clk,
++		.power_on	= exynos4212_power_on,
++		.power_off	= exynos4212_power_off,
++	},
++	{
++		.label		= "hsic1",
++		.id		= EXYNOS4212_HSIC1,
++		.rate_to_clk	= exynos4212_rate_to_clk,
++		.power_on	= exynos4212_power_on,
++		.power_off	= exynos4212_power_off,
++	},
++	{},
++};
++
++const struct samsung_usb2_phy_config exynos4212_usb2_phy_config = {
++	.num_phys		= EXYNOS4212_NUM_PHYS,
++	.phys			= exynos4212_phys,
++	.has_mode_switch	= 1,
++};
++
+diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-samsung-usb2.c
+new file mode 100644
+index 0000000..804ec77
+--- /dev/null
++++ b/drivers/phy/phy-samsung-usb2.c
+@@ -0,0 +1,228 @@
++/*
++ * Samsung SoC USB 1.1/2.0 PHY driver
++ *
++ * Copyright (C) 2013 Samsung Electronics Co., Ltd.
++ * Author: Kamil Debski <k.debski@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/clk.h>
++#include <linux/delay.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/mfd/syscon.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/phy/phy.h>
++#include <linux/platform_device.h>
++#include <linux/spinlock.h>
++#include "phy-samsung-usb2.h"
++
++static int samsung_usb2_phy_power_on(struct phy *phy)
++{
++	struct samsung_usb2_phy_instance *inst = phy_get_drvdata(phy);
++	struct samsung_usb2_phy_driver *drv = inst->drv;
++	int ret;
++
++	dev_dbg(drv->dev, "Request to power_on \"%s\" usb phy\n",
++							inst->cfg->label);
++	ret = clk_prepare_enable(drv->clk);
 +	if (ret)
- 		return ERR_PTR(-ENODEV);
--	}
- 
- 	mutex_lock(&phy_provider_mutex);
- 	phy_provider = of_phy_provider_lookup(args.np);
-@@ -281,6 +278,7 @@ err0:
- 
- 	return phy;
- }
-+EXPORT_SYMBOL_GPL(of_phy_get);
- 
- /**
-  * phy_put() - release the PHY
-@@ -370,7 +368,7 @@ struct phy *phy_get(struct device *dev, const char *string)
- 	if (dev->of_node) {
- 		index = of_property_match_string(dev->of_node, "phy-names",
- 			string);
--		phy = of_phy_get(dev, index);
-+		phy = of_phy_get(dev->of_node, index);
- 		if (IS_ERR(phy)) {
- 			dev_err(dev, "unable to find phy\n");
- 			return phy;
-diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-index 6d72269..169f572 100644
---- a/include/linux/phy/phy.h
-+++ b/include/linux/phy/phy.h
-@@ -131,6 +131,7 @@ struct phy *phy_get(struct device *dev, const char *string);
- struct phy *devm_phy_get(struct device *dev, const char *string);
- void phy_put(struct phy *phy);
- void devm_phy_put(struct device *dev, struct phy *phy);
-+struct phy *of_phy_get(struct device_node *np, int index);
- struct phy *of_phy_simple_xlate(struct device *dev,
- 	struct of_phandle_args *args);
- struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
++		goto err_main_clk;
++	ret = clk_prepare_enable(inst->clk);
++	if (ret)
++		goto err_instance_clk;
++	inst->rate = clk_get_rate(inst->clk);
++	if (inst->cfg->rate_to_clk) {
++		ret = inst->cfg->rate_to_clk(inst->rate, &inst->clk_reg_val);
++		if (ret)
++			goto err_get_rate;
++	}
++	if (inst->cfg->power_on) {
++		spin_lock(&drv->lock);
++		ret = inst->cfg->power_on(inst);
++		spin_unlock(&drv->lock);
++	}
++
++	return 0;
++
++err_get_rate:
++	clk_disable_unprepare(inst->clk);
++err_instance_clk:
++	clk_disable_unprepare(drv->clk);
++err_main_clk:
++	return ret;
++}
++
++static int samsung_usb2_phy_power_off(struct phy *phy)
++{
++	struct samsung_usb2_phy_instance *inst = phy_get_drvdata(phy);
++	struct samsung_usb2_phy_driver *drv = inst->drv;
++	int ret = 0;
++
++	dev_dbg(drv->dev, "Request to power_off \"%s\" usb phy\n",
++							inst->cfg->label);
++	if (inst->cfg->power_off) {
++		spin_lock(&drv->lock);
++		ret = inst->cfg->power_off(inst);
++		spin_unlock(&drv->lock);
++	}
++	clk_disable_unprepare(inst->clk);
++	clk_disable_unprepare(drv->clk);
++	return ret;
++}
++
++static struct phy_ops samsung_usb2_phy_ops = {
++	.power_on	= samsung_usb2_phy_power_on,
++	.power_off	= samsung_usb2_phy_power_off,
++	.owner		= THIS_MODULE,
++};
++
++static struct phy *samsung_usb2_phy_xlate(struct device *dev,
++					struct of_phandle_args *args)
++{
++	struct samsung_usb2_phy_driver *drv;
++
++	drv = dev_get_drvdata(dev);
++	if (!drv)
++		return ERR_PTR(-EINVAL);
++
++	if (WARN_ON(args->args[0] >= drv->cfg->num_phys))
++		return ERR_PTR(-ENODEV);
++
++	return drv->instances[args->args[0]].phy;
++}
++
++static const struct of_device_id samsung_usb2_phy_of_match[] = {
++#ifdef CONFIG_PHY_EXYNOS4210_USB2
++	{
++		.compatible = "samsung,exynos4210-usb2-phy",
++		.data = &exynos4210_usb2_phy_config,
++	},
++#endif
++#ifdef CONFIG_PHY_EXYNOS4212_USB2
++	{
++		.compatible = "samsung,exynos4212-usb2-phy",
++		.data = &exynos4212_usb2_phy_config,
++	},
++#endif
++	{ },
++};
++
++static int samsung_usb2_phy_probe(struct platform_device *pdev)
++{
++	const struct of_device_id *match;
++	const struct samsung_usb2_phy_config *cfg;
++	struct clk *clk;
++	struct device *dev = &pdev->dev;
++	struct phy_provider *phy_provider;
++	struct resource *mem;
++	struct samsung_usb2_phy_driver *drv;
++	int i;
++
++	if (!pdev->dev.of_node) {
++		dev_err(dev, "This driver is required to be instantiated from device tree\n");
++		return -EINVAL;
++	}
++
++	match = of_match_node(samsung_usb2_phy_of_match, pdev->dev.of_node);
++	if (!match) {
++		dev_err(dev, "of_match_node() failed\n");
++		return -EINVAL;
++	}
++	cfg = match->data;
++
++	drv = devm_kzalloc(dev, sizeof(struct samsung_usb2_phy_driver) +
++		cfg->num_phys * sizeof(struct samsung_usb2_phy_instance), GFP_KERNEL);
++	if (!drv)
++		return -ENOMEM;
++
++	dev_set_drvdata(dev, drv);
++	spin_lock_init(&drv->lock);
++
++	drv->cfg = cfg;
++	drv->dev = dev;
++
++	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	drv->reg_phy = devm_ioremap_resource(dev, mem);
++	if (IS_ERR(drv->reg_phy)) {
++		dev_err(dev, "Failed to map register memory (phy)\n");
++		return PTR_ERR(drv->reg_phy);
++	}
++
++	drv->reg_pmu = syscon_regmap_lookup_by_phandle(pdev->dev.of_node,
++		"samsung,pmureg-phandle");
++	if (IS_ERR(drv->reg_pmu)) {
++		dev_err(dev, "Failed to map PMU registers (via syscon)\n");
++		return PTR_ERR(drv->reg_pmu);
++	}
++
++	if (drv->cfg->has_mode_switch) {
++		drv->reg_sys = syscon_regmap_lookup_by_phandle(
++				pdev->dev.of_node, "samsung,sysreg-phandle");
++		if (IS_ERR(drv->reg_sys)) {
++			dev_err(dev, "Failed to map system registers (via syscon)\n");
++			return PTR_ERR(drv->reg_sys);
++		}
++	}
++
++	drv->clk = devm_clk_get(dev, "phy");
++	if (IS_ERR(drv->clk)) {
++		dev_err(dev, "Failed to get clock of phy controller\n");
++		return PTR_ERR(drv->clk);
++	}
++
++	for (i = 0; i < drv->cfg->num_phys; i++) {
++		char *label = drv->cfg->phys[i].label;
++		struct samsung_usb2_phy_instance *p = &drv->instances[i];
++
++		dev_dbg(dev, "Creating phy \"%s\"\n", label);
++		p->phy = devm_phy_create(dev, &samsung_usb2_phy_ops, NULL);
++		if (IS_ERR(p->phy)) {
++			dev_err(drv->dev, "Failed to create usb2_phy \"%s\"\n",
++						label);
++			return PTR_ERR(p->phy);
++		}
++
++		p->cfg = &drv->cfg->phys[i];
++		p->drv = drv;
++		phy_set_drvdata(p->phy, p);
++
++		clk = devm_clk_get(dev, p->cfg->label);
++		if (IS_ERR(clk)) {
++			dev_err(dev, "Failed to get clock of \"%s\" phy\n",
++								p->cfg->label);
++			return PTR_ERR(clk);
++		}
++		p->clk = clk;
++	}
++
++	phy_provider = devm_of_phy_provider_register(dev,
++							samsung_usb2_phy_xlate);
++	if (IS_ERR(phy_provider)) {
++		dev_err(drv->dev, "Failed to register phy provider\n");
++		return PTR_ERR(phy_provider);
++	}
++
++	return 0;
++}
++
++static struct platform_driver samsung_usb2_phy_driver = {
++	.probe	= samsung_usb2_phy_probe,
++	.driver = {
++		.of_match_table	= samsung_usb2_phy_of_match,
++		.name		= "samsung-usb2-phy",
++		.owner		= THIS_MODULE,
++	}
++};
++
++module_platform_driver(samsung_usb2_phy_driver);
++MODULE_DESCRIPTION("Samsung S5P/EXYNOS SoC USB PHY driver");
++MODULE_AUTHOR("Kamil Debski <k.debski@samsung.com>");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:samsung-usb2-phy");
++
+diff --git a/drivers/phy/phy-samsung-usb2.h b/drivers/phy/phy-samsung-usb2.h
+new file mode 100644
+index 0000000..cd12477
+--- /dev/null
++++ b/drivers/phy/phy-samsung-usb2.h
+@@ -0,0 +1,72 @@
++/*
++ * Samsung SoC USB 1.1/2.0 PHY driver
++ *
++ * Copyright (C) 2013 Samsung Electronics Co., Ltd.
++ * Author: Kamil Debski <k.debski@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef _PHY_EXYNOS_USB2_H
++#define _PHY_EXYNOS_USB2_H
++
++#include <linux/clk.h>
++#include <linux/delay.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/phy/phy.h>
++#include <linux/platform_device.h>
++#include <linux/spinlock.h>
++
++#define KHZ 1000
++#define MHZ (KHZ * KHZ)
++
++struct samsung_usb2_phy_driver;
++struct samsung_usb2_phy_instance;
++struct samsung_usb2_phy_config;
++
++struct samsung_usb2_phy_instance {
++	struct samsung_usb2_phy_driver *drv;
++	struct phy *phy;
++	const struct samsung_usb2_common_phy *cfg;
++	char enabled;
++	struct clk *clk;
++	u32 clk_reg_val;
++	unsigned long rate;
++};
++
++struct samsung_usb2_phy_driver {
++	struct device *dev;
++	spinlock_t lock;
++	void __iomem *reg_phy;
++	struct regmap *reg_sys;
++	struct regmap *reg_pmu;
++	const struct samsung_usb2_phy_config *cfg;
++	struct clk *clk;
++	struct samsung_usb2_phy_instance instances[0];
++};
++
++struct samsung_usb2_common_phy {
++	char *label;
++	unsigned int id;
++	int (*rate_to_clk)(unsigned long, u32 *);
++	int (*power_on)(struct samsung_usb2_phy_instance *);
++	int (*power_off)(struct samsung_usb2_phy_instance *);
++};
++
++
++struct samsung_usb2_phy_config {
++	int num_phys;
++	const struct samsung_usb2_common_phy *phys;
++	char has_mode_switch;
++};
++
++extern const struct samsung_usb2_phy_config exynos4210_usb2_phy_config;
++extern const struct samsung_usb2_phy_config exynos4212_usb2_phy_config;
++#endif
++
 -- 
 1.7.9.5
 
