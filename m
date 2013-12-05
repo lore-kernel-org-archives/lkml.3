@@ -1,105 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757038Ab3LEQzy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 11:55:54 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:35795 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756930Ab3LEQzw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 11:55:52 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+Ju8gDqcTiwu810MufFULr
-Date: Thu, 5 Dec 2013 08:55:49 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: linus.walleij@linaro.org, peter.ujfalusi@ti.com, nm@ti.com,
-        tomi.valkeinen@ti.com, balbi@ti.com, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/1] gpio: twl4030: Fix regression for twl gpio LED
- output
-Message-ID: <20131205165548.GX26766@atomide.com>
-References: <1386156871-7639-2-git-send-email-rogerq@ti.com>
- <1386235415-27670-1-git-send-email-rogerq@ti.com>
+	id S1757065Ab3LEQ6z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 11:58:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11176 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756890Ab3LEQ6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 11:58:54 -0500
+Date: Thu, 5 Dec 2013 17:59:53 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@parisplace.org>, Paul Moore <paul@paul-moore.com>
+Cc: Evan McNabb <emcnabb@redhat.com>, Jan Stancek <jstancek@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] selinux: selinux_setprocattr()->ptrace_parent() needs
+	rcu_read_lock()
+Message-ID: <20131205165953.GA24844@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386235415-27670-1-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [131205 01:24]:
-> Commit 0b2aa8be introduced a regression that causes failure
-> in setting LED GPO direction to OUT.
-> 
-> This causes USB host probe failures for Beagleboard C4.
-> 
-> [    2.075469] platform usb_phy_gen_xceiv.2: Driver usb_phy_gen_xceiv requests probe deferral
-> [    2.090454] hsusb2_vcc: Failed to request enable GPIO510: -22
-> [    2.100982] reg-fixed-voltage reg-fixed-voltage.0.auto: Failed to register regulator: -22
-> [    2.109954] reg-fixed-voltage: probe of reg-fixed-voltage.0.auto failed with error -22
-> 
-> direction_out/direction_in must return 0 if the operation succeeded.
-> 
-> Also, don't update direction flag and output data if twl4030_set_gpio_direction()
-> failed inside twl_direction_out();
-> 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+selinux_setprocattr() does ptrace_parent(p) under task_lock(p),
+but task_struct->alloc_lock doesn't pin ->parent or ->ptrace,
+this looks confusing and triggers the "suspicious RCU usage"
+warning because ptrace_parent() does rcu_dereference_check().
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+And in theory this is wrong, spin_lock()->preempt_disable()
+doesn't necessarily imply rcu_read_lock() we need to access
+the ->parent.
 
-Linus, commit 0b2aa8be is in mainline now, so feel free to pick this one
-up if it looks OK to you. This should be also Cc stable as 0b2aa8be has
-that.
+The patch also checks pid_alive(p) before ptrace_parent(p) to
+ensure that this task can't be dead even before rcu_read_lock(),
+in this case its ->parent points to nowhere. This is not really
+needed "in practice", task->ptrace must be already cleared in
+this case but we should not rely on this.
 
-Regards,
+Note: perhaps we should simply kill ptrace_parent(), it buys
+almost nothing and it is obviously racy. Or perhaps we should
+change it to ensure it can't wrongly return the natural parent
+if it races with ptrace_detach.
 
-Tony
+Reported-by: Evan McNabb <emcnabb@redhat.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ security/selinux/hooks.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
 
-> ---
->  drivers/gpio/gpio-twl4030.c | 15 ++++++++++++---
->  1 file changed, 12 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-twl4030.c b/drivers/gpio/gpio-twl4030.c
-> index b97d6a6..f999689 100644
-> --- a/drivers/gpio/gpio-twl4030.c
-> +++ b/drivers/gpio/gpio-twl4030.c
-> @@ -300,7 +300,7 @@ static int twl_direction_in(struct gpio_chip *chip, unsigned offset)
->  	if (offset < TWL4030_GPIO_MAX)
->  		ret = twl4030_set_gpio_direction(offset, 1);
->  	else
-> -		ret = -EINVAL;
-> +		ret = -EINVAL;	/* LED outputs can't be set as input */
->  
->  	if (!ret)
->  		priv->direction &= ~BIT(offset);
-> @@ -354,11 +354,20 @@ static void twl_set(struct gpio_chip *chip, unsigned offset, int value)
->  static int twl_direction_out(struct gpio_chip *chip, unsigned offset, int value)
->  {
->  	struct gpio_twl4030_priv *priv = to_gpio_twl4030(chip);
-> -	int ret = -EINVAL;
-> +	int ret = 0;
->  
->  	mutex_lock(&priv->mutex);
-> -	if (offset < TWL4030_GPIO_MAX)
-> +	if (offset < TWL4030_GPIO_MAX) {
->  		ret = twl4030_set_gpio_direction(offset, 0);
-> +		if (ret) {
-> +			mutex_unlock(&priv->mutex);
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	/*
-> +	 *  LED gpios i.e. offset >= TWL4030_GPIO_MAX are always output
-> +	 */
->  
->  	priv->direction |= BIT(offset);
->  	mutex_unlock(&priv->mutex);
-> -- 
-> 1.8.3.2
-> 
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 794c3ca..2adfd7a 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -5503,11 +5503,14 @@ static int selinux_setprocattr(struct task_struct *p,
+ 		/* Check for ptracing, and update the task SID if ok.
+ 		   Otherwise, leave SID unchanged and fail. */
+ 		ptsid = 0;
+-		task_lock(p);
+-		tracer = ptrace_parent(p);
+-		if (tracer)
+-			ptsid = task_sid(tracer);
+-		task_unlock(p);
++		tracer = NULL;
++		rcu_read_lock();
++		if (pid_alive(p)) {
++			tracer = ptrace_parent(p);
++			if (tracer)
++				ptsid = task_sid(tracer);
++		}
++		rcu_read_unlock();
+ 
+ 		if (tracer) {
+ 			error = avc_has_perm(ptsid, sid, SECCLASS_PROCESS,
+-- 
+1.5.5.1
+
+
