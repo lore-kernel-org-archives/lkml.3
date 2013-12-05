@@ -1,134 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757256Ab3LESwt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 13:52:49 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:57770 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756773Ab3LESwr (ORCPT
+	id S1751664Ab3LES5a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 13:57:30 -0500
+Received: from a9-113.smtp-out.amazonses.com ([54.240.9.113]:43423 "EHLO
+	a9-113.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750904Ab3LES53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 13:52:47 -0500
-Date: Thu, 5 Dec 2013 13:52:46 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Kamil Debski <k.debski@samsung.com>
-cc: linux-kernel@vger.kernel.org, <linux-samsung-soc@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <kyungmin.park@samsung.com>, <kishon@ti.com>, <t.figa@samsung.com>,
-        <s.nawrocki@samsung.com>, <m.szyprowski@samsung.com>,
-        <gautam.vivek@samsung.com>, <mat.krawczuk@gmail.com>,
-        <yulgon.kim@samsung.com>, <p.paneri@samsung.com>,
-        <av.tikhomirov@samsung.com>, <jg1.han@samsung.com>,
-        <galak@codeaurora.org>, <matt.porter@linaro.org>
-Subject: Re: [PATCH v4 4/9] usb: ehci-s5p: Change to use phy provided by the
- generic phy framework
-In-Reply-To: <1386246579-25141-5-git-send-email-k.debski@samsung.com>
-Message-ID: <Pine.LNX.4.44L0.1312051342300.869-100000@iolanthe.rowland.org>
+	Thu, 5 Dec 2013 13:57:29 -0500
+X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Dec 2013 13:57:29 EST
+Date: Thu, 5 Dec 2013 18:50:50 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        azurIt <azurit@pobox.sk>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        cgroups@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Christian Casteyde <casteyde.christian@free.fr>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [patch 2/2] fs: buffer: move allocation failure loop into the
+ allocator
+In-Reply-To: <20131205084441.GA5561@lge.com>
+Message-ID: <00000142c4192155-e27322df-ba1a-4af8-98c3-f2b15dd70d13-000000@email.amazonses.com>
+References: <1381265890-11333-1-git-send-email-hannes@cmpxchg.org> <1381265890-11333-2-git-send-email-hannes@cmpxchg.org> <20131203165910.54d6b4724a1f3e329af52ac6@linux-foundation.org> <20131204015218.GA19709@lge.com> <20131203180717.94c013d1.akpm@linux-foundation.org>
+ <00000142be2f1de0-764bb035-adbc-4367-b2b4-bf05498510a6-000000@email.amazonses.com> <CAAmzW4PwLhMd61ksOktdg=rkj0xHsSGt2Wm_za2Adjh4+tss-g@mail.gmail.com> <00000142be753b07-aa0e2354-6704-41f8-8e11-3c856a186af5-000000@email.amazonses.com>
+ <20131205084441.GA5561@lge.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.12.05-54.240.9.113
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Dec 2013, Kamil Debski wrote:
+On Thu, 5 Dec 2013, Joonsoo Kim wrote:
 
-> Change the phy provider used from the old usb phy specific to a new one
-> using the generic phy framework.
-> 
-> Signed-off-by: Kamil Debski <k.debski@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> I could try. But my trial would not figure this out, since my machine has
+> just 4 cores which normally cannot produce heavy contention.
 
-> --- a/drivers/usb/host/ehci-exynos.c
-> +++ b/drivers/usb/host/ehci-exynos.c
+I think that is fine for starters. Once we know what to look for we can
+find machines to test specific scenarios.
 
-> @@ -42,10 +42,10 @@
->  static const char hcd_name[] = "ehci-exynos";
->  static struct hc_driver __read_mostly exynos_ehci_hc_driver;
->  
-> +#define PHY_NUMBER 3
->  struct exynos_ehci_hcd {
->  	struct clk *clk;
-> -	struct usb_phy *phy;
-> -	struct usb_otg *otg;
+> Anyway, could you tell me where I can find your synthetic benchmarks for slab?
 
-Are you sure you want to remove that line?
-
-> +	struct phy *phy[PHY_NUMBER];
->  };
->  
->  #define to_exynos_ehci(hcd) (struct exynos_ehci_hcd *)(hcd_to_ehci(hcd)->priv)
-
-> @@ -102,13 +132,24 @@ static int exynos_ehci_probe(struct platform_device *pdev)
->  					"samsung,exynos5440-ehci"))
->  		goto skip_phy;
->  
-> -	phy = devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
-> -	if (IS_ERR(phy)) {
-> -		usb_put_hcd(hcd);
-> -		dev_warn(&pdev->dev, "no platform data or transceiver defined\n");
-> -		return -EPROBE_DEFER;
-> -	} else {
-> -		exynos_ehci->phy = phy;
-> +	for_each_available_child_of_node(pdev->dev.of_node, child) {
-> +		err = of_property_read_u32(child, "reg", &phy_number);
-> +		if (err) {
-> +			dev_err(&pdev->dev, "Failed to parse device tree\n");
-> +			return err;
-> +		}
-> +		if (phy_number >= PHY_NUMBER) {
-> +			dev_err(&pdev->dev, "Failed to parse device tree - number out of range\n");
-> +			return -EINVAL;
-
-Do you need to call of_node_put(child) before each of these return 
-statements?
-
-> +		}
-> +		phy = devm_of_phy_get(&pdev->dev, child, 0);
-> +		of_node_put(child);
-> +		if (IS_ERR(phy)) {
-> +			dev_err(&pdev->dev, "Failed to get phy number %d",
-> +								phy_number);
-> +			return PTR_ERR(phy);
-> +		}
-> +		exynos_ehci->phy[phy_number] = phy;
->  		exynos_ehci->otg = phy->otg;
-
-Did you intend to remove this line?  Above, you removed the
-exynos_ehci->otg field.  I can't see how this patch would ever compile
-without an error.
-
->  	}
->  
-> @@ -149,11 +190,11 @@ skip_phy:
->  		goto fail_io;
->  	}
->  
-> -	if (exynos_ehci->otg)
-> -		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
-> -
-> -	if (exynos_ehci->phy)
-> -		usb_phy_init(exynos_ehci->phy);
-> +	err = exynos_phys_on(exynos_ehci->phy);
-> +	if (err) {
-> +		dev_err(&pdev->dev, "Failed to enabled phys\n");
-> +		goto fail_phys_on;
-
-Why add a new statement label?  Just goto fail_io.
-
-> +	}
->  
->  	ehci = hcd_to_ehci(hcd);
->  	ehci->caps = hcd->regs;
-> @@ -172,8 +213,8 @@ skip_phy:
->  	return 0;
->  
->  fail_add_hcd:
-> -	if (exynos_ehci->phy)
-> -		usb_phy_shutdown(exynos_ehci->phy);
-> +	exynos_phys_off(exynos_ehci->phy);
-> +fail_phys_on:
->  fail_io:
->  	clk_disable_unprepare(exynos_ehci->clk);
->  fail_clk:
-
-Alan Stern
-
+https://lkml.org/lkml/2009/10/13/459
