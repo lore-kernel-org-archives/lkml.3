@@ -1,162 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932455Ab3LEPk2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 10:40:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50486 "EHLO mx1.redhat.com"
+	id S932632Ab3LEPma (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 10:42:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50433 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751545Ab3LEPkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 10:40:25 -0500
-Date: Thu, 5 Dec 2013 10:40:15 -0500
-From: Rik van Riel <riel@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Alex Thorlton <athorlton@sgi.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, hhuang@redhat.com
-Subject: Re: [PATCH 14/15] mm: numa: Flush TLB if NUMA hinting faults race
- with PTE scan update
-Message-ID: <20131205104015.716ed0fe@annuminas.surriel.com>
-In-Reply-To: <20131204160741.GC11295@suse.de>
-References: <1386060721-3794-1-git-send-email-mgorman@suse.de>
-	<1386060721-3794-15-git-send-email-mgorman@suse.de>
-	<529E641A.7040804@redhat.com>
-	<20131203234637.GS11295@suse.de>
-	<529F3D51.1090203@redhat.com>
-	<20131204160741.GC11295@suse.de>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932223Ab3LEPm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 10:42:27 -0500
+Date: Thu, 5 Dec 2013 16:53:39 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Andrey Vagin <avagin@openvz.org>
+Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Jason Wang <jasowang@redhat.com>
+Subject: Re: [PATCH 2/2] virtio: delete napi structures from netdev before
+ releasing memory
+Message-ID: <20131205145339.GB23147@redhat.com>
+References: <1386254181-17257-1-git-send-email-avagin@openvz.org>
+ <1386254181-17257-3-git-send-email-avagin@openvz.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386254181-17257-3-git-send-email-avagin@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Dec 2013 16:07:41 +0000
-Mel Gorman <mgorman@suse.de> wrote:
+On Thu, Dec 05, 2013 at 06:36:21PM +0400, Andrey Vagin wrote:
+> free_netdev calls netif_napi_del too, but it's too late, because napi
+> structures are placed on vi->rq. netif_napi_add() is called from
+> virtnet_alloc_queues.
+> 
+> general protection fault: 0000 [#1] SMP
+> Dumping ftrace buffer:
+>    (ftrace buffer empty)
+> Modules linked in: ip6table_filter ip6_tables iptable_filter ip_tables virtio_balloon pcspkr virtio_net(-) i2c_pii
+> CPU: 1 PID: 347 Comm: rmmod Not tainted 3.13.0-rc2+ #171
+> Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> task: ffff8800b779c420 ti: ffff8800379e0000 task.ti: ffff8800379e0000
+> RIP: 0010:[<ffffffff81322e19>]  [<ffffffff81322e19>] __list_del_entry+0x29/0xd0
+> RSP: 0018:ffff8800379e1dd0  EFLAGS: 00010a83
+> RAX: 6b6b6b6b6b6b6b6b RBX: ffff8800379c2fd0 RCX: dead000000200200
+> RDX: 6b6b6b6b6b6b6b6b RSI: 0000000000000001 RDI: ffff8800379c2fd0
+> RBP: ffff8800379e1dd0 R08: 0000000000000001 R09: 0000000000000000
+> R10: 0000000000000000 R11: 0000000000000001 R12: ffff8800379c2f90
+> R13: ffff880037839160 R14: 0000000000000000 R15: 00000000013352f0
+> FS:  00007f1400e34740(0000) GS:ffff8800bfb00000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 00007f464124c763 CR3: 00000000b68cf000 CR4: 00000000000006e0
+> Stack:
+>  ffff8800379e1df0 ffffffff8155beab 6b6b6b6b6b6b6b2b ffff8800378391c0
+>  ffff8800379e1e18 ffffffff8156499b ffff880037839be0 ffff880037839d20
+>  ffff88003779d3f0 ffff8800379e1e38 ffffffffa003477c ffff88003779d388
+> Call Trace:
+>  [<ffffffff8155beab>] netif_napi_del+0x1b/0x80
+>  [<ffffffff8156499b>] free_netdev+0x8b/0x110
+>  [<ffffffffa003477c>] virtnet_remove+0x7c/0x90 [virtio_net]
+>  [<ffffffff813ae323>] virtio_dev_remove+0x23/0x80
+>  [<ffffffff813f62ef>] __device_release_driver+0x7f/0xf0
+>  [<ffffffff813f6ca0>] driver_detach+0xc0/0xd0
+>  [<ffffffff813f5f28>] bus_remove_driver+0x58/0xd0
+>  [<ffffffff813f72ec>] driver_unregister+0x2c/0x50
+>  [<ffffffff813ae65e>] unregister_virtio_driver+0xe/0x10
+>  [<ffffffffa0036942>] virtio_net_driver_exit+0x10/0x6ce [virtio_net]
+>  [<ffffffff810d7cf2>] SyS_delete_module+0x172/0x220
+>  [<ffffffff810a732d>] ? trace_hardirqs_on+0xd/0x10
+>  [<ffffffff810f5d4c>] ? __audit_syscall_entry+0x9c/0xf0
+>  [<ffffffff81677f69>] system_call_fastpath+0x16/0x1b
+> Code: 00 00 55 48 8b 17 48 b9 00 01 10 00 00 00 ad de 48 8b 47 08 48 89 e5 48 39 ca 74 29 48 b9 00 02 20 00 00 00
+> RIP  [<ffffffff81322e19>] __list_del_entry+0x29/0xd0
+>  RSP <ffff8800379e1dd0>
+> ---[ end trace d5931cd3f87c9763 ]---
+> 
+> Fixes: 986a4f4d452d (virtio_net: multiqueue support)
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> Signed-off-by: Andrey Vagin <avagin@openvz.org>
 
-> Because I found it impossible to segfault processes under any level of
-> scanning and numa hinting fault stress after it was applied
- 
-I think I still managed to trigger the bug, by setting numa page
-scanning to ludicrous speed, and running two large specjbb2005
-processes on a 4 node system in an infinite loop :)
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 
-I believe the reason is your patch flushes the TLB too late,
-after the page contents have been migrated over to the new
-page.
+This is needed for stable.
 
-The changelog below should explain how the race works, and
-how this patch supposedly fixes it. If it doesn't, let me
-know and I'll go back to the drawing board :)
-
----8<---
-
-Subject: mm,numa: fix memory corrupter race between THP NUMA unmap and migrate
-
-There is a subtle race between THP NUMA migration, and the NUMA
-unmapping code.
-
-The NUMA unmapping code does a permission change on pages, which
-is done with a batched (deferred) TLB flush. This is normally safe,
-because the pages stay in the same place, and having other CPUs
-continue to access them until the TLB flush is indistinguishable
-from having other CPUs do those same accesses before the PTE
-permission change.
-
-The THP NUMA migration code normally does not do a remote TLB flush,
-because the PTE is marked inaccessible, meaning no other CPUs should
-have cached TLB entries that allow them to access the memory.
-
-However, the following race is possible:
-
-CPU A			CPU B			CPU C
-
-						load TLB entry
-make entry PMD_NUMA
-			fault on entry
-						write to page
-			start migrating page
-						write to page
-			change PMD to new page
-flush TLB
-						reload TLB from new entry
-						lose data
-
-The obvious fix is to flush remote TLB entries from the numa
-migrate code on CPU B, while CPU A is making PTE changes, and
-has the TLB flush batched up for later.
-
-The migration for 4kB pages is currently fine, because it calls
-mk_ptenonnuma before migrating the page, which causes the migration
-code to always do a remote TLB flush.  We should probably optimize
-that at some point...
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- include/linux/mm_types.h |  3 +++
- kernel/sched/core.c      |  1 +
- kernel/sched/fair.c      |  4 ++++
- mm/huge_memory.c         | 10 ++++++++++
- 4 files changed, 18 insertions(+)
-
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 261ff4a..fa67ddb 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -427,6 +427,9 @@ struct mm_struct {
- 
- 	/* numa_scan_seq prevents two threads setting pte_numa */
- 	int numa_scan_seq;
-+
-+	/* task_numa_work is unmapping pages, with deferred TLB flush */
-+	bool numa_tlb_lazy;
- #endif
- 	struct uprobes_state uprobes_state;
- };
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 5f14335..fe80455 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1732,6 +1732,7 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
- 	if (p->mm && atomic_read(&p->mm->mm_users) == 1) {
- 		p->mm->numa_next_scan = jiffies + msecs_to_jiffies(sysctl_numa_balancing_scan_delay);
- 		p->mm->numa_scan_seq = 0;
-+		p->mm->numa_tlb_lazy = false;
- 	}
- 
- 	if (clone_flags & CLONE_VM)
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 2ec4afb..c9440f3 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1722,7 +1722,11 @@ void task_numa_work(struct callback_head *work)
- 			start = max(start, vma->vm_start);
- 			end = ALIGN(start + (pages << PAGE_SHIFT), HPAGE_SIZE);
- 			end = min(end, vma->vm_end);
-+			wmb(); /* with do_huge_pmd_numa_page */
-+			mm->numa_tlb_lazy = true;
- 			nr_pte_updates += change_prot_numa(vma, start, end);
-+			wmb(); /* with do_huge_pmd_numa_page */
-+			mm->numa_tlb_lazy = false;
- 
- 			/*
- 			 * Scan sysctl_numa_balancing_scan_size but ensure that
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index d68066f..3a03370 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1385,6 +1385,16 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	}
- 
- 	/*
-+	 * Another CPU is currently turning ptes of this process into
-+	 * NUMA ptes. That permission change batches the TLB flush,
-+	 * so other CPUs may still have valid TLB entries pointing to
-+	 * the current page. Make sure those are flushed before we
-+	 * migrate to a new page.
-+	 */
-+	rmb(); /* with task_numa_work */
-+	if (mm->numa_tlb_lazy)
-+		flush_tlb_range(vma, haddr, haddr + HPAGE_PMD_SIZE);
-+	/*
- 	 * Migrate the THP to the requested node, returns with page unlocked
- 	 * and pmd_numa cleared.
- 	 */
+> ---
+>  drivers/net/virtio_net.c | 5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index 930039a..c293764 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -1367,6 +1367,11 @@ static void virtnet_config_changed(struct virtio_device *vdev)
+>  
+>  static void virtnet_free_queues(struct virtnet_info *vi)
+>  {
+> +	int i;
+> +
+> +	for (i = 0; i < vi->max_queue_pairs; i++)
+> +		netif_napi_del(&vi->rq[i].napi);
+> +
+>  	kfree(vi->rq);
+>  	kfree(vi->sq);
+>  }
+> -- 
+> 1.8.3.1
