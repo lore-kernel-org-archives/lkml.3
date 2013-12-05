@@ -1,139 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933598Ab3LER5d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:57:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38155 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933101Ab3LERg5 (ORCPT
+	id S933569Ab3LER5c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:57:32 -0500
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:34158 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933426Ab3LER53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:36:57 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Huang Shijie <b32955@freescale.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 26/90] mtd: gpmi: fix kernel BUG due to racing DMA operations
-Date: Thu,  5 Dec 2013 17:35:08 +0000
-Message-Id: <1386264972-5399-27-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
-References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Thu, 5 Dec 2013 12:57:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131127152244.410F2C404EC@trevor.secretlab.ca>
+References: <1383113571-13029-1-git-send-email-robherring2@gmail.com>
+	<CAL_JsqKHZtidrzJPH+c-zyFUQNsxtEKxOYg+Nzyo9JYNDNexug@mail.gmail.com>
+	<20131127152244.410F2C404EC@trevor.secretlab.ca>
+Date: Thu, 5 Dec 2013 11:57:28 -0600
+Message-ID: <CAL_Jsq+4yitHCtaKZ4nNxTg3Q4pUYF9RQY4Q=VTSs4ox-iSqSQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/2] of: add initcall with match boilerplate helpers
+From: Rob Herring <robherring2@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.27 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, Nov 27, 2013 at 9:22 AM, Grant Likely <grant.likely@linaro.org> wrote:
+> On Thu, 21 Nov 2013 17:23:14 -0600, Rob Herring <robherring2@gmail.com> wrote:
+>> On Thu, Nov 21, 2013 at 6:50 AM, Grant Likely <grant.likely@linaro.org> wrote:
+>> > On Wed, 30 Oct 2013 01:12:51 -0500, Rob Herring <robherring2@gmail.com> wrote:
+>> >> From: Rob Herring <rob.herring@calxeda.com>
+>> >>
+>> >> Add boilerplate helpers to create initcalls which are conditional on
+>> >> matching on devicetree properties.
 
-------------------
+[snip]
 
-From: Huang Shijie <b32955@freescale.com>
+>> > I'm not sure why this is necessary. I don't particularly have a problem
+>> > with it, but I wouldn't normally try to filter out device drivers when
+>> > the probe code simply won't get called.
+>> >
+>> > Considering it's paired with the previous patch that creates devices in
+>> > the module init call, I'm assuming it is to support that use case. If so
+>> > then I don't think it is a good idea. If there is another use case then
+>> > maybe.
+>>
+>> This is for cases that are not drivers. Again, the motivation is how
+>> do I do initialization on arm64 where there is not already some
+>> conditional initialization hook. My approach to solve this is by
+>> eliminating the machine_desc for highbank. While I don't really have a
+>> need to do this on highbank itself, I do have a need for some of the
+>> same functions present in mach-highbank for arm64.
+>>
+>> I realized quickly going down this path that I would have a repeated
+>> pattern and that there's already a few other examples in the kernel of
+>> something like this:
+>>
+>> static int __init some_initcall(void)
+>> {
+>>   if (of_machine_is_compatible("my-awesume-board"))
+>>     return -ENODEV;
+>>
+>>   /* do some init stuff... */
+>> }
+>>
+>> There are some examples using this here [1][2].
+>
+> It's still kind of a nasty pattern. I'd like to limit the use of this as
+> much as possible and I'd like to make it as easy as possible to discover
+> where things are coming from at boot. That's one of the things I like
+> about machine_desc. It is a common entry point for SoC family specific
+> behaviour.
 
-commit 7b3d2fb92067bcb29f0f085a9fa9fa64920a6646 upstream.
+But that is really no longer true now that all the machine_desc
+function ptrs are optional. A given platform may or may not even be
+calling some machine_desc functions. So the boot flow is already very
+much a function of what is in the DTB rather than what machine is
+selected.
 
-[1] The gpmi uses the nand_command_lp to issue the commands to NAND chips.
-    The gpmi issues a DMA operation with gpmi_cmd_ctrl when it handles
-    a NAND_CMD_NONE control command. So when we read a page(NAND_CMD_READ0)
-    from the NAND, we may send two DMA operations back-to-back.
+> As for device drivers, the preferred model is to bind against something
+> already registered. If it is not present, then it does nothing. To me
+> there is a difference between making the behavour conditional on
+> something that was registered vs. an arbitrary value in the device tree.
+> The triggers for the former are exported in /dev/devices. The latter is
+> 'magic'.  :-)
 
-    If we do not serialize the two DMA operations, we will meet a bug when
+Again, this patch is for not device driver stuff.
 
-    1.1) we enable CONFIG_DMA_API_DEBUG, CONFIG_DMADEVICES_DEBUG,
-         and CONFIG_DEBUG_SG.
+> The problem with "if (of_machine_is_compatible())" initcalls is they are
+> an exception to the normal flow of things. You have to go searching for
+> specific strings to find out if they are getting called.
 
-    1.2) Use the following commands in an UART console and a SSH console:
-         cmd 1: while true;do dd if=/dev/mtd0 of=/dev/null;done
-         cmd 1: while true;do dd if=/dev/mmcblk0 of=/dev/null;done
+Umm, initcall_debug is your friend here.
 
-    The kernel log shows below:
-    -----------------------------------------------------------------
-    kernel BUG at lib/scatterlist.c:28!
-    Unable to handle kernel NULL pointer dereference at virtual address 00000000
-      .........................
-    [<80044a0c>] (__bug+0x18/0x24) from [<80249b74>] (sg_next+0x48/0x4c)
-    [<80249b74>] (sg_next+0x48/0x4c) from [<80255398>] (debug_dma_unmap_sg+0x170/0x1a4)
-    [<80255398>] (debug_dma_unmap_sg+0x170/0x1a4) from [<8004af58>] (dma_unmap_sg+0x14/0x6c)
-    [<8004af58>] (dma_unmap_sg+0x14/0x6c) from [<8027e594>] (mxs_dma_tasklet+0x18/0x1c)
-    [<8027e594>] (mxs_dma_tasklet+0x18/0x1c) from [<8007d444>] (tasklet_action+0x114/0x164)
-    -----------------------------------------------------------------
+A standard boilerplate here would actually help in finding these
+cases. If arm64 continues to hold the line of no machine_desc, then
+this won't be the exception. Are there currently enough exceptions to
+justify factoring out this pattern? Obviously, I think there are and
+think they will grow, not shrink.
 
-    1.3) Assume the two DMA operations is X (first) and Y (second).
+Since none of the proponents of removing/avoiding machine_desc have
+weighed in, we'll never reach any conclusion on this. I'll just
+continue to open code this as I need to.
 
-         The root cause of the bug:
-	   Assume process P issues DMA X, and sleep on the completion
-	 @this->dma_done. X's tasklet callback is dma_irq_callback. It firstly
-	 wake up the process sleeping on the completion @this->dma_done,
-	 and then trid to unmap the scatterlist S. The waked process P will
-	 issue Y in another ARM core. Y initializes S->sg_magic to zero
-	 with sg_init_one(), while dma_irq_callback is unmapping S at the same
-	 time.
+> I'm possibly splitting hairs here, but a big part of migration to the
+> Linux device model is getting rid of modules that both register a device
+> and then bind to it.
 
-	 See the diagram:
+There will always be bits that don't fit into the driver model.
 
-                   ARM core 0              |         ARM core 1
-	 -------------------------------------------------------------
-         (P issues DMA X, then sleep)  --> |
-                                           |
-         (X's tasklet wakes P)         --> |
-                                           |
-                                           | <-- (P begin to issue DMA Y)
-                                           |
-         (X's tasklet unmap the            |
-      scatterlist S with dma_unmap_sg) --> | <-- (Y calls sg_init_one() to init
-                                           |      scatterlist S)
-                                           |
-
-[2] This patch serialize both the X and Y in the following way:
-     Unmap the DMA scatterlist S firstly, and wake up the process at the end
-     of the DMA callback, in such a way, Y will be executed after X.
-
-     After this patch:
-
-                   ARM core 0              |         ARM core 1
-	 -------------------------------------------------------------
-         (P issues DMA X, then sleep)  --> |
-                                           |
-         (X's tasklet unmap the            |
-      scatterlist S with dma_unmap_sg) --> |
-                                           |
-         (X's tasklet wakes P)         --> |
-                                           |
-                                           | <-- (P begin to issue DMA Y)
-                                           |
-                                           | <-- (Y calls sg_init_one() to init
-                                           |     scatterlist S)
-                                           |
-
-Signed-off-by: Huang Shijie <b32955@freescale.com>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/mtd/nand/gpmi-nand/gpmi-nand.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-index a6cad5c..e19fd89 100644
---- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-@@ -230,8 +230,6 @@ static void dma_irq_callback(void *param)
- 	struct gpmi_nand_data *this = param;
- 	struct completion *dma_c = &this->dma_done;
- 
--	complete(dma_c);
--
- 	switch (this->dma_type) {
- 	case DMA_FOR_COMMAND:
- 		dma_unmap_sg(this->dev, &this->cmd_sgl, 1, DMA_TO_DEVICE);
-@@ -256,6 +254,8 @@ static void dma_irq_callback(void *param)
- 	default:
- 		pr_err("in wrong DMA operation.\n");
- 	}
-+
-+	complete(dma_c);
- }
- 
- int start_dma_without_bch_irq(struct gpmi_nand_data *this,
--- 
-1.8.3.2
-
+Rob
