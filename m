@@ -1,62 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756175Ab3LELYA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 06:24:00 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:37360
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752228Ab3LELX6 (ORCPT
+	id S1756179Ab3LELZi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 06:25:38 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:49723 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228Ab3LELZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 06:23:58 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2fh95h839hd24hf0ah119dh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1e23h1fe8h1ff5h2218h2216h226dh2327h2336h906i1155h)
-From: Jagannadha Sutradharudu Teki 
-	<jagannadha.sutradharudu-teki@xilinx.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
-        Jagannadha Sutradharudu Teki <jaganna@xilinx.com>
-Subject: [PATCH] checkpatch: Do not hardcode perl path
-Date: Thu, 5 Dec 2013 16:53:36 +0530
-X-Mailer: git-send-email 1.8.3
-X-RCIS-Action: ALLOW
+	Thu, 5 Dec 2013 06:25:36 -0500
+From: Yijing Wang <wangyijing@huawei.com>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>
+Subject: [PATCH] video: Replace local macro with PCI standard macro
+Date: Thu, 5 Dec 2013 19:25:18 +0800
+Message-ID: <1386242718-24372-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
 MIME-Version: 1.0
 Content-Type: text/plain
-Message-ID: <b26e8934-caba-4385-bd32-8f48e2e99826@VA3EHSMHS026.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-checkpatch.pl requires perl v5.10.0 to run but it
-doesn't require to place in /usr/bin/perl
-Use env to ensure that the interpreter used is the
-first one on environment's $PATH on system with
-several versions of perl installed.
+Replace local macro TGA_BUS_PCI with PCI standard
+marco dev_is_pci().
 
-Signed-off-by: Jagannadha Sutradharudu Teki <jaganna@xilinx.com>
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- scripts/checkpatch.pl | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/video/tgafb.c |   16 +++++-----------
+ 1 files changed, 5 insertions(+), 11 deletions(-)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 9c98100..241bb11 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1,10 +1,11 @@
--#!/usr/bin/perl -w
-+#!/usr/bin/env perl
- # (c) 2001, Dave Jones. (the file handling bit)
- # (c) 2005, Joel Schopp <jschopp@austin.ibm.com> (the ugly bit)
- # (c) 2007,2008, Andy Whitcroft <apw@uk.ibm.com> (new conditions, test suite)
- # (c) 2008-2010 Andy Whitcroft <apw@canonical.com>
- # Licensed under the terms of the GNU GPL License version 2
+diff --git a/drivers/video/tgafb.c b/drivers/video/tgafb.c
+index f28674f..5e94c6e 100644
+--- a/drivers/video/tgafb.c
++++ b/drivers/video/tgafb.c
+@@ -32,12 +32,6 @@
  
-+use warnings;
- use strict;
- use POSIX;
+ #include <video/tgafb.h>
  
+-#ifdef CONFIG_PCI
+-#define TGA_BUS_PCI(dev) (dev->bus == &pci_bus_type)
+-#else
+-#define TGA_BUS_PCI(dev) 0
+-#endif
+-
+ #ifdef CONFIG_TC
+ #define TGA_BUS_TC(dev) (dev->bus == &tc_bus_type)
+ #else
+@@ -236,7 +230,7 @@ tgafb_set_par(struct fb_info *info)
+ 	};
+ 
+ 	struct tga_par *par = (struct tga_par *) info->par;
+-	int tga_bus_pci = TGA_BUS_PCI(par->dev);
++	int tga_bus_pci = dev_is_pci(par->dev);
+ 	int tga_bus_tc = TGA_BUS_TC(par->dev);
+ 	u32 htimings, vtimings, pll_freq;
+ 	u8 tga_type;
+@@ -519,7 +513,7 @@ tgafb_setcolreg(unsigned regno, unsigned red, unsigned green, unsigned blue,
+ 		unsigned transp, struct fb_info *info)
+ {
+ 	struct tga_par *par = (struct tga_par *) info->par;
+-	int tga_bus_pci = TGA_BUS_PCI(par->dev);
++	int tga_bus_pci = dev_is_pci(par->dev);
+ 	int tga_bus_tc = TGA_BUS_TC(par->dev);
+ 
+ 	if (regno > 255)
+@@ -1472,7 +1466,7 @@ static void
+ tgafb_init_fix(struct fb_info *info)
+ {
+ 	struct tga_par *par = (struct tga_par *)info->par;
+-	int tga_bus_pci = TGA_BUS_PCI(par->dev);
++	int tga_bus_pci = dev_is_pci(par->dev);
+ 	int tga_bus_tc = TGA_BUS_TC(par->dev);
+ 	u8 tga_type = par->tga_type;
+ 	const char *tga_type_name = NULL;
+@@ -1560,7 +1554,7 @@ static int tgafb_register(struct device *dev)
+ 	const struct fb_videomode *modedb_tga = NULL;
+ 	resource_size_t bar0_start = 0, bar0_len = 0;
+ 	const char *mode_option_tga = NULL;
+-	int tga_bus_pci = TGA_BUS_PCI(dev);
++	int tga_bus_pci = dev_is_pci(dev);
+ 	int tga_bus_tc = TGA_BUS_TC(dev);
+ 	unsigned int modedbsize_tga = 0;
+ 	void __iomem *mem_base;
+@@ -1690,7 +1684,7 @@ static int tgafb_register(struct device *dev)
+ static void tgafb_unregister(struct device *dev)
+ {
+ 	resource_size_t bar0_start = 0, bar0_len = 0;
+-	int tga_bus_pci = TGA_BUS_PCI(dev);
++	int tga_bus_pci = dev_is_pci(dev);
+ 	int tga_bus_tc = TGA_BUS_TC(dev);
+ 	struct fb_info *info = NULL;
+ 	struct tga_par *par;
 -- 
-1.8.3
+1.7.1
 
 
