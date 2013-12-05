@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab3LEW4g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 17:56:36 -0500
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:53902 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067Ab3LEW4d (ORCPT
+	id S1754533Ab3LEXCE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 18:02:04 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:47732 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab3LEXBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 17:56:33 -0500
+	Thu, 5 Dec 2013 18:01:55 -0500
+X-IronPort-AV: E=Sophos;i="4.93,836,1378882800"; 
+   d="scan'208";a="186680"
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Christian Daudt <bcm@fixthebug.org>
+CC: Tim Kryger <tim.kryger@linaro.org>,
+        Broadcom Kernel Feedback List 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        ARM Linux List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linaro Patches List <patches@linaro.org>
+Subject: [PATCH 1/2] ARM: bcm_defconfig: CONFIG_OABI_COMPAT default off
+Date: Thu, 5 Dec 2013 15:00:37 -0800
+Message-ID: <1386284438-11099-2-git-send-email-tim.kryger@linaro.org>
+X-Mailer: git-send-email 1.8.0.1
+In-Reply-To: <1386284438-11099-1-git-send-email-tim.kryger@linaro.org>
+References: <1386284438-11099-1-git-send-email-tim.kryger@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <CANk1AXRJK+Zy2FYEn5jBevUr5Dr_tNeFf9=GbOnzxgiSOw7j8w@mail.gmail.com>
-References: <1386088876-29205-1-git-send-email-delicious.quinoa@gmail.com>
-	<1386088876-29205-2-git-send-email-delicious.quinoa@gmail.com>
-	<20131205165439.GB5924@maple>
-	<CANk1AXRJK+Zy2FYEn5jBevUr5Dr_tNeFf9=GbOnzxgiSOw7j8w@mail.gmail.com>
-Date: Thu, 5 Dec 2013 16:56:32 -0600
-Message-ID: <CANk1AXS2twLVbPUUcLRXnzjJsGO0TPk9CM+8M5cf-tOOaUexnA@mail.gmail.com>
-Subject: Re: [PATCH v8] gpio: add a driver for the Synopsys DesignWare APB
- GPIO block
-From: delicious quinoa <delicious.quinoa@gmail.com>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, Alan Tull <atull@altera.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 5, 2013 at 4:53 PM, delicious quinoa
-<delicious.quinoa@gmail.com> wrote:
-> On Thu, Dec 5, 2013 at 10:54 AM, Jamie Iles <jamie@jamieiles.com> wrote:
->> Hi Alan,
->>
->> One minor comment below, otherwise looks great!
->>
->> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
->>
->> Thanks,
->>
->> Jamie
->>
->> On Tue, Dec 03, 2013 at 10:41:16AM -0600, Alan Tull wrote:
->>> diff --git a/drivers/gpio/gpio-dwapb.c b/drivers/gpio/gpio-dwapb.c
->>> new file mode 100644
->>> index 0000000..e6dc61f
->>> --- /dev/null
->>> +++ b/drivers/gpio/gpio-dwapb.c
->> ...
->>> +static unsigned int dwapb_gpio_nr_ports(struct device_node *of_node)
->>> +{
->>> +     unsigned int nr_ports = 0;
->>> +     struct device_node *np;
->>> +
->>> +     for_each_child_of_node(of_node, np)
->>> +             ++nr_ports;
->>> +
->>> +     return nr_ports;
->>> +}
->>
->> I notice that we now have of_get_child_count() which didn't exist when I
->> first wrote the driver, we could use that now.
->
-> Thanks Jamie.
->
-> I'll include that in v8.  I'll post that within a few days.
->
-> Alan
+Now that CONFIG_OABI_COMPAT is off by default, remove the explicit
+disabling of this feature.
 
-er, I mean v9.
+Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+---
+ arch/arm/configs/bcm_defconfig | 1 -
+ 1 file changed, 1 deletion(-)
 
-Alan
+diff --git a/arch/arm/configs/bcm_defconfig b/arch/arm/configs/bcm_defconfig
+index 287ac1d..574e046 100644
+--- a/arch/arm/configs/bcm_defconfig
++++ b/arch/arm/configs/bcm_defconfig
+@@ -29,7 +29,6 @@ CONFIG_ARCH_BCM_MOBILE=y
+ CONFIG_ARM_THUMBEE=y
+ CONFIG_PREEMPT=y
+ CONFIG_AEABI=y
+-# CONFIG_OABI_COMPAT is not set
+ # CONFIG_COMPACTION is not set
+ CONFIG_ZBOOT_ROM_TEXT=0x0
+ CONFIG_ZBOOT_ROM_BSS=0x0
+-- 
+1.8.0.1
+
