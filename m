@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751743Ab3LETKT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 14:10:19 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:48100 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751335Ab3LETKR (ORCPT
+	id S1752160Ab3LETMa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 14:12:30 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:48636 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006Ab3LETM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 14:10:17 -0500
-X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h22d0h2336h1155h)
-X-WSS-ID: 0MXCL4D-07-AZH-02
-X-M-MSG: 
-Subject: [PATCH] crypto: scatterwalk - Use sg_chain_ptr on chain entries
-To: <davem@davemloft.net>, <linux-crypto@vger.kernel.org>,
-        <herbert@gondor.apana.org.au>
-From: Tom Lendacky <thomas.lendacky@amd.com>
-CC: <linux-kernel@vger.kernel.org>
-Date: Thu, 5 Dec 2013 13:09:53 -0600
-Message-ID: <20131205190953.16167.59879.stgit@tlendack-t1.amdoffice.net>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Thu, 5 Dec 2013 14:12:29 -0500
+From: Mark Brown <broonie@kernel.org>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        Mark Brown <broonie@linaro.org>
+Date: Thu,  5 Dec 2013 19:12:01 +0000
+Message-Id: <1386270722-13962-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 1.8.5.1
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH 1/2] regulator: gpio: Document regulator-type property
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that scatterwalk_sg_chain sets the chain pointer bit the sg_page
-call in scatterwalk_sg_next hits a BUG_ON when CONFIG_DEBUG_SG is
-enabled. Use sg_chain_ptr instead of sg_page on a chain entry.
+From: Mark Brown <broonie@linaro.org>
 
-Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
+Reported-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 ---
- include/crypto/scatterwalk.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/devicetree/bindings/regulator/gpio-regulator.txt | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/include/crypto/scatterwalk.h b/include/crypto/scatterwalk.h
-index 64ebede..6a626a5 100644
---- a/include/crypto/scatterwalk.h
-+++ b/include/crypto/scatterwalk.h
-@@ -44,7 +44,7 @@ static inline struct scatterlist *scatterwalk_sg_next(struct scatterlist *sg)
- 	if (sg_is_last(sg))
- 		return NULL;
+diff --git a/Documentation/devicetree/bindings/regulator/gpio-regulator.txt b/Documentation/devicetree/bindings/regulator/gpio-regulator.txt
+index 63c659800c03..aaf5f66e66fb 100644
+--- a/Documentation/devicetree/bindings/regulator/gpio-regulator.txt
++++ b/Documentation/devicetree/bindings/regulator/gpio-regulator.txt
+@@ -10,6 +10,8 @@ Optional properties:
+ - gpios			: GPIO group used to control voltage.
+ - startup-delay-us	: Startup time in microseconds.
+ - enable-active-high	: Polarity of GPIO is active high (default is low).
++- regulator-type	: Specifies what is being regulated, must be either
++			  "voltage" or "current"
  
--	return (++sg)->length ? sg : (void *)sg_page(sg);
-+	return (++sg)->length ? sg : sg_chain_ptr(sg);
- }
- 
- static inline void scatterwalk_crypto_chain(struct scatterlist *head,
-
+ Any property defined as part of the core regulator binding defined in
+ regulator.txt can also be used.
+-- 
+1.8.5.1
 
