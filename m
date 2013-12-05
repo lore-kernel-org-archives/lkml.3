@@ -1,65 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756081Ab3LEPEh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 10:04:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41507 "EHLO mx1.redhat.com"
+	id S932464Ab3LEPGk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 10:06:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19394 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751247Ab3LEPEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 10:04:36 -0500
-Date: Thu, 05 Dec 2013 10:03:51 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Message-ID: <1386255831-pmlbizbv-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1386241817-5051-2-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1386241817-5051-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <1386241817-5051-2-git-send-email-liwanp@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2] sched/numa: drop idx field of task_numa_env struct
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
+	id S932203Ab3LEPGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 10:06:37 -0500
+Date: Thu, 5 Dec 2013 11:50:21 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Gleb Natapov <gleb@redhat.com>, avi.kivity@gmail.com,
+        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Eric Dumazet <dada1@cosmosbay.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
+Message-ID: <20131205135021.GA12996@amt.cnet>
+References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1382534973-13197-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20131122191429.GA13308@amt.cnet>
+ <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com>
+ <5292EE2F.5090305@linux.vnet.ibm.com>
+ <20131125181254.GB21858@amt.cnet>
+ <529413C1.60302@linux.vnet.ibm.com>
+ <20131126193148.GA18071@amt.cnet>
+ <5297049E.3020800@linux.vnet.ibm.com>
+ <529D83F8.7050605@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-X-Mutt-References: <1386241817-5051-2-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <529D83F8.7050605@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 07:10:17PM +0800, Wanpeng Li wrote:
-> Drop unused idx field of task_numa_env struct.
+GOn Tue, Dec 03, 2013 at 03:10:48PM +0800, Xiao Guangrong wrote:
+> On 11/28/2013 04:53 PM, Xiao Guangrong wrote:
+> > On 11/27/2013 03:31 AM, Marcelo Tosatti wrote:
+> >> On Tue, Nov 26, 2013 at 11:21:37AM +0800, Xiao Guangrong wrote:
+> >>> On 11/26/2013 02:12 AM, Marcelo Tosatti wrote:
+> >>>> On Mon, Nov 25, 2013 at 02:29:03PM +0800, Xiao Guangrong wrote:
+> >>>>>>> Also, there is no guarantee of termination (as long as sptes are
+> >>>>>>> deleted with the correct timing). BTW, can't see any guarantee of
+> >>>>>>> termination for rculist nulls either (a writer can race with a lockless
+> >>>>>>> reader indefinately, restarting the lockless walk every time).
+> >>>>>>
+> >>>>>> Hmm, that can be avoided by checking dirty-bitmap before rewalk,
+> >>>>>> that means, if the dirty-bitmap has been set during lockless write-protection,
+> >>>>>> it�s unnecessary to write-protect its sptes. Your idea?
+> >>>>> This idea is based on the fact that the number of rmap is limited by
+> >>>>> RMAP_RECYCLE_THRESHOLD. So, in the case of adding new spte into rmap,
+> >>>>> we can break the rewalk at once, in the case of deleting, we can only
+> >>>>> rewalk RMAP_RECYCLE_THRESHOLD times.
+> >>>>
+> >>>> Please explain in more detail.
+> >>>
+> >>> Okay.
+> >>>
+> >>> My proposal is like this:
+> >>>
+> >>> pte_list_walk_lockless()
+> >>> {
+> >>> restart:
+> >>>
+> >>> +	if (__test_bit(slot->arch.dirty_bitmap, gfn-index))
+> >>> +		return;
+> >>>
+> >>> 	code-doing-lockless-walking;
+> >>> 	......
+> >>> }
+> >>>
+> >>> Before do lockless-walking, we check the dirty-bitmap first, if
+> >>> it is set we can simply skip write-protection for the gfn, that
+> >>> is the case that new spte is being added into rmap when we lockless
+> >>> access the rmap.
+> >>
+> >> The dirty bit could be set after the check.
+> >>
+> >>> For the case of deleting spte from rmap, the number of entry is limited
+> >>> by RMAP_RECYCLE_THRESHOLD, that is not endlessly.
+> >>
+> >> It can shrink and grow while lockless walk is performed.
+> > 
+> > Yes, indeed.
+> > 
+> > Hmmm, another idea in my mind to fix this is encoding the position into
+> > the reserved bits of desc->more pointer, for example:
+> > 
+> >           +------+    +------+    +------+
+> > rmapp ->  |Desc 0| -> |Desc 1| -> |Desc 2|
+> >           +------+    +------+    +------+
+> > 
+> > There are 3 descs on the rmap, and:
+> > rmapp = &desc0 | 1UL | 3UL << 50;
+> > desc0->more = desc1 | 2UL << 50;
+> > desc1->more = desc0 | 1UL << 50
+> > desc2->more = &rmapp | 1UL; (The nulls pointer)
+> > 
+> > We will walk to the next desc only if the "position" of current desc
+> > is >= the position of next desc. That can make sure we can reach the
+> > last desc anyway.
+> > 
+> > And in order to avoiding doing too many "rewalk", we will goto the
+> > slow path (do walk with holding the lock) instead when retry the walk
+> > more that N times.
 > 
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> How about this idea? Or you guys still prefer to the idea of lockless on
+> first-level?
 
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Xiao,
 
-> ---
->  kernel/sched/fair.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index fd773ad..ea3fd1e 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1037,7 +1037,7 @@ struct task_numa_env {
->  
->  	struct numa_stats src_stats, dst_stats;
->  
-> -	int imbalance_pct, idx;
-> +	int imbalance_pct;
->  
->  	struct task_struct *best_task;
->  	long best_imp;
-> -- 
-> 1.7.7.6
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+Is it not the case that simply moving to the slow path once a maximum of
+rewalks has been reached enough? (looks a like a good solution).
+
+Please move lockless rcu walking code to generic code where it belongs.
+
