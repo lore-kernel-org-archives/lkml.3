@@ -1,88 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757351Ab3LESP5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 13:15:57 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:47202 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757265Ab3LESPx (ORCPT
+	id S1757786Ab3LESSm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 13:18:42 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:50748 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757254Ab3LESSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 13:15:53 -0500
+	Thu, 5 Dec 2013 13:18:41 -0500
+Date: Thu, 5 Dec 2013 10:18:34 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: rostedt@goodmis.org, mingo@kernel.org, henrik@austad.us,
+        linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH v4 tip/core/locking 0/4] Memory-barrier documentation
+ updates
+Message-ID: <20131205181834.GV15492@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131205105928.GA27382@austad.us>
+ <20131205122851.GB20562@gmail.com>
+ <20131205085146.0370ea2a@gandalf.local.home>
+ <20131205.130524.997340443429884333.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <20131202213654.GA4059@roeck-us.net>
-References: <1386008082-28740-1-git-send-email-dianders@chromium.org>
-	<20131202202120.GA23611@roeck-us.net>
-	<CAOesGMi-P6LG1-XKVizUS_qX-gfZi_iXBO5r+=6a2nfvBS60mw@mail.gmail.com>
-	<20131202213654.GA4059@roeck-us.net>
-Date: Thu, 5 Dec 2013 10:15:52 -0800
-X-Google-Sender-Auth: vfzVS7pWb2XCLn0h3c96fHcGjo0
-Message-ID: <CAD=FV=VppmDoREkCq-0HeS-MxUGrPuSRzxK2copG2yZpEg2+rw@mail.gmail.com>
-Subject: Re: [PATCH] watchdog: s3c2410_wdt: Report when the watchdog reset the system
-From: Doug Anderson <dianders@chromium.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Olof Johansson <olof@lixom.net>, Wim Van Sebroeck <wim@iguana.be>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131205.130524.997340443429884333.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120518-0928-0000-0000-0000041CE789
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guenter and Olof,
+On Thu, Dec 05, 2013 at 01:05:24PM -0500, David Miller wrote:
+> From: Steven Rostedt <rostedt@goodmis.org>
+> Date: Thu, 5 Dec 2013 08:51:46 -0500
+> 
+> > I wish vger wouldn't do that. I wonder how much spam is really flagged
+> > by this one characteristic alone. That is, spam that would have made it
+> > otherwise, but because of the Cc list, it was rejected.
+> 
+> 10 to 20 spam posts per day are prevented by this rule.
+> 
+> And frankly it's totally rediculous to have such a huge CC: list
+> in the first place, even if the vger spam filter didn't exist.
+> 
+> If you CC: something to netdev, it's going to reach me, you don't need
+> to CC: me.  If just makes for a dup that I have to delete in my inbox,
+> so you're actually making more work for me in the end.
+> 
+> That's just one example.
 
-On Mon, Dec 2, 2013 at 1:36 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On Mon, Dec 02, 2013 at 12:47:53PM -0800, Olof Johansson wrote:
->> On Mon, Dec 2, 2013 at 12:21 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->> > On Mon, Dec 02, 2013 at 10:14:41AM -0800, Doug Anderson wrote:
->> >> A good watchdog driver is supposed to report when it was responsible
->> >> for resetting the system.  Implement this for the s3c2410, at least on
->> >> exynos5250 and exynos5420 where we already have a pointer to the PMU
->> >> registers to read the information.
->> >>
->> >> Signed-off-by: Doug Anderson <dianders@chromium.org>
->> >> ---
->> >> This patch is based atop Leela Krishna's recent series that ends with
->> >> (ARM: dts: update watchdog device nodes for Exynos5250 and Exynos5420)
->> >> AKA <https://patchwork.kernel.org/patch/3251861/>.
->> >>
->> >>  drivers/watchdog/s3c2410_wdt.c | 42 +++++++++++++++++++++++++++++++++++++++---
->> >>  1 file changed, 39 insertions(+), 3 deletions(-)
->> >>
->> >> diff --git a/drivers/watchdog/s3c2410_wdt.c b/drivers/watchdog/s3c2410_wdt.c
->> >> index 47f4dcf..2c87d37 100644
->> >> --- a/drivers/watchdog/s3c2410_wdt.c
->> >> +++ b/drivers/watchdog/s3c2410_wdt.c
->> >> @@ -62,9 +62,13 @@
->> >>  #define CONFIG_S3C2410_WATCHDOG_ATBOOT               (0)
->> >>  #define CONFIG_S3C2410_WATCHDOG_DEFAULT_TIME (15)
->> >>
->> >> +#define RST_STAT_REG_OFFSET          0x0404
->> >>  #define WDT_DISABLE_REG_OFFSET               0x0408
->> >>  #define WDT_MASK_RESET_REG_OFFSET    0x040c
->> >>  #define QUIRK_NEEDS_PMU_CONFIG               (1 << 0)
->> >> +#define QUIRK_HAS_RST_STAT           (1 << 1)
->> >> +#define QUIRKS_NEED_PMUREG           (QUIRK_NEEDS_PMU_CONFIG | \
->> >> +                                      QUIRK_HAS_RST_STAT)
->> >>
->> > I am not really happy about the NEED (both of them, really) here.
->> > How about HAS instead ?
->>
->> Ah, I just commented on these things on our internal review site too
->> on this patch. I don't even think a quirk is needed -- just use the
->> presence of a non-0 rst_stat_reg to tell if you need to use regmap.
->>
-> Agreed; same is true for the QUIRK_NEEDS_PMU_CONFIG related registers
-> as well.
+Hello, David,
 
-I have changed all instances of NEED / NEEDS and HAS / HAVE.  Please
-take a look.  Since some of those changes applied to Leela Krishna's
-patch I'm sending up a "fixup" patch which hopefully he can
-incorporate into a v12.
+The situation that leads me to use a large CC list is when I am doing
+something that affects all architectures.  I could imagine keeping a
+smallish CC list, then forwarding or bouncing the email to the remaining
+maintainers  Would that work reasonably, or is there some better approach?
 
--Doug
+							Thanx, Paul
+
