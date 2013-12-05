@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932915Ab3LEQAS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 11:00:18 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:42161 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932880Ab3LEQAM (ORCPT
+	id S932930Ab3LEQBC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 11:01:02 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:34230 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752892Ab3LEQA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 11:00:12 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <arm@kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Yanis Moreno <yanis.moreno63@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] ARM: at91: remove redundant dependency
-Date: Thu, 5 Dec 2013 17:00:08 +0100
-Message-ID: <1386259208-2239-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <1384932191-8967-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1384932191-8967-1-git-send-email-michael.opdenacker@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 5 Dec 2013 11:00:58 -0500
+Message-ID: <1386258962.1791.268.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v4 07/12] efi: passing kexec necessary efi data via
+ setup_data
+From: Toshi Kani <toshi.kani@hp.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Dave Young <dyoung@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.infradead.org, greg@kroah.com, matt@console-pimps.org
+Date: Thu, 05 Dec 2013 08:56:02 -0700
+In-Reply-To: <20131205115124.GC14407@pd.tnic>
+References: <1385445477-9665-8-git-send-email-dyoung@redhat.com>
+	 <20131127140732.GD32267@pd.tnic>
+	 <20131129091415.GH4186@dhcp-16-126.nay.redhat.com>
+	 <1386023600.1791.201.camel@misato.fc.hp.com>
+	 <1386034289.1791.210.camel@misato.fc.hp.com>
+	 <20131203015613.GB3980@dhcp-16-126.nay.redhat.com>
+	 <1386085140.1791.218.camel@misato.fc.hp.com>
+	 <20131204024610.GA3764@dhcp-16-126.nay.redhat.com>
+	 <1386175428.1791.225.camel@misato.fc.hp.com>
+	 <20131205015615.GC3736@dhcp-16-126.nay.redhat.com>
+	 <20131205115124.GC14407@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yanis Moreno <yanis.moreno63@gmail.com>
+On Thu, 2013-12-05 at 12:51 +0100, Borislav Petkov wrote:
+> On Thu, Dec 05, 2013 at 09:56:15AM +0800, Dave Young wrote:
+> > > The z420 firmware is based on some UEFI core that may be used by other
+> > > vendors as well.  Since this handling is totally harmless (just
+> > > redundant), I'd suggest not to have a platform check on this handling.
+> > 
+> > I have same worry as well, so I agree with you.
+> 
+> Btw, why does kexec need the ->smbios table at all? I see it being
+> passed in efi_setup_data.
 
-This removes the "depends on SOC_SAM_V7" statement
-in a Kconfig section that's under an "if SOC_SAM_V7"
-condition (same parameter).
+Hi Boris,
 
-Signed-off-by: Yanis Moreno <yanis.moreno63@gmail.com>
-Reviewed-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
-Hi Olof,
+The smbios in efi_setup_data is necessary for kexec to pass the physical
+address of the SMBIOS table from the 1st kernel to the 2nd kernel.
 
-This is an additional patch for cleanup. I didn't include it in my previous
-"cleanup" branch as I had wanted to keep it focused on the move to CCF.
+The kernel boot sequence proceeds in the following order.  Step 2
+requires efi.smbios to be the physical address.  However, Dave found
+that EFI system table has a virtual address of SMBIOS in step 1.  Hence,
+he sets it back to the physical address with the smbios in
+efi_setup_data.  (When it is still the physical address, it simply sets
+the same value.)
 
-As you said that you are okay with applying patches and that I have only one
-related to "cleanup" for the moment, I send it to you.
+1. efi_init() - Set efi.smbios from EFI system table
+2. dmi_scan_machine() - Temporary map efi.smbios to access SMBIOS table
+3. efi_enter_virtual_mode() - Map EFI ranges
 
-Thanks, bye,
-  Nicolas Ferre
+Thanks,
+-Toshi
 
- arch/arm/mach-at91/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index b4f7d6ffa30b..aac7814db4f9 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -82,7 +82,6 @@ comment "Atmel AT91 Processor"
- if SOC_SAM_V7
- config SOC_SAMA5D3
- 	bool "SAMA5D3 family"
--	depends on SOC_SAM_V7
- 	select SOC_SAMA5
- 	select HAVE_FB_ATMEL
- 	select HAVE_AT91_DBGU1
--- 
-1.8.2.2
 
