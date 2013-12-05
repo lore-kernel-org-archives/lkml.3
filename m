@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933071Ab3LESsv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 13:48:51 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:44853 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933025Ab3LESst convert rfc822-to-8bit (ORCPT
+	id S933167Ab3LESsz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 13:48:55 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:55307 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933025Ab3LESsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 13:48:49 -0500
-From: "Strashko, Grygorii" <grygorii.strashko@ti.com>
-To: Tejun Heo <tj@kernel.org>
-CC: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Thu, 5 Dec 2013 13:48:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <201312031601.04997.arnd@arndb.de>
+References: <1385511748-27869-1-git-send-email-marc.ceeeee@gmail.com>
+ <1385511748-27869-2-git-send-email-marc.ceeeee@gmail.com> <201312031601.04997.arnd@arndb.de>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Thu, 5 Dec 2013 10:48:12 -0800
+Message-ID: <CAGVrzcbxHA+S0yZbsrj8uMZR0hsb_ng=PB02zte7S0rCZWQpBg@mail.gmail.com>
+Subject: Re: [PATCH v2 1/6] ARM: brcmstb: add infrastructure for ARM-based
+ Broadcom STB SoCs
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Marc Carino <marc.ceeeee@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: RE: [PATCH v2 08/23] mm/memblock: Add memblock memory allocation
- apis
-Thread-Topic: [PATCH v2 08/23] mm/memblock: Add memblock memory allocation
- apis
-Thread-Index: AQHO789nHFbKKAfbc0Sh2+NWsZmHZppDDVGAgAKyLgCAAAUlgIAALcpR
-Date: Thu, 5 Dec 2013 18:48:21 +0000
-Message-ID: <902E09E6452B0E43903E4F2D568737AB097B26B2@DNCE04.ent.ti.com>
-References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com>
- <1386037658-3161-9-git-send-email-santosh.shilimkar@ti.com>
- <20131203232445.GX8277@htj.dyndns.org>
- <52A0AB34.2030703@ti.com>,<20131205165325.GA24062@mtj.dyndns.org>
-In-Reply-To: <20131205165325.GA24062@mtj.dyndns.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.56]
-x-exclaimer-md-config: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+Hi Arnd,
 
->On Thu, Dec 05, 2013 at 06:35:00PM +0200, Grygorii Strashko wrote:
->> >> +#define memblock_virt_alloc_align(x, align) \
->> >> +  memblock_virt_alloc_try_nid(x, align, BOOTMEM_LOW_LIMIT, \
->> >> +                               BOOTMEM_ALLOC_ACCESSIBLE, MAX_NUMNODES)
->> >
->> > Also, do we really need this align variant separate when the caller
->> > can simply specify 0 for the default?
->>
->> Unfortunately Yes.
->> We need it to keep compatibility with bootmem/nobootmem
->> which don't handle 0 as default align value.
+2013/12/3 Arnd Bergmann <arnd@arndb.de>:
 >
->Hmm... why wouldn't just interpreting 0 to SMP_CACHE_BYTES in the
->memblock_virt*() function work?
+>> +     addr = ioremap(BPHYSADDR(BCHP_IRQ0_IRQEN), sizeof(u32));
+>> +     writel_relaxed(BCHP_IRQ0_IRQEN_uarta_irqen_MASK
+>> +             | BCHP_IRQ0_IRQEN_uartb_irqen_MASK
+>> +             | BCHP_IRQ0_IRQEN_uartc_irqen_MASK, addr);
+>> +     iounmap(addr);
 >
+> What does this part do? Isn't that something that should have been set
+> up by the boot loader?
 
-Problem is not with memblock_virt*(). The issue will happen in case if
-memblock or nobootmem are disabled in below code (memblock_virt*() is disabled).
+The bootloader will typically use the UART in busy-looping mode and
+not rely on interrupts, also the bootloader currently does not know
+much about how many UARTs there are in the system and how they are
+going to be used.
 
-+/* Fall back to all the existing bootmem APIs */
-+#define memblock_virt_alloc(x) \
-+       __alloc_bootmem(x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT)
+One possible way to solve this would be to write a very small irqchip
+driver which only implements the "irq_enable" method to allow these
+interrupts to be forwarded to the GIC. Somewhere in the Device Tree we
+would have an interrupt-map property which describes the mapping
+between the bits in BCHP_IRQ0_IRQEN and their corresponding
+peripherals (UARTA, B, C).
 
-which will be transformed to 
-+/* Fall back to all the existing bootmem APIs */
-+#define memblock_virt_alloc(x, align) \
-+       __alloc_bootmem(x, align, BOOTMEM_LOW_LIMIT)
-
-and used as
-
-memblock_virt_alloc(size, 0);
-
-so, by default bootmem code will use 0 as default alignment and not SMP_CACHE_BYTES
-and that is wrong.
-
-Regards,
--grygorii
+Would that work?
+-- 
+Florian
