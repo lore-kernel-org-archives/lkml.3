@@ -1,106 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756850Ab3LEPha (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 10:37:30 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41919 "EHLO arroyo.ext.ti.com"
+	id S932455Ab3LEPk2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 10:40:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50486 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752892Ab3LEPh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 10:37:29 -0500
-Message-ID: <52A0AB34.2030703@ti.com>
-Date: Thu, 5 Dec 2013 18:35:00 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mm@kvack.org>, Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 08/23] mm/memblock: Add memblock memory allocation
- apis
-References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com> <1386037658-3161-9-git-send-email-santosh.shilimkar@ti.com> <20131203232445.GX8277@htj.dyndns.org>
-In-Reply-To: <20131203232445.GX8277@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1751545Ab3LEPkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 10:40:25 -0500
+Date: Thu, 5 Dec 2013 10:40:15 -0500
+From: Rik van Riel <riel@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Alex Thorlton <athorlton@sgi.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, hhuang@redhat.com
+Subject: Re: [PATCH 14/15] mm: numa: Flush TLB if NUMA hinting faults race
+ with PTE scan update
+Message-ID: <20131205104015.716ed0fe@annuminas.surriel.com>
+In-Reply-To: <20131204160741.GC11295@suse.de>
+References: <1386060721-3794-1-git-send-email-mgorman@suse.de>
+	<1386060721-3794-15-git-send-email-mgorman@suse.de>
+	<529E641A.7040804@redhat.com>
+	<20131203234637.GS11295@suse.de>
+	<529F3D51.1090203@redhat.com>
+	<20131204160741.GC11295@suse.de>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.75]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On Wed, 4 Dec 2013 16:07:41 +0000
+Mel Gorman <mgorman@suse.de> wrote:
 
-On 12/04/2013 01:24 AM, Tejun Heo wrote:
-> Hello,
-> 
-> On Mon, Dec 02, 2013 at 09:27:23PM -0500, Santosh Shilimkar wrote:
->> So we add equivalent APIs so that we can replace usage of bootmem
->> with memblock interfaces. Architectures already converted to NO_BOOTMEM
->> use these new interfaces and other which still uses bootmem, these new
->> APIs just fallback to exiting bootmem APIs. So no functional change as
->> such.
-> 
-> The last part of the second last sentence doesn't parse too well.  I
-> think it'd be worthwhile to improve and preferably expand on it as
-> this is a bit tricky to understand given the twisted state of early
-> memory allocation.
-> 
->> In long run, once all the achitectures moves to NO_BOOTMEM, we can get rid of
->> bootmem layer completely. This is one step to remove the core code dependency
->> with bootmem and also gives path for architectures to move away from bootmem.
-> 
-> Lines too long?
-> 
+> Because I found it impossible to segfault processes under any level of
+> scanning and numa hinting fault stress after it was applied
+ 
+I think I still managed to trigger the bug, by setting numa page
+scanning to ludicrous speed, and running two large specjbb2005
+processes on a 4 node system in an infinite loop :)
 
-[...]
+I believe the reason is your patch flushes the TLB too late,
+after the page contents have been migrated over to the new
+page.
 
-> 
->> +/* FIXME: Move to memblock.h at a point where we remove nobootmem.c */
->> +void *memblock_virt_alloc_try_nid_nopanic(phys_addr_t size,
->> +		phys_addr_t align, phys_addr_t from,
->> +		phys_addr_t max_addr, int nid);
-> 
-> Wouldn't @min_addr instead of @from make more sense?  Ditto for other
-> occurrences.
-> 
->> +void *memblock_virt_alloc_try_nid(phys_addr_t size, phys_addr_t align,
->> +		phys_addr_t from, phys_addr_t max_addr, int nid);
->> +void __memblock_free_early(phys_addr_t base, phys_addr_t size);
->> +void __memblock_free_late(phys_addr_t base, phys_addr_t size);
->> +
->> +#define memblock_virt_alloc(x) \
->> +	memblock_virt_alloc_try_nid(x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT, \
->> +				     BOOTMEM_ALLOC_ACCESSIBLE, MAX_NUMNODES)
-> 
-> The underlying function interprets 0 as the default align, so it
-> probably is a better idea to just use 0 here.
-> 
->> +#define memblock_virt_alloc_align(x, align) \
->> +	memblock_virt_alloc_try_nid(x, align, BOOTMEM_LOW_LIMIT, \
->> +				     BOOTMEM_ALLOC_ACCESSIBLE, MAX_NUMNODES)
-> 
-> Also, do we really need this align variant separate when the caller
-> can simply specify 0 for the default?
+The changelog below should explain how the race works, and
+how this patch supposedly fixes it. If it doesn't, let me
+know and I'll go back to the drawing board :)
 
-Unfortunately Yes. 
-We need it to keep compatibility with bootmem/nobootmem
-which don't handle 0 as default align value.
+---8<---
 
-> 
->> +#define memblock_virt_alloc_nopanic(x) \
->> +	memblock_virt_alloc_try_nid_nopanic(x, SMP_CACHE_BYTES, \
->> +					     BOOTMEM_LOW_LIMIT, \
->> +					     BOOTMEM_ALLOC_ACCESSIBLE, \
->> +					     MAX_NUMNODES)
->> +#define memblock_virt_alloc_align_nopanic(x, align) \
->> +	memblock_virt_alloc_try_nid_nopanic(x, align, \
->> +					     BOOTMEM_LOW_LIMIT, \
->> +					     BOOTMEM_ALLOC_ACCESSIBLE, \
->> +					     MAX_NUMNODES)
->> +#define memblock_virt_alloc_node(x, nid) \
->> +	memblock_virt_alloc_try_nid(x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT, \
->> +				     BOOTMEM_ALLOC_ACCESSIBLE, nid)
->> +#define memblock_virt_alloc_node_nopanic(x, nid) \
+Subject: mm,numa: fix memory corrupter race between THP NUMA unmap and migrate
 
-Regards,
-- grygorii
+There is a subtle race between THP NUMA migration, and the NUMA
+unmapping code.
 
+The NUMA unmapping code does a permission change on pages, which
+is done with a batched (deferred) TLB flush. This is normally safe,
+because the pages stay in the same place, and having other CPUs
+continue to access them until the TLB flush is indistinguishable
+from having other CPUs do those same accesses before the PTE
+permission change.
+
+The THP NUMA migration code normally does not do a remote TLB flush,
+because the PTE is marked inaccessible, meaning no other CPUs should
+have cached TLB entries that allow them to access the memory.
+
+However, the following race is possible:
+
+CPU A			CPU B			CPU C
+
+						load TLB entry
+make entry PMD_NUMA
+			fault on entry
+						write to page
+			start migrating page
+						write to page
+			change PMD to new page
+flush TLB
+						reload TLB from new entry
+						lose data
+
+The obvious fix is to flush remote TLB entries from the numa
+migrate code on CPU B, while CPU A is making PTE changes, and
+has the TLB flush batched up for later.
+
+The migration for 4kB pages is currently fine, because it calls
+mk_ptenonnuma before migrating the page, which causes the migration
+code to always do a remote TLB flush.  We should probably optimize
+that at some point...
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ include/linux/mm_types.h |  3 +++
+ kernel/sched/core.c      |  1 +
+ kernel/sched/fair.c      |  4 ++++
+ mm/huge_memory.c         | 10 ++++++++++
+ 4 files changed, 18 insertions(+)
+
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 261ff4a..fa67ddb 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -427,6 +427,9 @@ struct mm_struct {
+ 
+ 	/* numa_scan_seq prevents two threads setting pte_numa */
+ 	int numa_scan_seq;
++
++	/* task_numa_work is unmapping pages, with deferred TLB flush */
++	bool numa_tlb_lazy;
+ #endif
+ 	struct uprobes_state uprobes_state;
+ };
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 5f14335..fe80455 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1732,6 +1732,7 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
+ 	if (p->mm && atomic_read(&p->mm->mm_users) == 1) {
+ 		p->mm->numa_next_scan = jiffies + msecs_to_jiffies(sysctl_numa_balancing_scan_delay);
+ 		p->mm->numa_scan_seq = 0;
++		p->mm->numa_tlb_lazy = false;
+ 	}
+ 
+ 	if (clone_flags & CLONE_VM)
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 2ec4afb..c9440f3 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1722,7 +1722,11 @@ void task_numa_work(struct callback_head *work)
+ 			start = max(start, vma->vm_start);
+ 			end = ALIGN(start + (pages << PAGE_SHIFT), HPAGE_SIZE);
+ 			end = min(end, vma->vm_end);
++			wmb(); /* with do_huge_pmd_numa_page */
++			mm->numa_tlb_lazy = true;
+ 			nr_pte_updates += change_prot_numa(vma, start, end);
++			wmb(); /* with do_huge_pmd_numa_page */
++			mm->numa_tlb_lazy = false;
+ 
+ 			/*
+ 			 * Scan sysctl_numa_balancing_scan_size but ensure that
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index d68066f..3a03370 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1385,6 +1385,16 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	}
+ 
+ 	/*
++	 * Another CPU is currently turning ptes of this process into
++	 * NUMA ptes. That permission change batches the TLB flush,
++	 * so other CPUs may still have valid TLB entries pointing to
++	 * the current page. Make sure those are flushed before we
++	 * migrate to a new page.
++	 */
++	rmb(); /* with task_numa_work */
++	if (mm->numa_tlb_lazy)
++		flush_tlb_range(vma, haddr, haddr + HPAGE_PMD_SIZE);
++	/*
+ 	 * Migrate the THP to the requested node, returns with page unlocked
+ 	 * and pmd_numa cleared.
+ 	 */
