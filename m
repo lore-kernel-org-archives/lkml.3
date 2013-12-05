@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933237Ab3LERhM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:37:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38176 "EHLO
+	id S933296Ab3LERhQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:37:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38215 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933159Ab3LERhC (ORCPT
+	with ESMTP id S933159Ab3LERhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:37:02 -0500
+	Thu, 5 Dec 2013 12:37:13 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 30/90] ALSA: hda - Don't clear the power state at snd_hda_codec_reset()
-Date: Thu,  5 Dec 2013 17:35:12 +0000
-Message-Id: <1386264972-5399-31-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 37/90] hwmon: (lm90) Fix max6696 alarm handling
+Date: Thu,  5 Dec 2013 17:35:19 +0000
+Message-Id: <1386264972-5399-38-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -27,38 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit d183b4fc463489b6bbe05c99afa0257a6fe578eb upstream.
+commit e41fae2b1ed8c78283d73651cd65be0228c0dd1c upstream.
 
-snd_hda_codec_reset() is called either in resetting the whole setup at
-error paths or hwdep clear/reconfig sysfs triggers.  But all of these
-don't assume that the power has to be off, rather they want to keep
-the power state unchanged (e.g. reconfig_codec() calls the power
-up/down by itself).  Thus, unconditionally clearing the power state in
-snd_hda_codec_reset() leads to the inconsistency, confuses the further
-operation.   This patch gets rid of the lines doing that bad thing.
+Bit 2 of status register 2 on MAX6696 (external diode 2 open)
+sets ALERT; the bit thus has to be listed in alert_alarms.
+Also display a message in the alert handler if the condition
+is encountered.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Even though not all overtemperature conditions cause ALERT
+to be set, we should not ignore them in the alert handler.
+Display messages for all out-of-range conditions.
+
+Reported-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/hda_codec.c | 3 ---
- 1 file changed, 3 deletions(-)
+ drivers/hwmon/lm90.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/sound/pci/hda/hda_codec.c b/sound/pci/hda/hda_codec.c
-index f33bb78..0948888 100644
---- a/sound/pci/hda/hda_codec.c
-+++ b/sound/pci/hda/hda_codec.c
-@@ -2312,9 +2312,6 @@ int snd_hda_codec_reset(struct hda_codec *codec)
+diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+index 22b14a68..1f4f941 100644
+--- a/drivers/hwmon/lm90.c
++++ b/drivers/hwmon/lm90.c
+@@ -278,7 +278,7 @@ static const struct lm90_params lm90_params[] = {
+ 	[max6696] = {
+ 		.flags = LM90_HAVE_EMERGENCY
+ 		  | LM90_HAVE_EMERGENCY_ALARM | LM90_HAVE_TEMP3,
+-		.alert_alarms = 0x187c,
++		.alert_alarms = 0x1c7c,
+ 		.max_convrate = 6,
+ 		.reg_local_ext = MAX6657_REG_R_LOCAL_TEMPL,
+ 	},
+@@ -1504,19 +1504,22 @@ static void lm90_alert(struct i2c_client *client, unsigned int flag)
+ 	if ((alarms & 0x7f) == 0 && (alarms2 & 0xfe) == 0) {
+ 		dev_info(&client->dev, "Everything OK\n");
+ 	} else {
+-		if (alarms & 0x61)
++		if ((alarms & 0x61) || (alarms2 & 0x80))
+ 			dev_warn(&client->dev,
+ 				 "temp%d out of range, please check!\n", 1);
+-		if (alarms & 0x1a)
++		if ((alarms & 0x1a) || (alarms2 & 0x20))
+ 			dev_warn(&client->dev,
+ 				 "temp%d out of range, please check!\n", 2);
+ 		if (alarms & 0x04)
+ 			dev_warn(&client->dev,
+ 				 "temp%d diode open, please check!\n", 2);
  
- #ifdef CONFIG_SND_HDA_POWER_SAVE
- 	cancel_delayed_work_sync(&codec->power_work);
--	codec->power_on = 0;
--	codec->power_transition = 0;
--	codec->power_jiffies = jiffies;
- 	flush_workqueue(bus->workq);
- #endif
- 	snd_hda_ctls_clear(codec);
+-		if (alarms2 & 0x18)
++		if (alarms2 & 0x5a)
+ 			dev_warn(&client->dev,
+ 				 "temp%d out of range, please check!\n", 3);
++		if (alarms2 & 0x04)
++			dev_warn(&client->dev,
++				 "temp%d diode open, please check!\n", 3);
+ 
+ 		/*
+ 		 * Disable ALERT# output, because these chips don't implement
 -- 
 1.8.3.2
 
