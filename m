@@ -1,157 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639Ab3LEXh3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 18:37:29 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:40272 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756084Ab3LEXhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 18:37:23 -0500
-Date: Fri, 6 Dec 2013 00:37:21 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: X86 ML <x86@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Kim Naru <kim.naru@amd.com>, Thomas Renninger <trenn@suse.de>
-Subject: [PATCH -v1.1 4/4] x86, microcode: Move to a proper location
-Message-ID: <20131205233720.GA4100@pd.tnic>
-References: <1386286348-5144-1-git-send-email-bp@alien8.de>
- <1386286348-5144-5-git-send-email-bp@alien8.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1386286348-5144-5-git-send-email-bp@alien8.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756665Ab3LEXhl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 18:37:41 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:32369 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754679Ab3LEXhi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 18:37:38 -0500
+Date: Thu, 5 Dec 2013 18:37:35 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
+Message-ID: <20131205183735.5f9c8bae@gandalf.local.home>
+In-Reply-To: <CAMEtUuyp0q9YSMq7OchEeWLz9oPYd3qQ+0SDV5Pt8F10KLbFpg@mail.gmail.com>
+References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
+	<87fvq9cwlk.fsf@tassilo.jf.intel.com>
+	<CAMEtUuzweYxqwoaYH+J5a2uRM+PFcBH+Pb8Z_ALPUMp+QFz1tQ@mail.gmail.com>
+	<CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com>
+	<20131205104113.GB20283@gmail.com>
+	<20131205084657.09b6a2ce@gandalf.local.home>
+	<CAMEtUuyp0q9YSMq7OchEeWLz9oPYd3qQ+0SDV5Pt8F10KLbFpg@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
-Subject: [PATCH -v1.1 4/4] x86, microcode: Move to a proper location
+On Thu, 5 Dec 2013 14:36:58 -0800
+Alexei Starovoitov <ast@plumgrid.com> wrote:
 
-We've grown a bunch of microcode loader files all prefixed with
-"microcode_". They should be under cpu/ because this is strictly
-CPU-related functionality so do that and drop the prefix since they're
-in their own directory now which gives that prefix. :)
+> On Thu, Dec 5, 2013 at 5:46 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >
+> > I know that it would be great to have the bpf filter run before
+> > recording of the tracepoint, but as that becomes quite awkward for a
+> > user interface, because it requires intimate knowledge of the kernel
+> > source, this speed up on the filter itself may be worth while to have
+> > it happen after the recording of the buffer. When it happens after the
+> > record, then the bpf has direct access to the event entry and its
+> > fields as described by the trace event format files.
+> 
+> I don't understand that 'awkward' part yet. What do you mean by 'knowledge of
+> the kernel'? By accessing pt_regs structure? Something else ?
+> Can we try fixing the interface first before compromising on performance?
 
-While at it, drop MICROCODE_INTEL_LIB config item and stash the
-functionality under CONFIG_MICROCODE_INTEL as it was its only user.
+Let me ask you this. If you do not have the source of the kernel on
+hand, can you use BPF to filter the sched_switch tracepoint on prev pid?
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/Kconfig                                                 | 4 ----
- arch/x86/kernel/Makefile                                         | 9 ---------
- arch/x86/kernel/cpu/Makefile                                     | 1 +
- arch/x86/kernel/cpu/microcode/Makefile                           | 7 +++++++
- arch/x86/kernel/{microcode_amd.c => cpu/microcode/amd.c}         | 0
- .../kernel/{microcode_amd_early.c => cpu/microcode/amd_early.c}  | 0
- arch/x86/kernel/{microcode_core.c => cpu/microcode/core.c}       | 0
- .../{microcode_core_early.c => cpu/microcode/core_early.c}       | 0
- arch/x86/kernel/{microcode_intel.c => cpu/microcode/intel.c}     | 0
- .../{microcode_intel_early.c => cpu/microcode/intel_early.c}     | 0
- .../kernel/{microcode_intel_lib.c => cpu/microcode/intel_lib.c}  | 0
- 11 files changed, 8 insertions(+), 13 deletions(-)
- create mode 100644 arch/x86/kernel/cpu/microcode/Makefile
- rename arch/x86/kernel/{microcode_amd.c => cpu/microcode/amd.c} (100%)
- rename arch/x86/kernel/{microcode_amd_early.c => cpu/microcode/amd_early.c} (100%)
- rename arch/x86/kernel/{microcode_core.c => cpu/microcode/core.c} (100%)
- rename arch/x86/kernel/{microcode_core_early.c => cpu/microcode/core_early.c} (100%)
- rename arch/x86/kernel/{microcode_intel.c => cpu/microcode/intel.c} (100%)
- rename arch/x86/kernel/{microcode_intel_early.c => cpu/microcode/intel_early.c} (100%)
- rename arch/x86/kernel/{microcode_intel_lib.c => cpu/microcode/intel_lib.c} (100%)
+The current filter interface allows you to filter with just what the
+running kernel provides. No need for debug info from the vmlinux or
+anything else.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index c84cf90ca693..cb3a8602b67a 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1111,10 +1111,6 @@ config MICROCODE_OLD_INTERFACE
- 	def_bool y
- 	depends on MICROCODE
- 
--config MICROCODE_INTEL_LIB
--	def_bool y
--	depends on MICROCODE_INTEL
--
- config MICROCODE_INTEL_EARLY
- 	def_bool n
- 
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 9b0a34e2cd79..4d0094dbb6c9 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -91,15 +91,6 @@ obj-$(CONFIG_PARAVIRT_CLOCK)	+= pvclock.o
- 
- obj-$(CONFIG_PCSPKR_PLATFORM)	+= pcspeaker.o
- 
--obj-$(CONFIG_MICROCODE_EARLY)		+= microcode_core_early.o
--obj-$(CONFIG_MICROCODE_INTEL_EARLY)	+= microcode_intel_early.o
--obj-$(CONFIG_MICROCODE_INTEL_LIB)	+= microcode_intel_lib.o
--microcode-y				:= microcode_core.o
--microcode-$(CONFIG_MICROCODE_INTEL)	+= microcode_intel.o
--microcode-$(CONFIG_MICROCODE_AMD)	+= microcode_amd.o
--obj-$(CONFIG_MICROCODE_AMD_EARLY)	+= microcode_amd_early.o
--obj-$(CONFIG_MICROCODE)			+= microcode.o
--
- obj-$(CONFIG_X86_CHECK_BIOS_CORRUPTION) += check.o
- 
- obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 6359506a19ee..7fd54f09b011 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -42,6 +42,7 @@ endif
- 
- obj-$(CONFIG_X86_MCE)			+= mcheck/
- obj-$(CONFIG_MTRR)			+= mtrr/
-+obj-$(CONFIG_MICROCODE)			+= microcode/
- 
- obj-$(CONFIG_X86_LOCAL_APIC)		+= perfctr-watchdog.o perf_event_amd_ibs.o
- 
-diff --git a/arch/x86/kernel/cpu/microcode/Makefile b/arch/x86/kernel/cpu/microcode/Makefile
-new file mode 100644
-index 000000000000..285c85427c32
---- /dev/null
-+++ b/arch/x86/kernel/cpu/microcode/Makefile
-@@ -0,0 +1,7 @@
-+microcode-y				:= core.o
-+obj-$(CONFIG_MICROCODE)			+= microcode.o
-+microcode-$(CONFIG_MICROCODE_INTEL)	+= intel.o intel_lib.o
-+microcode-$(CONFIG_MICROCODE_AMD)	+= amd.o
-+obj-$(CONFIG_MICROCODE_EARLY)		+= core_early.o
-+obj-$(CONFIG_MICROCODE_INTEL_EARLY)	+= intel_early.o
-+obj-$(CONFIG_MICROCODE_AMD_EARLY)	+= amd_early.o
-diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/cpu/microcode/amd.c
-similarity index 100%
-rename from arch/x86/kernel/microcode_amd.c
-rename to arch/x86/kernel/cpu/microcode/amd.c
-diff --git a/arch/x86/kernel/microcode_amd_early.c b/arch/x86/kernel/cpu/microcode/amd_early.c
-similarity index 100%
-rename from arch/x86/kernel/microcode_amd_early.c
-rename to arch/x86/kernel/cpu/microcode/amd_early.c
-diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/cpu/microcode/core.c
-similarity index 100%
-rename from arch/x86/kernel/microcode_core.c
-rename to arch/x86/kernel/cpu/microcode/core.c
-diff --git a/arch/x86/kernel/microcode_core_early.c b/arch/x86/kernel/cpu/microcode/core_early.c
-similarity index 100%
-rename from arch/x86/kernel/microcode_core_early.c
-rename to arch/x86/kernel/cpu/microcode/core_early.c
-diff --git a/arch/x86/kernel/microcode_intel.c b/arch/x86/kernel/cpu/microcode/intel.c
-similarity index 100%
-rename from arch/x86/kernel/microcode_intel.c
-rename to arch/x86/kernel/cpu/microcode/intel.c
-diff --git a/arch/x86/kernel/microcode_intel_early.c b/arch/x86/kernel/cpu/microcode/intel_early.c
-similarity index 100%
-rename from arch/x86/kernel/microcode_intel_early.c
-rename to arch/x86/kernel/cpu/microcode/intel_early.c
-diff --git a/arch/x86/kernel/microcode_intel_lib.c b/arch/x86/kernel/cpu/microcode/intel_lib.c
-similarity index 100%
-rename from arch/x86/kernel/microcode_intel_lib.c
-rename to arch/x86/kernel/cpu/microcode/intel_lib.c
--- 
-1.8.4
+pt_regs is not that useful without having something to translate what
+that means.
 
--- 
-Regards/Gruss,
-    Boris.
+I'm fine if it becomes a requirement to have a vmlinux built with
+DEBUG_INFO to use BPF and have a tool like perf to translate the
+filters. But it that must not replace what the current filters do now.
+That is, it can be an add on, but not a replacement.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+ -- Steve
