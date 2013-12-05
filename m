@@ -1,67 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756971Ab3LEQyq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 11:54:46 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:39513 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756973Ab3LEQyn (ORCPT
+	id S1757038Ab3LEQzy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 11:55:54 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:35795 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756930Ab3LEQzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 11:54:43 -0500
-Date: Thu, 5 Dec 2013 16:54:39 +0000
-From: Jamie Iles <jamie@jamieiles.com>
-To: Alan Tull <delicious.quinoa@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-doc@vger.kernel.org, Jamie Iles <jamie@jamieiles.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, Alan Tull <atull@altera.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>
-Subject: Re: [PATCH v8] gpio: add a driver for the Synopsys DesignWare APB
- GPIO block
-Message-ID: <20131205165439.GB5924@maple>
-References: <1386088876-29205-1-git-send-email-delicious.quinoa@gmail.com>
- <1386088876-29205-2-git-send-email-delicious.quinoa@gmail.com>
+	Thu, 5 Dec 2013 11:55:52 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+Ju8gDqcTiwu810MufFULr
+Date: Thu, 5 Dec 2013 08:55:49 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: linus.walleij@linaro.org, peter.ujfalusi@ti.com, nm@ti.com,
+        tomi.valkeinen@ti.com, balbi@ti.com, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/1] gpio: twl4030: Fix regression for twl gpio LED
+ output
+Message-ID: <20131205165548.GX26766@atomide.com>
+References: <1386156871-7639-2-git-send-email-rogerq@ti.com>
+ <1386235415-27670-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386088876-29205-2-git-send-email-delicious.quinoa@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1386235415-27670-1-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+* Roger Quadros <rogerq@ti.com> [131205 01:24]:
+> Commit 0b2aa8be introduced a regression that causes failure
+> in setting LED GPO direction to OUT.
+> 
+> This causes USB host probe failures for Beagleboard C4.
+> 
+> [    2.075469] platform usb_phy_gen_xceiv.2: Driver usb_phy_gen_xceiv requests probe deferral
+> [    2.090454] hsusb2_vcc: Failed to request enable GPIO510: -22
+> [    2.100982] reg-fixed-voltage reg-fixed-voltage.0.auto: Failed to register regulator: -22
+> [    2.109954] reg-fixed-voltage: probe of reg-fixed-voltage.0.auto failed with error -22
+> 
+> direction_out/direction_in must return 0 if the operation succeeded.
+> 
+> Also, don't update direction flag and output data if twl4030_set_gpio_direction()
+> failed inside twl_direction_out();
+> 
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
 
-One minor comment below, otherwise looks great!
+Acked-by: Tony Lindgren <tony@atomide.com>
 
-Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+Linus, commit 0b2aa8be is in mainline now, so feel free to pick this one
+up if it looks OK to you. This should be also Cc stable as 0b2aa8be has
+that.
 
-Thanks,
+Regards,
 
-Jamie
+Tony
 
-On Tue, Dec 03, 2013 at 10:41:16AM -0600, Alan Tull wrote:
-> diff --git a/drivers/gpio/gpio-dwapb.c b/drivers/gpio/gpio-dwapb.c
-> new file mode 100644
-> index 0000000..e6dc61f
-> --- /dev/null
-> +++ b/drivers/gpio/gpio-dwapb.c
-...
-> +static unsigned int dwapb_gpio_nr_ports(struct device_node *of_node)
-> +{
-> +	unsigned int nr_ports = 0;
-> +	struct device_node *np;
+> ---
+>  drivers/gpio/gpio-twl4030.c | 15 ++++++++++++---
+>  1 file changed, 12 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpio-twl4030.c b/drivers/gpio/gpio-twl4030.c
+> index b97d6a6..f999689 100644
+> --- a/drivers/gpio/gpio-twl4030.c
+> +++ b/drivers/gpio/gpio-twl4030.c
+> @@ -300,7 +300,7 @@ static int twl_direction_in(struct gpio_chip *chip, unsigned offset)
+>  	if (offset < TWL4030_GPIO_MAX)
+>  		ret = twl4030_set_gpio_direction(offset, 1);
+>  	else
+> -		ret = -EINVAL;
+> +		ret = -EINVAL;	/* LED outputs can't be set as input */
+>  
+>  	if (!ret)
+>  		priv->direction &= ~BIT(offset);
+> @@ -354,11 +354,20 @@ static void twl_set(struct gpio_chip *chip, unsigned offset, int value)
+>  static int twl_direction_out(struct gpio_chip *chip, unsigned offset, int value)
+>  {
+>  	struct gpio_twl4030_priv *priv = to_gpio_twl4030(chip);
+> -	int ret = -EINVAL;
+> +	int ret = 0;
+>  
+>  	mutex_lock(&priv->mutex);
+> -	if (offset < TWL4030_GPIO_MAX)
+> +	if (offset < TWL4030_GPIO_MAX) {
+>  		ret = twl4030_set_gpio_direction(offset, 0);
+> +		if (ret) {
+> +			mutex_unlock(&priv->mutex);
+> +			return ret;
+> +		}
+> +	}
 > +
-> +	for_each_child_of_node(of_node, np)
-> +		++nr_ports;
-> +
-> +	return nr_ports;
-> +}
-
-I notice that we now have of_get_child_count() which didn't exist when I 
-first wrote the driver, we could use that now.
+> +	/*
+> +	 *  LED gpios i.e. offset >= TWL4030_GPIO_MAX are always output
+> +	 */
+>  
+>  	priv->direction |= BIT(offset);
+>  	mutex_unlock(&priv->mutex);
+> -- 
+> 1.8.3.2
+> 
