@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab3LEK7V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 05:59:21 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:59511 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755011Ab3LEK7U (ORCPT
+	id S1755602Ab3LELAX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 06:00:23 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:45648 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755298Ab3LELAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 05:59:20 -0500
-Date: Thu, 5 Dec 2013 11:59:14 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/38] perf/core improvements and fixes
-Message-ID: <20131205105914.GA20558@gmail.com>
-References: <1386187622-2928-1-git-send-email-acme@infradead.org>
- <20131205100429.GC16749@gmail.com>
- <20131205103707.GC21600@krava.brq.redhat.com>
- <20131205105344.GD20283@gmail.com>
+	Thu, 5 Dec 2013 06:00:22 -0500
+Date: Thu, 5 Dec 2013 11:59:28 +0100
+From: Henrik Austad <henrik@austad.us>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu
+Subject: Re: [PATCH v4 tip/core/locking 0/4] Memory-barrier documentation
+ updates
+Message-ID: <20131205105928.GA27382@austad.us>
+References: <20131204224628.GA30159@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131205105344.GD20283@gmail.com>
+In-Reply-To: <20131204224628.GA30159@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 04, 2013 at 02:46:28PM -0800, Paul E. McKenney wrote:
+> Hello!
 
-* Ingo Molnar <mingo@kernel.org> wrote:
+Hi Paul,
 
-> > never saw that one.. starting your test on 24 CPUs server now
+> This series applies some long-needed updates to memory-barriers.txt:
 > 
-> I saw it again on a system by running two parallel build jobs:
+> 1.	Add ACCESS_ONCE() calls where needed to ensure their inclusion
+> 	in code copy-and-pasted from this file.
 > 
->   D=/tmp/perf-1; mkdir -p $D; while make O=$D install; do make O=$D clean; done
->   D=/tmp/perf-2; mkdir -p $D; while make O=$D install; do make O=$D clean; done
+> 2.	Add long atomic examples alongside the existing atomics.
+> 
+> 3.	Prohibit architectures supporting the Linux kernel from
+> 	speculating stores.
 
-I'm running it now with the previous perf/core - no failures so far, 
-after dozens of build passes.
+Just me, or is the 3rd patch missing from lkml?
 
-Thanks,
+> 4.	Document what ACCESS_ONCE() does along with a number of situations
+> 	requiring its use.
 
-	Ingo
+This was very useful, thanks! :)
+
+-- 
+Henrik Austad
