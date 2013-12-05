@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339Ab3LEBgx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 20:36:53 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:58390 "EHLO
+	id S933376Ab3LEBhk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 20:37:40 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:28095 "EHLO
 	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933047Ab3LEBgd (ORCPT
+	by vger.kernel.org with ESMTP id S1756299Ab3LEBhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 20:36:33 -0500
+	Wed, 4 Dec 2013 20:37:36 -0500
+Message-ID: <529FD8D7.1020900@marvell.com>
+Date: Thu, 5 Dec 2013 09:37:27 +0800
 From: Qiao Zhou <zhouqiao@marvell.com>
-To: <eric.y.miao@gmail.com>, <haojian.zhuang@gmail.com>,
-        <dan.j.williams@intel.com>, <vinod.koul@intel.com>,
-        <linux-kernel@vger.kernel.org>, <dmaengine@vger.kernel.org>,
-        <chao.xie@marvell.com>
-CC: Qiao Zhou <zhouqiao@marvell.com>
-Subject: [PATCH V2] arm: mmp: build sram driver alone
-Date: Thu, 5 Dec 2013 09:36:21 +0800
-Message-ID: <1386207381-28197-2-git-send-email-zhouqiao@marvell.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1386207381-28197-1-git-send-email-zhouqiao@marvell.com>
-References: <1386207381-28197-1-git-send-email-zhouqiao@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Dan Williams <dan.j.williams@intel.com>
+CC: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Miao Eric <eric.y.miao@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        Chao Xie <cxie4@marvell.com>
+Subject: Re: [PATCH 0/2 V1] arm-mmp-build-sram-driver-alone
+References: <1386145275-27438-1-git-send-email-zhouqiao@marvell.com> <CAN1soZzWUh74FHeKs3acLpfQYhQBNzES9nB1tJNvwV1h4zi1Lw@mail.gmail.com> <529F10D6.4000307@marvell.com> <CAPcyv4jELNXN7+f2MvD8FuUmvRCbAw7DG=cNMHuPrYWcWAo5BA@mail.gmail.com>
+In-Reply-To: <CAPcyv4jELNXN7+f2MvD8FuUmvRCbAw7DG=cNMHuPrYWcWAo5BA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.72,1.0.14,0.0.0000
  definitions=2013-12-04_08:2013-12-05,2013-12-04,1970-01-01 signatures=0
 X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
@@ -30,59 +32,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sram driver can be used by many chips besides CPU_MMP2, and so build
-it alone. Also need to select MMP_SRAM for MMP_TDMA driver.
+On 12/05/2013 03:17 AM, Dan Williams wrote:
+> On Wed, Dec 4, 2013 at 3:24 AM, Qiao Zhou <zhouqiao@marvell.com> wrote:
+>> On 12/04/2013 07:17 PM, Haojian Zhuang wrote:
+>>>
+>>> Dan indicated that you could pack these two patches into one. Whatever
+>>> it's also OK to use two patches.
+>>
+>> Misunderstood it... Thanks for correcting.
+>>
+>
+> Please combine the patches for two reasons:
+> 1/ patch1 by itself makes the problem worse it prevents the mmp_tdma
+> driver from building even if CPU_MMP2 is selected.
+> 2/ patch2 does not have a changelog and is the only user of the
+> enabling in patch1
+>
+Dan, I updated the patch according to your suggestions. please help take 
+a look again. Thanks.
 
-Reported-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: Qiao Zhou <zhouqiao@marvell.com>
----
- arch/arm/mach-mmp/Kconfig  |    3 +++
- arch/arm/mach-mmp/Makefile |    3 ++-
- drivers/dma/Kconfig        |    2 ++
- 3 files changed, 7 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/mach-mmp/Kconfig b/arch/arm/mach-mmp/Kconfig
-index ebdda83..ebdba87 100644
---- a/arch/arm/mach-mmp/Kconfig
-+++ b/arch/arm/mach-mmp/Kconfig
-@@ -136,4 +136,7 @@ config USB_EHCI_MV_U2O
- 	help
- 	  Enables support for OTG controller which can be switched to host mode.
- 
-+config MMP_SRAM
-+	bool
-+
- endif
-diff --git a/arch/arm/mach-mmp/Makefile b/arch/arm/mach-mmp/Makefile
-index 9b702a1..98f0f63 100644
---- a/arch/arm/mach-mmp/Makefile
-+++ b/arch/arm/mach-mmp/Makefile
-@@ -7,7 +7,8 @@ obj-y				+= common.o devices.o time.o
- # SoC support
- obj-$(CONFIG_CPU_PXA168)	+= pxa168.o
- obj-$(CONFIG_CPU_PXA910)	+= pxa910.o
--obj-$(CONFIG_CPU_MMP2)		+= mmp2.o sram.o
-+obj-$(CONFIG_CPU_MMP2)		+= mmp2.o
-+obj-$(CONFIG_MMP_SRAM)		+= sram.o
- 
- ifeq ($(CONFIG_COMMON_CLK), )
- obj-y				+= clock.o
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index dd2874e..599f0ae 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -288,9 +288,11 @@ config MMP_TDMA
- 	bool "MMP Two-Channel DMA support"
- 	depends on ARCH_MMP
- 	select DMA_ENGINE
-+	select MMP_SRAM
- 	help
- 	  Support the MMP Two-Channel DMA engine.
- 	  This engine used for MMP Audio DMA and pxa910 SQU.
-+	  It needs sram driver under mach-mmp.
- 
- 	  Say Y here if you enabled MMP ADMA, otherwise say N.
- 
 -- 
-1.7.0.4
 
+Best Regards
+Qiao
