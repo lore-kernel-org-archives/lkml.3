@@ -1,96 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755765Ab3LELdo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 06:33:44 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:52373 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753644Ab3LELdl (ORCPT
+	id S1756094Ab3LELeI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 06:34:08 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43982 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755741Ab3LELeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 06:33:41 -0500
-From: Yijing Wang <wangyijing@huawei.com>
-To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>
-CC: "David S. Miller" <davem@davemloft.net>, <dmaengine@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Yijing Wang <wangyijing@huawei.com>,
-        "Hanjun Guo" <guohanjun@huawei.com>
-Subject: [PATCH] ioat/dca: Use dev_is_pci() to check whether it is pci device
-Date: Thu, 5 Dec 2013 19:31:18 +0800
-Message-ID: <1386243078-27676-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
+	Thu, 5 Dec 2013 06:34:05 -0500
+Date: Thu, 5 Dec 2013 11:33:48 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Will Deacon <will.deacon@arm.com>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>
+Subject: Re: [PATCH 1/2] ARM: check stack pointer in get_wchan
+Message-ID: <20131205113348.GE4360@n2100.arm.linux.org.uk>
+References: <20131205083424.32632.51618.stgit@buzz>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131205083424.32632.51618.stgit@buzz>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use PCI standard marco dev_is_pci() instead of directly compare
-pci_bus_type to check whether it is pci device.
+On Thu, Dec 05, 2013 at 12:34:24PM +0400, Konstantin Khlebnikov wrote:
+> get_wchan() is lockless. Task may wakeup at any time and change its own stack,
+> thus each next stack frame may be overwritten and filled with random stuff.
+> 
+> /proc/$pid/stack interface had been disabled for non-current tasks, see [1]
+> But 'wchan' still allows to trigger stack frame unwinding on volatile stack.
+> 
+> This patch fixes oops in unwind_frame() by adding stack pointer validation on
+> each step (as x86 code do), unwind_frame() already checks frame pointer.
+> 
+> Also I've found another report of this oops on stackoverflow (irony).
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
- drivers/dma/ioat/dca.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+Your two patches look fine to me.  Please put them in the patch system
+and we'll get them merged - I think they should also be merged into stable
+trees too - it looks like this goes all the way back to 2.6.30 kernels.
 
-diff --git a/drivers/dma/ioat/dca.c b/drivers/dma/ioat/dca.c
-index 9e84d5b..7900963 100644
---- a/drivers/dma/ioat/dca.c
-+++ b/drivers/dma/ioat/dca.c
-@@ -147,7 +147,7 @@ static int ioat_dca_add_requester(struct dca_provider *dca, struct device *dev)
- 	u16 id;
- 
- 	/* This implementation only supports PCI-Express */
--	if (dev->bus != &pci_bus_type)
-+	if (!dev_is_pci(dev))
- 		return -ENODEV;
- 	pdev = to_pci_dev(dev);
- 	id = dcaid_from_pcidev(pdev);
-@@ -179,7 +179,7 @@ static int ioat_dca_remove_requester(struct dca_provider *dca,
- 	int i;
- 
- 	/* This implementation only supports PCI-Express */
--	if (dev->bus != &pci_bus_type)
-+	if (!dev_is_pci(dev))
- 		return -ENODEV;
- 	pdev = to_pci_dev(dev);
- 
-@@ -320,7 +320,7 @@ static int ioat2_dca_add_requester(struct dca_provider *dca, struct device *dev)
- 	u16 global_req_table;
- 
- 	/* This implementation only supports PCI-Express */
--	if (dev->bus != &pci_bus_type)
-+	if (!dev_is_pci(dev))
- 		return -ENODEV;
- 	pdev = to_pci_dev(dev);
- 	id = dcaid_from_pcidev(pdev);
-@@ -354,7 +354,7 @@ static int ioat2_dca_remove_requester(struct dca_provider *dca,
- 	u16 global_req_table;
- 
- 	/* This implementation only supports PCI-Express */
--	if (dev->bus != &pci_bus_type)
-+	if (!dev_is_pci(dev))
- 		return -ENODEV;
- 	pdev = to_pci_dev(dev);
- 
-@@ -496,7 +496,7 @@ static int ioat3_dca_add_requester(struct dca_provider *dca, struct device *dev)
- 	u16 global_req_table;
- 
- 	/* This implementation only supports PCI-Express */
--	if (dev->bus != &pci_bus_type)
-+	if (!dev_is_pci(dev))
- 		return -ENODEV;
- 	pdev = to_pci_dev(dev);
- 	id = dcaid_from_pcidev(pdev);
-@@ -530,7 +530,7 @@ static int ioat3_dca_remove_requester(struct dca_provider *dca,
- 	u16 global_req_table;
- 
- 	/* This implementation only supports PCI-Express */
--	if (dev->bus != &pci_bus_type)
-+	if (!dev_is_pci(dev))
- 		return -ENODEV;
- 	pdev = to_pci_dev(dev);
- 
--- 
-1.7.1
-
-
+Thanks.
