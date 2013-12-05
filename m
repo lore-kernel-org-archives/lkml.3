@@ -1,54 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755993Ab3LELv3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 06:51:29 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:40187 "EHLO mail.skyhub.de"
+	id S1756256Ab3LELwK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 06:52:10 -0500
+Received: from plane.gmane.org ([80.91.229.3]:50125 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755492Ab3LELv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 06:51:27 -0500
-Date: Thu, 5 Dec 2013 12:51:24 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Young <dyoung@redhat.com>
-Cc: Toshi Kani <toshi.kani@hp.com>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
-        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.infradead.org, greg@kroah.com, matt@console-pimps.org
-Subject: Re: [PATCH v4 07/12] efi: passing kexec necessary efi data via
- setup_data
-Message-ID: <20131205115124.GC14407@pd.tnic>
-References: <1385445477-9665-8-git-send-email-dyoung@redhat.com>
- <20131127140732.GD32267@pd.tnic>
- <20131129091415.GH4186@dhcp-16-126.nay.redhat.com>
- <1386023600.1791.201.camel@misato.fc.hp.com>
- <1386034289.1791.210.camel@misato.fc.hp.com>
- <20131203015613.GB3980@dhcp-16-126.nay.redhat.com>
- <1386085140.1791.218.camel@misato.fc.hp.com>
- <20131204024610.GA3764@dhcp-16-126.nay.redhat.com>
- <1386175428.1791.225.camel@misato.fc.hp.com>
- <20131205015615.GC3736@dhcp-16-126.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131205015615.GC3736@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753644Ab3LELwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 06:52:07 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Brecht Machiels <brecht@mos6581.org>
+Subject: Re: [REGRESSION] 41c7f74 rtc: Disable the alarm in the hardware
+ (v2)
+Date: Thu, 5 Dec 2013 11:51:12 +0000 (UTC)
+Message-ID: <l7ppbg$brg$1@ger.gmane.org>
+References: <20131201220343.2285b12ee1c1e54252dc7dd9@mos6581.org> <529CF1D5.
+	6010406@linaro.org> <20131202211958.GE7380@pd.tnic>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: ip-83-101-57-24.customer.schedom-europe.net
+User-Agent: Pan/0.139 (Sexual Chocolate; GIT bf56508
+ git://git.gnome.org/pan2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 09:56:15AM +0800, Dave Young wrote:
-> > The z420 firmware is based on some UEFI core that may be used by other
-> > vendors as well.  Since this handling is totally harmless (just
-> > redundant), I'd suggest not to have a platform check on this handling.
+On Mon, 02 Dec 2013 22:19:58 +0100, Borislav Petkov wrote:
+
+> On Mon, Dec 02, 2013 at 12:47:17PM -0800, John Stultz wrote:
+>> Ok, sorry about this. I've been hoping we'd get some better insight
+>> into what's actually happening on these strange BIOSes where disabling
+>> the irq seems to cause it to scream (powering the system back on when
+>> its shutdown), in the hopes of having a proper workaround. But despite
+>> Borislav's efforts, he didn't seem to be able to root cause the issue.
 > 
-> I have same worry as well, so I agree with you.
+> Right, this bug is too nasty - you could generate good random numbers
+> just from how the hardware behaves. :) And I've been trying to make
+> sense of what happens but I failed, as you know. :(
+> 
+> I consider it a huge waste of time and efforts having to deal with such
+> b0rked hardware instead of throwing it out of the window into the poring
+> rain while it is still powered.
+> 
+>> Borislav, could you double check this patch still works on your
+>> hardware as well?
+> 
+> Well, we have the patch in SLES11:
+> 
+> http://kernel.opensuse.org/cgit/kernel/commit/?h=SLE11-
+SP3&id=835398eb94dca7d55acd1a2628372e602ae3252a
+> 
+> and it passed testing.
+> 
+> From what I see below, your version is equivalent to the one above with
+> the logic reversed so it should work. I'll still try to get that
+> affected box and run your version on it but it'll take a while.
 
-Btw, why does kexec need the ->smbios table at all? I see it being
-passed in efi_setup_data.
+Hello John and Boris,
 
--- 
-Regards/Gruss,
-    Boris.
+Thank you for your quick response. And no need for an apology, I can 
+understand your frustration with the way some hardware behaves.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+I ran with John's patch for a couple of days, and it seems to work. 
+Curiously, the laptop did spontaneously boot the first time that I shut 
+it down with the patched kernel. I have no conclusive explanation for 
+this, but I have noticed that a manual power down is necessary after 
+booting with an unpatched kernel. Simply rebooting with a patched kernel 
+is not enough to stop the spontaneous boots. As far as I can remember, I 
+went directly from my custom kernel (with the v2 patch reverted) to a 
+kernel with your patch applied, so I'm not 100% convinced everything is 
+all right. I should say that I did experience some spontaneous boots when 
+running only Windows XP in the past, so there may be occasions where 
+drivers might not be able to help at all.
+
+Thankfully, after other shutdowns/hibernates (about 6 in total) the 
+laptop never booted spontaneously.
+
+As for killing alarm functionality on the affected systems, I did some 
+quick tests. With the patched kernel, I can set the RTC alarm by echoing 
+to /sys/class/rtc/rtc0/wakealarm, and the machine will boot at the 
+specified time. I have also tried setting the RTC alarm, and then 
+disabling it again by echoing '0' to /sys/class/rtc/rtc0/wakealarm. While 
+this sets the alrm_time to five minutes in the future, alarm_IRQ is set 
+to 'no' and the machine does *not* boot spontaneously 5 minutes after 
+shutting down. So, all seems well, as far as I can see. Unfortunately, I 
+don't know enough about the RTC driver to draw any conclusions from this.
+
+Best regards,
+Brecht
+
