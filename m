@@ -1,107 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055Ab3LEJun (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 04:50:43 -0500
-Received: from 7.mo1.mail-out.ovh.net ([87.98.158.110]:48931 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754781Ab3LEJuk (ORCPT
+	id S1755244Ab3LEJuw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 04:50:52 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:53623 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755077Ab3LEJuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 04:50:40 -0500
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Douglas Gilbert <dgilbert@interlog.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Grant Likely <grant.likely@linaro.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-Subject: [PATCH v3] usb: ohci-at91: fix irq and iomem resource retrieval
-Date: Thu,  5 Dec 2013 10:50:13 +0100
-Message-Id: <1386237013-22285-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 5614862836966258943
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 5 Dec 2013 04:50:46 -0500
+Date: Thu, 5 Dec 2013 10:50:42 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, Oleg Nesterov <oleg@redhat.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH tip/core/locking 4/4] Documentation/memory-barriers.txt:
+ Document ACCESS_ONCE()
+Message-ID: <20131205095042.GB16749@gmail.com>
+References: <20131204224628.GA30159@linux.vnet.ibm.com>
+ <1386197219-31964-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1386197219-31964-4-git-send-email-paulmck@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386197219-31964-4-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using dt resources retrieval (interrupts and reg properties) there is
-no predefined order for these resources in the platform dev resources
-table.
 
-Retrieve resources using the platform_get_resource function instead of
-direct resource table entries to avoid resource type mismatch.
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
----
-Changes since v2:
- - split the patch series to isolate the urgent fix provided by this patch
+> + (*) The compiler is within its rights to reload a variable, for example,
+> +     in cases where high register pressure prevents the compiler from
+> +     keeping all data of interest in registers.  The compiler might
+> +     therefore optimize the variable tmp out of our previous example:
+> +
+> +	while (tmp = a)
+> +		do_something_with(tmp);
+> +
+> +     This could result in the following code, which is perfectly safe in
+> +     single-threaded code, but can be fatal in concurrent code:
+> +
+> +	while (a)
+> +		do_something_with(a);
+> +
+> +     For example, the optimized version of this code could result in
+> +     passing a zero to do_something_with() in the case where the variable
+> +     a was modified by some other CPU between the "while" statement and
+> +     the call to do_something_with().
 
-Changes since v1:
- - none
+Nit: I guess references to variable names such as 'a' should be quoted 
+(same for 'tmp', 'b', etc):
 
- drivers/usb/host/ohci-at91.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+        For example, the optimized version of this code could result in
+        passing a zero to do_something_with() in the case where the variable
+        'a' was modified by some other CPU between the "while" statement and
+        the call to do_something_with().
 
-diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
-index 418444e..7aec6ca 100644
---- a/drivers/usb/host/ohci-at91.c
-+++ b/drivers/usb/host/ohci-at91.c
-@@ -136,23 +136,26 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
- 	struct ohci_hcd *ohci;
- 	int retval;
- 	struct usb_hcd *hcd = NULL;
-+	struct device *dev = &pdev->dev;
-+	struct resource *mem_r, *irq_r;
- 
--	if (pdev->num_resources != 2) {
--		pr_debug("hcd probe: invalid num_resources");
-+	mem_r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!mem_r) {
-+		dev_dbg(dev, "hcd probe: missing memory resource\n");
- 		return -ENODEV;
- 	}
- 
--	if ((pdev->resource[0].flags != IORESOURCE_MEM)
--			|| (pdev->resource[1].flags != IORESOURCE_IRQ)) {
--		pr_debug("hcd probe: invalid resource type\n");
-+	irq_r = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-+	if (!irq_r) {
-+		dev_dbg(dev, "hcd probe: missing irq resource\n");
- 		return -ENODEV;
- 	}
- 
- 	hcd = usb_create_hcd(driver, &pdev->dev, "at91");
- 	if (!hcd)
- 		return -ENOMEM;
--	hcd->rsrc_start = pdev->resource[0].start;
--	hcd->rsrc_len = resource_size(&pdev->resource[0]);
-+	hcd->rsrc_start = mem_r->start;
-+	hcd->rsrc_len = resource_size(mem_r);
- 
- 	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
- 		pr_debug("request_mem_region failed\n");
-@@ -199,7 +202,7 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
- 	ohci->num_ports = board->ports;
- 	at91_start_hc(pdev);
- 
--	retval = usb_add_hcd(hcd, pdev->resource[1].start, IRQF_SHARED);
-+	retval = usb_add_hcd(hcd, irq_r->start, IRQF_SHARED);
- 	if (retval == 0)
- 		return retval;
- 
--- 
-1.7.9.5
+which makes reading it less ambiguous and more fluid IMO. This 
+observation applies to the whole document as 'a' is used in many 
+places.
 
+Thanks,
+
+	Ingo
