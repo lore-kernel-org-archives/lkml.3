@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757560Ab3LERoD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:44:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38393 "EHLO
+	id S933464Ab3LERo3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:44:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38378 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751992Ab3LERiA (ORCPT
+	with ESMTP id S1757400Ab3LERh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:38:00 -0500
+	Thu, 5 Dec 2013 12:37:56 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
+Cc: Eric Seppanen <eric@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 72/90] KVM: Fix iommu map/unmap to handle memory slot moves
-Date: Thu,  5 Dec 2013 17:35:54 +0000
-Message-Id: <1386264972-5399-73-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 69/90] iscsi-target: chap auth shouldn't match username with trailing garbage
+Date: Thu,  5 Dec 2013 17:35:51 +0000
+Message-Id: <1386264972-5399-70-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -28,74 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Eric Seppanen <eric@purestorage.com>
 
-commit e40f193f5bb022e927a57a4f5d5194e4f12ddb74 upstream.
+commit 86784c6bdeeef78eed94d298be7a8879f6a97ee2 upstream.
 
-The iommu integration into memory slots expects memory slots to be
-added or removed and doesn't handle the move case.  We can unmap
-slots from the iommu after we mark them invalid and map them before
-installing the final memslot array.  Also re-order the kmemdup vs
-map so we don't leave iommu mappings if we get ENOMEM.
+In iSCSI negotiations with initiator CHAP enabled, usernames with
+trailing garbage are permitted, because the string comparison only
+checks the strlen of the configured username.
 
-Reviewed-by: Gleb Natapov <gleb@redhat.com>
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+e.g. "usernameXXXXX" will be permitted to match "username".
+
+Just check one more byte so the trailing null char is also matched.
+
+Signed-off-by: Eric Seppanen <eric@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- virt/kvm/kvm_main.c | 19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ drivers/target/iscsi/iscsi_target_auth.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 9e97f68..1b29357 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -786,6 +786,8 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 		old_memslots = kvm->memslots;
- 		rcu_assign_pointer(kvm->memslots, slots);
- 		synchronize_srcu_expedited(&kvm->srcu);
-+		/* slot was deleted or moved, clear iommu mapping */
-+		kvm_iommu_unmap_pages(kvm, &old);
- 		/* From this point no new shadow pages pointing to a deleted,
- 		 * or moved, memslot will be created.
- 		 *
-@@ -801,20 +803,19 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 	if (r)
- 		goto out_free;
+diff --git a/drivers/target/iscsi/iscsi_target_auth.c b/drivers/target/iscsi/iscsi_target_auth.c
+index a0fc7b9..b54f6ec 100644
+--- a/drivers/target/iscsi/iscsi_target_auth.c
++++ b/drivers/target/iscsi/iscsi_target_auth.c
+@@ -174,6 +174,7 @@ static int chap_server_compute_md5(
+ 	unsigned char client_digest[MD5_SIGNATURE_SIZE];
+ 	unsigned char server_digest[MD5_SIGNATURE_SIZE];
+ 	unsigned char chap_n[MAX_CHAP_N_SIZE], chap_r[MAX_RESPONSE_LENGTH];
++	size_t compare_len;
+ 	struct iscsi_chap *chap = conn->auth_protocol;
+ 	struct crypto_hash *tfm;
+ 	struct hash_desc desc;
+@@ -212,7 +213,9 @@ static int chap_server_compute_md5(
+ 		goto out;
+ 	}
  
--	/* map/unmap the pages in iommu page table */
--	if (npages) {
--		r = kvm_iommu_map_pages(kvm, &new);
--		if (r)
--			goto out_free;
--	} else
--		kvm_iommu_unmap_pages(kvm, &old);
--
- 	r = -ENOMEM;
- 	slots = kmemdup(kvm->memslots, sizeof(struct kvm_memslots),
- 			GFP_KERNEL);
- 	if (!slots)
- 		goto out_free;
- 
-+	/* map new memory slot into the iommu */
-+	if (npages) {
-+		r = kvm_iommu_map_pages(kvm, &new);
-+		if (r)
-+			goto out_slots;
-+	}
-+
- 	/* actual memory is freed via old in kvm_free_physmem_slot below */
- 	if (!npages) {
- 		new.rmap = NULL;
-@@ -841,6 +842,8 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 
- 	return 0;
- 
-+out_slots:
-+	kfree(slots);
- out_free:
- 	kvm_free_physmem_slot(&new, &old);
- out:
+-	if (memcmp(chap_n, auth->userid, strlen(auth->userid)) != 0) {
++	/* Include the terminating NULL in the compare */
++	compare_len = strlen(auth->userid) + 1;
++	if (strncmp(chap_n, auth->userid, compare_len) != 0) {
+ 		pr_err("CHAP_N values do not match!\n");
+ 		goto out;
+ 	}
 -- 
 1.8.3.2
 
