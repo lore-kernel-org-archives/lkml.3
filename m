@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933683Ab3LERtb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:49:31 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:55367 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933665Ab3LERt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:49:26 -0500
-Date: Thu, 5 Dec 2013 18:49:23 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Kosina <jkosina@suse.cz>,
-        Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [PATCH?] uprobes: change uprobe_write_opcode() to modify the
- page directly
-Message-ID: <20131205174923.GE14407@pd.tnic>
-References: <e6082bc4-c910-4a36-9e40-624b9319f5fb@email.android.com>
- <20131203205400.GA25735@redhat.com>
- <CA+55aFxKk+O4e51sq6iqunVWAwKfNAnZ-3=aZT-VuRpDAZUnzQ@mail.gmail.com>
- <20131204111125.GA26552@redhat.com>
- <529F51D9.7010001@zytor.com>
- <20131204164817.GA5271@redhat.com>
- <529F5E47.3040108@zytor.com>
- <CA+55aFyMx74jiKgS-o0axuuTBw7295UEMSf_vYDQCAghk3Vr=w@mail.gmail.com>
- <20131204174328.GA8082@redhat.com>
- <20131205172355.GA25780@redhat.com>
+	id S933698Ab3LERtp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:49:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38314 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757319Ab3LERhj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 12:37:39 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Thomas Richter <thor@math.tu-berlin.de>,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 56/90] drm/i915: flush cursors harder
+Date: Thu,  5 Dec 2013 17:35:38 +0000
+Message-Id: <1386264972-5399-57-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
+References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131205172355.GA25780@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 06:23:55PM +0100, Oleg Nesterov wrote:
-> This is almost off-topic, but I am wondering if (in the long term) we
-> can avoid this "insert the bp into every mm" altogether.
->
-> Instead, uprobe_write_opcode() should only unmap this page and set
+3.5.7.27 -stable review patch.  If anyone has any objections, please let me know.
 
-Ok, sorry if I'm completely off base here but have you guys tried
-unmapping the page from all other VMs, patching it and causing all
-the VMs to refault it thereby getting the updated content? During the
-patching you'd probably need to cause the #PF handler to "loop" until
-patching is complete though.
+------------------
 
-I don't know whether that is even doable/makes sense - just a dumb
-idea...
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
+commit b2ea8ef559b4d94190009f3651b5b3ab7c05afd3 upstream.
+
+Apparently they need the same treatment as primary planes. This fixes
+modesetting failures because of stuck cursors (!) on Thomas' i830M
+machine.
+
+I've figured while at it I'll also roll it out for the ivb 3 pipe
+version of this function. I didn't do this for i845/i865 since Bspec
+says the update mechanism works differently, and there's some
+additional rules about what can be updated in which order.
+
+Tested-by: Thomas Richter <thor@math.tu-berlin.de>
+Cc:  Thomas Richter <thor@math.tu-berlin.de>
+Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/gpu/drm/i915/intel_display.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 05f75ff..c0668fb 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -5015,7 +5015,9 @@ static void i9xx_update_cursor(struct drm_crtc *crtc, u32 base)
+ 		intel_crtc->cursor_visible = visible;
+ 	}
+ 	/* and commit changes on next vblank */
++	POSTING_READ(CURCNTR(pipe));
+ 	I915_WRITE(CURBASE(pipe), base);
++	POSTING_READ(CURBASE(pipe));
+ }
+ 
+ static void ivb_update_cursor(struct drm_crtc *crtc, u32 base)
+@@ -5040,7 +5042,9 @@ static void ivb_update_cursor(struct drm_crtc *crtc, u32 base)
+ 		intel_crtc->cursor_visible = visible;
+ 	}
+ 	/* and commit changes on next vblank */
++	POSTING_READ(CURCNTR_IVB(pipe));
+ 	I915_WRITE(CURBASE_IVB(pipe), base);
++	POSTING_READ(CURBASE_IVB(pipe));
+ }
+ 
+ /* If no-part of the cursor is visible on the framebuffer, then the GPU may hang... */
 -- 
-Regards/Gruss,
-    Boris.
+1.8.3.2
 
-Sent from a fat crate under my desk. Formatting is fine.
---
