@@ -1,113 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab3LENVE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 08:21:04 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:35736 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751362Ab3LENVB (ORCPT
+	id S1756674Ab3LENY6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 08:24:58 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43695 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab3LENYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 08:21:01 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: [PATCH] media: Add BCM2048 radio driver
-Date: Thu, 5 Dec 2013 14:20:56 +0100
-User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.3; x86_64; ; )
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org,
-        Eero Nurkkala <ext-eero.nurkkala@nokia.com>,
-        Nils Faerber <nils.faerber@kernelconcepts.de>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        =?utf-8?q?=D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE?=
-	 =?utf-8?q?_=D0=94=D0=B8=D0=BC=D0=B8=D1=82=D1=80=D0=BE=D0=B2?= 
-	<freemangordon@abv.bg>,
-        Pavel Machek <pavel@ucw.cz>, sre@ring0.de, aaro.koskinen@iki.fi
-References: <1381847218-8408-1-git-send-email-pali.rohar@gmail.com> <201312022151.07599@pali> <52A030BE.7040709@xs4all.nl>
-In-Reply-To: <52A030BE.7040709@xs4all.nl>
+	Thu, 5 Dec 2013 08:24:54 -0500
+Date: Thu, 5 Dec 2013 13:24:41 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Hanjun Guo <hanjun.guo@linaro.org>, Mark Rutland <mark.rutland@arm.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linaro Patches <patches@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>, linaro-acpi@lists.linaro.org,
+        linux-acpi@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Olof Johansson <olof@lixom.net>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>
+Message-ID: <20131205132441.GR29268@sirena.org.uk>
+References: <1386088753-2850-1-git-send-email-hanjun.guo@linaro.org>
+ <1386088753-2850-3-git-send-email-hanjun.guo@linaro.org>
+ <CAL_JsqKF-_GCRR1d5Hs0F6pCMfLxUYkXAAp9hY7Ywuu1C+aZ0A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart4391473.OPzRdpZXxa";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312051420.56852@pali>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="W1G4cAX3lNqeBRc9"
+Content-Disposition: inline
+In-Reply-To: <CAL_JsqKF-_GCRR1d5Hs0F6pCMfLxUYkXAAp9hY7Ywuu1C+aZ0A@mail.gmail.com>
+X-Cookie: It's clever, but is it art?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC part2 PATCH 2/9] ARM64 / ACPI: Prefill cpu possible/present
+ maps and map logical cpu id to APIC id
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart4391473.OPzRdpZXxa
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
 
-On Thursday 05 December 2013 08:52:30 Hans Verkuil wrote:
-> On 12/02/2013 09:51 PM, Pali Roh=C3=A1r wrote:
-> > On Monday 04 November 2013 12:39:44 Hans Verkuil wrote:
-> >> Hi Pali,
-> >>=20
-> >> On 10/26/2013 10:45 PM, Pali Roh=C3=A1r wrote:
-> >>> On Saturday 26 October 2013 22:22:09 Hans Verkuil wrote:
-> >>>>> Hans, so can it be added to drivers/staging/media tree?
-> >>>>=20
-> >>>> Yes, that is an option. It's up to you to decide what you
-> >>>> want. Note that if no cleanup work is done on the staging
-> >>>> driver for a long time, then it can be removed again.
-> >>>>=20
-> >>>> Regards,
-> >>>>=20
-> >>>>     Hans
-> >>>=20
-> >>> Ok, so if you can add it to staging tree. When driver will
-> >>> be in mainline other developers can look at it too. Now
-> >>> when driver is hidden, nobody know where to find it... You
-> >>> can see how upstream development for Nokia N900 HW going
-> >>> on: http://elinux.org/N900
-> >>=20
-> >> Please check my tree:
-> >>=20
-> >> http://git.linuxtv.org/hverkuil/media_tree.git/shortlog/ref
-> >> s/h eads/bcm
-> >>=20
-> >> If you're OK, then I'll queue it for 3.14 (it's too late
-> >> for 3.13).
-> >>=20
-> >> Regards,
-> >>=20
-> >> 	Hans
-> >=20
-> > Hi, sorry for late reply. I looked into your tree and
-> > difference is that you only removed "linux/slab.h" include.
-> > So it it is not needed, then it is OK.
->=20
-> I *added* slab.h :-)
->=20
+--W1G4cAX3lNqeBRc9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Right, I looked at reverse diff :-)
+On Wed, Dec 04, 2013 at 09:47:49AM -0600, Rob Herring wrote:
+> On Tue, Dec 3, 2013 at 10:39 AM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
 
-> Anyway, I've posted the pull request. Please note, if you want
-> to avoid having this driver be removed again in the future,
-> then you (or someone else) should work on addressing the
-> issues in the TODO file I added.
->=20
-> Regards,
->=20
-> 	Hans
+> > +#ifndef CONFIG_ACPI
+> >                 set_cpu_present(cpu, true);
+> > +#endif
 
-Ok. CCing other people who works with n900 kernel.
+> Should this be moved to DT cpu topology related code?
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+Part of the trick there being that there isn't any CPU topology code for
+ARMv8 in mainline yet, DT or otherwise - I'm working with some patches
+for doing that with DT which I'm hoping to get out soon.
 
---nextPart4391473.OPzRdpZXxa
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+--W1G4cAX3lNqeBRc9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-iEYEABECAAYFAlKgfbgACgkQi/DJPQPkQ1KFcgCcDfRd1qPjKNFaQbLQnsFYHayu
-gpkAnRvMP6Kon53xxaYo547H79UX4Lih
-=jk1Z
+iQIcBAEBAgAGBQJSoH6WAAoJELSic+t+oim9nJsP/jc9176AkYvZDjck2LzwXX1Y
+qNrW1L8s5tTBF6DI0Gnmjlui/DOItNWlNr635pV/HsB1UVBVpZyeALEPYS4um7Rn
+DYrTxwKIxUJgAXDI6htD9uDIxN8D/f4xz3FhiGub+x5sqbTk1u/bA7NAQzGXM4B0
+rrzC3XBpb3q+/SXyNNBsKxl3Ywc5YbhRUo2BSRH+5wFS1vrzkpLyEpwV/AF5V2GS
+Wrxgpaxc5OOBj4JYy41Vv3N0Uwa6wCRbY/uo/V3Hb4O+WR9g1n6+XhEj7v9UzJFX
+RiWAdUEcCp9vmMIJFtC3NOdbPxXr5lxS8HksVu7kcX7X8EFbPOsKKKQt2JZn/rsu
+CIXJM/nvAtj4Amr48zMuYnOwyd5d5Vk8Hcjic2i5qF2Ep2Z6iwtVHGqXoqaD4D+8
+xvmYzKSZp0MSGHM6vkEIhiPXL+da8YWeY4PEBPDEYI9GUcEasYWpCKNUsFuuomtS
+Tc2SsmcEphVdhrJR/Pv2giDovLZBU4T+SG6gnLfSY9xi8CtbjfdGyg+9WioqatVY
+tYWOa8zqbHDnid+pn5DOt+NJITZbg/ksgf9AQESUrt5Hi4Q+lRbfXCwwAaYhKxhk
+xFcgVusClPkLvyLyC3rcQL41ywZlZjNv7v0sVGcNEd9rOoefcxmf0T9EP3neobu3
+EJuzqaL01O1QOGfsaswf
+=9uVy
 -----END PGP SIGNATURE-----
 
---nextPart4391473.OPzRdpZXxa--
+--W1G4cAX3lNqeBRc9--
