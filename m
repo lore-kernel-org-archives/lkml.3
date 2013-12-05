@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756305Ab3LEAcI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 19:32:08 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:60793 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756150Ab3LEAcG (ORCPT
+	id S1756333Ab3LEAcX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 19:32:23 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:36653 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756314Ab3LEAcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 19:32:06 -0500
-Date: Thu, 5 Dec 2013 01:32:03 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: tglx@linutronix.de, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, oleg@redhat.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 02/10] posix-timers: Remove dead process posix cpu timers
- caching
-Message-ID: <20131205003201.GB6683@localhost.localdomain>
-References: <1385221040-24731-1-git-send-email-fweisbec@gmail.com>
- <1385221040-24731-3-git-send-email-fweisbec@gmail.com>
- <529F797A.6010107@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <529F797A.6010107@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 4 Dec 2013 19:32:18 -0500
+From: Mark Brown <broonie@kernel.org>
+To: Liam Girdwood <lgirdwood@gmail.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@linaro.org>
+Date: Thu,  5 Dec 2013 00:31:55 +0000
+Message-Id: <1386203515-6815-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 1.8.5.1
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH] regulator: gpio: Don't require a regulator-type property
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 01:50:34PM -0500, KOSAKI Motohiro wrote:
-> > @@ -1090,13 +1063,8 @@ void posix_cpu_timer_schedule(struct k_itimer *timer)
-> >  			timer->it.cpu.expires = 0;
-> >  			goto out_unlock;
-> >  		} else if (unlikely(p->exit_state) && thread_group_empty(p)) {
-> > -			/*
-> > -			 * We've noticed that the thread is dead, but
-> > -			 * not yet reaped.  Take this opportunity to
-> > -			 * drop our task ref.
-> > -			 */
-> > +			/* Optimizations: if the process is dying, no need to rearm */
-> >  			cpu_timer_sample_group(timer->it_clock, p, &now);
-> 
-> Why do we still need to call cpu_timer_sample_group? You removed to below line which uses
-> "now".
+From: Mark Brown <broonie@linaro.org>
 
-Good point, it looks safe to remove it now.
+Since essentially all GPIO controlled regulators are voltage regulators
+make the regulator-type property optional, defaulting to voltage.
 
-Thanks.
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+
+Compile tested only.
+
+ drivers/regulator/gpio-regulator.c | 14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/regulator/gpio-regulator.c b/drivers/regulator/gpio-regulator.c
+index 234960dc9607..13ec94d984ca 100644
+--- a/drivers/regulator/gpio-regulator.c
++++ b/drivers/regulator/gpio-regulator.c
+@@ -203,17 +203,15 @@ of_get_gpio_regulator_config(struct device *dev, struct device_node *np)
+ 	}
+ 	config->nr_states = i;
  
-> > -			clear_dead_task(timer, now);
-> >  			goto out_unlock;
-> >  		}
-> >  		spin_lock(&p->sighand->siglock);
-> > 
-> 
++	config->type = REGULATOR_VOLTAGE;
+ 	ret = of_property_read_string(np, "regulator-type", &regtype);
+-	if (ret < 0) {
+-		dev_err(dev, "Missing 'regulator-type' property\n");
+-		return ERR_PTR(-EINVAL);
++	if (ret >= 0) {
++		if (!strncmp("voltage", regtype, 7))
++			config->type = REGULATOR_VOLTAGE;
++		else if (!strncmp("current", regtype, 7))
++			config->type = REGULATOR_CURRENT;
+ 	}
+ 
+-	if (!strncmp("voltage", regtype, 7))
+-		config->type = REGULATOR_VOLTAGE;
+-	else if (!strncmp("current", regtype, 7))
+-		config->type = REGULATOR_CURRENT;
+-
+ 	return config;
+ }
+ 
+-- 
+1.8.5.1
+
