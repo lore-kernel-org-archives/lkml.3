@@ -1,108 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab3LEIwN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 03:52:13 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:35913 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752431Ab3LEIwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 03:52:11 -0500
-From: Qais Yousef <Qais.Yousef@imgtec.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: RE: [PATCH] crash_dump: fix compilation error (on MIPS at least)
-Thread-Topic: [PATCH] crash_dump: fix compilation error (on MIPS at least)
-Thread-Index: AQHO8QnExmvHISq+vkaNQVlz0RPH3ppEjfmAgAC8NNA=
-Date: Thu, 5 Dec 2013 08:52:06 +0000
-Message-ID: <392C4BDEFF12D14FA57A3F30B283D7D13C4C04@LEMAIL01.le.imgtec.org>
-References: <1386172702-31266-1-git-send-email-qais.yousef@imgtec.com>
- <20131204213017.GJ19087@redhat.com>
-In-Reply-To: <20131204213017.GJ19087@redhat.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.154.35]
-Content-Type: text/plain; charset="utf-8"
+	id S1754643Ab3LEIyJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 03:54:09 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:43066 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751791Ab3LEIyG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 03:54:06 -0500
+Message-ID: <52A03EE4.6030609@huawei.com>
+Date: Thu, 5 Dec 2013 16:52:52 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-X-SEF-Processed: 7_3_0_01192__2013_12_05_08_52_09
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan.kim@gmail.com>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        qiuxishi <qiuxishi@huawei.com>
+Subject: [PATCH] mm: do_mincore() cleanup
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.216]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rB58qJsj007073
 
-> -----Original Message-----
-> From: Vivek Goyal [mailto:vgoyal@redhat.com]
-> Sent: 04 December 2013 21:30
-> To: Qais Yousef
-> Cc: linux-kernel@vger.kernel.org; Andrew Morton; Michael Holzheu; linux-
-> mips@linux-mips.org; stable@vger.kernel.org
-> Subject: Re: [PATCH] crash_dump: fix compilation error (on MIPS at least)
-> 
-> On Wed, Dec 04, 2013 at 03:58:22PM +0000, Qais Yousef wrote:
-> >   In file included from kernel/crash_dump.c:2:0:
-> >   include/linux/crash_dump.h:22:27: error: unknown type name â€˜pgprot_tâ€™
-> >
-> > when CONFIG_CRASH_DUMP=y
-> >
-> > The error was traced back to this commit:
-> >
-> >   9cb218131de1 vmcore: introduce remap_oldmem_pfn_range()
-> >
-> > include <asm/pgtable.h> to get the missing definition
-> 
-> pgprot_t definition for mips seems to be in asm/page.h. So why are you including
-> asm/pgtable.h and not asm/page.h? For other architectures it seems to be in
-> other files. That means those arch will have broken compilation now.
+Two cleanups:
+1. remove redundant codes for hugetlb pages.
+2. end = pmd_addr_end(addr, end) restricts [addr, end) within PMD_SIZE,
+   this may increase do_mincore() calls, remove it.
 
-I didn't include asm/page.h because I didn't think it'll fix the problem for other arches.
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+---
+ mm/mincore.c |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
 
-> 
-> So question is, is there any arch specific file which one can include and be covered
-> for pgprot_t definition for all the arches.
+diff --git a/mm/mincore.c b/mm/mincore.c
+index da2be56..1016233 100644
+--- a/mm/mincore.c
++++ b/mm/mincore.c
+@@ -225,13 +225,6 @@ static long do_mincore(unsigned long addr, unsigned long pages, unsigned char *v
+ 
+ 	end = min(vma->vm_end, addr + (pages << PAGE_SHIFT));
+ 
+-	if (is_vm_hugetlb_page(vma)) {
+-		mincore_hugetlb_page_range(vma, addr, end, vec);
+-		return (end - addr) >> PAGE_SHIFT;
+-	}
+-
+-	end = pmd_addr_end(addr, end);
+-
+ 	if (is_vm_hugetlb_page(vma))
+ 		mincore_hugetlb_page_range(vma, addr, end, vec);
+ 	else
+-- 
+1.7.1
 
-I asked the same question and asm/pgtable.h was the answer.
 
-Thanks,
-Qais
-
-> 
-> Thanks
-> Vivek
-> 
-> >
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> > Cc: Vivek Goyal <vgoyal@redhat.com>
-> > Cc: <linux-mips@linux-mips.org>
-> > Cc: <stable@vger.kernel.org> # 3.12
-> > Reviewed-by: James Hogan <james.hogan@imgtec.com>
-> > Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
-> > ---
-> > I haven't tried any other architecture except mips.
-> > If OK this should be considered for stable 3.12 (CCed).
-> >
-> >  include/linux/crash_dump.h |    2 ++
-> >  1 files changed, 2 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/include/linux/crash_dump.h b/include/linux/crash_dump.h
-> > index fe68a5a..7032518 100644
-> > --- a/include/linux/crash_dump.h
-> > +++ b/include/linux/crash_dump.h
-> > @@ -6,6 +6,8 @@
-> >  #include <linux/proc_fs.h>
-> >  #include <linux/elf.h>
-> >
-> > +#include <asm/pgtable.h> /* for pgprot_t */
-> > +
-> >  #define ELFCORE_ADDR_MAX	(-1ULL)
-> >  #define ELFCORE_ADDR_ERR	(-2ULL)
-> >
-> > --
-> > 1.7.1
-> >
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
