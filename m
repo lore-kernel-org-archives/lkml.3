@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755111Ab3LEKJL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 05:09:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23782 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751909Ab3LEKJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 05:09:08 -0500
-From: Mateusz Guzik <mguzik@redhat.com>
-To: stable@vger.kernel.org
-Cc: Eryu Guan <eguan@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, linux-aio@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3.10] aio: restore locking of ioctx list on removal
-Date: Thu,  5 Dec 2013 11:09:02 +0100
-Message-Id: <1386238142-21792-1-git-send-email-mguzik@redhat.com>
+	id S1755395Ab3LEKJV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 05:09:21 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:59634 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755142Ab3LEKJP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 05:09:15 -0500
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [PATCH] MAINTAINERS: Add entry for Samsung SoC clock drivers
+Date: Thu, 05 Dec 2013 11:09:10 +0100
+Message-ID: <1965675.1ZOPt5drrV@flatron>
+User-Agent: KMail/4.11.3 (Linux/3.12.0-gentoo; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1383963454-2749-1-git-send-email-tomasz.figa@gmail.com>
+References: <1383963454-2749-1-git-send-email-tomasz.figa@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 36f5588905c10a8c4568a210d601fe8c3c27e0f0
-"aio: refcounting cleanup" resulted in ioctx_lock not being held
-during ctx removal, leaving the list susceptible to corruptions.
+Hi,
 
-In mainline kernel the issue went away as a side effect of
-db446a08c23d5475e6b08c87acca79ebb20f283c "aio: convert the ioctx list to
-table lookup v3".
+On Saturday 09 of November 2013 03:17:34 Tomasz Figa wrote:
+> From: Tomasz Figa <t.figa@samsung.com>
+> 
+> This patch adds an entry for Samsung SoC clock drivers located under
+> drivers/clk/samsung/ directory, with me taking the maintainer role.
+> 
+> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Acked-by: Mike Turquette <mturquette@linaro.org>
+> Acked-by: Sachin Kamat <sachin.kamat@linaro.org>
+> Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+> ---
+>  MAINTAINERS | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 61b8757..df7e1bf 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -7319,6 +7319,12 @@ L:	linux-media@vger.kernel.org
+>  S:	Supported
+>  F:	drivers/media/i2c/s5c73m3/*
+>  
+> +SAMSUNG SOC CLOCK DRIVERS
+> +M:	Tomasz Figa <t.figa@samsung.com>
+> +S:	Supported
+> +L:	linux-samsung-soc@vger.kernel.org (moderated for non-subscribers)
+> +F:	drivers/clk/samsung/
+> +
+>  SERIAL DRIVERS
+>  M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>  L:	linux-serial@vger.kernel.org
+> 
 
-Fix the problem by restoring appropriate locking.
+I don't see this patch applied anywhere. Mike, should it go through your
+tree?
 
-Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
-Reported-by: Eryu Guan <eguan@redhat.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: linux-aio@kvack.org
-Cc: linux-kernel@vger.kernel.org
-
----
- fs/aio.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/fs/aio.c b/fs/aio.c
-index 2bbcacf..ebd06fd 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -423,10 +423,12 @@ static void kill_ioctx_rcu(struct rcu_head *head)
-  *	when the processes owning a context have all exited to encourage
-  *	the rapid destruction of the kioctx.
-  */
--static void kill_ioctx(struct kioctx *ctx)
-+static void kill_ioctx(struct mm_struct *mm, struct kioctx *ctx)
- {
- 	if (!atomic_xchg(&ctx->dead, 1)) {
-+		spin_lock(&mm->ioctx_lock);
- 		hlist_del_rcu(&ctx->list);
-+		spin_unlock(&mm->ioctx_lock);
- 
- 		/*
- 		 * It'd be more correct to do this in free_ioctx(), after all
-@@ -494,7 +496,7 @@ void exit_aio(struct mm_struct *mm)
- 		 */
- 		ctx->mmap_size = 0;
- 
--		kill_ioctx(ctx);
-+		kill_ioctx(mm, ctx);
- 	}
- }
- 
-@@ -852,7 +854,7 @@ SYSCALL_DEFINE2(io_setup, unsigned, nr_events, aio_context_t __user *, ctxp)
- 	if (!IS_ERR(ioctx)) {
- 		ret = put_user(ioctx->user_id, ctxp);
- 		if (ret)
--			kill_ioctx(ioctx);
-+			kill_ioctx(current->mm, ioctx);
- 		put_ioctx(ioctx);
- 	}
- 
-@@ -870,7 +872,7 @@ SYSCALL_DEFINE1(io_destroy, aio_context_t, ctx)
- {
- 	struct kioctx *ioctx = lookup_ioctx(ctx);
- 	if (likely(NULL != ioctx)) {
--		kill_ioctx(ioctx);
-+		kill_ioctx(current->mm, ioctx);
- 		put_ioctx(ioctx);
- 		return 0;
- 	}
--- 
-1.8.3.1
+Best regards,
+Tomasz
 
