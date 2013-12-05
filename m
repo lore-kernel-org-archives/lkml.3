@@ -1,187 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab3LELCL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 06:02:11 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:4406 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754675Ab3LELCH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 06:02:07 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 05 Dec 2013 02:59:05 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@wwwdotorg.org>, <linus.walleij@linaro.org>
-CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <thierry.reding@gmail.com>,
-        <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 1/4] pinctrl: tegra: Add devicetree binding document for Tegra124
-Date: Thu, 5 Dec 2013 16:27:47 +0530
-Message-ID: <1386241070-4350-2-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1386241070-4350-1-git-send-email-ldewangan@nvidia.com>
-References: <1386241070-4350-1-git-send-email-ldewangan@nvidia.com>
+	id S1756086Ab3LELCS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 06:02:18 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:51299 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754675Ab3LELCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 06:02:12 -0500
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Subject: Re: [REPOST PATCH V2] irq: enable all irqs unconditionally in irq_resume
+Date: Thu, 5 Dec 2013 12:01:58 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "pavel@ucw.cz" <pavel@ucw.cz>, Stephen Warren <swarren@wwwdotorg.org>
+References: <1385388587-16442-1-git-send-email-ldewangan@nvidia.com> <52A05A21.5070100@nvidia.com>
+In-Reply-To: <52A05A21.5070100@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312051201.59284.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This device tree binding document describes the Tegra124 pincontrol
-DT bindings. This document lists all valid properties, names, mux
-options of Tegra124 pins.
+Hi Laxman,
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- .../bindings/pinctrl/nvidia,tegra124-pinmux.txt    |  137 ++++++++++++++++++++
- 1 files changed, 137 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-pinmux.txt
+Am Donnerstag, 5. Dezember 2013, 11:49:05 schrieb Laxman Dewangan:
+> Can you please review this patch?
+> This patch is pending from long back for review.
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-pinmux.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-pinmux.txt
-new file mode 100644
-index 0000000..016dad6
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-pinmux.txt
-@@ -0,0 +1,137 @@
-+NVIDIA Tegra124 pinmux controller
-+
-+The Tegra124 pinctrl binding is very similar to the Tegra20 and Tegra30
-+pinctrl binding, as described in nvidia,tegra20-pinmux.txt and
-+nvidia,tegra30-pinmux.txt. In fact, this document assumes that binding as
-+a baseline, and only documents the differences between the two bindings.
-+
-+Required properties:
-+- compatible: "nvidia,tegra124-pinmux"
-+- reg: Should contain the register physical address and length for each of
-+  the pad control and mux registers. The first bank of address must be the
-+  driver strength pad control register address and second bank address must
-+  be pinmux register address.
-+
-+Tegra124 adds the following optional properties for pin configuration subnodes:
-+- nvidia,enable-input: Integer. Enable the pin's input path. 0: no, 1: yes.
-+- nvidia,open-drain: Integer. Enable open drain mode. 0: no, 1: yes.
-+- nvidia,lock: Integer. Lock the pin configuration against further changes
-+    until reset. 0: no, 1: yes.
-+- nvidia,io-reset: Integer. Reset the IO path. 0: no, 1: yes.
-+- nvidia,rcv-sel: Integer. Select VIL/VIH receivers. 0: normal, 1: high.
-+- nvidia,drive-type: Integer. Valid range 0...3.
-+
-+The macros for options are defined in the
-+include/dt-binding/pinctrl/pinctrl-tegra.h.
-+
-+Please refer the Tegra TRM for complete details regarding which groups
-+support which functionality.
-+
-+Valid values for pin and group names are:
-+
-+  per-pin mux groups:
-+
-+    These all support nvidia,function, nvidia,tristate, nvidia,pull,
-+    nvidia,enable-input. Some support nvidia,lock nvidia,open-drain,
-+    nvidia,io-reset and nvidia,rcv-sel.
-+
-+	ulpi_data0_po1, ulpi_data1_po2, ulpi_data2_po3, ulpi_data3_po4,
-+	ulpi_data4_po5, ulpi_data5_po6, ulpi_data6_po7, ulpi_data7_po0,
-+	ulpi_clk_py0, ulpi_dir_py1, ulpi_nxt_py2, ulpi_stp_py3, dap3_fs_pp0,
-+	dap3_din_pp1, dap3_dout_pp2, dap3_sclk_pp3, pv0, pv1, sdmmc1_clk_pz0,
-+	sdmmc1_cmd_pz1, sdmmc1_dat3_py4, sdmmc1_dat2_py5, sdmmc1_dat1_py6,
-+	sdmmc1_dat0_py7, clk2_out_pw5, clk2_req_pcc5, hdmi_int_pn7, ddc_scl_pv4,
-+	ddc_sda_pv5, uart2_rxd_pc3, uart2_txd_pc2, uart2_rts_n_pj6,
-+	uart2_cts_n_pj5, uart3_txd_pw6, uart3_rxd_pw7, uart3_cts_n_pa1,
-+	uart3_rts_n_pc0, pu0, pu1, pu2, pu3, pu4, pu5, pu6, gen1_i2c_scl_pc4,
-+	gen1_i2c_sda_pc5, dap4_fs_pp4, dap4_din_pp5, dap4_dout_pp6,
-+	dap4_sclk_pp7, clk3_out_pee0, clk3_req_pee1, pc7, pi5, pi7, pk0, pk1,
-+	pj0, pj2, pk3, pk4, pk2, pi3, pi6, pg0, pg1, pg2, pg3, pg4, pg5, pg6,
-+	pg7, ph0, ph1, ph2, ph3, ph4, ph5, ph6, ph7, pj7, pb0, pb1, pk7, pi0,
-+	pi1, pi2, pi4, gen2_i2c_scl_pt5, gen2_i2c_sda_pt6, sdmmc4_clk_pcc4,
-+	sdmmc4_cmd_pt7, sdmmc4_dat0_paa0, sdmmc4_dat1_paa1, sdmmc4_dat2_paa2,
-+	sdmmc4_dat3_paa3, sdmmc4_dat4_paa4, sdmmc4_dat5_paa5, sdmmc4_dat6_paa6,
-+	sdmmc4_dat7_paa7, cam_mclk_pcc0, pcc1, pbb0, cam_i2c_scl_pbb1,
-+	cam_i2c_sda_pbb2, pbb3, pbb4, pbb5, pbb6, pbb7, pcc2, jtag_rtck,
-+	pwr_i2c_scl_pz6, pwr_i2c_sda_pz7, kb_row0_pr0, kb_row1_pr1, kb_row2_pr2,
-+	kb_row3_pr3, kb_row4_pr4, kb_row5_pr5, kb_row6_pr6, kb_row7_pr7,
-+	kb_row8_ps0, kb_row9_ps1, kb_row10_ps2, kb_row11_ps3, kb_row12_ps4,
-+	kb_row13_ps5, kb_row14_ps6, kb_row15_ps7, kb_col0_pq0, kb_col1_pq1,
-+	kb_col2_pq2, kb_col3_pq3, kb_col4_pq4, kb_col5_pq5, kb_col6_pq6,
-+	kb_col7_pq7, clk_32k_out_pa0, core_pwr_req, cpu_pwr_req, pwr_int_n,
-+	clk_32k_in, owr, dap1_fs_pn0, dap1_din_pn1, dap1_dout_pn2,
-+	dap1_sclk_pn3, dap_mclk1_req_pee2, dap_mclk1_pw4, spdif_in_pk6,
-+	spdif_out_pk5, dap2_fs_pa2, dap2_din_pa4, dap2_dout_pa5, dap2_sclk_pa3,
-+	dvfs_pwm_px0, gpio_x1_aud_px1, gpio_x3_aud_px3, dvfs_clk_px2,
-+	gpio_x4_aud_px4, gpio_x5_aud_px5, gpio_x6_aud_px6, gpio_x7_aud_px7,
-+	sdmmc3_clk_pa6, sdmmc3_cmd_pa7, sdmmc3_dat0_pb7, sdmmc3_dat1_pb6,
-+	sdmmc3_dat2_pb5, sdmmc3_dat3_pb4, pex_l0_rst_n_pdd1,
-+	pex_l0_clkreq_n_pdd2, pex_wake_n_pdd3, pex_l1_rst_n_pdd5,
-+	pex_l1_clkreq_n_pdd6, hdmi_cec_pee3, sdmmc1_wp_n_pv3,
-+	sdmmc3_cd_n_pv2, gpio_w2_aud_pw2, gpio_w3_aud_pw3, usb_vbus_en0_pn4,
-+	usb_vbus_en1_pn5, sdmmc3_clk_lb_out_pee4, sdmmc3_clk_lb_in_pee5,
-+	gmi_clk_lb, reset_out_n, kb_row16_pt0, kb_row17_pt1, usb_vbus_en2_pff1,
-+	pff2, dp_hpd_pff0,
-+
-+  drive groups:
-+
-+    These all support nvidia,pull-down-strength, nvidia,pull-up-strength,
-+    nvidia,slew-rate-rising, nvidia,slew-rate-falling. Most but not all
-+    support nvidia,high-speed-mode, nvidia,schmitt, nvidia,low-power-mode
-+    and nvidia,drive-type.
-+
-+    ao1, ao2, at1, at2, at3, at4, at5, cdev1, cdev2, dap1, dap2, dap3, dap4,
-+    dbg, sdio3, spi, uaa, uab, uart2, uart3, sdio1, ddc, gma, gme, gmf, gmg,
-+    gmh, owr, uda, gpv, dev3, cec, usb_vbus_en, ao3, ao0, hv0, sdio4, ao4.
-+
-+Valid values for nvidia,functions are:
-+
-+  blink, cec, cldvfs, clk12, cpu, dap, dap1, dap2, dev3, displaya,
-+  displaya_alt, displayb, dtv, extperiph1, extperiph2, extperiph3,
-+  gmi, gmi_alt, hda, hsi, i2c1, i2c2, i2c3, i2c4, i2cpwr, i2s0,
-+  i2s1, i2s2, i2s3, i2s4, irda, kbc, owr, pmi, pwm0, pwm1, pwm2, pwm3,
-+  pwron, reset_out_n, rsvd1, rsvd2, rsvd3, rsvd4, sdmmc1, sdmmc2, sdmmc3,
-+  sdmmc4, soc, spdif, spi1, spi2, spi3, spi4, spi5, spi6, trace, uarta,
-+  uartb, uartc, uartd, ulpi, usb, vgp1, vgp2, vgp3, vgp4, vgp5, vgp6,
-+  vi, vi_alt1, vi_alt3, vimclk2, vimclk2_alt, sata, ccla, pe0, pe, pe1,
-+  dp, rtck, sys, clk tmds.
-+
-+Example:
-+
-+	pinmux: pinmux {
-+		compatible = "nvidia,tegra124-pinmux";
-+		reg = <0x70000868 0x164		/* Pad control registers */
-+		       0x70003000 0x434>;	/* PinMux registers */
-+	};
-+
-+Example pinmux entries:
-+
-+	pinctrl {
-+		sdmmc4_default: pinmux {
-+			sdmmc4_clk_pcc4 {
-+				nvidia,pins = "sdmmc4_clk_pcc4",
-+				nvidia,function = "sdmmc4";
-+				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
-+				nvidia,tristate = <TEGRA_PIN_DISABLE>;
-+			};
-+
-+			sdmmc4_dat0_paa0 {
-+				nvidia,pins = "sdmmc4_dat0_paa0",
-+						"sdmmc4_dat1_paa1",
-+						"sdmmc4_dat2_paa2",
-+						"sdmmc4_dat3_paa3",
-+						"sdmmc4_dat4_paa4",
-+						"sdmmc4_dat5_paa5",
-+						"sdmmc4_dat6_paa6",
-+						"sdmmc4_dat7_paa7";
-+				nvidia,function = "sdmmc4";
-+				nvidia,pull = <TEGRA_PIN_PULL_UP>;
-+				nvidia,tristate = <TEGRA_PIN_DISABLE>;
-+			};
-+		};
-+	};
-+
-+	sdhci@78000400 {
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&sdmmc4_default>;
-+	};
--- 
-1.7.1.1
+the patch already made it into the appropriate tree, as can be seen by tip-bot
+message and on [0].
 
+
+Heiko
+
+[0] http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?h=irq-urgent-for-linus&id=ac01810c9d2814238f08a227062e66a35a0e1ea2
