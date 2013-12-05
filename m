@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933507Ab3LER5J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:57:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38163 "EHLO
+	id S933664Ab3LER5f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:57:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38159 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933115Ab3LERg6 (ORCPT
+	with ESMTP id S933102Ab3LERg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:36:58 -0500
+	Thu, 5 Dec 2013 12:36:57 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 25/90] SUNRPC: Fix a data corruption issue when retransmitting RPC calls
-Date: Thu,  5 Dec 2013 17:35:07 +0000
-Message-Id: <1386264972-5399-26-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 27/90] ALSA: msnd: Avoid duplicated driver name
+Date: Thu,  5 Dec 2013 17:35:09 +0000
+Message-Id: <1386264972-5399-28-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -27,154 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit a6b31d18b02ff9d7915c5898c9b5ca41a798cd73 upstream.
+commit 092f9cd16aac7d054af1755c945f37c1b33399e6 upstream.
 
-The following scenario can cause silent data corruption when doing
-NFS writes. It has mainly been observed when doing database writes
-using O_DIRECT.
+msnd_pinnacle.c is used for both snd-msnd-pinnacle and
+snd-msnd-classic drivers, and both should have different driver
+names.  Using the same driver name results in the sysfs warning for
+duplicated entries like
+ kobject: 'msnd-pinnacle.7' (cec33408): kobject_release, parent   (null) (delayed)
+ kobject: 'msnd-pinnacle' (cecd4980): kobject_release, parent cf3ad9b0 (delayed)
+ ------------[ cut here ]------------
+ WARNING: CPU: 0 PID: 1 at fs/sysfs/dir.c:486 sysfs_warn_dup+0x7d/0xa0()
+ sysfs: cannot create duplicate filename '/bus/isa/drivers/msnd-pinnacle'
+ ......
 
-1) The RPC client uses sendpage() to do zero-copy of the page data.
-2) Due to networking issues, the reply from the server is delayed,
-   and so the RPC client times out.
-
-3) The client issues a second sendpage of the page data as part of
-   an RPC call retransmission.
-
-4) The reply to the first transmission arrives from the server
-   _before_ the client hardware has emptied the TCP socket send
-   buffer.
-5) After processing the reply, the RPC state machine rules that
-   the call to be done, and triggers the completion callbacks.
-6) The application notices the RPC call is done, and reuses the
-   pages to store something else (e.g. a new write).
-
-7) The client NIC drains the TCP socket send buffer. Since the
-   page data has now changed, it reads a corrupted version of the
-   initial RPC call, and puts it on the wire.
-
-This patch fixes the problem in the following manner:
-
-The ordering guarantees of TCP ensure that when the server sends a
-reply, then we know that the _first_ transmission has completed. Using
-zero-copy in that situation is therefore safe.
-If a time out occurs, we then send the retransmission using sendmsg()
-(i.e. no zero-copy), We then know that the socket contains a full copy of
-the data, and so it will retransmit a faithful reproduction even if the
-RPC call completes, and the application reuses the O_DIRECT buffer in
-the meantime.
-
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/sunrpc/xprtsock.c | 28 +++++++++++++++++++++-------
- 1 file changed, 21 insertions(+), 7 deletions(-)
+ sound/isa/msnd/msnd_pinnacle.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-index 79064471..31f981d 100644
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -390,8 +390,10 @@ static int xs_send_kvec(struct socket *sock, struct sockaddr *addr, int addrlen,
- 	return kernel_sendmsg(sock, &msg, NULL, 0, 0);
+diff --git a/sound/isa/msnd/msnd_pinnacle.c b/sound/isa/msnd/msnd_pinnacle.c
+index 29cc8e1..a7d6a52 100644
+--- a/sound/isa/msnd/msnd_pinnacle.c
++++ b/sound/isa/msnd/msnd_pinnacle.c
+@@ -73,9 +73,11 @@
+ #ifdef MSND_CLASSIC
+ #  include "msnd_classic.h"
+ #  define LOGNAME			"msnd_classic"
++#  define DEV_NAME			"msnd-classic"
+ #else
+ #  include "msnd_pinnacle.h"
+ #  define LOGNAME			"snd_msnd_pinnacle"
++#  define DEV_NAME			"msnd-pinnacle"
+ #endif
+ 
+ static void __devinit set_default_audio_parameters(struct snd_msnd *chip)
+@@ -1068,8 +1070,6 @@ static int __devexit snd_msnd_isa_remove(struct device *pdev, unsigned int dev)
+ 	return 0;
  }
  
--static int xs_send_pagedata(struct socket *sock, struct xdr_buf *xdr, unsigned int base, int more)
-+static int xs_send_pagedata(struct socket *sock, struct xdr_buf *xdr, unsigned int base, int more, bool zerocopy)
- {
-+	ssize_t (*do_sendpage)(struct socket *sock, struct page *page,
-+			int offset, size_t size, int flags);
- 	struct page **ppage;
- 	unsigned int remainder;
- 	int err, sent = 0;
-@@ -400,6 +402,9 @@ static int xs_send_pagedata(struct socket *sock, struct xdr_buf *xdr, unsigned i
- 	base += xdr->page_base;
- 	ppage = xdr->pages + (base >> PAGE_SHIFT);
- 	base &= ~PAGE_MASK;
-+	do_sendpage = sock->ops->sendpage;
-+	if (!zerocopy)
-+		do_sendpage = sock_no_sendpage;
- 	for(;;) {
- 		unsigned int len = min_t(unsigned int, PAGE_SIZE - base, remainder);
- 		int flags = XS_SENDMSG_FLAGS;
-@@ -407,7 +412,7 @@ static int xs_send_pagedata(struct socket *sock, struct xdr_buf *xdr, unsigned i
- 		remainder -= len;
- 		if (remainder != 0 || more)
- 			flags |= MSG_MORE;
--		err = sock->ops->sendpage(sock, *ppage, base, len, flags);
-+		err = do_sendpage(sock, *ppage, base, len, flags);
- 		if (remainder == 0 || err != len)
- 			break;
- 		sent += err;
-@@ -428,9 +433,10 @@ static int xs_send_pagedata(struct socket *sock, struct xdr_buf *xdr, unsigned i
-  * @addrlen: UDP only -- length of destination address
-  * @xdr: buffer containing this request
-  * @base: starting position in the buffer
-+ * @zerocopy: true if it is safe to use sendpage()
-  *
-  */
--static int xs_sendpages(struct socket *sock, struct sockaddr *addr, int addrlen, struct xdr_buf *xdr, unsigned int base)
-+static int xs_sendpages(struct socket *sock, struct sockaddr *addr, int addrlen, struct xdr_buf *xdr, unsigned int base, bool zerocopy)
- {
- 	unsigned int remainder = xdr->len - base;
- 	int err, sent = 0;
-@@ -458,7 +464,7 @@ static int xs_sendpages(struct socket *sock, struct sockaddr *addr, int addrlen,
- 	if (base < xdr->page_len) {
- 		unsigned int len = xdr->page_len - base;
- 		remainder -= len;
--		err = xs_send_pagedata(sock, xdr, base, remainder != 0);
-+		err = xs_send_pagedata(sock, xdr, base, remainder != 0, zerocopy);
- 		if (remainder == 0 || err != len)
- 			goto out;
- 		sent += err;
-@@ -561,7 +567,7 @@ static int xs_local_send_request(struct rpc_task *task)
- 			req->rq_svec->iov_base, req->rq_svec->iov_len);
- 
- 	status = xs_sendpages(transport->sock, NULL, 0,
--						xdr, req->rq_bytes_sent);
-+						xdr, req->rq_bytes_sent, true);
- 	dprintk("RPC:       %s(%u) = %d\n",
- 			__func__, xdr->len - req->rq_bytes_sent, status);
- 	if (likely(status >= 0)) {
-@@ -617,7 +623,7 @@ static int xs_udp_send_request(struct rpc_task *task)
- 	status = xs_sendpages(transport->sock,
- 			      xs_addr(xprt),
- 			      xprt->addrlen, xdr,
--			      req->rq_bytes_sent);
-+			      req->rq_bytes_sent, true);
- 
- 	dprintk("RPC:       xs_udp_send_request(%u) = %d\n",
- 			xdr->len - req->rq_bytes_sent, status);
-@@ -688,6 +694,7 @@ static int xs_tcp_send_request(struct rpc_task *task)
- 	struct rpc_xprt *xprt = req->rq_xprt;
- 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
- 	struct xdr_buf *xdr = &req->rq_snd_buf;
-+	bool zerocopy = true;
- 	int status;
- 
- 	xs_encode_stream_record_marker(&req->rq_snd_buf);
-@@ -695,13 +702,20 @@ static int xs_tcp_send_request(struct rpc_task *task)
- 	xs_pktdump("packet data:",
- 				req->rq_svec->iov_base,
- 				req->rq_svec->iov_len);
-+	/* Don't use zero copy if this is a resend. If the RPC call
-+	 * completes while the socket holds a reference to the pages,
-+	 * then we may end up resending corrupted data.
-+	 */
-+	if (task->tk_flags & RPC_TASK_SENT)
-+		zerocopy = false;
- 
- 	/* Continue transmitting the packet/record. We must be careful
- 	 * to cope with writespace callbacks arriving _after_ we have
- 	 * called sendmsg(). */
- 	while (1) {
- 		status = xs_sendpages(transport->sock,
--					NULL, 0, xdr, req->rq_bytes_sent);
-+					NULL, 0, xdr, req->rq_bytes_sent,
-+					zerocopy);
- 
- 		dprintk("RPC:       xs_tcp_send_request(%u) = %d\n",
- 				xdr->len - req->rq_bytes_sent, status);
+-#define DEV_NAME "msnd-pinnacle"
+-
+ static struct isa_driver snd_msnd_driver = {
+ 	.match		= snd_msnd_isa_match,
+ 	.probe		= snd_msnd_isa_probe,
 -- 
 1.8.3.2
 
