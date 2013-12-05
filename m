@@ -1,66 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074Ab3LEU4N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 15:56:13 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:29133 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751414Ab3LEU4K (ORCPT
+	id S1752522Ab3LEVFc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 16:05:32 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:57864 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734Ab3LEVF3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 15:56:10 -0500
-Date: Thu, 5 Dec 2013 15:56:07 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tony Lu <zlu@tilera.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>, <fengguang.wu@intel.com>,
-        Jamie Iles <jamie.iles@oracle.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ftrace: default to tilegx if ARCH=tile is specified
-Message-ID: <20131205155607.5b87d90e@gandalf.local.home>
-In-Reply-To: <201312052045.rB5KjrBv019932@farm-0012.internal.tilera.com>
-References: <201312052045.rB5KjrBv019932@farm-0012.internal.tilera.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	Thu, 5 Dec 2013 16:05:29 -0500
+Date: Thu, 05 Dec 2013 16:05:26 -0500 (EST)
+Message-Id: <20131205.160526.1469833180680642514.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2013-12-05
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20131205165141.GB2307@tuxdriver.com>
+References: <20131205165141.GB2307@tuxdriver.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 05 Dec 2013 13:05:29 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Dec 2013 15:36:54 -0500
-Tony Lu <zlu@tilera.com> wrote:
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Thu, 5 Dec 2013 11:51:42 -0500
 
-> This matches the existing behavior in arch/tile/Makefile for defconfig.
-> 
-
-If you want to pull this in through the tile tree, you can add my:
-
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-
-Or I can take it. Either way is fine with me.
-
--- Steve
-
-> Reported-by: fengguang.wu@intel.com
-> Signed-off-by: Tony Lu <zlu@tilera.com>
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-> ---
-> Chris Metcalf will push this change via the tile tree.
-> 
->  scripts/recordmcount.pl | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/scripts/recordmcount.pl b/scripts/recordmcount.pl
-> index d0da66396f62..91280b82da08 100755
-> --- a/scripts/recordmcount.pl
-> +++ b/scripts/recordmcount.pl
-> @@ -364,7 +364,8 @@ if ($arch eq "x86_64") {
->  } elsif ($arch eq "blackfin") {
->      $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\s__mcount\$";
->      $mcount_adjust = -4;
-> -} elsif ($arch eq "tilegx") {
-> +} elsif ($arch eq "tilegx" || $arch eq "tile") {
-> +    # Default to the newer TILE-Gx architecture if only "tile" is given.
->      $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\s__mcount\$";
->      $type = ".quad";
->      $alignment = 8;
-
+> Please pull this batch of fixes intende for the 3.13 stream!
+	
+Pulled, thanks John.
