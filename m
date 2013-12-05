@@ -1,88 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772Ab3LETsX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 14:48:23 -0500
-Received: from mail-yh0-f51.google.com ([209.85.213.51]:54772 "EHLO
-	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667Ab3LETsT (ORCPT
+	id S1752419Ab3LETvz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 14:51:55 -0500
+Received: from smtprelay0048.hostedemail.com ([216.40.44.48]:43025 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751352Ab3LETvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 14:48:19 -0500
-Message-ID: <52A0D87A.9060802@linaro.org>
-Date: Thu, 05 Dec 2013 14:48:10 -0500
-From: David Long <dave.long@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, Rabin Vincent <rabin@rab.in>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org,
-        Linaro Networking <linaro-networking@linaro.org>
-Subject: Re: [PATCH v3 00/15] uprobes: Add uprobes support for ARM
-References: <1385520814-10663-1-git-send-email-dave.long@linaro.org> <529F6B88.2050005@linaro.org>
-In-Reply-To: <529F6B88.2050005@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 5 Dec 2013 14:51:53 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 30,2,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1566:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:2903:3138:3139:3140:3141:3142:3622:3653:3865:3866:3867:3870:3871:3872:3874:4321:5007:7652:10010:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
+X-HE-Tag: cause00_10334e0653b29
+X-Filterd-Recvd-Size: 1261
+Message-ID: <1386273109.10003.12.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: Do not hardcode perl path
+From: Joe Perches <joe@perches.com>
+To: Jagannadha Sutradharudu Teki 
+	<jagannadha.sutradharudu-teki@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
+        Jagannadha Sutradharudu Teki <jaganna@xilinx.com>
+Date: Thu, 05 Dec 2013 11:51:49 -0800
+In-Reply-To: <b26e8934-caba-4385-bd32-8f48e2e99826@VA3EHSMHS026.ehs.local>
+References: <b26e8934-caba-4385-bd32-8f48e2e99826@VA3EHSMHS026.ehs.local>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/13 12:51, Taras Kondratiuk wrote:
-> On 11/27/2013 04:53 AM, David Long wrote:
->> From: "David A. Long" <dave.long@linaro.org>
->>
->> This patch series adds basic uprobes support to ARM. It is based on patches
->> developed earlier by Rabin Vincent. That approach of adding hooks into
->> the kprobes instruction parsing code was not well received. This approach
->> separates the ARM instruction parsing code in kprobes out into a separate set
->> of functions which can be used by both kprobes and uprobes. Both kprobes and
->> uprobes then provide their own semantic action tables to process the results of
->> the parsing.
->>
->> The following are noteworthy changes made for v3:
->>
->> 1) The ARM uprobes functionality no longer depends on kprobes. As
->> a side effect of this there are no longer any changes to the common
->> kprobes include file (or any other common kprobes files).
->> 2) A couple large patches have been broken down into more smaller
->> patches.
->> 3) A problem with uretprobes has been fixed.
->> 4) The kprobes-test module has been made more useable for thumb tests.
->> 5) The argument list to the "action" functions has been shrunk.
->> 6) Alignment with a few recent patches that were made to common
->> uprobes code specifically to support this patchset.
->>
->> This patchset is based on v3.13-rc1
->
-> Hi Dave
->
-> I've tested this series in big-endian mode.
-> There is an issue within __create_xol_area() function.
-> It writes UPROBE_SWBP_INSN directly to memory, but UPROBE_SWBP_INSN
-> stores canonical opcode, which leads to a wrong instruction endianness
-> if CPU runs in BE.
->
-> I think the easies way to fix it without touching generic uprobes code
-> is to store opcode in native endianness in UPROBE_SWBP_INSN, and use
-> another macro for canonical form in ARM specific code.
-> Please check a diff below. With this diff plus addressed comment for
-> patch 14/15 plus fixed Ben's BE kprobes series I have uprobes working
-> on LE and BE.
->
+On Thu, 2013-12-05 at 16:53 +0530, Jagannadha Sutradharudu Teki wrote:
+> checkpatch.pl requires perl v5.10.0 to run but it
+> doesn't require to place in /usr/bin/perl
+> Use env to ensure that the interpreter used is the
+> first one on environment's $PATH on system with
+> several versions of perl installed.
 
-Thanks Taras.  I am preparing a v4 addressing these issues and also 
-addressing the issue that, after duplicating your earlier observations, 
-  my claim in "1)" above has proven to be incorrect.
-
--dl
-
+I don't have an opinion on this patch.
 
