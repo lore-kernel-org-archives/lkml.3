@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932759Ab3LEQMg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 11:12:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60513 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932651Ab3LEQMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 11:12:35 -0500
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
-References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
-	<87fvq9cwlk.fsf@tassilo.jf.intel.com>
-	<CAMEtUuzweYxqwoaYH+J5a2uRM+PFcBH+Pb8Z_ALPUMp+QFz1tQ@mail.gmail.com>
-	<CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com>
-From: fche@redhat.com (Frank Ch. Eigler)
-Date: Thu, 05 Dec 2013 11:11:57 -0500
-In-Reply-To: <CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com> (Alexei Starovoitov's message of "Wed, 4 Dec 2013 20:40:44 -0800")
-Message-ID: <y0meh5rs2eq.fsf@fche.csb>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
+	id S1756879Ab3LEQQZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 11:16:25 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:50204 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756832Ab3LEQQW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 11:16:22 -0500
+From: Samuel Dominguez <samuel.dominguez.lorenzo@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Samuel=20Dom=C3=ADnguez?= 
+	<samuel.dominguez.lorenzo@gmail.com>
+Subject: [PATCH] staging: lustre: lnet: lnet: fixed space coding style issues
+Date: Thu,  5 Dec 2013 16:16:13 +0000
+Message-Id: <1386260173-4200-1-git-send-email-samuel.dominguez.lorenzo@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Samuel Domínguez <samuel.dominguez.lorenzo@gmail.com>
 
-ast wrote:
+Fixed a coding style issue with spaces between function names and arguments:
 
->>[...]
-> Did simple ktap test with 1M alloc_skb/kfree_skb toy test from earlier email:
-> trace skb:kfree_skb {
->         if (arg2 == 0x100) {
->                 printf("%x %x\n", arg1, arg2)
->         }
-> }
-> [...]
+func (x) -> func(x) 
 
-For reference, you might try putting systemtap into the performance
-comparison matrix too:
+Signed-off-by: Samuel Dominguez <samuel.dominguez.lorenzo@gmail.com>
+---
+ drivers/staging/lustre/lnet/lnet/lib-msg.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-# stap -e 'probe kernel.trace("kfree_skb") { 
-              if ($location == 0x100 /* || $location == 0x200 etc. */ ) {
-                 printf("%x %x\n", $skb, $location)
-              }
-           }'
-
-
-- FChE
+diff --git a/drivers/staging/lustre/lnet/lnet/lib-msg.c b/drivers/staging/lustre/lnet/lnet/lib-msg.c
+index 61ae88b..761f1e1 100644
+--- a/drivers/staging/lustre/lnet/lnet/lib-msg.c
++++ b/drivers/staging/lustre/lnet/lnet/lib-msg.c
+@@ -43,7 +43,7 @@
+ #include <linux/lnet/lib-lnet.h>
+ 
+ void
+-lnet_build_unlink_event (lnet_libmd_t *md, lnet_event_t *ev)
++lnet_build_unlink_event(lnet_libmd_t *md, lnet_event_t *ev)
+ {
+ 	memset(ev, 0, sizeof(*ev));
+ 
+@@ -362,7 +362,7 @@ lnet_complete_msg_locked(lnet_msg_t *msg, int cpt)
+ 	int		rc;
+ 	int		status = msg->msg_ev.status;
+ 
+-	LASSERT (msg->msg_onactivelist);
++	LASSERT(msg->msg_onactivelist);
+ 
+ 	if (status == 0 && msg->msg_ack) {
+ 		/* Only send an ACK if the PUT completed successfully */
+@@ -432,7 +432,7 @@ lnet_complete_msg_locked(lnet_msg_t *msg, int cpt)
+ }
+ 
+ void
+-lnet_finalize (lnet_ni_t *ni, lnet_msg_t *msg, int status)
++lnet_finalize(lnet_ni_t *ni, lnet_msg_t *msg, int status)
+ {
+ 	struct lnet_msg_container	*container;
+ 	int				my_slot;
+@@ -440,7 +440,7 @@ lnet_finalize (lnet_ni_t *ni, lnet_msg_t *msg, int status)
+ 	int				rc;
+ 	int				i;
+ 
+-	LASSERT (!in_interrupt ());
++	LASSERT(!in_interrupt());
+ 
+ 	if (msg == NULL)
+ 		return;
+-- 
+1.8.3.2
