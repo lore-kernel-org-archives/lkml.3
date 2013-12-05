@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab3LEIe5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 03:34:57 -0500
-Received: from mga11.intel.com ([192.55.52.93]:25240 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753496Ab3LEIew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 03:34:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,831,1378882800"; 
-   d="scan'208";a="445028140"
-Message-ID: <1386232488.23205.283.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 0/2] MTD maintenance updates
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: linux-mtd@lists.infradead.org,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Thu, 05 Dec 2013 10:34:48 +0200
-In-Reply-To: <1386199726-28074-1-git-send-email-computersforpeace@gmail.com>
-References: <1386199726-28074-1-git-send-email-computersforpeace@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754151Ab3LEIhC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 03:37:02 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:46976 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935Ab3LEIg7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 03:36:59 -0500
+Date: Thu, 5 Dec 2013 11:36:37 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Serban Constantinescu <serban.constantinescu@arm.com>
+Cc: gregkh@linuxfoundation.org, arve@android.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, john.stultz@linaro.org,
+        ccross@android.com, Dave.Butcher@arm.com, irogers@google.com,
+        romlem@android.com
+Subject: Re: [PATCH v1 2/9] staging: android: binder: Add
+ binder_copy_to_user()
+Message-ID: <20131205083637.GV28413@mwanda>
+References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
+ <1386180581-6710-3-git-send-email-serban.constantinescu@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386180581-6710-3-git-send-email-serban.constantinescu@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-12-04 at 15:28 -0800, Brian Norris wrote:
-> BTW, I'd like to get David's "ack" for these patches, and it'd be nice
-> to hear
-> from Artem too, since he has previously been an unofficial maintainer
-> (and is
-> understandably distracted by non-MTD work these days).
+On Wed, Dec 04, 2013 at 06:09:34PM +0000, Serban Constantinescu wrote:
+> This patch adds binder_copy_to_user() to be used for copying binder
+> commands to user address space. This way we can abstract away the
+> copy_to_user() calls and add separate handling for the compat layer.
+> 
+> Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
+> ---
+>  drivers/staging/android/binder.c |   39 ++++++++++++++++++++------------------
+>  1 file changed, 21 insertions(+), 18 deletions(-)
+> 
+> diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+> index 233889c..6fbb340 100644
+> --- a/drivers/staging/android/binder.c
+> +++ b/drivers/staging/android/binder.c
+> @@ -2117,6 +2117,18 @@ static int binder_has_thread_work(struct binder_thread *thread)
+>  		(thread->looper & BINDER_LOOPER_STATE_NEED_RETURN);
+>  }
+>  
+> +static int binder_copy_to_user(uint32_t cmd, void *parcel,
+> +			       void __user **ptr, size_t size)
+> +{
 
-Acked-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Bike shedding:  Put the **ptr as the first argument.
+binder_copy_to_user(dest, cmd, src, size);
 
-Thanks Brian for taking care of the MTD subsystem.
+> +	if (put_user(cmd, (uint32_t __user *)*ptr))
+> +		return -EFAULT;
+> +	*ptr += sizeof(uint32_t);
+> +	if (copy_to_user(*ptr, parcel, size))
+> +		return -EFAULT;
+> +	*ptr += size;
+> +	return 0;
+> +}
 
--- 
-Best Regards,
-Artem Bityutskiy
+regards,
+dan carpenter
+
 
