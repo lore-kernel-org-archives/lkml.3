@@ -1,242 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230Ab3LEVrL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 16:47:11 -0500
-Received: from smtp-03.mandic.com.br ([200.225.81.143]:56609 "EHLO
-	smtp-03.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752771Ab3LEVrJ (ORCPT
+	id S1753710Ab3LEVtH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 16:49:07 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:49462 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751634Ab3LEVtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 16:47:09 -0500
-From: Cesar Eduardo Barros <cesarb@cesarb.eti.br>
-To: linux-crypto@vger.kernel.org
-Cc: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        James Yonan <james@openvpn.net>, Daniel Borkmann <dborkman@redhat.com>,
-        Florian Weimer <fw@deneb.enyo.de>, linux-kernel@vger.kernel.org,
-        Cesar Eduardo Barros <cesarb@cesarb.eti.br>
-Subject: [PATCH v4] crypto: more robust crypto_memneq
-Date: Thu,  5 Dec 2013 19:46:59 -0200
-Message-Id: <1386280019-3332-1-git-send-email-cesarb@cesarb.eti.br>
-X-Mailer: git-send-email 1.8.3.1
+	Thu, 5 Dec 2013 16:49:05 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lan Tianyu <tianyu.lan@intel.com>,
+        Len Brown <len.brown@intel.com>, Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH 0/4] Convert ACPI fan driver to platform driver
+Date: Thu, 05 Dec 2013 23:02:04 +0100
+Message-ID: <33836071.xLhUScjhOz@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20131205074734.GA4432@localhost.sh.intel.com>
+References: <1386059312-2990-1-git-send-email-aaron.lu@intel.com> <1654759.afJtadVnDQ@vostro.rjw.lan> <20131205074734.GA4432@localhost.sh.intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disabling compiler optimizations can be fragile, since a new
-optimization could be added to -O0 or -Os that breaks the assumptions
-the code is making.
+On Thursday, December 05, 2013 03:47:35 PM Aaron Lu wrote:
+> On Thu, Dec 05, 2013 at 12:07:31AM +0100, Rafael J. Wysocki wrote:
+> > On Tuesday, December 03, 2013 04:28:28 PM Aaron Lu wrote:
+> > > This patchset converts ACPI fan driver to platform driver. Patch 1-3 are
+> > > cleanups for existing fan driver and patch 4 does the convertion.
+> > > 
+> > > Tested on harris beach.
+> > > Apply on top of Rafael's linux-next branch.
+> > > 
+> > > Aaron Lu (4):
+> > >   ACPI / fan: remove unused macro for debug
+> > >   ACPI / fan: remove no need check for device pointer
+> > >   ACPI / fan: use acpi_device_xxx_power instead of acpi_bus equivelant
+> > >   ACPI / fan: convert to platform driver
+> > > 
+> > >  drivers/acpi/acpi_platform.c |  3 ++
+> > >  drivers/acpi/device_pm.c     |  1 +
+> > >  drivers/acpi/fan.c           | 88 ++++++++++++++++----------------------------
+> > >  drivers/acpi/internal.h      |  2 -
+> > >  include/acpi/acpi_bus.h      |  1 +
+> > >  5 files changed, 36 insertions(+), 59 deletions(-)
+> > 
+> > Unfortunately, we need to postpone these conversions, because Matthew Garrett
+> > has problems with adding more entries to acpi_platform_device_ids[].  He seems
+> > to be concerned that that list will grow indefinitely and will become difficult
+> > to maintain eventually.
+> > 
+> > For this reason, he would prefer it if we did the following:
+> > - Figure out the list of ACPI device IDs we need to create PNP devices for
+> >   via ACPI PNP.
+> 
+> I'm not sure how to tell this, is it that as long as the ACPI node has a
+> PNPxxxx ID we will need to create a PNP device for it? And in this case,
+> do we only check the _HID or both _HID and _CID?
 
-Instead of disabling compiler optimizations, use a dummy inline assembly
-(based on RELOC_HIDE) to block the problematic kinds of optimization,
-while still allowing other optimizations to be applied to the code.
+Just check the existing PNP drivers and see what device IDs they use.
 
-The dummy inline assembly is added after every OR, and has the
-accumulator variable as its input and output. The compiler is forced to
-assume that the dummy inline assembly could both depend on the
-accumulator variable and change the accumulator variable, so it is
-forced to compute the value correctly before the inline assembly, and
-cannot assume anything about its value after the inline assembly.
+> > - Make ACPI PNP create PNP devices for these IDs only and make the ACPI core create
+> >   platform devices for all "unassigned" ACPI device objects by default.
+> 
+> Does "unassigned" mean (all ACPI devices) - (ACPI devices that have a
+> PNP device created already)?
 
-This change should be enough to make crypto_memneq work correctly (with
-data-independent timing) even if it is inlined at its call sites. That
-can be done later in a followup patch.
+(all ACPI devices nodes) - (nodes taken care of by scan handlers + PNP)
+(and I *think* we can turn the PNP ACPI driver into a scan handler).
 
-Compile-tested on x86_64.
-
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.eti.br>
----
-
-v2: Moved the macro to include/linux/compiler*.h as suggested by Daniel
-Borkmann.
-v3: Thinking better about it, barrier() is a saner default for the
-"unknown compiler" case.
-v4: Compile fix for archs without efficient aligned access.
-
- crypto/Makefile                |  5 ---
- crypto/memneq.c                | 80 +++++++++++++++++++++++++++++-------------
- include/linux/compiler-gcc.h   |  3 ++
- include/linux/compiler-intel.h |  7 ++++
- include/linux/compiler.h       |  4 +++
- 5 files changed, 69 insertions(+), 30 deletions(-)
-
-diff --git a/crypto/Makefile b/crypto/Makefile
-index 989c510..b29402a 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -2,11 +2,6 @@
- # Cryptographic API
- #
- 
--# memneq MUST be built with -Os or -O0 to prevent early-return optimizations
--# that will defeat memneq's actual purpose to prevent timing attacks.
--CFLAGS_REMOVE_memneq.o := -O1 -O2 -O3
--CFLAGS_memneq.o := -Os
--
- obj-$(CONFIG_CRYPTO) += crypto.o
- crypto-y := api.o cipher.o compress.o memneq.o
- 
-diff --git a/crypto/memneq.c b/crypto/memneq.c
-index cd01622..afed1bd 100644
---- a/crypto/memneq.c
-+++ b/crypto/memneq.c
-@@ -72,6 +72,7 @@ __crypto_memneq_generic(const void *a, const void *b, size_t size)
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
- 	while (size >= sizeof(unsigned long)) {
- 		neq |= *(unsigned long *)a ^ *(unsigned long *)b;
-+		OPTIMIZER_HIDE_VAR(neq);
- 		a += sizeof(unsigned long);
- 		b += sizeof(unsigned long);
- 		size -= sizeof(unsigned long);
-@@ -79,6 +80,7 @@ __crypto_memneq_generic(const void *a, const void *b, size_t size)
- #endif /* CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS */
- 	while (size > 0) {
- 		neq |= *(unsigned char *)a ^ *(unsigned char *)b;
-+		OPTIMIZER_HIDE_VAR(neq);
- 		a += 1;
- 		b += 1;
- 		size -= 1;
-@@ -89,33 +91,61 @@ __crypto_memneq_generic(const void *a, const void *b, size_t size)
- /* Loop-free fast-path for frequently used 16-byte size */
- static inline unsigned long __crypto_memneq_16(const void *a, const void *b)
- {
-+	unsigned long neq = 0;
-+
- #ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
--	if (sizeof(unsigned long) == 8)
--		return ((*(unsigned long *)(a)   ^ *(unsigned long *)(b))
--		      | (*(unsigned long *)(a+8) ^ *(unsigned long *)(b+8)));
--	else if (sizeof(unsigned int) == 4)
--		return ((*(unsigned int *)(a)    ^ *(unsigned int *)(b))
--                      | (*(unsigned int *)(a+4)  ^ *(unsigned int *)(b+4))
--		      | (*(unsigned int *)(a+8)  ^ *(unsigned int *)(b+8))
--	              | (*(unsigned int *)(a+12) ^ *(unsigned int *)(b+12)));
--	else
-+	if (sizeof(unsigned long) == 8) {
-+		neq |= *(unsigned long *)(a)   ^ *(unsigned long *)(b);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned long *)(a+8) ^ *(unsigned long *)(b+8);
-+		OPTIMIZER_HIDE_VAR(neq);
-+	} else if (sizeof(unsigned int) == 4) {
-+		neq |= *(unsigned int *)(a)    ^ *(unsigned int *)(b);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned int *)(a+4)  ^ *(unsigned int *)(b+4);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned int *)(a+8)  ^ *(unsigned int *)(b+8);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned int *)(a+12) ^ *(unsigned int *)(b+12);
-+		OPTIMIZER_HIDE_VAR(neq);
-+	} else
- #endif /* CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS */
--		return ((*(unsigned char *)(a)    ^ *(unsigned char *)(b))
--		      | (*(unsigned char *)(a+1)  ^ *(unsigned char *)(b+1))
--		      | (*(unsigned char *)(a+2)  ^ *(unsigned char *)(b+2))
--		      | (*(unsigned char *)(a+3)  ^ *(unsigned char *)(b+3))
--		      | (*(unsigned char *)(a+4)  ^ *(unsigned char *)(b+4))
--		      | (*(unsigned char *)(a+5)  ^ *(unsigned char *)(b+5))
--		      | (*(unsigned char *)(a+6)  ^ *(unsigned char *)(b+6))
--		      | (*(unsigned char *)(a+7)  ^ *(unsigned char *)(b+7))
--		      | (*(unsigned char *)(a+8)  ^ *(unsigned char *)(b+8))
--		      | (*(unsigned char *)(a+9)  ^ *(unsigned char *)(b+9))
--		      | (*(unsigned char *)(a+10) ^ *(unsigned char *)(b+10))
--		      | (*(unsigned char *)(a+11) ^ *(unsigned char *)(b+11))
--		      | (*(unsigned char *)(a+12) ^ *(unsigned char *)(b+12))
--		      | (*(unsigned char *)(a+13) ^ *(unsigned char *)(b+13))
--		      | (*(unsigned char *)(a+14) ^ *(unsigned char *)(b+14))
--		      | (*(unsigned char *)(a+15) ^ *(unsigned char *)(b+15)));
-+	{
-+		neq |= *(unsigned char *)(a)    ^ *(unsigned char *)(b);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+1)  ^ *(unsigned char *)(b+1);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+2)  ^ *(unsigned char *)(b+2);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+3)  ^ *(unsigned char *)(b+3);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+4)  ^ *(unsigned char *)(b+4);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+5)  ^ *(unsigned char *)(b+5);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+6)  ^ *(unsigned char *)(b+6);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+7)  ^ *(unsigned char *)(b+7);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+8)  ^ *(unsigned char *)(b+8);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+9)  ^ *(unsigned char *)(b+9);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+10) ^ *(unsigned char *)(b+10);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+11) ^ *(unsigned char *)(b+11);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+12) ^ *(unsigned char *)(b+12);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+13) ^ *(unsigned char *)(b+13);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+14) ^ *(unsigned char *)(b+14);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+15) ^ *(unsigned char *)(b+15);
-+		OPTIMIZER_HIDE_VAR(neq);
-+	}
-+
-+	return neq;
- }
- 
- /* Compare two areas of memory without leaking timing information,
-diff --git a/include/linux/compiler-gcc.h b/include/linux/compiler-gcc.h
-index 24545cd..02ae99e 100644
---- a/include/linux/compiler-gcc.h
-+++ b/include/linux/compiler-gcc.h
-@@ -37,6 +37,9 @@
-     __asm__ ("" : "=r"(__ptr) : "0"(ptr));		\
-     (typeof(ptr)) (__ptr + (off)); })
- 
-+/* Make the optimizer believe the variable can be manipulated arbitrarily. */
-+#define OPTIMIZER_HIDE_VAR(var) __asm__ ("" : "=r" (var) : "0" (var))
-+
- #ifdef __CHECKER__
- #define __must_be_array(arr) 0
- #else
-diff --git a/include/linux/compiler-intel.h b/include/linux/compiler-intel.h
-index 973ce10..e784f57 100644
---- a/include/linux/compiler-intel.h
-+++ b/include/linux/compiler-intel.h
-@@ -15,6 +15,7 @@
-  */
- #undef barrier
- #undef RELOC_HIDE
-+#undef OPTIMIZER_HIDE_VAR
- 
- #define barrier() __memory_barrier()
- 
-@@ -23,6 +24,12 @@
-      __ptr = (unsigned long) (ptr);				\
-     (typeof(ptr)) (__ptr + (off)); })
- 
-+/* This should act as an optimization barrier on var.
-+ * Given that this compiler does not have inline assembly, a compiler barrier
-+ * is the best we can do.
-+ */
-+#define OPTIMIZER_HIDE_VAR(var) barrier()
-+
- /* Intel ECC compiler doesn't support __builtin_types_compatible_p() */
- #define __must_be_array(a) 0
- 
-diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index 92669cd..a2329c5 100644
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -170,6 +170,10 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
-     (typeof(ptr)) (__ptr + (off)); })
- #endif
- 
-+#ifndef OPTIMIZER_HIDE_VAR
-+#define OPTIMIZER_HIDE_VAR(var) barrier()
-+#endif
-+
- /* Not-quite-unique ID. */
- #ifndef __UNIQUE_ID
- # define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __LINE__)
--- 
-1.8.3.1
+Thanks,
+Rafael
 
