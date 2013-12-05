@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab3LEIG5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 03:06:57 -0500
-Received: from peace.netnation.com ([204.174.223.2]:34930 "EHLO
-	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753455Ab3LEIGy (ORCPT
+	id S1752600Ab3LEIIt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 03:08:49 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:51496 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab3LEIIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 03:06:54 -0500
-Date: Thu, 5 Dec 2013 00:06:51 -0800
-From: Simon Kirby <sim@hostway.ca>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Waiman Long <Waiman.Long@hp.com>, Ian Applegate <ia@cloudflare.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Christoph Lameter <cl@gentwo.org>,
-        Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] mutexes: Add CONFIG_DEBUG_MUTEX_FASTPATH=y debug variant
- to debug SMP races
-Message-ID: <20131205080650.GB29736@hostway.ca>
-References: <CA+55aFyez7uZ6LeXrBRCqJzgJ=w4Xv+CV6QSYp5NkOJ2R9Xang@mail.gmail.com>
- <CA+55aFyhzvJrCiJOqUgL-98=MVutWePToQXaVfS2j6e5eetJSw@mail.gmail.com>
- <20131203085233.GA20179@gmail.com>
- <CA+55aFxhUYi6Lbrxfjgq7OqSDMF24wqvnGn_J_RAMY7y-AmRiQ@mail.gmail.com>
- <20131204091903.GA18675@hostway.ca>
- <CA+55aFwDaeYav1WGpmoHH4tTZ5xTWjkEO-46RvLb6DRYD_BnSg@mail.gmail.com>
+	Thu, 5 Dec 2013 03:08:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwDaeYav1WGpmoHH4tTZ5xTWjkEO-46RvLb6DRYD_BnSg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Thu, 5 Dec 2013 09:08:47 +0100
+Message-ID: <CACRpkdbfiDCkBrigdFc_U5jaYS9QOcAfzwxVQdTDa_6H8k1aew@mail.gmail.com>
+Subject: 
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Axel Lin <axel.lin@ingics.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 01:14:56PM -0800, Linus Torvalds wrote:
+Hi Linus,
 
-> The lock we're moving up isn't the lock that actually protects the
-> whole allocation logic (it's the lock that then protects the pipe
-> contents when a pipe is *used*). So it's a useless lock, and moving it
-> up is a good idea regardless (because it makes the locks only protect
-> the parts they are actually *supposed* to protect.
-> 
-> And while extraneous lock wouldn't normally hurt, the sleeping locks
-> (both mutexes and semaphores) aren't actually safe wrt de-allocation -
-> they protect anything *inside* the lock, but the lock data structure
-> itself is accessed racily wrt other lockers (in a way that still
-> leaves the locked region protected, but not the lock itself). If you
-> care about details, you can walk through my example.
+Here are som pin control fixes for the v3.13 series. Nothing special really,
+we have a calm cycle this time it seems, all the action is in GPIO. Details
+are in the signed tag as usual.
 
-Yes, this makes sense now. It was spin_unlock_mutex() on the pipe lock
-that itself was already already freed and poisoned by another cpu. This
-explicit poison check also fires:
+Anyway, please pull it in!
 
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index bf156de..ae425d0 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -159,6 +159,7 @@ static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
- 			__ticket_unlock_slowpath(lock, prev);
- 	} else
- 		__add(&lock->tickets.head, TICKET_LOCK_INC, UNLOCK_LOCK_PREFIX);
-+	WARN_ON(*(unsigned int *)&lock->tickets.head == 0x6b6b6b6c);
- }
- 
- static inline int arch_spin_is_locked(arch_spinlock_t *lock)
+Yours,
+Linus Walleij
 
-It warns only as often as the poison checking already did, with a stack
-of warn_*, __mutex_unlock_slowpath(), mutex_unlock(), pipe_release().
 
-Trying to prove a negative, of course, but I tested with your first fix
-overnight and got no errors. Current git (with b0d8d2292160bb63de) also
-looks good. I will leave it running for a few days.
+The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
 
-Thanks for getting stuck on this one. It was educational, at least!
+  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
 
-Simon-
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
+tags/pinctrl-v3.13-2
+
+for you to fetch changes up to 71493de7e55af589dbe76ce78ae2b762f9cc6f27:
+
+  sh-pfc: sh7372: Fix pin bias setup (2013-12-03 10:38:41 +0100)
+
+----------------------------------------------------------------
+Pin control fixes for the v3.13 series:
+
+- Minor bug fixes for the Rockchip, ST-Ericsson abx500,
+  Renesas PFC r8a7740 and sh7372.
+
+- Compilation warning fixes.
+
+----------------------------------------------------------------
+Axel Lin (1):
+      pinctrl: abx500: Fix header file include guard
+
+Dan Carpenter (3):
+      pinctrl: rockchip: testing the wrong variable
+      pinctrl: abx500: fix some more bitwise AND tests
+      pinctrl: rockchip: missing unlock on error in rockchip_set_pull()
+
+Laurent Pinchart (2):
+      sh-pfc: r8a7740: Fix pin bias setup
+      sh-pfc: sh7372: Fix pin bias setup
+
+ drivers/pinctrl/pinctrl-abx500.c     | 6 +++---
+ drivers/pinctrl/pinctrl-abx500.h     | 2 +-
+ drivers/pinctrl/pinctrl-rockchip.c   | 5 +++--
+ drivers/pinctrl/sh-pfc/pfc-r8a7740.c | 2 +-
+ drivers/pinctrl/sh-pfc/pfc-sh7372.c  | 2 +-
+ 5 files changed, 9 insertions(+), 8 deletions(-)
