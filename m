@@ -1,122 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797Ab3LEHon (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 02:44:43 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:15446 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752431Ab3LEHod (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 02:44:33 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 04 Dec 2013 23:41:31 -0800
-From: Bill Huang <bilhuang@nvidia.com>
-To: <rjw@rjwysocki.net>, <viresh.kumar@linaro.org>, <swarren@wwwdotorg.org>,
-        <thierry.reding@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <cpufreq@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        Bill Huang <bilhuang@nvidia.com>
-Subject: [PATCH v3 1/2] cpufreq: tegra: Call tegra_cpufreq_init() specifically in machine code
-Date: Thu, 5 Dec 2013 15:44:21 +0800
-Message-ID: <1386229462-3474-2-git-send-email-bilhuang@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386229462-3474-1-git-send-email-bilhuang@nvidia.com>
-References: <1386229462-3474-1-git-send-email-bilhuang@nvidia.com>
-X-NVConfidentiality: public
+	id S1753008Ab3LEHor (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 02:44:47 -0500
+Received: from mga02.intel.com ([134.134.136.20]:54586 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752607Ab3LEHoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 02:44:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,831,1378882800"; 
+   d="scan'208";a="447234928"
+Date: Thu, 5 Dec 2013 15:47:35 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Zhang Rui <rui.zhang@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lan Tianyu <tianyu.lan@intel.com>,
+        Len Brown <len.brown@intel.com>, Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH 0/4] Convert ACPI fan driver to platform driver
+Message-ID: <20131205074734.GA4432@localhost.sh.intel.com>
+References: <1386059312-2990-1-git-send-email-aaron.lu@intel.com>
+ <1654759.afJtadVnDQ@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1654759.afJtadVnDQ@vostro.rjw.lan>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the call from module_init to Tegra machine codes so it won't be
-called in a multi-platform kernel running on non-Tegra SoCs.
+On Thu, Dec 05, 2013 at 12:07:31AM +0100, Rafael J. Wysocki wrote:
+> On Tuesday, December 03, 2013 04:28:28 PM Aaron Lu wrote:
+> > This patchset converts ACPI fan driver to platform driver. Patch 1-3 are
+> > cleanups for existing fan driver and patch 4 does the convertion.
+> > 
+> > Tested on harris beach.
+> > Apply on top of Rafael's linux-next branch.
+> > 
+> > Aaron Lu (4):
+> >   ACPI / fan: remove unused macro for debug
+> >   ACPI / fan: remove no need check for device pointer
+> >   ACPI / fan: use acpi_device_xxx_power instead of acpi_bus equivelant
+> >   ACPI / fan: convert to platform driver
+> > 
+> >  drivers/acpi/acpi_platform.c |  3 ++
+> >  drivers/acpi/device_pm.c     |  1 +
+> >  drivers/acpi/fan.c           | 88 ++++++++++++++++----------------------------
+> >  drivers/acpi/internal.h      |  2 -
+> >  include/acpi/acpi_bus.h      |  1 +
+> >  5 files changed, 36 insertions(+), 59 deletions(-)
+> 
+> Unfortunately, we need to postpone these conversions, because Matthew Garrett
+> has problems with adding more entries to acpi_platform_device_ids[].  He seems
+> to be concerned that that list will grow indefinitely and will become difficult
+> to maintain eventually.
+> 
+> For this reason, he would prefer it if we did the following:
+> - Figure out the list of ACPI device IDs we need to create PNP devices for
+>   via ACPI PNP.
 
-Signed-off-by: Bill Huang <bilhuang@nvidia.com>
----
- arch/arm/mach-tegra/tegra.c     |    2 ++
- drivers/cpufreq/tegra-cpufreq.c |   13 ++-----------
- include/linux/tegra-soc.h       |   11 ++++++++++-
- 3 files changed, 14 insertions(+), 12 deletions(-)
+I'm not sure how to tell this, is it that as long as the ACPI node has a
+PNPxxxx ID we will need to create a PNP device for it? And in this case,
+do we only check the _HID or both _HID and _CID?
 
-diff --git a/arch/arm/mach-tegra/tegra.c b/arch/arm/mach-tegra/tegra.c
-index 7336817..14490ad 100644
---- a/arch/arm/mach-tegra/tegra.c
-+++ b/arch/arm/mach-tegra/tegra.c
-@@ -34,6 +34,7 @@
- #include <linux/usb/tegra_usb_phy.h>
- #include <linux/clk/tegra.h>
- #include <linux/irqchip.h>
-+#include <linux/tegra-soc.h>
- 
- #include <asm/hardware/cache-l2x0.h>
- #include <asm/mach-types.h>
-@@ -160,6 +161,7 @@ static void __init tegra_dt_init_late(void)
- {
- 	int i;
- 
-+	tegra_cpufreq_init();
- 	tegra_init_suspend();
- 	tegra_cpuidle_init();
- 	tegra_powergate_debugfs_init();
-diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
-index 63f0059..ae1c0f1 100644
---- a/drivers/cpufreq/tegra-cpufreq.c
-+++ b/drivers/cpufreq/tegra-cpufreq.c
-@@ -155,7 +155,7 @@ static struct cpufreq_driver tegra_cpufreq_driver = {
- #endif
- };
- 
--static int __init tegra_cpufreq_init(void)
-+int __init tegra_cpufreq_init(void)
- {
- 	cpu_clk = clk_get_sys(NULL, "cclk");
- 	if (IS_ERR(cpu_clk))
-@@ -177,17 +177,8 @@ static int __init tegra_cpufreq_init(void)
- 
- 	return cpufreq_register_driver(&tegra_cpufreq_driver);
- }
--
--static void __exit tegra_cpufreq_exit(void)
--{
--        cpufreq_unregister_driver(&tegra_cpufreq_driver);
--	clk_put(emc_clk);
--	clk_put(cpu_clk);
--}
--
-+EXPORT_SYMBOL(tegra_cpufreq_init);
- 
- MODULE_AUTHOR("Colin Cross <ccross@android.com>");
- MODULE_DESCRIPTION("cpufreq driver for Nvidia Tegra2");
- MODULE_LICENSE("GPL");
--module_init(tegra_cpufreq_init);
--module_exit(tegra_cpufreq_exit);
-diff --git a/include/linux/tegra-soc.h b/include/linux/tegra-soc.h
-index 95f611d..a179aa5 100644
---- a/include/linux/tegra-soc.h
-+++ b/include/linux/tegra-soc.h
-@@ -1,5 +1,5 @@
- /*
-- * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
-+ * Copyright (c) 2012,2013, NVIDIA CORPORATION.  All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or modify it
-  * under the terms and conditions of the GNU General Public License,
-@@ -17,6 +17,15 @@
- #ifndef __LINUX_TEGRA_SOC_H_
- #define __LINUX_TEGRA_SOC_H_
- 
-+#ifdef CONFIG_ARM_TEGRA_CPUFREQ
-+int tegra_cpufreq_init(void);
-+#else
-+static inline int tegra_cpufreq_init(void)
-+{
-+	return -EINVAL;
-+}
-+#endif
-+
- u32 tegra_read_chipid(void);
- 
- #endif /* __LINUX_TEGRA_SOC_H_ */
--- 
-1.7.9.5
+> - Make ACPI PNP create PNP devices for these IDs only and make the ACPI core create
+>   platform devices for all "unassigned" ACPI device objects by default.
 
+Does "unassigned" mean (all ACPI devices) - (ACPI devices that have a
+PNP device created already)?
+
+Thanks,
+Aaron
+
+> - Do the conversions at that point.
+> 
+> I'm slightly worried that we'll encounter ordering issues while doing that, but
+> this is the only way forward I can see without going straight against the
+> Matthew's objections, which I'd prefer to avoid.
+> 
+> Thanks,
+> Rafael
+> 
