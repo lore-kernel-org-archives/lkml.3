@@ -1,88 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932854Ab3LEPzM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 10:55:12 -0500
-Received: from smtprelay0162.hostedemail.com ([216.40.44.162]:47308 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751545Ab3LEPzI (ORCPT
+	id S932775Ab3LEP6N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 10:58:13 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51976 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756819Ab3LEP6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 10:55:08 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2375:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3874:4250:4321:5007:7652:10004:10400:10848:11026:11232:11658:11914:12296:12517:12519:12740:13069:13095:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: range86_83c260790e755
-X-Filterd-Recvd-Size: 2788
-Message-ID: <1386258903.10003.8.camel@joe-AO722>
-Subject: Re: [PATCH 1/3] Introduce FW_INFO* functions and messages
-From: Joe Perches <joe@perches.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Thu, 05 Dec 2013 07:55:03 -0800
-In-Reply-To: <20131205113016.GB3823@console-pimps.org>
-References: <1385997579-22240-1-git-send-email-prarit@redhat.com>
-	 <1385997579-22240-2-git-send-email-prarit@redhat.com>
-	 <20131203132120.6a7ab2cd7cc99720712cbe6a@linux-foundation.org>
-	 <201312041922.59181.arnd@arndb.de>
-	 <20131205113016.GB3823@console-pimps.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	Thu, 5 Dec 2013 10:58:12 -0500
+Message-ID: <52A0A258.1040404@kernel.dk>
+Date: Thu, 05 Dec 2013 08:57:12 -0700
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Ming Lei <tom.leiming@gmail.com>, Dave Chinner <david@fromorbit.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [OOPS, 3.13-rc2] null ptr in dio_complete()
+References: <20131203215940.GX10988@dastard>	<20131204015837.GJ10988@dastard> <20131205222220.5d7f4a48@tom-ThinkPad-T410>
+In-Reply-To: <20131205222220.5d7f4a48@tom-ThinkPad-T410>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-12-05 at 11:30 +0000, Matt Fleming wrote:
-> On Wed, 04 Dec, at 07:22:57PM, Arnd Bergmann wrote:
-> > The other part I noticed about this particular patchset is that it's
-> > not really "firmware" as such, but specifically PC wiht ACPI that
-> > gets covered here. So rather than generalizing the code, another
-> > option would be to narrow down the scope and make it
-> > acpi_{warn,info,dbg} instead.
+On 12/05/2013 07:22 AM, Ming Lei wrote:
+> On Wed, 4 Dec 2013 12:58:38 +1100
+> Dave Chinner <david@fromorbit.com> wrote:
 > 
-> Making this specific to ACPI runs the risk of people introducing a
-> multitude of new logging functions for every subsystem, e.g.
-> efi_{warn,info,dbg}.
+>>
+>> And I just hit this from running xfs_repair which is doing
+>> multithreaded direct IO directly on /dev/vdc:
+>>
+>> [ 1776.508599] BUG: unable to handle kernel NULL pointer dereference at 0000000000000328
+>> [ 1776.510446] IP: [<ffffffff81755b6a>] blk_account_io_done+0x6a/0x180
+>> [ 1776.511762] PGD 38e75b067 PUD 41987d067 PMD 0
+>> [ 1776.512577] Oops: 0000 [#1] SMP
+>> [ 1776.512577] Modules linked in:
+>> [ 1776.512577] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.13.0-rc2-dgc+ #75
+>> [ 1776.512577] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+>> [ 1776.512577] task: ffffffff81f37480 ti: ffffffff81f26000 task.ti: ffffffff81f26000
+>> [ 1776.512577] RIP: 0010:[<ffffffff81755b6a>]  [<ffffffff81755b6a>] blk_account_io_done+0x6a/0x180
+>> [ 1776.512577] RSP: 0000:ffff88011bc03da8  EFLAGS: 00010046
+>> [ 1776.512577] RAX: 0000000010000000 RBX: 0000000000000000 RCX: 0000000000000000
+>> [ 1776.512577] RDX: 0000000000000000 RSI: 0000000000000002 RDI: ffff8800dba59fc0
+>> [ 1776.512577] RBP: ffff88011bc03db8 R08: 0000000000000000 R09: ffff88021a828928
+>> [ 1776.512577] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
+>> [ 1776.512577] R13: 0000000000000000 R14: 0000000000002000 R15: 0000000000000000
+>> [ 1776.512577] FS:  0000000000000000(0000) GS:ffff88011bc00000(0000) knlGS:0000000000000000
+>> [ 1776.512577] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>> [ 1776.512577] CR2: 0000000000000328 CR3: 000000041a4b0000 CR4: 00000000000006f0
+>> [ 1776.512577] Stack:
+>> [ 1776.512577]  0000000000000000 ffff8800dba59fc0 ffff88011bc03df8 ffffffff8175e4b8
+>> [ 1776.512577]  00000000000001c0 ffff8800dba59fc0 ffffe8fcfbc03a80 ffff88041aac0800
+>> [ 1776.512577]  ffff88011ad53b10 0000000000000096 ffff88011bc03e08 ffffffff8175e536
+>> [ 1776.512577] Call Trace:
+>> [ 1776.512577]  <IRQ>
+>> [ 1776.512577]  [<ffffffff8175e4b8>] blk_mq_complete_request+0xb8/0x120
+>> [ 1776.512577]  [<ffffffff8175e536>] __blk_mq_end_io+0x16/0x20
+>> [ 1776.512577]  [<ffffffff8175e5a8>] blk_mq_end_io+0x68/0xd0
+>> [ 1776.512577]  [<ffffffff81852e47>] virtblk_done+0x67/0x110
+>> [ 1776.512577]  [<ffffffff817f7925>] vring_interrupt+0x35/0x60
+>> [ 1776.512577]  [<ffffffff810e48a4>] handle_irq_event_percpu+0x54/0x1e0
+>> [ 1776.512577]  [<ffffffff810e4a78>] handle_irq_event+0x48/0x70
+>> [ 1776.512577]  [<ffffffff810e71d7>] handle_edge_irq+0x77/0x110
+>> [ 1776.512577]  [<ffffffff8104796f>] handle_irq+0xbf/0x150
+>> [ 1776.512577]  [<ffffffff81aec8c2>] ? __atomic_notifier_call_chain+0x12/0x20
+>> [ 1776.512577]  [<ffffffff81aec8e6>] ? atomic_notifier_call_chain+0x16/0x20
+>> [ 1776.512577]  [<ffffffff81af2b8a>] do_IRQ+0x5a/0xe0
+>> [ 1776.512577]  [<ffffffff81ae892d>] common_interrupt+0x6d/0x6d
+>> [ 1776.512577]  <EOI>
+>> [ 1776.512577]  [<ffffffff8107e626>] ? native_safe_halt+0x6/0x10
+>> [ 1776.512577]  [<ffffffff8104e50f>] default_idle+0x1f/0xc0
+>> [ 1776.512577]  [<ffffffff8104edb6>] arch_cpu_idle+0x26/0x30
+>> [ 1776.512577]  [<ffffffff810e3d81>] cpu_startup_entry+0x81/0x240
+>> [ 1776.512577]  [<ffffffff81ad4f97>] rest_init+0x77/0x80
+>> [ 1776.512577]  [<ffffffff82041ee7>] start_kernel+0x3c8/0x3d5
+>> [ 1776.512577]  [<ffffffff8204191e>] ? repair_env_string+0x5e/0x5e
+>> [ 1776.512577]  [<ffffffff82041117>] ? early_idt_handlers+0x117/0x120
+>> [ 1776.512577]  [<ffffffff820415c2>] x86_64_start_reservations+0x2a/0x2c
+>> [ 1776.512577]  [<ffffffff8204170a>] x86_64_start_kernel+0x146/0x155
+>> [ 1776.512577] Code: 54 41 89 c4 53 41 83 e4 01 48 2b 97 d8 00 00 00 48 8b 9f d0 00 00 00 4d 63 e4 65 44 8b 04 25 1c b0 00 00 49 8d 74 24 02 49 63 c8 <48> 8b 83 28 03
+>> [ 1776.512577] RIP  [<ffffffff81755b6a>] blk_account_io_done+0x6a/0x180
+>> [ 1776.512577]  RSP <ffff88011bc03da8>
+>> [ 1776.512577] CR2: 0000000000000328
+>> [ 1776.512577] ---[ end trace 33a5787221ff13b4 ]---
+>> [ 1776.512577] Kernel panic - not syncing: Fatal exception in interrupt
+>> [ 1776.512577] Shutting down cpus with NMI
+>>
+>> So this is looking like another virtio+blk_mq problem....
+> 
+> This one might be caused by using-after-'free' request because the freed
+> request may be allocated to another CPU immediately, and the below patch
+> may be helpful, would you mind testing it?
+> 
+> diff --git a/block/blk-mq.c b/block/blk-mq.c
+> index 6875736..2358bdf 100644
+> --- a/block/blk-mq.c
+> +++ b/block/blk-mq.c
+> @@ -311,12 +311,12 @@ void blk_mq_complete_request(struct request *rq, int error)
+>  
+>  	blk_account_io_completion(rq, bytes);
+>  
+> +	blk_account_io_done(rq);
+> +
+>  	if (rq->end_io)
+>  		rq->end_io(rq, error);
+>  	else
+>  		blk_mq_free_request(rq);
+> -
+> -	blk_account_io_done(rq);
+>  }
+>  
+>  void __blk_mq_end_io(struct request *rq, int error)
 
-There are many subsystem specific logging functions:
+That's definitely a bug... Good catch, Ming. Applied.
 
-$ grep -rP --include=*.[ch] -oh "\b[a-z_]+_warn\b\s*\(" *| \
-  sed -r 's/\s*//g'|sort|uniq -c|sort -rn|head -25
-   3808 dev_warn(
-   1964 pr_warn(
-    468 netdev_warn(
-    194 xfs_warn(
-    120 xhci_warn(
-    102 ipoib_warn(
-     76 netif_warn(
-     64 tuner_warn(
-     53 hid_warn(
-     51 ata_dev_warn(
-     46 mthca_warn(
-     45 nv_warn(
-     41 ubi_warn(
-     32 wiphy_warn(
-     32 osm_warn(
-     31 rbd_warn(
-     28 ubifs_warn(
-     27 psmouse_warn(
-     27 e_warn(
-     25 blogic_warn(
-     23 en_warn(
-     23 ata_link_warn(
-     22 jfs_warn(
-     21 csio_warn(
-     21 cam_warn(
-
-> FWIW, I'd be interested in using something like this patch series to
-> properly log EFI implementation bugs. The logging for EFI is currently
-> done fairly haphazardly.
-
-I thought that was the point of embedding the existing
-FW_INFO, FW_WARN and FW_BUG #defines in formats.
-
-Using logging message scraping to find faults is not
-a great approach as message content is subject to change.
-
+-- 
+Jens Axboe
 
