@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756587Ab3LECoH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 21:44:07 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:45632 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515Ab3LECoC (ORCPT
+	id S1756603Ab3LECoY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 21:44:24 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:41531 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756250Ab3LECoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 21:44:02 -0500
-Date: Wed, 4 Dec 2013 18:43:55 -0800
+	Wed, 4 Dec 2013 21:44:20 -0500
+Date: Wed, 4 Dec 2013 18:44:14 -0800
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
 Subject: Re: lots of brief rcu stalls.
-Message-ID: <20131205024355.GK15492@linux.vnet.ibm.com>
+Message-ID: <20131205024414.GL15492@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
 References: <20131204232838.GA25592@redhat.com>
  <20131205001614.GI15492@linux.vnet.ibm.com>
- <1386209910.30495.146.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20131205012206.GA31349@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386209910.30495.146.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <20131205012206.GA31349@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120502-8236-0000-0000-0000048A6413
+x-cbid: 13120502-7164-0000-0000-000003F3D3A5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 06:18:30PM -0800, Eric Dumazet wrote:
-> On Wed, 2013-12-04 at 16:16 -0800, Paul E. McKenney wrote:
-> > +	if (rdp->rsp == rcu_state &&
-> > +	    ULONG_CMP_GE(ACCESS_ONCE(jiffies), rdp->rsp->jiffies_resched)) {
-> > +		rdp->rsp->jiffies_resched += 5;
-> > +		resched_cpu(rdp->cpu);
-> > +	}
-> > +
-> >  	return 0;
-> >  }
+On Wed, Dec 04, 2013 at 08:22:06PM -0500, Dave Jones wrote:
+> On Wed, Dec 04, 2013 at 04:16:14PM -0800, Paul E. McKenney wrote:
+>  > On Wed, Dec 04, 2013 at 06:28:38PM -0500, Dave Jones wrote:
+>  > > Paul,
+>  > > I'm seeing this happening more and more lately...
+>  > > 
+>  > > [  771.786462] INFO: rcu_preempt detected stalls on CPUs/tasks:
+>  > > [  771.786552] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+>  > > [  771.786574] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+>  > > [  771.786595] 	(detected by 0, t=6502 jiffies, g=20611, c=20610, q=0)
+>  > > [  771.786620] INFO: Stall ended before state dump start
+>  > > [  966.724546] INFO: rcu_preempt detected stalls on CPUs/tasks:
+>  > > [  966.724854] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+>  > > [  966.724931] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+>  > > [  966.725005] 	(detected by 0, t=26007 jiffies, g=20611, c=20610, q=0)
+>  > > [  966.725093] INFO: Stall ended before state dump start
+>  > > [ 1161.661459] INFO: rcu_preempt detected stalls on CPUs/tasks:
+>  > > [ 1161.661763] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+>  > > [ 1161.661840] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+>  > > [ 1161.661915] 	(detected by 0, t=45512 jiffies, g=20611, c=20610, q=0)
+>  > > [ 1161.662001] INFO: Stall ended before state dump start
+>  > > [ 1356.598205] INFO: rcu_preempt detected stalls on CPUs/tasks:
+>  > > [ 1356.598513] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+>  > > [ 1356.598590] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+>  > > [ 1356.598664] 	(detected by 0, t=65017 jiffies, g=20611, c=20610, q=0)
+>  > > [ 1356.598751] INFO: Stall ended before state dump start
+>  > > [ 1551.536099] INFO: rcu_preempt detected stalls on CPUs/tasks:
+>  > > [ 1551.536408] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+>  > > [ 1551.536485] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+>  > > [ 1551.536559] 	(detected by 0, t=84522 jiffies, g=20611, c=20610, q=0)
+>  > > [ 1551.536645] INFO: Stall ended before state dump start
+>  > > 
+>  > > While it's apparently a non-problem, it's pretty noisy.
+>  > > Any ideas?
+>  > 
+>  > Does the following help?
 > 
-> jiffies should not need ACCESS_ONCE(), right ?
-> 
-> It is one of the few variables marked with volatile keyword.
+> Seems so so far!
 
-Good point!  I have queued a patch fixing this and four other occurrences
-with your Submitted-by.
+Keeping fingers firmly crossed...
 
 							Thanx, Paul
 
