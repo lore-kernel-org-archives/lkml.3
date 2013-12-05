@@ -1,98 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933619Ab3LERqI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:46:08 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55258 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933510Ab3LERqG (ORCPT
+	id S1757592Ab3LERqU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:46:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45903 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757506Ab3LERqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:46:06 -0500
-Date: Thu, 5 Dec 2013 14:45:33 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Pekka Enberg <penberg@kernel.org>,
-        Paul Mackerras <paulus@samba.org>
-Message-ID: <20131205174533.GE10333@ghostprotocols.net>
+	Thu, 5 Dec 2013 12:46:17 -0500
+Date: Thu, 5 Dec 2013 09:46:15 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [char-misc-next] mei: add 9 series PCH mei device ids
+Message-ID: <20131205174615.GA7383@kroah.com>
+References: <1386228884-30978-1-git-send-email-tomas.winkler@intel.com>
+ <20131205143153.GA5151@kroah.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AF24D4C@HASMSX106.ger.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B1AF24D4C@HASMSX106.ger.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-echo Link: http://lkml.kernel.org/n/tip-`ranpwd -l 24`@git.kernel.org
-	
-Bcc: 
-Subject: Re: [PATCH 0/2] perf tool: Carve out fs.* stuff
-Reply-To: 
-In-Reply-To: <1386260752-16436-1-git-send-email-bp@alien8.de>
-X-Url: http://acmel.wordpress.com
-
-Em Thu, Dec 05, 2013 at 05:25:50PM +0100, Borislav Petkov escreveu:
-> From: Borislav Petkov <bp@suse.de>
+On Thu, Dec 05, 2013 at 04:50:00PM +0000, Winkler, Tomas wrote:
 > 
-> Ok,
 > 
-> step one: carve out fs-related stuff into a libapikfs.a library.
-
-Adding some more people to the CC list, but from a quick look, this
-is in line with what we discussed so far, so I'm ok with it.
-
-For those people in the CC list, Acked-by would be really, really
-appreciated.
-
-- Arnaldo
- 
-> Borislav Petkov (2):
->   tools/: Convert to new topic libraries
->   perf: Move fs.* to lib/api/fs/
+> > On Thu, Dec 05, 2013 at 09:34:44AM +0200, Tomas Winkler wrote:
+> > > And Lynx Point H Refresh and Wildcat Point LP
+> > > device ids.
+> > >
+> > > Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+> > > ---
+> > > V2: remove duplicated  LPT entry
+> > >
+> > >  drivers/misc/mei/hw-me-regs.h | 5 ++++-
+> > >  drivers/misc/mei/pci-me.c     | 4 +++-
+> > >  2 files changed, 7 insertions(+), 2 deletions(-)
+> > 
+> > This should go into 3.13-final, right?  What about -stable versions?
 > 
->  tools/Makefile                                     | 12 ++++----
->  tools/lib/{lk => api}/Makefile                     |  8 ++++--
->  tools/lib/{lk => api/fs}/debugfs.c                 |  0
->  tools/lib/{lk => api/fs}/debugfs.h                 |  6 ++--
->  tools/{perf/util => lib/api/fs}/fs.c               | 11 ++++++--
->  .../util/include/linux/magic.h => lib/api/fs/fs.h} | 12 ++++----
->  tools/perf/Makefile.perf                           | 33 ++++++++++------------
->  tools/perf/builtin-kvm.c                           |  2 +-
->  tools/perf/builtin-probe.c                         |  2 +-
->  tools/perf/perf.c                                  |  2 +-
->  tools/perf/tests/parse-events.c                    |  4 +--
->  tools/perf/util/cpumap.c                           |  2 +-
->  tools/perf/util/evlist.c                           |  2 +-
->  tools/perf/util/evsel.c                            |  2 +-
->  tools/perf/util/fs.h                               |  7 -----
->  tools/perf/util/parse-events.c                     |  2 +-
->  tools/perf/util/pmu.c                              |  2 +-
->  tools/perf/util/probe-event.c                      |  2 +-
->  tools/perf/util/python-ext-sources                 |  2 +-
->  tools/perf/util/record.c                           |  2 +-
->  tools/perf/util/setup.py                           |  4 +--
->  tools/perf/util/trace-event-info.c                 |  2 +-
->  tools/perf/util/util.h                             |  2 +-
->  tools/vm/Makefile                                  | 14 ++++-----
->  tools/vm/page-types.c                              |  2 +-
->  25 files changed, 67 insertions(+), 72 deletions(-)
->  rename tools/lib/{lk => api}/Makefile (85%)
->  rename tools/lib/{lk => api/fs}/debugfs.c (100%)
->  rename tools/lib/{lk => api/fs}/debugfs.h (86%)
->  rename tools/{perf/util => lib/api/fs}/fs.c (91%)
->  rename tools/{perf/util/include/linux/magic.h => lib/api/fs/fs.h} (50%)
->  delete mode 100644 tools/perf/util/fs.h
-> 
-> -- 
-> 1.8.4
+> Yes, this can go to stable as well. I need to dig bit in from which
+> version this is relevant, I think 3.9 and up
+> I will resend with info.
+> Can you just clarify for me what is the policy here, is the support
+> for new HW a stable candidate?
+
+Please read Documentation/stable_kernel_rules.txt for the stable rules.
+
