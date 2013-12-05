@@ -1,76 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab3LEIIt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 03:08:49 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:51496 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab3LEIIs (ORCPT
+	id S1752595Ab3LEIMT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 03:12:19 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40940 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737Ab3LEIMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 03:08:48 -0500
-MIME-Version: 1.0
-Date: Thu, 5 Dec 2013 09:08:47 +0100
-Message-ID: <CACRpkdbfiDCkBrigdFc_U5jaYS9QOcAfzwxVQdTDa_6H8k1aew@mail.gmail.com>
-Subject: 
-From: Linus Walleij <linus.walleij@linaro.org>
+	Thu, 5 Dec 2013 03:12:18 -0500
+Date: Thu, 5 Dec 2013 08:12:01 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Axel Lin <axel.lin@ingics.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: Simon Kirby <sim@hostway.ca>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Waiman Long <Waiman.Long@hp.com>, Ian Applegate <ia@cloudflare.com>,
+        Christoph Lameter <cl@gentwo.org>, Pekka Enberg <penberg@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: gfs2 deadlock (was Re: Found it)
+Message-ID: <20131205081201.GA17203@ZenIV.linux.org.uk>
+References: <CA+55aFyez7uZ6LeXrBRCqJzgJ=w4Xv+CV6QSYp5NkOJ2R9Xang@mail.gmail.com>
+ <CA+55aFyhzvJrCiJOqUgL-98=MVutWePToQXaVfS2j6e5eetJSw@mail.gmail.com>
+ <20131203042830.GI10323@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131203042830.GI10323@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Dec 03, 2013 at 04:28:30AM +0000, Al Viro wrote:
 
-Here are som pin control fixes for the v3.13 series. Nothing special really,
-we have a calm cycle this time it seems, all the action is in GPIO. Details
-are in the signed tag as usual.
+> These should be safe, but damnit, we really need the lifecycle documented for
+> all objects - the above is only a part of it (note that for e.g. superblocks
+> we have additional rules re "->s_active can't be incremented for any reason
+> once it drops to zero, it can't be incremented until superblock had been
+> marked 'born' and it crosses over to zero only with ->s_umount held"; there's
+> 6 stages in life cycle of struct super_block and we had interesting bugs due
+> to messing the transitions up).  The trouble is, attempt to write those down
+> tends to stray into massive grep session, with usual results - some other
+> crap gets found (e.g. in some odd driver) and needs to be dealt with ;-/
+> Sigh...
 
-Anyway, please pull it in!
+... and sure enough, this time is no different - gfs2 sysfs-related code
+cheerfully violates lifetime rules for superblocks, which would've
+caused a major mess later, if it had not immediately caused a deadlock
+on the same superblock ;-/
 
-Yours,
-Linus Walleij
+Watch: gfs2 creates a bunch of files in sysfs (/sys/fs/gfs2/<devname>/*).
+Said bunch gets removed from ->put_super().  Which is called under
+->s_umount.  Guess what happens if somebody tries to write "1" to
+/sys/fs/gfs2/.../freeze just as we enter that ->put_super() (or at any
+point starting from the moment when deactivate_locked_super() has dropped
+the last active reference)?  This:
+static ssize_t freeze_store(struct gfs2_sbd *sdp, const char *buf, size_t len)
+{
+        int error;
+        int n = simple_strtol(buf, NULL, 0);
 
+        if (!capable(CAP_SYS_ADMIN))
+                return -EPERM;
 
-The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
+        switch (n) {
+[snip]
+        case 1:
+                error = freeze_super(sdp->sd_vfs);
 
-  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+And freeze_super(sb) assumes that caller has an active reference to
+sb:
+int freeze_super(struct super_block *sb)
+{
+        int ret;
 
-are available in the git repository at:
+        atomic_inc(&sb->s_active);
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
-tags/pinctrl-v3.13-2
+... which is not legitimate when ->s_active has already reached zero.
+And right after that we hit this:
+        down_write(&sb->s_umount);
 
-for you to fetch changes up to 71493de7e55af589dbe76ce78ae2b762f9cc6f27:
+Voila - write(2) is waiting for ->s_umount, while umount(2) is holding
+->s_umount and waits for write(2) to get past freeze_store().
 
-  sh-pfc: sh7372: Fix pin bias setup (2013-12-03 10:38:41 +0100)
+Hell knows what to do here - atomic_inc_not_zero() in freeze_super()
+(and failing if it fails) would've worked, but it doesn't help with
+the deadlock - just write "0" instead and we hit thaw_super(), which
+starts with grabbing ->s_umount.  atomic_inc_not_zero()/deactivate_super()
+around that call of thaw_super() would probably work, but I'll need to
+look at that after I get some sleep...
 
-----------------------------------------------------------------
-Pin control fixes for the v3.13 series:
-
-- Minor bug fixes for the Rockchip, ST-Ericsson abx500,
-  Renesas PFC r8a7740 and sh7372.
-
-- Compilation warning fixes.
-
-----------------------------------------------------------------
-Axel Lin (1):
-      pinctrl: abx500: Fix header file include guard
-
-Dan Carpenter (3):
-      pinctrl: rockchip: testing the wrong variable
-      pinctrl: abx500: fix some more bitwise AND tests
-      pinctrl: rockchip: missing unlock on error in rockchip_set_pull()
-
-Laurent Pinchart (2):
-      sh-pfc: r8a7740: Fix pin bias setup
-      sh-pfc: sh7372: Fix pin bias setup
-
- drivers/pinctrl/pinctrl-abx500.c     | 6 +++---
- drivers/pinctrl/pinctrl-abx500.h     | 2 +-
- drivers/pinctrl/pinctrl-rockchip.c   | 5 +++--
- drivers/pinctrl/sh-pfc/pfc-r8a7740.c | 2 +-
- drivers/pinctrl/sh-pfc/pfc-sh7372.c  | 2 +-
- 5 files changed, 9 insertions(+), 8 deletions(-)
+Why bother with sysfs, anyway?  What's wrong with putting those same files
+on gfs2meta, seeing that _this_ would have no problems with object lifetimes?
+Too late by now, of course, but...
