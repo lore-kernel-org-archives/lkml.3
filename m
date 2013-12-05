@@ -1,100 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab3LEISi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 03:18:38 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:39115 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab3LEISh (ORCPT
+	id S1754234Ab3LEIWa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 03:22:30 -0500
+Received: from ringil.hengli.com.au ([178.18.16.133]:57583 "EHLO
+	ringil.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752623Ab3LEIW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 03:18:37 -0500
-Date: Thu, 5 Dec 2013 11:18:22 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Serban Constantinescu <serban.constantinescu@arm.com>
-Cc: gregkh@linuxfoundation.org, arve@android.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, john.stultz@linaro.org,
-        ccross@android.com, Dave.Butcher@arm.com, irogers@google.com,
-        romlem@android.com
-Subject: Re: [PATCH v1 1/9] staging: android: binder: Move some of the logic
- into subfunction
-Message-ID: <20131205081822.GU28413@mwanda>
-References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
- <1386180581-6710-2-git-send-email-serban.constantinescu@arm.com>
+	Thu, 5 Dec 2013 03:22:27 -0500
+Date: Thu, 5 Dec 2013 16:22:20 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Cristian Stoica <cristian.stoica@freescale.com>
+Cc: "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] crypto: remove unnecessary includes
+Message-ID: <20131205082220.GB31822@gondor.apana.org.au>
+References: <1385658987-16012-1-git-send-email-cristian.stoica@freescale.com>
+ <20131129020657.GA5650@gondor.apana.org.au>
+ <1628287275CAA9409F1E349DEF3C6CCE77CB99@039-SN2MPN1-012.039d.mgd.msft.net>
+ <20131129113430.GA9542@gondor.apana.org.au>
+ <1628287275CAA9409F1E349DEF3C6CCE77CDBE@039-SN2MPN1-012.039d.mgd.msft.net>
+ <1628287275CAA9409F1E349DEF3C6CCE78CBF0@039-SN2MPN1-012.039d.mgd.msft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386180581-6710-2-git-send-email-serban.constantinescu@arm.com>
+In-Reply-To: <1628287275CAA9409F1E349DEF3C6CCE78CBF0@039-SN2MPN1-012.039d.mgd.msft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 06:09:33PM +0000, Serban Constantinescu wrote:
-> +static void bc_increfs_done(struct binder_proc *proc,
-> +		struct binder_thread *thread, uint32_t cmd,
-> +		void __user *node_ptr, void __user *cookie)
-> +{
-> +	struct binder_node *node;
-> +
-> +	node = binder_get_node(proc, node_ptr);
-> +	if (node == NULL) {
-> +		binder_user_error("%d:%d %s u%p no match\n",
-> +			proc->pid, thread->pid,
-> +			cmd == BC_INCREFS_DONE ?
-> +			"BC_INCREFS_DONE" :
-> +			"BC_ACQUIRE_DONE",
-> +			node_ptr);
-> +		return;
-> +	}
-> +	if (cookie != node->cookie) {
-> +		binder_user_error("%d:%d %s u%p node %d cookie mismatch %p != %p\n",
-> +			proc->pid, thread->pid,
-> +			cmd == BC_INCREFS_DONE ?
-> +			"BC_INCREFS_DONE" : "BC_ACQUIRE_DONE",
-> +			node_ptr, node->debug_id,
-> +			cookie, node->cookie);
-> +		return;
-> +	}
-> +	if (cmd == BC_ACQUIRE_DONE) {
-> +		if (node->pending_strong_ref == 0) {
-> +			binder_user_error("%d:%d BC_ACQUIRE_DONE node %d has no pending acquire request\n",
-> +				proc->pid, thread->pid,
-> +				node->debug_id);
-> +			return;
-> +		}
-> +		node->pending_strong_ref = 0;
-> +	} else {
-> +		if (node->pending_weak_ref == 0) {
-> +			binder_user_error("%d:%d BC_INCREFS_DONE node %d has no pending increfs request\n",
-> +				proc->pid, thread->pid,
-> +				node->debug_id);
-> +			return;
-> +		}
-> +		node->pending_weak_ref = 0;
-> +	}
-> +	binder_dec_node(node, cmd == BC_ACQUIRE_DONE, 0);
-> +	binder_debug(BINDER_DEBUG_USER_REFS,
-> +		     "%d:%d %s node %d ls %d lw %d\n",
-> +		     proc->pid, thread->pid,
-> +		     cmd == BC_INCREFS_DONE ?
-> +		     "BC_INCREFS_DONE" :
-> +		     "BC_ACQUIRE_DONE",
-> +		     node->debug_id, node->local_strong_refs,
-> +		     node->local_weak_refs);
-> +	return;
-> +}
+On Thu, Dec 05, 2013 at 08:14:55AM +0000, Cristian Stoica wrote:
+> Hi Herbert,
+> 
+> Your original response was terse and left me more puzzled. Do you have a sensible explanation why some includes should be kept in the source even they serve no purpose during the build?
 
-This function is 52 lines long but at least 32 of those lines are
-debug code.
+If you can't work out why authenc.c needs slab.h I don't think
+you should be submitting patches removing unnecessary header
+files.
 
-Just extra of lines of code means you have increased the number of bugs
-150%.  But what I know is that from a static analysis perspective, debug
-code has more defects per line then regular code it's worse than that.
-Plus all the extra noise obscures the actual logic and makes the real
-code annoying to look at so it's worse still.
-
-If you want to move this stuff out of staging, then remove all the extra
-crap so it doesn't look like barf.
-
-regards,
-dan carpenter
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
