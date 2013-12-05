@@ -1,45 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab3LEVqo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 16:46:44 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:54087 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab3LEVqm (ORCPT
+	id S1754230Ab3LEVrL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 16:47:11 -0500
+Received: from smtp-03.mandic.com.br ([200.225.81.143]:56609 "EHLO
+	smtp-03.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752771Ab3LEVrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 16:46:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAPDyKFpf58CRKUhFPKHyg4S9oaUR=XHJQs=hK7p63Hkv8gnbbw@mail.gmail.com>
-References: <Pine.LNX.4.44L0.1311291014020.27250-100000@netrider.rowland.org>
-	<4994754.y6gINBtP7i@vostro.rjw.lan>
-	<CAPDyKFpf58CRKUhFPKHyg4S9oaUR=XHJQs=hK7p63Hkv8gnbbw@mail.gmail.com>
-Date: Thu, 5 Dec 2013 16:46:40 -0500
-X-Google-Sender-Auth: Psev1ODTu966lx9pIYOsATwAH_E
-Message-ID: <CAJvTdKnqD3ccPUzh7kNMNqrEYFfD93Vh9hgFuKyHz+pjGNHdtA@mail.gmail.com>
-Subject: Re: [PATCH 0/5] PM: Enable option of re-use runtime PM callbacks at
- system suspend
-From: Len Brown <lenb@kernel.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 5 Dec 2013 16:47:09 -0500
+From: Cesar Eduardo Barros <cesarb@cesarb.eti.br>
+To: linux-crypto@vger.kernel.org
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Yonan <james@openvpn.net>, Daniel Borkmann <dborkman@redhat.com>,
+        Florian Weimer <fw@deneb.enyo.de>, linux-kernel@vger.kernel.org,
+        Cesar Eduardo Barros <cesarb@cesarb.eti.br>
+Subject: [PATCH v4] crypto: more robust crypto_memneq
+Date: Thu,  5 Dec 2013 19:46:59 -0200
+Message-Id: <1386280019-3332-1-git-send-email-cesarb@cesarb.eti.br>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This thread raises the question...
+Disabling compiler optimizations can be fragile, since a new
+optimization could be added to -O0 or -Os that breaks the assumptions
+the code is making.
 
-Do we still need to have PM_RUNTIME apart from PM_SLEEP?
+Instead of disabling compiler optimizations, use a dummy inline assembly
+(based on RELOC_HIDE) to block the problematic kinds of optimization,
+while still allowing other optimizations to be applied to the code.
 
-What is the benefit of being able to build-in one one without the other?
-If that benefit is not significant, perhaps the time has come to
-replace them both with CONFIG_PM...
+The dummy inline assembly is added after every OR, and has the
+accumulator variable as its input and output. The compiler is forced to
+assume that the dummy inline assembly could both depend on the
+accumulator variable and change the accumulator variable, so it is
+forced to compute the value correctly before the inline assembly, and
+cannot assume anything about its value after the inline assembly.
 
-cheers,
--Len Brown, Intel Open Source Technology Center
+This change should be enough to make crypto_memneq work correctly (with
+data-independent timing) even if it is inlined at its call sites. That
+can be done later in a followup patch.
+
+Compile-tested on x86_64.
+
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.eti.br>
+---
+
+v2: Moved the macro to include/linux/compiler*.h as suggested by Daniel
+Borkmann.
+v3: Thinking better about it, barrier() is a saner default for the
+"unknown compiler" case.
+v4: Compile fix for archs without efficient aligned access.
+
+ crypto/Makefile                |  5 ---
+ crypto/memneq.c                | 80 +++++++++++++++++++++++++++++-------------
+ include/linux/compiler-gcc.h   |  3 ++
+ include/linux/compiler-intel.h |  7 ++++
+ include/linux/compiler.h       |  4 +++
+ 5 files changed, 69 insertions(+), 30 deletions(-)
+
+diff --git a/crypto/Makefile b/crypto/Makefile
+index 989c510..b29402a 100644
+--- a/crypto/Makefile
++++ b/crypto/Makefile
+@@ -2,11 +2,6 @@
+ # Cryptographic API
+ #
+ 
+-# memneq MUST be built with -Os or -O0 to prevent early-return optimizations
+-# that will defeat memneq's actual purpose to prevent timing attacks.
+-CFLAGS_REMOVE_memneq.o := -O1 -O2 -O3
+-CFLAGS_memneq.o := -Os
+-
+ obj-$(CONFIG_CRYPTO) += crypto.o
+ crypto-y := api.o cipher.o compress.o memneq.o
+ 
+diff --git a/crypto/memneq.c b/crypto/memneq.c
+index cd01622..afed1bd 100644
+--- a/crypto/memneq.c
++++ b/crypto/memneq.c
+@@ -72,6 +72,7 @@ __crypto_memneq_generic(const void *a, const void *b, size_t size)
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+ 	while (size >= sizeof(unsigned long)) {
+ 		neq |= *(unsigned long *)a ^ *(unsigned long *)b;
++		OPTIMIZER_HIDE_VAR(neq);
+ 		a += sizeof(unsigned long);
+ 		b += sizeof(unsigned long);
+ 		size -= sizeof(unsigned long);
+@@ -79,6 +80,7 @@ __crypto_memneq_generic(const void *a, const void *b, size_t size)
+ #endif /* CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS */
+ 	while (size > 0) {
+ 		neq |= *(unsigned char *)a ^ *(unsigned char *)b;
++		OPTIMIZER_HIDE_VAR(neq);
+ 		a += 1;
+ 		b += 1;
+ 		size -= 1;
+@@ -89,33 +91,61 @@ __crypto_memneq_generic(const void *a, const void *b, size_t size)
+ /* Loop-free fast-path for frequently used 16-byte size */
+ static inline unsigned long __crypto_memneq_16(const void *a, const void *b)
+ {
++	unsigned long neq = 0;
++
+ #ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
+-	if (sizeof(unsigned long) == 8)
+-		return ((*(unsigned long *)(a)   ^ *(unsigned long *)(b))
+-		      | (*(unsigned long *)(a+8) ^ *(unsigned long *)(b+8)));
+-	else if (sizeof(unsigned int) == 4)
+-		return ((*(unsigned int *)(a)    ^ *(unsigned int *)(b))
+-                      | (*(unsigned int *)(a+4)  ^ *(unsigned int *)(b+4))
+-		      | (*(unsigned int *)(a+8)  ^ *(unsigned int *)(b+8))
+-	              | (*(unsigned int *)(a+12) ^ *(unsigned int *)(b+12)));
+-	else
++	if (sizeof(unsigned long) == 8) {
++		neq |= *(unsigned long *)(a)   ^ *(unsigned long *)(b);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned long *)(a+8) ^ *(unsigned long *)(b+8);
++		OPTIMIZER_HIDE_VAR(neq);
++	} else if (sizeof(unsigned int) == 4) {
++		neq |= *(unsigned int *)(a)    ^ *(unsigned int *)(b);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned int *)(a+4)  ^ *(unsigned int *)(b+4);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned int *)(a+8)  ^ *(unsigned int *)(b+8);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned int *)(a+12) ^ *(unsigned int *)(b+12);
++		OPTIMIZER_HIDE_VAR(neq);
++	} else
+ #endif /* CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS */
+-		return ((*(unsigned char *)(a)    ^ *(unsigned char *)(b))
+-		      | (*(unsigned char *)(a+1)  ^ *(unsigned char *)(b+1))
+-		      | (*(unsigned char *)(a+2)  ^ *(unsigned char *)(b+2))
+-		      | (*(unsigned char *)(a+3)  ^ *(unsigned char *)(b+3))
+-		      | (*(unsigned char *)(a+4)  ^ *(unsigned char *)(b+4))
+-		      | (*(unsigned char *)(a+5)  ^ *(unsigned char *)(b+5))
+-		      | (*(unsigned char *)(a+6)  ^ *(unsigned char *)(b+6))
+-		      | (*(unsigned char *)(a+7)  ^ *(unsigned char *)(b+7))
+-		      | (*(unsigned char *)(a+8)  ^ *(unsigned char *)(b+8))
+-		      | (*(unsigned char *)(a+9)  ^ *(unsigned char *)(b+9))
+-		      | (*(unsigned char *)(a+10) ^ *(unsigned char *)(b+10))
+-		      | (*(unsigned char *)(a+11) ^ *(unsigned char *)(b+11))
+-		      | (*(unsigned char *)(a+12) ^ *(unsigned char *)(b+12))
+-		      | (*(unsigned char *)(a+13) ^ *(unsigned char *)(b+13))
+-		      | (*(unsigned char *)(a+14) ^ *(unsigned char *)(b+14))
+-		      | (*(unsigned char *)(a+15) ^ *(unsigned char *)(b+15)));
++	{
++		neq |= *(unsigned char *)(a)    ^ *(unsigned char *)(b);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+1)  ^ *(unsigned char *)(b+1);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+2)  ^ *(unsigned char *)(b+2);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+3)  ^ *(unsigned char *)(b+3);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+4)  ^ *(unsigned char *)(b+4);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+5)  ^ *(unsigned char *)(b+5);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+6)  ^ *(unsigned char *)(b+6);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+7)  ^ *(unsigned char *)(b+7);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+8)  ^ *(unsigned char *)(b+8);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+9)  ^ *(unsigned char *)(b+9);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+10) ^ *(unsigned char *)(b+10);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+11) ^ *(unsigned char *)(b+11);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+12) ^ *(unsigned char *)(b+12);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+13) ^ *(unsigned char *)(b+13);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+14) ^ *(unsigned char *)(b+14);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+15) ^ *(unsigned char *)(b+15);
++		OPTIMIZER_HIDE_VAR(neq);
++	}
++
++	return neq;
+ }
+ 
+ /* Compare two areas of memory without leaking timing information,
+diff --git a/include/linux/compiler-gcc.h b/include/linux/compiler-gcc.h
+index 24545cd..02ae99e 100644
+--- a/include/linux/compiler-gcc.h
++++ b/include/linux/compiler-gcc.h
+@@ -37,6 +37,9 @@
+     __asm__ ("" : "=r"(__ptr) : "0"(ptr));		\
+     (typeof(ptr)) (__ptr + (off)); })
+ 
++/* Make the optimizer believe the variable can be manipulated arbitrarily. */
++#define OPTIMIZER_HIDE_VAR(var) __asm__ ("" : "=r" (var) : "0" (var))
++
+ #ifdef __CHECKER__
+ #define __must_be_array(arr) 0
+ #else
+diff --git a/include/linux/compiler-intel.h b/include/linux/compiler-intel.h
+index 973ce10..e784f57 100644
+--- a/include/linux/compiler-intel.h
++++ b/include/linux/compiler-intel.h
+@@ -15,6 +15,7 @@
+  */
+ #undef barrier
+ #undef RELOC_HIDE
++#undef OPTIMIZER_HIDE_VAR
+ 
+ #define barrier() __memory_barrier()
+ 
+@@ -23,6 +24,12 @@
+      __ptr = (unsigned long) (ptr);				\
+     (typeof(ptr)) (__ptr + (off)); })
+ 
++/* This should act as an optimization barrier on var.
++ * Given that this compiler does not have inline assembly, a compiler barrier
++ * is the best we can do.
++ */
++#define OPTIMIZER_HIDE_VAR(var) barrier()
++
+ /* Intel ECC compiler doesn't support __builtin_types_compatible_p() */
+ #define __must_be_array(a) 0
+ 
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index 92669cd..a2329c5 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -170,6 +170,10 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+     (typeof(ptr)) (__ptr + (off)); })
+ #endif
+ 
++#ifndef OPTIMIZER_HIDE_VAR
++#define OPTIMIZER_HIDE_VAR(var) barrier()
++#endif
++
+ /* Not-quite-unique ID. */
+ #ifndef __UNIQUE_ID
+ # define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __LINE__)
+-- 
+1.8.3.1
+
