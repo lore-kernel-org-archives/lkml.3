@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932826Ab3LEAum (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 19:50:42 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:59291 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756350Ab3LEAu0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 19:50:26 -0500
+	id S1756345Ab3LEAuZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 19:50:25 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:58679 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756116Ab3LEAuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 19:50:22 -0500
 From: Nishanth Menon <nm@ti.com>
 To: Rob Herring <rob.herring@calxeda.com>, Tony Lindgren <tony@atomide.com>,
         Benoit Cousson <bcousson@baylibre.com>
@@ -15,9 +14,9 @@ CC: Mark Rutland <mark.rutland@arm.com>,
         <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH V2 1/2] Documentation: dt: OMAP: explicitly state SoC compatible strings
-Date: Wed, 4 Dec 2013 18:49:36 -0600
-Message-ID: <1386204578-6018-2-git-send-email-nm@ti.com>
+Subject: [PATCH V2 2/2] ARM: OMAP2+: board-generic: update SoC compatibility strings
+Date: Wed, 4 Dec 2013 18:49:37 -0600
+Message-ID: <1386204578-6018-3-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386204578-6018-1-git-send-email-nm@ti.com>
 References: <1386204578-6018-1-git-send-email-nm@ti.com>
@@ -27,91 +26,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SoC family definitions at the moment are reactive to board needs.
-This results in potentially wrong matches taking place for board types.
-
-Eventually, we will have descriptors match only with SoC types and
-should not contain anything specific to board handling and pave the
-way to getting rid of soc_is_XYZ checks and allow this determination
-done with matches at of level.
-
-Existing implicit definitions(as part of board descriptions) are
-explicitly documented.
-
-NOTE: Even though we prefer to have dt compatibility to explicit,
-"ti,dra7xx", "ti,am33xx", "ti,omap36xx" preexist in current dts and
-are maintained for backward compatibility. It is also expected that
-any future SoC addition will keep this documentation updated.
+Now that we have standardized SoC definitions, update the
+compatibility strings in board machine descriptors. Eventually, we
+should just have SoC compatiblity here and all board specific stuff
+should disappear.
 
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- .../devicetree/bindings/arm/omap/omap.txt          |   53 ++++++++++++++++++++
- 1 file changed, 53 insertions(+)
+NOTE: To prevent conflict, I have not added am3517 which is addressed in:
+https://patchwork.kernel.org/patch/3279281/
 
-diff --git a/Documentation/devicetree/bindings/arm/omap/omap.txt b/Documentation/devicetree/bindings/arm/omap/omap.txt
-index 808c154..34dc40c 100644
---- a/Documentation/devicetree/bindings/arm/omap/omap.txt
-+++ b/Documentation/devicetree/bindings/arm/omap/omap.txt
-@@ -31,6 +31,59 @@ spinlock@1 {
-     ti,hwmods = "spinlock";
+ arch/arm/mach-omap2/board-generic.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
+index 19f1652..5356a29 100644
+--- a/arch/arm/mach-omap2/board-generic.c
++++ b/arch/arm/mach-omap2/board-generic.c
+@@ -78,6 +78,7 @@ MACHINE_END
+ 
+ #ifdef CONFIG_ARCH_OMAP3
+ static const char *omap3_boards_compat[] __initdata = {
++	"ti,omap3430",
+ 	"ti,omap3",
+ 	NULL,
  };
+@@ -155,6 +156,8 @@ MACHINE_END
  
-+SoC Type (optional):
-+
-+- General Purpose devices
-+  compatible = "ti,gp"
-+- High Security devices
-+  compatible = "ti,hs"
-+
-+SoC Families:
-+
-+- OMAP2 generic - defaults to OMAP2420
-+  compatible = "ti,omap2"
-+- OMAP3 generic - defaults to OMAP3430
-+  compatible = "ti,omap3"
-+- OMAP4 generic - defaults to OMAP4430
-+  compatible = "ti,omap4"
-+- OMAP5 generic - defaults to OMAP5430
-+  compatible = "ti,omap5"
-+- DRA7 generic - defaults to DRA742
-+  compatible = "ti,dra7"
-+- AM43x generic - defaults to AM4372
-+  compatible = "ti,am43"
-+
-+SoCs:
-+
-+- OMAP2420
-+  compatible = "ti,omap2420", "ti,omap2"
-+- OMAP2430
-+  compatible = "ti,omap2430", "ti,omap2"
-+
-+- OMAP3430
-+  compatible = "ti,omap3430", "ti,omap3"
-+- AM3517
-+  compatible = "ti,am3517", "ti,omap3"
-+- OMAP3630
-+  compatible = "ti,omap36xx", "ti,omap3"
-+- AM33xx
-+  compatible = "ti,am33xx", "ti,omap3"
-+
-+- OMAP4430
-+  compatible = "ti,omap4430", "ti,omap4"
-+- OMAP4460
-+  compatible = "ti,omap4460", "ti,omap4"
-+
-+- OMAP5430
-+  compatible = "ti,omap5430", "ti,omap5"
-+- OMAP5432
-+  compatible = "ti,omap5432", "ti,omap5"
-+
-+- DRA742
-+  compatible = "ti,dra7xx", "ti,dra7"
-+
-+- AM4372
-+  compatible = "ti,am4372", "ti,am43"
+ #ifdef CONFIG_ARCH_OMAP4
+ static const char *omap4_boards_compat[] __initdata = {
++	"ti,omap4460",
++	"ti,omap4430",
+ 	"ti,omap4",
+ 	NULL,
+ };
+@@ -175,6 +178,8 @@ MACHINE_END
  
- Boards:
+ #ifdef CONFIG_SOC_OMAP5
+ static const char *omap5_boards_compat[] __initdata = {
++	"ti,omap5432",
++	"ti,omap5430",
+ 	"ti,omap5",
+ 	NULL,
+ };
+@@ -195,6 +200,7 @@ MACHINE_END
  
+ #ifdef CONFIG_SOC_AM43XX
+ static const char *am43_boards_compat[] __initdata = {
++	"ti,am4372",
+ 	"ti,am43",
+ 	NULL,
+ };
+@@ -212,6 +218,7 @@ MACHINE_END
+ 
+ #ifdef CONFIG_SOC_DRA7XX
+ static const char *dra7xx_boards_compat[] __initdata = {
++	"ti,dra7xx",
+ 	"ti,dra7",
+ 	NULL,
+ };
 -- 
 1.7.9.5
 
