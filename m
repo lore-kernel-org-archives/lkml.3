@@ -1,125 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386Ab3LECMh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 21:12:37 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:53758 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752Ab3LECMc (ORCPT
+	id S1756379Ab3LECNI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 21:13:08 -0500
+Received: from www.linutronix.de ([62.245.132.108]:40241 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752Ab3LECNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 21:12:32 -0500
-X-AuditID: cbfee61a-b7f796d000004313-9f-529fe10ef242
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'???'" <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
-References: <001701cef15d$169a5a30$43cf0e90$@samsung.com>
-In-reply-to: <001701cef15d$169a5a30$43cf0e90$@samsung.com>
-Subject: RE: [f2fs-dev] [PATCH 3/3] f2fs: introduce f2fs_cache_node_page() to
- add page into node_inode cache
-Date: Thu, 05 Dec 2013 10:10:59 +0800
-Message-id: <001901cef15f$6fafea70$4f0fbf50$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=gb2312
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQH+2kryUW6+L81HU0v0CZ/TiLWAhpnlCEkQ
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t9jQV2+h/ODDB5NNbK4vusvk8WlRe4W
-	e/aeZLG4vGsOm0XrwvPMDqweuxd8ZvLo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujJXfbjIW
-	PBOp6HjTw9LA+F+gi5GTQ0LARGLR6juMELaYxIV769m6GLk4hASmM0pcvPqNBcL5wSjx89VZ
-	FpAqNgEVieUd/5lAbBEBZYlVHe1gHcwCMxglDs/9xwqSEBKwlPi/4C4biM0pYCWxdkozO4gt
-	LJAncWnzZ7A4i4CqRGfLS7ChvED1P788ZoawBSV+TL4HFmcW0JDoX7SBDcKWl9i85i0zxKkK
-	EjvOvmaEOMJI4s2tRnaIGnGJjUdusUxgFJqFZNQsJKNmIRk1C0nLAkaWVYyiqQXJBcVJ6bmG
-	esWJucWleel6yfm5mxjBcfBMagfjygaLQ4wCHIxKPLwvEucHCbEmlhVX5h5ilOBgVhLhrb8K
-	FOJNSaysSi3Kjy8qzUktPsQozcGiJM57oNU6UEggPbEkNTs1tSC1CCbLxMEp1cB4yO3qOibu
-	pJB7/+ce+/PO/OwnHoG9nRxmp48fsj+6qGb78qOTtrpGmXD8/6oz9fO3Sim2z1LL/VfbVEY8
-	ddm9ffPzR8tyLsSxzeNRnfWq+uuERost7ClNB9fNV77kpC9hZqoQlD7ZcJHgFte45Nun/Iy2
-	qcYaytjf9HEKNTD3nr3KqWPPjGNHlViKMxINtZiLihMBcwx5wX8CAAA=
+	Wed, 4 Dec 2013 21:13:05 -0500
+Date: Thu, 5 Dec 2013 03:12:55 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Neil Zhang <zhangwm@marvell.com>, mark.rutland@arm.com,
+        devicetree@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        haojian.zhuang@gmail.com, LAK <linux-arm-kernel@lists.infradead.org>
+Subject: Re: ARM: gic_arch_extn (Was: [PATCH v3] irqchip: mmp: add dt support
+ for wakeup)
+In-Reply-To: <20131205005216.GA4360@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.02.1312050157550.30673@ionos.tec.linutronix.de>
+References: <1386159214-31483-1-git-send-email-zhangwm@marvell.com> <alpine.DEB.2.02.1312042234190.30673@ionos.tec.linutronix.de> <alpine.DEB.2.02.1312042347350.30673@ionos.tec.linutronix.de> <20131205005216.GA4360@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Chao Yu [mailto:chao2.yu@samsung.com]
-> Sent: Thursday, December 05, 2013 9:55 AM
-> To: ???
-> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net
-> Subject: [f2fs-dev] [PATCH 3/3] f2fs: introduce f2fs_cache_node_page() to add page into node_inode cache
-> 
-> This patch introduces f2fs_cache_node_page(), in this function, page which is
-> readed ahead will be copy to node_inode's mapping cache.
-> It will avoid rereading these node pages.
-> 
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+Russell,
 
-Suggested-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+On Thu, 5 Dec 2013, Russell King - ARM Linux wrote:
+> On Thu, Dec 05, 2013 at 01:41:53AM +0100, Thomas Gleixner wrote:
+> > @all who feel responsible for gic_arch_extn
+> > 
+> > On Wed, 4 Dec 2013, Thomas Gleixner wrote:
+> > > I'm going to reply in a separate mail on this, because you have
+> > > brought this to my attention, but you are not responsible in the first
+> > > place for this brainfart.
+> > 
+> > Who came up with that gic_arch_extn concept in the first place?
+> 
+> If you'd spend more time reviewing IRQ patches then maybe you'd catch
+> this at review time.  So please stop your rediculous whinging when
+> most of the problem is your own lack of time.
 
-I miss that, my mistake.
+I'm not a native english speaker, so I want to make sure in the first
+place that you meant:
 
-> ---
->  fs/f2fs/node.c |   30 ++++++++++++++++++++++++++++++
->  1 file changed, 30 insertions(+)
-> 
-> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-> index 099f06f..5e2588f 100644
-> --- a/fs/f2fs/node.c
-> +++ b/fs/f2fs/node.c
-> @@ -1600,6 +1600,34 @@ static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
->  	return 0;
->  }
-> 
-> +/*
-> + * f2fs_cache_node_page() copy updated page data to node_inode cache page.
-> + */
-> +void f2fs_cache_node_page(struct f2fs_sb_info *sbi, struct page *page,
-> +						nid_t nid)
-> +{
-> +	struct address_space *mapping = sbi->node_inode->i_mapping;
-> +	struct page *npage;
-> +
-> +	npage = find_get_page(mapping, nid);
-> +	if (npage && PageUptodate(npage)) {
-> +		f2fs_put_page(npage, 0);
-> +		return;
-> +	}
-> +	f2fs_put_page(npage, 0);
-> +
-> +	npage = grab_cache_page(mapping, nid);
-> +	if (!npage)
-> +		return;
-> +
-> +	memcpy(page_address(npage), page_address(page), PAGE_CACHE_SIZE);
-> +
-> +	SetPageUptodate(npage);
-> +	f2fs_put_page(npage, 1);
-> +
-> +	return;
-> +}
-> +
->  int restore_node_summary(struct f2fs_sb_info *sbi,
->  			unsigned int segno, struct f2fs_summary_block *sum)
->  {
-> @@ -1633,6 +1661,8 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
->  				sum_entry->version = 0;
->  				sum_entry->ofs_in_node = 0;
->  				sum_entry++;
-> +				f2fs_cache_node_page(sbi, page,
-> +					le32_to_cpu(rn->footer.nid));
->  			} else {
->  				err = -EIO;
->  			}
-> --
-> 1.7.9.5
-> 
-> 
-> ------------------------------------------------------------------------------
-> Sponsored by Intel(R) XDK
-> Develop, test and display web and hybrid apps with a single code base.
-> Download it for free now!
-> http://pubads.g.doubleclick.net/gampad/clk?id=111408631&iu=/4140/ostg.clktrk
-> _______________________________________________
-> Linux-f2fs-devel mailing list
-> Linux-f2fs-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+    "ridiculous whingeing" 
 
+Assumed that you meant that, let me ridicule you a bit.
+
+The gic_arch_extn concept got merged with:
+
+    commit d7ed36a4ea84e3a850f9932e2058ceef987d1acd
+    Author: Santosh Shilimkar <santosh.shilimkar@ti.com>
+    Date:   Wed Mar 2 08:03:22 2011 +0100
+
+    ARM: 6777/1: gic: Add hooks for architecture specific extensions
+
+    <SNIP>
+
+    Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+    Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+    Acked-by: Colin Cross <ccross@android.com>
+    Tested-by: Colin Cross <ccross@android.com>
+    Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+
+    ---
+    arch/arm/common/gic.c		|   47 ++++++++++++....
+    arch/arm/include/asm/hardware/gic.h |    1
+
+The patch in question was never cc'ed to me and you merged it on your
+own.
+
+So now you have the chuzpe to blame me for that, just because this
+code moved to drivers/irqchip with
+
+     commit 81243e444c6e9d1625073e4a3d3bc244c8a545f0
+     Author: Rob Herring <rob.herring@calxeda.com>
+     Date:   Tue Nov 20 21:21:40 2012 -0600
+
+     irqchip: Move ARM GIC to drivers/irqchip
+    
+almost two years later?
+
+The code move neither exempts you from the responsibility of merging
+it nor does it imply a retroactive responsibility for me to review all
+patches which went into that code prior to the move.
+
+Thanks,
+
+	tglx
