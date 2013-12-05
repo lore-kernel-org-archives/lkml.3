@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755360Ab3LEJzM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 04:55:12 -0500
-Received: from 19.mo1.mail-out.ovh.net ([178.32.97.206]:37497 "EHLO
+	id S1755472Ab3LEJzv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 04:55:51 -0500
+Received: from 4.mo1.mail-out.ovh.net ([46.105.76.26]:40334 "EHLO
 	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753655Ab3LEJzI (ORCPT
+	with ESMTP id S1753962Ab3LEJzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 04:55:08 -0500
+	Thu, 5 Dec 2013 04:55:48 -0500
 From: Boris BREZILLON <b.brezillon@overkiz.com>
 To: Douglas Gilbert <dgilbert@interlog.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>,
@@ -17,11 +17,13 @@ To: Douglas Gilbert <dgilbert@interlog.com>,
 Cc: Grant Likely <grant.likely@linaro.org>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Boris BREZILLON <b.brezillon@overkiz.com>
-Subject: [PATCH v3 0/3] usb: ohci-at91: various improvements
-Date: Thu,  5 Dec 2013 10:54:39 +0100
-Message-Id: <1386237282-22385-1-git-send-email-b.brezillon@overkiz.com>
+Subject: [PATCH v3 2/3] usb: ohci-at91: use dev variable instead of &pdev->dev
+Date: Thu,  5 Dec 2013 10:54:41 +0100
+Message-Id: <1386237282-22385-3-git-send-email-b.brezillon@overkiz.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 5690298129756616959
+In-Reply-To: <1386237282-22385-1-git-send-email-b.brezillon@overkiz.com>
+References: <1386237282-22385-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 5701838603801753857
 X-Ovh-Remote: 80.245.18.66 ()
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
@@ -35,27 +37,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Make use of the dev variable instead of referencing the dev field of the
+pdev struct.
 
-This patch series moves the different driver resources (clks and iomem)
-retrieval to the device managed versions (devm_ functions).
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+---
+ drivers/usb/host/ohci-at91.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-Best Regards,
-
-Boris
-
-Changes since v2:
- - split urgent fix and resource retrieval improvements
-
-Boris BREZILLON (3):
-  usb: ohci-at91: replace request_mem_region + ioremap by
-    devm_request_and_ioremap
-  usb: ohci-at91: use dev variable instead of &pdev->dev
-  usb: ohci-at91: use device managed clk retrieval
-
- drivers/usb/host/ohci-at91.c |   64 +++++++++++-------------------------------
- 1 file changed, 17 insertions(+), 47 deletions(-)
-
+diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
+index 8528895..2a86e32 100644
+--- a/drivers/usb/host/ohci-at91.c
++++ b/drivers/usb/host/ohci-at91.c
+@@ -151,7 +151,7 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
+ 		return -ENODEV;
+ 	}
+ 
+-	hcd = usb_create_hcd(driver, &pdev->dev, "at91");
++	hcd = usb_create_hcd(driver, dev, "at91");
+ 	if (!hcd)
+ 		return -ENOMEM;
+ 	hcd->rsrc_start = mem_r->start;
+@@ -164,28 +164,28 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
+ 		goto err;
+ 	}
+ 
+-	iclk = clk_get(&pdev->dev, "ohci_clk");
++	iclk = clk_get(dev, "ohci_clk");
+ 	if (IS_ERR(iclk)) {
+-		dev_err(&pdev->dev, "failed to get ohci_clk\n");
++		dev_err(dev, "failed to get ohci_clk\n");
+ 		retval = PTR_ERR(iclk);
+ 		goto err;
+ 	}
+-	fclk = clk_get(&pdev->dev, "uhpck");
++	fclk = clk_get(dev, "uhpck");
+ 	if (IS_ERR(fclk)) {
+-		dev_err(&pdev->dev, "failed to get uhpck\n");
++		dev_err(dev, "failed to get uhpck\n");
+ 		retval = PTR_ERR(fclk);
+ 		goto err4;
+ 	}
+-	hclk = clk_get(&pdev->dev, "hclk");
++	hclk = clk_get(dev, "hclk");
+ 	if (IS_ERR(hclk)) {
+-		dev_err(&pdev->dev, "failed to get hclk\n");
++		dev_err(dev, "failed to get hclk\n");
+ 		retval = PTR_ERR(hclk);
+ 		goto err5;
+ 	}
+ 	if (IS_ENABLED(CONFIG_COMMON_CLK)) {
+-		uclk = clk_get(&pdev->dev, "usb_clk");
++		uclk = clk_get(dev, "usb_clk");
+ 		if (IS_ERR(uclk)) {
+-			dev_err(&pdev->dev, "failed to get uclk\n");
++			dev_err(dev, "failed to get uclk\n");
+ 			retval = PTR_ERR(uclk);
+ 			goto err6;
+ 		}
 -- 
 1.7.9.5
 
