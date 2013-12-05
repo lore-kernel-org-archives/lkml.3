@@ -1,117 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab3LEKpx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 05:45:53 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:53622 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188Ab3LEKpv (ORCPT
+	id S1755559Ab3LEKr4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 05:47:56 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:3654 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751909Ab3LEKrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 05:45:51 -0500
-Date: Thu, 5 Dec 2013 11:45:46 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 28/28] perf tools: Add udis86 disassembler feature check
-Message-ID: <20131205104546.GC20283@gmail.com>
-References: <1386076182-14484-1-git-send-email-jolsa@redhat.com>
- <1386076182-14484-29-git-send-email-jolsa@redhat.com>
- <20131204185024.GC14788@ghostprotocols.net>
- <20131205080513.GA1251@krava.brq.redhat.com>
- <20131205092502.GA16653@gmail.com>
- <20131205094122.GA21600@krava.brq.redhat.com>
+	Thu, 5 Dec 2013 05:47:51 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 05 Dec 2013 02:44:48 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <swarren@wwwdotorg.org>
+CC: <thierry.reding@gmail.com>, <rob.herring@calxeda.com>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V3 1/4] ARM: tegra: Add header file for pinctrl constants
+Date: Thu, 5 Dec 2013 16:14:06 +0530
+Message-ID: <1386240249-30786-2-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1386240249-30786-1-git-send-email-ldewangan@nvidia.com>
+References: <1386240249-30786-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131205094122.GA21600@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This new header file defines pincontrol constants for Tegra to
+use from Tegra's DTS file for pincontrol properties option.
 
-* Jiri Olsa <jolsa@redhat.com> wrote:
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Reviewed-by: Thierry Reding <treding@nvidia.com>
+---
+Changes from V1:
+- Get rid of lots of macro and converge it to TEGRA_PIN_ENABLE/DISABLE.
+- Change macro name for PULL UP/DOWN/NONE.
 
-> On Thu, Dec 05, 2013 at 10:25:02AM +0100, Ingo Molnar wrote:
-> > 
-> > * Jiri Olsa <jolsa@redhat.com> wrote:
-> > 
-> > > On Wed, Dec 04, 2013 at 03:50:24PM -0300, Arnaldo Carvalho de Melo wrote:
-> > > > Em Tue, Dec 03, 2013 at 02:09:42PM +0100, Jiri Olsa escreveu:
-> > > > > Adding udis86 disassembler feature check which support
-> > > > > is needed for kvm:kvm_emulate_insn tracepoint.
-> > > > >  
-> > > > > +$(call feature_check,udis86)
-> > > > > +ifeq ($(feature-udis86), 1)
-> > > > > +  LIBTRACEEVENT_CFLAGS += -DHAVE_UDIS86
-> > > > > +  EXTLIBS += -ludis86
-> > > > > +else
-> > > > > +  msg := $(warning No udis86 support.);
-> > > > > +endif
-> > > > 
-> > > > That is really an incomplete message, what package should I install?
-> > > > Perhaps we should add this there then:
-> > > > 
-> > > > http://bit.ly/1hyrN52
-> > > 
-> > > nice :-)
-> > > 
-> > > > 
-> > > > Wow, that was easy, but yeah, could be made easier 8-) ;-P
-> > > 
-> > > so something like:
-> > > No udis86 found. Please install udis86-devel.
-> > > 
-> > > or:
-> > > No udis86 found, disabling kvm tracepoints instruction disassembly. Please install udis86-devel.
-> > 
-> > 1)
-> > 
-> > So, the first problem I can see is in the output:
-> > 
-> > Auto-detecting system features:
-> > ...                     backtrace: [ on  ]
-> > ...                         dwarf: [ on  ]
-> > ...                fortify-source: [ on  ]
-> > ...                         glibc: [ on  ]
-> > ...                          gtk2: [ on  ]
-> > ...                  gtk2-infobar: [ on  ]
-> > ...                      libaudit: [ on  ]
-> > ...                        libbfd: [ on  ]
-> > ...                        libelf: [ on  ]
-> > ...             libelf-getphdrnum: [ on  ]
-> > ...                   libelf-mmap: [ on  ]
-> > ...                       libnuma: [ on  ]
-> > ...                       libperl: [ on  ]
-> > ...                     libpython: [ on  ]
-> > ...             libpython-version: [ on  ]
-> > ...                      libslang: [ on  ]
-> > ...                     libunwind: [ on  ]
-> > ...                       on-exit: [ on  ]
-> > ...            stackprotector-all: [ on  ]
-> > ...                       timerfd: [ on  ]
-> > 
-> > config/Makefile:421: No udis86 support.
-> > 
-> > such a 'no XYZ support' message should only occur if a feature test 
-> > failed. _If_ we decide that 'udis86' support is required for a full 
-> > perf build then there should be a new line saying something like:
-> > 
-> > ...                        udis86: [ OFF ]
-> 
-> hum, just sent v4 that added udis86 into above list ;-)
-> 
-> So.. do we consider 'full perf build' to be build with all
-> possible libraries linked in?
+Changes from V2:
+- Convert TEGRA -> Tegra.
+- Add comment on ENABLE/DSIABLE and remove from pulls.
 
-So my worry is, how widely is libudis86 available in distros? What is 
-the package name on Debian/Ubuntu for example?
+ include/dt-bindings/pinctrl/pinctrl-tegra.h |   45 +++++++++++++++++++++++++++
+ 1 files changed, 45 insertions(+), 0 deletions(-)
+ create mode 100644 include/dt-bindings/pinctrl/pinctrl-tegra.h
 
-Thanks,
+diff --git a/include/dt-bindings/pinctrl/pinctrl-tegra.h b/include/dt-bindings/pinctrl/pinctrl-tegra.h
+new file mode 100644
+index 0000000..ebafa49
+--- /dev/null
++++ b/include/dt-bindings/pinctrl/pinctrl-tegra.h
+@@ -0,0 +1,45 @@
++/*
++ * This header provides constants for Tegra pinctrl bindings.
++ *
++ * Copyright (c) 2013, NVIDIA CORPORATION.  All rights reserved.
++ *
++ * Author: Laxman Dewangan <ldewangan@nvidia.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ */
++
++#ifndef _DT_BINDINGS_PINCTRL_TEGRA_H
++#define _DT_BINDINGS_PINCTRL_TEGRA_H
++
++/*
++ * Enable/disable for diffeent dt properties. This is applicable for
++ * properties nvidia,enable-input, nvidia,tristate, nvidia,open-drain,
++ * nvidia,lock, nvidia,rcv-sel, nvidia,high-speed-mode, nvidia,schmitt.
++ */
++#define TEGRA_PIN_DISABLE				0
++#define TEGRA_PIN_ENABLE				1
++
++#define TEGRA_PIN_PULL_NONE				0
++#define TEGRA_PIN_PULL_DOWN				1
++#define TEGRA_PIN_PULL_UP				2
++
++/* Low power mode driver */
++#define TEGRA_PIN_LP_DRIVE_DIV_8			0
++#define TEGRA_PIN_LP_DRIVE_DIV_4			1
++#define TEGRA_PIN_LP_DRIVE_DIV_2			2
++#define TEGRA_PIN_LP_DRIVE_DIV_1			3
++
++/* Rising/Falling slew rate */
++#define TEGRA_PIN_SLEW_RATE_FASTEST			0
++#define TEGRA_PIN_SLEW_RATE_FAST			1
++#define TEGRA_PIN_SLEW_RATE_SLOW			2
++#define TEGRA_PIN_SLEW_RATE_SLOWEST			3
++
++#endif
+-- 
+1.7.1.1
 
-	Ingo
