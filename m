@@ -1,60 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932419Ab3LEBNj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 20:13:39 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:50645 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756254Ab3LEBNM (ORCPT
+	id S1756302Ab3LEBNO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 20:13:14 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.246]:34172 "EHLO
+	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753692Ab3LEBNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 20:13:12 -0500
-From: Gary Rookard <garyrookard@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: lisa@xenapiadmin.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Gary Rookard <garyrookard@gmail.com>
-Subject: [PATCH 4/5] Staging: bcm: DDRInit: Fixed coding style issue, repaced spaces w/ tab.(patch set)
-Date: Wed,  4 Dec 2013 20:13:05 -0500
-Message-Id: <1386205985-3502-1-git-send-email-garyrookard@gmail.com>
-X-Mailer: git-send-email 1.8.4
+	Wed, 4 Dec 2013 20:13:09 -0500
+Message-ID: <529FD2C0.6080707@atmel.com>
+Date: Thu, 5 Dec 2013 09:11:28 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Bo Shen <voice.shen@atmel.com>, <linux-pwm@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <nicolas.ferre@atmel.com>,
+        <linux-kernel@vger.kernel.org>, <alexandre.belloni@free-electrons.com>,
+        <galak@codeaurora.org>, <plagnioj@jcrosoft.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 1/2] PWM: atmel-pwm: add PWM controller driver
+References: <1384766002-2852-1-git-send-email-voice.shen@atmel.com> <20131202105957.GD18060@ulmo.nvidia.com> <529D4B58.9020700@atmel.com> <20131203094326.GB21178@ulmo.nvidia.com> <529E9AA2.8020400@atmel.com> <20131204100340.GU19943@ulmo.nvidia.com>
+In-Reply-To: <20131204100340.GU19943@ulmo.nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the fourth patch of a series.(4)
-Replaced spaces in margin w/ 1 tab for lines:
- 181-185, 187-188
+Hi Thierry,
 
-Signed-off-by: Gary Alan Rookard <garyrookard@gmail.com>
- On branch staging-next
----
- drivers/staging/bcm/DDRInit.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+On 12/04/2013 06:03 PM, Thierry Reding wrote:
+> On Wed, Dec 04, 2013 at 10:59:46AM +0800, Bo Shen wrote:
+>> Hi Thierry,
+>>
+>> On 12/03/2013 05:43 PM, Thierry Reding wrote:
+>>> On Tue, Dec 03, 2013 at 11:09:12AM +0800, Bo Shen wrote:
+>>>> On 12/02/2013 06:59 PM, Thierry Reding wrote:
+>>>>> On Mon, Nov 18, 2013 at 05:13:21PM +0800, Bo Shen wrote:
+>>> [...]
+>>>>>> diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
+>>> [...]
+>>>>>> +	/* Calculate the period cycles */
+>>>>>> +	while (div > PWM_MAX_PRD) {
+>>>>>> +		div = clk_rate / (1 << pres);
+>>>>>> +		div = div * period_ns;
+>>>>>> +		/* 1/Hz = 100000000 ns */
+>>>>>
+>>>>> I don't think that comment is needed.
+>>>>
+>>>> This is asked to be added.
+>>>> And, I think keep it and it won't hurt, what do you think?
+>>>
+>>> I think it's obvious that you're converting from nanoseconds because of
+>>> the _ns prefix in period_ns. But if somebody requested this and everyone
+>>> else thinks it's useful, I'm okay with keeping it.
+>>>
+>>>>>> +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
+>>>>>> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CDTYUPD, dty);
+>>>>>> +	} else {
+>>>>>> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CDTY, dty);
+>>>>>> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CPRD, prd);
+>>>>>> +	}
+>>>>>> +}
+>>>>>
+>>>>> Neither version 1 nor version 2 seem to be able to change the period
+>>>>> while the channel is enabled. Perhaps that should be checked for in
+>>>>> atmel_pwm_config() and an error (-EBUSY) returned?
+>>>>
+>>>> The period is configured in dt in device tree, or platform data in non
+>>>> device tree. Nowhere will update period. So, not code to update period.
+>>>> Am I right? If not, please figure out.
+>>>
+>>> The .config() operation allows the period to be specified. Just because
+>>> nobody currently changes it at runtime doesn't mean it can't be done.
+>>>
+>>> It is also possible that whoever wrote the device tree or platform data
+>>> didn't know that the period must be the same for all PWM channels and
+>>> therefore might use different values. If you check for this, at least
+>>> they'll notice. If you don't check for it, then they may end up having
+>>> the period reconfigured behind their backs, which may cause parts of
+>>> their setup to behave unexpectedly.
+>>
+>> Thanks for this information.
+>> I will add code for changing period.
+>
+> Just to clarify: I wouldn't want this code to allow changing the period
+> but rather reject incompatible changes to the period with an error code.
 
-diff --git a/drivers/staging/bcm/DDRInit.c b/drivers/staging/bcm/DDRInit.c
-index d31dc71..fdeb4f6 100644
---- a/drivers/staging/bcm/DDRInit.c
-+++ b/drivers/staging/bcm/DDRInit.c
-@@ -178,14 +178,14 @@ static struct bcm_ddr_setting asT3_DDRSetting100MHz[]= {//  # DPLL Clock Setting
- //Net T3B DDR Settings
- //DDR INIT-133Mhz
- static struct bcm_ddr_setting asDPLL_266MHZ[] = {
--                                        {0x0F000800,0x00007212},
--                                        {0x0f000820,0x07F13FFF},
--                                        {0x0f000810,0x00000F95},
--                                        {0x0f000860,0x00000000},
--                                        {0x0f000880,0x000003DD},
-+	{0x0F000800,0x00007212},
-+	{0x0f000820,0x07F13FFF},
-+	{0x0f000810,0x00000F95},
-+	{0x0f000860,0x00000000},
-+	{0x0f000880,0x000003DD},
-                                         // Changed source for X-bar and MIPS clock to APLL
--                                        {0x0f000840,0x0FFF1B00},
--                                        {0x0f000870,0x00000002}
-+	{0x0f000840,0x0FFF1B00},
-+	{0x0f000870,0x00000002}
- 									  };
- 
- #define T3B_SKIP_CLOCK_PROGRAM_DUMP_133MHZ 11  //index for 0x0F007000
--- 
-1.8.4
+So, in this patch, just check it as you suggested in previous email, 
+would it be OK?
+--->8---
+Perhaps that should be checked for in atmel_pwm_config() and an error 
+(-EBUSY) returned?
+---8<---
+
+> Thierry
+
+Best Regards,
+Bo Shen
 
