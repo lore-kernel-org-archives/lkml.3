@@ -1,115 +1,379 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022Ab3LEVTc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 16:19:32 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:39017 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751567Ab3LEVTa (ORCPT
+	id S1753538Ab3LEVWM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 16:22:12 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:37149 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097Ab3LEVWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 16:19:30 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhQHAMbsoFJ5LHyk/2dsb2JhbABZgweDM7B3hU+BGxd0giUBAQU6HCMQCAMOCgklDwUlAyETiAHBVBcWjmoHhDMDlDGDYopMh0iDPSg
-Date: Fri, 6 Dec 2013 08:19:26 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: hannes@cmpxchg.org, mhocko@suse.cz, dchinner@redhat.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org, devel@openvz.org,
-        glommer@openvz.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v12 10/18] memcg,list_lru: add per-memcg LRU list
- infrastructure
-Message-ID: <20131205211926.GO10988@dastard>
-References: <cover.1385974612.git.vdavydov@parallels.com>
- <73d7942f31ac80dfa53bbdd0f957ce5e9a301958.1385974612.git.vdavydov@parallels.com>
- <20131203111808.GE8803@dastard>
- <529DCE9A.8000802@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <529DCE9A.8000802@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 5 Dec 2013 16:22:08 -0500
+From: Will Tange <bh34rt@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Will Tange <bh34rt@gmail.com>
+Subject: [PATCH] staging: silicom: fix 'return is not a function, parentheses are not required' in bpctl_mod.c
+Date: Thu,  5 Dec 2013 22:23:53 +0100
+Message-Id: <1386278633-29641-1-git-send-email-bh34rt@gmail.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 04:29:14PM +0400, Vladimir Davydov wrote:
-> On 12/03/2013 03:18 PM, Dave Chinner wrote:
-> > On Mon, Dec 02, 2013 at 03:19:45PM +0400, Vladimir Davydov wrote:
-> >> FS-shrinkers, which shrink dcaches and icaches, keep dentries and inodes
-> >> in list_lru structures in order to evict least recently used objects.
-> >> With per-memcg kmem shrinking infrastructure introduced, we have to make
-> >> those LRU lists per-memcg in order to allow shrinking FS caches that
-> >> belong to different memory cgroups independently.
-> >>
-> >> This patch addresses the issue by introducing struct memcg_list_lru.
-> >> This struct aggregates list_lru objects for each kmem-active memcg, and
-> >> keeps it uptodate whenever a memcg is created or destroyed. Its
-> >> interface is very simple: it only allows to get the pointer to the
-> >> appropriate list_lru object from a memcg or a kmem ptr, which should be
-> >> further operated with conventional list_lru methods.
-> > Basically The idea was that the memcg LRUs hide entirely behind the
-> > generic list_lru interface so that any cache that used the list_lru
-> > insfrastructure got memcg capabilities for free. memcg's to shrink
-> > were to be passed through the shrinker control shrinkers to the list
-> > LRU code, and it then did all the "which lru are we using" logic
-> > internally.
-> >
-> > What you've done is driven all the "which LRU are we using" logic
-> > into every single caller location. i.e. you've just broken the
-> > underlying design principle that Glauber and I had worked towards
-> > with this code - that memcg aware LRUs should be completely
-> > transparent to list_lru users. Just like NUMA awareness came for
-> > free with the list_lru code, so should memcg awareness....
-> >
-> >> +/*
-> >> + * The following structure can be used to reclaim kmem objects accounted to
-> >> + * different memory cgroups independently. It aggregates a set of list_lru
-> >> + * objects, one for each kmem-enabled memcg, and provides the method to get
-> >> + * the lru corresponding to a memcg.
-> >> + */
-> >> +struct memcg_list_lru {
-> >> +	struct list_lru global_lru;
-> >> +
-> >> +#ifdef CONFIG_MEMCG_KMEM
-> >> +	struct list_lru **memcg_lrus;	/* rcu-protected array of per-memcg
-> >> +					   lrus, indexed by memcg_cache_id() */
-> >> +
-> >> +	struct list_head list;		/* list of all memcg-aware lrus */
-> >> +
-> >> +	/*
-> >> +	 * The memcg_lrus array is rcu protected, so we can only free it after
-> >> +	 * a call to synchronize_rcu(). To avoid multiple calls to
-> >> +	 * synchronize_rcu() when many lrus get updated at the same time, which
-> >> +	 * is a typical scenario, we will store the pointer to the previous
-> >> +	 * version of the array in the old_lrus variable for each lru, and then
-> >> +	 * free them all at once after a single call to synchronize_rcu().
-> >> +	 */
-> >> +	void *old_lrus;
-> >> +#endif
-> >> +};
-> > Really, this should be embedded in the struct list_lru, not wrapping
-> > around the outside. I don't see any changelog to tell me why you
-> > changed the code from what was last in Glauber's tree, so can you
-> > explain why exposing all this memcg stuff to everyone is a good
-> > idea?
-> 
-> I preferred to move from list_lru to memcg_list_lru, because the
-> connection between list_lru and memcgs' turned memcontrol.c and
-> list_lru.c into a monolithic structure. When I read comments to the last
-> version of this patchset submitted by Glauber (v10), I found that Andrew
-> Morton disliked it, that was why I tried to "fix" it the way you observe
-> in this patch. Besides, I though that the list_lru may be used w/o memcgs.
+Fixes warnings regarding redundant parantheses thrown by the checkpatch tool in bpctl_mod.c
 
-Yes, the list_lru can be used without memcgs. That's the point
-of having a generic list_lru API - we are able to add more
-fucntionality to the list_lru implemenation without needing to
-change all the users of the API.
+Signed-off-by: Will Tange <bh34rt@gmail.com>
+---
+ drivers/staging/silicom/bpctl_mod.c | 122 ++++++++++++++++++------------------
+ 1 file changed, 61 insertions(+), 61 deletions(-)
 
-Cheers,
-
-Dave.
+diff --git a/drivers/staging/silicom/bpctl_mod.c b/drivers/staging/silicom/bpctl_mod.c
+index 39dc92a..ffd5d48 100644
+--- a/drivers/staging/silicom/bpctl_mod.c
++++ b/drivers/staging/silicom/bpctl_mod.c
+@@ -3125,11 +3125,11 @@ static int tx_status(struct bpctl_dev *pbpctl_dev)
+ 
+ 		ctrl = BPCTL_READ_REG(pbpctl_dev, CTRL);
+ 		if (pbpctl_dev->bp_i80)
+-			return ((ctrl & BPCTLI_CTRL_SWDPIN1) != 0 ? 0 : 1);
++			return (ctrl & BPCTLI_CTRL_SWDPIN1) != 0 ? 0 : 1;
+ 		if (pbpctl_dev->bp_540) {
+ 			ctrl = BP10G_READ_REG(pbpctl_dev, ESDP);
+ 
+-			return ((ctrl & BP10G_SDP1_DATA) != 0 ? 0 : 1);
++			return (ctrl & BP10G_SDP1_DATA) != 0 ? 0 : 1;
+ 		}
+ 
+ 	}
+@@ -3150,8 +3150,8 @@ static int tx_status(struct bpctl_dev *pbpctl_dev)
+ 		}
+ 
+ 		if (pbpctl_dev->bp_10g9) {
+-			return ((BP10G_READ_REG(pbpctl_dev, ESDP) &
+-				 BP10G_SDP3_DATA) != 0 ? 0 : 1);
++			return (BP10G_READ_REG(pbpctl_dev, ESDP) &
++				 BP10G_SDP3_DATA) != 0 ? 0 : 1;
+ 
+ 		} else if (pbpctl_dev->bp_fiber5) {
+ 			ctrl = BPCTL_READ_REG(pbpctl_dev, CTRL_EXT);
+@@ -3186,10 +3186,10 @@ static int tx_status(struct bpctl_dev *pbpctl_dev)
+ 			if (pbpctl_dev->bp_540) {
+ 				ctrl = BP10G_READ_REG(pbpctl_dev, ESDP);
+ 
+-				return ((ctrl & BP10G_SDP1_DATA) != 0 ? 0 : 1);
++				return (ctrl & BP10G_SDP1_DATA) != 0 ? 0 : 1;
+ 			}
+ 
+-			return ((ctrl & BPCTLI_CTRL_SWDPIN0) != 0 ? 0 : 1);
++			return (ctrl & BPCTLI_CTRL_SWDPIN0) != 0 ? 0 : 1;
+ 		} else
+ 			return ((BP10G_READ_REG(pbpctl_dev, ESDP) &
+ 				 BP10G_SDP0_DATA) != 0 ? 0 : 1);
+@@ -3204,8 +3204,8 @@ static int bp_force_link_status(struct bpctl_dev *pbpctl_dev)
+ 	if (DBI_IF_SERIES(pbpctl_dev->subdevice)) {
+ 
+ 		if ((pbpctl_dev->bp_10g) || (pbpctl_dev->bp_10g9)) {
+-			return ((BP10G_READ_REG(pbpctl_dev, ESDP) &
+-				 BP10G_SDP1_DIR) != 0 ? 1 : 0);
++			return (BP10G_READ_REG(pbpctl_dev, ESDP) &
++				 BP10G_SDP1_DIR) != 0 ? 1 : 0;
+ 
+ 		}
+ 	}
+@@ -3251,9 +3251,9 @@ int bypass_flag_status(struct bpctl_dev *pbpctl_dev)
+ 
+ 	if ((pbpctl_dev->bp_caps & BP_CAP)) {
+ 		if (pbpctl_dev->bp_ext_ver >= PXG2BPI_VER) {
+-			return ((((read_reg(pbpctl_dev, STATUS_REG_ADDR)) &
++			return (((read_reg(pbpctl_dev, STATUS_REG_ADDR)) &
+ 				  BYPASS_FLAG_MASK) ==
+-				 BYPASS_FLAG_MASK) ? 1 : 0);
++				 BYPASS_FLAG_MASK) ? 1 : 0;
+ 		}
+ 	}
+ 	return BP_NOT_CAP;
+@@ -3298,8 +3298,8 @@ int bypass_off_status(struct bpctl_dev *pbpctl_dev)
+ 
+ 	if (pbpctl_dev->bp_caps & BP_CAP) {
+ 		if (pbpctl_dev->bp_ext_ver >= PXG2BPI_VER) {
+-			return ((((read_reg(pbpctl_dev, STATUS_REG_ADDR)) &
+-				  BYPASS_OFF_MASK) == BYPASS_OFF_MASK) ? 1 : 0);
++			return (((read_reg(pbpctl_dev, STATUS_REG_ADDR)) &
++				  BYPASS_OFF_MASK) == BYPASS_OFF_MASK) ? 1 : 0;
+ 		}
+ 	}
+ 	return BP_NOT_CAP;
+@@ -3333,18 +3333,18 @@ static int bypass_status(struct bpctl_dev *pbpctl_dev)
+ 				ctrl_ext = BP10G_READ_REG(pbpctl_dev_b, I2CCTL);
+ 				BP10G_WRITE_REG(pbpctl_dev_b, I2CCTL,
+ 						(ctrl_ext | BP10G_I2C_CLK_OUT));
+-				return ((BP10G_READ_REG(pbpctl_dev_b, I2CCTL) &
+-					 BP10G_I2C_CLK_IN) != 0 ? 0 : 1);
++				return (BP10G_READ_REG(pbpctl_dev_b, I2CCTL) &
++					 BP10G_I2C_CLK_IN) != 0 ? 0 : 1;
+ 
+ 			} else if (pbpctl_dev->bp_540) {
+-				return (((BP10G_READ_REG(pbpctl_dev_b, ESDP)) &
+-					 BP10G_SDP0_DATA) != 0 ? 0 : 1);
++				return ((BP10G_READ_REG(pbpctl_dev_b, ESDP)) &
++					 BP10G_SDP0_DATA) != 0 ? 0 : 1;
+ 			}
+ 
+ 			else if ((pbpctl_dev->bp_fiber5)
+ 				 || (pbpctl_dev->bp_i80)) {
+-				return (((BPCTL_READ_REG(pbpctl_dev_b, CTRL)) &
+-					 BPCTLI_CTRL_SWDPIN0) != 0 ? 0 : 1);
++				return ((BPCTL_READ_REG(pbpctl_dev_b, CTRL)) &
++					 BPCTLI_CTRL_SWDPIN0) != 0 ? 0 : 1;
+ 			} else if (pbpctl_dev->bp_10gb) {
+ 				ctrl_ext =
+ 				    BP10GB_READ_REG(pbpctl_dev, MISC_REG_GPIO);
+@@ -3353,10 +3353,10 @@ static int bypass_status(struct bpctl_dev *pbpctl_dev)
+ 						 & ~(BP10GB_GPIO3_SET_P0 |
+ 						     BP10GB_GPIO3_CLR_P0));
+ 
+-				return (((BP10GB_READ_REG
++				return ((BP10GB_READ_REG
+ 					  (pbpctl_dev,
+ 					   MISC_REG_GPIO)) & BP10GB_GPIO3_P0) !=
+-					0 ? 0 : 1);
++					0 ? 0 : 1;
+ 			}
+ 
+ 			else if (!pbpctl_dev->bp_10g)
+@@ -3371,14 +3371,14 @@ static int bypass_status(struct bpctl_dev *pbpctl_dev)
+ 				BP10G_WRITE_REG(pbpctl_dev_b, EODSDP,
+ 						(ctrl_ext |
+ 						 BP10G_SDP7_DATA_OUT));
+-				return ((BP10G_READ_REG(pbpctl_dev_b, EODSDP) &
+-					 BP10G_SDP7_DATA_IN) != 0 ? 0 : 1);
++				return (BP10G_READ_REG(pbpctl_dev_b, EODSDP) &
++					 BP10G_SDP7_DATA_IN) != 0 ? 0 : 1;
+ 			}
+ 
+ 		} else if (pbpctl_dev->media_type == BP_COPPER) {
+ 
+-			return (((BPCTL_READ_REG(pbpctl_dev_b, CTRL)) &
+-				 BPCTLI_CTRL_SWDPIN1) != 0 ? 1 : 0);
++			return ((BPCTL_READ_REG(pbpctl_dev_b, CTRL)) &
++				 BPCTLI_CTRL_SWDPIN1) != 0 ? 1 : 0;
+ 		} else {
+ 			if ((bypass_status_clear(pbpctl_dev)) >= 0)
+ 				return bypass_from_last_read(pbpctl_dev);
+@@ -3394,10 +3394,10 @@ int default_pwron_status(struct bpctl_dev *pbpctl_dev)
+ 	if (pbpctl_dev->bp_caps & SW_CTL_CAP) {
+ 		if (pbpctl_dev->bp_caps & BP_PWUP_CTL_CAP) {
+ 			if (pbpctl_dev->bp_ext_ver >= PXG2BPI_VER) {
+-				return ((((read_reg
++				return (((read_reg
+ 					   (pbpctl_dev,
+ 					    STATUS_REG_ADDR)) & DFLT_PWRON_MASK)
+-					 == DFLT_PWRON_MASK) ? 0 : 1);
++					 == DFLT_PWRON_MASK) ? 0 : 1;
+ 			}
+ 		}		/*else if ((!pbpctl_dev->bp_caps&BP_DIS_CAP)&&
+ 				   (pbpctl_dev->bp_caps&BP_PWUP_ON_CAP))
+@@ -3414,8 +3414,8 @@ static int default_pwroff_status(struct bpctl_dev *pbpctl_dev)
+ 	   return 1; */
+ 	if ((pbpctl_dev->bp_caps & SW_CTL_CAP)
+ 	    && (pbpctl_dev->bp_caps & BP_PWOFF_CTL_CAP)) {
+-		return ((((read_reg(pbpctl_dev, STATUS_REG_ADDR)) &
+-			  DFLT_PWROFF_MASK) == DFLT_PWROFF_MASK) ? 0 : 1);
++		return (((read_reg(pbpctl_dev, STATUS_REG_ADDR)) &
++			  DFLT_PWROFF_MASK) == DFLT_PWROFF_MASK) ? 0 : 1;
+ 	}
+ 	return BP_NOT_CAP;
+ }
+@@ -3425,9 +3425,9 @@ int dis_bypass_cap_status(struct bpctl_dev *pbpctl_dev)
+ 
+ 	if (pbpctl_dev->bp_caps & BP_DIS_CAP) {
+ 		if (pbpctl_dev->bp_ext_ver >= PXG2BPI_VER) {
+-			return ((((read_reg(pbpctl_dev, STATUS_REG_ADDR)) &
++			return (((read_reg(pbpctl_dev, STATUS_REG_ADDR)) &
+ 				  DIS_BYPASS_CAP_MASK) ==
+-				 DIS_BYPASS_CAP_MASK) ? 1 : 0);
++				 DIS_BYPASS_CAP_MASK) ? 1 : 0;
+ 		}
+ 	}
+ 	return BP_NOT_CAP;
+@@ -3438,8 +3438,8 @@ int cmd_en_status(struct bpctl_dev *pbpctl_dev)
+ 
+ 	if (pbpctl_dev->bp_caps & SW_CTL_CAP) {
+ 		if (pbpctl_dev->bp_ext_ver >= PXG2BPI_VER) {
+-			return ((((read_reg(pbpctl_dev, STATUS_REG_ADDR)) &
+-				  CMND_EN_MASK) == CMND_EN_MASK) ? 1 : 0);
++			return (((read_reg(pbpctl_dev, STATUS_REG_ADDR)) &
++				  CMND_EN_MASK) == CMND_EN_MASK) ? 1 : 0;
+ 		}
+ 	}
+ 	return BP_NOT_CAP;
+@@ -3450,8 +3450,8 @@ int wdt_en_status(struct bpctl_dev *pbpctl_dev)
+ 
+ 	if (pbpctl_dev->bp_caps & WD_CTL_CAP) {
+ 		if (pbpctl_dev->bp_ext_ver >= PXG2BPI_VER) {
+-			return ((((read_reg(pbpctl_dev, STATUS_REG_ADDR)) &
+-				  WDT_EN_MASK) == WDT_EN_MASK) ? 1 : 0);
++			return (((read_reg(pbpctl_dev, STATUS_REG_ADDR)) &
++				  WDT_EN_MASK) == WDT_EN_MASK) ? 1 : 0;
+ 		}
+ 	}
+ 	return BP_NOT_CAP;
+@@ -3617,8 +3617,8 @@ int tap_status(struct bpctl_dev *pbpctl_dev)
+ 				BP10G_WRITE_REG(pbpctl_dev_b, EODSDP,
+ 						(ctrl_ext |
+ 						 BP10G_SDP6_DATA_OUT));
+-				return ((BP10G_READ_REG(pbpctl_dev_b, EODSDP) &
+-					 BP10G_SDP6_DATA_IN) != 0 ? 0 : 1);
++				return (BP10G_READ_REG(pbpctl_dev_b, EODSDP) &
++					 BP10G_SDP6_DATA_IN) != 0 ? 0 : 1;
+ 			}
+ 
+ 		} else if (pbpctl_dev->media_type == BP_COPPER)
+@@ -3706,14 +3706,14 @@ int disc_off_status(struct bpctl_dev *pbpctl_dev)
+ 				  DISC_OFF_MASK) == DISC_OFF_MASK) ? 1 : 0);
+ 
+ 		if (pbpctl_dev->bp_i80) {
+-			return (((BPCTL_READ_REG(pbpctl_dev_b, CTRL_EXT)) &
+-				 BPCTLI_CTRL_EXT_SDP6_DATA) != 0 ? 1 : 0);
++			return ((BPCTL_READ_REG(pbpctl_dev_b, CTRL_EXT)) &
++				 BPCTLI_CTRL_EXT_SDP6_DATA) != 0 ? 1 : 0;
+ 
+ 		}
+ 		if (pbpctl_dev->bp_540) {
+ 			ctrl_ext = BP10G_READ_REG(pbpctl_dev_b, ESDP);
+-			return ((BP10G_READ_REG(pbpctl_dev_b, ESDP) &
+-				 BP10G_SDP2_DATA) != 0 ? 1 : 0);
++			return (BP10G_READ_REG(pbpctl_dev_b, ESDP) &
++				 BP10G_SDP2_DATA) != 0 ? 1 : 0;
+ 
+ 		}
+ 		if (pbpctl_dev->media_type == BP_COPPER) {
+@@ -3736,12 +3736,12 @@ int disc_off_status(struct bpctl_dev *pbpctl_dev)
+ 				BP10G_WRITE_REG(pbpctl_dev_b, I2CCTL,
+ 						(ctrl_ext |
+ 						 BP10G_I2C_DATA_OUT));
+-				return ((BP10G_READ_REG(pbpctl_dev_b, I2CCTL) &
+-					 BP10G_I2C_DATA_IN) != 0 ? 1 : 0);
++				return (BP10G_READ_REG(pbpctl_dev_b, I2CCTL) &
++					 BP10G_I2C_DATA_IN) != 0 ? 1 : 0;
+ 
+ 			} else if (pbpctl_dev->bp_fiber5) {
+-				return (((BPCTL_READ_REG(pbpctl_dev_b, CTRL)) &
+-					 BPCTLI_CTRL_SWDPIN1) != 0 ? 1 : 0);
++				return ((BPCTL_READ_REG(pbpctl_dev_b, CTRL)) &
++					 BPCTLI_CTRL_SWDPIN1) != 0 ? 1 : 0;
+ 			} else if (pbpctl_dev->bp_10gb) {
+ 				ctrl_ext =
+ 				    BP10GB_READ_REG(pbpctl_dev, MISC_REG_GPIO);
+@@ -3750,25 +3750,25 @@ int disc_off_status(struct bpctl_dev *pbpctl_dev)
+ 						 & ~(BP10GB_GPIO3_SET_P1 |
+ 						     BP10GB_GPIO3_CLR_P1));
+ 
+-				return (((BP10GB_READ_REG
++				return ((BP10GB_READ_REG
+ 					  (pbpctl_dev,
+ 					   MISC_REG_GPIO)) & BP10GB_GPIO3_P1) !=
+-					0 ? 1 : 0);
++					0 ? 1 : 0;
+ 			}
+ 			if (!pbpctl_dev->bp_10g) {
+ 
+-				return (((BPCTL_READ_REG
++				return ((BPCTL_READ_REG
+ 					  (pbpctl_dev_b,
+ 					   CTRL_EXT)) &
+ 					 BPCTLI_CTRL_EXT_SDP6_DATA) !=
+-					0 ? 1 : 0);
++					0 ? 1 : 0;
+ 			} else {
+ 				ctrl_ext = BP10G_READ_REG(pbpctl_dev_b, EODSDP);
+ 				BP10G_WRITE_REG(pbpctl_dev_b, EODSDP,
+ 						(ctrl_ext |
+ 						 BP10G_SDP6_DATA_OUT));
+-				return (((BP10G_READ_REG(pbpctl_dev_b, EODSDP))
+-					 & BP10G_SDP6_DATA_IN) != 0 ? 1 : 0);
++				return ((BP10G_READ_REG(pbpctl_dev_b, EODSDP))
++					 & BP10G_SDP6_DATA_IN) != 0 ? 1 : 0;
+ 			}
+ 
+ 		}
+@@ -3783,7 +3783,7 @@ static int disc_status(struct bpctl_dev *pbpctl_dev)
+ 		ctrl = disc_off_status(pbpctl_dev);
+ 		if (ctrl < 0)
+ 			return ctrl;
+-		return ((ctrl == 0) ? 1 : 0);
++		return (ctrl == 0) ? 1 : 0;
+ 	}
+ 	return BP_NOT_CAP;
+ }
+@@ -3824,8 +3824,8 @@ int disc_port_status(struct bpctl_dev *pbpctl_dev)
+ 
+ 	if (pbpctl_dev_m->bp_caps_ex & DISC_PORT_CAP_EX) {
+ 		if (is_bypass_fn(pbpctl_dev) == 1) {
+-			return ((((read_reg(pbpctl_dev, STATUS_TAP_REG_ADDR)) &
+-				  TX_DISA_MASK) == TX_DISA_MASK) ? 1 : 0);
++			return (((read_reg(pbpctl_dev, STATUS_TAP_REG_ADDR)) &
++				  TX_DISA_MASK) == TX_DISA_MASK) ? 1 : 0;
+ 		} else
+ 			return ((((read_reg(pbpctl_dev, STATUS_TAP_REG_ADDR)) &
+ 				  TX_DISB_MASK) == TX_DISB_MASK) ? 1 : 0);
+@@ -3885,8 +3885,8 @@ int tpl2_flag_status(struct bpctl_dev *pbpctl_dev)
+ {
+ 
+ 	if (pbpctl_dev->bp_caps_ex & TPL2_CAP_EX) {
+-		return ((((read_reg(pbpctl_dev, STATUS_DISC_REG_ADDR)) &
+-			  TPL2_FLAG_MASK) == TPL2_FLAG_MASK) ? 1 : 0);
++		return (((read_reg(pbpctl_dev, STATUS_DISC_REG_ADDR)) &
++			  TPL2_FLAG_MASK) == TPL2_FLAG_MASK) ? 1 : 0;
+ 
+ 	}
+ 	return BP_NOT_CAP;
+@@ -3940,8 +3940,8 @@ int std_nic_status(struct bpctl_dev *pbpctl_dev)
+ 		if (INTEL_IF_SERIES(pbpctl_dev->subdevice))
+ 			return BP_NOT_CAP;
+ 		if (pbpctl_dev->bp_ext_ver >= BP_FW_EXT_VER8) {
+-			return ((((read_reg(pbpctl_dev, STATUS_DISC_REG_ADDR)) &
+-				  STD_NIC_ON_MASK) == STD_NIC_ON_MASK) ? 1 : 0);
++			return (((read_reg(pbpctl_dev, STATUS_DISC_REG_ADDR)) &
++				  STD_NIC_ON_MASK) == STD_NIC_ON_MASK) ? 1 : 0;
+ 		}
+ 
+ 		if (pbpctl_dev->bp_ext_ver >= PXG2BPI_VER) {
+@@ -4377,7 +4377,7 @@ int is_bypass_fn(struct bpctl_dev *pbpctl_dev)
+ 	if (!pbpctl_dev)
+ 		return -1;
+ 
+-	return (((pbpctl_dev->func == 0) || (pbpctl_dev->func == 2)) ? 1 : 0);
++	return ((pbpctl_dev->func == 0) || (pbpctl_dev->func == 2)) ? 1 : 0;
+ }
+ 
+ int set_bypass_fn(struct bpctl_dev *pbpctl_dev, int bypass_mode)
+@@ -4641,7 +4641,7 @@ int get_tap_pwup_fn(struct bpctl_dev *pbpctl_dev)
+ 	ret = default_pwron_tap_status(pbpctl_dev);
+ 	if (ret < 0)
+ 		return ret;
+-	return ((ret == 0) ? 1 : 0);
++	return (ret == 0) ? 1 : 0;
+ }
+ 
+ int get_tap_change_fn(struct bpctl_dev *pbpctl_dev)
+@@ -4730,7 +4730,7 @@ int get_disc_pwup_fn(struct bpctl_dev *pbpctl_dev)
+ 		return -1;
+ 
+ 	ret = default_pwron_disc_status(pbpctl_dev);
+-	return (ret == 0 ? 1 : (ret < 0 ? BP_NOT_CAP : 0));
++	return ret == 0 ? 1 : (ret < 0 ? BP_NOT_CAP : 0);
+ }
+ 
+ int get_disc_change_fn(struct bpctl_dev *pbpctl_dev)
+@@ -4817,7 +4817,7 @@ int get_disc_port_pwup_fn(struct bpctl_dev *pbpctl_dev)
+ 	ret = default_pwron_disc_port_status(pbpctl_dev);
+ 	if (ret < 0)
+ 		return ret;
+-	return ((ret == 0) ? 1 : 0);
++	return (ret == 0) ? 1 : 0;
+ }
+ 
+ int get_wd_exp_mode_fn(struct bpctl_dev *pbpctl_dev)
 -- 
-Dave Chinner
-david@fromorbit.com
+1.8.4.2
+
