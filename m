@@ -1,90 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab3LEAFv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 19:05:51 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:34744 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752805Ab3LEAFq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 19:05:46 -0500
-Message-ID: <529FC352.7090004@hitachi.com>
-Date: Thu, 05 Dec 2013 09:05:38 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [RFC PATCH tip 4/5] use BPF in tracing filters
-References: <1386044930-15149-1-git-send-email-ast@plumgrid.com> <1386044930-15149-5-git-send-email-ast@plumgrid.com> <529E7BEC.70509@hitachi.com> <20131203201133.52934a02@gandalf.local.home>
-In-Reply-To: <20131203201133.52934a02@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756114Ab3LEAJE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 19:09:04 -0500
+Received: from mga02.intel.com ([134.134.136.20]:33902 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753140Ab3LEAJB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 19:09:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,829,1378882800"; 
+   d="scan'208";a="447063161"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "Ingo Molnar" <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>,
+        "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH] x86/apic: Justification for disabling IO APIC before Local APIC
+Date: Wed,  4 Dec 2013 16:07:49 -0800
+Message-Id: <1386202069-51515-1-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.8.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/04 10:11), Steven Rostedt wrote:
-> On Wed, 04 Dec 2013 09:48:44 +0900
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> 
->> (2013/12/03 13:28), Alexei Starovoitov wrote:
->>> Such filters can be written in C and allow safe read-only access to
->>> any kernel data structure.
->>> Like systemtap but with safety guaranteed by kernel.
->>>
->>> The user can do:
->>> cat bpf_program > /sys/kernel/debug/tracing/.../filter
->>> if tracing event is either static or dynamic via kprobe_events.
->>>
->>> The program can be anything as long as bpf_check() can verify its safety.
->>> For example, the user can create kprobe_event on dst_discard()
->>> and use logically following code inside BPF filter:
->>>       skb = (struct sk_buff *)ctx->regs.di;
->>>       dev = bpf_load_pointer(&skb->dev);
->>> to access 'struct net_device'
->>> Since its prototype is 'int dst_discard(struct sk_buff *skb);'
->>> 'skb' pointer is in 'rdi' register on x86_64
->>> bpf_load_pointer() will try to fetch 'dev' field of 'sk_buff'
->>> structure and will suppress page-fault if pointer is incorrect.
->>
->> Hmm, I doubt it is a good way to integrate with ftrace.
->> I prefer to use this for replacing current ftrace filter,
-> 
-> I'm not sure how we can do that. Especially since the bpf is very arch
-> specific, and the current filters work for all archs.
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-My idea is to use BPF for the arch specific optimization for
-ftrace filter. For the other arch, filter works with current
-code. So the ftrace holds filter_preds and compile it in
-BPF bytecode if possible.
-And this backend optimization also can be done for fetch methods.
+Since erratum AVR31 in "Intel Atom Processor C2000 Product Family
+Specification Update" is published, I add a justification comment for
+disabling IO APIC before Local APIC (commit 522e6646).
 
->> fetch functions and actions. In that case, we can continue
->> to use current interface but much faster to trace.
->> Also, we can see what filter/arguments/actions are set
->> on each event.
-> 
-> There's also the problem that the current filters work with the results
-> of what is written to the buffer, not what is passed in by the trace
-> point, as that isn't even displayed to the user.
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+---
+ arch/x86/kernel/reboot.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-Agreed, so I've said I doubt this implementation is a good
-shape to integrate. Ktap style is better, since it just gets
-parameters from perf buffer entry (using event format).
-
-Thank you,
-
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index da3c599..c752cb4 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -558,6 +558,17 @@ void native_machine_shutdown(void)
+ {
+ 	/* Stop the cpus and apics */
+ #ifdef CONFIG_X86_IO_APIC
++	/*
++	 * Disabling IO APIC before local APIC is a workaround for
++	 * erratum AVR31 in "Intel Atom Processor C2000 Product Family
++	 * Specification Update". In this situation, interrupts that target
++	 * a Logical Processor whose Local APIC is either in the process of
++	 * being hardware disabled or software disabled are neither delivered
++	 * nor discarded. When this erratum occurs, the processor may hang.
++	 *
++	 * Even without the erratum, it still makes sense to quiet IO APIC
++	 * before disabling Local APIC.
++	 */
+ 	disable_IO_APIC();
+ #endif
+ 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.8.1.2
 
