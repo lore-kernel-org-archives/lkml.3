@@ -1,103 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756452Ab3LEDXd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 22:23:33 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:65200 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752778Ab3LEDX3 (ORCPT
+	id S1756448Ab3LEDg5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 22:36:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38847 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753951Ab3LEDgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 22:23:29 -0500
+	Wed, 4 Dec 2013 22:36:54 -0500
+Date: Wed, 4 Dec 2013 19:36:30 -0800
+From: tip-bot for Fenghua Yu <tipbot@zytor.com>
+Message-ID: <tip-2885432aaf15c1b7e65c787bfe7c5fec428296f0@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1386202069-51515-1-git-send-email-fenghua.yu@intel.com>
+References: <1386202069-51515-1-git-send-email-fenghua.yu@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/apic, doc:
+  Justification for disabling IO APIC before Local APIC
+Git-Commit-ID: 2885432aaf15c1b7e65c787bfe7c5fec428296f0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1386183786-9400-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1386183786-9400-1-git-send-email-kirill.shutemov@linux.intel.com>
-Date: Thu, 5 Dec 2013 07:23:28 +0400
-Message-ID: <CANaxB-wUpTWUxpZtYzi+6OrmJ29HfD4AGCshLCs5QDSF9JY-pg@mail.gmail.com>
-Subject: Re: [PATCH] thp: move preallocated PTE page table on move_huge_pmd()
-From: Andrey Wagin <avagin@gmail.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 04 Dec 2013 19:36:36 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/12/4 Kirill A. Shutemov <kirill.shutemov@linux.intel.com>:
-> Andrey Wagin reported crash on VM_BUG_ON() in pgtable_pmd_page_dtor()
-> with fallowing backtrace:
->
->   [<ffffffff8119427f>] free_pgd_range+0x2bf/0x410
->   [<ffffffff8119449e>] free_pgtables+0xce/0x120
->   [<ffffffff8119b900>] unmap_region+0xe0/0x120
->   [<ffffffff811a0036>] ? move_page_tables+0x526/0x6b0
->   [<ffffffff8119d6a9>] do_munmap+0x249/0x360
->   [<ffffffff811a0304>] move_vma+0x144/0x270
->   [<ffffffff811a07e9>] SyS_mremap+0x3b9/0x510
->   [<ffffffff8172d512>] system_call_fastpath+0x16/0x1b
->
-> The crash can be reproduce with this test case:
->
->   #define _GNU_SOURCE
->   #include <sys/mman.h>
->   #include <stdio.h>
->   #include <unistd.h>
->
->   #define MB (1024 * 1024UL)
->   #define GB (1024 * MB)
->
->   int main(int argc, char **argv)
->   {
->         char *p;
->         int i;
->
->         p = mmap((void *) GB, 10 * MB, PROT_READ | PROT_WRITE,
->                         MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
->         for (i = 0; i < 10 * MB; i += 4096)
->                 p[i] = 1;
->         mremap(p, 10 * MB, 10 * MB, MREMAP_FIXED | MREMAP_MAYMOVE, 2 * GB);
->         return 0;
->   }
->
-> Due to split PMD lock, we now store preallocated PTE tables for THP
-> pages per-PMD table.  It means we need to move them to other PMD table
-> if huge PMD moved there.
->
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Reported-by: Andrey Vagin <avagin@openvz.org>
+Commit-ID:  2885432aaf15c1b7e65c787bfe7c5fec428296f0
+Gitweb:     http://git.kernel.org/tip/2885432aaf15c1b7e65c787bfe7c5fec428296f0
+Author:     Fenghua Yu <fenghua.yu@intel.com>
+AuthorDate: Wed, 4 Dec 2013 16:07:49 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 4 Dec 2013 19:33:21 -0800
 
-My tests were working for the night without any problem.  Thanks for
-the quick response.
+x86/apic, doc: Justification for disabling IO APIC before Local APIC
 
-Tested-by: Andrey Vagin <avagin@openvz.org>
+Since erratum AVR31 in "Intel Atom Processor C2000 Product Family
+Specification Update" is now published, I added a justification
+comment for disabling IO APIC before Local APIC, as changed in commit:
 
-> ---
->  mm/huge_memory.c | 12 +++++++++++-
->  1 file changed, 11 insertions(+), 1 deletion(-)
->
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index bccd5a628ea6..33a5dc492810 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -1481,8 +1481,18 @@ int move_huge_pmd(struct vm_area_struct *vma, struct vm_area_struct *new_vma,
->                 pmd = pmdp_get_and_clear(mm, old_addr, old_pmd);
->                 VM_BUG_ON(!pmd_none(*new_pmd));
->                 set_pmd_at(mm, new_addr, new_pmd, pmd_mksoft_dirty(pmd));
-> -               if (new_ptl != old_ptl)
-> +               if (new_ptl != old_ptl) {
-> +                       pgtable_t pgtable;
-> +
-> +                       /*
-> +                        * Move preallocated PTE page table if new_pmd is on
-> +                        * different PMD page table.
-> +                        */
-> +                       pgtable = pgtable_trans_huge_withdraw(mm, old_pmd);
-> +                       pgtable_trans_huge_deposit(mm, new_pmd, pgtable);
-> +
->                         spin_unlock(new_ptl);
-> +               }
->                 spin_unlock(old_ptl);
->         }
->  out:
-> --
-> 1.8.4.4
->
+522e66464467 x86/apic: Disable I/O APIC before shutdown of the local APIC
+
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/1386202069-51515-1-git-send-email-fenghua.yu@intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/reboot.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index da3c599..c752cb4 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -558,6 +558,17 @@ void native_machine_shutdown(void)
+ {
+ 	/* Stop the cpus and apics */
+ #ifdef CONFIG_X86_IO_APIC
++	/*
++	 * Disabling IO APIC before local APIC is a workaround for
++	 * erratum AVR31 in "Intel Atom Processor C2000 Product Family
++	 * Specification Update". In this situation, interrupts that target
++	 * a Logical Processor whose Local APIC is either in the process of
++	 * being hardware disabled or software disabled are neither delivered
++	 * nor discarded. When this erratum occurs, the processor may hang.
++	 *
++	 * Even without the erratum, it still makes sense to quiet IO APIC
++	 * before disabling Local APIC.
++	 */
+ 	disable_IO_APIC();
+ #endif
+ 
