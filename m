@@ -1,231 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880Ab3LEFpu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 00:45:50 -0500
-Received: from mga01.intel.com ([192.55.52.88]:58660 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750973Ab3LEFps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 00:45:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,830,1378882800"; 
-   d="scan'208";a="444959678"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: sage@inktank.com, dave@bob-the-boat.me.uk, malcolm@sgi.com,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH] ceph: initialize inode before instantiating dentry
-Date: Thu,  5 Dec 2013 13:45:36 +0800
-Message-Id: <1386222336-32559-1-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.8.1.4
+	id S1752108Ab3LEFuN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 00:50:13 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:37765 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab3LEFuK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 00:50:10 -0500
+Message-ID: <52A015E1.50005@linux.vnet.ibm.com>
+Date: Thu, 05 Dec 2013 11:27:53 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH RFC] mm readahead: Fix the readahead fail in case of empty
+ numa node
+References: <1386066977-17368-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20131203143841.11b71e387dc1db3a8ab0974c@linux-foundation.org> <529EE811.5050306@linux.vnet.ibm.com> <20131204004125.a06f7dfc.akpm@linux-foundation.org> <529EF0FB.2050808@linux.vnet.ibm.com> <20131204134838.a048880a1db9e9acd14a39e4@linux-foundation.org>
+In-Reply-To: <20131204134838.a048880a1db9e9acd14a39e4@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120505-4790-0000-0000-00000BA84CA6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+On 12/05/2013 03:18 AM, Andrew Morton wrote:
+> On Wed, 04 Dec 2013 14:38:11 +0530 Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
+>
+>> On 12/04/2013 02:11 PM, Andrew Morton wrote:
+> :
+> :     This patch takes it all out and applies the same upper limit as is used in
+> :     sys_readahead() - half the inactive list.
+> :
+> : +/*
+> : + * Given a desired number of PAGE_CACHE_SIZE readahead pages, return a
+> : + * sensible upper limit.
+> : + */
+> : +unsigned long max_sane_readahead(unsigned long nr)
+> : +{
+> : +       unsigned long active;
+> : +       unsigned long inactive;
+> : +
+> : +       get_zone_counts(&active, &inactive);
+> : +       return min(nr, inactive / 2);
+> : +}
+>
 
-commit b18825a7c8 (Put a small type field into struct dentry::d_flags)
-put a type field into struct dentry::d_flags. __d_instantiate() set the
-field by checking inode->i_mode. So we should initialize inode before
-instantiating dentry when handling mds reply.
+Hi Andrew, Thanks for digging out. So it seems like earlier we had not
+even considered free pages?
 
-Fixes: #6930
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
----
- fs/ceph/inode.c | 114 +++++++++++++++++++++-----------------------------------
- 1 file changed, 43 insertions(+), 71 deletions(-)
+> And one would need to go back further still to understand the rationale
+> for the sys_readahead() decision and that even predates the BK repo.
+>
+> iirc the thinking was that we need _some_ limit on readahead size so
+> the user can't go and do ridiculously large amounts of readahead via
+> sys_readahead().  But that doesn't make a lot of sense because the user
+> could do the same thing with plain old read().
+>
 
-diff --git a/fs/ceph/inode.c b/fs/ceph/inode.c
-index 9a8e396..c1a9367 100644
---- a/fs/ceph/inode.c
-+++ b/fs/ceph/inode.c
-@@ -978,7 +978,6 @@ int ceph_fill_trace(struct super_block *sb, struct ceph_mds_request *req,
- 	struct ceph_mds_reply_inode *ininfo;
- 	struct ceph_vino vino;
- 	struct ceph_fs_client *fsc = ceph_sb_to_client(sb);
--	int i = 0;
- 	int err = 0;
- 
- 	dout("fill_trace %p is_dentry %d is_target %d\n", req,
-@@ -1039,6 +1038,29 @@ int ceph_fill_trace(struct super_block *sb, struct ceph_mds_request *req,
- 		}
- 	}
- 
-+	if (rinfo->head->is_target) {
-+		vino.ino = le64_to_cpu(rinfo->targeti.in->ino);
-+		vino.snap = le64_to_cpu(rinfo->targeti.in->snapid);
-+
-+		in = ceph_get_inode(sb, vino);
-+		if (IS_ERR(in)) {
-+			err = PTR_ERR(in);
-+			goto done;
-+		}
-+		req->r_target_inode = in;
-+
-+		err = fill_inode(in, &rinfo->targeti, NULL,
-+				session, req->r_request_started,
-+				(le32_to_cpu(rinfo->head->result) == 0) ?
-+				req->r_fmode : -1,
-+				&req->r_caps_reservation);
-+		if (err < 0) {
-+			pr_err("fill_inode badness %p %llx.%llx\n",
-+				in, ceph_vinop(in));
-+			goto done;
-+		}
-+	}
-+
- 	/*
- 	 * ignore null lease/binding on snapdir ENOENT, or else we
- 	 * will have trouble splicing in the virtual snapdir later
-@@ -1108,7 +1130,6 @@ int ceph_fill_trace(struct super_block *sb, struct ceph_mds_request *req,
- 			     ceph_dentry(req->r_old_dentry)->offset);
- 
- 			dn = req->r_old_dentry;  /* use old_dentry */
--			in = dn->d_inode;
- 		}
- 
- 		/* null dentry? */
-@@ -1130,44 +1151,28 @@ int ceph_fill_trace(struct super_block *sb, struct ceph_mds_request *req,
- 		}
- 
- 		/* attach proper inode */
--		ininfo = rinfo->targeti.in;
--		vino.ino = le64_to_cpu(ininfo->ino);
--		vino.snap = le64_to_cpu(ininfo->snapid);
--		in = dn->d_inode;
--		if (!in) {
--			in = ceph_get_inode(sb, vino);
--			if (IS_ERR(in)) {
--				pr_err("fill_trace bad get_inode "
--				       "%llx.%llx\n", vino.ino, vino.snap);
--				err = PTR_ERR(in);
--				d_drop(dn);
--				goto done;
--			}
-+		if (!dn->d_inode) {
-+			ihold(in);
- 			dn = splice_dentry(dn, in, &have_lease, true);
- 			if (IS_ERR(dn)) {
- 				err = PTR_ERR(dn);
- 				goto done;
- 			}
- 			req->r_dentry = dn;  /* may have spliced */
--			ihold(in);
--		} else if (ceph_ino(in) == vino.ino &&
--			   ceph_snap(in) == vino.snap) {
--			ihold(in);
--		} else {
-+		} else if (dn->d_inode && dn->d_inode != in) {
- 			dout(" %p links to %p %llx.%llx, not %llx.%llx\n",
--			     dn, in, ceph_ino(in), ceph_snap(in),
--			     vino.ino, vino.snap);
-+			     dn, dn->d_inode, ceph_vinop(dn->d_inode),
-+			     ceph_vinop(in));
- 			have_lease = false;
--			in = NULL;
- 		}
- 
- 		if (have_lease)
- 			update_dentry_lease(dn, rinfo->dlease, session,
- 					    req->r_request_started);
- 		dout(" final dn %p\n", dn);
--		i++;
--	} else if ((req->r_op == CEPH_MDS_OP_LOOKUPSNAP ||
--		   req->r_op == CEPH_MDS_OP_MKSNAP) && !req->r_aborted) {
-+	} else if (!req->r_aborted &&
-+		   (req->r_op == CEPH_MDS_OP_LOOKUPSNAP ||
-+		    req->r_op == CEPH_MDS_OP_MKSNAP)) {
- 		struct dentry *dn = req->r_dentry;
- 
- 		/* fill out a snapdir LOOKUPSNAP dentry */
-@@ -1177,52 +1182,15 @@ int ceph_fill_trace(struct super_block *sb, struct ceph_mds_request *req,
- 		ininfo = rinfo->targeti.in;
- 		vino.ino = le64_to_cpu(ininfo->ino);
- 		vino.snap = le64_to_cpu(ininfo->snapid);
--		in = ceph_get_inode(sb, vino);
--		if (IS_ERR(in)) {
--			pr_err("fill_inode get_inode badness %llx.%llx\n",
--			       vino.ino, vino.snap);
--			err = PTR_ERR(in);
--			d_delete(dn);
--			goto done;
--		}
- 		dout(" linking snapped dir %p to dn %p\n", in, dn);
-+		ihold(in);
- 		dn = splice_dentry(dn, in, NULL, true);
- 		if (IS_ERR(dn)) {
- 			err = PTR_ERR(dn);
- 			goto done;
- 		}
- 		req->r_dentry = dn;  /* may have spliced */
--		ihold(in);
--		rinfo->head->is_dentry = 1;  /* fool notrace handlers */
- 	}
--
--	if (rinfo->head->is_target) {
--		vino.ino = le64_to_cpu(rinfo->targeti.in->ino);
--		vino.snap = le64_to_cpu(rinfo->targeti.in->snapid);
--
--		if (in == NULL || ceph_ino(in) != vino.ino ||
--		    ceph_snap(in) != vino.snap) {
--			in = ceph_get_inode(sb, vino);
--			if (IS_ERR(in)) {
--				err = PTR_ERR(in);
--				goto done;
--			}
--		}
--		req->r_target_inode = in;
--
--		err = fill_inode(in,
--				 &rinfo->targeti, NULL,
--				 session, req->r_request_started,
--				 (le32_to_cpu(rinfo->head->result) == 0) ?
--				 req->r_fmode : -1,
--				 &req->r_caps_reservation);
--		if (err < 0) {
--			pr_err("fill_inode badness %p %llx.%llx\n",
--			       in, ceph_vinop(in));
--			goto done;
--		}
--	}
--
- done:
- 	dout("fill_trace done err=%d\n", err);
- 	return err;
-@@ -1360,23 +1328,27 @@ retry_lookup:
- 		} else {
- 			in = ceph_get_inode(parent->d_sb, vino);
- 			if (IS_ERR(in)) {
--				dout("new_inode badness\n");
--				d_drop(dn);
--				dput(dn);
- 				err = PTR_ERR(in);
--				goto out;
-+				d_drop(dn);
-+				goto next_item;
- 			}
--			dn = splice_dentry(dn, in, NULL, false);
--			if (IS_ERR(dn))
--				dn = NULL;
- 		}
- 
- 		if (fill_inode(in, &rinfo->dir_in[i], NULL, session,
- 			       req->r_request_started, -1,
- 			       &req->r_caps_reservation) < 0) {
- 			pr_err("fill_inode badness on %p\n", in);
-+			if (!dn->d_inode)
-+				iput(in);
-+			d_drop(dn);
- 			goto next_item;
- 		}
-+
-+		if (!dn->d_inode) {
-+			dn = splice_dentry(dn, in, NULL, false);
-+			if (IS_ERR(dn))
-+				dn = NULL;
-+		}
- 		if (dn)
- 			update_dentry_lease(dn, rinfo->dir_dlease[i],
- 					    req->r_session,
--- 
-1.8.1.4
+True.
+
+> So for argument's sake I'm thinking we just kill it altogether and
+> permit arbitrarily large readahead:
+>
+> --- a/mm/readahead.c~a
+> +++ a/mm/readahead.c
+> @@ -238,13 +238,12 @@ int force_page_cache_readahead(struct ad
+>   }
+>
+>   /*
+> - * Given a desired number of PAGE_CACHE_SIZE readahead pages, return a
+> - * sensible upper limit.
+> + * max_sane_readahead() is disabled.  It can later be removed altogether, but
+> + * let's keep a skeleton in place for now, in case disabling was the wrong call.
+>    */
+>   unsigned long max_sane_readahead(unsigned long nr)
+>   {
+> -	return min(nr, (node_page_state(numa_node_id(), NR_INACTIVE_FILE)
+> -		+ node_page_state(numa_node_id(), NR_FREE_PAGES)) / 2);
+> +	return nr;
+>   }
+>
+
+I had something like below in mind for posting.  But it looks
+simple now with your patch.
+
+
+  unsigned long max_sane_readahead(unsigned long nr)
+  {
+	int nid;
+	unsigned long free_page = 0;
+
+	for_each_node_state(nid, N_MEMORY)
+		free_page += node_page_state(nid, NR_INACTIVE_FILE)
+				+ node_page_state(nid, NR_FREE_PAGES);
+
+	/*
+	 * Readahead onto remote memory is better than no readahead when local
+	 * numa node does not have memory. We sanitize readahead size depending
+	 * on potential free memory in the whole system.
+	 */
+	return min(nr, free_page / (2 * nr_node_ids));
+
+Or if we wanted to avoid iteration on nodes simply returning
+
+something like nr/8  or something like that for remote numa fault cases.
+
 
