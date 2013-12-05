@@ -1,137 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240Ab3LEANZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 19:13:25 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55504 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756116Ab3LEANX (ORCPT
+	id S1756247Ab3LEAQU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 19:16:20 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:59871 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753843Ab3LEAQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 19:13:23 -0500
-Date: Thu, 5 Dec 2013 00:13:15 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH tty-next 0/4] tty: Fix ^C echo
-Message-ID: <20131205001315.3ac390d6@alan.etchedpixels.co.uk>
-In-Reply-To: <529F698C.6040603@hurleysoftware.com>
-References: <1386018725-4781-1-git-send-email-peter@hurleysoftware.com>
-	<20131203000116.0d512b59@alan.etchedpixels.co.uk>
-	<529D4E58.9020101@hurleysoftware.com>
-	<20131203142011.371067ea@alan.etchedpixels.co.uk>
-	<529F698C.6040603@hurleysoftware.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Dec 2013 19:16:19 -0500
+Date: Wed, 4 Dec 2013 16:16:14 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: lots of brief rcu stalls.
+Message-ID: <20131205001614.GI15492@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131204232838.GA25592@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131204232838.GA25592@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120500-9332-0000-0000-000002624B4D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Not so much confused as simply merged. Input processing is inherently
-> single-threaded; it makes sense to rely on that at the highest level
-> possible.
+On Wed, Dec 04, 2013 at 06:28:38PM -0500, Dave Jones wrote:
+> Paul,
+> I'm seeing this happening more and more lately...
+> 
+> [  771.786462] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [  771.786552] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+> [  771.786574] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+> [  771.786595] 	(detected by 0, t=6502 jiffies, g=20611, c=20610, q=0)
+> [  771.786620] INFO: Stall ended before state dump start
+> [  966.724546] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [  966.724854] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+> [  966.724931] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+> [  966.725005] 	(detected by 0, t=26007 jiffies, g=20611, c=20610, q=0)
+> [  966.725093] INFO: Stall ended before state dump start
+> [ 1161.661459] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [ 1161.661763] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+> [ 1161.661840] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+> [ 1161.661915] 	(detected by 0, t=45512 jiffies, g=20611, c=20610, q=0)
+> [ 1161.662001] INFO: Stall ended before state dump start
+> [ 1356.598205] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [ 1356.598513] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+> [ 1356.598590] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+> [ 1356.598664] 	(detected by 0, t=65017 jiffies, g=20611, c=20610, q=0)
+> [ 1356.598751] INFO: Stall ended before state dump start
+> [ 1551.536099] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [ 1551.536408] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+> [ 1551.536485] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
+> [ 1551.536559] 	(detected by 0, t=84522 jiffies, g=20611, c=20610, q=0)
+> [ 1551.536645] INFO: Stall ended before state dump start
+> 
+> While it's apparently a non-problem, it's pretty noisy.
+> Any ideas?
 
-I would disagree entirely. You want to minimise the areas affected by a
-given lock. You also want to lock data not code. Correctness comes before
-speed. You optimise it when its right, otherwise you end up in a nasty
-mess when you discover you've optimised to assumptions that are flawed.
+Does the following help?
 
-> On smp, locked instructions and cache-line contention on the tty_buffer
-> list ptrs and read_buf indices account for more than 90% of the time cost
-> in the read path for real hardware (and over 95% for ptys).
+							Thanx, Paul
 
-Yes I'm uncomfortably aware of that for modern SMP hardware, and also
-that simply ripping out the buffering will screw the real low end people
-(eg M68K and friends)
+------------------------------------------------------------------------
 
-> Firewire, which is capable of sustained throughput in excess of 40MB/sec,
-> struggles to get over 5MB/sec through the tty layer. [And drm output
-> is orders-of-magnitude slower than that, which is just sad...]
+rcu: Kick CPU halfway to RCU CPU stall warning
 
-And what protocols do you care about 5MB/second - n_tty - no ? For the
-high speed protocols you are trying to fix a lost cause. By the time
-we've gone piddling around with tty buffers and serialized tty queues
-firing bytes through tasks and the like you already lost.
+When an RCU CPU stall warning occurs, the CPU invokes resched_cpu() on
+itself.  This can help move the grace period forward in some situations,
+but it would be even better to do this -before- the RCU CPU stall warning.
+This commit therefore causes resched_cpu() to be called every five jiffies
+once the system is halfway to an RCU CPU stall warning.
 
-For drm I assume you mean the framebuffer console logic ? Last time I
-benched that except for the Poulsbo it was bottlenecked on the GPU - not
-that I can type at 5MB/second anyway. Not that fixing the performance of
-the various bits wouldn't be a good thing too especially on the output
-end.
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-> While that would work, it's expensive extra locking in a path that 99.999%
-> of the time doesn't need it. I'd rather explore other solutions.
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index dd081987a8ec..5243ebea0fc1 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -755,6 +755,12 @@ static int dyntick_save_progress_counter(struct rcu_data *rdp,
+ }
+ 
+ /*
++ * This function really isn't for public consumption, but RCU is special in
++ * that context switches can allow the state machine to make progress.
++ */
++extern void resched_cpu(int cpu);
++
++/*
+  * Return true if the specified CPU has passed through a quiescent
+  * state by virtue of being in or having passed through an dynticks
+  * idle state since the last call to dyntick_save_progress_counter()
+@@ -812,16 +818,34 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp,
+ 	 */
+ 	rcu_kick_nohz_cpu(rdp->cpu);
+ 
++	/*
++	 * Alternatively, the CPU might be running in the kernel
++	 * for an extended period of time without a quiescent state.
++	 * Attempt to force the CPU through the scheduler to gain the
++	 * needed quiescent state, but only if the grace period has gone
++	 * on for an uncommonly long time.  If there are many stuck CPUs,
++	 * we will beat on the first one until it gets unstuck, then move
++	 * to the next.  Only do this for the primary flavor of RCU.
++	 */
++	if (rdp->rsp == rcu_state &&
++	    ULONG_CMP_GE(ACCESS_ONCE(jiffies), rdp->rsp->jiffies_resched)) {
++		rdp->rsp->jiffies_resched += 5;
++		resched_cpu(rdp->cpu);
++	}
++
+ 	return 0;
+ }
+ 
+ static void record_gp_stall_check_time(struct rcu_state *rsp)
+ {
+ 	unsigned long j = ACCESS_ONCE(jiffies);
++	unsigned long j1;
+ 
+ 	rsp->gp_start = j;
+ 	smp_wmb(); /* Record start time before stall time. */
+-	rsp->jiffies_stall = j + rcu_jiffies_till_stall_check();
++	j1 = rcu_jiffies_till_stall_check();
++	rsp->jiffies_stall = j + j1;
++	rsp->jiffies_resched = j + j1 / 2;
+ }
+ 
+ /*
+diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
+index 52be957c9fe2..8e34d8674a4e 100644
+--- a/kernel/rcu/tree.h
++++ b/kernel/rcu/tree.h
+@@ -453,6 +453,8 @@ struct rcu_state {
+ 						/*  but in jiffies. */
+ 	unsigned long jiffies_stall;		/* Time at which to check */
+ 						/*  for CPU stalls. */
++	unsigned long jiffies_resched;		/* Time at which to resched */
++						/*  a reluctant CPU. */
+ 	unsigned long gp_max;			/* Maximum GP duration in */
+ 						/*  jiffies. */
+ 	const char *name;			/* Name of structure. */
 
-How about getting the high speed paths out of the whole tty buffer
-layer ? Almost every line discipline can be a fastpath directly to the
-network layer. If optimisation is the new obsession then we can cut the
-crap entirely by optimising for networking not making it a slave of n_tty.
-
-Starting at the beginning
-
-we have locks on rx because
-- we want serialized rx
-- we have buffer lifetimes
-- we have buffer queues
-- we have loads of flow control parameters
-
-Only n_tty needs the buffers (maybe some of irda but irda hasn't worked
-for years afaik). IRQ receive paths are serialized (and as a bonus can be
-pinned to a CPU). Flow control is n_tty stuff, everyone else simply fires
-it at their network layer as fast as possible and net already does the
-work.
-
-Keep a single tty_buf in the tty for batching at any given time, and
-private so no locks at all
-
-Have a wrapper via
-ld->receive(tty, buf)
-
-which fires the tty_buf at the ldisc and allocates a new empty one
-
-tty_queue_bytes(tty, buf, flags, len)
-
-which adds to the buffer, and if full calls ld->queue and then carries on
-the copying cycle
-
-and
-
-ld->receive_direct(tty, buf, flags, len)
-
-which allows block mode devices to blast bytes directly at the queue (ie
-all the USB 3G stuff, firewire, etc) without going via any additional
-copies.
-
-For almost all ldiscs
-
-ld->receive would be
-
-ld->receive_direct(tty, buf->buf, buf->flags, buf->len);
-free buffer
-
-For n_tty type stuff
-
-ld->receive is basically much of tty_flip_buffer_push
-
-ld->receive_direct allocates tty_buffers and copies into it
-
-We may even be able to optimise some of the n_tty cases into the
-fastpath afterwards (notably raw, no echo)
-
-For anything receiving in blocks that puts us close to (but not quite at)
-ethernet kinds of cleanness for network buffer delivery.
-
-Worth me looking into ?
-
-> The clock/generation method seems like it might yield a lockless solution
-> for this problem, but maybe creates another one because the driver-side
-> would need to stamp the buffer (in essence, a flush could affect data
-> that has not yet been copied from the driver).
-
-But it has arrived in the driver so might not matter. That requires a
-little thought!
-
-Alan
