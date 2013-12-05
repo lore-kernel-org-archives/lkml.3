@@ -1,115 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933353Ab3LESum (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 13:50:42 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:41346 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933175Ab3LESul convert rfc822-to-8bit (ORCPT
+	id S933394Ab3LESvW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 13:51:22 -0500
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:45510 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752293Ab3LESvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 13:50:41 -0500
-Message-ID: <52A0CB04.8030502@arm.com>
-Date: Thu, 05 Dec 2013 18:50:44 +0000
-From: Serban Constantinescu <Serban.Constantinescu@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "arve@android.com" <arve@android.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+	Thu, 5 Dec 2013 13:51:21 -0500
+Date: Thu, 5 Dec 2013 13:51:16 -0500
+From: Tejun Heo <tj@kernel.org>
+To: "Strashko, Grygorii" <grygorii.strashko@ti.com>
+Cc: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        "ccross@android.com" <ccross@android.com>,
-        Dave Butcher <Dave.Butcher@arm.com>,
-        "irogers@google.com" <irogers@google.com>,
-        "romlem@android.com" <romlem@android.com>
-Subject: Re: [PATCH v1 3/9] staging: android: binder: Add cmd == CMD_NAME
- handling
-References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com> <1386180581-6710-4-git-send-email-serban.constantinescu@arm.com> <20131205084042.GW28413@mwanda>
-In-Reply-To: <20131205084042.GW28413@mwanda>
-X-OriginalArrivalTime: 05 Dec 2013 18:50:38.0393 (UTC) FILETIME=[E3A0CA90:01CEF1EA]
-X-MC-Unique: 113120518503901401
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2 08/23] mm/memblock: Add memblock memory allocation apis
+Message-ID: <20131205185116.GA27274@mtj.dyndns.org>
+References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com>
+ <1386037658-3161-9-git-send-email-santosh.shilimkar@ti.com>
+ <20131203232445.GX8277@htj.dyndns.org>
+ <52A0AB34.2030703@ti.com>
+ <20131205165325.GA24062@mtj.dyndns.org>
+ <902E09E6452B0E43903E4F2D568737AB097B26B2@DNCE04.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <902E09E6452B0E43903E4F2D568737AB097B26B2@DNCE04.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/13 08:40, Dan Carpenter wrote:
-> On Wed, Dec 04, 2013 at 06:09:35PM +0000, Serban Constantinescu wrote:
->> This patch modifies the functions that need to be passed the explicit
->> command to use a boolean flag. This way we can reuse the code for 64bit
->> compat commands.
->>
->
-> I don't understand this at all.  cmd seems like it should be 32 bits
-> on both arches.
-Command is 32bit for both arches but does not have the same value. Here 
-is what happens, this patch make more sense when looking at the compat 
-layer.
+Hey,
 
-The binder commands differ between 32bit userspace and 64bit kernels. E.g:
+On Thu, Dec 05, 2013 at 06:48:21PM +0000, Strashko, Grygorii wrote:
+> +/* Fall back to all the existing bootmem APIs */
+> +#define memblock_virt_alloc(x) \
+> +       __alloc_bootmem(x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT)
+> 
+> which will be transformed to 
+> +/* Fall back to all the existing bootmem APIs */
+> +#define memblock_virt_alloc(x, align) \
+> +       __alloc_bootmem(x, align, BOOTMEM_LOW_LIMIT)
+> 
+> and used as
+> 
+> memblock_virt_alloc(size, 0);
+> 
+> so, by default bootmem code will use 0 as default alignment and not SMP_CACHE_BYTES
+> and that is wrong.
 
-> BR_INCREFS = _IOR('r', 7, struct binder_ptr_cookie)
+Just translate it to SMP_CACHE_BYTES?  Am I missing something here?
+You're defining a new API which wraps around two interfaces.  Wrap
+them so that they show the same desired behavior?
 
-> COMPAT_BR_INCREFS = _IOR('r', 7, struct compat_binder_ptr_cookie)
-
-> struct compat_binder_ptr_cookie {
->     compat_uptr_t ptr;
->     compat_uptr_t cookie;
-> };
-
-> struct binder_ptr_cookie {
->     void *ptr;
->     void *cookie;
-> };
-
-(the IOR() macro encodes the size of the transaction - struct 
-binder_ptr_cookie).
-
-This enables me to use the same handler for:
-
-* native 64bit kernel/ 64bit userspace
-
->           case BC_INCREFS_DONE:
->         case BC_ACQUIRE_DONE: {
->                  void __user *node_ptr;
->                  void *cookie;
->
->                  if (get_user(node_ptr, (void * __user *)ptr))
->                        return -EFAULT;
->                  ptr += sizeof(void *);
->                  if (get_user(cookie, (void * __user *)ptr))
->                        return -EFAULT;
->                  ptr += sizeof(void *);
->                  bc_increfs_done(proc, thread, cmd == BC_ACQUIRE_DONE, node_ptr, cookie);
->                  break;
->           }
-
-* compat 64bit kernel/ 32bit userspace.
-
-> +       case COMPAT_BC_INCREFS_DONE:
-> +       case COMPAT_BC_ACQUIRE_DONE: {
-> +               compat_uptr_t node_ptr;
-> +               compat_uptr_t cookie;
-> +
-> +               if (get_user(node_ptr, (compat_uptr_t __user *)*ptr))
-> +                       return -EFAULT;
-> +               *ptr += sizeof(compat_uptr_t);
-> +               if (get_user(cookie, (compat_uptr_t __user *)*ptr))
-> +                       return -EFAULT;
-> +               *ptr += sizeof(compat_uptr_t);
-> +               bc_increfs_done(proc, thread, cmd == COMPAT_BC_ACQUIRE_DONE,
-> +                       compat_ptr(node_ptr), compat_ptr(cookie));
-> +               break;
-
-where the prototype for bc_increfs_done() has changed to:
-
->  static void bc_increfs_done(struct binder_proc *proc,
-> -        struct binder_thread *thread, uint32_t cmd,
-> +        struct binder_thread *thread, bool acquire,
-
-Obsucre on its own, I should add more details in the commit message.
-
-Thanks,
-Serban C
-
+-- 
+tejun
