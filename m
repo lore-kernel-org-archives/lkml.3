@@ -1,119 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932464Ab3LEPGk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 10:06:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19394 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932203Ab3LEPGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 10:06:37 -0500
-Date: Thu, 5 Dec 2013 11:50:21 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Gleb Natapov <gleb@redhat.com>, avi.kivity@gmail.com,
-        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Eric Dumazet <dada1@cosmosbay.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
-Message-ID: <20131205135021.GA12996@amt.cnet>
-References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1382534973-13197-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20131122191429.GA13308@amt.cnet>
- <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com>
- <5292EE2F.5090305@linux.vnet.ibm.com>
- <20131125181254.GB21858@amt.cnet>
- <529413C1.60302@linux.vnet.ibm.com>
- <20131126193148.GA18071@amt.cnet>
- <5297049E.3020800@linux.vnet.ibm.com>
- <529D83F8.7050605@linux.vnet.ibm.com>
+	id S932579Ab3LEPHY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 10:07:24 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:34291 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932203Ab3LEPHU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 10:07:20 -0500
+Message-ID: <52A0969A.5070607@ti.com>
+Date: Thu, 5 Dec 2013 20:37:06 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <529D83F8.7050605@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kamil Debski <k.debski@samsung.com>, <linux-kernel@vger.kernel.org>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+CC: <kyungmin.park@samsung.com>, <t.figa@samsung.com>,
+        <s.nawrocki@samsung.com>, <m.szyprowski@samsung.com>,
+        <gautam.vivek@samsung.com>, <mat.krawczuk@gmail.com>,
+        <yulgon.kim@samsung.com>, <p.paneri@samsung.com>,
+        <av.tikhomirov@samsung.com>, <jg1.han@samsung.com>,
+        <galak@codeaurora.org>, <matt.porter@linaro.org>
+Subject: Re: [PATCH v4 0/9] phy: Add new Exynos USB 2.0 PHY driver
+References: <1386246579-25141-1-git-send-email-k.debski@samsung.com>
+In-Reply-To: <1386246579-25141-1-git-send-email-k.debski@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GOn Tue, Dec 03, 2013 at 03:10:48PM +0800, Xiao Guangrong wrote:
-> On 11/28/2013 04:53 PM, Xiao Guangrong wrote:
-> > On 11/27/2013 03:31 AM, Marcelo Tosatti wrote:
-> >> On Tue, Nov 26, 2013 at 11:21:37AM +0800, Xiao Guangrong wrote:
-> >>> On 11/26/2013 02:12 AM, Marcelo Tosatti wrote:
-> >>>> On Mon, Nov 25, 2013 at 02:29:03PM +0800, Xiao Guangrong wrote:
-> >>>>>>> Also, there is no guarantee of termination (as long as sptes are
-> >>>>>>> deleted with the correct timing). BTW, can't see any guarantee of
-> >>>>>>> termination for rculist nulls either (a writer can race with a lockless
-> >>>>>>> reader indefinately, restarting the lockless walk every time).
-> >>>>>>
-> >>>>>> Hmm, that can be avoided by checking dirty-bitmap before rewalk,
-> >>>>>> that means, if the dirty-bitmap has been set during lockless write-protection,
-> >>>>>> it�s unnecessary to write-protect its sptes. Your idea?
-> >>>>> This idea is based on the fact that the number of rmap is limited by
-> >>>>> RMAP_RECYCLE_THRESHOLD. So, in the case of adding new spte into rmap,
-> >>>>> we can break the rewalk at once, in the case of deleting, we can only
-> >>>>> rewalk RMAP_RECYCLE_THRESHOLD times.
-> >>>>
-> >>>> Please explain in more detail.
-> >>>
-> >>> Okay.
-> >>>
-> >>> My proposal is like this:
-> >>>
-> >>> pte_list_walk_lockless()
-> >>> {
-> >>> restart:
-> >>>
-> >>> +	if (__test_bit(slot->arch.dirty_bitmap, gfn-index))
-> >>> +		return;
-> >>>
-> >>> 	code-doing-lockless-walking;
-> >>> 	......
-> >>> }
-> >>>
-> >>> Before do lockless-walking, we check the dirty-bitmap first, if
-> >>> it is set we can simply skip write-protection for the gfn, that
-> >>> is the case that new spte is being added into rmap when we lockless
-> >>> access the rmap.
-> >>
-> >> The dirty bit could be set after the check.
-> >>
-> >>> For the case of deleting spte from rmap, the number of entry is limited
-> >>> by RMAP_RECYCLE_THRESHOLD, that is not endlessly.
-> >>
-> >> It can shrink and grow while lockless walk is performed.
-> > 
-> > Yes, indeed.
-> > 
-> > Hmmm, another idea in my mind to fix this is encoding the position into
-> > the reserved bits of desc->more pointer, for example:
-> > 
-> >           +------+    +------+    +------+
-> > rmapp ->  |Desc 0| -> |Desc 1| -> |Desc 2|
-> >           +------+    +------+    +------+
-> > 
-> > There are 3 descs on the rmap, and:
-> > rmapp = &desc0 | 1UL | 3UL << 50;
-> > desc0->more = desc1 | 2UL << 50;
-> > desc1->more = desc0 | 1UL << 50
-> > desc2->more = &rmapp | 1UL; (The nulls pointer)
-> > 
-> > We will walk to the next desc only if the "position" of current desc
-> > is >= the position of next desc. That can make sure we can reach the
-> > last desc anyway.
-> > 
-> > And in order to avoiding doing too many "rewalk", we will goto the
-> > slow path (do walk with holding the lock) instead when retry the walk
-> > more that N times.
+Hi,
+
+On Thursday 05 December 2013 05:59 PM, Kamil Debski wrote:
+> Hi,
 > 
-> How about this idea? Or you guys still prefer to the idea of lockless on
-> first-level?
+> This is the fourth version of the patchset adding the new Exynos USB 2.0 PHY
+> driver. The driver uses the Generic PHY Framework.
+> 
+> A month has passed since the last version. I have addressed numerous comments
+> that appeared on the mailing list in this patch. I would like to specially
+> thank Kishon, Tomasz, Matt and Vivek for their comments.
+> 
+> This patch contains two necessary patches to the phy core.
+> It is very useful to be able to get phy using a device tree node.
+> 
+> In addition this patch depends on:
+> [PATCH V11 1/3] ARM: dts: Add pmu sysreg node to exynos5250 and exynos5420 dtsi
+> files [1].
+> 
+> Best wishes,
+> Kamil Debski
 
-Xiao,
+The last four patches are missing [1]
 
-Is it not the case that simply moving to the slow path once a maximum of
-rewalks has been reached enough? (looks a like a good solution).
+[1] -> https://lkml.org/lkml/2013/12/5/166
 
-Please move lockless rcu walking code to generic code where it belongs.
+Thanks
+Kishon
+> 
+> [1] - http://www.spinics.net/lists/linux-samsung-soc/msg24528.html
+> 
+> ----------------
+> Changes from v3:
+> - using PMU and system registers indirectly via syscon
+> - change labelling
+> - change Kconfig name
+> - fixed typos/stray whitespace
+> - move of_phy_provider_register() to the end of probe
+> - add a regular error return code to the rate_to_clk functions
+> - cleanup code and remove unused code
+> - change struct names to avoid collisions
+> - add mechanism to support multiple phys by the ehci driver
+> 
+> ----------------
+> Changes from v2:
+> - rebase all patches to the usb-next branch
+> - fixes in the documentation file
+>   - remove wrong entries in the phy node (ranges, and #address- & #size-cells)
+>   - add clocks and clock-names as required properites
+>   - rephrase a few sentences
+> - fixes in the ehci-exynos.c file
+>   - move phy_name variable next to phy in exynos_ehci_hcd
+>   - remove otg from exynos_ehci_hcd as it was no longer used
+>   - move devm_phy_get after the Exynos5440 skip_phy check
+> - fixes in the s3c-hsotg.c file
+>   - cosmetic fixes (remove empty line that was wrongfully added)
+> - fixes in the main driver
+>   - remove cpu_type in favour for a boolean flag matched with the compatible
+>     value
+>   - rename files, structures, variables and Kconfig entires - change from simple
+>     "uphy" to "usb2_phy"
+>   - fix multiline comments style
+>   - simplify #ifdefs in of_device_id
+>   - fix Kconfig description
+>   - change dev_info to dev_dbg where reasonable
+>   - cosmetic changes (remove wrongful blank lines)
+>   - remove unnecessary reference counting
+> 
+> ----------------
+> Changes from v1:
+> - the changes include minor fixes of the hardware initialization of the PHY
+>   module
+> - some other minor fixes were introduced
+> 
+> ----------------------
+> Original cover letter:
+> 
+> Hi,
+> 
+> This patch adds a new drive for USB PHYs for Samsung SoCs. The driver is
+> using the Generic PHY Framework created by Kishon Vijay Abrahan I. It
+> can be found here https://lkml.org/lkml/2013/8/21/29. This patch adds
+> support to Exynos4 family of SoCs. Support for Exynos3 and Exynos5 is
+> planned to be added in the near future.
+> 
+> I welcome your comments.
+> 
+> ----------------------
+> 
+> [1] https://lkml.org/lkml/2013/8/21/29
+> 
+> 
+> Kamil Debski (8):
+>   phy: core: Change the way of_phy_get is called
+>   phy: core: Add devm_of_phy_get to phy-core
+>   phy: Add new Exynos USB PHY driver
+>   usb: ehci-s5p: Change to use phy provided by the generic phy
+>     framework
+>   usb: s3c-hsotg: Use the new Exynos USB phy driver with the generic
+>     phy framework
+>   phy: Add Exynos 5250 support to the Exynos USB 2.0 PHY driver
+>   dts: Add usb2phy to Exynos 4
+>   dts: Add usb2phy to Exynos 5250
+> 
+> Mateusz Krawczuk (1):
+>   phy: Add support for S5PV210 to the Exynos USB PHY driver
+> 
+>  .../devicetree/bindings/arm/samsung/pmu.txt        |    2 +
+>  .../devicetree/bindings/phy/samsung-usbphy.txt     |   56 +++
+>  .../devicetree/bindings/usb/samsung-hsotg.txt      |    4 +
+>  Documentation/devicetree/bindings/usb/usb-ehci.txt |   35 ++
+>  arch/arm/boot/dts/exynos4.dtsi                     |   31 ++
+>  arch/arm/boot/dts/exynos4210.dtsi                  |   17 +
+>  arch/arm/boot/dts/exynos4x12.dtsi                  |   17 +
+>  arch/arm/boot/dts/exynos5250.dtsi                  |   33 +-
+>  drivers/phy/Kconfig                                |   35 ++
+>  drivers/phy/Makefile                               |    5 +
+>  drivers/phy/phy-core.c                             |   43 ++-
+>  drivers/phy/phy-exynos4210-usb2.c                  |  264 ++++++++++++++
+>  drivers/phy/phy-exynos4212-usb2.c                  |  312 +++++++++++++++++
+>  drivers/phy/phy-exynos5250-usb2.c                  |  363 ++++++++++++++++++++
+>  drivers/phy/phy-s5pv210-usb2.c                     |  206 +++++++++++
+>  drivers/phy/phy-samsung-usb2.c                     |  240 +++++++++++++
+>  drivers/phy/phy-samsung-usb2.h                     |   74 ++++
+>  drivers/usb/gadget/s3c-hsotg.c                     |   11 +-
+>  drivers/usb/host/ehci-exynos.c                     |   95 +++--
+>  include/linux/phy/phy.h                            |    3 +
+>  20 files changed, 1789 insertions(+), 57 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/phy/samsung-usbphy.txt
+>  create mode 100644 drivers/phy/phy-exynos4210-usb2.c
+>  create mode 100644 drivers/phy/phy-exynos4212-usb2.c
+>  create mode 100644 drivers/phy/phy-exynos5250-usb2.c
+>  create mode 100644 drivers/phy/phy-s5pv210-usb2.c
+>  create mode 100644 drivers/phy/phy-samsung-usb2.c
+>  create mode 100644 drivers/phy/phy-samsung-usb2.h
+> 
 
