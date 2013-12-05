@@ -1,80 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757065Ab3LEQ6z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 11:58:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11176 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756890Ab3LEQ6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 11:58:54 -0500
-Date: Thu, 5 Dec 2013 17:59:53 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Stephen Smalley <sds@tycho.nsa.gov>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@parisplace.org>, Paul Moore <paul@paul-moore.com>
-Cc: Evan McNabb <emcnabb@redhat.com>, Jan Stancek <jstancek@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] selinux: selinux_setprocattr()->ptrace_parent() needs
-	rcu_read_lock()
-Message-ID: <20131205165953.GA24844@redhat.com>
+	id S1757083Ab3LEQ7m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 11:59:42 -0500
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:65053 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756958Ab3LEQ7l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 11:59:41 -0500
+Date: Thu, 5 Dec 2013 11:59:36 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2 08/23] mm/memblock: Add memblock memory allocation apis
+Message-ID: <20131205165936.GB24062@mtj.dyndns.org>
+References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com>
+ <1386037658-3161-9-git-send-email-santosh.shilimkar@ti.com>
+ <20131203232445.GX8277@htj.dyndns.org>
+ <529F5047.50309@ti.com>
+ <20131204160730.GQ3158@htj.dyndns.org>
+ <529F5C55.1020707@ti.com>
+ <52A07BBE.7060507@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <52A07BBE.7060507@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-selinux_setprocattr() does ptrace_parent(p) under task_lock(p),
-but task_struct->alloc_lock doesn't pin ->parent or ->ptrace,
-this looks confusing and triggers the "suspicious RCU usage"
-warning because ptrace_parent() does rcu_dereference_check().
+Hello,
 
-And in theory this is wrong, spin_lock()->preempt_disable()
-doesn't necessarily imply rcu_read_lock() we need to access
-the ->parent.
+On Thu, Dec 05, 2013 at 03:12:30PM +0200, Grygorii Strashko wrote:
+> I'll try to provide more technical details here.
+> As Santosh mentioned in previous e-mails, it's not easy to simply
+> get rid of using MAX_NUMNODES:
+> 1) we introduce new interface memblock_allocX 
+> 2) our interface uses memblock APIs __next_free_mem_range_rev()
+>    and __next_free_mem_range()
+> 3) __next_free_mem_range_rev() and __next_free_mem_range() use MAX_NUMNODES
+> 4) _next_free_mem_range_rev() and __next_free_mem_range() are used standalone,
+>    outside of our interface as part of *for_each_free_mem_range* or for_each_mem_pfn_range ..
+> 
+> The point [4] leads to necessity to find and correct all places where memmblock APIs
+> are used and where it's expected to get MAX_NUMNODES as input parameter.
+> The major problem is that simple "grep" will not work, because memmblock APIs calls
+> are hidden inside other MM modules and it's not always clear
+> what will be passed as input parameters to APIs of these MM modules
+> (for example sparse_memory_present_with_active_regions() or sparse.c).
 
-The patch also checks pid_alive(p) before ptrace_parent(p) to
-ensure that this task can't be dead even before rcu_read_lock(),
-in this case its ->parent points to nowhere. This is not really
-needed "in practice", task->ptrace must be already cleared in
-this case but we should not rely on this.
+Isn't that kinda trivial to work around?  Make those functions accept
+both MAX_NUMNODES and NUMA_NO_NODE but emit warning on MAX_NUMNODES
+(preferably throttled reasonably).  Given the history of API, we'd
+probably want to keep such warning for extended period of time but
+that's what we'd need to do no matter what.
 
-Note: perhaps we should simply kill ptrace_parent(), it buys
-almost nothing and it is obviously racy. Or perhaps we should
-change it to ensure it can't wrongly return the natural parent
-if it races with ptrace_detach.
+> As result, WIP patch, I did, and which was posted by Santosh illustrates
+> the probable size and complexity of the change.
 
-Reported-by: Evan McNabb <emcnabb@redhat.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- security/selinux/hooks.c |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
+Again, I don't really mind the order things happen but I don't think
+it's a good idea to spread misusage with a new API.  You gotta deal
+with it one way or the other.
 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 794c3ca..2adfd7a 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -5503,11 +5503,14 @@ static int selinux_setprocattr(struct task_struct *p,
- 		/* Check for ptracing, and update the task SID if ok.
- 		   Otherwise, leave SID unchanged and fail. */
- 		ptsid = 0;
--		task_lock(p);
--		tracer = ptrace_parent(p);
--		if (tracer)
--			ptsid = task_sid(tracer);
--		task_unlock(p);
-+		tracer = NULL;
-+		rcu_read_lock();
-+		if (pid_alive(p)) {
-+			tracer = ptrace_parent(p);
-+			if (tracer)
-+				ptsid = task_sid(tracer);
-+		}
-+		rcu_read_unlock();
- 
- 		if (tracer) {
- 			error = avc_has_perm(ptsid, sid, SECCLASS_PROCESS,
+> Sorry, but question here is not "Do or not to do?", but rather 'how to do?",
+> taking into account complexity and state of the current MM code.
+> For example. would it be ok if I'll workaround the issue as in the attached patch?
+
+Well, it's more of when.  It's not really a technically difficult
+task and all I'm saying is it better be sooner than later.
+
+Thanks.
+
 -- 
-1.5.5.1
-
-
+tejun
