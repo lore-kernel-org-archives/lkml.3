@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128Ab3LEVnZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 16:43:25 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:55392 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998Ab3LEVnY (ORCPT
+	id S1753689Ab3LEVnu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 16:43:50 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:41965 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753224Ab3LEVnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 16:43:24 -0500
+	Thu, 5 Dec 2013 16:43:46 -0500
+Date: Thu, 5 Dec 2013 21:43:41 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Milo Kim <milo.kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-pwm@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>
+Message-ID: <20131205214341.GC29268@sirena.org.uk>
+References: <1380082975-6022-1-git-send-email-milo.kim@ti.com>
+ <20131204103431.GC26589@ulmo.nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <20131204164627.GA27677@infradead.org>
-References: <20131204164627.GA27677@infradead.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 5 Dec 2013 14:43:03 -0700
-Message-ID: <CAErSpo49VvgpoRpS2+KHJe=zWhzR6sXdcrGdYQ5MGemi3m_Xuw@mail.gmail.com>
-Subject: Re: smp_call_function_single with wait=0 considered harmful
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        Robert Richter <rric@kernel.org>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        David Daney <david.daney@cavium.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WbkWELb8d/6oR4nB"
+Content-Disposition: inline
+In-Reply-To: <20131204103431.GC26589@ulmo.nvidia.com>
+X-Cookie: It's clever, but is it art?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4 0/4] LP3943 MFD driver for a GPIO expander and a PWM
+ generator
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 4, 2013 at 9:46 AM, Christoph Hellwig <hch@infradead.org> wrote:
-> While doing my recent work on the generic smp function calls I noticed
-> that smp_call_function_single without the wait flag can't work, as
-> it allocates struct call_single_data on stack, and without the wait
-> flag will happily return before the IPI has been executed.
 
-I don't understand the problem yet.  With wait==0,
-smp_call_function_single() sets "csd = &__get_cpu_var(csd_data)", so
-it's not using a struct on the stack.  We'll queue up "func" and
-likely will return before it is executed, but that should be fine
-because nobody will overwrite csd_data until it *is* executed and
-csd_unlock() has been called.
+--WbkWELb8d/6oR4nB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> This affects the following callers:
->
->   arch/ia64/kernel/mca.c:mca_cpu_callback()
->   arch/ia64/kernel/smpboot.c:ia64_sync_itc()
->   arch/x86/kernel/kvm.c:kvm_cpu_notify()
->   arch/x86/oprofile/nmi_int.c:oprofile_cpu_notifier()
->   arch/x86/pci/amd_bus.c:amd_cpu_notify()
+On Wed, Dec 04, 2013 at 11:34:32AM +0100, Thierry Reding wrote:
+> On Wed, Sep 25, 2013 at 01:22:55PM +0900, Milo Kim wrote:
 
-I don't see any reason why amd_cpu_notify() needs to use wait==0.
+> >   mfd: add LP3943 MFD driver
+> >   gpio: add LP3943 I2C GPIO expander driver
+> >   pwm: add LP3943 PWM driver
+> >   Documentation: add LP3943 DT bindings and document
 
->   drivers/staging/octeon/ethernet-rx.c:cvm_oct_enable_one_cpu()
->   kernel/stop_machine.c:stop_two_cpus()
->
-> It would be good to get these fixed so that we could remove the
-> parameter.  Either convert them to wait, or use a preallocated
-> call_single_data and __smp_call_function_single.
->
-> After that I'd like to remove the wait argument to prevent further
-> abuses.
+> I suspect that given the build-time dependencies Lee may want to take
+> all four patches through the MFD tree, so I've acked the PWM parts.
+
+FWIW this isn't an issue with new MFDs - since the function drivers will
+depend on the core driver it's not possible to enable them in Kconfig
+until the core driver is also merged and you don't get bisect issues.
+
+--WbkWELb8d/6oR4nB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSoPOJAAoJELSic+t+oim90fgP/Rr9rCPDaQciOglENW/i2AnN
+Yk5bbdeAeNSjI3GhIdprtb3C/MjqJAGo+TOmDU7HLo1vzIVM54CumZCYqg6qQwKu
+W0X3jadh/PMhDW8v04ixxxNoT7Ag9qCWdGIdO/z2lKq3sDWGEn7nFmRmCQQSK8sx
+u2C+uvrnI98XQ7klNEc/y6yrqAAy/NOKX708INrS4sMFtkLSvory8N512pS53SUM
++2g3hx3LYVvLhBy30nmT7kHRvbC1aSDUmEOPW3XCOFKq5wzqTVy9F2/Ftno0W+I/
+9efSSOD7DgtUWe1mDUZbjA7H+Fbpzp+gNY+9L24mGrD8uTL/Vk7QMvsIpW/2grce
+xuEf66JAKeytsFFkbNcmQSB+NV8rivLyfxJ661a4wVDAFJg7uw46neRoGnCjZqXs
+xinFj2bC4479zkW3PiobTIeh7AHBmKpca7x/7HD1+FqDrpk3vL5SAq7KwAflCRBt
+WqR2JlqRwX19GuGoVWhJq2sYmx0wUdVRvRTzJhoJeZwMrIsZVd/W9C/sbJh3qKgX
+u4vDtO1jwUpMwKddbKIOt5/rjOm4lMmdNG9akwdsR7iplcstIQn9IkMEww4CALM9
+z3r0SModw7MrOVAdEjq9Re7gI+RDhY/NCfhsazieBh7gan5cA9NEGK9pQrTNRicX
+TQJj9JyQ55eNErjHPGsq
+=4LdU
+-----END PGP SIGNATURE-----
+
+--WbkWELb8d/6oR4nB--
