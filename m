@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab3LEDtI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 22:49:08 -0500
-Received: from mailout.micron.com ([137.201.242.129]:38764 "EHLO
+	id S1756616Ab3LEDtS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 22:49:18 -0500
+Received: from mailout.micron.com ([137.201.242.129]:18043 "EHLO
 	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756524Ab3LEDtE (ORCPT
+	with ESMTP id S1756516Ab3LEDtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 22:49:04 -0500
+	Wed, 4 Dec 2013 22:49:11 -0500
 From: =?gb2312?B?UWkgV2FuZyDN9cbwIChxaXdhbmcp?= <qiwang@micron.com>
 To: "dedekind1@gmail.com" <dedekind1@gmail.com>,
         "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
@@ -17,9 +17,9 @@ Subject: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash after
  erasure interrupted
 Thread-Topic: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash
  after erasure interrupted
-Thread-Index: Ac7bkfL3+Un6Pi2jSbO3yZA9UtDETwNhLovgAa9rO+AAZh4LEA==
-Date: Thu, 5 Dec 2013 03:48:31 +0000
-Message-ID: <71CF8D7F32C5C24C9CD1D0E02D52498A770B6F67@NTXXIAMBX02.xacn.micron.com>
+Thread-Index: Ac7bkfL3+Un6Pi2jSbO3yZA9UtDETwNhLovgAa9rO+AAZiFEEA==
+Date: Thu, 5 Dec 2013 03:48:46 +0000
+Message-ID: <71CF8D7F32C5C24C9CD1D0E02D52498A770B6F77@NTXXIAMBX02.xacn.micron.com>
 References: <71CF8D7F32C5C24C9CD1D0E02D52498A770B54B1@NTXXIAMBX02.xacn.micron.com>
  <71CF8D7F32C5C24C9CD1D0E02D52498A770B68A8@NTXXIAMBX02.xacn.micron.com>
 In-Reply-To: <71CF8D7F32C5C24C9CD1D0E02D52498A770B68A8@NTXXIAMBX02.xacn.micron.com>
@@ -39,7 +39,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rB53nFLB006161
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rB53nNpi006165
 
 
 Hi Artem:
