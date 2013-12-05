@@ -1,156 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757075Ab3LERWH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:22:07 -0500
-Received: from imx9.toshiba.co.jp ([202.33.96.51]:52541 "EHLO
-	imx9.toshiba.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756888Ab3LERWE (ORCPT
+	id S932491Ab3LERWZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:22:25 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:42888 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757106Ab3LERWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:22:04 -0500
-X-Greylist: delayed 1708 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Dec 2013 12:22:02 EST
-From: Yoshitake Kobayashi <yoshitake.kobayashi@toshiba.co.jp>
-To: gregkh@linuxfoundation.org, stable@vger.kernel.org
-Cc: cjb@laptop.org, linux-kernel@vger.kernel.org,
-        KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
-Subject: [PATCH 3.4] mmc: block: fix a bug of error handling in MMC driver
-Date: Fri,  6 Dec 2013 01:47:03 +0900
-Message-Id: <1386262023-30954-1-git-send-email-yoshitake.kobayashi@toshiba.co.jp>
-X-Mailer: git-send-email 1.7.0.4
+	Thu, 5 Dec 2013 12:22:21 -0500
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <52A0AB2E.80504@atmel.com>
+References: <1386003701-29760-1-git-send-email-nicolas.ferre@atmel.com>
+	<CAOesGMjoK=fN-QCnRS1r2XQFrqc=KN_HPj5A=EVHL3ut58MvQA@mail.gmail.com>
+	<52A0AB2E.80504@atmel.com>
+Date: Thu, 5 Dec 2013 09:22:18 -0800
+Message-ID: <CAOesGMguxEwWsLeXQH=FTvLToSCJPxSS9w+JQVSfPgi=vD4crw@mail.gmail.com>
+Subject: Re: [GIT PULL] at91: cleanup for 3.14 #1 (aka move to CCF)
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Arnd Bergmann <arnd@arndb.de>, "arm@kernel.org" <arm@kernel.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Boris BREZILLON <b.brezillon@overkiz.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
+On Thu, Dec 5, 2013 at 8:34 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+> On 04/12/2013 22:54, Olof Johansson :
+>
+>> On Mon, Dec 2, 2013 at 9:01 AM, Nicolas Ferre <nicolas.ferre@atmel.com>
+>> wrote:
+>>>
+>>> Arnd, Olof, Kevin,
+>>>
+>>> This is the big move of AT91 to Common Clock Framework for 3.14. I
+>>> collected
+>>> all the material as a "cleanup" topic so that the CCF can be considered
+>>> as a
+>>> base for all our AT91 patches for 3.14.
+>>> I prefer to have the sama5d3 use of AT91 CCF included into this
+>>> pull-request
+>>> so that it can be read as an example and clearly states that it has been
+>>> tested
+>>> in real life.
+>>> We agreed with Mike to send this work upstream through arm-soc so that we
+>>> will
+>>> be able to stack other patches for 3.14 on top of that work without
+>>> having to
+>>> deal with conflicts.
+>>>
+>>> For merging with the "fixes" pull-request that I sent earlier today, I
+>>> also
+>>> uploaded a little branch for reference:
+>>> at91-3.14-next_fixes_cleanup_dt-resolution.
+>>> In two words, the clock section of the arch/arm/mach-at91/sama5d3.c file
+>>> has to be deleted.
+>>>
+>>> Do not hesitate to ask questions about this material.
+>>>
+>>> Thanks, best regards,
+>>>
+>>> The following changes since commit
+>>> 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
+>>>
+>>>    Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+>>>
+>>> are available in the git repository at:
+>>>
+>>>    git://github.com/at91linux/linux-at91.git tags/at91-cleanup
+>>>
+>>> for you to fetch changes up to b46e837d8ef1f3c777bbf9513e2cdb5d87d6c374:
+>>>
+>>>    ARM: at91/dt: remove old clk material (2013-12-02 15:31:29 +0100)
+>>
+>>
+>> Thanks, pulled into next/cleanup. use this branch as base for your
+>> future at91 branches if you need it to avoid conflicts, please.
+>
+>
+> Yes, sure. I still have to synchronize with Uwe as he is building a series
+> for removing timex.h that may conflict with these modifications.
+>
+>
+>> (I named it at91/sama5-ccf in our tree)
+>
+>
+> Well, it seems that the at91/sama5-ccf is not aligned with
+> next/cleanup as of today (94c5216ee93b)
+>
+> Did I miss something?
 
-commit c8760069627ad3b0dbbea170f0c4c58b16e18d3d upstream.
+Seems that I pulled it into for-next instead of next/cleanup. Thanks
+for catching that.
 
-Current MMC driver doesn't handle generic error (bit19 of device
-status) in write sequence. As a result, write data gets lost when
-generic error occurs. For example, a generic error when updating a
-filesystem management information causes a loss of write data and
-corrupts the filesystem. In the worst case, the system will never
-boot.
 
-This patch includes the following functionality:
-  1. To enable error checking for the response of CMD12 and CMD13
-     in write command sequence
-  2. To retry write sequence when a generic error occurs
-
-[Backported to 3.4-stable]
-
-Signed-off-by: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
-Signed-off-by: Chris Ball <cjb@laptop.org>
----
- drivers/mmc/card/block.c |   47 +++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 44 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index 833ff16..91042a2 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -701,7 +701,7 @@ static int mmc_blk_cmd_error(struct request *req, const char *name, int error,
-  * Otherwise we don't understand what happened, so abort.
-  */
- static int mmc_blk_cmd_recovery(struct mmc_card *card, struct request *req,
--	struct mmc_blk_request *brq, int *ecc_err)
-+	struct mmc_blk_request *brq, int *ecc_err, int *gen_err)
- {
- 	bool prev_cmd_status_valid = true;
- 	u32 status, stop_status = 0;
-@@ -739,6 +739,16 @@ static int mmc_blk_cmd_recovery(struct mmc_card *card, struct request *req,
- 	    (brq->cmd.resp[0] & R1_CARD_ECC_FAILED))
- 		*ecc_err = 1;
- 
-+	/* Flag General errors */
-+	if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ)
-+		if ((status & R1_ERROR) ||
-+			(brq->stop.resp[0] & R1_ERROR)) {
-+			pr_err("%s: %s: general error sending stop or status command, stop cmd response %#x, card status %#x\n",
-+			       req->rq_disk->disk_name, __func__,
-+			       brq->stop.resp[0], status);
-+			*gen_err = 1;
-+		}
-+
- 	/*
- 	 * Check the current card state.  If it is in some data transfer
- 	 * mode, tell it to stop (and hopefully transition back to TRAN.)
-@@ -758,6 +768,13 @@ static int mmc_blk_cmd_recovery(struct mmc_card *card, struct request *req,
- 			return ERR_ABORT;
- 		if (stop_status & R1_CARD_ECC_FAILED)
- 			*ecc_err = 1;
-+		if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ)
-+			if (stop_status & R1_ERROR) {
-+				pr_err("%s: %s: general error sending stop command, stop cmd response %#x\n",
-+				       req->rq_disk->disk_name, __func__,
-+				       stop_status);
-+				*gen_err = 1;
-+			}
- 	}
- 
- 	/* Check for set block count errors */
-@@ -1007,7 +1024,7 @@ static int mmc_blk_err_check(struct mmc_card *card,
- 						    mmc_active);
- 	struct mmc_blk_request *brq = &mq_mrq->brq;
- 	struct request *req = mq_mrq->req;
--	int ecc_err = 0;
-+	int ecc_err = 0, gen_err = 0;
- 
- 	/*
- 	 * sbc.error indicates a problem with the set block count
-@@ -1021,7 +1038,7 @@ static int mmc_blk_err_check(struct mmc_card *card,
- 	 */
- 	if (brq->sbc.error || brq->cmd.error || brq->stop.error ||
- 	    brq->data.error) {
--		switch (mmc_blk_cmd_recovery(card, req, brq, &ecc_err)) {
-+		switch (mmc_blk_cmd_recovery(card, req, brq, &ecc_err, &gen_err)) {
- 		case ERR_RETRY:
- 			return MMC_BLK_RETRY;
- 		case ERR_ABORT:
-@@ -1051,6 +1068,15 @@ static int mmc_blk_err_check(struct mmc_card *card,
- 	 */
- 	if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ) {
- 		u32 status;
-+
-+		/* Check stop command response */
-+		if (brq->stop.resp[0] & R1_ERROR) {
-+			pr_err("%s: %s: general error sending stop command, stop cmd response %#x\n",
-+			       req->rq_disk->disk_name, __func__,
-+			       brq->stop.resp[0]);
-+			gen_err = 1;
-+		}
-+
- 		do {
- 			int err = get_card_status(card, &status, 5);
- 			if (err) {
-@@ -1058,6 +1084,14 @@ static int mmc_blk_err_check(struct mmc_card *card,
- 				       req->rq_disk->disk_name, err);
- 				return MMC_BLK_CMD_ERR;
- 			}
-+
-+			if (status & R1_ERROR) {
-+				pr_err("%s: %s: general error sending status command, card status %#x\n",
-+				       req->rq_disk->disk_name, __func__,
-+				       status);
-+				gen_err = 1;
-+			}
-+
- 			/*
- 			 * Some cards mishandle the status bits,
- 			 * so make sure to check both the busy
-@@ -1067,6 +1101,13 @@ static int mmc_blk_err_check(struct mmc_card *card,
- 			 (R1_CURRENT_STATE(status) == R1_STATE_PRG));
- 	}
- 
-+	/* if general error occurs, retry the write operation. */
-+	if (gen_err) {
-+		pr_warning("%s: retrying write for general error\n",
-+				req->rq_disk->disk_name);
-+		return MMC_BLK_RETRY;
-+	}
-+
- 	if (brq->data.error) {
- 		pr_err("%s: error %d transferring data, sector %u, nr %u, cmd response %#x, card status %#x\n",
- 		       req->rq_disk->disk_name, brq->data.error,
--- 
-1.7.0.4
-
+-Olof
