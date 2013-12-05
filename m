@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757391Ab3LERhw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:37:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38319 "EHLO
+	id S1757410Ab3LERh5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:37:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38369 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756956Ab3LERhk (ORCPT
+	with ESMTP id S1756956Ab3LERhy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:37:40 -0500
+	Thu, 5 Dec 2013 12:37:54 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 57/90] rtlwifi: rtl8192cu: Fix more pointer arithmetic errors
-Date: Thu,  5 Dec 2013 17:35:39 +0000
-Message-Id: <1386264972-5399-58-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 66/90] powerpc/pseries: Duplicate dtl entries sometimes sent to userspace
+Date: Thu,  5 Dec 2013 17:35:48 +0000
+Message-Id: <1386264972-5399-67-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -28,77 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Anton Blanchard <anton@samba.org>
 
-commit eafbdde9c5629bea58df07275c5917eb42afbbe7 upstream.
+commit 84b073868b9d9e754ae48b828337633d1b386482 upstream.
 
-This driver uses a number of macros to get and set various fields in the
-RX and TX descriptors. To work correctly, a u8 pointer to the descriptor
-must be used; however, in some cases a descriptor structure pointer is used
-instead. In addition, a duplicated statement is removed.
+When reading from the dispatch trace log (dtl) userspace interface, I
+sometimes see duplicate entries. One example:
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Reported-by: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+00000000  07 04 00 0c 00 00 48 44  00 00 00 00 00 00 00 00
+00000010  00 0c a0 b4 16 83 6d 68  00 00 00 00 00 00 00 00
+00000020  00 00 00 00 10 00 13 50  80 00 00 00 00 00 d0 32
+
+00000030  07 04 00 0c 00 00 48 44  00 00 00 00 00 00 00 00
+00000040  00 0c a0 b4 16 83 6d 68  00 00 00 00 00 00 00 00
+00000050  00 00 00 00 10 00 13 50  80 00 00 00 00 00 d0 32
+
+The problem is in scan_dispatch_log() where we call dtl_consumer()
+but bail out before incrementing the index.
+
+To fix this I moved dtl_consumer() after the timebase comparison.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/mac.c | 6 +++---
- drivers/net/wireless/rtlwifi/rtl8192cu/trx.c | 6 +++---
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ arch/powerpc/kernel/time.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c b/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
-index 7e91c76..ce0f14a 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
-@@ -762,7 +762,7 @@ static long _rtl92c_signal_scale_mapping(struct ieee80211_hw *hw,
- 
- static void _rtl92c_query_rxphystatus(struct ieee80211_hw *hw,
- 				      struct rtl_stats *pstats,
--				      struct rx_desc_92c *pdesc,
-+				      struct rx_desc_92c *p_desc,
- 				      struct rx_fwinfo_92c *p_drvinfo,
- 				      bool packet_match_bssid,
- 				      bool packet_toself,
-@@ -777,11 +777,11 @@ static void _rtl92c_query_rxphystatus(struct ieee80211_hw *hw,
- 	u32 rssi, total_rssi = 0;
- 	bool in_powersavemode = false;
- 	bool is_cck_rate;
-+	u8 *pdesc = (u8 *)p_desc;
- 
--	is_cck_rate = RX_HAL_IS_CCK_RATE(pdesc);
-+	is_cck_rate = RX_HAL_IS_CCK_RATE(p_desc);
- 	pstats->packet_matchbssid = packet_match_bssid;
- 	pstats->packet_toself = packet_toself;
--	pstats->is_cck = is_cck_rate;
- 	pstats->packet_beacon = packet_beacon;
- 	pstats->is_cck = is_cck_rate;
- 	pstats->RX_SIGQ[0] = -1;
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
-index 047e3bc..5654b0a 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
-@@ -303,10 +303,10 @@ out:
- bool rtl92cu_rx_query_desc(struct ieee80211_hw *hw,
- 			   struct rtl_stats *stats,
- 			   struct ieee80211_rx_status *rx_status,
--			   u8 *p_desc, struct sk_buff *skb)
-+			   u8 *pdesc, struct sk_buff *skb)
- {
- 	struct rx_fwinfo_92c *p_drvinfo;
--	struct rx_desc_92c *pdesc = (struct rx_desc_92c *)p_desc;
-+	struct rx_desc_92c *p_desc = (struct rx_desc_92c *)pdesc;
- 	u32 phystatus = GET_RX_DESC_PHY_STATUS(pdesc);
- 
- 	stats->length = (u16) GET_RX_DESC_PKT_LEN(pdesc);
-@@ -345,7 +345,7 @@ bool rtl92cu_rx_query_desc(struct ieee80211_hw *hw,
- 	if (phystatus) {
- 		p_drvinfo = (struct rx_fwinfo_92c *)(skb->data +
- 						     stats->rx_bufshift);
--		rtl92c_translate_rx_signal_stuff(hw, skb, stats, pdesc,
-+		rtl92c_translate_rx_signal_stuff(hw, skb, stats, p_desc,
- 						 p_drvinfo);
- 	}
- 	/*rx_status->qual = stats->signal; */
+diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
+index 3c50ed9..fe33f00 100644
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -213,8 +213,6 @@ static u64 scan_dispatch_log(u64 stop_tb)
+ 	if (i == vpa->dtl_idx)
+ 		return 0;
+ 	while (i < vpa->dtl_idx) {
+-		if (dtl_consumer)
+-			dtl_consumer(dtl, i);
+ 		dtb = dtl->timebase;
+ 		tb_delta = dtl->enqueue_to_dispatch_time +
+ 			dtl->ready_to_enqueue_time;
+@@ -227,6 +225,8 @@ static u64 scan_dispatch_log(u64 stop_tb)
+ 		}
+ 		if (dtb > stop_tb)
+ 			break;
++		if (dtl_consumer)
++			dtl_consumer(dtl, i);
+ 		stolen += tb_delta;
+ 		++i;
+ 		++dtl;
 -- 
 1.8.3.2
 
