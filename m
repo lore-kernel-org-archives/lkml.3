@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933027Ab3LER1e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:27:34 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:42121 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932920Ab3LER12 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:27:28 -0500
+	id S933091Ab3LER1o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:27:44 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:33147 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932920Ab3LER1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 12:27:39 -0500
 From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>
@@ -19,94 +18,55 @@ CC: <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
         <dwmw2@infradead.org>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: =?UTF-8?q?=5BPATCH=20v3=206/9=5D=20mtd=3A=20nand=3A=20davinci=3A=20extend=20description=20of=20bindings?=
-Date: Thu, 5 Dec 2013 19:25:54 +0200
-Message-ID: <1386264358-9738-7-git-send-email-ivan.khoronzhuk@ti.com>
+Subject: [PATCH v3 7/9] mtd: nand: davinci: adjust DT properties to MTD generic
+Date: Thu, 5 Dec 2013 19:25:55 +0200
+Message-ID: <1386264358-9738-8-git-send-email-ivan.khoronzhuk@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386264358-9738-1-git-send-email-ivan.khoronzhuk@ti.com>
 References: <1386264358-9738-1-git-send-email-ivan.khoronzhuk@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extend bindings for davinci_nand driver to be more clear.
-This is clarification only, without semantic changes.
+The properties davinci-ecc-mode, davinci-nand-use-bbt, davinci-nand-buswidth
+are MTD generic. Correct names for them are: nand-ecc-mode, nand-on-flash-bbt,
+nand-bus-width accordingly. So rename them in dts and documentation.
 
 Reviewed-by: Grygorii Strashko <grygorii.strashko@ti.com>
 Reviewed-by: Taras Kondratiuk <taras@ti.com>
 Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 ---
- .../devicetree/bindings/mtd/davinci-nand.txt       |   77 ++++++++++++++------
- 1 file changed, 54 insertions(+), 23 deletions(-)
+ .../devicetree/bindings/mtd/davinci-nand.txt       |   25 ++++++++++++++++----
+ drivers/mtd/nand/davinci_nand.c                    |   11 ++++++---
+ 2 files changed, 28 insertions(+), 8 deletions(-)
 
 diff --git a/Documentation/devicetree/bindings/mtd/davinci-nand.txt b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
-index 3545ea7..d2a3fc0 100644
+index d2a3fc0..befaa5b 100644
 --- a/Documentation/devicetree/bindings/mtd/davinci-nand.txt
 +++ b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
-@@ -1,36 +1,67 @@
--* Texas Instruments Davinci NAND
-+Device tree bindings for Texas instruments Davinci NAND controller
+@@ -37,7 +37,7 @@ Recommended properties :
+ - ti,davinci-mask-chipsel:	mask for chipselect address. Needed to mask
+ 				addresses for given chipselect.
  
--This file provides information, what the device node for the
--davinci nand interface contain.
-+This file provides information, what the device node for the davinci NAND
-+interface contains.
-+
-+Documentation:
-+Davinci DM646x - http://www.ti.com/lit/ug/sprueq7c/sprueq7c.pdf
+-- ti,davinci-ecc-mode:		operation mode of the NAND ecc mode. ECC mode
++- nand-ecc-mode:		operation mode of the NAND ecc mode. ECC mode
+ 				valid values for davinci driver:
+ 				- "none"
+ 				- "soft"
+@@ -45,10 +45,25 @@ Recommended properties :
  
- Required properties:
--- compatible: "ti,davinci-nand";
--- reg : contain 2 offset/length values:
--        - offset and length for the access window
--        - offset and length for accessing the aemif control registers
--- ti,davinci-chipselect: Indicates on the davinci_nand driver which
--                         chipselect is used for accessing the nand.
-+
-+- compatible:			"ti,davinci-nand"
-+
-+- reg:				Contains 2 offset/length values:
-+				- offset and length for the access window.
-+				- offset and length for accessing the AEMIF
-+				control registers.
-+
-+- ti,davinci-chipselect:	number of chipselect. Indicates on the
-+				davinci_nand driver which chipselect is used
-+				for accessing the nand.
-+				Can be in the range [0-3].
+ - ti,davinci-ecc-bits:		used ECC bits, currently supported 1 or 4.
  
- Recommended properties :
--- ti,davinci-mask-ale: mask for ale
--- ti,davinci-mask-cle: mask for cle
--- ti,davinci-mask-chipsel: mask for chipselect
--- ti,davinci-ecc-mode: ECC mode valid values for davinci driver:
--		- "none"
--		- "soft"
--		- "hw"
--- ti,davinci-ecc-bits: used ECC bits, currently supported 1 or 4.
--- ti,davinci-nand-buswidth: buswidth 8 or 16
--- ti,davinci-nand-use-bbt: use flash based bad block table support.
--
--nand device bindings may contain additional sub-nodes describing
--partitions of the address space. See partition.txt for more detail.
+-- ti,davinci-nand-buswidth:	buswidth 8 or 16.
++- nand-bus-width:		buswidth 8 or 16. If not present 8.
 +
-+- ti,davinci-mask-ale:		mask for ALE. Needed for executing address
-+				phase. These offset will be added to the base
-+				address for the chip select space the NAND Flash
-+				device is connected to.
-+				If not set equal to 0x08.
++- nand-on-flash-bbt:		use flash based bad block table support. OOB
++				identifier is saved in OOB area. If not present
++				false.
 +
-+- ti,davinci-mask-cle:		mask for CLE. Needed for executing command
-+				phase. These offset will be added to the base
-+				address for the chip select space the NAND Flash
-+				device is connected to.
-+				If not set equal to 0x10.
-+
-+- ti,davinci-mask-chipsel:	mask for chipselect address. Needed to mask
-+				addresses for given chipselect.
++Deprecated properties:
 +
 +- ti,davinci-ecc-mode:		operation mode of the NAND ecc mode. ECC mode
 +				valid values for davinci driver:
@@ -114,29 +74,66 @@ index 3545ea7..d2a3fc0 100644
 +				- "soft"
 +				- "hw"
 +
-+- ti,davinci-ecc-bits:		used ECC bits, currently supported 1 or 4.
-+
-+- ti,davinci-nand-buswidth:	buswidth 8 or 16.
-+
-+- ti,davinci-nand-use-bbt:	use flash based bad block table support. OOB
-+				identifier is saved in OOB area.
-+
-+Nand device bindings may contain additional sub-nodes describing partitions of
-+the address space. See partition.txt for more detail. The NAND Flash timing
-+values must be programmed in the chip select’s node of AEMIF
-+memory-controller (see Documentation/devicetree/bindings/memory-controllers/
-+davinci-aemif.txt).
++- ti,davinci-nand-buswidth:	buswidth 8 or 16. If not present 8.
  
- Example(da850 EVM ):
-+
- nand_cs3@62000000 {
- 	compatible = "ti,davinci-nand";
- 	reg = <0x62000000 0x807ff
--		0x68000000 0x8000>;
-+	       0x68000000 0x8000>;
- 	ti,davinci-chipselect = <1>;
+ - ti,davinci-nand-use-bbt:	use flash based bad block table support. OOB
+-				identifier is saved in OOB area.
++				identifier is saved in OOB area. If not present
++				false.
+ 
+ Nand device bindings may contain additional sub-nodes describing partitions of
+ the address space. See partition.txt for more detail. The NAND Flash timing
+@@ -66,9 +81,9 @@ nand_cs3@62000000 {
  	ti,davinci-mask-ale = <0>;
  	ti,davinci-mask-cle = <0>;
+ 	ti,davinci-mask-chipsel = <0>;
+-	ti,davinci-ecc-mode = "hw";
++	nand-ecc-mode = "hw";
+ 	ti,davinci-ecc-bits = <4>;
+-	ti,davinci-nand-use-bbt;
++	nand-on-flash-bbt;
+ 
+ 	partition@180000 {
+ 		label = "ubifs";
+diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+index c0be223..f7b21b8 100644
+--- a/drivers/mtd/nand/davinci_nand.c
++++ b/drivers/mtd/nand/davinci_nand.c
+@@ -534,7 +534,6 @@ static struct davinci_nand_pdata
+ 		struct davinci_nand_pdata *pdata;
+ 		const char *mode;
+ 		u32 prop;
+-		int len;
+ 
+ 		pdata =  devm_kzalloc(&pdev->dev,
+ 				sizeof(struct davinci_nand_pdata),
+@@ -558,6 +557,8 @@ static struct davinci_nand_pdata
+ 			"ti,davinci-mask-chipsel", &prop))
+ 			pdata->mask_chipsel = prop;
+ 		if (!of_property_read_string(pdev->dev.of_node,
++			"nand-ecc-mode", &mode) ||
++		    !of_property_read_string(pdev->dev.of_node,
+ 			"ti,davinci-ecc-mode", &mode)) {
+ 			if (!strncmp("none", mode, 4))
+ 				pdata->ecc_mode = NAND_ECC_NONE;
+@@ -570,11 +571,15 @@ static struct davinci_nand_pdata
+ 			"ti,davinci-ecc-bits", &prop))
+ 			pdata->ecc_bits = prop;
+ 		if (!of_property_read_u32(pdev->dev.of_node,
++			"nand-bus-width", &prop) ||
++		    !of_property_read_u32(pdev->dev.of_node,
+ 			"ti,davinci-nand-buswidth", &prop))
+ 			if (prop == 16)
+ 				pdata->options |= NAND_BUSWIDTH_16;
+-		if (of_find_property(pdev->dev.of_node,
+-			"ti,davinci-nand-use-bbt", &len))
++		if (of_property_read_bool(pdev->dev.of_node,
++			"nand-on-flash-bbt") ||
++		    of_property_read_bool(pdev->dev.of_node,
++			"ti,davinci-nand-use-bbt"))
+ 			pdata->bbt_options = NAND_BBT_USE_FLASH;
+ 	}
+ 
 -- 
 1.7.9.5
 
