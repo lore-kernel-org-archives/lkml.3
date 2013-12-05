@@ -1,183 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725Ab3LEWyn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 17:54:43 -0500
-Received: from smtprelay0195.hostedemail.com ([216.40.44.195]:58486 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752753Ab3LEWym (ORCPT
+	id S1755076Ab3LEWzj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 17:55:39 -0500
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:57973 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752366Ab3LEWze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 17:54:42 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 80,6,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:2:41:69:355:379:421:541:800:960:968:973:982:988:989:1260:1345:1431:1437:1535:1605:1730:1747:1777:1792:2194:2198:2199:2200:2393:2559:2562:2895:2901:2903:3138:3139:3140:3141:3142:3369:3865:3866:3867:3868:3870:3871:3872:3873:3874:4049:4117:4250:4321:4419:4605:5007:6119:6261:7875:9592:10026:10848:11026:11232:11473:11658:11914:12043:12291:12296:12438:12517:12519:12555:12683:13153:13161:13228:13229:13255,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
-X-HE-Tag: fact08_bb1dd7dc2924
-X-Filterd-Recvd-Size: 6794
-From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org
-Cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH net-next] ether_addr_equal: Optimize implementation, remove unused compare_ether_addr
-Date: Thu,  5 Dec 2013 14:54:38 -0800
-Message-Id: <34a0bad292ab2535a3a2e757a83eca13408e55b7.1386283991.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+	Thu, 5 Dec 2013 17:55:34 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131204115628.GL16025@e106331-lin.cambridge.arm.com>
+References: <1386088876-29205-1-git-send-email-delicious.quinoa@gmail.com>
+	<1386088876-29205-2-git-send-email-delicious.quinoa@gmail.com>
+	<20131204115628.GL16025@e106331-lin.cambridge.arm.com>
+Date: Thu, 5 Dec 2013 16:55:32 -0600
+Message-ID: <CANk1AXRVO+=U=0zLR=orU49hn4nOmx6pZH-42tpbGk4oF5L9Og@mail.gmail.com>
+Subject: Re: [PATCH v8] gpio: add a driver for the Synopsys DesignWare APB
+ GPIO block
+From: delicious quinoa <delicious.quinoa@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Jamie Iles <jamie@jamieiles.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new check for CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS to reduce
-the number of or's used in the ether_addr_equal comparison to very
-slightly improve function performance.
+On Wed, Dec 4, 2013 at 5:56 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> On Tue, Dec 03, 2013 at 04:41:16PM +0000, Alan Tull wrote:
+>> From: Jamie Iles <jamie@jamieiles.com>
+>>
+>> The Synopsys DesignWare block is used in some ARM devices (picoxcell)
+>> and can be configured to provide multiple banks of GPIO pins.
+>>
+>> Signed-off-by: Alan Tull <atull@altera.com>
+>> Reviewed-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>>
+>> v8:     - remove socfpga.dtsi changes
+>>         - minor cleanup in devicetree documentation
+>> v7:     - use irq_generic_chip
+>>         - support one irq per gpio line or one irq for many
+>>         - s/bank/port/ and other cleanup
+>> v6:     - (atull) squash the set of patches
+>>         - use linear irq domain
+>>         - build fixes. Original driver was reviewed on v3.2.
+>>         - Fix setting irq edge type for 'rising' and 'both'.
+>>         - Support as a loadable module.
+>>         - Use bgpio_chip's spinlock during register access.
+>>         - Clean up register names to match spec
+>>         - s/bank/port/ because register names use the word 'port'
+>>         - s/nr-gpio/nr-gpios/
+>>         - don't get/put the of_node
+>>         - remove signoffs/acked-by's because of changes
+>>         - other cleanup
+>> v5:     - handle sparse bank population correctly
+>> v3:     - depend on rather than select IRQ_DOMAIN
+>>         - split IRQ support into a separate patch
+>> v2:     - use Rob Herring's irqdomain in generic irq chip patches
+>>         - use reg property to indicate bank index
+>>         - support irqs on both edges based on LinusW's u300 driver
+>> ---
+>>  .../devicetree/bindings/gpio/snps-dwapb-gpio.txt   |   57 +++
+>>  drivers/gpio/Kconfig                               |    9 +
+>>  drivers/gpio/Makefile                              |    1 +
+>>  drivers/gpio/gpio-dwapb.c                          |  426 ++++++++++++++++++++
+>>  4 files changed, 493 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt
+>>  create mode 100644 drivers/gpio/gpio-dwapb.c
+>>
+>> diff --git a/Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt b/Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt
+>> new file mode 100644
+>> index 0000000..e7f144f
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt
+>> @@ -0,0 +1,57 @@
+>> +* Synopsys DesignWare APB GPIO controller
+>> +
+>> +Required properties:
+>> +- compatible : Should be "snps,dw-apb-gpio"
+>
+> s/be/contain/
+>
+>> +- reg : Address and length of the register set for the device
+>
+> As this has children with reg entries, it should have #address-cells and
+> #size-cells (as the example does).
+>
+>> +
+>> +The GPIO controller has a configurable number of ports, each of which are
+>> +represented as child nodes with the following properties:
+>> +
+>> +Required properties:
+>> +- compatible : "snps,dw-apb-gpio-port"
+>> +- gpio-controller : Marks the device node as a gpio controller.
+>> +- #gpio-cells : Should be two.  The first cell is the pin number and
+>> +  the second cell is used to specify optional parameters (currently
+>> +  unused).
+>> +- reg : The integer port index of the port, a single cell.
+>> +
+>> +Optional properties:
+>> +- interrupt-controller : The first port may be configured to be an interrupt
+>> +controller.
+>> +- #interrupt-cells : Specifies the number of cells needed to encode an
+>> +interrupt.  Shall be set to 2.  The first cell defines the interrupt number,
+>> +the second encodes the triger flags encoded as described in
+>> +Documentation/devicetree/bindings/interrupts.txt
+>> +- interrupt-parent : The parent interrupt controller.
+>> +- interrupts : The interrupts to the parent controller raised when GPIOs
+>> +generate the interrupts.
+>> +- snps,nr-gpios : The number of pins in the port, a single cell.
+>> +
+>> +Example:
+>> +
+>> +gpio: gpio@20000 {
+>> +       compatible = "snps,dw-apb-gpio";
+>> +       reg = <0x20000 0x1000>;
+>> +       #address-cells = <1>;
+>> +       #size-cells = <0>;
+>> +
+>> +       porta: gpio-controller@0 {
+>> +               compatible = "snps,dw-apb-gpio-port";
+>> +               gpio-controller;
+>> +               #gpio-cells = <2>;
+>> +               snps,nr-gpio = <8>;
+>> +               reg = <0>;
+>> +               interrupt-controller;
+>> +               #interrupt-cells = <2>;
+>> +               interrupt-parent = <&vic1>;
+>> +               interrupts = <0 1 2 3 4 5 6 7>;
+>
+> Nit: please bracket list entries individually.
+>
+> Otherwise this looks fine to me.
+>
+> Thanks,
+> Mark.
 
-Simplify the ether_addr_equal_64bits implementation.
-Integrate and remove the zap_last_2bytes helper as it's now
-used only once.
+Hi Mark,
 
-Remove the now unused compare_ether_addr function.
+Thanks for the feedback.  I'll include fixes in v9 which I'll post
+within a few days.
 
-Update the unaligned-memory-access documentation to remove the
-compare_ether_addr description and show how unaligned accesses
-could occur with ether_addr_equal.
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
- Documentation/unaligned-memory-access.txt | 28 +++++++++++------
- include/linux/etherdevice.h               | 51 +++++++++++--------------------
- 2 files changed, 37 insertions(+), 42 deletions(-)
-
-diff --git a/Documentation/unaligned-memory-access.txt b/Documentation/unaligned-memory-access.txt
-index f866c72..a445da0 100644
---- a/Documentation/unaligned-memory-access.txt
-+++ b/Documentation/unaligned-memory-access.txt
-@@ -137,24 +137,34 @@ Code that causes unaligned access
- =================================
- 
- With the above in mind, let's move onto a real life example of a function
--that can cause an unaligned memory access. The following function adapted
-+that can cause an unaligned memory access. The following function taken
- from include/linux/etherdevice.h is an optimized routine to compare two
- ethernet MAC addresses for equality.
- 
--unsigned int compare_ether_addr(const u8 *addr1, const u8 *addr2)
-+bool ether_addr_equal(const u8 *addr1, const u8 *addr2)
- {
--	const u16 *a = (const u16 *) addr1;
--	const u16 *b = (const u16 *) addr2;
-+#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-+	u32 fold = ((*(const u32 *)addr1) ^ (*(const u32 *)addr2)) |
-+		   ((*(const u16 *)(addr1 + 4)) ^ (*(const u16 *)(addr2 + 4)));
-+
-+	return fold == 0;
-+#else
-+	const u16 *a = (const u16 *)addr1;
-+	const u16 *b = (const u16 *)addr2;
- 	return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) != 0;
-+#endif
- }
- 
--In the above function, the reference to a[0] causes 2 bytes (16 bits) to
--be read from memory starting at address addr1. Think about what would happen
--if addr1 was an odd address such as 0x10003. (Hint: it'd be an unaligned
--access.)
-+In the above function, when the hardware has efficient unaligned access
-+capability, there is no issue with this code.  But when the hardware isn't
-+able to access memory on arbitrary boundaries, the reference to a[0] causes
-+2 bytes (16 bits) to be read from memory starting at address addr1.
-+
-+Think about what would happen if addr1 was an odd address such as 0x10003.
-+(Hint: it'd be an unaligned access.)
- 
- Despite the potential unaligned access problems with the above function, it
--is included in the kernel anyway but is understood to only work on
-+is included in the kernel anyway but is understood to only work normally on
- 16-bit-aligned addresses. It is up to the caller to ensure this alignment or
- not use this function at all. This alignment-unsafe function is still useful
- as it is a decent optimization for the cases when you can ensure alignment,
-diff --git a/include/linux/etherdevice.h b/include/linux/etherdevice.h
-index fc4a9aa..3526e81 100644
---- a/include/linux/etherdevice.h
-+++ b/include/linux/etherdevice.h
-@@ -26,6 +26,7 @@
- #include <linux/netdevice.h>
- #include <linux/random.h>
- #include <asm/unaligned.h>
-+#include <asm/bitsperlong.h>
- 
- #ifdef __KERNEL__
- __be16 eth_type_trans(struct sk_buff *skb, struct net_device *dev);
-@@ -211,40 +212,26 @@ static inline void eth_hw_addr_inherit(struct net_device *dst,
- }
- 
- /**
-- * compare_ether_addr - Compare two Ethernet addresses
-- * @addr1: Pointer to a six-byte array containing the Ethernet address
-- * @addr2: Pointer other six-byte array containing the Ethernet address
-- *
-- * Compare two Ethernet addresses, returns 0 if equal, non-zero otherwise.
-- * Unlike memcmp(), it doesn't return a value suitable for sorting.
-- */
--static inline unsigned compare_ether_addr(const u8 *addr1, const u8 *addr2)
--{
--	const u16 *a = (const u16 *) addr1;
--	const u16 *b = (const u16 *) addr2;
--
--	BUILD_BUG_ON(ETH_ALEN != 6);
--	return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) != 0;
--}
--
--/**
-  * ether_addr_equal - Compare two Ethernet addresses
-  * @addr1: Pointer to a six-byte array containing the Ethernet address
-  * @addr2: Pointer other six-byte array containing the Ethernet address
-  *
-  * Compare two Ethernet addresses, returns true if equal
-+ *
-+ * Please note: addr1 & addr2 must both be aligned to u16.
-  */
- static inline bool ether_addr_equal(const u8 *addr1, const u8 *addr2)
- {
--	return !compare_ether_addr(addr1, addr2);
--}
-+#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
-+	u32 fold = ((*(const u32 *)addr1) ^ (*(const u32 *)addr2)) |
-+		   ((*(const u16 *)(addr1 + 4)) ^ (*(const u16 *)(addr2 + 4)));
- 
--static inline unsigned long zap_last_2bytes(unsigned long value)
--{
--#ifdef __BIG_ENDIAN
--	return value >> 16;
-+	return fold == 0;
- #else
--	return value << 16;
-+	const u16 *a = (const u16 *)addr1;
-+	const u16 *b = (const u16 *)addr2;
-+
-+	return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) == 0;
- #endif
- }
- 
-@@ -265,16 +252,14 @@ static inline unsigned long zap_last_2bytes(unsigned long value)
- static inline bool ether_addr_equal_64bits(const u8 addr1[6+2],
- 					   const u8 addr2[6+2])
- {
--#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
--	unsigned long fold = ((*(unsigned long *)addr1) ^
--			      (*(unsigned long *)addr2));
--
--	if (sizeof(fold) == 8)
--		return zap_last_2bytes(fold) == 0;
-+#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS) && BITS_PER_LONG == 64
-+	u64 fold = (*(const u64 *)addr1) ^ (*(const u64 *)addr2);
- 
--	fold |= zap_last_2bytes((*(unsigned long *)(addr1 + 4)) ^
--				(*(unsigned long *)(addr2 + 4)));
--	return fold == 0;
-+#ifdef __BIG_ENDIAN
-+	return (fold >> 16) == 0;
-+#else
-+	return (fold << 16) == 0;
-+#endif
- #else
- 	return ether_addr_equal(addr1, addr2);
- #endif
--- 
-1.8.1.2.459.gbcd45b4.dirty
-
+Alan Tull
