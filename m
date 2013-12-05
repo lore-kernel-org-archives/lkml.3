@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933629Ab3LERsI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:48:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38335 "EHLO
+	id S933517Ab3LERsu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:48:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38325 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757348Ab3LERhp (ORCPT
+	with ESMTP id S1757332Ab3LERhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:37:45 -0500
+	Thu, 5 Dec 2013 12:37:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christoph Hellwig <hch@lst.de>, "J. Bruce Fields" <bfields@redhat.com>,
+Cc: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 61/90] nfsd: make sure to balance get/put_write_access
-Date: Thu,  5 Dec 2013 17:35:43 +0000
-Message-Id: <1386264972-5399-62-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 59/90] drm/radeon: add semaphore trace point
+Date: Thu,  5 Dec 2013 17:35:41 +0000
+Message-Id: <1386264972-5399-60-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,74 +31,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@infradead.org>
+From: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
 
-commit 987da4791052fa298b7cfcde4dea9f6f2bbc786b upstream.
+commit bd80c8ba995c1dbdddee14acc55c541c499e0442 upstream.
 
-Use a straight goto error label style in nfsd_setattr to make sure
-we always do the put_write_access call after we got it earlier.
-
-Note that the we have been failing to do that in the case
-nfsd_break_lease() returns an error, a bug introduced into 2.6.38 with
-6a76bebefe15d9a08864f824d7f8d5beaf37c997 "nfsd4: break lease on nfsd
-setattr".
-
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-[ luis: backported to 3.5:
-  - dropped 3rd parameter to notify_change() ]
+Signed-off-by: Christian König <christian.koenig@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfsd/vfs.c | 29 +++++++++++++++--------------
- 1 file changed, 15 insertions(+), 14 deletions(-)
+ drivers/gpu/drm/radeon/radeon_semaphore.c |  6 +++++-
+ drivers/gpu/drm/radeon/radeon_trace.h     | 36 +++++++++++++++++++++++++++++++
+ 2 files changed, 41 insertions(+), 1 deletion(-)
 
-diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
-index 5a34e9e..474afc6 100644
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -443,27 +443,28 @@ nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
- 
- 	iap->ia_valid |= ATTR_CTIME;
- 
--	err = nfserr_notsync;
--	if (!check_guard || guardtime == inode->i_ctime.tv_sec) {
--		host_err = nfsd_break_lease(inode);
--		if (host_err)
--			goto out_nfserr;
--		fh_lock(fhp);
+diff --git a/drivers/gpu/drm/radeon/radeon_semaphore.c b/drivers/gpu/drm/radeon/radeon_semaphore.c
+index e2ace5d..5ba2d38 100644
+--- a/drivers/gpu/drm/radeon/radeon_semaphore.c
++++ b/drivers/gpu/drm/radeon/radeon_semaphore.c
+@@ -30,7 +30,7 @@
+ #include "drmP.h"
+ #include "drm.h"
+ #include "radeon.h"
 -
--		host_err = notify_change(dentry, iap);
--		err = nfserrno(host_err);
--		fh_unlock(fhp);
-+	if (check_guard && guardtime != inode->i_ctime.tv_sec) {
-+		err = nfserr_notsync;
-+		goto out_put_write_access;
- 	}
++#include "radeon_trace.h"
+ 
+ int radeon_semaphore_create(struct radeon_device *rdev,
+ 			    struct radeon_semaphore **semaphore)
+@@ -57,6 +57,8 @@ int radeon_semaphore_create(struct radeon_device *rdev,
+ void radeon_semaphore_emit_signal(struct radeon_device *rdev, int ring,
+ 			          struct radeon_semaphore *semaphore)
+ {
++	trace_radeon_semaphore_signale(ring, semaphore);
 +
-+	host_err = nfsd_break_lease(inode);
-+	if (host_err)
-+		goto out_put_write_access_nfserror;
-+
-+	fh_lock(fhp);
-+	host_err = notify_change(dentry, iap);
-+	fh_unlock(fhp);
-+
-+out_put_write_access_nfserror:
-+	err = nfserrno(host_err);
-+out_put_write_access:
- 	if (size_change)
- 		put_write_access(inode);
- 	if (!err)
- 		commit_metadata(fhp);
- out:
- 	return err;
--
--out_nfserr:
--	err = nfserrno(host_err);
--	goto out;
+ 	--semaphore->waiters;
+ 	radeon_semaphore_ring_emit(rdev, ring, &rdev->ring[ring], semaphore, false);
  }
+@@ -64,6 +66,8 @@ void radeon_semaphore_emit_signal(struct radeon_device *rdev, int ring,
+ void radeon_semaphore_emit_wait(struct radeon_device *rdev, int ring,
+ 			        struct radeon_semaphore *semaphore)
+ {
++	trace_radeon_semaphore_wait(ring, semaphore);
++
+ 	++semaphore->waiters;
+ 	radeon_semaphore_ring_emit(rdev, ring, &rdev->ring[ring], semaphore, true);
+ }
+diff --git a/drivers/gpu/drm/radeon/radeon_trace.h b/drivers/gpu/drm/radeon/radeon_trace.h
+index eafd816..a20bc7e 100644
+--- a/drivers/gpu/drm/radeon/radeon_trace.h
++++ b/drivers/gpu/drm/radeon/radeon_trace.h
+@@ -74,6 +74,42 @@ DEFINE_EVENT(radeon_fence_request, radeon_fence_wait_end,
+ 	    TP_ARGS(dev, seqno)
+ );
  
- #if defined(CONFIG_NFSD_V2_ACL) || \
++DECLARE_EVENT_CLASS(radeon_semaphore_request,
++
++	    TP_PROTO(int ring, struct radeon_semaphore *sem),
++
++	    TP_ARGS(ring, sem),
++
++	    TP_STRUCT__entry(
++			     __field(int, ring)
++			     __field(signed, waiters)
++			     __field(uint64_t, gpu_addr)
++			     ),
++
++	    TP_fast_assign(
++			   __entry->ring = ring;
++			   __entry->waiters = sem->waiters;
++			   __entry->gpu_addr = sem->gpu_addr;
++			   ),
++
++	    TP_printk("ring=%u, waiters=%d, addr=%010Lx", __entry->ring,
++		      __entry->waiters, __entry->gpu_addr)
++);
++
++DEFINE_EVENT(radeon_semaphore_request, radeon_semaphore_signale,
++
++	    TP_PROTO(int ring, struct radeon_semaphore *sem),
++
++	    TP_ARGS(ring, sem)
++);
++
++DEFINE_EVENT(radeon_semaphore_request, radeon_semaphore_wait,
++
++	    TP_PROTO(int ring, struct radeon_semaphore *sem),
++
++	    TP_ARGS(ring, sem)
++);
++
+ #endif
+ 
+ /* This part must be outside protection */
 -- 
 1.8.3.2
 
