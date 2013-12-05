@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757901Ab3LER7T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:59:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38128 "EHLO
+	id S933704Ab3LER7z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:59:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38107 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932948Ab3LERgs (ORCPT
+	with ESMTP id S932718Ab3LERgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:36:48 -0500
+	Thu, 5 Dec 2013 12:36:43 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+Cc: Brian Norris <computersforpeace@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 20/90] loop: fix crash if blk_alloc_queue fails
-Date: Thu,  5 Dec 2013 17:35:02 +0000
-Message-Id: <1386264972-5399-21-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 17/90] mtd: m25p80: fix allocation size
+Date: Thu,  5 Dec 2013 17:34:59 +0000
+Message-Id: <1386264972-5399-18-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -27,91 +27,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Brian Norris <computersforpeace@gmail.com>
 
-commit 3ec981e30fae1f3c8728a05c730acaa1f627bcfb upstream.
+commit 778d226a1462572b51d6777cdb1d611543410cb4 upstream.
 
-loop: fix crash if blk_alloc_queue fails
+This patch fixes two memory errors:
 
-If blk_alloc_queue fails, loop_add cleans up, but it doesn't clean up the
-identifier allocated with idr_alloc. That causes crash on module unload in
-idr_for_each(&loop_index_idr, &loop_exit_cb, NULL); where we attempt to
-remove non-existed device with that id.
+1. During a probe failure (in mtd_device_parse_register?) the command
+   buffer would not be freed.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000380
-IP: [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
-PGD 43d399067 PUD 43d0ad067 PMD 0
-Oops: 0000 [#1] PREEMPT SMP
-Modules linked in: loop(-) dm_snapshot dm_zero dm_mirror dm_region_hash dm_log dm_loop dm_mod ip6table_filter ip6_tables uvesafb cfbcopyarea cfbimgblt cfbfillrect fbcon font bitblit fbcon_rotate fbcon_cw fbcon_ud fbcon_ccw softcursor fb fbdev msr ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc tun ipv6 cpufreq_userspace cpufreq_stats cpufreq_ondemand cpufreq_conservative cpufreq_powersave spadfs fuse hid_generic usbhid hid raid0 md_mod dmi_sysfs nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack snd_usb_audio snd_pcm_oss snd_mixer_oss snd_pcm snd_timer snd_page_alloc lm85 hwmon_vid snd_hwdep snd_usbmidi_lib snd_rawmidi snd soundcore acpi_cpufreq ohci_hcd freq_table tg3 ehci_pci mperf ehci_hcd kvm_amd kvm sata_svw serverworks libphy libata ide_core k10temp usbcore hwmon microcode ptp pcspkr pps_core e100 skge mii usb_common i2c_piix4 floppy evdev rtc_cmos i2c_core processor but!
- ton unix
-CPU: 7 PID: 2735 Comm: rmmod Tainted: G        W    3.10.15-devel #15
-Hardware name: empty empty/S3992-E, BIOS 'V1.06   ' 06/09/2009
-task: ffff88043d38e780 ti: ffff88043d21e000 task.ti: ffff88043d21e000
-RIP: 0010:[<ffffffff812057c9>]  [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
-RSP: 0018:ffff88043d21fe10  EFLAGS: 00010282
-RAX: ffffffffa05102e0 RBX: 0000000000000000 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: ffff88043ea82800 RDI: 0000000000000000
-RBP: ffff88043d21fe48 R08: 0000000000000000 R09: 0000000000000001
-R10: 0000000000000001 R11: 0000000000000000 R12: 00000000000000ff
-R13: 0000000000000080 R14: 0000000000000000 R15: ffff88043ea82800
-FS:  00007ff646534700(0000) GS:ffff880447000000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000380 CR3: 000000043e9bf000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Stack:
- ffffffff8100aba4 0000000000000092 ffff88043d21fe48 ffff88043ea82800
- 00000000000000ff ffff88043d21fe98 0000000000000000 ffff88043d21fe60
- ffffffffa05102b4 0000000000000000 ffff88043d21fe70 ffffffffa05102ec
-Call Trace:
- [<ffffffff8100aba4>] ? native_sched_clock+0x24/0x80
- [<ffffffffa05102b4>] loop_remove+0x14/0x40 [loop]
- [<ffffffffa05102ec>] loop_exit_cb+0xc/0x10 [loop]
- [<ffffffff81217b74>] idr_for_each+0x104/0x190
- [<ffffffffa05102e0>] ? loop_remove+0x40/0x40 [loop]
- [<ffffffff8109adc5>] ? trace_hardirqs_on_caller+0x105/0x1d0
- [<ffffffffa05135dc>] loop_exit+0x34/0xa58 [loop]
- [<ffffffff810a98ea>] SyS_delete_module+0x13a/0x260
- [<ffffffff81221d5e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff813cff16>] system_call_fastpath+0x1a/0x1f
-Code: f0 4c 8b 6d f8 c9 c3 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 41 56 41 55 4c 8d af 80 00 00 00 41 54 53 48 89 fb 48 83 ec 18 <48> 83 bf 80 03 00
-00 00 74 4d e8 98 fe ff ff 31 f6 48 c7 c7 20
-RIP  [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
- RSP <ffff88043d21fe10>
-CR2: 0000000000000380
----[ end trace 64ec069ec70f1309 ]---
+2. The command buffer's size is determined based on the 'fast_read'
+   boolean, but the assignment of fast_read is made after this
+   allocation. Thus, the buffer may be allocated "too small".
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+To fix the first, just switch to the devres version of kzalloc.
+
+To fix the second, increase MAX_CMD_SIZE unconditionally. It's not worth
+saving a byte to fiddle around with the conditions here.
+
+This problem was reported by Yuhang Wang a while back.
+
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Reported-by: Yuhang Wang <wangyuhang2014@gmail.com>
+Reviewed-by: Sourav Poddar <sourav.poddar@ti.com>
 [ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/block/loop.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/mtd/devices/m25p80.c | 19 +++++++------------
+ 1 file changed, 7 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index c5e0f73..97febab 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -1634,7 +1634,7 @@ static int loop_add(struct loop_device **l, int i)
+diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+index 5d0d68c..e857734 100644
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -71,7 +71,7 @@
  
- 	lo->lo_queue = blk_alloc_queue(GFP_KERNEL);
- 	if (!lo->lo_queue)
--		goto out_free_dev;
-+		goto out_free_idr;
+ /* Define max times to check status register before we give up. */
+ #define	MAX_READY_WAIT_JIFFIES	(40 * HZ)	/* M25P16 specs 40s max chip erase */
+-#define	MAX_CMD_SIZE		5
++#define	MAX_CMD_SIZE		6
  
- 	disk = lo->lo_disk = alloc_disk(1 << part_shift);
- 	if (!disk)
-@@ -1678,6 +1678,8 @@ static int loop_add(struct loop_device **l, int i)
+ #ifdef CONFIG_M25PXX_USE_FAST_READ
+ #define OPCODE_READ 	OPCODE_FAST_READ
+@@ -848,14 +848,13 @@ static int __devinit m25p_probe(struct spi_device *spi)
+ 		}
+ 	}
  
- out_free_queue:
- 	blk_cleanup_queue(lo->lo_queue);
-+out_free_idr:
-+	idr_remove(&loop_index_idr, i);
- out_free_dev:
- 	kfree(lo);
- out:
+-	flash = kzalloc(sizeof *flash, GFP_KERNEL);
++	flash = devm_kzalloc(&spi->dev, sizeof(*flash), GFP_KERNEL);
+ 	if (!flash)
+ 		return -ENOMEM;
+-	flash->command = kmalloc(MAX_CMD_SIZE + FAST_READ_DUMMY_BYTE, GFP_KERNEL);
+-	if (!flash->command) {
+-		kfree(flash);
++
++	flash->command = devm_kzalloc(&spi->dev, MAX_CMD_SIZE, GFP_KERNEL);
++	if (!flash->command)
+ 		return -ENOMEM;
+-	}
+ 
+ 	flash->spi = spi;
+ 	mutex_init(&flash->lock);
+@@ -952,14 +951,10 @@ static int __devinit m25p_probe(struct spi_device *spi)
+ static int __devexit m25p_remove(struct spi_device *spi)
+ {
+ 	struct m25p	*flash = dev_get_drvdata(&spi->dev);
+-	int		status;
+ 
+ 	/* Clean up MTD stuff. */
+-	status = mtd_device_unregister(&flash->mtd);
+-	if (status == 0) {
+-		kfree(flash->command);
+-		kfree(flash);
+-	}
++	mtd_device_unregister(&flash->mtd);
++
+ 	return 0;
+ }
+ 
 -- 
 1.8.3.2
 
