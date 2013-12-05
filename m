@@ -1,98 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001Ab3LETZE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 14:25:04 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:54841 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750723Ab3LETZB (ORCPT
+	id S1752138Ab3LET0V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 14:26:21 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:50360 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716Ab3LET0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 14:25:01 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH V5 2/6] Add shared update_fdt() function for ARM/ARM64
-To: Roy Franz <roy.franz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        matt.fleming@intel.com, linux@arm.linux.org.uk
-Cc: leif.lindholm@linaro.org, dave.martin@arm.com, msalter@redhat.com,
-        patches@linaro.org, Roy Franz <roy.franz@linaro.org>
-In-Reply-To: <1385595115-21488-3-git-send-email-roy.franz@linaro.org>
-References: <1385595115-21488-1-git-send-email-roy.franz@linaro.org> < 1385595115-21488-3-git-send-email-roy.franz@linaro.org>
-Date: Thu, 05 Dec 2013 19:24:56 +0000
-Message-Id: <20131205192456.1B602C40785@trevor.secretlab.ca>
+	Thu, 5 Dec 2013 14:26:20 -0500
+Date: Thu, 5 Dec 2013 20:30:50 +0100
+From: Sima Baymani <sima.baymani@gmail.com>
+To: linux-mm@kvack.org, rientjes@google.com
+Cc: tangchen@cn.fujitsu.com, akpm@linux-foundation.org, aquini@redhat.com,
+        linux-kernel@vger.kernel.org, gang.chen@asianux.com,
+        aneesh.kumar@linux.vnet.ibm.com, isimatu.yasuaki@jp.fujitsu.com,
+        kirill.shutemov@linux.intel.com, sjenning@linux.vnet.ibm.com,
+        darrick.wong@oracle.com
+Subject: [PATCH] mm: Add missing dependency in Kconfig
+Message-ID: <20131205193050.GA13476@lovelace>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Nov 2013 15:31:51 -0800, Roy Franz <roy.franz@linaro.org> wrote:
-> Both ARM and ARM64 stubs will update the device tree
-> that they pass to the kernel.  In both cases they
-> primarily need to add the same UEFI related information,
-> so the function can be shared.
-> Create a new FDT related file for this to avoid use
-> of architecture #ifdefs in efi-stub-helper.c
-> Change EFI allocation type for memory map to
-> EFI_RUNTIME_SERVICES_DATA, since we are passing
-> this buffer to the kernel, or immediately freeing it.
-> 
-> Signed-off-by: Roy Franz <roy.franz@linaro.org>
+Eliminate the following (rand)config warning by adding missing PROC_FS
+dependency:
+warning: (HWPOISON_INJECT && MEM_SOFT_DIRTY) selects PROC_PAGE_MONITOR
+which has unmet direct dependencies (PROC_FS && MMU)
 
-Hi Roy,
+Suggested-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Sima Baymani <sima.baymani@gmail.com>
+---
+ mm/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Comments below...
-
-> +static efi_status_t update_fdt(efi_system_table_t *sys_table, void *orig_fdt,
-> +			       void *fdt, int new_fdt_size, char *cmdline_ptr,
-> +			       u64 initrd_addr, u64 initrd_size,
-> +			       efi_memory_desc_t *memory_map,
-> +			       unsigned long map_size, unsigned long desc_size,
-> +			       u32 desc_ver)
-> +{
-> +	int node;
-> +	int status;
-> +	u32 fdt_val32;
-> +	u64 fdt_val64;
-> +	/* Copy definition of linux_banner here.  Since this code is
-> +	 * built as part of the decompressor for ARM v7, pulling
-> +	 * in version.c where linux_banner is defined for the
-> +	 * kernel brings other kernel dependencies with it.
-> +	 */
-> +	const char linux_banner[] =
-> +	    "Linux version " UTS_RELEASE " (" LINUX_COMPILE_BY "@"
-> +	    LINUX_COMPILE_HOST ") (" LINUX_COMPILER ") " UTS_VERSION "\n";
-
-This is inherently fragile because the string is now defined in two
-places. This issue shouldn't hold off merging the patch, but a follow up
-patch should be crafted to make it possible to pull in version.c without
-the other dependencies....
-
-Then again, the version.c strings have a very big "DON'T TOUCH" warning
-on them so I'm probably worrying about nothing.  :-)
-
-> +
-> +	status = fdt_open_into(orig_fdt, fdt, new_fdt_size);
-> +	if (status != 0)
-> +		goto fdt_set_fail;
-> +
-> +	node = fdt_subnode_offset(fdt, 0, "chosen");
-> +	if (node < 0) {
-> +		node = fdt_add_subnode(fdt, 0, "chosen");
-> +		if (node < 0) {
-> +			status = node; /* node is error code when negative */
-> +			goto fdt_set_fail;
-> +		}
-> +	}
-> +
-> +	if ((cmdline_ptr != NULL) && (strlen(cmdline_ptr) > 0)) {
-> +		status = fdt_setprop(fdt, node, "bootargs", cmdline_ptr,
-> +				     strlen(cmdline_ptr) + 1);
-> +		if (status)
-> +			goto fdt_set_fail;
-> +	}
-> +
-> +	/* Set intird address/end in device tree, if present */
-
-sp. initrd
-
-None of the above comments are blockers though.
-
-Acked-by: Grant Likely <grant.likely@linaro.org>
+diff --git a/mm/Kconfig b/mm/Kconfig
+index eb69f35..723bbe0 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -543,7 +543,7 @@ config ZSWAP
+ 
+ config MEM_SOFT_DIRTY
+ 	bool "Track memory changes"
+-	depends on CHECKPOINT_RESTORE && HAVE_ARCH_SOFT_DIRTY
++	depends on CHECKPOINT_RESTORE && HAVE_ARCH_SOFT_DIRTY && PROC_FS
+ 	select PROC_PAGE_MONITOR
+ 	help
+ 	  This option enables memory changes tracking by introducing a
+-- 
+1.7.10.4
 
