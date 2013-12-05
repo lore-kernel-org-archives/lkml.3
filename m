@@ -1,56 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756301Ab3LECgN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 21:36:13 -0500
-Received: from smtprelay0251.hostedemail.com ([216.40.44.251]:54957 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752401Ab3LECgK (ORCPT
+	id S1756424Ab3LECjN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 21:39:13 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:63568 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756127Ab3LECjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 21:36:10 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3653:3865:3866:3871:3872:4321:4605:5007:7652:7904:8957:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: scent92_8ccba6daf960a
-X-Filterd-Recvd-Size: 1966
-Message-ID: <1386210965.30493.84.camel@joe-AO722>
-Subject: Re: lots of brief rcu stalls.
-From: Joe Perches <joe@perches.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: paulmck@linux.vnet.ibm.com, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Josh Triplett <josh@freedesktop.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Date: Wed, 04 Dec 2013 18:36:05 -0800
-In-Reply-To: <1386209910.30495.146.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <20131204232838.GA25592@redhat.com>
-	 <20131205001614.GI15492@linux.vnet.ibm.com>
-	 <1386209910.30495.146.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	Wed, 4 Dec 2013 21:39:09 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: haver@linux.vnet.ibm.com
+Subject: Re: [PATCH 1/6] GenWQE PCI support, health monitoring and recovery
+Date: Thu, 5 Dec 2013 03:38:54 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        cody@linux.vnet.ibm.com, schwidefsky@de.ibm.com, utz.bacher@de.ibm.com,
+        mmarek@suse.cz, rmallon@gmail.com, jsvogt@de.ibm.com,
+        MIJUNG@de.ibm.com, cascardo@linux.vnet.ibm.com, michael@ibmra.de
+References: <1386080903-27160-1-git-send-email-haver@linux.vnet.ibm.com> <1386080903-27160-2-git-send-email-haver@linux.vnet.ibm.com> <1386165744.7883.34.camel@oc7383187364.ibm.com>
+In-Reply-To: <1386165744.7883.34.camel@oc7383187364.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201312050338.54841.arnd@arndb.de>
+X-Provags-ID: V02:K0:PE+9+9wa/slCY8x1DKFYwHo6FH9muk6Vr7/GRkY380k
+ RRELB387XK4L2EcwK9V2w35ilizRBnhYfbx/VPDtzQwpz+o7SB
+ k4LUEDvduhsMmdYg3O6u1FYFG19nhop3xQkZEylcG8z9H5Gf8z
+ z0aBrtbST8JIvSTjrwv1wv3wW4YBPPpVJfIKiKjg0EBcbl1si+
+ /4qoiWOGE1PI4V+7uwSCJ0QIqWtGXlo3HP8+aPleHj3dpjiqXX
+ zSUdJvJcFrwsvv9x2km937Ia3CMcsbefMgAnN48B6cT3BbedRn
+ ytmQqk3+9y8+/z3TBIi8zyJaU2SLZCtu91qUtQ5mOxHHAjusII
+ zQ/oz3Dbj/hnJ3tNhZUA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-12-04 at 18:18 -0800, Eric Dumazet wrote:
-> On Wed, 2013-12-04 at 16:16 -0800, Paul E. McKenney wrote:
-> > +	    ULONG_CMP_GE(ACCESS_ONCE(jiffies), rdp->rsp->jiffies_resched)) {
-
-perhaps time_before_eq
-
-> jiffies should not need ACCESS_ONCE(), right ?
+On Wednesday 04 December 2013, Frank Haverkamp wrote:
+> Hi Arnd & Greg,
 > 
-> It is one of the few variables marked with volatile keyword.
+> please let me know if my following changes are ok:
+> 
+> Am Dienstag, den 03.12.2013, 15:28 +0100 schrieb Frank Haverkamp:
+> 
+> > +/* Read/write from/to registers */
+> > +struct genwqe_regs_io {
+> > +       __u32 num;              /* register offset/address */
+> > +       union {
+> > +               __u64 val64;
+> > +               __u32 val32;
+> > +               __u16 define;
+> > +       };
+> > +};
+> 
+> Here I am using now:
+> 
+> struct genwqe_regs_io {
+> 	__u64 num;		/* register offset/address */
+> 	union {
+> 		__u64 val64;
+> 		__u32 val32;
+> 		__u16 define;
+> 	};
+> };
 
-It does seem redundant
+This is not a bug anymore, but it seems pointless to use a union
+there rather than just a __u64 for the value.
 
-$ git grep -n "ACCESS_ONCE(jiffies)"
-kernel/rcu/torture.c:1354:      jiffies_snap = ACCESS_ONCE(jiffies);
-kernel/rcu/torture.c:1363:              jiffies_snap = ACCESS_ONCE(jiffies);
-kernel/rcu/tree.c:820:  unsigned long j = ACCESS_ONCE(jiffies);
-kernel/rcu/tree.c:975:  j = ACCESS_ONCE(jiffies);
-kernel/sched/core.c:2324:       unsigned long next, now = ACCESS_ONCE(jiffies);
-kernel/sched/proc.c:536:        unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
-kernel/sched/proc.c:558:        unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+> Here I reordered and resized the members like this:
+> 
+> struct genwqe_bitstream {
+> 	__u64 data_addr;		/* pointer to image data */
+> 	__u32 size;			/* size of image file */
+> 	__u32 crc;			/* crc of this image */
+> 	__u64 target_addr;		/* starting address in Flash */
+> 	__u32 partition;		/* '0', '1', or 'v' */
+> 	__u32 uid;			/* 1=host/x=dram */
+> 
+> 	__u64 slu_id;			/* informational/sim: SluID */
+> 	__u64 app_id;			/* informational/sim: AppID */
+> 
+> 	__u16 retc;			/* returned from processing */
+> 	__u16 attn;			/* attention code from processing */
+> 	__u32 progress;			/* progress code from processing */
+> };
+
+Yes, this is fine.
+
+> > +struct genwqe_debug_data {
+> > +       char driver_version[64];
+> > +       __u64 slu_unitcfg;
+> > +       __u64 app_unitcfg;
+> > +
+> > +       __u8  ddcb_before[DDCB_LENGTH];
+> > +       __u8  ddcb_prev[DDCB_LENGTH];
+> > +       __u8  ddcb_finished[DDCB_LENGTH];
+> > +};
+> > +
+> 
+> This I hope is ok. DDCB_LENGTH is 256.
+
+Yes.
+
+> 
+> Was this already ok? My new version looks as follows:
+
+The old version was wrong.
+
+> struct genwqe_ddcb_cmd {
+> 	/* START of data copied to/from driver */
+> 	__u64 next_addr;		/* chaining genwqe_ddcb_cmd */
+> 	__u64 flags;			/* reserved */
+> 
+> 	__u8  acfunc;			/* accelerators functional unit */
+> 	__u8  cmd;			/* command to execute */
+> 	__u8  asiv_length;		/* used parameter length */
+> 	__u8  asv_length;		/* length of valid return values  */
+> 	__u16 cmdopts;			/* command options */
+> 	__u16 retc;			/* return code from processing    */
 
 
+> 	__u16 attn;			/* attention code from processing */
+> 	__u16 vcrc;			/* variant crc16 */
+> 	__u32 progress;			/* progress code from processing  */
+> 
+> 	__u64 deque_ts;			/* dequeue time stamp */
+> 	__u64 cmplt_ts;			/* completion time stamp */
+> 	__u64 disp_ts;			/* SW processing start */
+> 
+> 	/* move to end and avoid copy-back */
+> 	__u64 ddata_addr;		/* collect debug data */
+> 
+> 	/* command specific values */
+> 	__u8  asv[DDCB_ASV_LENGTH];
+> 
+> 	/* END of data copied from driver */
+> 	union {
+> 		struct {
+> 			__u64 ats;
+> 			__u8  asiv[DDCB_ASIV_LENGTH_ATS];
+> 		};
+> 		/* used for flash update to keep it backward compatible */
+> 		__u8 __asiv[DDCB_ASIV_LENGTH];
+> 	};
+> 	/* END of data copied to driver */
+> };
+> 
+> Trying to group the data in 64bit chunks even nicer than I had it
+> before.
+
+Yes, this works, although I would argue that it is too complex to be a nice
+interface.
+
+> > +/**
+> > + * struct genwqe_mem - Memory pinning/unpinning information
+> > + * @addr:          virtual user space address
+> > + * @size:          size of the area pin/dma-map/unmap
+> > + * direction:      0: read/1: read and write
+> > + *
+> > + * Avoid pinning and unpinning of memory pages dynamically. Instead
+> > + * the idea is to pin the whole buffer space required for DDCB
+> > + * opertionas in advance. The driver will reuse this pinning and the
+> > + * memory associated with it to setup the sglists for the DDCB
+> > + * requests without the need to allocate and free memory or map and
+> > + * unmap to get the DMA addresses.
+> > + *
+> > + * The inverse operation needs to be called after the pinning is not
+> > + * needed anymore. The pinnings else the pinnings will get removed
+> > + * after the device is closed. Note that pinnings will required
+> > + * memory.
+> > + */
+> > +struct genwqe_mem {
+> > +       unsigned long addr;
+> > +       unsigned long size;
+> > +       int direction;
+> > +};
+> 
+> Was wrong, as already pointed out before. It is now:
+> 
+> struct genwqe_mem {
+> 	__u64 addr;
+> 	__u64 size;
+> 	int direction;
+> };
+> 
+> I hope the int is ok here.
+
+No, it's not. The problem is that sizeof(struct genwqe_mem) is now 24 on
+most architectures (including x86-64) and 20 on x86-32. The size gets
+encoded into the ioctl number, at least after you fix this part:
+
+> > +
+> > +#define GENWQE_PIN_MEM       _IOWR(GENWQE_IOC_CODE, 40, struct
+> > genwqe_mem *)
+> > +#define GENWQE_UNPIN_MEM      _IOWR(GENWQE_IOC_CODE, 41, struct
+> > genwqe_mem *)
+
+... which is also broken because sizeof(struct genwqe_mem *) is 8 on
+64-bit and 4 on 32-bit architectures. The argument to _IOWR() is
+supposed to be struct, not a pointer. I thought we would actually
+cause a build-time warning about this bug (I wrote the code to do that)
+but I may be misremembering which bugs we can actually catch.
+
+> > +/*
+> > + * Generic synchronous DDCB execution interface.
+> > + * Synchronously execute a DDCB.
+> > + *
+> > + * Return: 0 on success or negative error code.
+> > + *         -EINVAL: Invalid parameters (ASIV_LEN, ASV_LEN, illegal
+> > fixups
+> > + *                  no mappings found/could not create mappings
+> > + *         -EFAULT: illegal addresses in fixups, purging failed
+> > + *         -EBADMSG: enqueing failed, retc != DDCB_RETC_COMPLETE
+> > + */
+> > +#define GENWQE_EXECUTE_DDCB                                    \
+> > +       _IOWR(GENWQE_IOC_CODE, 50, struct genwqe_ddcb_cmd *)
+> > +
+> > +#define
+> > GENWQE_EXECUTE_RAW_DDCB                                        \
+> > +       _IOWR(GENWQE_IOC_CODE, 51, struct genwqe_ddcb_cmd *)
+> > +
+> > +/* Service Layer functions (PF only) */
+> > +#define GENWQE_SLU_UPDATE  _IOWR(GENWQE_IOC_CODE, 80, struct
+> > genwqe_bistream *)
+> > +#define GENWQE_SLU_READ           _IOWR(GENWQE_IOC_CODE, 81, struct
+> > genwqe_bistream *)
+
+Same bug for all of these.
+
+	Arnd
