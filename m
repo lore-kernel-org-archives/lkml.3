@@ -1,68 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab3LEWHG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 17:07:06 -0500
-Received: from eddie.linux-mips.org ([78.24.191.182]:56419 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab3LEWHD (ORCPT
+	id S1752667Ab3LEWNx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 17:13:53 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:61202 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab3LEWNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 17:07:03 -0500
-Date: Thu, 5 Dec 2013 22:06:59 +0000 (GMT)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: Yijing Wang <wangyijing@huawei.com>
-cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hanjun Guo <guohanjun@huawei.com>
-Subject: Re: [PATCH 2/2] net/fddi: Replace local marco with PCI standard
- macro
-In-Reply-To: <1386243482-32856-1-git-send-email-wangyijing@huawei.com>
-Message-ID: <alpine.LFD.2.10.1312052154190.1599@eddie.linux-mips.org>
-References: <1386243482-32856-1-git-send-email-wangyijing@huawei.com>
-User-Agent: Alpine 2.10 (LFD 1266 2009-07-14)
+	Thu, 5 Dec 2013 17:13:51 -0500
+X-IronPort-AV: E=Sophos;i="4.93,836,1378882800"; 
+   d="scan'208";a="379202"
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Christian Daudt <bcm@fixthebug.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Tim Kryger <tim.kryger@linaro.org>,
+        Broadcom Kernel Feedback List 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linaro Patches List <patches@linaro.org>
+Subject: [PATCH] clocksource: kona: Print warning rather than panic
+Date: Thu, 5 Dec 2013 14:13:41 -0800
+Message-ID: <1386281621-5659-1-git-send-email-tim.kryger@linaro.org>
+X-Mailer: git-send-email 1.8.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Dec 2013, Yijing Wang wrote:
+Since there may be other clocksources available, this driver should not
+trigger a panic simply because it can not determine the frequency of an
+external clock.  This change refactors the driver to allow a warning to
+be printed in this case instead.
 
-> Replace local marco DFX_BUS_PCI with PCI standard marco
-> dev_is_pci().
+Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+Reviewed-by: Matt Porter <matt.porter@linaro.org>
+---
 
- Typos above: marco -> macro
+This patch depends on:  https://lkml.org/lkml/2013/12/5/513
 
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> ---
->  drivers/net/fddi/defxx.c |   20 +++++++-------------
->  1 files changed, 7 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/net/fddi/defxx.c b/drivers/net/fddi/defxx.c
-> index 0b40e1c..0344f71 100644
-> --- a/drivers/net/fddi/defxx.c
-> +++ b/drivers/net/fddi/defxx.c
-> @@ -241,12 +241,6 @@ static char version[] =
->   */
->  #define NEW_SKB_SIZE (PI_RCV_DATA_K_SIZE_MAX+128)
->  
-> -#ifdef CONFIG_PCI
-> -#define DFX_BUS_PCI(dev) (dev->bus == &pci_bus_type)
-> -#else
-> -#define DFX_BUS_PCI(dev) 0
-> -#endif
-> -
->  #ifdef CONFIG_EISA
->  #define DFX_BUS_EISA(dev) (dev->bus == &eisa_bus_type)
->  #else
-> @@ -436,7 +430,7 @@ static void dfx_port_read_long(DFX_board_t *bp, int offset, u32 *data)
->  static void dfx_get_bars(struct device *bdev,
->  			 resource_size_t *bar_start, resource_size_t *bar_len)
->  {
-> -	int dfx_bus_pci = DFX_BUS_PCI(bdev);
-> +	int dfx_bus_pci = dev_is_pci(bdev);
->  	int dfx_bus_eisa = DFX_BUS_EISA(bdev);
->  	int dfx_bus_tc = DFX_BUS_TC(bdev);
->  	int dfx_use_mmio = DFX_MMIO || dfx_bus_tc;
+ drivers/clocksource/bcm_kona_timer.c | 54 +++++++++++++++++++-----------------
+ 1 file changed, 28 insertions(+), 26 deletions(-)
 
-Acked-by: Maciej W. Rozycki <macro@linux-mips.org>
+diff --git a/drivers/clocksource/bcm_kona_timer.c b/drivers/clocksource/bcm_kona_timer.c
+index 8a4ab36..75d26fe 100644
+--- a/drivers/clocksource/bcm_kona_timer.c
++++ b/drivers/clocksource/bcm_kona_timer.c
+@@ -105,31 +105,6 @@ static const struct of_device_id bcm_timer_ids[] __initconst = {
+ 	{},
+ };
+ 
+-static void __init kona_timers_init(struct device_node *node)
+-{
+-	u32 freq;
+-	struct clk *external_clk;
+-
+-	external_clk = of_clk_get_by_name(node, NULL);
+-
+-	if (!IS_ERR(external_clk)) {
+-		arch_timer_rate = clk_get_rate(external_clk);
+-		clk_prepare_enable(external_clk);
+-	} else if (!of_property_read_u32(node, "clock-frequency", &freq)) {
+-		arch_timer_rate = freq;
+-	} else {
+-		panic("unable to determine clock-frequency");
+-	}
+-
+-	/* Setup IRQ numbers */
+-	timers.tmr_irq = irq_of_parse_and_map(node, 0);
+-
+-	/* Setup IO addresses */
+-	timers.tmr_regs = of_iomap(node, 0);
+-
+-	kona_timer_disable_and_clear(timers.tmr_regs);
+-}
+-
+ static int kona_timer_set_next_event(unsigned long clc,
+ 				  struct clock_event_device *unused)
+ {
+@@ -204,7 +179,34 @@ static struct irqaction kona_timer_irq = {
+ 
+ static void __init kona_timer_init(struct device_node *node)
+ {
+-	kona_timers_init(node);
++	u32 freq;
++	struct clk *external_clk;
++
++	if (!of_device_is_available(node)) {
++		pr_info("Kona Timer v1 marked as disabled in device tree\n");
++		return;
++	}
++
++	external_clk = of_clk_get_by_name(node, NULL);
++
++	if (!IS_ERR(external_clk)) {
++		arch_timer_rate = clk_get_rate(external_clk);
++		clk_prepare_enable(external_clk);
++	} else if (!of_property_read_u32(node, "clock-frequency", &freq)) {
++		arch_timer_rate = freq;
++	} else {
++		pr_err("Kona Timer v1 unable to determine clock-frequency");
++		return;
++	}
++
++	/* Setup IRQ numbers */
++	timers.tmr_irq = irq_of_parse_and_map(node, 0);
++
++	/* Setup IO addresses */
++	timers.tmr_regs = of_iomap(node, 0);
++
++	kona_timer_disable_and_clear(timers.tmr_regs);
++
+ 	kona_timer_clockevents_init();
+ 	setup_irq(timers.tmr_irq, &kona_timer_irq);
+ 	kona_timer_set_next_event((arch_timer_rate / HZ), NULL);
+-- 
+1.8.0.1
 
-  Maciej
