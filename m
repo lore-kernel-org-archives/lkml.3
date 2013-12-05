@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756368Ab3LEOUV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 09:20:21 -0500
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:54092 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab3LEOUU (ORCPT
+	id S1756709Ab3LEOVr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 09:21:47 -0500
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:49290 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968Ab3LEOVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 09:20:20 -0500
+	Thu, 5 Dec 2013 09:21:43 -0500
 MIME-Version: 1.0
-In-Reply-To: <87wqjod97k.fsf@devron.myhome.or.jp>
-References: <1384688316-3003-1-git-send-email-linkinjeon@gmail.com>
-	<87wqjod97k.fsf@devron.myhome.or.jp>
-Date: Thu, 5 Dec 2013 23:20:19 +0900
-Message-ID: <CAKYAXd8NS56AYO-EGs4SM9jVn7AfsQbKznxXP2t7Xf2qDXUo1g@mail.gmail.com>
-Subject: Re: [PATCH v2 5/5] fat: permit to return phy block number by fibmap
- in fallocated region
+In-Reply-To: <87siucd90z.fsf@devron.myhome.or.jp>
+References: <1384688224-2832-1-git-send-email-linkinjeon@gmail.com>
+	<87siucd90z.fsf@devron.myhome.or.jp>
+Date: Thu, 5 Dec 2013 23:21:42 +0900
+Message-ID: <CAKYAXd8wLuSevrKqyztNVM47OT-fwhJ41cnuU7K8+n4ezQFf_A@mail.gmail.com>
+Subject: Re: [PATCH v2 0/5] fat: additions to support fat_fallocate
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,58 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2013/12/1, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
 > Namjae Jeon <linkinjeon@gmail.com> writes:
 >
->> diff --git a/fs/fat/cache.c b/fs/fat/cache.c
->> index c56bd7e..7777822 100644
->> --- a/fs/fat/cache.c
->> +++ b/fs/fat/cache.c
->> @@ -312,6 +312,7 @@ int fat_bmap(struct inode *inode, sector_t sector,
->> sector_t *phys,
->>  	const unsigned char blocksize_bits = sb->s_blocksize_bits;
->>  	sector_t last_block;
->>  	int cluster, offset;
->> +	loff_t i_size = i_size_read(inode);
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
 >>
->>  	*phys = 0;
->>  	*mapped_blocks = 0;
->> @@ -323,10 +324,20 @@ int fat_bmap(struct inode *inode, sector_t sector,
->> sector_t *phys,
->>  		return 0;
->>  	}
+>> This patch set provides support for doing fallocate operation
+>> on FAT filesystem.
+>> After series of review for the the feature
+>> The complete functionality is broken down into smaller subsets.
 >>
->> -	last_block = (i_size_read(inode) + (blocksize - 1)) >> blocksize_bits;
->> +	last_block = (i_size + (blocksize - 1)) >> blocksize_bits;
->>  	if (sector >= last_block) {
->> -		if (!create)
->> +		if (!create) {
->> +			/*
->> +			 * to map cluster in case of read request
->> +			 * for a block in fallocated region
->> +			 */
->> +			if (MSDOS_I(inode)->i_disksize >
->> +			    round_up(i_size, sb->s_blocksize)) {
->> +				goto out_map_cluster;
->> +			}
->
-> Said on another reply though, we will have to add new flag for
-> this. Because normal read get_block() operation should not return
-> mapping beyond ->i_size.
-Okay.
->
->>  	/* fat_get_cluster() assumes the requested blocknr isn't truncated. */
->> -	down_read(&MSDOS_I(mapping->host)->truncate_lock);
->> +	mutex_lock(&mapping->host->i_mutex);
->>  	blocknr = generic_block_bmap(mapping, block, fat_get_block);
->> -	up_read(&MSDOS_I(mapping->host)->truncate_lock);
->> +	mutex_unlock(&mapping->host->i_mutex);
+>> v2:
+>>  - remove a stary unlock(from Dan Carpenter)
+>>  - check ->mmu_private and ->i_disksize to truncate uninitialized data.
 >>
->>  	return blocknr;
->>  }
+>> Namjae Jeon (5):
+>>  fat: add i_disksize to represent uninitialized size
+>>  fat: add fat_fallocate operation
+>>  fat: zero out seek range on _fat_get_block
+>>  fat: fallback to buffered write in case of fallocatded region on direct
+>> IO
+>>  fat: permit to return phy block number by fibmap in fallocated region
 >
-> ->i_mutex doesn't work for swapfile.
-Sorry, Actually, I don't understand why it is related with swapfile.
-Could you elaborate more ?
+> Let's add document about FAT's fallocate() behavior to
+> Documents/filesystem/vfat.txt.
+>
+> I.e. it will be truncated evict_inode(). So, user has to assume
+> fallocate() is only valid until last close(), and user has to re-call
+> fallocate() after re-open to make sure fallocate() region.
+Right. I will update vfat document.
 
-Thanks.
+Thanks for review.
 > --
 > OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 >
