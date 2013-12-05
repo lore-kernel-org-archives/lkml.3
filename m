@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933661Ab3LERtI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:49:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38321 "EHLO
+	id S1757322Ab3LERhk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:37:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38305 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757072Ab3LERhl (ORCPT
+	with ESMTP id S1756956Ab3LERhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:37:41 -0500
+	Thu, 5 Dec 2013 12:37:36 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jerome Glisse <jglisse@redhat.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 58/90] radeon: workaround pinning failure on low ram gpu
-Date: Thu,  5 Dec 2013 17:35:40 +0000
-Message-Id: <1386264972-5399-59-git-send-email-luis.henriques@canonical.com>
+Cc: NeilBrown <neilb@suse.de>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 55/90] md: fix calculation of stacking limits on level change.
+Date: Thu,  5 Dec 2013 17:35:37 +0000
+Message-Id: <1386264972-5399-56-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -28,68 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 97b6ff6be9da7675aab339334fda996d6c5077d9 upstream.
+commit 02e5f5c0a0f726e66e3d8506ea1691e344277969 upstream.
 
-GPU with low amount of ram can fails at pinning new framebuffer before
-unpinning old one. On such failure, retry with unpinning old one before
-pinning new one allowing to work around the issue. This is somewhat
-ugly but only affect those old GPU we care about.
+The various ->run routines of md personalities assume that the 'queue'
+has been initialised by the blk_set_stacking_limits() call in
+md_alloc().
 
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+However when the level is changed (by level_store()) the ->run routine
+for the new level is called for an array which has already had the
+stacking limits modified.  This can result in incorrect final
+settings.
+
+So call blk_set_stacking_limits() before ->run in level_store().
+
+A specific consequence of this bug is that it causes
+discard_granularity to be set incorrectly when reshaping a RAID4 to a
+RAID0.
+
+This is suitable for any -stable kernel since 3.3 in which
+blk_set_stacking_limits() was introduced.
+
+Reported-and-tested-by: "Baldysiak, Pawel" <pawel.baldysiak@intel.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_legacy_crtc.c | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+ drivers/md/md.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_legacy_crtc.c b/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
-index 9760e5a..b44bbf5 100644
---- a/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
-+++ b/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
-@@ -416,6 +416,7 @@ int radeon_crtc_do_set_base(struct drm_crtc *crtc,
- 	/* Pin framebuffer & get tilling informations */
- 	obj = radeon_fb->obj;
- 	rbo = gem_to_radeon_bo(obj);
-+retry:
- 	r = radeon_bo_reserve(rbo, false);
- 	if (unlikely(r != 0))
- 		return r;
-@@ -424,6 +425,33 @@ int radeon_crtc_do_set_base(struct drm_crtc *crtc,
- 				     &base);
- 	if (unlikely(r != 0)) {
- 		radeon_bo_unreserve(rbo);
-+
-+		/* On old GPU like RN50 with little vram pining can fails because
-+		 * current fb is taking all space needed. So instead of unpining
-+		 * the old buffer after pining the new one, first unpin old one
-+		 * and then retry pining new one.
-+		 *
-+		 * As only master can set mode only master can pin and it is
-+		 * unlikely the master client will race with itself especialy
-+		 * on those old gpu with single crtc.
-+		 *
-+		 * We don't shutdown the display controller because new buffer
-+		 * will end up in same spot.
-+		 */
-+		if (!atomic && fb && fb != crtc->fb) {
-+			struct radeon_bo *old_rbo;
-+			unsigned long nsize, osize;
-+
-+			old_rbo = gem_to_radeon_bo(to_radeon_framebuffer(fb)->obj);
-+			osize = radeon_bo_size(old_rbo);
-+			nsize = radeon_bo_size(rbo);
-+			if (nsize <= osize && !radeon_bo_reserve(old_rbo, false)) {
-+				radeon_bo_unpin(old_rbo);
-+				radeon_bo_unreserve(old_rbo);
-+				fb = NULL;
-+				goto retry;
-+			}
-+		}
- 		return -EINVAL;
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 5f5e10e..84f0f19 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -3681,6 +3681,7 @@ level_store(struct mddev *mddev, const char *buf, size_t len)
+ 		mddev->in_sync = 1;
+ 		del_timer_sync(&mddev->safemode_timer);
  	}
- 	radeon_bo_get_tiling_flags(rbo, &tiling_flags, NULL);
++	blk_set_stacking_limits(&mddev->queue->limits);
+ 	pers->run(mddev);
+ 	set_bit(MD_CHANGE_DEVS, &mddev->flags);
+ 	mddev_resume(mddev);
 -- 
 1.8.3.2
 
