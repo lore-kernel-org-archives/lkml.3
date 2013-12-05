@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756048Ab3LELWM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 06:22:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39402 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753650Ab3LELWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 06:22:07 -0500
-Date: Thu, 5 Dec 2013 12:21:58 +0100
-From: Karel Zak <kzak@redhat.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Matt Domsch <Matt_Domsch@dell.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        "Chandramouleeswaran,Aswin" <aswin@hp.com>
-Subject: Re: [PATCH] partitions/efi: complete gpt kernel param purpose
-Message-ID: <20131205112158.GD8058@x2.net.home>
-References: <1386198962.31494.12.camel@buesod1.americas.hpqcorp.net>
+	id S1756131Ab3LELWj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 06:22:39 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:3347 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753698Ab3LELWF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 06:22:05 -0500
+From: Yijing Wang <wangyijing@huawei.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>
+Subject: [PATCH 2/2] uwb: Use dev_is_pci() to check whether it is pci device
+Date: Thu, 5 Dec 2013 19:21:42 +0800
+Message-ID: <1386242502-29440-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386198962.31494.12.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 03:16:02PM -0800, Davidlohr Bueso wrote:
-> From: Davidlohr Bueso <davidlohr@hp.com>
-> 
-> The usage of the 'gpt' kernel parameter is twofold:
-> (i) skip any mbr integrity checks and (ii) enable the
-> backup GPT header to be used in situations where the
-> primary one is corrupted. This last "feature" is not
-> obvious and needs to be properly documented in the
-> kernel-parameters document.
+Use PCI standard marco dev_is_pci() instead of directly compare
+pci_bus_type to check whether it is pci device.
 
-The question is if we really have to force users to specify "gpt"
-kernel parameter to use the backup GPT header. Maybe it would be
-enough to report the problem (print warning) and use the valid backup
-header. IMHO the current behaviour is overkill.
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+---
+ drivers/uwb/umc-bus.c   |    2 +-
+ include/linux/uwb/umc.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-    Karel
-
+diff --git a/drivers/uwb/umc-bus.c b/drivers/uwb/umc-bus.c
+index e3ed6ff..88a290f 100644
+--- a/drivers/uwb/umc-bus.c
++++ b/drivers/uwb/umc-bus.c
+@@ -85,7 +85,7 @@ int umc_match_pci_id(struct umc_driver *umc_drv, struct umc_dev *umc)
+ 	const struct pci_device_id *id_table = umc_drv->match_data;
+ 	struct pci_dev *pci;
+ 
+-	if (umc->dev.parent->bus != &pci_bus_type)
++	if (!dev_is_pci(umc->dev.parent))
+ 		return 0;
+ 
+ 	pci = to_pci_dev(umc->dev.parent);
+diff --git a/include/linux/uwb/umc.h b/include/linux/uwb/umc.h
+index 891d1d5..ba82f03 100644
+--- a/include/linux/uwb/umc.h
++++ b/include/linux/uwb/umc.h
+@@ -143,7 +143,7 @@ int umc_match_pci_id(struct umc_driver *umc_drv, struct umc_dev *umc);
+ static inline struct pci_dev *umc_parent_pci_dev(struct umc_dev *umc_dev)
+ {
+ 	struct pci_dev *pci_dev = NULL;
+-	if (umc_dev->dev.parent->bus == &pci_bus_type)
++	if (dev_is_pci(umc_dev->dev.parent))
+ 		pci_dev = to_pci_dev(umc_dev->dev.parent);
+ 	return pci_dev;
+ }
 -- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+1.7.1
+
+
