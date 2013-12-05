@@ -1,88 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594Ab3LEKnH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 05:43:07 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40988 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752658Ab3LEKnE (ORCPT
+	id S1755440Ab3LEKpx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 05:45:53 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:53622 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753188Ab3LEKpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 05:43:04 -0500
-Date: Thu, 5 Dec 2013 10:42:52 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "davidb@codeaurora.org" <davidb@codeaurora.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Manu Gautam <mgautam@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4 12/15] usb: phy: msm: Add support for secondary PHY
- control
-Message-ID: <20131205104252.GK29200@e106331-lin.cambridge.arm.com>
-References: <1384267910-32066-1-git-send-email-iivanov@mm-sol.com>
- <1384267910-32066-13-git-send-email-iivanov@mm-sol.com>
- <20131115164212.GI24831@e106331-lin.cambridge.arm.com>
- <1384779462.13631.16.camel@iivanov-dev.int.mm-sol.com>
+	Thu, 5 Dec 2013 05:45:51 -0500
+Date: Thu, 5 Dec 2013 11:45:46 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 28/28] perf tools: Add udis86 disassembler feature check
+Message-ID: <20131205104546.GC20283@gmail.com>
+References: <1386076182-14484-1-git-send-email-jolsa@redhat.com>
+ <1386076182-14484-29-git-send-email-jolsa@redhat.com>
+ <20131204185024.GC14788@ghostprotocols.net>
+ <20131205080513.GA1251@krava.brq.redhat.com>
+ <20131205092502.GA16653@gmail.com>
+ <20131205094122.GA21600@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1384779462.13631.16.camel@iivanov-dev.int.mm-sol.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131205094122.GA21600@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 12:57:42PM +0000, Ivan T. Ivanov wrote:
-> 
-> Hi Mark,
-> 
-> On Fri, 2013-11-15 at 16:42 +0000, Mark Rutland wrote: 
-> > On Tue, Nov 12, 2013 at 02:51:47PM +0000, Ivan T. Ivanov wrote:
-> > > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> > > 
-> > > Allow support to use 2nd HSPHY with USB2 Core.
-> > > Some platforms may have configuration to allow USB controller
-> > > work with any of the two HSPHYs present. By default driver
-> > > configures USB core to use primary HSPHY. Add support to allow
-> > > user select 2nd HSPHY using DT parameter.
-> > > 
-> > > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > > Cc: Manu Gautam <mgautam@codeaurora.org>
-> > > Cc: devicetree@vger.kernel.org
-> > > ---
-> > >  .../devicetree/bindings/usb/msm-hsusb.txt          |    6 +++++
-> > >  drivers/usb/phy/phy-msm-usb.c                      |   24 ++++++++++++++++++--
-> > >  include/linux/usb/msm_hsusb.h                      |    1 +
-> > >  include/linux/usb/msm_hsusb_hw.h                   |    1 +
-> > >  4 files changed, 30 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/Documentation/devicetree/bindings/usb/msm-hsusb.txt b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
-> > > index 3f21204..d105ba9 100644
-> > > --- a/Documentation/devicetree/bindings/usb/msm-hsusb.txt
-> > > +++ b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
-> > > @@ -72,6 +72,12 @@ Optional properties:
-> > >  - qcom,phy-init-sequence: PHY configuration sequence. val, reg pairs
-> > >  				terminate with -1
-> > >  
-> > > +- qcom,phy-num:	Select number of pyco-phy to use, can be one of
-> > > +				0 - PHY one, default
-> > > +				1 - Second PHY
-> > > +				Some platforms may have configuration to allow USB
-> > > +				controller work with any of the two HSPHYs present.
-> > > +
+
+* Jiri Olsa <jolsa@redhat.com> wrote:
+
+> On Thu, Dec 05, 2013 at 10:25:02AM +0100, Ingo Molnar wrote:
 > > 
-> > Only one can be used at a time?
+> > * Jiri Olsa <jolsa@redhat.com> wrote:
+> > 
+> > > On Wed, Dec 04, 2013 at 03:50:24PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > > Em Tue, Dec 03, 2013 at 02:09:42PM +0100, Jiri Olsa escreveu:
+> > > > > Adding udis86 disassembler feature check which support
+> > > > > is needed for kvm:kvm_emulate_insn tracepoint.
+> > > > >  
+> > > > > +$(call feature_check,udis86)
+> > > > > +ifeq ($(feature-udis86), 1)
+> > > > > +  LIBTRACEEVENT_CFLAGS += -DHAVE_UDIS86
+> > > > > +  EXTLIBS += -ludis86
+> > > > > +else
+> > > > > +  msg := $(warning No udis86 support.);
+> > > > > +endif
+> > > > 
+> > > > That is really an incomplete message, what package should I install?
+> > > > Perhaps we should add this there then:
+> > > > 
+> > > > http://bit.ly/1hyrN52
+> > > 
+> > > nice :-)
+> > > 
+> > > > 
+> > > > Wow, that was easy, but yeah, could be made easier 8-) ;-P
+> > > 
+> > > so something like:
+> > > No udis86 found. Please install udis86-devel.
+> > > 
+> > > or:
+> > > No udis86 found, disabling kvm tracepoints instruction disassembly. Please install udis86-devel.
+> > 
+> > 1)
+> > 
+> > So, the first problem I can see is in the output:
+> > 
+> > Auto-detecting system features:
+> > ...                     backtrace: [ on  ]
+> > ...                         dwarf: [ on  ]
+> > ...                fortify-source: [ on  ]
+> > ...                         glibc: [ on  ]
+> > ...                          gtk2: [ on  ]
+> > ...                  gtk2-infobar: [ on  ]
+> > ...                      libaudit: [ on  ]
+> > ...                        libbfd: [ on  ]
+> > ...                        libelf: [ on  ]
+> > ...             libelf-getphdrnum: [ on  ]
+> > ...                   libelf-mmap: [ on  ]
+> > ...                       libnuma: [ on  ]
+> > ...                       libperl: [ on  ]
+> > ...                     libpython: [ on  ]
+> > ...             libpython-version: [ on  ]
+> > ...                      libslang: [ on  ]
+> > ...                     libunwind: [ on  ]
+> > ...                       on-exit: [ on  ]
+> > ...            stackprotector-all: [ on  ]
+> > ...                       timerfd: [ on  ]
+> > 
+> > config/Makefile:421: No udis86 support.
+> > 
+> > such a 'no XYZ support' message should only occur if a feature test 
+> > failed. _If_ we decide that 'udis86' support is required for a full 
+> > perf build then there should be a new line saying something like:
+> > 
+> > ...                        udis86: [ OFF ]
 > 
-> Yes only one of them. Selected at driver init time. 
+> hum, just sent v4 that added udis86 into above list ;-)
+> 
+> So.. do we consider 'full perf build' to be build with all
+> possible libraries linked in?
 
-Ok. For a given platform, is it likely that both are wired up and
-_possibly_ usable?
+So my worry is, how widely is libudis86 available in distros? What is 
+the package name on Debian/Ubuntu for example?
 
-Thanks
-Mark.
+Thanks,
+
+	Ingo
