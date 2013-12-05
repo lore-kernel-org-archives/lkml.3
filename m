@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756451Ab3LEESM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 23:18:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37814 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab3LEESL (ORCPT
+	id S1756564Ab3LEETz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 23:19:55 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:61301 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959Ab3LEETx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 23:18:11 -0500
-Date: Wed, 4 Dec 2013 20:19:13 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tomas Winkler <tomas.winkler@intel.com>
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org
-Subject: Re: [char-misc-next] mei: add 9 series PCH mei device ids
-Message-ID: <20131205041913.GA4975@kroah.com>
-References: <1386068489-19511-1-git-send-email-tomas.winkler@intel.com>
+	Wed, 4 Dec 2013 23:19:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386068489-19511-1-git-send-email-tomas.winkler@intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <Pine.LNX.4.44L0.1312041014460.1329-100000@iolanthe.rowland.org>
+References: <1386116201-22131-1-git-send-email-jwerner@chromium.org>
+	<Pine.LNX.4.44L0.1312041014460.1329-100000@iolanthe.rowland.org>
+Date: Wed, 4 Dec 2013 20:19:52 -0800
+X-Google-Sender-Auth: 75f0rdGl7AQKC6Qsm60Q7bC3814
+Message-ID: <CAODwPW8aLDUyQbX1h2FkeFvWHCTV=sCFVztPP6kHpaaF-OBOOA@mail.gmail.com>
+Subject: Re: [PATCH] usb: core: Abort deauthorization if unsetting
+ configuration fails
+From: Julius Werner <jwerner@chromium.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Julius Werner <jwerner@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 01:01:29PM +0200, Tomas Winkler wrote:
-> And Lynx Point H Refresh and Wildcat Point LP
-> device ids.
-> 
-> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-> ---
->  drivers/misc/mei/hw-me-regs.h | 4 ++++
->  drivers/misc/mei/pci-me.c     | 4 +++-
->  2 files changed, 7 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/misc/mei/hw-me-regs.h b/drivers/misc/mei/hw-me-regs.h
-> index 6c0fde5..f83bc80 100644
-> --- a/drivers/misc/mei/hw-me-regs.h
-> +++ b/drivers/misc/mei/hw-me-regs.h
-> @@ -110,8 +110,12 @@
->  #define MEI_DEV_ID_PPT_3      0x1DBA  /* Panther Point */
->  
->  #define MEI_DEV_ID_LPT        0x8C3A  /* Lynx Point */
-> +#define MEI_DEV_ID_LPT_H      0x8C3A  /* Lynx Point H */
+> Instead, how about changing usb_set_configuration() so that it will
+> never fail when the new config is -1?  Except perhaps for -ENODEV
+> errors (the device has been disconnected), which
+> usb_deauthorize_device() could check for.
 
-Why duplicate this #define?
+Yes, that should work as well. It's really just one autoresume and one
+disable_lpm that can fail in that case so it shouldn't be too
+intrusive. I would prefer not to special-case ENODEV though, no need
+to add more complexity than necessary.
 
-And, now that you changed it, why keep the "old" one around, it's no
-longer used anywhere else?
-
-thanks,
-
-greg k-h
+I will write up a new version for that tomorrow.
