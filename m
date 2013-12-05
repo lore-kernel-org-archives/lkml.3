@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933419Ab3LER41 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:56:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38186 "EHLO
+	id S933475Ab3LER4s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:56:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38182 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757193Ab3LERhF (ORCPT
+	with ESMTP id S1757105Ab3LERhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:37:05 -0500
+	Thu, 5 Dec 2013 12:37:04 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Skeggs <bskeggs@redhat.com>,
+Cc: Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 32/90] drm/nouveau: when bailing out of a pushbuf ioctl, do not remove previous fence
-Date: Thu,  5 Dec 2013 17:35:14 +0000
-Message-Id: <1386264972-5399-33-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 31/90] ASoC: blackfin: Fix missing break
+Date: Thu,  5 Dec 2013 17:35:13 +0000
+Message-Id: <1386264972-5399-32-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -27,30 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 9360bd1112d8874d21942e2ae74f5416b00a8db6 upstream.
+commit afed4dbe3a043dbd833a53b6b4951e155708afd2 upstream.
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Fixes: 4b2ffc205cb9 ('ASoC: Blackfin I2S: add 8-bit sample support')
+Reported-by: David Binderman
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/nouveau/nouveau_gem.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/soc/blackfin/bf5xx-i2s.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_gem.c b/drivers/gpu/drm/nouveau/nouveau_gem.c
-index 30f5423..9a5851a 100644
---- a/drivers/gpu/drm/nouveau/nouveau_gem.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_gem.c
-@@ -286,7 +286,8 @@ validate_fini_list(struct list_head *list, struct nouveau_fence *fence)
- 	list_for_each_safe(entry, tmp, list) {
- 		nvbo = list_entry(entry, struct nouveau_bo, entry);
- 
--		nouveau_bo_fence(nvbo, fence);
-+		if (likely(fence))
-+			nouveau_bo_fence(nvbo, fence);
- 
- 		if (unlikely(nvbo->validate_mapped)) {
- 			ttm_bo_kunmap(&nvbo->kmap);
+diff --git a/sound/soc/blackfin/bf5xx-i2s.c b/sound/soc/blackfin/bf5xx-i2s.c
+index 4dccf03..f59a961 100644
+--- a/sound/soc/blackfin/bf5xx-i2s.c
++++ b/sound/soc/blackfin/bf5xx-i2s.c
+@@ -111,6 +111,7 @@ static int bf5xx_i2s_hw_params(struct snd_pcm_substream *substream,
+ 		bf5xx_i2s->tcr2 |= 7;
+ 		bf5xx_i2s->rcr2 |= 7;
+ 		sport_handle->wdsize = 1;
++		break;
+ 	case SNDRV_PCM_FORMAT_S16_LE:
+ 		bf5xx_i2s->tcr2 |= 15;
+ 		bf5xx_i2s->rcr2 |= 15;
 -- 
 1.8.3.2
 
