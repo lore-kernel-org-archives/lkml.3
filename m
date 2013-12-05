@@ -1,121 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab3LEOWx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 09:22:53 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:63612 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab3LEOWv (ORCPT
+	id S1756263Ab3LEO0B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 09:26:01 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:52434 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084Ab3LEOZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 09:22:51 -0500
-Date: Thu, 5 Dec 2013 22:22:20 +0800
-From: Ming Lei <tom.leiming@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Ming Lei <tom.leiming@gmail.com>
-Subject: Re: [OOPS, 3.13-rc2] null ptr in dio_complete()
-Message-ID: <20131205222220.5d7f4a48@tom-ThinkPad-T410>
-In-Reply-To: <20131204015837.GJ10988@dastard>
-References: <20131203215940.GX10988@dastard>
-	<20131204015837.GJ10988@dastard>
-Organization: Ming
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Dec 2013 09:25:59 -0500
+From: Lv Zheng <zetalog@gmail.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Lv Zheng <zetalog@gmail.com>, Lv Zheng <lv.zheng@intel.com>,
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx@lists.freedesktop.org
+Subject: [PATCH v2] ACPI/i915: Fix wrong <acpi/acpi.h> inclusion in i915 opregion module.
+Date: Thu,  5 Dec 2013 22:25:39 +0800
+Message-Id: <239568bf8e41fd4987b03f0ece3570d4b7f7b08e.1386241253.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <cover.1385094640.git.lv.zheng@intel.com>
+References: <cover.1385094640.git.lv.zheng@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Dec 2013 12:58:38 +1100
-Dave Chinner <david@fromorbit.com> wrote:
+From: Lv Zheng <lv.zheng@intel.com>
 
-> 
-> And I just hit this from running xfs_repair which is doing
-> multithreaded direct IO directly on /dev/vdc:
-> 
-> [ 1776.508599] BUG: unable to handle kernel NULL pointer dereference at 0000000000000328
-> [ 1776.510446] IP: [<ffffffff81755b6a>] blk_account_io_done+0x6a/0x180
-> [ 1776.511762] PGD 38e75b067 PUD 41987d067 PMD 0
-> [ 1776.512577] Oops: 0000 [#1] SMP
-> [ 1776.512577] Modules linked in:
-> [ 1776.512577] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.13.0-rc2-dgc+ #75
-> [ 1776.512577] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [ 1776.512577] task: ffffffff81f37480 ti: ffffffff81f26000 task.ti: ffffffff81f26000
-> [ 1776.512577] RIP: 0010:[<ffffffff81755b6a>]  [<ffffffff81755b6a>] blk_account_io_done+0x6a/0x180
-> [ 1776.512577] RSP: 0000:ffff88011bc03da8  EFLAGS: 00010046
-> [ 1776.512577] RAX: 0000000010000000 RBX: 0000000000000000 RCX: 0000000000000000
-> [ 1776.512577] RDX: 0000000000000000 RSI: 0000000000000002 RDI: ffff8800dba59fc0
-> [ 1776.512577] RBP: ffff88011bc03db8 R08: 0000000000000000 R09: ffff88021a828928
-> [ 1776.512577] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
-> [ 1776.512577] R13: 0000000000000000 R14: 0000000000002000 R15: 0000000000000000
-> [ 1776.512577] FS:  0000000000000000(0000) GS:ffff88011bc00000(0000) knlGS:0000000000000000
-> [ 1776.512577] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [ 1776.512577] CR2: 0000000000000328 CR3: 000000041a4b0000 CR4: 00000000000006f0
-> [ 1776.512577] Stack:
-> [ 1776.512577]  0000000000000000 ffff8800dba59fc0 ffff88011bc03df8 ffffffff8175e4b8
-> [ 1776.512577]  00000000000001c0 ffff8800dba59fc0 ffffe8fcfbc03a80 ffff88041aac0800
-> [ 1776.512577]  ffff88011ad53b10 0000000000000096 ffff88011bc03e08 ffffffff8175e536
-> [ 1776.512577] Call Trace:
-> [ 1776.512577]  <IRQ>
-> [ 1776.512577]  [<ffffffff8175e4b8>] blk_mq_complete_request+0xb8/0x120
-> [ 1776.512577]  [<ffffffff8175e536>] __blk_mq_end_io+0x16/0x20
-> [ 1776.512577]  [<ffffffff8175e5a8>] blk_mq_end_io+0x68/0xd0
-> [ 1776.512577]  [<ffffffff81852e47>] virtblk_done+0x67/0x110
-> [ 1776.512577]  [<ffffffff817f7925>] vring_interrupt+0x35/0x60
-> [ 1776.512577]  [<ffffffff810e48a4>] handle_irq_event_percpu+0x54/0x1e0
-> [ 1776.512577]  [<ffffffff810e4a78>] handle_irq_event+0x48/0x70
-> [ 1776.512577]  [<ffffffff810e71d7>] handle_edge_irq+0x77/0x110
-> [ 1776.512577]  [<ffffffff8104796f>] handle_irq+0xbf/0x150
-> [ 1776.512577]  [<ffffffff81aec8c2>] ? __atomic_notifier_call_chain+0x12/0x20
-> [ 1776.512577]  [<ffffffff81aec8e6>] ? atomic_notifier_call_chain+0x16/0x20
-> [ 1776.512577]  [<ffffffff81af2b8a>] do_IRQ+0x5a/0xe0
-> [ 1776.512577]  [<ffffffff81ae892d>] common_interrupt+0x6d/0x6d
-> [ 1776.512577]  <EOI>
-> [ 1776.512577]  [<ffffffff8107e626>] ? native_safe_halt+0x6/0x10
-> [ 1776.512577]  [<ffffffff8104e50f>] default_idle+0x1f/0xc0
-> [ 1776.512577]  [<ffffffff8104edb6>] arch_cpu_idle+0x26/0x30
-> [ 1776.512577]  [<ffffffff810e3d81>] cpu_startup_entry+0x81/0x240
-> [ 1776.512577]  [<ffffffff81ad4f97>] rest_init+0x77/0x80
-> [ 1776.512577]  [<ffffffff82041ee7>] start_kernel+0x3c8/0x3d5
-> [ 1776.512577]  [<ffffffff8204191e>] ? repair_env_string+0x5e/0x5e
-> [ 1776.512577]  [<ffffffff82041117>] ? early_idt_handlers+0x117/0x120
-> [ 1776.512577]  [<ffffffff820415c2>] x86_64_start_reservations+0x2a/0x2c
-> [ 1776.512577]  [<ffffffff8204170a>] x86_64_start_kernel+0x146/0x155
-> [ 1776.512577] Code: 54 41 89 c4 53 41 83 e4 01 48 2b 97 d8 00 00 00 48 8b 9f d0 00 00 00 4d 63 e4 65 44 8b 04 25 1c b0 00 00 49 8d 74 24 02 49 63 c8 <48> 8b 83 28 03
-> [ 1776.512577] RIP  [<ffffffff81755b6a>] blk_account_io_done+0x6a/0x180
-> [ 1776.512577]  RSP <ffff88011bc03da8>
-> [ 1776.512577] CR2: 0000000000000328
-> [ 1776.512577] ---[ end trace 33a5787221ff13b4 ]---
-> [ 1776.512577] Kernel panic - not syncing: Fatal exception in interrupt
-> [ 1776.512577] Shutting down cpus with NMI
-> 
-> So this is looking like another virtio+blk_mq problem....
+In Linux kernel, ACPICA is wrapped and safely exported by CONFIG_ACPI.  So
+all external modules should depend on CONFIG_ACPI rather than using ACPICA
+header directly for stubbing.  But if we moves <acpi/acpi.h> inclusions
+into "#ifdef CONFIG_ACPI", build breakge can help to detect wrong ACPICA
+dependent modules.
 
-This one might be caused by using-after-'free' request because the freed
-request may be allocated to another CPU immediately, and the below patch
-may be helpful, would you mind testing it?
+One of the build breakage is:
+include/linux/acpi_io.h:7:45: error: unknown type name 'acpi_physical_address'
+include/linux/acpi_io.h:8:10: error: unknown type name 'acpi_size'
+include/linux/acpi_io.h:13:33: error: unknown type name 'acpi_physical_address'
+include/linux/acpi_io.h:15:40: warning: 'struct acpi_generic_address' declared inside parameter list [enabled by default]
+include/linux/acpi_io.h:15:40: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
+include/linux/acpi_io.h:16:43: warning: 'struct acpi_generic_address' declared inside parameter list [enabled by default]
+drivers/gpu/drm/i915/intel_opregion.c: In function 'intel_opregion_setup':
+drivers/gpu/drm/i915/intel_opregion.c:883:2: error: implicit declaration of function 'acpi_os_ioremap' [-Werror=implicit-function-declaration]
+drivers/gpu/drm/i915/intel_opregion.c:883:7: warning: assignment makes pointer from integer without a cast [enabled by default]
 
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 6875736..2358bdf 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -311,12 +311,12 @@ void blk_mq_complete_request(struct request *rq, int error)
+The root causes of this breakage are:
+1. The <linux/acpi_io.h> depends on CONFIG_ACPI=y as most of the prototypes
+   exported by it are implemented in drivers/acpi/osl.c.
+2. CONFIG_DRM_I915 uses the only "inline" function acpi_os_ioremap() to
+   implement stubs but it shouldn't.
+
+Since ACPI IGD OpRegion is an ACPI-based mechanism, (please refer to the
+Doclink below), this patch fixes this issue by making
+drivers/gpu/drm/i915/intel_opregion.c dependent on CONFIG_ACPI.  This is
+identical to other Intel DRM drivers' OpRegion support (e.x.,
+drivers/gpu/drm/gma500/opregion.c).
+
+Since acpi_io.h is not safe for CONFIG_ACPI=y environment, this patch also
+moves it to include/acpi, includes it in <linux/acpi.h> for CONFIG_ACPI=y
+build environment and cleans up its inclusions by converting them into
+<linux/acpi.h> inclusions.
+
+After that, since all <acpi/acpi_io.h> inclusions are CONFIG_ACPI
+dependent, the FIXME marked <acpi/acpi.h> inclusion in <acpi/acpi_io.h> is
+also deleted in this patch.
+
+Doclink: https://01.org/linuxgraphics/sites/default/files/documentation/acpi_igd_opregion_spec.pdf
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: intel-gfx@lists.freedesktop.org
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+---
+ Updated due to:
+ 1. Patch descripition is changed, "FIXME deletion" notes is added;
+ 2. A mistake is fixed in the original patch.  The change in the
+    drivers/gpu/drm/i915/intel_opregion.c is not added to the quilt.  It's
+    lost as a process issues in my tests.
+    This update fixes this issue by deleting linux/acpi_io.h inclusion from
+    drivers/gpu/drm/i915/intel_opregion.c.
+    Recursive build test environment is set up as follows:
+    Following CONFIGs are enabled by default:
+     CONFIG_DRM_I915=y
+     CONFIG_DRM_GMA500=y
+     CONFIG_ACPI_APEI=y
+     CONFIG_ACPI_APEI_GHES=y
+     CONFIG_ACPI_APEI_EINJ=y
+     CONFIG_ACPI_APEI_ERST_DEBUG=y
+    Following special CONFIG tests are enabled:
+     CONFIG_ACPI=n
+    Following special object tests are enabled:
+     drivers/acpi/apei/erst.o
+     drivers/acpi/apei/hest.o
+     drivers/acpi/apei/ghes.o
+     drivers/acpi/apei/einj.o
+     drivers/acpi/apei/erst-dbg.o
+     drivers/gpu/drm/i915/intel_opregion.o
+     drivers/gpu/drm/gma500/opregion.o
+    It is done after merging the patch and before signing-off the patch.
+---
+ drivers/acpi/apei/apei-base.c         |    1 -
+ drivers/acpi/apei/apei-internal.h     |    1 -
+ drivers/acpi/apei/ghes.c              |    1 -
+ drivers/acpi/nvs.c                    |    1 -
+ drivers/acpi/osl.c                    |    1 -
+ drivers/gpu/drm/gma500/opregion.c     |    1 -
+ drivers/gpu/drm/i915/Makefile         |    3 +--
+ drivers/gpu/drm/i915/i915_drv.h       |    3 ++-
+ drivers/gpu/drm/i915/intel_opregion.c |    1 -
+ include/acpi/acpi_io.h                |   17 +++++++++++++++++
+ include/linux/acpi.h                  |    1 +
+ include/linux/acpi_io.h               |   18 ------------------
+ 12 files changed, 21 insertions(+), 28 deletions(-)
+ create mode 100644 include/acpi/acpi_io.h
+ delete mode 100644 include/linux/acpi_io.h
+
+diff --git a/drivers/acpi/apei/apei-base.c b/drivers/acpi/apei/apei-base.c
+index 6d2c49b..0760b75 100644
+--- a/drivers/acpi/apei/apei-base.c
++++ b/drivers/acpi/apei/apei-base.c
+@@ -34,7 +34,6 @@
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/acpi.h>
+-#include <linux/acpi_io.h>
+ #include <linux/slab.h>
+ #include <linux/io.h>
+ #include <linux/kref.h>
+diff --git a/drivers/acpi/apei/apei-internal.h b/drivers/acpi/apei/apei-internal.h
+index 21ba34a..e5bcd91 100644
+--- a/drivers/acpi/apei/apei-internal.h
++++ b/drivers/acpi/apei/apei-internal.h
+@@ -8,7 +8,6 @@
  
- 	blk_account_io_completion(rq, bytes);
+ #include <linux/cper.h>
+ #include <linux/acpi.h>
+-#include <linux/acpi_io.h>
  
-+	blk_account_io_done(rq);
+ struct apei_exec_context;
+ 
+diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+index a30bc31..694c486 100644
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -33,7 +33,6 @@
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/acpi.h>
+-#include <linux/acpi_io.h>
+ #include <linux/io.h>
+ #include <linux/interrupt.h>
+ #include <linux/timer.h>
+diff --git a/drivers/acpi/nvs.c b/drivers/acpi/nvs.c
+index 386a9fe..ef28613 100644
+--- a/drivers/acpi/nvs.c
++++ b/drivers/acpi/nvs.c
+@@ -12,7 +12,6 @@
+ #include <linux/mm.h>
+ #include <linux/slab.h>
+ #include <linux/acpi.h>
+-#include <linux/acpi_io.h>
+ 
+ /* ACPI NVS regions, APEI may use it */
+ 
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 7e2d814..63251b6 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -39,7 +39,6 @@
+ #include <linux/workqueue.h>
+ #include <linux/nmi.h>
+ #include <linux/acpi.h>
+-#include <linux/acpi_io.h>
+ #include <linux/efi.h>
+ #include <linux/ioport.h>
+ #include <linux/list.h>
+diff --git a/drivers/gpu/drm/gma500/opregion.c b/drivers/gpu/drm/gma500/opregion.c
+index ad0d6de..13ec628 100644
+--- a/drivers/gpu/drm/gma500/opregion.c
++++ b/drivers/gpu/drm/gma500/opregion.c
+@@ -22,7 +22,6 @@
+  *
+  */
+ #include <linux/acpi.h>
+-#include <linux/acpi_io.h>
+ #include "psb_drv.h"
+ #include "psb_intel_reg.h"
+ 
+diff --git a/drivers/gpu/drm/i915/Makefile b/drivers/gpu/drm/i915/Makefile
+index 41838ea..d4ae48b 100644
+--- a/drivers/gpu/drm/i915/Makefile
++++ b/drivers/gpu/drm/i915/Makefile
+@@ -38,7 +38,6 @@ i915-y := i915_drv.o i915_dma.o i915_irq.o \
+ 	  intel_ringbuffer.o \
+ 	  intel_overlay.o \
+ 	  intel_sprite.o \
+-	  intel_opregion.o \
+ 	  intel_sideband.o \
+ 	  intel_uncore.o \
+ 	  dvo_ch7xxx.o \
+@@ -51,7 +50,7 @@ i915-y := i915_drv.o i915_dma.o i915_irq.o \
+ 
+ i915-$(CONFIG_COMPAT)   += i915_ioc32.o
+ 
+-i915-$(CONFIG_ACPI)	+= intel_acpi.o
++i915-$(CONFIG_ACPI)	+= intel_acpi.o intel_opregion.o
+ 
+ i915-$(CONFIG_DRM_I915_FBDEV) += intel_fbdev.o
+ 
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index ccdbecc..7f37b83 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -2336,8 +2336,8 @@ extern void intel_i2c_reset(struct drm_device *dev);
+ 
+ /* intel_opregion.c */
+ struct intel_encoder;
+-extern int intel_opregion_setup(struct drm_device *dev);
+ #ifdef CONFIG_ACPI
++extern int intel_opregion_setup(struct drm_device *dev);
+ extern void intel_opregion_init(struct drm_device *dev);
+ extern void intel_opregion_fini(struct drm_device *dev);
+ extern void intel_opregion_asle_intr(struct drm_device *dev);
+@@ -2346,6 +2346,7 @@ extern int intel_opregion_notify_encoder(struct intel_encoder *intel_encoder,
+ extern int intel_opregion_notify_adapter(struct drm_device *dev,
+ 					 pci_power_t state);
+ #else
++static inline int intel_opregion_setup(struct drm_device *dev) { return 0; }
+ static inline void intel_opregion_init(struct drm_device *dev) { return; }
+ static inline void intel_opregion_fini(struct drm_device *dev) { return; }
+ static inline void intel_opregion_asle_intr(struct drm_device *dev) { return; }
+diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
+index 6d69a9b..9a8804b 100644
+--- a/drivers/gpu/drm/i915/intel_opregion.c
++++ b/drivers/gpu/drm/i915/intel_opregion.c
+@@ -28,7 +28,6 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/acpi.h>
+-#include <linux/acpi_io.h>
+ #include <acpi/video.h>
+ 
+ #include <drm/drmP.h>
+diff --git a/include/acpi/acpi_io.h b/include/acpi/acpi_io.h
+new file mode 100644
+index 0000000..2be8580
+--- /dev/null
++++ b/include/acpi/acpi_io.h
+@@ -0,0 +1,17 @@
++#ifndef _ACPI_IO_H_
++#define _ACPI_IO_H_
 +
- 	if (rq->end_io)
- 		rq->end_io(rq, error);
- 	else
- 		blk_mq_free_request(rq);
--
--	blk_account_io_done(rq);
- }
++#include <linux/io.h>
++
++static inline void __iomem *acpi_os_ioremap(acpi_physical_address phys,
++					    acpi_size size)
++{
++       return ioremap_cache(phys, size);
++}
++
++void __iomem *acpi_os_get_iomem(acpi_physical_address phys, unsigned int size);
++
++int acpi_os_map_generic_address(struct acpi_generic_address *addr);
++void acpi_os_unmap_generic_address(struct acpi_generic_address *addr);
++
++#endif
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 115c610..72c88f4 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -42,6 +42,7 @@
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
+ #include <acpi/acpi_numa.h>
++#include <acpi/acpi_io.h>
+ #include <asm/acpi.h>
  
- void __blk_mq_end_io(struct request *rq, int error)
-
-
-Thanks,
+ static inline acpi_handle acpi_device_handle(struct acpi_device *adev)
+diff --git a/include/linux/acpi_io.h b/include/linux/acpi_io.h
+deleted file mode 100644
+index 2a5a139..0000000
+--- a/include/linux/acpi_io.h
++++ /dev/null
+@@ -1,18 +0,0 @@
+-#ifndef _ACPI_IO_H_
+-#define _ACPI_IO_H_
+-
+-#include <linux/io.h>
+-#include <acpi/acpi.h>	/* FIXME: inclusion should be removed */
+-
+-static inline void __iomem *acpi_os_ioremap(acpi_physical_address phys,
+-					    acpi_size size)
+-{
+-       return ioremap_cache(phys, size);
+-}
+-
+-void __iomem *acpi_os_get_iomem(acpi_physical_address phys, unsigned int size);
+-
+-int acpi_os_map_generic_address(struct acpi_generic_address *addr);
+-void acpi_os_unmap_generic_address(struct acpi_generic_address *addr);
+-
+-#endif
 -- 
-Ming Lei
+1.7.10
+
