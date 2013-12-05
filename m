@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701Ab3LEK4B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 05:56:01 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:57437 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab3LEKz6 (ORCPT
+	id S1755458Ab3LEK7V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 05:59:21 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:59511 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755011Ab3LEK7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 05:55:58 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v3 1/3] Documentation: arm: add UEFI support documentation
-To: Matt Sealey <neko@bakuhatsu.net>, Leif Lindholm <leif.lindholm@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-efi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, matt.fleming@intel.com,
-        roy.franz@linaro.org, msalter@redhat.com,
-        Patch Tracking <patches@linaro.org>, linaro-uefi@linaro.org,
-        Mark Rutland <mark.rutland@arm.com>, Rob Landley <rob@landley.net>,
-        linux-doc@vger.kernel.org
-In-Reply-To: <CAHCPf3t5dEzVWbYZ6DWcFCENNO2dbrx-YeZvKRk0MkEsJMTE3A@mail.gmail.com>
-References: <1385656883-4420-1-git-send-email-leif.lindholm@linaro.org> < 1385656883-4420-2-git-send-email-leif.lindholm@linaro.org> < CAHCPf3t5dEzVWbYZ6DWcFCENNO2dbrx-YeZvKRk0MkEsJMTE3A@mail.gmail.com>
-Date: Thu, 05 Dec 2013 10:55:50 +0000
-Message-Id: <20131205105550.692FCC40710@trevor.secretlab.ca>
+	Thu, 5 Dec 2013 05:59:20 -0500
+Date: Thu, 5 Dec 2013 11:59:14 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/38] perf/core improvements and fixes
+Message-ID: <20131205105914.GA20558@gmail.com>
+References: <1386187622-2928-1-git-send-email-acme@infradead.org>
+ <20131205100429.GC16749@gmail.com>
+ <20131205103707.GC21600@krava.brq.redhat.com>
+ <20131205105344.GD20283@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131205105344.GD20283@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Dec 2013 13:51:22 -0600, Matt Sealey <neko@bakuhatsu.net> wrote:
-> > +UEFI kernel support on ARM
-> > +==========================
-> > +UEFI kernel support on the ARM architectures (arm and arm64) is only available
-> > +when boot is performed through the stub.
-> > +
-> > +The stub populates the FDT /chosen node with (and the kernel scans for) the
-> > +following parameters:
-> > +________________________________________________________________________________
-> > +Name                      | Size   | Description
-> > +================================================================================
-> > +linux,uefi-system-table   | 64-bit | Physical address of the UEFI System Table.
-> > +--------------------------------------------------------------------------------
-> > +linux,uefi-mmap-start     | 64-bit | Physical address of the UEFI memory map,
-> > +                          |        | populated by the UEFI GetMemoryMap() call.
-> > +--------------------------------------------------------------------------------
-> > +linux,uefi-mmap-size      | 32-bit | Size in bytes of the UEFI memory map
-> > +                          |        | pointed to in previous entry.
-> > +--------------------------------------------------------------------------------
-> > +linux,uefi-mmap-desc-size | 32-bit | Size in bytes of each entry in the UEFI
-> > +                          |        | memory map.
-> > +--------------------------------------------------------------------------------
-> > +linux,uefi-mmap-desc-ver  | 32-bit | Version of the mmap descriptor format.
-> > +--------------------------------------------------------------------------------
-> > +linux,uefi-stub-kern-ver  | string | Copy of linux_banner from build.
-> > +--------------------------------------------------------------------------------
+
+* Ingo Molnar <mingo@kernel.org> wrote:
+
+> > never saw that one.. starting your test on 24 CPUs server now
 > 
-> This flies in the face of actually using #address-cells and
-> #size-cells to define how big addresses and sizes are. You're limited
-> here by the root node definitions... that's the spec.
+> I saw it again on a system by running two parallel build jobs:
 > 
-> Here's where I think this whole thing falls down as being the weirdest
-> possible implementation of this. It defies logic to put this
-> information in the device tree /chosen node while also attempting to
-> boot the kernel using an EFI stub; the stub is going to have this
-> information because it is going to have the pointer to the system
-> System Table (since it was called by StartImage()). Why not stash the
-> System Table pointer somewhere safe in the stub?
+>   D=/tmp/perf-1; mkdir -p $D; while make O=$D install; do make O=$D clean; done
+>   D=/tmp/perf-2; mkdir -p $D; while make O=$D install; do make O=$D clean; done
 
-Everything here is about getting from the stub to the kernel. We have a
-boot interface for the kernel proper. It works, and this patch set works
-with it. Also, this is effectively a kernel-internal interface between
-the stub and the kernel so there aren't any ABI issues that we need to
-deail with.
+I'm running it now with the previous perf/core - no failures so far, 
+after dozens of build passes.
 
-Go ahead and propose patches for a better interface, but in the mean
-time I see no reason not to merge this series.
+Thanks,
 
-g.
+	Ingo
