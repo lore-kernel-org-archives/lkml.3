@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933376Ab3LEBhk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 20:37:40 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:28095 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756299Ab3LEBhg (ORCPT
+	id S1756386Ab3LEBnC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 20:43:02 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:49475 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756228Ab3LEBm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 20:37:36 -0500
-Message-ID: <529FD8D7.1020900@marvell.com>
-Date: Thu, 5 Dec 2013 09:37:27 +0800
-From: Qiao Zhou <zhouqiao@marvell.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 4 Dec 2013 20:42:57 -0500
+Date: Wed, 4 Dec 2013 19:42:54 -0600
+From: rkuo <rkuo@codeaurora.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
+        Wang YanQing <udknight@gmail.com>, linux-arch@vger.kernel.org
+Subject: Re: [RFC PATCH v3 07/19] smp, hexagon: kill SMP single function call
+ interrupt
+Message-ID: <20131205014254.GA3188@codeaurora.org>
+References: <1386173591-28514-1-git-send-email-liuj97@gmail.com>
+ <1386173591-28514-8-git-send-email-liuj97@gmail.com>
 MIME-Version: 1.0
-To: Dan Williams <dan.j.williams@intel.com>
-CC: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Miao Eric <eric.y.miao@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        Chao Xie <cxie4@marvell.com>
-Subject: Re: [PATCH 0/2 V1] arm-mmp-build-sram-driver-alone
-References: <1386145275-27438-1-git-send-email-zhouqiao@marvell.com> <CAN1soZzWUh74FHeKs3acLpfQYhQBNzES9nB1tJNvwV1h4zi1Lw@mail.gmail.com> <529F10D6.4000307@marvell.com> <CAPcyv4jELNXN7+f2MvD8FuUmvRCbAw7DG=cNMHuPrYWcWAo5BA@mail.gmail.com>
-In-Reply-To: <CAPcyv4jELNXN7+f2MvD8FuUmvRCbAw7DG=cNMHuPrYWcWAo5BA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.72,1.0.14,0.0.0000
- definitions=2013-12-04_08:2013-12-05,2013-12-04,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1312040208
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386173591-28514-8-git-send-email-liuj97@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2013 03:17 AM, Dan Williams wrote:
-> On Wed, Dec 4, 2013 at 3:24 AM, Qiao Zhou <zhouqiao@marvell.com> wrote:
->> On 12/04/2013 07:17 PM, Haojian Zhuang wrote:
->>>
->>> Dan indicated that you could pack these two patches into one. Whatever
->>> it's also OK to use two patches.
->>
->> Misunderstood it... Thanks for correcting.
->>
->
-> Please combine the patches for two reasons:
-> 1/ patch1 by itself makes the problem worse it prevents the mmp_tdma
-> driver from building even if CPU_MMP2 is selected.
-> 2/ patch2 does not have a changelog and is the only user of the
-> enabling in patch1
->
-Dan, I updated the patch according to your suggestions. please help take 
-a look again. Thanks.
+On Thu, Dec 05, 2013 at 12:12:58AM +0800, Jiang Liu wrote:
+> Commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use logic
+> similar to smp_call_function_single()" has unified the way to handle
+> single and multiple cross-CPU function calls. Now only one intterupt
+> is needed for architecture specific code to support generic SMP function
+> call interfaces, so kill the redundant single function call interrupt.
+> 
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Shaohua Li <shli@kernel.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Jiri Kosina <trivial@kernel.org>
+> Cc: Richard Kuo <rkuo@codeaurora.org>
+> Cc: linux-hexagon@vger.kernel.org
+> Signed-off-by: Jiang Liu <liuj97@gmail.com>
+> ---
+>  arch/hexagon/include/asm/smp.h | 1 -
+>  arch/hexagon/kernel/smp.c      | 6 +-----
+>  2 files changed, 1 insertion(+), 6 deletions(-)
+
+Seems to work fine for Hexagon.  Thanks!
+
+
+Acked-by: Richard Kuo <rkuo@codeaurora.org>
+
 
 -- 
 
-Best Regards
-Qiao
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
