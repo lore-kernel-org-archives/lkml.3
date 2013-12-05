@@ -1,63 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755746Ab3LEXno (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 18:43:44 -0500
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:36824 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508Ab3LEXnl (ORCPT
+	id S1755544Ab3LEXq1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 18:46:27 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:50766 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525Ab3LEXqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 18:43:41 -0500
-From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-To: "'Martin K. Petersen'" <martin.petersen@oracle.com>
-Cc: "'open list'" <linux-kernel@vger.kernel.org>, <linux-ext4@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, <gregkh@linuxfoundation.org>
-References: <CAO9zADw-k+Qghk79yzwzaiYiPSoQnKwjjTBwrhcOrJxTWc-fOQ@mail.gmail.com> <yq1iovclm0m.fsf@sermon.lab.mkp.net> <00c701ceec3a$c8bcfc90$5a36f5b0$@lucidpixels.com> <yq1d2lkllek.fsf@sermon.lab.mkp.net> <010b01ceec84$27643580$762ca080$@lucidpixels.com>
-In-Reply-To: <010b01ceec84$27643580$762ca080$@lucidpixels.com>
-Subject: RE: 3.12.0: sda2: WRITE SAME failed. Manually zeroing. with 3w-xxxx driver
-Date: Thu, 5 Dec 2013 18:43:39 -0500
-Message-ID: <018b01cef213$d34d1df0$79e759d0$@lucidpixels.com>
+	Thu, 5 Dec 2013 18:46:24 -0500
+Subject: [PATCH 0/2] dmi-sysfs module unload fixes
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, Mike Waychison <mikew@google.com>
+Date: Thu, 05 Dec 2013 16:46:16 -0700
+Message-ID: <20131205234448.26412.62189.stgit@bhelgaas-glaptop.roam.corp.google.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQIRpMQ5yoPFWdrjnTAKydtw81oUOQGvynbaASKfOScCoiRwNAIp0YgrmYPpOnA=
-Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+These fix a warning on dmi-sysfs module unload and an error when
+reloading immediately after unload with DEBUG_KOBJECT_RELEASE.
+
+---
+
+Bjorn Helgaas (2):
+      firmware: dmi-sysfs: Don't remove dmi-sysfs "raw" file explicitly
+      firmware: dmi-sysfs: Remove "dmi" directory on module exit
 
 
-> -----Original Message-----
-> From: Martin K. Petersen [mailto:martin.petersen@oracle.com]
-> Sent: Thursday, November 28, 2013 8:13 AM
-> 
-> 
-> Martin>	http://marc.info/?l=linux-scsi&m=138252394614920&w=2
-> 
-> Justin> Awesome, thank you!  This patch is over a month old, do you know
-> Justin> if is currently in mainline?
-> 
-> Nope. - James?
-> 
-> Could it possibly get added to 3.12.x -stable as well? I've patched
-against
-> 3.12.0 for now -- I'll let you know if there are any issues-- so far so
-> good, thanks again.
-> 
-> Justin.
-
-Update:
-System uptime with the patch is 7+ days under extensive load at times and
-I've had no issues to date.
-I just checked the current linux git repo (3.13-rc2) and found this patch
-has not been included.
-
-Please advise if any further testing or validation needs to be completed to
-help get this into -stable/-mainline.
-
-Justin.
-
-
-
+ drivers/firmware/dmi-sysfs.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
