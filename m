@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab3LEUfA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 15:35:00 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53998 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751947Ab3LEUe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 15:34:59 -0500
-Message-ID: <52A0E357.7090008@ti.com>
-Date: Thu, 5 Dec 2013 15:34:31 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753197Ab3LEUfn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 15:35:43 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:38805 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752325Ab3LEUfl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 15:35:41 -0500
+Date: Thu, 5 Dec 2013 20:35:19 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Message-ID: <20131205203519.GA29268@sirena.org.uk>
+References: <1386202994-30784-1-git-send-email-robherring2@gmail.com>
+ <1386202994-30784-2-git-send-email-robherring2@gmail.com>
+ <20131205181606.GY29268@sirena.org.uk>
+ <52A0DC28.1040001@gmail.com>
 MIME-Version: 1.0
-To: "Strashko, Grygorii" <grygorii.strashko@ti.com>
-CC: Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 08/23] mm/memblock: Add memblock memory allocation
- apis
-References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com> <1386037658-3161-9-git-send-email-santosh.shilimkar@ti.com> <20131203232445.GX8277@htj.dyndns.org> <52A0AB34.2030703@ti.com>,<20131205165325.GA24062@mtj.dyndns.org> <902E09E6452B0E43903E4F2D568737AB097B26B2@DNCE04.ent.ti.com>
-In-Reply-To: <902E09E6452B0E43903E4F2D568737AB097B26B2@DNCE04.ent.ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8MNCZdTuKvcKRZar"
+Content-Disposition: inline
+In-Reply-To: <52A0DC28.1040001@gmail.com>
+X-Cookie: It's clever, but is it art?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] cpufreq: enable ARM drivers on arm64
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grygorii,
 
-On Thursday 05 December 2013 01:48 PM, Strashko, Grygorii wrote:
-> Hi Tejun,
-> 
->> On Thu, Dec 05, 2013 at 06:35:00PM +0200, Grygorii Strashko wrote:
->>>>> +#define memblock_virt_alloc_align(x, align) \
->>>>> +  memblock_virt_alloc_try_nid(x, align, BOOTMEM_LOW_LIMIT, \
->>>>> +                               BOOTMEM_ALLOC_ACCESSIBLE, MAX_NUMNODES)
->>>>
->>>> Also, do we really need this align variant separate when the caller
->>>> can simply specify 0 for the default?
->>>
->>> Unfortunately Yes.
->>> We need it to keep compatibility with bootmem/nobootmem
->>> which don't handle 0 as default align value.
->>
->> Hmm... why wouldn't just interpreting 0 to SMP_CACHE_BYTES in the
->> memblock_virt*() function work?
->>
-> 
-> Problem is not with memblock_virt*(). The issue will happen in case if
-> memblock or nobootmem are disabled in below code (memblock_virt*() is disabled).
-> 
-> +/* Fall back to all the existing bootmem APIs */
-> +#define memblock_virt_alloc(x) \
-> +       __alloc_bootmem(x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT)
-> 
-> which will be transformed to 
-> +/* Fall back to all the existing bootmem APIs */
-> +#define memblock_virt_alloc(x, align) \
-> +       __alloc_bootmem(x, align, BOOTMEM_LOW_LIMIT)
-> 
-> and used as
-> 
-> memblock_virt_alloc(size, 0);
-> 
-> so, by default bootmem code will use 0 as default alignment and not SMP_CACHE_BYTES
-> and that is wrong.
-> 
-Looks like you didn't understood the suggestion completely.
-The fall back inline will look like below .....
+--8MNCZdTuKvcKRZar
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-static inline memblock_virt_alloc(x, align)
-{
-	if (align == 0)
-		align = SMP_CACHE_BYTES
-	__alloc_bootmem(x, align, BOOTMEM_LOW_LIMIT);
-}
+On Thu, Dec 05, 2013 at 02:03:52PM -0600, Rob Herring wrote:
 
-regards,
-Santosh
+> Will do, but I'm surprised we're at the point on arm64 of needing LSK.
 
+ARMv8 isn't just for servers, and of course there's the desire to have
+the software as ready as early as it can be!
 
+> There's a couple of subsystems that need enabling. I've posted EDAC
+> patches (need to send v3). cpuidle is another. Probably some more I
+> haven't looked at.
+
+Right, cpuidle is in progress - Lorenzo has been posting patches for
+that: =20
+
+   http://lwn.net/Articles/574950/
+
+There's some active work in the trace and debug area too.
+
+--8MNCZdTuKvcKRZar
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSoOOEAAoJELSic+t+oim98xoP/0TLsIEw/QlwHgf4/RvQ3X9L
+3LG1saF/8gxwabEiYdnKCqDPYVCTlcVOHnUUUOIGmC87wCcrP0saIfMVSQcAUOVZ
+030yjm/XlRXgECGqnOVG1Bw4lQElnDEM25rA7mdjQcs95llSabNcGY4LKf04s6Me
+x6qN/qfc4bBBLjmPplG/QU/2HLVe1QSDAS0DgC76jWNkgx4+iciE3hebrqjlDytM
+jKcx9iCMMIYdqnFC7BCCg1M/52nITeIGM7+09IwAVOgJl9y7Pc8Wi9YBbr/Fw3Ti
+9NXKsCQDISSauLe8GuYhUN9neUCHOMX6YKZnhQV2KbXAlHpp7oPej1qQaN4UbEfm
+A6np9/PWtwFU1d4Q7Q81usfLLoWGuAPBcu8UrVM3lPbOfLDSWXatBE5kY0HaJ3oY
+xZ4S/7/WpBjoWv7BtNYPK+v7A2Vq09qnrexii12LVXffU9pVEk1EY2mS66qZfaes
+C0kcPodwxjYi0VOlILAV/l7qGIjfkY9ujzM9mVA1ECAwke3x+Mg79JIo9FrPpMws
+slX+uM7cJRaajVMwH83M6cF5jMwkx3vk0gmYAwsFRoRCBwKNdQ/E7XgztO6Xdm4v
+79s41efqAAF1YYGHFkHp6v1W3g51NZldFD0ZRZHbp/kIV/DQl3KwMHY9RgH/aBW/
+jrufQPkMWOx83/uOnE0W
+=qoqq
+-----END PGP SIGNATURE-----
+
+--8MNCZdTuKvcKRZar--
