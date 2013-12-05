@@ -1,85 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304Ab3LEWZc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 17:25:32 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:52342 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920Ab3LEWZ2 (ORCPT
+	id S1752825Ab3LEW16 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 17:27:58 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:51093 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750877Ab3LEW15 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 17:25:28 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC part1 PATCH 0/7] Make ACPI core running on ARM64
-Date: Thu, 5 Dec 2013 23:25:02 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Hanjun Guo <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, Linus Walleij <linus.walleij@linaro.org>,
-        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, linaro-acpi@lists.linaro.org,
-        linux-acpi@vger.kernel.org, Jon Masters <jonathan@jonmasters.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org>
-In-Reply-To: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org>
+	Thu, 5 Dec 2013 17:27:57 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-acpi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] SFI: fix compilation warnings
+Date: Thu, 05 Dec 2013 23:40:57 +0100
+Message-ID: <2894493.n5DTvIrPJs@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <4771886.zcelg2hCiB@vostro.rjw.lan>
+References: <1386264397-27319-1-git-send-email-andriy.shevchenko@linux.intel.com> <4771886.zcelg2hCiB@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312052325.02603.arnd@arndb.de>
-X-Provags-ID: V02:K0:RT3YNvS/ez2II07yqgA1ZHRVGEyDMH4ZW7Q4XC4GwiT
- BtZmx9Wo9MVaN9fiTr4GTBeLJq+uVDNSlsVof7Zp/qx6naCMsC
- zIYaG3pY0tfvABBA+xxWyY9VCJSvIZd01KRlyU53BjIpB1kYIO
- 0KY4KjHmEu69aTofF86cW53wVB5NxFyGOxXc0FIZyLI80+TeP+
- ySep3qg5l8hO08X3tjSBrFkinZ77SrQbeDNgl+fmnZAoq4u7sF
- Y5O3TOCwiCCIkSu6MbS+xZwMwNIpFljLQUGpV1dRVpzLC+7iU1
- Wxplkl+TD2PI2ki1zy5p2Z4FoqWFWgAEUY5EiWtUt19iUyfMav
- M8Z2kXyx9Bes1O8wEsQE=
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 03 December 2013, Hanjun Guo wrote:
-> This is the first part of making ACPI core running on ARM.
+On Thursday, December 05, 2013 11:36:37 PM Rafael J. Wysocki wrote:
+> On Thursday, December 05, 2013 07:26:37 PM Andy Shevchenko wrote:
+> > When build kernel with make W=1 we get the following compiler error.
+> > 
+> > In file included from drivers/sfi/sfi_acpi.c:66:0:
+> > include/linux/sfi_acpi.h: In function ‘acpi_sfi_table_parse’:
+> > include/linux/sfi_acpi.h:72:2: error: implicit declaration of function ‘acpi_table_parse’ [-Werror=implicit-function-declaration]
+> >   if (!acpi_table_parse(signature, handler))
+> >   ^
+> >   cc1: some warnings being treated as errors
+> > 
+> > The patch changes acpi/acpi.h inclusion to linux/acpi.h.
+> > 
+> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 > 
-> PCI is optional on ARM64 but ACPI is dependent on PCI now, so
-> in the first patch we try to make ACPI can be running without
-> PCI.
+> OK
 > 
-> _PDC is requred for ACPI processor_core.c, but its related code
-> is a little bit x86/ia64 dependent, so I rework _PDC related staff
-> to make it more arch independent, and then introduce the skeleton
-> of _PDC related for ARM64, it should be fully implemented after
-> ACPI spec is ready for processor idle control.
-> 
-> After that, arm-core.c is introduced so we can get ACPI table from
-> UEFI, then we can parsed for SMP initialisation, GIC initialisation
-> and for ACPI drivers.
-> 
-> This patch set is based on:
-> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git
-> 
-> origin/linux-next branch and plus Al Stone's v2 reduced hardware profile
-> patch.
+> Lv, I'm dropping your patch cleaning up the inclusions, please sort that thing
+> out entirely for the next cycle.
 
-As a meta-comment, I looked over all your patches and none of this looks
-scary. It's definitely good that you're doing this work to put the patches
-out here for discussion and to get the get the details of this sorted out.
-It already looks much better than the earlier snapshots I had looked at
-in git trees in the past.
+Or rather I'll keep it in bleeding-edge and wait for follow-up patches to
+fix build problems like this one (then we can merge it into 3.14 hopefully).
 
-However, as I mentioned before I am much more worried about the parts that
-are not done (or not posted) yet and that will be required to actually
-have working support for a real server system. Until we know more about
-where this is heading, I think we should not merge any of the ARM specific
-parts of your patches. Any patches that are reasonable cleanups and bug
-fixes for the ACPI subsystem should of course get merged once they are
-reviewed.
+Thanks!
 
-	Arnd
+> > ---
+> >  drivers/sfi/sfi_acpi.c   | 2 +-
+> >  include/linux/sfi_acpi.h | 2 +-
+> >  2 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/sfi/sfi_acpi.c b/drivers/sfi/sfi_acpi.c
+> > index 0c9f419..d4dfcbe 100644
+> > --- a/drivers/sfi/sfi_acpi.c
+> > +++ b/drivers/sfi/sfi_acpi.c
+> > @@ -60,7 +60,7 @@
+> >  #define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
+> >  
+> >  #include <linux/kernel.h>
+> > -#include <acpi/acpi.h>	/* FIXME: inclusion should be removed */
+> > +#include <linux/acpi.h>
+> >  
+> >  #include <linux/sfi.h>
+> >  #include <linux/sfi_acpi.h>
+> > diff --git a/include/linux/sfi_acpi.h b/include/linux/sfi_acpi.h
+> > index 2cfcb79..c9cab82 100644
+> > --- a/include/linux/sfi_acpi.h
+> > +++ b/include/linux/sfi_acpi.h
+> > @@ -60,7 +60,7 @@
+> >  #define _LINUX_SFI_ACPI_H
+> >  
+> >  #ifdef CONFIG_SFI
+> > -#include <acpi/acpi.h>	/* FIXME: inclusion should be removed */
+> > +#include <linux/acpi.h>
+> >  
+> >  extern int sfi_acpi_table_parse(char *signature, char *oem_id,
+> >  				char *oem_table_id,
+> > 
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
