@@ -1,247 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277Ab3LEL0J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 06:26:09 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:31864 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755990Ab3LEL0H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 06:26:07 -0500
-X-AuditID: cbfee61b-b7f006d000003e1f-64-52a062cdf8bc
-From: Anurag Aggarwal <a.anurag@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, dave.martin@arm.com,
-        linux@arm.linux.org.uk
-Cc: cpgs@samsung.com, a.anurag@samsung.com, narendra.m1@samsung.com,
-        poorva.s@samsung.com, naveen.sel@samsung.com, ashish.kalra@samsung.com,
-        mohammad.a2@samsung.com, rajat.suri@samsung.com,
-        naveenkrishna.ch@gmail.com, anurag19aggarwal@gmail.com,
-        linux-kernel@vger.kernel.org, will.deacon@arm.com, nico@linaro.org,
-        catalin.marinas@arm.com
-Subject: [PATCH V4] ARM : unwinder : Prevent data abort due to stack overflow
-Date: Thu, 05 Dec 2013 16:56:25 +0530
-Message-id: <1386242785-5146-1-git-send-email-a.anurag@samsung.com>
+	id S1756291Ab3LEL2X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 06:28:23 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60670 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753665Ab3LEL2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 06:28:19 -0500
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
+        <wim@iguana.be>, <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <Pawel.Moll@arm.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
+        <grygorii.strashko@ti.com>, <linux@roeck-us.net>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [PATCH v6 1/5] watchdog: davinci: change driver to use WDT core
+Date: Thu, 5 Dec 2013 13:26:24 +0200
+Message-ID: <1386242784-16922-1-git-send-email-ivan.khoronzhuk@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t9jQd2zSQuCDC4vULB4fKGV1WLJts2s
-	FvenfWO3eL+sh9Hi5SFNi6a5exgtNj2+xmpxedccNovbl3ktJsz9y2yx9PwZZotv0xezWiza
-	9p/ZYvqxv2wWpx48ZbH4PH8tq8XLjydYHAQ91sxbw+jR0tzD5rFz1l12jzvX9rB5bF5S79G3
-	ZRWjx+dNcgHsUVw2Kak5mWWpRfp2CVwZkxesYC64aVTx/tU7xgbGi+pdjJwcEgImEt9WPGCH
-	sMUkLtxbz9bFyMUhJDCdUeLMhB3MIAkhgXYmiYt/PUBsNgEdiVc72plAbBGBcIn//0+D1TAL
-	3GSS2N4UDmILC/hK/OlpYQGxWQRUJV4/nQq2gFfAWWLWn16gOAfQMgWJOZNsJjByL2BkWMUo
-	mlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHJTPpHcwrmqwOMQowMGoxMP7InF+kBBrYllxZe4h
-	RgkOZiURXsfYBUFCvCmJlVWpRfnxRaU5qcWHGKU5WJTEeQ+2WgcKCaQnlqRmp6YWpBbBZJk4
-	OKUaGFu2frlivcZ4R6GZVlz1VUXPheUKv/Js2Cb3Se/aMaNAqr/h/KJJ8yuufrSUm1SdoHnh
-	ktmVlx8ZhIq/6a1KXyp2V2la42qfizVWz/fa6DcdWbA1TYpV/pG6mX7P99UT25mld8/eKb3w
-	aeY8q22ysUZTWy4tFnlWvX3Glx3Ns7ybG6OvS0wQyFdiKc5INNRiLipOBAC/ptSVRgIAAA==
+In-Reply-To: <1386185970-14488-2-git-send-email-ivan.khoronzhuk@ti.com>
+References: <1386185970-14488-2-git-send-email-ivan.khoronzhuk@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While unwinding backtrace, stack overflow is possible. This stack
-overflow can sometimes lead to data abort in system if the area after
-stack is not mapped to physical memory.
+To reduce code duplicate and increase code readability use WDT core
+code to handle WDT interface.
 
-To prevent this problem from happening, execute the instructions that
-can cause a data abort in separate helper functions, where a check for
-feasibility is made before reading each word from the stack.
+Remove io_lock as the WDT core uses mutex to lock each wdt device.
+Remove wdt_state as the WDT core tracks state with its own variable.
 
-Signed-off-by: Anurag Aggarwal <a.anurag@samsung.com>
+The watchdog_init_timeout() can read timeout value from timeout-sec
+property if the passed value is out of bounds. The heartbeat is
+initialized in next way. If heartbeat is not set thought module
+parameter, try to read it's value from WDT node timeout-sec property.
+If node has no one, use default value.
+
+The heartbeat is hold in wdd->timeout by WDT core, so use it in
+order to set timeout period.
+
+Davinci WDT can't be stopped and once it's expired - it can be
+rearmed only after hardware reset, that's why nowayout feature
+is enforced.
+
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 ---
- arch/arm/kernel/unwind.c |  127 ++++++++++++++++++++++++++++++++-------------
- 1 files changed, 90 insertions(+), 37 deletions(-)
+ drivers/watchdog/Kconfig       |    1 +
+ drivers/watchdog/davinci_wdt.c |  147 ++++++++++------------------------------
+ 2 files changed, 36 insertions(+), 112 deletions(-)
 
-diff --git a/arch/arm/kernel/unwind.c b/arch/arm/kernel/unwind.c
-index 00df012..94f6ef4 100644
---- a/arch/arm/kernel/unwind.c
-+++ b/arch/arm/kernel/unwind.c
-@@ -68,6 +68,7 @@ EXPORT_SYMBOL(__aeabi_unwind_cpp_pr2);
- struct unwind_ctrl_block {
- 	unsigned long vrs[16];		/* virtual register set */
- 	const unsigned long *insn;	/* pointer to the current instructions word */
-+	unsigned long sp_high;		/* highest value of sp allowed*/
- 	int entries;			/* number of entries left to interpret */
- 	int byte;			/* current byte number in the instructions word */
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 5be6e91..3ca69c8 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -271,6 +271,7 @@ config IOP_WATCHDOG
+ config DAVINCI_WATCHDOG
+ 	tristate "DaVinci watchdog"
+ 	depends on ARCH_DAVINCI
++	select WATCHDOG_CORE
+ 	help
+ 	  Say Y here if to include support for the watchdog timer
+ 	  in the DaVinci DM644x/DM646x processors.
+diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
+index dd625cc..3701f06 100644
+--- a/drivers/watchdog/davinci_wdt.c
++++ b/drivers/watchdog/davinci_wdt.c
+@@ -3,7 +3,7 @@
+  *
+  * Watchdog driver for DaVinci DM644x/DM646x processors
+  *
+- * Copyright (C) 2006 Texas Instruments.
++ * Copyright (C) 2006-2013 Texas Instruments.
+  *
+  * 2007 (c) MontaVista Software, Inc. This file is licensed under
+  * the terms of the GNU General Public License version 2. This program
+@@ -15,18 +15,12 @@
+ #include <linux/moduleparam.h>
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+-#include <linux/fs.h>
+-#include <linux/miscdevice.h>
+ #include <linux/watchdog.h>
+ #include <linux/init.h>
+-#include <linux/bitops.h>
+ #include <linux/platform_device.h>
+-#include <linux/spinlock.h>
+-#include <linux/uaccess.h>
+ #include <linux/io.h>
+ #include <linux/device.h>
+ #include <linux/clk.h>
+-#include <linux/slab.h>
+ #include <linux/err.h>
+ 
+ #define MODULE_NAME "DAVINCI-WDT: "
+@@ -61,31 +55,12 @@
+ #define WDKEY_SEQ0		(0xa5c6 << 16)
+ #define WDKEY_SEQ1		(0xda7e << 16)
+ 
+-static int heartbeat = DEFAULT_HEARTBEAT;
+-
+-static DEFINE_SPINLOCK(io_lock);
+-static unsigned long wdt_status;
+-#define WDT_IN_USE        0
+-#define WDT_OK_TO_CLOSE   1
+-#define WDT_REGION_INITED 2
+-#define WDT_DEVICE_INITED 3
+-
++static int heartbeat;
+ static void __iomem	*wdt_base;
+ struct clk		*wdt_clk;
++static struct watchdog_device	wdt_wdd;
+ 
+-static void wdt_service(void)
+-{
+-	spin_lock(&io_lock);
+-
+-	/* put watchdog in service state */
+-	iowrite32(WDKEY_SEQ0, wdt_base + WDTCR);
+-	/* put watchdog in active state */
+-	iowrite32(WDKEY_SEQ1, wdt_base + WDTCR);
+-
+-	spin_unlock(&io_lock);
+-}
+-
+-static void wdt_enable(void)
++static int davinci_wdt_start(struct watchdog_device *wdd)
+ {
+ 	u32 tgcr;
+ 	u32 timer_margin;
+@@ -93,8 +68,6 @@ static void wdt_enable(void)
+ 
+ 	wdt_freq = clk_get_rate(wdt_clk);
+ 
+-	spin_lock(&io_lock);
+-
+ 	/* disable, internal clock source */
+ 	iowrite32(0, wdt_base + TCR);
+ 	/* reset timer, set mode to 64-bit watchdog, and unreset */
+@@ -105,9 +78,9 @@ static void wdt_enable(void)
+ 	iowrite32(0, wdt_base + TIM12);
+ 	iowrite32(0, wdt_base + TIM34);
+ 	/* set timeout period */
+-	timer_margin = (((u64)heartbeat * wdt_freq) & 0xffffffff);
++	timer_margin = (((u64)wdd->timeout * wdt_freq) & 0xffffffff);
+ 	iowrite32(timer_margin, wdt_base + PRD12);
+-	timer_margin = (((u64)heartbeat * wdt_freq) >> 32);
++	timer_margin = (((u64)wdd->timeout * wdt_freq) >> 32);
+ 	iowrite32(timer_margin, wdt_base + PRD34);
+ 	/* enable run continuously */
+ 	iowrite32(ENAMODE12_PERIODIC, wdt_base + TCR);
+@@ -119,84 +92,28 @@ static void wdt_enable(void)
+ 	iowrite32(WDKEY_SEQ0 | WDEN, wdt_base + WDTCR);
+ 	/* put watchdog in active state */
+ 	iowrite32(WDKEY_SEQ1 | WDEN, wdt_base + WDTCR);
+-
+-	spin_unlock(&io_lock);
+-}
+-
+-static int davinci_wdt_open(struct inode *inode, struct file *file)
+-{
+-	if (test_and_set_bit(WDT_IN_USE, &wdt_status))
+-		return -EBUSY;
+-
+-	wdt_enable();
+-
+-	return nonseekable_open(inode, file);
++	return 0;
+ }
+ 
+-static ssize_t
+-davinci_wdt_write(struct file *file, const char *data, size_t len,
+-		  loff_t *ppos)
++static int davinci_wdt_ping(struct watchdog_device *wdd)
+ {
+-	if (len)
+-		wdt_service();
+-
+-	return len;
++	/* put watchdog in service state */
++	iowrite32(WDKEY_SEQ0, wdt_base + WDTCR);
++	/* put watchdog in active state */
++	iowrite32(WDKEY_SEQ1, wdt_base + WDTCR);
++	return 0;
+ }
+ 
+-static const struct watchdog_info ident = {
++static const struct watchdog_info davinci_wdt_info = {
+ 	.options = WDIOF_KEEPALIVEPING,
+ 	.identity = "DaVinci Watchdog",
  };
-@@ -235,6 +236,86 @@ static unsigned long unwind_get_byte(struct unwind_ctrl_block *ctrl)
+ 
+-static long davinci_wdt_ioctl(struct file *file,
+-					unsigned int cmd, unsigned long arg)
+-{
+-	int ret = -ENOTTY;
+-
+-	switch (cmd) {
+-	case WDIOC_GETSUPPORT:
+-		ret = copy_to_user((struct watchdog_info *)arg, &ident,
+-				   sizeof(ident)) ? -EFAULT : 0;
+-		break;
+-
+-	case WDIOC_GETSTATUS:
+-	case WDIOC_GETBOOTSTATUS:
+-		ret = put_user(0, (int *)arg);
+-		break;
+-
+-	case WDIOC_KEEPALIVE:
+-		wdt_service();
+-		ret = 0;
+-		break;
+-
+-	case WDIOC_GETTIMEOUT:
+-		ret = put_user(heartbeat, (int *)arg);
+-		break;
+-	}
+-	return ret;
+-}
+-
+-static int davinci_wdt_release(struct inode *inode, struct file *file)
+-{
+-	wdt_service();
+-	clear_bit(WDT_IN_USE, &wdt_status);
+-
+-	return 0;
+-}
+-
+-static const struct file_operations davinci_wdt_fops = {
+-	.owner = THIS_MODULE,
+-	.llseek = no_llseek,
+-	.write = davinci_wdt_write,
+-	.unlocked_ioctl = davinci_wdt_ioctl,
+-	.open = davinci_wdt_open,
+-	.release = davinci_wdt_release,
+-};
+-
+-static struct miscdevice davinci_wdt_miscdev = {
+-	.minor = WATCHDOG_MINOR,
+-	.name = "watchdog",
+-	.fops = &davinci_wdt_fops,
++static const struct watchdog_ops davinci_wdt_ops = {
++	.owner		= THIS_MODULE,
++	.start		= davinci_wdt_start,
++	.stop		= davinci_wdt_ping,
++	.ping		= davinci_wdt_ping,
+ };
+ 
+ static int davinci_wdt_probe(struct platform_device *pdev)
+@@ -204,6 +121,7 @@ static int davinci_wdt_probe(struct platform_device *pdev)
+ 	int ret = 0;
+ 	struct device *dev = &pdev->dev;
+ 	struct resource  *wdt_mem;
++	struct watchdog_device *wdd;
+ 
+ 	wdt_clk = devm_clk_get(dev, NULL);
+ 	if (WARN_ON(IS_ERR(wdt_clk)))
+@@ -211,29 +129,34 @@ static int davinci_wdt_probe(struct platform_device *pdev)
+ 
+ 	clk_prepare_enable(wdt_clk);
+ 
+-	if (heartbeat < 1 || heartbeat > MAX_HEARTBEAT)
+-		heartbeat = DEFAULT_HEARTBEAT;
++	wdd			= &wdt_wdd;
++	wdd->info		= &davinci_wdt_info;
++	wdd->ops		= &davinci_wdt_ops;
++	wdd->min_timeout	= 1;
++	wdd->max_timeout	= MAX_HEARTBEAT;
++	wdd->timeout		= DEFAULT_HEARTBEAT;
++
++	watchdog_init_timeout(wdd, heartbeat, dev);
++
++	dev_info(dev, "heartbeat %d sec\n", wdd->timeout);
+ 
+-	dev_info(dev, "heartbeat %d sec\n", heartbeat);
++	watchdog_set_nowayout(wdd, 1);
+ 
+ 	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	wdt_base = devm_ioremap_resource(dev, wdt_mem);
+ 	if (IS_ERR(wdt_base))
+ 		return PTR_ERR(wdt_base);
+ 
+-	ret = misc_register(&davinci_wdt_miscdev);
+-	if (ret < 0) {
+-		dev_err(dev, "cannot register misc device\n");
+-	} else {
+-		set_bit(WDT_DEVICE_INITED, &wdt_status);
+-	}
++	ret = watchdog_register_device(wdd);
++	if (ret < 0)
++		dev_err(dev, "cannot register watchdog device\n");
+ 
  	return ret;
  }
  
-+/* Before poping a register check whether it is feasible or not */
-+static int unwind_pop_register(struct unwind_ctrl_block *ctrl,
-+				unsigned long **vsp, unsigned int reg)
-+{
-+	if (*vsp >= (unsigned long *)ctrl->sp_high)
-+		return -URC_FAILURE;
-+
-+	ctrl->vrs[reg] = *(*vsp)++;
-+	return URC_OK;
-+}
-+
-+/* Helper functions to execute the instructions */
-+static int unwind_exec_pop_subset_r4_to_r13(struct unwind_ctrl_block *ctrl,
-+						unsigned long mask)
-+{
-+	unsigned long *vsp = (unsigned long *)ctrl->vrs[SP];
-+	int load_sp, reg = 4;
-+
-+	load_sp = mask & (1 << (13 - 4));
-+	while (mask) {
-+		if (mask & 1)
-+			if (unwind_pop_register(ctrl, &vsp, reg))
-+				return -URC_FAILURE;
-+		mask >>= 1;
-+		reg++;
-+	}
-+	if (!load_sp)
-+		ctrl->vrs[SP] = (unsigned long)vsp;
-+
-+	pr_debug("%s: fp = %08lx sp = %08lx lr = %08lx pc = %08lx\n", __func__,
-+		ctrl->vrs[FP], ctrl->vrs[SP], ctrl->vrs[LR], ctrl->vrs[PC]);
-+
-+	return URC_OK;
-+}
-+
-+static int unwind_exec_pop_r4_to_rN(struct unwind_ctrl_block *ctrl,
-+					unsigned long insn)
-+{
-+	unsigned long *vsp = (unsigned long *)ctrl->vrs[SP];
-+	int reg;
-+
-+	/* pop R4-R[4+bbb] */
-+	for (reg = 4; reg <= 4 + (insn & 7); reg++)
-+		if (unwind_pop_register(ctrl, &vsp, reg))
-+				return -URC_FAILURE;
-+
-+	if (insn & 0x80)
-+		if (unwind_pop_register(ctrl, &vsp, 14))
-+				return -URC_FAILURE;
-+
-+	ctrl->vrs[SP] = (unsigned long)vsp;
-+
-+	pr_debug("%s: fp = %08lx sp = %08lx lr = %08lx pc = %08lx\n", __func__,
-+		ctrl->vrs[FP], ctrl->vrs[SP], ctrl->vrs[LR], ctrl->vrs[PC]);
-+
-+	return URC_OK;
-+}
-+
-+static int unwind_exec_pop_subset_r0_to_r3(struct unwind_ctrl_block *ctrl,
-+						unsigned long mask)
-+{
-+	unsigned long *vsp = (unsigned long *)ctrl->vrs[SP];
-+	int reg = 0;
-+
-+	/* pop R0-R3 according to mask */
-+	while (mask) {
-+		if (mask & 1)
-+			if (unwind_pop_register(ctrl, &vsp, reg))
-+				return -URC_FAILURE;
-+		mask >>= 1;
-+		reg++;
-+	}
-+	ctrl->vrs[SP] = (unsigned long)vsp;
-+
-+	pr_debug("%s: fp = %08lx sp = %08lx lr = %08lx pc = %08lx\n", __func__,
-+		ctrl->vrs[FP], ctrl->vrs[SP], ctrl->vrs[LR], ctrl->vrs[PC]);
-+
-+	return URC_OK;
-+}
-+
- /*
-  * Execute the current unwind instruction.
-  */
-@@ -250,8 +331,6 @@ static int unwind_exec_insn(struct unwind_ctrl_block *ctrl)
- 		ctrl->vrs[SP] -= ((insn & 0x3f) << 2) + 4;
- 	else if ((insn & 0xf0) == 0x80) {
- 		unsigned long mask;
--		unsigned long *vsp = (unsigned long *)ctrl->vrs[SP];
--		int load_sp, reg = 4;
- 
- 		insn = (insn << 8) | unwind_get_byte(ctrl);
- 		mask = insn & 0x0fff;
-@@ -261,38 +340,19 @@ static int unwind_exec_insn(struct unwind_ctrl_block *ctrl)
- 			return -URC_FAILURE;
- 		}
- 
--		/* pop R4-R15 according to mask */
--		load_sp = mask & (1 << (13 - 4));
--		while (mask) {
--			if (mask & 1)
--				ctrl->vrs[reg] = *vsp++;
--			mask >>= 1;
--			reg++;
--		}
--		if (!load_sp)
--			ctrl->vrs[SP] = (unsigned long)vsp;
-+		return unwind_exec_pop_subset_r4_to_r13(ctrl, mask);
- 	} else if ((insn & 0xf0) == 0x90 &&
- 		   (insn & 0x0d) != 0x0d)
- 		ctrl->vrs[SP] = ctrl->vrs[insn & 0x0f];
--	else if ((insn & 0xf0) == 0xa0) {
--		unsigned long *vsp = (unsigned long *)ctrl->vrs[SP];
--		int reg;
--
--		/* pop R4-R[4+bbb] */
--		for (reg = 4; reg <= 4 + (insn & 7); reg++)
--			ctrl->vrs[reg] = *vsp++;
--		if (insn & 0x80)
--			ctrl->vrs[14] = *vsp++;
--		ctrl->vrs[SP] = (unsigned long)vsp;
--	} else if (insn == 0xb0) {
-+	else if ((insn & 0xf0) == 0xa0)
-+		return unwind_exec_pop_r4_to_rN(ctrl, insn);
-+	else if (insn == 0xb0) {
- 		if (ctrl->vrs[PC] == 0)
- 			ctrl->vrs[PC] = ctrl->vrs[LR];
- 		/* no further processing */
- 		ctrl->entries = 0;
- 	} else if (insn == 0xb1) {
- 		unsigned long mask = unwind_get_byte(ctrl);
--		unsigned long *vsp = (unsigned long *)ctrl->vrs[SP];
--		int reg = 0;
- 
- 		if (mask == 0 || mask & 0xf0) {
- 			pr_warning("unwind: Spare encoding %04lx\n",
-@@ -300,14 +360,7 @@ static int unwind_exec_insn(struct unwind_ctrl_block *ctrl)
- 			return -URC_FAILURE;
- 		}
- 
--		/* pop R0-R3 according to mask */
--		while (mask) {
--			if (mask & 1)
--				ctrl->vrs[reg] = *vsp++;
--			mask >>= 1;
--			reg++;
--		}
--		ctrl->vrs[SP] = (unsigned long)vsp;
-+		return unwind_exec_pop_subset_r0_to_r3(ctrl, mask);
- 	} else if (insn == 0xb2) {
- 		unsigned long uleb128 = unwind_get_byte(ctrl);
- 
-@@ -329,13 +382,13 @@ static int unwind_exec_insn(struct unwind_ctrl_block *ctrl)
-  */
- int unwind_frame(struct stackframe *frame)
+ static int davinci_wdt_remove(struct platform_device *pdev)
  {
--	unsigned long high, low;
-+	unsigned long low;
- 	const struct unwind_idx *idx;
- 	struct unwind_ctrl_block ctrl;
+-	misc_deregister(&davinci_wdt_miscdev);
++	watchdog_unregister_device(&wdt_wdd);
+ 	clk_disable_unprepare(wdt_clk);
  
--	/* only go to a higher address on the stack */
-+	/* store the highest address on the stack to avoid crossing it*/
- 	low = frame->sp;
--	high = ALIGN(low, THREAD_SIZE);
-+	ctrl.sp_high = ALIGN(low, THREAD_SIZE);
- 
- 	pr_debug("%s(pc = %08lx lr = %08lx sp = %08lx)\n", __func__,
- 		 frame->pc, frame->lr, frame->sp);
-@@ -386,7 +439,7 @@ int unwind_frame(struct stackframe *frame)
- 		int urc = unwind_exec_insn(&ctrl);
- 		if (urc < 0)
- 			return urc;
--		if (ctrl.vrs[SP] < low || ctrl.vrs[SP] >= high)
-+		if (ctrl.vrs[SP] < low || ctrl.vrs[SP] >= ctrl.sp_high)
- 			return -URC_FAILURE;
- 	}
- 
+ 	return 0;
 -- 
-1.7.0.4
+1.7.9.5
 
