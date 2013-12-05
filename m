@@ -1,88 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825Ab3LEW16 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 17:27:58 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:51093 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750877Ab3LEW15 convert rfc822-to-8bit (ORCPT
+	id S1753567Ab3LEW3A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 17:29:00 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:33521 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab3LEW27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 17:27:57 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] SFI: fix compilation warnings
-Date: Thu, 05 Dec 2013 23:40:57 +0100
-Message-ID: <2894493.n5DTvIrPJs@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <4771886.zcelg2hCiB@vostro.rjw.lan>
-References: <1386264397-27319-1-git-send-email-andriy.shevchenko@linux.intel.com> <4771886.zcelg2hCiB@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+	Thu, 5 Dec 2013 17:28:59 -0500
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [net-next PATCH 0/6] some cleanups
+Date: Fri,  6 Dec 2013 06:28:41 +0800
+Message-Id: <1386282527-14094-1-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120522-7164-0000-0000-000003FC8A59
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, December 05, 2013 11:36:37 PM Rafael J. Wysocki wrote:
-> On Thursday, December 05, 2013 07:26:37 PM Andy Shevchenko wrote:
-> > When build kernel with make W=1 we get the following compiler error.
-> > 
-> > In file included from drivers/sfi/sfi_acpi.c:66:0:
-> > include/linux/sfi_acpi.h: In function ‘acpi_sfi_table_parse’:
-> > include/linux/sfi_acpi.h:72:2: error: implicit declaration of function ‘acpi_table_parse’ [-Werror=implicit-function-declaration]
-> >   if (!acpi_table_parse(signature, handler))
-> >   ^
-> >   cc1: some warnings being treated as errors
-> > 
-> > The patch changes acpi/acpi.h inclusion to linux/acpi.h.
-> > 
-> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> 
-> OK
-> 
-> Lv, I'm dropping your patch cleaning up the inclusions, please sort that thing
-> out entirely for the next cycle.
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-Or rather I'll keep it in bleeding-edge and wait for follow-up patches to
-fix build problems like this one (then we can merge it into 3.14 hopefully).
+Since net-next is open now, it's time to post them out again.
 
-Thanks!
+Zhi Yong Wu (6):
+  vhost: remove the dead branch
+  vhost: adjust vhost_dev_init() to be void
+  macvtap: remove the dead branch
+  macvtap: adjust macvtap_skb_to_vnet_hdr() to be void
+  macvtap: update file current position
+  macvtap: remove unused paramter in macvtap_do_read()
 
-> > ---
-> >  drivers/sfi/sfi_acpi.c   | 2 +-
-> >  include/linux/sfi_acpi.h | 2 +-
-> >  2 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/sfi/sfi_acpi.c b/drivers/sfi/sfi_acpi.c
-> > index 0c9f419..d4dfcbe 100644
-> > --- a/drivers/sfi/sfi_acpi.c
-> > +++ b/drivers/sfi/sfi_acpi.c
-> > @@ -60,7 +60,7 @@
-> >  #define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
-> >  
-> >  #include <linux/kernel.h>
-> > -#include <acpi/acpi.h>	/* FIXME: inclusion should be removed */
-> > +#include <linux/acpi.h>
-> >  
-> >  #include <linux/sfi.h>
-> >  #include <linux/sfi_acpi.h>
-> > diff --git a/include/linux/sfi_acpi.h b/include/linux/sfi_acpi.h
-> > index 2cfcb79..c9cab82 100644
-> > --- a/include/linux/sfi_acpi.h
-> > +++ b/include/linux/sfi_acpi.h
-> > @@ -60,7 +60,7 @@
-> >  #define _LINUX_SFI_ACPI_H
-> >  
-> >  #ifdef CONFIG_SFI
-> > -#include <acpi/acpi.h>	/* FIXME: inclusion should be removed */
-> > +#include <linux/acpi.h>
-> >  
-> >  extern int sfi_acpi_table_parse(char *signature, char *oem_id,
-> >  				char *oem_table_id,
-> > 
-> 
+ drivers/net/macvtap.c |   16 +++++++---------
+ drivers/vhost/net.c   |    9 ++-------
+ drivers/vhost/scsi.c  |    7 +------
+ drivers/vhost/test.c  |    8 +-------
+ drivers/vhost/vhost.c |    4 +---
+ drivers/vhost/vhost.h |    2 +-
+ 6 files changed, 13 insertions(+), 33 deletions(-)
+
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.6.5
+
