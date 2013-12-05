@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab3LEXbO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 18:31:14 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:13743 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752359Ab3LEXbM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 18:31:12 -0500
-X-IronPort-AV: E=Sophos;i="4.93,836,1378882800"; 
-   d="scan'208";a="388801"
-From: Tim Kryger <tim.kryger@linaro.org>
-To: Christian Daudt <bcm@fixthebug.org>
-CC: Tim Kryger <tim.kryger@linaro.org>,
-        <bcm-kernel-feedback-list@broadcom.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <patches@linaro.org>
-Subject: [RESEND PATCH] ARM: bcm_defconfig: Do not expect appended DTB
-Date: Thu, 5 Dec 2013 15:30:55 -0800
-Message-ID: <1386286255-4338-1-git-send-email-tim.kryger@linaro.org>
-X-Mailer: git-send-email 1.8.0.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756145Ab3LEXch (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 18:32:37 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:44699 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752923Ab3LEXcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 18:32:32 -0500
+From: Borislav Petkov <bp@alien8.de>
+To: X86 ML <x86@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Kim Naru <kim.naru@amd.com>, Thomas Renninger <trenn@suse.de>
+Subject: [PATCH 2/4] x86, microcode: Share native MSR accessing variants
+Date: Fri,  6 Dec 2013 00:32:26 +0100
+Message-Id: <1386286348-5144-3-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1386286348-5144-1-git-send-email-bp@alien8.de>
+References: <1386286348-5144-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bootloaders used with Broadcom mobile SoCs are capable of handling
-a device tree separately from the zImage so there is no need for this
-option to be enabled.
+From: Borislav Petkov <bp@suse.de>
 
-Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+We want to use those in AMD's early loading path too. Also, add a
+native_wrmsrl variant.
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
- arch/arm/configs/bcm_defconfig | 1 -
- 1 file changed, 1 deletion(-)
+ arch/x86/include/asm/microcode.h        | 15 +++++++++++++++
+ arch/x86/kernel/microcode_intel_early.c | 10 ----------
+ 2 files changed, 15 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/configs/bcm_defconfig b/arch/arm/configs/bcm_defconfig
-index 6e49310..b152367 100644
---- a/arch/arm/configs/bcm_defconfig
-+++ b/arch/arm/configs/bcm_defconfig
-@@ -35,7 +35,6 @@ CONFIG_AEABI=y
- # CONFIG_COMPACTION is not set
- CONFIG_ZBOOT_ROM_TEXT=0x0
- CONFIG_ZBOOT_ROM_BSS=0x0
--CONFIG_ARM_APPENDED_DTB=y
- CONFIG_CMDLINE="console=ttyS0,115200n8 mem=128M"
- CONFIG_CPU_IDLE=y
- CONFIG_VFP=y
+diff --git a/arch/x86/include/asm/microcode.h b/arch/x86/include/asm/microcode.h
+index f98bd6625318..b59827e76529 100644
+--- a/arch/x86/include/asm/microcode.h
++++ b/arch/x86/include/asm/microcode.h
+@@ -1,6 +1,21 @@
+ #ifndef _ASM_X86_MICROCODE_H
+ #define _ASM_X86_MICROCODE_H
+ 
++#define native_rdmsr(msr, val1, val2)			\
++do {							\
++	u64 __val = native_read_msr((msr));		\
++	(void)((val1) = (u32)__val);			\
++	(void)((val2) = (u32)(__val >> 32));		\
++} while (0)
++
++#define native_wrmsr(msr, low, high)			\
++	native_write_msr(msr, low, high)
++
++#define native_wrmsrl(msr, val)				\
++	native_write_msr((msr),				\
++			 (u32)((u64)(val)),		\
++			 (u32)((u64)(val) >> 32))
++
+ struct cpu_signature {
+ 	unsigned int sig;
+ 	unsigned int pf;
+diff --git a/arch/x86/kernel/microcode_intel_early.c b/arch/x86/kernel/microcode_intel_early.c
+index 1575deb2e636..18f739129e72 100644
+--- a/arch/x86/kernel/microcode_intel_early.c
++++ b/arch/x86/kernel/microcode_intel_early.c
+@@ -365,16 +365,6 @@ out:
+ 	return state;
+ }
+ 
+-#define native_rdmsr(msr, val1, val2)		\
+-do {						\
+-	u64 __val = native_read_msr((msr));	\
+-	(void)((val1) = (u32)__val);		\
+-	(void)((val2) = (u32)(__val >> 32));	\
+-} while (0)
+-
+-#define native_wrmsr(msr, low, high)		\
+-	native_write_msr(msr, low, high);
+-
+ static int collect_cpu_info_early(struct ucode_cpu_info *uci)
+ {
+ 	unsigned int val[2];
 -- 
-1.8.0.1
+1.8.4
 
