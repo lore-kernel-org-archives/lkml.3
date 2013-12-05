@@ -1,81 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932615Ab3LEOuD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 09:50:03 -0500
-Received: from mail.kernelconcepts.de ([212.60.202.196]:34858 "EHLO
-	mail.kernelconcepts.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932203Ab3LEOt7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 09:49:59 -0500
-X-Greylist: delayed 2800 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Dec 2013 09:49:59 EST
-Message-ID: <52A08795.3010809@kernelconcepts.de>
-Date: Thu, 05 Dec 2013 15:03:01 +0100
-From: Nils Faerber <nils.faerber@kernelconcepts.de>
-Organization: kernel concepts GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S932670Ab3LEOu7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 09:50:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48684 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932622Ab3LEOu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 09:50:57 -0500
+Date: Thu, 5 Dec 2013 16:54:18 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Andrey Vagin <avagin@openvz.org>
+Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH 0/2] virtio-net: Fix two bugs on unloading the module
+Message-ID: <20131205145418.GC23147@redhat.com>
+References: <1386254181-17257-1-git-send-email-avagin@openvz.org>
 MIME-Version: 1.0
-To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Eero Nurkkala <ext-eero.nurkkala@nokia.com>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        =?UTF-8?B?0JjQstCw0LnQu9C+IA==?=
-	 =?UTF-8?B?0JTQuNC80LjRgtGA0L7Qsg==?= <freemangordon@abv.bg>,
-        Pavel Machek <pavel@ucw.cz>, aaro.koskinen@iki.fi
-Subject: Re: [PATCH] media: Add BCM2048 radio driver
-References: <1381847218-8408-1-git-send-email-pali.rohar@gmail.com> <201312022151.07599@pali> <52A030BE.7040709@xs4all.nl> <201312051420.56852@pali> <20131205135705.GA3969@earth.universe>
-In-Reply-To: <20131205135705.GA3969@earth.universe>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="x1fdQqOBHN9aK9MPn22bu4c2GblVcxiHl"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386254181-17257-1-git-send-email-avagin@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---x1fdQqOBHN9aK9MPn22bu4c2GblVcxiHl
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Thu, Dec 05, 2013 at 06:36:19PM +0400, Andrey Vagin wrote:
+> They can be easy to reproduce, if you try to unload virtio-net
+> 
+> Andrey Vagin (2):
+>   virtio-net: determine type of bufs correctly
+>   virtio: delete napi objects from netdev before releasing memory
 
-Am 05.12.2013 14:57, schrieb Sebastian Reichel:
-> On Thu, Dec 05, 2013 at 02:20:56PM +0100, Pali Roh=C3=A1r wrote:
->>> Anyway, I've posted the pull request. Please note, if you want
->>> to avoid having this driver be removed again in the future,
->>> then you (or someone else) should work on addressing the
->>> issues in the TODO file I added.
->>
->> Ok. CCing other people who works with n900 kernel.
->=20
-> Does the bcm2048's radio part work without the bluetooth driver?
+Thanks a lot for the patches!
 
-At least I do not know.
-I just added the RDS data interface, I have no idea of about the
-hardware and the other parts of it, sorry.
-
-> -- Sebastian
-Cheers
-  nils
-
---=20
-kernel concepts GmbH       Tel: +49-271-771091-12
-Sieghuetter Hauptweg 48
-D-57072 Siegen             Mob: +49-176-21024535
-http://www.kernelconcepts.de
-
-
---x1fdQqOBHN9aK9MPn22bu4c2GblVcxiHl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAlKgh5UACgkQJXeIURG1qHiMQACcDhooAQilsBFxHQaxTdq9/KJs
-jzQAn0HKW+OllXU44DT7W73cWYWUHw9f
-=R6Hj
------END PGP SIGNATURE-----
-
---x1fdQqOBHN9aK9MPn22bu4c2GblVcxiHl--
+>  drivers/net/virtio_net.c | 10 +++++++---
+>  1 file changed, 7 insertions(+), 3 deletions(-)
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> -- 
+> 1.8.3.1
