@@ -1,232 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786Ab3LEO2Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 09:28:24 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:40520 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752902Ab3LEO2V (ORCPT
+	id S932144Ab3LEO3Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 09:29:24 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:46566 "EHLO
+	highbank-bc01-b06.austin.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752266Ab3LEO3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 09:28:21 -0500
-Message-ID: <52A08D6E.9070400@linaro.org>
-Date: Thu, 05 Dec 2013 22:27:58 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Al Stone <al.stone@linaro.org>, Linaro Patches <patches@linaro.org>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, linaro-acpi@lists.linaro.org,
-        linux-acpi@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
+	Thu, 5 Dec 2013 09:29:20 -0500
+X-Greylist: delayed 615 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Dec 2013 09:29:20 EST
+Date: Thu, 5 Dec 2013 14:18:53 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Mark Salter <msalter@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC part1 PATCH 5/7] ARM64 / ACPI: Introduce arm_core.c and
- its related head file
-References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org> <1386088611-2801-6-git-send-email-hanjun.guo@linaro.org> <CAL_Jsq+8O13+hVKVEVGg_Mu4hkRLi6afBhoeduVAWW7g=5B8bQ@mail.gmail.com>
-In-Reply-To: <CAL_Jsq+8O13+hVKVEVGg_Mu4hkRLi6afBhoeduVAWW7g=5B8bQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	<linux-arm-kernel@lists.infradead.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        "roy.franz@linaro.org" <roy.franz@linaro.org>
+Subject: Re: [PATCH 1/3] arm64: add EFI stub
+Message-ID: <20131205141853.GA974@darko.cambridge.arm.com>
+References: <1385762712-17043-1-git-send-email-msalter@redhat.com>
+ <1385762712-17043-2-git-send-email-msalter@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385762712-17043-2-git-send-email-msalter@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年12月05日 22:09, Rob Herring wrote:
-> On Tue, Dec 3, 2013 at 10:36 AM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
-[...]
->> +
->>   #endif /*_ASM_ARM_ACPI_H*/
->> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
->> index bd9bbd0..8199360 100644
->> --- a/arch/arm64/kernel/setup.c
->> +++ b/arch/arm64/kernel/setup.c
->> @@ -41,6 +41,7 @@
->>   #include <linux/memblock.h>
->>   #include <linux/of_fdt.h>
->>   #include <linux/of_platform.h>
->> +#include <linux/acpi.h>
->>
->>   #include <asm/cputype.h>
->>   #include <asm/elf.h>
->> @@ -225,6 +226,13 @@ void __init setup_arch(char **cmdline_p)
->>
->>          arm64_memblock_init();
->>
->> +       /*
->> +        * Parse the ACPI tables for possible boot-time configuration
->> +        */
->> +       acpi_boot_table_init();
->> +       early_acpi_boot_init();
->> +       acpi_boot_init();
->> +
-> How about a single function here. Perhaps called acpi_early_init. That
-> would save checking acpi_disabled 3 times.
+Hi Mark,
 
-It is separated for some reasons on intel platforms, one of them
-is ACPI based memory hot-plug, SRAT (NUMA related ACPI table)
-and its related memory initialization should be finished between
-early_acpi_boot_init() and acpi_boot_init().
+On Fri, Nov 29, 2013 at 10:05:10PM +0000, Mark Salter wrote:
+> This patch adds PE/COFF header fields to the start of the Image
+> so that it appears as an EFI application to EFI firmware. An EFI
+> stub is included to allow direct booting of the kernel Image. Due
+> to EFI firmware limitations, only little endian kernels with 4K
+> page sizes are supported at this time.
 
-I keep this code unchanged for future use (memory hotplug)
-on ARM, is this make sense to you?
+I don't fully understand the EFI firmware limitations but for big endian
+we could have the EFI_STUB wrapper in little endian and get the kernel
+to switch to big endian once booted. The image header should always be
+little endian.
 
->>          paging_init();
->>          request_standard_resources();
->>
-[...]
->> lic License for more details.
->> + *
->> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->> + */
->> +
->> +#include <linux/init.h>
->> +#include <linux/acpi.h>
->> +#include <linux/acpi_pmtmr.h>
->> +#include <linux/efi.h>
->> +#include <linux/cpumask.h>
->> +#include <linux/memblock.h>
->> +#include <linux/module.h>
->> +#include <linux/irq.h>
->> +#include <linux/irqdomain.h>
->> +#include <linux/slab.h>
->> +#include <linux/bootmem.h>
->> +#include <linux/ioport.h>
->> +#include <linux/pci.h>
->> +
->> +#include <asm/pgtable.h>
->> +#include <asm/io.h>
-> linux/io.h although I can't see where it is even needed.
->
->> +#include <asm/smp.h>
-> linux/smp.h ...
->
-> Seems like you have a lot of unnecessary headers here. efi.h, slab.h,
-> pci.h, etc.
+And I have to dig further into the 4K limitation (or you could give a
+quick summary ;)).
 
-Thanks for the reminding, will update and clean them up.
+> diff --git a/arch/arm64/kernel/efi-entry.S b/arch/arm64/kernel/efi-entry.S
+> new file mode 100644
+> index 0000000..5f6d179
+> --- /dev/null
+> +++ b/arch/arm64/kernel/efi-entry.S
+> @@ -0,0 +1,81 @@
+> +/*
+> + * EFI entry point.
+> + *
+> + * Copyright (C) 2013 Red Hat, Inc.
+> + * Author: Mark Salter <msalter@redhat.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +#include <linux/linkage.h>
+> +#include <linux/init.h>
+> +
+> +#include <asm/assembler.h>
+> +
+> +#define EFI_LOAD_ERROR 0x8000000000000001
 
->> +
->> +/*
->> + * We never plan to use RSDT on arm/arm64 as its deprecated in spec but this
->> + * variable is still required by the ACPI core
->> + */
->> +u32 acpi_rsdt_forced;
->> +
->> +int acpi_noirq;                        /* skip ACPI IRQ initialization */
->> +int acpi_strict;
->> +int acpi_disabled;
->> +EXPORT_SYMBOL(acpi_disabled);
->> +
->> +int acpi_pci_disabled;         /* skip ACPI PCI scan and IRQ initialization */
->> +EXPORT_SYMBOL(acpi_pci_disabled);
->> +
->> +#define PREFIX                 "ACPI: "
->> +
->> +/* FIXME: this function should be moved to topology.c when it is ready */
->> +void arch_fix_phys_package_id(int num, u32 slot)
->> +{
->> +       return;
->> +}
->> +EXPORT_SYMBOL_GPL(arch_fix_phys_package_id);
->> +
->> +/*
->> + * Boot-time Configuration
->> + */
->> +
-> It is not really clear what this comment applies to.
+It's defined already but I see why you can't include efi.h here. Maybe a
+comment.
 
-Yes, only leading some confusion, will remove it.
+> +
+> +       __INIT
+> +
+> +       /*
+> +        * We arrive here from the EFI boot manager with:
+> +        *
+> +        *    * MMU on with identity-mapped RAM.
+> +        *    * Icache and Dcache on
+> +        *
+> +        * We will most likely be running from some place other than where
+> +        * we want to be. The kernel image wants to be placed at TEXT_OFFSET
+> +        * from start of RAM.
+> +        */
+> +ENTRY(efi_stub_entry)
+> +       stp     x29, x30, [sp, #-32]!
+> +
+> +       /*
+> +        * Call efi_entry to do the real work.
+> +        * x0 and x1 are already set up by firmware. Current runtime
+> +        * address of image is calculated and passed via *image_addr.
+> +        *
+> +        * unsigned long efi_entry(void *handle,
+> +        *                         efi_system_table_t *sys_table,
+> +        *                         unsigned long *image_addr) ;
+> +        */
+> +       adrp    x8, _text
+> +        add    x8, x8, #:lo12:_text
 
->> +enum acpi_irq_model_id acpi_irq_model = ACPI_IRQ_MODEL_PLATFORM;
->> +
->> +static unsigned int gsi_to_irq(unsigned int gsi)
->> +{
->> +       int irq = irq_create_mapping(NULL, gsi);
->> +
->> +       return irq;
->> +}
->> +
->> +/*
->> + * __acpi_map_table() will be called before page_init(), so early_ioremap()
->> + * or early_memremap() should be called here.
->> + *
->> + * FIXME: early_io/memremap()/early_iounmap() are not upstream yet on ARM64,
->> + * just wait for Mark Salter's patchset accepted by mainline
->> + */
->> +char *__init __acpi_map_table(unsigned long phys, unsigned long size)
->> +{
->> +       if (!phys || !size)
->> +               return NULL;
->> +
->> +       /*
->> +        * temporarily use phys_to_virt(),
->> +        * should be early_memremap(phys, size) here
->> +        */
->> +       return phys_to_virt(phys);
->> +}
->> +
->> +void __init __acpi_unmap_table(char *map, unsigned long size)
->> +{
->> +       if (!map || !size)
->> +               return;
->> +
->> +       /* should be early_iounmap(map, size); */
->> +       return;
->> +}
->> +
->> +int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
->> +{
->> +       *irq = gsi_to_irq(gsi);
->> +
->> +       return 0;
->> +}
->> +EXPORT_SYMBOL_GPL(acpi_gsi_to_irq);
->> +
->> +/*
->> + * success: return IRQ number (>=0)
-> '> 0' for interrupts is what normally means success in the kernel. 0
-> is for no irq.
+Minor: some wrong whitespace (but I don't trust our incoming mail server
+either, it corrupts patches usually).
 
-Will update :)
+> +       add     x2, sp, 16
+> +       str     x8, [x2]
+> +       bl      efi_entry
+> +       cmn     x0, #1
+> +       b.eq    efi_load_fail
+> +
+> +       /*
+> +        * efi_entry() will have relocated the kernel image if necessary
+> +        * and we return here with device tree address in x0 and the kernel
+> +        * entry point stored at *image_addr. Save those values in registers
+> +        * which are preserved by __flush_dcache_all.
+> +        */
+> +       ldr     x1, [sp, #16]
+> +       mov     x20, x0
+> +       mov     x21, x1
+> +
+> +       bl      __flush_dcache_all
 
->> + * failure: return < 0
->> + */
->> +int acpi_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
->> +{
->> +       return -1;
->> +}
->> +EXPORT_SYMBOL_GPL(acpi_register_gsi);
-[...]
->> +
->> +static int __init parse_acpi(char *arg)
->> +{
->> +       if (!arg)
->> +               return -EINVAL;
->> +
->> +       /* "acpi=off" disables both ACPI table parsing and interpreter */
->> +       if (strcmp(arg, "off") == 0) {
->> +               disable_acpi();
->> +       }
->> +       /* acpi=strict disables out-of-spec workarounds */
->> +       else if (strcmp(arg, "strict") == 0) {
->> +               acpi_strict = 1;
->> +       }
->> +       return 0;
->> +}
->> +early_param("acpi", parse_acpi);
-> These aren't common options across architectures?
+Regarding __flush_dcache_all, I plan to remove it for all cases apart
+from power management with the MMU disabled. With MMU enabled, there is
+no guarantee that this function does the right thing. It's even worse in
+the guest context.
 
-Different architectures have different options,
-such as x86, it has more options which ARM is not needed.
+> +       /* Turn off Dcache and MMU */
+> +       mrs     x0, sctlr_el1
+> +       bic     x0, x0, #1 << 0 // clear SCTLR.M
+> +       bic     x0, x0, #1 << 2 // clear SCTLR.C
+> +       msr     sctlr_el1, x0
+> +       isb
 
-Thanks
-Hanjun
+I assume an EFI app is running with the MMU enabled (and UP only). Do we
+always run it in EL1? What about EL2 mode (needed by KVM and Xen)?
+
+> +
+> +       /* Jump to real entry point */
+> +       mov     x0, x20
+> +       mov     x1, xzr
+> +       mov     x2, xzr
+> +       mov     x3, xzr
+> +       br      x21
+> +
+> +efi_load_fail:
+> +       mov     x0, EFI_LOAD_ERROR
+
+Needs #EFI_LOAD_ERROR (strange that gas doesn't complain).
+
+> +       ldp     x29, x30, [sp], #32
+> +       ret
+> +
+> +ENDPROC(efi_stub_entry)
+> diff --git a/arch/arm64/kernel/efi-stub.c b/arch/arm64/kernel/efi-stub.c
+> new file mode 100644
+> index 0000000..f000b04
+> --- /dev/null
+> +++ b/arch/arm64/kernel/efi-stub.c
+> @@ -0,0 +1,280 @@
+> +/*
+> + * linux/arch/arm/boot/compressed/efi-stub.c
+> + *
+> + * Copyright (C) 2013 Linaro Ltd;  <roy.franz@linaro.org>
+> + *
+> + * This file implements the EFI boot stub for the arm64 kernel.
+> + * Adapted from ARM version by Mark Salter <msalter@redhat.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +#include <linux/efi.h>
+> +#include <linux/libfdt.h>
+> +#include <asm/sections.h>
+> +#include <generated/compile.h>
+> +#include <linux/uts.h>
+> +#include <linux/utsname.h>
+> +#include <generated/utsrelease.h>
+> +#include <linux/version.h>
+> +
+> +/* error code which can't be mistaken for valid address */
+> +#define EFI_ERROR      (~0UL)
+> +
+> +/*
+> + * EFI function call wrappers. These are not required for arm64, but wrappers
+> + * are required for X86 to convert between ABIs. These wrappers are provided
+> + * to allow code sharing between X86 and other architectures. Since these
+> + * wrappers directly invoke the EFI function pointer, the function pointer
+> + * type must be properly defined, which is not the case for X86. One advantage
+> + * of this is it allows for type checking of arguments, which is not possible
+> + * with the X86 wrappers.
+> + */
+> +#define efi_call_phys0(f)                      f()
+> +#define efi_call_phys1(f, a1)                  f(a1)
+> +#define efi_call_phys2(f, a1, a2)              f(a1, a2)
+> +#define efi_call_phys3(f, a1, a2, a3)          f(a1, a2, a3)
+> +#define efi_call_phys4(f, a1, a2, a3, a4)      f(a1, a2, a3, a4)
+> +#define efi_call_phys5(f, a1, a2, a3, a4, a5)  f(a1, a2, a3, a4, a5)
+> +
+> +/*
+> + * AArch64 requires the DTB to be 8-byte aligned in the first 512MiB from
+> + * start of kernel and may not cross a 2MiB boundary. We set alignment to
+> + * equal max size so we know it won't cross a 2MiB boudary.
+> + */
+> +#define MAX_DTB_SIZE   0x40000
+
+2MB is 0x200000 (or I don't understand the comment).
+
+> +#define DTB_ALIGN      MAX_DTB_SIZE
+> +#define MAX_DTB_OFFSET 0x20000000
+> +
+> +#define pr_efi(msg)     efi_printk(sys_table, "EFI stub: "msg)
+> +#define pr_efi_err(msg) efi_printk(sys_table, "EFI stub: ERROR: "msg)
+> +
+> +struct fdt_region {
+> +       u64 base;
+> +       u64 size;
+> +};
+> +
+> +/* Include shared EFI stub code */
+> +#include "../../../drivers/firmware/efi/efi-stub-helper.c"
+> +#include "../../../drivers/firmware/efi/fdt.c"
+
+I don't particularly like .c files inclusion but it looks like x86 does
+the same.
+
+> +
+> +static unsigned long __init get_dram_base(efi_system_table_t *sys_table)
+> +{
+> +       efi_status_t status;
+> +       unsigned long map_size, desc_size;
+> +       unsigned long membase = EFI_ERROR;
+> +       efi_memory_desc_t *memory_map;
+> +       int i;
+> +
+> +       status = efi_get_memory_map(sys_table, &memory_map, &map_size,
+> +                                   &desc_size, NULL, NULL);
+> +       if (status == EFI_SUCCESS) {
+
+Can you exit earlier here if !EFI_SUCCESS? It reduces the indentation
+level.
+
+-- 
+Catalin
