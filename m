@@ -1,85 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab3LEJYJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 04:24:09 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:40491 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754734Ab3LEJYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 04:24:05 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <linus.walleij@linaro.org>
-CC: <tony@atomide.com>, <peter.ujfalusi@ti.com>, <nm@ti.com>,
-        <tomi.valkeinen@ti.com>, <balbi@ti.com>, <linux-gpio@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v2 1/1] gpio: twl4030: Fix regression for twl gpio LED output
-Date: Thu, 5 Dec 2013 11:23:35 +0200
-Message-ID: <1386235415-27670-1-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386156871-7639-2-git-send-email-rogerq@ti.com>
-References: <1386156871-7639-2-git-send-email-rogerq@ti.com>
+	id S1755238Ab3LEJZK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 04:25:10 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:40870 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752223Ab3LEJZG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 04:25:06 -0500
+Date: Thu, 5 Dec 2013 10:25:02 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 28/28] perf tools: Add udis86 disassembler feature check
+Message-ID: <20131205092502.GA16653@gmail.com>
+References: <1386076182-14484-1-git-send-email-jolsa@redhat.com>
+ <1386076182-14484-29-git-send-email-jolsa@redhat.com>
+ <20131204185024.GC14788@ghostprotocols.net>
+ <20131205080513.GA1251@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131205080513.GA1251@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 0b2aa8be introduced a regression that causes failure
-in setting LED GPO direction to OUT.
 
-This causes USB host probe failures for Beagleboard C4.
+* Jiri Olsa <jolsa@redhat.com> wrote:
 
-[    2.075469] platform usb_phy_gen_xceiv.2: Driver usb_phy_gen_xceiv requests probe deferral
-[    2.090454] hsusb2_vcc: Failed to request enable GPIO510: -22
-[    2.100982] reg-fixed-voltage reg-fixed-voltage.0.auto: Failed to register regulator: -22
-[    2.109954] reg-fixed-voltage: probe of reg-fixed-voltage.0.auto failed with error -22
+> On Wed, Dec 04, 2013 at 03:50:24PM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Tue, Dec 03, 2013 at 02:09:42PM +0100, Jiri Olsa escreveu:
+> > > Adding udis86 disassembler feature check which support
+> > > is needed for kvm:kvm_emulate_insn tracepoint.
+> > >  
+> > > +$(call feature_check,udis86)
+> > > +ifeq ($(feature-udis86), 1)
+> > > +  LIBTRACEEVENT_CFLAGS += -DHAVE_UDIS86
+> > > +  EXTLIBS += -ludis86
+> > > +else
+> > > +  msg := $(warning No udis86 support.);
+> > > +endif
+> > 
+> > That is really an incomplete message, what package should I install?
+> > Perhaps we should add this there then:
+> > 
+> > http://bit.ly/1hyrN52
+> 
+> nice :-)
+> 
+> > 
+> > Wow, that was easy, but yeah, could be made easier 8-) ;-P
+> 
+> so something like:
+> No udis86 found. Please install udis86-devel.
+> 
+> or:
+> No udis86 found, disabling kvm tracepoints instruction disassembly. Please install udis86-devel.
 
-direction_out/direction_in must return 0 if the operation succeeded.
+1)
 
-Also, don't update direction flag and output data if twl4030_set_gpio_direction()
-failed inside twl_direction_out();
+So, the first problem I can see is in the output:
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- drivers/gpio/gpio-twl4030.c | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+Auto-detecting system features:
+...                     backtrace: [ on  ]
+...                         dwarf: [ on  ]
+...                fortify-source: [ on  ]
+...                         glibc: [ on  ]
+...                          gtk2: [ on  ]
+...                  gtk2-infobar: [ on  ]
+...                      libaudit: [ on  ]
+...                        libbfd: [ on  ]
+...                        libelf: [ on  ]
+...             libelf-getphdrnum: [ on  ]
+...                   libelf-mmap: [ on  ]
+...                       libnuma: [ on  ]
+...                       libperl: [ on  ]
+...                     libpython: [ on  ]
+...             libpython-version: [ on  ]
+...                      libslang: [ on  ]
+...                     libunwind: [ on  ]
+...                       on-exit: [ on  ]
+...            stackprotector-all: [ on  ]
+...                       timerfd: [ on  ]
 
-diff --git a/drivers/gpio/gpio-twl4030.c b/drivers/gpio/gpio-twl4030.c
-index b97d6a6..f999689 100644
---- a/drivers/gpio/gpio-twl4030.c
-+++ b/drivers/gpio/gpio-twl4030.c
-@@ -300,7 +300,7 @@ static int twl_direction_in(struct gpio_chip *chip, unsigned offset)
- 	if (offset < TWL4030_GPIO_MAX)
- 		ret = twl4030_set_gpio_direction(offset, 1);
- 	else
--		ret = -EINVAL;
-+		ret = -EINVAL;	/* LED outputs can't be set as input */
- 
- 	if (!ret)
- 		priv->direction &= ~BIT(offset);
-@@ -354,11 +354,20 @@ static void twl_set(struct gpio_chip *chip, unsigned offset, int value)
- static int twl_direction_out(struct gpio_chip *chip, unsigned offset, int value)
- {
- 	struct gpio_twl4030_priv *priv = to_gpio_twl4030(chip);
--	int ret = -EINVAL;
-+	int ret = 0;
- 
- 	mutex_lock(&priv->mutex);
--	if (offset < TWL4030_GPIO_MAX)
-+	if (offset < TWL4030_GPIO_MAX) {
- 		ret = twl4030_set_gpio_direction(offset, 0);
-+		if (ret) {
-+			mutex_unlock(&priv->mutex);
-+			return ret;
-+		}
-+	}
-+
-+	/*
-+	 *  LED gpios i.e. offset >= TWL4030_GPIO_MAX are always output
-+	 */
- 
- 	priv->direction |= BIT(offset);
- 	mutex_unlock(&priv->mutex);
--- 
-1.8.3.2
+config/Makefile:421: No udis86 support.
 
+such a 'no XYZ support' message should only occur if a feature test 
+failed. _If_ we decide that 'udis86' support is required for a full 
+perf build then there should be a new line saying something like:
+
+...                        udis86: [ OFF ]
+
+2)
+
+The other problem I see is that I think we should start adding the 
+install-suggestions to the feature-check lines themselves.
+
+On .deb based systems it should say something like:
+
+...                       on-exit: [ on  ]
+...            stackprotector-all: [ on  ]
+...                       timerfd: [ on  ]
+...                        udis86: [ OFF ]    # apt-get install udis86-dev
+
+On RPM based systems it should say something like:
+
+...                       on-exit: [ on  ]
+...            stackprotector-all: [ on  ]
+...                       timerfd: [ on  ]
+...                        udis86: [ OFF ]    # yum install udis86-devel
+
+Or so. I think we can maintain package suggestion strings for these 
+two main distro variants.
+
+The package install strings should probably be maintained together 
+with the list of feature names in some table/list format. Such lookup 
+tables can be implemented either in Make via:
+
+  http://www.gnu.org/savannah-checkouts/gnu/make/manual/html_node/Computed-Names.html
+
+Or via a shell command in the makefile, using Bash associative arrays 
+or such.
+
+Thanks,
+
+	Ingo
