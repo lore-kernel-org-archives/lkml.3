@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282Ab3LENfl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 08:35:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35627 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756299Ab3LENfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 08:35:40 -0500
-Date: Thu, 5 Dec 2013 13:35:36 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Alex Thorlton <athorlton@sgi.com>
-Cc: Rik van Riel <riel@redhat.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/15] mm: thp: give transparent hugepage code a separate
- copy_page
-Message-ID: <20131205133536.GH11295@suse.de>
-References: <1386060721-3794-1-git-send-email-mgorman@suse.de>
- <1386060721-3794-4-git-send-email-mgorman@suse.de>
- <20131204165918.GA13191@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20131204165918.GA13191@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756687Ab3LENkV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 08:40:21 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:60195 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362Ab3LENkU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 08:40:20 -0500
+X-AuditID: cbfec7f5-b7fd16d000007299-70-52a0824137fe
+Subject: [PATCH] x86-64: fix stack bounds checking in get_wchan
+To: Andi Kleen <ak@linux.intel.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Date: Thu, 05 Dec 2013 17:40:17 +0400
+Message-id: <20131205134017.17161.147.stgit@buzz>
+User-Agent: StGit/0.15
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHLMWRmVeSWpSXmKPExsVy+t/xy7qOTQuCDLZs1rU4PsHSYtpGcYsf
+	O3tZLS7vmsNmcenAAiaLzZumMlv82PCY1YHdY9OqTjaPd+fOsXvMOxno8X7fVTaPvi2rGD0+
+	b5LzONHyhTWAPYrLJiU1J7MstUjfLoErY0Xfb8aCbs6K5y+PsDQwrmbvYuTgkBAwkfg3R7yL
+	kRPIFJO4cG89WxcjF4eQwFJGibXbHzFDOA1MEnOu32ICaRAWsJd4NKcMJC4isJdR4nz/I0aQ
+	bjYBM4lt+26D2SwCqhIzbswEs3kFDCWu3lvFDGKLAm1Yc+kkE0RcUOLH5HssIDOZBdQlpkzJ
+	BQkzC8hLbF7zlnkCI+8sJFWzEKpmIalawMi8ilE0tTS5oDgpPddIrzgxt7g0L10vOT93EyMk
+	TL/uYFx6zOoQowAHoxIPr2PK/CAh1sSy4srcQ4wSHMxKIrzbGxYECfGmJFZWpRblxxeV5qQW
+	H2Jk4uCUamB0C346ca34WSeteI3Nn/eFypx+XHZpkwlHjbF1324TI8YXps5HeeuEF2w4fOHA
+	gxD/f2q/S+u9xUMnFPsbKeyWTD7+3sXxQsrqDS/+bmGdd0Vf7cij4Gm/7V525U7OvhqT3tf3
+	LerIgxDdf9L/3p57ssSda+EThZRdT3Znznua+DTmLfeCw/tylFiKMxINtZiLihMBnwXFWDEC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 10:59:18AM -0600, Alex Thorlton wrote:
-> > -void copy_huge_page(struct page *dst, struct page *src)
-> > -{
-> > -	int i;
-> > -	struct hstate *h = page_hstate(src);
-> > -
-> > -	if (unlikely(pages_per_huge_page(h) > MAX_ORDER_NR_PAGES)) {
-> 
-> With CONFIG_HUGETLB_PAGE=n, the kernel fails to build, throwing this
-> error:
-> 
-> mm/migrate.c: In function ???copy_huge_page???:
-> mm/migrate.c:473: error: implicit declaration of function ???page_hstate???
-> 
-> I got it to build by sticking the following into hugetlb.h:
-> 
-> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> index 4694afc..fd76912 100644
-> --- a/include/linux/hugetlb.h
-> +++ b/include/linux/hugetlb.h
-> @@ -403,6 +403,7 @@ struct hstate {};
->  #define hstate_sizelog(s) NULL
->  #define hstate_vma(v) NULL
->  #define hstate_inode(i) NULL
-> +#define page_hstate(p) NULL
->  #define huge_page_size(h) PAGE_SIZE
->  #define huge_page_mask(h) PAGE_MASK
->  #define vma_kernel_pagesize(v) PAGE_SIZE
-> 
-> I figure that the #define I stuck in isn't actually solving the real
-> problem, but it got things working again.
-> 
+This patch fixes potential oops on unwinding volatile stack. get_wchan() is
+lockless, task may wake up at any time and override any frame under us.
+Stackframe is 16 bytes long plus it's supposed to be 64bit aligned.
 
-It's based on an upstream patch so I'll check if the problem is there as
-well and backport accordingly. This patch to unblock yourself is fine
-for now.
+Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+---
+ arch/x86/kernel/process_64.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-Thanks.
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 9c0280f..a7f089d 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -442,12 +442,11 @@ unsigned long get_wchan(struct task_struct *p)
+ 	if (!p || p == current || p->state == TASK_RUNNING)
+ 		return 0;
+ 	stack = (unsigned long)task_stack_page(p);
+-	if (p->thread.sp < stack || p->thread.sp >= stack+THREAD_SIZE)
++	if (p->thread.sp < stack || p->thread.sp > stack + THREAD_SIZE - 8)
+ 		return 0;
+ 	fp = *(u64 *)(p->thread.sp);
+ 	do {
+-		if (fp < (unsigned long)stack ||
+-		    fp >= (unsigned long)stack+THREAD_SIZE)
++		if (fp < stack || fp > stack + THREAD_SIZE - 16 || fp & 7)
+ 			return 0;
+ 		ip = *(u64 *)(fp+8);
+ 		if (!in_sched_functions(ip))
 
--- 
-Mel Gorman
-SUSE Labs
