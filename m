@@ -1,109 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911Ab3LEJSq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 04:18:46 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:11204
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752154Ab3LEJSk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 04:18:40 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(z579ehzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h177df4h8275eh17326ah8275bh8275dh1de097h186068ha1495iz2dh2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1155h)
-Date: Thu, 5 Dec 2013 16:49:09 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Daniel Tang <dt.tangr@gmail.com>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 1/2] usb: chipidea: fix mistake in device tree binding
- of nspire-usb to use vendor name 'lsi' instead of SoC name 'zevio'
-Message-ID: <20131205084909.GA25943@shlinux1.ap.freescale.net>
-References: <1386148808-15065-1-git-send-email-dt.tangr@gmail.com>
- <20131204134433.GD1573@shlinux1.ap.freescale.net>
- <38AC4BA3-DE10-47A6-B3EF-26872A88AABD@gmail.com>
+	id S1754809Ab3LEJXb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 04:23:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7577 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751402Ab3LEJXY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 04:23:24 -0500
+Date: Thu, 5 Dec 2013 10:23:00 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
+Subject: [PATCHv4 28/28] perf tools: Add udis86 disassembler feature check
+Message-ID: <20131205092300.GA1265@krava.brq.redhat.com>
+References: <1386076182-14484-1-git-send-email-jolsa@redhat.com>
+ <1386076182-14484-29-git-send-email-jolsa@redhat.com>
+ <20131204185024.GC14788@ghostprotocols.net>
+ <20131205080513.GA1251@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <38AC4BA3-DE10-47A6-B3EF-26872A88AABD@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <20131205080513.GA1251@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 04:44:13PM +1100, Daniel Tang wrote:
-> Hi,
+On Thu, Dec 05, 2013 at 09:05:13AM +0100, Jiri Olsa wrote:
+> On Wed, Dec 04, 2013 at 03:50:24PM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Tue, Dec 03, 2013 at 02:09:42PM +0100, Jiri Olsa escreveu:
+> > > Adding udis86 disassembler feature check which support
+> > > is needed for kvm:kvm_emulate_insn tracepoint.
+> > >  
+> > > +$(call feature_check,udis86)
+> > > +ifeq ($(feature-udis86), 1)
+> > > +  LIBTRACEEVENT_CFLAGS += -DHAVE_UDIS86
+> > > +  EXTLIBS += -ludis86
+> > > +else
+> > > +  msg := $(warning No udis86 support.);
+> > > +endif
+> > 
+> > That is really an incomplete message, what package should I install?
+> > Perhaps we should add this there then:
+> > 
+> > http://bit.ly/1hyrN52
 > 
-> On 05/12/2013, at 12:44 AM, Peter Chen <Peter.Chen@freescale.com> wrote:
+> nice :-)
 > 
 > > 
-> > lsi is vendor name, what are zevio and nspire?
-> > Usually, the compatible string should be "vendor_name,soc_name-module_name"
-> > 
+> > Wow, that was easy, but yeah, could be made easier 8-) ;-P
 > 
-> Because this port uses documentation from reverse engineering, it's difficult to work out what is SoC specific and what is device specific. The SoC is Zevio but the driver is written for the TI-Nspire.
+> so something like:
+> No udis86 found. Please install udis86-devel.
 > 
+> or:
+> No udis86 found, disabling kvm tracepoints instruction disassembly. Please install udis86-devel.
 
-Please wrap the line to 80 characters.
+took the first one, v4 attached, perf/core_plugins is updated
 
-The driver is written for the TI-Nspire, and you port this driver for
-SoC Zevio platform? Since you use chipidea ip, we don't care the usb
-module name at your platform, we only care the soc name which you are
-running, it can detect the SoC platform at runtime.
+thanks,
+jirka
 
-At your dts patch, it still uses nspire-usb.
-http://marc.info/?l=linux-usb&m=138614886720024&w=2
 
-Peter
+---
+Adding udis86 disassembler feature check which support
+is needed for kvm:kvm_emulate_insn tracepoint.
 
-> If it's usually "vendor_name,soc_name-module_name", I'll fix up this patch with zevio instead of nspire (and it'll be more consistent with the other drivers).
-> 
-> >> - reg: Should contain registers location and length
-> >> - interrupts: Should contain controller interrupt
-> >> 
-> >> @@ -11,7 +11,7 @@ Recommended properies:
-> >> Examples:
-> >> 		usb0: usb@B0000000 {
-> >> 			reg = <0xB0000000 0x1000>;
-> >> -			compatible = "zevio,nspire-usb";
-> >> +			compatible = "lsi,nspire-usb";
-> >> 			interrupts = <8>;
-> >> 			vbus-supply = <&vbus_reg>;
-> >> 		};
-> >> diff --git a/drivers/usb/chipidea/ci_hdrc_nspire.c b/drivers/usb/chipidea/ci_hdrc_nspire.c
-> >> index 517ce41..c5c2dde 100644
-> >> --- a/drivers/usb/chipidea/ci_hdrc_nspire.c
-> >> +++ b/drivers/usb/chipidea/ci_hdrc_nspire.c
-> >> @@ -52,7 +52,7 @@ static int ci_hdrc_nspire_remove(struct platform_device *pdev)
-> >> }
-> >> 
-> >> static const struct of_device_id ci_hdrc_nspire_dt_ids[] = {
-> >> -	{ .compatible = "zevio,nspire-usb", },
-> >> +	{ .compatible = "lsi,nspire-usb", },
-> >> 	{ /* sentinel */ }
-> >> };
-> >> 
-> >> -- 
-> >> 1.7.10.4
-> >> 
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> 
-> > 
-> > -- 
-> > 
-> > Best Regards,
-> > Peter Chen
-> > 
-> 
-> Cheers,
-> Daniel Tang
+The diff of 'perf script' output generated by old and new code:
+(data was generated by 'perf record -e kvm:kvm_emulate_insn -a')
 
+  --- script.kvm.old
+  +++ script.kvm.new
+  - qemu-system-x86 15519 [003]  5332.470049: kvm:kvm_emulate_insn: 0:ffffffff8103c596:89 b7 00 80 5f ff (prot64)
+  + qemu-system-x86 15519 [003]  5332.470049: kvm:kvm_emulate_insn: 0:ffffffff8103c596: mov %esi, -0xa08000(%rdi)
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/Makefile.perf                       |  4 ++--
+ tools/perf/config/Makefile                     | 11 ++++++++++-
+ tools/perf/config/feature-checks/Makefile      |  8 ++++++--
+ tools/perf/config/feature-checks/test-all.c    |  5 +++++
+ tools/perf/config/feature-checks/test-udis86.c | 11 +++++++++++
+ 5 files changed, 34 insertions(+), 5 deletions(-)
+ create mode 100644 tools/perf/config/feature-checks/test-udis86.c
+
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index ca3b87d..5c4c8bd 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -712,7 +712,7 @@ $(LIB_FILE): $(LIB_OBJS)
+ TE_SOURCES = $(wildcard $(TRACE_EVENT_DIR)*.[ch])
+ 
+ LIBTRACEEVENT_FLAGS  = $(QUIET_SUBDIR1) O=$(OUTPUT)
+-LIBTRACEEVENT_FLAGS += CFLAGS="-g -Wall $(EXTRA_CFLAGS)"
++LIBTRACEEVENT_FLAGS += CFLAGS="-g -Wall $(EXTRA_CFLAGS) $(LIBTRACEEVENT_CFLAGS)"
+ LIBTRACEEVENT_FLAGS += plugin_dir=$(plugindir_SQ)
+ 
+ $(LIBTRACEEVENT): $(TE_SOURCES) $(OUTPUT)PERF-CFLAGS
+@@ -793,7 +793,7 @@ cscope:
+ 
+ ### Detect prefix changes
+ TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):\
+-             $(bindir_SQ):$(perfexecdir_SQ):$(template_dir_SQ):$(prefix_SQ):$(plugindir_SQ)
++             $(bindir_SQ):$(perfexecdir_SQ):$(template_dir_SQ):$(prefix_SQ):$(plugindir_SQ):$(LIBTRACEEVENT_CFLAGS)
+ 
+ $(OUTPUT)PERF-CFLAGS: .FORCE-PERF-CFLAGS
+ 	@FLAGS='$(TRACK_CFLAGS)'; \
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index bae1072..ddae5c4 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -142,7 +142,8 @@ CORE_FEATURE_TESTS =			\
+ 	libunwind			\
+ 	on-exit				\
+ 	stackprotector-all		\
+-	timerfd
++	timerfd				\
++	udis86
+ 
+ #
+ # So here we detect whether test-all was rebuilt, to be able
+@@ -413,6 +414,14 @@ else
+   msg := $(warning No timerfd support. Disables 'perf kvm stat live');
+ endif
+ 
++$(call feature_check,udis86)
++ifeq ($(feature-udis86), 1)
++  LIBTRACEEVENT_CFLAGS += -DHAVE_UDIS86
++  EXTLIBS += -ludis86
++else
++  msg := $(warning No udis86 found. Please install udis86-devel.)
++endif
++
+ disable-python = $(eval $(disable-python_code))
+ define disable-python_code
+   CFLAGS += -DNO_LIBPYTHON
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index b8bb749..3ed2667 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -26,7 +26,8 @@ FILES=					\
+ 	test-libunwind-debug-frame	\
+ 	test-on-exit			\
+ 	test-stackprotector-all		\
+-	test-timerfd
++	test-timerfd			\
++	test-udis86
+ 
+ CC := $(CC) -MD
+ 
+@@ -37,7 +38,7 @@ BUILD = $(CC) $(CFLAGS) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
+ ###############################
+ 
+ test-all:
+-	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma $(LIBUNWIND_LIBS) -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
++	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma $(LIBUNWIND_LIBS) -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl -ludis86
+ 
+ test-hello:
+ 	$(BUILD)
+@@ -140,6 +141,9 @@ test-backtrace:
+ test-timerfd:
+ 	$(BUILD)
+ 
++test-udis86:
++	$(BUILD) -DHAVE_UDIS86 -ludis86
++
+ -include *.d
+ 
+ ###############################
+diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
+index 9b8a544..df087a5 100644
+--- a/tools/perf/config/feature-checks/test-all.c
++++ b/tools/perf/config/feature-checks/test-all.c
+@@ -89,6 +89,10 @@
+ # include "test-stackprotector-all.c"
+ #undef main
+ 
++#define main main_test_udis86
++# include "test-udis86.c"
++#undef main
++
+ int main(int argc, char *argv[])
+ {
+ 	main_test_libpython();
+@@ -111,6 +115,7 @@ int main(int argc, char *argv[])
+ 	main_test_libnuma();
+ 	main_test_timerfd();
+ 	main_test_stackprotector_all();
++	main_test_udis86();
+ 
+ 	return 0;
+ }
+diff --git a/tools/perf/config/feature-checks/test-udis86.c b/tools/perf/config/feature-checks/test-udis86.c
+new file mode 100644
+index 0000000..dbc2c26
+--- /dev/null
++++ b/tools/perf/config/feature-checks/test-udis86.c
+@@ -0,0 +1,11 @@
++
++/*
++ * test for udis86 functions used by plugin_kvm.c
++ */
++
++#include <udis86.h>
++
++int main(void)
++{
++	return puts("hi");
++}
 -- 
-
-Best Regards,
-Peter Chen
+1.8.3.1
 
