@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541Ab3LELJD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 06:09:03 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:46377 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755045Ab3LELI6 (ORCPT
+	id S1755689Ab3LELJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 06:09:50 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:4629 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707Ab3LELJr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 06:08:58 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v3 1/3] Documentation: arm: add UEFI support documentation
-To: Matt Sealey <neko@bakuhatsu.net>, Leif Lindholm <leif.lindholm@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-efi@vger.kernel.org,
+	Thu, 5 Dec 2013 06:09:47 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 05 Dec 2013 03:03:06 -0800
+Message-ID: <52A05E55.3020605@nvidia.com>
+Date: Thu, 5 Dec 2013 16:37:01 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, matt.fleming@intel.com,
-        Roy Franz <roy.franz@linaro.org>, Mark Salter <msalter@redhat.com>,
-        Patch Tracking <patches@linaro.org>, linaro-uefi@lists.linaro.org,
-        Mark Rutland <mark.rutland@arm.com>, Rob Landley <rob@landley.net>,
-        linux-doc@vger.kernel.org
-In-Reply-To: <CAHCPf3tsWdV+dJGm6mX6N4Ou5EQoGukdLyRvsRX6VQFjtKgxtg@mail.gmail.com>
-References: <1385656883-4420-1-git-send-email-leif.lindholm@linaro.org> < 1385656883-4420-2-git-send-email-leif.lindholm@linaro.org> < CAHCPf3t5dEzVWbYZ6DWcFCENNO2dbrx-YeZvKRk0MkEsJMTE3A@mail.gmail.com> < 20131202210719.GQ24997@rocoto.smurfnet.nu> < CAHCPf3tsWdV+dJGm6mX6N4Ou5EQoGukdLyRvsRX6VQFjtKgxtg@mail.gmail.com>
-Date: Thu, 05 Dec 2013 11:08:48 +0000
-Message-Id: <20131205110848.A9385C40710@trevor.secretlab.ca>
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "pavel@ucw.cz" <pavel@ucw.cz>, Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [REPOST PATCH V2] irq: enable all irqs unconditionally in irq_resume
+References: <1385388587-16442-1-git-send-email-ldewangan@nvidia.com> <52A05A21.5070100@nvidia.com> <201312051201.59284.heiko@sntech.de>
+In-Reply-To: <201312051201.59284.heiko@sntech.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Dec 2013 15:06:47 -0600, Matt Sealey <neko@bakuhatsu.net> wrote:
-> If your platform has UEFI, then your platform has UEFI - if you built
-> a multiplatform kernel that needs to boot on U-Boot, then you glued an
-> EFI stub to it to make it boot. At some point between the stub and the
-> runtime services driver, you're going through 10,000 lines of code
-> with the information that it *is* running on top of UEFI completely
-> lost to the boot process.
-> 
-> I believe I am also objecting to the idea that the way this is BEST
-> implemented is to take a stock zImage (decompressor+Image payload) and
-> glue a stub in front to resolve the interface issue when the
-> implication is extra complication to the boot process.
+On Thursday 05 December 2013 04:31 PM, Heiko Stübner wrote:
+> Hi Laxman,
+>
+> Am Donnerstag, 5. Dezember 2013, 11:49:05 schrieb Laxman Dewangan:
+>> Can you please review this patch?
+>> This patch is pending from long back for review.
+> the patch already made it into the appropriate tree, as can be seen by tip-bot
+> message and on [0].
+>
+>
+> Heiko
+>
+> [0] http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?h=irq-urgent-for-linus&id=ac01810c9d2814238f08a227062e66a35a0e1ea2
 
-Adding UEFI support to an existing image type was a design goal when we
-started. Having yet another image format which is not compatibile with
-existing firmware adds yet another barrier to migrating from U-Boot to
-UEFI, or to supporting multiplatforms.
+Seems I lost the applied mail and that's why I assumed that it is not 
+reviewed yet. My bad, Sorry for  noise.
+I can see the change in linux-next also.
 
-g.
+Thanks Thomas/Heiko for review.
+
+Thanks,
+Laxman
+
+
+
