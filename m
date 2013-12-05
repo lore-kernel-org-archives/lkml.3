@@ -1,64 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932601Ab3LEDix (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 22:38:53 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:64589 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752620Ab3LEDiu (ORCPT
+	id S933349Ab3LEDlp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 22:41:45 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40261 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753951Ab3LEDlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 22:38:50 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC part1 PATCH 5/7] ARM64 / ACPI: Introduce arm_core.c and its related head file
-Date: Thu, 5 Dec 2013 04:38:04 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Hanjun Guo <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, linaro-kernel@lists.linaro.org,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Al Stone <al.stone@linaro.org>, patches@linaro.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, linaro-acpi@lists.linaro.org,
-        linux-acpi@vger.kernel.org, Jon Masters <jonathan@jonmasters.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org> <1386088611-2801-6-git-send-email-hanjun.guo@linaro.org>
-In-Reply-To: <1386088611-2801-6-git-send-email-hanjun.guo@linaro.org>
+	Wed, 4 Dec 2013 22:41:44 -0500
+Date: Wed, 4 Dec 2013 20:41:43 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [OOPS, 3.13-rc2] null ptr in dio_complete()
+Message-ID: <20131205034143.GU5051@kernel.dk>
+References: <20131203215940.GX10988@dastard>
+ <20131204015837.GJ10988@dastard>
+ <20131204033815.GK10988@dastard>
+ <20131204034712.GM5051@kernel.dk>
+ <20131204041749.GL10988@dastard>
+ <20131204235656.GG8803@dastard>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312050438.05117.arnd@arndb.de>
-X-Provags-ID: V02:K0:vmIyr1JDoVe0wwp2cT3VS0TBzw4hbxun/3uQ1uE/B/M
- tgK4UACrwVfDwXaZSoopDSI9GGXTIh+Yc958d2fM16sNnqiWwB
- fBbEYaECTjOOkXPNzhXQXUs0XhcgL8XtNTvmuYwJFayIIf5oPE
- lXv3qiIZq3YFV9B+4Oao5TcyOXSMolL+jUzaBKggJQcUN6jkZa
- od7Fr5wpdP76pLqijGVc3pEapV/mgfZWQarKHsSQODEdiRKpRk
- L0OaSHE62p9CxT6i+0gq3ot3U55M+vAS7S/lULA6PEOJu8TVUu
- f9jz74CSTZcKUzsvTbUpVFfkxDjkaD0p7WSzBMwYPPYjb2/HXO
- zQ+csaH0DMIHVd6e/PYQ=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131204235656.GG8803@dastard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 03 December 2013, Hanjun Guo wrote:
-> +static unsigned int gsi_to_irq(unsigned int gsi)
-> +{
-> +       int irq = irq_create_mapping(NULL, gsi);
-> +
-> +       return irq;
-> +}
+On Thu, Dec 05 2013, Dave Chinner wrote:
+> On Wed, Dec 04, 2013 at 03:17:49PM +1100, Dave Chinner wrote:
+> > On Tue, Dec 03, 2013 at 08:47:12PM -0700, Jens Axboe wrote:
+> > > On Wed, Dec 04 2013, Dave Chinner wrote:
+> > > > On Wed, Dec 04, 2013 at 12:58:38PM +1100, Dave Chinner wrote:
+> > > > > On Wed, Dec 04, 2013 at 08:59:40AM +1100, Dave Chinner wrote:
+> > > > > > Hi Jens,
+> > > > > > 
+> > > > > > Not sure who to direct this to or CC, so I figured you are the
+> > > > > > person to do that. I just had xfstests generic/299 (an AIO/DIO test)
+> > > > > > oops in dio_complete() like so:
+> > > > > > 
+> > ....
+> > > > > > [ 9650.590630]  <IRQ>
+> > > > > > [ 9650.590630]  [<ffffffff811ddae3>] dio_complete+0xa3/0x140
+> > > > > > [ 9650.590630]  [<ffffffff811ddc2a>] dio_bio_end_aio+0x7a/0x110
+> > > > > > [ 9650.590630]  [<ffffffff811ddbb5>] ? dio_bio_end_aio+0x5/0x110
+> > > > > > [ 9650.590630]  [<ffffffff811d8a9d>] bio_endio+0x1d/0x30
+> > > > > > [ 9650.590630]  [<ffffffff8175d65f>] blk_mq_complete_request+0x5f/0x120
+> > > > > > [ 9650.590630]  [<ffffffff8175d736>] __blk_mq_end_io+0x16/0x20
+> > > > > > [ 9650.590630]  [<ffffffff8175d7a8>] blk_mq_end_io+0x68/0xd0
+> > > > > > [ 9650.590630]  [<ffffffff818539a7>] virtblk_done+0x67/0x110
+> > > > > > [ 9650.590630]  [<ffffffff817f74c5>] vring_interrupt+0x35/0x60
+> > .....
+> > > > > And I just hit this from running xfs_repair which is doing
+> > > > > multithreaded direct IO directly on /dev/vdc:
+> > > > > 
+> > ....
+> > > > > [ 1776.510446] IP: [<ffffffff81755b6a>] blk_account_io_done+0x6a/0x180
+> > ....
+> > > > > [ 1776.512577]  [<ffffffff8175e4b8>] blk_mq_complete_request+0xb8/0x120
+> > > > > [ 1776.512577]  [<ffffffff8175e536>] __blk_mq_end_io+0x16/0x20
+> > > > > [ 1776.512577]  [<ffffffff8175e5a8>] blk_mq_end_io+0x68/0xd0
+> > > > > [ 1776.512577]  [<ffffffff81852e47>] virtblk_done+0x67/0x110
+> > > > > [ 1776.512577]  [<ffffffff817f7925>] vring_interrupt+0x35/0x60
+> > > > > [ 1776.512577]  [<ffffffff810e48a4>] handle_irq_event_percpu+0x54/0x1e0
+> > .....
+> > > > > So this is looking like another virtio+blk_mq problem....
+> > > > 
+> > > > This one is definitely reproducable. Just hit it again...
+> > > 
+> > > I'll take a look at this. You don't happen to have gdb dumps of the
+> > > lines associated with those crashes? Just to save me some digging
+> > > time...
+> > 
+> > Only this:
+> > 
+> > (gdb) l *(dio_complete+0xa3)
+> > 0xffffffff811ddae3 is in dio_complete (fs/direct-io.c:282).
+> > 277                     }
+> > 278
+> > 279                     aio_complete(dio->iocb, ret, 0);
+> > 280             }
+> > 281
+> > 282             kmem_cache_free(dio_cache, dio);
+> > 283             return ret;
+> > 284     }
+> > 285
+> > 286     static void dio_aio_complete_work(struct work_struct *work)
+> > 
+> > And this:
+> > 
+> > (gdb) l *(blk_account_io_done+0x6a)
+> > 0xffffffff81755b6a is in blk_account_io_done (block/blk-core.c:2049).
+> > 2044                    int cpu;
+> > 2045
+> > 2046                    cpu = part_stat_lock();
+> > 2047                    part = req->part;
+> > 2048
+> > 2049                    part_stat_inc(cpu, part, ios[rw]);
+> > 2050                    part_stat_add(cpu, part, ticks[rw], duration);
+> > 2051                    part_round_stats(cpu, part);
+> > 2052                    part_dec_in_flight(part, rw);
+> > 2053
+> > 
+> > as I've rebuild the kernel with different patches since the one
+> > running on the machine that is triggering the problem.
+> 
+> Any update on this, Jens? I've hit this blk_account_io_done() panic
+> 10 times in the past 2 hours while trying to do xfs_repair
+> testing....
 
-I think this could use a comment regarding your plans for IRQ domains.
+No, sorry, no updates yet... I haven't had time to look into it today.
+To reproduce tomorrow, can you mail me your exact setup (kvm invocation,
+etc) and how your guest is setup and if there's any special way I need
+to run xfstest or xfs_repair?
 
-Do you expect that all ACPI systems would have only a single GIC IRQ
-controller and a single domain, or do you plan to add irqdomain code
-later?
+-- 
+Jens Axboe
 
-	Arnd
