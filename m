@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932943Ab3LERgq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:36:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38103 "EHLO
+	id S933018Ab3LERgv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:36:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38117 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932592Ab3LERgk (ORCPT
+	with ESMTP id S932859Ab3LERgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:36:40 -0500
+	Thu, 5 Dec 2013 12:36:46 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Brian Norris <computersforpeace@gmail.com>,
+Cc: Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 15/90] mtd: nand: hack ONFI for non-power-of-2 dimensions
-Date: Thu,  5 Dec 2013 17:34:57 +0000
-Message-Id: <1386264972-5399-16-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 18/90] block: fix race between request completion and timeout handling
+Date: Thu,  5 Dec 2013 17:35:00 +0000
+Message-Id: <1386264972-5399-19-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -27,86 +27,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Norris <computersforpeace@gmail.com>
+From: Jeff Moyer <jmoyer@redhat.com>
 
-commit 4355b70cf48363c50a9de450b01178c83aba8f6a upstream.
+commit 4912aa6c11e6a5d910264deedbec2075c6f1bb73 upstream.
 
-Some bright specification writers decided to write this in the ONFI spec
-(from ONFI 3.0, Section 3.1):
+crocode i2c_i801 i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma dca be2net sg ses enclosure ext4 mbcache jbd2 sd_mod crc_t10dif ahci megaraid_sas(U) dm_mirror dm_region_hash dm_log dm_mod [last unloaded: scsi_wait_scan]
 
-  "The number of blocks and number of pages per block is not required to
-  be a power of two. In the case where one of these values is not a
-  power of two, the corresponding address shall be rounded to an
-  integral number of bits such that it addresses a range up to the
-  subsequent power of two value. The host shall not access upper
-  addresses in a range that is shown as not supported."
+Pid: 491, comm: scsi_eh_0 Tainted: G        W  ----------------   2.6.32-220.13.1.el6.x86_64 #1 IBM  -[8722PAX]-/00D1461
+RIP: 0010:[<ffffffff8124e424>]  [<ffffffff8124e424>] blk_requeue_request+0x94/0xa0
+RSP: 0018:ffff881057eefd60  EFLAGS: 00010012
+RAX: ffff881d99e3e8a8 RBX: ffff881d99e3e780 RCX: ffff881d99e3e8a8
+RDX: ffff881d99e3e8a8 RSI: ffff881d99e3e780 RDI: ffff881d99e3e780
+RBP: ffff881057eefd80 R08: ffff881057eefe90 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000000 R12: ffff881057f92338
+R13: 0000000000000000 R14: ffff881057f92338 R15: ffff883058188000
+FS:  0000000000000000(0000) GS:ffff880040200000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
+CR2: 00000000006d3ec0 CR3: 000000302cd7d000 CR4: 00000000000406b0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process scsi_eh_0 (pid: 491, threadinfo ffff881057eee000, task ffff881057e29540)
+Stack:
+ 0000000000001057 0000000000000286 ffff8810275efdc0 ffff881057f16000
+<0> ffff881057eefdd0 ffffffff81362323 ffff881057eefe20 ffffffff8135f393
+<0> ffff881057e29af8 ffff8810275efdc0 ffff881057eefe78 ffff881057eefe90
+Call Trace:
+ [<ffffffff81362323>] __scsi_queue_insert+0xa3/0x150
+ [<ffffffff8135f393>] ? scsi_eh_ready_devs+0x5e3/0x850
+ [<ffffffff81362a23>] scsi_queue_insert+0x13/0x20
+ [<ffffffff8135e4d4>] scsi_eh_flush_done_q+0x104/0x160
+ [<ffffffff8135fb6b>] scsi_error_handler+0x35b/0x660
+ [<ffffffff8135f810>] ? scsi_error_handler+0x0/0x660
+ [<ffffffff810908c6>] kthread+0x96/0xa0
+ [<ffffffff8100c14a>] child_rip+0xa/0x20
+ [<ffffffff81090830>] ? kthread+0x0/0xa0
+ [<ffffffff8100c140>] ? child_rip+0x0/0x20
+Code: 00 00 eb d1 4c 8b 2d 3c 8f 97 00 4d 85 ed 74 bf 49 8b 45 00 49 83 c5 08 48 89 de 4c 89 e7 ff d0 49 8b 45 00 48 85 c0 75 eb eb a4 <0f> 0b eb fe 0f 1f 84 00 00 00 00 00 55 48 89 e5 0f 1f 44 00 00
+RIP  [<ffffffff8124e424>] blk_requeue_request+0x94/0xa0
+ RSP <ffff881057eefd60>
 
-This breaks every assumption MTD makes about NAND block/chip-size
-dimensions -- they *must* be a power of two!
+The RIP is this line:
+        BUG_ON(blk_queued_rq(rq));
 
-And of course, an enterprising manufacturer has made use of this lovely
-freedom. Exhibit A: Micron MT29F32G08CBADAWP
+After digging through the code, I think there may be a race between the
+request completion and the timer handler running.
 
-  "- Plane size: 2 planes x 1064 blocks per plane
-   - Device size: 32Gb: 2128 blockss [sic]"
+A timer is started for each request put on the device's queue (see
+blk_start_request->blk_add_timer).  If the request does not complete
+before the timer expires, the timer handler (blk_rq_timed_out_timer)
+will mark the request complete atomically:
 
-This quickly hits a BUG() in nand_base.c, since the extra dimensions
-overflow so we think it's a second chip (on my single-chip setup):
+static inline int blk_mark_rq_complete(struct request *rq)
+{
+        return test_and_set_bit(REQ_ATOM_COMPLETE, &rq->atomic_flags);
+}
 
-    ONFI param page 0 valid
-    ONFI flash detected
-    NAND device: Manufacturer ID: 0x2c, Chip ID: 0x44 (Micron MT29F32G08CBADAWP), 4256MiB, page size: 8192, OOB size: 744
-    ------------[ cut here ]------------
-    kernel BUG at drivers/mtd/nand/nand_base.c:203!
-    Internal error: Oops - BUG: 0 [#1] SMP ARM
-    [... trim ...]
-    [<c02cf3e4>] (nand_select_chip+0x18/0x2c) from [<c02d25c0>] (nand_do_read_ops+0x90/0x424)
-    [<c02d25c0>] (nand_do_read_ops+0x90/0x424) from [<c02d2dd8>] (nand_read+0x54/0x78)
-    [<c02d2dd8>] (nand_read+0x54/0x78) from [<c02ad2c8>] (mtd_read+0x84/0xbc)
-    [<c02ad2c8>] (mtd_read+0x84/0xbc) from [<c02d4b28>] (scan_read.clone.4+0x4c/0x64)
-    [<c02d4b28>] (scan_read.clone.4+0x4c/0x64) from [<c02d4c88>] (search_bbt+0x148/0x290)
-    [<c02d4c88>] (search_bbt+0x148/0x290) from [<c02d4ea4>] (nand_scan_bbt+0xd4/0x5c0)
-    [... trim ...]
-    ---[ end trace 0c9363860d865ff2 ]---
+and then call blk_rq_timed_out.  The latter function will call
+scsi_times_out, which will return one of BLK_EH_HANDLED,
+BLK_EH_RESET_TIMER or BLK_EH_NOT_HANDLED.  If BLK_EH_RESET_TIMER is
+returned, blk_clear_rq_complete is called, and blk_add_timer is again
+called to simply wait longer for the request to complete.
 
-So to fix this, just truncate these dimensions down to the greatest
-power-of-2 dimension that is less than or equal to the specified
-dimension.
+Now, if the request happens to complete while this is going on, what
+happens?  Given that we know the completion handler will bail if it
+finds the REQ_ATOM_COMPLETE bit set, we need to focus on the completion
+handler running after that bit is cleared.  So, from the above
+paragraph, after the call to blk_clear_rq_complete.  If the completion
+sets REQ_ATOM_COMPLETE before the BUG_ON in blk_add_timer, we go boom
+there (I haven't seen this in the cores).  Next, if we get the
+completion before the call to list_add_tail, then the timer will
+eventually fire for an old req, which may either be freed or reallocated
+(there is evidence that this might be the case).  Finally, if the
+completion comes in *after* the addition to the timeout list, I think
+it's harmless.  The request will be removed from the timeout list,
+req_atom_complete will be set, and all will be well.
 
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+This will only actually explain the coredumps *IF* the request
+structure was freed, reallocated *and* queued before the error handler
+thread had a chance to process it.  That is possible, but it may make
+sense to keep digging for another race.  I think that if this is what
+was happening, we would see other instances of this problem showing up
+as null pointer or garbage pointer dereferences, for example when the
+request structure was not re-used.  It looks like we actually do run
+into that situation in other reports.
+
+This patch moves the BUG_ON(test_bit(REQ_ATOM_COMPLETE,
+&req->atomic_flags)); from blk_add_timer to the only caller that could
+trip over it (blk_start_request).  It then inverts the calls to
+blk_clear_rq_complete and blk_add_timer in blk_rq_timed_out to address
+the race.  I've boot tested this patch, but nothing more.
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Acked-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mtd/nand/nand_base.c | 15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ block/blk-core.c    | 1 +
+ block/blk-timeout.c | 3 +--
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index c429abd..09d0cea 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2905,10 +2905,21 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
- 	sanitize_string(p->model, sizeof(p->model));
- 	if (!mtd->name)
- 		mtd->name = p->model;
-+
- 	mtd->writesize = le32_to_cpu(p->byte_per_page);
--	mtd->erasesize = le32_to_cpu(p->pages_per_block) * mtd->writesize;
-+
-+	/*
-+	 * pages_per_block and blocks_per_lun may not be a power-of-2 size
-+	 * (don't ask me who thought of this...). MTD assumes that these
-+	 * dimensions will be power-of-2, so just truncate the remaining area.
-+	 */
-+	mtd->erasesize = 1 << (fls(le32_to_cpu(p->pages_per_block)) - 1);
-+	mtd->erasesize *= mtd->writesize;
-+
- 	mtd->oobsize = le16_to_cpu(p->spare_bytes_per_page);
--	chip->chipsize = le32_to_cpu(p->blocks_per_lun);
-+
-+	/* See erasesize comment */
-+	chip->chipsize = 1 << (fls(le32_to_cpu(p->blocks_per_lun)) - 1);
- 	chip->chipsize *= (uint64_t)mtd->erasesize * p->lun_count;
- 	*busw = 0;
- 	if (le16_to_cpu(p->features) & 1)
+diff --git a/block/blk-core.c b/block/blk-core.c
+index e17ce4b..cb3b3a7 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -2144,6 +2144,7 @@ void blk_start_request(struct request *req)
+ 	if (unlikely(blk_bidi_rq(req)))
+ 		req->next_rq->resid_len = blk_rq_bytes(req->next_rq);
+ 
++	BUG_ON(test_bit(REQ_ATOM_COMPLETE, &req->atomic_flags));
+ 	blk_add_timer(req);
+ }
+ EXPORT_SYMBOL(blk_start_request);
+diff --git a/block/blk-timeout.c b/block/blk-timeout.c
+index 6e4744c..5a6296e 100644
+--- a/block/blk-timeout.c
++++ b/block/blk-timeout.c
+@@ -90,8 +90,8 @@ static void blk_rq_timed_out(struct request *req)
+ 		__blk_complete_request(req);
+ 		break;
+ 	case BLK_EH_RESET_TIMER:
+-		blk_clear_rq_complete(req);
+ 		blk_add_timer(req);
++		blk_clear_rq_complete(req);
+ 		break;
+ 	case BLK_EH_NOT_HANDLED:
+ 		/*
+@@ -173,7 +173,6 @@ void blk_add_timer(struct request *req)
+ 		return;
+ 
+ 	BUG_ON(!list_empty(&req->timeout_list));
+-	BUG_ON(test_bit(REQ_ATOM_COMPLETE, &req->atomic_flags));
+ 
+ 	/*
+ 	 * Some LLDs, like scsi, peek at the timeout to prevent a
 -- 
 1.8.3.2
 
