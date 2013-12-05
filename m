@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933433Ab3LERiP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:38:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38401 "EHLO
+	id S933455Ab3LERiT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:38:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38418 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757422Ab3LERiC (ORCPT
+	with ESMTP id S1756956Ab3LERiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:38:02 -0500
+	Thu, 5 Dec 2013 12:38:06 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+Cc: Xiangliang Yu <yuxiangl@marvell.com>, Myron Stowe <myron.stowe@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 74/90] crypto: s390 - Fix aes-cbc IV corruption
-Date: Thu,  5 Dec 2013 17:35:56 +0000
-Message-Id: <1386264972-5399-75-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 76/90] PCI: Define macro for Marvell vendor ID
+Date: Thu,  5 Dec 2013 17:35:58 +0000
+Message-Id: <1386264972-5399-77-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -27,97 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: Xiangliang Yu <yuxiangl@marvell.com>
 
-commit f262f0f5cad0c9eca61d1d383e3b67b57dcbe5ea upstream.
+commit 8e7ee6f5dfb56a32da760d990be908ed35b1c5bf upstream.
 
-The cbc-aes-s390 algorithm incorrectly places the IV in the tfm
-data structure.  As the tfm is shared between multiple threads,
-this introduces a possibility of data corruption.
+Define PCI_VENDOR_ID_MARVELL_EXT macro for 0x1b4b vendor ID
 
-This patch fixes this by moving the parameter block containing
-the IV and key onto the stack (the block is 48 bytes long).
-
-The same bug exists elsewhere in the s390 crypto system and they
-will be fixed in subsequent patches.
-
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: Xiangliang Yu <yuxiangl@marvell.com>
+Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/s390/crypto/aes_s390.c | 19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
+ include/linux/pci_ids.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/s390/crypto/aes_s390.c b/arch/s390/crypto/aes_s390.c
-index a9ce135..6522bb7 100644
---- a/arch/s390/crypto/aes_s390.c
-+++ b/arch/s390/crypto/aes_s390.c
-@@ -35,7 +35,6 @@ static u8 *ctrblk;
- static char keylen_flag;
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index a3f8d6d..5066e76 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -1602,6 +1602,7 @@
+ #define PCI_SUBDEVICE_ID_KEYSPAN_SX2	0x5334
  
- struct s390_aes_ctx {
--	u8 iv[AES_BLOCK_SIZE];
- 	u8 key[AES_MAX_KEY_SIZE];
- 	long enc;
- 	long dec;
-@@ -442,29 +441,35 @@ static int cbc_aes_set_key(struct crypto_tfm *tfm, const u8 *in_key,
- 	return aes_set_key(tfm, in_key, key_len);
- }
- 
--static int cbc_aes_crypt(struct blkcipher_desc *desc, long func, void *param,
-+static int cbc_aes_crypt(struct blkcipher_desc *desc, long func,
- 			 struct blkcipher_walk *walk)
- {
-+	struct s390_aes_ctx *sctx = crypto_blkcipher_ctx(desc->tfm);
- 	int ret = blkcipher_walk_virt(desc, walk);
- 	unsigned int nbytes = walk->nbytes;
-+	struct {
-+		u8 iv[AES_BLOCK_SIZE];
-+		u8 key[AES_MAX_KEY_SIZE];
-+	} param;
- 
- 	if (!nbytes)
- 		goto out;
- 
--	memcpy(param, walk->iv, AES_BLOCK_SIZE);
-+	memcpy(param.iv, walk->iv, AES_BLOCK_SIZE);
-+	memcpy(param.key, sctx->key, sctx->key_len);
- 	do {
- 		/* only use complete blocks */
- 		unsigned int n = nbytes & ~(AES_BLOCK_SIZE - 1);
- 		u8 *out = walk->dst.virt.addr;
- 		u8 *in = walk->src.virt.addr;
- 
--		ret = crypt_s390_kmc(func, param, out, in, n);
-+		ret = crypt_s390_kmc(func, &param, out, in, n);
- 		BUG_ON((ret < 0) || (ret != n));
- 
- 		nbytes &= AES_BLOCK_SIZE - 1;
- 		ret = blkcipher_walk_done(desc, walk, nbytes);
- 	} while ((nbytes = walk->nbytes));
--	memcpy(walk->iv, param, AES_BLOCK_SIZE);
-+	memcpy(walk->iv, param.iv, AES_BLOCK_SIZE);
- 
- out:
- 	return ret;
-@@ -481,7 +486,7 @@ static int cbc_aes_encrypt(struct blkcipher_desc *desc,
- 		return fallback_blk_enc(desc, dst, src, nbytes);
- 
- 	blkcipher_walk_init(&walk, dst, src, nbytes);
--	return cbc_aes_crypt(desc, sctx->enc, sctx->iv, &walk);
-+	return cbc_aes_crypt(desc, sctx->enc, &walk);
- }
- 
- static int cbc_aes_decrypt(struct blkcipher_desc *desc,
-@@ -495,7 +500,7 @@ static int cbc_aes_decrypt(struct blkcipher_desc *desc,
- 		return fallback_blk_dec(desc, dst, src, nbytes);
- 
- 	blkcipher_walk_init(&walk, dst, src, nbytes);
--	return cbc_aes_crypt(desc, sctx->dec, sctx->iv, &walk);
-+	return cbc_aes_crypt(desc, sctx->dec, &walk);
- }
- 
- static struct crypto_alg cbc_aes_alg = {
+ #define PCI_VENDOR_ID_MARVELL		0x11ab
++#define PCI_VENDOR_ID_MARVELL_EXT	0x1b4b
+ #define PCI_DEVICE_ID_MARVELL_GT64111	0x4146
+ #define PCI_DEVICE_ID_MARVELL_GT64260	0x6430
+ #define PCI_DEVICE_ID_MARVELL_MV64360	0x6460
 -- 
 1.8.3.2
 
