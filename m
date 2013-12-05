@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757583Ab3LER6v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:58:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38147 "EHLO
+	id S933543Ab3LER7V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:59:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38122 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933036Ab3LERgx (ORCPT
+	with ESMTP id S932592Ab3LERgr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:36:53 -0500
+	Thu, 5 Dec 2013 12:36:47 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Beulich <JBeulich@suse.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Vegard Nossum <vegard.nossum@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 23/90] xen/blkback: fix reference counting
-Date: Thu,  5 Dec 2013 17:35:05 +0000
-Message-Id: <1386264972-5399-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 19/90] blk-core: Fix memory corruption if blkcg_init_queue fails
+Date: Thu,  5 Dec 2013 17:35:01 +0000
+Message-Id: <1386264972-5399-20-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -29,46 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vegard Nossum <vegard.nossum@oracle.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit ea5ec76d76da9279d12027c1828544c5ccbe7932 upstream.
+commit fff4996b7db7955414ac74386efa5e07fd766b50 upstream.
 
-If the permission check fails, we drop a reference to the blkif without
-having taken it in the first place. The bug was introduced in commit
-604c499cbbcc3d5fe5fb8d53306aa0fae1990109 (xen/blkback: Check device
-permissions before allowing OP_DISCARD).
+If blkcg_init_queue fails, blk_alloc_queue_node doesn't call bdi_destroy
+to clean up structures allocated by the backing dev.
 
-Cc: Jan Beulich <JBeulich@suse.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+------------[ cut here ]------------
+WARNING: at lib/debugobjects.c:260 debug_print_object+0x85/0xa0()
+ODEBUG: free active (active state 0) object type: percpu_counter hint:           (null)
+Modules linked in: dm_loop dm_mod ip6table_filter ip6_tables uvesafb cfbcopyarea cfbimgblt cfbfillrect fbcon font bitblit fbcon_rotate fbcon_cw fbcon_ud fbcon_ccw softcursor fb fbdev ipt_MASQUERADE iptable_nat nf_nat_ipv4 msr nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc tun ipv6 cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_ondemand cpufreq_conservative spadfs fuse hid_generic usbhid hid raid0 md_mod dmi_sysfs nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack lm85 hwmon_vid snd_usb_audio snd_pcm_oss snd_mixer_oss snd_pcm snd_timer snd_page_alloc snd_hwdep snd_usbmidi_lib snd_rawmidi snd soundcore acpi_cpufreq freq_table mperf sata_svw serverworks kvm_amd ide_core ehci_pci ohci_hcd libata ehci_hcd kvm usbcore tg3 usb_common libphy k10temp pcspkr ptp i2c_piix4 i2c_core evdev microcode hwmon rtc_cmos pps_core e100 skge floppy mii processor button unix
+CPU: 0 PID: 2739 Comm: lvchange Tainted: G        W
+3.10.15-devel #14
+Hardware name: empty empty/S3992-E, BIOS 'V1.06   ' 06/09/2009
+ 0000000000000009 ffff88023c3c1ae8 ffffffff813c8fd4 ffff88023c3c1b20
+ ffffffff810399eb ffff88043d35cd58 ffffffff81651940 ffff88023c3c1bf8
+ ffffffff82479d90 0000000000000005 ffff88023c3c1b80 ffffffff81039a67
+Call Trace:
+ [<ffffffff813c8fd4>] dump_stack+0x19/0x1b
+ [<ffffffff810399eb>] warn_slowpath_common+0x6b/0xa0
+ [<ffffffff81039a67>] warn_slowpath_fmt+0x47/0x50
+ [<ffffffff8122aaaf>] ? debug_check_no_obj_freed+0xcf/0x250
+ [<ffffffff81229a15>] debug_print_object+0x85/0xa0
+ [<ffffffff8122abe3>] debug_check_no_obj_freed+0x203/0x250
+ [<ffffffff8113c4ac>] kmem_cache_free+0x20c/0x3a0
+ [<ffffffff811f6709>] blk_alloc_queue_node+0x2a9/0x2c0
+ [<ffffffff811f672e>] blk_alloc_queue+0xe/0x10
+ [<ffffffffa04c0093>] dm_create+0x1a3/0x530 [dm_mod]
+ [<ffffffffa04c6bb0>] ? list_version_get_info+0xe0/0xe0 [dm_mod]
+ [<ffffffffa04c6c07>] dev_create+0x57/0x2b0 [dm_mod]
+ [<ffffffffa04c6bb0>] ? list_version_get_info+0xe0/0xe0 [dm_mod]
+ [<ffffffffa04c6bb0>] ? list_version_get_info+0xe0/0xe0 [dm_mod]
+ [<ffffffffa04c6528>] ctl_ioctl+0x268/0x500 [dm_mod]
+ [<ffffffff81097662>] ? get_lock_stats+0x22/0x70
+ [<ffffffffa04c67ce>] dm_ctl_ioctl+0xe/0x20 [dm_mod]
+ [<ffffffff81161aad>] do_vfs_ioctl+0x2ed/0x520
+ [<ffffffff8116cfc7>] ? fget_light+0x377/0x4e0
+ [<ffffffff81161d2b>] SyS_ioctl+0x4b/0x90
+ [<ffffffff813cff16>] system_call_fastpath+0x1a/0x1f
+---[ end trace 4b5ff0d55673d986 ]---
+------------[ cut here ]------------
+
+This fix should be backported to stable kernels starting with 2.6.37. Note
+that in the kernels prior to 3.5 the affected code is different, but the
+bug is still there - bdi_init is called and bdi_destroy isn't.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Acked-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/block/xen-blkback/blkback.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ block/blk-core.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index b83b40e..ae1b0c4 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -406,6 +406,8 @@ static int dispatch_discard_io(struct xen_blkif *blkif,
- 	unsigned long secure;
- 	struct phys_req preq;
+diff --git a/block/blk-core.c b/block/blk-core.c
+index cb3b3a7..ac4e3ea 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -605,10 +605,12 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
+ 	__set_bit(QUEUE_FLAG_BYPASS, &q->queue_flags);
  
-+	xen_blkif_get(blkif);
-+
- 	preq.sector_number = req->u.discard.sector_number;
- 	preq.nr_sects      = req->u.discard.nr_sectors;
+ 	if (blkcg_init_queue(q))
+-		goto fail_id;
++		goto fail_bdi;
  
-@@ -418,7 +420,6 @@ static int dispatch_discard_io(struct xen_blkif *blkif,
- 	}
- 	blkif->st_ds_req++;
+ 	return q;
  
--	xen_blkif_get(blkif);
- 	secure = (blkif->vbd.discard_secure &&
- 		 (req->u.discard.flag & BLKIF_DISCARD_SECURE)) ?
- 		 BLKDEV_DISCARD_SECURE : 0;
++fail_bdi:
++	bdi_destroy(&q->backing_dev_info);
+ fail_id:
+ 	ida_simple_remove(&blk_queue_ida, q->id);
+ fail_q:
 -- 
 1.8.3.2
 
