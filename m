@@ -1,138 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933040Ab3LECsp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 21:48:45 -0500
-Received: from ozlabs.org ([203.10.76.45]:47501 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756397Ab3LECsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 21:48:41 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        David Howells <dhowells@redhat.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, keescook@chromium.org
-Subject: Re: [PATCH v3 1/2] test: add minimal module for verification testing
-In-Reply-To: <1386184969-29750-2-git-send-email-keescook@chromium.org>
-References: <1386184969-29750-1-git-send-email-keescook@chromium.org> <1386184969-29750-2-git-send-email-keescook@chromium.org>
-User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Thu, 05 Dec 2013 13:12:17 +1030
-Message-ID: <87li00ow6u.fsf@rustcorp.com.au>
+	id S933393Ab3LECuf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 21:50:35 -0500
+Received: from mail-qe0-f42.google.com ([209.85.128.42]:41363 "EHLO
+	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756492Ab3LECub (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 21:50:31 -0500
+Date: Wed, 4 Dec 2013 21:50:26 -0500
+From: Tejun Heo <tj@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups@vger.kernel.org
+Subject: Re: [patch 7/8] mm, memcg: allow processes handling oom
+ notifications to access reserves
+Message-ID: <20131205025026.GA26777@htj.dyndns.org>
+References: <20131119134007.GD20655@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1311192352070.20752@chino.kir.corp.google.com>
+ <20131120152251.GA18809@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1311201917520.7167@chino.kir.corp.google.com>
+ <20131128115458.GK2761@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312021504170.13465@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1312032116440.29733@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1312032118570.29733@chino.kir.corp.google.com>
+ <20131204054533.GZ3556@cmpxchg.org>
+ <alpine.DEB.2.02.1312041742560.20115@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1312041742560.20115@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook <keescook@chromium.org> writes:
-> When doing module loading verification tests (for example, with module
-> singing, or LSM hooks), it is very handy to have a module that can be
+Hello,
 
-"module singing" sounds like a horrible idea!  Is the author even
-musical?  I've only heard it said David Howls.
+On Wed, Dec 04, 2013 at 05:49:04PM -0800, David Rientjes wrote:
+> That's not what this series is addressing, though, and in fact it's quite 
+> the opposite.  It acknowledges that userspace oom handlers need to 
+> allocate and that anything else would be too difficult to maintain 
+> (thereby agreeing with the above), so we must set aside memory that they 
+> are exclusively allowed to access.  For the vast majority of users who 
+> will not use userspace oom handlers, they can just use the default value 
+> of memory.oom_reserve_in_bytes == 0 and they incur absolutely no side-
+> effects as a result of this series.
 
-But if my ack for the patch helps:
+Umm.. without delving into details, aren't you basically creating a
+memory cgroup inside a memory cgroup?  Doesn't sound like a
+particularly well thought-out plan to me.
 
-        Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+> For those who do use userspace oom handlers, like Google, this allows us 
+> to set aside memory to allow the userspace oom handlers to kill a process, 
+> dump the heap, send a signal, drop caches, etc. when waking up.
 
-Cheers,
-Rusty.
+Seems kinda obvious.  Put it in a separate cgroup?  You're basically
+saying it doesn't want to be under the same memory limit as the
+processes that it's looking over.  That's like the definition of being
+in a different cgroup.
 
+Thanks.
 
-> built on all systems under test, isn't auto-loaded at boot, and has
-> no device or similar dependencies. This creates the "test_module.ko"
-> module for that purpose, which only reports its load and unload to printk.
->
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
-> v3:
->  - use KBUILD_MODNAME; Rusty Russell
-> v2:
->  - use pr_warn, better comment, add headers explicitly, move to lib/; akpm.
-> ---
->  lib/Kconfig.debug |   14 ++++++++++++++
->  lib/Makefile      |    1 +
->  lib/test_module.c |   33 +++++++++++++++++++++++++++++++++
->  3 files changed, 48 insertions(+)
->  create mode 100644 lib/test_module.c
->
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index db25707aa41b..81882335c625 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -1578,6 +1578,20 @@ config DMA_API_DEBUG
->  	  This option causes a performance degredation.  Use only if you want
->  	  to debug device drivers. If unsure, say N.
->  
-> +config TEST_MODULE
-> +	tristate "Test module loading with 'hello world' module"
-> +	default n
-> +	depends on m
-> +	help
-> +	  This builds the "test_module" module that emits "Hello, world"
-> +	  on printk when loaded. It is designed to be used for basic
-> +	  evaluation of the module loading subsystem (for example when
-> +	  validating module verification). It lacks any extra dependencies,
-> +	  and will not normally be loaded by the system unless explicitly
-> +	  requested by name.
-> +
-> +	  If unsure, say N.
-> +
->  source "samples/Kconfig"
->  
->  source "lib/Kconfig.kgdb"
-> diff --git a/lib/Makefile b/lib/Makefile
-> index a459c31e8c6b..b494b9af631c 100644
-> --- a/lib/Makefile
-> +++ b/lib/Makefile
-> @@ -31,6 +31,7 @@ obj-y += string_helpers.o
->  obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
->  obj-y += kstrtox.o
->  obj-$(CONFIG_TEST_KSTRTOX) += test-kstrtox.o
-> +obj-$(CONFIG_TEST_MODULE) += test_module.o
->  
->  ifeq ($(CONFIG_DEBUG_KOBJECT),y)
->  CFLAGS_kobject.o += -DDEBUG
-> diff --git a/lib/test_module.c b/lib/test_module.c
-> new file mode 100644
-> index 000000000000..319b66f1ff61
-> --- /dev/null
-> +++ b/lib/test_module.c
-> @@ -0,0 +1,33 @@
-> +/*
-> + * This module emits "Hello, world" on printk when loaded.
-> + *
-> + * It is designed to be used for basic evaluation of the module loading
-> + * subsystem (for example when validating module signing/verification). It
-> + * lacks any extra dependencies, and will not normally be loaded by the
-> + * system unless explicitly requested by name.
-> + */
-> +
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
-> +#include <linux/init.h>
-> +#include <linux/module.h>
-> +#include <linux/printk.h>
-> +
-> +static int __init test_module_init(void)
-> +{
-> +	pr_warn("Hello, world\n");
-> +
-> +	return 0;
-> +}
-> +
-> +module_init(test_module_init);
-> +
-> +static void __exit test_module_exit(void)
-> +{
-> +	pr_warn("Goodbye\n");
-> +}
-> +
-> +module_exit(test_module_exit);
-> +
-> +MODULE_AUTHOR("Kees Cook <keescook@chromium.org>");
-> +MODULE_LICENSE("GPL");
-> -- 
-> 1.7.9.5
+-- 
+tejun
