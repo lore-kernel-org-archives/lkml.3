@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab3LEMbA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 07:31:00 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:51174 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756691Ab3LEMaX (ORCPT
+	id S1756307Ab3LEMbj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 07:31:39 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:65450 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756647Ab3LEMaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 07:30:23 -0500
-X-AuditID: cbfee61a-b7f796d000004313-7d-52a071dd3570
+	Thu, 5 Dec 2013 07:30:08 -0500
+X-AuditID: cbfee61b-b7f006d000003e1f-2b-52a071cfda7e
 From: Kamil Debski <k.debski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         linux-usb@vger.kernel.org, devicetree@vger.kernel.org
@@ -17,264 +17,93 @@ Cc: kyungmin.park@samsung.com, kishon@ti.com, t.figa@samsung.com,
         yulgon.kim@samsung.com, p.paneri@samsung.com,
         av.tikhomirov@samsung.com, jg1.han@samsung.com, galak@codeaurora.org,
         matt.porter@linaro.org, Kamil Debski <k.debski@samsung.com>
-Subject: [PATCH v4 4/9] usb: ehci-s5p: Change to use phy provided by the
- generic phy framework
-Date: Thu, 05 Dec 2013 13:29:34 +0100
-Message-id: <1386246579-25141-5-git-send-email-k.debski@samsung.com>
+Subject: [PATCH 2/9] phy: core: Add devm_of_phy_get to phy-core
+Date: Thu, 05 Dec 2013 13:29:32 +0100
+Message-id: <1386246579-25141-3-git-send-email-k.debski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1386246579-25141-1-git-send-email-k.debski@samsung.com>
 References: <1386246579-25141-1-git-send-email-k.debski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jQd27hQuCDM5ctLBYsvsGq8X8I+dY
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jQd3zhQuCDBYsVbZYsvsGq8X8I+dY
 	LfrfLGS1aLtykN3i8sJLrBY/Xl9gs7jwtIfN4mzTG6DYrjlsFjPO72OyWLSsldli7ZG77BZn
 	+2+zWUxsmsZucX5LJ5PF4TftrBbrZ7xmseg4e5DdQcjjcl8vk8fOWXfZPe5c28Pm0bdlFaPH
-	8RvbmTw+b5ILYIvisklJzcksSy3St0vgymiexV/w2bTi2OnHTA2MC7S6GDk5JARMJD5uX8YI
-	YYtJXLi3nq2LkYtDSGA6o8TBZ6dZIJwOJonGVW9Zuxg5ONgENCVW3fMAaRARqJGYcusKO4jN
-	LHCXSWL1RrChwgIJEnvWN4DFWQRUJRbMfQpm8wq4SOzs3cwGMkZCQEFiziQbkDCngKvEyomH
-	wcJCQCVrrmhOYORdwMiwilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4jJ9J7WBc2WBxiFGA
-	g1GJh/dF4vwgIdbEsuLK3EOMEhzMSiK8wjkLgoR4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmi1
-	DhQSSE8sSc1OTS1ILYLJMnFwSjUwTq94uZPD9KHGlQ+9yWLXlrpF+fwsrtPiftHI0/Njb57q
-	sR1THyx/9zdbO+TeP08t73TG+ZPPv75i3K+ZGeTm5+IoO+nGnuay2XLHLdrk6rKeHbR9ZWpe
-	c1hIKOT+ssqUSzlJD+IFn3o8Wci0n89sv66Gdv7qx4eZVuc4dK3I3H2+3zjnnfV3JZbijERD
-	Leai4kQA8JngW18CAAA=
+	8RvbmTw+b5ILYIvisklJzcksSy3St0vgypg+7TRrwRHBiv2HTzI2MK7i62Lk5JAQMJHY+/sb
+	M4QtJnHh3nq2LkYuDiGB6YwSR28tYYFwOpgkPh79xd7FyMHBJqApseqeB0iDiECNxJRbV9hB
+	bGaBu0wSqzdqgdjCAvYSq9ZdBRvKIqAq8WHlSyYQm1fAReLv3stsIGMkBBQk5kyyAQlzCrhK
+	rJx4GCwsBFSy5ormBEbeBYwMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCA/mZ9A7GVQ0W
+	hxgFOBiVeHhfJM4PEmJNLCuuzD3EKMHBrCTCK5yzIEiINyWxsiq1KD++qDQntfgQozQHi5I4
+	78FW60AhgfTEktTs1NSC1CKYLBMHp1QDY8N7n5cpphMe5e68oJM3XfBo+dWFH94cjnUtY3h1
+	PvL/2YdvTm9oas1tWB36i/VscOjPH94f7j9atGAq2/mO59sn8estvelg6Lpw651jcm9YLs9d
+	7HIk73ucxdTQt3MUd/9tjZL4+0bMchvTx5urPDvkdfqrL+a61d/jv/nm/E+PTVl8PN/u1goq
+	sRRnJBpqMRcVJwIAVutu12ACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the phy provider used from the old usb phy specific to a new one
-using the generic phy framework.
+Adding devm_of_phy_get will allow to get phys by supplying the
+device_node instead of by name.
 
 Signed-off-by: Kamil Debski <k.debski@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- Documentation/devicetree/bindings/usb/usb-ehci.txt |   35 ++++++++
- drivers/usb/host/ehci-exynos.c                     |   95 +++++++++++++-------
- 2 files changed, 97 insertions(+), 33 deletions(-)
+ drivers/phy/phy-core.c  |   31 +++++++++++++++++++++++++++++++
+ include/linux/phy/phy.h |    2 ++
+ 2 files changed, 33 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/usb/usb-ehci.txt b/Documentation/devicetree/bindings/usb/usb-ehci.txt
-index fa18612..413f7cd 100644
---- a/Documentation/devicetree/bindings/usb/usb-ehci.txt
-+++ b/Documentation/devicetree/bindings/usb/usb-ehci.txt
-@@ -14,6 +14,10 @@ If controller implementation operates with big endian descriptors,
- If both big endian registers and descriptors are used by the controller
- implementation, "big-endian" property can be specified instead of having
- both "big-endian-regs" and "big-endian-desc".
-+  - port: if in the SoC there are EHCI phys, they should be listed here.
-+One phy per port. Each port should have its reg entry with a consecutive
-+number. Also it should contain phys and phy-names entries specifying the
-+phy used by the port.
+diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+index 7fb3474..b39b48c 100644
+--- a/drivers/phy/phy-core.c
++++ b/drivers/phy/phy-core.c
+@@ -421,6 +421,37 @@ struct phy *devm_phy_get(struct device *dev, const char *string)
+ EXPORT_SYMBOL_GPL(devm_phy_get);
  
- Example (Sequoia 440EPx):
-     ehci@e0000300 {
-@@ -23,3 +27,34 @@ Example (Sequoia 440EPx):
- 	   reg = <0 e0000300 90 0 e0000390 70>;
- 	   big-endian;
-    };
-+
-+Example (Exynos 4212):
-+    ehci@12580000 {
-+        compatible = "samsung,exynos4210-ehci";
-+        reg = <0x12580000 0x20000>;
-+        interrupts = <0 70 0>;
-+        clocks = <&clock 304>, <&clock 305>;
-+        clock-names = "usbhost", "otg";
-+        status = "disabled";
-+        #address-cells = <1>;
-+        #size-cells = <0>;
-+        port@0 {
-+            reg = <0>;
-+            phys = <&usb2phy 1>;
-+            phy-names = "host";
-+            status = "disabled";
-+        };
-+        port@1 {
-+            reg = <1>;
-+            phys = <&usb2phy 2>;
-+            phy-names = "hsic0";
-+            status = "disabled";
-+        };
-+        port@2 {
-+            reg = <2>;
-+            phys = <&usb2phy 3>;
-+            phy-names = "hsic1";
-+            status = "disabled";
-+        };
-+    };
-+
-diff --git a/drivers/usb/host/ehci-exynos.c b/drivers/usb/host/ehci-exynos.c
-index e97c198..bb81809 100644
---- a/drivers/usb/host/ehci-exynos.c
-+++ b/drivers/usb/host/ehci-exynos.c
-@@ -19,12 +19,12 @@
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/of_gpio.h>
-+#include <linux/phy/phy.h>
- #include <linux/platform_device.h>
- #include <linux/usb/phy.h>
- #include <linux/usb/samsung_usb_phy.h>
- #include <linux/usb.h>
- #include <linux/usb/hcd.h>
--#include <linux/usb/otg.h>
- 
- #include "ehci.h"
- 
-@@ -42,10 +42,10 @@
- static const char hcd_name[] = "ehci-exynos";
- static struct hc_driver __read_mostly exynos_ehci_hc_driver;
- 
-+#define PHY_NUMBER 3
- struct exynos_ehci_hcd {
- 	struct clk *clk;
--	struct usb_phy *phy;
--	struct usb_otg *otg;
-+	struct phy *phy[PHY_NUMBER];
- };
- 
- #define to_exynos_ehci(hcd) (struct exynos_ehci_hcd *)(hcd_to_ehci(hcd)->priv)
-@@ -69,13 +69,43 @@ static void exynos_setup_vbus_gpio(struct platform_device *pdev)
- 		dev_err(dev, "can't request ehci vbus gpio %d", gpio);
- }
- 
-+static int exynos_phys_on(struct phy *p[])
+ /**
++ * devm_of_phy_get() - lookup and obtain a reference to a phy.
++ * @dev: device that requests this phy
++ * @np: node containing the phy
++ * @index: the index of the phy
++ *
++ * Gets the phy using phy_get(), and associates a device with it using
++ * devres. On driver detach, release function is invoked on the devres data,
++ * then, devres data is freed.
++ */
++struct phy *devm_of_phy_get(struct device *dev, struct device_node *np, int
++									index)
 +{
-+	int i;
-+	int ret = 0;
++	struct phy **ptr, *phy;
 +
-+	for (i = 0; ret == 0 && i < PHY_NUMBER; i++)
-+		if (p[i])
-+			ret = phy_power_on(p[i]);
-+	if (ret)
-+		for (i--; i > 0; i--)
-+			if (p[i])
-+				phy_power_off(p[i]);
++	ptr = devres_alloc(devm_phy_release, sizeof(*ptr), GFP_KERNEL);
++	if (!ptr)
++		return ERR_PTR(-ENOMEM);
 +
-+	return ret;
-+}
-+
-+static int exynos_phys_off(struct phy *p[])
-+{
-+	int i;
-+	int ret = 0;
-+
-+	for (i = 0; ret == 0 && i < PHY_NUMBER; i++)
-+		if (p[i])
-+			ret = phy_power_off(p[i]);
-+
-+	return ret;
-+}
-+
- static int exynos_ehci_probe(struct platform_device *pdev)
- {
- 	struct exynos_ehci_hcd *exynos_ehci;
- 	struct usb_hcd *hcd;
- 	struct ehci_hcd *ehci;
- 	struct resource *res;
--	struct usb_phy *phy;
-+	struct phy *phy;
-+	struct device_node *child;
-+	int phy_number;
- 	int irq;
- 	int err;
- 
-@@ -102,13 +132,24 @@ static int exynos_ehci_probe(struct platform_device *pdev)
- 					"samsung,exynos5440-ehci"))
- 		goto skip_phy;
- 
--	phy = devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
--	if (IS_ERR(phy)) {
--		usb_put_hcd(hcd);
--		dev_warn(&pdev->dev, "no platform data or transceiver defined\n");
--		return -EPROBE_DEFER;
--	} else {
--		exynos_ehci->phy = phy;
-+	for_each_available_child_of_node(pdev->dev.of_node, child) {
-+		err = of_property_read_u32(child, "reg", &phy_number);
-+		if (err) {
-+			dev_err(&pdev->dev, "Failed to parse device tree\n");
-+			return err;
-+		}
-+		if (phy_number >= PHY_NUMBER) {
-+			dev_err(&pdev->dev, "Failed to parse device tree - number out of range\n");
-+			return -EINVAL;
-+		}
-+		phy = devm_of_phy_get(&pdev->dev, child, 0);
-+		of_node_put(child);
-+		if (IS_ERR(phy)) {
-+			dev_err(&pdev->dev, "Failed to get phy number %d",
-+								phy_number);
-+			return PTR_ERR(phy);
-+		}
-+		exynos_ehci->phy[phy_number] = phy;
- 		exynos_ehci->otg = phy->otg;
- 	}
- 
-@@ -149,11 +190,11 @@ skip_phy:
- 		goto fail_io;
- 	}
- 
--	if (exynos_ehci->otg)
--		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
--
--	if (exynos_ehci->phy)
--		usb_phy_init(exynos_ehci->phy);
-+	err = exynos_phys_on(exynos_ehci->phy);
-+	if (err) {
-+		dev_err(&pdev->dev, "Failed to enabled phys\n");
-+		goto fail_phys_on;
++	phy = of_phy_get(np, index);
++	if (!IS_ERR(phy)) {
++		*ptr = phy;
++		devres_add(dev, ptr);
++	} else {
++		devres_free(ptr);
 +	}
- 
- 	ehci = hcd_to_ehci(hcd);
- 	ehci->caps = hcd->regs;
-@@ -172,8 +213,8 @@ skip_phy:
- 	return 0;
- 
- fail_add_hcd:
--	if (exynos_ehci->phy)
--		usb_phy_shutdown(exynos_ehci->phy);
-+	exynos_phys_off(exynos_ehci->phy);
-+fail_phys_on:
- fail_io:
- 	clk_disable_unprepare(exynos_ehci->clk);
- fail_clk:
-@@ -188,11 +229,7 @@ static int exynos_ehci_remove(struct platform_device *pdev)
- 
- 	usb_remove_hcd(hcd);
- 
--	if (exynos_ehci->otg)
--		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
--
--	if (exynos_ehci->phy)
--		usb_phy_shutdown(exynos_ehci->phy);
-+	exynos_phys_off(exynos_ehci->phy);
- 
- 	clk_disable_unprepare(exynos_ehci->clk);
- 
-@@ -212,11 +249,7 @@ static int exynos_ehci_suspend(struct device *dev)
- 
- 	rc = ehci_suspend(hcd, do_wakeup);
- 
--	if (exynos_ehci->otg)
--		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
--
--	if (exynos_ehci->phy)
--		usb_phy_shutdown(exynos_ehci->phy);
-+	exynos_phys_off(exynos_ehci->phy);
- 
- 	clk_disable_unprepare(exynos_ehci->clk);
- 
-@@ -230,11 +263,7 @@ static int exynos_ehci_resume(struct device *dev)
- 
- 	clk_prepare_enable(exynos_ehci->clk);
- 
--	if (exynos_ehci->otg)
--		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
--
--	if (exynos_ehci->phy)
--		usb_phy_init(exynos_ehci->phy);
-+	exynos_phys_on(exynos_ehci->phy);
- 
- 	/* DMA burst Enable */
- 	writel(EHCI_INSNREG00_ENABLE_DMA_BURST, EHCI_INSNREG00(hcd->regs));
++
++	return phy;
++}
++EXPORT_SYMBOL_GPL(devm_of_phy_get);
++
++/**
+  * phy_create() - create a new phy
+  * @dev: device that is creating the new phy
+  * @ops: function pointers for performing phy operations
+diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
+index 169f572..f143ee8 100644
+--- a/include/linux/phy/phy.h
++++ b/include/linux/phy/phy.h
+@@ -129,6 +129,8 @@ int phy_power_on(struct phy *phy);
+ int phy_power_off(struct phy *phy);
+ struct phy *phy_get(struct device *dev, const char *string);
+ struct phy *devm_phy_get(struct device *dev, const char *string);
++struct phy *devm_of_phy_get(struct device *dev, struct device_node *np, int
++									index);
+ void phy_put(struct phy *phy);
+ void devm_phy_put(struct device *dev, struct phy *phy);
+ struct phy *of_phy_get(struct device_node *np, int index);
 -- 
 1.7.9.5
 
