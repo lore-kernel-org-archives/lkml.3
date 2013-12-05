@@ -1,86 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab3LEKlS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 05:41:18 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:33585 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917Ab3LEKlR (ORCPT
+	id S1755565Ab3LEKmE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 05:42:04 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40945 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751025Ab3LEKmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 05:41:17 -0500
-Date: Thu, 5 Dec 2013 11:41:13 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
-Message-ID: <20131205104113.GB20283@gmail.com>
-References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
- <87fvq9cwlk.fsf@tassilo.jf.intel.com>
- <CAMEtUuzweYxqwoaYH+J5a2uRM+PFcBH+Pb8Z_ALPUMp+QFz1tQ@mail.gmail.com>
- <CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com>
+	Thu, 5 Dec 2013 05:42:01 -0500
+Date: Thu, 5 Dec 2013 10:41:50 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "davidb@codeaurora.org" <davidb@codeaurora.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v4 10/15] usb: phy: msm: Add device tree support and
+ binding information
+Message-ID: <20131205104150.GJ29200@e106331-lin.cambridge.arm.com>
+References: <1384267910-32066-1-git-send-email-iivanov@mm-sol.com>
+ <1384267910-32066-11-git-send-email-iivanov@mm-sol.com>
+ <20131115163818.GH24831@e106331-lin.cambridge.arm.com>
+ <1384779277.13631.13.camel@iivanov-dev.int.mm-sol.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1384779277.13631.13.camel@iivanov-dev.int.mm-sol.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 18, 2013 at 12:54:37PM +0000, Ivan T. Ivanov wrote:
+> Hi Mark, 
+> 
+> On Fri, 2013-11-15 at 16:38 +0000, Mark Rutland wrote: 
+> > On Tue, Nov 12, 2013 at 02:51:45PM +0000, Ivan T. Ivanov wrote:
+> > > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> > > 
+> > > Allows MSM OTG controller to be specified via device tree.
+> > > 
+> > > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > > Cc: devicetree@vger.kernel.org
+> > > ---
+> > >  .../devicetree/bindings/usb/msm-hsusb.txt          |   57 +++++++++++++-
+> > >  drivers/usb/phy/phy-msm-usb.c                      |   79 +++++++++++++++++---
+> > >  2 files changed, 124 insertions(+), 12 deletions(-)
 
-* Alexei Starovoitov <ast@plumgrid.com> wrote:
+[...]
 
-> > On Tue, Dec 3, 2013 at 4:01 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> >>
-> >> Can you do some performance comparison compared to e.g. ktap?
-> >> How much faster is it?
+> > > +
+> > > +- dr_mode:		One of "host", "peripheral" or "otg". Defaults to "otg"
+> > 
+> > If this has a default and thus isn't required, it should be listed as
+> > optional.
 > 
-> Did simple ktap test with 1M alloc_skb/kfree_skb toy test from earlier email:
-> trace skb:kfree_skb {
->         if (arg2 == 0x100) {
->                 printf("%x %x\n", arg1, arg2)
->         }
-> }
-> 1M skb alloc/free 350315 (usecs)
-> 
-> baseline without any tracing:
-> 1M skb alloc/free 145400 (usecs)
-> 
-> then equivalent bpf test:
-> void filter(struct bpf_context *ctx)
-> {
->         void *loc = (void *)ctx->regs.dx;
->         if (loc == 0x100) {
->                 struct sk_buff *skb = (struct sk_buff *)ctx->regs.si;
->                 char fmt[] = "skb %p loc %p\n";
->                 bpf_trace_printk(fmt, sizeof(fmt), (long)skb, (long)loc, 0);
->         }
-> }
-> 1M skb alloc/free 183214 (usecs)
-> 
-> so with one 'if' condition the difference ktap vs bpf is 350-145 vs 183-145
-> 
-> obviously ktap is an interpreter, so it's not really fair.
-> 
-> To make it really unfair I did:
-> trace skb:kfree_skb {
->         if (arg2 == 0x100 || arg2 == 0x200 || arg2 == 0x300 || arg2 == 0x400 ||
->             arg2 == 0x500 || arg2 == 0x600 || arg2 == 0x700 || arg2 == 0x800 ||
->             arg2 == 0x900 || arg2 == 0x1000) {
->                 printf("%x %x\n", arg1, arg2)
->         }
-> }
-> 1M skb alloc/free 484280 (usecs)
+> This is part of the standard USB bindings, Perhaps I could just
+> refer to:  Documentation/devicetree/bindings/usb/generic.txt
 
-Real life scripts, for examples the ones related to network protocol 
-analysis will often have such patterns in them, so I don't think this 
-measurement is particularly unfair.
+That would be fine, but it should also be moved to the optional
+properties section.
 
-Thanks,
+> 
+> 
+> > 
+> > > +
+> > > +- vdccx-supply:	phandle to the regulator for the vdd supply for
+> > > +				digital circuit operation.
+> > > +- v1p8-supply:	phandle to the regulator for the 1.8V supply
+> > > +- v3p3-supply:	phandle to the regulator for the 3.3V supply
+> > > +
+> > > +- qcom,otg-control: OTG control (VBUS and ID notifications) can be one of
+> > > +				1 - PHY control
+> > > +				2 - PMIC control
+> > > +				3 - User control (via debugfs)
+> > 
+> > NAK. This does not seem like a description of the hardware, and given
+> > the debugfs comment is fundamentally tied to the way Linux functions
+> > today.
+> 
+> I will remove option 3, but rest are really property of the chipset. 
 
-	Ingo
+Can you elaborate on the diffence please?
+
+> 
+> > 
+> > > +
+> > > +Optional properties:
+> > > +- qcom,phy-init-sequence: PHY configuration sequence. val, reg pairs
+> > > +				terminate with -1
+> > 
+> > What is this? I'm really not keen on having arbitrary register/memory
+> > poking sequences in the dt.
+> 
+> This is related Device Mode Eye Diagram test and values used could be
+> different between chipsets.
+
+Ok. Then we should encode the tuning data rather than adding a mechanism
+to allow for writes to arbitrary addresses.
+
+> 
+> > 
+> > Why does it need to be terminated? Surely the size of the property tells
+> > you that it's terminated.
+> 
+> Yes. -1 termination could be done in driver.
+
+Please do. There's no need for it to be in the DT.
+
+Cheers,
+Mark.
