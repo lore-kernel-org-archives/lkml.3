@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757145Ab3LER3L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:29:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46513 "EHLO mx1.redhat.com"
+	id S1757127Ab3LER1Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:27:24 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47050 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756960Ab3LER3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:29:07 -0500
-Date: Thu, 5 Dec 2013 18:29:31 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Michal Hocko <mhocko@suse.cz>, William Dauchy <wdauchy@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Ma, Xindong" <xindong.ma@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>, azurIt <azurit@pobox.sk>,
-        Sameer Nanda <snanda@chromium.org>
-Subject: Re: [PATCH] Fix race between oom kill and task exit
-Message-ID: <20131205172931.GA26018@redhat.com>
-References: <3917C05D9F83184EAA45CE249FF1B1DD0253093A@SHSMSX103.ccr.corp.intel.com> <20131128063505.GN3556@cmpxchg.org> <CAJ75kXZXxCMgf8=pghUWf=W9EKf3Z4nzKKy=CAn+7keVF_DCRA@mail.gmail.com> <20131128120018.GL2761@dhcp22.suse.cz> <20131128183830.GD20740@redhat.com> <20131202141203.GA31402@redhat.com> <alpine.DEB.2.02.1312041655370.13608@chino.kir.corp.google.com>
+	id S1757167Ab3LER1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 12:27:21 -0500
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>
+CC: <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
+        <dwmw2@infradead.org>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [PATCH v3 3/9] mtd: nand: davinci: check required ti,davinci-chipselect property
+Date: Thu, 5 Dec 2013 19:25:51 +0200
+Message-ID: <1386264358-9738-4-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1386264358-9738-1-git-send-email-ivan.khoronzhuk@ti.com>
+References: <1386264358-9738-1-git-send-email-ivan.khoronzhuk@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1312041655370.13608@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04, David Rientjes wrote:
->
-> On Mon, 2 Dec 2013, Oleg Nesterov wrote:
->
-> > OK, I am going to send the initial fixes today. This means (I hope)
-> > that we do not need this or Sameer's "[PATCH] mm, oom: Fix race when
-> > selecting process to kill".
->
-> Your v2 series looks good and I suspect anybody trying them doesn't have
-> additional reports of the infinite loop?  Should they be marked for
-> stable?
+The property "ti,davinci-chipselect" is required. So we have to check
+if it is set.
 
-Unlikely...
+Reviewed-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Reviewed-by: Taras Kondratiuk <taras@ti.com>
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+---
+ drivers/mtd/nand/davinci_nand.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-I think the patch from Sameer makes more sense for stable as a temporary
-(and obviously incomplete) fix.
-
-Oleg.
+diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+index ddcd7c8..9a96ac7 100644
+--- a/drivers/mtd/nand/davinci_nand.c
++++ b/drivers/mtd/nand/davinci_nand.c
+@@ -545,6 +545,9 @@ static struct davinci_nand_pdata
+ 		if (!of_property_read_u32(pdev->dev.of_node,
+ 			"ti,davinci-chipselect", &prop))
+ 			pdev->id = prop;
++		else
++			return ERR_PTR(-EINVAL);
++
+ 		if (!of_property_read_u32(pdev->dev.of_node,
+ 			"ti,davinci-mask-ale", &prop))
+ 			pdata->mask_ale = prop;
+-- 
+1.7.9.5
 
