@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752361Ab3LETkJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 14:40:09 -0500
-Received: from 10.mo4.mail-out.ovh.net ([188.165.33.109]:53683 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750723Ab3LETkG (ORCPT
+	id S1752383Ab3LETnR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 14:43:17 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:64557 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751398Ab3LETnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 14:40:06 -0500
-X-Greylist: delayed 4199 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Dec 2013 14:40:06 EST
-Message-ID: <52A0AEB4.7090909@bracey.fi>
-Date: Thu, 05 Dec 2013 18:49:56 +0200
-From: Kevin Bracey <kevin@bracey.fi>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Thu, 5 Dec 2013 14:43:14 -0500
 MIME-Version: 1.0
-To: Tomasz Figa <t.figa@samsung.com>
-CC: Mark Brown <broonie@kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
-        Kyungmin Park <kmpark@infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Doug Anderson <dianders@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH] pinctrl: samsung: Allow pin value to be initialized using
- pinfunc.
-References: <1384881351-10782-1-git-send-email-t.figa@samsung.com> <CACRpkdYrPd9tnO48bA_5n+-k=KEDyhY7czkCNhTZfpgF3ar+LQ@mail.gmail.com> <20131205150747.GW29268@sirena.org.uk> <1502243.eRBlCfUhTO@amdc1227>
-In-Reply-To: <1502243.eRBlCfUhTO@amdc1227>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 12704654549761495205
-X-Ovh-Remote: 62.183.157.30 (62-183-157-30.bb.dnainternet.fi)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+In-Reply-To: <y0meh5rs2eq.fsf@fche.csb>
+References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
+	<87fvq9cwlk.fsf@tassilo.jf.intel.com>
+	<CAMEtUuzweYxqwoaYH+J5a2uRM+PFcBH+Pb8Z_ALPUMp+QFz1tQ@mail.gmail.com>
+	<CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com>
+	<y0meh5rs2eq.fsf@fche.csb>
+Date: Thu, 5 Dec 2013 11:43:13 -0800
+Message-ID: <CAMEtUuzQXo2kwoBUxq0PKOWA=T4WXtg3Bj8vzYvQquzW+isMSA@mail.gmail.com>
+Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2013 17:11, Tomasz Figa wrote:
-> On Thursday 05 of December 2013 15:07:47 Mark Brown wrote:
->> On Tue, Dec 03, 2013 at 10:29:42AM +0100, Linus Walleij wrote:
->>
->>> So a suggested patch to support weak hogs would be interesting
->>> to look at. Can you provide details on how you think this would
->>> work?
->> Or should we be going and applying the default state to all devices on
->> init without worrying about a driver appearing?
-> If a device isn't used, then it's often better to configure the pins for
-> a different function, such as GPIO, to minimize leakage current.
+On Thu, Dec 5, 2013 at 8:11 AM, Frank Ch. Eigler <fche@redhat.com> wrote:
 >
+> ast wrote:
+>
+>>>[...]
+>> Did simple ktap test with 1M alloc_skb/kfree_skb toy test from earlier email:
+>> trace skb:kfree_skb {
+>>         if (arg2 == 0x100) {
+>>                 printf("%x %x\n", arg1, arg2)
+>>         }
+>> }
+>> [...]
+>
+> For reference, you might try putting systemtap into the performance
+> comparison matrix too:
+>
+> # stap -e 'probe kernel.trace("kfree_skb") {
+>               if ($location == 0x100 /* || $location == 0x200 etc. */ ) {
+>                  printf("%x %x\n", $skb, $location)
+>               }
+>            }'
 
-And there can also be mutually-exclusive drivers choosing different 
-default states for the same pin. I think you do need a separate "safe" 
-indicator.
+stap with one 'if': 1M skb alloc/free 200696 (usecs)
+stap with 10 'if': 1M skb alloc/free 202135 (usecs)
 
-My current thought is that  a late-init "make safe all unclaimed pins" 
-pass would make sense - you can't really mess with pins in an automated 
-fashion on init, as it can mess up bootloader->driver handover.   There 
-already exist late-init "turn off all unclaimed clocks" (at least on 
-shmobile) and "turn off all unclaimed regulators", and it would fit that 
-model.
-
-Kevin
-
+so systemtap entry overhead is a bit higher than bpf and extra if-s
+show the same progression as expected.
