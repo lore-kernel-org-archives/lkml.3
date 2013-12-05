@@ -1,34 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753879Ab3LEUKI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 15:10:08 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:43239 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562Ab3LEUKE (ORCPT
+	id S1754000Ab3LEUK3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 15:10:29 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:57725 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752857Ab3LEUKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 15:10:04 -0500
+	Thu, 5 Dec 2013 15:10:25 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
+Subject: Re: [PATCH 2/2] regulator: gpio: Warn if an invalid regulator-type is supplied
+Date: Thu, 05 Dec 2013 21:10:31 +0100
+Message-ID: <66015321.Q31GikVXiU@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.10.17-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1386270722-13962-2-git-send-email-broonie@kernel.org>
+References: <1386270722-13962-1-git-send-email-broonie@kernel.org> <1386270722-13962-2-git-send-email-broonie@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20131205145217.GA23147@redhat.com>
-References: <1386254181-17257-1-git-send-email-avagin@openvz.org>
- <1386254181-17257-2-git-send-email-avagin@openvz.org> <20131205145217.GA23147@redhat.com>
-From: Michael Dalton <mwdalton@google.com>
-Date: Thu, 5 Dec 2013 12:09:44 -0800
-Message-ID: <CANJ5vPKoH59JuupkK5+dFD3irp8GQQ7MxCnV2GvPKxNYOXNgdA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] virtio-net: determine type of bufs correctly
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Andrey Vagin <avagin@openvz.org>,
-        lf-virt <virtualization@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Andrey, great catch. I believe this issue occurs in one more
-place, when packets are dropped if they are too short. I will send
-out a patch momentarily to fix that additional case.
+Hi Mark,
 
-Best,
+Thank you for the patch.
 
-Mike
+On Thursday 05 December 2013 19:12:02 Mark Brown wrote:
+> From: Mark Brown <broonie@linaro.org>
+> 
+> Reported-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Signed-off-by: Mark Brown <broonie@linaro.org>
+
+I believe you could squash this patch with the one you've previously posted 
+that makes the property optional. For the result,
+
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+> ---
+>  drivers/regulator/gpio-regulator.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/regulator/gpio-regulator.c
+> b/drivers/regulator/gpio-regulator.c index 13ec94d984ca..c0a1d00b78c9
+> 100644
+> --- a/drivers/regulator/gpio-regulator.c
+> +++ b/drivers/regulator/gpio-regulator.c
+> @@ -210,6 +210,9 @@ of_get_gpio_regulator_config(struct device *dev, struct
+> device_node *np) config->type = REGULATOR_VOLTAGE;
+>  		else if (!strncmp("current", regtype, 7))
+>  			config->type = REGULATOR_CURRENT;
+> +		else
+> +			dev_warn(dev, "Unknown regulator-type '%s'\n",
+> +				 regtype);
+>  	}
+> 
+>  	return config;
+-- 
+Regards,
+
+Laurent Pinchart
+
