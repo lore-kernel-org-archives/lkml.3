@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756940Ab3LEQxb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 11:53:31 -0500
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:61540 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752984Ab3LEQxa (ORCPT
+	id S1756964Ab3LEQyf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 11:54:35 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:56401 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756863Ab3LEQye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 11:53:30 -0500
-Date: Thu, 5 Dec 2013 11:53:25 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 08/23] mm/memblock: Add memblock memory allocation apis
-Message-ID: <20131205165325.GA24062@mtj.dyndns.org>
-References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com>
- <1386037658-3161-9-git-send-email-santosh.shilimkar@ti.com>
- <20131203232445.GX8277@htj.dyndns.org>
- <52A0AB34.2030703@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52A0AB34.2030703@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 5 Dec 2013 11:54:34 -0500
+Date: Thu, 5 Dec 2013 16:54:29 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Remove unnecessarily gendered language
+Message-ID: <20131205165429.34468e1b@alan.etchedpixels.co.uk>
+In-Reply-To: <20131205104808.GA6455@amd.pavel.ucw.cz>
+References: <1386033532-25431-1-git-send-email-matthew.garrett@nebula.com>
+	<20131205104808.GA6455@amd.pavel.ucw.cz>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 5 Dec 2013 11:48:08 +0100
+Pavel Machek <pavel@ucw.cz> wrote:
 
-On Thu, Dec 05, 2013 at 06:35:00PM +0200, Grygorii Strashko wrote:
-> >> +#define memblock_virt_alloc_align(x, align) \
-> >> +	memblock_virt_alloc_try_nid(x, align, BOOTMEM_LOW_LIMIT, \
-> >> +				     BOOTMEM_ALLOC_ACCESSIBLE, MAX_NUMNODES)
-> > 
-> > Also, do we really need this align variant separate when the caller
-> > can simply specify 0 for the default?
+> On Mon 2013-12-02 20:18:52, Matthew Garrett wrote:
+> > The kernel as a number of cases of gendered language. The majority of these
+> > refer to objects that don't have gender in English, and so I've replaced
+> > them with "it" and "its". Some refer to people (developers or users), and
+> > I've replaced these with the singular "they" variant. Some are simply
+> > typos that I've fixed up.
 > 
-> Unfortunately Yes. 
-> We need it to keep compatibility with bootmem/nobootmem
-> which don't handle 0 as default align value.
+> Why is this good idea?
+> 
+> I don't think this makes documentation better.
 
-Hmm... why wouldn't just interpreting 0 to SMP_CACHE_BYTES in the
-memblock_virt*() function work?
+It makes it more inclusive and modern. It doesn't make it worse in theory
+but some of the changes it does seem a bit muddled.
 
-Thanks.
+> > @@ -127,7 +127,7 @@ gid=
+> >  umask=			Provide default owner, group, and access mode mask.
+> >  			These options work as documented in mount(8).  By
+> >  			default, the files/directories are owned by root and
+> > -			he/she has read and write permissions, as well as
+> > +			they have read and write permissions, as well as
+> >  			browse permission for directories.  No one else has any
+> >  			access permissions.  I.e. the mode on all files is by
+> >  			default rw------- and for directories rwx------, a
+> 
+> So... we had unambiguous text "user has read and write permissions"
+> and now you have to wonder if they refers to "user" or
+> "files/directories".
 
--- 
-tejun
+Changing he/she into they seems silly. It's already perfectly sensible
+language. Quite frankly if you want to avoid he/she in that text why not
+just use "owned by root, and root has" ?
+
+> (And I'm pretty sure most people will parse it the wrong way.)
+> 
+> > @@ -23,7 +24,7 @@ Quota netlink interface
+> >  When user exceeds a softlimit, runs out of grace time or reaches hardlimit,
+> >  quota subsystem traditionally printed a message to the controlling terminal of
+> >  the process which caused the excess. This method has the disadvantage that
+> > -when user is using a graphical desktop he usually cannot see the message.
+> > +when user is using a graphical desktop they usually cannot see the
+> >  message.
+> 
+> Is this even correct english?
+
+That would depend who you ask and English has no "correct". There are
+people who will go to the grave refusing to split an infinitive let alone
+use "their" in this fashion, but it does reflect modern English language
+usage in much of the UK. Some areas of the UK ascribe gender to a lot of
+objects not just the usual bizarre exception of ships and trains 8) so
+don't expect consensus.
+
+I would argue that "This method has the disadvantage that when user
+is using a graphical desktop he usually cannot see the message." 
+
+really wants fixing for other language reasons anyway. In fact the whole
+paragraph wants a rewrite - but I appreciate the author of that text was
+not first language English.
+
+Alan
+
