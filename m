@@ -1,95 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756668Ab3LEMgr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 07:36:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14120 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754949Ab3LEMgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 07:36:46 -0500
-Date: Thu, 5 Dec 2013 13:35:47 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/38] perf/core improvements and fixes
-Message-ID: <20131205123547.GG21600@krava.brq.redhat.com>
-References: <1386187622-2928-1-git-send-email-acme@infradead.org>
- <20131205100429.GC16749@gmail.com>
- <20131205103707.GC21600@krava.brq.redhat.com>
- <20131205105344.GD20283@gmail.com>
- <20131205105914.GA20558@gmail.com>
- <20131205111354.GE21600@krava.brq.redhat.com>
- <20131205122751.GA20562@gmail.com>
+	id S1755963Ab3LEMld (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 07:41:33 -0500
+Received: from ausxipps301.us.dell.com ([143.166.148.223]:23210 "EHLO
+	ausxipps301.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299Ab3LEMlb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 07:41:31 -0500
+X-LoopCount0: from 10.170.28.39
+X-IronPort-AV: E=Sophos;i="4.93,832,1378875600"; 
+   d="scan'208";a="348942269"
+From: <Srinivas_G_Gowda@Dell.com>
+To: <Srinivas_G_Gowda@Dell.com>
+CC: <minyard@acm.org>, <linux-kernel@vger.kernel.org>
+Date: Thu, 5 Dec 2013 04:40:13 -0800
+Subject: Re: [PATCH 1/1] ipmi: setting mod_timer for read_event_msg buffer
+ cmd
+Thread-Topic: [PATCH 1/1] ipmi: setting mod_timer for read_event_msg buffer
+ cmd
+Thread-Index: Ac7xtySA4bbevNG8RMKOSyxRcH2qRw==
+Message-ID: <52A072BB.6020609@dell.com>
+References: <52931C2D.4070908@dell.com> <5294D9D8.2030305@acm.org>
+ <75F7F7632819D94BA80703D8B1F10B6D29CEE95A1D@BLRX7MCDC201.AMER.DELL.COM>
+ <52992EFA.4000903@acm.org> <529C9C99.2010108@dell.com>
+ <529CF5AA.5040700@acm.org>
+ <75F7F7632819D94BA80703D8B1F10B6D29CEE96846@BLRX7MCDC201.AMER.DELL.COM>
+ <529E1078.1060502@acm.org> <529F178A.3050304@dell.com>
+In-Reply-To: <529F178A.3050304@dell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131
+ Thunderbird/10.0
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131205122751.GA20562@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 01:27:51PM +0100, Ingo Molnar wrote:
-> 
-> * Jiri Olsa <jolsa@redhat.com> wrote:
-> 
-> > On Thu, Dec 05, 2013 at 11:59:14AM +0100, Ingo Molnar wrote:
-> > > 
-> > > * Ingo Molnar <mingo@kernel.org> wrote:
-> > > 
-> > > > > never saw that one.. starting your test on 24 CPUs server now
-> > > > 
-> > > > I saw it again on a system by running two parallel build jobs:
-> > > > 
-> > > >   D=/tmp/perf-1; mkdir -p $D; while make O=$D install; do make O=$D clean; done
-> > > >   D=/tmp/perf-2; mkdir -p $D; while make O=$D install; do make O=$D clean; done
-> > > 
-> > > I'm running it now with the previous perf/core - no failures so far, 
-> > > after dozens of build passes.
-> > > 
-> > 
-> > could you please try attached change? working for me so far..
-> > 
-> > thanks,
-> > jirka
-> > 
-> > 
-> > ---
-> > diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-> > index ca3b87d..9a8cf37 100644
-> > --- a/tools/perf/Makefile.perf
-> > +++ b/tools/perf/Makefile.perf
-> > @@ -722,7 +722,7 @@ $(LIBTRACEEVENT)-clean:
-> >  	$(call QUIET_CLEAN, libtraceevent)
-> >  	@$(MAKE) -C $(TRACE_EVENT_DIR) O=$(OUTPUT) clean >/dev/null
-> >  
-> > -install-traceevent-plugins:
-> > +install-traceevent-plugins: $(LIBTRACEEVENT)
-> >  	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) install_plugins
-> >  
-> >  LIBLK_SOURCES = $(wildcard $(LK_PATH)*.[ch])
-> 
-> It's looking good so far.
-> 
-> I've made a commit out of it and added your SOB, is that fine with 
-> you?
 
-definitely, my test is still running ok as well
+> 
+> No, I did not see final else in ipmi_thread ever getting hit.
+> 
+> I am looking at  ipmi_thread_busy_wait(),
+>  by default the below condition never gets set unitl I explicetly set "kipmid_max_busy_us" to some value.
+> if (smi_info->intf_num < num_max_busy_us)
+> 
+> This means by default "max_busy_us" is always 0. Hence Ill basically end up only doing this
+> if (max_busy_us == 0 || smi_result != SI_SM_CALL_WITH_DELAY)
+>                 ipmi_si_set_not_busy(busy_until);
+> 
+> That probably explains why I never hit the else condition in ipmi_thread.
+> 
+> I see ipmi_start_timer_if_necessary() getting called from ipmi_thread() after setting "kipmid_max_busy_us"
+> Ill set "kipmid_max_busy_us=300" and run the stress. I am hoping that we will not see the issue in this case.
+> 
 
-thanks a lot,
-jirka
+I don't see the issue after this change. (I am going to try again just to be sure)
+I am trying to figure out how to hit ipmi_start_timer_if_necessary() in default mode...! 
+
+
+Thanks,
+G
+
+> 
+> Thanks,
+> G
+> 
+> 
+> 
+>> Thanks,
+>>
+>> -corey
+>>
+>>>
+>>>
+>>> Thanks,
+>>> G
+>>>
+>>> -----Original Message-----
+>>> From: Corey Minyard [mailto:tcminyard@gmail.com] On Behalf Of Corey Minyard
+>>> Sent: Tuesday, December 03, 2013 2:34 AM
+>>> To: Gowda, Srinivas G
+>>> Cc: tcminyard@gmail.com; linux-kernel@vger.kernel.org; openipmi@mvista.com
+>>> Subject: Re: [PATCH 1/1] ipmi: setting mod_timer for read_event_msg buffer cmd On 12/02/2013 08:49 AM, Srinivas_G_Gowda@Dell.com wrote: 
+>>>> Thanks for the patch Corey. 
+>>>> I am afraid that the system does not have interrupts enabled. It uses polling mode. 
+>>>>
+>>>> When the error is seen, I know for a fact that in function
+>>>> ipmi_thread() smi_result is SI_SM_CALL_WITH_DELAY, I have some logs where in busy_wait always reads as 1. Not sure if it was ever set to 0. (ill check this again).
+>>>> Ill anyway run the test using the patch that you have shared. 
+>>>>
+>>>> b/w would it harm if we were to do to something like this ?
+>>> Unfortunately, that would start the timer unnecessarily.  You don't want to start timers unnecessarily in the kernel or the power management police will come after you.
+>>> The patch I sent did have this call in the non-idle portion of the kernel thread and that should have done the same thing.  Plus, if you are using the kernel thread, it's going to run periodically and should kick things off again if they get stuck.  I'm suspicious now that something else is going on.
+>>> -corey 
+>>>> Signed-off-by: Srinivas Gowda <srinivas_g_gowda@dell.com>
+>>>> ---
+>>>>   drivers/char/ipmi/ipmi_si_intf.c | 1 +
+>>>>   1 file changed, 1 insertion(+)
+>>>>
+>>>> diff --git a/drivers/char/ipmi/ipmi_si_intf.c
+>>>> b/drivers/char/ipmi/ipmi_si_intf.c
+>>>> index 15e4a60..e23484f 100644
+>>>> --- a/drivers/char/ipmi/ipmi_si_intf.c
+>>>> +++ b/drivers/char/ipmi/ipmi_si_intf.c
+>>>> @@ -1008,6 +1008,7 @@ static int ipmi_thread(void *data)
+>>>>                spin_unlock_irqrestore(&(smi_info->si_lock), flags);
+>>>>                busy_wait = ipmi_thread_busy_wait(smi_result, smi_info,
+>>>>                                                  &busy_until);
+>>>> +             ipmi_start_timer_if_necessary(smi_info);
+>>>>                if (smi_result == SI_SM_CALL_WITHOUT_DELAY)
+>>>>                        ; /* do nothing */
+>>>>                else if (smi_result == SI_SM_CALL_WITH_DELAY && 
+>>>> busy_wait)
+>>
+> 
+> 
+> 
+
