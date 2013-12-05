@@ -1,133 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101Ab3LETDs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 14:03:48 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:26305 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224Ab3LETDr (ORCPT
+	id S1751743Ab3LETKT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 14:10:19 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:48100 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751335Ab3LETKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 14:03:47 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18hljt2Z3MYIKkK4sJONBj8
-Date: Thu, 5 Dec 2013 11:03:43 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Tobias Jakobi <tjakobi@math.uni-bielefeld.de>, Joel F <joelf@ti.com>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH] ARM: OMAP2+: omap_device: add fail hook for runtime_pm
- when bad data is detected
-Message-ID: <20131205190343.GI26766@atomide.com>
-References: <1386121153-32351-1-git-send-email-nm@ti.com>
+	Thu, 5 Dec 2013 14:10:17 -0500
+X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h22d0h2336h1155h)
+X-WSS-ID: 0MXCL4D-07-AZH-02
+X-M-MSG: 
+Subject: [PATCH] crypto: scatterwalk - Use sg_chain_ptr on chain entries
+To: <davem@davemloft.net>, <linux-crypto@vger.kernel.org>,
+        <herbert@gondor.apana.org.au>
+From: Tom Lendacky <thomas.lendacky@amd.com>
+CC: <linux-kernel@vger.kernel.org>
+Date: Thu, 5 Dec 2013 13:09:53 -0600
+Message-ID: <20131205190953.16167.59879.stgit@tlendack-t1.amdoffice.net>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386121153-32351-1-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [131203 17:40]:
-> Due to the cross dependencies between hwmod for automanaged device
-> information for OMAP and dts node definitions, we can run into scenarios
-> where the dts node is defined, however it's hwmod entry is yet to be
-> added. In these cases:
-> a) omap_device does not register a pm_domain (since it cannot find
->    hwmod entry).
-> b) driver does not know about (a), does a pm_runtime_get_sync which
->    never fails
-> c) It then tries to do some operation on the device (such as read the
->   revision register (as part of probe) without clock or adequate OMAP
->   generic PM operation performed for enabling the module.
-> 
-> This causes a crash such as that reported in:
-> https://bugzilla.kernel.org/show_bug.cgi?id=66441
-> 
-> When 'ti,hwmod' is provided in dt node, it is expected that the device
-> will not function without the OMAP's power automanagement. Hence, when
-> we hit a fail condition (due to hwmod entries not present or other
-> similar scenario), fail at pm_domain level due to lack of data, provide
-> enough information for it to be fixed, however, it allows for the driver
-> to take appropriate measures to prevent crash.
+Now that scatterwalk_sg_chain sets the chain pointer bit the sg_page
+call in scatterwalk_sg_next hits a BUG_ON when CONFIG_DEBUG_SG is
+enabled. Use sg_chain_ptr instead of sg_page on a chain entry.
 
-Kevin, any comments on this one?
+Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
+---
+ include/crypto/scatterwalk.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Regards,
-
-Tony
+diff --git a/include/crypto/scatterwalk.h b/include/crypto/scatterwalk.h
+index 64ebede..6a626a5 100644
+--- a/include/crypto/scatterwalk.h
++++ b/include/crypto/scatterwalk.h
+@@ -44,7 +44,7 @@ static inline struct scatterlist *scatterwalk_sg_next(struct scatterlist *sg)
+ 	if (sg_is_last(sg))
+ 		return NULL;
  
-> Reported-by: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> ---
->  arch/arm/mach-omap2/omap_device.c |   24 ++++++++++++++++++++++++
->  arch/arm/mach-omap2/omap_device.h |    1 +
->  2 files changed, 25 insertions(+)
-> 
-> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
-> index 53f0735..e0a398c 100644
-> --- a/arch/arm/mach-omap2/omap_device.c
-> +++ b/arch/arm/mach-omap2/omap_device.c
-> @@ -183,6 +183,10 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
->  odbfd_exit1:
->  	kfree(hwmods);
->  odbfd_exit:
-> +	/* if data/we are at fault.. load up a fail handler */
-> +	if (ret)
-> +		pdev->dev.pm_domain = &omap_device_fail_pm_domain;
-> +
->  	return ret;
->  }
->  
-> @@ -604,6 +608,19 @@ static int _od_runtime_resume(struct device *dev)
->  
->  	return pm_generic_runtime_resume(dev);
->  }
-> +
-> +static int _od_fail_runtime_suspend(struct device *dev)
-> +{
-> +	dev_warn(dev, "%s: FIXME: missing hwmod/omap_dev info\n", __func__);
-> +	return -ENODEV;
-> +}
-> +
-> +static int _od_fail_runtime_resume(struct device *dev)
-> +{
-> +	dev_warn(dev, "%s: FIXME: missing hwmod/omap_dev info\n", __func__);
-> +	return -ENODEV;
-> +}
-> +
->  #endif
->  
->  #ifdef CONFIG_SUSPEND
-> @@ -657,6 +674,13 @@ static int _od_resume_noirq(struct device *dev)
->  #define _od_resume_noirq NULL
->  #endif
->  
-> +struct dev_pm_domain omap_device_fail_pm_domain = {
-> +	.ops = {
-> +		SET_RUNTIME_PM_OPS(_od_fail_runtime_suspend,
-> +				   _od_fail_runtime_resume, NULL)
-> +	}
-> +};
-> +
->  struct dev_pm_domain omap_device_pm_domain = {
->  	.ops = {
->  		SET_RUNTIME_PM_OPS(_od_runtime_suspend, _od_runtime_resume,
-> diff --git a/arch/arm/mach-omap2/omap_device.h b/arch/arm/mach-omap2/omap_device.h
-> index 17ca1ae..78c02b3 100644
-> --- a/arch/arm/mach-omap2/omap_device.h
-> +++ b/arch/arm/mach-omap2/omap_device.h
-> @@ -29,6 +29,7 @@
->  #include "omap_hwmod.h"
->  
->  extern struct dev_pm_domain omap_device_pm_domain;
-> +extern struct dev_pm_domain omap_device_fail_pm_domain;
->  
->  /* omap_device._state values */
->  #define OMAP_DEVICE_STATE_UNKNOWN	0
-> -- 
-> 1.7.9.5
-> 
+-	return (++sg)->length ? sg : (void *)sg_page(sg);
++	return (++sg)->length ? sg : sg_chain_ptr(sg);
+ }
+ 
+ static inline void scatterwalk_crypto_chain(struct scatterlist *head,
+
+
