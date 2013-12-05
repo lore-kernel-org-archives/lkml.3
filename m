@@ -1,78 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756302Ab3LELf4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 06:35:56 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:37560 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752228Ab3LELfy (ORCPT
+	id S1755903Ab3LELiX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 06:38:23 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:54422 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753644Ab3LELiV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 06:35:54 -0500
-Date: Thu, 5 Dec 2013 11:35:31 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20131205113531.GN29268@sirena.org.uk>
-References: <1386203515-6815-1-git-send-email-broonie@kernel.org>
- <1766701.HGqKkTj0sM@avalon>
+	Thu, 5 Dec 2013 06:38:21 -0500
+From: Yijing Wang <wangyijing@huawei.com>
+To: "Maciej W. Rozycki" <macro@linux-mips.org>,
+        "David S. Miller" <davem@davemloft.net>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>
+Subject: [PATCH 2/2] net/fddi: Replace local marco with PCI standard macro
+Date: Thu, 5 Dec 2013 19:38:02 +0800
+Message-ID: <1386243482-32856-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7trrzIZ+323l9a6P"
-Content-Disposition: inline
-In-Reply-To: <1766701.HGqKkTj0sM@avalon>
-X-Cookie: It's clever, but is it art?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: gpio: Don't require a regulator-type property
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Replace local marco DFX_BUS_PCI with PCI standard marco
+dev_is_pci().
 
---7trrzIZ+323l9a6P
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+---
+ drivers/net/fddi/defxx.c |   20 +++++++-------------
+ 1 files changed, 7 insertions(+), 13 deletions(-)
 
-On Thu, Dec 05, 2013 at 01:44:42AM +0100, Laurent Pinchart wrote:
-> On Thursday 05 December 2013 00:31:55 Mark Brown wrote:
+diff --git a/drivers/net/fddi/defxx.c b/drivers/net/fddi/defxx.c
+index 0b40e1c..0344f71 100644
+--- a/drivers/net/fddi/defxx.c
++++ b/drivers/net/fddi/defxx.c
+@@ -241,12 +241,6 @@ static char version[] =
+  */
+ #define NEW_SKB_SIZE (PI_RCV_DATA_K_SIZE_MAX+128)
+ 
+-#ifdef CONFIG_PCI
+-#define DFX_BUS_PCI(dev) (dev->bus == &pci_bus_type)
+-#else
+-#define DFX_BUS_PCI(dev) 0
+-#endif
+-
+ #ifdef CONFIG_EISA
+ #define DFX_BUS_EISA(dev) (dev->bus == &eisa_bus_type)
+ #else
+@@ -436,7 +430,7 @@ static void dfx_port_read_long(DFX_board_t *bp, int offset, u32 *data)
+ static void dfx_get_bars(struct device *bdev,
+ 			 resource_size_t *bar_start, resource_size_t *bar_len)
+ {
+-	int dfx_bus_pci = DFX_BUS_PCI(bdev);
++	int dfx_bus_pci = dev_is_pci(bdev);
+ 	int dfx_bus_eisa = DFX_BUS_EISA(bdev);
+ 	int dfx_bus_tc = DFX_BUS_TC(bdev);
+ 	int dfx_use_mmio = DFX_MMIO || dfx_bus_tc;
+@@ -518,7 +512,7 @@ static const struct net_device_ops dfx_netdev_ops = {
+ static int dfx_register(struct device *bdev)
+ {
+ 	static int version_disp;
+-	int dfx_bus_pci = DFX_BUS_PCI(bdev);
++	int dfx_bus_pci = dev_is_pci(bdev);
+ 	int dfx_bus_tc = DFX_BUS_TC(bdev);
+ 	int dfx_use_mmio = DFX_MMIO || dfx_bus_tc;
+ 	const char *print_name = dev_name(bdev);
+@@ -667,7 +661,7 @@ static void dfx_bus_init(struct net_device *dev)
+ {
+ 	DFX_board_t *bp = netdev_priv(dev);
+ 	struct device *bdev = bp->bus_dev;
+-	int dfx_bus_pci = DFX_BUS_PCI(bdev);
++	int dfx_bus_pci = dev_is_pci(bdev);
+ 	int dfx_bus_eisa = DFX_BUS_EISA(bdev);
+ 	int dfx_bus_tc = DFX_BUS_TC(bdev);
+ 	int dfx_use_mmio = DFX_MMIO || dfx_bus_tc;
+@@ -813,7 +807,7 @@ static void dfx_bus_uninit(struct net_device *dev)
+ {
+ 	DFX_board_t *bp = netdev_priv(dev);
+ 	struct device *bdev = bp->bus_dev;
+-	int dfx_bus_pci = DFX_BUS_PCI(bdev);
++	int dfx_bus_pci = dev_is_pci(bdev);
+ 	int dfx_bus_eisa = DFX_BUS_EISA(bdev);
+ 	u8 val;
+ 
+@@ -967,7 +961,7 @@ static int dfx_driver_init(struct net_device *dev, const char *print_name,
+ {
+ 	DFX_board_t *bp = netdev_priv(dev);
+ 	struct device *bdev = bp->bus_dev;
+-	int dfx_bus_pci = DFX_BUS_PCI(bdev);
++	int dfx_bus_pci = dev_is_pci(bdev);
+ 	int dfx_bus_eisa = DFX_BUS_EISA(bdev);
+ 	int dfx_bus_tc = DFX_BUS_TC(bdev);
+ 	int dfx_use_mmio = DFX_MMIO || dfx_bus_tc;
+@@ -1877,7 +1871,7 @@ static irqreturn_t dfx_interrupt(int irq, void *dev_id)
+ 	struct net_device *dev = dev_id;
+ 	DFX_board_t *bp = netdev_priv(dev);
+ 	struct device *bdev = bp->bus_dev;
+-	int dfx_bus_pci = DFX_BUS_PCI(bdev);
++	int dfx_bus_pci = dev_is_pci(bdev);
+ 	int dfx_bus_eisa = DFX_BUS_EISA(bdev);
+ 	int dfx_bus_tc = DFX_BUS_TC(bdev);
+ 
+@@ -3579,7 +3573,7 @@ static void dfx_unregister(struct device *bdev)
+ {
+ 	struct net_device *dev = dev_get_drvdata(bdev);
+ 	DFX_board_t *bp = netdev_priv(dev);
+-	int dfx_bus_pci = DFX_BUS_PCI(bdev);
++	int dfx_bus_pci = dev_is_pci(bdev);
+ 	int dfx_bus_tc = DFX_BUS_TC(bdev);
+ 	int dfx_use_mmio = DFX_MMIO || dfx_bus_tc;
+ 	resource_size_t bar_start = 0;		/* pointer to port */
+-- 
+1.7.1
 
-> > +	if (ret >= 0) {
-> > +		if (!strncmp("voltage", regtype, 7))
-> > +			config->type = REGULATOR_VOLTAGE;
-> > +		else if (!strncmp("current", regtype, 7))
-> > +			config->type = REGULATOR_CURRENT;
 
-> Should we warn or error in case of an unsupported value ?
-
-That's sensible, yes - this was just a straight change to make the
-property optional.  Given that we've always accepted anything a warning
-seems more appropriate otherwise we might break existing DTs with typos
-or something.
-
---7trrzIZ+323l9a6P
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSoGUAAAoJELSic+t+oim9yJ8P/ii7ElNMdvjRx8elVGlVTWly
-yCD7iADLChd7UA3rMk53mUCusOcCSefdOT/N9dns141ikg1FGgyXBz9wpDpLxlSL
-UONaNyIK6idKQeCPVNTVBf6dBredEY0Dwimqlqs0ZQS4lxnCmj2f7HDHNrTf78m+
-FxwghfwuQlpRx2FK/Hm6MQpPnAEY45bwZOV/LduXexdk3yicXmldZnXcTrsfJiIH
-FuOqrjohNQEyCoSbxV3rGKb7jsLMRc4/vtMvOq5f5CccnXm0AKzKd+R0shwW9C6G
-f12C5NpJoyiwlqGImPZZF3VgIV+9hU/KyKOuh5s8hWb2yhPIH+QW/Pun7DK6eCUC
-glb0gCWwOvIhMAALzzmYV5uOkdMppxDTsrTyKCVBNiDRk5XA2iMtq1vSxb3hhP6u
-jgMGvBoB/h8OCrsmYj7NnKutNTIpviGcgZdwIH+fT9jB1aY6C/yc56hkQjw2Iofd
-pHvg9xY2RbEd0lUUxfqzzeSavOyPE7fIsUyLhkb3EwbsKVLRH9cxtpDscdcykPHZ
-2HMY6DLLr+Be3LPhaNj3jdEsFzoRuDP5DCYyKg0Hk25/Ljqgiy3CE0BWA40Dsy4b
-cQbsHmx7mnE74ZkNorS8MOoiLBG2PMEQQQdhpfB1m0aZWKNL5PBI99ofJoN8PGDM
-IwMrqx6p5YBstLpVk2pJ
-=lN0r
------END PGP SIGNATURE-----
-
---7trrzIZ+323l9a6P--
