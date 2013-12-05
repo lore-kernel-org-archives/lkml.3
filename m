@@ -1,113 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933569Ab3LER5c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:57:32 -0500
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:34158 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933426Ab3LER53 (ORCPT
+	id S933077Ab3LERg4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:36:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38138 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932859Ab3LERgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:57:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131127152244.410F2C404EC@trevor.secretlab.ca>
-References: <1383113571-13029-1-git-send-email-robherring2@gmail.com>
-	<CAL_JsqKHZtidrzJPH+c-zyFUQNsxtEKxOYg+Nzyo9JYNDNexug@mail.gmail.com>
-	<20131127152244.410F2C404EC@trevor.secretlab.ca>
-Date: Thu, 5 Dec 2013 11:57:28 -0600
-Message-ID: <CAL_Jsq+4yitHCtaKZ4nNxTg3Q4pUYF9RQY4Q=VTSs4ox-iSqSQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/2] of: add initcall with match boilerplate helpers
-From: Rob Herring <robherring2@gmail.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 5 Dec 2013 12:36:51 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mike Snitzer <snitzer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 22/90] block: properly stack underlying max_segment_size to DM device
+Date: Thu,  5 Dec 2013 17:35:04 +0000
+Message-Id: <1386264972-5399-23-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
+References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 9:22 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> On Thu, 21 Nov 2013 17:23:14 -0600, Rob Herring <robherring2@gmail.com> wrote:
->> On Thu, Nov 21, 2013 at 6:50 AM, Grant Likely <grant.likely@linaro.org> wrote:
->> > On Wed, 30 Oct 2013 01:12:51 -0500, Rob Herring <robherring2@gmail.com> wrote:
->> >> From: Rob Herring <rob.herring@calxeda.com>
->> >>
->> >> Add boilerplate helpers to create initcalls which are conditional on
->> >> matching on devicetree properties.
+3.5.7.27 -stable review patch.  If anyone has any objections, please let me know.
 
-[snip]
+------------------
 
->> > I'm not sure why this is necessary. I don't particularly have a problem
->> > with it, but I wouldn't normally try to filter out device drivers when
->> > the probe code simply won't get called.
->> >
->> > Considering it's paired with the previous patch that creates devices in
->> > the module init call, I'm assuming it is to support that use case. If so
->> > then I don't think it is a good idea. If there is another use case then
->> > maybe.
->>
->> This is for cases that are not drivers. Again, the motivation is how
->> do I do initialization on arm64 where there is not already some
->> conditional initialization hook. My approach to solve this is by
->> eliminating the machine_desc for highbank. While I don't really have a
->> need to do this on highbank itself, I do have a need for some of the
->> same functions present in mach-highbank for arm64.
->>
->> I realized quickly going down this path that I would have a repeated
->> pattern and that there's already a few other examples in the kernel of
->> something like this:
->>
->> static int __init some_initcall(void)
->> {
->>   if (of_machine_is_compatible("my-awesume-board"))
->>     return -ENODEV;
->>
->>   /* do some init stuff... */
->> }
->>
->> There are some examples using this here [1][2].
->
-> It's still kind of a nasty pattern. I'd like to limit the use of this as
-> much as possible and I'd like to make it as easy as possible to discover
-> where things are coming from at boot. That's one of the things I like
-> about machine_desc. It is a common entry point for SoC family specific
-> behaviour.
+From: Mike Snitzer <snitzer@redhat.com>
 
-But that is really no longer true now that all the machine_desc
-function ptrs are optional. A given platform may or may not even be
-calling some machine_desc functions. So the boot flow is already very
-much a function of what is in the DTB rather than what machine is
-selected.
+commit d82ae52e68892338068e7559a0c0657193341ce4 upstream.
 
-> As for device drivers, the preferred model is to bind against something
-> already registered. If it is not present, then it does nothing. To me
-> there is a difference between making the behavour conditional on
-> something that was registered vs. an arbitrary value in the device tree.
-> The triggers for the former are exported in /dev/devices. The latter is
-> 'magic'.  :-)
+Without this patch all DM devices will default to BLK_MAX_SEGMENT_SIZE
+(65536) even if the underlying device(s) have a larger value -- this is
+due to blk_stack_limits() using min_not_zero() when stacking the
+max_segment_size limit.
 
-Again, this patch is for not device driver stuff.
+1073741824
 
-> The problem with "if (of_machine_is_compatible())" initcalls is they are
-> an exception to the normal flow of things. You have to go searching for
-> specific strings to find out if they are getting called.
+before patch:
+65536
 
-Umm, initcall_debug is your friend here.
+after patch:
+1073741824
 
-A standard boilerplate here would actually help in finding these
-cases. If arm64 continues to hold the line of no machine_desc, then
-this won't be the exception. Are there currently enough exceptions to
-justify factoring out this pattern? Obviously, I think there are and
-think they will grow, not shrink.
+Reported-by: Lukasz Flis <l.flis@cyfronet.pl>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ block/blk-settings.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Since none of the proponents of removing/avoiding machine_desc have
-weighed in, we'll never reach any conclusion on this. I'll just
-continue to open code this as I need to.
+diff --git a/block/blk-settings.c b/block/blk-settings.c
+index d3234fc..191d33e 100644
+--- a/block/blk-settings.c
++++ b/block/blk-settings.c
+@@ -144,6 +144,7 @@ void blk_set_stacking_limits(struct queue_limits *lim)
+ 	lim->max_segments = USHRT_MAX;
+ 	lim->max_hw_sectors = UINT_MAX;
+ 
++	lim->max_segment_size = UINT_MAX;
+ 	lim->max_sectors = BLK_DEF_MAX_SECTORS;
+ }
+ EXPORT_SYMBOL(blk_set_stacking_limits);
+-- 
+1.8.3.2
 
-> I'm possibly splitting hairs here, but a big part of migration to the
-> Linux device model is getting rid of modules that both register a device
-> and then bind to it.
-
-There will always be bits that don't fit into the driver model.
-
-Rob
