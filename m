@@ -1,95 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853Ab3LEPRv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 10:17:51 -0500
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:17135 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752352Ab3LEPRs (ORCPT
+	id S1756876Ab3LEPTb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 10:19:31 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:62302 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752352Ab3LEPT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 10:17:48 -0500
-From: Betty Dall <betty.dall@hp.com>
-To: lenb@kernel.org, rjw@rjwysocki.net, bhelgaas@google.com,
-        robert.moore@intel.com, lv.zheng@intel.com
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, devel@acpica.org,
-        Betty Dall <betty.dall@hp.com>
-Subject: [PATCH] PCI/ACPI: Use PCIe segment in the ACPI HEST AER error sources
-Date: Thu,  5 Dec 2013 08:08:24 -0700
-Message-Id: <1386256104-20624-1-git-send-email-betty.dall@hp.com>
-X-Mailer: git-send-email 1.7.7.6
+	Thu, 5 Dec 2013 10:19:28 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH V5 1/6] efi-stub.txt updates for ARM
+To: Roy Franz <roy.franz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        matt.fleming@intel.com, linux@arm.linux.org.uk
+Cc: leif.lindholm@linaro.org, dave.martin@arm.com, msalter@redhat.com,
+        patches@linaro.org, Roy Franz <roy.franz@linaro.org>
+In-Reply-To: <1385595115-21488-2-git-send-email-roy.franz@linaro.org>
+References: <1385595115-21488-1-git-send-email-roy.franz@linaro.org> < 1385595115-21488-2-git-send-email-roy.franz@linaro.org>
+Date: Thu, 05 Dec 2013 15:19:23 +0000
+Message-Id: <20131205151923.E5B9CC40785@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the discussion for this set of patches: https://lkml.org/lkml/2013/6/6/517,
-Bjorn Helgaas pointed out that the ACPI HEST AER error sources do not have the
-PCIe segment number associated with the bus. I worked with the ACPI spec and
-got this change to definition of the "Bus" field into the recently released
-ACPI Spec 5.0a section 18.3.2.3-5:
+On Wed, 27 Nov 2013 15:31:50 -0800, Roy Franz <roy.franz@linaro.org> wrote:
+> Update efi-stub.txt documentation to be more general
+> and not x86 specific.  Add ARM only "dtb=" command
+> line option description.
+> 
+> Signed-off-by: Roy Franz <roy.franz@linaro.org>
 
-"Identifies the PCI Bus and Segment of the device. The Bus is
-encoded in bits 0-7. For systems that expose multiple PCI
-segment groups, the segment number is encoded in bits 8-23
-and bits 24-31 must be zero. For systems that do not expose
-multiple PCI segment groups, bits 8-31 must be zero. If the
-GLOBAL flag is specified, this field is ignored."
+Acked-by: Grant Likely <grant.likely@linaro.org>
 
-This patch makes use of the new definition in the only place in the kernel
-that uses the acpi_hest_aer_common's bus field.
+> ---
+>  Documentation/efi-stub.txt |   27 ++++++++++++++++++++-------
+>  1 file changed, 20 insertions(+), 7 deletions(-)
+> 
+> diff --git a/Documentation/efi-stub.txt b/Documentation/efi-stub.txt
+> index 44e6bb6..19e897c 100644
+> --- a/Documentation/efi-stub.txt
+> +++ b/Documentation/efi-stub.txt
+> @@ -1,13 +1,16 @@
+>  			  The EFI Boot Stub
+>  		     ---------------------------
+>  
+> -On the x86 platform, a bzImage can masquerade as a PE/COFF image,
+> -thereby convincing EFI firmware loaders to load it as an EFI
+> -executable. The code that modifies the bzImage header, along with the
+> -EFI-specific entry point that the firmware loader jumps to are
+> -collectively known as the "EFI boot stub", and live in
+> +On the x86 and ARM platforms, a kernel zImage/bzImage can masquerade
+> +as a PE/COFF image, thereby convincing EFI firmware loaders to load
+> +it as an EFI executable. The code that modifies the bzImage header,
+> +along with the EFI-specific entry point that the firmware loader
+> +jumps to are collectively known as the "EFI boot stub", and live in
+>  arch/x86/boot/header.S and arch/x86/boot/compressed/eboot.c,
+> -respectively.
+> +respectively.  For ARM the EFI stub is implemented in
+> +arch/arm/boot/compressed/efi-header.S and
+> +arch/arm/boot/compressed/efi-stub.c.  EFI stub code that is shared
+> +between architectures is in drivers/firmware/efi/efi-stub-helper.c.
+>  
+>  By using the EFI boot stub it's possible to boot a Linux kernel
+>  without the use of a conventional EFI boot loader, such as grub or
+> @@ -23,7 +26,9 @@ The bzImage located in arch/x86/boot/bzImage must be copied to the EFI
+>  System Partiion (ESP) and renamed with the extension ".efi". Without
+>  the extension the EFI firmware loader will refuse to execute it. It's
+>  not possible to execute bzImage.efi from the usual Linux file systems
+> -because EFI firmware doesn't have support for them.
+> +because EFI firmware doesn't have support for them.  For ARM the
+> +arch/arm/boot/zImage should be copied to the system partition, and it
+> +may not need to be renamed.
+>  
+>  
+>  **** Passing kernel parameters from the EFI shell
+> @@ -63,3 +68,11 @@ Notice how bzImage.efi can be specified with a relative path. That's
+>  because the image we're executing is interpreted by the EFI shell,
+>  which understands relative paths, whereas the rest of the command line
+>  is passed to bzImage.efi.
+> +
+> +
+> +**** The "dtb=" option
+> +
+> +For the ARM architecture, we also need to be able to provide a device
+> +tree to the kernel.  This is done with the "dtb=" command line option,
+> +and is process in the same manner as the "initrd=" option that is described
+> +above.
+> -- 
+> 1.7.10.4
+> 
 
-Signed-off-by: Betty Dall <betty.dall@hp.com>
----
-
- drivers/pci/pcie/aer/aerdrv_acpi.c |    8 ++++----
- include/acpi/actbl1.h              |   11 ++++++++++-
- 2 files changed, 14 insertions(+), 5 deletions(-)
-
-
-diff --git a/drivers/pci/pcie/aer/aerdrv_acpi.c b/drivers/pci/pcie/aer/aerdrv_acpi.c
-index cf611ab..93f852b 100644
---- a/drivers/pci/pcie/aer/aerdrv_acpi.c
-+++ b/drivers/pci/pcie/aer/aerdrv_acpi.c
-@@ -23,10 +23,10 @@
- static inline int hest_match_pci(struct acpi_hest_aer_common *p,
- 				 struct pci_dev *pci)
- {
--	return	(0           == pci_domain_nr(pci->bus) &&
--		 p->bus      == pci->bus->number &&
--		 p->device   == PCI_SLOT(pci->devfn) &&
--		 p->function == PCI_FUNC(pci->devfn));
-+	return   ACPI_HEST_SEGMENT(p->bus) == pci_domain_nr(pci->bus) &&
-+		 ACPI_HEST_BUS(p->bus)     == pci->bus->number &&
-+		 p->device                 == PCI_SLOT(pci->devfn) &&
-+		 p->function               == PCI_FUNC(pci->devfn);
- }
- 
- static inline bool hest_match_type(struct acpi_hest_header *hest_hdr,
-diff --git a/include/acpi/actbl1.h b/include/acpi/actbl1.h
-index 556c83ee..0c7428b 100644
---- a/include/acpi/actbl1.h
-+++ b/include/acpi/actbl1.h
-@@ -457,7 +457,7 @@ struct acpi_hest_aer_common {
- 	u8 enabled;
- 	u32 records_to_preallocate;
- 	u32 max_sections_per_record;
--	u32 bus;
-+	u32 bus;		/* bus: bits 0-7; segment: bits 8-23 */
- 	u16 device;
- 	u16 function;
- 	u16 device_control;
-@@ -473,6 +473,15 @@ struct acpi_hest_aer_common {
- #define ACPI_HEST_FIRMWARE_FIRST        (1)
- #define ACPI_HEST_GLOBAL                (1<<1)
- 
-+/*
-+ * The segment/bus of the PCIe device is encoded in the bus field
-+ * of the acpi_hest_aer_common structure as follows:
-+ *      23:8 = segment
-+ *      7:0 = bus
-+ */
-+#define ACPI_HEST_SEGMENT(bus)		(((bus) >> 8) & 0xFFFF)
-+#define ACPI_HEST_BUS(bus)	        ((bus) & 0xFF)
-+
- /* Hardware Error Notification */
- 
- struct acpi_hest_notify {
