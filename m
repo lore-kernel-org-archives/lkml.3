@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757705Ab3LERvi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:51:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38269 "EHLO
+	id S1757690Ab3LERvg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:51:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38273 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933384Ab3LERh2 (ORCPT
+	with ESMTP id S933385Ab3LERh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:37:28 -0500
+	Thu, 5 Dec 2013 12:37:29 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Williams <dcbw@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Paul Moore <pmoore@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 48/90] prism54: set netdev type to "wlan"
-Date: Thu,  5 Dec 2013 17:35:30 +0000
-Message-Id: <1386264972-5399-49-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 49/90] selinux: correct locking in selinux_netlbl_socket_connect)
+Date: Thu,  5 Dec 2013 17:35:31 +0000
+Message-Id: <1386264972-5399-50-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -28,47 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Paul Moore <pmoore@redhat.com>
 
-commit 8e3ffa471091c560deb6738ed9ab7445b7a5fd04 upstream.
+commit 42d64e1add3a1ce8a787116036163b8724362145 upstream.
 
-Userspace uses the netdev devtype for stuff like device naming and type
-detection.  Be nice and set it.  Remove the pointless #if/#endif around
-SET_NETDEV_DEV too.
+The SELinux/NetLabel glue code has a locking bug that affects systems
+with NetLabel enabled, see the kernel error message below.  This patch
+corrects this problem by converting the bottom half socket lock to a
+more conventional, and correct for this call-path, lock_sock() call.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+ ===============================
+ [ INFO: suspicious RCU usage. ]
+ 3.11.0-rc3+ #19 Not tainted
+ -------------------------------
+ net/ipv4/cipso_ipv4.c:1928 suspicious rcu_dereference_protected() usage!
+
+ other info that might help us debug this:
+
+ rcu_scheduler_active = 1, debug_locks = 0
+ 2 locks held by ping/731:
+  #0:  (slock-AF_INET/1){+.-...}, at: [...] selinux_netlbl_socket_connect
+  #1:  (rcu_read_lock){.+.+..}, at: [<...>] netlbl_conn_setattr
+
+ stack backtrace:
+ CPU: 1 PID: 731 Comm: ping Not tainted 3.11.0-rc3+ #19
+ Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+  0000000000000001 ffff88006f659d28 ffffffff81726b6a ffff88003732c500
+  ffff88006f659d58 ffffffff810e4457 ffff88006b845a00 0000000000000000
+  000000000000000c ffff880075aa2f50 ffff88006f659d90 ffffffff8169bec7
+ Call Trace:
+  [<ffffffff81726b6a>] dump_stack+0x54/0x74
+  [<ffffffff810e4457>] lockdep_rcu_suspicious+0xe7/0x120
+  [<ffffffff8169bec7>] cipso_v4_sock_setattr+0x187/0x1a0
+  [<ffffffff8170f317>] netlbl_conn_setattr+0x187/0x190
+  [<ffffffff8170f195>] ? netlbl_conn_setattr+0x5/0x190
+  [<ffffffff8131ac9e>] selinux_netlbl_socket_connect+0xae/0xc0
+  [<ffffffff81303025>] selinux_socket_connect+0x135/0x170
+  [<ffffffff8119d127>] ? might_fault+0x57/0xb0
+  [<ffffffff812fb146>] security_socket_connect+0x16/0x20
+  [<ffffffff815d3ad3>] SYSC_connect+0x73/0x130
+  [<ffffffff81739a85>] ? sysret_check+0x22/0x5d
+  [<ffffffff810e5e2d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
+  [<ffffffff81373d4e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+  [<ffffffff815d52be>] SyS_connect+0xe/0x10
+  [<ffffffff81739a59>] system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/prism54/islpci_dev.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ security/selinux/netlabel.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/wireless/prism54/islpci_dev.c b/drivers/net/wireless/prism54/islpci_dev.c
-index 5970ff6..d498b02 100644
---- a/drivers/net/wireless/prism54/islpci_dev.c
-+++ b/drivers/net/wireless/prism54/islpci_dev.c
-@@ -811,6 +811,10 @@ static const struct net_device_ops islpci_netdev_ops = {
- 	.ndo_validate_addr	= eth_validate_addr,
- };
+diff --git a/security/selinux/netlabel.c b/security/selinux/netlabel.c
+index da4b8b2..6235d05 100644
+--- a/security/selinux/netlabel.c
++++ b/security/selinux/netlabel.c
+@@ -442,8 +442,7 @@ int selinux_netlbl_socket_connect(struct sock *sk, struct sockaddr *addr)
+ 	    sksec->nlbl_state != NLBL_CONNLABELED)
+ 		return 0;
  
-+static struct device_type wlan_type = {
-+	.name	= "wlan",
-+};
-+
- struct net_device *
- islpci_setup(struct pci_dev *pdev)
- {
-@@ -821,9 +825,8 @@ islpci_setup(struct pci_dev *pdev)
- 		return ndev;
+-	local_bh_disable();
+-	bh_lock_sock_nested(sk);
++	lock_sock(sk);
  
- 	pci_set_drvdata(pdev, ndev);
--#if defined(SET_NETDEV_DEV)
- 	SET_NETDEV_DEV(ndev, &pdev->dev);
--#endif
-+	SET_NETDEV_DEVTYPE(ndev, &wlan_type);
+ 	/* connected sockets are allowed to disconnect when the address family
+ 	 * is set to AF_UNSPEC, if that is what is happening we want to reset
+@@ -464,7 +463,6 @@ int selinux_netlbl_socket_connect(struct sock *sk, struct sockaddr *addr)
+ 		sksec->nlbl_state = NLBL_CONNLABELED;
  
- 	/* setup the structure members */
- 	ndev->base_addr = pci_resource_start(pdev, 0);
+ socket_connect_return:
+-	bh_unlock_sock(sk);
+-	local_bh_enable();
++	release_sock(sk);
+ 	return rc;
+ }
 -- 
 1.8.3.2
 
