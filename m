@@ -1,102 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756302Ab3LEBNO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 20:13:14 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.246]:34172 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753692Ab3LEBNJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 20:13:09 -0500
-Message-ID: <529FD2C0.6080707@atmel.com>
-Date: Thu, 5 Dec 2013 09:11:28 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S933262Ab3LEBNs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 20:13:48 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:6200 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756339Ab3LEBNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 20:13:44 -0500
+X-IronPort-AV: E=Sophos;i="4.93,829,1378857600"; 
+   d="asc'?scan'208";a="78404173"
+Message-ID: <1386206018.3926.138.camel@Abyss>
+Subject: Re: [Xen-devel] [PATCH v2 0/2] xen: vnuma introduction for pv guest
+From: Dario Faggioli <dario.faggioli@citrix.com>
+To: Elena Ufimtseva <ufimtseva@gmail.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <akpm@linux-foundation.org>, <wency@cn.fujitsu.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tangchen@cn.fujitsu.com>, <mingo@redhat.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        xen-devel <xen-devel@lists.xenproject.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>,
+        Ian Campbell <ian.campbell@citrix.com>
+Date: Thu, 5 Dec 2013 02:13:38 +0100
+In-Reply-To: <CAEr7rXjgFi17vuV91R7=U4rkOKCMOw95kgWu0A0+yrfgHpR6Ow@mail.gmail.com>
+References: <1384806350-12651-1-git-send-email-ufimtseva@gmail.com>
+	 <20131119153837.GA5966@phenom.dumpdata.com>
+	 <1384885783.15360.40.camel@Solace>
+	 <CAEr7rXiCL-MagPwn76ZdTOJH03M8GCrKF2fGw0YWdnPZK332CA@mail.gmail.com>
+	 <CAEr7rXjgFi17vuV91R7=U4rkOKCMOw95kgWu0A0+yrfgHpR6Ow@mail.gmail.com>
+Organization: Citrix Ltd
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="=-KnJr3et4PMH86EdEqAhW"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Bo Shen <voice.shen@atmel.com>, <linux-pwm@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <nicolas.ferre@atmel.com>,
-        <linux-kernel@vger.kernel.org>, <alexandre.belloni@free-electrons.com>,
-        <galak@codeaurora.org>, <plagnioj@jcrosoft.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 1/2] PWM: atmel-pwm: add PWM controller driver
-References: <1384766002-2852-1-git-send-email-voice.shen@atmel.com> <20131202105957.GD18060@ulmo.nvidia.com> <529D4B58.9020700@atmel.com> <20131203094326.GB21178@ulmo.nvidia.com> <529E9AA2.8020400@atmel.com> <20131204100340.GU19943@ulmo.nvidia.com>
-In-Reply-To: <20131204100340.GU19943@ulmo.nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
+--=-KnJr3et4PMH86EdEqAhW
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On 12/04/2013 06:03 PM, Thierry Reding wrote:
-> On Wed, Dec 04, 2013 at 10:59:46AM +0800, Bo Shen wrote:
->> Hi Thierry,
->>
->> On 12/03/2013 05:43 PM, Thierry Reding wrote:
->>> On Tue, Dec 03, 2013 at 11:09:12AM +0800, Bo Shen wrote:
->>>> On 12/02/2013 06:59 PM, Thierry Reding wrote:
->>>>> On Mon, Nov 18, 2013 at 05:13:21PM +0800, Bo Shen wrote:
->>> [...]
->>>>>> diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
->>> [...]
->>>>>> +	/* Calculate the period cycles */
->>>>>> +	while (div > PWM_MAX_PRD) {
->>>>>> +		div = clk_rate / (1 << pres);
->>>>>> +		div = div * period_ns;
->>>>>> +		/* 1/Hz = 100000000 ns */
->>>>>
->>>>> I don't think that comment is needed.
->>>>
->>>> This is asked to be added.
->>>> And, I think keep it and it won't hurt, what do you think?
->>>
->>> I think it's obvious that you're converting from nanoseconds because of
->>> the _ns prefix in period_ns. But if somebody requested this and everyone
->>> else thinks it's useful, I'm okay with keeping it.
->>>
->>>>>> +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
->>>>>> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CDTYUPD, dty);
->>>>>> +	} else {
->>>>>> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CDTY, dty);
->>>>>> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CPRD, prd);
->>>>>> +	}
->>>>>> +}
->>>>>
->>>>> Neither version 1 nor version 2 seem to be able to change the period
->>>>> while the channel is enabled. Perhaps that should be checked for in
->>>>> atmel_pwm_config() and an error (-EBUSY) returned?
->>>>
->>>> The period is configured in dt in device tree, or platform data in non
->>>> device tree. Nowhere will update period. So, not code to update period.
->>>> Am I right? If not, please figure out.
->>>
->>> The .config() operation allows the period to be specified. Just because
->>> nobody currently changes it at runtime doesn't mean it can't be done.
->>>
->>> It is also possible that whoever wrote the device tree or platform data
->>> didn't know that the period must be the same for all PWM channels and
->>> therefore might use different values. If you check for this, at least
->>> they'll notice. If you don't check for it, then they may end up having
->>> the period reconfigured behind their backs, which may cause parts of
->>> their setup to behave unexpectedly.
->>
->> Thanks for this information.
->> I will add code for changing period.
+On mer, 2013-12-04 at 01:20 -0500, Elena Ufimtseva wrote:
+> On Tue, Dec 3, 2013 at 7:35 PM, Elena Ufimtseva <ufimtseva@gmail.com> wro=
+te:
+> > Oh guys, I feel really bad about not replying to these emails... Someho=
+w these
+> > replies all got deleted.. wierd.
+> >
+No worries... You should see *my* backlog. :-P
+
+> > Ok, about that automatic balancing. At the moment of the last patch
+> > automatic numa balancing seem to
+> > work, but after rebasing on the top of 3.12-rc2 I see similar issues.
+> > I will try to figure out what commits broke and will contact Ingo
+> > Molnar and Mel Gorman.
+> >
+> As of now I have patch v4 for reviewing. Not sure if it will be
+> beneficial to post it for review
+> or look closer at the current problem.
 >
-> Just to clarify: I wouldn't want this code to allow changing the period
-> but rather reject incompatible changes to the period with an error code.
+You mean the Linux side? Perhaps stick somewhere a reference to the git
+tree/branch where it lives, but, before re-sending, let's wait for it to
+be as issue free as we can tell?
 
-So, in this patch, just check it as you suggested in previous email, 
-would it be OK?
---->8---
-Perhaps that should be checked for in atmel_pwm_config() and an error 
-(-EBUSY) returned?
----8<---
+> The issue I am seeing right now is defferent from what was happening befo=
+re.
+> The corruption happens when on change_prot_numa way :
+>=20
+Ok, so, I think I need to step back a bit from the actual stack trace
+and look at the big picture. Please, Elena or anyone, correct me if I'm
+saying something wrong about how Linux's autonuma works and interacts
+with Xen.
 
-> Thierry
+The way it worked when I last looked at it was sort of like this:
+ - there was a kthread scanning all the pages, removing the PAGE_PRESENT
+   bit from actually present pages, and adding a new special one
+   (PAGE_NUMA or something like that);
+ - when a page fault is triggered and the PAGE_NUMA flag is found, it
+   figures out the page is actually there, so no swap or anything.
+   However, it tracks from what node the access to that page came from,
+   matches it with the node where the page actually is and collect some
+   statistics about that;
+ - at some point (and here I don't remember the exact logic, since it
+   changed quite a few times) pages ranking badly in the stats above are
+   moved from one node to another.
 
-Best Regards,
-Bo Shen
+Is this description still accurate? If yes, here's what I would (double)
+check, when running this in a PV guest on top of Xen:
 
+ 1. the NUMA hinting page fault, are we getting and handling them
+    correctly in the PV guest? Are the stats in the guest kernel being
+    updated in a sensible way, i.e., do they make sense and properly
+    relate to the virtual topology of the guest?
+    At some point we thought it would have been necessary to intercept
+    these faults and make sure the above is true with some help from the
+    hypervisor... Is this the case? Why? Why not?
+
+ 2. what happens when autonuma tries to move pages from one node to
+    another? For us, that would mean in moving from one virtual node
+    to another... Is there a need to do anything at all? I mean, is
+    this, from our perspective, just copying the content of an MFN from
+    node X into another MFN on node Y, or do we need to update some of
+    our vnuma tracking data structures in Xen?
+
+If we have this figured out already, then I think we just chase bugs and
+repost the series. If not, well, I think we should. :-D
+
+Thanks and Regards,
+Dario
+
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+-----------------------------------------------------------------
+Dario Faggioli, Ph.D, http://about.me/dario.faggioli
+Senior Software Engineer, Citrix Systems R&D Ltd., Cambridge (UK)
+
+
+--=-KnJr3et4PMH86EdEqAhW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iEYEABECAAYFAlKf00IACgkQk4XaBE3IOsT+xgCeOg7AfXbg9cyVeQO9edvoxa3x
+oQUAniqA3TnuUusWL+TrSVgh36ikCbTT
+=du2o
+-----END PGP SIGNATURE-----
+
+--=-KnJr3et4PMH86EdEqAhW--
