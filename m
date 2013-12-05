@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011Ab3LETbA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 14:31:00 -0500
+	id S1752915Ab3LETa6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 14:30:58 -0500
 Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:52527 "EHLO
 	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743Ab3LETaz (ORCPT
+	with ESMTP id S1752841Ab3LETaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Dec 2013 14:30:55 -0500
 X-IronPort-AV: E=Sophos;i="4.93,835,1378882800"; 
-   d="scan'208";a="161131"
+   d="scan'208";a="161132"
 From: Tim Kryger <tim.kryger@linaro.org>
 To: Christian Daudt <bcm@fixthebug.org>, Rob Herring <rob.herring@calxeda.com>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
@@ -23,9 +23,9 @@ CC: Tim Kryger <tim.kryger@linaro.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux MMC List <linux-mmc@vger.kernel.org>,
         Linaro Patches List <patches@linaro.org>
-Subject: [PATCH v4 4/8] ARM: dts: Specify clocks for SDHCIs on bcm11351
-Date: Thu, 5 Dec 2013 11:20:40 -0800
-Message-ID: <1386271244-3927-5-git-send-email-tim.kryger@linaro.org>
+Subject: [PATCH v4 3/8] Documentation: dt: kona-sdhci: Add clocks property
+Date: Thu, 5 Dec 2013 11:20:39 -0800
+Message-ID: <1386271244-3927-4-git-send-email-tim.kryger@linaro.org>
 X-Mailer: git-send-email 1.8.0.1
 In-Reply-To: <1386271244-3927-1-git-send-email-tim.kryger@linaro.org>
 References: <1386271244-3927-1-git-send-email-tim.kryger@linaro.org>
@@ -35,50 +35,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Specify the external clock label in each SDHCI node.
+The Kona SDHCI block requires a clock that must be specified in the
+device tree.  Update the documentation to reflect this requirement.
 
 Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
 Reviewed-by: Matt Porter <matt.porter@linaro.org>
 ---
- arch/arm/boot/dts/bcm11351.dtsi | 4 ++++
+ Documentation/devicetree/bindings/mmc/kona-sdhci.txt | 4 ++++
  1 file changed, 4 insertions(+)
 
-diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
-index 9b99c52..25ca128 100644
---- a/arch/arm/boot/dts/bcm11351.dtsi
-+++ b/arch/arm/boot/dts/bcm11351.dtsi
-@@ -118,6 +118,7 @@
- 		compatible = "brcm,kona-sdhci";
- 		reg = <0x3f180000 0x10000>;
- 		interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&sdio1_clk>;
- 		status = "disabled";
- 	};
+diff --git a/Documentation/devicetree/bindings/mmc/kona-sdhci.txt b/Documentation/devicetree/bindings/mmc/kona-sdhci.txt
+index 789fb07..aaba248 100644
+--- a/Documentation/devicetree/bindings/mmc/kona-sdhci.txt
++++ b/Documentation/devicetree/bindings/mmc/kona-sdhci.txt
+@@ -6,12 +6,16 @@ and the properties present in the bcm281xx SDHCI
+ Required properties:
+ - compatible : Should be "brcm,kona-sdhci"
+ - DEPRECATED: compatible : Should be "bcm,kona-sdhci"
++- clocks: phandle + clock specifier pair of the external clock
++
++Refer to clocks/clock-bindings.txt for generic clock consumer properties.
  
-@@ -125,6 +126,7 @@
- 		compatible = "brcm,kona-sdhci";
- 		reg = <0x3f190000 0x10000>;
- 		interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&sdio2_clk>;
- 		status = "disabled";
- 	};
+ Example:
  
-@@ -132,6 +134,7 @@
- 		compatible = "brcm,kona-sdhci";
- 		reg = <0x3f1a0000 0x10000>;
- 		interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&sdio3_clk>;
- 		status = "disabled";
- 	};
- 
-@@ -139,6 +142,7 @@
- 		compatible = "brcm,kona-sdhci";
- 		reg = <0x3f1b0000 0x10000>;
- 		interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&sdio4_clk>;
- 		status = "disabled";
- 	};
+ sdio2: sdio@0x3f1a0000 {
+ 	compatible = "brcm,kona-sdhci";
+ 	reg = <0x3f1a0000 0x10000>;
++	clocks = <&sdio3_clk>;
+ 	interrupts = <0x0 74 0x4>;
+ };
  
 -- 
 1.8.0.1
