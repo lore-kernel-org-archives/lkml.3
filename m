@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756461Ab3LECqq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 21:46:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18047 "EHLO mx1.redhat.com"
+	id S1756585Ab3LECsm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 21:48:42 -0500
+Received: from ozlabs.org ([203.10.76.45]:45531 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756250Ab3LECqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 21:46:44 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Cc: Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>,
-        Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-Subject: [PATCH 1/3] selinux: call WARN_ONCE() instead of calling audit_log_start()
-Date: Wed,  4 Dec 2013 21:45:54 -0500
-Message-Id: <ef6553c5bb2a7497e43dd4d17bfd43590f0e3dc0.1386206544.git.rgb@redhat.com>
-In-Reply-To: <1382713941.2954.19.camel@flatline.rdu.redhat.com>
-References: <1382713941.2954.19.camel@flatline.rdu.redhat.com>
-In-Reply-To: <cover.1386206544.git.rgb@redhat.com>
-References: <cover.1386206544.git.rgb@redhat.com>
+	id S1756127Ab3LECsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 21:48:40 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Luiz Capitulino <lcapitulino@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] virtio_balloon: update_balloon_size(): update correct field
+In-Reply-To: <20131204171856.3f3453e6@redhat.com>
+References: <20131204171856.3f3453e6@redhat.com>
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Thu, 05 Dec 2013 13:04:36 +1030
+Message-ID: <87ob4wowjn.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Two of the conditions in selinux_audit_rule_match() should never happen and
-the third indicates a race that should be retried.  Remove the calls to
-audit_log() (which call audit_log_start()) and deal with the errors in the
-caller, logging only once if the condition is met.  Calling audit_log_start()
-in this location makes buffer allocation and locking more complicated in the
-calling tree (audit_filter_user()).
+Luiz Capitulino <lcapitulino@redhat.com> writes:
+> According to the virtio spec, the device configuration field
+> that should be updated after an inflation or deflation
+> operation is the 'actual' field, not the 'num_pages' one.
+>
+> Commit 855e0c5288177bcb193f6f6316952d2490478e1c swapped them
+> in update_balloon_size(). Fix it.
+>
+> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
 
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
----
- security/selinux/ss/services.c |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
+Damn, exactly right.  Good catch.
 
-diff --git a/security/selinux/ss/services.c b/security/selinux/ss/services.c
-index b4feecc..f4dda05 100644
---- a/security/selinux/ss/services.c
-+++ b/security/selinux/ss/services.c
-@@ -2938,25 +2938,21 @@ int selinux_audit_rule_match(u32 sid, u32 field, u32 op, void *vrule,
- 	struct selinux_audit_rule *rule = vrule;
- 	int match = 0;
- 
--	if (!rule) {
--		audit_log(actx, GFP_ATOMIC, AUDIT_SELINUX_ERR,
--			  "selinux_audit_rule_match: missing rule\n");
-+	if (unlikely(!rule)) {
-+		WARN_ONCE(1, "selinux_audit_rule_match: missing rule\n");
- 		return -ENOENT;
- 	}
- 
- 	read_lock(&policy_rwlock);
- 
- 	if (rule->au_seqno < latest_granting) {
--		audit_log(actx, GFP_ATOMIC, AUDIT_SELINUX_ERR,
--			  "selinux_audit_rule_match: stale rule\n");
- 		match = -ESTALE;
- 		goto out;
- 	}
- 
- 	ctxt = sidtab_search(&sidtab, sid);
--	if (!ctxt) {
--		audit_log(actx, GFP_ATOMIC, AUDIT_SELINUX_ERR,
--			  "selinux_audit_rule_match: unrecognized SID %d\n",
-+	if (unlikely(!ctxt)) {
-+		WARN_ONCE(1, "selinux_audit_rule_match: unrecognized SID %d\n",
- 			  sid);
- 		match = -ENOENT;
- 		goto out;
--- 
-1.7.1
+Applied,
+Rusty.
 
+>  drivers/virtio/virtio_balloon.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+> index c444654..5c4a95b 100644
+> --- a/drivers/virtio/virtio_balloon.c
+> +++ b/drivers/virtio/virtio_balloon.c
+> @@ -285,7 +285,7 @@ static void update_balloon_size(struct virtio_balloon *vb)
+>  {
+>  	__le32 actual = cpu_to_le32(vb->num_pages);
+>  
+> -	virtio_cwrite(vb->vdev, struct virtio_balloon_config, num_pages,
+> +	virtio_cwrite(vb->vdev, struct virtio_balloon_config, actual,
+>  		      &actual);
+>  }
+>  
+> -- 
+> 1.8.1.4
