@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755775Ab3LEKyr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 05:54:47 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:3335 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754889Ab3LEKyn (ORCPT
+	id S1755701Ab3LEK4B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 05:56:01 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:57437 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475Ab3LEKz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 05:54:43 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 05 Dec 2013 02:45:14 -0800
-Message-ID: <52A05A21.5070100@nvidia.com>
-Date: Thu, 5 Dec 2013 16:19:05 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+	Thu, 5 Dec 2013 05:55:58 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v3 1/3] Documentation: arm: add UEFI support documentation
+To: Matt Sealey <neko@bakuhatsu.net>, Leif Lindholm <leif.lindholm@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-efi@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "heiko@sntech.de" <heiko@sntech.de>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: [REPOST PATCH V2] irq: enable all irqs unconditionally in irq_resume
-References: <1385388587-16442-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1385388587-16442-1-git-send-email-ldewangan@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+        Russell King <linux@arm.linux.org.uk>, matt.fleming@intel.com,
+        roy.franz@linaro.org, msalter@redhat.com,
+        Patch Tracking <patches@linaro.org>, linaro-uefi@linaro.org,
+        Mark Rutland <mark.rutland@arm.com>, Rob Landley <rob@landley.net>,
+        linux-doc@vger.kernel.org
+In-Reply-To: <CAHCPf3t5dEzVWbYZ6DWcFCENNO2dbrx-YeZvKRk0MkEsJMTE3A@mail.gmail.com>
+References: <1385656883-4420-1-git-send-email-leif.lindholm@linaro.org> < 1385656883-4420-2-git-send-email-leif.lindholm@linaro.org> < CAHCPf3t5dEzVWbYZ6DWcFCENNO2dbrx-YeZvKRk0MkEsJMTE3A@mail.gmail.com>
+Date: Thu, 05 Dec 2013 10:55:50 +0000
+Message-Id: <20131205105550.692FCC40710@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On Mon, 2 Dec 2013 13:51:22 -0600, Matt Sealey <neko@bakuhatsu.net> wrote:
+> > +UEFI kernel support on ARM
+> > +==========================
+> > +UEFI kernel support on the ARM architectures (arm and arm64) is only available
+> > +when boot is performed through the stub.
+> > +
+> > +The stub populates the FDT /chosen node with (and the kernel scans for) the
+> > +following parameters:
+> > +________________________________________________________________________________
+> > +Name                      | Size   | Description
+> > +================================================================================
+> > +linux,uefi-system-table   | 64-bit | Physical address of the UEFI System Table.
+> > +--------------------------------------------------------------------------------
+> > +linux,uefi-mmap-start     | 64-bit | Physical address of the UEFI memory map,
+> > +                          |        | populated by the UEFI GetMemoryMap() call.
+> > +--------------------------------------------------------------------------------
+> > +linux,uefi-mmap-size      | 32-bit | Size in bytes of the UEFI memory map
+> > +                          |        | pointed to in previous entry.
+> > +--------------------------------------------------------------------------------
+> > +linux,uefi-mmap-desc-size | 32-bit | Size in bytes of each entry in the UEFI
+> > +                          |        | memory map.
+> > +--------------------------------------------------------------------------------
+> > +linux,uefi-mmap-desc-ver  | 32-bit | Version of the mmap descriptor format.
+> > +--------------------------------------------------------------------------------
+> > +linux,uefi-stub-kern-ver  | string | Copy of linux_banner from build.
+> > +--------------------------------------------------------------------------------
+> 
+> This flies in the face of actually using #address-cells and
+> #size-cells to define how big addresses and sizes are. You're limited
+> here by the root node definitions... that's the spec.
+> 
+> Here's where I think this whole thing falls down as being the weirdest
+> possible implementation of this. It defies logic to put this
+> information in the device tree /chosen node while also attempting to
+> boot the kernel using an EFI stub; the stub is going to have this
+> information because it is going to have the pointer to the system
+> System Table (since it was called by StartImage()). Why not stash the
+> System Table pointer somewhere safe in the stub?
 
-On Monday 25 November 2013 07:39 PM, Laxman Dewangan wrote:
-> When system enters into suspend, it disable all irqs in single
-> function call. This disables EARLY_RESUME irqs also along with
-> normal irqs.
->
-> The EARLY_RESUME irqs get enabled in sys_core_ops->resume and
-> non-EARLY_RESUME irqs get enabled in normal system resume path.
->
-> When suspend_noirq failed or suspend is aborted for any reason,
-> the EARLY_RESUME irqs do not get enabled as sys_core_ops->resume()
-> call did not happen. It only enables the non-EARLY_RESUME irqs in normal
-> disable for remaining life of system.
->
-> Enable all irqs unconditionally in normal irq_resume() regardless of
-> EARLY_RESUME irqs have been already enabled or not.
->
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> Acked-by-and-tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Acked-by: Heiko Stuebner <heiko@sntech.de>
-> Reviewed-by: Pavel Machek <pavel@ucw.cz>
->
+Everything here is about getting from the stub to the kernel. We have a
+boot interface for the kernel proper. It works, and this patch set works
+with it. Also, this is effectively a kernel-internal interface between
+the stub and the kernel so there aren't any ABI issues that we need to
+deail with.
 
-Can you please review this patch?
-This patch is pending from long back for review.
+Go ahead and propose patches for a better interface, but in the mean
+time I see no reason not to merge this series.
 
-Thanks,
-Laxman
-
+g.
