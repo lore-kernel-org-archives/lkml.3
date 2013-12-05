@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933549Ab3LERli (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:41:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38444 "EHLO
+	id S933582Ab3LERl6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:41:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38440 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932997Ab3LERiN (ORCPT
+	with ESMTP id S1757458Ab3LERiM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:38:13 -0500
+	Thu, 5 Dec 2013 12:38:12 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
+Cc: Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 82/90] tracing: Allow events to have NULL strings
-Date: Thu,  5 Dec 2013 17:36:04 +0000
-Message-Id: <1386264972-5399-83-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 81/90] ALSA: hda/realtek - Set pcbeep amp for ALC668
+Date: Thu,  5 Dec 2013 17:36:03 +0000
+Message-Id: <1386264972-5399-82-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -27,91 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Kailang Yang <kailang@realtek.com>
 
-commit 4e58e54754dc1fec21c3a9e824bc108b05fdf46e upstream.
+commit 9ad54547cf6f4410eba83bb95dfd2a0966718d6d upstream.
 
-If an TRACE_EVENT() uses __assign_str() or __get_str on a NULL pointer
-then the following oops will happen:
+Set the missing pcbeep default amp for ALC668.
 
-BUG: unable to handle kernel NULL pointer dereference at   (null)
-IP: [<c127a17b>] strlen+0x10/0x1a
-*pde = 00000000 ^M
-Oops: 0000 [#1] PREEMPT SMP
-Modules linked in:
-CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.13.0-rc1-test+ #2
-Hardware name:                  /DG965MQ, BIOS MQ96510J.86A.0372.2006.0605.1717 06/05/2006^M
-task: f5cde9f0 ti: f5e5e000 task.ti: f5e5e000
-EIP: 0060:[<c127a17b>] EFLAGS: 00210046 CPU: 1
-EIP is at strlen+0x10/0x1a
-EAX: 00000000 EBX: c2472da8 ECX: ffffffff EDX: c2472da8
-ESI: c1c5e5fc EDI: 00000000 EBP: f5e5fe84 ESP: f5e5fe80
- DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-CR0: 8005003b CR2: 00000000 CR3: 01f32000 CR4: 000007d0
-Stack:
- f5f18b90 f5e5feb8 c10687a8 0759004f 00000005 00000005 00000005 00200046
- 00000002 00000000 c1082a93 f56c7e28 c2472da8 c1082a93 f5e5fee4 c106bc61^M
- 00000000 c1082a93 00000000 00000000 00000001 00200046 00200082 00000000
-Call Trace:
- [<c10687a8>] ftrace_raw_event_lock+0x39/0xc0
- [<c1082a93>] ? ktime_get+0x29/0x69
- [<c1082a93>] ? ktime_get+0x29/0x69
- [<c106bc61>] lock_release+0x57/0x1a5
- [<c1082a93>] ? ktime_get+0x29/0x69
- [<c10824dd>] read_seqcount_begin.constprop.7+0x4d/0x75
- [<c1082a93>] ? ktime_get+0x29/0x69^M
- [<c1082a93>] ktime_get+0x29/0x69
- [<c108a46a>] __tick_nohz_idle_enter+0x1e/0x426
- [<c10690e8>] ? lock_release_holdtime.part.19+0x48/0x4d
- [<c10bc184>] ? time_hardirqs_off+0xe/0x28
- [<c1068c82>] ? trace_hardirqs_off_caller+0x3f/0xaf
- [<c108a8cb>] tick_nohz_idle_enter+0x59/0x62
- [<c1079242>] cpu_startup_entry+0x64/0x192
- [<c102299c>] start_secondary+0x277/0x27c
-Code: 90 89 c6 89 d0 88 c4 ac 38 e0 74 09 84 c0 75 f7 be 01 00 00 00 89 f0 48 5e 5d c3 55 89 e5 57 66 66 66 66 90 83 c9 ff 89 c7 31 c0 <f2> ae f7 d1 8d 41 ff 5f 5d c3 55 89 e5 57 66 66 66 66 90 31 ff
-EIP: [<c127a17b>] strlen+0x10/0x1a SS:ESP 0068:f5e5fe80
-CR2: 0000000000000000
----[ end trace 01bc47bf519ec1b2 ]---
-
-New tracepoints have been added that have allowed for NULL pointers
-being assigned to strings. To fix this, change the TRACE_EVENT() code
-to check for NULL and if it is, it will assign "(null)" to it instead
-(similar to what glibc printf does).
-
-Reported-by: Shuah Khan <shuah.kh@samsung.com>
-Reported-by: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Link: http://lkml.kernel.org/r/CAGdX0WFeEuy+DtpsJzyzn0343qEEjLX97+o1VREFkUEhndC+5Q@mail.gmail.com
-Link: http://lkml.kernel.org/r/528D6972.9010702@samsung.com
-Fixes: 9cbf117662e2 ("tracing/events: provide string with undefined size support")
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Kailang Yang <kailang@realtek.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/trace/ftrace.h | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_realtek.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 7697249..763bf05 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -379,7 +379,8 @@ ftrace_define_fields_##call(struct ftrace_event_call *event_call)	\
- 	__data_size += (len) * sizeof(type);
- 
- #undef __string
--#define __string(item, src) __dynamic_array(char, item, strlen(src) + 1)
-+#define __string(item, src) __dynamic_array(char, item,			\
-+		    strlen((src) ? (const char *)(src) : "(null)") + 1)
- 
- #undef DECLARE_EVENT_CLASS
- #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
-@@ -504,7 +505,7 @@ static inline notrace int ftrace_get_offsets_##call(			\
- 
- #undef __assign_str
- #define __assign_str(dst, src)						\
--	strcpy(__get_str(dst), src);
-+	strcpy(__get_str(dst), (src) ? (const char *)(src) : "(null)");
- 
- #undef TP_fast_assign
- #define TP_fast_assign(args...) args
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 27d88ac..45f1b1c 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6887,6 +6887,7 @@ static int patch_alc662(struct hda_codec *codec)
+ 		case 0x10ec0272:
+ 		case 0x10ec0663:
+ 		case 0x10ec0665:
++		case 0x10ec0668:
+ 			set_beep_amp(spec, 0x0b, 0x04, HDA_INPUT);
+ 			break;
+ 		case 0x10ec0273:
 -- 
 1.8.3.2
 
