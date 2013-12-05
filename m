@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757488Ab3LERit (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:38:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38485 "EHLO
+	id S933479Ab3LERiq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:38:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38496 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933462Ab3LERiW (ORCPT
+	with ESMTP id S1756956Ab3LERiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:38:22 -0500
+	Thu, 5 Dec 2013 12:38:25 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>, "Luck, Tony" <tony.luck@intel.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 86/90] exec/ptrace: fix get_dumpable() incorrect tests
-Date: Thu,  5 Dec 2013 17:36:08 +0000
-Message-Id: <1386264972-5399-87-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 90/90] misc: atmel_pwm: add deferred-probing support
+Date: Thu,  5 Dec 2013 17:36:12 +0000
+Message-Id: <1386264972-5399-91-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -31,127 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit d049f74f2dbe71354d43d393ac3a188947811348 upstream.
+commit 5c6d6fd1564138ad048564e48639f842714a90c6 upstream.
 
-The get_dumpable() return value is not boolean.  Most users of the
-function actually want to be testing for non-SUID_DUMP_USER(1) rather than
-SUID_DUMP_DISABLE(0).  The SUID_DUMP_ROOT(2) is also considered a
-protected state.  Almost all places did this correctly, excepting the two
-places fixed in this patch.
+Two drivers (atmel-pwm-bl and leds-atmel-pwm) currently depend on the
+atmel_pwm driver to have bound to any pwm-device before their devices
+are probed.
 
-Wrong logic:
-    if (dumpable == SUID_DUMP_DISABLE) { /* be protective */ }
-        or
-    if (dumpable == 0) { /* be protective */ }
-        or
-    if (!dumpable) { /* be protective */ }
+Support deferred probing of such devices by making sure to return
+-EPROBE_DEFER from pwm_channel_alloc when no pwm-device has yet been
+bound.
 
-Correct logic:
-    if (dumpable != SUID_DUMP_USER) { /* be protective */ }
-        or
-    if (dumpable != 1) { /* be protective */ }
-
-Without this patch, if the system had set the sysctl fs/suid_dumpable=2, a
-user was able to ptrace attach to processes that had dropped privileges to
-that user.  (This may have been partially mitigated if Yama was enabled.)
-
-The macros have been moved into the file that declares get/set_dumpable(),
-which means things like the ia64 code can see them too.
-
-CVE-2013-2929
-
-Reported-by: Vasily Kulikov <segoon@openwall.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: "Luck, Tony" <tony.luck@intel.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/ia64/include/asm/processor.h | 2 +-
- fs/exec.c                         | 6 ++++++
- include/linux/binfmts.h           | 3 ---
- include/linux/sched.h             | 4 ++++
- kernel/ptrace.c                   | 3 ++-
- 5 files changed, 13 insertions(+), 5 deletions(-)
+ drivers/misc/atmel_pwm.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/ia64/include/asm/processor.h b/arch/ia64/include/asm/processor.h
-index 832dd37..f641343 100644
---- a/arch/ia64/include/asm/processor.h
-+++ b/arch/ia64/include/asm/processor.h
-@@ -319,7 +319,7 @@ struct thread_struct {
- 	regs->loadrs = 0;									\
- 	regs->r8 = get_dumpable(current->mm);	/* set "don't zap registers" flag */		\
- 	regs->r12 = new_sp - 16;	/* allocate 16 byte scratch area */			\
--	if (unlikely(!get_dumpable(current->mm))) {							\
-+	if (unlikely(get_dumpable(current->mm) != SUID_DUMP_USER)) {	\
- 		/*										\
- 		 * Zap scratch regs to avoid leaking bits between processes with different	\
- 		 * uid/privileges.								\
-diff --git a/fs/exec.c b/fs/exec.c
-index 832763a..ac0a868 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -2049,6 +2049,12 @@ static int __get_dumpable(unsigned long mm_flags)
- 	return (ret >= 2) ? 2 : ret;
- }
+diff --git a/drivers/misc/atmel_pwm.c b/drivers/misc/atmel_pwm.c
+index 28f5aaa..2741108 100644
+--- a/drivers/misc/atmel_pwm.c
++++ b/drivers/misc/atmel_pwm.c
+@@ -90,8 +90,10 @@ int pwm_channel_alloc(int index, struct pwm_channel *ch)
+ 	unsigned long	flags;
+ 	int		status = 0;
  
-+/*
-+ * This returns the actual value of the suid_dumpable flag. For things
-+ * that are using this for checking for privilege transitions, it must
-+ * test against SUID_DUMP_USER rather than treating it as a boolean
-+ * value.
-+ */
- int get_dumpable(struct mm_struct *mm)
- {
- 	return __get_dumpable(mm->flags);
-diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
-index 5bab59b..424b381 100644
---- a/include/linux/binfmts.h
-+++ b/include/linux/binfmts.h
-@@ -113,9 +113,6 @@ extern void setup_new_exec(struct linux_binprm * bprm);
- extern void would_dump(struct linux_binprm *, struct file *);
- 
- extern int suid_dumpable;
--#define SUID_DUMP_DISABLE	0	/* No setuid dumping */
--#define SUID_DUMP_USER		1	/* Dump as user of process */
--#define SUID_DUMP_ROOT		2	/* Dump as root */
- 
- /* Stack area protections */
- #define EXSTACK_DEFAULT   0	/* Whatever the arch defaults to */
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index ebd15f9..be28098 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -406,6 +406,10 @@ static inline void arch_pick_mmap_layout(struct mm_struct *mm) {}
- extern void set_dumpable(struct mm_struct *mm, int value);
- extern int get_dumpable(struct mm_struct *mm);
- 
-+#define SUID_DUMP_DISABLE	0	/* No setuid dumping */
-+#define SUID_DUMP_USER		1	/* Dump as user of process */
-+#define SUID_DUMP_ROOT		2	/* Dump as root */
+-	/* insist on PWM init, with this signal pinned out */
+-	if (!pwm || !(pwm->mask & 1 << index))
++	if (!pwm)
++		return -EPROBE_DEFER;
 +
- /* mm flags */
- /* dumpable bits */
- #define MMF_DUMPABLE      0  /* core dump is permitted */
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index b96de86b4..6bdbe71 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -253,7 +253,8 @@ ok:
- 	smp_rmb();
- 	if (task->mm)
- 		dumpable = get_dumpable(task->mm);
--	if (!dumpable  && !ptrace_has_cap(task_user_ns(task), mode))
-+	if (dumpable != SUID_DUMP_USER &&
-+	    !ptrace_has_cap(task_user_ns(task), mode))
- 		return -EPERM;
++	if (!(pwm->mask & 1 << index))
+ 		return -ENODEV;
  
- 	return security_ptrace_access_check(task, mode);
+ 	if (index < 0 || index >= PWM_NCHAN || !ch)
 -- 
 1.8.3.2
 
