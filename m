@@ -1,116 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756977Ab3LERUe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:20:34 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:43099 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab3LERUd (ORCPT
+	id S1757075Ab3LERWH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:22:07 -0500
+Received: from imx9.toshiba.co.jp ([202.33.96.51]:52541 "EHLO
+	imx9.toshiba.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756888Ab3LERWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:20:33 -0500
-Message-ID: <1386264029.2572.1.camel@leira.trondhjem.org>
-Subject: [GIT PULL] Please pull NFS client bugfixes
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Torvalds Linus <torvalds@linux-foundation.org>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Date: Thu, 05 Dec 2013 12:20:29 -0500
-Organization: Primary Data
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-pQ1NGriv4ugg90GsT3Ei"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	Thu, 5 Dec 2013 12:22:04 -0500
+X-Greylist: delayed 1708 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Dec 2013 12:22:02 EST
+From: Yoshitake Kobayashi <yoshitake.kobayashi@toshiba.co.jp>
+To: gregkh@linuxfoundation.org, stable@vger.kernel.org
+Cc: cjb@laptop.org, linux-kernel@vger.kernel.org,
+        KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
+Subject: [PATCH 3.4] mmc: block: fix a bug of error handling in MMC driver
+Date: Fri,  6 Dec 2013 01:47:03 +0900
+Message-Id: <1386262023-30954-1-git-send-email-yoshitake.kobayashi@toshiba.co.jp>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
 
---=-pQ1NGriv4ugg90GsT3Ei
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+commit c8760069627ad3b0dbbea170f0c4c58b16e18d3d upstream.
 
-Hi Linus,
+Current MMC driver doesn't handle generic error (bit19 of device
+status) in write sequence. As a result, write data gets lost when
+generic error occurs. For example, a generic error when updating a
+filesystem management information causes a loss of write data and
+corrupts the filesystem. In the worst case, the system will never
+boot.
 
-The following changes since commit 8c2fabc6542d9d0f8b16bd1045c2eda59bdcde13=
-:
+This patch includes the following functionality:
+  1. To enable error checking for the response of CMD12 and CMD13
+     in write command sequence
+  2. To retry write sequence when a generic error occurs
 
-  nfs: fix pnfs Kconfig defaults (2013-11-15 13:41:43 -0500)
+[Backported to 3.4-stable]
 
-are available in the git repository at:
+Signed-off-by: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
+Signed-off-by: Chris Ball <cjb@laptop.org>
+---
+ drivers/mmc/card/block.c |   47 +++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 44 insertions(+), 3 deletions(-)
 
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.13-=
-3
-
-for you to fetch changes up to 3873d064b8538686bbbd4b858dc8a07db1f7f43a:
-
-  nfs: fix do_div() warning by instead using sector_div() (2013-12-04 12:57=
-:37 -0500)
-
-----------------------------------------------------------------
-NFS client bugfixes
-
-- Stable fix for a NFSv4.1 delegation and state recovery deadlock
-- Stable fix for a loop on irrecoverable errors when returning delegations
-- Fix a 3-way deadlock between layoutreturn, open, and state recovery
-- Update the MAINTAINERS file with contact information for Trond Myklebust
-- Close needs to handle NFS4ERR_ADMIN_REVOKED
-- Enabling v4.2 should not recompile nfsd and lockd
-- Fix a couple of compile warnings
-
-----------------------------------------------------------------
-Andy Adamson (2):
-      NFSv4 wait on recovery for async session errors
-      SUNRPC: do not fail gss proc NULL calls with EACCES
-
-Anna Schumaker (1):
-      NFS: Enabling v4.2 should not recompile nfsd and lockd
-
-Helge Deller (1):
-      nfs: fix do_div() warning by instead using sector_div()
-
-Trond Myklebust (5):
-      NFS: Fix a warning in nfs_setsecurity
-      NFSv4: Update list of irrecoverable errors on DELEGRETURN
-      NFSv4: close needs to handle NFS4ERR_ADMIN_REVOKED
-      NFSv4.1: Prevent a 3-way deadlock between layoutreturn, open and stat=
-e recovery
-      MAINTAINERS: Update contact information for Trond Myklebust
-
- MAINTAINERS                      |  4 ++--
- fs/nfs/blocklayout/blocklayout.h |  1 +
- fs/nfs/blocklayout/extents.c     |  2 +-
- fs/nfs/dns_resolve.c             |  2 ++
- fs/nfs/inode.c                   |  2 +-
- fs/nfs/internal.h                | 15 +++++++++++++++
- fs/nfs/nfs4_fs.h                 |  8 ++++++++
- fs/nfs/nfs4proc.c                | 30 +++++++++++++++++++++++-------
- include/linux/nfs4.h             | 10 ----------
- include/linux/nfs_fs.h           | 18 ------------------
- net/sunrpc/auth_gss/auth_gss.c   |  2 +-
- 11 files changed, 54 insertions(+), 40 deletions(-)
-
-
---=-pQ1NGriv4ugg90GsT3Ei
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAABAgAGBQJSoLXdAAoJEGcL54qWCgDyytgQAIM7qNrEQcqnvQzbQk+v+ouc
-9D9+HSWoeyS5mWgupuYkyQNgGHzaKWkivFwQqYFcEdsUnNaDUfclmXYwhfhNPYrs
-TdZpNlMCCESkxF28Tx6Ks99De7sMoIo8Rgm30fTGmGrjNJECfzB8yro3GlyianDm
-Z+bqAKCgB6qqPtypKzOKwu+6EQvjVEHzFgCYcmE9e0s0JUaNh5hqSRzfSb3b7Iom
-JgjhzeF/59EHT27EOWxPoD4Bck4qOFZNc61aY+P1TVS95lgt7rAkmEIfoHqq++dx
-dKI5qhGq5MPGlieGIFWq3vGZARpgyDarChcYeX8IisP48GT4+MarTgEDxoIuD6xg
-UGgZ96czMV0f/NZa8UUkCVsqXDx43pg3wMs4a7Q589sP21IQ2MQFAIcHrGJoxV5i
-OvsaKFUgxvdP7jhIz3cEOV67H+YKGby7bkgnEgJgP4Lg4ZNqZpvVIS6Lejf0Dd7m
-//DTxFmuPC2Wj4DNipSAEAHJJbPna3pETmFNG1Zob4bByr12kcQs2Y2yWaBnfj2y
-b5hZIFOie9M1ZtcOQOiX2xDYm6ZVkEJyYIxJFXu3GuOkIlbiGhNN8QhmpCHORQ7k
-RO1TxhMKePkyNBlv3X4o5ytYfA7SijQv7pUGEnjR4zllb9Jo3OKUv5n2LkR43Nai
-vZJDgCVxETQ9Lxvh6eUp
-=sB4E
------END PGP SIGNATURE-----
-
---=-pQ1NGriv4ugg90GsT3Ei--
+diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+index 833ff16..91042a2 100644
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -701,7 +701,7 @@ static int mmc_blk_cmd_error(struct request *req, const char *name, int error,
+  * Otherwise we don't understand what happened, so abort.
+  */
+ static int mmc_blk_cmd_recovery(struct mmc_card *card, struct request *req,
+-	struct mmc_blk_request *brq, int *ecc_err)
++	struct mmc_blk_request *brq, int *ecc_err, int *gen_err)
+ {
+ 	bool prev_cmd_status_valid = true;
+ 	u32 status, stop_status = 0;
+@@ -739,6 +739,16 @@ static int mmc_blk_cmd_recovery(struct mmc_card *card, struct request *req,
+ 	    (brq->cmd.resp[0] & R1_CARD_ECC_FAILED))
+ 		*ecc_err = 1;
+ 
++	/* Flag General errors */
++	if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ)
++		if ((status & R1_ERROR) ||
++			(brq->stop.resp[0] & R1_ERROR)) {
++			pr_err("%s: %s: general error sending stop or status command, stop cmd response %#x, card status %#x\n",
++			       req->rq_disk->disk_name, __func__,
++			       brq->stop.resp[0], status);
++			*gen_err = 1;
++		}
++
+ 	/*
+ 	 * Check the current card state.  If it is in some data transfer
+ 	 * mode, tell it to stop (and hopefully transition back to TRAN.)
+@@ -758,6 +768,13 @@ static int mmc_blk_cmd_recovery(struct mmc_card *card, struct request *req,
+ 			return ERR_ABORT;
+ 		if (stop_status & R1_CARD_ECC_FAILED)
+ 			*ecc_err = 1;
++		if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ)
++			if (stop_status & R1_ERROR) {
++				pr_err("%s: %s: general error sending stop command, stop cmd response %#x\n",
++				       req->rq_disk->disk_name, __func__,
++				       stop_status);
++				*gen_err = 1;
++			}
+ 	}
+ 
+ 	/* Check for set block count errors */
+@@ -1007,7 +1024,7 @@ static int mmc_blk_err_check(struct mmc_card *card,
+ 						    mmc_active);
+ 	struct mmc_blk_request *brq = &mq_mrq->brq;
+ 	struct request *req = mq_mrq->req;
+-	int ecc_err = 0;
++	int ecc_err = 0, gen_err = 0;
+ 
+ 	/*
+ 	 * sbc.error indicates a problem with the set block count
+@@ -1021,7 +1038,7 @@ static int mmc_blk_err_check(struct mmc_card *card,
+ 	 */
+ 	if (brq->sbc.error || brq->cmd.error || brq->stop.error ||
+ 	    brq->data.error) {
+-		switch (mmc_blk_cmd_recovery(card, req, brq, &ecc_err)) {
++		switch (mmc_blk_cmd_recovery(card, req, brq, &ecc_err, &gen_err)) {
+ 		case ERR_RETRY:
+ 			return MMC_BLK_RETRY;
+ 		case ERR_ABORT:
+@@ -1051,6 +1068,15 @@ static int mmc_blk_err_check(struct mmc_card *card,
+ 	 */
+ 	if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ) {
+ 		u32 status;
++
++		/* Check stop command response */
++		if (brq->stop.resp[0] & R1_ERROR) {
++			pr_err("%s: %s: general error sending stop command, stop cmd response %#x\n",
++			       req->rq_disk->disk_name, __func__,
++			       brq->stop.resp[0]);
++			gen_err = 1;
++		}
++
+ 		do {
+ 			int err = get_card_status(card, &status, 5);
+ 			if (err) {
+@@ -1058,6 +1084,14 @@ static int mmc_blk_err_check(struct mmc_card *card,
+ 				       req->rq_disk->disk_name, err);
+ 				return MMC_BLK_CMD_ERR;
+ 			}
++
++			if (status & R1_ERROR) {
++				pr_err("%s: %s: general error sending status command, card status %#x\n",
++				       req->rq_disk->disk_name, __func__,
++				       status);
++				gen_err = 1;
++			}
++
+ 			/*
+ 			 * Some cards mishandle the status bits,
+ 			 * so make sure to check both the busy
+@@ -1067,6 +1101,13 @@ static int mmc_blk_err_check(struct mmc_card *card,
+ 			 (R1_CURRENT_STATE(status) == R1_STATE_PRG));
+ 	}
+ 
++	/* if general error occurs, retry the write operation. */
++	if (gen_err) {
++		pr_warning("%s: retrying write for general error\n",
++				req->rq_disk->disk_name);
++		return MMC_BLK_RETRY;
++	}
++
+ 	if (brq->data.error) {
+ 		pr_err("%s: error %d transferring data, sector %u, nr %u, cmd response %#x, card status %#x\n",
+ 		       req->rq_disk->disk_name, brq->data.error,
+-- 
+1.7.0.4
 
