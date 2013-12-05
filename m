@@ -1,118 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291Ab3LDX5G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 18:57:06 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:47442 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753218Ab3LDX5C (ORCPT
+	id S932945Ab3LEAA0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 19:00:26 -0500
+Received: from mail-yh0-f41.google.com ([209.85.213.41]:38382 "EHLO
+	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752805Ab3LEAAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 18:57:02 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApgGABnAn1J5LHyk/2dsb2JhbABZgwe0JoVPgR4XdIIlAQEFJxMcIxAIAxgJJQ8FJQMhE4gBwW0XFo5oB4QzA5gTikyHSIM9KA
-Date: Thu, 5 Dec 2013 10:56:56 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [OOPS, 3.13-rc2] null ptr in dio_complete()
-Message-ID: <20131204235656.GG8803@dastard>
-References: <20131203215940.GX10988@dastard>
- <20131204015837.GJ10988@dastard>
- <20131204033815.GK10988@dastard>
- <20131204034712.GM5051@kernel.dk>
- <20131204041749.GL10988@dastard>
+	Wed, 4 Dec 2013 19:00:23 -0500
+Date: Wed, 4 Dec 2013 16:00:19 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Sima Baymani <sima.baymani@gmail.com>
+cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org, tangchen@cn.fujitsu.com,
+        akpm@linux-foundation.org, linux-mm@kvack.org, aquini@redhat.com,
+        linux-kernel@vger.kernel.org, gang.chen@asianux.com,
+        aneesh.kumar@linux.vnet.ibm.com, isimatu.yasuaki@jp.fujitsu.com,
+        kirill.shutemov@linux.intel.com, sjenning@linux.vnet.ibm.com,
+        darrick.wong@oracle.com
+Subject: Re: linux-next: Tree for Dec 3 (mm/Kconfig)
+In-Reply-To: <CAL8k4FwmVmCq8jPWNoRXKPtnSdRc3pwaMCE+AZoq_VoZphpR_A@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1312041558280.6329@chino.kir.corp.google.com>
+References: <CAL8k4FwmVmCq8jPWNoRXKPtnSdRc3pwaMCE+AZoq_VoZphpR_A@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131204041749.GL10988@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 03:17:49PM +1100, Dave Chinner wrote:
-> On Tue, Dec 03, 2013 at 08:47:12PM -0700, Jens Axboe wrote:
-> > On Wed, Dec 04 2013, Dave Chinner wrote:
-> > > On Wed, Dec 04, 2013 at 12:58:38PM +1100, Dave Chinner wrote:
-> > > > On Wed, Dec 04, 2013 at 08:59:40AM +1100, Dave Chinner wrote:
-> > > > > Hi Jens,
-> > > > > 
-> > > > > Not sure who to direct this to or CC, so I figured you are the
-> > > > > person to do that. I just had xfstests generic/299 (an AIO/DIO test)
-> > > > > oops in dio_complete() like so:
-> > > > > 
-> ....
-> > > > > [ 9650.590630]  <IRQ>
-> > > > > [ 9650.590630]  [<ffffffff811ddae3>] dio_complete+0xa3/0x140
-> > > > > [ 9650.590630]  [<ffffffff811ddc2a>] dio_bio_end_aio+0x7a/0x110
-> > > > > [ 9650.590630]  [<ffffffff811ddbb5>] ? dio_bio_end_aio+0x5/0x110
-> > > > > [ 9650.590630]  [<ffffffff811d8a9d>] bio_endio+0x1d/0x30
-> > > > > [ 9650.590630]  [<ffffffff8175d65f>] blk_mq_complete_request+0x5f/0x120
-> > > > > [ 9650.590630]  [<ffffffff8175d736>] __blk_mq_end_io+0x16/0x20
-> > > > > [ 9650.590630]  [<ffffffff8175d7a8>] blk_mq_end_io+0x68/0xd0
-> > > > > [ 9650.590630]  [<ffffffff818539a7>] virtblk_done+0x67/0x110
-> > > > > [ 9650.590630]  [<ffffffff817f74c5>] vring_interrupt+0x35/0x60
-> .....
-> > > > And I just hit this from running xfs_repair which is doing
-> > > > multithreaded direct IO directly on /dev/vdc:
-> > > > 
-> ....
-> > > > [ 1776.510446] IP: [<ffffffff81755b6a>] blk_account_io_done+0x6a/0x180
-> ....
-> > > > [ 1776.512577]  [<ffffffff8175e4b8>] blk_mq_complete_request+0xb8/0x120
-> > > > [ 1776.512577]  [<ffffffff8175e536>] __blk_mq_end_io+0x16/0x20
-> > > > [ 1776.512577]  [<ffffffff8175e5a8>] blk_mq_end_io+0x68/0xd0
-> > > > [ 1776.512577]  [<ffffffff81852e47>] virtblk_done+0x67/0x110
-> > > > [ 1776.512577]  [<ffffffff817f7925>] vring_interrupt+0x35/0x60
-> > > > [ 1776.512577]  [<ffffffff810e48a4>] handle_irq_event_percpu+0x54/0x1e0
-> .....
-> > > > So this is looking like another virtio+blk_mq problem....
-> > > 
-> > > This one is definitely reproducable. Just hit it again...
-> > 
-> > I'll take a look at this. You don't happen to have gdb dumps of the
-> > lines associated with those crashes? Just to save me some digging
-> > time...
-> 
-> Only this:
-> 
-> (gdb) l *(dio_complete+0xa3)
-> 0xffffffff811ddae3 is in dio_complete (fs/direct-io.c:282).
-> 277                     }
-> 278
-> 279                     aio_complete(dio->iocb, ret, 0);
-> 280             }
-> 281
-> 282             kmem_cache_free(dio_cache, dio);
-> 283             return ret;
-> 284     }
-> 285
-> 286     static void dio_aio_complete_work(struct work_struct *work)
-> 
-> And this:
-> 
-> (gdb) l *(blk_account_io_done+0x6a)
-> 0xffffffff81755b6a is in blk_account_io_done (block/blk-core.c:2049).
-> 2044                    int cpu;
-> 2045
-> 2046                    cpu = part_stat_lock();
-> 2047                    part = req->part;
-> 2048
-> 2049                    part_stat_inc(cpu, part, ios[rw]);
-> 2050                    part_stat_add(cpu, part, ticks[rw], duration);
-> 2051                    part_round_stats(cpu, part);
-> 2052                    part_dec_in_flight(part, rw);
-> 2053
-> 
-> as I've rebuild the kernel with different patches since the one
-> running on the machine that is triggering the problem.
+On Wed, 4 Dec 2013, Sima Baymani wrote:
 
-Any update on this, Jens? I've hit this blk_account_io_done() panic
-10 times in the past 2 hours while trying to do xfs_repair
-testing....
+> When generating randconfig, got following warning:
+> 
+> warning: (HWPOISON_INJECT && MEM_SOFT_DIRTY) selects PROC_PAGE_MONITOR
+> which has unmet direct dependencies (PROC_FS && MMU)
+> 
+> I would have liked to form a patch for it, but not sure whether to
+> simply add PROC_FS && MMU as dependencies for HWPOISON_INJECT and
+> MEM_SOFT_DIRTY, or if some other fix would be more suitable?
+> 
 
-Cheers,
+CONFIG_HWPOISON_INJECT is unrelated, it already depends on CONFIG_PROC_FS.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+CONFIG_PROC_PAGE_MONITOR is obviously only useful for CONFIG_PROC_FS, so 
+the correct fix would be to make CONFIG_MEM_SOFT_DIRTY depend on 
+CONFIG_PROC_FS.
+
+Want to try sending a patch?
