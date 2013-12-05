@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933658Ab3LER7x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:59:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38112 "EHLO
+	id S933708Ab3LESAw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 13:00:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38099 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932767Ab3LERgo (ORCPT
+	with ESMTP id S1757235Ab3LERgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:36:44 -0500
+	Thu, 5 Dec 2013 12:36:39 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Pang Xunlei <pang.xunlei@zte.com.cn>, Zhang Yi <zhang.yi20@zte.com.cn>,
-        Lu Zhongjun <lu.zhongjun@zte.com.cn>,
-        Brian Norris <computersforpeace@gmail.com>,
+Cc: Aaron Lu <aaron.lu@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 16/90] mtd: map: fixed bug in 64-bit systems
-Date: Thu,  5 Dec 2013 17:34:58 +0000
-Message-Id: <1386264972-5399-17-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 14/90] PM / hibernate: Avoid overflow in hibernate_preallocate_memory()
+Date: Thu,  5 Dec 2013 17:34:56 +0000
+Message-Id: <1386264972-5399-15-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -29,73 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wang Haitao <wang.haitao1@zte.com.cn>
+From: Aaron Lu <aaron.lu@intel.com>
 
-commit a4d62babf988fe5dfde24437fa135ef147bc7aa0 upstream.
+commit fd432b9f8c7c88428a4635b9f5a9c6e174df6e36 upstream.
 
-Hardware:
-	CPU: XLP832,the 64-bit OS
-	NOR Flash:S29GL128S 128M
-Software:
-	Kernel:2.6.32.41
-	Filesystem:JFFS2
-When writing files, errors appear:
-	Write len 182  but return retlen 180
-	Write of 182 bytes at 0x072c815c failed. returned -5, retlen 180
-	Write len 186  but return retlen 184
-	Write of 186 bytes at 0x072caff4 failed. returned -5, retlen 184
-These errors exist only in 64-bit systems,not in 32-bit systems. After analysis, we
-found that the left shift operation is wrong in map_word_load_partial. For instance:
-	unsigned char buf[3] ={0x9e,0x3a,0xea};
-	map_bankwidth(map) is 4;
-	for (i=0; i < 3; i++) {
-		int bitpos;
-		bitpos = (map_bankwidth(map)-1-i)*8;
-		orig.x[0] &= ~(0xff << bitpos);
-		orig.x[0] |= buf[i] << bitpos;
-	}
+When system has a lot of highmem (e.g. 16GiB using a 32 bits kernel),
+the code to calculate how much memory we need to preallocate in
+normal zone may cause overflow. As Leon has analysed:
 
-The value of orig.x[0] is expected to be 0x9e3aeaff, but in this situation(64-bit
-System) we'll get the wrong value of 0xffffffff9e3aeaff due to the 64-bit sign
-extension:
-buf[i] is defined as "unsigned char" and the left-shift operation will convert it
-to the type of "signed int", so when left-shift buf[i] by 24 bits, the final result
-will get the wrong value: 0xffffffff9e3aeaff.
+ It looks that during computing 'alloc' variable there is overflow:
+ alloc = (3943404 - 1970542) - 1978280 = -5418 (signed)
+ And this function goes to err_out.
 
-If the left-shift bits are less than 24, then sign extension will not occur. Whereas
-the bankwidth of the nor flash we used is 4, therefore this BUG emerges.
+Fix this by avoiding that overflow.
 
-Signed-off-by: Pang Xunlei <pang.xunlei@zte.com.cn>
-Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
-Signed-off-by: Lu Zhongjun <lu.zhongjun@zte.com.cn>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=60817
+Reported-and-tested-by: Leon Drugi <eyak@wp.pl>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/mtd/map.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/power/snapshot.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/mtd/map.h b/include/linux/mtd/map.h
-index 3595a02..292645f 100644
---- a/include/linux/mtd/map.h
-+++ b/include/linux/mtd/map.h
-@@ -362,7 +362,7 @@ static inline map_word map_word_load_partial(struct map_info *map, map_word orig
- 			bitpos = (map_bankwidth(map)-1-i)*8;
- #endif
- 			orig.x[0] &= ~(0xff << bitpos);
--			orig.x[0] |= buf[i-start] << bitpos;
-+			orig.x[0] |= (unsigned long)buf[i-start] << bitpos;
- 		}
- 	}
- 	return orig;
-@@ -381,7 +381,7 @@ static inline map_word map_word_ff(struct map_info *map)
- 
- 	if (map_bankwidth(map) < MAP_FF_LIMIT) {
- 		int bw = 8 * map_bankwidth(map);
--		r.x[0] = (1 << bw) - 1;
-+		r.x[0] = (1UL << bw) - 1;
- 	} else {
- 		for (i=0; i<map_words(map); i++)
- 			r.x[i] = ~0UL;
+diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+index 0de2857..91c04f1 100644
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -1398,7 +1398,11 @@ int hibernate_preallocate_memory(void)
+ 	 * highmem and non-highmem zones separately.
+ 	 */
+ 	pages_highmem = preallocate_image_highmem(highmem / 2);
+-	alloc = (count - max_size) - pages_highmem;
++	alloc = count - max_size;
++	if (alloc > pages_highmem)
++		alloc -= pages_highmem;
++	else
++		alloc = 0;
+ 	pages = preallocate_image_memory(alloc, avail_normal);
+ 	if (pages < alloc) {
+ 		/* We have exhausted non-highmem pages, try highmem. */
 -- 
 1.8.3.2
 
