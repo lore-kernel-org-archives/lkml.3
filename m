@@ -1,52 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab3LEWyt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 17:54:49 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38204 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754228Ab3LEWyo (ORCPT
+	id S1754725Ab3LEWyn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 17:54:43 -0500
+Received: from smtprelay0195.hostedemail.com ([216.40.44.195]:58486 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752753Ab3LEWym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 17:54:44 -0500
-Message-ID: <52A10431.6070306@wwwdotorg.org>
-Date: Thu, 05 Dec 2013 15:54:41 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Bill Huang <bilhuang@nvidia.com>, rjw@rjwysocki.net,
-        viresh.kumar@linaro.org, thierry.reding@gmail.com
-CC: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] cpufreq: tegra: Call tegra_cpufreq_init() specifically
- in machine code
-References: <1386229462-3474-1-git-send-email-bilhuang@nvidia.com> <1386229462-3474-2-git-send-email-bilhuang@nvidia.com>
-In-Reply-To: <1386229462-3474-2-git-send-email-bilhuang@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Dec 2013 17:54:42 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 80,6,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:2:41:69:355:379:421:541:800:960:968:973:982:988:989:1260:1345:1431:1437:1535:1605:1730:1747:1777:1792:2194:2198:2199:2200:2393:2559:2562:2895:2901:2903:3138:3139:3140:3141:3142:3369:3865:3866:3867:3868:3870:3871:3872:3873:3874:4049:4117:4250:4321:4419:4605:5007:6119:6261:7875:9592:10026:10848:11026:11232:11473:11658:11914:12043:12291:12296:12438:12517:12519:12555:12683:13153:13161:13228:13229:13255,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
+X-HE-Tag: fact08_bb1dd7dc2924
+X-Filterd-Recvd-Size: 6794
+From: Joe Perches <joe@perches.com>
+To: netdev@vger.kernel.org
+Cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH net-next] ether_addr_equal: Optimize implementation, remove unused compare_ether_addr
+Date: Thu,  5 Dec 2013 14:54:38 -0800
+Message-Id: <34a0bad292ab2535a3a2e757a83eca13408e55b7.1386283991.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2013 12:44 AM, Bill Huang wrote:
-> Move the call from module_init to Tegra machine codes so it won't be
-> called in a multi-platform kernel running on non-Tegra SoCs.
+Add a new check for CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS to reduce
+the number of or's used in the ether_addr_equal comparison to very
+slightly improve function performance.
 
-> diff --git a/include/linux/tegra-soc.h b/include/linux/tegra-soc.h
+Simplify the ether_addr_equal_64bits implementation.
+Integrate and remove the zap_last_2bytes helper as it's now
+used only once.
 
-It might be better to create <linux/tegra-cpufreq.h> for the interface
-to the cpufreq driver; tegra-soc.h is for the interface to core Tegra
-code *from* other drivers.
+Remove the now unused compare_ether_addr function.
 
-> +#ifdef CONFIG_ARM_TEGRA_CPUFREQ
-> +int tegra_cpufreq_init(void);
-> +#else
-> +static inline int tegra_cpufreq_init(void)
-> +{
-> +	return -EINVAL;
-> +}
-> +#endif
+Update the unaligned-memory-access documentation to remove the
+compare_ether_addr description and show how unaligned accesses
+could occur with ether_addr_equal.
 
-Probably best to "return 0" from the !CONFIG_ARM_TEGRA_CPUFREQ case; the
-whole point is to isolate callers from having to care whether
-CONFIG_ARM_TEGRA_CPUFREQ is enabled, and making the function act like it
-worked OK is part of that isolation.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ Documentation/unaligned-memory-access.txt | 28 +++++++++++------
+ include/linux/etherdevice.h               | 51 +++++++++++--------------------
+ 2 files changed, 37 insertions(+), 42 deletions(-)
+
+diff --git a/Documentation/unaligned-memory-access.txt b/Documentation/unaligned-memory-access.txt
+index f866c72..a445da0 100644
+--- a/Documentation/unaligned-memory-access.txt
++++ b/Documentation/unaligned-memory-access.txt
+@@ -137,24 +137,34 @@ Code that causes unaligned access
+ =================================
+ 
+ With the above in mind, let's move onto a real life example of a function
+-that can cause an unaligned memory access. The following function adapted
++that can cause an unaligned memory access. The following function taken
+ from include/linux/etherdevice.h is an optimized routine to compare two
+ ethernet MAC addresses for equality.
+ 
+-unsigned int compare_ether_addr(const u8 *addr1, const u8 *addr2)
++bool ether_addr_equal(const u8 *addr1, const u8 *addr2)
+ {
+-	const u16 *a = (const u16 *) addr1;
+-	const u16 *b = (const u16 *) addr2;
++#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
++	u32 fold = ((*(const u32 *)addr1) ^ (*(const u32 *)addr2)) |
++		   ((*(const u16 *)(addr1 + 4)) ^ (*(const u16 *)(addr2 + 4)));
++
++	return fold == 0;
++#else
++	const u16 *a = (const u16 *)addr1;
++	const u16 *b = (const u16 *)addr2;
+ 	return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) != 0;
++#endif
+ }
+ 
+-In the above function, the reference to a[0] causes 2 bytes (16 bits) to
+-be read from memory starting at address addr1. Think about what would happen
+-if addr1 was an odd address such as 0x10003. (Hint: it'd be an unaligned
+-access.)
++In the above function, when the hardware has efficient unaligned access
++capability, there is no issue with this code.  But when the hardware isn't
++able to access memory on arbitrary boundaries, the reference to a[0] causes
++2 bytes (16 bits) to be read from memory starting at address addr1.
++
++Think about what would happen if addr1 was an odd address such as 0x10003.
++(Hint: it'd be an unaligned access.)
+ 
+ Despite the potential unaligned access problems with the above function, it
+-is included in the kernel anyway but is understood to only work on
++is included in the kernel anyway but is understood to only work normally on
+ 16-bit-aligned addresses. It is up to the caller to ensure this alignment or
+ not use this function at all. This alignment-unsafe function is still useful
+ as it is a decent optimization for the cases when you can ensure alignment,
+diff --git a/include/linux/etherdevice.h b/include/linux/etherdevice.h
+index fc4a9aa..3526e81 100644
+--- a/include/linux/etherdevice.h
++++ b/include/linux/etherdevice.h
+@@ -26,6 +26,7 @@
+ #include <linux/netdevice.h>
+ #include <linux/random.h>
+ #include <asm/unaligned.h>
++#include <asm/bitsperlong.h>
+ 
+ #ifdef __KERNEL__
+ __be16 eth_type_trans(struct sk_buff *skb, struct net_device *dev);
+@@ -211,40 +212,26 @@ static inline void eth_hw_addr_inherit(struct net_device *dst,
+ }
+ 
+ /**
+- * compare_ether_addr - Compare two Ethernet addresses
+- * @addr1: Pointer to a six-byte array containing the Ethernet address
+- * @addr2: Pointer other six-byte array containing the Ethernet address
+- *
+- * Compare two Ethernet addresses, returns 0 if equal, non-zero otherwise.
+- * Unlike memcmp(), it doesn't return a value suitable for sorting.
+- */
+-static inline unsigned compare_ether_addr(const u8 *addr1, const u8 *addr2)
+-{
+-	const u16 *a = (const u16 *) addr1;
+-	const u16 *b = (const u16 *) addr2;
+-
+-	BUILD_BUG_ON(ETH_ALEN != 6);
+-	return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) != 0;
+-}
+-
+-/**
+  * ether_addr_equal - Compare two Ethernet addresses
+  * @addr1: Pointer to a six-byte array containing the Ethernet address
+  * @addr2: Pointer other six-byte array containing the Ethernet address
+  *
+  * Compare two Ethernet addresses, returns true if equal
++ *
++ * Please note: addr1 & addr2 must both be aligned to u16.
+  */
+ static inline bool ether_addr_equal(const u8 *addr1, const u8 *addr2)
+ {
+-	return !compare_ether_addr(addr1, addr2);
+-}
++#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
++	u32 fold = ((*(const u32 *)addr1) ^ (*(const u32 *)addr2)) |
++		   ((*(const u16 *)(addr1 + 4)) ^ (*(const u16 *)(addr2 + 4)));
+ 
+-static inline unsigned long zap_last_2bytes(unsigned long value)
+-{
+-#ifdef __BIG_ENDIAN
+-	return value >> 16;
++	return fold == 0;
+ #else
+-	return value << 16;
++	const u16 *a = (const u16 *)addr1;
++	const u16 *b = (const u16 *)addr2;
++
++	return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) == 0;
+ #endif
+ }
+ 
+@@ -265,16 +252,14 @@ static inline unsigned long zap_last_2bytes(unsigned long value)
+ static inline bool ether_addr_equal_64bits(const u8 addr1[6+2],
+ 					   const u8 addr2[6+2])
+ {
+-#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
+-	unsigned long fold = ((*(unsigned long *)addr1) ^
+-			      (*(unsigned long *)addr2));
+-
+-	if (sizeof(fold) == 8)
+-		return zap_last_2bytes(fold) == 0;
++#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS) && BITS_PER_LONG == 64
++	u64 fold = (*(const u64 *)addr1) ^ (*(const u64 *)addr2);
+ 
+-	fold |= zap_last_2bytes((*(unsigned long *)(addr1 + 4)) ^
+-				(*(unsigned long *)(addr2 + 4)));
+-	return fold == 0;
++#ifdef __BIG_ENDIAN
++	return (fold >> 16) == 0;
++#else
++	return (fold << 16) == 0;
++#endif
+ #else
+ 	return ether_addr_equal(addr1, addr2);
+ #endif
+-- 
+1.8.1.2.459.gbcd45b4.dirty
+
