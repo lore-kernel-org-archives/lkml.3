@@ -1,61 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933394Ab3LESvW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 13:51:22 -0500
-Received: from mail-qe0-f51.google.com ([209.85.128.51]:45510 "EHLO
-	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293Ab3LESvV (ORCPT
+	id S1757256Ab3LESwt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 13:52:49 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:57770 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756773Ab3LESwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 13:51:21 -0500
-Date: Thu, 5 Dec 2013 13:51:16 -0500
-From: Tejun Heo <tj@kernel.org>
-To: "Strashko, Grygorii" <grygorii.strashko@ti.com>
-Cc: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 08/23] mm/memblock: Add memblock memory allocation apis
-Message-ID: <20131205185116.GA27274@mtj.dyndns.org>
-References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com>
- <1386037658-3161-9-git-send-email-santosh.shilimkar@ti.com>
- <20131203232445.GX8277@htj.dyndns.org>
- <52A0AB34.2030703@ti.com>
- <20131205165325.GA24062@mtj.dyndns.org>
- <902E09E6452B0E43903E4F2D568737AB097B26B2@DNCE04.ent.ti.com>
+	Thu, 5 Dec 2013 13:52:47 -0500
+Date: Thu, 5 Dec 2013 13:52:46 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Kamil Debski <k.debski@samsung.com>
+cc: linux-kernel@vger.kernel.org, <linux-samsung-soc@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <kyungmin.park@samsung.com>, <kishon@ti.com>, <t.figa@samsung.com>,
+        <s.nawrocki@samsung.com>, <m.szyprowski@samsung.com>,
+        <gautam.vivek@samsung.com>, <mat.krawczuk@gmail.com>,
+        <yulgon.kim@samsung.com>, <p.paneri@samsung.com>,
+        <av.tikhomirov@samsung.com>, <jg1.han@samsung.com>,
+        <galak@codeaurora.org>, <matt.porter@linaro.org>
+Subject: Re: [PATCH v4 4/9] usb: ehci-s5p: Change to use phy provided by the
+ generic phy framework
+In-Reply-To: <1386246579-25141-5-git-send-email-k.debski@samsung.com>
+Message-ID: <Pine.LNX.4.44L0.1312051342300.869-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <902E09E6452B0E43903E4F2D568737AB097B26B2@DNCE04.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+On Thu, 5 Dec 2013, Kamil Debski wrote:
 
-On Thu, Dec 05, 2013 at 06:48:21PM +0000, Strashko, Grygorii wrote:
-> +/* Fall back to all the existing bootmem APIs */
-> +#define memblock_virt_alloc(x) \
-> +       __alloc_bootmem(x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT)
+> Change the phy provider used from the old usb phy specific to a new one
+> using the generic phy framework.
 > 
-> which will be transformed to 
-> +/* Fall back to all the existing bootmem APIs */
-> +#define memblock_virt_alloc(x, align) \
-> +       __alloc_bootmem(x, align, BOOTMEM_LOW_LIMIT)
-> 
-> and used as
-> 
-> memblock_virt_alloc(size, 0);
-> 
-> so, by default bootmem code will use 0 as default alignment and not SMP_CACHE_BYTES
-> and that is wrong.
+> Signed-off-by: Kamil Debski <k.debski@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-Just translate it to SMP_CACHE_BYTES?  Am I missing something here?
-You're defining a new API which wraps around two interfaces.  Wrap
-them so that they show the same desired behavior?
+> --- a/drivers/usb/host/ehci-exynos.c
+> +++ b/drivers/usb/host/ehci-exynos.c
 
--- 
-tejun
+> @@ -42,10 +42,10 @@
+>  static const char hcd_name[] = "ehci-exynos";
+>  static struct hc_driver __read_mostly exynos_ehci_hc_driver;
+>  
+> +#define PHY_NUMBER 3
+>  struct exynos_ehci_hcd {
+>  	struct clk *clk;
+> -	struct usb_phy *phy;
+> -	struct usb_otg *otg;
+
+Are you sure you want to remove that line?
+
+> +	struct phy *phy[PHY_NUMBER];
+>  };
+>  
+>  #define to_exynos_ehci(hcd) (struct exynos_ehci_hcd *)(hcd_to_ehci(hcd)->priv)
+
+> @@ -102,13 +132,24 @@ static int exynos_ehci_probe(struct platform_device *pdev)
+>  					"samsung,exynos5440-ehci"))
+>  		goto skip_phy;
+>  
+> -	phy = devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
+> -	if (IS_ERR(phy)) {
+> -		usb_put_hcd(hcd);
+> -		dev_warn(&pdev->dev, "no platform data or transceiver defined\n");
+> -		return -EPROBE_DEFER;
+> -	} else {
+> -		exynos_ehci->phy = phy;
+> +	for_each_available_child_of_node(pdev->dev.of_node, child) {
+> +		err = of_property_read_u32(child, "reg", &phy_number);
+> +		if (err) {
+> +			dev_err(&pdev->dev, "Failed to parse device tree\n");
+> +			return err;
+> +		}
+> +		if (phy_number >= PHY_NUMBER) {
+> +			dev_err(&pdev->dev, "Failed to parse device tree - number out of range\n");
+> +			return -EINVAL;
+
+Do you need to call of_node_put(child) before each of these return 
+statements?
+
+> +		}
+> +		phy = devm_of_phy_get(&pdev->dev, child, 0);
+> +		of_node_put(child);
+> +		if (IS_ERR(phy)) {
+> +			dev_err(&pdev->dev, "Failed to get phy number %d",
+> +								phy_number);
+> +			return PTR_ERR(phy);
+> +		}
+> +		exynos_ehci->phy[phy_number] = phy;
+>  		exynos_ehci->otg = phy->otg;
+
+Did you intend to remove this line?  Above, you removed the
+exynos_ehci->otg field.  I can't see how this patch would ever compile
+without an error.
+
+>  	}
+>  
+> @@ -149,11 +190,11 @@ skip_phy:
+>  		goto fail_io;
+>  	}
+>  
+> -	if (exynos_ehci->otg)
+> -		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+> -
+> -	if (exynos_ehci->phy)
+> -		usb_phy_init(exynos_ehci->phy);
+> +	err = exynos_phys_on(exynos_ehci->phy);
+> +	if (err) {
+> +		dev_err(&pdev->dev, "Failed to enabled phys\n");
+> +		goto fail_phys_on;
+
+Why add a new statement label?  Just goto fail_io.
+
+> +	}
+>  
+>  	ehci = hcd_to_ehci(hcd);
+>  	ehci->caps = hcd->regs;
+> @@ -172,8 +213,8 @@ skip_phy:
+>  	return 0;
+>  
+>  fail_add_hcd:
+> -	if (exynos_ehci->phy)
+> -		usb_phy_shutdown(exynos_ehci->phy);
+> +	exynos_phys_off(exynos_ehci->phy);
+> +fail_phys_on:
+>  fail_io:
+>  	clk_disable_unprepare(exynos_ehci->clk);
+>  fail_clk:
+
+Alan Stern
+
