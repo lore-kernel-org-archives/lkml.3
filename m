@@ -1,39 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756772Ab3LEOfU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 09:35:20 -0500
-Received: from ringil.hengli.com.au ([178.18.16.133]:48977 "EHLO
+	id S1756802Ab3LEOgV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 09:36:21 -0500
+Received: from ringil.hengli.com.au ([178.18.16.133]:55123 "EHLO
 	ringil.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab3LEOfR (ORCPT
+	with ESMTP id S1752509Ab3LEOgT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 09:35:17 -0500
-Date: Thu, 5 Dec 2013 22:35:11 +0800
+	Thu, 5 Dec 2013 09:36:19 -0500
+Date: Thu, 5 Dec 2013 22:36:01 +0800
 From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Tom Lendacky <thomas.lendacky@amd.com>
-Cc: davem@davemloft.net, linux-crypto@vger.kernel.org,
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: Cesar Eduardo Barros <cesarb@cesarb.eti.br>, linux-crypto@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        James Yonan <james@openvpn.net>, Florian Weimer <fw@deneb.enyo.de>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/10] AMD Cryptographic Coprocessor support
-Message-ID: <20131205143511.GA1976@gondor.apana.org.au>
-References: <20131112174558.19746.47262.stgit@tlendack-t1.amdoffice.net>
+Subject: Re: [PATCH v3] crypto: more robust crypto_memneq
+Message-ID: <20131205143601.GD1976@gondor.apana.org.au>
+References: <1385424041-18064-1-git-send-email-cesarb@cesarb.eti.br>
+ <5294F625.5040506@redhat.com>
+ <52951640.6080805@cesarb.eti.br>
+ <5295EB77.8040803@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131112174558.19746.47262.stgit@tlendack-t1.amdoffice.net>
+In-Reply-To: <5295EB77.8040803@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 11:45:59AM -0600, Tom Lendacky wrote:
-> Resending because of typo in mailing list address...
+On Wed, Nov 27, 2013 at 01:54:15PM +0100, Daniel Borkmann wrote:
+> On 11/26/2013 10:44 PM, Cesar Eduardo Barros wrote:
+> >Em 26-11-2013 17:27, Daniel Borkmann escreveu:
+> >>On 11/26/2013 01:00 AM, Cesar Eduardo Barros wrote:
+> >>>Compile-tested on x86_64.
+> >>
+> >>Actually with yet another version, I hoped that the "compile-tested"-only
+> >>statement would eventually disappear, ohh well. ;)
+> >
+> >I did compile test each version ;-) including verifying (with "make crypto/memneq.i") that the macro was really generating the expected inline assembly (with these #ifdef chains, one has to be careful with typos).
+> >
+> >(Actually, I compile tested with "make crypto/memneq.o crypto/memneq.s crypto/memneq.i". I took a peek at the assembly to see if it made sense.)
+> >
+> >>Resolving the OPTIMIZER_HIDE_VAR() macro for others than GCC jnto a
+> >>barrier() seems a bit suboptimal, but assuming 99% of people will use
+> >>GCC anyway, then for the minority of the remaining, they will worst case
+> >>have a clever compiler and eventually mimic memcmp() in some situations,
+> >>or have a not-so-clever compiler and execute the full code as is.
+> >
+> >I do not think any compiler other than gcc and icc can compile unmodified upstream kernel code. LLVM's clang would be the one which comes closest, but it has gcc-compatible inline assembly, as does icc AFAIK.
+> >
+> >The #define to barrier() within compiler-intel.h is for some compiler called ECC (not icc). From what I could find about it on a quick search, it appears to be some kind of Itanium compiler.
+> >
+> >That part of the header was added back in 2003, and I do not believe it is still relevant. A comment within that #ifdef block says "Intel ECC compiler doesn't support gcc specific asm stmts", but there are many uses of unprotected inline assembly all over the kernel (including on the ia64 headers), so if that comment is true, the kernel will not compile with that compiler. It is probably a piece of leftover dead code. I only added to it because I am following RELOC_HIDE's example, and RELOC_HIDE is there.
 > 
-> The following series implements support for the AMD Cryptographic
-> Coprocessor (CCP).  The AMD CCP provides hardware encryption, hashing
-> and other related operations.
+> Yep.
 > 
-> This patch series is based on the 3.12 kernel.
+> Acked-by: Daniel Borkmann <dborkman@redhat.com>
 
-All applied.  Thanks!
+Patch applied.  Thanks!
 -- 
 Email: Herbert Xu <herbert@gondor.apana.org.au>
 Home Page: http://gondor.apana.org.au/~herbert/
