@@ -1,76 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051Ab3LEXcf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 18:32:35 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:44695 "EHLO mail.skyhub.de"
+	id S1756321Ab3LEXdB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 18:33:01 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:44707 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752754Ab3LEXcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 18:32:32 -0500
+	id S1755303Ab3LEXcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 18:32:33 -0500
 From: Borislav Petkov <bp@alien8.de>
 To: X86 ML <x86@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
         Kim Naru <kim.naru@amd.com>, Thomas Renninger <trenn@suse.de>
-Subject: [PATCH 0/4] x86, microcode, AMD: Fix early loading
-Date: Fri,  6 Dec 2013 00:32:24 +0100
-Message-Id: <1386286348-5144-1-git-send-email-bp@alien8.de>
+Subject: [PATCH 1/4] x86, ramdisk: Export relocated ramdisk VA
+Date: Fri,  6 Dec 2013 00:32:25 +0100
+Message-Id: <1386286348-5144-2-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1386286348-5144-1-git-send-email-bp@alien8.de>
+References: <1386286348-5144-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <bp@suse.de>
 
-A couple of openSUSE bugzillas made me look at the early ucode loading
-on AMD.
+The ramdisk can possibly get relocated if the whole image is not mapped.
+And since we're going over it in the microcode loader and fishing
+out the relevant microcode patches, we want to access it at its new
+location. Thus, export it.
 
-The problem is, we're doing memory allocation too early with IRQs
-disabled and we really want to avoid that. Also, 32-bit has other
-problems like calling rd/wrmsr*/cpuid functions at their virtual
-addresses while paging is not enabled yet. Bah.
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/include/asm/setup.h |  3 ++-
+ arch/x86/kernel/setup.c      | 19 ++++++++++---------
+ 2 files changed, 12 insertions(+), 10 deletions(-)
 
-So, fix that by *always* using the initrd image handed in from the
-bootloader and cache the ucode patches only late, right before the
-initrd is jettisoned. This avoids the allocation issue completely. While
-at it, take care of the 32-bit issues too.
-
-Testing on 32-bit and 64-bit passes here.
-
-@Kim: I'd appreciate it if you guys ran those patches too,
-by creating an early ucode initrd as it is described in
-Documentation/x86/early-microcode.txt.
-
-Thanks.
-
-Borislav Petkov (4):
-  x86, ramdisk: Export relocated ramdisk VA
-  x86, microcode: Share native MSR accessing variants
-  x86, microcode, AMD: Fix early ucode loading
-  x86, microcode: Move to a proper location
-
- arch/x86/include/asm/microcode.h                   |  15 ++
- arch/x86/include/asm/microcode_amd.h               |   7 +-
- arch/x86/include/asm/setup.h                       |   3 +-
- arch/x86/kernel/Makefile                           |   9 -
- arch/x86/kernel/cpu/Makefile                       |   1 +
- arch/x86/kernel/cpu/microcode/Makefile             |  11 +
- .../{microcode_amd.c => cpu/microcode/amd.c}       |  13 +-
- .../microcode/amd_early.c}                         | 239 ++++++++++++++-------
- .../{microcode_core.c => cpu/microcode/core.c}     |   0
- .../microcode/core_early.c}                        |   0
- .../{microcode_intel.c => cpu/microcode/intel.c}   |   0
- .../microcode/intel_early.c}                       |  10 -
- .../microcode/intel_lib.c}                         |   0
- arch/x86/kernel/setup.c                            |  19 +-
- 14 files changed, 209 insertions(+), 118 deletions(-)
- create mode 100644 arch/x86/kernel/cpu/microcode/Makefile
- rename arch/x86/kernel/{microcode_amd.c => cpu/microcode/amd.c} (96%)
- rename arch/x86/kernel/{microcode_amd_early.c => cpu/microcode/amd_early.c} (55%)
- rename arch/x86/kernel/{microcode_core.c => cpu/microcode/core.c} (100%)
- rename arch/x86/kernel/{microcode_core_early.c => cpu/microcode/core_early.c} (100%)
- rename arch/x86/kernel/{microcode_intel.c => cpu/microcode/intel.c} (100%)
- rename arch/x86/kernel/{microcode_intel_early.c => cpu/microcode/intel_early.c} (98%)
- rename arch/x86/kernel/{microcode_intel_lib.c => cpu/microcode/intel_lib.c} (100%)
-
+diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
+index 59bcf4e22418..d62c9f809bc5 100644
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -3,7 +3,6 @@
+ 
+ #include <uapi/asm/setup.h>
+ 
+-
+ #define COMMAND_LINE_SIZE 2048
+ 
+ #include <linux/linkage.h>
+@@ -29,6 +28,8 @@
+ #include <asm/bootparam.h>
+ #include <asm/x86_init.h>
+ 
++extern u64 relocated_ramdisk;
++
+ /* Interrupt control for vSMPowered x86_64 systems */
+ #ifdef CONFIG_X86_64
+ void vsmp_init(void);
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index f97cf4dd4b76..488e93e763c8 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -295,6 +295,8 @@ static void __init reserve_brk(void)
+ 	_brk_start = 0;
+ }
+ 
++u64 relocated_ramdisk;
++
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 
+ static u64 __init get_ramdisk_image(void)
+@@ -321,25 +323,24 @@ static void __init relocate_initrd(void)
+ 	u64 ramdisk_image = get_ramdisk_image();
+ 	u64 ramdisk_size  = get_ramdisk_size();
+ 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
+-	u64 ramdisk_here;
+ 	unsigned long slop, clen, mapaddr;
+ 	char *p, *q;
+ 
+ 	/* We need to move the initrd down into directly mapped mem */
+-	ramdisk_here = memblock_find_in_range(0, PFN_PHYS(max_pfn_mapped),
+-						 area_size, PAGE_SIZE);
++	relocated_ramdisk = memblock_find_in_range(0, PFN_PHYS(max_pfn_mapped),
++						   area_size, PAGE_SIZE);
+ 
+-	if (!ramdisk_here)
++	if (!relocated_ramdisk)
+ 		panic("Cannot find place for new RAMDISK of size %lld\n",
+-			 ramdisk_size);
++		      ramdisk_size);
+ 
+ 	/* Note: this includes all the mem currently occupied by
+ 	   the initrd, we rely on that fact to keep the data intact. */
+-	memblock_reserve(ramdisk_here, area_size);
+-	initrd_start = ramdisk_here + PAGE_OFFSET;
++	memblock_reserve(relocated_ramdisk, area_size);
++	initrd_start = relocated_ramdisk + PAGE_OFFSET;
+ 	initrd_end   = initrd_start + ramdisk_size;
+ 	printk(KERN_INFO "Allocated new RAMDISK: [mem %#010llx-%#010llx]\n",
+-			 ramdisk_here, ramdisk_here + ramdisk_size - 1);
++	       relocated_ramdisk, relocated_ramdisk + ramdisk_size - 1);
+ 
+ 	q = (char *)initrd_start;
+ 
+@@ -363,7 +364,7 @@ static void __init relocate_initrd(void)
+ 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
+ 		" [mem %#010llx-%#010llx]\n",
+ 		ramdisk_image, ramdisk_image + ramdisk_size - 1,
+-		ramdisk_here, ramdisk_here + ramdisk_size - 1);
++		relocated_ramdisk, relocated_ramdisk + ramdisk_size - 1);
+ }
+ 
+ static void __init early_reserve_initrd(void)
 -- 
 1.8.4
 
