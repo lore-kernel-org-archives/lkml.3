@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757279Ab3LERgi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:36:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38091 "EHLO
+	id S932943Ab3LERgq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:36:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38103 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757235Ab3LERgg (ORCPT
+	with ESMTP id S932592Ab3LERgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:36:36 -0500
+	Thu, 5 Dec 2013 12:36:40 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Hellstrom <thellstrom@vmware.com>,
+Cc: Brian Norris <computersforpeace@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 12/90] drm/ttm: Fix ttm_bo_move_memcpy
-Date: Thu,  5 Dec 2013 17:34:54 +0000
-Message-Id: <1386264972-5399-13-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 15/90] mtd: nand: hack ONFI for non-power-of-2 dimensions
+Date: Thu,  5 Dec 2013 17:34:57 +0000
+Message-Id: <1386264972-5399-16-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -27,62 +27,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Brian Norris <computersforpeace@gmail.com>
 
-commit da95c788ef0c645378ffccb7060a0df1a33aee38 upstream.
+commit 4355b70cf48363c50a9de450b01178c83aba8f6a upstream.
 
-All error paths will want to keep the mm node, so handle this at the
-function exit. This fixes an ioremap failure error path.
-Also add some comments to make the function a bit easier to understand.
+Some bright specification writers decided to write this in the ONFI spec
+(from ONFI 3.0, Section 3.1):
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
-[ luis: backported to 3.5: adjusted context ]
+  "The number of blocks and number of pages per block is not required to
+  be a power of two. In the case where one of these values is not a
+  power of two, the corresponding address shall be rounded to an
+  integral number of bits such that it addresses a range up to the
+  subsequent power of two value. The host shall not access upper
+  addresses in a range that is shown as not supported."
+
+This breaks every assumption MTD makes about NAND block/chip-size
+dimensions -- they *must* be a power of two!
+
+And of course, an enterprising manufacturer has made use of this lovely
+freedom. Exhibit A: Micron MT29F32G08CBADAWP
+
+  "- Plane size: 2 planes x 1064 blocks per plane
+   - Device size: 32Gb: 2128 blockss [sic]"
+
+This quickly hits a BUG() in nand_base.c, since the extra dimensions
+overflow so we think it's a second chip (on my single-chip setup):
+
+    ONFI param page 0 valid
+    ONFI flash detected
+    NAND device: Manufacturer ID: 0x2c, Chip ID: 0x44 (Micron MT29F32G08CBADAWP), 4256MiB, page size: 8192, OOB size: 744
+    ------------[ cut here ]------------
+    kernel BUG at drivers/mtd/nand/nand_base.c:203!
+    Internal error: Oops - BUG: 0 [#1] SMP ARM
+    [... trim ...]
+    [<c02cf3e4>] (nand_select_chip+0x18/0x2c) from [<c02d25c0>] (nand_do_read_ops+0x90/0x424)
+    [<c02d25c0>] (nand_do_read_ops+0x90/0x424) from [<c02d2dd8>] (nand_read+0x54/0x78)
+    [<c02d2dd8>] (nand_read+0x54/0x78) from [<c02ad2c8>] (mtd_read+0x84/0xbc)
+    [<c02ad2c8>] (mtd_read+0x84/0xbc) from [<c02d4b28>] (scan_read.clone.4+0x4c/0x64)
+    [<c02d4b28>] (scan_read.clone.4+0x4c/0x64) from [<c02d4c88>] (search_bbt+0x148/0x290)
+    [<c02d4c88>] (search_bbt+0x148/0x290) from [<c02d4ea4>] (nand_scan_bbt+0xd4/0x5c0)
+    [... trim ...]
+    ---[ end trace 0c9363860d865ff2 ]---
+
+So to fix this, just truncate these dimensions down to the greatest
+power-of-2 dimension that is less than or equal to the specified
+dimension.
+
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/ttm/ttm_bo_util.c | 17 +++++++++++++++--
- 1 file changed, 15 insertions(+), 2 deletions(-)
+ drivers/mtd/nand/nand_base.c | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/ttm/ttm_bo_util.c b/drivers/gpu/drm/ttm/ttm_bo_util.c
-index 2d69262..05577e8 100644
---- a/drivers/gpu/drm/ttm/ttm_bo_util.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
-@@ -337,12 +337,20 @@ int ttm_bo_move_memcpy(struct ttm_buffer_object *bo,
- 	if (ret)
- 		goto out;
- 
-+	/*
-+	 * Single TTM move. NOP.
-+	 */
- 	if (old_iomap == NULL && new_iomap == NULL)
- 		goto out2;
+diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+index c429abd..09d0cea 100644
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -2905,10 +2905,21 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
+ 	sanitize_string(p->model, sizeof(p->model));
+ 	if (!mtd->name)
+ 		mtd->name = p->model;
++
+ 	mtd->writesize = le32_to_cpu(p->byte_per_page);
+-	mtd->erasesize = le32_to_cpu(p->pages_per_block) * mtd->writesize;
 +
 +	/*
-+	 * Move nonexistent data. NOP.
++	 * pages_per_block and blocks_per_lun may not be a power-of-2 size
++	 * (don't ask me who thought of this...). MTD assumes that these
++	 * dimensions will be power-of-2, so just truncate the remaining area.
 +	 */
- 	if (old_iomap == NULL && ttm == NULL)
- 		goto out2;
- 
--	/* TTM might be null for moves within the same region.
-+	/*
-+	 * TTM might be null for moves within the same region.
- 	 */
- 	if (ttm && ttm->state == tt_unpopulated) {
- 		ret = ttm->bdev->driver->ttm_tt_populate(ttm);
-@@ -392,7 +400,12 @@ out1:
- 	ttm_mem_reg_iounmap(bdev, old_mem, new_iomap);
- out:
- 	ttm_mem_reg_iounmap(bdev, &old_copy, old_iomap);
--	ttm_bo_mem_put(bo, &old_copy);
++	mtd->erasesize = 1 << (fls(le32_to_cpu(p->pages_per_block)) - 1);
++	mtd->erasesize *= mtd->writesize;
 +
-+	/*
-+	 * On error, keep the mm node!
-+	 */
-+	if (!ret)
-+		ttm_bo_mem_put(bo, &old_copy);
- 	return ret;
- }
- EXPORT_SYMBOL(ttm_bo_move_memcpy);
+ 	mtd->oobsize = le16_to_cpu(p->spare_bytes_per_page);
+-	chip->chipsize = le32_to_cpu(p->blocks_per_lun);
++
++	/* See erasesize comment */
++	chip->chipsize = 1 << (fls(le32_to_cpu(p->blocks_per_lun)) - 1);
+ 	chip->chipsize *= (uint64_t)mtd->erasesize * p->lun_count;
+ 	*busw = 0;
+ 	if (le16_to_cpu(p->features) & 1)
 -- 
 1.8.3.2
 
