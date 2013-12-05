@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757643Ab3LESBj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 13:01:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38087 "EHLO
+	id S1757248Ab3LERge (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:36:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38062 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757255Ab3LERgg (ORCPT
+	with ESMTP id S1757102Ab3LERg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:36:36 -0500
+	Thu, 5 Dec 2013 12:36:29 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jakob Bornecrantz <jakob@vmware.com>,
-        =?UTF-8?q?Thomas=20Hellstr=C3=B6m?= <thellstrom@vmware.com>,
+Cc: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 11/90] drm/ttm: Handle in-memory region copies
-Date: Thu,  5 Dec 2013 17:34:53 +0000
-Message-Id: <1386264972-5399-12-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 05/90] aacraid: prevent invalid pointer dereference
+Date: Thu,  5 Dec 2013 17:34:47 +0000
+Message-Id: <1386264972-5399-6-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,35 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jakob Bornecrantz <jakob@vmware.com>
+From: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
 
-commit 9a0599ddeae012a771bba5e23393fc52d8a59d89 upstream.
+commit b4789b8e6be3151a955ade74872822f30e8cd914 upstream.
 
-Fix the case where the ttm pointer may be NULL causing
-a NULL pointer dereference.
+It appears that driver runs into a problem here if fibsize is too small
+because we allocate user_srbcmd with fibsize size only but later we
+access it until user_srbcmd->sg.count to copy it over to srbcmd.
 
-Signed-off-by: Jakob Bornecrantz <jakob@vmware.com>
-Signed-off-by: Thomas Hellström <thellstrom@vmware.com>
+It is not correct to test (fibsize < sizeof(*user_srbcmd)) because this
+structure already includes one sg element and this is not needed for
+commands without data.  So, we would recommend to add the following
+(instead of test for fibsize == 0).
+
+Signed-off-by: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/ttm/ttm_bo_util.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/scsi/aacraid/commctrl.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/ttm/ttm_bo_util.c b/drivers/gpu/drm/ttm/ttm_bo_util.c
-index f8187ea..2d69262 100644
---- a/drivers/gpu/drm/ttm/ttm_bo_util.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
-@@ -342,7 +342,9 @@ int ttm_bo_move_memcpy(struct ttm_buffer_object *bo,
- 	if (old_iomap == NULL && ttm == NULL)
- 		goto out2;
+diff --git a/drivers/scsi/aacraid/commctrl.c b/drivers/scsi/aacraid/commctrl.c
+index 0bd38da..05fbc3d 100644
+--- a/drivers/scsi/aacraid/commctrl.c
++++ b/drivers/scsi/aacraid/commctrl.c
+@@ -508,7 +508,8 @@ static int aac_send_raw_srb(struct aac_dev* dev, void __user * arg)
+ 		goto cleanup;
+ 	}
  
--	if (ttm->state == tt_unpopulated) {
-+	/* TTM might be null for moves within the same region.
-+	 */
-+	if (ttm && ttm->state == tt_unpopulated) {
- 		ret = ttm->bdev->driver->ttm_tt_populate(ttm);
- 		if (ret)
- 			goto out1;
+-	if (fibsize > (dev->max_fib_size - sizeof(struct aac_fibhdr))) {
++	if ((fibsize < (sizeof(struct user_aac_srb) - sizeof(struct user_sgentry))) ||
++	    (fibsize > (dev->max_fib_size - sizeof(struct aac_fibhdr)))) {
+ 		rcode = -EINVAL;
+ 		goto cleanup;
+ 	}
 -- 
 1.8.3.2
 
