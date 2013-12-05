@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933464Ab3LERo3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:44:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38378 "EHLO
+	id S933502Ab3LERoq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:44:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38376 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757400Ab3LERh4 (ORCPT
+	with ESMTP id S1757394Ab3LERhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:37:56 -0500
+	Thu, 5 Dec 2013 12:37:55 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Seppanen <eric@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 69/90] iscsi-target: chap auth shouldn't match username with trailing garbage
-Date: Thu,  5 Dec 2013 17:35:51 +0000
-Message-Id: <1386264972-5399-70-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 67/90] powerpc/signals: Mark VSX not saved with small contexts
+Date: Thu,  5 Dec 2013 17:35:49 +0000
+Message-Id: <1386264972-5399-68-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -28,48 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Seppanen <eric@purestorage.com>
+From: Michael Neuling <mikey@neuling.org>
 
-commit 86784c6bdeeef78eed94d298be7a8879f6a97ee2 upstream.
+commit c13f20ac48328b05cd3b8c19e31ed6c132b44b42 upstream.
 
-In iSCSI negotiations with initiator CHAP enabled, usernames with
-trailing garbage are permitted, because the string comparison only
-checks the strlen of the configured username.
+The VSX MSR bit in the user context indicates if the context contains VSX
+state.  Currently we set this when the process has touched VSX at any stage.
 
-e.g. "usernameXXXXX" will be permitted to match "username".
+Unfortunately, if the user has not provided enough space to save the VSX state,
+we can't save it but we currently still set the MSR VSX bit.
 
-Just check one more byte so the trailing null char is also matched.
+This patch changes this to clear the MSR VSX bit when the user doesn't provide
+enough space.  This indicates that there is no valid VSX state in the user
+context.
 
-Signed-off-by: Eric Seppanen <eric@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+This is needed to support get/set/make/swapcontext for applications that use
+VSX but only provide a small context.  For example, getcontext in glibc
+provides a smaller context since the VSX registers don't need to be saved over
+the glibc function call.  But since the program calling getcontext may have
+used VSX, the kernel currently says the VSX state is valid when it's not.  If
+the returned context is then used in setcontext (ie. a small context without
+VSX but with MSR VSX set), the kernel will refuse the context.  This situation
+has been reported by the glibc community.
+
+Based on patch from Carlos O'Donell.
+
+Tested-by: Haren Myneni <haren@linux.vnet.ibm.com>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/target/iscsi/iscsi_target_auth.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/powerpc/kernel/signal_32.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/target/iscsi/iscsi_target_auth.c b/drivers/target/iscsi/iscsi_target_auth.c
-index a0fc7b9..b54f6ec 100644
---- a/drivers/target/iscsi/iscsi_target_auth.c
-+++ b/drivers/target/iscsi/iscsi_target_auth.c
-@@ -174,6 +174,7 @@ static int chap_server_compute_md5(
- 	unsigned char client_digest[MD5_SIGNATURE_SIZE];
- 	unsigned char server_digest[MD5_SIGNATURE_SIZE];
- 	unsigned char chap_n[MAX_CHAP_N_SIZE], chap_r[MAX_RESPONSE_LENGTH];
-+	size_t compare_len;
- 	struct iscsi_chap *chap = conn->auth_protocol;
- 	struct crypto_hash *tfm;
- 	struct hash_desc desc;
-@@ -212,7 +213,9 @@ static int chap_server_compute_md5(
- 		goto out;
- 	}
- 
--	if (memcmp(chap_n, auth->userid, strlen(auth->userid)) != 0) {
-+	/* Include the terminating NULL in the compare */
-+	compare_len = strlen(auth->userid) + 1;
-+	if (strncmp(chap_n, auth->userid, compare_len) != 0) {
- 		pr_err("CHAP_N values do not match!\n");
- 		goto out;
- 	}
+diff --git a/arch/powerpc/kernel/signal_32.c b/arch/powerpc/kernel/signal_32.c
+index 8b4c049..c2a2001 100644
+--- a/arch/powerpc/kernel/signal_32.c
++++ b/arch/powerpc/kernel/signal_32.c
+@@ -450,7 +450,15 @@ static int save_user_regs(struct pt_regs *regs, struct mcontext __user *frame,
+ 		if (copy_vsx_to_user(&frame->mc_vsregs, current))
+ 			return 1;
+ 		msr |= MSR_VSX;
+-	}
++	} else if (!ctx_has_vsx_region)
++		/*
++		 * With a small context structure we can't hold the VSX
++		 * registers, hence clear the MSR value to indicate the state
++		 * was not saved.
++		 */
++		msr &= ~MSR_VSX;
++
++
+ #endif /* CONFIG_VSX */
+ #ifdef CONFIG_SPE
+ 	/* save spe registers */
 -- 
 1.8.3.2
 
