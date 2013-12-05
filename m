@@ -1,166 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab3LEUDw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 15:03:52 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:54881 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab3LEUDu (ORCPT
+	id S1753213Ab3LEUD6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 15:03:58 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:40098 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752943Ab3LEUDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 15:03:50 -0500
+	Thu, 5 Dec 2013 15:03:54 -0500
+Message-ID: <52A0DC28.1040001@gmail.com>
+Date: Thu, 05 Dec 2013 14:03:52 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-In-Reply-To: <CAD6G_RQzT1AB1LdYptm5RghLKVg_OC4fOP3-J=kXSiA7CV30Ug@mail.gmail.com>
-References: <CAD6G_RT0S43BrOeXxJ6d3p1ALbXkGumZCSPBaK1Bz=2pX3hHYQ@mail.gmail.com>
- <CAErSpo4DNqUpA6Cb_tanW3uRJ3J-4utCQwtRz3eYZETCMtniUQ@mail.gmail.com>
- <CAD6G_RR=toq_6tCav6Y9=EprK9LC3YfGO=scvWpcGfDpWwJbRA@mail.gmail.com>
- <CAErSpo57gPPY73nCHbfGVynZRde0jj9_kjpR=FKwY-uTXzY2cw@mail.gmail.com>
- <CAD6G_RTHNGg7XSnDMQ-H+hUzmh1RPn9gYUDf7vRdeETmTmTdzw@mail.gmail.com>
- <CAErSpo5jLsvMwjuWMctwgvjUrP-RyzxykXG5AbAvTp8K0PezNg@mail.gmail.com>
- <CAD6G_RSvrHGa=OEBgoD_iM68eOzb_2Dq9FneuNjSX_+iTj0_zA@mail.gmail.com>
- <CAErSpo41ATgzfdew=2=X4ULkoENPRaW_PikDLcjWJqeCf5sPMA@mail.gmail.com> <CAD6G_RQzT1AB1LdYptm5RghLKVg_OC4fOP3-J=kXSiA7CV30Ug@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 5 Dec 2013 13:03:29 -0700
-Message-ID: <CAErSpo41xkDhDRpNmYf9QsAUaBa62C+X+PDqsX2yqFFEeUcNyw@mail.gmail.com>
-Subject: Re: Need help on Linux PCIe
-To: Jagan Teki <jagannadh.teki@gmail.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Mark Brown <broonie@kernel.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 1/2] cpufreq: enable ARM drivers on arm64
+References: <1386202994-30784-1-git-send-email-robherring2@gmail.com> <1386202994-30784-2-git-send-email-robherring2@gmail.com> <20131205181606.GY29268@sirena.org.uk>
+In-Reply-To: <20131205181606.GY29268@sirena.org.uk>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 5, 2013 at 11:36 AM, Jagan Teki <jagannadh.teki@gmail.com> wrote:
-> On Thu, Dec 5, 2013 at 11:45 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Wed, Dec 4, 2013 at 11:30 PM, Jagan Teki <jagannadh.teki@gmail.com> wrote:
->>> On Wed, Dec 4, 2013 at 11:35 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>>> On Wed, Dec 4, 2013 at 10:00 AM, Jagan Teki <jagannadh.teki@gmail.com> wrote:
->>>>> On Wed, Dec 4, 2013 at 8:41 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>>>>> On Tue, Dec 3, 2013 at 11:20 PM, Jagan Teki <jagannadh.teki@gmail.com> wrote:
->>>>>>> Thanks for your quick response.
->>>>>>> Please find my comments below.
->>>>>>>
->>>>>>> On Tue, Dec 3, 2013 at 11:09 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>>>>>>> On Tue, Dec 3, 2013 at 4:24 AM, Jagan Teki <jagannadh.teki@gmail.com> wrote:
->>>>>>>>> Hi,
->>>>>>>>>
->>>>>>>>> I have few question on Linux PCIe subsystem, I am trying to understand
->>>>>>>>> the PCIe on ARM platform.
->>>>>>>>> 1. Compared to PCI, PCIe have an extra port functionalists/services
->>>>>>>>> which is implemented drivers/pci/pcie/* is it true?
->>>>>>>>
->>>>>>>> Yes.
->>>>>>>>
->>>>>>>>> 2. PCIe root complex is same as Host controller drivers in linux drivers/host/*
->>>>>>>>
->>>>>>>> Yes.
->>>>>>>>
->>>>>>>>> 3. As individual endpoint drivers are registered to pci_core as
->>>>>>>>> pci_driver_register, then what is the common call for registering
->>>>>>>>> individual HC driver to pci-core?
->>>>>>>>
->>>>>>>> The host controller-PCI core interface is not as mature as the
->>>>>>>> pci_register_driver() interface.  The basic interface is
->>>>>>>> pci_scan_root_bus().  If you skim through the drivers in
->>>>>>>> drivers/pci/host/* and drivers/acpi/pci_root.c, the interface to the
->>>>>>>> PCI core will be fairly obvious.  And you'll learn what the existing
->>>>>>>> practices are in case you need to add or modify something.
->>>>>>>
->>>>>>> OK.
->>>>>>>
->>>>>>> I understand the flow as below - please correct if am wrong.
->>>>>>>
->>>>>>> From low level (hw) - HC driver has a platform registration using
->>>>>>> platform_driver_register() to lower layer
->>>>>>> and then pci_scan_root_bus() --> pci_common_init_dev() registration to
->>>>>>> upper layer as PCI - BIOS and then ends.
->>>>>>
->>>>>> Yes.  Sometime HC drivers use platform_driver_register(); other use
->>>>>> something else depending on how the HC device is enumerated.  For
->>>>>> example, drivers/acpi/pci_root.c uses something else to deal with host
->>>>>> bridges in the ACPI namespace.
->>>>>>
->>>>>>> From upper level (app) - each endpoint driver has
->>>>>>> pci_driver_register() call to PCI Core for lower level
->>>>>>
->>>>>> Yes.
->>>>>>
->>>>>>> and then the upper level registration is based on endpoint().
->>>>>>
->>>>>> I don't know what you mean here (I don't know of a function named
->>>>>> "endpoint()").  But the driver model matches drivers to PCI functions
->>>>>> based on vendor and device IDs.  A Linux "pci_dev" is what the PCI
->>>>>> specs refer to as a "function."
->>>>> Sorry it's typo - added ()
->>>>>
->>>>>>
->>>>>>> What is the connection here for PCI-BIOS and PCI-Core here, does these
->>>>>>> are two different entities means there is no common call for these?
->>>>>>> I see for ARM - "arch/arm/kernel/bios32.c" is PCI-BIOS is it correct?
->>>>>>> does we have separate BIOS codes for architectures?
->>>>>>
->>>>>> The "pcibios_*" functions are architecture-specific things called by
->>>>>> the generic PCI core.  Generally, things specified by the PCI specs
->>>>>> are architecture-independent and should be in the PCI core
->>>>>> (drivers/pci/*).
->>>>>
->>>>> I have some good information to discuss from this thread.
->>>>> Can you please verify this Linux PCIe subsystem stack - comment
->>>>> whether my understanding is correct/not.
->>>>> (I just draw this based on driver calls flow - to accommodate with in
->>>>> the Linux cores)
->>>>> http://jagannadhteki.blog.com/2013/12/04/linux-pcie-subsystem/
->>>>
->>>> Yes, that makes sense.  I wouldn't label the PCIBIOS - PCI core link
->>>> as "pci_bus_add_device()"; pci_bus_add_device() is part of the PCI
->>>> core's generic enumeration code and shouldn't be called by
->>>> arch-specific code.  The link going from PCI core to PCIBIOS is the
->>>> set of "pcibios_*()" functions.  Going from PCIBIOS to the PCI core,
->>>> it's mostly just pci_scan_root_bus().
->>> Yes - understand your point.
->>> I made few changes accordingly.
->>> http://jagannadhteki.blog.com/files/2013/12/Linux_PCIe_zynq.png
->>
->> Why did you keep the pci_bus_add_device() label?  There are no calls
->> from arch code.  The only calls from outside the PCI core are from
-> Yes.. from ARM I see pci_bus_add_devices() call from BIOS code -
-> arch/arm/kernel/bios32
-> to a defination of pci core side.
->
-> As it's a last call from pci_common_init_dev() - which actually called
-> from HC driver.
->
-> Correct me if am wrong.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Ah, I see.  I searched for "pci_bus_add_device()", which is what's in
-your picture.  It's true that there are several other callers of
-"pci_bus_add_devices()" (with an "s"), including the one from
-pci_common_init_dev().
+On 12/05/2013 12:16 PM, Mark Brown wrote:
+> On Wed, Dec 04, 2013 at 06:23:13PM -0600, Rob Herring wrote:
+>> From: Rob Herring <rob.herring@calxeda.com>
+>> 
+>> Enable cpufreq and power kconfig menus on arm64 along with arm
+>> cpufreq drivers. The power menu is needed for OPP support. At
+>> least on Calxeda systems, the same cpufreq driver is used for arm
+>> and arm64 based systems.
+> 
+> If this needs any revisions (I'd be surprised but...) can you
+> please keep me on the CCs?  I intend to pull this into LSK if
+> that's OK since I was about to do roughly the same thing for it and
+> upstream the result.
 
-The reason non-PCI core code calls pci_bus_add_devices() is basically
-historical.  The core isn't yet smart enough to manage all resource
-allocation by itself.  That's why you see things like
-pci_bus_assign_resources() between pci_scan_root_bus() and
-pci_bus_add_devices().  There's nothing arch-specific about assigning
-resources, though, so that all *should* be pulled into the PCI core.
-Then we could get rid of almost all the pci_bus_add_devices() callers.
+Will do, but I'm surprised we're at the point on arm64 of needing LSK.
+There's a couple of subsystems that need enabling. I've posted EDAC
+patches (need to send v3). cpuidle is another. Probably some more I
+haven't looked at.
 
-To get back to your picture, I guess it makes sense to document the
-current state, even if it's not where we want to end up.  But you
-should fix the typo (add the "s" at the end of pci_bus_add_devices())
-and maybe add pci_bus_assign_resources().
+Rob
 
-Bjorn
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
->> i82875p_setup_overfl_dev(), asus_rfkill_hotplug(), and
->> eeepc_rfkill_hotplug().  These are all hacks that should not be
->> emulated.
->
-> --
-> Thanks,
-> Jagan.
-> --------
-> Jagannadha Sutradharudu Teki,
-> E: jagannadh.teki@gmail.com, P: +91-9676773388
-> Engineer - System Software Hacker
-> U-boot - SPI Custodian and Zynq APSOC
-> Ln: http://www.linkedin.com/in/jaganteki
+iQEcBAEBAgAGBQJSoNwoAAoJEMhvYp4jgsXiZmMH/0h6Zubjcqhkrx/UGYa47j7r
+EU0stg3/sJvyNGlo+jDV7ljEEtHVmJyxINORDFCGBlYLnsVisYLY9Q+YRZH7PSrJ
+O7eloK2LdceYabpoe0QFBXuB+VQ5uUiVH5ts9I3JLp3bxvBwjjM6rsYdKHwx4VHp
+IAkCgRZZAC9WLi+F4vteC9oh+S5UoXIKpTr1ei/y21czZ6Gw8tGhrGX4fc3IcFSy
+4OPFb41/RQkJL5U4KCRUrMS+8wOmJy3rLcTvjxXz85b5ht9+i01AUt6yN9mwGrjp
+a/Y5pFzADIXvhlJDYt4KBK+xgYyL6keWSc2cQyW08MhyNRjr2qXzOaw3qb3VvhI=
+=SJ+q
+-----END PGP SIGNATURE-----
