@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756336Ab3LELxY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 06:53:24 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:16443 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756261Ab3LELxW (ORCPT
+	id S1756377Ab3LEL4M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 06:56:12 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59988 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755684Ab3LEL4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 06:53:22 -0500
-From: Yijing Wang <wangyijing@huawei.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>
-Subject: [PATCH 1/9] PCI: Use dev_is_pci() to check whether it is pci device
-Date: Thu, 5 Dec 2013 19:52:53 +0800
-Message-ID: <1386244373-35796-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
+	Thu, 5 Dec 2013 06:56:11 -0500
+Date: Thu, 5 Dec 2013 12:56:08 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Sebastian Reichel <sre@debian.org>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: [patch] fix n900 bt error handling
+Message-ID: <20131205115608.GA9498@amd.pavel.ucw.cz>
+References: <20131127125149.GA9389@amd.pavel.ucw.cz>
+ <201312021613.19521@pali>
+ <20131204122204.GA10262@amd.pavel.ucw.cz>
+ <201312041732.05400@pali>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201312041732.05400@pali>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use dev_is_pci() instead of directly compare
-pci_bus_type to check whether it is pci device.
+Hi!
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
- drivers/pci/pci-acpi.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> I think that we can drop "new" version, because it has several
+> problems and "old" version is working. So now it not make sense
+> to use hack or develop "new" version anymore.
 
-diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
-index 577074e..e0431f1 100644
---- a/drivers/pci/pci-acpi.c
-+++ b/drivers/pci/pci-acpi.c
-@@ -358,7 +358,7 @@ static void pci_acpi_cleanup(struct device *dev)
+Ok... but this seems still needed. Please apply,
+							Pavel
+
+commit 6c65774280a7095dce8b1e995d86b2e079ef5fdb
+Author: Pavel <pavel@ucw.cz>
+Date:   Thu Dec 5 12:54:31 2013 +0100
+
+Cleanups should be performed even if firmware load fails.
+   
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
+
+diff --git a/drivers/bluetooth/hci_h4p/core.c b/drivers/bluetooth/hci_h4p/core.c
+index ead25c4..e76e889 100644
+--- a/drivers/bluetooth/hci_h4p/core.c
++++ b/drivers/bluetooth/hci_h4p/core.c
+@@ -942,7 +942,7 @@ again:
+ 	err = hci_h4p_read_fw(info, &fw_queue);
+ 	if (err < 0) {
+ 		dev_err(info->dev, "Cannot read firmware\n");
+-		return err;
++		goto err_clean;
+ 	}
  
- static bool pci_acpi_bus_match(struct device *dev)
- {
--	return dev->bus == &pci_bus_type;
-+	return dev_is_pci(dev);
- }
- 
- static struct acpi_bus_type acpi_pci_bus = {
+ 	err = hci_h4p_send_fw(info, &fw_queue);
+
+
+
 -- 
-1.7.1
-
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
