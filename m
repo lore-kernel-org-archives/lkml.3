@@ -1,64 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909Ab3LEIPE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 03:15:04 -0500
-Received: from mail-db9lp0248.outbound.messaging.microsoft.com ([213.199.154.248]:5548
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753546Ab3LEIPB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 03:15:01 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zz1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzzz2dh109h2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216h22d0h2336hbe9i1155h)
-From: Cristian Stoica <cristian.stoica@freescale.com>
-To: Cristian Stoica <cristian.stoica@freescale.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-CC: "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] crypto: remove unnecessary includes
-Thread-Topic: [PATCH] crypto: remove unnecessary includes
-Thread-Index: AQHO7F2WLzAy+Wj4w0mRxS12fEJIVJo7dqIAgABwEFCAAC6BAIAABtkAgAkuiUA=
-Date: Thu, 5 Dec 2013 08:14:55 +0000
-Message-ID: <1628287275CAA9409F1E349DEF3C6CCE78CBF0@039-SN2MPN1-012.039d.mgd.msft.net>
-References: <1385658987-16012-1-git-send-email-cristian.stoica@freescale.com>
- <20131129020657.GA5650@gondor.apana.org.au>
- <1628287275CAA9409F1E349DEF3C6CCE77CB99@039-SN2MPN1-012.039d.mgd.msft.net>
- <20131129113430.GA9542@gondor.apana.org.au>
- <1628287275CAA9409F1E349DEF3C6CCE77CDBE@039-SN2MPN1-012.039d.mgd.msft.net>
-In-Reply-To: <1628287275CAA9409F1E349DEF3C6CCE77CDBE@039-SN2MPN1-012.039d.mgd.msft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.171.73.198]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754046Ab3LEIRt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 03:17:49 -0500
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:35908 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751843Ab3LEIRr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 03:17:47 -0500
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <2442031.907VFG2eGN@amdc1032>
+References: <1386151747-3209-1-git-send-email-gautam.vivek@samsung.com>
+	<1386151747-3209-3-git-send-email-gautam.vivek@samsung.com>
+	<2442031.907VFG2eGN@amdc1032>
+Date: Thu, 5 Dec 2013 13:47:45 +0530
+Message-ID: <CAFp+6iH8Sobgjrxj4jmXwhLOCaJSRqe3v6wSFm7wU0vQu5qyDg@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] dt: exynos5250: Enable support for generic USB 3.0 phy
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Vivek Gautam <gautam.vivek@samsung.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Felipe Balbi <balbi@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, kishon <kishon@ti.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Julius Werner <jwerner@chromium.org>,
+        Kamil Debski <k.debski@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Herbert,
-
-Your original response was terse and left me more puzzled. Do you have a sensible explanation why some includes should be kept in the source even they serve no purpose during the build?
-
-Thanks,
-
-Cristian S.
+Hi,
 
 
+On Wed, Dec 4, 2013 at 6:20 PM, Bartlomiej Zolnierkiewicz
+<b.zolnierkie@samsung.com> wrote:
+>
+> Hi,
+>
+> Does the old phy-samsung-usb3 driver currently work on Exynos5250?  If yes,
+> then this patch should be merged with patch #1 to preserve bisectability.
 
-> > Just because it compiles it doesn't meant that the files you
-> > removed are unnecessary.
-> >
-> > The only file that is really unnecessary here is spinlock.h.
-> >
-> []
-> OK then, but let's reverse the question. In a construct similar to
-> authenc.c, what would be the purpose of slab.h and kernel.h?
-> (That leads to the next question which is - what is the purpose of those
-> files in authenc.c?)
+Yes, the old phy-samsung-usb3 driver works well on Exynos5250 currently.
+Ok, will merge it with patch #1
+[PATCH v2 1/4] phy: Add new Exynos5 USB 3.0 PHY driver
 
+Thanks for pointing out.
+
+>
+> Best regards,
+> --
+> Bartlomiej Zolnierkiewicz
+> Samsung R&D Institute Poland
+> Samsung Electronics
+>
+> On Wednesday, December 04, 2013 03:39:05 PM Vivek Gautam wrote:
+>> Update device tree bindings for DWC3 controller and
+>> USB 3.0 phy present on Exynos 5250 SoC, to start using
+>> the phy driver based on generic phy framework.
+>>
+>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> ---
+>>  arch/arm/boot/dts/exynos5250.dtsi |   16 ++++++----------
+>>  1 files changed, 6 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
+>> index 9db5047..7444717 100644
+>> --- a/arch/arm/boot/dts/exynos5250.dtsi
+>> +++ b/arch/arm/boot/dts/exynos5250.dtsi
+>> @@ -475,22 +475,18 @@
+>>                       compatible = "synopsys,dwc3";
+>>                       reg = <0x12000000 0x10000>;
+>>                       interrupts = <0 72 0>;
+>> -                     usb-phy = <&usb2_phy &usb3_phy>;
+>> +                     phys = <&usb3_phy>;
+>> +                     phy-names = "usb3-phy";
+>>               };
+>>       };
+>>
+>>       usb3_phy: usbphy@12100000 {
+>>               compatible = "samsung,exynos5250-usb3phy";
+>>               reg = <0x12100000 0x100>;
+>> -             clocks = <&clock 1>, <&clock 286>;
+>> -             clock-names = "ext_xtal", "usbdrd30";
+>> -             #address-cells = <1>;
+>> -             #size-cells = <1>;
+>> -             ranges;
+>> -
+>> -             usbphy-sys {
+>> -                     reg = <0x10040704 0x8>;
+>> -             };
+>> +             clocks = <&clock 286>, <&clock 1>;
+>> +             clock-names = "phy", "usb3phy_refclk";
+>> +             samsung,syscon-phandle = <&pmu_syscon>;
+>> +             #phy-cells = <0>;
+>>       };
+>>
+>>       usb@12110000 {
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
