@@ -1,117 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab3LEIRt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 03:17:49 -0500
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:35908 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843Ab3LEIRr (ORCPT
+	id S1754128Ab3LEISi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 03:18:38 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:39115 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab3LEISh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 03:17:47 -0500
+	Thu, 5 Dec 2013 03:18:37 -0500
+Date: Thu, 5 Dec 2013 11:18:22 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Serban Constantinescu <serban.constantinescu@arm.com>
+Cc: gregkh@linuxfoundation.org, arve@android.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, john.stultz@linaro.org,
+        ccross@android.com, Dave.Butcher@arm.com, irogers@google.com,
+        romlem@android.com
+Subject: Re: [PATCH v1 1/9] staging: android: binder: Move some of the logic
+ into subfunction
+Message-ID: <20131205081822.GU28413@mwanda>
+References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
+ <1386180581-6710-2-git-send-email-serban.constantinescu@arm.com>
 MIME-Version: 1.0
-In-Reply-To: <2442031.907VFG2eGN@amdc1032>
-References: <1386151747-3209-1-git-send-email-gautam.vivek@samsung.com>
-	<1386151747-3209-3-git-send-email-gautam.vivek@samsung.com>
-	<2442031.907VFG2eGN@amdc1032>
-Date: Thu, 5 Dec 2013 13:47:45 +0530
-Message-ID: <CAFp+6iH8Sobgjrxj4jmXwhLOCaJSRqe3v6wSFm7wU0vQu5qyDg@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] dt: exynos5250: Enable support for generic USB 3.0 phy
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Felipe Balbi <balbi@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, kishon <kishon@ti.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, Julius Werner <jwerner@chromium.org>,
-        Kamil Debski <k.debski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386180581-6710-2-git-send-email-serban.constantinescu@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Dec 04, 2013 at 06:09:33PM +0000, Serban Constantinescu wrote:
+> +static void bc_increfs_done(struct binder_proc *proc,
+> +		struct binder_thread *thread, uint32_t cmd,
+> +		void __user *node_ptr, void __user *cookie)
+> +{
+> +	struct binder_node *node;
+> +
+> +	node = binder_get_node(proc, node_ptr);
+> +	if (node == NULL) {
+> +		binder_user_error("%d:%d %s u%p no match\n",
+> +			proc->pid, thread->pid,
+> +			cmd == BC_INCREFS_DONE ?
+> +			"BC_INCREFS_DONE" :
+> +			"BC_ACQUIRE_DONE",
+> +			node_ptr);
+> +		return;
+> +	}
+> +	if (cookie != node->cookie) {
+> +		binder_user_error("%d:%d %s u%p node %d cookie mismatch %p != %p\n",
+> +			proc->pid, thread->pid,
+> +			cmd == BC_INCREFS_DONE ?
+> +			"BC_INCREFS_DONE" : "BC_ACQUIRE_DONE",
+> +			node_ptr, node->debug_id,
+> +			cookie, node->cookie);
+> +		return;
+> +	}
+> +	if (cmd == BC_ACQUIRE_DONE) {
+> +		if (node->pending_strong_ref == 0) {
+> +			binder_user_error("%d:%d BC_ACQUIRE_DONE node %d has no pending acquire request\n",
+> +				proc->pid, thread->pid,
+> +				node->debug_id);
+> +			return;
+> +		}
+> +		node->pending_strong_ref = 0;
+> +	} else {
+> +		if (node->pending_weak_ref == 0) {
+> +			binder_user_error("%d:%d BC_INCREFS_DONE node %d has no pending increfs request\n",
+> +				proc->pid, thread->pid,
+> +				node->debug_id);
+> +			return;
+> +		}
+> +		node->pending_weak_ref = 0;
+> +	}
+> +	binder_dec_node(node, cmd == BC_ACQUIRE_DONE, 0);
+> +	binder_debug(BINDER_DEBUG_USER_REFS,
+> +		     "%d:%d %s node %d ls %d lw %d\n",
+> +		     proc->pid, thread->pid,
+> +		     cmd == BC_INCREFS_DONE ?
+> +		     "BC_INCREFS_DONE" :
+> +		     "BC_ACQUIRE_DONE",
+> +		     node->debug_id, node->local_strong_refs,
+> +		     node->local_weak_refs);
+> +	return;
+> +}
 
+This function is 52 lines long but at least 32 of those lines are
+debug code.
 
-On Wed, Dec 4, 2013 at 6:20 PM, Bartlomiej Zolnierkiewicz
-<b.zolnierkie@samsung.com> wrote:
->
-> Hi,
->
-> Does the old phy-samsung-usb3 driver currently work on Exynos5250?  If yes,
-> then this patch should be merged with patch #1 to preserve bisectability.
+Just extra of lines of code means you have increased the number of bugs
+150%.  But what I know is that from a static analysis perspective, debug
+code has more defects per line then regular code it's worse than that.
+Plus all the extra noise obscures the actual logic and makes the real
+code annoying to look at so it's worse still.
 
-Yes, the old phy-samsung-usb3 driver works well on Exynos5250 currently.
-Ok, will merge it with patch #1
-[PATCH v2 1/4] phy: Add new Exynos5 USB 3.0 PHY driver
+If you want to move this stuff out of staging, then remove all the extra
+crap so it doesn't look like barf.
 
-Thanks for pointing out.
-
->
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
->
-> On Wednesday, December 04, 2013 03:39:05 PM Vivek Gautam wrote:
->> Update device tree bindings for DWC3 controller and
->> USB 3.0 phy present on Exynos 5250 SoC, to start using
->> the phy driver based on generic phy framework.
->>
->> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> ---
->>  arch/arm/boot/dts/exynos5250.dtsi |   16 ++++++----------
->>  1 files changed, 6 insertions(+), 10 deletions(-)
->>
->> diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
->> index 9db5047..7444717 100644
->> --- a/arch/arm/boot/dts/exynos5250.dtsi
->> +++ b/arch/arm/boot/dts/exynos5250.dtsi
->> @@ -475,22 +475,18 @@
->>                       compatible = "synopsys,dwc3";
->>                       reg = <0x12000000 0x10000>;
->>                       interrupts = <0 72 0>;
->> -                     usb-phy = <&usb2_phy &usb3_phy>;
->> +                     phys = <&usb3_phy>;
->> +                     phy-names = "usb3-phy";
->>               };
->>       };
->>
->>       usb3_phy: usbphy@12100000 {
->>               compatible = "samsung,exynos5250-usb3phy";
->>               reg = <0x12100000 0x100>;
->> -             clocks = <&clock 1>, <&clock 286>;
->> -             clock-names = "ext_xtal", "usbdrd30";
->> -             #address-cells = <1>;
->> -             #size-cells = <1>;
->> -             ranges;
->> -
->> -             usbphy-sys {
->> -                     reg = <0x10040704 0x8>;
->> -             };
->> +             clocks = <&clock 286>, <&clock 1>;
->> +             clock-names = "phy", "usb3phy_refclk";
->> +             samsung,syscon-phandle = <&pmu_syscon>;
->> +             #phy-cells = <0>;
->>       };
->>
->>       usb@12110000 {
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+regards,
+dan carpenter
