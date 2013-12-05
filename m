@@ -1,87 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab3LEJOm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 04:14:42 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:61821 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab3LEJOi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 04:14:38 -0500
+	id S1754896Ab3LEJQU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 04:16:20 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:40213 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752709Ab3LEJQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 04:16:14 -0500
+Message-ID: <52A04442.6050607@ti.com>
+Date: Thu, 5 Dec 2013 11:15:46 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-In-Reply-To: <003701ceefb6$64918db0$2db4a910$%han@samsung.com>
-References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
-	<003701ceefb6$64918db0$2db4a910$%han@samsung.com>
-Date: Thu, 5 Dec 2013 17:14:37 +0800
-Message-ID: <CAAb+SYZ+891u6xAStg36mFa85YPNnrXJiVZUuQoupk5U+Brx+Q@mail.gmail.com>
-Subject: Re: [PATCH 34/39] vme: remove DEFINE_PCI_DEVICE_TABLE macro
-From: ZHAO Gang <gamerh2o@gmail.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        STAGING SUBSYSTEM <devel@driverdev.osuosl.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Tony Lindgren <tony@atomide.com>
+CC: <linus.walleij@linaro.org>, <peter.ujfalusi@ti.com>, <nm@ti.com>,
+        <tomi.valkeinen@ti.com>, <balbi@ti.com>, <linux-gpio@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/1] gpio: twl4030: Fix regression for twl gpio LED output
+References: <1386156871-7639-1-git-send-email-rogerq@ti.com> <1386156871-7639-2-git-send-email-rogerq@ti.com> <20131204173705.GQ26766@atomide.com>
+In-Reply-To: <20131204173705.GQ26766@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 3, 2013 at 7:29 AM, Jingoo Han <jg1.han@samsung.com> wrote:
-> Don't use DEFINE_PCI_DEVICE_TABLE macro, because this macro
-> is not preferred.
->
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
+On 12/04/2013 07:37 PM, Tony Lindgren wrote:
+> * Roger Quadros <rogerq@ti.com> [131204 03:35]:
+>> Commit 0b2aa8be introduced a regression that causes failure
+>> in setting LED GPO direction to OUT.
+>>
+>> This causes USB host probe failures for Beagleboard C4.
+>>
+>> [    2.075469] platform usb_phy_gen_xceiv.2: Driver usb_phy_gen_xceiv requests probe deferral
+>> [    2.090454] hsusb2_vcc: Failed to request enable GPIO510: -22
+>> [    2.100982] reg-fixed-voltage reg-fixed-voltage.0.auto: Failed to register regulator: -22
+>> [    2.109954] reg-fixed-voltage: probe of reg-fixed-voltage.0.auto failed with error -22
+>>
+>> direction_out/direction_in must return 0 if the operation succeeded.
+> 
+> Uh, OK, sorry that was an unexpected side effect. We still should keep the
+> return values though instead of just ignoring them.
 
-Greg, this patch should be reverted. It do the opposite things.
+OK.
+>  
+>>  1 file changed, 9 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/gpio/gpio-twl4030.c b/drivers/gpio/gpio-twl4030.c
+>> index b97d6a6..0999ed1 100644
+>> --- a/drivers/gpio/gpio-twl4030.c
+>> +++ b/drivers/gpio/gpio-twl4030.c
+>> @@ -294,13 +294,13 @@ out:
+>>  static int twl_direction_in(struct gpio_chip *chip, unsigned offset)
+>>  {
+>>  	struct gpio_twl4030_priv *priv = to_gpio_twl4030(chip);
+>> -	int ret;
+>> +	int ret = 0;
+>>  
+>>  	mutex_lock(&priv->mutex);
+>>  	if (offset < TWL4030_GPIO_MAX)
+>> -		ret = twl4030_set_gpio_direction(offset, 1);
+>> +		twl4030_set_gpio_direction(offset, 1);
+>>  	else
+>> -		ret = -EINVAL;
+>> +		ret = -EINVAL;	/* LED outputs can't be set as input */
+>>  
+>>  	if (!ret)
+>>  		priv->direction &= ~BIT(offset);
+> 
+> This looks OK to me.
+> 
+>> @@ -354,18 +354,21 @@ static void twl_set(struct gpio_chip *chip, unsigned offset, int value)
+>>  static int twl_direction_out(struct gpio_chip *chip, unsigned offset, int value)
+>>  {
+>>  	struct gpio_twl4030_priv *priv = to_gpio_twl4030(chip);
+>> -	int ret = -EINVAL;
+>>  
+> 
+> Can't you just have:
+> 
+> 	int ret = 0;
 
->  drivers/vme/boards/vme_vmivme7805.c |    2 +-
->  drivers/vme/bridges/vme_ca91cx42.c  |    2 +-
->  drivers/vme/bridges/vme_tsi148.c    |    2 +-
->  3 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/vme/boards/vme_vmivme7805.c b/drivers/vme/boards/vme_vmivme7805.c
-> index cf74aee..ac42212 100644
-> --- a/drivers/vme/boards/vme_vmivme7805.c
-> +++ b/drivers/vme/boards/vme_vmivme7805.c
-> @@ -27,7 +27,7 @@ static void __iomem *vmic_base;
->
->  static const char driver_name[] = "vmivme_7805";
->
-> -static DEFINE_PCI_DEVICE_TABLE(vmic_ids) = {
-> +static const struct pci_device_id vmic_ids[] = {
->         { PCI_DEVICE(PCI_VENDOR_ID_VMIC, PCI_DEVICE_ID_VTIMR) },
->         { },
->  };
-> diff --git a/drivers/vme/bridges/vme_ca91cx42.c b/drivers/vme/bridges/vme_ca91cx42.c
-> index f844857..a06edbf 100644
-> --- a/drivers/vme/bridges/vme_ca91cx42.c
-> +++ b/drivers/vme/bridges/vme_ca91cx42.c
-> @@ -42,7 +42,7 @@ static int geoid;
->
->  static const char driver_name[] = "vme_ca91cx42";
->
-> -static DEFINE_PCI_DEVICE_TABLE(ca91cx42_ids) = {
-> +static const struct pci_device_id ca91cx42_ids[] = {
->         { PCI_DEVICE(PCI_VENDOR_ID_TUNDRA, PCI_DEVICE_ID_TUNDRA_CA91C142) },
->         { },
->  };
-> diff --git a/drivers/vme/bridges/vme_tsi148.c b/drivers/vme/bridges/vme_tsi148.c
-> index 9cf8833..16830d8 100644
-> --- a/drivers/vme/bridges/vme_tsi148.c
-> +++ b/drivers/vme/bridges/vme_tsi148.c
-> @@ -45,7 +45,7 @@ static int geoid;
->
->  static const char driver_name[] = "vme_tsi148";
->
-> -static DEFINE_PCI_DEVICE_TABLE(tsi148_ids) = {
-> +static const struct pci_device_id tsi148_ids[] = {
->         { PCI_DEVICE(PCI_VENDOR_ID_TUNDRA, PCI_DEVICE_ID_TUNDRA_TSI148) },
->         { },
->  };
-> --
-> 1.7.10.4
->
->
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
+Yes, i'll add that.
+> 
+>>  	mutex_lock(&priv->mutex);
+>>  	if (offset < TWL4030_GPIO_MAX)
+>> -		ret = twl4030_set_gpio_direction(offset, 0);
+>> +		twl4030_set_gpio_direction(offset, 0);
+>> +
+>> +	/*
+>> +	 *  LED gpio's i.e. offset >= TWL4030_GPIO_MAX are always output
+>> +	 */
+>>  
+>>  	priv->direction |= BIT(offset);
+>>  	mutex_unlock(&priv->mutex);
+>>  
+>>  	twl_set(chip, offset, value);
+>>  
+>> -	return ret;
+>> +	return 0;
+>>  }
+> 
+> Then the rest of this change is not needed and we check the return value for
+> twl4030_set_gpio_direction. Makes sense to keep the comment there though.
+
+OK. Will post v2.
+
+cheers,
+-roger
+
