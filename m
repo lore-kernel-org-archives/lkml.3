@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326Ab3LEHVy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 02:21:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38719 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab3LEHVw (ORCPT
+	id S1752157Ab3LEHeK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 02:34:10 -0500
+Received: from mga14.intel.com ([143.182.124.37]:38716 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751779Ab3LEHeI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 02:21:52 -0500
-Date: Wed, 4 Dec 2013 23:22:51 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: BUG: sleeping function called from invalid context at
- kernel/locking/mutex.c:616
-Message-Id: <20131204232251.73cc62c6.akpm@linux-foundation.org>
-In-Reply-To: <1386227524.4806.7.camel@phoenix>
-References: <1385895217.3994.2.camel@phoenix>
-	<1386144811.16763.2.camel@phoenix>
-	<20131204003147.454534da.akpm@linux-foundation.org>
-	<1386147578.20621.4.camel@phoenix>
-	<20131204133220.a7f38e748ce2c57f90483111@linux-foundation.org>
-	<1386227524.4806.7.camel@phoenix>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Dec 2013 02:34:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,831,1378882800"; 
+   d="scan'208";a="438930993"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [char-misc-next] mei: add 9 series PCH mei device ids
+Thread-Topic: [char-misc-next] mei: add 9 series PCH mei device ids
+Thread-Index: AQHO8XEKSg/ku3ZvTky/fxOhHc7lHZpFNLdg
+Date: Thu, 5 Dec 2013 07:34:04 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AF2461B@HASMSX106.ger.corp.intel.com>
+References: <1386068489-19511-1-git-send-email-tomas.winkler@intel.com>
+ <20131205041913.GA4975@kroah.com>
+In-Reply-To: <20131205041913.GA4975@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 05 Dec 2013 15:12:04 +0800 Axel Lin <axel.lin@ingics.com> wrote:
-
-> > 
-> > blam.  spin_unlock_irq(&mapping->tree_lock) failed to decrement
-> > preempt_count().  What the heck.
-> > 
-> > What architecture is this?  Please send the full .config.
-> > 
-> > And exactly which kernel version is in use?
+> >
+> > diff --git a/drivers/misc/mei/hw-me-regs.h b/drivers/misc/mei/hw-me-regs.h
+> > index 6c0fde5..f83bc80 100644
+> > --- a/drivers/misc/mei/hw-me-regs.h
+> > +++ b/drivers/misc/mei/hw-me-regs.h
+> > @@ -110,8 +110,12 @@
+> >  #define MEI_DEV_ID_PPT_3      0x1DBA  /* Panther Point */
+> >
+> >  #define MEI_DEV_ID_LPT        0x8C3A  /* Lynx Point */
+> > +#define MEI_DEV_ID_LPT_H      0x8C3A  /* Lynx Point H */
 > 
-> It's a arm7tdmi SoC (GeneralPlus gpl32700 SoC).
-> The code is: current Linus' tree + patches for this SoC.
-> The patches for this SoC includes:
-> irqchip, clocksource, pinctrl, gpio, uart, spi, sd/mmc host drivers.
-> I also apply a out-of-tree sdio wifi driver for mt5931 wifi module.
+> Why duplicate this #define?
 
-Beats me, sorry - I don't see anything which could cause this in the
-arm spinlock implementation, even if the spinlock's storage got
-corrupted.
-
-> I can successfully boot and running busybox if using ext2 as root.
-> Thus I don't hit "spin_unlock_irq decrement preempt_count failure" if using ext2 as root.
-> The storage is a spi nor flash, so I prefer to use jffs2 but then I got
-> the hangup.
+> And, now that you changed it, why keep the "old" one around, it's no
+> longer used anywhere else?
 > 
-> BTW, I got below panic today:
-> 
-> 467: 0
-> 470: 0
-> 475: 1
-> 485: 1
-> 487: 2
-> 489: 2
-> 491: 1
-> 494: 1
-> 496: 1
-> 498: 1
-> BUG: spinlock bad magic on CPU#0, spi0/30
+The correct name is LPT_H so  I've just missed to remove the line, sending V2.
 
-Which is what appears to have happened here.
-
-I assume earlier kernels worked OK with this config?
-
-If so, all I can suggest is a git bisection search :(
+Thanks
+Tomas
