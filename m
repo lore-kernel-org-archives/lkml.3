@@ -1,135 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750924Ab3LEFBb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 00:01:31 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:25183 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750706Ab3LEFB3 (ORCPT
+	id S1751423Ab3LEFLl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 00:11:41 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:62439 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757Ab3LEFLk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 00:01:29 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApgGAMgHoFJ5LHyk/2dsb2JhbABZgwe0KIVPgRoXdIIlAQEEAQ4ZExwPFAULCAMOCgklDwUlAyETh3wFwSUXFo4RVweEMwOYE5IUgz0ogS0
-Date: Thu, 5 Dec 2013 16:01:18 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: hannes@cmpxchg.org, mhocko@suse.cz, dchinner@redhat.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org, devel@openvz.org,
-        glommer@openvz.org, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v12 09/18] vmscan: shrink slab on memcg pressure
-Message-ID: <20131205050118.GM8803@dastard>
-References: <cover.1385974612.git.vdavydov@parallels.com>
- <be01fd9afeedb7d5c7979347f4d6ddaf67c9082d.1385974612.git.vdavydov@parallels.com>
- <20131203104849.GD8803@dastard>
- <529DCB7D.10205@parallels.com>
- <20131204045147.GN10988@dastard>
- <529ECC44.8040508@parallels.com>
+	Thu, 5 Dec 2013 00:11:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <529ECC44.8040508@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <529FC352.7090004@hitachi.com>
+References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
+	<1386044930-15149-5-git-send-email-ast@plumgrid.com>
+	<529E7BEC.70509@hitachi.com>
+	<20131203201133.52934a02@gandalf.local.home>
+	<529FC352.7090004@hitachi.com>
+Date: Wed, 4 Dec 2013 21:11:39 -0800
+Message-ID: <CAMEtUuwMv6PtN=9_RmxouZpVB8PVN8oZDNDUyLva2J+xos48og@mail.gmail.com>
+Subject: Re: [RFC PATCH tip 4/5] use BPF in tracing filters
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 10:31:32AM +0400, Vladimir Davydov wrote:
-> On 12/04/2013 08:51 AM, Dave Chinner wrote:
-> > On Tue, Dec 03, 2013 at 04:15:57PM +0400, Vladimir Davydov wrote:
-> >> On 12/03/2013 02:48 PM, Dave Chinner wrote:
-> >>>> @@ -236,11 +236,17 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
-> >>>>  		return 0;
-> >>>>  
-> >>>>  	/*
-> >>>> -	 * copy the current shrinker scan count into a local variable
-> >>>> -	 * and zero it so that other concurrent shrinker invocations
-> >>>> -	 * don't also do this scanning work.
-> >>>> +	 * Do not touch global counter of deferred objects on memcg pressure to
-> >>>> +	 * avoid isolation issues. Ideally the counter should be per-memcg.
-> >>>>  	 */
-> >>>> -	nr = atomic_long_xchg(&shrinker->nr_deferred[nid], 0);
-> >>>> +	if (!shrinkctl->target_mem_cgroup) {
-> >>>> +		/*
-> >>>> +		 * copy the current shrinker scan count into a local variable
-> >>>> +		 * and zero it so that other concurrent shrinker invocations
-> >>>> +		 * don't also do this scanning work.
-> >>>> +		 */
-> >>>> +		nr = atomic_long_xchg(&shrinker->nr_deferred[nid], 0);
-> >>>> +	}
-> >>> That's ugly. Effectively it means that memcg reclaim is going to be
-> >>> completely ineffective when large numbers of allocations and hence
-> >>> reclaim attempts are done under GFP_NOFS context.
-> >>>
-> >>> The only thing that keeps filesystem caches in balance when there is
-> >>> lots of filesystem work going on (i.e. lots of GFP_NOFS allocations)
-> >>> is the deferal of reclaim work to a context that can do something
-> >>> about it.
-> >> Imagine the situation: a memcg issues a GFP_NOFS allocation and goes to
-> >> shrink_slab() where it defers them to the global counter; then another
-> >> memcg issues a GFP_KERNEL allocation, also goes to shrink_slab() where
-> >> it sees a huge number of deferred objects and starts shrinking them,
-> >> which is not good IMHO.
-> > That's exactly what the deferred mechanism is for - we know we have
-> > to do the work, but we can't do it right now so let someone else do
-> > it who can.
-> >
-> > In most cases, deferral is handled by kswapd, because when a
-> > filesystem workload is causing memory pressure then most allocations
-> > are done in GFP_NOFS conditions. Hence the only memory reclaim that
-> > can make progress here is kswapd.
-> >
-> > Right now, you aren't deferring any of this memory pressure to some
-> > other agent, so it just does not get done. That's a massive problem
-> > - it's a design flaw - and instead I see lots of crazy hacks being
-> > added to do stuff that should simply be deferred to kswapd like is
-> > done for global memory pressure.
-> >
-> > Hell, kswapd shoul dbe allowed to walk memcg LRU lists and trim
-> > them, just like it does for the global lists. We only need a single
-> > "deferred work" counter per node for that - just let kswapd
-> > proportion the deferred work over the per-node LRU and the
-> > memcgs....
-> 
-> Seems I misunderstand :-(
-> 
-> Let me try. You mean we have the only nr_deferred counter per-node, and
-> kswapd scans
-> 
-> nr_deferred*memcg_kmem_size/total_kmem_size
-> 
-> objects in each memcg, right?
-> 
-> Then if there were a lot of objects deferred on memcg (not global)
-> pressure due to a memcg issuing a lot of GFP_NOFS allocations, kswapd
-> will reclaim objects from all, even unlimited, memcgs. This looks like
-> an isolation issue :-/
+On Wed, Dec 4, 2013 at 4:05 PM, Masami Hiramatsu
+<masami.hiramatsu.pt@hitachi.com> wrote:
+> (2013/12/04 10:11), Steven Rostedt wrote:
+>> On Wed, 04 Dec 2013 09:48:44 +0900
+>> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+>>
+>>> fetch functions and actions. In that case, we can continue
+>>> to use current interface but much faster to trace.
+>>> Also, we can see what filter/arguments/actions are set
+>>> on each event.
+>>
+>> There's also the problem that the current filters work with the results
+>> of what is written to the buffer, not what is passed in by the trace
+>> point, as that isn't even displayed to the user.
+>
+> Agreed, so I've said I doubt this implementation is a good
+> shape to integrate. Ktap style is better, since it just gets
+> parameters from perf buffer entry (using event format).
 
-Which, when you are running out of memory, is a much less of an
-issue than not being able to make progress reclaiming memory.
+Are you saying always store all arguments into ring buffer and let
+filter run on it?
+It's slower, but it's cleaner, because of human readable? since ktap
+arg1 matches first
+argument of tracepoint is better than doing ctx->regs.di ? Sure.
+si->arg1 is easy to fix.
+With si->arg1 tweak the bpf will become architecture independent. It
+will run through JIT on x86 and through interpreter everywhere else.
+but for kprobes user have to specify 'var=cpu_register' during probe
+creation… how is it better than doing the same in filter?
+I'm open to suggestions on how to improve the usability.
 
-Besides, the "isolation" argument runs both ways. e.g. when there
-isn't memory available, it's entirely possible it's because there is
-actually no free memory, not because we've hit a memcg limit. e.g.
-all the memory has been consumed by an unlimited memcg, and we need to
-reclaim from it so this memcg can make progress.
-
-In those situations we need to reclaim from everyone, not
-just the memcg that can't find free memory to allocate....
-
-> Currently we have a per-node nr_deferred counter for each shrinker. If
-> we add per-memcg reclaim, we have to make it per-memcg per-node, don't we?
-
-Think about what you just said for a moment. We have how many memcg
-shrinkers?  And we can support how many nodes? And we can support
-how many memcgs? And when we multiply that all together, how much
-memory do we need to track that?
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Thanks
+Alexei
