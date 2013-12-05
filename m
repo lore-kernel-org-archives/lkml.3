@@ -1,81 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277Ab3LEAoi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 19:44:38 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:51676 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756000Ab3LEAof (ORCPT
+	id S1756313Ab3LEAsN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 19:48:13 -0500
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:41939 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756142Ab3LEAsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 19:44:35 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-kernel@vger.kernel.org, Mark Brown <broonie@linaro.org>
-Subject: Re: [PATCH] regulator: gpio: Don't require a regulator-type property
-Date: Thu, 05 Dec 2013 01:44:42 +0100
-Message-ID: <1766701.HGqKkTj0sM@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.10.17-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1386203515-6815-1-git-send-email-broonie@kernel.org>
-References: <1386203515-6815-1-git-send-email-broonie@kernel.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 4 Dec 2013 19:48:10 -0500
+From: Gary Rookard <garyrookard@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: lisa@xenapiadmin.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Gary Rookard <garyrookard@gmail.com>
+Subject: [PATCH 3/3] Staging: bcm: DDRInit: Fixed coding style issue, replaced spaces w/ tab.(patch set)
+Date: Wed,  4 Dec 2013 19:47:14 -0500
+Message-Id: <1386204434-21714-1-git-send-email-garyrookard@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+This is the third patch of a series.(3)
+Replaced spaces in margin w/ 1 tab for lines:
+ 121-125, 128-134, 136, 138-171, 173, 175
 
-Thanks for the patch.
+Signed-off-by: Gary Alan Rookard <garyrookard@gmail.com>
+ On branch staging-next
+---
+ drivers/staging/bcm/DDRInit.c | 98 +++++++++++++++++++++----------------------
+ 1 file changed, 49 insertions(+), 49 deletions(-)
 
-On Thursday 05 December 2013 00:31:55 Mark Brown wrote:
-> From: Mark Brown <broonie@linaro.org>
-> 
-> Since essentially all GPIO controlled regulators are voltage regulators
-> make the regulator-type property optional, defaulting to voltage.
-> 
-> Signed-off-by: Mark Brown <broonie@linaro.org>
-> ---
-> 
-> Compile tested only.
-> 
->  drivers/regulator/gpio-regulator.c | 14 ++++++--------
->  1 file changed, 6 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/regulator/gpio-regulator.c
-> b/drivers/regulator/gpio-regulator.c index 234960dc9607..13ec94d984ca
-> 100644
-> --- a/drivers/regulator/gpio-regulator.c
-> +++ b/drivers/regulator/gpio-regulator.c
-> @@ -203,17 +203,15 @@ of_get_gpio_regulator_config(struct device *dev,
-> struct device_node *np) }
->  	config->nr_states = i;
-> 
-> +	config->type = REGULATOR_VOLTAGE;
->  	ret = of_property_read_string(np, "regulator-type", &regtype);
-> -	if (ret < 0) {
-> -		dev_err(dev, "Missing 'regulator-type' property\n");
-> -		return ERR_PTR(-EINVAL);
-> +	if (ret >= 0) {
-> +		if (!strncmp("voltage", regtype, 7))
-> +			config->type = REGULATOR_VOLTAGE;
-> +		else if (!strncmp("current", regtype, 7))
-> +			config->type = REGULATOR_CURRENT;
-
-Should we warn or error in case of an unsupported value ?
-
->  	}
-> 
-> -	if (!strncmp("voltage", regtype, 7))
-> -		config->type = REGULATOR_VOLTAGE;
-> -	else if (!strncmp("current", regtype, 7))
-> -		config->type = REGULATOR_CURRENT;
-> -
->  	return config;
->  }
+diff --git a/drivers/staging/bcm/DDRInit.c b/drivers/staging/bcm/DDRInit.c
+index 6f5880b..d31dc71 100644
+--- a/drivers/staging/bcm/DDRInit.c
++++ b/drivers/staging/bcm/DDRInit.c
+@@ -118,61 +118,61 @@ static struct bcm_ddr_setting asT3_DDRSetting80MHz[]= {//   # DPLL Clock Setting
+ //100Mhz
+ #define T3_SKIP_CLOCK_PROGRAM_DUMP_100MHZ 13  //index for 0x0F007000
+ static struct bcm_ddr_setting asT3_DDRSetting100MHz[]= {//  # DPLL Clock Setting
+-                                        {0x0F000800,0x00007008},
+-                                        {0x0f000810,0x00000F95},
+-                                        {0x0f000820,0x07F13E3F},
+-                                        {0x0f000860,0x00000000},
+-                                        {0x0f000880,0x000003DD},
++	{0x0F000800,0x00007008},
++	{0x0f000810,0x00000F95},
++	{0x0f000820,0x07F13E3F},
++	{0x0f000860,0x00000000},
++	{0x0f000880,0x000003DD},
+                                 // Changed source for X-bar and MIPS clock to APLL
+                                 //0x0f000840,0x0FFF1800,
+-                                        {0x0f000840,0x0FFF1B00},
+-                                        {0x0f000870,0x00000002},
+-                                        {0x0F00a044,0x1fffffff},
+-                                        {0x0F00a040,0x1f000000},
+-                                        {0x0F00a084,0x1Cffffff},
+-                                        {0x0F00a080,0x1C000000},
+-                                        {0x0F00a04C,0x0000000C},
++	{0x0f000840,0x0FFF1B00},
++	{0x0f000870,0x00000002},
++	{0x0F00a044,0x1fffffff},
++	{0x0F00a040,0x1f000000},
++	{0x0F00a084,0x1Cffffff},
++	{0x0F00a080,0x1C000000},
++	{0x0F00a04C,0x0000000C},
+                                 //# Enable 2 ports within X-bar
+-                                        {0x0F00A000,0x00000016},
++	{0x0F00A000,0x00000016},
+                                 //Memcontroller Default values
+-                                        {0x0F007000,0x00010001},
+-                                        {0x0F007004,0x01010100},
+-                                        {0x0F007008,0x01000001},
+-                                        {0x0F00700c,0x00000000},
+-                                        {0x0F007010,0x01000000},
+-                                        {0x0F007014,0x01000100},
+-                                        {0x0F007018,0x01000000},
+-                                        {0x0F00701c,0x01020001}, // POP - 0x00020000 Normal 0x01020000
+-                                        {0x0F007020,0x04020107},//Normal - 0x04030107 POP - 0x05030107
+-                                        {0x0F007024,0x00000007},
+-                                        {0x0F007028,0x01020201},
+-                                        {0x0F00702c,0x0204040A},
+-                                        {0x0F007030,0x06000000},
+-                                        {0x0F007034,0x00000004},
+-                                        {0x0F007038,0x20080200},
+-                                        {0x0F00703C,0x02030320},
+-                                        {0x0F007040,0x6E7F1200},
+-                                        {0x0F007044,0x01190A00},
+-                                        {0x0F007048,0x06120305},//0x02690204 // 0x06120305
+-                                        {0x0F00704c,0x00000000},
+-                                        {0x0F007050,0x0000001C},
+-                                        {0x0F007054,0x00000000},
+-                                        {0x0F007058,0x00000000},
+-                                        {0x0F00705c,0x00000000},
+-                                        {0x0F007060,0x00082ED6},
+-                                        {0x0F007064,0x0000000A},
+-                                        {0x0F007068,0x00000000},
+-                                        {0x0F00706c,0x00000001},
+-                                        {0x0F007070,0x00005000},
+-                                        {0x0F007074,0x00000000},
+-                                        {0x0F007078,0x00000000},
+-                                        {0x0F00707C,0x00000000},
+-                                        {0x0F007080,0x00000000},
+-                                        {0x0F007084,0x00000000},
++	{0x0F007000,0x00010001},
++	{0x0F007004,0x01010100},
++	{0x0F007008,0x01000001},
++	{0x0F00700c,0x00000000},
++	{0x0F007010,0x01000000},
++	{0x0F007014,0x01000100},
++	{0x0F007018,0x01000000},
++	{0x0F00701c,0x01020001}, // POP - 0x00020000 Normal 0x01020000
++	{0x0F007020,0x04020107},//Normal - 0x04030107 POP - 0x05030107
++	{0x0F007024,0x00000007},
++	{0x0F007028,0x01020201},
++	{0x0F00702c,0x0204040A},
++	{0x0F007030,0x06000000},
++	{0x0F007034,0x00000004},
++	{0x0F007038,0x20080200},
++	{0x0F00703C,0x02030320},
++	{0x0F007040,0x6E7F1200},
++	{0x0F007044,0x01190A00},
++	{0x0F007048,0x06120305},//0x02690204 // 0x06120305
++	{0x0F00704c,0x00000000},
++	{0x0F007050,0x0000001C},
++	{0x0F007054,0x00000000},
++	{0x0F007058,0x00000000},
++	{0x0F00705c,0x00000000},
++	{0x0F007060,0x00082ED6},
++	{0x0F007064,0x0000000A},
++	{0x0F007068,0x00000000},
++	{0x0F00706c,0x00000001},
++	{0x0F007070,0x00005000},
++	{0x0F007074,0x00000000},
++	{0x0F007078,0x00000000},
++	{0x0F00707C,0x00000000},
++	{0x0F007080,0x00000000},
++	{0x0F007084,0x00000000},
+                                 //# Enable BW improvement within memory controller
+-                                        {0x0F007094,0x00000104},
++	{0x0F007094,0x00000104},
+                                 //# Enable start bit within memory controller
+-                                        {0x0F007018,0x01010000}
++	{0x0F007018,0x01010000}
+                                 };
+ 
+ //Net T3B DDR Settings
 -- 
-Regards,
-
-Laurent Pinchart
+1.8.4
 
