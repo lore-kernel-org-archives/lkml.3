@@ -1,75 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834Ab3LEJac (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 04:30:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49228 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751351Ab3LEJa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 04:30:28 -0500
-Date: Thu, 5 Dec 2013 10:29:37 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC 0/6] perf tools: Add perf_evlist errno
-Message-ID: <20131205092937.GB1265@krava.brq.redhat.com>
-References: <1385725510-20118-1-git-send-email-jolsa@redhat.com>
- <87wqjnoebd.fsf@sejong.aot.lge.com>
+	id S1753748Ab3LEJdr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 04:33:47 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:63137 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402Ab3LEJdn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 04:33:43 -0500
+Date: Thu, 5 Dec 2013 10:33:34 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, Oleg Nesterov <oleg@redhat.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH tip/core/locking 4/4] Documentation/memory-barriers.txt:
+ Document ACCESS_ONCE()
+Message-ID: <20131205093334.GA16749@gmail.com>
+References: <20131204224628.GA30159@linux.vnet.ibm.com>
+ <1386197219-31964-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1386197219-31964-4-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87wqjnoebd.fsf@sejong.aot.lge.com>
+In-Reply-To: <1386197219-31964-4-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 05:19:18PM +0900, Namhyung Kim wrote:
-> Hi Jiri,
-> 
-> On Fri, 29 Nov 2013 12:45:04 +0100, Jiri Olsa wrote:
-> > hi,
-> > Andi reported wrong error message for :S modifier
-> > on kernel without event ID ioctl support.
-> >
-> > The reason was that the ioctl failed, but the error was
-> > printed like the mmap would:
-> >
-> >     $ perf.old record -e '{cycles,cache-misses}:S' ls
-> >     failed to mmap with 25 (Inappropriate ioctl for device)
-> >     ls: Terminated
-> 
-> I see same confusing error message..
-> 
-> >
-> > I experimentally added sort of 'libc errno' interface for
-> > perf_evlist to be able to get proper error message, like:
-> >
-> >     $ perf record -e '{cycles,cache-misses}:S' ls
-> >     Cannot read event group on this kernel.
-> >     Please consider kernel update (v3.12+).
-> >     ls: Terminated
-> >
-> > I'm not sure about this approach. Maybe it'd be better be more
-> > global..? So before throwing this out, sending it as RFC ;-)
-> 
-> I like it. :)  We still need to improve this user-visible error handling.
-> 
-> But what you mean by 'more global'?  I think the evlist APIs are pretty
-> global alreay.  And we have same error handling in perf_target code too.
 
-aah, missed the target object has that already.. I meant
-to keep the same way of error handling globaly
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-> 
-> But I think it'd be better making it thread-safe even though it's not
-> needed for now.  The code is growing really fast.. ;-)
+> + (*) The compiler is within its rights to reorder memory accesses unless
+> +     you tell it not to.  For example, consider the following interaction
+> +     between process-level code and an interrupt handler:
+> +
+> +	void process_level(void)
+> +	{
+> +		msg = get_message();
+> +		flag = true;
+> +	}
+> +
+> +	void interrupt_handler(void)
+> +	{
+> +		if (flag)
+> +			process_message(msg);
+> +	}
+> +
+> +     There is nothing to prevent the the compiler from transforming
+> +     process_level() to the following, in fact, this might well be a
+> +     win for single-threaded code:
+> +
+> +	void process_level(void)
+> +	{
+> +		flag = true;
+> +		msg = get_message();
+> +	}
+> +
+> +     If the interrupt occurs between these two statement, then
+> +     interrupt_handler() might be passed a garbled msg.  Use ACCESS_ONCE()
+> +     to prevent this as follows:
+> +
+> +	void process_level(void)
+> +	{
+> +		ACCESS_ONCE(msg) = get_message();
+> +		ACCESS_ONCE(flag) = true;
+> +	}
+> +
+> +	void interrupt_handler(void)
+> +	{
+> +		if (ACCESS_ONCE(flag))
+> +			process_message(ACCESS_ONCE(msg));
+> +	}
 
-ok, will repost 
+Technically, if the interrupt handler is the innermost context, the 
+ACCESS_ONCE() is not needed in the interrupt_handler() code.
 
-thanks,
-jirka
+Since for the vast majority of Linux code IRQ handlers are the most 
+atomic contexts (very few drivers deal with NMIs) I suspect we should 
+either remove that ACCESS_ONCE() from the example or add a comment 
+explaining that in many cases those are superfluous?
+
+> + (*) For aligned memory locations whose size allows them to be accessed
+> +     with a single memory-reference instruction, prevents "load tearing"
+> +     and "store tearing," in which a single large access is replaced by
+> +     multiple smaller accesses.  For example, given an architecture having
+> +     16-bit store instructions with 7-bit immediate fields, the compiler
+> +     might be tempted to use two 16-bit store-immediate instructions to
+> +     implement the following 32-bit store:
+> +
+> +	p = 0x00010002;
+> +
+> +     Please note that GCC really does use this sort of optimization,
+> +     which is not surprising given that it would likely take more
+> +     than two instructions to build the constant and then store it.
+> +     This optimization can therefore be a win in single-threaded code.
+> +     In fact, a recent bug (since fixed) caused GCC to incorrectly use
+> +     this optimization in a volatile store.  In the absence of such bugs,
+> +     use of ACCESS_ONCE() prevents store tearing:
+> +
+> +	ACCESS_ONCE(p) = 0x00010002;
+
+I suspect the last sentence should read:
+
+> +                                             In the absence of such bugs,
+> +     use of ACCESS_ONCE() prevents store tearing in this example:
+> +
+> +	ACCESS_ONCE(p) = 0x00010002;
+
+Otherwise it could be read as a more generic statement (leaving out 
+'load tearing')?
+
+Thanks,
+
+	Ingo
