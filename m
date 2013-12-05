@@ -1,90 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932957Ab3LEQfY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 11:35:24 -0500
-Received: from mail-by2lp0238.outbound.protection.outlook.com ([207.46.163.238]:20419
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932576Ab3LEQfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 11:35:20 -0500
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "pavel@ucw.cz" <pavel@ucw.cz>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Remove unnecessarily gendered language
-Thread-Topic: [PATCH] Remove unnecessarily gendered language
-Thread-Index: AQHO78Wp335rwpc28EKOB9Zlmmg7eZpFb2wAgABg+gA=
-Date: Thu, 5 Dec 2013 16:35:15 +0000
-Message-ID: <1386261314.14035.8.camel@x230>
-References: <1386033532-25431-1-git-send-email-matthew.garrett@nebula.com>
-	 <20131205104808.GA6455@amd.pavel.ucw.cz>
-In-Reply-To: <20131205104808.GA6455@amd.pavel.ucw.cz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [209.6.207.143]
-x-forefront-prvs: 00514A2FE6
-x-forefront-antispam-report: SFV:NSPM;SFS:(24454002)(51704005)(199002)(189002)(377424004)(76482001)(81542001)(81342001)(74876001)(74706001)(47736001)(19580395003)(69226001)(31966008)(74662001)(47446002)(74502001)(85306002)(47976001)(50986001)(83072001)(83322001)(4396001)(49866001)(19580405001)(87936001)(77982001)(56816005)(63696002)(79102001)(2656002)(81686001)(81816001)(33646001)(33716001)(66066001)(65816001)(80022001)(76786001)(76796001)(54356001)(59766001)(51856001)(90146001)(54316002)(80976001)(87266001)(74366001)(77096001)(56776001)(53806001)(46102001)(85852002);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR05MB424;H:BN1PR05MB423.namprd05.prod.outlook.com;CLIP:209.6.207.143;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <08E4DB7EFF4C994797A26CC0AD2BBEBF@namprd05.prod.outlook.com>
+	id S933001Ab3LEQj0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 11:39:26 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:34562 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932797Ab3LEQjX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 11:39:23 -0500
+Message-ID: <52A0AC37.5010006@linaro.org>
+Date: Thu, 05 Dec 2013 17:39:19 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+CC: Axel Lin <axel.lin@ingics.com>, Dinh Nguyen <dinguyen@altera.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] clocksource/clockevents fixes for 3.13
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rB5GZVTu009554
 
-On Thu, 2013-12-05 at 11:48 +0100, Pavel Machek wrote:
-> On Mon 2013-12-02 20:18:52, Matthew Garrett wrote:
-> > The kernel as a number of cases of gendered language. The majority of these
-> > refer to objects that don't have gender in English, and so I've replaced
-> > them with "it" and "its". Some refer to people (developers or users), and
-> > I've replaced these with the singular "they" variant. Some are simply
-> > typos that I've fixed up.
-> 
-> Why is this good idea?
 
-Using "he" to refer to objects without gender is (with some exceptions)
-incorrect in English, so that set should be uncontroversial. "He" is
-usually considered acceptable when referring to an individual of unknown
-gender, but so is "they". The latter version has the advantage of not
-giving the impression that we believe all our users are male.
+Hi Thomas,
 
-> > @@ -127,7 +127,7 @@ gid=
-> >  umask=			Provide default owner, group, and access mode mask.
-> >  			These options work as documented in mount(8).  By
-> >  			default, the files/directories are owned by root and
-> > -			he/she has read and write permissions, as well as
-> > +			they have read and write permissions, as well as
-> >  			browse permission for directories.  No one else has any
-> >  			access permissions.  I.e. the mode on all files is by
-> >  			default rw------- and for directories rwx------, a
-> 
-> So... we had unambiguous text "user has read and write permissions"
-> and now you have to wonder if they refers to "user" or
-> "files/directories".
+here are the fixes for 3.13 based on timers/urgent
 
-Reasonable. I'll rework that.
+  * Axel Lin removed the bcm_timer_ids which are no longer used due to 
+the conversion to clksrc-of and added a missing dependency on 
+CLKSRC_MMIO in the Kconfig for the time-efm32.
 
-> > @@ -23,7 +24,7 @@ Quota netlink interface
-> >  When user exceeds a softlimit, runs out of grace time or reaches hardlimit,
-> >  quota subsystem traditionally printed a message to the controlling terminal of
-> >  the process which caused the excess. This method has the disadvantage that
-> > -when user is using a graphical desktop he usually cannot see the message.
-> > +when user is using a graphical desktop they usually cannot see the
-> >  message.
-> 
-> Is this even correct english?
+  * Dinh Nguyen fixed read_sched_clock to return the right value for the 
+dw_apb_timer.
 
-No, but it wasn't to begin with either. I mostly avoided more
-significant changes because I didn't want to risk changing existing
-meaning.
+  * Ezequiel Garcia registered the sched clock after the counter, thus 
+preventing time jump in the traces for the armada-370-xp.
 
-> NAK, FWIW.
+  * Marc Zyngier stopped the timer before enabling the irq in order to 
+prevent it to be fired before the clockevent is registered for the sunxi.
 
-Why?
+  * Thierry Reding removed a of_node_put in clksrc-of because the 
+reference is not held.
+
+Thanks
+
+   -- Daniel
+
+
+The following changes since commit 0e576acbc1d9600cf2d9b4a141a2554639959d50:
+
+   nohz: Fix another inconsistency between CONFIG_NO_HZ=n and nohz=off 
+(2013-11-29 12:23:03 +0100)
+
+are available in the git repository at:
+
+   git://git.linaro.org/people/dlezcano/linux.git clockevents/fixes
+
+for you to fetch changes up to 75bf1f2333a0df1471b06ab4be220d2a7f877284:
+
+   clocksource: sunxi: Stop timer from ticking before enabling 
+interrupts (2013-12-05 17:30:27 +0100)
+
+----------------------------------------------------------------
+Axel Lin (2):
+       clocksource: time-efm32: Select CLKSRC_MMIO
+       clocksource: bcm_kona_timer: Remove unused bcm_timer_ids
+
+Dinh Nguyen (2):
+       clocksource: dw_apb_timer: Move timer defines to header file.
+       clocksource: dw_apb_timer_of: Fix read_sched_clock
+
+Ezequiel Garcia (1):
+       clocksource: armada-370-xp: Register sched_clock after the 
+counter reset
+
+Marc Zyngier (1):
+       clocksource: sunxi: Stop timer from ticking before enabling 
+interrupts
+
+Thierry Reding (1):
+       clocksource: clksrc-of: Do not drop unheld reference on device node
+
+  drivers/clocksource/Kconfig              |    1 +
+  drivers/clocksource/bcm_kona_timer.c     |    6 ------
+  drivers/clocksource/clksrc-of.c          |    1 -
+  drivers/clocksource/dw_apb_timer.c       |   19 -------------------
+  drivers/clocksource/dw_apb_timer_of.c    |    9 +++++----
+  drivers/clocksource/sun4i_timer.c        |    3 +++
+  drivers/clocksource/time-armada-370-xp.c |   10 +++++-----
+  include/linux/dw_apb_timer.h             |   19 +++++++++++++++++++
+  8 files changed, 33 insertions(+), 35 deletions(-)
+
+
 
 -- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+  <http://www.linaro.org/> Linaro.org ‚îÇ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
