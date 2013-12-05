@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab3LEUlU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 15:41:20 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:51703 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739Ab3LEUlR (ORCPT
+	id S1753284Ab3LEUl7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 15:41:59 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:47670 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752943Ab3LEUl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 15:41:17 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Subject: Re: [RFC part1 PATCH 5/7] ARM64 / ACPI: Introduce arm_core.c and its related head file
-Date: Thu, 5 Dec 2013 21:40:42 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, linaro-kernel@lists.linaro.org,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Al Stone <al.stone@linaro.org>, patches@linaro.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, linaro-acpi@lists.linaro.org,
-        linux-acpi@vger.kernel.org, Jon Masters <jonathan@jonmasters.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org> <201312050438.05117.arnd@arndb.de> <52A084EB.5010103@linaro.org>
-In-Reply-To: <52A084EB.5010103@linaro.org>
+	Thu, 5 Dec 2013 15:41:57 -0500
+Date: Thu, 5 Dec 2013 12:41:51 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Matt Walker <matt.g.d.walker@gmail.com>
+Cc: backports@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] drivers/input/mouse: add support for newer elantech
+ touchpads (released ca. August 2013);
+Message-ID: <20131205204150.GA2761@core.coreip.homeip.net>
+References: <CA+X2d=AHdivGF+s_uOC2ns5okoOdZHX1kEg4iuB32zUkBjsszg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201312052140.42269.arnd@arndb.de>
-X-Provags-ID: V02:K0:M6y8Yc8XZNpYlHtYek3ez89PU4TEAEGOdWPWIjPK0ev
- QPpwWDT3yvs9V8AGCEYIHNZLn7jid9G4ld/GjWNB+bdEnDdGLy
- dPI+p3HKwJRkpqoHEAEVL0mKQe3aAoPYPm6Rm42udlAqXcgu7z
- fCt6DAUpU3DdrMdomDutosDPJfE5rSvNSN+LFk7xh1yYGVyJOd
- tUdjSPYVKHTW0bZkWGIBL7aMAHffVGEs/bGVNY1f5PYFDtEMjU
- WtLk5vM3JmqXTXoFLlpbVdhY1RNWP61OBOuUSaozRoY08J1jVg
- Bnov9m8GLG1bHGY7HWmmqaNhz8SCkndMzin6KeMBeYtUUIsaCR
- z3FGxOra4ZHRuHCmIEWg=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+X2d=AHdivGF+s_uOC2ns5okoOdZHX1kEg4iuB32zUkBjsszg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 05 December 2013, Hanjun Guo wrote:
-> On 2013年12月05日 11:38, Arnd Bergmann wrote:
-> > On Tuesday 03 December 2013, Hanjun Guo wrote:
-> >> +static unsigned int gsi_to_irq(unsigned int gsi)
-> >> +{
-> >> +       int irq = irq_create_mapping(NULL, gsi);
-> >> +
-> >> +       return irq;
-> >> +}
-> > I think this could use a comment regarding your plans for IRQ domains.
-> >
-> > Do you expect that all ACPI systems would have only a single GIC IRQ
-> > controller and a single domain, or do you plan to add irqdomain code
-> > later?
+On Wed, Dec 04, 2013 at 12:57:15PM -0500, Matt Walker wrote:
+> From: Matt Walker <matt.g.d.walker@gmail.com>
 > 
-> we added irqdomain code in the part2 patch set, is that the code ok
-> with you?
+> Added detection for newer Elantech touchpads, so that kernel doesn't
+> fall-back to default PS/2 driver. Supports touchpads released after
+> ~August 2013.  Fixes bug:
+> https://lists.launchpad.net/kernel-packages/msg18481.html
+> 
+> Signed-off by: Matt Walker <matt.g.d.walker@gmail.com> on an Acer
+> Aspire S7-392-6302
 
-I don't see where it gets added. Do you mean "[RFC part2 PATCH 8/9] ACPI /
-ARM64: Update acpi_register_gsi to register with the core IRQ subsystem"?
-That still just uses a single domain.
+Applied, thank you.
 
-When we talked about ACPI support at Linaro connect, someone mentioned
-that the ACPI spec does have the concept of IRQ domains, but it seems
-they are not implemented by Linux.
+> 
+> ----
+> 
+> Thanks to Hauke for the reference on how to submit a patch properly.
+> Thanks to Dmitry for correction to Signed-off line.
+> 
+> Diff Output:
+> 
+> --- linux-3.13-rc1/drivers/input/
+> mouse/elantech.c.orig    2013-12-03
+> 12:14:52.829173656 -0500
+> +++ linux-3.13-rc1/drivers/input/mouse/elantech.c    2013-12-03
+> 12:15:11.833173880 -0500
+> @@ -1313,6 +1313,7 @@ static int elantech_set_properties(struc
+>              break;
+>          case 6:
+>          case 7:
+> +        case 8:
+>              etd->hw_version = 4;
+>              break;
+>          default:
 
-How do you get a mapping for an IRQ on a secondary irqchip such as
-a GPIO extender?
 
-	Arnd
+
+-- 
+Dmitry
