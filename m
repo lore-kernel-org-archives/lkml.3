@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755689Ab3LEXfg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 18:35:36 -0500
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:50649 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287Ab3LEXfe (ORCPT
+	id S1756003Ab3LEXhE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 18:37:04 -0500
+Received: from smtprelay0001.hostedemail.com ([216.40.44.1]:42999 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752560Ab3LEXg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 18:35:34 -0500
-Date: Thu, 5 Dec 2013 15:35:30 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
-cc: Michal Hocko <mhocko@suse.cz>, William Dauchy <wdauchy@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Ma, Xindong" <xindong.ma@intel.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        gregkh@linuxfoundation.org, "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        azurIt <azurit@pobox.sk>, Sameer Nanda <snanda@chromium.org>
-Subject: Re: [PATCH] Fix race between oom kill and task exit
-In-Reply-To: <20131205172931.GA26018@redhat.com>
-Message-ID: <alpine.DEB.2.02.1312051531330.7717@chino.kir.corp.google.com>
-References: <3917C05D9F83184EAA45CE249FF1B1DD0253093A@SHSMSX103.ccr.corp.intel.com> <20131128063505.GN3556@cmpxchg.org> <CAJ75kXZXxCMgf8=pghUWf=W9EKf3Z4nzKKy=CAn+7keVF_DCRA@mail.gmail.com> <20131128120018.GL2761@dhcp22.suse.cz> <20131128183830.GD20740@redhat.com>
- <20131202141203.GA31402@redhat.com> <alpine.DEB.2.02.1312041655370.13608@chino.kir.corp.google.com> <20131205172931.GA26018@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 5 Dec 2013 18:36:59 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:966:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2553:2559:2562:2740:2828:2914:3138:3139:3140:3141:3142:3352:3622:3865:3868:3872:3873:4321:4385:4605:5007:6119:7652:8531:10004:10400:10481:10848:10967:11026:11232:11473:11658:11914:12043:12438:12517:12519:12740:13069:13255:13311:13357:19900,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: stove02_59c686d945b28
+X-Filterd-Recvd-Size: 1767
+Message-ID: <1386286615.10003.30.camel@joe-AO722>
+Subject: Re: [PATCH net-next] ether_addr_equal: Optimize implementation,
+ remove unused compare_ether_addr
+From: Joe Perches <joe@perches.com>
+To: Stephen Hemminger <stephen@networkplumber.org>
+Cc: netdev@vger.kernel.org, Rob Landley <rob@landley.net>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 05 Dec 2013 15:36:55 -0800
+In-Reply-To: <20131205153229.187f7604@nehalam.linuxnetplumber.net>
+References: <34a0bad292ab2535a3a2e757a83eca13408e55b7.1386283991.git.joe@perches.com>
+	 <20131205153229.187f7604@nehalam.linuxnetplumber.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Dec 2013, Oleg Nesterov wrote:
+On Thu, 2013-12-05 at 15:32 -0800, Stephen Hemminger wrote:
+> On Thu,  5 Dec 2013 14:54:38 -0800
+> Joe Perches <joe@perches.com> wrote:
+> 
+> > +#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
+> > +	u32 fold = ((*(const u32 *)addr1) ^ (*(const u32 *)addr2)) |
+> > +		   ((*(const u16 *)(addr1 + 4)) ^ (*(const u16 *)(addr2 + 4)));
+> > +
+> > +	return fold == 0;
+> 
+> Why the temporary variable.
 
-> > > OK, I am going to send the initial fixes today. This means (I hope)
-> > > that we do not need this or Sameer's "[PATCH] mm, oom: Fix race when
-> > > selecting process to kill".
-> >
-> > Your v2 series looks good and I suspect anybody trying them doesn't have
-> > additional reports of the infinite loop?  Should they be marked for
-> > stable?
-> 
-> Unlikely...
-> 
-> I think the patch from Sameer makes more sense for stable as a temporary
-> (and obviously incomplete) fix.
-> 
+It's cost free and I think a bit more readable.
 
-There's a problem because none of this is currently even in linux-next.  I 
-think we could make a case for getting Sameer's patch at 
-http://marc.info/?l=linux-kernel&m=138436313021133 to be merged for 
-stable, but then we'd have to revert it in linux-next before merging your 
-series at http://marc.info/?l=linux-kernel&m=138616217925981.  All of the 
-issues you present in that series seem to be stable material, so why not 
-just go ahead with your series and mark it for stable for 3.13?
+>  You can just do:
+> 	return ((*(const u32 *)addr1) ^ (*(const u32 *)addr2)) |
+> 	       ((*(const u16 *)(addr1 + 4)) ^ (*(const u16 *)(addr2 + 4))) != 0;
+
+== 0
+
+> Or
+> 	return !!((*(const u32 *)addr1) ^ (*(const u32 *)addr2)) |
+> 	         ((*(const u16 *)(addr1 + 4)) ^ (*(const u16 *)(addr2 + 4))));
+
+!!!? :)
+
+
