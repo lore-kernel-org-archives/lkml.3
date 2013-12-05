@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756448Ab3LEDg5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 22:36:57 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38847 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951Ab3LEDgy (ORCPT
+	id S932601Ab3LEDix (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 22:38:53 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:64589 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752620Ab3LEDiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 22:36:54 -0500
-Date: Wed, 4 Dec 2013 19:36:30 -0800
-From: tip-bot for Fenghua Yu <tipbot@zytor.com>
-Message-ID: <tip-2885432aaf15c1b7e65c787bfe7c5fec428296f0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1386202069-51515-1-git-send-email-fenghua.yu@intel.com>
-References: <1386202069-51515-1-git-send-email-fenghua.yu@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/apic, doc:
-  Justification for disabling IO APIC before Local APIC
-Git-Commit-ID: 2885432aaf15c1b7e65c787bfe7c5fec428296f0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 4 Dec 2013 22:38:50 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC part1 PATCH 5/7] ARM64 / ACPI: Introduce arm_core.c and its related head file
+Date: Thu, 5 Dec 2013 04:38:04 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Hanjun Guo <hanjun.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, linaro-kernel@lists.linaro.org,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Al Stone <al.stone@linaro.org>, patches@linaro.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, linaro-acpi@lists.linaro.org,
+        linux-acpi@vger.kernel.org, Jon Masters <jonathan@jonmasters.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org> <1386088611-2801-6-git-send-email-hanjun.guo@linaro.org>
+In-Reply-To: <1386088611-2801-6-git-send-email-hanjun.guo@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 04 Dec 2013 19:36:36 -0800 (PST)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312050438.05117.arnd@arndb.de>
+X-Provags-ID: V02:K0:vmIyr1JDoVe0wwp2cT3VS0TBzw4hbxun/3uQ1uE/B/M
+ tgK4UACrwVfDwXaZSoopDSI9GGXTIh+Yc958d2fM16sNnqiWwB
+ fBbEYaECTjOOkXPNzhXQXUs0XhcgL8XtNTvmuYwJFayIIf5oPE
+ lXv3qiIZq3YFV9B+4Oao5TcyOXSMolL+jUzaBKggJQcUN6jkZa
+ od7Fr5wpdP76pLqijGVc3pEapV/mgfZWQarKHsSQODEdiRKpRk
+ L0OaSHE62p9CxT6i+0gq3ot3U55M+vAS7S/lULA6PEOJu8TVUu
+ f9jz74CSTZcKUzsvTbUpVFfkxDjkaD0p7WSzBMwYPPYjb2/HXO
+ zQ+csaH0DMIHVd6e/PYQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2885432aaf15c1b7e65c787bfe7c5fec428296f0
-Gitweb:     http://git.kernel.org/tip/2885432aaf15c1b7e65c787bfe7c5fec428296f0
-Author:     Fenghua Yu <fenghua.yu@intel.com>
-AuthorDate: Wed, 4 Dec 2013 16:07:49 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 4 Dec 2013 19:33:21 -0800
+On Tuesday 03 December 2013, Hanjun Guo wrote:
+> +static unsigned int gsi_to_irq(unsigned int gsi)
+> +{
+> +       int irq = irq_create_mapping(NULL, gsi);
+> +
+> +       return irq;
+> +}
 
-x86/apic, doc: Justification for disabling IO APIC before Local APIC
+I think this could use a comment regarding your plans for IRQ domains.
 
-Since erratum AVR31 in "Intel Atom Processor C2000 Product Family
-Specification Update" is now published, I added a justification
-comment for disabling IO APIC before Local APIC, as changed in commit:
+Do you expect that all ACPI systems would have only a single GIC IRQ
+controller and a single domain, or do you plan to add irqdomain code
+later?
 
-522e66464467 x86/apic: Disable I/O APIC before shutdown of the local APIC
-
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/1386202069-51515-1-git-send-email-fenghua.yu@intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/reboot.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
-
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index da3c599..c752cb4 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -558,6 +558,17 @@ void native_machine_shutdown(void)
- {
- 	/* Stop the cpus and apics */
- #ifdef CONFIG_X86_IO_APIC
-+	/*
-+	 * Disabling IO APIC before local APIC is a workaround for
-+	 * erratum AVR31 in "Intel Atom Processor C2000 Product Family
-+	 * Specification Update". In this situation, interrupts that target
-+	 * a Logical Processor whose Local APIC is either in the process of
-+	 * being hardware disabled or software disabled are neither delivered
-+	 * nor discarded. When this erratum occurs, the processor may hang.
-+	 *
-+	 * Even without the erratum, it still makes sense to quiet IO APIC
-+	 * before disabling Local APIC.
-+	 */
- 	disable_IO_APIC();
- #endif
- 
+	Arnd
