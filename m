@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933167Ab3LESsz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 13:48:55 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:55307 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933025Ab3LESsx (ORCPT
+	id S933220Ab3LESto (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 13:49:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46287 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933175Ab3LEStm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 13:48:53 -0500
+	Thu, 5 Dec 2013 13:49:42 -0500
+Date: Thu, 5 Dec 2013 10:49:40 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Serban Constantinescu <Serban.Constantinescu@arm.com>
+Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Colin Cross <ccross@android.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Rogers <irogers@google.com>, lkml <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Dave Butcher <Dave.Butcher@arm.com>,
+        "romlem@android.com" <romlem@android.com>
+Subject: Re: [PATCH v1 9/9] staging: android: binder: Add binder compat layer
+Message-ID: <20131205184940.GA10660@kroah.com>
+References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
+ <1386180581-6710-10-git-send-email-serban.constantinescu@arm.com>
+ <20131204183554.GA16693@kroah.com>
+ <CAMbhsRRP=ccdMb5PNwyYab+JoMdh+rmo2qF1naEDGBFCdMz9=A@mail.gmail.com>
+ <20131204214325.GA19565@kroah.com>
+ <CAMbhsRSkYuNBOt57PothjUO_6=vyJQAYsLmasq4Y-QVCT7fqZA@mail.gmail.com>
+ <20131204220247.GA22031@kroah.com>
+ <CAMP5Xgd-n4dgPsGN9KnD1c6WQ-CTAU1-3Z3mWgg=vqZQeru+UA@mail.gmail.com>
+ <52A0C67D.90809@arm.com>
 MIME-Version: 1.0
-In-Reply-To: <201312031601.04997.arnd@arndb.de>
-References: <1385511748-27869-1-git-send-email-marc.ceeeee@gmail.com>
- <1385511748-27869-2-git-send-email-marc.ceeeee@gmail.com> <201312031601.04997.arnd@arndb.de>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Thu, 5 Dec 2013 10:48:12 -0800
-Message-ID: <CAGVrzcbxHA+S0yZbsrj8uMZR0hsb_ng=PB02zte7S0rCZWQpBg@mail.gmail.com>
-Subject: Re: [PATCH v2 1/6] ARM: brcmstb: add infrastructure for ARM-based
- Broadcom STB SoCs
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Marc Carino <marc.ceeeee@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52A0C67D.90809@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Thu, Dec 05, 2013 at 06:31:25PM +0000, Serban Constantinescu wrote:
+> Hi all,
+> 
+> Thanks for your feedback! Sadly enough, being in a different
+> time-zone, is not useful.
+> 
+> Sorry for the confusion related to why is this patch needed or not. I
+> should highlight a bit more what is the patch enabling and what
+> would be the different alternatives, at least from my perspective.
+> 
+> *64bit kernel/ 32bit userspace*
+> 
+> This patch series adds support for 32bit userspace running on 64bit
+> kernels. Thus by applying this patch to your kernel you will be able
+> to use any existing 32bit Android userspace on your 64bit platform,
+> running a 64bit kernel. That is pure 32bit userspace with no 64bit
+> support!
+> 
+> This means *no modifications to the 32bit userspace*. Therefore any
+> applications or userspace side drivers, that uses the binder
+> interface at a native level will not have to be modified. These kind
+> of applications are not "good citizens" - the native binder API is
+> not exposed in the Android NDK. However I do not know how many
+> applications do this and if breaking the compatibility is a concernt
+> for 32bit userspace running on 64bit kernels.
 
-2013/12/3 Arnd Bergmann <arnd@arndb.de>:
->
->> +     addr = ioremap(BPHYSADDR(BCHP_IRQ0_IRQEN), sizeof(u32));
->> +     writel_relaxed(BCHP_IRQ0_IRQEN_uarta_irqen_MASK
->> +             | BCHP_IRQ0_IRQEN_uartb_irqen_MASK
->> +             | BCHP_IRQ0_IRQEN_uartc_irqen_MASK, addr);
->> +     iounmap(addr);
->
-> What does this part do? Isn't that something that should have been set
-> up by the boot loader?
+Um, I thought we were assured that the _only_ user of the kernel binder
+interface was libbinder.  If other programs are touching this interface
+"directly", you have bigger problems then just a 32/64 bit issue, and
+that needs to be fixed.
 
-The bootloader will typically use the UART in busy-looping mode and
-not rely on interrupts, also the bootloader currently does not know
-much about how many UARTs there are in the system and how they are
-going to be used.
+In other words, you should be totally safe in modifying libbinder as
+well as the kernel interface at the same time.
 
-One possible way to solve this would be to write a very small irqchip
-driver which only implements the "irq_enable" method to allow these
-interrupts to be forwarded to the GIC. Somewhere in the Device Tree we
-would have an interrupt-map property which describes the mapping
-between the bits in BCHP_IRQ0_IRQEN and their corresponding
-peripherals (UARTA, B, C).
+Now if you really want to do that or not is another issue, but it should
+be possible (and in my opinion, the better option...)
 
-Would that work?
--- 
-Florian
+thanks,
+
+greg k-h
