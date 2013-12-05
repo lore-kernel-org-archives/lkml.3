@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab3LEWvF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 17:51:05 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:43572 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754158Ab3LEWvA (ORCPT
+	id S1754445Ab3LEWxH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 17:53:07 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:62126 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048Ab3LEWxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 17:51:00 -0500
-Date: Fri, 6 Dec 2013 01:50:51 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Will Tange <bh34rt@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: silicom: fix 'return is not a function,
- parentheses are not required' in bpctl_mod.c
-Message-ID: <20131205225051.GC28413@mwanda>
-References: <1386278633-29641-1-git-send-email-bh34rt@gmail.com>
+	Thu, 5 Dec 2013 17:53:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386278633-29641-1-git-send-email-bh34rt@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20131205165439.GB5924@maple>
+References: <1386088876-29205-1-git-send-email-delicious.quinoa@gmail.com>
+	<1386088876-29205-2-git-send-email-delicious.quinoa@gmail.com>
+	<20131205165439.GB5924@maple>
+Date: Thu, 5 Dec 2013 16:53:01 -0600
+Message-ID: <CANk1AXRJK+Zy2FYEn5jBevUr5Dr_tNeFf9=GbOnzxgiSOw7j8w@mail.gmail.com>
+Subject: Re: [PATCH v8] gpio: add a driver for the Synopsys DesignWare APB
+ GPIO block
+From: delicious quinoa <delicious.quinoa@gmail.com>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 10:23:53PM +0100, Will Tange wrote:
-> Fixes warnings regarding redundant parantheses thrown by the checkpatch tool in bpctl_mod.c
-> 
+On Thu, Dec 5, 2013 at 10:54 AM, Jamie Iles <jamie@jamieiles.com> wrote:
+> Hi Alan,
+>
+> One minor comment below, otherwise looks great!
+>
+> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+>
+> Thanks,
+>
+> Jamie
+>
+> On Tue, Dec 03, 2013 at 10:41:16AM -0600, Alan Tull wrote:
+>> diff --git a/drivers/gpio/gpio-dwapb.c b/drivers/gpio/gpio-dwapb.c
+>> new file mode 100644
+>> index 0000000..e6dc61f
+>> --- /dev/null
+>> +++ b/drivers/gpio/gpio-dwapb.c
+> ...
+>> +static unsigned int dwapb_gpio_nr_ports(struct device_node *of_node)
+>> +{
+>> +     unsigned int nr_ports = 0;
+>> +     struct device_node *np;
+>> +
+>> +     for_each_child_of_node(of_node, np)
+>> +             ++nr_ports;
+>> +
+>> +     return nr_ports;
+>> +}
+>
+> I notice that we now have of_get_child_count() which didn't exist when I
+> first wrote the driver, we could use that now.
 
-Fair enough, but if you wanted to go clean the returns up further then
-you could.  Remove all the "!= 0" bits.
+Thanks Jamie.
 
-> @@ -3125,11 +3125,11 @@ static int tx_status(struct bpctl_dev *pbpctl_dev)
->  
->  		ctrl = BPCTL_READ_REG(pbpctl_dev, CTRL);
->  		if (pbpctl_dev->bp_i80)
-> -			return ((ctrl & BPCTLI_CTRL_SWDPIN1) != 0 ? 0 : 1);
-> +			return (ctrl & BPCTLI_CTRL_SWDPIN1) != 0 ? 0 : 1;
+I'll include that in v8.  I'll post that within a few days.
 
-The double negative just makes the code not as not confusing as it could
-be.  Simpler:
-
-			return (ctrl & BPCTLI_CTRL_SWDPIN1) ? 0 : 1;
-
->  
->  	if ((pbpctl_dev->bp_caps & BP_CAP)) {
->  		if (pbpctl_dev->bp_ext_ver >= PXG2BPI_VER) {
-> -			return ((((read_reg(pbpctl_dev, STATUS_REG_ADDR)) &
-> +			return (((read_reg(pbpctl_dev, STATUS_REG_ADDR)) &
->  				  BYPASS_FLAG_MASK) ==
-> -				 BYPASS_FLAG_MASK) ? 1 : 0);
-> +				 BYPASS_FLAG_MASK) ? 1 : 0;
-
-These super long lines would be better if we introduced a temporary
-variable.
-			reg = read_reg(pbpctl_dev, STATUS_REG_ADDR);
-			return (reg & BYPASS_FLAG_MASK) == BYPASS_FLAG_MASK;
-
-BYPASS_FLAG_MASK is poorly named.  It's actually just a bit or a flag
-and not a mask, so it could be renamed.
-
-			reg = read_reg(pbpctl_dev, STATUS_REG_ADDR);
-			return (reg & BP_BYPASS_FLAG) ? 1 : 0;
-
-Which is way simpler than the original and only 2 lines long instead of
-4.  I don't know that "BP_" is the right prefix...  BYPASS_FLAG is too
-generic.
-
-> @@ -4730,7 +4730,7 @@ int get_disc_pwup_fn(struct bpctl_dev *pbpctl_dev)
->  		return -1;
->  
->  	ret = default_pwron_disc_status(pbpctl_dev);
-> -	return (ret == 0 ? 1 : (ret < 0 ? BP_NOT_CAP : 0));
-> +	return ret == 0 ? 1 : (ret < 0 ? BP_NOT_CAP : 0);
-
-
-	if (ret < 0)
-		return BP_NOT_CAP;
-	if (ret == 0)
-		return 1;
-	return 0;
-
-More lines, but simpler to understand than the original.
-
-Think of checkpatch.pl as a pointer to bad code and not that we just
-have to silence checkpatch and move on.
-
-regards,
-dan carpenter
+Alan
