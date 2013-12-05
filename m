@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757133Ab3LER1T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:27:19 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47043 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757033Ab3LER1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:27:15 -0500
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>
-CC: <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
-        <dwmw2@infradead.org>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [PATCH v3 0/9] Reuse davinci-nand driver for Keystone arch
-Date: Thu, 5 Dec 2013 19:25:48 +0200
-Message-ID: <1386264358-9738-1-git-send-email-ivan.khoronzhuk@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1757233Ab3LERbI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:31:08 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:38968 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756809Ab3LERbG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 12:31:06 -0500
+Date: Thu, 5 Dec 2013 09:31:02 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: lots of brief rcu stalls.
+Message-ID: <20131205173102.GS15492@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131204232838.GA25592@redhat.com>
+ <20131205001614.GI15492@linux.vnet.ibm.com>
+ <20131205012206.GA31349@redhat.com>
+ <20131205164912.GA1585@linux.vnet.ibm.com>
+ <20131205171550.GA30002@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131205171550.GA30002@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120517-9332-0000-0000-0000026443FD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series contains fixes and updates of Davinci nand driver in
-order to reuse it for Keystone platform.
+On Thu, Dec 05, 2013 at 12:15:50PM -0500, Dave Jones wrote:
+> On Thu, Dec 05, 2013 at 08:49:12AM -0800, Paul E. McKenney wrote:
+> 
+>  > But what workload are you running that causes this?  The only way I
+>  > can think of to make this happen requires that you have at least one
+>  > CPU spending more than 21 seconds running continuously in kernel mode.
+>  > Is that what you are doing, or have you come up with some other creative
+>  > way for this to happen?  In the latter case, I would really like to know
+>  > about it in case it exposes yet another flaw in my RCU design.  ;-)
+> 
+> just the regular trinity runs, so it could be anything.
+> (Running a few instances of it, with a couple dozen child processes each to drive up the loadavg)
 
-v2..v3:
-- mtd: nand: davinci: don't set timings if AEMIF is used
-	dropped, it would be replaced by alone patch
-	ARM: davinci: aemif: get rid of davinci-nand driver dependency on aemif
+Well, trinity has caused kernel-mode execution periods in excess of
+21 seconds in the past, so I will assume that this is the cause until
+further notice.
 
-v1..v2
-The series is combination of two following series:
-- Davinci nand driver fixes and updates:
-https://lkml.org/lkml/2013/11/20/271
-- Reuse davinci-nand driver for Keystone arch
-https://lkml.org/lkml/2013/11/20/315
+> if only I had a trace or something that I could start to guess at what was happening :)
 
-- mtd: nand: davinci: extend description of bindings
-	clarified changeset description
+Maybe creating such a trace would expose additional bugs.  ;-)
 
-- mtd: nand: davinci: reuse driver for Keystone arch
-	removed "ti,keystone-nand" compatible from driver
-
-Ivan Khoronzhuk (9):
-  mtd: nand: davinci: fix driver registration
-  mtd: nand: davinci: return ENOMEM if memory allocation is failed
-  mtd: nand: davinci: check required ti,davinci-chipselect property
-  mtd: nand: davinci: simplify error handling
-  mtd: nand: davinci: move bindings under mtd
-  mtd: nand: davinci: extend description of bindings
-  mtd: nand: davinci: adjust DT properties to MTD generic
-  mtd: nand: davinci: reuse driver for Keystone arch
-  mtd: nand: davinci: don't request AEMIF address range
-
- .../devicetree/bindings/arm/davinci/nand.txt       |   46 ----------
- .../devicetree/bindings/mtd/davinci-nand.txt       |   94 ++++++++++++++++++++
- drivers/mtd/nand/Kconfig                           |    6 +-
- drivers/mtd/nand/davinci_nand.c                    |   70 ++++++++-------
- 4 files changed, 133 insertions(+), 83 deletions(-)
- delete mode 100644 Documentation/devicetree/bindings/arm/davinci/nand.txt
- create mode 100644 Documentation/devicetree/bindings/mtd/davinci-nand.txt
-
--- 
-1.7.9.5
+							Thanx, Paul
 
