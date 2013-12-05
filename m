@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751466Ab3LETCD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 14:02:03 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:41535 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750723Ab3LETCB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 14:02:01 -0500
-Date: Thu, 5 Dec 2013 11:01:39 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Miller <davem@davemloft.net>
-Cc: rostedt@goodmis.org, mingo@kernel.org, henrik@austad.us,
-        linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH v4 tip/core/locking 0/4] Memory-barrier documentation
- updates
-Message-ID: <20131205190138.GW15492@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131205085146.0370ea2a@gandalf.local.home>
- <20131205.130524.997340443429884333.davem@davemloft.net>
- <20131205181834.GV15492@linux.vnet.ibm.com>
- <20131205.134406.2030493811398343882.davem@davemloft.net>
+	id S1751865Ab3LETC0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 14:02:26 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:22129 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750723Ab3LETCY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 14:02:24 -0500
+X-Greylist: delayed 2589 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Dec 2013 14:02:24 EST
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131205.134406.2030493811398343882.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120519-6688-0000-0000-00000433C421
+Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>
+From: Chris Mason <clm@fb.com>
+In-Reply-To: <CA+55aFz3sxb5h+m2eC8KniJjE4dA1F2Pzcu=9DfZRRzZakiBDw@mail.gmail.com>
+CC: linux-btrfs <linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <20131204175350.3449.17368@hit-nxdomain.opendns.com>
+ <CA+55aFz3sxb5h+m2eC8KniJjE4dA1F2Pzcu=9DfZRRzZakiBDw@mail.gmail.com>
+Message-ID: <20131205181908.26814.83252@ret>
+User-Agent: alot/0.3.5
+Subject: Re: [GIT PULL] Btrfs Maintainer update
+Date: Thu, 5 Dec 2013 13:19:09 -0500
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.72,1.0.14,0.0.0000
+ definitions=2013-12-05_06:2013-12-05,2013-12-05,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
+ suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
+ adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
+ definitions=main-1312050108
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 01:44:06PM -0500, David Miller wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Date: Thu, 5 Dec 2013 10:18:34 -0800
+Quoting Linus Torvalds (2013-12-05 12:53:26)
+> On Wed, Dec 4, 2013 at 9:53 AM, Chris Mason <clm@fb.com> wrote:
+> >
+> > Instead of diffstat etc, I've put the patch below.  The commit is also
+> > signed, my updated key should be floating around the pgp servers now.
 > 
-> > The situation that leads me to use a large CC list is when I am doing
-> > something that affects all architectures.  I could imagine keeping a
-> > smallish CC list, then forwarding or bouncing the email to the remaining
-> > maintainers  Would that work reasonably, or is there some better approach?
+> You've done something to the git tree since your test request, because
+> now the signed tag isn't there any more, now it's just a regular
+> branch.
 > 
-> Please use linux-arch, that's what that list is for, notifying arch
-> maintainers of changes that basically have an impact on every target.
+> Mind re-uploading the *tag*, which is where the signature is?
 
-Thank you, I have updated that commit as you suggested.
+I had used git commit -S instead of signing the tag.  I just pushed out
+a signed tag on for-linus as well.
 
-							Thanx, Paul
+-chris
 
