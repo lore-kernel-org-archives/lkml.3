@@ -1,90 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756345Ab3LEAuZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 19:50:25 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:58679 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756116Ab3LEAuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 19:50:22 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Rob Herring <rob.herring@calxeda.com>, Tony Lindgren <tony@atomide.com>,
-        Benoit Cousson <bcousson@baylibre.com>
-CC: Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Rob Landley <rob@landley.net>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH V2 2/2] ARM: OMAP2+: board-generic: update SoC compatibility strings
-Date: Wed, 4 Dec 2013 18:49:37 -0600
-Message-ID: <1386204578-6018-3-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386204578-6018-1-git-send-email-nm@ti.com>
-References: <1386204578-6018-1-git-send-email-nm@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S933236Ab3LEAva (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 19:51:30 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:63005 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756419Ab3LEAv3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 19:51:29 -0500
+From: Gary Rookard <garyrookard@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: lisa@xenapiadmin.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Gary Rookard <garyrookard@gmail.com>
+Subject: [PATCH 3/3] Staging: bcm: DDRInit: Fixed coding style issue, replaced spaces w/ tab.(patch set)
+Date: Wed,  4 Dec 2013 19:51:15 -0500
+Message-Id: <1386204675-21817-1-git-send-email-garyrookard@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have standardized SoC definitions, update the
-compatibility strings in board machine descriptors. Eventually, we
-should just have SoC compatiblity here and all board specific stuff
-should disappear.
+This is the third patch of a series.(3)
+Replaced spaces in margin w/ 1 tab for lines:
+ 121-125, 128-134, 136, 138-171, 173, 175
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Gary Alan Rookard <garyrookard@gmail.com>
+ On branch staging-next
 ---
-NOTE: To prevent conflict, I have not added am3517 which is addressed in:
-https://patchwork.kernel.org/patch/3279281/
+ drivers/staging/bcm/DDRInit.c | 98 +++++++++++++++++++++----------------------
+ 1 file changed, 49 insertions(+), 49 deletions(-)
 
- arch/arm/mach-omap2/board-generic.c |    7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
-index 19f1652..5356a29 100644
---- a/arch/arm/mach-omap2/board-generic.c
-+++ b/arch/arm/mach-omap2/board-generic.c
-@@ -78,6 +78,7 @@ MACHINE_END
+diff --git a/drivers/staging/bcm/DDRInit.c b/drivers/staging/bcm/DDRInit.c
+index 6f5880b..d31dc71 100644
+--- a/drivers/staging/bcm/DDRInit.c
++++ b/drivers/staging/bcm/DDRInit.c
+@@ -118,61 +118,61 @@ static struct bcm_ddr_setting asT3_DDRSetting80MHz[]= {//   # DPLL Clock Setting
+ //100Mhz
+ #define T3_SKIP_CLOCK_PROGRAM_DUMP_100MHZ 13  //index for 0x0F007000
+ static struct bcm_ddr_setting asT3_DDRSetting100MHz[]= {//  # DPLL Clock Setting
+-                                        {0x0F000800,0x00007008},
+-                                        {0x0f000810,0x00000F95},
+-                                        {0x0f000820,0x07F13E3F},
+-                                        {0x0f000860,0x00000000},
+-                                        {0x0f000880,0x000003DD},
++	{0x0F000800,0x00007008},
++	{0x0f000810,0x00000F95},
++	{0x0f000820,0x07F13E3F},
++	{0x0f000860,0x00000000},
++	{0x0f000880,0x000003DD},
+                                 // Changed source for X-bar and MIPS clock to APLL
+                                 //0x0f000840,0x0FFF1800,
+-                                        {0x0f000840,0x0FFF1B00},
+-                                        {0x0f000870,0x00000002},
+-                                        {0x0F00a044,0x1fffffff},
+-                                        {0x0F00a040,0x1f000000},
+-                                        {0x0F00a084,0x1Cffffff},
+-                                        {0x0F00a080,0x1C000000},
+-                                        {0x0F00a04C,0x0000000C},
++	{0x0f000840,0x0FFF1B00},
++	{0x0f000870,0x00000002},
++	{0x0F00a044,0x1fffffff},
++	{0x0F00a040,0x1f000000},
++	{0x0F00a084,0x1Cffffff},
++	{0x0F00a080,0x1C000000},
++	{0x0F00a04C,0x0000000C},
+                                 //# Enable 2 ports within X-bar
+-                                        {0x0F00A000,0x00000016},
++	{0x0F00A000,0x00000016},
+                                 //Memcontroller Default values
+-                                        {0x0F007000,0x00010001},
+-                                        {0x0F007004,0x01010100},
+-                                        {0x0F007008,0x01000001},
+-                                        {0x0F00700c,0x00000000},
+-                                        {0x0F007010,0x01000000},
+-                                        {0x0F007014,0x01000100},
+-                                        {0x0F007018,0x01000000},
+-                                        {0x0F00701c,0x01020001}, // POP - 0x00020000 Normal 0x01020000
+-                                        {0x0F007020,0x04020107},//Normal - 0x04030107 POP - 0x05030107
+-                                        {0x0F007024,0x00000007},
+-                                        {0x0F007028,0x01020201},
+-                                        {0x0F00702c,0x0204040A},
+-                                        {0x0F007030,0x06000000},
+-                                        {0x0F007034,0x00000004},
+-                                        {0x0F007038,0x20080200},
+-                                        {0x0F00703C,0x02030320},
+-                                        {0x0F007040,0x6E7F1200},
+-                                        {0x0F007044,0x01190A00},
+-                                        {0x0F007048,0x06120305},//0x02690204 // 0x06120305
+-                                        {0x0F00704c,0x00000000},
+-                                        {0x0F007050,0x0000001C},
+-                                        {0x0F007054,0x00000000},
+-                                        {0x0F007058,0x00000000},
+-                                        {0x0F00705c,0x00000000},
+-                                        {0x0F007060,0x00082ED6},
+-                                        {0x0F007064,0x0000000A},
+-                                        {0x0F007068,0x00000000},
+-                                        {0x0F00706c,0x00000001},
+-                                        {0x0F007070,0x00005000},
+-                                        {0x0F007074,0x00000000},
+-                                        {0x0F007078,0x00000000},
+-                                        {0x0F00707C,0x00000000},
+-                                        {0x0F007080,0x00000000},
+-                                        {0x0F007084,0x00000000},
++	{0x0F007000,0x00010001},
++	{0x0F007004,0x01010100},
++	{0x0F007008,0x01000001},
++	{0x0F00700c,0x00000000},
++	{0x0F007010,0x01000000},
++	{0x0F007014,0x01000100},
++	{0x0F007018,0x01000000},
++	{0x0F00701c,0x01020001}, // POP - 0x00020000 Normal 0x01020000
++	{0x0F007020,0x04020107},//Normal - 0x04030107 POP - 0x05030107
++	{0x0F007024,0x00000007},
++	{0x0F007028,0x01020201},
++	{0x0F00702c,0x0204040A},
++	{0x0F007030,0x06000000},
++	{0x0F007034,0x00000004},
++	{0x0F007038,0x20080200},
++	{0x0F00703C,0x02030320},
++	{0x0F007040,0x6E7F1200},
++	{0x0F007044,0x01190A00},
++	{0x0F007048,0x06120305},//0x02690204 // 0x06120305
++	{0x0F00704c,0x00000000},
++	{0x0F007050,0x0000001C},
++	{0x0F007054,0x00000000},
++	{0x0F007058,0x00000000},
++	{0x0F00705c,0x00000000},
++	{0x0F007060,0x00082ED6},
++	{0x0F007064,0x0000000A},
++	{0x0F007068,0x00000000},
++	{0x0F00706c,0x00000001},
++	{0x0F007070,0x00005000},
++	{0x0F007074,0x00000000},
++	{0x0F007078,0x00000000},
++	{0x0F00707C,0x00000000},
++	{0x0F007080,0x00000000},
++	{0x0F007084,0x00000000},
+                                 //# Enable BW improvement within memory controller
+-                                        {0x0F007094,0x00000104},
++	{0x0F007094,0x00000104},
+                                 //# Enable start bit within memory controller
+-                                        {0x0F007018,0x01010000}
++	{0x0F007018,0x01010000}
+                                 };
  
- #ifdef CONFIG_ARCH_OMAP3
- static const char *omap3_boards_compat[] __initdata = {
-+	"ti,omap3430",
- 	"ti,omap3",
- 	NULL,
- };
-@@ -155,6 +156,8 @@ MACHINE_END
- 
- #ifdef CONFIG_ARCH_OMAP4
- static const char *omap4_boards_compat[] __initdata = {
-+	"ti,omap4460",
-+	"ti,omap4430",
- 	"ti,omap4",
- 	NULL,
- };
-@@ -175,6 +178,8 @@ MACHINE_END
- 
- #ifdef CONFIG_SOC_OMAP5
- static const char *omap5_boards_compat[] __initdata = {
-+	"ti,omap5432",
-+	"ti,omap5430",
- 	"ti,omap5",
- 	NULL,
- };
-@@ -195,6 +200,7 @@ MACHINE_END
- 
- #ifdef CONFIG_SOC_AM43XX
- static const char *am43_boards_compat[] __initdata = {
-+	"ti,am4372",
- 	"ti,am43",
- 	NULL,
- };
-@@ -212,6 +218,7 @@ MACHINE_END
- 
- #ifdef CONFIG_SOC_DRA7XX
- static const char *dra7xx_boards_compat[] __initdata = {
-+	"ti,dra7xx",
- 	"ti,dra7",
- 	NULL,
- };
+ //Net T3B DDR Settings
 -- 
-1.7.9.5
+1.8.4
 
