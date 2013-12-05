@@ -1,90 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752067Ab3LEG5h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 01:57:37 -0500
-Received: from peace.netnation.com ([204.174.223.2]:34917 "EHLO
-	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398Ab3LEG5e (ORCPT
+	id S1752276Ab3LEG56 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 01:57:58 -0500
+Received: from relay.parallels.com ([195.214.232.42]:50130 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752095Ab3LEG5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 01:57:34 -0500
-Date: Wed, 4 Dec 2013 22:57:31 -0800
-From: Simon Kirby <sim@hostway.ca>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Waiman Long <Waiman.Long@hp.com>, Ian Applegate <ia@cloudflare.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Christoph Lameter <cl@gentwo.org>,
-        Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] mutexes: Add CONFIG_DEBUG_MUTEX_FASTPATH=y debug variant
- to debug SMP races
-Message-ID: <20131205065731.GA29736@hostway.ca>
-References: <CA+55aFyez7uZ6LeXrBRCqJzgJ=w4Xv+CV6QSYp5NkOJ2R9Xang@mail.gmail.com>
- <CA+55aFyhzvJrCiJOqUgL-98=MVutWePToQXaVfS2j6e5eetJSw@mail.gmail.com>
- <20131203085233.GA20179@gmail.com>
+	Thu, 5 Dec 2013 01:57:39 -0500
+Message-ID: <52A023BD.9000706@parallels.com>
+Date: Thu, 5 Dec 2013 10:57:01 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131203085233.GA20179@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dave Chinner <david@fromorbit.com>
+CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <dchinner@redhat.com>,
+        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        <glommer@openvz.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v12 09/18] vmscan: shrink slab on memcg pressure
+References: <cover.1385974612.git.vdavydov@parallels.com> <be01fd9afeedb7d5c7979347f4d6ddaf67c9082d.1385974612.git.vdavydov@parallels.com> <20131203104849.GD8803@dastard> <529DCB7D.10205@parallels.com> <20131204045147.GN10988@dastard> <529ECC44.8040508@parallels.com> <20131205050118.GM8803@dastard>
+In-Reply-To: <20131205050118.GM8803@dastard>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 09:52:33AM +0100, Ingo Molnar wrote:
+On 12/05/2013 09:01 AM, Dave Chinner wrote:
+> On Wed, Dec 04, 2013 at 10:31:32AM +0400, Vladimir Davydov wrote:
+>> On 12/04/2013 08:51 AM, Dave Chinner wrote:
+>>> On Tue, Dec 03, 2013 at 04:15:57PM +0400, Vladimir Davydov wrote:
+>>>> On 12/03/2013 02:48 PM, Dave Chinner wrote:
+>>>>>> @@ -236,11 +236,17 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+>>>>>>  		return 0;
+>>>>>>  
+>>>>>>  	/*
+>>>>>> -	 * copy the current shrinker scan count into a local variable
+>>>>>> -	 * and zero it so that other concurrent shrinker invocations
+>>>>>> -	 * don't also do this scanning work.
+>>>>>> +	 * Do not touch global counter of deferred objects on memcg pressure to
+>>>>>> +	 * avoid isolation issues. Ideally the counter should be per-memcg.
+>>>>>>  	 */
+>>>>>> -	nr = atomic_long_xchg(&shrinker->nr_deferred[nid], 0);
+>>>>>> +	if (!shrinkctl->target_mem_cgroup) {
+>>>>>> +		/*
+>>>>>> +		 * copy the current shrinker scan count into a local variable
+>>>>>> +		 * and zero it so that other concurrent shrinker invocations
+>>>>>> +		 * don't also do this scanning work.
+>>>>>> +		 */
+>>>>>> +		nr = atomic_long_xchg(&shrinker->nr_deferred[nid], 0);
+>>>>>> +	}
+>>>>> That's ugly. Effectively it means that memcg reclaim is going to be
+>>>>> completely ineffective when large numbers of allocations and hence
+>>>>> reclaim attempts are done under GFP_NOFS context.
+>>>>>
+>>>>> The only thing that keeps filesystem caches in balance when there is
+>>>>> lots of filesystem work going on (i.e. lots of GFP_NOFS allocations)
+>>>>> is the deferal of reclaim work to a context that can do something
+>>>>> about it.
+>>>> Imagine the situation: a memcg issues a GFP_NOFS allocation and goes to
+>>>> shrink_slab() where it defers them to the global counter; then another
+>>>> memcg issues a GFP_KERNEL allocation, also goes to shrink_slab() where
+>>>> it sees a huge number of deferred objects and starts shrinking them,
+>>>> which is not good IMHO.
+>>> That's exactly what the deferred mechanism is for - we know we have
+>>> to do the work, but we can't do it right now so let someone else do
+>>> it who can.
+>>>
+>>> In most cases, deferral is handled by kswapd, because when a
+>>> filesystem workload is causing memory pressure then most allocations
+>>> are done in GFP_NOFS conditions. Hence the only memory reclaim that
+>>> can make progress here is kswapd.
+>>>
+>>> Right now, you aren't deferring any of this memory pressure to some
+>>> other agent, so it just does not get done. That's a massive problem
+>>> - it's a design flaw - and instead I see lots of crazy hacks being
+>>> added to do stuff that should simply be deferred to kswapd like is
+>>> done for global memory pressure.
+>>>
+>>> Hell, kswapd shoul dbe allowed to walk memcg LRU lists and trim
+>>> them, just like it does for the global lists. We only need a single
+>>> "deferred work" counter per node for that - just let kswapd
+>>> proportion the deferred work over the per-node LRU and the
+>>> memcgs....
+>> Seems I misunderstand :-(
+>>
+>> Let me try. You mean we have the only nr_deferred counter per-node, and
+>> kswapd scans
+>>
+>> nr_deferred*memcg_kmem_size/total_kmem_size
+>>
+>> objects in each memcg, right?
+>>
+>> Then if there were a lot of objects deferred on memcg (not global)
+>> pressure due to a memcg issuing a lot of GFP_NOFS allocations, kswapd
+>> will reclaim objects from all, even unlimited, memcgs. This looks like
+>> an isolation issue :-/
+> Which, when you are running out of memory, is a much less of an
+> issue than not being able to make progress reclaiming memory.
+>
+> Besides, the "isolation" argument runs both ways. e.g. when there
+> isn't memory available, it's entirely possible it's because there is
+> actually no free memory, not because we've hit a memcg limit. e.g.
+> all the memory has been consumed by an unlimited memcg, and we need to
+> reclaim from it so this memcg can make progress.
+>
+> In those situations we need to reclaim from everyone, not
+> just the memcg that can't find free memory to allocate....
 
-> Indeed: this comes from mutex->count being separate from 
-> mutex->wait_lock, and this should affect every architecture that has a 
-> mutex->count fast-path implemented (essentially every architecture 
-> that matters).
-> 
-> Such bugs should also magically go away with mutex debugging enabled.
+Agree, on global overcommit we have to reclaim from all. I guess it
+would be also nice to balance the reclaim proportionally to memlimit
+somehow then.
 
-Confirmed: I ran the reproducer with CONFIG_DEBUG_MUTEXES for a few
-hours, and never got a single poison overwritten notice.
+>> Currently we have a per-node nr_deferred counter for each shrinker. If
+>> we add per-memcg reclaim, we have to make it per-memcg per-node, don't we?
+> Think about what you just said for a moment. We have how many memcg
+> shrinkers?  And we can support how many nodes? And we can support
+> how many memcgs? And when we multiply that all together, how much
+> memory do we need to track that?
 
-> I'd expect such bugs to be more prominent with unlucky object 
-> size/alignment: if mutex->count lies on a separate cache line from 
-> mutex->wait_lock.
-> 
-> Side note: this might be a valid light weight debugging technique, we 
-> could add padding between the two fields to force them into separate 
-> cache lines, without slowing it down.
-> 
-> Simon, would you be willing to try the fairly trivial patch below? 
-> Please enable CONFIG_DEBUG_MUTEX_FASTPATH=y. Does your kernel fail 
-> faster that way?
+But we could grow nr_deferred dynamically as the number of kmem-active
+memcgs grows just like we're going to grow list_lru. Then the overhead
+would not be that big, it would be practically 0 if there is no
+kmem-active memcgs.
 
-I didn't see much of a change other than the incremented poison byte is
-now further in due to the padding, and it shows up in kmalloc-256.
+I mean, per memcg nr_deferred wouldn't hinder the global reclaim and
+it's not that much of overhead comparing to several per memcg lrus for
+each superblock, but it would make the reclaimer fairer on memcg
+pressure, wouldn't it?
 
-I also tried with Linus' udelay() suggestion, below. With this, there
-were many occurrences per second.
-
-Simon-
-
-diff --git a/kernel/mutex.c b/kernel/mutex.c
-index d24105b..f65e735 100644
---- a/kernel/mutex.c
-+++ b/kernel/mutex.c
-@@ -25,6 +25,7 @@
- #include <linux/spinlock.h>
- #include <linux/interrupt.h>
- #include <linux/debug_locks.h>
-+#include <linux/delay.h>
- 
- /*
-  * In the DEBUG case we are using the "NULL fastpath" for mutexes,
-@@ -740,6 +741,11 @@ __mutex_unlock_common_slowpath(atomic_t *lock_count, int nested)
- 		wake_up_process(waiter->task);
- 	}
- 
-+	/* udelay a bit if the spinlock isn't contended */
-+	if (lock->wait_lock.rlock.raw_lock.tickets.head + 1 ==
-+	    lock->wait_lock.rlock.raw_lock.tickets.tail)
-+		udelay(1);
-+
- 	spin_unlock_mutex(&lock->wait_lock, flags);
- }
- 
+Thanks.
