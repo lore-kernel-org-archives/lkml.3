@@ -1,81 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab3LEX3p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 18:29:45 -0500
-Received: from smtprelay0049.hostedemail.com ([216.40.44.49]:55207 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754095Ab3LEX30 (ORCPT
+	id S1755784Ab3LEXaM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 18:30:12 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40492 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754095Ab3LEXaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 18:29:26 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:960:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2110:2198:2199:2393:2553:2559:2562:2692:2693:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3874:4321:5007:7652:7903:10004:10400:10471:10848:11026:11232:11473:11658:11914:12296:12517:12519:12740:13069:13161:13229:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: blow11_17fc8dc36d931
-X-Filterd-Recvd-Size: 2333
-Message-ID: <1386286162.10003.24.camel@joe-AO722>
-Subject: Re: [PATCH] staging: silicom: fix 'return is not a function,
- parentheses are not required' in bpctl_mod.c
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Will Tange <bh34rt@gmail.com>, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Thu, 05 Dec 2013 15:29:22 -0800
-In-Reply-To: <20131205232140.GE5443@mwanda>
-References: <1386278633-29641-1-git-send-email-bh34rt@gmail.com>
-	 <20131205225051.GC28413@mwanda> <1386284955.10003.20.camel@joe-AO722>
-	 <20131205232140.GE5443@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	Thu, 5 Dec 2013 18:30:08 -0500
+Message-ID: <52A10C7B.8070406@wwwdotorg.org>
+Date: Thu, 05 Dec 2013 16:30:03 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>, linus.walleij@linaro.org,
+        thierry.reding@gmail.com, Thierry Reding <treding@nvidia.com>
+CC: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Ashwini Ghuge <aghuge@nvidia.com>
+Subject: Re: [PATCH 4/4] pinctrl: tegra: add pinmux controller driver for
+ Tegra124
+References: <1386241070-4350-1-git-send-email-ldewangan@nvidia.com> <1386241070-4350-5-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1386241070-4350-5-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-12-06 at 02:21 +0300, Dan Carpenter wrote:
-> On Thu, Dec 05, 2013 at 03:09:15PM -0800, Joe Perches wrote:
-> > On Fri, 2013-12-06 at 01:50 +0300, Dan Carpenter wrote:
-> > > On Thu, Dec 05, 2013 at 10:23:53PM +0100, Will Tange wrote:
-> > > > Fixes warnings regarding redundant parantheses thrown by the checkpatch tool in bpctl_mod.c
-> > []
-> > > 	if (ret < 0)
-> > > 		return BP_NOT_CAP;
-> > > 	if (ret == 0)
-> > > 		return 1;
-> > > 	return 0;
-> > > 
-> > > More lines, but simpler to understand than the original.
-> > > 
-> > > Think of checkpatch.pl as a pointer to bad code and not that we just
-> > > have to silence checkpatch and move on.
-> > 
-> > So true.
-> > 
-> > If 0 is the expected ret value and 1 is the
-> > expected function return for not-errored use,
-> > I suggest changing the last bit to:
-> > 
-> > 	if (ret < 0)
-> > 		return BP_NOT_CAP;
-> > 	else if (ret > 0)
-> > 		return 0;
-> > 
-> > 	return 1;
-> > 
-> > so that the error conditions are done first
-> > and the normal return is at the bottom of
-> > the function.
+On 12/05/2013 03:57 AM, Laxman Dewangan wrote:
+> From: Ashwini Ghuge <aghuge@nvidia.com>
 > 
-> In this function, -1 means fail, 1 means "on" and 0 means "off".  I
-> sorted them from lowest to highest: negative, zero and greater than
-> zero.
+> This adds a driver for the Tegra124 pinmux, and required
+> parameterization data for Tegra124.
+> 
+> The driver uses the common Tegra pincontrol driver utility
+> functions to implement the majority of the driver.
+> 
+> This driver is not compatible with the earlier NVIDIA's SoCs,
+> hence add new compatibile as "nvidia,tegra124-pinmux".
+> 
+> Originally written by Ashwini Gguhe.
+> ldewangan:
+>         - cleanup the patches,
+>         - Fix address issue.
 
-Ah.
+IIRC, Thierry mentioned he had some fixes in his local branch for this
+driver. Thierry, can you please confirm/deny this?
 
-Then maybe use a single ?: or a ! instead
+I made the following comment on the version Ashwini posted, which hasn't
+been addressed yet:
 
-	return ret ? 0 : 1;
-or
-	return !ret;
+A day or two ago during upstream review:
 
-cheers, Joe
+>> +static const struct tegra_function  tegra124_functions[] = {
+> ...
+>> +	FUNCTION(i2c1),
+>> +	FUNCTION(i2c2),
+>> +	FUNCTION(i2c3),
+>> +	FUNCTION(i2c4),
+>> +	FUNCTION(i2cpwr),
+> 
+> Is that complete? Tegra124 apparently has 6 I2C controllers. Are the
+> pins for the new sixth controller (0x7000d100) not affected by the pinmux?
 
+That said, if we find things are missing, I suppose we can add them
+later without breaking existing ABI. Breakage would only happen if we
+had to change/remove something.
+
+During downstream review quite a while ago I also said:
+
+>> > +static const struct pinctrl_pin_desc  tegra124_pins[] = {
+>> 
+>> There are two spaces before "tegra124_pins[]".
+>> 
+>> > +static const char * const gmi_groups[] = {
+>> > +	"uart2_cts_n_pj5",
+>> > +	"uart2_rts_n_pj6",
+>> > +	"uart3_txd_pw6",
+>> > +	"uart3_rxd_pw7",
+>> > +	"uart3_cts_n_pa1",
+>> > +	"uart3_rts_n_pc0",
+>> > +
+>> > +	"pu0",
+>> 
+>> It'd be best not to have blank lines in the middle of arrays. The same comment exists elsewhere in the
+>> file, so make sure you search the whole file.
+
+Nits:
+
+- There are some cases of multiple blank lines back-to-back.
+- There's a blank line at the end of the file.
+
+Aside from those minor issues, patches 1/4 and 4/4,
+Acked-by: Stephen Warren <swarren@nvidia.com>
+
+(BTW, those 2 patches would go through the pinctrl tree, and patches 2/4
+and 3/4 would go through the Tegra tree. You generally shouldn't posted
+patches that will be applied to different trees in the same series,
+since there aren't dependencies).
