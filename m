@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab3LEXJr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 18:09:47 -0500
-Received: from ring0.de ([91.143.88.219]:39506 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752426Ab3LEXJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 18:09:44 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Dmitry Torokhov <dtor@mail.ru>, linux-input@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        devicetree@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sebastian Reichel <sre@debian.org>
-Subject: [PATCH 0/2] tsc2005 DT binding
-Date: Fri,  6 Dec 2013 00:09:37 +0100
-Message-Id: <1386284979-9680-1-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.8.4.3
+	id S1755458Ab3LEXMZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 18:12:25 -0500
+Received: from mail-yh0-f45.google.com ([209.85.213.45]:49419 "EHLO
+	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752060Ab3LEXMX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 18:12:23 -0500
+Date: Thu, 5 Dec 2013 15:12:18 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Sima Baymani <sima.baymani@gmail.com>
+cc: linux-mm@kvack.org, tangchen@cn.fujitsu.com, akpm@linux-foundation.org,
+        aquini@redhat.com, linux-kernel@vger.kernel.org, gang.chen@asianux.com,
+        aneesh.kumar@linux.vnet.ibm.com, isimatu.yasuaki@jp.fujitsu.com,
+        kirill.shutemov@linux.intel.com, sjenning@linux.vnet.ibm.com,
+        darrick.wong@oracle.com
+Subject: Re: [PATCH] mm: Add missing dependency in Kconfig
+In-Reply-To: <20131205193050.GA13476@lovelace>
+Message-ID: <alpine.DEB.2.02.1312051512050.7717@chino.kir.corp.google.com>
+References: <20131205193050.GA13476@lovelace>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 5 Dec 2013, Sima Baymani wrote:
 
-This adds device tree support for the tsc2005 touchscreen
-controller, which is currently only used by the Nokia N900
-board.
+> Eliminate the following (rand)config warning by adding missing PROC_FS
+> dependency:
+> warning: (HWPOISON_INJECT && MEM_SOFT_DIRTY) selects PROC_PAGE_MONITOR
+> which has unmet direct dependencies (PROC_FS && MMU)
+> 
+> Suggested-by: David Rientjes <rientjes@google.com>
+> Signed-off-by: Sima Baymani <sima.baymani@gmail.com>
 
-The patch does not update the reset pin handling for platform
-data based probe to avoid merge conflicts (Tony will remove
-the Nokia N900 boardcode in 3.14). The platform data based
-probe can be removed once the N900 boardcode is gone.
-
--- Sebastian
-
-Sebastian Reichel (2):
-  Input: tsc2005: add DT support
-  Documentation: dt: Document TSC2005 DT binding
-
- .../bindings/input/touchscreen/tsc2005.txt         | 49 +++++++++++
- drivers/input/touchscreen/tsc2005.c                | 95 ++++++++++++++++++----
- 2 files changed, 127 insertions(+), 17 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/input/touchscreen/tsc2005.txt
-
--- 
-1.8.4.3
-
+Acked-by: David Rientjes <rientjes@google.com>
