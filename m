@@ -1,106 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052Ab3LEUVG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 15:21:06 -0500
-Received: from tex.lwn.net ([70.33.254.29]:40428 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751967Ab3LEUVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 15:21:03 -0500
-Date: Thu, 5 Dec 2013 13:21:01 -0700
-From: Jonathan Corbet <corbet@lwn.net>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, Oleg Nesterov <oleg@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH tip/core/locking 4/4] Documentation/memory-barriers.txt:
- Document ACCESS_ONCE()
-Message-ID: <20131205132101.45c56f93@lwn.net>
-In-Reply-To: <1386197219-31964-4-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20131204224628.GA30159@linux.vnet.ibm.com>
-	<1386197219-31964-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	<1386197219-31964-4-git-send-email-paulmck@linux.vnet.ibm.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1752690Ab3LEUbx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 15:31:53 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:53662 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056Ab3LEUbt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 15:31:49 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: haver@linux.vnet.ibm.com
+Subject: Re: [PATCH 1/6] GenWQE PCI support, health monitoring and recovery
+Date: Thu, 5 Dec 2013 21:31:42 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        cody@linux.vnet.ibm.com, schwidefsky@de.ibm.com, utz.bacher@de.ibm.com,
+        mmarek@suse.cz, rmallon@gmail.com, jsvogt@de.ibm.com,
+        MIJUNG@de.ibm.com, cascardo@linux.vnet.ibm.com, michael@ibmra.de
+References: <1386080903-27160-1-git-send-email-haver@linux.vnet.ibm.com> <201312050338.54841.arnd@arndb.de> <1386247827.11866.6.camel@oc7383187364.ibm.com>
+In-Reply-To: <1386247827.11866.6.camel@oc7383187364.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312052131.42316.arnd@arndb.de>
+X-Provags-ID: V02:K0:m7TJlUhPD5dsCOGQH5m3I1wgzh9fVdJ4PDA+7dewMKf
+ mjeYyBnAs3zK4Sr/C1TxLn/gGBrbiOJ5GklhkItRB+UxKzru+V
+ w4Nkz/RHXzMemWjEdqeiexEutTpZmSJgY2cZEKm5071yEJV1p1
+ JyNYQakptggtUOncgTi2St1SK92WD9N+uKbF64oH/iYzI+y9ue
+ LJfTX/oK9NZIhbaNfBMr1K/bmt5r3mH2UyCyeKQ5QCgFjUCzux
+ OsahBWqAbDQanHJ8aFoqzoZqPIOItIWTJ7n9tQ24PfQe9j3hMp
+ nI92psCQO1WzJ8RRC0affUagmhGG9cdrMXfOoyEMFJbLR9IxCh
+ Si8tRP58u0pTnghoTwRk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  4 Dec 2013 14:46:59 -0800
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Thursday 05 December 2013, Frank Haverkamp wrote:
+> > > Was wrong, as already pointed out before. It is now:
+> > > 
+> > > struct genwqe_mem {
+> > >     __u64 addr;
+> > >     __u64 size;
+> > >     int direction;
+> > > };
+> > > 
+> > > I hope the int is ok here.
+> > 
+> > No, it's not. The problem is that sizeof(struct genwqe_mem) is now 24 on
+> > most architectures (including x86-64) and 20 on x86-32.
 > 
-> The situations in which ACCESS_ONCE() is required are not well documented,
-> so this commit adds some verbiage to memory-barriers.txt.
+> Interesting. So int is like long architecture specific. I changed it to
+> be __u64 too, to avoid any problem.
 
-[...]
+The solution is ok, but the problem is different from what you thought:
 
-> +     But please note that the compiler is also closely watching what you
-> +     do with the value after the ACCESS_ONCE().  For example, suppose you
-> +     do the following and MAX is a preprocessor macro with the value 1:
-> +
-> +	for ((tmp = ACCESS_ONCE(a)) % MAX)
-> +		do_something_with(tmp);
+On all architectures that Linux runs on, 'int' is 32 bit. The problem is
+again the alignment of __u64. On normal architectures, it is naturally
+aligned, and gcc adds 4 byte padding so that 'sizeof (struct genwqe_mem)'
+is  multiple of the required alignment. On x86-32, the required alignment
+for the __u64 members is only 4 bytes, so no padding is added.
 
-That sure looks like it was meant to be "while" instead of "for"?
-
-[...]
-
-> + (*) The compiler is within its rights to reorder memory accesses unless
-> +     you tell it not to.  For example, consider the following interaction
-> +     between process-level code and an interrupt handler:
-> +
-> +	void process_level(void)
-> +	{
-> +		msg = get_message();
-> +		flag = true;
-> +	}
-> +
-> +	void interrupt_handler(void)
-> +	{
-> +		if (flag)
-> +			process_message(msg);
-> +	}
-> +
-> +     There is nothing to prevent the the compiler from transforming
-> +     process_level() to the following, in fact, this might well be a
-> +     win for single-threaded code:
-> +
-> +	void process_level(void)
-> +	{
-> +		flag = true;
-> +		msg = get_message();
-> +	}
-> +
-> +     If the interrupt occurs between these two statement, then
-> +     interrupt_handler() might be passed a garbled msg.  Use ACCESS_ONCE()
-> +     to prevent this as follows:
-> +
-> +	void process_level(void)
-> +	{
-> +		ACCESS_ONCE(msg) = get_message();
-> +		ACCESS_ONCE(flag) = true;
-> +	}
-> +
-> +	void interrupt_handler(void)
-> +	{
-> +		if (ACCESS_ONCE(flag))
-> +			process_message(ACCESS_ONCE(msg));
-> +	}
-
-Looking at this, I find myself wondering why you couldn't just put a
-barrier() between the two statements in process_level()?  ACCESS_ONCE()
-seems like a heavy hammer to just avoid reordering of two assignments.
-What am I missing, and what could be added here to keep the other folks as
-dense as me from missing the same thing?
-
-Thanks,
-
-jon
+	Arnd
