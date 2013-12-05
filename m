@@ -1,92 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932355Ab3LEAEN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 19:04:13 -0500
-Received: from mga02.intel.com ([134.134.136.20]:38105 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753400Ab3LEAEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 19:04:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,829,1378882800"; 
-   d="scan'208";a="419559328"
-Date: Wed, 4 Dec 2013 16:04:09 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: "Cortes, Alexis" <alexis.cortes@ti.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Julius Werner <jwerner@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Benson Leung <bleung@chromium.org>,
-        Vincent Palatin <vpalatin@chromium.org>
-Subject: Re: [PATCH] usb: hub: Use correct reset for wedged USB3 devices that
- are NOTATTACHED
-Message-ID: <20131205000409.GA10678@xanatos>
-References: <CAODwPW8j2wGGgH_HjuXuH=95jd_B1iqWeifoT89xgJoEZRvphw@mail.gmail.com>
- <Pine.LNX.4.44L0.1311071026480.1401-100000@iolanthe.rowland.org>
- <20131114233055.GR10371@xanatos>
- <31F406F20B26204E8066CA524505279A269C6840@DFLE12.ent.ti.com>
+	id S1756191Ab3LEAEj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 19:04:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36375 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756160Ab3LEAEi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 19:04:38 -0500
+Date: Wed, 4 Dec 2013 16:02:32 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Colin Cross <ccross@android.com>
+Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Rogers <irogers@google.com>,
+        Serban Constantinescu <serban.constantinescu@arm.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>, romlem@android.com,
+        David Butcher <Dave.Butcher@arm.com>
+Subject: Re: [PATCH v1 9/9] staging: android: binder: Add binder compat layer
+Message-ID: <20131205000232.GA19810@kroah.com>
+References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
+ <1386180581-6710-10-git-send-email-serban.constantinescu@arm.com>
+ <20131204183554.GA16693@kroah.com>
+ <CAMbhsRRP=ccdMb5PNwyYab+JoMdh+rmo2qF1naEDGBFCdMz9=A@mail.gmail.com>
+ <20131204214325.GA19565@kroah.com>
+ <CAMbhsRSkYuNBOt57PothjUO_6=vyJQAYsLmasq4Y-QVCT7fqZA@mail.gmail.com>
+ <20131204220247.GA22031@kroah.com>
+ <CAMbhsRQnY6+Ahs-itSeALNQ27tsWAJT8wUtXNGZE--44URp2-A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <31F406F20B26204E8066CA524505279A269C6840@DFLE12.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMbhsRQnY6+Ahs-itSeALNQ27tsWAJT8wUtXNGZE--44URp2-A@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 04, 2013 at 02:22:13PM -0800, Colin Cross wrote:
+> On Wed, Dec 4, 2013 at 2:02 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Wed, Dec 04, 2013 at 01:55:34PM -0800, Colin Cross wrote:
+> >> On Wed, Dec 4, 2013 at 1:43 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >> > On Wed, Dec 04, 2013 at 12:46:42PM -0800, Colin Cross wrote:
+> >> >> On Wed, Dec 4, 2013 at 10:35 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >> >> <snip>
+> >> >>
+> >> >> > And finally, is this all really needed?  Why not just fix the structures
+> >> >> > to be "correct", and then fix userspace to use the correct structures as
+> >> >> > well, thereby not needing a compat layer at all?
+> >> >>
+> >> >> Some of the binder ioctls take userspace pointers.  Are you suggesting
+> >> >> storing those pointers in a __u64 to avoid having to have a
+> >> >> compat_ioctl?
+> >> >
+> >> > Yes, that's the best way to solve the issue, right?
+> >>
+> >> It's the least code, but in exchange you lose all the type safety and
+> >> warnings when copying in and out of the pointers, as well as sparse
+> >> checking on the __user attribute.
+> >
+> > Not if you make the cast right at the beginning, when you first "touch"
+> > the data, but yes, it does take some of the type saftey away, at the
+> > expense of simpler code to mess up :)
+> >
+> >> That doesn't seem like a good tradeoff to me.  In addition it requires
+> >> modifying the existing heavily used 32 bit api, which means a
+> >> mostly-equivalent compat layer added in libbinder to support old
+> >> kernels.
+> >
+> > Wait, I thought that libbinder would have to be changed anyway here, to
+> > handle 64bit kernels (in both 32 and 64bit userspace).  Since you are
+> > already changing it, why not just "do it correctly"?
+> 
+> libbinder will need changes to support 64-bit userspace and especially
+> a mixed 64-bit and 32-bit userspace, but this patch series is only
+> addressing a pure 32-bit userspace on a 64-bit kernel.  Support for a
+> 64-bit userspace in Android is obviously going to require a future
+> version of Android including, among other things, libbinder changes.
+> As far as I know, those changes won't need to change the ioctl api,
+> only the layout of the buffers that are passed through the ioctl api.
 
-On Tue, Nov 19, 2013 at 02:53:22PM +0000, Cortes, Alexis wrote:
-> Hi Sarah,
-> 
-> Sorry for my delayed response, I just saw your e-mail (it got filtered somehow). About your question: actually I'm not sure, I'll have to check that to confirm it. I'll get back to you with an answer as soon as I have it.
+"only" means you can rearrange things at that point in time, as you will
+have to be doing that anyway :)
 
-Ping, Alexis: any info on this question?
+> > Or does this patch series mean that no userspace code is changed?  Is
+> > that a "requirement" here?
+> 
+> Since this series only addresses 32-bit userspace on 64-bit kernel
+> support there are no associated userspace changes.  Changing the
+> 32-bit api here means that combining the KitKat branch from
+> http://android.googlesource.com with a newer kernel version will not
+> work.
 
-Sarah Sharp
+Is that something that anyone has said would work in the past?  It seems
+that other parts of the Android userspace are pretty tied to specific
+kernel features / versions, is this anything new if the binder code had
+to change?
 
-> -----Original Message-----
-> From: Sarah Sharp [mailto:sarah.a.sharp@linux.intel.com] 
-> Sent: Thursday, November 14, 2013 5:31 PM
-> To: Alan Stern
-> Cc: Julius Werner; Greg Kroah-Hartman; LKML; linux-usb@vger.kernel.org; Benson Leung; Vincent Palatin; Cortes, Alexis
-> Subject: Re: [PATCH] usb: hub: Use correct reset for wedged USB3 devices that are NOTATTACHED
-> 
-> On Thu, Nov 07, 2013 at 10:32:33AM -0500, Alan Stern wrote:
-> > On Wed, 6 Nov 2013, Julius Werner wrote:
-> > 
-> > > > What if the device is in USB_STATE_SUSPENDED?
-> > > 
-> > > I'm not sure that is possible at that point in hub_events(), I don't 
-> > > know of a way that could lead to this situation. I could still add 
-> > > the check just to be sure if you want it, though.
-> > 
-> > I don't know either.  But Sarah has said that ports can spontaneously 
-> > go into Compliance Mode for no apparent reason.  If that can happen, 
-> > maybe it can happen while the port is in U3 and the device is 
-> > suspended.  In such cases, though, you'd need to do a reset-resume 
-> > rather than a simple reset.
-> 
-> Looking at commits c3897aa5386faba77e5bbdf94902a1658d3a5b11 and 71c731a296f1b08a3724bd1b514b64f1bda87a23, it seems that the TI host controllers' ports can go into compliance mode only when a device is inserted.  Once the device is link trained by the redriver, the port shouldn't go into compliance mode.  So we should never see compliance mode on a port with an attached USB device in suspend.
-> 
-> Alex, can you confirm that the TI host's port won't go into compliance mode while a connected device is suspended?
-> 
-> > > > Not at all.  If a device is unplugged, its state changes to 
-> > > > NOTATTACHED before the driver is unbound.  During that time, the 
-> > > > driver will see all its URBs failing, so it may very well try to reset the device.
-> > > > (For example, usbhid behaves like this.)  That isn't a bug.
-> > > 
-> > > Oh, okay, I wasn't quite sure how that plays together. Would you 
-> > > think it's still valuable to print it out (maybe as dev_info() 
-> > > instead of
-> > > dev_warn()) instead of just silently ignoring the reset request? It 
-> > > would have certainly been useful for me to find this problem faster, 
-> > > but I can take it out again if you think it would result in too much 
-> > > noise.
-> > 
-> > I think keeping dev_dbg() is best.  If you're searching for the 
-> > solution to a problem, you should have debugging enabled and so you 
-> > ought to see the message.
-> > 
-> > Alan Stern
-> > 
+Anyway, the code as submitted has problems, see my response to the
+second patch, so it's not ready yet anyway :(
+
+thanks,
+
+greg k-h
