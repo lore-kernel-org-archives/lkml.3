@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757285Ab3LESjk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 13:39:40 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:34733 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757058Ab3LESji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 13:39:38 -0500
-Date: Thu, 5 Dec 2013 10:38:19 -0800
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Chen Liqin <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-doc@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: [PATCH] doc: no singing
-Message-ID: <20131205183819.GA2217@www.outflux.net>
+	id S1757308Ab3LESnb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 13:43:31 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:31594 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757062Ab3LESna (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 13:43:30 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/ycZwIC2IagHl+zd+Ij6ql
+Date: Thu, 5 Dec 2013 10:43:23 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Belisko Marek <marek.belisko@gmail.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Subject: Re: [PATCH] omap: twl-common: Fix musb-hdrc device name.
+Message-ID: <20131205184323.GF26766@atomide.com>
+References: <1386059589-4030-1-git-send-email-marek.belisko@open-nandra.com>
+ <529D9D43.6040101@ti.com>
+ <CAAfyv37Vie1vZK2XQ1cfVq6eVnSuaBLfykk6pU8fwEyqvPF4BA@mail.gmail.com>
+ <CAAfyv35gVVNydrk8vifSyidpFjEXjGiT4-i2dgN5Un2=FuHaqQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-HELO: www.outflux.net
+In-Reply-To: <CAAfyv35gVVNydrk8vifSyidpFjEXjGiT4-i2dgN5Un2=FuHaqQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stop that, stop that! You're not going to do a song while I'm here.
+* Belisko Marek <marek.belisko@gmail.com> [131203 01:21]:
+> On Tue, Dec 3, 2013 at 10:08 AM, Belisko Marek <marek.belisko@gmail.com> wrote:
+> > Hi,
+> >
+> > On Tue, Dec 3, 2013 at 9:58 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> >> Hi,
+> >>
+> >> On Tuesday 03 December 2013 02:03 PM, Marek Belisko wrote:
+> >>> Without this change when booting omap3 device (gta04) with board file
+> >>> leads to follwing errors:
+> >>>
+> >>> [    1.203308] musb-hdrc musb-hdrc.0.auto: unable to find phy
+> >>> [    1.209075] HS USB OTG: no transceiver configured
+> >>> [    1.214019] musb-hdrc musb-hdrc.0.auto: musb_init_controller failed with status -517
+> >>>
+> >>> and usb isn't working.
+> >>>
+> >>> This is probably regression caused by commit: 6c27f939
+> >>
+> >> I think a better fix would be to have this merged..
+> >> https://lkml.org/lkml/2013/7/26/91
+> > Yes I see but how this could help with current situation? Ho you then
+> > specify device number?
+> I was too fast with reply sorry. I can see whole series and it is of
+> course correct solution. But as I said
+> can we except to be merged to 3.13. If not Tony can you pick my patch.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
-https://lkml.org/lkml/2013/12/4/786
-http://www.youtube.com/watch?v=g3YiPC91QUk#t=62
----
- Documentation/cgroups/resource_counter.txt |    2 +-
- Documentation/video4linux/si476x.txt       |    2 +-
- arch/score/lib/checksum.S                  |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+If it's a regression, then let's get it merged for the -rc cycle.
 
-diff --git a/Documentation/cgroups/resource_counter.txt b/Documentation/cgroups/resource_counter.txt
-index c4d99ed0b418..caa6d662b230 100644
---- a/Documentation/cgroups/resource_counter.txt
-+++ b/Documentation/cgroups/resource_counter.txt
-@@ -95,7 +95,7 @@ to work with it.
- 
-  f. u64 res_counter_uncharge_until
- 		(struct res_counter *rc, struct res_counter *top,
--		 unsinged long val)
-+		 unsigned long val)
- 
- 	Almost same as res_cunter_uncharge() but propagation of uncharge
- 	stops when rc == top. This is useful when kill a res_coutner in
-diff --git a/Documentation/video4linux/si476x.txt b/Documentation/video4linux/si476x.txt
-index 2f9b4875ab8a..616607955aaf 100644
---- a/Documentation/video4linux/si476x.txt
-+++ b/Documentation/video4linux/si476x.txt
-@@ -147,7 +147,7 @@ The drivers exposes following files:
-   --------------------------------------------------------------------
-   0x12		| readfreq	| Current tuned frequency
-   --------------------------------------------------------------------
--  0x14		| freqoff	| Singed frequency offset in units of
-+  0x14		| freqoff	| Signed frequency offset in units of
-   		| 		| 2ppm
-   --------------------------------------------------------------------
-   0x15		| rssi		| Signed value of RSSI in dBuV
-diff --git a/arch/score/lib/checksum.S b/arch/score/lib/checksum.S
-index 706157edc7d5..1141f2b4a501 100644
---- a/arch/score/lib/checksum.S
-+++ b/arch/score/lib/checksum.S
-@@ -137,7 +137,7 @@ ENTRY(csum_partial)
- 	ldi r25, 0
- 	mv r10, r5
- 	cmpi.c	r5, 0x8
--	blt	small_csumcpy		/* < 8(singed) bytes to copy */
-+	blt	small_csumcpy		/* < 8(signed) bytes to copy */
- 	cmpi.c	r5, 0x0
- 	beq	out
- 	andri.c	r25, src, 0x1		/* odd buffer? */
--- 
-1.7.9.5
+So please try to follow up on getting the proper fix merged, meanwhile
+I'll mark this thread as read. If you need this one merged for some
+reason, then please report to get it back to my radar.
 
+Regards,
 
--- 
-Kees Cook
-Chrome OS Security
+Tony
