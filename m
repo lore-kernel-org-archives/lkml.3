@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933500Ab3LERrc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:47:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38339 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757356Ab3LERhq (ORCPT
+	id S933574Ab3LERrm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:47:42 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55311 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933421Ab3LERrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:37:46 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "J. Bruce Fields" <bfields@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 62/90] nfsd4: fix xdr decoding of large non-write compounds
-Date: Thu,  5 Dec 2013 17:35:44 +0000
-Message-Id: <1386264972-5399-63-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
-References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Thu, 5 Dec 2013 12:47:40 -0500
+Date: Thu, 5 Dec 2013 14:47:25 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <rric@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Stanislav Fomichev <stfomichev@yandex-team.ru>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Pekka Enberg <penberg@kernel.org>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH 0/2] perf tool: Carve out fs.* stuff
+Message-ID: <20131205174725.GF10333@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386260752-16436-1-git-send-email-bp@alien8.de>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.27 -stable review patch.  If anyone has any objections, please let me know.
+Sorry, some editing problem happened here... Now with proper subject
+line.
 
-------------------
+- Arnaldo
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+Em Thu, Dec 05, 2013 at 05:25:50PM +0100, Borislav Petkov escreveu:
+> From: Borislav Petkov <bp@suse.de>
+> 
+> Ok,
+> 
+> step one: carve out fs-related stuff into a libapikfs.a library.
 
-commit 365da4adebb1c012febf81019ad3dc5bb52e2a13 upstream.
+Adding some more people to the CC list, but from a quick look, this
+is in line with what we discussed so far, so I'm ok with it.
 
-This fixes a regression from 247500820ebd02ad87525db5d9b199e5b66f6636
-"nfsd4: fix decoding of compounds across page boundaries".  The previous
-code was correct: argp->pagelist is initialized in
-nfs4svc_deocde_compoundargs to rqstp->rq_arg.pages, and is therefore a
-pointer to the page *after* the page we are currently decoding.
+For those people in the CC list, Acked-by would be really, really
+appreciated.
 
-The reason that patch nevertheless fixed a problem with decoding
-compounds containing write was a bug in the write decoding introduced by
-5a80a54d21c96590d013378d8c5f65f879451ab4 "nfsd4: reorganize write
-decoding", after which write decoding no longer adhered to the rule that
-argp->pagelist point to the next page.
-
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-[ luis: backported to 3.5: simply revert 2475008 "nfsd4: fix decoding of
-  compounds across page boundaries":
-  - adjusted 1st hunk to modify read_buf() instead of next_decode_page()
-  - dropped 2nd hunk ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- fs/nfsd/nfs4xdr.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index 65ed9bf..b2ae2da 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -161,8 +161,8 @@ static __be32 *read_buf(struct nfsd4_compoundargs *argp, u32 nbytes)
- 	 */
- 	memcpy(p, argp->p, avail);
- 	/* step to next page */
--	argp->pagelist++;
- 	argp->p = page_address(argp->pagelist[0]);
-+	argp->pagelist++;
- 	if (argp->pagelen < PAGE_SIZE) {
- 		argp->end = argp->p + (argp->pagelen>>2);
- 		argp->pagelen = 0;
--- 
-1.8.3.2
-
+- Arnaldo
+ 
+> Borislav Petkov (2):
+>   tools/: Convert to new topic libraries
+>   perf: Move fs.* to lib/api/fs/
+> 
+>  tools/Makefile                                     | 12 ++++----
+>  tools/lib/{lk => api}/Makefile                     |  8 ++++--
+>  tools/lib/{lk => api/fs}/debugfs.c                 |  0
+>  tools/lib/{lk => api/fs}/debugfs.h                 |  6 ++--
+>  tools/{perf/util => lib/api/fs}/fs.c               | 11 ++++++--
+>  .../util/include/linux/magic.h => lib/api/fs/fs.h} | 12 ++++----
+>  tools/perf/Makefile.perf                           | 33 ++++++++++------------
+>  tools/perf/builtin-kvm.c                           |  2 +-
+>  tools/perf/builtin-probe.c                         |  2 +-
+>  tools/perf/perf.c                                  |  2 +-
+>  tools/perf/tests/parse-events.c                    |  4 +--
+>  tools/perf/util/cpumap.c                           |  2 +-
+>  tools/perf/util/evlist.c                           |  2 +-
+>  tools/perf/util/evsel.c                            |  2 +-
+>  tools/perf/util/fs.h                               |  7 -----
+>  tools/perf/util/parse-events.c                     |  2 +-
+>  tools/perf/util/pmu.c                              |  2 +-
+>  tools/perf/util/probe-event.c                      |  2 +-
+>  tools/perf/util/python-ext-sources                 |  2 +-
+>  tools/perf/util/record.c                           |  2 +-
+>  tools/perf/util/setup.py                           |  4 +--
+>  tools/perf/util/trace-event-info.c                 |  2 +-
+>  tools/perf/util/util.h                             |  2 +-
+>  tools/vm/Makefile                                  | 14 ++++-----
+>  tools/vm/page-types.c                              |  2 +-
+>  25 files changed, 67 insertions(+), 72 deletions(-)
+>  rename tools/lib/{lk => api}/Makefile (85%)
+>  rename tools/lib/{lk => api/fs}/debugfs.c (100%)
+>  rename tools/lib/{lk => api/fs}/debugfs.h (86%)
+>  rename tools/{perf/util => lib/api/fs}/fs.c (91%)
+>  rename tools/{perf/util/include/linux/magic.h => lib/api/fs/fs.h} (50%)
+>  delete mode 100644 tools/perf/util/fs.h
+> 
+> -- 
+> 1.8.4
