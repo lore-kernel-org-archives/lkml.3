@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755739Ab3LELWG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 06:22:06 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:48484 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753650Ab3LELWD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 06:22:03 -0500
-From: Yijing Wang <wangyijing@huawei.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>
-Subject: [PATCH 1/2] usb: Use dev_is_pci() to check whether it is pci device
-Date: Thu, 5 Dec 2013 19:21:32 +0800
-Message-ID: <1386242492-25480-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
+	id S1756048Ab3LELWM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 06:22:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39402 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753650Ab3LELWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 06:22:07 -0500
+Date: Thu, 5 Dec 2013 12:21:58 +0100
+From: Karel Zak <kzak@redhat.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Matt Domsch <Matt_Domsch@dell.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        "Chandramouleeswaran,Aswin" <aswin@hp.com>
+Subject: Re: [PATCH] partitions/efi: complete gpt kernel param purpose
+Message-ID: <20131205112158.GD8058@x2.net.home>
+References: <1386198962.31494.12.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386198962.31494.12.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use PCI standard marco dev_is_pci() instead of directly compare
-pci_bus_type to check whether it is pci device.
+On Wed, Dec 04, 2013 at 03:16:02PM -0800, Davidlohr Bueso wrote:
+> From: Davidlohr Bueso <davidlohr@hp.com>
+> 
+> The usage of the 'gpt' kernel parameter is twofold:
+> (i) skip any mbr integrity checks and (ii) enable the
+> backup GPT header to be used in situations where the
+> primary one is corrupted. This last "feature" is not
+> obvious and needs to be properly documented in the
+> kernel-parameters document.
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
- drivers/usb/host/ehci-dbg.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The question is if we really have to force users to specify "gpt"
+kernel parameter to use the backup GPT header. Maybe it would be
+enough to report the problem (print warning) and use the valid backup
+header. IMHO the current behaviour is overkill.
 
-diff --git a/drivers/usb/host/ehci-dbg.c b/drivers/usb/host/ehci-dbg.c
-index 4a9c2ed..0bb5e48 100644
---- a/drivers/usb/host/ehci-dbg.c
-+++ b/drivers/usb/host/ehci-dbg.c
-@@ -818,7 +818,7 @@ static ssize_t fill_registers_buffer(struct debug_buffer *buf)
- 
- #ifdef	CONFIG_PCI
- 	/* EHCI 0.96 and later may have "extended capabilities" */
--	if (hcd->self.controller->bus == &pci_bus_type) {
-+	if (dev_is_pci(hcd->self.controller)) {
- 		struct pci_dev	*pdev;
- 		u32		offset, cap, cap2;
- 		unsigned	count = 256/4;
+    Karel
+
 -- 
-1.7.1
-
-
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
