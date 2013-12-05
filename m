@@ -1,122 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab3LEKxt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 05:53:49 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:33942 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658Ab3LEKxs (ORCPT
+	id S1755775Ab3LEKyr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 05:54:47 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:3335 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754889Ab3LEKyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 05:53:48 -0500
-Date: Thu, 5 Dec 2013 11:53:44 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/38] perf/core improvements and fixes
-Message-ID: <20131205105344.GD20283@gmail.com>
-References: <1386187622-2928-1-git-send-email-acme@infradead.org>
- <20131205100429.GC16749@gmail.com>
- <20131205103707.GC21600@krava.brq.redhat.com>
+	Thu, 5 Dec 2013 05:54:43 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 05 Dec 2013 02:45:14 -0800
+Message-ID: <52A05A21.5070100@nvidia.com>
+Date: Thu, 5 Dec 2013 16:19:05 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131205103707.GC21600@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "heiko@sntech.de" <heiko@sntech.de>, "pavel@ucw.cz" <pavel@ucw.cz>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: [REPOST PATCH V2] irq: enable all irqs unconditionally in irq_resume
+References: <1385388587-16442-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1385388587-16442-1-git-send-email-ldewangan@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Thomas,
 
-* Jiri Olsa <jolsa@redhat.com> wrote:
+On Monday 25 November 2013 07:39 PM, Laxman Dewangan wrote:
+> When system enters into suspend, it disable all irqs in single
+> function call. This disables EARLY_RESUME irqs also along with
+> normal irqs.
+>
+> The EARLY_RESUME irqs get enabled in sys_core_ops->resume and
+> non-EARLY_RESUME irqs get enabled in normal system resume path.
+>
+> When suspend_noirq failed or suspend is aborted for any reason,
+> the EARLY_RESUME irqs do not get enabled as sys_core_ops->resume()
+> call did not happen. It only enables the non-EARLY_RESUME irqs in normal
+> disable for remaining life of system.
+>
+> Enable all irqs unconditionally in normal irq_resume() regardless of
+> EARLY_RESUME irqs have been already enabled or not.
+>
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> Acked-by-and-tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Acked-by: Heiko Stuebner <heiko@sntech.de>
+> Reviewed-by: Pavel Machek <pavel@ucw.cz>
+>
 
-> On Thu, Dec 05, 2013 at 11:04:29AM +0100, Ingo Molnar wrote:
-> > 
-> > * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-> > 
-> > > From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> > > 
-> > > Hi Ingo,
-> > > 
-> > > 	Please consider pulling,
-> > > 
-> > > - Arnaldo
-> > > 
-> > > The following changes since commit 89e3bbd58a6186b832fe2b9419ac2f9ab90e9089:
-> > > 
-> > >   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2013-12-04 10:17:17 +0100)
-> > > 
-> > > are available in the git repository at:
-> > > 
-> > > 
-> > >   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-> > 
-> > Hm, I saw such a build failure:
-> > 
-> >   CC FPIC  plugin_kmem.o
-> >   BUILD    PLUGIN plugin_jbd2.so
-> > plugin_jbd2.o: file not recognized: File truncated
-> > collect2: error: ld returned 1 exit status
-> > make[2]: *** [plugin_jbd2.so] Error 1
-> > make[1]: *** [install-traceevent-plugins] Error 2
-> > make[1]: *** Waiting for unfinished jobs....
-> >   CC FPIC  plugin_kvm.o
-> >   CC FPIC  plugin_mac80211.o
-> > 
-> > which suggests some sort of build race ...
-> > 
-> > I was doing several 'make clean; make install' runs - and the second 
-> > run failed. Unfortunately the failure was not reproducible after that 
-> > point - and I tried dozens of times. The test system has 12 CPUs.
-> > 
-> > The following loop attempts to build until a failure occurs:
-> > 
-> >   cd tools/perf/
-> >   while make install; do make clean; done
-> > 
-> > Any ideas?
-> 
-> never saw that one.. starting your test on 24 CPUs server now
-
-I saw it again on a system by running two parallel build jobs:
-
-  D=/tmp/perf-1; mkdir -p $D; while make O=$D install; do make O=$D clean; done
-  D=/tmp/perf-2; mkdir -p $D; while make O=$D install; do make O=$D clean; done
-
-one failed with:
-
-  BUILD    PLUGIN plugin_kmem.so
-make[2]: *** [sub-make] Error 2
-make[1]: *** [/tmp/perf-1/libtraceevent.a] Error 2
-make[1]: *** Waiting for unfinished jobs....
-  BUILD    PLUGIN plugin_kvm.so
-
-the other with:
-
-  CC FPIC  plugin_cfg80211.o
-  CC       /tmp/perf-2/builtin-help.o
-  CC       /tmp/perf-2/builtin-sched.o
-plugin_sched_switch.o: file not recognized: File truncated
-collect2: error: ld returned 1 exit status
-make[3]: *** [plugin_sched_switch.so] Error 1  BUILD    PLUGIN plugin_function.so
-
-
-and that's clearly the new plugin code.
+Can you please review this patch?
+This patch is pending from long back for review.
 
 Thanks,
+Laxman
 
-	Ingo
