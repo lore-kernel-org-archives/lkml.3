@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933425Ab3LECup (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 21:50:45 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:52795 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933408Ab3LECul (ORCPT
+	id S1756549Ab3LECvz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 21:51:55 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:38857 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756394Ab3LECvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 21:50:41 -0500
-Date: Wed, 4 Dec 2013 18:50:37 -0800
+	Wed, 4 Dec 2013 21:51:52 -0500
+Date: Wed, 4 Dec 2013 18:51:47 -0800
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Will CPU 0 be forever prohibited from NO_HZ_FULL status?
-Message-ID: <20131205025037.GM15492@linux.vnet.ibm.com>
+To: Joe Perches <joe@perches.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Josh Triplett <josh@freedesktop.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: lots of brief rcu stalls.
+Message-ID: <20131205025147.GN15492@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131204193957.GA2847@linux.vnet.ibm.com>
- <20131205012053.GC6683@localhost.localdomain>
+References: <20131204232838.GA25592@redhat.com>
+ <20131205001614.GI15492@linux.vnet.ibm.com>
+ <1386209910.30495.146.camel@edumazet-glaptop2.roam.corp.google.com>
+ <1386210965.30493.84.camel@joe-AO722>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131205012053.GC6683@localhost.localdomain>
+In-Reply-To: <1386210965.30493.84.camel@joe-AO722>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120502-0928-0000-0000-0000045563B7
+x-cbid: 13120502-1542-0000-0000-000003EA2227
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 02:20:55AM +0100, Frederic Weisbecker wrote:
-> On Wed, Dec 04, 2013 at 11:39:57AM -0800, Paul E. McKenney wrote:
-> > Hello, Frederic,
+On Wed, Dec 04, 2013 at 06:36:05PM -0800, Joe Perches wrote:
+> On Wed, 2013-12-04 at 18:18 -0800, Eric Dumazet wrote:
+> > On Wed, 2013-12-04 at 16:16 -0800, Paul E. McKenney wrote:
+> > > +	    ULONG_CMP_GE(ACCESS_ONCE(jiffies), rdp->rsp->jiffies_resched)) {
+> 
+> perhaps time_before_eq
+> 
+> > jiffies should not need ACCESS_ONCE(), right ?
 > > 
-> > Just realized that I could further decrease RT latency of one of my "shut
-> > up RCU on NO_HZ_FULL CPUs" patches if I relied on CPU 0 always having
-> > a scheduling-clock tick unless the entire system is idle.  The trick
-> > is that I could then rely on CPU 0 to detect RCU CPU stall warnings,
-> > and remove the checking from the other CPUs.
-> > 
-> > Thoughts?
+> > It is one of the few variables marked with volatile keyword.
 > 
-> You're right on time as I'm currently working on that :)
-> So the plan is to allow timekeeping to be handled by a set of CPUs (cpu_housekeeping_mask
-> which I guess should be ~nohz_full_mask & cpu_online_mask). I think it will be better
-> for powersaving. I guess you could balance the RCU stall checks in this
-> set of housekeeping CPUs?
+> It does seem redundant
 > 
-> It should be very easy to make the rcu sysidle stuff to support that housekeeping set,
-> I just looked into it and all we need to do is to turn the several "cpu == tick_do_timer"
-> checks into something like is_housekeeping_cpu(cpu). And may be a few easy details, like which
-> CPU from the housekeeping set should get the kick IPI, well the first one available should be a good start,
-> of course I expect some issues with cpu hotplug.
-> But other than that, RCU sysidle detection is mostly ready to support tracking only a given subset
-> of CPUs instead of all of them. That's in fact what it already does currently by excluding the
-> fixed boot timekeeping CPU.
-> 
-> So I'm working on that and should have some patches ready soon.
+> $ git grep -n "ACCESS_ONCE(jiffies)"
+> kernel/rcu/torture.c:1354:      jiffies_snap = ACCESS_ONCE(jiffies);
+> kernel/rcu/torture.c:1363:              jiffies_snap = ACCESS_ONCE(jiffies);
+> kernel/rcu/tree.c:820:  unsigned long j = ACCESS_ONCE(jiffies);
+> kernel/rcu/tree.c:975:  j = ACCESS_ONCE(jiffies);
 
-Thank you for the info!  Nice to know that RCU will continue to be able
-to rely on there being at least one housekeeping CPU.  ;-)
-
-At that point, tick_nohz_full_cpu() would still be a good way for RCU
-to distinguish housekeeping CPUs from working CPUs, correct?
-
-> In fact I just realized that all the sysidle detection infrastructure is there and working
-> but we forgot to plug it in the tick engine, and thus we are still running
-> with periodic CPU 0 even with CONFIG_NO_HZ_FULL_SYSIDLE=y. Anyway I have a few changes
-> ready to enable that, lets hope testing will be ok :)
-
-Indeed!  ;-)
-
-The CONFIG_NO_HZ_FULL_SYSIDLE=y might complicate things a bit.  But I
-guess the problem would be a corner case -- the system entered sysidle
-mode with a grace period pending, which should eventually wake up the
-corresponding grace-period kthread, which might be prevented from ever
-running due to high load or something.  If that problem arises, I will
-fix it.
-
-So there!  ;-)
+I took care of the first four, plus one more that I have in my local tree.
 
 							Thanx, Paul
+
+> kernel/sched/core.c:2324:       unsigned long next, now = ACCESS_ONCE(jiffies);
+> kernel/sched/proc.c:536:        unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+> kernel/sched/proc.c:558:        unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+> 
+> 
 
