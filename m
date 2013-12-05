@@ -1,73 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610Ab3LEM55 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 07:57:57 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:44464 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755269Ab3LEM5z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 07:57:55 -0500
-Date: Thu, 5 Dec 2013 13:58:06 +0100
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Matt Sealey <neko@bakuhatsu.net>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-efi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, matt.fleming@intel.com,
-        Grant Likely <grant.likely@linaro.org>,
-        Roy Franz <roy.franz@linaro.org>, Mark Salter <msalter@redhat.com>,
-        Patch Tracking <patches@linaro.org>, linaro-uefi@lists.linaro.org,
-        Mark Rutland <mark.rutland@arm.com>, Rob Landley <rob@landley.net>,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] Documentation: arm: add UEFI support documentation
-Message-ID: <20131205125805.GX24997@rocoto.smurfnet.nu>
-References: <1385656883-4420-1-git-send-email-leif.lindholm@linaro.org>
- <1385656883-4420-2-git-send-email-leif.lindholm@linaro.org>
- <CAHCPf3t5dEzVWbYZ6DWcFCENNO2dbrx-YeZvKRk0MkEsJMTE3A@mail.gmail.com>
- <20131202210719.GQ24997@rocoto.smurfnet.nu>
- <CAHCPf3tsWdV+dJGm6mX6N4Ou5EQoGukdLyRvsRX6VQFjtKgxtg@mail.gmail.com>
+	id S932302Ab3LENCF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 08:02:05 -0500
+Received: from mga09.intel.com ([134.134.136.24]:50036 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932215Ab3LENCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 08:02:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,832,1378882800"; 
+   d="scan'208";a="419867408"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Lv Zheng <zetalog@gmail.com>, linux-acpi@vger.kernel.org,
+        Lv Zheng <lv.zheng@intel.com>
+Subject: Re: [Intel-gfx] [PATCH 1/3] ACPI/i915: Fix wrong <acpi/acpi.h> inclusion in i915 opregion module.
+In-Reply-To: <58025298b10c01a76adeed0f27e12d4b764ad99c.1386116927.git.lv.zheng@intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <cover.1385094640.git.lv.zheng@intel.com> <cover.1386116927.git.lv.zheng@intel.com> <58025298b10c01a76adeed0f27e12d4b764ad99c.1386116927.git.lv.zheng@intel.com>
+User-Agent: Notmuch/0.17~rc2+4~gbbbc7bd (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 05 Dec 2013 15:04:16 +0200
+Message-ID: <87haanqwj3.fsf@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHCPf3tsWdV+dJGm6mX6N4Ou5EQoGukdLyRvsRX6VQFjtKgxtg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 03:06:47PM -0600, Matt Sealey wrote:
-> By the time we get half-way through arm/kernel/head.S the cache and
-> MMU has been turned off and on and off again by the decompressor, and
-> after a large amount of guesswork and arbitrary restriction-based
-> implementation, there's no guarantee that the kernel hasn't been
-> decompressed over some important UEFI feature or some memory hasn't
-> been trashed. You can't make that guarantee because by entering the
-> plain zImage, you forfeited that information. This is at worst case
-> going to be lots of blank screens and blinking serial console prompts
-> and little more than frustration..
+On Wed, 04 Dec 2013, Lv Zheng <lv.zheng@intel.com> wrote:
+> diff --git a/drivers/gpu/drm/i915/Makefile b/drivers/gpu/drm/i915/Makefile
+> index 41838ea..d4ae48b 100644
+> --- a/drivers/gpu/drm/i915/Makefile
+> +++ b/drivers/gpu/drm/i915/Makefile
+> @@ -38,7 +38,6 @@ i915-y := i915_drv.o i915_dma.o i915_irq.o \
+>  	  intel_ringbuffer.o \
+>  	  intel_overlay.o \
+>  	  intel_sprite.o \
+> -	  intel_opregion.o \
+>  	  intel_sideband.o \
+>  	  intel_uncore.o \
+>  	  dvo_ch7xxx.o \
+> @@ -51,7 +50,7 @@ i915-y := i915_drv.o i915_dma.o i915_irq.o \
+>  
+>  i915-$(CONFIG_COMPAT)   += i915_ioc32.o
+>  
+> -i915-$(CONFIG_ACPI)	+= intel_acpi.o
+> +i915-$(CONFIG_ACPI)	+= intel_acpi.o intel_opregion.o
+>  
+>  i915-$(CONFIG_DRM_I915_FBDEV) += intel_fbdev.o
+>  
+> diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+> index ccdbecc..7f37b83 100644
+> --- a/drivers/gpu/drm/i915/i915_drv.h
+> +++ b/drivers/gpu/drm/i915/i915_drv.h
+> @@ -2336,8 +2336,8 @@ extern void intel_i2c_reset(struct drm_device *dev);
+>  
+>  /* intel_opregion.c */
+>  struct intel_encoder;
+> -extern int intel_opregion_setup(struct drm_device *dev);
+>  #ifdef CONFIG_ACPI
+> +extern int intel_opregion_setup(struct drm_device *dev);
+>  extern void intel_opregion_init(struct drm_device *dev);
+>  extern void intel_opregion_fini(struct drm_device *dev);
+>  extern void intel_opregion_asle_intr(struct drm_device *dev);
+> @@ -2346,6 +2346,7 @@ extern int intel_opregion_notify_encoder(struct intel_encoder *intel_encoder,
+>  extern int intel_opregion_notify_adapter(struct drm_device *dev,
+>  					 pci_power_t state);
+>  #else
+> +static inline int intel_opregion_setup(struct drm_device *dev) { return 0; }
+>  static inline void intel_opregion_init(struct drm_device *dev) { return; }
+>  static inline void intel_opregion_fini(struct drm_device *dev) { return; }
+>  static inline void intel_opregion_asle_intr(struct drm_device *dev) { return; }
 
-So, Grant covered the reason _why_ we coexist with zImage, so I won't
-go into that. I will however point out that we are explicitly using the
-UEFI interfaces to allocate the regions the zImage will decompress into.
-This isn't guesswork, and has in fact already turned up issues with a
-couple of UEFI board ports that reserved memory near 0 (which were
-indeed previously being silently overwritten by the kernel
-decompression).
+FWIW, the above i915 specific hunks are
 
-We _are_ planning to do more development for subsequent patches, making
-more use of the UEFI memory map. And by subsequent, I mean hopefully in
-time for 3.14. I sneekily included this in the version of uefi.txt sent
-out for separate review early November:
-http://permalink.gmane.org/gmane.linux.kernel.efi/2657, but not in
-the one included with this patch set (since the code isn't there yet).
-But we considered it more important to get the basic support ready
-first.
+Reviewed-by: Jani Nikula <jani.nikula@intel.com>
 
-At that point, you will see the stub reading the dram_base from the
-UEFI memory map rather than DT, and memblock_init getting its input
-from there too.
+Nuking the CONFIG_ACPI conditional build within intel_opregion.c is an
+obvious follow-up patch later on.
 
-Regards,
 
-Leif
+-- 
+Jani Nikula, Intel Open Source Technology Center
