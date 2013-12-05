@@ -1,89 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933426Ab3LECCc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 21:02:32 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53660 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756337Ab3LECCb convert rfc822-to-8bit (ORCPT
+	id S1753386Ab3LECMh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 21:12:37 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:53758 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752Ab3LECMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 21:02:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131204220247.GA22031@kroah.com>
-References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
-	<1386180581-6710-10-git-send-email-serban.constantinescu@arm.com>
-	<20131204183554.GA16693@kroah.com>
-	<CAMbhsRRP=ccdMb5PNwyYab+JoMdh+rmo2qF1naEDGBFCdMz9=A@mail.gmail.com>
-	<20131204214325.GA19565@kroah.com>
-	<CAMbhsRSkYuNBOt57PothjUO_6=vyJQAYsLmasq4Y-QVCT7fqZA@mail.gmail.com>
-	<20131204220247.GA22031@kroah.com>
-Date: Wed, 4 Dec 2013 18:02:30 -0800
-Message-ID: <CAMP5Xgd-n4dgPsGN9KnD1c6WQ-CTAU1-3Z3mWgg=vqZQeru+UA@mail.gmail.com>
-Subject: Re: [PATCH v1 9/9] staging: android: binder: Add binder compat layer
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Colin Cross <ccross@android.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Rogers <irogers@google.com>,
-        Serban Constantinescu <serban.constantinescu@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        David Butcher <Dave.Butcher@arm.com>, romlem@android.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 4 Dec 2013 21:12:32 -0500
+X-AuditID: cbfee61a-b7f796d000004313-9f-529fe10ef242
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'???'" <jaegeuk.kim@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
+References: <001701cef15d$169a5a30$43cf0e90$@samsung.com>
+In-reply-to: <001701cef15d$169a5a30$43cf0e90$@samsung.com>
+Subject: RE: [f2fs-dev] [PATCH 3/3] f2fs: introduce f2fs_cache_node_page() to
+ add page into node_inode cache
+Date: Thu, 05 Dec 2013 10:10:59 +0800
+Message-id: <001901cef15f$6fafea70$4f0fbf50$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=gb2312
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQH+2kryUW6+L81HU0v0CZ/TiLWAhpnlCEkQ
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t9jQV2+h/ODDB5NNbK4vusvk8WlRe4W
+	e/aeZLG4vGsOm0XrwvPMDqweuxd8ZvLo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujJXfbjIW
+	PBOp6HjTw9LA+F+gi5GTQ0LARGLR6juMELaYxIV769m6GLk4hASmM0pcvPqNBcL5wSjx89VZ
+	FpAqNgEVieUd/5lAbBEBZYlVHe1gHcwCMxglDs/9xwqSEBKwlPi/4C4biM0pYCWxdkozO4gt
+	LJAncWnzZ7A4i4CqRGfLS7ChvED1P788ZoawBSV+TL4HFmcW0JDoX7SBDcKWl9i85i0zxKkK
+	EjvOvmaEOMJI4s2tRnaIGnGJjUdusUxgFJqFZNQsJKNmIRk1C0nLAkaWVYyiqQXJBcVJ6bmG
+	esWJucWleel6yfm5mxjBcfBMagfjygaLQ4wCHIxKPLwvEucHCbEmlhVX5h5ilOBgVhLhrb8K
+	FOJNSaysSi3Kjy8qzUktPsQozcGiJM57oNU6UEggPbEkNTs1tSC1CCbLxMEp1cB4yO3qOibu
+	pJB7/+ce+/PO/OwnHoG9nRxmp48fsj+6qGb78qOTtrpGmXD8/6oz9fO3Sim2z1LL/VfbVEY8
+	ddm9ffPzR8tyLsSxzeNRnfWq+uuERost7ClNB9fNV77kpC9hZqoQlD7ZcJHgFte45Nun/Iy2
+	qcYaytjf9HEKNTD3nr3KqWPPjGNHlViKMxINtZiLihMBcwx5wX8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 4, 2013 at 2:02 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Wed, Dec 04, 2013 at 01:55:34PM -0800, Colin Cross wrote:
->> On Wed, Dec 4, 2013 at 1:43 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> > On Wed, Dec 04, 2013 at 12:46:42PM -0800, Colin Cross wrote:
->> >> On Wed, Dec 4, 2013 at 10:35 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> >> <snip>
->> >>
->> >> > And finally, is this all really needed?  Why not just fix the structures
->> >> > to be "correct", and then fix userspace to use the correct structures as
->> >> > well, thereby not needing a compat layer at all?
->> >>
->> >> Some of the binder ioctls take userspace pointers.  Are you suggesting
->> >> storing those pointers in a __u64 to avoid having to have a
->> >> compat_ioctl?
->> >
->> > Yes, that's the best way to solve the issue, right?
->>
->> It's the least code, but in exchange you lose all the type safety and
->> warnings when copying in and out of the pointers, as well as sparse
->> checking on the __user attribute.
->
-> Not if you make the cast right at the beginning, when you first "touch"
-> the data, but yes, it does take some of the type saftey away, at the
-> expense of simpler code to mess up :)
->
->> That doesn't seem like a good tradeoff to me.  In addition it requires
->> modifying the existing heavily used 32 bit api, which means a
->> mostly-equivalent compat layer added in libbinder to support old
->> kernels.
->
-> Wait, I thought that libbinder would have to be changed anyway here, to
-> handle 64bit kernels (in both 32 and 64bit userspace).  Since you are
-> already changing it, why not just "do it correctly"?
->
+> -----Original Message-----
+> From: Chao Yu [mailto:chao2.yu@samsung.com]
+> Sent: Thursday, December 05, 2013 9:55 AM
+> To: ???
+> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net
+> Subject: [f2fs-dev] [PATCH 3/3] f2fs: introduce f2fs_cache_node_page() to add page into node_inode cache
+> 
+> This patch introduces f2fs_cache_node_page(), in this function, page which is
+> readed ahead will be copy to node_inode's mapping cache.
+> It will avoid rereading these node pages.
+> 
+> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
 
-Yes libbinder will have to be changed to support calls between 32 bit
-and 64 bit processes, so I don't see much value in a patchset that
-only supports all 32 bit or all 64 bit processes. If user space is
-fixed to use 64 bit pointers on a 64 bit system, then much of the code
-added in this patchset becomes useless (and probably harmful as it
-appears to prevent 32 bit processes from communicating with 64 bit
-processes).
+Suggested-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 
-> Or does this patch series mean that no userspace code is changed?  Is
-> that a "requirement" here?
->
+I miss that, my mistake.
 
-I don't think we need to support old 32 bit userspace framework code
-on a 64 bit system. I think it is more important to not prevent mixed
-mode systems.
+> ---
+>  fs/f2fs/node.c |   30 ++++++++++++++++++++++++++++++
+>  1 file changed, 30 insertions(+)
+> 
+> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> index 099f06f..5e2588f 100644
+> --- a/fs/f2fs/node.c
+> +++ b/fs/f2fs/node.c
+> @@ -1600,6 +1600,34 @@ static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
+>  	return 0;
+>  }
+> 
+> +/*
+> + * f2fs_cache_node_page() copy updated page data to node_inode cache page.
+> + */
+> +void f2fs_cache_node_page(struct f2fs_sb_info *sbi, struct page *page,
+> +						nid_t nid)
+> +{
+> +	struct address_space *mapping = sbi->node_inode->i_mapping;
+> +	struct page *npage;
+> +
+> +	npage = find_get_page(mapping, nid);
+> +	if (npage && PageUptodate(npage)) {
+> +		f2fs_put_page(npage, 0);
+> +		return;
+> +	}
+> +	f2fs_put_page(npage, 0);
+> +
+> +	npage = grab_cache_page(mapping, nid);
+> +	if (!npage)
+> +		return;
+> +
+> +	memcpy(page_address(npage), page_address(page), PAGE_CACHE_SIZE);
+> +
+> +	SetPageUptodate(npage);
+> +	f2fs_put_page(npage, 1);
+> +
+> +	return;
+> +}
+> +
+>  int restore_node_summary(struct f2fs_sb_info *sbi,
+>  			unsigned int segno, struct f2fs_summary_block *sum)
+>  {
+> @@ -1633,6 +1661,8 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
+>  				sum_entry->version = 0;
+>  				sum_entry->ofs_in_node = 0;
+>  				sum_entry++;
+> +				f2fs_cache_node_page(sbi, page,
+> +					le32_to_cpu(rn->footer.nid));
+>  			} else {
+>  				err = -EIO;
+>  			}
+> --
+> 1.7.9.5
+> 
+> 
+> ------------------------------------------------------------------------------
+> Sponsored by Intel(R) XDK
+> Develop, test and display web and hybrid apps with a single code base.
+> Download it for free now!
+> http://pubads.g.doubleclick.net/gampad/clk?id=111408631&iu=/4140/ostg.clktrk
+> _______________________________________________
+> Linux-f2fs-devel mailing list
+> Linux-f2fs-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
 
--- 
-Arve Hjønnevåg
