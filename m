@@ -1,80 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932803Ab3LEQtR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 11:49:17 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:42054 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752984Ab3LEQtQ (ORCPT
+	id S1756920Ab3LEQvF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 11:51:05 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45407 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756771Ab3LEQvD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 11:49:16 -0500
-Date: Thu, 5 Dec 2013 08:49:12 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: lots of brief rcu stalls.
-Message-ID: <20131205164912.GA1585@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131204232838.GA25592@redhat.com>
- <20131205001614.GI15492@linux.vnet.ibm.com>
- <20131205012206.GA31349@redhat.com>
+	Thu, 5 Dec 2013 11:51:03 -0500
+From: "Cortes, Alexis" <alexis.cortes@ti.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Julius Werner <jwerner@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Benson Leung <bleung@chromium.org>,
+        "Vincent Palatin" <vpalatin@chromium.org>
+Subject: RE: [PATCH] usb: hub: Use correct reset for wedged USB3 devices
+ that are NOTATTACHED
+Thread-Topic: [PATCH] usb: hub: Use correct reset for wedged USB3 devices
+ that are NOTATTACHED
+Thread-Index: AQHO4ZGWIwMPqdqwwU67UO/vDDw2rJom0hOQgB5qaYCAALJSsA==
+Date: Thu, 5 Dec 2013 16:50:56 +0000
+Message-ID: <31F406F20B26204E8066CA524505279A269D794B@DFLE12.ent.ti.com>
+References: <CAODwPW8j2wGGgH_HjuXuH=95jd_B1iqWeifoT89xgJoEZRvphw@mail.gmail.com>
+ <Pine.LNX.4.44L0.1311071026480.1401-100000@iolanthe.rowland.org>
+ <20131114233055.GR10371@xanatos>
+ <31F406F20B26204E8066CA524505279A269C6840@DFLE12.ent.ti.com>
+ <20131205000409.GA10678@xanatos>
+In-Reply-To: <20131205000409.GA10678@xanatos>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [128.247.5.50]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131205012206.GA31349@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120516-0928-0000-0000-0000045A843C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 08:22:06PM -0500, Dave Jones wrote:
-> On Wed, Dec 04, 2013 at 04:16:14PM -0800, Paul E. McKenney wrote:
->  > On Wed, Dec 04, 2013 at 06:28:38PM -0500, Dave Jones wrote:
->  > > Paul,
->  > > I'm seeing this happening more and more lately...
->  > > 
->  > > [  771.786462] INFO: rcu_preempt detected stalls on CPUs/tasks:
->  > > [  771.786552] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [  771.786574] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [  771.786595] 	(detected by 0, t=6502 jiffies, g=20611, c=20610, q=0)
->  > > [  771.786620] INFO: Stall ended before state dump start
->  > > [  966.724546] INFO: rcu_preempt detected stalls on CPUs/tasks:
->  > > [  966.724854] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [  966.724931] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [  966.725005] 	(detected by 0, t=26007 jiffies, g=20611, c=20610, q=0)
->  > > [  966.725093] INFO: Stall ended before state dump start
->  > > [ 1161.661459] INFO: rcu_preempt detected stalls on CPUs/tasks:
->  > > [ 1161.661763] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [ 1161.661840] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [ 1161.661915] 	(detected by 0, t=45512 jiffies, g=20611, c=20610, q=0)
->  > > [ 1161.662001] INFO: Stall ended before state dump start
->  > > [ 1356.598205] INFO: rcu_preempt detected stalls on CPUs/tasks:
->  > > [ 1356.598513] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [ 1356.598590] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [ 1356.598664] 	(detected by 0, t=65017 jiffies, g=20611, c=20610, q=0)
->  > > [ 1356.598751] INFO: Stall ended before state dump start
->  > > [ 1551.536099] INFO: rcu_preempt detected stalls on CPUs/tasks:
->  > > [ 1551.536408] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [ 1551.536485] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
->  > > [ 1551.536559] 	(detected by 0, t=84522 jiffies, g=20611, c=20610, q=0)
->  > > [ 1551.536645] INFO: Stall ended before state dump start
->  > > 
->  > > While it's apparently a non-problem, it's pretty noisy.
->  > > Any ideas?
->  > 
->  > Does the following help?
+Hi Sarah,
+
+Sorry for my delayed response, I was on vacation. Although I wasn't able to verify this on an actual system that is susceptible to the compliance mode issue, after reviewing the USB spec, I don't think it is possible that a port can enter compliance mode while a connected device is suspended. Per the spec, the only way to enter to Compliance Mode state is through the Polling state (after the 'first LFPS timeout'). Does this make sense? 
+
+Best Regards,
+Alexis Cortes.
+
+-----Original Message-----
+From: Sarah Sharp [mailto:sarah.a.sharp@linux.intel.com] 
+Sent: Wednesday, December 04, 2013 6:04 PM
+To: Cortes, Alexis
+Cc: Alan Stern; Julius Werner; Greg Kroah-Hartman; LKML; linux-usb@vger.kernel.org; Benson Leung; Vincent Palatin
+Subject: Re: [PATCH] usb: hub: Use correct reset for wedged USB3 devices that are NOTATTACHED
+
+
+On Tue, Nov 19, 2013 at 02:53:22PM +0000, Cortes, Alexis wrote:
+> Hi Sarah,
 > 
-> Seems so so far!
+> Sorry for my delayed response, I just saw your e-mail (it got filtered somehow). About your question: actually I'm not sure, I'll have to check that to confirm it. I'll get back to you with an answer as soon as I have it.
 
-Nice!
+Ping, Alexis: any info on this question?
 
-But what workload are you running that causes this?  The only way I
-can think of to make this happen requires that you have at least one
-CPU spending more than 21 seconds running continuously in kernel mode.
-Is that what you are doing, or have you come up with some other creative
-way for this to happen?  In the latter case, I would really like to know
-about it in case it exposes yet another flaw in my RCU design.  ;-)
+Sarah Sharp
 
-							Thanx, Paul
-
+> -----Original Message-----
+> From: Sarah Sharp [mailto:sarah.a.sharp@linux.intel.com]
+> Sent: Thursday, November 14, 2013 5:31 PM
+> To: Alan Stern
+> Cc: Julius Werner; Greg Kroah-Hartman; LKML; 
+> linux-usb@vger.kernel.org; Benson Leung; Vincent Palatin; Cortes, 
+> Alexis
+> Subject: Re: [PATCH] usb: hub: Use correct reset for wedged USB3 
+> devices that are NOTATTACHED
+> 
+> On Thu, Nov 07, 2013 at 10:32:33AM -0500, Alan Stern wrote:
+> > On Wed, 6 Nov 2013, Julius Werner wrote:
+> > 
+> > > > What if the device is in USB_STATE_SUSPENDED?
+> > > 
+> > > I'm not sure that is possible at that point in hub_events(), I 
+> > > don't know of a way that could lead to this situation. I could 
+> > > still add the check just to be sure if you want it, though.
+> > 
+> > I don't know either.  But Sarah has said that ports can 
+> > spontaneously go into Compliance Mode for no apparent reason.  If 
+> > that can happen, maybe it can happen while the port is in U3 and the 
+> > device is suspended.  In such cases, though, you'd need to do a 
+> > reset-resume rather than a simple reset.
+> 
+> Looking at commits c3897aa5386faba77e5bbdf94902a1658d3a5b11 and 71c731a296f1b08a3724bd1b514b64f1bda87a23, it seems that the TI host controllers' ports can go into compliance mode only when a device is inserted.  Once the device is link trained by the redriver, the port shouldn't go into compliance mode.  So we should never see compliance mode on a port with an attached USB device in suspend.
+> 
+> Alex, can you confirm that the TI host's port won't go into compliance mode while a connected device is suspended?
+> 
+> > > > Not at all.  If a device is unplugged, its state changes to 
+> > > > NOTATTACHED before the driver is unbound.  During that time, the 
+> > > > driver will see all its URBs failing, so it may very well try to reset the device.
+> > > > (For example, usbhid behaves like this.)  That isn't a bug.
+> > > 
+> > > Oh, okay, I wasn't quite sure how that plays together. Would you 
+> > > think it's still valuable to print it out (maybe as dev_info() 
+> > > instead of
+> > > dev_warn()) instead of just silently ignoring the reset request? 
+> > > It would have certainly been useful for me to find this problem 
+> > > faster, but I can take it out again if you think it would result 
+> > > in too much noise.
+> > 
+> > I think keeping dev_dbg() is best.  If you're searching for the 
+> > solution to a problem, you should have debugging enabled and so you 
+> > ought to see the message.
+> > 
+> > Alan Stern
+> > 
