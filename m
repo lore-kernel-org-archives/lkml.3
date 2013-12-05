@@ -1,124 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963Ab3LEMld (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 07:41:33 -0500
-Received: from ausxipps301.us.dell.com ([143.166.148.223]:23210 "EHLO
-	ausxipps301.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab3LEMlb convert rfc822-to-8bit (ORCPT
+	id S1756345Ab3LEMnX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 07:43:23 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:39965 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756085Ab3LEMnV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 07:41:31 -0500
-X-LoopCount0: from 10.170.28.39
-X-IronPort-AV: E=Sophos;i="4.93,832,1378875600"; 
-   d="scan'208";a="348942269"
-From: <Srinivas_G_Gowda@Dell.com>
-To: <Srinivas_G_Gowda@Dell.com>
-CC: <minyard@acm.org>, <linux-kernel@vger.kernel.org>
-Date: Thu, 5 Dec 2013 04:40:13 -0800
-Subject: Re: [PATCH 1/1] ipmi: setting mod_timer for read_event_msg buffer
- cmd
-Thread-Topic: [PATCH 1/1] ipmi: setting mod_timer for read_event_msg buffer
- cmd
-Thread-Index: Ac7xtySA4bbevNG8RMKOSyxRcH2qRw==
-Message-ID: <52A072BB.6020609@dell.com>
-References: <52931C2D.4070908@dell.com> <5294D9D8.2030305@acm.org>
- <75F7F7632819D94BA80703D8B1F10B6D29CEE95A1D@BLRX7MCDC201.AMER.DELL.COM>
- <52992EFA.4000903@acm.org> <529C9C99.2010108@dell.com>
- <529CF5AA.5040700@acm.org>
- <75F7F7632819D94BA80703D8B1F10B6D29CEE96846@BLRX7MCDC201.AMER.DELL.COM>
- <529E1078.1060502@acm.org> <529F178A.3050304@dell.com>
-In-Reply-To: <529F178A.3050304@dell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131
- Thunderbird/10.0
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	Thu, 5 Dec 2013 07:43:21 -0500
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH 1/2] sched/numa: fix set cpupid on page migration twice
+Date: Thu,  5 Dec 2013 19:10:16 +0800
+Message-Id: <1386241817-5051-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120512-9264-0000-0000-0000050E997B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+commit 7851a45cd3 (mm: numa: Copy cpupid on page migration) copy over 
+the cpupid at page migration time, there is unnecessary to set it again 
+in migrate_misplaced_transhuge_page, this patch fix it.
 
-> 
-> No, I did not see final else in ipmi_thread ever getting hit.
-> 
-> I am looking at  ipmi_thread_busy_wait(),
->  by default the below condition never gets set unitl I explicetly set "kipmid_max_busy_us" to some value.
-> if (smi_info->intf_num < num_max_busy_us)
-> 
-> This means by default "max_busy_us" is always 0. Hence Ill basically end up only doing this
-> if (max_busy_us == 0 || smi_result != SI_SM_CALL_WITH_DELAY)
->                 ipmi_si_set_not_busy(busy_until);
-> 
-> That probably explains why I never hit the else condition in ipmi_thread.
-> 
-> I see ipmi_start_timer_if_necessary() getting called from ipmi_thread() after setting "kipmid_max_busy_us"
-> Ill set "kipmid_max_busy_us=300" and run the stress. I am hoping that we will not see the issue in this case.
-> 
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+---
+ mm/migrate.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-I don't see the issue after this change. (I am going to try again just to be sure)
-I am trying to figure out how to hit ipmi_start_timer_if_necessary() in default mode...! 
-
-
-Thanks,
-G
-
-> 
-> Thanks,
-> G
-> 
-> 
-> 
->> Thanks,
->>
->> -corey
->>
->>>
->>>
->>> Thanks,
->>> G
->>>
->>> -----Original Message-----
->>> From: Corey Minyard [mailto:tcminyard@gmail.com] On Behalf Of Corey Minyard
->>> Sent: Tuesday, December 03, 2013 2:34 AM
->>> To: Gowda, Srinivas G
->>> Cc: tcminyard@gmail.com; linux-kernel@vger.kernel.org; openipmi@mvista.com
->>> Subject: Re: [PATCH 1/1] ipmi: setting mod_timer for read_event_msg buffer cmd On 12/02/2013 08:49 AM, Srinivas_G_Gowda@Dell.com wrote: 
->>>> Thanks for the patch Corey. 
->>>> I am afraid that the system does not have interrupts enabled. It uses polling mode. 
->>>>
->>>> When the error is seen, I know for a fact that in function
->>>> ipmi_thread() smi_result is SI_SM_CALL_WITH_DELAY, I have some logs where in busy_wait always reads as 1. Not sure if it was ever set to 0. (ill check this again).
->>>> Ill anyway run the test using the patch that you have shared. 
->>>>
->>>> b/w would it harm if we were to do to something like this ?
->>> Unfortunately, that would start the timer unnecessarily.  You don't want to start timers unnecessarily in the kernel or the power management police will come after you.
->>> The patch I sent did have this call in the non-idle portion of the kernel thread and that should have done the same thing.  Plus, if you are using the kernel thread, it's going to run periodically and should kick things off again if they get stuck.  I'm suspicious now that something else is going on.
->>> -corey 
->>>> Signed-off-by: Srinivas Gowda <srinivas_g_gowda@dell.com>
->>>> ---
->>>>   drivers/char/ipmi/ipmi_si_intf.c | 1 +
->>>>   1 file changed, 1 insertion(+)
->>>>
->>>> diff --git a/drivers/char/ipmi/ipmi_si_intf.c
->>>> b/drivers/char/ipmi/ipmi_si_intf.c
->>>> index 15e4a60..e23484f 100644
->>>> --- a/drivers/char/ipmi/ipmi_si_intf.c
->>>> +++ b/drivers/char/ipmi/ipmi_si_intf.c
->>>> @@ -1008,6 +1008,7 @@ static int ipmi_thread(void *data)
->>>>                spin_unlock_irqrestore(&(smi_info->si_lock), flags);
->>>>                busy_wait = ipmi_thread_busy_wait(smi_result, smi_info,
->>>>                                                  &busy_until);
->>>> +             ipmi_start_timer_if_necessary(smi_info);
->>>>                if (smi_result == SI_SM_CALL_WITHOUT_DELAY)
->>>>                        ; /* do nothing */
->>>>                else if (smi_result == SI_SM_CALL_WITH_DELAY && 
->>>> busy_wait)
->>
-> 
-> 
-> 
+diff --git a/mm/migrate.c b/mm/migrate.c
+index bb94004..fdb70f7 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1736,8 +1736,6 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
+ 	if (!new_page)
+ 		goto out_fail;
+ 
+-	page_cpupid_xchg_last(new_page, page_cpupid_last(page));
+-
+ 	isolated = numamigrate_isolate_page(pgdat, page);
+ 	if (!isolated) {
+ 		put_page(new_page);
+-- 
+1.7.7.6
 
