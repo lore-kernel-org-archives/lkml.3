@@ -1,79 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689Ab3LEVnu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 16:43:50 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:41965 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753224Ab3LEVnq (ORCPT
+	id S1753978Ab3LEVoP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 16:44:15 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:43786 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752148Ab3LEVoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 16:43:46 -0500
-Date: Thu, 5 Dec 2013 21:43:41 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Milo Kim <milo.kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-pwm@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Message-ID: <20131205214341.GC29268@sirena.org.uk>
-References: <1380082975-6022-1-git-send-email-milo.kim@ti.com>
- <20131204103431.GC26589@ulmo.nvidia.com>
+	Thu, 5 Dec 2013 16:44:12 -0500
+Date: Thu, 5 Dec 2013 13:44:06 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, Oleg Nesterov <oleg@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH tip/core/locking 4/4] Documentation/memory-barriers.txt:
+ Document ACCESS_ONCE()
+Message-ID: <20131205214406.GY15492@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131204224628.GA30159@linux.vnet.ibm.com>
+ <1386197219-31964-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1386197219-31964-4-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20131205132101.45c56f93@lwn.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WbkWELb8d/6oR4nB"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131204103431.GC26589@ulmo.nvidia.com>
-X-Cookie: It's clever, but is it art?
+In-Reply-To: <20131205132101.45c56f93@lwn.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4 0/4] LP3943 MFD driver for a GPIO expander and a PWM
- generator
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120521-3532-0000-0000-000003982500
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Dec 05, 2013 at 01:21:01PM -0700, Jonathan Corbet wrote:
+> On Wed,  4 Dec 2013 14:46:59 -0800
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > The situations in which ACCESS_ONCE() is required are not well documented,
+> > so this commit adds some verbiage to memory-barriers.txt.
+> 
+> [...]
+> 
+> > +     But please note that the compiler is also closely watching what you
+> > +     do with the value after the ACCESS_ONCE().  For example, suppose you
+> > +     do the following and MAX is a preprocessor macro with the value 1:
+> > +
+> > +	for ((tmp = ACCESS_ONCE(a)) % MAX)
+> > +		do_something_with(tmp);
+> 
+> That sure looks like it was meant to be "while" instead of "for"?
 
---WbkWELb8d/6oR4nB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Good catch, fixed!
 
-On Wed, Dec 04, 2013 at 11:34:32AM +0100, Thierry Reding wrote:
-> On Wed, Sep 25, 2013 at 01:22:55PM +0900, Milo Kim wrote:
+> [...]
+> 
+> > + (*) The compiler is within its rights to reorder memory accesses unless
+> > +     you tell it not to.  For example, consider the following interaction
+> > +     between process-level code and an interrupt handler:
+> > +
+> > +	void process_level(void)
+> > +	{
+> > +		msg = get_message();
+> > +		flag = true;
+> > +	}
+> > +
+> > +	void interrupt_handler(void)
+> > +	{
+> > +		if (flag)
+> > +			process_message(msg);
+> > +	}
+> > +
+> > +     There is nothing to prevent the the compiler from transforming
+> > +     process_level() to the following, in fact, this might well be a
+> > +     win for single-threaded code:
+> > +
+> > +	void process_level(void)
+> > +	{
+> > +		flag = true;
+> > +		msg = get_message();
+> > +	}
+> > +
+> > +     If the interrupt occurs between these two statement, then
+> > +     interrupt_handler() might be passed a garbled msg.  Use ACCESS_ONCE()
+> > +     to prevent this as follows:
+> > +
+> > +	void process_level(void)
+> > +	{
+> > +		ACCESS_ONCE(msg) = get_message();
+> > +		ACCESS_ONCE(flag) = true;
+> > +	}
+> > +
+> > +	void interrupt_handler(void)
+> > +	{
+> > +		if (ACCESS_ONCE(flag))
+> > +			process_message(ACCESS_ONCE(msg));
+> > +	}
+> 
+> Looking at this, I find myself wondering why you couldn't just put a
+> barrier() between the two statements in process_level()?  ACCESS_ONCE()
+> seems like a heavy hammer to just avoid reordering of two assignments.
+> What am I missing, and what could be added here to keep the other folks as
+> dense as me from missing the same thing?
 
-> >   mfd: add LP3943 MFD driver
-> >   gpio: add LP3943 I2C GPIO expander driver
-> >   pwm: add LP3943 PWM driver
-> >   Documentation: add LP3943 DT bindings and document
+You could use barrier() from an ordering viewpoint.  However,
+ACCESS_ONCE() is often lighter weight than barrier().  ACCESS_ONCE()
+affects only that one access, while barrier() forces the compiler to
+forget pretty much anything it previously gleaned from any region of
+memory, including private locations that no one else touches.
 
-> I suspect that given the build-time dependencies Lee may want to take
-> all four patches through the MFD tree, so I've acked the PWM parts.
+I am adding a sentence saying that pure ordering can be provided
+by barrier(), though often at higher cost.
 
-FWIW this isn't an issue with new MFDs - since the function drivers will
-depend on the core driver it's not possible to enable them in Kconfig
-until the core driver is also merged and you don't get bisect issues.
+							Thanx, Paul
 
---WbkWELb8d/6oR4nB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSoPOJAAoJELSic+t+oim90fgP/Rr9rCPDaQciOglENW/i2AnN
-Yk5bbdeAeNSjI3GhIdprtb3C/MjqJAGo+TOmDU7HLo1vzIVM54CumZCYqg6qQwKu
-W0X3jadh/PMhDW8v04ixxxNoT7Ag9qCWdGIdO/z2lKq3sDWGEn7nFmRmCQQSK8sx
-u2C+uvrnI98XQ7klNEc/y6yrqAAy/NOKX708INrS4sMFtkLSvory8N512pS53SUM
-+2g3hx3LYVvLhBy30nmT7kHRvbC1aSDUmEOPW3XCOFKq5wzqTVy9F2/Ftno0W+I/
-9efSSOD7DgtUWe1mDUZbjA7H+Fbpzp+gNY+9L24mGrD8uTL/Vk7QMvsIpW/2grce
-xuEf66JAKeytsFFkbNcmQSB+NV8rivLyfxJ661a4wVDAFJg7uw46neRoGnCjZqXs
-xinFj2bC4479zkW3PiobTIeh7AHBmKpca7x/7HD1+FqDrpk3vL5SAq7KwAflCRBt
-WqR2JlqRwX19GuGoVWhJq2sYmx0wUdVRvRTzJhoJeZwMrIsZVd/W9C/sbJh3qKgX
-u4vDtO1jwUpMwKddbKIOt5/rjOm4lMmdNG9akwdsR7iplcstIQn9IkMEww4CALM9
-z3r0SModw7MrOVAdEjq9Re7gI+RDhY/NCfhsazieBh7gan5cA9NEGK9pQrTNRicX
-TQJj9JyQ55eNErjHPGsq
-=4LdU
------END PGP SIGNATURE-----
-
---WbkWELb8d/6oR4nB--
