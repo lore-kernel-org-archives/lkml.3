@@ -1,66 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab3LEUl7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 15:41:59 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:47670 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943Ab3LEUl5 (ORCPT
+	id S1753403Ab3LEUma (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 15:42:30 -0500
+Received: from mail-pd0-f201.google.com ([209.85.192.201]:45312 "EHLO
+	mail-pd0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752388Ab3LEUm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 15:41:57 -0500
-Date: Thu, 5 Dec 2013 12:41:51 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Matt Walker <matt.g.d.walker@gmail.com>
-Cc: backports@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] drivers/input/mouse: add support for newer elantech
- touchpads (released ca. August 2013);
-Message-ID: <20131205204150.GA2761@core.coreip.homeip.net>
-References: <CA+X2d=AHdivGF+s_uOC2ns5okoOdZHX1kEg4iuB32zUkBjsszg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+X2d=AHdivGF+s_uOC2ns5okoOdZHX1kEg4iuB32zUkBjsszg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 5 Dec 2013 15:42:28 -0500
+From: Ben Zhang <benzh@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Don Zickus <dzickus@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ben Zhang <benzh@chromium.org>
+Subject: [PATCH] watchdog: touch_nmi_watchdog should only touch local cpu not every one
+Date: Thu,  5 Dec 2013 12:42:24 -0800
+Message-Id: <1386276144-9241-1-git-send-email-benzh@chromium.org>
+X-Mailer: git-send-email 1.8.5.1
+In-Reply-To: <20131205031218.GO35219@redhat.com>
+References: <20131205031218.GO35219@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 12:57:15PM -0500, Matt Walker wrote:
-> From: Matt Walker <matt.g.d.walker@gmail.com>
-> 
-> Added detection for newer Elantech touchpads, so that kernel doesn't
-> fall-back to default PS/2 driver. Supports touchpads released after
-> ~August 2013.  Fixes bug:
-> https://lists.launchpad.net/kernel-packages/msg18481.html
-> 
-> Signed-off by: Matt Walker <matt.g.d.walker@gmail.com> on an Acer
-> Aspire S7-392-6302
+I ran into a scenario where while one cpu was stuck and should have panic'd
+because of the NMI watchdog, it didn't.  The reason was another cpu was spewing
+stack dumps on to the console.  Upon investigation, I noticed that when writing
+to the console and also when dumping the stack, the watchdog is touched.
 
-Applied, thank you.
+This causes all the cpus to reset their NMI watchdog flags and the 'stuck' cpu
+just spins forever.
 
-> 
-> ----
-> 
-> Thanks to Hauke for the reference on how to submit a patch properly.
-> Thanks to Dmitry for correction to Signed-off line.
-> 
-> Diff Output:
-> 
-> --- linux-3.13-rc1/drivers/input/
-> mouse/elantech.c.orig    2013-12-03
-> 12:14:52.829173656 -0500
-> +++ linux-3.13-rc1/drivers/input/mouse/elantech.c    2013-12-03
-> 12:15:11.833173880 -0500
-> @@ -1313,6 +1313,7 @@ static int elantech_set_properties(struc
->              break;
->          case 6:
->          case 7:
-> +        case 8:
->              etd->hw_version = 4;
->              break;
->          default:
+This change causes the semantics of touch_nmi_watchdog to be changed slightly.
+Previously, I accidentally changed the semantics and we noticed there was a
+codepath in which touch_nmi_watchdog could be touched from a preemtible area.
+That caused a BUG() to happen when CONFIG_DEBUG_PREEMPT was enabled.  I believe
+it was the acpi code.
 
+My attempt here re-introduces the change to have the touch_nmi_watchdog() code
+only touch the local cpu instead of all of the cpus.  But instead of using
+__get_cpu_var(), I use the __raw_get_cpu_var() version.
 
+This avoids the preemption problem.  However my reasoning wasn't because I was
+trying to be lazy.  Instead I rationalized it as, well if preemption is enabled
+then interrupts should be enabled to and the NMI watchdog will have no reason
+to trigger.  So it won't matter if the wrong cpu is touched because the percpu
+interrupt counters the NMI watchdog uses should still be incrementing.
 
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Ben Zhang <benzh@chromium.org>
+---
+ kernel/watchdog.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 4431610..613f611 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -158,14 +158,14 @@ void touch_all_softlockup_watchdogs(void)
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
+ void touch_nmi_watchdog(void)
+ {
+-	if (watchdog_user_enabled) {
+-		unsigned cpu;
+-
+-		for_each_present_cpu(cpu) {
+-			if (per_cpu(watchdog_nmi_touch, cpu) != true)
+-				per_cpu(watchdog_nmi_touch, cpu) = true;
+-		}
+-	}
++	/*
++	 * Using __raw here because some code paths have
++	 * preemption enabled.  If preemption is enabled
++	 * then interrupts should be enabled too, in which
++	 * case we shouldn't have to worry about the watchdog
++	 * going off.
++	 */
++	__raw_get_cpu_var(watchdog_nmi_touch) = true;
+ 	touch_softlockup_watchdog();
+ }
+ EXPORT_SYMBOL(touch_nmi_watchdog);
 -- 
-Dmitry
+1.8.5.1
+
