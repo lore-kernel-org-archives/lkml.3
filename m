@@ -1,46 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793Ab3LEOsK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 09:48:10 -0500
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:40786 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755324Ab3LEOsD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 09:48:03 -0500
-Date: Thu, 5 Dec 2013 11:47:55 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] perf trace: Fix crash on RHEL6
-Message-ID: <20131205144754.GC10333@ghostprotocols.net>
-References: <1386211302-31303-1-git-send-email-dsahern@gmail.com>
- <1386211302-31303-3-git-send-email-dsahern@gmail.com>
- <20131205130924.GA10333@ghostprotocols.net>
- <52A08D68.5020701@gmail.com>
+	id S932404Ab3LEOs4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 09:48:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32507 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755324Ab3LEOsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 09:48:53 -0500
+Date: Thu, 5 Dec 2013 16:52:17 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Andrey Vagin <avagin@openvz.org>
+Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Michael Dalton <mwdalton@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH 1/2] virtio-net: determine type of bufs correctly
+Message-ID: <20131205145217.GA23147@redhat.com>
+References: <1386254181-17257-1-git-send-email-avagin@openvz.org>
+ <1386254181-17257-2-git-send-email-avagin@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52A08D68.5020701@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1386254181-17257-2-git-send-email-avagin@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Dec 05, 2013 at 07:27:52AM -0700, David Ahern escreveu:
-> On 12/5/13, 6:09 AM, Arnaldo Carvalho de Melo wrote:
-> >Em Wed, Dec 04, 2013 at 07:41:40PM -0700, David Ahern escreveu:
-> >>Signed-off-by: David Ahern <dsahern@gmail.com>
-> >
-> >What would make no fields to be present if tp_format is not NULL, i.e.
-> >if the /format file was successfully parsed?
+On Thu, Dec 05, 2013 at 06:36:20PM +0400, Andrey Vagin wrote:
+> free_unused_bufs must check vi->mergeable_rx_bufs before
+> vi->big_packets, because we use this sequence in other places.
+> Otherwise we allocate buffer of one type, then free it as another
+> type.
 > 
-> Sometimes it is not successfully parsed. I see failed to parse
-> messages, so most likely the root cause. I was posting this one and
-> the first one hoping you could take a look at RHEL6 problems. I
-> think it is mostly an old kernel thing.
+> general protection fault: 0000 [#1] SMP
+> Dumping ftrace buffer:
+>    (ftrace buffer empty)
+> Modules linked in: ip6table_filter ip6_tables iptable_filter ip_tables pcspkr virtio_balloon virtio_net(-) i2c_pii
+> CPU: 0 PID: 400 Comm: rmmod Not tainted 3.13.0-rc2+ #170
+> Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> task: ffff8800b6d2a210 ti: ffff8800aed32000 task.ti: ffff8800aed32000
+> RIP: 0010:[<ffffffffa00345f3>]  [<ffffffffa00345f3>] free_unused_bufs+0xc3/0x190 [virtio_net]
+> RSP: 0018:ffff8800aed33dd8  EFLAGS: 00010202
+> RAX: ffff8800b1fe2c00 RBX: ffff8800b66a7240 RCX: 6b6b6b6b6b6b6b6b
+> RDX: 6b6b6b6b6b6b6b6b RSI: ffff8800b8419a68 RDI: ffff8800b66a1148
+> RBP: ffff8800aed33e00 R08: 0000000000000001 R09: 0000000000000000
+> R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
+> R13: ffff8800b66a1148 R14: 0000000000000000 R15: 000077ff80000000
+> FS:  00007fc4f9c4e740(0000) GS:ffff8800bfa00000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 00007f63f432f000 CR3: 00000000b6538000 CR4: 00000000000006f0
+> Stack:
+>  ffff8800b66a7240 ffff8800b66a7380 ffff8800377bd3f0 0000000000000000
+>  00000000023302f0 ffff8800aed33e18 ffffffffa00346e2 ffff8800b66a7240
+>  ffff8800aed33e38 ffffffffa003474d ffff8800377bd388 ffff8800377bd390
+> Call Trace:
+>  [<ffffffffa00346e2>] remove_vq_common+0x22/0x40 [virtio_net]
+>  [<ffffffffa003474d>] virtnet_remove+0x4d/0x90 [virtio_net]
+>  [<ffffffff813ae303>] virtio_dev_remove+0x23/0x80
+>  [<ffffffff813f62cf>] __device_release_driver+0x7f/0xf0
+>  [<ffffffff813f6c80>] driver_detach+0xc0/0xd0
+>  [<ffffffff813f5f08>] bus_remove_driver+0x58/0xd0
+>  [<ffffffff813f72cc>] driver_unregister+0x2c/0x50
+>  [<ffffffff813ae63e>] unregister_virtio_driver+0xe/0x10
+>  [<ffffffffa0036852>] virtio_net_driver_exit+0x10/0x7be [virtio_net]
+>  [<ffffffff810d7cf2>] SyS_delete_module+0x172/0x220
+>  [<ffffffff810a732d>] ? trace_hardirqs_on+0xd/0x10
+>  [<ffffffff810f5d4c>] ? __audit_syscall_entry+0x9c/0xf0
+>  [<ffffffff81677f69>] system_call_fastpath+0x16/0x1b
+> Code: c0 74 55 0f 1f 44 00 00 80 7b 30 00 74 7a 48 8b 50 30 4c 89 e6 48 03 73 20 48 85 d2 0f 84 bb 00 00 00 66 0f
+> RIP  [<ffffffffa00345f3>] free_unused_bufs+0xc3/0x190 [virtio_net]
+>  RSP <ffff8800aed33dd8>
+> ---[ end trace edb570ea923cce9c ]---
+> 
+> Fixes: 2613af0ed18a (virtio_net: migrate mergeable rx buffers to page frag allocators)
+> Cc: Michael Dalton <mwdalton@google.com>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> Signed-off-by: Andrey Vagin <avagin@openvz.org>
 
-OK, just questioning because perhaps you had some insight and had just
-not posted it as the changeset log msg.
+Yes, big_packets can be set with mergeable_rx_bufs,
+so mergeable_rx_bufs must be tested first.
 
-- Arnaldo
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+
+> ---
+>  drivers/net/virtio_net.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index 916241d..930039a 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -1396,10 +1396,10 @@ static void free_unused_bufs(struct virtnet_info *vi)
+>  		struct virtqueue *vq = vi->rq[i].vq;
+>  
+>  		while ((buf = virtqueue_detach_unused_buf(vq)) != NULL) {
+> -			if (vi->big_packets)
+> -				give_pages(&vi->rq[i], buf);
+> -			else if (vi->mergeable_rx_bufs)
+> +			if (vi->mergeable_rx_bufs)
+>  				put_page(virt_to_head_page(buf));
+> +			else if (vi->big_packets)
+> +				give_pages(&vi->rq[i], buf);
+>  			else
+>  				dev_kfree_skb(buf);
+>  			--vi->rq[i].num;
+> -- 
+> 1.8.3.1
