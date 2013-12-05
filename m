@@ -1,96 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756867Ab3LEOlV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 09:41:21 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:37173 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756081Ab3LEOkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 09:40:45 -0500
-From: Andrey Vagin <avagin@openvz.org>
-To: virtualization@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Andrey Vagin <avagin@openvz.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: [PATCH 2/2] virtio: delete napi structures from netdev before releasing memory
-Date: Thu,  5 Dec 2013 18:36:21 +0400
-Message-Id: <1386254181-17257-3-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1386254181-17257-1-git-send-email-avagin@openvz.org>
-References: <1386254181-17257-1-git-send-email-avagin@openvz.org>
+	id S932466Ab3LEOmg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 09:42:36 -0500
+Received: from mail-we0-f171.google.com ([74.125.82.171]:64583 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755961Ab3LEOmf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 09:42:35 -0500
+Date: Thu, 5 Dec 2013 15:42:27 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Christoph Lameter <cl@linux.com>, Peter Zijlstra <peterz@infradead.org>,
+        Tejun Heo <htejun@gmail.com>, zhang.yi20@zte.com.cn,
+        lkml <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 1/1] usermodehelper: kill
+ ____call_usermodehelper()->set_cpus_allowed_ptr()
+Message-ID: <20131205144224.GA20828@localhost.localdomain>
+References: <20131128133152.GA821@redhat.com>
+ <20131128133947.GR10022@twins.programming.kicks-ass.net>
+ <20131128142359.GA6420@redhat.com>
+ <20131128143155.GC3925@htj.dyndns.org>
+ <20131128150055.GA11956@redhat.com>
+ <20131128150233.GA10022@twins.programming.kicks-ass.net>
+ <20131128193330.GA24767@redhat.com>
+ <20131128193349.GB24767@redhat.com>
+ <CAFTL4hw+Ztsy5uy2WOsyxQ1dL7B_rPEU=XtisoR5X18cPQ7LYg@mail.gmail.com>
+ <20131205143745.GA18488@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131205143745.GA18488@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-free_netdev calls netif_napi_del too, but it's too late, because napi
-structures are placed on vi->rq. netif_napi_add() is called from
-virtnet_alloc_queues.
+On Thu, Dec 05, 2013 at 03:37:45PM +0100, Oleg Nesterov wrote:
+> On 12/05, Frederic Weisbecker wrote:
+> >
+> > 2013/11/28 Oleg Nesterov <oleg@redhat.com>:
+> > > ____call_usermodehelper() does set_cpus_allowed_ptr(cpu_all_mask),
+> > > this (and the comment) is misleading. We no longer have keventd_wq,
+> > > and kmod.c switched to khelper_wq a long ago.
+> > >
+> > > And more importantly, "unlike our parent" is no longer true too,
+> > > this thread was created by WQ_UNBOUND worker thread which has the
+> > > full ->cpus_allowed mask, so this set_cpus_allowed_ptr() is simply
+> > > unnecessary.
+> > >
+> > > Perhaps we will change this later, so that userspace can control
+> > > the affinity of the usermode helper tasks, but this is yet another
+> > > reason to remove this set_cpus_allowed_ptr().
+> > >
+> > > To some degree this also applies to set_user_nice(), but this
+> > > patch only updates the comment.
+> > >
+> > > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> >
+> > I'm adding Christophe in Cc because he is interested in tweaking the
+> > affinity of call_usermodehelper for cpu isolation. This welcome
+> > cleanup confirms that we want to take the direction of being able to
+> > change the affinity of workqueue themselves instead of just
+> > call_usermodehelper() alone.
+> 
+> OK, but I'd like to remind just in case, as Tejun pointed out this
+> patch is wrong ;)
 
-general protection fault: 0000 [#1] SMP
-Dumping ftrace buffer:
-   (ftrace buffer empty)
-Modules linked in: ip6table_filter ip6_tables iptable_filter ip_tables virtio_balloon pcspkr virtio_net(-) i2c_pii
-CPU: 1 PID: 347 Comm: rmmod Not tainted 3.13.0-rc2+ #171
-Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-task: ffff8800b779c420 ti: ffff8800379e0000 task.ti: ffff8800379e0000
-RIP: 0010:[<ffffffff81322e19>]  [<ffffffff81322e19>] __list_del_entry+0x29/0xd0
-RSP: 0018:ffff8800379e1dd0  EFLAGS: 00010a83
-RAX: 6b6b6b6b6b6b6b6b RBX: ffff8800379c2fd0 RCX: dead000000200200
-RDX: 6b6b6b6b6b6b6b6b RSI: 0000000000000001 RDI: ffff8800379c2fd0
-RBP: ffff8800379e1dd0 R08: 0000000000000001 R09: 0000000000000000
-R10: 0000000000000000 R11: 0000000000000001 R12: ffff8800379c2f90
-R13: ffff880037839160 R14: 0000000000000000 R15: 00000000013352f0
-FS:  00007f1400e34740(0000) GS:ffff8800bfb00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00007f464124c763 CR3: 00000000b68cf000 CR4: 00000000000006e0
-Stack:
- ffff8800379e1df0 ffffffff8155beab 6b6b6b6b6b6b6b2b ffff8800378391c0
- ffff8800379e1e18 ffffffff8156499b ffff880037839be0 ffff880037839d20
- ffff88003779d3f0 ffff8800379e1e38 ffffffffa003477c ffff88003779d388
-Call Trace:
- [<ffffffff8155beab>] netif_napi_del+0x1b/0x80
- [<ffffffff8156499b>] free_netdev+0x8b/0x110
- [<ffffffffa003477c>] virtnet_remove+0x7c/0x90 [virtio_net]
- [<ffffffff813ae323>] virtio_dev_remove+0x23/0x80
- [<ffffffff813f62ef>] __device_release_driver+0x7f/0xf0
- [<ffffffff813f6ca0>] driver_detach+0xc0/0xd0
- [<ffffffff813f5f28>] bus_remove_driver+0x58/0xd0
- [<ffffffff813f72ec>] driver_unregister+0x2c/0x50
- [<ffffffff813ae65e>] unregister_virtio_driver+0xe/0x10
- [<ffffffffa0036942>] virtio_net_driver_exit+0x10/0x6ce [virtio_net]
- [<ffffffff810d7cf2>] SyS_delete_module+0x172/0x220
- [<ffffffff810a732d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff810f5d4c>] ? __audit_syscall_entry+0x9c/0xf0
- [<ffffffff81677f69>] system_call_fastpath+0x16/0x1b
-Code: 00 00 55 48 8b 17 48 b9 00 01 10 00 00 00 ad de 48 8b 47 08 48 89 e5 48 39 ca 74 29 48 b9 00 02 20 00 00 00
-RIP  [<ffffffff81322e19>] __list_del_entry+0x29/0xd0
- RSP <ffff8800379e1dd0>
----[ end trace d5931cd3f87c9763 ]---
+Ok, I see that's because unboud workqueues are actually bound to NUMA nodes.
+Doesn't that eventually work for call_usermodehelper() as well? Or may be there
+are some reasons for it to keep a global affinity?
 
-Fixes: 986a4f4d452d (virtio_net: multiqueue support)
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- drivers/net/virtio_net.c | 5 +++++
- 1 file changed, 5 insertions(+)
+> 
+> And "change the affinity of workqueue themselves" is not simple, but
+> we can make khelper_wq WQ_SYSFS.
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 930039a..c293764 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1367,6 +1367,11 @@ static void virtnet_config_changed(struct virtio_device *vdev)
- 
- static void virtnet_free_queues(struct virtnet_info *vi)
- {
-+	int i;
-+
-+	for (i = 0; i < vi->max_queue_pairs; i++)
-+		netif_napi_del(&vi->rq[i].napi);
-+
- 	kfree(vi->rq);
- 	kfree(vi->sq);
- }
--- 
-1.8.3.1
+Right it can be either user driven like through sysfs or some adaptive decision
+taken by the kernel on top of full dynticks CPUs, etc...
 
+But the sysfs interface based solution looks better from a quick POV.
