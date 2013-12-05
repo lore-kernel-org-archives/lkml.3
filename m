@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756572Ab3LECn5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 21:43:57 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:58888 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515Ab3LECnw (ORCPT
+	id S1756587Ab3LECoH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 21:44:07 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:45632 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753515Ab3LECoC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 21:43:52 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH 5/5] ARM: msm: Move MSM's DT based hardware to multi-platform support
-Date: Thu, 5 Dec 2013 03:43:18 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1386185952-27259-1-git-send-email-sboyd@codeaurora.org> <1386185952-27259-6-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1386185952-27259-6-git-send-email-sboyd@codeaurora.org>
+	Wed, 4 Dec 2013 21:44:02 -0500
+Date: Wed, 4 Dec 2013 18:43:55 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: lots of brief rcu stalls.
+Message-ID: <20131205024355.GK15492@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131204232838.GA25592@redhat.com>
+ <20131205001614.GI15492@linux.vnet.ibm.com>
+ <1386209910.30495.146.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312050343.19327.arnd@arndb.de>
-X-Provags-ID: V02:K0:Wz1zQ/EHj2h/uYlYq0Yh2i/r62LZjF7VAh5g4xBFePe
- pH1V3BjIhcfoYG24nbLfenczDFZuMcNvuPSjCYyvEKpf4rJ5CV
- zVhWTuEVTTg1bt8nHGymcrwLPR9IwLI4+pbbYutv3CLayta9Mj
- X1PgY1TPz4S5MHiUvEFqRWMToAtUqSWZ8JSvozhfWHhj3xoDis
- IB3umAx4JgmLFUQW6+Te2hAlqijkJXDMKpLwkQ58n3vTpZjFzg
- tCz1vMq9eW4CLNB1IpUb62zGGeol102Ds6EHsRdHJCr2ZhSNKU
- QvgMs12IFEA/776wnL9VKWZFl2bsWpBG+TytgNYF+XGGBpKm8Y
- pS8gEHjAYmZBmiYtAC4Q=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386209910.30495.146.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120502-8236-0000-0000-0000048A6413
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 04 December 2013, Stephen Boyd wrote:
-> The DT based MSM platforms can join the multi-platform builds, so
-> introduce a DT based ARCH_MSM option. This option allows DT based
-> MSM platforms to be built into the multi-platform kernel. Also
-> introduce a hidden ARCH_MSM config that both the DT and non-DT
-> platform support code select to avoid churn in places that depend
-> on CONFIG_ARCH_MSM.
+On Wed, Dec 04, 2013 at 06:18:30PM -0800, Eric Dumazet wrote:
+> On Wed, 2013-12-04 at 16:16 -0800, Paul E. McKenney wrote:
+> > +	if (rdp->rsp == rcu_state &&
+> > +	    ULONG_CMP_GE(ACCESS_ONCE(jiffies), rdp->rsp->jiffies_resched)) {
+> > +		rdp->rsp->jiffies_resched += 5;
+> > +		resched_cpu(rdp->cpu);
+> > +	}
+> > +
+> >  	return 0;
+> >  }
 > 
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> jiffies should not need ACCESS_ONCE(), right ?
+> 
+> It is one of the few variables marked with volatile keyword.
 
-Nice!
+Good point!  I have queued a patch fixing this and four other occurrences
+with your Submitted-by.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+							Thanx, Paul
+
