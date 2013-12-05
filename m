@@ -1,121 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab3LEJdr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 04:33:47 -0500
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:63137 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402Ab3LEJdn (ORCPT
+	id S1754332Ab3LEJgw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 04:36:52 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:44833 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752782Ab3LEJgt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 04:33:43 -0500
-Date: Thu, 5 Dec 2013 10:33:34 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, Oleg Nesterov <oleg@redhat.com>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH tip/core/locking 4/4] Documentation/memory-barriers.txt:
- Document ACCESS_ONCE()
-Message-ID: <20131205093334.GA16749@gmail.com>
-References: <20131204224628.GA30159@linux.vnet.ibm.com>
- <1386197219-31964-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1386197219-31964-4-git-send-email-paulmck@linux.vnet.ibm.com>
+	Thu, 5 Dec 2013 04:36:49 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386197219-31964-4-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: Supporting 4 way connections in LKSCTP
+Date: Thu, 5 Dec 2013 09:35:40 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B7460@saturn3.aculab.com>
+In-Reply-To: <529F7336.1000007@gmail.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: Supporting 4 way connections in LKSCTP
+Thread-Index: Ac7xHeyTQl+XjrK9TRWP9VgAAWh/MgAfsOEQ
+References: <CAFXGft+CXk3W8=3w=AuYzqYtYnR8nH4Of9=668tUeT+tugD9-A@mail.gmail.com>	<CAFXGftJQV=5Pqs3bhfiS3T1VO1q8jfaMjAUiqm2tDbtSyBCM3A@mail.gmail.com>	<529C9B50.50002@gmail.com>	<CAGugRbXFirQ5P3ek9zN86h4vvO6qsy3eNEooJOApotA+dL+C_g@mail.gmail.com>	<529CB859.9090904@gmail.com>	<CAFXGft+F52p+oaa59=5e5pGfON44N36NA-XMYi5PorzWeybnKw@mail.gmail.com>	<CAFXGft+4o6fT4SYbu3musC+-BEi=xOEGUbZSavF1-0_V1mg6zg@mail.gmail.com>	<529D3BF9.3070208@gmail.com>	<CAFXGftJtCCJ=pVxg_DH-+n2bKmoKXavog0y8mfX+h-1z3hP49Q@mail.gmail.com>	<529DCF42.1070800@gmail.com>	<CAFXGftK5tz90OzObiV7Hi+g080j3zWCNdo217CKdNkOY4JWQUg@mail.gmail.com>	<529DF73E.7060604@gmail.com> <CAFXGftKZD0zN1S=UTa_bYr71-v=7mzU=_CewTNkjPv9CGGB_Fg@mail.gmail.com> <529F395B.9040308@gmail.com> <AE90C24D6B3A694183C094C60CF0A2F6026B745D@saturn3.aculab.com> <529F4D1A.3050304@gmail.com> <7A4B9BD9-B2BF-4625-A2E5-500CD4A6D399@lurchi.franken.de> <529F5472.9030207@gmail.com> <4F0BC498-2F09-4DB6-83DC-82571645476B@lurchi.franken.de> <529F7336.1000007@gmail.com>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Vlad Yasevich" <vyasevich@gmail.com>,
+        "Michael Tuexen" <Michael.Tuexen@lurchi.franken.de>
+Cc: "Sun Paul" <paulrbk@gmail.com>, <netdev@vger.kernel.org>,
+        <linux-sctp@vger.kernel.org>, "Karl Heiss" <kheiss@gmail.com>,
+        "Neil Horman" <nhorman@tuxdriver.com>, <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> >> the configured addresses could be:
+> >> System A) 10.0.0.1 on Lan X, 10.10.0.1 on Lan Y
+> >> System B) 10.0.0.2 on Lan X, 10.10.0.2 on Lan Y
+> >> System C) 10.0.0.3 on Lan X, 10.10.0.2 on Lan Z
+> >>
+> >> Same problem will occur.
+...
+> With that, Sys A talking to Sys C will get an abort
+> from Sys B when trying to talk to 10.10.0.2.  With /8, it'll be
+> even worse since SysB and SysC will have duplicate addresses
+> within the subnet. :)
+> 
+> The point is that you don't always know that the same private subnet
+> is in reality 2 different subnets with duplicate addresses.
+> 
+> I've had to debug an actual production issue similar to this where
+> customer had a very similar configuration to above, and their
+> associations kept getting aborted.  When I tried accessing the
+> system that kept sending aborts, I found it was some windows
+> server and not a Diameter station they were expecting.
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+Does seem that the addresses listed in INIT and INIT_ACK chunks
+should be ignored until a valid HB response has been received.
+If an abort is received before a valid HB response then the
+address should be ignored rather than the connection aborted.
+Then it wouldn't matter anywhere near as much if addresses are
+advertised that are not reachable from the remote system.
 
-> + (*) The compiler is within its rights to reorder memory accesses unless
-> +     you tell it not to.  For example, consider the following interaction
-> +     between process-level code and an interrupt handler:
-> +
-> +	void process_level(void)
-> +	{
-> +		msg = get_message();
-> +		flag = true;
-> +	}
-> +
-> +	void interrupt_handler(void)
-> +	{
-> +		if (flag)
-> +			process_message(msg);
-> +	}
-> +
-> +     There is nothing to prevent the the compiler from transforming
-> +     process_level() to the following, in fact, this might well be a
-> +     win for single-threaded code:
-> +
-> +	void process_level(void)
-> +	{
-> +		flag = true;
-> +		msg = get_message();
-> +	}
-> +
-> +     If the interrupt occurs between these two statement, then
-> +     interrupt_handler() might be passed a garbled msg.  Use ACCESS_ONCE()
-> +     to prevent this as follows:
-> +
-> +	void process_level(void)
-> +	{
-> +		ACCESS_ONCE(msg) = get_message();
-> +		ACCESS_ONCE(flag) = true;
-> +	}
-> +
-> +	void interrupt_handler(void)
-> +	{
-> +		if (ACCESS_ONCE(flag))
-> +			process_message(ACCESS_ONCE(msg));
-> +	}
+All this should have been thought about when the original RFC
+was written.
 
-Technically, if the interrupt handler is the innermost context, the 
-ACCESS_ONCE() is not needed in the interrupt_handler() code.
+	David
 
-Since for the vast majority of Linux code IRQ handlers are the most 
-atomic contexts (very few drivers deal with NMIs) I suspect we should 
-either remove that ACCESS_ONCE() from the example or add a comment 
-explaining that in many cases those are superfluous?
 
-> + (*) For aligned memory locations whose size allows them to be accessed
-> +     with a single memory-reference instruction, prevents "load tearing"
-> +     and "store tearing," in which a single large access is replaced by
-> +     multiple smaller accesses.  For example, given an architecture having
-> +     16-bit store instructions with 7-bit immediate fields, the compiler
-> +     might be tempted to use two 16-bit store-immediate instructions to
-> +     implement the following 32-bit store:
-> +
-> +	p = 0x00010002;
-> +
-> +     Please note that GCC really does use this sort of optimization,
-> +     which is not surprising given that it would likely take more
-> +     than two instructions to build the constant and then store it.
-> +     This optimization can therefore be a win in single-threaded code.
-> +     In fact, a recent bug (since fixed) caused GCC to incorrectly use
-> +     this optimization in a volatile store.  In the absence of such bugs,
-> +     use of ACCESS_ONCE() prevents store tearing:
-> +
-> +	ACCESS_ONCE(p) = 0x00010002;
 
-I suspect the last sentence should read:
-
-> +                                             In the absence of such bugs,
-> +     use of ACCESS_ONCE() prevents store tearing in this example:
-> +
-> +	ACCESS_ONCE(p) = 0x00010002;
-
-Otherwise it could be read as a more generic statement (leaving out 
-'load tearing')?
-
-Thanks,
-
-	Ingo
