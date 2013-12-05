@@ -1,105 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932646Ab3LEP36 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 10:29:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43893 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932223Ab3LEP35 (ORCPT
+	id S932655Ab3LEPbA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 10:31:00 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:37679 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751545Ab3LEPa5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 10:29:57 -0500
-Date: Thu, 5 Dec 2013 07:31:04 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Serban Constantinescu <serban.constantinescu@arm.com>,
-        devel@driverdev.osuosl.org, irogers@google.com, Dave.Butcher@arm.com,
-        linux-kernel@vger.kernel.org, arve@android.com, john.stultz@linaro.org,
-        ccross@android.com, romlem@android.com
-Subject: Re: [PATCH v1 1/9] staging: android: binder: Move some of the logic
- into subfunction
-Message-ID: <20131205153104.GA7123@kroah.com>
-References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
- <1386180581-6710-2-git-send-email-serban.constantinescu@arm.com>
- <20131205081822.GU28413@mwanda>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131205081822.GU28413@mwanda>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Thu, 5 Dec 2013 10:30:57 -0500
+Content-Type: text/plain; charset=utf-8
+Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1822\))
+Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+In-Reply-To: <20131205135021.GA12996@amt.cnet>
+Date: Thu, 5 Dec 2013 23:30:27 +0800
+Cc: Gleb Natapov <gleb@redhat.com>, avi.kivity@gmail.com,
+        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Eric Dumazet <dada1@cosmosbay.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <F8A4D0B5-9900-48F3-9CA3-23A5A8CC0B4B@linux.vnet.ibm.com>
+References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1382534973-13197-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20131122191429.GA13308@amt.cnet> <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com> <5292EE2F.5090305@linux.vnet.ibm.com> <20131125181254.GB21858@amt.cnet> <529413C1.60302@linux.vnet.ibm.com> <20131126193148.GA18071@amt.cnet> <5297049E.3020800@linux.vnet.ibm.com> <529D83F8.7050605@linux.vnet.ibm.com> <20131205135021.GA12996@amt.cnet>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+X-Mailer: Apple Mail (2.1822)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 11:18:22AM +0300, Dan Carpenter wrote:
-> On Wed, Dec 04, 2013 at 06:09:33PM +0000, Serban Constantinescu wrote:
-> > +static void bc_increfs_done(struct binder_proc *proc,
-> > +		struct binder_thread *thread, uint32_t cmd,
-> > +		void __user *node_ptr, void __user *cookie)
-> > +{
-> > +	struct binder_node *node;
-> > +
-> > +	node = binder_get_node(proc, node_ptr);
-> > +	if (node == NULL) {
-> > +		binder_user_error("%d:%d %s u%p no match\n",
-> > +			proc->pid, thread->pid,
-> > +			cmd == BC_INCREFS_DONE ?
-> > +			"BC_INCREFS_DONE" :
-> > +			"BC_ACQUIRE_DONE",
-> > +			node_ptr);
-> > +		return;
-> > +	}
-> > +	if (cookie != node->cookie) {
-> > +		binder_user_error("%d:%d %s u%p node %d cookie mismatch %p != %p\n",
-> > +			proc->pid, thread->pid,
-> > +			cmd == BC_INCREFS_DONE ?
-> > +			"BC_INCREFS_DONE" : "BC_ACQUIRE_DONE",
-> > +			node_ptr, node->debug_id,
-> > +			cookie, node->cookie);
-> > +		return;
-> > +	}
-> > +	if (cmd == BC_ACQUIRE_DONE) {
-> > +		if (node->pending_strong_ref == 0) {
-> > +			binder_user_error("%d:%d BC_ACQUIRE_DONE node %d has no pending acquire request\n",
-> > +				proc->pid, thread->pid,
-> > +				node->debug_id);
-> > +			return;
-> > +		}
-> > +		node->pending_strong_ref = 0;
-> > +	} else {
-> > +		if (node->pending_weak_ref == 0) {
-> > +			binder_user_error("%d:%d BC_INCREFS_DONE node %d has no pending increfs request\n",
-> > +				proc->pid, thread->pid,
-> > +				node->debug_id);
-> > +			return;
-> > +		}
-> > +		node->pending_weak_ref = 0;
-> > +	}
-> > +	binder_dec_node(node, cmd == BC_ACQUIRE_DONE, 0);
-> > +	binder_debug(BINDER_DEBUG_USER_REFS,
-> > +		     "%d:%d %s node %d ls %d lw %d\n",
-> > +		     proc->pid, thread->pid,
-> > +		     cmd == BC_INCREFS_DONE ?
-> > +		     "BC_INCREFS_DONE" :
-> > +		     "BC_ACQUIRE_DONE",
-> > +		     node->debug_id, node->local_strong_refs,
-> > +		     node->local_weak_refs);
-> > +	return;
-> > +}
-> 
-> This function is 52 lines long but at least 32 of those lines are
-> debug code.
-> 
-> Just extra of lines of code means you have increased the number of bugs
-> 150%.  But what I know is that from a static analysis perspective, debug
-> code has more defects per line then regular code it's worse than that.
-> Plus all the extra noise obscures the actual logic and makes the real
-> code annoying to look at so it's worse still.
-> 
-> If you want to move this stuff out of staging, then remove all the extra
-> crap so it doesn't look like barf.
 
-I don't ever think the binder code will be moved out of staging for a
-variety of reasons, but that doesn't mean it shouldn't be cleaned up :)
+On Dec 5, 2013, at 9:50 PM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
 
-thanks,
+> GOn Tue, Dec 03, 2013 at 03:10:48PM +0800, Xiao Guangrong wrote:
+>> On 11/28/2013 04:53 PM, Xiao Guangrong wrote:
+>>> On 11/27/2013 03:31 AM, Marcelo Tosatti wrote:
+>>>> On Tue, Nov 26, 2013 at 11:21:37AM +0800, Xiao Guangrong wrote:
+>>>>> On 11/26/2013 02:12 AM, Marcelo Tosatti wrote:
+>>>>>> On Mon, Nov 25, 2013 at 02:29:03PM +0800, Xiao Guangrong wrote:
+>>>>>>>>> Also, there is no guarantee of termination (as long as sptes are
+>>>>>>>>> deleted with the correct timing). BTW, can't see any guarantee of
+>>>>>>>>> termination for rculist nulls either (a writer can race with a lockless
+>>>>>>>>> reader indefinately, restarting the lockless walk every time).
+>>>>>>>> 
+>>>>>>>> Hmm, that can be avoided by checking dirty-bitmap before rewalk,
+>>>>>>>> that means, if the dirty-bitmap has been set during lockless write-protection,
+>>>>>>>> it�s unnecessary to write-protect its sptes. Your idea?
+>>>>>>> This idea is based on the fact that the number of rmap is limited by
+>>>>>>> RMAP_RECYCLE_THRESHOLD. So, in the case of adding new spte into rmap,
+>>>>>>> we can break the rewalk at once, in the case of deleting, we can only
+>>>>>>> rewalk RMAP_RECYCLE_THRESHOLD times.
+>>>>>> 
+>>>>>> Please explain in more detail.
+>>>>> 
+>>>>> Okay.
+>>>>> 
+>>>>> My proposal is like this:
+>>>>> 
+>>>>> pte_list_walk_lockless()
+>>>>> {
+>>>>> restart:
+>>>>> 
+>>>>> +	if (__test_bit(slot->arch.dirty_bitmap, gfn-index))
+>>>>> +		return;
+>>>>> 
+>>>>> 	code-doing-lockless-walking;
+>>>>> 	......
+>>>>> }
+>>>>> 
+>>>>> Before do lockless-walking, we check the dirty-bitmap first, if
+>>>>> it is set we can simply skip write-protection for the gfn, that
+>>>>> is the case that new spte is being added into rmap when we lockless
+>>>>> access the rmap.
+>>>> 
+>>>> The dirty bit could be set after the check.
+>>>> 
+>>>>> For the case of deleting spte from rmap, the number of entry is limited
+>>>>> by RMAP_RECYCLE_THRESHOLD, that is not endlessly.
+>>>> 
+>>>> It can shrink and grow while lockless walk is performed.
+>>> 
+>>> Yes, indeed.
+>>> 
+>>> Hmmm, another idea in my mind to fix this is encoding the position into
+>>> the reserved bits of desc->more pointer, for example:
+>>> 
+>>>         +------+    +------+    +------+
+>>> rmapp ->  |Desc 0| -> |Desc 1| -> |Desc 2|
+>>>         +------+    +------+    +------+
+>>> 
+>>> There are 3 descs on the rmap, and:
+>>> rmapp = &desc0 | 1UL | 3UL << 50;
+>>> desc0->more = desc1 | 2UL << 50;
+>>> desc1->more = desc0 | 1UL << 50
+>>> desc2->more = &rmapp | 1UL; (The nulls pointer)
+>>> 
+>>> We will walk to the next desc only if the "position" of current desc
+>>> is >= the position of next desc. That can make sure we can reach the
+>>> last desc anyway.
+>>> 
+>>> And in order to avoiding doing too many "rewalk", we will goto the
+>>> slow path (do walk with holding the lock) instead when retry the walk
+>>> more that N times.
+>> 
+>> How about this idea? Or you guys still prefer to the idea of lockless on
+>> first-level?
+> 
+> Xiao,
+> 
+> Is it not the case that simply moving to the slow path once a maximum of
+> rewalks has been reached enough? (looks a like a good solution).
 
-greg k-h
+In some cases, the lockless walker will do endless-walking on desc and
+without rewalk, consider this case:
+
+there are two descs: desc1 and desc2 who is pointed by desc1->next：
+desc1->next = desc2.
+
+CPU 0                                                                            CPU 1
+
+lockless walk on desc1
+                                                                 deleting desc1 from the rmap
+lockless walk on desc2 (desc1->next)
+                                                                delete desc2 from the rmap
+                                                                add desc1
+                                                                add desc2, then desc2->next = desc1
+
+lockless walk on desc1
+                                                               delete desc2
+                                                               delete desc1
+                                                               add desc2
+                                                               add desc1; the desc1->next = desc2
+lockless walk on desc2
+
+……
+
+Then, the walker is endlessly walking on desc1 and desc2 without any rewalk.
+
+
+> 
+> Please move lockless rcu walking code to generic code where it belongs.
+
+Okay.
+
+
+
