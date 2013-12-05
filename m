@@ -1,95 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595Ab3LEIMT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 03:12:19 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40940 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737Ab3LEIMS (ORCPT
+	id S1753455Ab3LEIOm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 03:14:42 -0500
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:58703 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751791Ab3LEIOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 03:12:18 -0500
-Date: Thu, 5 Dec 2013 08:12:01 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Simon Kirby <sim@hostway.ca>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Waiman Long <Waiman.Long@hp.com>, Ian Applegate <ia@cloudflare.com>,
-        Christoph Lameter <cl@gentwo.org>, Pekka Enberg <penberg@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: gfs2 deadlock (was Re: Found it)
-Message-ID: <20131205081201.GA17203@ZenIV.linux.org.uk>
-References: <CA+55aFyez7uZ6LeXrBRCqJzgJ=w4Xv+CV6QSYp5NkOJ2R9Xang@mail.gmail.com>
- <CA+55aFyhzvJrCiJOqUgL-98=MVutWePToQXaVfS2j6e5eetJSw@mail.gmail.com>
- <20131203042830.GI10323@ZenIV.linux.org.uk>
+	Thu, 5 Dec 2013 03:14:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131203042830.GI10323@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <529F3C1C.2050509@ti.com>
+References: <1383205544-32244-1-git-send-email-gautam.vivek@samsung.com>
+	<1383205544-32244-2-git-send-email-gautam.vivek@samsung.com>
+	<527744B2.4090303@ti.com>
+	<030d01ced946$d6e23490$84a69db0$%debski@samsung.com>
+	<52779D28.9000905@ti.com>
+	<CAFp+6iH7vQ-OtMFL4pyr4tFDRchH4oh1Z0753WNgrHiUzj+kzw@mail.gmail.com>
+	<00fe01ceda0a$941957a0$bc4c06e0$%debski@samsung.com>
+	<000001ceda17$f41c2030$dc546090$%han@samsung.com>
+	<000101ceda1f$04ca6f20$0e5f4d60$%han@samsung.com>
+	<CAFp+6iFAZab35F-MOOZHcHpzSEOL=51gWBK2KZbOJS+0731GJQ@mail.gmail.com>
+	<000301ceda84$1d648bf0$582da3d0$%han@samsung.com>
+	<5280BB65.5040305@ti.com>
+	<CAFp+6iGKpzOHjwnSMvSgTehzPLQMB8madoYqMk5JPSAZfSGSTg@mail.gmail.com>
+	<528C7B0E.3080401@ti.com>
+	<CAFp+6iF3UnV-w2pYQE2THQZBGma8xpp6pqSuwXzjUN3emJnftQ@mail.gmail.com>
+	<528CD8EC.9050403@ti.com>
+	<529F3C1C.2050509@ti.com>
+Date: Thu, 5 Dec 2013 13:44:36 +0530
+Message-ID: <CAFp+6iF+N+eMOd=B-J3oS_u0TEse+5V2gHkcNxN0OS+YbV_Y9g@mail.gmail.com>
+Subject: Re: [PATCH RFC 1/4] phy: Add new Exynos5 USB 3.0 PHY driver
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Jingoo Han <jg1.han@samsung.com>, Kamil Debski <k.debski@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-doc@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Julius Werner <jwerner@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 04:28:30AM +0000, Al Viro wrote:
+Hi Kishon,
 
-> These should be safe, but damnit, we really need the lifecycle documented for
-> all objects - the above is only a part of it (note that for e.g. superblocks
-> we have additional rules re "->s_active can't be incremented for any reason
-> once it drops to zero, it can't be incremented until superblock had been
-> marked 'born' and it crosses over to zero only with ->s_umount held"; there's
-> 6 stages in life cycle of struct super_block and we had interesting bugs due
-> to messing the transitions up).  The trouble is, attempt to write those down
-> tends to stray into massive grep session, with usual results - some other
-> crap gets found (e.g. in some odd driver) and needs to be dealt with ;-/
-> Sigh...
 
-... and sure enough, this time is no different - gfs2 sysfs-related code
-cheerfully violates lifetime rules for superblocks, which would've
-caused a major mess later, if it had not immediately caused a deadlock
-on the same superblock ;-/
+On Wed, Dec 4, 2013 at 7:58 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> Hi Vivek,
+>
+> On Wednesday 20 November 2013 09:14 PM, Kishon Vijay Abraham I wrote:
+>> Hi,
+>>
+>> On Wednesday 20 November 2013 03:02 PM, Vivek Gautam wrote:
+>>> On Wed, Nov 20, 2013 at 2:34 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>>> On Wednesday 20 November 2013 02:27 PM, Vivek Gautam wrote:
+>>>>> Hi Kishon,
+>>>>>
+>>>>>
+>>>>> On Mon, Nov 11, 2013 at 4:41 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>>>>> Hi,
+>>>>> sorry for the delayed response.
+>>>>>
+>>>>>>
+>>>>>> On Wednesday 06 November 2013 05:37 AM, Jingoo Han wrote:
+>>>>>>> On Wednesday, November 06, 2013 2:58 AM, Vivek Gautam wrote:
+>>>>>>>> On Tue, Nov 5, 2013 at 5:33 PM, Jingoo Han <jg1.han@samsung.com> wrote:
+>>>>>>>
+>>>>>>> [.....]
+>>>>>>>
+>>>>>>>>> USB3.0 PHY consists of two blocks such as 3.0 block and 2.0 block.
+>>>>>>>>> This USB3.0 PHY can support UTMI+ and PIPE3 interface for 3.0 block
+>>>>>>>>> and 2.0 block, respectively.
+>>>>>>>>>
+>>>>>>>>> Conclusion:
+>>>>>>>>>
+>>>>>>>>>    1) USB2.0 PHY: USB2.0 HOST, USB2.0 Device
+>>>>>>>>>                        Base address: 0x1213 0000
+>>>>>>>>>
+>>>>>>>>>    2) USB3.0 PHY: USB3.0 DRD (3.0 HOST & 3.0 Device)
+>>>>>>>>>                        Base address: 0x1210 0000
+>>>>>>>>>                        2.0 block(UTMI+) & 3.0 block(PIPE3)
+>>>>>>>>
+>>>>>>>> And this is of course the PHY used by DWC3 controller, which works at
+>>>>>>>> both High speed as well as Super Speed.
+>>>>>>>> Right ?
+>>>>>>>
+>>>>>>> Right.
+>>>>>>>
+>>>>>>> While 3.0 block(PIPE3) can be used for Super Speed, 2.0 block(UTMI+)
+>>>>>>> can be used for High speed.
+>>>>>>
+>>>>>> It should then come under *single IP muliple PHY* category similar to what
+>>>>>> Sylwester has done.
+>>>>>
+>>>>> Do you mean that i should be including PHY IDs for UTMI+ phy and PIPE3
+>>>>> phy present in this PHY block ?
+>>>>> AFAICS the two phys (UTMI+ and PIPE3) do not really have separate
+>>>>> registers to program, and that's the reason
+>>>>> we program the entire PHY in a shot.
+>>>>
+>>>> you mean you program the same set of bits for UTMI+ and PIPE3?
+>>>
+>>> No, looking closely into PHY datasheet as well as Exynos5250 manual, i
+>>> can see that UTMI+ and PIPE3
+>>> phys have separate bit settings. So i think we should be able to
+>>> segregate the two PHYs (UTMI+ and PIPE3).
+>>> Pardon me for my earlier observations.
+>>
+>> no problem..
+>>> Let me clarify more with our h/w team also on this and then i will
+>>> confirm with this.
+>
+> Did you get more information on this?
 
-Watch: gfs2 creates a bunch of files in sysfs (/sys/fs/gfs2/<devname>/*).
-Said bunch gets removed from ->put_super().  Which is called under
-->s_umount.  Guess what happens if somebody tries to write "1" to
-/sys/fs/gfs2/.../freeze just as we enter that ->put_super() (or at any
-point starting from the moment when deactivate_locked_super() has dropped
-the last active reference)?  This:
-static ssize_t freeze_store(struct gfs2_sbd *sdp, const char *buf, size_t len)
-{
-        int error;
-        int n = simple_strtol(buf, NULL, 0);
+Yes, i have been in contact with our hardware team.
+The functionality of setting up UTMI+ and PIPE3 phys separately, and
+thereby using only one functionality of the two
+at some point of time (either high speed or super speed) hasn't been
+tested so far.
+So i will be looking into this and try to find out proper init
+sequences for the two available PHYs
+separately and as soon as i get a working solution for this, i will update.
 
-        if (!capable(CAP_SYS_ADMIN))
-                return -EPERM;
+>
+> Thanks
+> Kishon
 
-        switch (n) {
-[snip]
-        case 1:
-                error = freeze_super(sdp->sd_vfs);
 
-And freeze_super(sb) assumes that caller has an active reference to
-sb:
-int freeze_super(struct super_block *sb)
-{
-        int ret;
 
-        atomic_inc(&sb->s_active);
-
-... which is not legitimate when ->s_active has already reached zero.
-And right after that we hit this:
-        down_write(&sb->s_umount);
-
-Voila - write(2) is waiting for ->s_umount, while umount(2) is holding
-->s_umount and waits for write(2) to get past freeze_store().
-
-Hell knows what to do here - atomic_inc_not_zero() in freeze_super()
-(and failing if it fails) would've worked, but it doesn't help with
-the deadlock - just write "0" instead and we hit thaw_super(), which
-starts with grabbing ->s_umount.  atomic_inc_not_zero()/deactivate_super()
-around that call of thaw_super() would probably work, but I'll need to
-look at that after I get some sleep...
-
-Why bother with sysfs, anyway?  What's wrong with putting those same files
-on gfs2meta, seeing that _this_ would have no problems with object lifetimes?
-Too late by now, of course, but...
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
