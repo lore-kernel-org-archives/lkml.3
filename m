@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756975Ab3LERhd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:37:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38266 "EHLO
+	id S1757391Ab3LERhw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:37:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38319 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932997Ab3LERh1 (ORCPT
+	with ESMTP id S1756956Ab3LERhk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:37:27 -0500
+	Thu, 5 Dec 2013 12:37:40 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 47/90] mwifiex: correct packet length for packets from SDIO interface
-Date: Thu,  5 Dec 2013 17:35:29 +0000
-Message-Id: <1386264972-5399-48-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 57/90] rtlwifi: rtl8192cu: Fix more pointer arithmetic errors
+Date: Thu,  5 Dec 2013 17:35:39 +0000
+Message-Id: <1386264972-5399-58-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -28,37 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avinash Patil <patila@marvell.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit d03b4aa77e1187b77dfe37d14a923547f00baa66 upstream.
+commit eafbdde9c5629bea58df07275c5917eb42afbbe7 upstream.
 
-While receiving a packet on SDIO interface, we allocate skb with
-size multiple of SDIO block size. We need to resize this skb
-after RX using packet length from RX header.
+This driver uses a number of macros to get and set various fields in the
+RX and TX descriptors. To work correctly, a u8 pointer to the descriptor
+must be used; however, in some cases a descriptor structure pointer is used
+instead. In addition, a duplicated statement is removed.
 
-Signed-off-by: Avinash Patil <patila@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/mwifiex/sdio.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/wireless/rtlwifi/rtl8192cu/mac.c | 6 +++---
+ drivers/net/wireless/rtlwifi/rtl8192cu/trx.c | 6 +++---
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/wireless/mwifiex/sdio.c b/drivers/net/wireless/mwifiex/sdio.c
-index 821d9d2..44677fd 100644
---- a/drivers/net/wireless/mwifiex/sdio.c
-+++ b/drivers/net/wireless/mwifiex/sdio.c
-@@ -944,7 +944,10 @@ static int mwifiex_decode_rx_packet(struct mwifiex_adapter *adapter,
- 				    struct sk_buff *skb, u32 upld_typ)
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c b/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
+index 7e91c76..ce0f14a 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
+@@ -762,7 +762,7 @@ static long _rtl92c_signal_scale_mapping(struct ieee80211_hw *hw,
+ 
+ static void _rtl92c_query_rxphystatus(struct ieee80211_hw *hw,
+ 				      struct rtl_stats *pstats,
+-				      struct rx_desc_92c *pdesc,
++				      struct rx_desc_92c *p_desc,
+ 				      struct rx_fwinfo_92c *p_drvinfo,
+ 				      bool packet_match_bssid,
+ 				      bool packet_toself,
+@@ -777,11 +777,11 @@ static void _rtl92c_query_rxphystatus(struct ieee80211_hw *hw,
+ 	u32 rssi, total_rssi = 0;
+ 	bool in_powersavemode = false;
+ 	bool is_cck_rate;
++	u8 *pdesc = (u8 *)p_desc;
+ 
+-	is_cck_rate = RX_HAL_IS_CCK_RATE(pdesc);
++	is_cck_rate = RX_HAL_IS_CCK_RATE(p_desc);
+ 	pstats->packet_matchbssid = packet_match_bssid;
+ 	pstats->packet_toself = packet_toself;
+-	pstats->is_cck = is_cck_rate;
+ 	pstats->packet_beacon = packet_beacon;
+ 	pstats->is_cck = is_cck_rate;
+ 	pstats->RX_SIGQ[0] = -1;
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
+index 047e3bc..5654b0a 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
+@@ -303,10 +303,10 @@ out:
+ bool rtl92cu_rx_query_desc(struct ieee80211_hw *hw,
+ 			   struct rtl_stats *stats,
+ 			   struct ieee80211_rx_status *rx_status,
+-			   u8 *p_desc, struct sk_buff *skb)
++			   u8 *pdesc, struct sk_buff *skb)
  {
- 	u8 *cmd_buf;
-+	__le16 *curr_ptr = (__le16 *)skb->data;
-+	u16 pkt_len = le16_to_cpu(*curr_ptr);
+ 	struct rx_fwinfo_92c *p_drvinfo;
+-	struct rx_desc_92c *pdesc = (struct rx_desc_92c *)p_desc;
++	struct rx_desc_92c *p_desc = (struct rx_desc_92c *)pdesc;
+ 	u32 phystatus = GET_RX_DESC_PHY_STATUS(pdesc);
  
-+	skb_trim(skb, pkt_len);
- 	skb_pull(skb, INTF_HEADER_LEN);
- 
- 	switch (upld_typ) {
+ 	stats->length = (u16) GET_RX_DESC_PKT_LEN(pdesc);
+@@ -345,7 +345,7 @@ bool rtl92cu_rx_query_desc(struct ieee80211_hw *hw,
+ 	if (phystatus) {
+ 		p_drvinfo = (struct rx_fwinfo_92c *)(skb->data +
+ 						     stats->rx_bufshift);
+-		rtl92c_translate_rx_signal_stuff(hw, skb, stats, pdesc,
++		rtl92c_translate_rx_signal_stuff(hw, skb, stats, p_desc,
+ 						 p_drvinfo);
+ 	}
+ 	/*rx_status->qual = stats->signal; */
 -- 
 1.8.3.2
 
