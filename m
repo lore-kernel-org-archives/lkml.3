@@ -1,70 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932358Ab3LENOr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 08:14:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34764 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932327Ab3LENOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 08:14:45 -0500
-Date: Thu, 5 Dec 2013 14:14:44 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] mm: memcg: do not allow task about to OOM kill to
- bypass the limit
-Message-ID: <20131205131444.GC16711@dhcp22.suse.cz>
-References: <1386197114-5317-1-git-send-email-hannes@cmpxchg.org>
- <1386197114-5317-3-git-send-email-hannes@cmpxchg.org>
+	id S1756648Ab3LENVE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 08:21:04 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:35736 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362Ab3LENVB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 08:21:01 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Subject: Re: [PATCH] media: Add BCM2048 radio driver
+Date: Thu, 5 Dec 2013 14:20:56 +0100
+User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.3; x86_64; ; )
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org,
+        Eero Nurkkala <ext-eero.nurkkala@nokia.com>,
+        Nils Faerber <nils.faerber@kernelconcepts.de>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        =?utf-8?q?=D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE?=
+	 =?utf-8?q?_=D0=94=D0=B8=D0=BC=D0=B8=D1=82=D1=80=D0=BE=D0=B2?= 
+	<freemangordon@abv.bg>,
+        Pavel Machek <pavel@ucw.cz>, sre@ring0.de, aaro.koskinen@iki.fi
+References: <1381847218-8408-1-git-send-email-pali.rohar@gmail.com> <201312022151.07599@pali> <52A030BE.7040709@xs4all.nl>
+In-Reply-To: <52A030BE.7040709@xs4all.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386197114-5317-3-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart4391473.OPzRdpZXxa";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312051420.56852@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 04-12-13 17:45:14, Johannes Weiner wrote:
-> 4942642080ea ("mm: memcg: handle non-error OOM situations more
-> gracefully") allowed tasks that already entered a memcg OOM condition
-> to bypass the memcg limit on subsequent allocation attempts hoping
-> this would expedite finishing the page fault and executing the kill.
-> 
-> David Rientjes is worried that this breaks memcg isolation guarantees
-> and since there is no evidence that the bypass actually speeds up
-> fault processing just change it so that these subsequent charge
-> attempts fail outright.  The notable exception being __GFP_NOFAIL
-> charges which are required to bypass the limit regardless.
-> 
-> Reported-by: David Rientjes <rientjes@google.com>
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+--nextPart4391473.OPzRdpZXxa
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-We want this in stable as well IMHO.
-Acked-by: Michal Hocko <mhocko@suse.cz>
+On Thursday 05 December 2013 08:52:30 Hans Verkuil wrote:
+> On 12/02/2013 09:51 PM, Pali Roh=C3=A1r wrote:
+> > On Monday 04 November 2013 12:39:44 Hans Verkuil wrote:
+> >> Hi Pali,
+> >>=20
+> >> On 10/26/2013 10:45 PM, Pali Roh=C3=A1r wrote:
+> >>> On Saturday 26 October 2013 22:22:09 Hans Verkuil wrote:
+> >>>>> Hans, so can it be added to drivers/staging/media tree?
+> >>>>=20
+> >>>> Yes, that is an option. It's up to you to decide what you
+> >>>> want. Note that if no cleanup work is done on the staging
+> >>>> driver for a long time, then it can be removed again.
+> >>>>=20
+> >>>> Regards,
+> >>>>=20
+> >>>>     Hans
+> >>>=20
+> >>> Ok, so if you can add it to staging tree. When driver will
+> >>> be in mainline other developers can look at it too. Now
+> >>> when driver is hidden, nobody know where to find it... You
+> >>> can see how upstream development for Nokia N900 HW going
+> >>> on: http://elinux.org/N900
+> >>=20
+> >> Please check my tree:
+> >>=20
+> >> http://git.linuxtv.org/hverkuil/media_tree.git/shortlog/ref
+> >> s/h eads/bcm
+> >>=20
+> >> If you're OK, then I'll queue it for 3.14 (it's too late
+> >> for 3.13).
+> >>=20
+> >> Regards,
+> >>=20
+> >> 	Hans
+> >=20
+> > Hi, sorry for late reply. I looked into your tree and
+> > difference is that you only removed "linux/slab.h" include.
+> > So it it is not needed, then it is OK.
+>=20
+> I *added* slab.h :-)
+>=20
 
-> ---
->  mm/memcontrol.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index f6a63f5b3827..bf5e89457149 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2694,7 +2694,7 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
->  		goto bypass;
->  
->  	if (unlikely(task_in_memcg_oom(current)))
-> -		goto bypass;
-> +		goto nomem;
->  
->  	if (gfp_mask & __GFP_NOFAIL)
->  		oom = false;
-> -- 
-> 1.8.4.2
-> 
+Right, I looked at reverse diff :-)
 
--- 
-Michal Hocko
-SUSE Labs
+> Anyway, I've posted the pull request. Please note, if you want
+> to avoid having this driver be removed again in the future,
+> then you (or someone else) should work on addressing the
+> issues in the TODO file I added.
+>=20
+> Regards,
+>=20
+> 	Hans
+
+Ok. CCing other people who works with n900 kernel.
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart4391473.OPzRdpZXxa
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlKgfbgACgkQi/DJPQPkQ1KFcgCcDfRd1qPjKNFaQbLQnsFYHayu
+gpkAnRvMP6Kon53xxaYo547H79UX4Lih
+=jk1Z
+-----END PGP SIGNATURE-----
+
+--nextPart4391473.OPzRdpZXxa--
