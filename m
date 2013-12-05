@@ -1,109 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756307Ab3LEMbj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 07:31:39 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:65450 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756647Ab3LEMaI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 07:30:08 -0500
-X-AuditID: cbfee61b-b7f006d000003e1f-2b-52a071cfda7e
-From: Kamil Debski <k.debski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org
-Cc: kyungmin.park@samsung.com, kishon@ti.com, t.figa@samsung.com,
-        s.nawrocki@samsung.com, m.szyprowski@samsung.com,
-        gautam.vivek@samsung.com, mat.krawczuk@gmail.com,
-        yulgon.kim@samsung.com, p.paneri@samsung.com,
-        av.tikhomirov@samsung.com, jg1.han@samsung.com, galak@codeaurora.org,
-        matt.porter@linaro.org, Kamil Debski <k.debski@samsung.com>
-Subject: [PATCH 2/9] phy: core: Add devm_of_phy_get to phy-core
-Date: Thu, 05 Dec 2013 13:29:32 +0100
-Message-id: <1386246579-25141-3-git-send-email-k.debski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1386246579-25141-1-git-send-email-k.debski@samsung.com>
-References: <1386246579-25141-1-git-send-email-k.debski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jQd3zhQuCDBYsVbZYsvsGq8X8I+dY
-	LfrfLGS1aLtykN3i8sJLrBY/Xl9gs7jwtIfN4mzTG6DYrjlsFjPO72OyWLSsldli7ZG77BZn
-	+2+zWUxsmsZucX5LJ5PF4TftrBbrZ7xmseg4e5DdQcjjcl8vk8fOWXfZPe5c28Pm0bdlFaPH
-	8RvbmTw+b5ILYIvisklJzcksSy3St0vgypg+7TRrwRHBiv2HTzI2MK7i62Lk5JAQMJHY+/sb
-	M4QtJnHh3nq2LkYuDiGB6YwSR28tYYFwOpgkPh79xd7FyMHBJqApseqeB0iDiECNxJRbV9hB
-	bGaBu0wSqzdqgdjCAvYSq9ZdBRvKIqAq8WHlSyYQm1fAReLv3stsIGMkBBQk5kyyAQlzCrhK
-	rJx4GCwsBFSy5ormBEbeBYwMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCA/mZ9A7GVQ0W
-	hxgFOBiVeHhfJM4PEmJNLCuuzD3EKMHBrCTCK5yzIEiINyWxsiq1KD++qDQntfgQozQHi5I4
-	78FW60AhgfTEktTs1NSC1CKYLBMHp1QDY8N7n5cpphMe5e68oJM3XfBo+dWFH94cjnUtY3h1
-	PvL/2YdvTm9oas1tWB36i/VscOjPH94f7j9atGAq2/mO59sn8estvelg6Lpw651jcm9YLs9d
-	7HIk73ucxdTQt3MUd/9tjZL4+0bMchvTx5urPDvkdfqrL+a61d/jv/nm/E+PTVl8PN/u1goq
-	sRRnJBpqMRcVJwIAVutu12ACAAA=
+	id S1756668Ab3LEMgr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 07:36:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14120 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754949Ab3LEMgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 07:36:46 -0500
+Date: Thu, 5 Dec 2013 13:35:47 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/38] perf/core improvements and fixes
+Message-ID: <20131205123547.GG21600@krava.brq.redhat.com>
+References: <1386187622-2928-1-git-send-email-acme@infradead.org>
+ <20131205100429.GC16749@gmail.com>
+ <20131205103707.GC21600@krava.brq.redhat.com>
+ <20131205105344.GD20283@gmail.com>
+ <20131205105914.GA20558@gmail.com>
+ <20131205111354.GE21600@krava.brq.redhat.com>
+ <20131205122751.GA20562@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131205122751.GA20562@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding devm_of_phy_get will allow to get phys by supplying the
-device_node instead of by name.
+On Thu, Dec 05, 2013 at 01:27:51PM +0100, Ingo Molnar wrote:
+> 
+> * Jiri Olsa <jolsa@redhat.com> wrote:
+> 
+> > On Thu, Dec 05, 2013 at 11:59:14AM +0100, Ingo Molnar wrote:
+> > > 
+> > > * Ingo Molnar <mingo@kernel.org> wrote:
+> > > 
+> > > > > never saw that one.. starting your test on 24 CPUs server now
+> > > > 
+> > > > I saw it again on a system by running two parallel build jobs:
+> > > > 
+> > > >   D=/tmp/perf-1; mkdir -p $D; while make O=$D install; do make O=$D clean; done
+> > > >   D=/tmp/perf-2; mkdir -p $D; while make O=$D install; do make O=$D clean; done
+> > > 
+> > > I'm running it now with the previous perf/core - no failures so far, 
+> > > after dozens of build passes.
+> > > 
+> > 
+> > could you please try attached change? working for me so far..
+> > 
+> > thanks,
+> > jirka
+> > 
+> > 
+> > ---
+> > diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+> > index ca3b87d..9a8cf37 100644
+> > --- a/tools/perf/Makefile.perf
+> > +++ b/tools/perf/Makefile.perf
+> > @@ -722,7 +722,7 @@ $(LIBTRACEEVENT)-clean:
+> >  	$(call QUIET_CLEAN, libtraceevent)
+> >  	@$(MAKE) -C $(TRACE_EVENT_DIR) O=$(OUTPUT) clean >/dev/null
+> >  
+> > -install-traceevent-plugins:
+> > +install-traceevent-plugins: $(LIBTRACEEVENT)
+> >  	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) install_plugins
+> >  
+> >  LIBLK_SOURCES = $(wildcard $(LK_PATH)*.[ch])
+> 
+> It's looking good so far.
+> 
+> I've made a commit out of it and added your SOB, is that fine with 
+> you?
 
-Signed-off-by: Kamil Debski <k.debski@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/phy/phy-core.c  |   31 +++++++++++++++++++++++++++++++
- include/linux/phy/phy.h |    2 ++
- 2 files changed, 33 insertions(+)
+definitely, my test is still running ok as well
 
-diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index 7fb3474..b39b48c 100644
---- a/drivers/phy/phy-core.c
-+++ b/drivers/phy/phy-core.c
-@@ -421,6 +421,37 @@ struct phy *devm_phy_get(struct device *dev, const char *string)
- EXPORT_SYMBOL_GPL(devm_phy_get);
- 
- /**
-+ * devm_of_phy_get() - lookup and obtain a reference to a phy.
-+ * @dev: device that requests this phy
-+ * @np: node containing the phy
-+ * @index: the index of the phy
-+ *
-+ * Gets the phy using phy_get(), and associates a device with it using
-+ * devres. On driver detach, release function is invoked on the devres data,
-+ * then, devres data is freed.
-+ */
-+struct phy *devm_of_phy_get(struct device *dev, struct device_node *np, int
-+									index)
-+{
-+	struct phy **ptr, *phy;
-+
-+	ptr = devres_alloc(devm_phy_release, sizeof(*ptr), GFP_KERNEL);
-+	if (!ptr)
-+		return ERR_PTR(-ENOMEM);
-+
-+	phy = of_phy_get(np, index);
-+	if (!IS_ERR(phy)) {
-+		*ptr = phy;
-+		devres_add(dev, ptr);
-+	} else {
-+		devres_free(ptr);
-+	}
-+
-+	return phy;
-+}
-+EXPORT_SYMBOL_GPL(devm_of_phy_get);
-+
-+/**
-  * phy_create() - create a new phy
-  * @dev: device that is creating the new phy
-  * @ops: function pointers for performing phy operations
-diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-index 169f572..f143ee8 100644
---- a/include/linux/phy/phy.h
-+++ b/include/linux/phy/phy.h
-@@ -129,6 +129,8 @@ int phy_power_on(struct phy *phy);
- int phy_power_off(struct phy *phy);
- struct phy *phy_get(struct device *dev, const char *string);
- struct phy *devm_phy_get(struct device *dev, const char *string);
-+struct phy *devm_of_phy_get(struct device *dev, struct device_node *np, int
-+									index);
- void phy_put(struct phy *phy);
- void devm_phy_put(struct device *dev, struct phy *phy);
- struct phy *of_phy_get(struct device_node *np, int index);
--- 
-1.7.9.5
-
+thanks a lot,
+jirka
