@@ -1,286 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538Ab3LEUBF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 15:01:05 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:37354 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab3LEUBB (ORCPT
+	id S1753068Ab3LEUDw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 15:03:52 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:54881 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884Ab3LEUDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 15:01:01 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH V5 4/6] Add EFI stub for ARM
-To: Roy Franz <roy.franz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        matt.fleming@intel.com, linux@arm.linux.org.uk
-Cc: leif.lindholm@linaro.org, dave.martin@arm.com, msalter@redhat.com,
-        patches@linaro.org, Roy Franz <roy.franz@linaro.org>
-In-Reply-To: <1385595115-21488-5-git-send-email-roy.franz@linaro.org>
-References: <1385595115-21488-1-git-send-email-roy.franz@linaro.org> < 1385595115-21488-5-git-send-email-roy.franz@linaro.org>
-Date: Thu, 05 Dec 2013 20:00:54 +0000
-Message-Id: <20131205200054.ED87FC40785@trevor.secretlab.ca>
+	Thu, 5 Dec 2013 15:03:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAD6G_RQzT1AB1LdYptm5RghLKVg_OC4fOP3-J=kXSiA7CV30Ug@mail.gmail.com>
+References: <CAD6G_RT0S43BrOeXxJ6d3p1ALbXkGumZCSPBaK1Bz=2pX3hHYQ@mail.gmail.com>
+ <CAErSpo4DNqUpA6Cb_tanW3uRJ3J-4utCQwtRz3eYZETCMtniUQ@mail.gmail.com>
+ <CAD6G_RR=toq_6tCav6Y9=EprK9LC3YfGO=scvWpcGfDpWwJbRA@mail.gmail.com>
+ <CAErSpo57gPPY73nCHbfGVynZRde0jj9_kjpR=FKwY-uTXzY2cw@mail.gmail.com>
+ <CAD6G_RTHNGg7XSnDMQ-H+hUzmh1RPn9gYUDf7vRdeETmTmTdzw@mail.gmail.com>
+ <CAErSpo5jLsvMwjuWMctwgvjUrP-RyzxykXG5AbAvTp8K0PezNg@mail.gmail.com>
+ <CAD6G_RSvrHGa=OEBgoD_iM68eOzb_2Dq9FneuNjSX_+iTj0_zA@mail.gmail.com>
+ <CAErSpo41ATgzfdew=2=X4ULkoENPRaW_PikDLcjWJqeCf5sPMA@mail.gmail.com> <CAD6G_RQzT1AB1LdYptm5RghLKVg_OC4fOP3-J=kXSiA7CV30Ug@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 5 Dec 2013 13:03:29 -0700
+Message-ID: <CAErSpo41xkDhDRpNmYf9QsAUaBa62C+X+PDqsX2yqFFEeUcNyw@mail.gmail.com>
+Subject: Re: Need help on Linux PCIe
+To: Jagan Teki <jagannadh.teki@gmail.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Nov 2013 15:31:53 -0800, Roy Franz <roy.franz@linaro.org> wrote:
-> This patch adds EFI stub support for the ARM Linux kernel.  The EFI stub
-> operates similarly to the x86 stub: it is a shim between the EFI firmware
-> and the normal zImage entry point, and sets up the environment that the
-> zImage is expecting.  This includes loading the initrd (optionaly) and
-> device tree from the system partition based on the kernel command line.
-> The stub updates the device tree as necessary, adding entries for EFI
-> runtime services. The PE/COFF "MZ" header at offset 0 results in the
-> first instruction being an add that corrupts r5, which is not used by
-> the zImage interface.
-> 
-> Signed-off-by: Roy Franz <roy.franz@linaro.org>
+On Thu, Dec 5, 2013 at 11:36 AM, Jagan Teki <jagannadh.teki@gmail.com> wrote:
+> On Thu, Dec 5, 2013 at 11:45 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Wed, Dec 4, 2013 at 11:30 PM, Jagan Teki <jagannadh.teki@gmail.com> wrote:
+>>> On Wed, Dec 4, 2013 at 11:35 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>>> On Wed, Dec 4, 2013 at 10:00 AM, Jagan Teki <jagannadh.teki@gmail.com> wrote:
+>>>>> On Wed, Dec 4, 2013 at 8:41 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>>>>> On Tue, Dec 3, 2013 at 11:20 PM, Jagan Teki <jagannadh.teki@gmail.com> wrote:
+>>>>>>> Thanks for your quick response.
+>>>>>>> Please find my comments below.
+>>>>>>>
+>>>>>>> On Tue, Dec 3, 2013 at 11:09 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>>>>>>> On Tue, Dec 3, 2013 at 4:24 AM, Jagan Teki <jagannadh.teki@gmail.com> wrote:
+>>>>>>>>> Hi,
+>>>>>>>>>
+>>>>>>>>> I have few question on Linux PCIe subsystem, I am trying to understand
+>>>>>>>>> the PCIe on ARM platform.
+>>>>>>>>> 1. Compared to PCI, PCIe have an extra port functionalists/services
+>>>>>>>>> which is implemented drivers/pci/pcie/* is it true?
+>>>>>>>>
+>>>>>>>> Yes.
+>>>>>>>>
+>>>>>>>>> 2. PCIe root complex is same as Host controller drivers in linux drivers/host/*
+>>>>>>>>
+>>>>>>>> Yes.
+>>>>>>>>
+>>>>>>>>> 3. As individual endpoint drivers are registered to pci_core as
+>>>>>>>>> pci_driver_register, then what is the common call for registering
+>>>>>>>>> individual HC driver to pci-core?
+>>>>>>>>
+>>>>>>>> The host controller-PCI core interface is not as mature as the
+>>>>>>>> pci_register_driver() interface.  The basic interface is
+>>>>>>>> pci_scan_root_bus().  If you skim through the drivers in
+>>>>>>>> drivers/pci/host/* and drivers/acpi/pci_root.c, the interface to the
+>>>>>>>> PCI core will be fairly obvious.  And you'll learn what the existing
+>>>>>>>> practices are in case you need to add or modify something.
+>>>>>>>
+>>>>>>> OK.
+>>>>>>>
+>>>>>>> I understand the flow as below - please correct if am wrong.
+>>>>>>>
+>>>>>>> From low level (hw) - HC driver has a platform registration using
+>>>>>>> platform_driver_register() to lower layer
+>>>>>>> and then pci_scan_root_bus() --> pci_common_init_dev() registration to
+>>>>>>> upper layer as PCI - BIOS and then ends.
+>>>>>>
+>>>>>> Yes.  Sometime HC drivers use platform_driver_register(); other use
+>>>>>> something else depending on how the HC device is enumerated.  For
+>>>>>> example, drivers/acpi/pci_root.c uses something else to deal with host
+>>>>>> bridges in the ACPI namespace.
+>>>>>>
+>>>>>>> From upper level (app) - each endpoint driver has
+>>>>>>> pci_driver_register() call to PCI Core for lower level
+>>>>>>
+>>>>>> Yes.
+>>>>>>
+>>>>>>> and then the upper level registration is based on endpoint().
+>>>>>>
+>>>>>> I don't know what you mean here (I don't know of a function named
+>>>>>> "endpoint()").  But the driver model matches drivers to PCI functions
+>>>>>> based on vendor and device IDs.  A Linux "pci_dev" is what the PCI
+>>>>>> specs refer to as a "function."
+>>>>> Sorry it's typo - added ()
+>>>>>
+>>>>>>
+>>>>>>> What is the connection here for PCI-BIOS and PCI-Core here, does these
+>>>>>>> are two different entities means there is no common call for these?
+>>>>>>> I see for ARM - "arch/arm/kernel/bios32.c" is PCI-BIOS is it correct?
+>>>>>>> does we have separate BIOS codes for architectures?
+>>>>>>
+>>>>>> The "pcibios_*" functions are architecture-specific things called by
+>>>>>> the generic PCI core.  Generally, things specified by the PCI specs
+>>>>>> are architecture-independent and should be in the PCI core
+>>>>>> (drivers/pci/*).
+>>>>>
+>>>>> I have some good information to discuss from this thread.
+>>>>> Can you please verify this Linux PCIe subsystem stack - comment
+>>>>> whether my understanding is correct/not.
+>>>>> (I just draw this based on driver calls flow - to accommodate with in
+>>>>> the Linux cores)
+>>>>> http://jagannadhteki.blog.com/2013/12/04/linux-pcie-subsystem/
+>>>>
+>>>> Yes, that makes sense.  I wouldn't label the PCIBIOS - PCI core link
+>>>> as "pci_bus_add_device()"; pci_bus_add_device() is part of the PCI
+>>>> core's generic enumeration code and shouldn't be called by
+>>>> arch-specific code.  The link going from PCI core to PCIBIOS is the
+>>>> set of "pcibios_*()" functions.  Going from PCIBIOS to the PCI core,
+>>>> it's mostly just pci_scan_root_bus().
+>>> Yes - understand your point.
+>>> I made few changes accordingly.
+>>> http://jagannadhteki.blog.com/files/2013/12/Linux_PCIe_zynq.png
+>>
+>> Why did you keep the pci_bus_add_device() label?  There are no calls
+>> from arch code.  The only calls from outside the PCI core are from
+> Yes.. from ARM I see pci_bus_add_devices() call from BIOS code -
+> arch/arm/kernel/bios32
+> to a defination of pci core side.
+>
+> As it's a last call from pci_common_init_dev() - which actually called
+> from HC driver.
+>
+> Correct me if am wrong.
 
-I'm going to review this patch side-by-side with the ARM64 patch written
-by Mark. There are things that can still be consolidated. Otherwise the
-patch looks good.
+Ah, I see.  I searched for "pci_bus_add_device()", which is what's in
+your picture.  It's true that there are several other callers of
+"pci_bus_add_devices()" (with an "s"), including the one from
+pci_common_init_dev().
 
-> ---
-> diff --git a/arch/arm/boot/compressed/efi-stub.c b/arch/arm/boot/compressed/efi-stub.c
-> new file mode 100644
-> index 0000000..2bd559d
-> --- /dev/null
-> +++ b/arch/arm/boot/compressed/efi-stub.c
-> @@ -0,0 +1,291 @@
-> +/*
-> + * linux/arch/arm/boot/compressed/efi-stub.c
-> + *
-> + * Copyright (C) 2013 Linaro Ltd;  <roy.franz@linaro.org>
-> + *
-> + * This file implements the EFI boot stub for the ARM kernel
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +#include <linux/efi.h>
-> +#include <libfdt.h>
-> +#include "efi-stub.h"
-> +
-> +/* EFI function call wrappers.  These are not required for
-> + * ARM, but wrappers are required for X86 to convert between
-> + * ABIs.  These wrappers are provided to allow code sharing
-> + * between X86 and ARM.  Since these wrappers directly invoke the
-> + * EFI function pointer, the function pointer type must be properly
-> + * defined, which is not the case for X86  One advantage of this is
-> + * it allows for type checking of arguments, which is not
-> + * possible with the X86 wrappers.
-> + */
-> +#define efi_call_phys0(f)			f()
-> +#define efi_call_phys1(f, a1)			f(a1)
-> +#define efi_call_phys2(f, a1, a2)		f(a1, a2)
-> +#define efi_call_phys3(f, a1, a2, a3)		f(a1, a2, a3)
-> +#define efi_call_phys4(f, a1, a2, a3, a4)	f(a1, a2, a3, a4)
-> +#define efi_call_phys5(f, a1, a2, a3, a4, a5)	f(a1, a2, a3, a4, a5)
+The reason non-PCI core code calls pci_bus_add_devices() is basically
+historical.  The core isn't yet smart enough to manage all resource
+allocation by itself.  That's why you see things like
+pci_bus_assign_resources() between pci_scan_root_bus() and
+pci_bus_add_devices().  There's nothing arch-specific about assigning
+resources, though, so that all *should* be pulled into the PCI core.
+Then we could get rid of almost all the pci_bus_add_devices() callers.
 
-Identical to ARM64. I would put this into a common header usable by
-platforms that can call the functions directly.
+To get back to your picture, I guess it makes sense to document the
+current state, even if it's not where we want to end up.  But you
+should fix the typo (add the "s" at the end of pci_bus_add_devices())
+and maybe add pci_bus_assign_resources().
 
-> +
-> +/* The maximum uncompressed kernel size is 32 MBytes, so we will reserve
-> + * that for the decompressed kernel.  We have no easy way to tell what
-> + * the actuall size of code + data the uncompressed kernel will use.
-> + */
-> +#define MAX_UNCOMP_KERNEL_SIZE	0x02000000
-> +
-> +/* The kernel zImage should be located between 32 Mbytes
-> + * and 128 MBytes from the base of DRAM.  The min
-> + * address leaves space for a maximal size uncompressed image,
-> + * and the max address is due to how the zImage decompressor
-> + * picks a destination address.
-> + */
-> +#define ZIMAGE_OFFSET_LIMIT	0x08000000
-> +#define MIN_ZIMAGE_OFFSET	MAX_UNCOMP_KERNEL_SIZE
-> +
-> +#define PRINTK_PREFIX		"EFIstub: "
-> +
-> +struct fdt_region {
-> +	u64 base;
-> +	u64 size;
-> +};
+Bjorn
 
-Identical to ARM64; move to header.
-
-> +
-> +
-> +/* Include shared EFI stub code, and required headers. */
-> +#include "../../../../include/generated/compile.h"
-> +#include "../../../../include/generated/utsrelease.h"
-> +#include "../../../../drivers/firmware/efi/efi-stub-helper.c"
-> +#include "../../../../drivers/firmware/efi/fdt.c"
-> +
-> +
-> +int efi_entry(void *handle, efi_system_table_t *sys_table,
-> +	      unsigned long *zimage_addr)
-> +{
-> +	efi_loaded_image_t *image;
-> +	int status;
-> +	unsigned long nr_pages;
-> +	const struct fdt_region *region;
-> +
-> +	void *fdt;
-> +	int err;
-> +	int node;
-> +	unsigned long zimage_size = 0;
-> +	unsigned long dram_base;
-> +	/* addr/point and size pairs for memory management*/
-> +	unsigned long initrd_addr;
-> +	unsigned long initrd_size = 0;
-> +	unsigned long fdt_addr;
-> +	unsigned long fdt_size = 0;
-> +	efi_physical_addr_t kernel_reserve_addr;
-> +	unsigned long kernel_reserve_size = 0;
-> +	char *cmdline_ptr;
-> +	int cmdline_size = 0;
-> +
-> +	unsigned long map_size, desc_size;
-> +	u32 desc_ver;
-> +	unsigned long mmap_key;
-> +	efi_memory_desc_t *memory_map;
-> +
-> +	unsigned long new_fdt_size;
-> +	unsigned long new_fdt_addr;
-> +
-> +	efi_guid_t proto = LOADED_IMAGE_PROTOCOL_GUID;
-> +
-> +	/* Check if we were booted by the EFI firmware */
-> +	if (sys_table->hdr.signature != EFI_SYSTEM_TABLE_SIGNATURE)
-> +		goto fail;
-> +
-> +	efi_printk(sys_table, PRINTK_PREFIX"Booting Linux using EFI stub.\n");
-
-Gratuitously different between ARM and ARM64. efi_printk() vs. pr_efi()
-and the string is different.
-
-> +	/* get the command line from EFI, using the LOADED_IMAGE protocol */
-> +	status = efi_call_phys3(sys_table->boottime->handle_protocol,
-> +				handle, &proto, (void *)&image);
-> +	if (status != EFI_SUCCESS) {
-> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: Failed to get handle for LOADED_IMAGE_PROTOCOL.\n");
-> +		goto fail;
-> +	}
-> +
-> +	/* We are going to copy the command line into the device tree,
-> +	 * so this memory just needs to not conflict with boot protocol
-> +	 * requirements.
-> +	 */
-> +	cmdline_ptr = efi_convert_cmdline_to_ascii(sys_table, image,
-> +						   &cmdline_size);
-> +	if (!cmdline_ptr) {
-> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: Unable to allocate memory for command line.\n");
-> +		goto fail;
-> +	}
-> +
-> +	/* We first load the device tree, as we need to get the base address of
-> +	 * DRAM from the device tree.  The zImage, device tree, and initrd
-> +	 * have address restrictions that are relative to the base of DRAM.
-> +	 */
-> +	status = handle_cmdline_files(sys_table, image, cmdline_ptr, "dtb=",
-> +				      0xffffffff, &fdt_addr, &fdt_size);
-> +	if (status != EFI_SUCCESS) {
-> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: Unable to load device tree blob.\n");
-> +		goto fail_free_cmdline;
-> +	}
-> +
-> +	err = fdt_check_header((void *)fdt_addr);
-> +	if (err != 0) {
-> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: Device tree header not valid.\n");
-> +		goto fail_free_fdt;
-> +	}
-> +	if (fdt_totalsize((void *)fdt_addr) > fdt_size) {
-> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: Incomplete device tree.\n");
-> +		goto fail_free_fdt;
-> +
-> +	}
-
-All of the above is basically identical.
-
-> +	/* Look up the base of DRAM from the device tree. */
-> +	fdt = (void *)fdt_addr;
-> +	node = fdt_subnode_offset(fdt, 0, "memory");
-> +	region = fdt_getprop(fdt, node, "reg", NULL);
-> +	if (region) {
-> +		dram_base = fdt64_to_cpu(region->base);
-> +	} else {
-> +		/* There is no way to get amount or addresses of physical
-> +		 * memory installed using EFI calls.  If the device tree
-> +		 * we read from disk doesn't have this, there is no way
-> +		 * for us to construct this informaion.
-> +		 */
-> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: No 'memory' node in device tree.\n");
-> +		goto fail_free_fdt;
-> +	}
-
-ARM and ARM64 differ here. ARM64 uses get_dram_base(), this open codes
-some stuff.
-
-> +
-> +	/* Reserve memory for the uncompressed kernel image. This is
-> +	 * all that prevents any future allocations from conflicting
-> +	 * with the kernel.  Since we can't tell from the compressed
-> +	 * image how much DRAM the kernel actually uses (due to BSS
-> +	 * size uncertainty) we allocate the maximum possible size.
-> +	 */
-> +	kernel_reserve_addr = dram_base;
-> +	kernel_reserve_size = MAX_UNCOMP_KERNEL_SIZE;
-> +	nr_pages = round_up(kernel_reserve_size, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
-> +	status = efi_call_phys4(sys_table->boottime->allocate_pages,
-> +				EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
-> +				nr_pages, &kernel_reserve_addr);
-> +	if (status != EFI_SUCCESS) {
-> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: Unable to allocate memory for uncompressed kernel.\n");
-> +		goto fail_free_fdt;
-> +	}
-
-This is ARM only since arm64 doesn't have a compressed version. It would
-be possible to stub out.
-
-> +
-> +	/* Relocate the zImage, if required.  ARM doesn't have a
-> +	 * preferred address, so we set it to 0, as we want to allocate
-> +	 * as low in memory as possible.
-> +	 */
-> +	zimage_size = image->image_size;
-> +	status = efi_relocate_kernel(sys_table, zimage_addr, zimage_size,
-> +				     zimage_size, 0, 0);
-> +	if (status != EFI_SUCCESS) {
-> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: Failed to relocate kernel.\n");
-> +		goto fail_free_kernel_reserve;
-> +	}
-
-Slight differences here.
-
-> +
-> +	/* Check to see if we were able to allocate memory low enough
-> +	 * in memory.
-> +	 */
-> +	if (*zimage_addr + zimage_size > dram_base + ZIMAGE_OFFSET_LIMIT) {
-> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: Failed to relocate kernel, no low memory available.\n");
-> +		goto fail_free_zimage;
-> +	}
-
-Back to same code below this point, and is the same through to the
-bottom of the function. That is a lot of identical code. I think you can
-generalize the whole function with arch specific callouts in a couple of
-places.
-
-I really don't want to hold up the merging of this series. Aside from
-the duplication I think it is ready to be merged. However, the
-duplication is so obvious that I'm not comfortable with it. If I were
-an ARM or ARM64 core maintainer then I would push back on it.
-
-Go ahead an add my Acked-by for this patch. I'll support merging it as
-is provided that you promise me to merge the two versions with a
-follow-up patch ASAP. However, if you can I would still recommend
-respinning the series with the common bits split out right away since
-there's a much greater chance of getting the arm and arm64 maintainers
-to accept them.
-
-Acked-by: Grant Likely <grant.likely@linaro.org>
-
-g.
+>> i82875p_setup_overfl_dev(), asus_rfkill_hotplug(), and
+>> eeepc_rfkill_hotplug().  These are all hacks that should not be
+>> emulated.
+>
+> --
+> Thanks,
+> Jagan.
+> --------
+> Jagannadha Sutradharudu Teki,
+> E: jagannadh.teki@gmail.com, P: +91-9676773388
+> Engineer - System Software Hacker
+> U-boot - SPI Custodian and Zynq APSOC
+> Ln: http://www.linkedin.com/in/jaganteki
