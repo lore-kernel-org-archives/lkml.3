@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab3LEHgM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 02:36:12 -0500
-Received: from mga11.intel.com ([192.55.52.93]:10901 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752184Ab3LEHgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 02:36:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,831,1378882800"; 
-   d="scan'208";a="445002277"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next] mei: add 9 series PCH mei device ids
-Date: Thu,  5 Dec 2013 09:34:44 +0200
-Message-Id: <1386228884-30978-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1752357Ab3LEHo3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 02:44:29 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:16336 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779Ab3LEHo1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 02:44:27 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 04 Dec 2013 23:37:45 -0800
+From: Bill Huang <bilhuang@nvidia.com>
+To: <rjw@rjwysocki.net>, <viresh.kumar@linaro.org>, <swarren@wwwdotorg.org>,
+        <thierry.reding@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <cpufreq@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        Bill Huang <bilhuang@nvidia.com>
+Subject: [PATCH v3 0/2] Remodel Tegra cpufreq drivers to support Tegra series SoC 
+Date: Thu, 5 Dec 2013 15:44:20 +0800
+Message-ID: <1386229462-3474-1-git-send-email-bilhuang@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And Lynx Point H Refresh and Wildcat Point LP
-device ids.
+This patch series remodel Tegra cpufreq driver to make it more easy to
+add new SoC support, in addition to that, adding probe function in the
+driver to let probe defer can be used to control init sequence when we
+are going to support DVFS.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
-V2: remove duplicated  LPT entry
+Changes since v2:
 
- drivers/misc/mei/hw-me-regs.h | 5 ++++-
- drivers/misc/mei/pci-me.c     | 4 +++-
- 2 files changed, 7 insertions(+), 2 deletions(-)
+- Fix Kconfig.
+- Rebase on top of branch 'cpufreq-next' on git://git.linaro.org/people/vireshk/linux.git.
 
-diff --git a/drivers/misc/mei/hw-me-regs.h b/drivers/misc/mei/hw-me-regs.h
-index 6c0fde5..66f411a 100644
---- a/drivers/misc/mei/hw-me-regs.h
-+++ b/drivers/misc/mei/hw-me-regs.h
-@@ -109,9 +109,12 @@
- #define MEI_DEV_ID_PPT_2      0x1CBA  /* Panther Point */
- #define MEI_DEV_ID_PPT_3      0x1DBA  /* Panther Point */
- 
--#define MEI_DEV_ID_LPT        0x8C3A  /* Lynx Point */
-+#define MEI_DEV_ID_LPT_H      0x8C3A  /* Lynx Point H */
- #define MEI_DEV_ID_LPT_W      0x8D3A  /* Lynx Point - Wellsburg */
- #define MEI_DEV_ID_LPT_LP     0x9C3A  /* Lynx Point LP */
-+#define MEI_DEV_ID_LPT_HR     0x8CBA  /* Lynx Point H Refresh */
-+
-+#define MEI_DEV_ID_WPT_LP     0x9CBA  /* Wildcat Point LP */
- /*
-  * MEI HW Section
-  */
-diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
-index 3bfae38..7dfaa32 100644
---- a/drivers/misc/mei/pci-me.c
-+++ b/drivers/misc/mei/pci-me.c
-@@ -76,9 +76,11 @@ static DEFINE_PCI_DEVICE_TABLE(mei_me_pci_tbl) = {
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_1)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_2)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_3)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_H)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_W)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_LP)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_HR)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_WPT_LP)},
- 
- 	/* required last entry */
- 	{0, }
+Changes since v1:
+
+- Split up patches.
+- Split configuration-time data out of structure "tegra_cpufreq_data".
+- Bug fixes.
+
+Bill Huang (2):
+  cpufreq: tegra: Call tegra_cpufreq_init() specifically in machine
+    code
+  cpufreq: tegra: Re-model Tegra cpufreq driver
+
+ arch/arm/mach-tegra/tegra.c       |    2 +
+ drivers/cpufreq/Kconfig.arm       |   12 +++
+ drivers/cpufreq/Makefile          |    1 +
+ drivers/cpufreq/tegra-cpufreq.c   |  188 +++++++++++++++++--------------------
+ drivers/cpufreq/tegra-cpufreq.h   |   40 ++++++++
+ drivers/cpufreq/tegra20-cpufreq.c |  136 +++++++++++++++++++++++++++
+ include/linux/tegra-soc.h         |   11 ++-
+ 7 files changed, 287 insertions(+), 103 deletions(-)
+ create mode 100644 drivers/cpufreq/tegra-cpufreq.h
+ create mode 100644 drivers/cpufreq/tegra20-cpufreq.c
+
 -- 
-1.8.3.1
+1.7.9.5
 
