@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665Ab3LEXhl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 18:37:41 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:32369 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754679Ab3LEXhi (ORCPT
+	id S1755746Ab3LEXno (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 18:43:44 -0500
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:36824 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508Ab3LEXnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 18:37:38 -0500
-Date: Thu, 5 Dec 2013 18:37:35 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
-Message-ID: <20131205183735.5f9c8bae@gandalf.local.home>
-In-Reply-To: <CAMEtUuyp0q9YSMq7OchEeWLz9oPYd3qQ+0SDV5Pt8F10KLbFpg@mail.gmail.com>
-References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
-	<87fvq9cwlk.fsf@tassilo.jf.intel.com>
-	<CAMEtUuzweYxqwoaYH+J5a2uRM+PFcBH+Pb8Z_ALPUMp+QFz1tQ@mail.gmail.com>
-	<CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com>
-	<20131205104113.GB20283@gmail.com>
-	<20131205084657.09b6a2ce@gandalf.local.home>
-	<CAMEtUuyp0q9YSMq7OchEeWLz9oPYd3qQ+0SDV5Pt8F10KLbFpg@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 5 Dec 2013 18:43:41 -0500
+From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
+To: "'Martin K. Petersen'" <martin.petersen@oracle.com>
+Cc: "'open list'" <linux-kernel@vger.kernel.org>, <linux-ext4@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, <gregkh@linuxfoundation.org>
+References: <CAO9zADw-k+Qghk79yzwzaiYiPSoQnKwjjTBwrhcOrJxTWc-fOQ@mail.gmail.com> <yq1iovclm0m.fsf@sermon.lab.mkp.net> <00c701ceec3a$c8bcfc90$5a36f5b0$@lucidpixels.com> <yq1d2lkllek.fsf@sermon.lab.mkp.net> <010b01ceec84$27643580$762ca080$@lucidpixels.com>
+In-Reply-To: <010b01ceec84$27643580$762ca080$@lucidpixels.com>
+Subject: RE: 3.12.0: sda2: WRITE SAME failed. Manually zeroing. with 3w-xxxx driver
+Date: Thu, 5 Dec 2013 18:43:39 -0500
+Message-ID: <018b01cef213$d34d1df0$79e759d0$@lucidpixels.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQIRpMQ5yoPFWdrjnTAKydtw81oUOQGvynbaASKfOScCoiRwNAIp0YgrmYPpOnA=
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Dec 2013 14:36:58 -0800
-Alexei Starovoitov <ast@plumgrid.com> wrote:
 
-> On Thu, Dec 5, 2013 at 5:46 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >
-> > I know that it would be great to have the bpf filter run before
-> > recording of the tracepoint, but as that becomes quite awkward for a
-> > user interface, because it requires intimate knowledge of the kernel
-> > source, this speed up on the filter itself may be worth while to have
-> > it happen after the recording of the buffer. When it happens after the
-> > record, then the bpf has direct access to the event entry and its
-> > fields as described by the trace event format files.
+
+> -----Original Message-----
+> From: Martin K. Petersen [mailto:martin.petersen@oracle.com]
+> Sent: Thursday, November 28, 2013 8:13 AM
 > 
-> I don't understand that 'awkward' part yet. What do you mean by 'knowledge of
-> the kernel'? By accessing pt_regs structure? Something else ?
-> Can we try fixing the interface first before compromising on performance?
+> 
+> Martin>	http://marc.info/?l=linux-scsi&m=138252394614920&w=2
+> 
+> Justin> Awesome, thank you!  This patch is over a month old, do you know
+> Justin> if is currently in mainline?
+> 
+> Nope. - James?
+> 
+> Could it possibly get added to 3.12.x -stable as well? I've patched
+against
+> 3.12.0 for now -- I'll let you know if there are any issues-- so far so
+> good, thanks again.
+> 
+> Justin.
 
-Let me ask you this. If you do not have the source of the kernel on
-hand, can you use BPF to filter the sched_switch tracepoint on prev pid?
+Update:
+System uptime with the patch is 7+ days under extensive load at times and
+I've had no issues to date.
+I just checked the current linux git repo (3.13-rc2) and found this patch
+has not been included.
 
-The current filter interface allows you to filter with just what the
-running kernel provides. No need for debug info from the vmlinux or
-anything else.
+Please advise if any further testing or validation needs to be completed to
+help get this into -stable/-mainline.
 
-pt_regs is not that useful without having something to translate what
-that means.
+Justin.
 
-I'm fine if it becomes a requirement to have a vmlinux built with
-DEBUG_INFO to use BPF and have a tool like perf to translate the
-filters. But it that must not replace what the current filters do now.
-That is, it can be an add on, but not a replacement.
 
- -- Steve
+
