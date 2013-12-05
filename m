@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152Ab3LERg3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:36:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38052 "EHLO
+	id S932639Ab3LERgl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:36:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38095 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122Ab3LERgY (ORCPT
+	with ESMTP id S1757273Ab3LERgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:36:24 -0500
+	Thu, 5 Dec 2013 12:36:38 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Thomas Hellstrom <thellstrom@vmware.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 03/90] ACPICA: Return error if DerefOf resolves to a null package element.
-Date: Thu,  5 Dec 2013 17:34:45 +0000
-Message-Id: <1386264972-5399-4-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 13/90] drm/ttm: Fix memory type compatibility check
+Date: Thu,  5 Dec 2013 17:34:55 +0000
+Message-Id: <1386264972-5399-14-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -28,48 +27,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Moore <robert.moore@intel.com>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit a50abf4842dd7d603a2ad6dcc7f1467fd2a66f03 upstream.
+commit 59c8e66378fb78adbcd05f0d09783dde6fef282b upstream.
 
-Disallow the dereference of a reference (via index) to an uninitialized
-package element. Provides compatibility with other ACPI
-implementations. ACPICA BZ 1003.
+Also check the busy placements before deciding to move a buffer object.
+Failing to do this may result in a completely unneccessary move within a
+single memory type.
 
-References: https://bugs.acpica.org/show_bug.cgi?id=431
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/acpi/acpica/exoparg1.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/ttm/ttm_bo.c | 32 ++++++++++++++++++++------------
+ 1 file changed, 20 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/acpi/acpica/exoparg1.c b/drivers/acpi/acpica/exoparg1.c
-index fb8772d..fe2f9d9 100644
---- a/drivers/acpi/acpica/exoparg1.c
-+++ b/drivers/acpi/acpica/exoparg1.c
-@@ -970,10 +970,17 @@ acpi_status acpi_ex_opcode_1A_0T_1R(struct acpi_walk_state *walk_state)
- 					 */
- 					return_desc =
- 					    *(operand[0]->reference.where);
--					if (return_desc) {
--						acpi_ut_add_reference
--						    (return_desc);
-+					if (!return_desc) {
-+						/*
-+						 * Element is NULL, do not allow the dereference.
-+						 * This provides compatibility with other ACPI
-+						 * implementations.
-+						 */
-+						return_ACPI_STATUS
-+						    (AE_AML_UNINITIALIZED_ELEMENT);
- 					}
-+
-+					acpi_ut_add_reference(return_desc);
- 					break;
+diff --git a/drivers/gpu/drm/ttm/ttm_bo.c b/drivers/gpu/drm/ttm/ttm_bo.c
+index 36f4b28..a414452 100644
+--- a/drivers/gpu/drm/ttm/ttm_bo.c
++++ b/drivers/gpu/drm/ttm/ttm_bo.c
+@@ -1099,24 +1099,32 @@ out_unlock:
+ 	return ret;
+ }
  
- 				default:
+-static int ttm_bo_mem_compat(struct ttm_placement *placement,
+-			     struct ttm_mem_reg *mem)
++static bool ttm_bo_mem_compat(struct ttm_placement *placement,
++			      struct ttm_mem_reg *mem,
++			      uint32_t *new_flags)
+ {
+ 	int i;
+ 
+ 	if (mem->mm_node && placement->lpfn != 0 &&
+ 	    (mem->start < placement->fpfn ||
+ 	     mem->start + mem->num_pages > placement->lpfn))
+-		return -1;
++		return false;
+ 
+ 	for (i = 0; i < placement->num_placement; i++) {
+-		if ((placement->placement[i] & mem->placement &
+-			TTM_PL_MASK_CACHING) &&
+-			(placement->placement[i] & mem->placement &
+-			TTM_PL_MASK_MEM))
+-			return i;
++		*new_flags = placement->placement[i];
++		if ((*new_flags & mem->placement & TTM_PL_MASK_CACHING) &&
++		    (*new_flags & mem->placement & TTM_PL_MASK_MEM))
++			return true;
++	}
++
++	for (i = 0; i < placement->num_busy_placement; i++) {
++		*new_flags = placement->busy_placement[i];
++		if ((*new_flags & mem->placement & TTM_PL_MASK_CACHING) &&
++		    (*new_flags & mem->placement & TTM_PL_MASK_MEM))
++			return true;
+ 	}
+-	return -1;
++
++	return false;
+ }
+ 
+ int ttm_bo_validate(struct ttm_buffer_object *bo,
+@@ -1125,6 +1133,7 @@ int ttm_bo_validate(struct ttm_buffer_object *bo,
+ 			bool no_wait_gpu)
+ {
+ 	int ret;
++	uint32_t new_flags;
+ 
+ 	BUG_ON(!atomic_read(&bo->reserved));
+ 	/* Check that range is valid */
+@@ -1135,8 +1144,7 @@ int ttm_bo_validate(struct ttm_buffer_object *bo,
+ 	/*
+ 	 * Check whether we need to move buffer.
+ 	 */
+-	ret = ttm_bo_mem_compat(placement, &bo->mem);
+-	if (ret < 0) {
++	if (!ttm_bo_mem_compat(placement, &bo->mem, &new_flags)) {
+ 		ret = ttm_bo_move_buffer(bo, placement, interruptible, no_wait_reserve, no_wait_gpu);
+ 		if (ret)
+ 			return ret;
+@@ -1145,7 +1153,7 @@ int ttm_bo_validate(struct ttm_buffer_object *bo,
+ 		 * Use the access and other non-mapping-related flag bits from
+ 		 * the compatible memory placement flags to the active flags
+ 		 */
+-		ttm_flag_masked(&bo->mem.placement, placement->placement[ret],
++		ttm_flag_masked(&bo->mem.placement, new_flags,
+ 				~TTM_PL_MASK_MEMTYPE);
+ 	}
+ 	/*
 -- 
 1.8.3.2
 
