@@ -1,212 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab3LEMPA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 07:15:00 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:55212 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751020Ab3LEMO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 07:14:59 -0500
-Message-ID: <52A07BBE.7060507@ti.com>
-Date: Thu, 5 Dec 2013 15:12:30 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>, Tejun Heo <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mm@kvack.org>, Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 08/23] mm/memblock: Add memblock memory allocation
- apis
-References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com> <1386037658-3161-9-git-send-email-santosh.shilimkar@ti.com> <20131203232445.GX8277@htj.dyndns.org> <529F5047.50309@ti.com> <20131204160730.GQ3158@htj.dyndns.org> <529F5C55.1020707@ti.com>
-In-Reply-To: <529F5C55.1020707@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1756117Ab3LEMPp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 07:15:45 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:37922 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754045Ab3LEMPb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 07:15:31 -0500
+Message-ID: <1386245723.20519.111.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [RFC][PATCH 4/4] ima: added support for new kernel cmdline
+ parameter ima_template_fmt
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Roberto Sassu <roberto.sassu@polito.it>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ima-devel@lists.sourceforge.net, zohar@us.ibm.com,
+        d.kasatkin@samsung.com, james.l.morris@oracle.com
+Date: Thu, 05 Dec 2013 07:15:23 -0500
+In-Reply-To: <52A03DFE.7020403@polito.it>
+References: <1383832849-17125-1-git-send-email-roberto.sassu@polito.it>
+	 <1383832849-17125-5-git-send-email-roberto.sassu@polito.it>
+	 <1386191125.20519.80.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <52A03DFE.7020403@polito.it>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.75]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120512-1542-0000-0000-000003ECA230
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
-On 12/04/2013 06:46 PM, Santosh Shilimkar wrote:
-> On Wednesday 04 December 2013 11:07 AM, Tejun Heo wrote:
->> Hello,
->>
->> On Wed, Dec 04, 2013 at 10:54:47AM -0500, Santosh Shilimkar wrote:
->>> Well as you know there are architectures still using bootmem even after
->>> this series. Changing MAX_NUMNODES to NUMA_NO_NODE is too invasive and
->>> actually should be done in a separate series. As commented, the best
->>> time to do that would be when all remaining architectures moves to
->>> memblock.
->>>
->>> Just to give you perspective, look at the patch end of the email which
->>> Grygorrii cooked up. It doesn't cover all the users of MAX_NUMNODES
->>> and we are bot even sure whether the change is correct and its
->>> impact on the code which we can't even tests. I would really want to
->>> avoid touching all the architectures and keep the scope of the series
->>> to core code as we aligned initially.
->>>
->>> May be you have better idea to handle this change so do
->>> let us know how to proceed with it. With such a invasive change the
->>> $subject series can easily get into circles again :-(
->>
->> But we don't have to use MAX_NUMNODES for the new interface, no?  Or
->> do you think that it'd be more confusing because it ends up mixing the
->> two?
-> The issue is memblock code already using MAX_NUMNODES. Please
-> look at __next_free_mem_range() and __next_free_mem_range_rev().
-> The new API use the above apis and hence use MAX_NUMNODES. If the
-> usage of these constant was consistent across bootmem and memblock
-> then we wouldn't have had the whole confusion.
-
-I'll try to provide more technical details here.
-As Santosh mentioned in previous e-mails, it's not easy to simply
-get rid of using MAX_NUMNODES:
-1) we introduce new interface memblock_allocX 
-2) our interface uses memblock APIs __next_free_mem_range_rev()
-   and __next_free_mem_range()
-3) __next_free_mem_range_rev() and __next_free_mem_range() use MAX_NUMNODES
-4) _next_free_mem_range_rev() and __next_free_mem_range() are used standalone,
-   outside of our interface as part of *for_each_free_mem_range* or for_each_mem_pfn_range ..
-
-The point [4] leads to necessity to find and correct all places where memmblock APIs
-are used and where it's expected to get MAX_NUMNODES as input parameter.
-The major problem is that simple "grep" will not work, because memmblock APIs calls
-are hidden inside other MM modules and it's not always clear
-what will be passed as input parameters to APIs of these MM modules
-(for example sparse_memory_present_with_active_regions() or sparse.c).
-
-As result, WIP patch, I did, and which was posted by Santosh illustrates
-the probable size and complexity of the change.
-
+On Thu, 2013-12-05 at 09:49 +0100, Roberto Sassu wrote:
+> On 12/04/2013 10:05 PM, Mimi Zohar wrote:
+> > On Thu, 2013-11-07 at 15:00 +0100, Roberto Sassu wrote:
+> >> This patch allows users to provide a custom template format through the
+> >> new kernel command line parameter 'ima_template_fmt'. If the supplied
+> >> format is not valid, IMA uses the default template descriptor.
+> >>
+> >> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+> >> ---
+> >>   Documentation/kernel-parameters.txt      |  4 +++
+> >>   Documentation/security/IMA-templates.txt | 29 +++++++++---------
+> >>   security/integrity/ima/ima_template.c    | 50 ++++++++++++++++++++++++++++++++
+> >>   3 files changed, 68 insertions(+), 15 deletions(-)
+> >>
+> >> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> >> index 1e8761c..27b14b2 100644
+> >> --- a/Documentation/kernel-parameters.txt
+> >> +++ b/Documentation/kernel-parameters.txt
+> >> @@ -1199,6 +1199,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+> >>   			Formats: { "ima" | "ima-ng" }
+> >>   			Default: "ima-ng"
+> >>
+> >> +	ima_template_fmt=
+> >> +	                [IMA] Define a custom template format.
+> >> +			Format: { "field1|...|fieldN" }
+> >> +
+> >>   	init=		[KNL]
+> >>   			Format: <full_path>
+> >>   			Run specified binary instead of /sbin/init as init
+> >> diff --git a/Documentation/security/IMA-templates.txt b/Documentation/security/IMA-templates.txt
+> >> index a777e5f..08ea2da 100644
+> >> --- a/Documentation/security/IMA-templates.txt
+> >> +++ b/Documentation/security/IMA-templates.txt
+> >> @@ -27,25 +27,22 @@ Managing templates with these structures is very simple. To support
+> >>   a new data type, developers define the field identifier and implement
+> >>   two functions, init() and show(), respectively to generate and display
+> >>   measurement entries. Defining a new template descriptor requires
+> >> -specifying the template format, a string of field identifiers separated
+> >> -by the '|' character. While in the current implementation it is possible
+> >> -to define new template descriptors only by adding their definition in the
+> >> -template specific code (ima_template.c), in a future version it will be
+> >> -possible to register a new template on a running kernel by supplying to IMA
+> >> -the desired format string. In this version, IMA initializes at boot time
+> >> -all defined template descriptors by translating the format into an array
+> >> -of template fields structures taken from the set of the supported ones.
+> >> +specifying the template format (a string of field identifiers separated
+> >> +by the '|' character) through the 'ima_template_fmt' kernel command line
+> >> +parameter. At boot time, IMA initializes all defined template descriptors
+> >> +by translating the format into an array of template fields structures taken
+> >> +from the set of the supported ones.
+> >>
+> >>   After the initialization step, IMA will call ima_alloc_init_template()
+> >>   (new function defined within the patches for the new template management
+> >>   mechanism) to generate a new measurement entry by using the template
+> >>   descriptor chosen through the kernel configuration or through the newly
+> >> -introduced 'ima_template=' kernel command line parameter. It is during this
+> >> -phase that the advantages of the new architecture are clearly shown:
+> >> -the latter function will not contain specific code to handle a given template
+> >> -but, instead, it simply calls the init() method of the template fields
+> >> -associated to the chosen template descriptor and store the result (pointer
+> >> -to allocated data and data length) in the measurement entry structure.
+> >> +introduced 'ima_template' and 'ima_template_fmt' kernel command line parameters.
+> >> +It is during this phase that the advantages of the new architecture are
+> >> +clearly shown: the latter function will not contain specific code to handle
+> >> +a given template but, instead, it simply calls the init() method of the template
+> >> +fields associated to the chosen template descriptor and store the result
+> >> +(pointer to allocated data and data length) in the measurement entry structure.
+> >>
+> >>   The same mechanism is employed to display measurements entries.
+> >>   The functions ima[_ascii]_measurements_show() retrieve, for each entry,
+> >> @@ -84,4 +81,6 @@ currently the following methods are supported:
+> >>    - select a template descriptor among those supported in the kernel
+> >>      configuration ('ima-ng' is the default choice);
+> >>    - specify a template descriptor name from the kernel command line through
+> >> -   the 'ima_template=' parameter.
+> >> +   the 'ima_template=' parameter;
+> >> + - register a new template descriptor with custom format through the kernel
+> >> +   command line parameter 'ima_template_fmt='.
+> >> diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
+> >> index bb33576..5a95d06 100644
+> >> --- a/security/integrity/ima/ima_template.c
+> >> +++ b/security/integrity/ima/ima_template.c
+> >> @@ -21,6 +21,7 @@ static struct ima_template_desc defined_templates[] = {
+> >>   	{.name = IMA_TEMPLATE_IMA_NAME, .fmt = IMA_TEMPLATE_IMA_FMT},
+> >>   	{.name = "ima-ng",.fmt = "d-ng|n-ng"},
+> >>   	{.name = "ima-sig",.fmt = "d-ng|n-ng|sig"},
+> >> +	{.name = "",.fmt = ""},	/* placeholder for a custom format */
+> >>   };
+> >>
+> >>   static struct ima_template_field supported_fields[] = {
+> >> @@ -38,12 +39,16 @@ static struct ima_template_field supported_fields[] = {
+> >>
+> >>   static struct ima_template_desc *ima_template;
+> >>   static struct ima_template_desc *lookup_template_desc(const char *name);
+> >> +static struct ima_template_field *lookup_template_field(const char *field_id);
+> >>
+> >>   static int __init ima_template_setup(char *str)
+> >>   {
+> >>   	struct ima_template_desc *template_desc;
+> >>   	int template_len = strlen(str);
+> >>
+> >> +	if (ima_template)
+> >> +		return 1;
+> >> +
+> >>   	/*
+> >>   	 * Verify that a template with the supplied name exists.
+> >>   	 * If not, use CONFIG_IMA_DEFAULT_TEMPLATE.
+> >> @@ -70,6 +75,48 @@ static int __init ima_template_setup(char *str)
+> >>   }
+> >>   __setup("ima_template=", ima_template_setup);
+> >>
+> >> +static int __init ima_template_fmt_setup(char *str)
+> >> +{
+> >> +	int num_templates = ARRAY_SIZE(defined_templates);
+> >> +	char *str_ptr_start = str;
+> >> +	char *str_ptr_end = str_ptr_start;
+> >> +
+> >> +	if (ima_template)
+> >> +		return 1;
+> >> +
+> >> +	while (str_ptr_start != NULL) {
+> >> +		char field_id[IMA_TEMPLATE_FIELD_ID_MAX_LEN];
+> >> +		int len;
+> >> +
+> >> +		str_ptr_end = strpbrk(str_ptr_start, "|");
+> >> +		if (str_ptr_end == NULL)
+> >> +			len = str + strlen(str) - str_ptr_start;
+> >> +		else
+> >> +			len = str_ptr_end++ - str_ptr_start;
+> >> +
+> >> +		if (len >= IMA_TEMPLATE_FIELD_ID_MAX_LEN) {
+> >> +			pr_err("IMA: field too long, using template %s\n",
+> >> +			       CONFIG_IMA_DEFAULT_TEMPLATE);
+> >> +			return 1;
+> >> +		}
+> >> +
+> >> +		memcpy(field_id, str_ptr_start, len);
+> >> +		field_id[len] = '\0';
+> >> +		if (lookup_template_field(field_id) == NULL) {
+> >> +			pr_err("IMA: field '%s' not found, using template %s\n",
+> >> +			       field_id, CONFIG_IMA_DEFAULT_TEMPLATE);
+> >> +			return 1;
+> >> +		}
+> >> +
+> >> +		str_ptr_start = str_ptr_end;
+> >> +	}
+> >> +
+> >
+> > Roberto, looking this over again, I think this can be simplified by
+> > using strsep().
+> >
 > 
-> It kinda really bothers me this patchset is expanding the usage
->> of the wrong constant with only very far-out plan to fix that.  All
->> archs converting to nobootmem will take a *long* time, that is, if
->> that happens at all.  I don't really care about the order of things
->> happening but "this is gonna be fixed when everyone moves off
->> MAX_NUMNODES" really isn't good enough.
+> Hi Mimi
+> 
+> yes, the code can be simplified. However, I did not use strsep()
+> to avoid that this function modifies the kernel command line
+> (it replaces the passed separator character with '\0').
+> Since the custom format string is parsed again later, I also
+> have to revert changes made by strsep().
 
-Sorry, but question here is not "Do or not to do?", but rather 'how to do?",
-taking into account complexity and state of the current MM code.
-For example. would it be ok if I'll workaround the issue as in the attached patch?
+Somehow the code needs to be simplified and cleaned up.  For example,
+str_ptr_start/end need to be renamed to something simpler, like
+field/field_end or token/token_end. (Refer to Documentation/CodingStyle
+chapter 4 for variable naming style.)  Perhaps, instead of using
+strsep(), write a function to return a pointer to the field and field
+length.
 
-Thanks for any advice.
+thanks,
 
-Regards,
-- grygorii
+Mimi
 
----
- include/linux/bootmem.h |    8 ++++----
- mm/memblock.c           |   25 ++++++++++++++++++-------
- mm/percpu.c             |    2 +-
- 3 files changed, 23 insertions(+), 12 deletions(-)
+> >
+> >> +	defined_templates[num_templates - 1].fmt = str;
+> >> +	ima_template = defined_templates + num_templates - 1;
+> >> +	return 1;
+> >> +}
+> >> +__setup("ima_template_fmt=", ima_template_fmt_setup);
+> >> +
+> >>   static struct ima_template_desc *lookup_template_desc(const char *name)
+> >>   {
+> >>   	int i;
+> >> @@ -160,6 +207,9 @@ static int init_defined_templates(void)
+> >>   	for (i = 0; i < ARRAY_SIZE(defined_templates); i++) {
+> >>   		struct ima_template_desc *template = &defined_templates[i];
+> >>
+> >> +		if (strlen(template->fmt) == 0)
+> >> +			continue;
+> >> +
+> >>   		result = template_desc_init_fields(template->fmt,
+> >>   						   &(template->fields),
+> >>   						   &(template->num_fields));
+> >
+> >
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
-index 9e67fe4..84e778d 100644
---- a/include/linux/bootmem.h
-+++ b/include/linux/bootmem.h
-@@ -171,20 +171,20 @@ void __memblock_free_late(phys_addr_t base, phys_addr_t size);
- 
- #define memblock_virt_alloc(x) \
- 	memblock_virt_alloc_try_nid(x, 0, BOOTMEM_LOW_LIMIT, \
--				     BOOTMEM_ALLOC_ACCESSIBLE, MAX_NUMNODES)
-+				     BOOTMEM_ALLOC_ACCESSIBLE, NUMA_NO_NODE)
- #define memblock_virt_alloc_align(x, align) \
- 	memblock_virt_alloc_try_nid(x, align, BOOTMEM_LOW_LIMIT, \
--				     BOOTMEM_ALLOC_ACCESSIBLE, MAX_NUMNODES)
-+				     BOOTMEM_ALLOC_ACCESSIBLE, NUMA_NO_NODE)
- #define memblock_virt_alloc_nopanic(x) \
- 	memblock_virt_alloc_try_nid_nopanic(x, 0, \
- 					     BOOTMEM_LOW_LIMIT, \
- 					     BOOTMEM_ALLOC_ACCESSIBLE, \
--					     MAX_NUMNODES)
-+					     NUMA_NO_NODE)
- #define memblock_virt_alloc_align_nopanic(x, align) \
- 	memblock_virt_alloc_try_nid_nopanic(x, align, \
- 					     BOOTMEM_LOW_LIMIT, \
- 					     BOOTMEM_ALLOC_ACCESSIBLE, \
--					     MAX_NUMNODES)
-+					     NUMA_NO_NODE)
- #define memblock_virt_alloc_node(x, nid) \
- 	memblock_virt_alloc_try_nid(x, 0, BOOTMEM_LOW_LIMIT, \
- 				     BOOTMEM_ALLOC_ACCESSIBLE, nid)
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 1503300..cae02a1 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -945,7 +945,7 @@ phys_addr_t __init memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align, i
-  * @max_addr: the upper bound of the memory region from where the allocation
-  *	      is preferred (phys address), or %BOOTMEM_ALLOC_ACCESSIBLE to
-  *	      allocate only from memory limited by memblock.current_limit value
-- * @nid: nid of the free area to find, %MAX_NUMNODES for any node
-+ * @nid: nid of the free area to find, %NUMA_NO_NODE for any node
-  *
-  * The @min_addr limit is dropped if it can not be satisfied and the allocation
-  * will fall back to memory below @min_addr.
-@@ -970,16 +970,27 @@ static void * __init _memblock_virt_alloc_try_nid_nopanic(
- 	phys_addr_t alloc;
- 	void *ptr;
- 
-+	/*
-+	 * TODO: this is WA as we should get NUMA_NO_NODE as input parameter
-+	 * to work with any node, but there are no guarantee that we always will
-+	 * Remove it once memblock core is converted to use NUMA_NO_NODE.
-+	 */
-+	nid = (nid == MAX_NUMNODES) ? NUMA_NO_NODE : nid;
-+
- 	if (WARN_ON_ONCE(slab_is_available())) {
--		if (nid == MAX_NUMNODES)
--			return kzalloc(size, GFP_NOWAIT);
--		else
--			return kzalloc_node(size, GFP_NOWAIT, nid);
-+		return kzalloc_node(size, GFP_NOWAIT, nid);
- 	}
- 
- 	if (!align)
- 		align = SMP_CACHE_BYTES;
- 
-+	/*
-+	 * TODO: this is WA as we get NUMA_NO_NODE as input parameter, but
-+	 * memblock core still uses MAX_NUMNODES.
-+	 * Remove it once memblock core is converted to use NUMA_NO_NODE.
-+	 */
-+	nid = (nid == NUMA_NO_NODE) ? MAX_NUMNODES : nid;
-+
- 	/* align @size to avoid excessive fragmentation on reserved array */
- 	size = round_up(size, align);
- 
-@@ -1028,7 +1039,7 @@ error:
-  * @max_addr: the upper bound of the memory region from where the allocation
-  *	      is preferred (phys address), or %BOOTMEM_ALLOC_ACCESSIBLE to
-  *	      allocate only from memory limited by memblock.current_limit value
-- * @nid: nid of the free area to find, %MAX_NUMNODES for any node
-+ * @nid: nid of the free area to find, %NUMA_NO_NODE for any node
-  *
-  * Public version of _memblock_virt_alloc_try_nid_nopanic() which provides
-  * additional debug information (including caller info), if enabled.
-@@ -1056,7 +1067,7 @@ void * __init memblock_virt_alloc_try_nid_nopanic(
-  * @max_addr: the upper bound of the memory region from where the allocation
-  *	      is preferred (phys address), or %BOOTMEM_ALLOC_ACCESSIBLE to
-  *	      allocate only from memory limited by memblock.current_limit value
-- * @nid: nid of the free area to find, %MAX_NUMNODES for any node
-+ * @nid: nid of the free area to find, %NUMA_NO_NODE for any node
-  *
-  * Public panicking version of _memblock_virt_alloc_try_nid_nopanic()
-  * which provides debug information (including caller info), if enabled,
-diff --git a/mm/percpu.c b/mm/percpu.c
-index f74902c..55a798e 100644
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -1853,7 +1853,7 @@ static void * __init pcpu_dfl_fc_alloc(unsigned int cpu, size_t size,
- 	return  memblock_virt_alloc_try_nid_nopanic(size, align,
- 						     __pa(MAX_DMA_ADDRESS),
- 						     BOOTMEM_ALLOC_ACCESSIBLE,
--						     MAX_NUMNODES);
-+						     NUMA_NO_NODE);
- }
- 
- static void __init pcpu_dfl_fc_free(void *ptr, size_t size)
--- 
-1.7.9.5
 
