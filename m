@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333Ab3LEAcX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 19:32:23 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:36653 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756314Ab3LEAcS (ORCPT
+	id S1756222Ab3LEAgR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 19:36:17 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55533 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753361Ab3LEAgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 19:32:18 -0500
-From: Mark Brown <broonie@kernel.org>
-To: Liam Girdwood <lgirdwood@gmail.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@linaro.org>
-Date: Thu,  5 Dec 2013 00:31:55 +0000
-Message-Id: <1386203515-6815-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 1.8.5.1
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] regulator: gpio: Don't require a regulator-type property
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Wed, 4 Dec 2013 19:36:16 -0500
+Date: Thu, 5 Dec 2013 00:32:39 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Colin Cross <ccross@android.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Serban Constantinescu <serban.constantinescu@arm.com>,
+        Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        David Butcher <Dave.Butcher@arm.com>, Ian Rogers <irogers@google.com>,
+        romlem@android.com
+Subject: Re: [PATCH v1 9/9] staging: android: binder: Add binder compat
+ layer
+Message-ID: <20131205003239.352c52c2@alan.etchedpixels.co.uk>
+In-Reply-To: <CAMbhsRQHRK8xRzff_vCeqUwp=VGkByxVijxHpYjsKhA_oB7C=A@mail.gmail.com>
+References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
+	<1386180581-6710-10-git-send-email-serban.constantinescu@arm.com>
+	<20131204183554.GA16693@kroah.com>
+	<20131204232118.1c3db844@alan.etchedpixels.co.uk>
+	<CAMbhsRQHRK8xRzff_vCeqUwp=VGkByxVijxHpYjsKhA_oB7C=A@mail.gmail.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+> None of this (the patch series or the original code) is mine.  My
 
-Since essentially all GPIO controlled regulators are voltage regulators
-make the regulator-type property optional, defaulting to voltage.
+Sorry mistraced the attribution sequence
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
----
+> question was more of a general one on designing ioctls, as well as
+> concerns with changing the existing 32-bit api.
 
-Compile tested only.
+I think in general my advice would be:
 
- drivers/regulator/gpio-regulator.c | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+If its already been screwed up
+- sort the structures out for the 64bit version
+- make the 32bit version and compat ones clean copies of what they are now
+- don't try and pull stunts with alignof and other such tricks because
+	- some poor bugger will have to debug it one day (and it might be
+		  you some years after you forget how it worked)
+	- most of our security holes show up in complex data parsing paths
+- figure out whether its better to do compat fixups or just have 64bit use
+  new structures and new ioctl numbers with the 32bit ones working but
+  with 32bit offsets regardless of 32/64bit CPU mode.
 
-diff --git a/drivers/regulator/gpio-regulator.c b/drivers/regulator/gpio-regulator.c
-index 234960dc9607..13ec94d984ca 100644
---- a/drivers/regulator/gpio-regulator.c
-+++ b/drivers/regulator/gpio-regulator.c
-@@ -203,17 +203,15 @@ of_get_gpio_regulator_config(struct device *dev, struct device_node *np)
- 	}
- 	config->nr_states = i;
- 
-+	config->type = REGULATOR_VOLTAGE;
- 	ret = of_property_read_string(np, "regulator-type", &regtype);
--	if (ret < 0) {
--		dev_err(dev, "Missing 'regulator-type' property\n");
--		return ERR_PTR(-EINVAL);
-+	if (ret >= 0) {
-+		if (!strncmp("voltage", regtype, 7))
-+			config->type = REGULATOR_VOLTAGE;
-+		else if (!strncmp("current", regtype, 7))
-+			config->type = REGULATOR_CURRENT;
- 	}
- 
--	if (!strncmp("voltage", regtype, 7))
--		config->type = REGULATOR_VOLTAGE;
--	else if (!strncmp("current", regtype, 7))
--		config->type = REGULATOR_CURRENT;
--
- 	return config;
- }
- 
--- 
-1.8.5.1
 
+and for new stuff
+- design for 64bit safety in advance
+- watch the padding rules and user alignment
+- consider leaving some spare zero space on the end of the structs
+
+Alan
