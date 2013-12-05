@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933761Ab3LESFd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 13:05:33 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:56110 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932811Ab3LESFb (ORCPT
+	id S933784Ab3LESFz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 13:05:55 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:44940 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933335Ab3LESFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 13:05:31 -0500
-Date: Thu, 05 Dec 2013 13:05:24 -0500 (EST)
-Message-Id: <20131205.130524.997340443429884333.davem@davemloft.net>
-To: rostedt@goodmis.org
-Cc: mingo@kernel.org, henrik@austad.us, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, dhowells@redhat.com,
+	Thu, 5 Dec 2013 13:05:53 -0500
+Date: Thu, 5 Dec 2013 10:05:47 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH v4 tip/core/locking 0/4] Memory-barrier documentation
- updates
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20131205085146.0370ea2a@gandalf.local.home>
-References: <20131205105928.GA27382@austad.us>
-	<20131205122851.GB20562@gmail.com>
-	<20131205085146.0370ea2a@gandalf.local.home>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 05 Dec 2013 10:05:30 -0800 (PST)
+        sbw@mit.edu, Oleg Nesterov <oleg@redhat.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH tip/core/locking 4/4] Documentation/memory-barriers.txt:
+ Document ACCESS_ONCE()
+Message-ID: <20131205180547.GU15492@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131204224628.GA30159@linux.vnet.ibm.com>
+ <1386197219-31964-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1386197219-31964-4-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20131205095042.GB16749@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131205095042.GB16749@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120518-8236-0000-0000-00000492EB05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
-Date: Thu, 5 Dec 2013 08:51:46 -0500
+On Thu, Dec 05, 2013 at 10:50:42AM +0100, Ingo Molnar wrote:
+> 
+> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > + (*) The compiler is within its rights to reload a variable, for example,
+> > +     in cases where high register pressure prevents the compiler from
+> > +     keeping all data of interest in registers.  The compiler might
+> > +     therefore optimize the variable tmp out of our previous example:
+> > +
+> > +	while (tmp = a)
+> > +		do_something_with(tmp);
+> > +
+> > +     This could result in the following code, which is perfectly safe in
+> > +     single-threaded code, but can be fatal in concurrent code:
+> > +
+> > +	while (a)
+> > +		do_something_with(a);
+> > +
+> > +     For example, the optimized version of this code could result in
+> > +     passing a zero to do_something_with() in the case where the variable
+> > +     a was modified by some other CPU between the "while" statement and
+> > +     the call to do_something_with().
+> 
+> Nit: I guess references to variable names such as 'a' should be quoted 
+> (same for 'tmp', 'b', etc):
+> 
+>         For example, the optimized version of this code could result in
+>         passing a zero to do_something_with() in the case where the variable
+>         'a' was modified by some other CPU between the "while" statement and
+>         the call to do_something_with().
+> 
+> which makes reading it less ambiguous and more fluid IMO. This 
+> observation applies to the whole document as 'a' is used in many 
+> places.
 
-> I wish vger wouldn't do that. I wonder how much spam is really flagged
-> by this one characteristic alone. That is, spam that would have made it
-> otherwise, but because of the Cc list, it was rejected.
+Good point, fixed.
 
-10 to 20 spam posts per day are prevented by this rule.
+							Thanx, Paul
 
-And frankly it's totally rediculous to have such a huge CC: list
-in the first place, even if the vger spam filter didn't exist.
-
-If you CC: something to netdev, it's going to reach me, you don't need
-to CC: me.  If just makes for a dup that I have to delete in my inbox,
-so you're actually making more work for me in the end.
-
-That's just one example.
