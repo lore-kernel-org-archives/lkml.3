@@ -1,135 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755205Ab3LEJw1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 04:52:27 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39344 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753196Ab3LEJwW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 04:52:22 -0500
-Date: Thu, 5 Dec 2013 09:52:18 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Georgi Djakov <gdjakov@mm-sol.com>
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "subhashj@codeaurora.org" <subhashj@codeaurora.org>
-Subject: Re: [PATCH v7 1/2] mmc: sdhci-msm: Initial SDHCI MSM driver
- documentation
-Message-ID: <20131205095218.GH29200@e106331-lin.cambridge.arm.com>
-References: <1383753405-23631-1-git-send-email-gdjakov@mm-sol.com>
- <1383753405-23631-2-git-send-email-gdjakov@mm-sol.com>
+	id S1755325Ab3LEJwh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 04:52:37 -0500
+Received: from mail.efficios.com ([78.47.125.74]:47118 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755268Ab3LEJwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 04:52:31 -0500
+Date: Thu, 5 Dec 2013 09:52:31 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu,
+        Oleg Nesterov <oleg@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Message-ID: <1352854539.80112.1386237151296.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20131205093334.GA16749@gmail.com>
+References: <20131204224628.GA30159@linux.vnet.ibm.com> <1386197219-31964-1-git-send-email-paulmck@linux.vnet.ibm.com> <1386197219-31964-4-git-send-email-paulmck@linux.vnet.ibm.com> <20131205093334.GA16749@gmail.com>
+Subject: Re: [PATCH tip/core/locking 4/4] Documentation/memory-barriers.txt:
+ Document ACCESS_ONCE()
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383753405-23631-2-git-send-email-gdjakov@mm-sol.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [88.131.58.147]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF25 (Linux)/8.0.5_GA_5839)
+Thread-Topic: Documentation/memory-barriers.txt: Document ACCESS_ONCE()
+Thread-Index: zAaiyN81xHa/XqybOfp91cVtGmrNPQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Apologies for the late reply.
-
-On Wed, Nov 06, 2013 at 03:56:44PM +0000, Georgi Djakov wrote:
-> This patch adds documentation for Qualcomm SDHCI MSM driver.
-> It contains the differences between the core properties in mmc.txt
-> and the properties used by the sdhci-msm driver.
-
-Nit, but this is documentation of the binding, not the driver.
-
+----- Original Message -----
+> From: "Ingo Molnar" <mingo@kernel.org>
+> To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org, "mathieu
+> desnoyers" <mathieu.desnoyers@efficios.com>, josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+> peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+> fweisbec@gmail.com, sbw@mit.edu, "Oleg Nesterov" <oleg@redhat.com>, "Jonathan Corbet" <corbet@lwn.net>, "Rusty
+> Russell" <rusty@rustcorp.com.au>
+> Sent: Thursday, December 5, 2013 10:33:34 AM
+> Subject: Re: [PATCH tip/core/locking 4/4] Documentation/memory-barriers.txt: Document ACCESS_ONCE()
 > 
-> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
-> ---
->  .../devicetree/bindings/mmc/sdhci-msm.txt          |   92 ++++++++++++++++++++
->  1 file changed, 92 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mmc/sdhci-msm.txt
 > 
-> diff --git a/Documentation/devicetree/bindings/mmc/sdhci-msm.txt b/Documentation/devicetree/bindings/mmc/sdhci-msm.txt
-> new file mode 100644
-> index 0000000..8f1a52d
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mmc/sdhci-msm.txt
-> @@ -0,0 +1,92 @@
-> +* Qualcomm SDHCI controller (sdhci-msm)
-> +
-> +This file documents differences between the core properties in mmc.txt
-> +and the properties used by the sdhci-msm driver.
-> +
-> +Required properties:
-> +- compatible: should contain "qcom,sdhci-msm"
-> +- reg: should contain SDHC, SD Core register map
+> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > + (*) The compiler is within its rights to reorder memory accesses unless
+> > +     you tell it not to.  For example, consider the following interaction
+> > +     between process-level code and an interrupt handler:
+> > +
+> > +	void process_level(void)
+> > +	{
+> > +		msg = get_message();
+> > +		flag = true;
+> > +	}
+> > +
+> > +	void interrupt_handler(void)
+> > +	{
+> > +		if (flag)
+> > +			process_message(msg);
+> > +	}
+> > +
+> > +     There is nothing to prevent the the compiler from transforming
+> > +     process_level() to the following, in fact, this might well be a
+> > +     win for single-threaded code:
+> > +
+> > +	void process_level(void)
+> > +	{
+> > +		flag = true;
+> > +		msg = get_message();
+> > +	}
+> > +
+> > +     If the interrupt occurs between these two statement, then
+> > +     interrupt_handler() might be passed a garbled msg.  Use ACCESS_ONCE()
+> > +     to prevent this as follows:
+> > +
+> > +	void process_level(void)
+> > +	{
+> > +		ACCESS_ONCE(msg) = get_message();
+> > +		ACCESS_ONCE(flag) = true;
+> > +	}
+> > +
+> > +	void interrupt_handler(void)
+> > +	{
+> > +		if (ACCESS_ONCE(flag))
+> > +			process_message(ACCESS_ONCE(msg));
+> > +	}
+> 
+> Technically, if the interrupt handler is the innermost context, the
+> ACCESS_ONCE() is not needed in the interrupt_handler() code.
+> 
+> Since for the vast majority of Linux code IRQ handlers are the most
+> atomic contexts (very few drivers deal with NMIs) I suspect we should
+> either remove that ACCESS_ONCE() from the example or add a comment
+> explaining that in many cases those are superfluous?
 
-As this seems to depend on reg-names, it would be nice to write this in
-terms of reg-names (as with clocks and clock-names).
+It might be worthwhile to state clearly those two different use-cases:
 
+* no nesting (e.g. process vs process), where both sides of the access
+  need ACCESS_ONCE().
 
-> +- reg-names: indicates various resources passed to driver (via reg proptery) by name
-> +	"reg-names" examples are "hc_mem" and "core_mem"
+* nested access: the outer context needs ACCESS_ONCE(), but not the
+  inner context.
 
-Either there are a fixed set of names you expect (and therefore these
-aren't examples but rather a definition), or this property is useless.
-Please either define the set of names or remove this property.
-
-> +- interrupts: should contain SDHC interrupts
-> +- interrupt-names: indicates interrupts passed to driver (via interrupts property) by name
-> +	"interrupt-names" examples are "hc_irq" and "pwr_irq"
-
-Likewise for both points.
-
-> +- vdd-supply: phandle to the regulator for the vdd (flash core voltage) supply.
-> +- vddio-supply: phandle to the regulator for the vdd-io (i/o voltage) supply.
-> +- pinctrl-names: Should contain only one value - "default".
-> +- pinctrl-0: Should specify pin control groups used for this controller.
-> +- clocks: A list of phandle + clock-specifier pairs for the clocks listed in clock-names
-> +- clock-names: Should contain the following:
-> +	"iface" - Main peripheral bus clock (PCLK/HCLK - AHB Bus clock) (required)
-> +	"core"	- SDC MMC clock (MCLK) (required)
-> +	"bus"	- SDCC bus voter clock (optional)
-
-This looks good :)
-
-> +
-> +Optional properties:
-> +- qcom,bus-speed-mode: specifies the supported bus speed modes by host
-> +	The supported bus speed modes are:
-> +	"HS200_1p8v" - indicates that host can support HS200 at 1.8v
-> +	"HS200_1p2v" - indicates that host can support HS200 at 1.2v
-> +	"DDR_1p8v" - indicates that host can support DDR mode at 1.8v
-> +	"DDR_1p2v" - indicates that host can support DDR mode at 1.2v
-
-Is this a list of strings, or does the unit only support one of these?
-
-This could be a set of boolean properties instead, is this likely to
-expand in future?
-
-> +
-> +- qcom,{vdd,vdd-io}-lpm-sup - specifies whether the supply can be kept in low power mode.
-
-Boolean? Please specify types on properties.
-
-Can you elaborate on what this means? When can a supply not be kept in
-low power mode?
-
-> +- qcom,{vdd,vdd-io}-voltage-level - specifies voltage levels for the supply.
-> +	Should be specified in pairs (min, max), units uV.
-> +- qcom,{vdd,vdd-io}-current-level - specifies load levels for the supply in lpm
-> +	or high power mode (hpm). Should be specified in pairs (lpm, hpm), units uA.
-
-Can you not query these from the regulator framework?
-
-If these are configuration, why are they necessary?
+We don't actually care about IRQs being the "most atomic" context, and
+we should not care about NMIs in this example. Only the relative nesting
+of the execution contexts accessing the data matter.
 
 Thanks,
-Mark.
+
+Mathieu
+
+> 
+> > + (*) For aligned memory locations whose size allows them to be accessed
+> > +     with a single memory-reference instruction, prevents "load tearing"
+> > +     and "store tearing," in which a single large access is replaced by
+> > +     multiple smaller accesses.  For example, given an architecture having
+> > +     16-bit store instructions with 7-bit immediate fields, the compiler
+> > +     might be tempted to use two 16-bit store-immediate instructions to
+> > +     implement the following 32-bit store:
+> > +
+> > +	p = 0x00010002;
+> > +
+> > +     Please note that GCC really does use this sort of optimization,
+> > +     which is not surprising given that it would likely take more
+> > +     than two instructions to build the constant and then store it.
+> > +     This optimization can therefore be a win in single-threaded code.
+> > +     In fact, a recent bug (since fixed) caused GCC to incorrectly use
+> > +     this optimization in a volatile store.  In the absence of such bugs,
+> > +     use of ACCESS_ONCE() prevents store tearing:
+> > +
+> > +	ACCESS_ONCE(p) = 0x00010002;
+> 
+> I suspect the last sentence should read:
+> 
+> > +                                             In the absence of such bugs,
+> > +     use of ACCESS_ONCE() prevents store tearing in this example:
+> > +
+> > +	ACCESS_ONCE(p) = 0x00010002;
+> 
+> Otherwise it could be read as a more generic statement (leaving out
+> 'load tearing')?
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
