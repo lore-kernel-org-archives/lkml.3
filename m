@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757203Ab3LERgc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:36:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38068 "EHLO
+	id S933742Ab3LESDA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 13:03:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38075 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757158Ab3LERga (ORCPT
+	with ESMTP id S1757174Ab3LERgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:36:30 -0500
+	Thu, 5 Dec 2013 12:36:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 07/90] ARM: sa11x0/assabet: ensure CS2 is configured appropriately
-Date: Thu,  5 Dec 2013 17:34:49 +0000
-Message-Id: <1386264972-5399-8-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 08/90] dm: allocate buffer for messages with small number of arguments using GFP_NOIO
+Date: Thu,  5 Dec 2013 17:34:50 +0000
+Message-Id: <1386264972-5399-9-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -27,35 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit f3964fe1c9d9a887d65faf594669852e4dec46e0 upstream.
+commit f36afb3957353d2529cb2b00f78fdccd14fc5e9c upstream.
 
-The CS2 region contains the Assabet board configuration and status
-registers, which are 32-bit.  Unfortunately, some boot loaders do not
-configure this region correctly, leaving it setup as a 16-bit region.
-Fix this.
+dm-mpath and dm-thin must process messages even if some device is
+suspended, so we allocate argv buffer with GFP_NOIO. These messages have
+a small fixed number of arguments.
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+On the other hand, dm-switch needs to process bulk data using messages
+so excessive use of GFP_NOIO could cause trouble.
+
+The patch also lowers the default number of arguments from 64 to 8, so
+that there is smaller load on GFP_NOIO allocations.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Acked-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mach-sa1100/assabet.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/md/dm-table.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-sa1100/assabet.c b/arch/arm/mach-sa1100/assabet.c
-index d1dc7f1..3417058 100644
---- a/arch/arm/mach-sa1100/assabet.c
-+++ b/arch/arm/mach-sa1100/assabet.c
-@@ -509,6 +509,9 @@ static void __init assabet_map_io(void)
- 	 * Its called GPCLKR0 in my SA1110 manual.
- 	 */
- 	Ser1SDCR0 |= SDCR0_SUS;
-+	MSC1 = (MSC1 & ~0xffff) |
-+		MSC_NonBrst | MSC_32BitStMem |
-+		MSC_RdAcc(2) | MSC_WrAcc(2) | MSC_Rec(0);
+diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
+index f220a69..d509f23 100644
+--- a/drivers/md/dm-table.c
++++ b/drivers/md/dm-table.c
+@@ -581,14 +581,28 @@ static int adjoin(struct dm_table *table, struct dm_target *ti)
  
- 	if (!machine_has_neponset())
- 		sa1100_register_uart_fns(&assabet_port_fns);
+ /*
+  * Used to dynamically allocate the arg array.
++ *
++ * We do first allocation with GFP_NOIO because dm-mpath and dm-thin must
++ * process messages even if some device is suspended. These messages have a
++ * small fixed number of arguments.
++ *
++ * On the other hand, dm-switch needs to process bulk data using messages and
++ * excessive use of GFP_NOIO could cause trouble.
+  */
+ static char **realloc_argv(unsigned *array_size, char **old_argv)
+ {
+ 	char **argv;
+ 	unsigned new_size;
++	gfp_t gfp;
+ 
+-	new_size = *array_size ? *array_size * 2 : 64;
+-	argv = kmalloc(new_size * sizeof(*argv), GFP_KERNEL);
++	if (*array_size) {
++		new_size = *array_size * 2;
++		gfp = GFP_KERNEL;
++	} else {
++		new_size = 8;
++		gfp = GFP_NOIO;
++	}
++	argv = kmalloc(new_size * sizeof(*argv), gfp);
+ 	if (argv) {
+ 		memcpy(argv, old_argv, *array_size * sizeof(*argv));
+ 		*array_size = new_size;
 -- 
 1.8.3.2
 
