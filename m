@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab3LEWrS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 17:47:18 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:47437 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab3LEWrR (ORCPT
+	id S1753092Ab3LEWuZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 17:50:25 -0500
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:45891 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097Ab3LEWuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 17:47:17 -0500
-Date: Thu, 5 Dec 2013 14:47:10 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, Oleg Nesterov <oleg@redhat.com>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH tip/core/locking 4/4] Documentation/memory-barriers.txt:
- Document ACCESS_ONCE()
-Message-ID: <20131205224710.GA21140@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131204224628.GA30159@linux.vnet.ibm.com>
- <1386197219-31964-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1386197219-31964-4-git-send-email-paulmck@linux.vnet.ibm.com>
- <20131205095042.GB16749@gmail.com>
- <20131205180547.GU15492@linux.vnet.ibm.com>
+	Thu, 5 Dec 2013 17:50:23 -0500
+Date: Thu, 5 Dec 2013 17:50:19 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: BUG: sleeping function called from invalid context at
+ kernel/locking/rwsem.c:20
+Message-ID: <20131205225019.GA32005@mtj.dyndns.org>
+References: <20131205031051.GC5135@yliu-dev.sh.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131205180547.GU15492@linux.vnet.ibm.com>
+In-Reply-To: <20131205031051.GC5135@yliu-dev.sh.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120522-0928-0000-0000-0000045EC138
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 10:05:47AM -0800, Paul E. McKenney wrote:
-> On Thu, Dec 05, 2013 at 10:50:42AM +0100, Ingo Molnar wrote:
-> > 
-> > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> > 
-> > > + (*) The compiler is within its rights to reload a variable, for example,
-> > > +     in cases where high register pressure prevents the compiler from
-> > > +     keeping all data of interest in registers.  The compiler might
-> > > +     therefore optimize the variable tmp out of our previous example:
-> > > +
-> > > +	while (tmp = a)
-> > > +		do_something_with(tmp);
-> > > +
-> > > +     This could result in the following code, which is perfectly safe in
-> > > +     single-threaded code, but can be fatal in concurrent code:
-> > > +
-> > > +	while (a)
-> > > +		do_something_with(a);
-> > > +
-> > > +     For example, the optimized version of this code could result in
-> > > +     passing a zero to do_something_with() in the case where the variable
-> > > +     a was modified by some other CPU between the "while" statement and
-> > > +     the call to do_something_with().
-> > 
-> > Nit: I guess references to variable names such as 'a' should be quoted 
-> > (same for 'tmp', 'b', etc):
-> > 
-> >         For example, the optimized version of this code could result in
-> >         passing a zero to do_something_with() in the case where the variable
-> >         'a' was modified by some other CPU between the "while" statement and
-> >         the call to do_something_with().
-> > 
-> > which makes reading it less ambiguous and more fluid IMO. This 
-> > observation applies to the whole document as 'a' is used in many 
-> > places.
+On Thu, Dec 05, 2013 at 11:10:51AM +0800, Yuanhan Liu wrote:
+> Greetings,
 > 
-> Good point, fixed.
+> I got the below dmesg and the first bad commit is
+> 
+> commit 4b93dc9b1c684d0587fe44d36bbfdf45bd3bea9d
+> Author:     Tejun Heo <tj@kernel.org>
+> AuthorDate: Thu Nov 28 14:54:43 2013 -0500
+> Commit:     Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> CommitDate: Fri Nov 29 18:16:08 2013 -0800
+> 
+>     sysfs, kernfs: prepare mount path for kernfs
 
-Which reminds me -- the thing that makes me most nervous about prohibiting
-speculative stores is the bit about having to anticipate all compiler
-optimizations that might get rid of the needed conditionals.
+Oops, can you please try the following patch?
 
-Thoughts?
+Thanks.
 
-							Thanx, Paul
-
+diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
+index e7e3aa8..8d07527 100644
+--- a/fs/sysfs/mount.c
++++ b/fs/sysfs/mount.c
+@@ -45,8 +45,10 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
+ 
+ static void sysfs_kill_sb(struct super_block *sb)
+ {
++	void *ns = (void *)kernfs_super_ns(sb);
++
+ 	kernfs_kill_sb(sb);
+-	kobj_ns_drop(KOBJ_NS_TYPE_NET, (void *)kernfs_super_ns(sb));
++	kobj_ns_drop(KOBJ_NS_TYPE_NET, ns);
+ }
+ 
+ static struct file_system_type sysfs_fs_type = {
