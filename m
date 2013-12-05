@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932390Ab3LENvv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 08:51:51 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:64196 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932203Ab3LENvu (ORCPT
+	id S932426Ab3LENv6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 08:51:58 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:47639 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932203Ab3LENvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 08:51:50 -0500
-Date: Thu, 5 Dec 2013 08:51:46 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Henrik Austad <henrik@austad.us>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, David Miller <davem@davemloft.net>
-Subject: Re: [PATCH v4 tip/core/locking 0/4] Memory-barrier documentation
- updates
-Message-ID: <20131205085146.0370ea2a@gandalf.local.home>
-In-Reply-To: <20131205122851.GB20562@gmail.com>
-References: <20131204224628.GA30159@linux.vnet.ibm.com>
-	<20131205105928.GA27382@austad.us>
-	<20131205122851.GB20562@gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Thu, 5 Dec 2013 08:51:55 -0500
+Message-ID: <52A084EB.5010103@linaro.org>
+Date: Thu, 05 Dec 2013 21:51:39 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, linaro-kernel@lists.linaro.org,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Al Stone <al.stone@linaro.org>, patches@linaro.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, linaro-acpi@lists.linaro.org,
+        linux-acpi@vger.kernel.org, Jon Masters <jonathan@jonmasters.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [RFC part1 PATCH 5/7] ARM64 / ACPI: Introduce arm_core.c and
+ its related head file
+References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org> <1386088611-2801-6-git-send-email-hanjun.guo@linaro.org> <201312050438.05117.arnd@arndb.de>
+In-Reply-To: <201312050438.05117.arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Dec 2013 13:28:51 +0100
-Ingo Molnar <mingo@kernel.org> wrote:
- 
-> > Just me, or is the 3rd patch missing from lkml?
-> 
-> It had a Cc: list from hell so vger probably rejected it as spam.
-> 
+On 2013年12月05日 11:38, Arnd Bergmann wrote:
+> On Tuesday 03 December 2013, Hanjun Guo wrote:
+>> +static unsigned int gsi_to_irq(unsigned int gsi)
+>> +{
+>> +       int irq = irq_create_mapping(NULL, gsi);
+>> +
+>> +       return irq;
+>> +}
+> I think this could use a comment regarding your plans for IRQ domains.
+>
+> Do you expect that all ACPI systems would have only a single GIC IRQ
+> controller and a single domain, or do you plan to add irqdomain code
+> later?
 
-I wish vger wouldn't do that. I wonder how much spam is really flagged
-by this one characteristic alone. That is, spam that would have made it
-otherwise, but because of the Cc list, it was rejected.
+we added irqdomain code in the part2 patch set, is that the code ok
+with you?
 
--- Steve
+Thanks
+Hanjun
