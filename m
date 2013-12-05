@@ -1,135 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756479Ab3LEDMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 22:12:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2435 "EHLO mx1.redhat.com"
+	id S1756528Ab3LEDPT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 22:15:19 -0500
+Received: from mga03.intel.com ([143.182.124.21]:46645 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752778Ab3LEDMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 22:12:21 -0500
-Date: Wed, 4 Dec 2013 22:12:18 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Ben Zhang <benzh@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v2] watchdog: Add a sysctl to disable soft lockup detector
-Message-ID: <20131205031218.GO35219@redhat.com>
-References: <20131204212916.GJ35219@redhat.com>
- <1386208556-23873-1-git-send-email-benzh@chromium.org>
+	id S1754023Ab3LEDPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Dec 2013 22:15:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,830,1378882800"; 
+   d="asc'?scan'208";a="394250606"
+Date: Wed, 4 Dec 2013 21:57:41 -0500
+From: "Chen, Gong" <gong.chen@linux.intel.com>
+To: Levente Kurusa <levex@linux.com>
+Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        EDAC <linux-edac@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: mcheck: call put_device on device_register failure
+Message-ID: <20131205025741.GA26999@gchen.bj.intel.com>
+Mail-Followup-To: Levente Kurusa <levex@linux.com>,
+	Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Tony Luck <tony.luck@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	x86@kernel.org, EDAC <linux-edac@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <5298F900.9000208@linux.com>
+ <20131129205628.GA20144@pd.tnic>
+ <52999419.7040600@linux.com>
+ <20131130111214.GB4323@pd.tnic>
+ <20131203022330.GA25136@gchen.bj.intel.com>
+ <20131203170150.GA5369@pd.tnic>
+ <20131204073824.GA22134@gchen.bj.intel.com>
+ <529F76CB.8080601@linux.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TB36FDmn/VVEgNH/"
 Content-Disposition: inline
-In-Reply-To: <1386208556-23873-1-git-send-email-benzh@chromium.org>
+In-Reply-To: <529F76CB.8080601@linux.com>
+X-PGP-Key-ID: A43922C7
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 05:55:56PM -0800, Ben Zhang wrote:
-> Currently, the soft lockup detector and hard lockup detector
-> can be enabled or disabled together via the flag variable
-> watchdog_user_enabled. There isn't a way to disable only the
-> soft lockup detector while keeping the hard lockup detector
-> running.
-> 
-> The hard lockup detector sometimes does not work on a x86
-> machine with multiple cpus when softlockup_panic is set to 0.
-> For example:
-> 1. Hard lockup occurs on cpu0 ("cli" followed by a infinite loop).
-> 2. Soft lockup occurs on cpu1 shortly after because cpu1 tries to
-> send a function to cpu0 via smp_call_function_single().
-> 3. watchdog_timer_fn() detects the soft lockup on cpu1 and
-> dumps the stack. dump_stack() eventually calls touch_nmi_watchdog()
-> which sets watchdog_nmi_touch=true for all cpus and sets
-> watchdog_touch_ts=0 for cpu1.
-> 4. NMI fires on cpu0. watchdog_overflow_callback() sees
-> watchdog_nmi_touch=true, so it does not do anything except setting
-> watchdog_nmi_touch=false.
-> 5. watchdog_timer_fn() is called again on cpu1, it sees
-> watchdog_touch_ts=0, so reloads it with the current tick. Thus,
-> is_softlockup() returns false, and soft_watchdog_warn is set to false.
-> 6. Before NMI can fire on cpu0 again with watchdog_nmi_touch=false,
-> watchdog_timer_fn() reports the soft lockup on cpu1 again
-> and we go back to #3.
 
-Yup.  This is because touch_nmi_watchdog touches _all_ the cpus instead of
-its own.  I tried to fix this 3 years ago, but Andrew wanted me to fix
-something else in the panic code first as a trade for his ack in changing
-the semantics of touch_nmi_watchdog. ;-p
+--TB36FDmn/VVEgNH/
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I doubt this patch still applies but the concept is pretty simple, touch
-only the local cpu not all of them.  Should be pretty easy to port.
+On Wed, Dec 04, 2013 at 07:39:07PM +0100, Levente Kurusa wrote:
+> Date:	Wed, 04 Dec 2013 19:39:07 +0100
+> From: Levente Kurusa <levex@linux.com>
+> To: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>, Thomas
+>  Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>, "H. Peter
+>  Anvin" <hpa@zytor.com>, x86@kernel.org, EDAC <linux-edac@vger.kernel.org=
+>,
+>  LKML <linux-kernel@vger.kernel.org>
+> Subject: Re: [PATCH] x86: mcheck: call put_device on device_register fail=
+ure
+> User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
+>  Thunderbird/24.1.0
+>=20
+> 2013-12-04 08:38, Chen, Gong:
+> > On Tue, Dec 03, 2013 at 06:01:50PM +0100, Borislav Petkov wrote:
+> >> Date: Tue, 3 Dec 2013 18:01:50 +0100
+> >> From: Borislav Petkov <bp@alien8.de>
+> >> To: "Chen, Gong" <gong.chen@linux.intel.com>
+> >> Cc: Levente Kurusa <levex@linux.com>, Ingo Molnar <mingo@kernel.org>,
+> >>  Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>=
+, "H.
+> >>  Peter Anvin" <hpa@zytor.com>, x86@kernel.org, EDAC
+> >>  <linux-edac@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+> >> Subject: Re: [PATCH] x86: mcheck: call put_device on device_register f=
+ailure
+> >> User-Agent: Mutt/1.5.21 (2010-09-15)
+> >>
+> >> Can you please fix your
+> >>
+> >> Mail-Followup-To:
+> >>
+> >> header? It is impossible to reply to your emails without fiddling with
+> >> the To: and Cc: by hand which gets very annoying over time.
+> >=20
+> > I add some configs in my muttrc. Hope it works.
+> >=20
+> >>
+> >> On Mon, Dec 02, 2013 at 09:23:30PM -0500, Chen, Gong wrote:
+> >>> I have some concerns about it. if device_register is failed, it will
+> >>> backtraces all kinds of conditions automatically, including put_device
+> >>> definately. So do we really need an extra put_device when it returns
+> >>> failure?
+> >>
+> >> Do you mean the "done:" label in device_add() which does put_device()
+> >> and which gets called by device_register()?
+> >>
+> >=20
+> > Not only. I noticed that another put_device under label "Error:".
+> >=20
+>=20
+> That label is called when we failed to add the kobject to its parent.
+> It just puts the parent of the device. I don't think it has anything
+> to do with us put_device()-ing the actual device too.
+>=20
+OK, you are right. I read some kobject related codes and get:
 
-Not entirely sure if this would be accepted by folks, but I think it would
-address your fundamental problem.
+static inline void kref_init(struct kref *kref)
+{
+        atomic_set(&kref->refcount, 1);
+}
 
-Cheers,
-Don 
+The init refcount is 1, which means even if we meet an error and put_device
+in device_add, we still need an extra put_device to make refcount =3D 0
+and then release the dev object.
 
--------------------8<------------------------
-From: Don Zickus <dzickus@redhat.com>
-Date: Thu, 4 Nov 2010 20:53:03 -0400
-Subject: [PATCH v3] watchdog:  touch_nmi_watchdog should only touch local cpu not every one
+BTW, from the comments of device_register:
 
-I ran into a scenario where while one cpu was stuck and should have panic'd
-because of the NMI watchdog, it didn't.  The reason was another cpu was spewing
-stack dumps on to the console.  Upon investigation, I noticed that when writing
-to the console and also when dumping the stack, the watchdog is touched.
+"NOTE: _Never_ directly free @dev after calling this function, even
+ if it returned an error! Always use put_device() to give up the
+ reference initialized in this function instead. "
 
-This causes all the cpus to reset their NMI watchdog flags and the 'stuck' cpu
-just spins forever.
+Many caller don't follow this logic. For example:
+in arch/arm/common/locomo.c
+locomo_init_one_child
+=2E..
+        ret =3D device_register(&dev->dev);
+        if (ret) {
+out:
+                kfree(dev);
+        }
+=2E..
+=20
+in arch/parisc/kernel/drivers.c
+create_tree_node
+=2E..
+        if (device_register(&dev->dev)) {
+                kfree(dev);
+                return NULL;
+        }
+=2E..
 
-This change causes the semantics of touch_nmi_watchdog to be changed slightly.
-Previously, I accidentally changed the semantics and we noticed there was a
-codepath in which touch_nmi_watchdog could be touched from a preemtible area.
-That caused a BUG() to happen when CONFIG_DEBUG_PREEMPT was enabled.  I believe
-it was the acpi code.
+etc.
 
-My attempt here re-introduces the change to have the touch_nmi_watchdog() code
-only touch the local cpu instead of all of the cpus.  But instead of using
-__get_cpu_var(), I use the __raw_get_cpu_var() version.
+Maybe we need one more patch to fix them all. :-)
+> --=20
+> Regards,
+> Levente Kurusa
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-edac" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-This avoids the preemption problem.  However my reasoning wasn't because I was
-trying to be lazy.  Instead I rationalized it as, well if preemption is enabled
-then interrupts should be enabled to and the NMI watchdog will have no reason
-to trigger.  So it won't matter if the wrong cpu is touched because the percpu
-interrupt counters the NMI watchdog uses should still be incrementing.
+--TB36FDmn/VVEgNH/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-V3: Really remove touch_all_nmi_watchdogs()
-V2: Remove touch_all_nmi_watchdogs()
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- kernel/watchdog.c |   17 +++++++++--------
- 1 files changed, 9 insertions(+), 8 deletions(-)
+iQIcBAEBAgAGBQJSn+ulAAoJEI01n1+kOSLHekAP/2qGijIWvxDe3ekFVAKvywaH
+J3rAurbzvk+uJn/ZoOXOhWJ6EkctoG7NMionVmgvaeSnGnIj5uye6NTzzD5pfWTv
+b6nKQpSb/doxmcYersAm5rn3WSDPTrB+I7915/nP5HH/6aVLojPOAE+ON6JxM8yp
+mqA3gGyvddUgErplRZE0wFhJ2dnG6w45Zt1POeDCN3akwAv2cgvmoVxQitwwY1LY
+cYxO8roVuxi7BcS3qvc85JQyXV1gr3TQxVW1xXLxQfY9G8Fap2vDZuMTaDW0wnju
+S+/3+3TAudjbSgAGORk4yfvG91dn+8AtS4ut97nEp3H0ZCUaBvxhu/S/Y2RYJYK3
+CJ9ohxDbSCvT0J6bvZOGRA4Uhuawe4l6PHTLvFB5sfLsei4Spw5afpep2st7A3E5
+2VJLtyXgEWFu6JisMmq+sxHjvi8PQWIc2GGhUGICgiFo3hCgnVasLXn9dm8g2rca
+KhFlgGL8WYYzPvL0wxVZ3uIGPyf2TzA67TaNPzDLshhnuufw8ZxTga/p0przKx6g
+d32QwW6S+t6PisuSphnwHku08QVLrvHqOVqCvi0jvQVLxzdbdXm5DNDBP+Pd7fR9
+UiB7eNQB/VmrB0ht9+FZtHOZo/iTzsVyiJnPonWKxdcWrcV9IPcZAgxA5FCPkJP3
+GAohR2LbKVyIee08glQJ
+=l25A
+-----END PGP SIGNATURE-----
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index dc8e168..09fddd7 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -141,14 +141,15 @@ void touch_all_softlockup_watchdogs(void)
- #ifdef CONFIG_HARDLOCKUP_DETECTOR
- void touch_nmi_watchdog(void)
- {
--	if (watchdog_enabled) {
--		unsigned cpu;
-+	/*
-+	 * Using __raw here because some code paths have
-+	 * preemption enabled.  If preemption is enabled
-+	 * then interrupts should be enabled too, in which
-+	 * case we shouldn't have to worry about the watchdog
-+	 * going off.
-+	 */
-+	__raw_get_cpu_var(watchdog_nmi_touch) = true;
- 
--		for_each_present_cpu(cpu) {
--			if (per_cpu(watchdog_nmi_touch, cpu) != true)
--				per_cpu(watchdog_nmi_touch, cpu) = true;
--		}
--	}
- 	touch_softlockup_watchdog();
- }
- EXPORT_SYMBOL(touch_nmi_watchdog);
--- 
-1.7.2.3
-
+--TB36FDmn/VVEgNH/--
