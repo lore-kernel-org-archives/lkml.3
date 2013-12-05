@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab3LEOVr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 09:21:47 -0500
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:49290 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab3LEOVn (ORCPT
+	id S1756762Ab3LEOWD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 09:22:03 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:37861 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968Ab3LEOVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 09:21:43 -0500
+	Thu, 5 Dec 2013 09:21:55 -0500
 MIME-Version: 1.0
-In-Reply-To: <87siucd90z.fsf@devron.myhome.or.jp>
-References: <1384688224-2832-1-git-send-email-linkinjeon@gmail.com>
-	<87siucd90z.fsf@devron.myhome.or.jp>
-Date: Thu, 5 Dec 2013 23:21:42 +0900
-Message-ID: <CAKYAXd8wLuSevrKqyztNVM47OT-fwhJ41cnuU7K8+n4ezQFf_A@mail.gmail.com>
-Subject: Re: [PATCH v2 0/5] fat: additions to support fat_fallocate
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20131128193349.GB24767@redhat.com>
+References: <20131128091358.GH10022@twins.programming.kicks-ass.net>
+	<20131128114542.GA3826@redhat.com>
+	<20131128121748.GN10022@twins.programming.kicks-ass.net>
+	<20131128133152.GA821@redhat.com>
+	<20131128133947.GR10022@twins.programming.kicks-ass.net>
+	<20131128142359.GA6420@redhat.com>
+	<20131128143155.GC3925@htj.dyndns.org>
+	<20131128150055.GA11956@redhat.com>
+	<20131128150233.GA10022@twins.programming.kicks-ass.net>
+	<20131128193330.GA24767@redhat.com>
+	<20131128193349.GB24767@redhat.com>
+Date: Thu, 5 Dec 2013 15:21:53 +0100
+Message-ID: <CAFTL4hw+Ztsy5uy2WOsyxQ1dL7B_rPEU=XtisoR5X18cPQ7LYg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] usermodehelper: kill ____call_usermodehelper()->set_cpus_allowed_ptr()
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>, Christoph Lameter <cl@linux.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Tejun Heo <htejun@gmail.com>,
+        zhang.yi20@zte.com.cn, lkml <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/12/1, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
+2013/11/28 Oleg Nesterov <oleg@redhat.com>:
+> ____call_usermodehelper() does set_cpus_allowed_ptr(cpu_all_mask),
+> this (and the comment) is misleading. We no longer have keventd_wq,
+> and kmod.c switched to khelper_wq a long ago.
 >
->> From: Namjae Jeon <namjae.jeon@samsung.com>
->>
->> This patch set provides support for doing fallocate operation
->> on FAT filesystem.
->> After series of review for the the feature
->> The complete functionality is broken down into smaller subsets.
->>
->> v2:
->>  - remove a stary unlock(from Dan Carpenter)
->>  - check ->mmu_private and ->i_disksize to truncate uninitialized data.
->>
->> Namjae Jeon (5):
->>  fat: add i_disksize to represent uninitialized size
->>  fat: add fat_fallocate operation
->>  fat: zero out seek range on _fat_get_block
->>  fat: fallback to buffered write in case of fallocatded region on direct
->> IO
->>  fat: permit to return phy block number by fibmap in fallocated region
+> And more importantly, "unlike our parent" is no longer true too,
+> this thread was created by WQ_UNBOUND worker thread which has the
+> full ->cpus_allowed mask, so this set_cpus_allowed_ptr() is simply
+> unnecessary.
 >
-> Let's add document about FAT's fallocate() behavior to
-> Documents/filesystem/vfat.txt.
+> Perhaps we will change this later, so that userspace can control
+> the affinity of the usermode helper tasks, but this is yet another
+> reason to remove this set_cpus_allowed_ptr().
 >
-> I.e. it will be truncated evict_inode(). So, user has to assume
-> fallocate() is only valid until last close(), and user has to re-call
-> fallocate() after re-open to make sure fallocate() region.
-Right. I will update vfat document.
+> To some degree this also applies to set_user_nice(), but this
+> patch only updates the comment.
+>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Thanks for review.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+I'm adding Christophe in Cc because he is interested in tweaking the
+affinity of call_usermodehelper for cpu isolation. This welcome
+cleanup confirms that we want to take the direction of being able to
+change the affinity of workqueue themselves instead of just
+call_usermodehelper() alone.
+
+> ---
+>  kernel/kmod.c |    8 ++------
+>  1 files changed, 2 insertions(+), 6 deletions(-)
 >
+> diff --git a/kernel/kmod.c b/kernel/kmod.c
+> index b086006..2fe4544 100644
+> --- a/kernel/kmod.c
+> +++ b/kernel/kmod.c
+> @@ -208,13 +208,9 @@ static int ____call_usermodehelper(void *data)
+>         spin_lock_irq(&current->sighand->siglock);
+>         flush_signal_handlers(current, 1);
+>         spin_unlock_irq(&current->sighand->siglock);
+> -
+> -       /* We can run anywhere, unlike our parent keventd(). */
+> -       set_cpus_allowed_ptr(current, cpu_all_mask);
+> -
+>         /*
+> -        * Our parent is keventd, which runs with elevated scheduling priority.
+> -        * Avoid propagating that into the userspace child.
+> +        * Our parent is a workqueue thread, which can run with elevated
+> +        * scheduling priority. Avoid propagating that into the userspace.
+>          */
+>         set_user_nice(current, 0);
+>
+> --
+> 1.5.5.1
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
