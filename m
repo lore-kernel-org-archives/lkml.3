@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753623Ab3LEVXV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 16:23:21 -0500
-Received: from a9-50.smtp-out.amazonses.com ([54.240.9.50]:34600 "EHLO
-	a9-50.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752388Ab3LEVXU (ORCPT
+	id S1753878Ab3LEVXh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 16:23:37 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:58026 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752861Ab3LEVXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 16:23:20 -0500
-X-Greylist: delayed 984 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Dec 2013 16:23:20 EST
-Date: Thu, 5 Dec 2013 21:06:55 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: linux-kernel@vger.kernel.org
-Subject: rcu: Avoid irq disable in rcu_cpu_kthread
-Message-ID: <00000142c495b75b-c1878909-baf9-42a8-9ba7-62d216d806a7-000000@email.amazonses.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.12.05-54.240.9.50
+	Thu, 5 Dec 2013 16:23:35 -0500
+Date: Thu, 05 Dec 2013 16:23:33 -0500 (EST)
+Message-Id: <20131205.162333.1525865133149454763.davem@davemloft.net>
+To: ydroneaud@opteya.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk
+Subject: Re: [PATCH v2] net: handle error more gracefully in socketpair()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1385979146-13825-1-git-send-email-ydroneaud@opteya.com>
+References: <1385977019-12282-1-git-send-email-ydroneaud@opteya.com>
+	<1385979146-13825-1-git-send-email-ydroneaud@opteya.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 05 Dec 2013 13:23:35 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Once we have the per cpu patchset merged we could do the following [it
-even works without that patchset but the __this_cpu ops will not do
-preemption checks]. Would this work?
+From: Yann Droneaud <ydroneaud@opteya.com>
+Date: Mon,  2 Dec 2013 11:12:26 +0100
 
+> socketpair() error paths can be simplified to not call
+> heavy-weight sys_close().
+> 
+> This patch makes socketpair() use of error paths which do not
+> rely on heavy-weight call to sys_lose(): it's better to try
+> to push the file descriptor to userspace before installing
+> the socket file to the file descriptor, so that errors are
+> catched earlier and being easier to handle.
+> 
+> Three distinct error paths are needed since calling fput()
+> on file structure returned by sock_alloc_file() will
+> implicitly call sock_release() on the associated socket
+> structure.
+> 
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+> Link: http://marc.info/?i=1385977019-12282-1-git-send-email-ydroneaud@opteya.com
 
-Subject: rcu: Avoid irq disable in rcu_cpu_kthread
+I know that sys_close() is expensive, _but_ erroring out on
+the put_user() is extremely rare and logically it makes
+a ton more sense to fully install a file descriptor before
+writing it's numeric value into userspace.
 
-The use of this_cpu ops avoids numerous address calculations
-and allows to avoid the irq enable/disable sequence through a
-low latency non locking this_cpu_xchg.
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/kernel/rcu/tree_plugin.h
-===================================================================
---- linux.orig/kernel/rcu/tree_plugin.h	2013-12-03 11:32:23.322999660 -0600
-+++ linux/kernel/rcu/tree_plugin.h	2013-12-03 11:32:23.312999941 -0600
-@@ -1417,33 +1417,29 @@ static int rcu_cpu_kthread_should_run(un
-  */
- static void rcu_cpu_kthread(unsigned int cpu)
- {
--	unsigned int *statusp = this_cpu_ptr(&rcu_cpu_kthread_status);
--	char work, *workp = this_cpu_ptr(&rcu_cpu_has_work);
-+	char work;
- 	int spincnt;
-
- 	for (spincnt = 0; spincnt < 10; spincnt++) {
- 		trace_rcu_utilization(TPS("Start CPU kthread@rcu_wait"));
- 		local_bh_disable();
--		*statusp = RCU_KTHREAD_RUNNING;
--		this_cpu_inc(rcu_cpu_kthread_loops);
--		local_irq_disable();
--		work = *workp;
--		*workp = 0;
--		local_irq_enable();
-+		__this_cpu_write(rcu_cpu_kthread_status, RCU_KTHREAD_RUNNING);
-+		__this_cpu_inc(rcu_cpu_kthread_loops);
-+		work = this_cpu_xchg(rcu_cpu_has_work, 0);
- 		if (work)
- 			rcu_kthread_do_work();
- 		local_bh_enable();
--		if (*workp == 0) {
-+		if (__this_cpu_read(rcu_cpu_has_work) == 0) {
- 			trace_rcu_utilization(TPS("End CPU kthread@rcu_wait"));
--			*statusp = RCU_KTHREAD_WAITING;
-+			__this_cpu_write(rcu_cpu_kthread_status, RCU_KTHREAD_WAITING);
- 			return;
- 		}
- 	}
--	*statusp = RCU_KTHREAD_YIELDING;
-+	__this_cpu_write(rcu_cpu_kthread_status, RCU_KTHREAD_YIELDING);
- 	trace_rcu_utilization(TPS("Start CPU kthread@rcu_yield"));
- 	schedule_timeout_interruptible(2);
- 	trace_rcu_utilization(TPS("End CPU kthread@rcu_yield"));
--	*statusp = RCU_KTHREAD_WAITING;
-+	__this_cpu_write(rcu_cpu_kthread_status, RCU_KTHREAD_WAITING);
- }
-
- /*
+Sorry, I think the current code is fine and I'm not going
+to apply this, thanks.
