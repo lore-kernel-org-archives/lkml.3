@@ -1,144 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab3LEAQU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 19:16:20 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:59871 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753843Ab3LEAQT (ORCPT
+	id S1756187Ab3LEAVG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 19:21:06 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:44183 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753162Ab3LEAVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 19:16:19 -0500
-Date: Wed, 4 Dec 2013 16:16:14 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: lots of brief rcu stalls.
-Message-ID: <20131205001614.GI15492@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131204232838.GA25592@redhat.com>
+	Wed, 4 Dec 2013 19:21:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131204232838.GA25592@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120500-9332-0000-0000-000002624B4D
+In-Reply-To: <20131205000232.GA19810@kroah.com>
+References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
+	<1386180581-6710-10-git-send-email-serban.constantinescu@arm.com>
+	<20131204183554.GA16693@kroah.com>
+	<CAMbhsRRP=ccdMb5PNwyYab+JoMdh+rmo2qF1naEDGBFCdMz9=A@mail.gmail.com>
+	<20131204214325.GA19565@kroah.com>
+	<CAMbhsRSkYuNBOt57PothjUO_6=vyJQAYsLmasq4Y-QVCT7fqZA@mail.gmail.com>
+	<20131204220247.GA22031@kroah.com>
+	<CAMbhsRQnY6+Ahs-itSeALNQ27tsWAJT8wUtXNGZE--44URp2-A@mail.gmail.com>
+	<20131205000232.GA19810@kroah.com>
+Date: Wed, 4 Dec 2013 16:21:00 -0800
+X-Google-Sender-Auth: 0V66ZCoGlxT1e6XE6oFtk0TFRrU
+Message-ID: <CAMbhsRSNnSU8XmS+8ttHujycdX2UvpLBBnL5p5k=nzZThvTD6A@mail.gmail.com>
+Subject: Re: [PATCH v1 9/9] staging: android: binder: Add binder compat layer
+From: Colin Cross <ccross@android.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Rogers <irogers@google.com>,
+        Serban Constantinescu <serban.constantinescu@arm.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>, romlem@android.com,
+        David Butcher <Dave.Butcher@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 06:28:38PM -0500, Dave Jones wrote:
-> Paul,
-> I'm seeing this happening more and more lately...
-> 
-> [  771.786462] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [  771.786552] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
-> [  771.786574] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
-> [  771.786595] 	(detected by 0, t=6502 jiffies, g=20611, c=20610, q=0)
-> [  771.786620] INFO: Stall ended before state dump start
-> [  966.724546] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [  966.724854] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
-> [  966.724931] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
-> [  966.725005] 	(detected by 0, t=26007 jiffies, g=20611, c=20610, q=0)
-> [  966.725093] INFO: Stall ended before state dump start
-> [ 1161.661459] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [ 1161.661763] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
-> [ 1161.661840] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
-> [ 1161.661915] 	(detected by 0, t=45512 jiffies, g=20611, c=20610, q=0)
-> [ 1161.662001] INFO: Stall ended before state dump start
-> [ 1356.598205] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [ 1356.598513] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
-> [ 1356.598590] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
-> [ 1356.598664] 	(detected by 0, t=65017 jiffies, g=20611, c=20610, q=0)
-> [ 1356.598751] INFO: Stall ended before state dump start
-> [ 1551.536099] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [ 1551.536408] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
-> [ 1551.536485] 	Tasks blocked on level-0 rcu_node (CPUs 0-3):
-> [ 1551.536559] 	(detected by 0, t=84522 jiffies, g=20611, c=20610, q=0)
-> [ 1551.536645] INFO: Stall ended before state dump start
-> 
-> While it's apparently a non-problem, it's pretty noisy.
-> Any ideas?
+On Wed, Dec 4, 2013 at 4:02 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Wed, Dec 04, 2013 at 02:22:13PM -0800, Colin Cross wrote:
+>> On Wed, Dec 4, 2013 at 2:02 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> > On Wed, Dec 04, 2013 at 01:55:34PM -0800, Colin Cross wrote:
+>> >> On Wed, Dec 4, 2013 at 1:43 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> >> > On Wed, Dec 04, 2013 at 12:46:42PM -0800, Colin Cross wrote:
+>> >> >> On Wed, Dec 4, 2013 at 10:35 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> >> >> <snip>
+>> >> >>
+>> >> >> > And finally, is this all really needed?  Why not just fix the structures
+>> >> >> > to be "correct", and then fix userspace to use the correct structures as
+>> >> >> > well, thereby not needing a compat layer at all?
+>> >> >>
+>> >> >> Some of the binder ioctls take userspace pointers.  Are you suggesting
+>> >> >> storing those pointers in a __u64 to avoid having to have a
+>> >> >> compat_ioctl?
+>> >> >
+>> >> > Yes, that's the best way to solve the issue, right?
+>> >>
+>> >> It's the least code, but in exchange you lose all the type safety and
+>> >> warnings when copying in and out of the pointers, as well as sparse
+>> >> checking on the __user attribute.
+>> >
+>> > Not if you make the cast right at the beginning, when you first "touch"
+>> > the data, but yes, it does take some of the type saftey away, at the
+>> > expense of simpler code to mess up :)
+>> >
+>> >> That doesn't seem like a good tradeoff to me.  In addition it requires
+>> >> modifying the existing heavily used 32 bit api, which means a
+>> >> mostly-equivalent compat layer added in libbinder to support old
+>> >> kernels.
+>> >
+>> > Wait, I thought that libbinder would have to be changed anyway here, to
+>> > handle 64bit kernels (in both 32 and 64bit userspace).  Since you are
+>> > already changing it, why not just "do it correctly"?
+>>
+>> libbinder will need changes to support 64-bit userspace and especially
+>> a mixed 64-bit and 32-bit userspace, but this patch series is only
+>> addressing a pure 32-bit userspace on a 64-bit kernel.  Support for a
+>> 64-bit userspace in Android is obviously going to require a future
+>> version of Android including, among other things, libbinder changes.
+>> As far as I know, those changes won't need to change the ioctl api,
+>> only the layout of the buffers that are passed through the ioctl api.
+>
+> "only" means you can rearrange things at that point in time, as you will
+> have to be doing that anyway :)
+>
+>> > Or does this patch series mean that no userspace code is changed?  Is
+>> > that a "requirement" here?
+>>
+>> Since this series only addresses 32-bit userspace on 64-bit kernel
+>> support there are no associated userspace changes.  Changing the
+>> 32-bit api here means that combining the KitKat branch from
+>> http://android.googlesource.com with a newer kernel version will not
+>> work.
+>
+> Is that something that anyone has said would work in the past?  It seems
+> that other parts of the Android userspace are pretty tied to specific
+> kernel features / versions, is this anything new if the binder code had
+> to change?
 
-Does the following help?
+We have explicitly said that Android userspace does not require a
+specific kernel version.  I expect to see KitKat devices running at
+least 3.4, 3.10, and whatever is the next long term stable version.
+Sometimes new kernels need userspace support, but we try to avoid that
+as much as possible.  The last major one I can remember was removing
+early suspend in 3.4, but in that case I provided a compat 3.4 branch
+to allow using 3.4 with an older userspace.  Changing the binder api
+is not completely unsupportable for old versions, my guess is some
+people would just ship with a new kernel with the binder changes
+reverted.
 
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-rcu: Kick CPU halfway to RCU CPU stall warning
-
-When an RCU CPU stall warning occurs, the CPU invokes resched_cpu() on
-itself.  This can help move the grace period forward in some situations,
-but it would be even better to do this -before- the RCU CPU stall warning.
-This commit therefore causes resched_cpu() to be called every five jiffies
-once the system is halfway to an RCU CPU stall warning.
-
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index dd081987a8ec..5243ebea0fc1 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -755,6 +755,12 @@ static int dyntick_save_progress_counter(struct rcu_data *rdp,
- }
- 
- /*
-+ * This function really isn't for public consumption, but RCU is special in
-+ * that context switches can allow the state machine to make progress.
-+ */
-+extern void resched_cpu(int cpu);
-+
-+/*
-  * Return true if the specified CPU has passed through a quiescent
-  * state by virtue of being in or having passed through an dynticks
-  * idle state since the last call to dyntick_save_progress_counter()
-@@ -812,16 +818,34 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp,
- 	 */
- 	rcu_kick_nohz_cpu(rdp->cpu);
- 
-+	/*
-+	 * Alternatively, the CPU might be running in the kernel
-+	 * for an extended period of time without a quiescent state.
-+	 * Attempt to force the CPU through the scheduler to gain the
-+	 * needed quiescent state, but only if the grace period has gone
-+	 * on for an uncommonly long time.  If there are many stuck CPUs,
-+	 * we will beat on the first one until it gets unstuck, then move
-+	 * to the next.  Only do this for the primary flavor of RCU.
-+	 */
-+	if (rdp->rsp == rcu_state &&
-+	    ULONG_CMP_GE(ACCESS_ONCE(jiffies), rdp->rsp->jiffies_resched)) {
-+		rdp->rsp->jiffies_resched += 5;
-+		resched_cpu(rdp->cpu);
-+	}
-+
- 	return 0;
- }
- 
- static void record_gp_stall_check_time(struct rcu_state *rsp)
- {
- 	unsigned long j = ACCESS_ONCE(jiffies);
-+	unsigned long j1;
- 
- 	rsp->gp_start = j;
- 	smp_wmb(); /* Record start time before stall time. */
--	rsp->jiffies_stall = j + rcu_jiffies_till_stall_check();
-+	j1 = rcu_jiffies_till_stall_check();
-+	rsp->jiffies_stall = j + j1;
-+	rsp->jiffies_resched = j + j1 / 2;
- }
- 
- /*
-diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
-index 52be957c9fe2..8e34d8674a4e 100644
---- a/kernel/rcu/tree.h
-+++ b/kernel/rcu/tree.h
-@@ -453,6 +453,8 @@ struct rcu_state {
- 						/*  but in jiffies. */
- 	unsigned long jiffies_stall;		/* Time at which to check */
- 						/*  for CPU stalls. */
-+	unsigned long jiffies_resched;		/* Time at which to resched */
-+						/*  a reluctant CPU. */
- 	unsigned long gp_max;			/* Maximum GP duration in */
- 						/*  jiffies. */
- 	const char *name;			/* Name of structure. */
-
+> Anyway, the code as submitted has problems, see my response to the
+> second patch, so it's not ready yet anyway :(
+>
+> thanks,
+>
+> greg k-h
