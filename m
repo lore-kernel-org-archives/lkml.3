@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757425Ab3LERiD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:38:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38388 "EHLO
+	id S1757449Ab3LERiK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:38:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38408 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756956Ab3LERh7 (ORCPT
+	with ESMTP id S1757428Ab3LERiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:37:59 -0500
+	Thu, 5 Dec 2013 12:38:04 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
+Cc: Frank Zago <frank@zago.net>, Jonathan Cameron <jic23@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 71/90] KVM: perform an invalid memslot step for gpa base change
-Date: Thu,  5 Dec 2013 17:35:53 +0000
-Message-Id: <1386264972-5399-72-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 75/90] iio:accel:kxsd9 fix missing mutex unlock
+Date: Thu,  5 Dec 2013 17:35:57 +0000
+Message-Id: <1386264972-5399-76-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcelo Tosatti <mtosatti@redhat.com>
+From: Frank Zago <frank@zago.net>
 
-commit 12d6e7538e2d418c08f082b1b44ffa5fb7270ed8 upstream.
+commit 0ee005c7dc2803125275e24598f0fb37775a6af3 upstream.
 
-PPC must flush all translations before the new memory slot
-is visible.
+This will leave a lock held after reading from the device, preventing
+any further reads.
 
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Frank Zago <frank@zago.net>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+[ luis: backported to 3.5:
+  - adjusted context
+  - drivers/iio/accel/kxsd9.c -> drivers/staging/iio/accel/kxsd9.c ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- virt/kvm/kvm_main.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/iio/accel/kxsd9.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index e32731c..9e97f68 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -770,7 +770,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 		/* destroy any largepage mappings for dirty tracking */
- 	}
+diff --git a/drivers/staging/iio/accel/kxsd9.c b/drivers/staging/iio/accel/kxsd9.c
+index 8cf7cd9..cfa77fb 100644
+--- a/drivers/staging/iio/accel/kxsd9.c
++++ b/drivers/staging/iio/accel/kxsd9.c
+@@ -116,9 +116,10 @@ static int kxsd9_read(struct iio_dev *indio_dev, u8 address)
+ 	spi_message_add_tail(&xfers[0], &msg);
+ 	spi_message_add_tail(&xfers[1], &msg);
+ 	ret = spi_sync(st->us, &msg);
+-	if (ret)
+-		return ret;
+-	return (((u16)(st->rx[0])) << 8) | (st->rx[1] & 0xF0);
++	if (!ret)
++		ret = (((u16)(st->rx[0])) << 8) | (st->rx[1] & 0xF0);
++	mutex_unlock(&st->buf_lock);
++	return ret;
+ }
  
--	if (!npages) {
-+	if (!npages || base_gfn != old.base_gfn) {
- 		struct kvm_memory_slot *slot;
- 
- 		r = -ENOMEM;
-@@ -786,8 +786,8 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 		old_memslots = kvm->memslots;
- 		rcu_assign_pointer(kvm->memslots, slots);
- 		synchronize_srcu_expedited(&kvm->srcu);
--		/* From this point no new shadow pages pointing to a deleted
--		 * memslot will be created.
-+		/* From this point no new shadow pages pointing to a deleted,
-+		 * or moved, memslot will be created.
- 		 *
- 		 * validation of sp->gfn happens in:
- 		 * 	- gfn_to_hva (kvm_read_guest, gfn_to_pfn)
+ static IIO_CONST_ATTR(accel_scale_available,
 -- 
 1.8.3.2
 
