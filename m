@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933359Ab3LEAmR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 19:42:17 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:54295 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933207Ab3LEAmP (ORCPT
+	id S933385Ab3LEAmx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 19:42:53 -0500
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:55971 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755434Ab3LEAmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 19:42:15 -0500
-Date: Thu, 5 Dec 2013 00:42:11 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>
-Message-ID: <20131205004211.GK29268@sirena.org.uk>
-References: <1386159757-29966-1-git-send-email-linus.walleij@linaro.org>
- <20131204230721.GA9376@kroah.com>
+	Wed, 4 Dec 2013 19:42:50 -0500
+Date: Wed, 4 Dec 2013 16:42:47 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        "Ma, Xindong" <xindong.ma@intel.com>, Michal Hocko <mhocko@suse.cz>,
+        Sameer Nanda <snanda@chromium.org>, Sergey Dyasly <dserrg@gmail.com>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/4] oom_kill: add rcu_read_lock() into
+ find_lock_task_mm()
+In-Reply-To: <20131204130420.GA6017@redhat.com>
+Message-ID: <alpine.DEB.2.02.1312041642360.31158@chino.kir.corp.google.com>
+References: <20131204130420.GA6017@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0ZSpXV6RUUo6PuQK"
-Content-Disposition: inline
-In-Reply-To: <20131204230721.GA9376@kroah.com>
-X-Cookie: It's clever, but is it art?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] Documentation: start documenting driver design patterns
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 4 Dec 2013, Oleg Nesterov wrote:
 
---0ZSpXV6RUUo6PuQK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> find_lock_task_mm() expects it is called under rcu or tasklist lock,
+> but it seems that at least oom_unkillable_task()->task_in_mem_cgroup()
+> and mem_cgroup_out_of_memory()->oom_badness() can call it lockless.
+> 
+> Perhaps we could fix the callers, but this patch simply adds rcu lock
+> into find_lock_task_mm(). This also allows to simplify a bit one of its
+> callers, oom_kill_process().
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-On Wed, Dec 04, 2013 at 03:07:21PM -0800, Greg Kroah-Hartman wrote:
-
-> No objection from me, I'll be glad to take this, thanks for writing it
-> up.  Hopefully people will read it (the problem I've found with
-> documentation in the past when no one actually reads it...)
-
-Still means less typing for the replies if you can reference something.
-Actually to that end might it be worth making it a directory with one
-file per recommendation - easier to reference specific things?  Possibly
-stored in the purple bikeshed.
-
---0ZSpXV6RUUo6PuQK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSn8vgAAoJELSic+t+oim96oIP/RZM5LsnpP052zvBz4WTXXKq
-MZ7697ZnpPvcyFNv263QE1Q9sCto06VyTWDjzB2FFmyzb+Nk/f6fNcMGSiDMUQed
-YYX2dStI8xZIS16KTJb5qE02pY46WOqq0kQSchYOyfLWrj9ps+WeKVYGpONmsydn
-98YRinZdt2ux8gAz8DBZNyLzzFnG+Tn+BHZ7kyCJeSCuSPHH3qCV53y7nWRemnb7
-M7rfuGqc4yNbxtZTc/pzFnopOlSMNrlHvRytekGbOpE6h6Dg2rcXod/0CNp9aBtH
-0lvCSsiEoUjzVktI/g1BH4AKDzGAgWrwrtc6glxaJ0g6zdNJ8HU/D9S42rE9FS8J
-K5tVGxLZasUfpId/vdjd90c9ZW9IJb+QyB4x7qYUzCIplFYpcPQFScGEiyCwu6C3
-QWPvHfqvTsUuLylTQ166UDvFxyg1VZSl5osmNHWGYKiQpbFhoo2Vm3XB6GV+FsWc
-gD7r9SHss7Njmu3Dv1TGpcfVygSbnK3qaZeDYr5L5eOBasNWvmoE3lxlMTt6SxeI
-IvC+GFTE91QqFxYAaCfboWLt3KUzug4NbGWoO9R3m2DOPwNb5yOH2BVjVgjP/A83
-jKkB3rsnb7iXPOQpXxFk/nCYQwO8upPcYQqhYVmISJiE5iQ9FtFDPkFP8GwsHv78
-rDXP6NuBvOq32/EblvOB
-=RUDl
------END PGP SIGNATURE-----
-
---0ZSpXV6RUUo6PuQK--
+Acked-by: David Rientjes <rientjes@google.com>
