@@ -1,64 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933271Ab3LEEEq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Dec 2013 23:04:46 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:37162 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756411Ab3LEEEm (ORCPT
+	id S933409Ab3LEEKj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Dec 2013 23:10:39 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:56867 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752867Ab3LEEKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Dec 2013 23:04:42 -0500
-Message-ID: <529FFB57.9010505@gmail.com>
-Date: Wed, 04 Dec 2013 21:04:39 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Wed, 4 Dec 2013 23:10:36 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org, hpa@zytor.com,
+        mjg59@srcf.ucam.org, greg@kroah.com
+References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
+	<8761rl73s7.fsf@xmission.com> <20131122015518.GA31921@redhat.com>
+	<87txf4y304.fsf@xmission.com> <20131122141945.GE4046@redhat.com>
+	<87li0fvm10.fsf@xmission.com> <20131204193430.GF19087@redhat.com>
+Date: Wed, 04 Dec 2013 20:10:22 -0800
+In-Reply-To: <20131204193430.GF19087@redhat.com> (Vivek Goyal's message of
+	"Wed, 4 Dec 2013 14:34:31 -0500")
+Message-ID: <87siu8545t.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] perf trace fixes
-References: <1386211302-31303-1-git-send-email-dsahern@gmail.com>
-In-Reply-To: <1386211302-31303-1-git-send-email-dsahern@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+N2K0zzpm9glUWHJFBoF4Co7HGubQbMMw=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0230]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Vivek Goyal <vgoyal@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel loading
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/4/13, 7:41 PM, David Ahern wrote:
-> Hi Arnaldo:
+Vivek Goyal <vgoyal@redhat.com> writes:
+
+> Hi Eric,
 >
-> As I mentioned on IRC perf-trace fails on older kernels -- like RHEL6. This
-> set of patches makes it at least usable - though still some problems I am
-> hoping you can fix.
->
-> Build perf with these patches and run:
->
->    perf trace -- dd if=/dev/zero of=/tmp/zero bs=4096 count=16
->
-> you see something like this which is just wrong:
->
->    3.684 ( 0.007 ms): write(buf: 2, count: 140737077958816  ) = 27
->
-> there is no fd (should be 1 for the write) and all the values are wrong.
-> Perhaps it is an artifact of the older way of doing system call tracing, but
-> I see something goofy with the 3.12 kernel as well:
->    5.633 ( 0.004 ms): write(fd: 2, buf: 0x7fff9177fee0, count: 24 ) = 24
+> So you want a separate purgatory code and that purgatory should be self
+> contained and should not share any code with rest of the kernel. No
+> inclusion of header files, no linking against kernel libraries? That means
+> even re-implementing sha256 functions separately (like user space)?
 
-forget this last comment about 3.12; it works fine. That write entry is 
-the final write by dd:
+Call only trivial sharing of code with the rest of the kernel.   But only
+as much as say the kernel decompressor has.  
 
-write(2, "65536 bytes (66 kB) copied", 2665536 bytes (66 kB) copied) = 26
+> If code maintenance is a concern, then I think I can reimplement some
+> of the functions to calculate sha256 in separate crash files and invoke
+> those to reduce code sharing with rest of the kernel. And we should be
+> able to link against the kernel and not have to create separate
+> relocatable purgatory object and relocate it.
 
-That one is fine and looking up I see the 4096 lines as expected.
+It is both code maintenance and the fact that we have a strong
+expectation that where purgatory lives should not be corrupted.
+Plus what I have seen there maintenance becomes much simpler if there is
+a little bit of C code that lives between the two kernels.  At that
+point people don't have to grok assembly to be able to touch anything,
+and by simply living their it enforces separation of concerns
+from the kernel in a way that is trivial and obvious.
 
-For RHEL6, the problem is there for the 4096 lines:
+Plus we already have all of the code in userspace to do all of this work
+so it is not something you would need to write from scrach merely
+something that you would need to adapt.
 
-32.641 ( 0.005 ms): read(buf: 0, count: 27258880) = 4096
-32.655 ( 0.009 ms): write(buf: 1, count: 27258880) = 4096
+> IOW, does purgatory still have to be a relocatable object?
 
-buf and count are wrong. Adding -e write to the perf-trace I get:
+Fundamentally purgatory does need to be a relocatable object.
 
-33.775 ( 0.031 ms): write(buf: 1</tmp/zero>, count: 37437440) = 4096
+> I think
+> user space had no choice but given the fact that we are implementing
+> thing in kernel, I should be able to implement my own hash calculation
+> and segment verification code and link it to existing kernel and invoke
+> these outside purgatory. 
 
-which suggests an off-by-1 error with parsing syscalls versus 
-raw_syscalls. I am hoping you have an idea on how to fix that.
+Doing this outside of purgatory and linking to the rest of the kernel is
+almost certainly enough to get someone to perform an obvious cleanup
+that will undermine the purpose of the code.  Or perhaps it will be
+merely a reference to the GOT table behind our backs in the C code
+generated by the compiler that will undermine this checking.
 
-David
+Linking to our sanity checks to the rest of the kernel leaves me
+profoundly uncomfortable.
+
+> Anyway, we call so many other functions after
+> crash to stop cpus, save registers, etc.
+
+There is no other possible place to stop cpus, and save the cpu
+registers.  As much as possible that should be the only justification
+for the code we run on the kexec on panic code path.
+
+Honestly calling so many other functions on that code path is a good
+reason to see about removing them.  In addition to my other reasons
+adding the hash calculation on that path will likely confuse issues
+more than helping them.
+
+Eric
+
