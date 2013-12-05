@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933018Ab3LERgv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 12:36:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38117 "EHLO
+	id S933237Ab3LERhM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 12:37:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38176 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932859Ab3LERgq (ORCPT
+	with ESMTP id S933159Ab3LERhC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 12:36:46 -0500
+	Thu, 5 Dec 2013 12:37:02 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 18/90] block: fix race between request completion and timeout handling
-Date: Thu,  5 Dec 2013 17:35:00 +0000
-Message-Id: <1386264972-5399-19-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 30/90] ALSA: hda - Don't clear the power state at snd_hda_codec_reset()
+Date: Thu,  5 Dec 2013 17:35:12 +0000
+Message-Id: <1386264972-5399-31-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
 References: <1386264972-5399-1-git-send-email-luis.henriques@canonical.com>
@@ -27,139 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Moyer <jmoyer@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 4912aa6c11e6a5d910264deedbec2075c6f1bb73 upstream.
+commit d183b4fc463489b6bbe05c99afa0257a6fe578eb upstream.
 
-crocode i2c_i801 i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma dca be2net sg ses enclosure ext4 mbcache jbd2 sd_mod crc_t10dif ahci megaraid_sas(U) dm_mirror dm_region_hash dm_log dm_mod [last unloaded: scsi_wait_scan]
+snd_hda_codec_reset() is called either in resetting the whole setup at
+error paths or hwdep clear/reconfig sysfs triggers.  But all of these
+don't assume that the power has to be off, rather they want to keep
+the power state unchanged (e.g. reconfig_codec() calls the power
+up/down by itself).  Thus, unconditionally clearing the power state in
+snd_hda_codec_reset() leads to the inconsistency, confuses the further
+operation.   This patch gets rid of the lines doing that bad thing.
 
-Pid: 491, comm: scsi_eh_0 Tainted: G        W  ----------------   2.6.32-220.13.1.el6.x86_64 #1 IBM  -[8722PAX]-/00D1461
-RIP: 0010:[<ffffffff8124e424>]  [<ffffffff8124e424>] blk_requeue_request+0x94/0xa0
-RSP: 0018:ffff881057eefd60  EFLAGS: 00010012
-RAX: ffff881d99e3e8a8 RBX: ffff881d99e3e780 RCX: ffff881d99e3e8a8
-RDX: ffff881d99e3e8a8 RSI: ffff881d99e3e780 RDI: ffff881d99e3e780
-RBP: ffff881057eefd80 R08: ffff881057eefe90 R09: 0000000000000000
-R10: 0000000000000000 R11: 0000000000000000 R12: ffff881057f92338
-R13: 0000000000000000 R14: ffff881057f92338 R15: ffff883058188000
-FS:  0000000000000000(0000) GS:ffff880040200000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
-CR2: 00000000006d3ec0 CR3: 000000302cd7d000 CR4: 00000000000406b0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process scsi_eh_0 (pid: 491, threadinfo ffff881057eee000, task ffff881057e29540)
-Stack:
- 0000000000001057 0000000000000286 ffff8810275efdc0 ffff881057f16000
-<0> ffff881057eefdd0 ffffffff81362323 ffff881057eefe20 ffffffff8135f393
-<0> ffff881057e29af8 ffff8810275efdc0 ffff881057eefe78 ffff881057eefe90
-Call Trace:
- [<ffffffff81362323>] __scsi_queue_insert+0xa3/0x150
- [<ffffffff8135f393>] ? scsi_eh_ready_devs+0x5e3/0x850
- [<ffffffff81362a23>] scsi_queue_insert+0x13/0x20
- [<ffffffff8135e4d4>] scsi_eh_flush_done_q+0x104/0x160
- [<ffffffff8135fb6b>] scsi_error_handler+0x35b/0x660
- [<ffffffff8135f810>] ? scsi_error_handler+0x0/0x660
- [<ffffffff810908c6>] kthread+0x96/0xa0
- [<ffffffff8100c14a>] child_rip+0xa/0x20
- [<ffffffff81090830>] ? kthread+0x0/0xa0
- [<ffffffff8100c140>] ? child_rip+0x0/0x20
-Code: 00 00 eb d1 4c 8b 2d 3c 8f 97 00 4d 85 ed 74 bf 49 8b 45 00 49 83 c5 08 48 89 de 4c 89 e7 ff d0 49 8b 45 00 48 85 c0 75 eb eb a4 <0f> 0b eb fe 0f 1f 84 00 00 00 00 00 55 48 89 e5 0f 1f 44 00 00
-RIP  [<ffffffff8124e424>] blk_requeue_request+0x94/0xa0
- RSP <ffff881057eefd60>
-
-The RIP is this line:
-        BUG_ON(blk_queued_rq(rq));
-
-After digging through the code, I think there may be a race between the
-request completion and the timer handler running.
-
-A timer is started for each request put on the device's queue (see
-blk_start_request->blk_add_timer).  If the request does not complete
-before the timer expires, the timer handler (blk_rq_timed_out_timer)
-will mark the request complete atomically:
-
-static inline int blk_mark_rq_complete(struct request *rq)
-{
-        return test_and_set_bit(REQ_ATOM_COMPLETE, &rq->atomic_flags);
-}
-
-and then call blk_rq_timed_out.  The latter function will call
-scsi_times_out, which will return one of BLK_EH_HANDLED,
-BLK_EH_RESET_TIMER or BLK_EH_NOT_HANDLED.  If BLK_EH_RESET_TIMER is
-returned, blk_clear_rq_complete is called, and blk_add_timer is again
-called to simply wait longer for the request to complete.
-
-Now, if the request happens to complete while this is going on, what
-happens?  Given that we know the completion handler will bail if it
-finds the REQ_ATOM_COMPLETE bit set, we need to focus on the completion
-handler running after that bit is cleared.  So, from the above
-paragraph, after the call to blk_clear_rq_complete.  If the completion
-sets REQ_ATOM_COMPLETE before the BUG_ON in blk_add_timer, we go boom
-there (I haven't seen this in the cores).  Next, if we get the
-completion before the call to list_add_tail, then the timer will
-eventually fire for an old req, which may either be freed or reallocated
-(there is evidence that this might be the case).  Finally, if the
-completion comes in *after* the addition to the timeout list, I think
-it's harmless.  The request will be removed from the timeout list,
-req_atom_complete will be set, and all will be well.
-
-This will only actually explain the coredumps *IF* the request
-structure was freed, reallocated *and* queued before the error handler
-thread had a chance to process it.  That is possible, but it may make
-sense to keep digging for another race.  I think that if this is what
-was happening, we would see other instances of this problem showing up
-as null pointer or garbage pointer dereferences, for example when the
-request structure was not re-used.  It looks like we actually do run
-into that situation in other reports.
-
-This patch moves the BUG_ON(test_bit(REQ_ATOM_COMPLETE,
-&req->atomic_flags)); from blk_add_timer to the only caller that could
-trip over it (blk_start_request).  It then inverts the calls to
-blk_clear_rq_complete and blk_add_timer in blk_rq_timed_out to address
-the race.  I've boot tested this patch, but nothing more.
-
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-Acked-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- block/blk-core.c    | 1 +
- block/blk-timeout.c | 3 +--
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ sound/pci/hda/hda_codec.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index e17ce4b..cb3b3a7 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -2144,6 +2144,7 @@ void blk_start_request(struct request *req)
- 	if (unlikely(blk_bidi_rq(req)))
- 		req->next_rq->resid_len = blk_rq_bytes(req->next_rq);
+diff --git a/sound/pci/hda/hda_codec.c b/sound/pci/hda/hda_codec.c
+index f33bb78..0948888 100644
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -2312,9 +2312,6 @@ int snd_hda_codec_reset(struct hda_codec *codec)
  
-+	BUG_ON(test_bit(REQ_ATOM_COMPLETE, &req->atomic_flags));
- 	blk_add_timer(req);
- }
- EXPORT_SYMBOL(blk_start_request);
-diff --git a/block/blk-timeout.c b/block/blk-timeout.c
-index 6e4744c..5a6296e 100644
---- a/block/blk-timeout.c
-+++ b/block/blk-timeout.c
-@@ -90,8 +90,8 @@ static void blk_rq_timed_out(struct request *req)
- 		__blk_complete_request(req);
- 		break;
- 	case BLK_EH_RESET_TIMER:
--		blk_clear_rq_complete(req);
- 		blk_add_timer(req);
-+		blk_clear_rq_complete(req);
- 		break;
- 	case BLK_EH_NOT_HANDLED:
- 		/*
-@@ -173,7 +173,6 @@ void blk_add_timer(struct request *req)
- 		return;
- 
- 	BUG_ON(!list_empty(&req->timeout_list));
--	BUG_ON(test_bit(REQ_ATOM_COMPLETE, &req->atomic_flags));
- 
- 	/*
- 	 * Some LLDs, like scsi, peek at the timeout to prevent a
+ #ifdef CONFIG_SND_HDA_POWER_SAVE
+ 	cancel_delayed_work_sync(&codec->power_work);
+-	codec->power_on = 0;
+-	codec->power_transition = 0;
+-	codec->power_jiffies = jiffies;
+ 	flush_workqueue(bus->workq);
+ #endif
+ 	snd_hda_ctls_clear(codec);
 -- 
 1.8.3.2
 
