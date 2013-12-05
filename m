@@ -1,59 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab3LEXhE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 18:37:04 -0500
-Received: from smtprelay0001.hostedemail.com ([216.40.44.1]:42999 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752560Ab3LEXg7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 18:36:59 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:966:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2553:2559:2562:2740:2828:2914:3138:3139:3140:3141:3142:3352:3622:3865:3868:3872:3873:4321:4385:4605:5007:6119:7652:8531:10004:10400:10481:10848:10967:11026:11232:11473:11658:11914:12043:12438:12517:12519:12740:13069:13255:13311:13357:19900,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: stove02_59c686d945b28
-X-Filterd-Recvd-Size: 1767
-Message-ID: <1386286615.10003.30.camel@joe-AO722>
-Subject: Re: [PATCH net-next] ether_addr_equal: Optimize implementation,
- remove unused compare_ether_addr
-From: Joe Perches <joe@perches.com>
-To: Stephen Hemminger <stephen@networkplumber.org>
-Cc: netdev@vger.kernel.org, Rob Landley <rob@landley.net>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 05 Dec 2013 15:36:55 -0800
-In-Reply-To: <20131205153229.187f7604@nehalam.linuxnetplumber.net>
-References: <34a0bad292ab2535a3a2e757a83eca13408e55b7.1386283991.git.joe@perches.com>
-	 <20131205153229.187f7604@nehalam.linuxnetplumber.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756639Ab3LEXh3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 18:37:29 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:40272 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756084Ab3LEXhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 18:37:23 -0500
+Date: Fri, 6 Dec 2013 00:37:21 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: X86 ML <x86@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Kim Naru <kim.naru@amd.com>, Thomas Renninger <trenn@suse.de>
+Subject: [PATCH -v1.1 4/4] x86, microcode: Move to a proper location
+Message-ID: <20131205233720.GA4100@pd.tnic>
+References: <1386286348-5144-1-git-send-email-bp@alien8.de>
+ <1386286348-5144-5-git-send-email-bp@alien8.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1386286348-5144-5-git-send-email-bp@alien8.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-12-05 at 15:32 -0800, Stephen Hemminger wrote:
-> On Thu,  5 Dec 2013 14:54:38 -0800
-> Joe Perches <joe@perches.com> wrote:
-> 
-> > +#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-> > +	u32 fold = ((*(const u32 *)addr1) ^ (*(const u32 *)addr2)) |
-> > +		   ((*(const u16 *)(addr1 + 4)) ^ (*(const u16 *)(addr2 + 4)));
-> > +
-> > +	return fold == 0;
-> 
-> Why the temporary variable.
+From: Borislav Petkov <bp@suse.de>
+Subject: [PATCH -v1.1 4/4] x86, microcode: Move to a proper location
 
-It's cost free and I think a bit more readable.
+We've grown a bunch of microcode loader files all prefixed with
+"microcode_". They should be under cpu/ because this is strictly
+CPU-related functionality so do that and drop the prefix since they're
+in their own directory now which gives that prefix. :)
 
->  You can just do:
-> 	return ((*(const u32 *)addr1) ^ (*(const u32 *)addr2)) |
-> 	       ((*(const u16 *)(addr1 + 4)) ^ (*(const u16 *)(addr2 + 4))) != 0;
+While at it, drop MICROCODE_INTEL_LIB config item and stash the
+functionality under CONFIG_MICROCODE_INTEL as it was its only user.
 
-== 0
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/Kconfig                                                 | 4 ----
+ arch/x86/kernel/Makefile                                         | 9 ---------
+ arch/x86/kernel/cpu/Makefile                                     | 1 +
+ arch/x86/kernel/cpu/microcode/Makefile                           | 7 +++++++
+ arch/x86/kernel/{microcode_amd.c => cpu/microcode/amd.c}         | 0
+ .../kernel/{microcode_amd_early.c => cpu/microcode/amd_early.c}  | 0
+ arch/x86/kernel/{microcode_core.c => cpu/microcode/core.c}       | 0
+ .../{microcode_core_early.c => cpu/microcode/core_early.c}       | 0
+ arch/x86/kernel/{microcode_intel.c => cpu/microcode/intel.c}     | 0
+ .../{microcode_intel_early.c => cpu/microcode/intel_early.c}     | 0
+ .../kernel/{microcode_intel_lib.c => cpu/microcode/intel_lib.c}  | 0
+ 11 files changed, 8 insertions(+), 13 deletions(-)
+ create mode 100644 arch/x86/kernel/cpu/microcode/Makefile
+ rename arch/x86/kernel/{microcode_amd.c => cpu/microcode/amd.c} (100%)
+ rename arch/x86/kernel/{microcode_amd_early.c => cpu/microcode/amd_early.c} (100%)
+ rename arch/x86/kernel/{microcode_core.c => cpu/microcode/core.c} (100%)
+ rename arch/x86/kernel/{microcode_core_early.c => cpu/microcode/core_early.c} (100%)
+ rename arch/x86/kernel/{microcode_intel.c => cpu/microcode/intel.c} (100%)
+ rename arch/x86/kernel/{microcode_intel_early.c => cpu/microcode/intel_early.c} (100%)
+ rename arch/x86/kernel/{microcode_intel_lib.c => cpu/microcode/intel_lib.c} (100%)
 
-> Or
-> 	return !!((*(const u32 *)addr1) ^ (*(const u32 *)addr2)) |
-> 	         ((*(const u16 *)(addr1 + 4)) ^ (*(const u16 *)(addr2 + 4))));
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index c84cf90ca693..cb3a8602b67a 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1111,10 +1111,6 @@ config MICROCODE_OLD_INTERFACE
+ 	def_bool y
+ 	depends on MICROCODE
+ 
+-config MICROCODE_INTEL_LIB
+-	def_bool y
+-	depends on MICROCODE_INTEL
+-
+ config MICROCODE_INTEL_EARLY
+ 	def_bool n
+ 
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 9b0a34e2cd79..4d0094dbb6c9 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -91,15 +91,6 @@ obj-$(CONFIG_PARAVIRT_CLOCK)	+= pvclock.o
+ 
+ obj-$(CONFIG_PCSPKR_PLATFORM)	+= pcspeaker.o
+ 
+-obj-$(CONFIG_MICROCODE_EARLY)		+= microcode_core_early.o
+-obj-$(CONFIG_MICROCODE_INTEL_EARLY)	+= microcode_intel_early.o
+-obj-$(CONFIG_MICROCODE_INTEL_LIB)	+= microcode_intel_lib.o
+-microcode-y				:= microcode_core.o
+-microcode-$(CONFIG_MICROCODE_INTEL)	+= microcode_intel.o
+-microcode-$(CONFIG_MICROCODE_AMD)	+= microcode_amd.o
+-obj-$(CONFIG_MICROCODE_AMD_EARLY)	+= microcode_amd_early.o
+-obj-$(CONFIG_MICROCODE)			+= microcode.o
+-
+ obj-$(CONFIG_X86_CHECK_BIOS_CORRUPTION) += check.o
+ 
+ obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
+diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+index 6359506a19ee..7fd54f09b011 100644
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -42,6 +42,7 @@ endif
+ 
+ obj-$(CONFIG_X86_MCE)			+= mcheck/
+ obj-$(CONFIG_MTRR)			+= mtrr/
++obj-$(CONFIG_MICROCODE)			+= microcode/
+ 
+ obj-$(CONFIG_X86_LOCAL_APIC)		+= perfctr-watchdog.o perf_event_amd_ibs.o
+ 
+diff --git a/arch/x86/kernel/cpu/microcode/Makefile b/arch/x86/kernel/cpu/microcode/Makefile
+new file mode 100644
+index 000000000000..285c85427c32
+--- /dev/null
++++ b/arch/x86/kernel/cpu/microcode/Makefile
+@@ -0,0 +1,7 @@
++microcode-y				:= core.o
++obj-$(CONFIG_MICROCODE)			+= microcode.o
++microcode-$(CONFIG_MICROCODE_INTEL)	+= intel.o intel_lib.o
++microcode-$(CONFIG_MICROCODE_AMD)	+= amd.o
++obj-$(CONFIG_MICROCODE_EARLY)		+= core_early.o
++obj-$(CONFIG_MICROCODE_INTEL_EARLY)	+= intel_early.o
++obj-$(CONFIG_MICROCODE_AMD_EARLY)	+= amd_early.o
+diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/cpu/microcode/amd.c
+similarity index 100%
+rename from arch/x86/kernel/microcode_amd.c
+rename to arch/x86/kernel/cpu/microcode/amd.c
+diff --git a/arch/x86/kernel/microcode_amd_early.c b/arch/x86/kernel/cpu/microcode/amd_early.c
+similarity index 100%
+rename from arch/x86/kernel/microcode_amd_early.c
+rename to arch/x86/kernel/cpu/microcode/amd_early.c
+diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/cpu/microcode/core.c
+similarity index 100%
+rename from arch/x86/kernel/microcode_core.c
+rename to arch/x86/kernel/cpu/microcode/core.c
+diff --git a/arch/x86/kernel/microcode_core_early.c b/arch/x86/kernel/cpu/microcode/core_early.c
+similarity index 100%
+rename from arch/x86/kernel/microcode_core_early.c
+rename to arch/x86/kernel/cpu/microcode/core_early.c
+diff --git a/arch/x86/kernel/microcode_intel.c b/arch/x86/kernel/cpu/microcode/intel.c
+similarity index 100%
+rename from arch/x86/kernel/microcode_intel.c
+rename to arch/x86/kernel/cpu/microcode/intel.c
+diff --git a/arch/x86/kernel/microcode_intel_early.c b/arch/x86/kernel/cpu/microcode/intel_early.c
+similarity index 100%
+rename from arch/x86/kernel/microcode_intel_early.c
+rename to arch/x86/kernel/cpu/microcode/intel_early.c
+diff --git a/arch/x86/kernel/microcode_intel_lib.c b/arch/x86/kernel/cpu/microcode/intel_lib.c
+similarity index 100%
+rename from arch/x86/kernel/microcode_intel_lib.c
+rename to arch/x86/kernel/cpu/microcode/intel_lib.c
+-- 
+1.8.4
 
-!!!? :)
+-- 
+Regards/Gruss,
+    Boris.
 
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
