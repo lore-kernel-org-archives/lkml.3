@@ -1,111 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab3LEKE0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 05:04:26 -0500
-Received: from 10.mo1.mail-out.ovh.net ([178.32.96.102]:56867 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751025Ab3LEKEX (ORCPT
+	id S1754525Ab3LEKEh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 05:04:37 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:56129 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025Ab3LEKEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 05:04:23 -0500
-X-Greylist: delayed 536 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Dec 2013 05:04:23 EST
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Douglas Gilbert <dgilbert@interlog.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Grant Likely <grant.likely@linaro.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-Subject: [PATCH v3 1/3] usb: ohci-at91: replace request_mem_region + ioremap by devm_request_and_ioremap
-Date: Thu,  5 Dec 2013 10:54:40 +0100
-Message-Id: <1386237282-22385-2-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386237282-22385-1-git-send-email-b.brezillon@overkiz.com>
-References: <1386237282-22385-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 5695927629290830080
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 5 Dec 2013 05:04:33 -0500
+Date: Thu, 5 Dec 2013 11:04:29 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Jiri Olsa <jolsa@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/38] perf/core improvements and fixes
+Message-ID: <20131205100429.GC16749@gmail.com>
+References: <1386187622-2928-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386187622-2928-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the request_mem_region + ioremap calls by the
-devm_request_and_ioremap call which does the same things but with device
-managed resources.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
----
- drivers/usb/host/ohci-at91.c |   24 +++++-------------------
- 1 file changed, 5 insertions(+), 19 deletions(-)
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
-index 7aec6ca..8528895 100644
---- a/drivers/usb/host/ohci-at91.c
-+++ b/drivers/usb/host/ohci-at91.c
-@@ -157,24 +157,18 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
- 	hcd->rsrc_start = mem_r->start;
- 	hcd->rsrc_len = resource_size(mem_r);
- 
--	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
--		pr_debug("request_mem_region failed\n");
--		retval = -EBUSY;
--		goto err1;
--	}
--
--	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
-+	hcd->regs = devm_request_and_ioremap(dev, mem_r);
- 	if (!hcd->regs) {
--		pr_debug("ioremap failed\n");
-+		dev_dbg(dev, "devm_request_and_ioremap failed\n");
- 		retval = -EIO;
--		goto err2;
-+		goto err;
- 	}
- 
- 	iclk = clk_get(&pdev->dev, "ohci_clk");
- 	if (IS_ERR(iclk)) {
- 		dev_err(&pdev->dev, "failed to get ohci_clk\n");
- 		retval = PTR_ERR(iclk);
--		goto err3;
-+		goto err;
- 	}
- 	fclk = clk_get(&pdev->dev, "uhpck");
- 	if (IS_ERR(fclk)) {
-@@ -218,13 +212,7 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
-  err4:
- 	clk_put(iclk);
- 
-- err3:
--	iounmap(hcd->regs);
--
-- err2:
--	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
--
-- err1:
-+ err:
- 	usb_put_hcd(hcd);
- 	return retval;
- }
-@@ -247,8 +235,6 @@ static void usb_hcd_at91_remove(struct usb_hcd *hcd,
- {
- 	usb_remove_hcd(hcd);
- 	at91_stop_hc(pdev);
--	iounmap(hcd->regs);
--	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
- 	usb_put_hcd(hcd);
- 
- 	if (IS_ENABLED(CONFIG_COMMON_CLK))
--- 
-1.7.9.5
+> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> 
+> Hi Ingo,
+> 
+> 	Please consider pulling,
+> 
+> - Arnaldo
+> 
+> The following changes since commit 89e3bbd58a6186b832fe2b9419ac2f9ab90e9089:
+> 
+>   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2013-12-04 10:17:17 +0100)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
 
+Hm, I saw such a build failure:
+
+  CC FPIC  plugin_kmem.o
+  BUILD    PLUGIN plugin_jbd2.so
+plugin_jbd2.o: file not recognized: File truncated
+collect2: error: ld returned 1 exit status
+make[2]: *** [plugin_jbd2.so] Error 1
+make[1]: *** [install-traceevent-plugins] Error 2
+make[1]: *** Waiting for unfinished jobs....
+  CC FPIC  plugin_kvm.o
+  CC FPIC  plugin_mac80211.o
+
+which suggests some sort of build race ...
+
+I was doing several 'make clean; make install' runs - and the second 
+run failed. Unfortunately the failure was not reproducible after that 
+point - and I tried dozens of times. The test system has 12 CPUs.
+
+The following loop attempts to build until a failure occurs:
+
+  cd tools/perf/
+  while make install; do make clean; done
+
+Any ideas?
+
+Thanks,
+
+	Ingo
