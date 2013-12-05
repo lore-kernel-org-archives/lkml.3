@@ -1,70 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756843Ab3LEPL3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 10:11:29 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:32293 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751247Ab3LEPL0 (ORCPT
+	id S1756782Ab3LEPP2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 10:15:28 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:37990 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826Ab3LEPPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 10:11:26 -0500
-X-AuditID: cbfec7f5-b7fd16d000007299-46-52a0979c230e
-From: Tomasz Figa <t.figa@samsung.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Kevin Bracey <kevin@bracey.fi>,
-        Kyungmin Park <kmpark@infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Doug Anderson <dianders@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
+	Thu, 5 Dec 2013 10:15:25 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131205135928.GA4096@e103592.cambridge.arm.com>
+References: <1386242785-5146-1-git-send-email-a.anurag@samsung.com>
+	<20131205135928.GA4096@e103592.cambridge.arm.com>
+Date: Thu, 5 Dec 2013 20:45:22 +0530
+Message-ID: <CAPoNrtuzV=eOWP44om+E6m0NSx+xfFtg-STjPLMBO4OUBF84kQ@mail.gmail.com>
+Subject: Re: [PATCH V4] ARM : unwinder : Prevent data abort due to stack overflow
+From: Anurag Aggarwal <anurag19aggarwal@gmail.com>
+To: Dave Martin <Dave.Martin@arm.com>
+Cc: Anurag Aggarwal <a.anurag@samsung.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH] pinctrl: samsung: Allow pin value to be initialized using
- pinfunc.
-Date: Thu, 05 Dec 2013 16:11:15 +0100
-Message-id: <1502243.eRBlCfUhTO@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.11.3 (Linux/3.11.5-gentoo; KDE/4.11.3; x86_64; ; )
-In-reply-to: <20131205150747.GW29268@sirena.org.uk>
-References: <1384881351-10782-1-git-send-email-t.figa@samsung.com>
- <CACRpkdYrPd9tnO48bA_5n+-k=KEDyhY7czkCNhTZfpgF3ar+LQ@mail.gmail.com>
- <20131205150747.GW29268@sirena.org.uk>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphkeLIzCtJLcpLzFFi42I5/e/4Fd050xcEGfRP5bCY+vAJm8X8I+dY
-	Lc4uO8hm8f/Ra1aL0yv2slr0LrjKZnHr8ioWiyl/ljNZbHp8jdXi8q45bBYzzu9jslh75C67
-	xauDbSwWx2YsYXTg8/h/tY3RY3bDRRaPzSu0PDat6mTzuHNtD5vH5iX1Hn1bVjF6bL82j9nj
-	8yY5j41zQwO4orhsUlJzMstSi/TtErgyvi58ylpwgKXi7dUTbA2Mh5i7GDk5JARMJGb97mKC
-	sMUkLtxbz9bFyMUhJLCUUeL3/8+MEE4Xk8SZdetZQarYBNQkPjc8YgOxRQSUJa5+38sCUsQs
-	0MYqsXHvA7AiYYFIiVc7WsFsFgFViZev/gIVcXDwCmhK7PivDBLmF1CXeLftKdhmUQE3iRf7
-	trCD2JwCxhJXuk+zQizexChxZ/EOsASvgKDEj8n3WEBsZgF5iX37p7JC2FoS63ceZ5rAKDgL
-	SdksJGWzkJQtYGRexSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRESc193MC49ZnWIUYCDUYmH
-	1zFlfpAQa2JZcWXuIUYJDmYlEV71jgVBQrwpiZVVqUX58UWlOanFhxiZODilGhjLRN+9s7Gu
-	T5K2Kddky01L3F3W5CR5LE3N6ql4nOBdLvfOW5llkzYvFeVMTr27u+BX8dt7bu+t09+pLSrR
-	jO2+uKzk++vanvs90kf98/If1upXSek//MTrsDs10uyw2cSwj0xBCz8yaUxY/sKdTzXOwXyP
-	+qRVWQc3bJ5kIxB02aloMltWlBJLcUaioRZzUXEiAORP7LeXAgAA
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "cpgs@samsung.com" <cpgs@samsung.com>,
+        "narendra.m1@samsung.com" <narendra.m1@samsung.com>,
+        "poorva.s@samsung.com" <poorva.s@samsung.com>,
+        "naveen.sel@samsung.com" <naveen.sel@samsung.com>,
+        "ashish.kalra@samsung.com" <ashish.kalra@samsung.com>,
+        "mohammad.a2@samsung.com" <mohammad.a2@samsung.com>,
+        "rajat.suri@samsung.com" <rajat.suri@samsung.com>,
+        "naveenkrishna.ch@gmail.com" <naveenkrishna.ch@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>, "nico@linaro.org" <nico@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 05 of December 2013 15:07:47 Mark Brown wrote:
-> On Tue, Dec 03, 2013 at 10:29:42AM +0100, Linus Walleij wrote:
-> 
-> > So a suggested patch to support weak hogs would be interesting
-> > to look at. Can you provide details on how you think this would
-> > work?
-> 
-> Or should we be going and applying the default state to all devices on
-> init without worrying about a driver appearing?
+>>if (unlikely(check) &&
+>>    *vsp >= (unsigned long *)ctrl->sp_high))
 
-If a device isn't used, then it's often better to configure the pins for
-a different function, such as GPIO, to minimize leakage current.
+Good idea, It can help in optimizing the code and will leave code more readable
+and it will be easy to maintain also.
 
-Best regards,
-Tomasz
+>>Does the code check anywhere that SP is word-aligned?
+>>
+>>That should probably be checked if it's not done already.
 
+I think this should be handled in separate patch
+I would also like to hear more your ideas for the file
+
+Regards
+Anurag
+
+On Thu, Dec 5, 2013 at 7:29 PM, Dave Martin <Dave.Martin@arm.com> wrote:
+> On Thu, Dec 05, 2013 at 11:26:25AM +0000, Anurag Aggarwal wrote:
+>> While unwinding backtrace, stack overflow is possible. This stack
+>> overflow can sometimes lead to data abort in system if the area after
+>> stack is not mapped to physical memory.
+>>
+>> To prevent this problem from happening, execute the instructions that
+>> can cause a data abort in separate helper functions, where a check for
+>> feasibility is made before reading each word from the stack.
+>>
+>> Signed-off-by: Anurag Aggarwal <a.anurag@samsung.com>
+>> ---
+>>  arch/arm/kernel/unwind.c |  127 ++++++++++++++++++++++++++++++++-------------
+>>  1 files changed, 90 insertions(+), 37 deletions(-)
+>>
+>> diff --git a/arch/arm/kernel/unwind.c b/arch/arm/kernel/unwind.c
+>> index 00df012..94f6ef4 100644
+>> --- a/arch/arm/kernel/unwind.c
+>> +++ b/arch/arm/kernel/unwind.c
+>> @@ -68,6 +68,7 @@ EXPORT_SYMBOL(__aeabi_unwind_cpp_pr2);
+>>  struct unwind_ctrl_block {
+>>       unsigned long vrs[16];          /* virtual register set */
+>>       const unsigned long *insn;      /* pointer to the current instructions word */
+>> +     unsigned long sp_high;          /* highest value of sp allowed*/
+>>       int entries;                    /* number of entries left to interpret */
+>>       int byte;                       /* current byte number in the instructions word */
+>>  };
+>> @@ -235,6 +236,86 @@ static unsigned long unwind_get_byte(struct unwind_ctrl_block *ctrl)
+>>       return ret;
+>>  }
+>>
+>> +/* Before poping a register check whether it is feasible or not */
+>> +static int unwind_pop_register(struct unwind_ctrl_block *ctrl,
+>> +                             unsigned long **vsp, unsigned int reg)
+>> +{
+>> +     if (*vsp >= (unsigned long *)ctrl->sp_high)
+>> +             return -URC_FAILURE;
+>> +
+>> +     ctrl->vrs[reg] = *(*vsp)++;
+>> +     return URC_OK;
+>
+> It occurred to me that your optimisation can still be implemented on
+> top on this.
+>
+> If you add an extra flag parameter to unwind_pop_register telling it
+> whether to do checking or not, I think that the compiler and/or
+> CPU branch predictor should be able to do a pretty good job of
+> optimising the common case.  Until we get near sp_high, if(check) will
+> branch the same way every time.
+>
+> if (unlikely(check) &&
+>     *vsp >= (unsigned long *)ctrl->sp_high))
+>
+> would make sense, in fact.
+>
+>
+> I think this brings most of the benefit, without needing to code the
+> insn exec rules twice.
+>
+> I'm still not sure the optimisation benefits us much, but I think
+> that would be a tidier way of doing it if you want to try.
+>
+>> +}
+>> +
+>> +/* Helper functions to execute the instructions */
+>> +static int unwind_exec_pop_subset_r4_to_r13(struct unwind_ctrl_block *ctrl,
+>> +                                             unsigned long mask)
+>> +{
+>> +     unsigned long *vsp = (unsigned long *)ctrl->vrs[SP];
+>> +     int load_sp, reg = 4;
+>> +
+>> +     load_sp = mask & (1 << (13 - 4));
+>> +     while (mask) {
+>> +             if (mask & 1)
+>> +                     if (unwind_pop_register(ctrl, &vsp, reg))
+>> +                             return -URC_FAILURE;
+>> +             mask >>= 1;
+>> +             reg++;
+>> +     }
+>> +     if (!load_sp)
+>> +             ctrl->vrs[SP] = (unsigned long)vsp;
+>> +
+>> +     pr_debug("%s: fp = %08lx sp = %08lx lr = %08lx pc = %08lx\n", __func__,
+>> +             ctrl->vrs[FP], ctrl->vrs[SP], ctrl->vrs[LR], ctrl->vrs[PC]);
+>
+> Minor-ish nit: you now duplicate this same pr_debug() in many places.
+> Apologies, I didn't spot that in the previous review.
+>
+> What about something like this:
+>
+> static int unwind_exec_insn(...)
+> {
+>         int ret = URC_OK;
+>
+>         } else if (...)
+>                 ret = unwind_exec_pop_subset_r4_to_r13(...);
+>                 if (ret)
+>                         goto error;
+>         else ...
+>
+>         pr_debug(...);
+>
+> error:
+>         return ret;
+> }
+>
+> Then everything returns through the same pr_debug() after the insn has
+> been executed.
+>
+> [...]
+>
+>> @@ -329,13 +382,13 @@ static int unwind_exec_insn(struct unwind_ctrl_block *ctrl)
+>>   */
+>>  int unwind_frame(struct stackframe *frame)
+>>  {
+>> -     unsigned long high, low;
+>> +     unsigned long low;
+>>       const struct unwind_idx *idx;
+>>       struct unwind_ctrl_block ctrl;
+>>
+>> -     /* only go to a higher address on the stack */
+>> +     /* store the highest address on the stack to avoid crossing it*/
+>>       low = frame->sp;
+>> -     high = ALIGN(low, THREAD_SIZE);
+>> +     ctrl.sp_high = ALIGN(low, THREAD_SIZE);
+>
+> Does the code check anywhere that SP is word-aligned?
+>
+> That should probably be checked if it's not done already.
+>
+> I have some unrelated changes I want to make in this file (which is
+> part of why I'm being pushy about getting things nice and clean) ... so
+> I'm happy to follow up with that as a separate patch later.  It's a
+> separate issue, really.  It doesn't necessarily belong in this patch.
+>
+> Cheers
+> ---Dave
+
+
+
+-- 
+Anurag Aggarwal
