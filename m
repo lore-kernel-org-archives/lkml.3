@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758846Ab3LFWLZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:11:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60960 "EHLO
+	id S1161775Ab3LFWLp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:11:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60946 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759397Ab3LFVxp (ORCPT
+	with ESMTP id S1759388Ab3LFVxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:45 -0500
+	Fri, 6 Dec 2013 16:53:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Kim Phillips <kim.phillips@linaro.org>
-Subject: [PATCH 3.10 45/58] clockevents: Get rid of the notifier chain
-Date: Fri,  6 Dec 2013 13:52:16 -0800
-Message-Id: <20131206214849.069722835@linuxfoundation.org>
+        Stefan Priebe <s.priebe@profihost.ag>,
+        Veaceslav Falico <vfalico@redhat.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 30/58] net: core: Always propagate flag changes to interfaces
+Date: Fri,  6 Dec 2013 13:52:01 -0800
+Message-Id: <20131206214847.691790901@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -29,253 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-commit 7172a286ced0c1f4f239a0fa09db54ed37d3ead2 upstream.
+[ Upstream commit d2615bf450694c1302d86b9cc8a8958edfe4c3a4 ]
 
-7+ years and still a single user. Kill it.
+The following commit:
+    b6c40d68ff6498b7f63ddf97cf0aa818d748dee7
+    net: only invoke dev->change_rx_flags when device is UP
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Magnus Damm <magnus.damm@gmail.com>
-Link: http://lkml.kernel.org/r/20130425143436.098520211@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Kim Phillips <kim.phillips@linaro.org>
+tried to fix a problem with VLAN devices and promiscuouse flag setting.
+The issue was that VLAN device was setting a flag on an interface that
+was down, thus resulting in bad promiscuity count.
+This commit blocked flag propagation to any device that is currently
+down.
+
+A later commit:
+    deede2fabe24e00bd7e246eb81cd5767dc6fcfc7
+    vlan: Don't propagate flag changes on down interfaces
+
+fixed VLAN code to only propagate flags when the VLAN interface is up,
+thus fixing the same issue as above, only localized to VLAN.
+
+The problem we have now is that if we have create a complex stack
+involving multiple software devices like bridges, bonds, and vlans,
+then it is possible that the flags would not propagate properly to
+the physical devices.  A simple examle of the scenario is the
+following:
+
+  eth0----> bond0 ----> bridge0 ---> vlan50
+
+If bond0 or eth0 happen to be down at the time bond0 is added to
+the bridge, then eth0 will never have promisc mode set which is
+currently required for operation as part of the bridge.  As a
+result, packets with vlan50 will be dropped by the interface.
+
+The only 2 devices that implement the special flag handling are
+VLAN and DSA and they both have required code to prevent incorrect
+flag propagation.  As a result we can remove the generic solution
+introduced in b6c40d68ff6498b7f63ddf97cf0aa818d748dee7 and leave
+it to the individual devices to decide whether they will block
+flag propagation or not.
+
+Reported-by: Stefan Priebe <s.priebe@profihost.ag>
+Suggested-by: Veaceslav Falico <vfalico@redhat.com>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- include/linux/clockchips.h   |    1 -
- kernel/time/clockevents.c    |   35 +++--------------------------------
- kernel/time/tick-broadcast.c |    5 ++---
- kernel/time/tick-common.c    |   30 +++++-------------------------
- kernel/time/tick-internal.h  |    7 ++++---
- 5 files changed, 14 insertions(+), 64 deletions(-)
+ net/core/dev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/clockchips.h
-+++ b/include/linux/clockchips.h
-@@ -150,7 +150,6 @@ extern void clockevents_exchange_device(
- 					struct clock_event_device *new);
- extern void clockevents_set_mode(struct clock_event_device *dev,
- 				 enum clock_event_mode mode);
--extern int clockevents_register_notifier(struct notifier_block *nb);
- extern int clockevents_program_event(struct clock_event_device *dev,
- 				     ktime_t expires, bool force);
- 
---- a/kernel/time/clockevents.c
-+++ b/kernel/time/clockevents.c
-@@ -15,7 +15,6 @@
- #include <linux/hrtimer.h>
- #include <linux/init.h>
- #include <linux/module.h>
--#include <linux/notifier.h>
- #include <linux/smp.h>
- 
- #include "tick-internal.h"
-@@ -23,10 +22,6 @@
- /* The registered clock event devices */
- static LIST_HEAD(clockevent_devices);
- static LIST_HEAD(clockevents_released);
--
--/* Notification for clock events */
--static RAW_NOTIFIER_HEAD(clockevents_chain);
--
- /* Protection for the above */
- static DEFINE_RAW_SPINLOCK(clockevents_lock);
- 
-@@ -267,30 +262,6 @@ int clockevents_program_event(struct clo
- 	return (rc && force) ? clockevents_program_min_delta(dev) : rc;
- }
- 
--/**
-- * clockevents_register_notifier - register a clock events change listener
-- */
--int clockevents_register_notifier(struct notifier_block *nb)
--{
--	unsigned long flags;
--	int ret;
--
--	raw_spin_lock_irqsave(&clockevents_lock, flags);
--	ret = raw_notifier_chain_register(&clockevents_chain, nb);
--	raw_spin_unlock_irqrestore(&clockevents_lock, flags);
--
--	return ret;
--}
--
--/*
-- * Notify about a clock event change. Called with clockevents_lock
-- * held.
-- */
--static void clockevents_do_notify(unsigned long reason, void *dev)
--{
--	raw_notifier_call_chain(&clockevents_chain, reason, dev);
--}
--
- /*
-  * Called after a notify add to make devices available which were
-  * released from the notifier call.
-@@ -304,7 +275,7 @@ static void clockevents_notify_released(
- 				 struct clock_event_device, list);
- 		list_del(&dev->list);
- 		list_add(&dev->list, &clockevent_devices);
--		clockevents_do_notify(CLOCK_EVT_NOTIFY_ADD, dev);
-+		tick_check_new_device(dev);
- 	}
- }
- 
-@@ -325,7 +296,7 @@ void clockevents_register_device(struct
- 	raw_spin_lock_irqsave(&clockevents_lock, flags);
- 
- 	list_add(&dev->list, &clockevent_devices);
--	clockevents_do_notify(CLOCK_EVT_NOTIFY_ADD, dev);
-+	tick_check_new_device(dev);
- 	clockevents_notify_released();
- 
- 	raw_spin_unlock_irqrestore(&clockevents_lock, flags);
-@@ -468,7 +439,7 @@ void clockevents_notify(unsigned long re
- 	int cpu;
- 
- 	raw_spin_lock_irqsave(&clockevents_lock, flags);
--	clockevents_do_notify(reason, arg);
-+	tick_notify(reason, arg);
- 
- 	switch (reason) {
- 	case CLOCK_EVT_NOTIFY_CPU_DEAD:
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -65,7 +65,7 @@ static void tick_broadcast_start_periodi
- /*
-  * Check, if the device can be utilized as broadcast device:
-  */
--int tick_check_broadcast_device(struct clock_event_device *dev)
-+void tick_install_broadcast_device(struct clock_event_device *dev)
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -4478,7 +4478,7 @@ static void dev_change_rx_flags(struct n
  {
- 	struct clock_event_device *cur = tick_broadcast_device.evtdev;
+ 	const struct net_device_ops *ops = dev->netdev_ops;
  
-@@ -73,7 +73,7 @@ int tick_check_broadcast_device(struct c
- 	    (tick_broadcast_device.evtdev &&
- 	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
- 	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
--		return 0;
-+		return;
- 
- 	clockevents_exchange_device(tick_broadcast_device.evtdev, dev);
- 	if (cur)
-@@ -91,7 +91,6 @@ int tick_check_broadcast_device(struct c
- 	 */
- 	if (dev->features & CLOCK_EVT_FEAT_ONESHOT)
- 		tick_clock_notify();
--	return 1;
+-	if ((dev->flags & IFF_UP) && ops->ndo_change_rx_flags)
++	if (ops->ndo_change_rx_flags)
+ 		ops->ndo_change_rx_flags(dev, flags);
  }
  
- /*
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -209,11 +209,11 @@ static void tick_setup_device(struct tic
- /*
-  * Check, if the new registered device should be used.
-  */
--static int tick_check_new_device(struct clock_event_device *newdev)
-+void tick_check_new_device(struct clock_event_device *newdev)
- {
- 	struct clock_event_device *curdev;
- 	struct tick_device *td;
--	int cpu, ret = NOTIFY_OK;
-+	int cpu;
- 	unsigned long flags;
- 
- 	raw_spin_lock_irqsave(&tick_device_lock, flags);
-@@ -276,18 +276,14 @@ static int tick_check_new_device(struct
- 		tick_oneshot_notify();
- 
- 	raw_spin_unlock_irqrestore(&tick_device_lock, flags);
--	return NOTIFY_STOP;
-+	return;
- 
- out_bc:
- 	/*
- 	 * Can the new device be used as a broadcast device ?
- 	 */
--	if (tick_check_broadcast_device(newdev))
--		ret = NOTIFY_STOP;
--
-+	tick_install_broadcast_device(newdev);
- 	raw_spin_unlock_irqrestore(&tick_device_lock, flags);
--
--	return ret;
- }
- 
- /*
-@@ -361,17 +357,10 @@ static void tick_resume(void)
- 	raw_spin_unlock_irqrestore(&tick_device_lock, flags);
- }
- 
--/*
-- * Notification about clock event devices
-- */
--static int tick_notify(struct notifier_block *nb, unsigned long reason,
--			       void *dev)
-+void tick_notify(unsigned long reason, void *dev)
- {
- 	switch (reason) {
- 
--	case CLOCK_EVT_NOTIFY_ADD:
--		return tick_check_new_device(dev);
--
- 	case CLOCK_EVT_NOTIFY_BROADCAST_ON:
- 	case CLOCK_EVT_NOTIFY_BROADCAST_OFF:
- 	case CLOCK_EVT_NOTIFY_BROADCAST_FORCE:
-@@ -405,21 +394,12 @@ static int tick_notify(struct notifier_b
- 	default:
- 		break;
- 	}
--
--	return NOTIFY_OK;
- }
- 
--static struct notifier_block tick_notifier = {
--	.notifier_call = tick_notify,
--};
--
- /**
-  * tick_init - initialize the tick control
-- *
-- * Register the notifier with the clockevents framework
-  */
- void __init tick_init(void)
- {
--	clockevents_register_notifier(&tick_notifier);
- 	tick_broadcast_init();
- }
---- a/kernel/time/tick-internal.h
-+++ b/kernel/time/tick-internal.h
-@@ -18,6 +18,8 @@ extern int tick_do_timer_cpu __read_most
- 
- extern void tick_setup_periodic(struct clock_event_device *dev, int broadcast);
- extern void tick_handle_periodic(struct clock_event_device *dev);
-+extern void tick_notify(unsigned long reason, void *dev);
-+extern void tick_check_new_device(struct clock_event_device *dev);
- 
- extern void clockevents_shutdown(struct clock_event_device *dev);
- 
-@@ -90,7 +92,7 @@ static inline bool tick_broadcast_onesho
-  */
- #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
- extern int tick_device_uses_broadcast(struct clock_event_device *dev, int cpu);
--extern int tick_check_broadcast_device(struct clock_event_device *dev);
-+extern void tick_install_broadcast_device(struct clock_event_device *dev);
- extern int tick_is_broadcast_device(struct clock_event_device *dev);
- extern void tick_broadcast_on_off(unsigned long reason, int *oncpu);
- extern void tick_shutdown_broadcast(unsigned int *cpup);
-@@ -102,9 +104,8 @@ tick_set_periodic_handler(struct clock_e
- 
- #else /* !BROADCAST */
- 
--static inline int tick_check_broadcast_device(struct clock_event_device *dev)
-+static inline void tick_install_broadcast_device(struct clock_event_device *dev)
- {
--	return 0;
- }
- 
- static inline int tick_is_broadcast_device(struct clock_event_device *dev)
 
 
