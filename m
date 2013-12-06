@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108Ab3LFEi4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 23:38:56 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:39908 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898Ab3LFEix (ORCPT
+	id S1753295Ab3LFEoX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 23:44:23 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:33312 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958Ab3LFEoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 23:38:53 -0500
-From: Lans Zhang <jia.zhang@windriver.com>
-To: <andi@firstfloor.org>, <mingo@kernel.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86/mm/numa: fix becoming single node on numa machine with 32-bit kernel.
-Date: Fri, 6 Dec 2013 12:18:30 +0800
-Message-ID: <1386303510-18574-1-git-send-email-jia.zhang@windriver.com>
-X-Mailer: git-send-email 1.7.8.110.g4cb5d
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 5 Dec 2013 23:44:22 -0500
+Date: Thu, 05 Dec 2013 23:44:20 -0500 (EST)
+Message-Id: <20131205.234420.2000965496889063263.davem@davemloft.net>
+To: wangyijing@huawei.com
+Cc: macro@linux-mips.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        guohanjun@huawei.com
+Subject: Re: [PATCH 2/2] net/fddi: Replace local marco with PCI standard
+ macro
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <52A13F34.2010403@huawei.com>
+References: <1386243482-32856-1-git-send-email-wangyijing@huawei.com>
+	<alpine.LFD.2.10.1312052154190.1599@eddie.linux-mips.org>
+	<52A13F34.2010403@huawei.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 05 Dec 2013 20:44:22 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On numa machine, if a 32-bit kernel runs over it, node data cannot
-be allocated from local node if the account of memory for node 0
-covers the low memory space entirely:
+From: Yijing Wang <wangyijing@huawei.com>
+Date: Fri, 6 Dec 2013 11:06:28 +0800
 
-[    0.000000] Initmem setup node 0 [mem 0x00000000-0x83fffffff]
-[    0.000000]   NODE_DATA [mem 0x367ed000-0x367edfff]
-[    0.000000] Initmem setup node 1 [mem 0x840000000-0xfffffffff]
-[    0.000000] Cannot find 4096 bytes in node 1
-[    0.000000] 64664MB HIGHMEM available.
-[    0.000000] 871MB LOWMEM available.
+> On 2013/12/6 6:06, Maciej W. Rozycki wrote:
+>> On Thu, 5 Dec 2013, Yijing Wang wrote:
+>> 
+>>> Replace local marco DFX_BUS_PCI with PCI standard marco
+>>> dev_is_pci().
+>> 
+>>  Typos above: marco -> macro
+> 
+> Sorry for the mistake, David, should i need to resend this patch to fix this typo error?
 
-To fix this issue, node data is allowed to be allocated from other
-nodes if the memory of local node is still not mapped. The expected
-result looks like this:
+You have to resubmit all of these conversions again because you posted
+them before the net-next tree was even open for submissions.
 
-[    0.000000] Initmem setup node 0 [mem 0x00000000-0x83fffffff]
-[    0.000000]   NODE_DATA [mem 0x367ed000-0x367edfff]
-[    0.000000] Initmem setup node 1 [mem 0x840000000-0xfffffffff]
-[    0.000000]   NODE_DATA [mem 0x367ec000-0x367ecfff]
-[    0.000000]     NODE_DATA(1) on node 0
-[    0.000000] 64664MB HIGHMEM available.
-[    0.000000] 871MB LOWMEM available.
-
-Signed-off-by: Lans Zhang <jia.zhang@windriver.com>
----
- arch/x86/mm/numa.c |   10 +++++++---
- 1 files changed, 7 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 24aec58..c85da7b 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -211,9 +211,13 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
- 	 */
- 	nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
- 	if (!nd_pa) {
--		pr_err("Cannot find %zu bytes in node %d\n",
--		       nd_size, nid);
--		return;
-+		nd_pa = __memblock_alloc_base(nd_size, SMP_CACHE_BYTES,
-+					      MEMBLOCK_ALLOC_ACCESSIBLE);
-+		if (!nd_pa) {
-+			pr_err("Cannot find %zu bytes in node %d\n",
-+			       nd_size, nid);
-+			return;
-+		}
- 	}
- 	nd = __va(nd_pa);
- 
--- 
-1.7.8.110.g4cb5d
-
+So you might as well fix the typos etc. while doing so.
