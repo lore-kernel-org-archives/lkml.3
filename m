@@ -1,107 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758103Ab3LFROb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 12:14:31 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:53136 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755025Ab3LFRO3 convert rfc822-to-8bit (ORCPT
+	id S1756574Ab3LFRUs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 12:20:48 -0500
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:38087 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754120Ab3LFRUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 12:14:29 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sergei Ianovich <ynvich@gmail.com>
-Subject: Re: [PATCH 02/11] arm: pxa27x: support ICP DAS LP-8x4x
-Date: Fri, 6 Dec 2013 18:14:15 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Daniel Mack <zonque@gmail.com>
-References: <1385879185-22455-1-git-send-email-ynvich@gmail.com> <201312060140.10376.arnd@arndb.de> <1386347911.7152.70.camel@host5.omatika.ru>
-In-Reply-To: <1386347911.7152.70.camel@host5.omatika.ru>
+	Fri, 6 Dec 2013 12:20:46 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201312061814.15730.arnd@arndb.de>
-X-Provags-ID: V02:K0:I9iTahQl0VbGumwepaGMWfeEGS1QMj3VR7Nf1/wTPiT
- o9AAtN79fBAH2hOAJdCmPkTTedAcp2PZf4AbmPY7prXjZVUFLd
- P1+j5Hx6qpyIE04BmltsHEs6+G3gwcivQ1c4WoV6yQG1O7ZRNq
- OB49Qv5IHWhN8y7wDq+7gHqfrxc4IqLNTaN2WN96kDdlS3KLRR
- X4icIf234NFQNtnzMONvseXutVzkoWDHfK3y+6Cgd2RlioeJkz
- 1io8ffT47q324kl1fUUbmUQzUswGIg49J0x29pD9zmH3QFEQSJ
- PyQcVbQtzD72jm7fHGpnPrCnfefBMsK4XVgl+7CLEiyeM4rzdD
- EKSxz5bOaHbDHTi6Iu6M=
+In-Reply-To: <20131204224447.GA19265@srcf.ucam.org>
+References: <1385656883-4420-1-git-send-email-leif.lindholm@linaro.org>
+	<1385656883-4420-2-git-send-email-leif.lindholm@linaro.org>
+	<CAHCPf3t5dEzVWbYZ6DWcFCENNO2dbrx-YeZvKRk0MkEsJMTE3A@mail.gmail.com>
+	<20131202210719.GQ24997@rocoto.smurfnet.nu>
+	<CAHCPf3tsWdV+dJGm6mX6N4Ou5EQoGukdLyRvsRX6VQFjtKgxtg@mail.gmail.com>
+	<20131204224447.GA19265@srcf.ucam.org>
+Date: Fri, 6 Dec 2013 11:20:45 -0600
+Message-ID: <CAHCPf3s_SXYXLRwvn7tzqTCQ-gB=emRMK_dXkEmw_HWigiD7Mw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] Documentation: arm: add UEFI support documentation
+From: Matt Sealey <neko@bakuhatsu.net>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-efi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, matt.fleming@intel.com,
+        Grant Likely <grant.likely@linaro.org>,
+        Roy Franz <roy.franz@linaro.org>, Mark Salter <msalter@redhat.com>,
+        Patch Tracking <patches@linaro.org>, linaro-uefi@lists.linaro.org,
+        Mark Rutland <mark.rutland@arm.com>, Rob Landley <rob@landley.net>,
+        linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 06 December 2013, Sergei Ianovich wrote:
-> On Fri, 2013-12-06 at 01:40 +0100, Arnd Bergmann wrote:
-> 
-> > Ideally we want shared defconfigs where you enable multiple (or all) pxa boards
-> > at once and end up with a kernel that works on all of them.
-> > 
-> > For most other platforms the goal is even to have a shared defconfig across
-> > SoC families, but PXA is one of the exceptions that I would make because
-> > it is both old and rather different from even the ARM9 or Marvell Feroceon
-> > based SoCs.
-> 
-> There is probably no in point sharing this config with most other
-> devices on PXA2xx SoC. This device is an industrial PC. Its config needs
-> to be optimized for low latency even by the cost of greater power
-> consumption. It is not supposed to run on batteries or enter any low
-> power mode anyway.
+On Wed, Dec 4, 2013 at 4:44 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Wed, Dec 04, 2013 at 03:06:47PM -0600, Matt Sealey wrote:
+>
+>> there's no guarantee that the kernel hasn't been decompressed over
+>> some important UEFI feature or some memory hasn't been trashed. You
+>> can't make that guarantee because by entering the plain zImage, you
+>> forfeited that information.
+>
+> The stub is responsible for ensuring that the compressed kernel is
+> loaded at a suitable address. Take a look at efi_relocate_kernel().
 
-Ok, I see. Note that while most of them are mobile, I believe there are
-a couple of pxa boards that are in the same category as yours.
+My objection is the suitable address is based on a restriction that
+booting from UEFI doesn't have and information UEFI provides that
+makes kernel features from head.S (both of them) easier to get around.
+The kernel doesn't need to be within a particular range of the start
+of memory, nor does the device tree or ramdisk require being in a
+particular place. What the code before efi_relocate_kernel does is
+allocate a maximum-sized-buffer to safely decompress in, which is just
+a gross way to do it, then crosses it's fingers based on the way it
+has historically worked - while you might want to assume that the
+decompression process is quite well defined and reliable, I keep
+seeing patches come in that stop it from doing weird unsavory behavior
+- for example decompressing over it's own page table.
 
-Unfortunately, PXA already has most defconfigs than any other platform (25
-at the moment) and I would like to see that reduced in the future if
-I can find someone to do the work.
+The decompressor - and the kernel head it jumps to after decompression
+- *guess* all the information UEFI could have provided and completely
+regenerate the environment for the decompressor itself (stacks, hacky
+memory allocations, cache on, off, on, off, on... fudging locations of
+page tables, zreladdr fixup, low level debug message output, in
+context of UEFI - reimplementation of memcpy, memset). It forfeits a
+more controlled and lean boot process to capitulate to a historical
+legacy. Since you're taking over the decompressor head.S anyway, why
+not take control of the decompression process?
 
-> > we try to avoid hardwired virtual addresses entirely and instead use platform
-> > device resources, but I realize that there are limits to how far you get with
-> > that. Please make an effort to convert as many parts of the FPGA into platform
-> > devices with regular resources, but know that we would not enforce this as
-> > strictly as we do for new platforms.
-> > 
-> > > +
-> > > +static struct irq_chip lp8x4x_irq_chip = {
-> > > +     .name                   = "FPGA",
-> > > +     .irq_ack                = lp8x4x_ack_irq,
-> > > +     .irq_mask               = lp8x4x_mask_irq,
-> > > +     .irq_unmask             = lp8x4x_unmask_irq,
-> > > +};
-> > 
-> > Please try to move the irqchip code to drivers/irqchip/.
-> 
-> CONFIG_IRQCHIP depends on CONFIG_OF_IRQ which in turn depends on Open
-> Firmware.
+It sets up a page table location the hard way (as above.. also patched
+recently not to decompress over it's own page table). It doesn't need
+to relocate itself past the end of the decompressed image. It doesn't
+need to set up the C environment - UEFI did that for it. It makes
+assumptions about the stack and hacks memory allocations for the
+decompression.. it turns the cache on, decompresses, then turns it off
+again... you can just walk through the code under the EFI stub in
+compressed/head.S and see all this can just fall away.
 
-Hmm, I wonder if we should try to change Kconfig then. Let's leave it
-alone for now, maybe Linus Walleij has some comments since he has
-been looking into moving drivers out in the past.
+There's one immediate advantage too, if it's actually implemented and
+working, which is that for kernel images that are compressed using the
+standard UEFI compression method no actual decompression code needs to
+be added to the stub, and the functionality gets the exact length of
+the required decompression buffer.. that doesn't reduce flexibility in
+kernel compression as long as there is still the possibility of adding
+additional compression code to the stub.
 
-> The device is shipped with such a flash device partition table, which
-> makes migration to device tree rather difficult. The partition for
-> U-Boot is just 256kiB. This is a high aim already. U-Boot needs to be
-> compiled without command line help and USB support to fit into this
-> size. Otherwise the main flash needs to be repartitioned.
-> 
-> Could it be acceptable to accept the device without device tree support?
+The second immediate advantage is that the EFI stub/decompressor can
+actually verify that the *decompressed* image meets Secure Boot
+requirements.
 
->From my point of view it's ok, but I'll leave that up to Daniel Mack,
-since he has been doing all the work on PXA migration to DT lately.
-I believe with his work it won't actually be a problem to do DT.
+Once you get past the decompressor and into the kernel proper head.S,
+creating the page tables (again) and turning the MMU on, pv table
+patching.. if you still had the information around, that gets simpler
+too.
 
-> If so, FPGA irqchip could remain in the machine source file. It is
-> highly unlikely, it will ever be reused. In this case all fixed virtual
-> address definitions could be moved to the machine source file. The file
-> will be the only place where LP8X4X_FPGA_VIRT is used directly.
+Grant suggested I should propose some patches; sure, if I'm not otherwise busy.
 
-That sounds reasonable to me as well.
+Maybe the Linaro guys can recommend a platform (real or emulated) that
+would be best to test it on with the available UEFI?
 
-	Arnd
+>> Most of the guessing is ideally not required to be a guess at all, the
+>> restrictions are purely to deal with the lack of trust for the
+>> bootloader environment. Why can't we trust UEFI? Or at least hold it
+>> to a higher standard. If someone ships a broken UEFI, they screw a
+>> feature or have a horrible bug and ship it, laud the fact Linux
+>> doesn't boot on it and the fact that it's their fault - over their
+>> head. It actually works these days, Linux actually has "market share,"
+>> companies really go out of their way to rescue their "image" and
+>> resolve the situation when someone blogs about a serious UEFI bug on
+>> their $1300 laptops, or even $300 tablets.
+>
+> Yeah, that hasn't actually worked out too well for us.
+
+Aside from Teething problems caused by a rush to market ;)
+
+For the "ARM server market" rather than the "get the cheapest
+tablet/ultrabook out of the door that runs Windows 8/RT" I am sure
+this is going to get to be VERY important for vendors to take into
+account. Imagine if Dell shipped a *server* where Linux would brick it
+out of the box just for setting a variable.. however, if it works the
+day they ship the server, and Linux gains better support for UEFI
+booting which breaks the server in question, that's our fault for not
+doing it in the right way in the first place, and Dell can be just as
+angry at us as we would be at them. Vendors won't test code that
+doesn't exist for obvious reasons.
+
+This is what I was trying to get at about them not updating their
+firmware support for the more firmware-aware method if it works with
+the "ditch firmware early" method worked well for them (which means
+the functionality in the firmware never gets stressed and the
+self-fulfilling prophecy of untrustworthy firmware vendors persists).
+That firmware quality assurance - if not the code itself - will
+trickle down to consumer tablets and ARM thin laptop kind of devices.
+
+Ta,
+Matt Sealey <neko@bakuhatsu.net>
