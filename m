@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758691Ab3LFSZj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 13:25:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59508 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754779Ab3LFSZf (ORCPT
+	id S1758706Ab3LFSZz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 13:25:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56938 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752757Ab3LFSZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 13:25:35 -0500
-Date: Fri, 6 Dec 2013 10:25:11 -0800
-From: tip-bot for Qiaowei Ren <tipbot@zytor.com>
-Message-ID: <tip-191f57c137bcce0e3e9313acb77b2f114d15afbb@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, qiaowei.ren@intel.com, hpa@zytor.com,
-        mingo@kernel.org, jinsong.liu@intel.com, xudong.hao@intel.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, qiaowei.ren@intel.com,
-        linux-kernel@vger.kernel.org, jinsong.liu@intel.com,
-        xudong.hao@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1386375658-2191-2-git-send-email-qiaowei.ren@intel.com>
-References: <1386375658-2191-2-git-send-email-qiaowei.ren@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpufeature] x86, cpufeature:
-  Define the Intel MPX feature flag
-Git-Commit-ID: 191f57c137bcce0e3e9313acb77b2f114d15afbb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 6 Dec 2013 13:25:54 -0500
+Date: Fri, 6 Dec 2013 10:25:53 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: [GIT PATCH] TTY/Serial fixes for 3.13-rc3
+Message-ID: <20131206182553.GA30323@kroah.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 06 Dec 2013 10:25:17 -0800 (PST)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  191f57c137bcce0e3e9313acb77b2f114d15afbb
-Gitweb:     http://git.kernel.org/tip/191f57c137bcce0e3e9313acb77b2f114d15afbb
-Author:     Qiaowei Ren <qiaowei.ren@intel.com>
-AuthorDate: Sat, 7 Dec 2013 08:20:57 +0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 6 Dec 2013 10:21:44 -0800
+The following changes since commit c42b4e6501cdaabee8cc292ae1ef0f66bf4825c1:
 
-x86, cpufeature: Define the Intel MPX feature flag
+  Revert "n_gsm: race between ld close and gsmtty open" (2013-11-25 18:30:21 -0800)
 
-Define the Intel MPX (Memory Protection Extensions) CPU feature flag
-in the cpufeature list.
+are available in the git repository at:
 
-Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
-Link: http://lkml.kernel.org/r/1386375658-2191-2-git-send-email-qiaowei.ren@intel.com
-Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/cpufeature.h | 1 +
- 1 file changed, 1 insertion(+)
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.13-rc3
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 89270b4..e099f95 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -216,6 +216,7 @@
- #define X86_FEATURE_ERMS	(9*32+ 9) /* Enhanced REP MOVSB/STOSB */
- #define X86_FEATURE_INVPCID	(9*32+10) /* Invalidate Processor Context ID */
- #define X86_FEATURE_RTM		(9*32+11) /* Restricted Transactional Memory */
-+#define X86_FEATURE_MPX		(9*32+14) /* Memory Protection Extension */
- #define X86_FEATURE_RDSEED	(9*32+18) /* The RDSEED instruction */
- #define X86_FEATURE_ADX		(9*32+19) /* The ADCX and ADOX instructions */
- #define X86_FEATURE_SMAP	(9*32+20) /* Supervisor Mode Access Prevention */
+for you to fetch changes up to 39434abd942c8e4b9c14c06a03b3245beaf8467f:
+
+  n_tty: Fix missing newline echo (2013-11-29 12:53:19 -0800)
+
+----------------------------------------------------------------
+tty fix for 3.13-rc3
+
+Here is a single n_tty fix for 3.13-rc3 that resolves a regression in 3.12 that
+has been reported.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Peter Hurley (1):
+      n_tty: Fix missing newline echo
+
+ drivers/tty/n_tty.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
