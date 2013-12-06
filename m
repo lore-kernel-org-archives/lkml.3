@@ -1,173 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab3LFHCL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 02:02:11 -0500
-Received: from relay.parallels.com ([195.214.232.42]:53650 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016Ab3LFHCJ (ORCPT
+	id S1753126Ab3LFHHP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 02:07:15 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:44873 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab3LFHHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 02:02:09 -0500
-Message-ID: <52A1766F.5090808@parallels.com>
-Date: Fri, 6 Dec 2013 11:02:07 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Li Zefan <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>
-Subject: Re: [PATCH cgroup/for-3.13-fixes] cgroup: fix oops in cgroup init
- failure path
-References: <1386234006-1633-1-git-send-email-vdavydov@parallels.com> <20131205211814.GA29598@mtj.dyndns.org>
-In-Reply-To: <20131205211814.GA29598@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
+	Fri, 6 Dec 2013 02:07:11 -0500
+X-AuditID: cbfee68f-b7f256d000003c1b-42-52a1779d068b
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Mark Brown'" <broonie@kernel.org>
+Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Lee Jones'" <lee.jones@linaro.org>,
+        "'Bengt Jonsson'" <bengt.g.jonsson@stericsson.com>,
+        "'Axel Lin'" <axel.lin@ingics.com>
+Subject: [PATCH 1/6] regulator: ab8500: use devm_regulator_register()
+Date: Fri, 06 Dec 2013 16:07:09 +0900
+Message-id: <000a01cef251$c79ea9e0$56dbfda0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7yUb+lAqO9MkXdRJaD6VTAoDhw9g==
+Content-language: ko
+x-cr-hashedpuzzle: B6p4 i4cf vH+a yZbS 1MmC AAWnCQ== AAmIxA== AA33fw== ABCOaA==
+ ABZ7dg== AB+Xsg== ACnDfA== ADnTZQ== AE0VJg== AFAmrg==
+ AFvadQ==;7;YQB4AGUAbAAuAGwAaQBuAEAAaQBuAGcAaQBjAHMALgBjAG8AbQA7AGIAZQBuAGcAdAAuAGcALgBqAG8AbgBzAHMAbwBuAEAAcwB0AGUAcgBpAGMAcwBzAG8AbgAuAGMAbwBtADsAYgByAG8AbwBuAGkAZQBAAGsAZQByAG4AZQBsAC4AbwByAGcAOwBqAGcAMQAuAGgAYQBuAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAbABlAGUALgBqAG8AbgBlAHMAQABsAGkAbgBhAHIAbwAuAG8AcgBnADsAbABnAGkAcgBkAHcAbwBvAGQAQABnAG0AYQBpAGwALgBjAG8AbQA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcA;Sosha1_v1;7;{16487644-B78F-4963-98A3-171330066DA9};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Fri,
+ 06 Dec 2013 07:06:56
+ GMT;WwBQAEEAVABDAEgAIAAxAC8ANgBdACAAcgBlAGcAdQBsAGEAdABvAHIAOgAgAGEAYgA4ADUAMAAwADoAIAB1AHMAZQAgAGQAZQB2AG0AXwByAGUAZwB1AGwAYQB0AG8AcgBfAHIAZQBnAGkAcwB0AGUAcgAoACkA
+x-cr-puzzleid: {16487644-B78F-4963-98A3-171330066DA9}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsVy+t8zI9155QuDDM75WByZ85XZYv2DY0wW
+	Ux8+YbO4vPASq8X9r0cZLb5d6WCyuLxrDpsDu8fOWXfZPdp+lnlsWtXJ5nHn2h42j74tqxg9
+	vi9dw+7xeZNcAHsUl01Kak5mWWqRvl0CV8aiWyvYC47wV8x+vYyxgfE1TxcjJ4eEgInE5cn9
+	jBC2mMSFe+vZuhi5OIQEljFKfHp3kAWm6PmLLmaIxHRGiZ7ub+wQzi8gZ/JsZpAqNgE1iS9f
+	DgMlODhEBFQl/r9yB6lhFnjJKPFgcx8TSI2wgKtE6+V5jCA1LEA11+Zpg4R5BWwl5vZsYYGw
+	BSV+TL4HZjMLaEms33mcCcKWl9i85i0zSKuEgLrEo7+6IGERAT2Ji8d/QpWLSOx78Y4RZK2E
+	wAs2iYUn25kg6k0l7j4qhIj/ZJeY8/0qWAOLgIDEt8mHWCBqZCU2HWCG+FdS4uCKGywTGCVm
+	IbloFpKLZiG5aBaS1QsYWVYxiqYWJBcUJ6UXGesVJ+YWl+al6yXn525ihERz/w7GuwesDzEm
+	A62fyCwlmpwPTAZ5JfGGxmZGFqYmpsZG5pZmpAkrifPef5gUJCSQnliSmp2aWpBaFF9UmpNa
+	fIiRiYNTqoExkPll7dSbm74eEw3o7jK9+bFXPzFby/NT3RXpdmOr2SejVpcKdyxMn5V0K4Bj
+	n3fp7t8HPzRtFvspe6z1z5Ul4rPObKoQUQ1JTBP/FjCve2WG3cV7PG9l1ua0u7tsyP6etMTn
+	2LmOBj+Wqrxc9/2OoQ822YmvDD+4v8YvacXsPe/rH0i1R9xQYinOSDTUYi4qTgQAD7NlIfwC	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOKsWRmVeSWpSXmKPExsVy+t9jQd255QuDDKa2WlocmfOV2WL9g2NM
+	FlMfPmGzuLzwEqvF/a9HGS2+Xelgsri8aw6bA7vHzll32T3afpZ5bFrVyeZx59oeNo++LasY
+	Pb4vXcPu8XmTXAB7VAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqt
+	kotPgK5bZg7QQUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjEW3VrAX
+	HOGvmP16GWMD42ueLkZODgkBE4nnL7qYIWwxiQv31rN1MXJxCAlMZ5To6f7GDuH8AnImzwar
+	YhNQk/jy5TBQgoNDREBV4v8rd5AaZoGXjBIPNvcxgdQIC7hKtF6exwhSwwJUc22eNkiYV8BW
+	Ym7PFhYIW1Dix+R7YDazgJbE+p3HmSBseYnNa94yg7RKCKhLPPqrCxIWEdCTuHj8J1S5iMS+
+	F+8YQdZKCLxgk1h4sp0Jot5U4u6jwgmMQrOQbJiFZMMsJBtmIRm1gJFlFaNoakFyQXFSeq6R
+	XnFibnFpXrpecn7uJkZwsngmvYNxVYPFIUYBDkYlHl6OVQuChFgTy4orcw8xSnAwK4nw9ogv
+	DBLiTUmsrEotyo8vKs1JLT7EmAz0/0RmKdHkfGAiyyuJNzQ2MTOyNDKzMDIxNydNWEmc92Cr
+	daCQQHpiSWp2ampBahHMFiYOTqkGxgDXCWoFN54daMnMFrXzNO4Xk9x07dz0+ETVGn/J7zM1
+	kn9WBez8VTm/1XlxZ1XDy+RJqTsMk9zVha+Jye1j/jWPY/MWDamd+lbfns/2+ppvqPk0pOyF
+	fSnTcac3VjxbXTq7Kid6zdv4y8Hih3XW9f+rBFt+eZ3Yz7pycfgMf5uuyv1L/xTFKLEUZyQa
+	ajEXFScCABdY/2taAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2013 01:18 AM, Tejun Heo wrote:
-> Hello, Vladimir.
->
-> Thanks a lot for the report and fix; however, I really wanna make sure
-> that only online css's become visible, so I wrote up a different fix.
-> Can you please test this one?
+Use devm_regulator_register() to make cleanup paths simpler.
 
-Hi, Tejun
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/regulator/ab8500.c |   24 ++++--------------------
+ 1 file changed, 4 insertions(+), 20 deletions(-)
 
-This patch fixes this bug, but I have a couple of questions regarding it.
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index 0f86695..c625468 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -3005,7 +3005,6 @@ static int ab8500_regulator_register(struct platform_device *pdev,
+ 	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
+ 	struct ab8500_regulator_info *info = NULL;
+ 	struct regulator_config config = { };
+-	int err;
+ 
+ 	/* assign per-regulator data */
+ 	info = &abx500_regulator.info[id];
+@@ -3027,17 +3026,12 @@ static int ab8500_regulator_register(struct platform_device *pdev,
+ 	}
+ 
+ 	/* register regulator with framework */
+-	info->regulator = regulator_register(&info->desc, &config);
++	info->regulator = devm_regulator_register(&pdev->dev, &info->desc,
++						&config);
+ 	if (IS_ERR(info->regulator)) {
+-		err = PTR_ERR(info->regulator);
+ 		dev_err(&pdev->dev, "failed to register regulator %s\n",
+ 			info->desc.name);
+-		/* when we fail, un-register all earlier regulators */
+-		while (--id >= 0) {
+-			info = &abx500_regulator.info[id];
+-			regulator_unregister(info->regulator);
+-		}
+-		return err;
++		return PTR_ERR(info->regulator);
+ 	}
+ 
+ 	return 0;
+@@ -3086,17 +3080,7 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
+ 
+ static int ab8500_regulator_remove(struct platform_device *pdev)
+ {
+-	int i, err;
+-
+-	for (i = 0; i < abx500_regulator.info_size; i++) {
+-		struct ab8500_regulator_info *info = NULL;
+-		info = &abx500_regulator.info[i];
+-
+-		dev_vdbg(rdev_get_dev(info->regulator),
+-			"%s-remove\n", info->desc.name);
+-
+-		regulator_unregister(info->regulator);
+-	}
++	int err;
+ 
+ 	/* remove regulator debug */
+ 	err = ab8500_regulator_debug_exit(pdev);
+-- 
+1.7.10.4
 
-First, cgroup_load_subsys() also calls css_online(), and if it fails, it
-calls cgroup_unload_subsys() to rollback. The latter function executes
-the following command:
-
-    offline_css(cgroup_css(cgroup_dummy_top, ss));
-
-But since we failed to online_css(), cgroup_css() will return NULL
-resulting in another oops.
-
-Second, it's not clear to me why we need the CSS_ONLINE flag at all if
-we never assign css's that we fail to online to a cgroup. AFAIU we will
-never see such css's, because in all places we call offline_css(),
-namely cgroup_destroy_locked() (via kill_css()) and
-cgroup_unload_subsys(), we use cgroup_css() which will return NULL for them.
-
-Third, please see commends inline.
-
-Thanks.
-
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -4399,13 +4399,13 @@ static long cgroup_create(struct cgroup
->  		css = ss->css_alloc(cgroup_css(parent, ss));
->  		if (IS_ERR(css)) {
->  			err = PTR_ERR(css);
-> -			goto err_free_all;
-> +			goto err_deactivate;
->  		}
->  		css_ar[ss->subsys_id] = css;
->  
->  		err = percpu_ref_init(&css->refcnt, css_release);
->  		if (err)
-> -			goto err_free_all;
-> +			goto err_deactivate;
->  
->  		init_css(css, ss, cgrp);
->  	}
-> @@ -4417,7 +4417,7 @@ static long cgroup_create(struct cgroup
->  	 */
->  	err = cgroup_create_file(dentry, S_IFDIR | mode, sb);
->  	if (err < 0)
-> -		goto err_free_all;
-> +		goto err_deactivate;
->  	lockdep_assert_held(&dentry->d_inode->i_mutex);
->  
->  	cgrp->serial_nr = cgroup_serial_nr_next++;
-> @@ -4445,6 +4445,9 @@ static long cgroup_create(struct cgroup
->  		if (err)
->  			goto err_destroy;
-
-Before we get here, we call
-
-    /* each css holds a ref to the cgroup's dentry and the parent css */
-    for_each_root_subsys(root, ss) {
-        struct cgroup_subsys_state *css = css_ar[ss->subsys_id];
-
-        dget(dentry);
-        css_get(css->parent);
-    }
-
-If we fail to online a css, we will only call
-
-    ss->css_free(css);
-
-on it skipping css_put() on parent.
-
-css_put() is called on parent in css_release() on normal destroy path.
-
->  
-> +		/* @css successfully attached, now owned by @cgrp */
-> +		css_ar[ss->subsys_id] = NULL;
-> +
->  		if (ss->broken_hierarchy && !ss->warned_broken_hierarchy &&
->  		    parent->parent) {
->  			pr_warning("cgroup: %s (%d) created nested cgroup for controller \"%s\" which has incomplete hierarchy support. Nested cgroups may change behavior in the future.\n",
-> @@ -4470,15 +4473,7 @@ static long cgroup_create(struct cgroup
->  
->  	return 0;
->  
-> -err_free_all:
-> -	for_each_root_subsys(root, ss) {
-> -		struct cgroup_subsys_state *css = css_ar[ss->subsys_id];
-> -
-> -		if (css) {
-> -			percpu_ref_cancel_init(&css->refcnt);
-> -			ss->css_free(css);
-> -		}
-> -	}
-> +err_deactivate:
->  	mutex_unlock(&cgroup_mutex);
->  	/* Release the reference count that we took on the superblock */
->  	deactivate_super(sb);
-> @@ -4488,12 +4483,21 @@ err_free_name:
->  	kfree(rcu_dereference_raw(cgrp->name));
->  err_free_cgrp:
->  	kfree(cgrp);
-> -	return err;
-> +	goto out_free_css_ar;
->  
->  err_destroy:
->  	cgroup_destroy_locked(cgrp);
->  	mutex_unlock(&cgroup_mutex);
->  	mutex_unlock(&dentry->d_inode->i_mutex);
-> +out_free_css_ar:
-> +	for_each_root_subsys(root, ss) {
-> +		struct cgroup_subsys_state *css = css_ar[ss->subsys_id];
-> +
-> +		if (css) {
-> +			percpu_ref_cancel_init(&css->refcnt);
-> +			ss->css_free(css);
-> +		}
-> +	}
->  	return err;
->  }
->  
-> @@ -4650,10 +4654,14 @@ static int cgroup_destroy_locked(struct
->  	/*
->  	 * Initiate massacre of all css's.  cgroup_destroy_css_killed()
->  	 * will be invoked to perform the rest of destruction once the
-> -	 * percpu refs of all css's are confirmed to be killed.
-> +	 * percpu refs of all css's are confirmed to be killed.  Not all
-> +	 * css's may be present if @cgrp failed init half-way.
->  	 */
-> -	for_each_root_subsys(cgrp->root, ss)
-> -		kill_css(cgroup_css(cgrp, ss));
-> +	for_each_root_subsys(cgrp->root, ss) {
-> +		struct cgroup_subsys_state *css = cgroup_css(cgrp, ss);
-> +		if (css)
-> +			kill_css(cgroup_css(cgrp, ss));
-> +	}
->  
->  	/*
->  	 * Mark @cgrp dead.  This prevents further task migration and child
 
