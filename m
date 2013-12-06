@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161797Ab3LFNDj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:03:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44410 "EHLO
+	id S1162618Ab3LFN3K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:29:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44430 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161780Ab3LFNDf (ORCPT
+	with ESMTP id S1161798Ab3LFNDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:03:35 -0500
+	Fri, 6 Dec 2013 08:03:40 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stefan Achatz <erazor_de@users.sourceforge.net>,
-        Jiri Kosina <jkosina@suse.cz>,
+Cc: Nanno Langstraat <langstr@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 181/272] HID: roccat: add new device return value
-Date: Fri,  6 Dec 2013 12:57:50 +0000
-Message-Id: <1386334761-25517-182-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 185/272] HID: apple: option to swap the 'Option' ("Alt") and 'Command' ("Flag") keys.
+Date: Fri,  6 Dec 2013 12:57:54 +0000
+Message-Id: <1386334761-25517-186-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,55 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
+From: Nanno Langstraat <langstr@gmail.com>
 
-commit 14fc4290df2fb94a28f39dab9ed32feaa5527bef upstream.
+commit 43c831468b3d26dbe8f2e061ccaf1abaf9cc1b8b upstream.
 
-Ryos uses a new return value for critical errors, others have been
-confirmed.
+Use case: people who use both Apple and PC keyboards regularly, and desire to
+keep&use their PC muscle memory.
 
-Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+A particular use case: an Apple compact external keyboard connected to a PC
+laptop. (This use case can't be covered well by X.org key remappings etc.)
+
+Signed-off-by: Nanno Langstraat <langstr@gmail.com>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-roccat-common.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/hid/hid-apple.c | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
-diff --git a/drivers/hid/hid-roccat-common.c b/drivers/hid/hid-roccat-common.c
-index 74f7040..e840899 100644
---- a/drivers/hid/hid-roccat-common.c
-+++ b/drivers/hid/hid-roccat-common.c
-@@ -65,10 +65,11 @@ int roccat_common2_send(struct usb_device *usb_dev, uint report_id,
- EXPORT_SYMBOL_GPL(roccat_common2_send);
+diff --git a/drivers/hid/hid-apple.c b/drivers/hid/hid-apple.c
+index c7710b5..d54e1d0 100644
+--- a/drivers/hid/hid-apple.c
++++ b/drivers/hid/hid-apple.c
+@@ -46,6 +46,12 @@ module_param(iso_layout, uint, 0644);
+ MODULE_PARM_DESC(iso_layout, "Enable/Disable hardcoded ISO-layout of the keyboard. "
+ 		"(0 = disabled, [1] = enabled)");
  
- enum roccat_common2_control_states {
--	ROCCAT_COMMON_CONTROL_STATUS_OVERLOAD = 0,
-+	ROCCAT_COMMON_CONTROL_STATUS_CRITICAL = 0,
- 	ROCCAT_COMMON_CONTROL_STATUS_OK = 1,
- 	ROCCAT_COMMON_CONTROL_STATUS_INVALID = 2,
--	ROCCAT_COMMON_CONTROL_STATUS_WAIT = 3,
-+	ROCCAT_COMMON_CONTROL_STATUS_BUSY = 3,
-+	ROCCAT_COMMON_CONTROL_STATUS_CRITICAL_NEW = 4,
++static unsigned int swap_opt_cmd = 0;
++module_param(swap_opt_cmd, uint, 0644);
++MODULE_PARM_DESC(swap_opt_cmd, "Swap the Option (\"Alt\") and Command (\"Flag\") keys. "
++		"(For people who want to keep Windows PC keyboard muscle memory. "
++		"[0] = as-is, Mac layout. 1 = swapped, Windows layout.)");
++
+ struct apple_sc {
+ 	unsigned long quirks;
+ 	unsigned int fn_on;
+@@ -150,6 +156,14 @@ static const struct apple_key_translation apple_iso_keyboard[] = {
+ 	{ }
  };
  
- static int roccat_common2_receive_control_status(struct usb_device *usb_dev)
-@@ -88,13 +89,12 @@ static int roccat_common2_receive_control_status(struct usb_device *usb_dev)
- 		switch (control.value) {
- 		case ROCCAT_COMMON_CONTROL_STATUS_OK:
- 			return 0;
--		case ROCCAT_COMMON_CONTROL_STATUS_WAIT:
-+		case ROCCAT_COMMON_CONTROL_STATUS_BUSY:
- 			msleep(500);
- 			continue;
- 		case ROCCAT_COMMON_CONTROL_STATUS_INVALID:
--
--		case ROCCAT_COMMON_CONTROL_STATUS_OVERLOAD:
--			/* seems to be critical - replug necessary */
-+		case ROCCAT_COMMON_CONTROL_STATUS_CRITICAL:
-+		case ROCCAT_COMMON_CONTROL_STATUS_CRITICAL_NEW:
- 			return -EINVAL;
- 		default:
- 			dev_err(&usb_dev->dev,
++static const struct apple_key_translation swapped_option_cmd_keys[] = {
++	{ KEY_LEFTALT,	KEY_LEFTMETA },
++	{ KEY_LEFTMETA,	KEY_LEFTALT },
++	{ KEY_RIGHTALT,	KEY_RIGHTMETA },
++	{ KEY_RIGHTMETA,KEY_RIGHTALT },
++	{ }
++};
++
+ static const struct apple_key_translation *apple_find_translation(
+ 		const struct apple_key_translation *table, u16 from)
+ {
+@@ -242,6 +256,14 @@ static int hidinput_apple_event(struct hid_device *hid, struct input_dev *input,
+ 		}
+ 	}
+ 
++	if (swap_opt_cmd) {
++		trans = apple_find_translation(swapped_option_cmd_keys, usage->code);
++		if (trans) {
++			input_event(input, usage->type, trans->to, value);
++			return 1;
++		}
++	}
++
+ 	return 0;
+ }
+ 
 -- 
 1.8.3.2
 
