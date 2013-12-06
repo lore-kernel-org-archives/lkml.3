@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759100Ab3LFOYc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:24:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43551 "EHLO
+	id S1759266Ab3LFO0q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:26:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43536 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757858Ab3LFM7j (ORCPT
+	with ESMTP id S1161031Ab3LFM7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 07:59:39 -0500
+	Fri, 6 Dec 2013 07:59:36 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Josh Boyer <jwboyer@redhat.com>,
+        Alexander Holler <holler@ahsoftware.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 008/272] target: Fix delayed Task Aborted Status (TAS) handling bug
-Date: Fri,  6 Dec 2013 12:54:57 +0000
-Message-Id: <1386334761-25517-9-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 001/272] X.509: Remove certificate date checks
+Date: Fri,  6 Dec 2013 12:54:50 +0000
+Message-Id: <1386334761-25517-2-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,47 +29,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: David Howells <dhowells@redhat.com>
 
-commit 29f4c090079f442ea2723d292e4e64f0b6ac1f27 upstream.
+commit 124df926090b32a998483f6e43ebeccdbe5b5302 upstream.
 
-This patch fixes a bug in delayed Task Aborted Status (TAS) handling,
-where transport_send_task_abort() was not returning for the case
-when the se_tfo->write_pending() callback indicated that last fabric
-specific WRITE PDU had not yet been received.
+Remove the certificate date checks that are performed when a certificate is
+parsed.  There are two checks: a valid from and a valid to.  The first check is
+causing a lot of problems with system clocks that don't keep good time and the
+second places an implicit expiry date upon the kernel when used for module
+signing, so do we really need them?
 
-It also adds an explicit cmd->scsi_status = SAM_STAT_TASK_ABORTED
-assignment within transport_check_aborted_status() to avoid the case
-where se_tfo->queue_status() is called when the SAM_STAT_TASK_ABORTED
-assignment + ->queue_status() in transport_send_task_abort() does not
-occur once SCF_SENT_DELAYED_TAS has been set.
-
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: David Woodhouse <dwmw2@infradead.org>
+cc: Rusty Russell <rusty@rustcorp.com.au>
+cc: Josh Boyer <jwboyer@redhat.com>
+cc: Alexander Holler <holler@ahsoftware.de>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/target/target_core_transport.c | 2 ++
- 1 file changed, 2 insertions(+)
+ crypto/asymmetric_keys/x509_public_key.c | 38 --------------------------------
+ 1 file changed, 38 deletions(-)
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index d8e49d7..2050727 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -2784,6 +2784,7 @@ int transport_check_aborted_status(struct se_cmd *cmd, int send_status)
- 		 cmd->t_task_cdb[0], cmd->se_tfo->get_task_tag(cmd));
- 
- 	cmd->se_cmd_flags |= SCF_SENT_DELAYED_TAS;
-+	cmd->scsi_status = SAM_STAT_TASK_ABORTED;
- 	trace_target_cmd_complete(cmd);
- 	cmd->se_tfo->queue_status(cmd);
- 
-@@ -2812,6 +2813,7 @@ void transport_send_task_abort(struct se_cmd *cmd)
- 		if (cmd->se_tfo->write_pending_status(cmd) != 0) {
- 			cmd->transport_state |= CMD_T_ABORTED;
- 			smp_mb__after_atomic_inc();
-+			return;
- 		}
+diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
+index 06007f0..52222a2 100644
+--- a/crypto/asymmetric_keys/x509_public_key.c
++++ b/crypto/asymmetric_keys/x509_public_key.c
+@@ -106,7 +106,6 @@ error_no_sig:
+ static int x509_key_preparse(struct key_preparsed_payload *prep)
+ {
+ 	struct x509_certificate *cert;
+-	struct tm now;
+ 	size_t srlen, sulen;
+ 	char *desc = NULL;
+ 	int ret;
+@@ -137,43 +136,6 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
+ 		goto error_free_cert;
  	}
- 	cmd->scsi_status = SAM_STAT_TASK_ABORTED;
+ 
+-	time_to_tm(CURRENT_TIME.tv_sec, 0, &now);
+-	pr_devel("Now: %04ld-%02d-%02d %02d:%02d:%02d\n",
+-		 now.tm_year + 1900, now.tm_mon + 1, now.tm_mday,
+-		 now.tm_hour, now.tm_min,  now.tm_sec);
+-	if (now.tm_year < cert->valid_from.tm_year ||
+-	    (now.tm_year == cert->valid_from.tm_year &&
+-	     (now.tm_mon < cert->valid_from.tm_mon ||
+-	      (now.tm_mon == cert->valid_from.tm_mon &&
+-	       (now.tm_mday < cert->valid_from.tm_mday ||
+-		(now.tm_mday == cert->valid_from.tm_mday &&
+-		 (now.tm_hour < cert->valid_from.tm_hour ||
+-		  (now.tm_hour == cert->valid_from.tm_hour &&
+-		   (now.tm_min < cert->valid_from.tm_min ||
+-		    (now.tm_min == cert->valid_from.tm_min &&
+-		     (now.tm_sec < cert->valid_from.tm_sec
+-		      ))))))))))) {
+-		pr_warn("Cert %s is not yet valid\n", cert->fingerprint);
+-		ret = -EKEYREJECTED;
+-		goto error_free_cert;
+-	}
+-	if (now.tm_year > cert->valid_to.tm_year ||
+-	    (now.tm_year == cert->valid_to.tm_year &&
+-	     (now.tm_mon > cert->valid_to.tm_mon ||
+-	      (now.tm_mon == cert->valid_to.tm_mon &&
+-	       (now.tm_mday > cert->valid_to.tm_mday ||
+-		(now.tm_mday == cert->valid_to.tm_mday &&
+-		 (now.tm_hour > cert->valid_to.tm_hour ||
+-		  (now.tm_hour == cert->valid_to.tm_hour &&
+-		   (now.tm_min > cert->valid_to.tm_min ||
+-		    (now.tm_min == cert->valid_to.tm_min &&
+-		     (now.tm_sec > cert->valid_to.tm_sec
+-		      ))))))))))) {
+-		pr_warn("Cert %s has expired\n", cert->fingerprint);
+-		ret = -EKEYEXPIRED;
+-		goto error_free_cert;
+-	}
+-
+ 	cert->pub->algo = x509_public_key_algorithms[cert->pkey_algo];
+ 	cert->pub->id_type = PKEY_ID_X509;
+ 
 -- 
 1.8.3.2
 
