@@ -1,53 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584Ab3LFPwS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 10:52:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63125 "EHLO mx1.redhat.com"
+	id S1756776Ab3LFPzS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 10:55:18 -0500
+Received: from mga11.intel.com ([192.55.52.93]:13898 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751596Ab3LFPwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 10:52:17 -0500
-Date: Fri, 6 Dec 2013 16:52:38 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        William Dauchy <wdauchy@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Ma, Xindong" <xindong.ma@intel.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        gregkh@linuxfoundation.org, "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        azurIt <azurit@pobox.sk>, Sameer Nanda <snanda@chromium.org>
-Subject: Re: [PATCH] Fix race between oom kill and task exit
-Message-ID: <20131206155238.GA6676@redhat.com>
-References: <3917C05D9F83184EAA45CE249FF1B1DD0253093A@SHSMSX103.ccr.corp.intel.com> <20131128063505.GN3556@cmpxchg.org> <CAJ75kXZXxCMgf8=pghUWf=W9EKf3Z4nzKKy=CAn+7keVF_DCRA@mail.gmail.com> <20131128120018.GL2761@dhcp22.suse.cz> <20131128183830.GD20740@redhat.com> <20131202141203.GA31402@redhat.com> <alpine.DEB.2.02.1312041655370.13608@chino.kir.corp.google.com> <20131205172931.GA26018@redhat.com> <alpine.DEB.2.02.1312051531330.7717@chino.kir.corp.google.com> <20131206151944.GC2674@redhat.com>
+	id S1753526Ab3LFPzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 10:55:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,841,1378882800"; 
+   d="scan'208";a="445805675"
+From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: Paolo Bonzini <pbonzini@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Xudong Hao" <xudong.hao@intel.com>,
+        "Liu, Jinsong" <jinsong.liu@intel.com>
+Subject: RE: [PATCH 1/3] x86, mpx: add documentation on Intel MPX
+Thread-Topic: [PATCH 1/3] x86, mpx: add documentation on Intel MPX
+Thread-Index: AQHO8neZfx07qtPJJki+2rKfZdg4T5pGopUAgACswDA=
+Date: Fri, 6 Dec 2013 15:55:10 +0000
+Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE014A4322@SHSMSX102.ccr.corp.intel.com>
+References: <1386355976-11732-1-git-send-email-qiaowei.ren@intel.com>
+ <20131206132648.GB6694@pd.tnic>
+In-Reply-To: <20131206132648.GB6694@pd.tnic>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131206151944.GC2674@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rB6FtPlV020184
 
-On 12/06, Oleg Nesterov wrote:
->
-> And this is risky. For example, 1/4 depends on (at least) another patch
-> I sent in preparation for this change, commit 81907739851
-> "kernel/fork.c:copy_process(): don't add the uninitialized
-> child to thread/task/pid lists", perhaps on something else.
 
-Hmm. not too much actually, I re-checked v3.10:kernel/copy_process.c.
-Yes, list_add(thread_node)) in copy_process() can add the new thread
-with the wrong pids, but somehow I forgot that list_add(thread_group)
-in v3.10 has the same problem, so this probably doesn't matter and
-we can safely backport this change.
 
-> So personally I'd prefer to simply send the workaround for stable.
+> -----Original Message-----
+> From: Borislav Petkov [mailto:bp@alien8.de]
+> Sent: Friday, December 06, 2013 9:27 PM
+> To: Ren, Qiaowei
+> Cc: Paolo Bonzini; H. Peter Anvin; Ingo Molnar; Thomas Gleixner;
+> x86@kernel.org; linux-kernel@vger.kernel.org; qemu-devel@nongnu.org;
+> kvm@vger.kernel.org; Xudong Hao; Liu, Jinsong
+> Subject: Re: [PATCH 1/3] x86, mpx: add documentation on Intel MPX
+> 
+> On Sat, Dec 07, 2013 at 02:52:54AM +0800, Qiaowei Ren wrote:
+> > This patch adds the Documentation/intel_mpx.txt file with some
+> > information about Intel MPX.
+> >
+> > Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+> > Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+> > Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
+> > ---
+> >  Documentation/intel_mpx.txt |   77
+> +++++++++++++++++++++++++++++++++++++++++++
+> 
+> Documentation/x86/ is probably a more fitting place for this.
+> 
+Yes. I will move it to Documentation/x86.
 
-Yes, anyway, bacause I will sleep better ;)
+> >  1 files changed, 77 insertions(+), 0 deletions(-)  create mode 100644
+> > Documentation/intel_mpx.txt
+> >
+> > diff --git a/Documentation/intel_mpx.txt b/Documentation/intel_mpx.txt
+> > new file mode 100644 index 0000000..3d947d0
+> > --- /dev/null
+> > +++ b/Documentation/intel_mpx.txt
+> > @@ -0,0 +1,77 @@
+> > +Intel(R) MPX Overview:
+> > +=====================
+> > +
+> > +Intel(R) Memory Protection Extensions (Intel(R) MPX) is a new
+> > +capability introduced into Intel Architecture. Intel MPX can increase
+> > +the robustness of software when it is used in conjunction with
+> > +compiler changes to check memory references, for those references
+> > +whose compile-time normal intentions are usurped
+> 
+> That's a strange formulation, what does it actually mean? The intentions of
+> references??
+> 
+It is from public introduction and specification, you can refer to http://software.intel.com/en-us/articles/introduction-to-intel-memory-protection-extensions 
 
-But OK, if you think it would be better to mark 1-4 series I sent
-for stable - I won't argue.
-
-Oleg.
-
+Thanks,
+Qiaowei
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
