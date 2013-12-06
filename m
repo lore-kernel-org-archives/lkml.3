@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757927Ab3LFLO5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 06:14:57 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:44483 "EHLO comal.ext.ti.com"
+	id S1757732Ab3LFLQN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 06:16:13 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56496 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757898Ab3LFLOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 06:14:52 -0500
-Message-ID: <52A1B19F.70501@ti.com>
-Date: Fri, 6 Dec 2013 16:44:39 +0530
+	id S1753799Ab3LFLQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 06:16:11 -0500
+Message-ID: <52A1B1EE.8050201@ti.com>
+Date: Fri, 6 Dec 2013 16:45:58 +0530
 From: Kishon Vijay Abraham I <kishon@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
@@ -20,93 +20,87 @@ CC: <kyungmin.park@samsung.com>, <t.figa@samsung.com>,
         <yulgon.kim@samsung.com>, <p.paneri@samsung.com>,
         <av.tikhomirov@samsung.com>, <jg1.han@samsung.com>,
         <galak@codeaurora.org>, <matt.porter@linaro.org>
-Subject: Re: [PATCH v4 6/9] phy: Add support for S5PV210 to the Exynos USB
- PHY driver
-References: <1386246579-25141-1-git-send-email-k.debski@samsung.com> <1386325897-27260-1-git-send-email-k.debski@samsung.com>
-In-Reply-To: <1386325897-27260-1-git-send-email-k.debski@samsung.com>
+Subject: Re: [PATCH v4 7/9] phy: Add Exynos 5250 support to the Exynos USB
+ 2.0 PHY driver
+References: <1386246579-25141-1-git-send-email-k.debski@samsung.com> <1386325955-27322-1-git-send-email-k.debski@samsung.com>
+In-Reply-To: <1386325955-27322-1-git-send-email-k.debski@samsung.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Friday 06 December 2013 04:01 PM, Kamil Debski wrote:
-> From: Mateusz Krawczuk <mat.krawczuk@gmail.com>
+On Friday 06 December 2013 04:02 PM, Kamil Debski wrote:
+> Add support for Exynos 5250. This driver is to replace the old
+> USB 2.0 PHY driver.
 > 
-> Add support for the Samsung's S5PV210 SoC to the Exynos USB PHY driver.
-> 
-> Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-> [k.debski@samsung.com: cleanup and commit description]
-> [k.debski@samsung.com: make changes accordingly to the mailing list
-> comments]
 > Signed-off-by: Kamil Debski <k.debski@samsung.com>
 > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 > ---
 >  .../devicetree/bindings/phy/samsung-usbphy.txt     |    1 +
->  drivers/phy/Kconfig                                |    7 +
+>  drivers/phy/Kconfig                                |    8 +
 >  drivers/phy/Makefile                               |    1 +
->  drivers/phy/phy-s5pv210-usb2.c                     |  206 ++++++++++++++++++++
+>  drivers/phy/phy-exynos5250-usb2.c                  |  363 ++++++++++++++++++++
 >  drivers/phy/phy-samsung-usb2.c                     |    6 +
 >  drivers/phy/phy-samsung-usb2.h                     |    1 +
->  6 files changed, 222 insertions(+)
->  create mode 100644 drivers/phy/phy-s5pv210-usb2.c
+>  6 files changed, 380 insertions(+)
+>  create mode 100644 drivers/phy/phy-exynos5250-usb2.c
 > 
 > diff --git a/Documentation/devicetree/bindings/phy/samsung-usbphy.txt b/Documentation/devicetree/bindings/phy/samsung-usbphy.txt
-> index cadbf70..77a8e9c 100644
+> index 77a8e9c..94096fc 100644
 > --- a/Documentation/devicetree/bindings/phy/samsung-usbphy.txt
 > +++ b/Documentation/devicetree/bindings/phy/samsung-usbphy.txt
-> @@ -3,6 +3,7 @@ Samsung S5P/EXYNOS SoC series USB PHY
->  
->  Required properties:
->  - compatible : should be one of the listed compatibles:
-> +	- "samsung,s5pv210-usb2-phy"
+> @@ -6,6 +6,7 @@ Required properties:
+>  	- "samsung,s5pv210-usb2-phy"
 >  	- "samsung,exynos4210-usb2-phy"
 >  	- "samsung,exynos4212-usb2-phy"
+> +	- "samsung,exynos5250-usb2-phy"
 >  - reg : a list of registers used by phy driver
+>  	- first and obligatory is the location of phy modules registers
+>  - samsung,sysreg-phandle - handle to syscon used to control the system registers
 > diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-> index b29018f..2e433cd 100644
+> index 2e433cd..74e9064 100644
 > --- a/drivers/phy/Kconfig
 > +++ b/drivers/phy/Kconfig
-> @@ -58,6 +58,13 @@ config PHY_SAMSUNG_USB2
->  	  This driver provides common interface to interact, for Samsung
->  	  USB 2.0 PHY driver.
->  
-> +config PHY_S5PV210_USB2
-> +	bool "Support for S5PV210"
-> +	depends on PHY_SAMSUNG_USB2
-> +	depends on ARCH_S5PV210
-> +	help
-> +	  Enable USB PHY support for S5PV210
-
-more description here..
+> @@ -78,4 +78,12 @@ config PHY_EXYNOS4212_USB2
+>  	depends on (SOC_EXYNOS4212 || SOC_EXYNOS4412)
+>  	help
+>  	  Enable USB PHY support for Exynos 4212
 > +
->  config PHY_EXYNOS4210_USB2
->  	bool "Support for Exynos 4210"
->  	depends on PHY_SAMSUNG_USB2
+> +config PHY_EXYNOS5250_USB2
+> +	bool "Support for Exynos 5250"
+> +	depends on PHY_SAMSUNG_USB2
+> +	depends on SOC_EXYNOS5250
+> +	help
+> +	  Enable USB PHY support for Exynos 5250
+
+My comments for the previous patch is applicable here too..
+
+Thanks
+Kishon
+
+> +
+>  endmenu
 > diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-> index 9f4befd..fefc6c2 100644
+> index fefc6c2..33c3ac1 100644
 > --- a/drivers/phy/Makefile
 > +++ b/drivers/phy/Makefile
-> @@ -8,5 +8,6 @@ obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)	+= phy-exynos-mipi-video.o
->  obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
->  obj-$(CONFIG_TWL4030_USB)		+= phy-twl4030-usb.o
->  obj-$(CONFIG_PHY_SAMSUNG_USB2)		+= phy-samsung-usb2.o
-> +obj-$(CONFIG_PHY_S5PV210_USB2)		+= phy-s5pv210-usb2.o
+> @@ -11,3 +11,4 @@ obj-$(CONFIG_PHY_SAMSUNG_USB2)		+= phy-samsung-usb2.o
+>  obj-$(CONFIG_PHY_S5PV210_USB2)		+= phy-s5pv210-usb2.o
 >  obj-$(CONFIG_PHY_EXYNOS4210_USB2)	+= phy-exynos4210-usb2.o
 >  obj-$(CONFIG_PHY_EXYNOS4212_USB2)	+= phy-exynos4212-usb2.o
-> diff --git a/drivers/phy/phy-s5pv210-usb2.c b/drivers/phy/phy-s5pv210-usb2.c
+> +obj-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
+> diff --git a/drivers/phy/phy-exynos5250-usb2.c b/drivers/phy/phy-exynos5250-usb2.c
 > new file mode 100644
-> index 0000000..528a114
+> index 0000000..7aeebc8
 > --- /dev/null
-> +++ b/drivers/phy/phy-s5pv210-usb2.c
-> @@ -0,0 +1,206 @@
+> +++ b/drivers/phy/phy-exynos5250-usb2.c
+> @@ -0,0 +1,363 @@
 > +/*
-> + * Samsung SoC USB 1.1/2.0 PHY driver - S5PV210 support
+> + * Samsung SoC USB 1.1/2.0 PHY driver - Exynos 5250 support
 > + *
 > + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
-> + * Authors: Kamil Debski <k.debski@samsung.com>
+> + * Author: Kamil Debski <k.debski@samsung.com>
 > + *
 > + * This program is free software; you can redistribute it and/or modify
 > + * it under the terms of the GNU General Public License version 2 as
@@ -122,106 +116,178 @@ more description here..
 > +#include <linux/of_address.h>
 > +#include <linux/phy/phy.h>
 > +#include <linux/platform_device.h>
+> +#include <linux/regmap.h>
 > +#include <linux/spinlock.h>
-
-I think my comments for the previous patch with a similar driver
-(phy-exynos4210-usb2.c) is applicable here also.
-
-Thanks
-Kishon
-
 > +#include "phy-samsung-usb2.h"
 > +
 > +/* Exynos USB PHY registers */
+> +#define EXYNOS_5250_REFCLKSEL_CRYSTAL	0x0
+> +#define EXYNOS_5250_REFCLKSEL_XO	0x1
+> +#define EXYNOS_5250_REFCLKSEL_CLKCORE	0x2
 > +
-> +/* PHY power control */
-> +#define S5PV210_UPHYPWR			0x0
+> +#define EXYNOS_5250_FSEL_9MHZ6		0x0
+> +#define EXYNOS_5250_FSEL_10MHZ		0x1
+> +#define EXYNOS_5250_FSEL_12MHZ		0x2
+> +#define EXYNOS_5250_FSEL_19MHZ2		0x3
+> +#define EXYNOS_5250_FSEL_20MHZ		0x4
+> +#define EXYNOS_5250_FSEL_24MHZ		0x5
+> +#define EXYNOS_5250_FSEL_50MHZ		0x7
 > +
-> +#define S5PV210_UPHYPWR_PHY0_SUSPEND	(1 << 0)
-> +#define S5PV210_UPHYPWR_PHY0_PWR		(1 << 3)
-> +#define S5PV210_UPHYPWR_PHY0_OTG_PWR	(1 << 4)
-> +#define S5PV210_UPHYPWR_PHY0	( \
-> +	S5PV210_UPHYPWR_PHY0_SUSPEND | \
-> +	S5PV210_UPHYPWR_PHY0_PWR | \
-> +	S5PV210_UPHYPWR_PHY0_OTG_PWR)
+> +/* Normal host */
+> +#define EXYNOS_5250_HOSTPHYCTRL0			0x0
 > +
-> +#define S5PV210_UPHYPWR_PHY1_SUSPEND	(1 << 6)
-> +#define S5PV210_UPHYPWR_PHY1_PWR		(1 << 7)
-> +#define S5PV210_UPHYPWR_PHY1 ( \
-> +	S5PV210_UPHYPWR_PHY1_SUSPEND | \
-> +	S5PV210_UPHYPWR_PHY1_PWR)
+> +#define EXYNOS_5250_HOSTPHYCTRL0_PHYSWRSTALL		(0x1 << 31)
+> +#define EXYNOS_5250_HOSTPHYCTRL0_REFCLKSEL_SHIFT	19
+> +#define EXYNOS_5250_HOSTPHYCTRL0_REFCLKSEL_MASK	\
+> +		(0x3 << EXYNOS_5250_HOSTPHYCTRL0_REFCLKSEL_SHIFT)
+> +#define EXYNOS_5250_HOSTPHYCTRL0_FSEL_SHIFT		16
+> +#define EXYNOS_5250_HOSTPHYCTRL0_FSEL_MASK \
+> +		(0x7 << EXYNOS_5250_HOSTPHYCTRL0_FSEL_SHIFT)
+> +#define EXYNOS_5250_HOSTPHYCTRL0_TESTBURNIN		(0x1 << 11)
+> +#define EXYNOS_5250_HOSTPHYCTRL0_RETENABLE		(0x1 << 10)
+> +#define EXYNOS_5250_HOSTPHYCTRL0_COMMON_ON_N		(0x1 << 9)
+> +#define EXYNOS_5250_HOSTPHYCTRL0_VATESTENB_MASK		(0x3 << 7)
+> +#define EXYNOS_5250_HOSTPHYCTRL0_VATESTENB_DUAL		(0x0 << 7)
+> +#define EXYNOS_5250_HOSTPHYCTRL0_VATESTENB_ID0		(0x1 << 7)
+> +#define EXYNOS_5250_HOSTPHYCTRL0_VATESTENB_ANALOGTEST	(0x2 << 7)
+> +#define EXYNOS_5250_HOSTPHYCTRL0_SIDDQ			(0x1 << 6)
+> +#define EXYNOS_5250_HOSTPHYCTRL0_FORCESLEEP		(0x1 << 5)
+> +#define EXYNOS_5250_HOSTPHYCTRL0_FORCESUSPEND		(0x1 << 4)
+> +#define EXYNOS_5250_HOSTPHYCTRL0_WORDINTERFACE		(0x1 << 3)
+> +#define EXYNOS_5250_HOSTPHYCTRL0_UTMISWRST		(0x1 << 2)
+> +#define EXYNOS_5250_HOSTPHYCTRL0_LINKSWRST		(0x1 << 1)
+> +#define EXYNOS_5250_HOSTPHYCTRL0_PHYSWRST		(0x1 << 0)
 > +
-> +/* PHY clock control */
-> +#define S5PV210_UPHYCLK			0x4
+> +/* HSIC0 & HSCI1 */
+> +#define EXYNOS_5250_HOSTPHYCTRL1			0x10
+> +#define EXYNOS_5250_HOSTPHYCTRL2			0x20
 > +
-> +#define S5PV210_UPHYCLK_PHYFSEL_MASK	(0x3 << 0)
-> +#define S5PV210_UPHYCLK_PHYFSEL_48MHZ	(0x0 << 0)
-> +#define S5PV210_UPHYCLK_PHYFSEL_24MHZ	(0x3 << 0)
-> +#define S5PV210_UPHYCLK_PHYFSEL_12MHZ	(0x2 << 0)
+> +#define EXYNOS_5250_HOSTPHYCTRLX_REFCLKSEL_MASK		(0x3 << 23)
+> +#define EXYNOS_5250_HOSTPHYCTRLX_REFCLKDIV_MASK		(0x7f << 16)
+> +#define EXYNOS_5250_HOSTPHYCTRLX_SIDDQ			(0x1 << 6)
+> +#define EXYNOS_5250_HOSTPHYCTRLX_FORCESLEEP		(0x1 << 5)
+> +#define EXYNOS_5250_HOSTPHYCTRLX_FORCESUSPEND		(0x1 << 4)
+> +#define EXYNOS_5250_HOSTPHYCTRLX_WORDINTERFACE		(0x1 << 3)
+> +#define EXYNOS_5250_HOSTPHYCTRLX_UTMISWRST		(0x1 << 2)
+> +#define EXYNOS_5250_HOSTPHYCTRLX_PHYSWRST		(0x1 << 0)
 > +
-> +#define S5PV210_UPHYCLK_PHY0_ID_PULLUP	(0x1 << 2)
-> +#define S5PV210_UPHYCLK_PHY0_COMMON_ON	(0x1 << 4)
-> +#define S5PV210_UPHYCLK_PHY1_COMMON_ON	(0x1 << 7)
+> +/* EHCI control */
+> +#define EXYNOS_5250_HOSTEHCICTRL			0x30
+> +#define EXYNOS_5250_HOSTEHCICTRL_ENAINCRXALIGN		(0x1 << 29)
+> +#define EXYNOS_5250_HOSTEHCICTRL_ENAINCR4		(0x1 << 28)
+> +#define EXYNOS_5250_HOSTEHCICTRL_ENAINCR8		(0x1 << 27)
+> +#define EXYNOS_5250_HOSTEHCICTRL_ENAINCR16		(0x1 << 26)
+> +#define EXYNOS_5250_HOSTEHCICTRL_AUTOPPDONOVRCUREN	(0x1 << 25)
+> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_SHIFT	19
+> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_MASK	\
+> +		(0x3f << EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_SHIFT)
+> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL1_SHIFT	13
+> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL1_MASK	\
+> +		(0x3f << EXYNOS_5250_HOSTEHCICTRL_FLADJVAL1_SHIFT)
+> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL2_SHIFT	7
+> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_MASK	\
+> +		(0x3f << EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_SHIFT)
+> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVALHOST_SHIFT	1
+> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVALHOST_MASK \
+> +		(0x1 << EXYNOS_5250_HOSTEHCICTRL_FLADJVALHOST_SHIFT)
+> +#define EXYNOS_5250_HOSTEHCICTRL_SIMULATIONMODE		(0x1 << 0)
 > +
-> +/* PHY reset control */
-> +#define S5PV210_UPHYRST			0x8
+> +/* OHCI control */
+> +#define EXYNOS_5250_HOSTOHCICTRL                        0x34
+> +#define EXYNOS_5250_HOSTOHCICTRL_FRAMELENVAL_SHIFT	1
+> +#define EXYNOS_5250_HOSTOHCICTRL_FRAMELENVAL_MASK \
+> +		(0x3ff << EXYNOS_5250_HOSTOHCICTRL_FRAMELENVAL_SHIFT)
+> +#define EXYNOS_5250_HOSTOHCICTRL_FRAMELENVALEN		(0x1 << 0)
 > +
-> +#define S5PV210_URSTCON_PHY0		(1 << 0)
-> +#define S5PV210_URSTCON_OTG_HLINK		(1 << 1)
-> +#define S5PV210_URSTCON_OTG_PHYLINK		(1 << 2)
-> +#define S5PV210_URSTCON_PHY1_ALL		(1 << 3)
-> +#define S5PV210_URSTCON_HOST_LINK_ALL	(1 << 4)
+> +/* USBOTG */
+> +#define EXYNOS_5250_USBOTGSYS				0x38
+> +#define EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET		(0x1 << 14)
+> +#define EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG		(0x1 << 13)
+> +#define EXYNOS_5250_USBOTGSYS_PHY_SW_RST		(0x1 << 12)
+> +#define EXYNOS_5250_USBOTGSYS_REFCLKSEL_SHIFT		9
+> +#define EXYNOS_5250_USBOTGSYS_REFCLKSEL_MASK \
+> +		(0x3 << EXYNOS_5250_USBOTGSYS_REFCLKSEL_SHIFT)
+> +#define EXYNOS_5250_USBOTGSYS_ID_PULLUP			(0x1 << 8)
+> +#define EXYNOS_5250_USBOTGSYS_COMMON_ON			(0x1 << 7)
+> +#define EXYNOS_5250_USBOTGSYS_FSEL_SHIFT		4
+> +#define EXYNOS_5250_USBOTGSYS_FSEL_MASK \
+> +		(0x3 << EXYNOS_5250_USBOTGSYS_FSEL_SHIFT)
+> +#define EXYNOS_5250_USBOTGSYS_FORCE_SLEEP		(0x1 << 3)
+> +#define EXYNOS_5250_USBOTGSYS_OTGDISABLE		(0x1 << 2)
+> +#define EXYNOS_5250_USBOTGSYS_SIDDQ_UOTG		(0x1 << 1)
+> +#define EXYNOS_5250_USBOTGSYS_FORCE_SUSPEND		(0x1 << 0)
 > +
 > +/* Isolation, configured in the power management unit */
-> +#define S5PV210_USB_ISOL_DEVICE_OFFSET	0x704
-> +#define S5PV210_USB_ISOL_DEVICE		(1 << 0)
-> +#define S5PV210_USB_ISOL_HOST_OFFSET	0x708
-> +#define S5PV210_USB_ISOL_HOST		(1 << 1)
+> +#define EXYNOS_5250_USB_ISOL_OTG_OFFSET		0x704
+> +#define EXYNOS_5250_USB_ISOL_OTG		(1 << 0)
+> +#define EXYNOS_5250_USB_ISOL_HOST_OFFSET	0x708
+> +#define EXYNOS_5250_USB_ISOL_HOST		(1 << 0)
 > +
+> +/* Mode swtich register */
+> +#define EXYNOS_5250_MODE_SWITCH_OFFSET		0x230
+> +#define EXYNOS_5250_MODE_SWITCH_MASK		1
+> +#define EXYNOS_5250_MODE_SWITCH_DEVICE		0
+> +#define EXYNOS_5250_MODE_SWITCH_HOST		1
 > +
-> +enum s5pv210_phy_id {
-> +	S5PV210_DEVICE,
-> +	S5PV210_HOST,
-> +	S5PV210_NUM_PHYS,
+> +enum exynos4x12_phy_id {
+> +	EXYNOS5250_DEVICE,
+> +	EXYNOS5250_HOST,
+> +	EXYNOS5250_HSIC0,
+> +	EXYNOS5250_HSIC1,
+> +	EXYNOS5250_NUM_PHYS,
 > +};
 > +
 > +/*
-> + * s5pv210_rate_to_clk() converts the supplied clock rate to the value that
+> + * exynos5250_rate_to_clk() converts the supplied clock rate to the value that
 > + * can be written to the phy register.
 > + */
-> +static int s5pv210_rate_to_clk(unsigned long rate, u32 *reg)
+> +static int exynos5250_rate_to_clk(unsigned long rate, u32 *reg)
 > +{
-> +	pr_info("%lu\n", rate);
+> +	/* EXYNOS_5250_FSEL_MASK */
+> +
 > +	switch (rate) {
+> +	case 9600 * KHZ:
+> +		*reg = EXYNOS_5250_FSEL_9MHZ6;
+> +		break;
+> +	case 10 * MHZ:
+> +		*reg = EXYNOS_5250_FSEL_10MHZ;
+> +		break;
 > +	case 12 * MHZ:
-> +		*reg = S5PV210_UPHYCLK_PHYFSEL_12MHZ;
+> +		*reg = EXYNOS_5250_FSEL_12MHZ;
+> +		break;
+> +	case 19200 * KHZ:
+> +		*reg = EXYNOS_5250_FSEL_19MHZ2;
+> +		break;
+> +	case 20 * MHZ:
+> +		*reg = EXYNOS_5250_FSEL_20MHZ;
 > +		break;
 > +	case 24 * MHZ:
-> +		*reg = S5PV210_UPHYCLK_PHYFSEL_24MHZ;
+> +		*reg = EXYNOS_5250_FSEL_24MHZ;
 > +		break;
-> +	case 48 * MHZ:
-> +		*reg = S5PV210_UPHYCLK_PHYFSEL_48MHZ;
+> +	case 50 * MHZ:
+> +		*reg = EXYNOS_5250_FSEL_50MHZ;
 > +		break;
 > +	default:
 > +		return -EINVAL;
 > +	}
+> +
+> +	return 0;
 > +}
 > +
-> +static void s5pv210_isol(struct samsung_usb2_phy_instance *inst, bool on)
+> +static void exynos5250_isol(struct samsung_usb2_phy_instance *inst, bool on)
 > +{
 > +	struct samsung_usb2_phy_driver *drv = inst->drv;
+> +	u32 offset;
 > +	u32 mask;
-> +	u32 tmp;
-> +
-> +	if (!drv->reg_isol)
-> +		return;
 > +
 > +	switch (inst->cfg->id) {
-> +	case S5PV210_DEVICE:
-> +		mask = S5PV210_USB_ISOL_DEVICE;
+> +	case EXYNOS5250_DEVICE:
+> +		offset = EXYNOS_5250_USB_ISOL_OTG_OFFSET;
+> +		mask = EXYNOS_5250_USB_ISOL_OTG;
 > +		break;
-> +	case S5PV210_HOST:
-> +		mask = S5PV210_USB_ISOL_HOST;
+> +	case EXYNOS5250_HOST:
+> +		offset = EXYNOS_5250_USB_ISOL_HOST_OFFSET;
+> +		mask = EXYNOS_5250_USB_ISOL_HOST;
 > +		break;
 > +	default:
 > +		return;
@@ -230,119 +296,196 @@ Kishon
 > +	regmap_update_bits(drv->reg_pmu, offset, mask, on ? 0 : mask);
 > +}
 > +
-> +static void s5pv210_phy_pwr(struct samsung_usb2_phy_instance *inst, bool on)
+> +static void exynos5250_phy_pwr(struct samsung_usb2_phy_instance *inst, bool on)
 > +{
 > +	struct samsung_usb2_phy_driver *drv = inst->drv;
-> +	u32 rstbits = 0;
-> +	u32 phypwr = 0;
-> +	u32 rst;
-> +	u32 pwr;
+> +	u32 ctrl0;
+> +	u32 otg;
+> +	u32 ehci;
+> +	u32 ohci;
 > +
 > +	switch (inst->cfg->id) {
-> +	case S5PV210_DEVICE:
-> +		phypwr =	S5PV210_UPHYPWR_PHY0;
-> +		rstbits =	S5PV210_URSTCON_PHY0;
+> +	case EXYNOS5250_DEVICE:
+> +		regmap_update_bits(drv->reg_sys,
+> +			EXYNOS_5250_MODE_SWITCH_OFFSET,
+> +			EXYNOS_5250_MODE_SWITCH_MASK,
+> +			EXYNOS_5250_MODE_SWITCH_DEVICE);
+> +
+> +		/* OTG configuration */
+> +		otg = readl(drv->reg_phy + EXYNOS_5250_USBOTGSYS);
+> +		/* The clock */
+> +		otg &= ~EXYNOS_5250_USBOTGSYS_FSEL_MASK;
+> +		otg |= inst->clk_reg_val << EXYNOS_5250_USBOTGSYS_FSEL_SHIFT;
+> +		/* Reset */
+> +		otg &= ~(EXYNOS_5250_USBOTGSYS_FORCE_SUSPEND |
+> +			EXYNOS_5250_USBOTGSYS_FORCE_SLEEP |
+> +			EXYNOS_5250_USBOTGSYS_SIDDQ_UOTG);
+> +		otg |=	EXYNOS_5250_USBOTGSYS_PHY_SW_RST |
+> +			EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET |
+> +			EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG |
+> +			EXYNOS_5250_USBOTGSYS_OTGDISABLE;
+> +		/* Ref clock */
+> +		otg &=	~EXYNOS_5250_USBOTGSYS_REFCLKSEL_MASK;
+> +		otg |=  EXYNOS_5250_REFCLKSEL_CLKCORE <<
+> +					EXYNOS_5250_USBOTGSYS_REFCLKSEL_SHIFT;
+> +		writel(otg, drv->reg_phy + EXYNOS_5250_USBOTGSYS);
+> +		udelay(100);
+> +		otg &= ~(EXYNOS_5250_USBOTGSYS_PHY_SW_RST |
+> +			EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG |
+> +			EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET |
+> +			EXYNOS_5250_USBOTGSYS_OTGDISABLE);
+> +		writel(otg, drv->reg_phy + EXYNOS_5250_USBOTGSYS);
+> +
+> +
 > +		break;
-> +	case S5PV210_HOST:
-> +		phypwr =	S5PV210_UPHYPWR_PHY1;
-> +		rstbits =	S5PV210_URSTCON_PHY1_ALL |
-> +				S5PV210_URSTCON_HOST_LINK_ALL;
-> +		break;
-> +	};
+> +	case EXYNOS5250_HOST:
+> +		/* Host registers configuration */
+> +		ctrl0 = readl(drv->reg_phy + EXYNOS_5250_HOSTPHYCTRL0);
+> +		/* The clock */
+> +		ctrl0 &= ~EXYNOS_5250_HOSTPHYCTRL0_FSEL_MASK;
+> +		ctrl0 |= inst->clk_reg_val <<
+> +					EXYNOS_5250_HOSTPHYCTRL0_FSEL_SHIFT;
 > +
-> +	if (on) {
-> +		writel(inst->clk, drv->reg_phy + S5PV210_UPHYCLK);
-> +
-> +		pwr = readl(drv->reg_phy + S5PV210_UPHYPWR);
-> +		pwr &= ~phypwr;
-> +		writel(pwr, drv->reg_phy + S5PV210_UPHYPWR);
-> +
-> +		rst = readl(drv->reg_phy + S5PV210_UPHYRST);
-> +		rst |= rstbits;
-> +		writel(rst, drv->reg_phy + S5PV210_UPHYRST);
+> +		/* Reset */
+> +		ctrl0 &=	~(EXYNOS_5250_HOSTPHYCTRL0_PHYSWRST |
+> +				EXYNOS_5250_HOSTPHYCTRL0_PHYSWRSTALL |
+> +				EXYNOS_5250_HOSTPHYCTRL0_SIDDQ |
+> +				EXYNOS_5250_HOSTPHYCTRL0_FORCESUSPEND |
+> +				EXYNOS_5250_HOSTPHYCTRL0_FORCESLEEP);
+> +		ctrl0 |=	EXYNOS_5250_HOSTPHYCTRL0_LINKSWRST |
+> +				EXYNOS_5250_HOSTPHYCTRL0_UTMISWRST |
+> +				EXYNOS_5250_HOSTPHYCTRL0_COMMON_ON_N;
+> +		writel(ctrl0, drv->reg_phy + EXYNOS_5250_HOSTPHYCTRL0);
 > +		udelay(10);
-> +		rst &= ~rstbits;
-> +		writel(rst, drv->reg_phy + S5PV210_UPHYRST);
-> +	} else {
-> +		pwr = readl(drv->reg_phy + S5PV210_UPHYPWR);
-> +		pwr |= phypwr;
-> +		writel(pwr, drv->reg_phy + S5PV210_UPHYPWR);
+> +		ctrl0 &=	~(EXYNOS_5250_HOSTPHYCTRL0_LINKSWRST |
+> +				EXYNOS_5250_HOSTPHYCTRL0_UTMISWRST);
+> +		writel(ctrl0, drv->reg_phy + EXYNOS_5250_HOSTPHYCTRL0);
+> +
+> +		/* OTG configuration */
+> +		otg = readl(drv->reg_phy + EXYNOS_5250_USBOTGSYS);
+> +		/* The clock */
+> +		otg &= ~EXYNOS_5250_USBOTGSYS_FSEL_MASK;
+> +		otg |= inst->clk_reg_val << EXYNOS_5250_USBOTGSYS_FSEL_SHIFT;
+> +		/* Reset */
+> +		otg &= ~(EXYNOS_5250_USBOTGSYS_FORCE_SUSPEND |
+> +			EXYNOS_5250_USBOTGSYS_FORCE_SLEEP |
+> +			EXYNOS_5250_USBOTGSYS_SIDDQ_UOTG);
+> +		otg |=	EXYNOS_5250_USBOTGSYS_PHY_SW_RST |
+> +			EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET |
+> +			EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG |
+> +			EXYNOS_5250_USBOTGSYS_OTGDISABLE;
+> +		/* Ref clock */
+> +		otg &=	~EXYNOS_5250_USBOTGSYS_REFCLKSEL_MASK;
+> +		otg |=  EXYNOS_5250_REFCLKSEL_CLKCORE <<
+> +					EXYNOS_5250_USBOTGSYS_REFCLKSEL_SHIFT;
+> +		writel(otg, drv->reg_phy + EXYNOS_5250_USBOTGSYS);
+> +		udelay(10);
+> +		otg &= ~(EXYNOS_5250_USBOTGSYS_PHY_SW_RST |
+> +			EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG |
+> +			EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET);
+> +
+> +		/* Enable EHCI DMA burst */
+> +		ehci = readl(drv->reg_phy + EXYNOS_5250_HOSTEHCICTRL);
+> +		ehci |=	EXYNOS_5250_HOSTEHCICTRL_ENAINCRXALIGN |
+> +			EXYNOS_5250_HOSTEHCICTRL_ENAINCR4 |
+> +			EXYNOS_5250_HOSTEHCICTRL_ENAINCR8 |
+> +			EXYNOS_5250_HOSTEHCICTRL_ENAINCR16;
+> +		writel(ehci, drv->reg_phy + EXYNOS_5250_HOSTEHCICTRL);
+> +
+> +		/* OHCI settings */
+> +		ohci = readl(drv->reg_phy + EXYNOS_5250_HOSTOHCICTRL);
+> +		/* Following code is based on the old driver */
+> +		ohci |=	0x1 << 3;
+> +		writel(ohci, drv->reg_phy + EXYNOS_5250_HOSTOHCICTRL);
+> +
+> +		break;
 > +	}
 > +}
 > +
-> +static int s5pv210_power_on(struct samsung_usb2_phy_instance *inst)
+> +static int exynos5250_power_on(struct samsung_usb2_phy_instance *inst)
 > +{
-> +	struct samsung_usb2_phy_driver *drv = inst->drv;
-> +
-> +	s5pv210_isol(inst, 0);
-> +	s5pv210_phy_pwr(inst, 1);
+> +	inst->enabled = 1;
+> +	exynos5250_phy_pwr(inst, 1);
+> +	exynos5250_isol(inst, 0);
 > +
 > +	return 0;
 > +}
 > +
-> +static int s5pv210_power_off(struct samsung_usb2_phy_instance *inst)
+> +static int exynos5250_power_off(struct samsung_usb2_phy_instance *inst)
 > +{
-> +	struct samsung_usb2_phy_driver *drv = inst->drv;
-> +
-> +	s5pv210_phy_pwr(inst, 0);
-> +	s5pv210_isol(inst, 1);
+> +	inst->enabled = 0;
+> +	exynos5250_isol(inst, 1);
+> +	exynos5250_phy_pwr(inst, 0);
 > +
 > +	return 0;
 > +}
 > +
 > +
-> +static const struct samsung_usb2_common_phy s5pv210_phys[] = {
+> +static const struct samsung_usb2_common_phy exynos5250_phys[] = {
 > +	{
 > +		.label		= "device",
-> +		.id		= S5PV210_DEVICE,
-> +		.rate_to_clk	= s5pv210_rate_to_clk,
-> +		.power_on	= s5pv210_power_on,
-> +		.power_off	= s5pv210_power_off,
+> +		.id		= EXYNOS5250_DEVICE,
+> +		.rate_to_clk	= exynos5250_rate_to_clk,
+> +		.power_on	= exynos5250_power_on,
+> +		.power_off	= exynos5250_power_off,
 > +	},
 > +	{
 > +		.label		= "host",
-> +		.id		= S5PV210_HOST,
-> +		.rate_to_clk	= s5pv210_rate_to_clk,
-> +		.power_on	= s5pv210_power_on,
-> +		.power_off	= s5pv210_power_off,
+> +		.id		= EXYNOS5250_HOST,
+> +		.rate_to_clk	= exynos5250_rate_to_clk,
+> +		.power_on	= exynos5250_power_on,
+> +		.power_off	= exynos5250_power_off,
+> +	},
+> +	{
+> +		.label		= "hsic0",
+> +		.id		= EXYNOS5250_HSIC0,
+> +		.rate_to_clk	= exynos5250_rate_to_clk,
+> +		.power_on	= exynos5250_power_on,
+> +		.power_off	= exynos5250_power_off,
+> +	},
+> +	{
+> +		.label		= "hsic1",
+> +		.id		= EXYNOS5250_HSIC1,
+> +		.rate_to_clk	= exynos5250_rate_to_clk,
+> +		.power_on	= exynos5250_power_on,
+> +		.power_off	= exynos5250_power_off,
 > +	},
 > +	{},
 > +};
 > +
-> +const struct samsung_usb2_phy_config s5pv210_usb2_phy_config = {
-> +	.cpu		= TYPE_S5PV210,
-> +	.num_phys	= S5PV210_NUM_PHYS,
-> +	.phys		= s5pv210_phys,
+> +const struct samsung_usb2_phy_config exynos5250_usb2_phy_config = {
+> +	.num_phys		= EXYNOS5250_NUM_PHYS,
+> +	.phys			= exynos5250_phys,
+> +	.has_mode_switch	= 1,
 > +};
 > +
 > diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-samsung-usb2.c
-> index 804ec77..ef93fd3 100644
+> index ef93fd3..d62e847 100644
 > --- a/drivers/phy/phy-samsung-usb2.c
 > +++ b/drivers/phy/phy-samsung-usb2.c
-> @@ -98,6 +98,12 @@ static struct phy *samsung_usb2_phy_xlate(struct device *dev,
->  }
->  
->  static const struct of_device_id samsung_usb2_phy_of_match[] = {
-> +#ifdef CONFIG_PHY_S5PV210_USB2
+> @@ -116,6 +116,12 @@ static const struct of_device_id samsung_usb2_phy_of_match[] = {
+>  		.data = &exynos4212_usb2_phy_config,
+>  	},
+>  #endif
+> +#ifdef CONFIG_PHY_EXYNOS5250_USB2
 > +	{
-> +		.compatible = "samsung,s5pv210-usb2-phy",
-> +		.data = &s5pv210_usb2_phy_config,
+> +		.compatible = "samsung,exynos5250-usb2-phy",
+> +		.data = &exynos5250_usb2_phy_config,
 > +	},
 > +#endif
->  #ifdef CONFIG_PHY_EXYNOS4210_USB2
->  	{
->  		.compatible = "samsung,exynos4210-usb2-phy",
-> diff --git a/drivers/phy/phy-samsung-usb2.h b/drivers/phy/phy-samsung-usb2.h
-> index cd12477..0f51dbb 100644
-> --- a/drivers/phy/phy-samsung-usb2.h
-> +++ b/drivers/phy/phy-samsung-usb2.h
-> @@ -66,6 +66,7 @@ struct samsung_usb2_phy_config {
->  	char has_mode_switch;
+>  	{ },
 >  };
 >  
-> +extern const struct samsung_usb2_phy_config s5pv210_usb2_phy_config;
+> diff --git a/drivers/phy/phy-samsung-usb2.h b/drivers/phy/phy-samsung-usb2.h
+> index 0f51dbb..0049e8a 100644
+> --- a/drivers/phy/phy-samsung-usb2.h
+> +++ b/drivers/phy/phy-samsung-usb2.h
+> @@ -69,5 +69,6 @@ struct samsung_usb2_phy_config {
+>  extern const struct samsung_usb2_phy_config s5pv210_usb2_phy_config;
 >  extern const struct samsung_usb2_phy_config exynos4210_usb2_phy_config;
 >  extern const struct samsung_usb2_phy_config exynos4212_usb2_phy_config;
+> +extern const struct samsung_usb2_phy_config exynos5250_usb2_phy_config;
 >  #endif
+>  
 > 
 
