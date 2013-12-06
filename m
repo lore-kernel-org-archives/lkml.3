@@ -1,111 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422671Ab3LFNw5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:52:57 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:57853 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161452Ab3LFNwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:52:54 -0500
-Message-ID: <52A1D697.5030601@ti.com>
-Date: Fri, 6 Dec 2013 09:52:23 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-CC: <rui.zhang@intel.com>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] thermal: fix cpu_cooling max_level behavior
-References: <1384366269-1655-1-git-send-email-eduardo.valentin@ti.com>
-In-Reply-To: <1384366269-1655-1-git-send-email-eduardo.valentin@ti.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="GPHds3scF6R6EBuAe9qETRthVkwCPqWGT"
+	id S1161907Ab3LFNxT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:53:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44064 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758047Ab3LFNBz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 08:01:55 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 107/272] loop: fix crash if blk_alloc_queue fails
+Date: Fri,  6 Dec 2013 12:56:36 +0000
+Message-Id: <1386334761-25517-108-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---GPHds3scF6R6EBuAe9qETRthVkwCPqWGT
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
 
-On 13-11-2013 14:11, Eduardo Valentin wrote:
-> As per Documentation/thermal/sysfs-api.txt, max_level
-> is an index, not a counter. Thus, in case a CPU has
-> 3 valid frequencies, max_level is expected to be 2, for instance.
->=20
-> The current code makes max_level =3D=3D number of valid frequencies,
-> which is bogus. This patch fix the cpu_cooling device by
-> ranging max_level properly.
->=20
-> Reported-by: Carlos Hernandez <ceh@ti.com>
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+------------------
 
-Rui,
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-Can you please consider pushing this fix?
+commit 3ec981e30fae1f3c8728a05c730acaa1f627bcfb upstream.
 
-> ---
->  drivers/thermal/cpu_cooling.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
->=20
-> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_coolin=
-g.c
-> index d179028..d0f8f8b5 100644
-> --- a/drivers/thermal/cpu_cooling.c
-> +++ b/drivers/thermal/cpu_cooling.c
-> @@ -173,6 +173,8 @@ static int get_property(unsigned int cpu, unsigned =
-long input,
->  		freq =3D table[i].frequency;
->  		max_level++;
->  	}
-> +	/* max_level is an index, not a counter */
-> +	max_level--;
-> =20
->  	/* get max level */
->  	if (property =3D=3D GET_MAXL) {
-> @@ -181,7 +183,7 @@ static int get_property(unsigned int cpu, unsigned =
-long input,
->  	}
-> =20
->  	if (property =3D=3D GET_FREQ)
-> -		level =3D descend ? input : (max_level - input - 1);
-> +		level =3D descend ? input : (max_level - input);
-> =20
->  	for (i =3D 0, j =3D 0; table[i].frequency !=3D CPUFREQ_TABLE_END; i++=
-) {
->  		/* ignore invalid entry */
-> @@ -197,7 +199,7 @@ static int get_property(unsigned int cpu, unsigned =
-long input,
-> =20
->  		if (property =3D=3D GET_LEVEL && (unsigned int)input =3D=3D freq) {
->  			/* get level by frequency */
-> -			*output =3D descend ? j : (max_level - j - 1);
-> +			*output =3D descend ? j : (max_level - j);
->  			return 0;
->  		}
->  		if (property =3D=3D GET_FREQ && level =3D=3D j) {
->=20
+loop: fix crash if blk_alloc_queue fails
 
+If blk_alloc_queue fails, loop_add cleans up, but it doesn't clean up the
+identifier allocated with idr_alloc. That causes crash on module unload in
+idr_for_each(&loop_index_idr, &loop_exit_cb, NULL); where we attempt to
+remove non-existed device with that id.
 
---=20
-You have got to be excited about what you are doing. (L. Lamport)
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000380
+IP: [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
+PGD 43d399067 PUD 43d0ad067 PMD 0
+Oops: 0000 [#1] PREEMPT SMP
+Modules linked in: loop(-) dm_snapshot dm_zero dm_mirror dm_region_hash dm_log dm_loop dm_mod ip6table_filter ip6_tables uvesafb cfbcopyarea cfbimgblt cfbfillrect fbcon font bitblit fbcon_rotate fbcon_cw fbcon_ud fbcon_ccw softcursor fb fbdev msr ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc tun ipv6 cpufreq_userspace cpufreq_stats cpufreq_ondemand cpufreq_conservative cpufreq_powersave spadfs fuse hid_generic usbhid hid raid0 md_mod dmi_sysfs nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack snd_usb_audio snd_pcm_oss snd_mixer_oss snd_pcm snd_timer snd_page_alloc lm85 hwmon_vid snd_hwdep snd_usbmidi_lib snd_rawmidi snd soundcore acpi_cpufreq ohci_hcd freq_table tg3 ehci_pci mperf ehci_hcd kvm_amd kvm sata_svw serverworks libphy libata ide_core k10temp usbcore hwmon microcode ptp pcspkr pps_core e100 skge mii usb_common i2c_piix4 floppy evdev rtc_cmos i2c_core processor but!
+ ton unix
+CPU: 7 PID: 2735 Comm: rmmod Tainted: G        W    3.10.15-devel #15
+Hardware name: empty empty/S3992-E, BIOS 'V1.06   ' 06/09/2009
+task: ffff88043d38e780 ti: ffff88043d21e000 task.ti: ffff88043d21e000
+RIP: 0010:[<ffffffff812057c9>]  [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
+RSP: 0018:ffff88043d21fe10  EFLAGS: 00010282
+RAX: ffffffffa05102e0 RBX: 0000000000000000 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: ffff88043ea82800 RDI: 0000000000000000
+RBP: ffff88043d21fe48 R08: 0000000000000000 R09: 0000000000000001
+R10: 0000000000000001 R11: 0000000000000000 R12: 00000000000000ff
+R13: 0000000000000080 R14: 0000000000000000 R15: ffff88043ea82800
+FS:  00007ff646534700(0000) GS:ffff880447000000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000380 CR3: 000000043e9bf000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Stack:
+ ffffffff8100aba4 0000000000000092 ffff88043d21fe48 ffff88043ea82800
+ 00000000000000ff ffff88043d21fe98 0000000000000000 ffff88043d21fe60
+ ffffffffa05102b4 0000000000000000 ffff88043d21fe70 ffffffffa05102ec
+Call Trace:
+ [<ffffffff8100aba4>] ? native_sched_clock+0x24/0x80
+ [<ffffffffa05102b4>] loop_remove+0x14/0x40 [loop]
+ [<ffffffffa05102ec>] loop_exit_cb+0xc/0x10 [loop]
+ [<ffffffff81217b74>] idr_for_each+0x104/0x190
+ [<ffffffffa05102e0>] ? loop_remove+0x40/0x40 [loop]
+ [<ffffffff8109adc5>] ? trace_hardirqs_on_caller+0x105/0x1d0
+ [<ffffffffa05135dc>] loop_exit+0x34/0xa58 [loop]
+ [<ffffffff810a98ea>] SyS_delete_module+0x13a/0x260
+ [<ffffffff81221d5e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff813cff16>] system_call_fastpath+0x1a/0x1f
+Code: f0 4c 8b 6d f8 c9 c3 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 41 56 41 55 4c 8d af 80 00 00 00 41 54 53 48 89 fb 48 83 ec 18 <48> 83 bf 80 03 00
+00 00 74 4d e8 98 fe ff ff 31 f6 48 c7 c7 20
+RIP  [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
+ RSP <ffff88043d21fe10>
+CR2: 0000000000000380
+---[ end trace 64ec069ec70f1309 ]---
 
-Eduardo Valentin
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/block/loop.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 40e7155..de7f456 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1633,7 +1633,7 @@ static int loop_add(struct loop_device **l, int i)
+ 	err = -ENOMEM;
+ 	lo->lo_queue = blk_alloc_queue(GFP_KERNEL);
+ 	if (!lo->lo_queue)
+-		goto out_free_dev;
++		goto out_free_idr;
+ 
+ 	disk = lo->lo_disk = alloc_disk(1 << part_shift);
+ 	if (!disk)
+@@ -1678,6 +1678,8 @@ static int loop_add(struct loop_device **l, int i)
+ 
+ out_free_queue:
+ 	blk_cleanup_queue(lo->lo_queue);
++out_free_idr:
++	idr_remove(&loop_index_idr, i);
+ out_free_dev:
+ 	kfree(lo);
+ out:
+-- 
+1.8.3.2
 
---GPHds3scF6R6EBuAe9qETRthVkwCPqWGT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlKh1qgACgkQCXcVR3XQvP04PAD/U6ZYQlzZJQC+2bqschJj/cYg
-+MeNOlQua0SYDT/K9VEA/iljsNLm2fh9RJfPFZzbbd3x4FoJUNRu3oCR8JiB3iwW
-=0MfC
------END PGP SIGNATURE-----
-
---GPHds3scF6R6EBuAe9qETRthVkwCPqWGT--
