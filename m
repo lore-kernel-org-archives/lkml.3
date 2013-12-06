@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758342Ab3LFNHr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:07:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44841 "EHLO
+	id S1758377Ab3LFNID (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:08:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44837 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162219Ab3LFNGO (ORCPT
+	with ESMTP id S1161424Ab3LFNGM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:06:14 -0500
+	Fri, 6 Dec 2013 08:06:12 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 270/272] ALSA: pcsp: Fix the order of input device unregistration
-Date: Fri,  6 Dec 2013 12:59:19 +0000
-Message-Id: <1386334761-25517-271-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 269/272] ALSA: hda - Don't clear the power state at snd_hda_codec_reset()
+Date: Fri,  6 Dec 2013 12:59:18 +0000
+Message-Id: <1386334761-25517-270-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -29,32 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit 6408eac2665955343cd0e4bcd7d6237ce39611ed upstream.
+commit d183b4fc463489b6bbe05c99afa0257a6fe578eb upstream.
 
-The current code may access to the already freed object.  The input
-device must be accessed and unregistered before freeing the top level
-sound object.
+snd_hda_codec_reset() is called either in resetting the whole setup at
+error paths or hwdep clear/reconfig sysfs triggers.  But all of these
+don't assume that the power has to be off, rather they want to keep
+the power state unchanged (e.g. reconfig_codec() calls the power
+up/down by itself).  Thus, unconditionally clearing the power state in
+snd_hda_codec_reset() leads to the inconsistency, confuses the further
+operation.   This patch gets rid of the lines doing that bad thing.
 
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/drivers/pcsp/pcsp.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/hda_codec.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/sound/drivers/pcsp/pcsp.c b/sound/drivers/pcsp/pcsp.c
-index 1c19cd7..83b8a9a 100644
---- a/sound/drivers/pcsp/pcsp.c
-+++ b/sound/drivers/pcsp/pcsp.c
-@@ -187,8 +187,8 @@ static int pcsp_probe(struct platform_device *dev)
- static int pcsp_remove(struct platform_device *dev)
- {
- 	struct snd_pcsp *chip = platform_get_drvdata(dev);
--	alsa_card_pcsp_exit(chip);
- 	pcspkr_input_remove(chip->input_dev);
-+	alsa_card_pcsp_exit(chip);
- 	return 0;
- }
- 
+diff --git a/sound/pci/hda/hda_codec.c b/sound/pci/hda/hda_codec.c
+index 96ef7c2..4d30aa6 100644
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -2519,9 +2519,6 @@ int snd_hda_codec_reset(struct hda_codec *codec)
+ 	cancel_delayed_work_sync(&codec->jackpoll_work);
+ #ifdef CONFIG_PM
+ 	cancel_delayed_work_sync(&codec->power_work);
+-	codec->power_on = 0;
+-	codec->power_transition = 0;
+-	codec->power_jiffies = jiffies;
+ 	flush_workqueue(bus->workq);
+ #endif
+ 	snd_hda_ctls_clear(codec);
 -- 
 1.8.3.2
 
