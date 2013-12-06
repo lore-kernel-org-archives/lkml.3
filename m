@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161775Ab3LFWLp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:11:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60946 "EHLO
+	id S1161862Ab3LFWMM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:12:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60923 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759388Ab3LFVxm (ORCPT
+	with ESMTP id S1759373Ab3LFVxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:42 -0500
+	Fri, 6 Dec 2013 16:53:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Priebe <s.priebe@profihost.ag>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        Vlad Yasevich <vyasevic@redhat.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 30/58] net: core: Always propagate flag changes to interfaces
-Date: Fri,  6 Dec 2013 13:52:01 -0800
-Message-Id: <20131206214847.691790901@linuxfoundation.org>
+Subject: [PATCH 3.10 29/58] ipv4: fix race in concurrent ip_route_input_slow()
+Date: Fri,  6 Dec 2013 13:52:00 -0800
+Message-Id: <20131206214847.599609797@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -29,66 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Alexei Starovoitov <ast@plumgrid.com>
 
-[ Upstream commit d2615bf450694c1302d86b9cc8a8958edfe4c3a4 ]
+[ Upstream commit dcdfdf56b4a6c9437fc37dbc9cee94a788f9b0c4 ]
 
-The following commit:
-    b6c40d68ff6498b7f63ddf97cf0aa818d748dee7
-    net: only invoke dev->change_rx_flags when device is UP
+CPUs can ask for local route via ip_route_input_noref() concurrently.
+if nh_rth_input is not cached yet, CPUs will proceed to allocate
+equivalent DSTs on 'lo' and then will try to cache them in nh_rth_input
+via rt_cache_route()
+Most of the time they succeed, but on occasion the following two lines:
+	orig = *p;
+	prev = cmpxchg(p, orig, rt);
+in rt_cache_route() do race and one of the cpus fails to complete cmpxchg.
+But ip_route_input_slow() doesn't check the return code of rt_cache_route(),
+so dst is leaking. dst_destroy() is never called and 'lo' device
+refcnt doesn't go to zero, which can be seen in the logs as:
+	unregister_netdevice: waiting for lo to become free. Usage count = 1
+Adding mdelay() between above two lines makes it easily reproducible.
+Fix it similar to nh_pcpu_rth_output case.
 
-tried to fix a problem with VLAN devices and promiscuouse flag setting.
-The issue was that VLAN device was setting a flag on an interface that
-was down, thus resulting in bad promiscuity count.
-This commit blocked flag propagation to any device that is currently
-down.
-
-A later commit:
-    deede2fabe24e00bd7e246eb81cd5767dc6fcfc7
-    vlan: Don't propagate flag changes on down interfaces
-
-fixed VLAN code to only propagate flags when the VLAN interface is up,
-thus fixing the same issue as above, only localized to VLAN.
-
-The problem we have now is that if we have create a complex stack
-involving multiple software devices like bridges, bonds, and vlans,
-then it is possible that the flags would not propagate properly to
-the physical devices.  A simple examle of the scenario is the
-following:
-
-  eth0----> bond0 ----> bridge0 ---> vlan50
-
-If bond0 or eth0 happen to be down at the time bond0 is added to
-the bridge, then eth0 will never have promisc mode set which is
-currently required for operation as part of the bridge.  As a
-result, packets with vlan50 will be dropped by the interface.
-
-The only 2 devices that implement the special flag handling are
-VLAN and DSA and they both have required code to prevent incorrect
-flag propagation.  As a result we can remove the generic solution
-introduced in b6c40d68ff6498b7f63ddf97cf0aa818d748dee7 and leave
-it to the individual devices to decide whether they will block
-flag propagation or not.
-
-Reported-by: Stefan Priebe <s.priebe@profihost.ag>
-Suggested-by: Veaceslav Falico <vfalico@redhat.com>
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Fixes: d2d68ba9fe8b ("ipv4: Cache input routes in fib_info nexthops.")
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/dev.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/route.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -4478,7 +4478,7 @@ static void dev_change_rx_flags(struct n
- {
- 	const struct net_device_ops *ops = dev->netdev_ops;
- 
--	if ((dev->flags & IFF_UP) && ops->ndo_change_rx_flags)
-+	if (ops->ndo_change_rx_flags)
- 		ops->ndo_change_rx_flags(dev, flags);
- }
- 
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1720,8 +1720,12 @@ local_input:
+ 		rth->dst.error= -err;
+ 		rth->rt_flags 	&= ~RTCF_LOCAL;
+ 	}
+-	if (do_cache)
+-		rt_cache_route(&FIB_RES_NH(res), rth);
++	if (do_cache) {
++		if (unlikely(!rt_cache_route(&FIB_RES_NH(res), rth))) {
++			rth->dst.flags |= DST_NOCACHE;
++			rt_add_uncached_list(rth);
++		}
++	}
+ 	skb_dst_set(skb, &rth->dst);
+ 	err = 0;
+ 	goto out;
 
 
