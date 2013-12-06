@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162723Ab3LFNer (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:34:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44360 "EHLO
+	id S1162733Ab3LFNfD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:35:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44348 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758270Ab3LFNDR (ORCPT
+	with ESMTP id S1161689Ab3LFNDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:03:17 -0500
+	Fri, 6 Dec 2013 08:03:13 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 169/272] [media] av7110_hw: Don't use dynamic static allocation
-Date: Fri,  6 Dec 2013 12:57:38 +0000
-Message-Id: <1386334761-25517-170-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 166/272] [media] dw2102: Don't use dynamic static allocation
+Date: Fri,  6 Dec 2013 12:57:35 +0000
+Message-Id: <1386334761-25517-167-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -29,73 +29,196 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit 5bf30b3bc4ff80ef71a733a1f459cca4fa507892 upstream.
+commit 0065a79a8698a953e4b201c5fce8db8940530578 upstream.
 
 Dynamic static allocation is evil, as Kernel stack is too low, and
 compilation complains about it on some archs:
-	drivers/media/pci/ttpci/av7110_hw.c:510:1: warning: 'av7110_fw_cmd' uses dynamic stack allocation [enabled by default]
-Instead, let's enforce a limit for the buffer.
-In the specific case of this driver, the maximum fw command size
-is 6 + 2, as checked using:
-	$ git grep -A1 av7110_fw_cmd drivers/media/pci/ttpci/
-So, use 8 for the buffer size.
+	drivers/media/usb/dvb-usb/dw2102.c:368:1: warning: 'dw2102_earda_i2c_transfer' uses dynamic stack allocation [enabled by default]
+	drivers/media/usb/dvb-usb/dw2102.c:449:1: warning: 'dw2104_i2c_transfer' uses dynamic stack allocation [enabled by default]
+	drivers/media/usb/dvb-usb/dw2102.c:512:1: warning: 'dw3101_i2c_transfer' uses dynamic stack allocation [enabled by default]
+	drivers/media/usb/dvb-usb/dw2102.c:621:1: warning: 's6x0_i2c_transfer' uses dynamic stack allocation [enabled by default]
+Instead, let's enforce a limit for the buffer to be the max size of
+a control URB payload data (64 bytes).
 
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/pci/ttpci/av7110_hw.c | 19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+ drivers/media/usb/dvb-usb/dw2102.c | 90 +++++++++++++++++++++++++++++++++-----
+ 1 file changed, 80 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/media/pci/ttpci/av7110_hw.c b/drivers/media/pci/ttpci/av7110_hw.c
-index f1cbfe5..6299d5d 100644
---- a/drivers/media/pci/ttpci/av7110_hw.c
-+++ b/drivers/media/pci/ttpci/av7110_hw.c
-@@ -22,7 +22,7 @@
-  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-  * Or, point your browser to http://www.gnu.org/copyleft/gpl.html
-  *
-- * the project's page is at http://www.linuxtv.org/ 
-+ * the project's page is at http://www.linuxtv.org/
-  */
+diff --git a/drivers/media/usb/dvb-usb/dw2102.c b/drivers/media/usb/dvb-usb/dw2102.c
+index 6e237b6..71b22f5 100644
+--- a/drivers/media/usb/dvb-usb/dw2102.c
++++ b/drivers/media/usb/dvb-usb/dw2102.c
+@@ -30,6 +30,9 @@
+ #include "stb6100_proc.h"
+ #include "m88rs2000.h"
  
- /* for debugging ARM communication: */
-@@ -40,6 +40,14 @@
- 
- #define _NOHANDSHAKE
- 
-+/*
-+ * Max transfer size done by av7110_fw_cmd()
-+ *
-+ * The maximum size passed to this function is 6 bytes. The buffer also
-+ * uses two additional ones for type and size. So, 8 bytes is enough.
-+ */
-+#define MAX_XFER_SIZE  8
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
 +
- /****************************************************************************
-  * DEBI functions
-  ****************************************************************************/
-@@ -488,11 +496,18 @@ static int av7110_send_fw_cmd(struct av7110 *av7110, u16* buf, int length)
- int av7110_fw_cmd(struct av7110 *av7110, int type, int com, int num, ...)
- {
- 	va_list args;
--	u16 buf[num + 2];
-+	u16 buf[MAX_XFER_SIZE];
- 	int i, ret;
- 
- //	dprintk(4, "%p\n", av7110);
- 
-+	if (2 + num > sizeof(buf)) {
-+		printk(KERN_WARNING
-+		       "%s: %s len=%d is too big!\n",
-+		       KBUILD_MODNAME, __func__, num);
-+		return -EINVAL;
-+	}
+ #ifndef USB_PID_DW2102
+ #define USB_PID_DW2102 0x2102
+ #endif
+@@ -308,7 +311,14 @@ static int dw2102_earda_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg ms
+ 	case 2: {
+ 		/* read */
+ 		/* first write first register number */
+-		u8 ibuf[msg[1].len + 2], obuf[3];
++		u8 ibuf[MAX_XFER_SIZE], obuf[3];
 +
- 	buf[0] = ((type << 8) | com);
- 	buf[1] = num;
- 
++		if (2 + msg[1].len > sizeof(ibuf)) {
++			warn("i2c rd: len=%d is too big!\n",
++			     msg[1].len);
++			return -EOPNOTSUPP;
++		}
++
+ 		obuf[0] = msg[0].addr << 1;
+ 		obuf[1] = msg[0].len;
+ 		obuf[2] = msg[0].buf[0];
+@@ -325,7 +335,14 @@ static int dw2102_earda_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg ms
+ 		switch (msg[0].addr) {
+ 		case 0x68: {
+ 			/* write to register */
+-			u8 obuf[msg[0].len + 2];
++			u8 obuf[MAX_XFER_SIZE];
++
++			if (2 + msg[0].len > sizeof(obuf)) {
++				warn("i2c wr: len=%d is too big!\n",
++				     msg[1].len);
++				return -EOPNOTSUPP;
++			}
++
+ 			obuf[0] = msg[0].addr << 1;
+ 			obuf[1] = msg[0].len;
+ 			memcpy(obuf + 2, msg[0].buf, msg[0].len);
+@@ -335,7 +352,14 @@ static int dw2102_earda_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg ms
+ 		}
+ 		case 0x61: {
+ 			/* write to tuner */
+-			u8 obuf[msg[0].len + 2];
++			u8 obuf[MAX_XFER_SIZE];
++
++			if (2 + msg[0].len > sizeof(obuf)) {
++				warn("i2c wr: len=%d is too big!\n",
++				     msg[1].len);
++				return -EOPNOTSUPP;
++			}
++
+ 			obuf[0] = msg[0].addr << 1;
+ 			obuf[1] = msg[0].len;
+ 			memcpy(obuf + 2, msg[0].buf, msg[0].len);
+@@ -401,7 +425,14 @@ static int dw2104_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[], i
+ 		default: {
+ 			if (msg[j].flags == I2C_M_RD) {
+ 				/* read registers */
+-				u8  ibuf[msg[j].len + 2];
++				u8  ibuf[MAX_XFER_SIZE];
++
++				if (2 + msg[j].len > sizeof(ibuf)) {
++					warn("i2c rd: len=%d is too big!\n",
++					     msg[j].len);
++					return -EOPNOTSUPP;
++				}
++
+ 				dw210x_op_rw(d->udev, 0xc3,
+ 						(msg[j].addr << 1) + 1, 0,
+ 						ibuf, msg[j].len + 2,
+@@ -430,7 +461,14 @@ static int dw2104_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[], i
+ 				} while (len > 0);
+ 			} else {
+ 				/* write registers */
+-				u8 obuf[msg[j].len + 2];
++				u8 obuf[MAX_XFER_SIZE];
++
++				if (2 + msg[j].len > sizeof(obuf)) {
++					warn("i2c wr: len=%d is too big!\n",
++					     msg[j].len);
++					return -EOPNOTSUPP;
++				}
++
+ 				obuf[0] = msg[j].addr << 1;
+ 				obuf[1] = msg[j].len;
+ 				memcpy(obuf + 2, msg[j].buf, msg[j].len);
+@@ -463,7 +501,13 @@ static int dw3101_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
+ 	case 2: {
+ 		/* read */
+ 		/* first write first register number */
+-		u8 ibuf[msg[1].len + 2], obuf[3];
++		u8 ibuf[MAX_XFER_SIZE], obuf[3];
++
++		if (2 + msg[1].len > sizeof(ibuf)) {
++			warn("i2c rd: len=%d is too big!\n",
++			     msg[1].len);
++			return -EOPNOTSUPP;
++		}
+ 		obuf[0] = msg[0].addr << 1;
+ 		obuf[1] = msg[0].len;
+ 		obuf[2] = msg[0].buf[0];
+@@ -481,7 +525,13 @@ static int dw3101_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
+ 		case 0x60:
+ 		case 0x0c: {
+ 			/* write to register */
+-			u8 obuf[msg[0].len + 2];
++			u8 obuf[MAX_XFER_SIZE];
++
++			if (2 + msg[0].len > sizeof(obuf)) {
++				warn("i2c wr: len=%d is too big!\n",
++				     msg[0].len);
++				return -EOPNOTSUPP;
++			}
+ 			obuf[0] = msg[0].addr << 1;
+ 			obuf[1] = msg[0].len;
+ 			memcpy(obuf + 2, msg[0].buf, msg[0].len);
+@@ -563,7 +613,14 @@ static int s6x0_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
+ 		default: {
+ 			if (msg[j].flags == I2C_M_RD) {
+ 				/* read registers */
+-				u8 ibuf[msg[j].len];
++				u8 ibuf[MAX_XFER_SIZE];
++
++				if (msg[j].len > sizeof(ibuf)) {
++					warn("i2c rd: len=%d is too big!\n",
++					     msg[j].len);
++					return -EOPNOTSUPP;
++				}
++
+ 				dw210x_op_rw(d->udev, 0x91, 0, 0,
+ 						ibuf, msg[j].len,
+ 						DW210X_READ_MSG);
+@@ -590,7 +647,14 @@ static int s6x0_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
+ 				} while (len > 0);
+ 			} else if (j < (num - 1)) {
+ 				/* write register addr before read */
+-				u8 obuf[msg[j].len + 2];
++				u8 obuf[MAX_XFER_SIZE];
++
++				if (2 + msg[j].len > sizeof(obuf)) {
++					warn("i2c wr: len=%d is too big!\n",
++					     msg[j].len);
++					return -EOPNOTSUPP;
++				}
++
+ 				obuf[0] = msg[j + 1].len;
+ 				obuf[1] = (msg[j].addr << 1);
+ 				memcpy(obuf + 2, msg[j].buf, msg[j].len);
+@@ -602,7 +666,13 @@ static int s6x0_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
+ 				break;
+ 			} else {
+ 				/* write registers */
+-				u8 obuf[msg[j].len + 2];
++				u8 obuf[MAX_XFER_SIZE];
++
++				if (2 + msg[j].len > sizeof(obuf)) {
++					warn("i2c wr: len=%d is too big!\n",
++					     msg[j].len);
++					return -EOPNOTSUPP;
++				}
+ 				obuf[0] = msg[j].len + 1;
+ 				obuf[1] = (msg[j].addr << 1);
+ 				memcpy(obuf + 2, msg[j].buf, msg[j].len);
 -- 
 1.8.3.2
 
