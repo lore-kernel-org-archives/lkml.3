@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162215Ab3LFNGJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:06:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44818 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162158Ab3LFNGH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1162200Ab3LFNGH (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 6 Dec 2013 08:06:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44788 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162158Ab3LFNF6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 08:05:58 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 265/272] SUNRPC: Avoid deep recursion in rpc_release_client
-Date: Fri,  6 Dec 2013 12:59:14 +0000
-Message-Id: <1386334761-25517-266-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 258/272] block: fix a probe argument to blk_register_region
+Date: Fri,  6 Dec 2013 12:59:07 +0000
+Message-Id: <1386334761-25517-259-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,104 +27,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit d07ba8422f1e58be94cc98a1f475946dc1b89f1b upstream.
+commit a207f5937630dd35bd2550620bef416937a1365e upstream.
 
-In cases where an rpc client has a parent hierarchy, then
-rpc_free_client may end up calling rpc_release_client() on the
-parent, thus recursing back into rpc_free_client. If the hierarchy
-is deep enough, then we can get into situations where the stack
-simply overflows.
+The probe function is supposed to return NULL on failure (as we can see in
+kobj_lookup: kobj = probe(dev, index, data); ... if (kobj) return kobj;
 
-The fix is to have rpc_release_client() loop so that it can take
-care of the parent rpc client hierarchy without needing to
-recurse.
+However, in loop and brd, it returns negative error from ERR_PTR.
 
-Reported-by: Jeff Layton <jlayton@redhat.com>
-Reported-by: Weston Andros Adamson <dros@netapp.com>
-Reported-by: Bruce Fields <bfields@fieldses.org>
-Link: http://lkml.kernel.org/r/2C73011F-0939-434C-9E4D-13A1EB1403D7@netapp.com
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+This causes a crash if we simulate disk allocation failure and run
+less -f /dev/loop0 because the negative number is interpreted as a pointer:
+
+BUG: unable to handle kernel NULL pointer dereference at 00000000000002b4
+IP: [<ffffffff8118b188>] __blkdev_get+0x28/0x450
+PGD 23c677067 PUD 23d6d1067 PMD 0
+Oops: 0000 [#1] PREEMPT SMP
+Modules linked in: loop hpfs nvidia(PO) ip6table_filter ip6_tables uvesafb cfbcopyarea cfbimgblt cfbfillrect fbcon font bitblit fbcon_rotate fbcon_cw fbcon_ud fbcon_ccw softcursor fb fbdev msr ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc tun ipv6 cpufreq_stats cpufreq_ondemand cpufreq_userspace cpufreq_powersave cpufreq_conservative hid_generic spadfs usbhid hid fuse raid0 snd_usb_audio snd_pcm_oss snd_mixer_oss md_mod snd_pcm snd_timer snd_page_alloc snd_hwdep snd_usbmidi_lib dmi_sysfs snd_rawmidi nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack snd soundcore lm85 hwmon_vid ohci_hcd ehci_pci ehci_hcd serverworks sata_svw libata acpi_cpufreq freq_table mperf ide_core usbcore kvm_amd kvm tg3 i2c_piix4 libphy microcode e100 usb_common ptp skge i2c_core pcspkr k10temp evdev floppy hwmon pps_core mii rtc_cmos button processor unix [last unloaded: nvidia]
+CPU: 1 PID: 6831 Comm: less Tainted: P        W  O 3.10.15-devel #18
+Hardware name: empty empty/S3992-E, BIOS 'V1.06   ' 06/09/2009
+task: ffff880203cc6bc0 ti: ffff88023e47c000 task.ti: ffff88023e47c000
+RIP: 0010:[<ffffffff8118b188>]  [<ffffffff8118b188>] __blkdev_get+0x28/0x450
+RSP: 0018:ffff88023e47dbd8  EFLAGS: 00010286
+RAX: ffffffffffffff74 RBX: ffffffffffffff74 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000001
+RBP: ffff88023e47dc18 R08: 0000000000000002 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000000 R12: ffff88023f519658
+R13: ffffffff8118c300 R14: 0000000000000000 R15: ffff88023f519640
+FS:  00007f2070bf7700(0000) GS:ffff880247400000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00000000000002b4 CR3: 000000023da1d000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Stack:
+ 0000000000000002 0000001d00000000 000000003e47dc50 ffff88023f519640
+ ffff88043d5bb668 ffffffff8118c300 ffff88023d683550 ffff88023e47de60
+ ffff88023e47dc98 ffffffff8118c10d 0000001d81605698 0000000000000292
+Call Trace:
+ [<ffffffff8118c300>] ? blkdev_get_by_dev+0x60/0x60
+ [<ffffffff8118c10d>] blkdev_get+0x1dd/0x370
+ [<ffffffff8118c300>] ? blkdev_get_by_dev+0x60/0x60
+ [<ffffffff813cea6c>] ? _raw_spin_unlock+0x2c/0x50
+ [<ffffffff8118c300>] ? blkdev_get_by_dev+0x60/0x60
+ [<ffffffff8118c365>] blkdev_open+0x65/0x80
+ [<ffffffff8114d12e>] do_dentry_open.isra.18+0x23e/0x2f0
+ [<ffffffff8114d214>] finish_open+0x34/0x50
+ [<ffffffff8115e122>] do_last.isra.62+0x2d2/0xc50
+ [<ffffffff8115eb58>] path_openat.isra.63+0xb8/0x4d0
+ [<ffffffff81115a8e>] ? might_fault+0x4e/0xa0
+ [<ffffffff8115f4f0>] do_filp_open+0x40/0x90
+ [<ffffffff813cea6c>] ? _raw_spin_unlock+0x2c/0x50
+ [<ffffffff8116db85>] ? __alloc_fd+0xa5/0x1f0
+ [<ffffffff8114e45f>] do_sys_open+0xef/0x1d0
+ [<ffffffff8114e559>] SyS_open+0x19/0x20
+ [<ffffffff813cff16>] system_call_fastpath+0x1a/0x1f
+Code: 44 00 00 55 48 89 e5 41 57 49 89 ff 41 56 41 89 d6 41 55 41 54 4c 8d 67 18 53 48 83 ec 18 89 75 cc e9 f2 00 00 00 0f 1f 44 00 00 <48> 8b 80 40 03 00 00 48 89 df 4c 8b 68 58 e8 d5
+a4 07 00 44 89
+RIP  [<ffffffff8118b188>] __blkdev_get+0x28/0x450
+ RSP <ffff88023e47dbd8>
+CR2: 00000000000002b4
+---[ end trace bb7f32dbf02398dc ]---
+
+The brd change should be backported to stable kernels starting with 2.6.25.
+The loop change should be backported to stable kernels starting with 2.6.22.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/sunrpc/clnt.c | 29 +++++++++++++++++------------
- 1 file changed, 17 insertions(+), 12 deletions(-)
+ drivers/block/brd.c  | 2 +-
+ drivers/block/loop.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-index b544965..c15fb0f 100644
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -645,14 +645,16 @@ EXPORT_SYMBOL_GPL(rpc_shutdown_client);
- /*
-  * Free an RPC client
-  */
--static void
-+static struct rpc_clnt *
- rpc_free_client(struct rpc_clnt *clnt)
- {
-+	struct rpc_clnt *parent = NULL;
-+
- 	dprintk_rcu("RPC:       destroying %s client for %s\n",
- 			clnt->cl_protname,
- 			rcu_dereference(clnt->cl_xprt)->servername);
- 	if (clnt->cl_parent != clnt)
--		rpc_release_client(clnt->cl_parent);
-+		parent = clnt->cl_parent;
- 	rpc_clnt_remove_pipedir(clnt);
- 	rpc_unregister_client(clnt);
- 	rpc_free_iostats(clnt->cl_metrics);
-@@ -661,18 +663,17 @@ rpc_free_client(struct rpc_clnt *clnt)
- 	xprt_put(rcu_dereference_raw(clnt->cl_xprt));
- 	rpciod_down();
- 	kfree(clnt);
-+	return parent;
- }
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index 9bf4371..d91f1a5 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -545,7 +545,7 @@ static struct kobject *brd_probe(dev_t dev, int *part, void *data)
  
- /*
-  * Free an RPC client
-  */
--static void
-+static struct rpc_clnt * 
- rpc_free_auth(struct rpc_clnt *clnt)
- {
--	if (clnt->cl_auth == NULL) {
--		rpc_free_client(clnt);
--		return;
--	}
-+	if (clnt->cl_auth == NULL)
-+		return rpc_free_client(clnt);
+ 	mutex_lock(&brd_devices_mutex);
+ 	brd = brd_init_one(MINOR(dev) >> part_shift);
+-	kobj = brd ? get_disk(brd->brd_disk) : ERR_PTR(-ENOMEM);
++	kobj = brd ? get_disk(brd->brd_disk) : NULL;
+ 	mutex_unlock(&brd_devices_mutex);
  
- 	/*
- 	 * Note: RPCSEC_GSS may need to send NULL RPC calls in order to
-@@ -683,7 +684,8 @@ rpc_free_auth(struct rpc_clnt *clnt)
- 	rpcauth_release(clnt->cl_auth);
- 	clnt->cl_auth = NULL;
- 	if (atomic_dec_and_test(&clnt->cl_count))
--		rpc_free_client(clnt);
-+		return rpc_free_client(clnt);
-+	return NULL;
- }
- 
- /*
-@@ -694,10 +696,13 @@ rpc_release_client(struct rpc_clnt *clnt)
- {
- 	dprintk("RPC:       rpc_release_client(%p)\n", clnt);
- 
--	if (list_empty(&clnt->cl_tasks))
--		wake_up(&destroy_wait);
--	if (atomic_dec_and_test(&clnt->cl_count))
--		rpc_free_auth(clnt);
-+	do {
-+		if (list_empty(&clnt->cl_tasks))
-+			wake_up(&destroy_wait);
-+		if (!atomic_dec_and_test(&clnt->cl_count))
-+			break;
-+		clnt = rpc_free_auth(clnt);
-+	} while (clnt != NULL);
- }
- EXPORT_SYMBOL_GPL(rpc_release_client);
- 
+ 	*part = 0;
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index c62f14f..c8dac73 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1744,7 +1744,7 @@ static struct kobject *loop_probe(dev_t dev, int *part, void *data)
+ 	if (err < 0)
+ 		err = loop_add(&lo, MINOR(dev) >> part_shift);
+ 	if (err < 0)
+-		kobj = ERR_PTR(err);
++		kobj = NULL;
+ 	else
+ 		kobj = get_disk(lo->lo_disk);
+ 	mutex_unlock(&loop_index_mutex);
 -- 
 1.8.3.2
 
