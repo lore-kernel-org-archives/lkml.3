@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753719Ab3LFHIn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 02:08:43 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:15404 "EHLO
+	id S1754152Ab3LFHJf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 02:09:35 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:15623 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350Ab3LFHIk (ORCPT
+	with ESMTP id S1751337Ab3LFHJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 02:08:40 -0500
-X-AuditID: cbfee68e-b7fee6d000003b32-72-52a177f6fd05
+	Fri, 6 Dec 2013 02:09:33 -0500
+X-AuditID: cbfee68f-b7f256d000003c1b-96-52a1782a433e
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Mark Brown'" <broonie@kernel.org>
 Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Bengt Jonsson'" <bengt.g.jonsson@stericsson.com>
+        "'Jingoo Han'" <jg1.han@samsung.com>
 References: <000a01cef251$c79ea9e0$56dbfda0$%han@samsung.com>
 In-reply-to: <000a01cef251$c79ea9e0$56dbfda0$%han@samsung.com>
-Subject: [PATCH 2/6] regulator: db8500-prcmu: use devm_regulator_register()
-Date: Fri, 06 Dec 2013 16:08:38 +0900
-Message-id: <000b01cef251$fc6df360$f549da20$%han@samsung.com>
+Subject: [PATCH 3/6] regulator: fixed: use devm_regulator_register()
+Date: Fri, 06 Dec 2013 16:09:29 +0900
+Message-id: <000c01cef252$1b341040$519c30c0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7yUb+lAqO9MkXdRJaD6VTAoDhw9gAAAxYw
+Thread-index: Ac7yUb+lAqO9MkXdRJaD6VTAoDhw9gAAD2hQ
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t8zI91v5QuDDP7tk7BY/+AYk8XUh0/Y
-	LC4vvMRq8e1KB5PF5V1z2BxYPXbOusvusWlVJ5tH35ZVjB7fl65h9/i8SS6ANYrLJiU1J7Ms
-	tUjfLoEr4/v/S8wFW3gqdnTeYG5gXMDVxcjJISFgInFlShszhC0mceHeerYuRi4OIYFljBKT
-	L2xlgina2jCZCSIxnVFi+6GPjBDOL0aJIxs3gbWzCahJfPlymL2LkYNDREBV4v8rd5AaZoGF
-	jBJTljxgBokLCdhKrLpfDVLOKWAn8efoG7BWYQFvibdHPoEtYwFqnX/6ICuIzQtU/vz9fShb
-	UOLH5HssIDazgJbE+p3HmSBseYnNa96CjZcQUJd49FcXJCwiYCTxb9tudogSEYl9L96BnSwh
-	8IhdYtLCCewQuwQkvk0+xALRKyux6QA0ICQlDq64wTKBUWIWks2zkGyehWTzLCQrFjCyrGIU
-	TS1ILihOSi8y0itOzC0uzUvXS87P3cQIidS+HYw3D1gfYkwGWj+RWUo0OR8Y6Xkl8YbGZkYW
-	piamxkbmlmakCSuJ8y56mBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgbGt68qxrS//7tyo
-	qzPn6gWOfXx/V82rdv6Q1+r/y9+DT2THB1HWXxP91Ktf8RjsXXe4/8dpwdlm9xY49c416DNw
-	Xqj7/W3pt7on1haLtNZ9/ugT+cy6t0PRbqbXkof35a7sWvxF4iJHvnBgUKNrduPuXxlZk2/7
-	xB7yzRSc2iW/7tWhbMua1VuUWIozEg21mIuKEwEUa+Kf6gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jQd1v5QuDDFatEbFY/+AYk8XUh0/Y
-	LC4vvMRq8e1KB5PF5V1z2BxYPXbOusvusWlVJ5tH35ZVjB7fl65h9/i8SS6ANaqB0SYjNTEl
-	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
-	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMeP7/0vMBVt4KnZ03mBuYFzA1cXIySEhYCKx
-	tWEyE4QtJnHh3nq2LkYuDiGB6YwS2w99ZIRwfjFKHNm4iRmkik1ATeLLl8PsXYwcHCICqhL/
-	X7mD1DALLGSUmLLkATNIXEjAVmLV/WqQck4BO4k/R9+AtQoLeEu8PfIJbBkLUOv80wdZQWxe
-	oPLn7+9D2YISPybfYwGxmQW0JNbvPM4EYctLbF7zFmy8hIC6xKO/uiBhEQEjiX/bdrNDlIhI
-	7HvxjnECo9AsJJNmIZk0C8mkWUhaFjCyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQITgPP
-	pHYwrmywOMQowMGoxMPLsWpBkBBrYllxZe4hRgkOZiUR3h7xhUFCvCmJlVWpRfnxRaU5qcWH
-	GJOBHp3ILCWanA9MUXkl8YbGJmZGlkZmFkYm5uakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C2cLE
-	wSnVwGg+8xDny43ytZ1TGqWuy1q5XRBLrfGO86qMnLj6f+WpM69zTeeXCkVaq22+vsXwu/f1
-	larRUSf2Ttdv0t9VvFF8TdbHV+zH40rM027rMmeLHdo85aLGY2WHrNRjL6b/aBbxEVzkW/7/
-	bgXPN3H3j41Si1we5X93f/m5yuu+aYa6y8xLRU0XDymxFGckGmoxFxUnAgBBi+63RwMAAA==
+x-cr-hashedpuzzle: A9I+ BbPS C5Dx FwHM LbmZ M8vX Tq6L VmmJ a7fW fJPM ffPR id68
+ i/WT nJvb pmzO
+ rHX8;4;YgByAG8AbwBuAGkAZQBAAGsAZQByAG4AZQBsAC4AbwByAGcAOwBqAGcAMQAuAGgAYQBuAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAbABnAGkAcgBkAHcAbwBvAGQAQABnAG0AYQBpAGwALgBjAG8AbQA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcA;Sosha1_v1;7;{179D4714-B600-4A38-AF57-1147BDF09400};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Fri,
+ 06 Dec 2013 07:09:23
+ GMT;WwBQAEEAVABDAEgAIAAzAC8ANgBdACAAcgBlAGcAdQBsAGEAdABvAHIAOgAgAGYAaQB4AGUAZAA6ACAAdQBzAGUAIABkAGUAdgBtAF8AcgBlAGcAdQBsAGEAdABvAHIAXwByAGUAZwBpAHMAdABlAHIAKAApAA==
+x-cr-puzzleid: {179D4714-B600-4A38-AF57-1147BDF09400}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMIsWRmVeSWpSXmKPExsVy+t8zI12tioVBBtf/iFlMffiEzeLywkus
+	Ft+udDBZXN41h82BxWPnrLvsHptWdbJ59G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8a6lU/Z
+	C05xVLxatom5gXERexcjJ4eEgInEgvNdULaYxIV769m6GLk4hASWMUr0X1jNDFO0++p+qMR0
+	Rone51+hnF+MEst2bAOrYhNQk/jy5TDQKA4OEQFVif+v3EFMZoFcie5t6SCmkICtxKr71SDF
+	nAJ2En+OvgFrFBZwkbi++wwbiM0C1Di1ezFYnBeovGvRVSYIW1Dix+R7LCA2s4CWxPqdx5kg
+	bHmJzWveMoOMlxBQl3j0VxckLCJgJPH/+A1GiBIRiX0v3jFCfPKHRWLlnnoI21Si78ENVpBH
+	JAQesUu8f3OTCeIGAYlvkw+xQMyUldh0ABoKkhIHV9xgmcAoNQvJRbOQXDQLyUWzkKxewMiy
+	ilE0tSC5oDgpvchYrzgxt7g0L10vOT93EyMkgvt3MN49YH2IMRlo/URmKdHkfGACyCuJNzQ2
+	M7IwNTE1NjK3NCNNWEmc9/7DpCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjL6OJx/M3N0m
+	sHS3WYOwYJzIbr9ThxodH65+deHZ4muKQl8PLL9kcE7K/ffGKVUx3OfvdT5euUggwm6FlP4i
+	5cjwBe7/pAQa3xwXvbn2lPZ3xwVsFZtk7yvs6tzzOeaP4aX8xPzMgwqXDwRdm2ZVvzW964vw
+	kw6n8xd07jnaXEt9Mcns05wqySNKLMUZiYZazEXFiQB8WtnT9gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAKsWRmVeSWpSXmKPExsVy+t9jQV2tioVBBnvnCFtMffiEzeLywkus
+	Ft+udDBZXN41h82BxWPnrLvsHptWdbJ59G1ZxejxeZNcAEtUA6NNRmpiSmqRQmpecn5KZl66
+	rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBOJYWyxJxSoFBAYnGxkr4dpgmhIW66
+	FjCNEbq+IUFwPUYGaCBhHWPGupVP2QtOcVS8WraJuYFxEXsXIyeHhICJxO6r+9kgbDGJC/fW
+	A9lcHEIC0xklep9/hXJ+MUos27GNGaSKTUBN4suXw0DdHBwiAqoS/1+5g5jMArkS3dvSQUwh
+	AVuJVferQYo5Bewk/hx9A9YoLOAicX33GbBVLECNU7sXg8V5gcq7Fl1lgrAFJX5MvscCYjML
+	aEms33mcCcKWl9i85i0zyHgJAXWJR391QcIiAkYS/4/fYIQoEZHY9+IdI8Qnf1gkVu6ph7BN
+	Jfoe3GCdwCgyC8mGWUg2zEKyYRaSUQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBKeH
+	Z1I7GFc2WBxiFOBgVOLh5Vi1IEiINbGsuDL3EKMEB7OSCG+P+MIgId6UxMqq1KL8+KLSnNTi
+	Q4zJwACYyCwlmpwPTF15JfGGxiZmRpZGZhZGJubmpAkrifMeaLUOFBJITyxJzU5NLUgtgtnC
+	xMEp1cDoeE5lvtXbDS/1l4fMd/5cd22m8PVtie/euumcmOty9VWfaWHAuV3Fp7xOSq5eb8ll
+	KXzzlr5ERiO3UGrH6Z9Orl5dIt/O7P4r1Tu3aV7MoWKtwNMyLl8aw0L68ri27284JWRkerPK
+	a/4CzzffGCynPVKe9HCZ8hzLi64fH/X7P828eV9oReonJZbijERDLeai4kQAiNt20VMDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,52 +65,30 @@ Use devm_regulator_register() to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/regulator/db8500-prcmu.c |   20 +-------------------
- 1 file changed, 1 insertion(+), 19 deletions(-)
+ drivers/regulator/fixed.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/regulator/db8500-prcmu.c b/drivers/regulator/db8500-prcmu.c
-index a53c11a..846acf2 100644
---- a/drivers/regulator/db8500-prcmu.c
-+++ b/drivers/regulator/db8500-prcmu.c
-@@ -431,17 +431,11 @@ static int db8500_regulator_register(struct platform_device *pdev,
- 	config.of_node = np;
+diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
+index 5ea64b9..f45cc1ac 100644
+--- a/drivers/regulator/fixed.c
++++ b/drivers/regulator/fixed.c
+@@ -186,7 +186,8 @@ static int reg_fixed_voltage_probe(struct platform_device *pdev)
+ 	cfg.driver_data = drvdata;
+ 	cfg.of_node = pdev->dev.of_node;
  
- 	/* register with the regulator framework */
--	info->rdev = regulator_register(&info->desc, &config);
-+	info->rdev = devm_regulator_register(&pdev->dev, &info->desc, &config);
- 	if (IS_ERR(info->rdev)) {
- 		err = PTR_ERR(info->rdev);
- 		dev_err(&pdev->dev, "failed to register %s: err %i\n",
- 			info->desc.name, err);
--
--		/* if failing, unregister all earlier regulators */
--		while (--id >= 0) {
--			info = &dbx500_regulator_info[id];
--			regulator_unregister(info->rdev);
--		}
- 		return err;
- 	}
- 
-@@ -530,20 +524,8 @@ static int db8500_regulator_probe(struct platform_device *pdev)
- 
- static int db8500_regulator_remove(struct platform_device *pdev)
+-	drvdata->dev = regulator_register(&drvdata->desc, &cfg);
++	drvdata->dev = devm_regulator_register(&pdev->dev, &drvdata->desc,
++						&cfg);
+ 	if (IS_ERR(drvdata->dev)) {
+ 		ret = PTR_ERR(drvdata->dev);
+ 		dev_err(&pdev->dev, "Failed to register regulator: %d\n", ret);
+@@ -212,7 +213,6 @@ static int reg_fixed_voltage_remove(struct platform_device *pdev)
  {
--	int i;
--
- 	ux500_regulator_debug_exit();
+ 	struct fixed_voltage_data *drvdata = platform_get_drvdata(pdev);
  
--	for (i = 0; i < ARRAY_SIZE(dbx500_regulator_info); i++) {
--		struct dbx500_regulator_info *info;
--		info = &dbx500_regulator_info[i];
--
--		dev_vdbg(rdev_get_dev(info->rdev),
--			"regulator-%s-remove\n", info->desc.name);
--
--		regulator_unregister(info->rdev);
--	}
--
- 	return 0;
- }
+-	regulator_unregister(drvdata->dev);
+ 	kfree(drvdata->desc.supply_name);
+ 	kfree(drvdata->desc.name);
  
 -- 
 1.7.10.4
