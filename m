@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab3LFIbO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 03:31:14 -0500
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:56320 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654Ab3LFIbN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 03:31:13 -0500
-Message-ID: <52A18B4F.1070809@gmail.com>
-Date: Fri, 06 Dec 2013 10:31:11 +0200
-From: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-CC: minchan@kernel.org, pavel@ucw.cz, sre@debian.org, pali.rohar@gmail.com,
-        pc+n900@asdf.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: OMAPFB: CMA allocation failures
-References: <1847426616.52843.1383681351015.JavaMail.apache@mail83.abv.bg> <A5506022381E423385022F79B40C6FAB@ivogl> <52A062A0.3070005@ti.com>
-In-Reply-To: <52A062A0.3070005@ti.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756269Ab3LFIdF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 03:33:05 -0500
+Received: from mga09.intel.com ([134.134.136.24]:3378 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751624Ab3LFIdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 03:33:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,839,1378882800"; 
+   d="scan'208";a="447864750"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: lenb@kernel.org, rjw@rjwysocki.net
+Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [Update PATCH] ACPI/Button: Fix enable Button GPEs twice
+Date: Fri,  6 Dec 2013 16:32:40 +0800
+Message-Id: <1386318760-5887-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Button GPEs have been enabled in the acpi_wake_device_init() during
+boot and Button driver enables these GPEs second time. This causes
+disabling these gpes via sysfs interface requires twice "echo disable
+> /sys/firmware/acpi/interrupts/gpeXXX". This patch is to remove
+related code in the Button driver.
 
-On 05.12.2013 13:25, Tomi Valkeinen wrote:
-> How about the patch below? If I'm not mistaken (and I might) it reserves
-> separate memory area for omapfb, which is not used by CMA.
->
-> If it works, it should be extended to get the parameters via kernel
-> cmdline, and use that alloc only if the user requests it.
->
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+Update:
+	fix a typo, sorry for noise.
 
-YAY!!! That one seems to fix the issue.
+ drivers/acpi/button.c | 12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
-Though I had to revert 7faa92339bbb1e6b9a80983b206642517327eb75 (well, I 
-hacked check_horiz_timing_omap3 to always return 0). Otherwise I have 
-"omapdss DISPC error: horizontal timing too tight" error when try to 
-play anything above 320x240 or so. I'll look at the issue.
+diff --git a/drivers/acpi/button.c b/drivers/acpi/button.c
+index 9e3a6cb..6643f2d 100644
+--- a/drivers/acpi/button.c
++++ b/drivers/acpi/button.c
+@@ -406,15 +406,9 @@ static int acpi_button_add(struct acpi_device *device)
+ 		lid_device = device;
+ 	}
+ 
+-	if (device->wakeup.flags.valid) {
+-		/* Button's GPE is run-wake GPE */
+-		acpi_enable_gpe(device->wakeup.gpe_device,
+-				device->wakeup.gpe_number);
+-		if (!device_may_wakeup(&device->dev)) {
+-			device_set_wakeup_enable(&device->dev, true);
+-			button->wakeup_enabled = true;
+-		}
+-	}
++	/* Button GPEs have been enabled in the acpi_wakeup_device_list()*/
++	if (device->wakeup.flags.valid)
++		button->wakeup_enabled = true;
+ 
+ 	printk(KERN_INFO PREFIX "%s [%s]\n", name, acpi_device_bid(device));
+ 	return 0;
+-- 
+1.8.2.1
 
-Regards,
-Ivo
