@@ -1,82 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758542Ab3LFOzt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:55:49 -0500
-Received: from mail-db9lp0251.outbound.messaging.microsoft.com ([213.199.154.251]:15087
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751347Ab3LFOzr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 09:55:47 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6h1082kzz1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1155h)
-Date: Fri, 6 Dec 2013 22:38:17 +0800
-From: Nicolin Chen <b42378@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: <lgirdwood@gmail.com>, <alsa-devel@alsa-project.org>, <tiwai@suse.de>,
-        <perex@perex.cz>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <rob@landley.net>, <ijc+devicetree@hellion.org.uk>,
-        <swarren@wwwdotorg.org>, <mark.rutland@arm.com>, <pawel.moll@arm.com>,
-        <rob.herring@calxeda.com>
-Subject: Re: [PATCH 3/3] ASoC: fsl: imx-wm8962: Add headphone and microphone
- jack plugin/out detection
-Message-ID: <20131206143817.GB29975@MrMyself>
-References: <cover.1386322845.git.b42378@freescale.com>
- <82d3285b7efe1f98dbc3d9c0a423b2e5e454481f.1386322845.git.b42378@freescale.com>
- <20131206144256.GI29268@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20131206144256.GI29268@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	id S1758568Ab3LFO41 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:56:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26175 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751020Ab3LFO4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 09:56:25 -0500
+Message-ID: <1386341754.1861.188.camel@deneb.redhat.com>
+Subject: Re: [PATCH 1/3] arm64: add EFI stub
+From: Mark Salter <msalter@redhat.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        "roy.franz@linaro.org" <roy.franz@linaro.org>
+Date: Fri, 06 Dec 2013 09:55:54 -0500
+In-Reply-To: <20131205141853.GA974@darko.cambridge.arm.com>
+References: <1385762712-17043-1-git-send-email-msalter@redhat.com>
+	 <1385762712-17043-2-git-send-email-msalter@redhat.com>
+	 <20131205141853.GA974@darko.cambridge.arm.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 06, 2013 at 02:42:56PM +0000, Mark Brown wrote:
-> On Fri, Dec 06, 2013 at 05:48:23PM +0800, Nicolin Chen wrote:
+On Thu, 2013-12-05 at 14:18 +0000, Catalin Marinas wrote:
+> Hi Mark,
 > 
-> > Therefore, this patch mainly adds jack event detection feature and switchs I/O
-> > routes accordingly. Meanwhile, for those monaural input cases, we also turn on
-> > the ADC monomix features of WM8962 if needed.
-> 
-> No, the kernel shouldn't be doing any route switching or other
-> configuration - that should be done by userspace.  This is a policy
-> decision, there are situations where for example audio should go to both
-> headphones and speaker when headphones are connected in order to make
-> sure notifications are audible even if headpones have been removed.
-
-I see...It seems my solution is too specific. I will re-think about it.
-
-> > +	if (hp_status != priv->hp_active_low) {
-> > +		snprintf(buf, 32, "STATE=%d", 2);
-> > +		snd_soc_dapm_disable_pin(&priv->codec->dapm, "Ext Spk");
-> > +		ret = imx_hp_jack_gpio.report;
-> > +	} else {
-> > +		snprintf(buf, 32, "STATE=%d", 0);
-> > +		snd_soc_dapm_enable_pin(&priv->codec->dapm, "Ext Spk");
-> > +		ret = 0;
-> > +	}
+> On Fri, Nov 29, 2013 at 10:05:10PM +0000, Mark Salter wrote:
+> > +#include <linux/linkage.h>
+> > +#include <linux/init.h>
 > > +
-> > +	envp[0] = "NAME=headphone";
-> > +	envp[1] = buf;
-> > +	envp[2] = NULL;
-> > +	kobject_uevent_env(&pdev->dev.kobj, KOBJ_CHANGE, envp);
+> > +#include <asm/assembler.h>
+> > +
+> > +#define EFI_LOAD_ERROR 0x8000000000000001
 > 
-> What's this uevent trying to do and why is it open coded in the driver?
+> It's defined already but I see why you can't include efi.h here. Maybe a
+> comment.
 
-That's a requirement from Android team of Freescale. By checking this
-event they can determine whether current output is speaker or headphone
-so as to place an icon on the notification area.
+okay
 
-Sir, if you think this patch is not common enough or non-community style,
-I can try to cut it down to an common one or entirely drop it.
+> 
+> > +
+> > +       __INIT
+> > +
+> > +       /*
+> > +        * We arrive here from the EFI boot manager with:
+> > +        *
+> > +        *    * MMU on with identity-mapped RAM.
+> > +        *    * Icache and Dcache on
+> > +        *
+> > +        * We will most likely be running from some place other than where
+> > +        * we want to be. The kernel image wants to be placed at TEXT_OFFSET
+> > +        * from start of RAM.
+> > +        */
+> > +ENTRY(efi_stub_entry)
+> > +       stp     x29, x30, [sp, #-32]!
+> > +
+> > +       /*
+> > +        * Call efi_entry to do the real work.
+> > +        * x0 and x1 are already set up by firmware. Current runtime
+> > +        * address of image is calculated and passed via *image_addr.
+> > +        *
+> > +        * unsigned long efi_entry(void *handle,
+> > +        *                         efi_system_table_t *sys_table,
+> > +        *                         unsigned long *image_addr) ;
+> > +        */
+> > +       adrp    x8, _text
+> > +        add    x8, x8, #:lo12:_text
+> 
+> Minor: some wrong whitespace (but I don't trust our incoming mail server
+> either, it corrupts patches usually).
 
-Looking forward to your reply,
-Nicolin Chen
+I will fix it. (the whitespace, not your mail server)
 
+> 
+> > +       add     x2, sp, 16
+> > +       str     x8, [x2]
+> > +       bl      efi_entry
+> > +       cmn     x0, #1
+> > +       b.eq    efi_load_fail
+> > +
+> > +       /*
+> > +        * efi_entry() will have relocated the kernel image if necessary
+> > +        * and we return here with device tree address in x0 and the kernel
+> > +        * entry point stored at *image_addr. Save those values in registers
+> > +        * which are preserved by __flush_dcache_all.
+> > +        */
+> > +       ldr     x1, [sp, #16]
+> > +       mov     x20, x0
+> > +       mov     x21, x1
+> > +
+> > +       bl      __flush_dcache_all
+> 
+> Regarding __flush_dcache_all, I plan to remove it for all cases apart
+> from power management with the MMU disabled. With MMU enabled, there is
+> no guarantee that this function does the right thing. It's even worse in
+> the guest context.
+
+According to booting.txt, the dcache needs to be invalidated. Is there
+something existing I can use or do I need to write it?
+> 
+> > +       /* Turn off Dcache and MMU */
+> > +       mrs     x0, sctlr_el1
+> > +       bic     x0, x0, #1 << 0 // clear SCTLR.M
+> > +       bic     x0, x0, #1 << 2 // clear SCTLR.C
+> > +       msr     sctlr_el1, x0
+> > +       isb
+> 
+> I assume an EFI app is running with the MMU enabled (and UP only). Do we
+> always run it in EL1? What about EL2 mode (needed by KVM and Xen)?
+
+Good point. It could be non-secure EL2.
+
+> 
+> > +
+> > +       /* Jump to real entry point */
+> > +       mov     x0, x20
+> > +       mov     x1, xzr
+> > +       mov     x2, xzr
+> > +       mov     x3, xzr
+> > +       br      x21
+> > +
+> > +efi_load_fail:
+> > +       mov     x0, EFI_LOAD_ERROR
+> 
+> Needs #EFI_LOAD_ERROR (strange that gas doesn't complain).
+
+Hmm, no complaint but it DTRT.
+
+> > +/*
+> > + * AArch64 requires the DTB to be 8-byte aligned in the first 512MiB from
+> > + * start of kernel and may not cross a 2MiB boundary. We set alignment to
+> > + * equal max size so we know it won't cross a 2MiB boudary.
+> > + */
+> > +#define MAX_DTB_SIZE   0x40000
+> 
+> 2MB is 0x200000 (or I don't understand the comment).
+
+I had a little trouble with it myself. :) The size was left over from
+older code which used it directly in an allocation. I'll fix the
+comment, drop MAX_DTB_SIZE, and fix DTB_ALIGN to be 2MiB.
+
+> > +
+> > +static unsigned long __init get_dram_base(efi_system_table_t *sys_table)
+> > +{
+> > +       efi_status_t status;
+> > +       unsigned long map_size, desc_size;
+> > +       unsigned long membase = EFI_ERROR;
+> > +       efi_memory_desc_t *memory_map;
+> > +       int i;
+> > +
+> > +       status = efi_get_memory_map(sys_table, &memory_map, &map_size,
+> > +                                   &desc_size, NULL, NULL);
+> > +       if (status == EFI_SUCCESS) {
+> 
+> Can you exit earlier here if !EFI_SUCCESS? It reduces the indentation
+> level.
+> 
+Yes.
 
 
