@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161438Ab3LFNBL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:01:11 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43852 "EHLO
+	id S1161454Ab3LFNBP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:01:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43881 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161334Ab3LFNBC (ORCPT
+	with ESMTP id S1161437Ab3LFNBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:01:02 -0500
+	Fri, 6 Dec 2013 08:01:11 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Helge Deller <deller@gmx.de>,
+Cc: Johan Hovold <jhovold@gmail.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 069/272] parisc: sticon - unbreak on 64bit kernel
-Date: Fri,  6 Dec 2013 12:55:58 +0000
-Message-Id: <1386334761-25517-70-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 075/272] ARM: at91: fix hanged boot due to early rtt-interrupt
+Date: Fri,  6 Dec 2013 12:56:04 +0000
+Message-Id: <1386334761-25517-76-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,585 +27,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 0219132fe7c26574371232b50db085573f6fbd3f upstream.
+commit 94c4c79f2f1acca6e69a50bff5a7d9027509c16b upstream.
 
-STI text console (sticon) was broken on 64bit machines with more than
-4GB RAM and this lead in some cases to a kernel crash.
+Make sure the RTT-interrupts are masked at boot by adding a new helper
+function to be used at SOC-init.
 
-Since sticon uses the 32bit STI API it needs to keep pointers to memory
-below 4GB. But on a 64bit kernel some memory regions (e.g. the kernel
-stack) might be above 4GB which then may crash the kernel in the STI
-functions.
+This fixes hanged boot on all AT91 SOCs with an RTT, for example, if an
+RTT-alarm goes off after a non-clean shutdown (e.g. when using RTC
+wakeup).
 
-Additionally sticon didn't selected the built-in framebuffer fonts by
-default. This is now fixed.
+The RTC and RTT-peripherals are powered by backup power (VDDBU) (on all
+AT91 SOCs but RM9200) and are not reset on wake-up, user, watchdog or
+software reset. This means that their interrupts may be enabled during
+early boot if, for example, they where not disabled during a previous
+shutdown (e.g. due to a buggy driver or a non-clean shutdown such as a
+user reset). Furthermore, an RTC or RTT-alarm may also be active.
 
-On a side-note: Theoretically we could enhance the sticon driver to
-use the 64bit STI API. But - beside the fact that some machines don't
-provide a 64bit STI ROM - this would just add complexity.
+The RTC and RTT-interrupts use the shared system-interrupt line, which
+is also used by the PIT, and if an interrupt occurs before a handler
+(e.g. RTC-driver) has been installed this leads to the system interrupt
+being disabled and prevents the system from booting.
 
-Signed-off-by: Helge Deller <deller@gmx.de>
+Note that when boot hangs due to an early RTC or RTT-interrupt, the only
+way to get the system to start again is to remove the backup power (e.g.
+battery) or to disable the interrupt manually from the bootloader. In
+particular, a user reset is not sufficient.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/video/console/sticore.c | 166 +++++++++++++++++++++++++---------------
- drivers/video/sticore.h         |  62 ++++++++++++---
- drivers/video/stifb.c           |  10 +--
- 3 files changed, 158 insertions(+), 80 deletions(-)
+ arch/arm/mach-at91/at91sam9260.c |  2 ++
+ arch/arm/mach-at91/at91sam9261.c |  2 ++
+ arch/arm/mach-at91/at91sam9263.c |  3 +++
+ arch/arm/mach-at91/at91sam9g45.c |  1 +
+ arch/arm/mach-at91/at91sam9rl.c  |  1 +
+ arch/arm/mach-at91/generic.h     |  1 +
+ arch/arm/mach-at91/sysirq_mask.c | 24 ++++++++++++++++++++++++
+ 7 files changed, 34 insertions(+)
 
-diff --git a/drivers/video/console/sticore.c b/drivers/video/console/sticore.c
-index 35687fd..4ad24f2 100644
---- a/drivers/video/console/sticore.c
-+++ b/drivers/video/console/sticore.c
-@@ -3,7 +3,7 @@
-  *	core code for console driver using HP's STI firmware
-  *
-  *	Copyright (C) 2000 Philipp Rumpf <prumpf@tux.org>
-- *	Copyright (C) 2001-2003 Helge Deller <deller@gmx.de>
-+ *	Copyright (C) 2001-2013 Helge Deller <deller@gmx.de>
-  *	Copyright (C) 2001-2002 Thomas Bogendoerfer <tsbogend@alpha.franken.de>
-  * 
-  * TODO:
-@@ -30,7 +30,7 @@
+diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
+index 5de6074..ae10d14 100644
+--- a/arch/arm/mach-at91/at91sam9260.c
++++ b/arch/arm/mach-at91/at91sam9260.c
+@@ -349,6 +349,8 @@ static void __init at91sam9260_initialize(void)
+ 	arm_pm_idle = at91sam9_idle;
+ 	arm_pm_restart = at91sam9_alt_restart;
  
- #include "../sticore.h"
- 
--#define STI_DRIVERVERSION "Version 0.9a"
-+#define STI_DRIVERVERSION "Version 0.9b"
- 
- static struct sti_struct *default_sti __read_mostly;
- 
-@@ -73,28 +73,34 @@ static const struct sti_init_flags default_init_flags = {
- 
- static int sti_init_graph(struct sti_struct *sti)
- {
--	struct sti_init_inptr_ext inptr_ext = { 0, };
--	struct sti_init_inptr inptr = {
--		.text_planes	= 3, /* # of text planes (max 3 for STI) */
--		.ext_ptr	= STI_PTR(&inptr_ext)
--	};
--	struct sti_init_outptr outptr = { 0, };
-+	struct sti_init_inptr *inptr = &sti->sti_data->init_inptr;
-+	struct sti_init_inptr_ext *inptr_ext = &sti->sti_data->init_inptr_ext;
-+	struct sti_init_outptr *outptr = &sti->sti_data->init_outptr;
- 	unsigned long flags;
--	int ret;
-+	int ret, err;
- 
- 	spin_lock_irqsave(&sti->lock, flags);
- 
--	ret = STI_CALL(sti->init_graph, &default_init_flags, &inptr,
--		&outptr, sti->glob_cfg);
-+	memset(inptr, 0, sizeof(*inptr));
-+	inptr->text_planes = 3; /* # of text planes (max 3 for STI) */
-+	memset(inptr_ext, 0, sizeof(*inptr_ext));
-+	inptr->ext_ptr = STI_PTR(inptr_ext);
-+	outptr->errno = 0;
++	at91_sysirq_mask_rtt(AT91SAM9260_BASE_RTT);
 +
-+	ret = sti_call(sti, sti->init_graph, &default_init_flags, inptr,
-+		outptr, sti->glob_cfg);
+ 	/* Register GPIO subsystem */
+ 	at91_gpio_init(at91sam9260_gpio, 3);
+ }
+diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
+index 0e07932..e761e74 100644
+--- a/arch/arm/mach-at91/at91sam9261.c
++++ b/arch/arm/mach-at91/at91sam9261.c
+@@ -291,6 +291,8 @@ static void __init at91sam9261_initialize(void)
+ 	arm_pm_idle = at91sam9_idle;
+ 	arm_pm_restart = at91sam9_alt_restart;
+ 
++	at91_sysirq_mask_rtt(AT91SAM9261_BASE_RTT);
 +
-+	if (ret >= 0)
-+		sti->text_planes = outptr->text_planes;
-+	err = outptr->errno;
- 
- 	spin_unlock_irqrestore(&sti->lock, flags);
- 
- 	if (ret < 0) {
--		printk(KERN_ERR "STI init_graph failed (ret %d, errno %d)\n",ret,outptr.errno);
-+		pr_err("STI init_graph failed (ret %d, errno %d)\n", ret, err);
- 		return -1;
- 	}
- 	
--	sti->text_planes = outptr.text_planes;
- 	return 0;
+ 	/* Register GPIO subsystem */
+ 	at91_gpio_init(at91sam9261_gpio, 3);
  }
+diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
+index 6ce7d18..e6fed62 100644
+--- a/arch/arm/mach-at91/at91sam9263.c
++++ b/arch/arm/mach-at91/at91sam9263.c
+@@ -328,6 +328,9 @@ static void __init at91sam9263_initialize(void)
+ 	arm_pm_idle = at91sam9_idle;
+ 	arm_pm_restart = at91sam9_alt_restart;
  
-@@ -104,16 +110,18 @@ static const struct sti_conf_flags default_conf_flags = {
- 
- static void sti_inq_conf(struct sti_struct *sti)
- {
--	struct sti_conf_inptr inptr = { 0, };
-+	struct sti_conf_inptr *inptr = &sti->sti_data->inq_inptr;
-+	struct sti_conf_outptr *outptr = &sti->sti_data->inq_outptr;
- 	unsigned long flags;
- 	s32 ret;
- 
--	sti->outptr.ext_ptr = STI_PTR(&sti->outptr_ext);
-+	outptr->ext_ptr = STI_PTR(&sti->sti_data->inq_outptr_ext);
- 	
- 	do {
- 		spin_lock_irqsave(&sti->lock, flags);
--		ret = STI_CALL(sti->inq_conf, &default_conf_flags,
--			&inptr, &sti->outptr, sti->glob_cfg);
-+		memset(inptr, 0, sizeof(*inptr));
-+		ret = sti_call(sti, sti->inq_conf, &default_conf_flags,
-+			inptr, outptr, sti->glob_cfg);
- 		spin_unlock_irqrestore(&sti->lock, flags);
- 	} while (ret == 1);
- }
-@@ -126,7 +134,8 @@ static const struct sti_font_flags default_font_flags = {
- void
- sti_putc(struct sti_struct *sti, int c, int y, int x)
- {
--	struct sti_font_inptr inptr = {
-+	struct sti_font_inptr *inptr = &sti->sti_data->font_inptr;
-+	struct sti_font_inptr inptr_default = {
- 		.font_start_addr= STI_PTR(sti->font->raw),
- 		.index		= c_index(sti, c),
- 		.fg_color	= c_fg(sti, c),
-@@ -134,14 +143,15 @@ sti_putc(struct sti_struct *sti, int c, int y, int x)
- 		.dest_x		= x * sti->font_width,
- 		.dest_y		= y * sti->font_height,
- 	};
--	struct sti_font_outptr outptr = { 0, };
-+	struct sti_font_outptr *outptr = &sti->sti_data->font_outptr;
- 	s32 ret;
- 	unsigned long flags;
- 
- 	do {
- 		spin_lock_irqsave(&sti->lock, flags);
--		ret = STI_CALL(sti->font_unpmv, &default_font_flags,
--			&inptr, &outptr, sti->glob_cfg);
-+		*inptr = inptr_default;
-+		ret = sti_call(sti, sti->font_unpmv, &default_font_flags,
-+			inptr, outptr, sti->glob_cfg);
- 		spin_unlock_irqrestore(&sti->lock, flags);
- 	} while (ret == 1);
- }
-@@ -156,7 +166,8 @@ void
- sti_set(struct sti_struct *sti, int src_y, int src_x,
- 	int height, int width, u8 color)
- {
--	struct sti_blkmv_inptr inptr = {
-+	struct sti_blkmv_inptr *inptr = &sti->sti_data->blkmv_inptr;
-+	struct sti_blkmv_inptr inptr_default = {
- 		.fg_color	= color,
- 		.bg_color	= color,
- 		.src_x		= src_x,
-@@ -166,14 +177,15 @@ sti_set(struct sti_struct *sti, int src_y, int src_x,
- 		.width		= width,
- 		.height		= height,
- 	};
--	struct sti_blkmv_outptr outptr = { 0, };
-+	struct sti_blkmv_outptr *outptr = &sti->sti_data->blkmv_outptr;
- 	s32 ret;
- 	unsigned long flags;
- 	
- 	do {
- 		spin_lock_irqsave(&sti->lock, flags);
--		ret = STI_CALL(sti->block_move, &clear_blkmv_flags,
--			&inptr, &outptr, sti->glob_cfg);
-+		*inptr = inptr_default;
-+		ret = sti_call(sti, sti->block_move, &clear_blkmv_flags,
-+			inptr, outptr, sti->glob_cfg);
- 		spin_unlock_irqrestore(&sti->lock, flags);
- 	} while (ret == 1);
- }
-@@ -182,7 +194,8 @@ void
- sti_clear(struct sti_struct *sti, int src_y, int src_x,
- 	  int height, int width, int c)
- {
--	struct sti_blkmv_inptr inptr = {
-+	struct sti_blkmv_inptr *inptr = &sti->sti_data->blkmv_inptr;
-+	struct sti_blkmv_inptr inptr_default = {
- 		.fg_color	= c_fg(sti, c),
- 		.bg_color	= c_bg(sti, c),
- 		.src_x		= src_x * sti->font_width,
-@@ -192,14 +205,15 @@ sti_clear(struct sti_struct *sti, int src_y, int src_x,
- 		.width		= width * sti->font_width,
- 		.height		= height* sti->font_height,
- 	};
--	struct sti_blkmv_outptr outptr = { 0, };
-+	struct sti_blkmv_outptr *outptr = &sti->sti_data->blkmv_outptr;
- 	s32 ret;
- 	unsigned long flags;
- 
- 	do {
- 		spin_lock_irqsave(&sti->lock, flags);
--		ret = STI_CALL(sti->block_move, &clear_blkmv_flags,
--			&inptr, &outptr, sti->glob_cfg);
-+		*inptr = inptr_default;
-+		ret = sti_call(sti, sti->block_move, &clear_blkmv_flags,
-+			inptr, outptr, sti->glob_cfg);
- 		spin_unlock_irqrestore(&sti->lock, flags);
- 	} while (ret == 1);
- }
-@@ -212,7 +226,8 @@ void
- sti_bmove(struct sti_struct *sti, int src_y, int src_x,
- 	  int dst_y, int dst_x, int height, int width)
- {
--	struct sti_blkmv_inptr inptr = {
-+	struct sti_blkmv_inptr *inptr = &sti->sti_data->blkmv_inptr;
-+	struct sti_blkmv_inptr inptr_default = {
- 		.src_x		= src_x * sti->font_width,
- 		.src_y		= src_y * sti->font_height,
- 		.dest_x		= dst_x * sti->font_width,
-@@ -220,14 +235,15 @@ sti_bmove(struct sti_struct *sti, int src_y, int src_x,
- 		.width		= width * sti->font_width,
- 		.height		= height* sti->font_height,
- 	};
--	struct sti_blkmv_outptr outptr = { 0, };
-+	struct sti_blkmv_outptr *outptr = &sti->sti_data->blkmv_outptr;
- 	s32 ret;
- 	unsigned long flags;
- 
- 	do {
- 		spin_lock_irqsave(&sti->lock, flags);
--		ret = STI_CALL(sti->block_move, &default_blkmv_flags,
--			&inptr, &outptr, sti->glob_cfg);
-+		*inptr = inptr_default;
-+		ret = sti_call(sti, sti->block_move, &default_blkmv_flags,
-+			inptr, outptr, sti->glob_cfg);
- 		spin_unlock_irqrestore(&sti->lock, flags);
- 	} while (ret == 1);
- }
-@@ -284,7 +300,7 @@ __setup("sti=", sti_setup);
- 
- 
- 
--static char *font_name[MAX_STI_ROMS] = { "VGA8x16", };
-+static char *font_name[MAX_STI_ROMS];
- static int font_index[MAX_STI_ROMS],
- 	   font_height[MAX_STI_ROMS],
- 	   font_width[MAX_STI_ROMS];
-@@ -389,10 +405,10 @@ static void sti_dump_outptr(struct sti_struct *sti)
- 		"%d used bits\n"
- 		"%d planes\n"
- 		"attributes %08x\n",
--		 sti->outptr.bits_per_pixel,
--		 sti->outptr.bits_used,
--		 sti->outptr.planes,
--		 sti->outptr.attributes));
-+		 sti->sti_data->inq_outptr.bits_per_pixel,
-+		 sti->sti_data->inq_outptr.bits_used,
-+		 sti->sti_data->inq_outptr.planes,
-+		 sti->sti_data->inq_outptr.attributes));
- }
- 
- static int sti_init_glob_cfg(struct sti_struct *sti, unsigned long rom_address,
-@@ -402,24 +418,21 @@ static int sti_init_glob_cfg(struct sti_struct *sti, unsigned long rom_address,
- 	struct sti_glob_cfg_ext *glob_cfg_ext;
- 	void *save_addr;
- 	void *sti_mem_addr;
--	const int save_addr_size = 1024;	/* XXX */
--	int i;
-+	int i, size;
- 
--	if (!sti->sti_mem_request)
-+	if (sti->sti_mem_request < 256)
- 		sti->sti_mem_request = 256; /* STI default */
- 
--	glob_cfg = kzalloc(sizeof(*sti->glob_cfg), GFP_KERNEL);
--	glob_cfg_ext = kzalloc(sizeof(*glob_cfg_ext), GFP_KERNEL);
--	save_addr = kzalloc(save_addr_size, GFP_KERNEL);
--	sti_mem_addr = kzalloc(sti->sti_mem_request, GFP_KERNEL);
-+	size = sizeof(struct sti_all_data) + sti->sti_mem_request - 256;
- 
--	if (!(glob_cfg && glob_cfg_ext && save_addr && sti_mem_addr)) {
--		kfree(glob_cfg);
--		kfree(glob_cfg_ext);
--		kfree(save_addr);
--		kfree(sti_mem_addr);
-+	sti->sti_data = kzalloc(size, STI_LOWMEM);
-+	if (!sti->sti_data)
- 		return -ENOMEM;
--	}
++	at91_sysirq_mask_rtt(AT91SAM9263_BASE_RTT0);
++	at91_sysirq_mask_rtt(AT91SAM9263_BASE_RTT1);
 +
-+	glob_cfg	= &sti->sti_data->glob_cfg;
-+	glob_cfg_ext	= &sti->sti_data->glob_cfg_ext;
-+	save_addr	= &sti->sti_data->save_addr;
-+	sti_mem_addr	= &sti->sti_data->sti_mem_addr;
- 
- 	glob_cfg->ext_ptr = STI_PTR(glob_cfg_ext);
- 	glob_cfg->save_addr = STI_PTR(save_addr);
-@@ -475,32 +488,31 @@ static int sti_init_glob_cfg(struct sti_struct *sti, unsigned long rom_address,
- 	return 0;
+ 	/* Register GPIO subsystem */
+ 	at91_gpio_init(at91sam9263_gpio, 5);
  }
+diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
+index ff662af..9f7a97c 100644
+--- a/arch/arm/mach-at91/at91sam9g45.c
++++ b/arch/arm/mach-at91/at91sam9g45.c
+@@ -378,6 +378,7 @@ static void __init at91sam9g45_initialize(void)
+ 	arm_pm_restart = at91sam9g45_restart;
  
--#ifdef CONFIG_FB
-+#ifdef CONFIG_FONTS
- static struct sti_cooked_font *
- sti_select_fbfont(struct sti_cooked_rom *cooked_rom, const char *fbfont_name)
- {
--	const struct font_desc *fbfont;
-+	const struct font_desc *fbfont = NULL;
- 	unsigned int size, bpc;
- 	void *dest;
- 	struct sti_rom_font *nf;
- 	struct sti_cooked_font *cooked_font;
- 	
--	if (!fbfont_name || !strlen(fbfont_name))
--		return NULL;
--	fbfont = find_font(fbfont_name);
-+	if (fbfont_name && strlen(fbfont_name))
-+		fbfont = find_font(fbfont_name);
- 	if (!fbfont)
- 		fbfont = get_default_font(1024,768, ~(u32)0, ~(u32)0);
- 	if (!fbfont)
- 		return NULL;
+ 	at91_sysirq_mask_rtc(AT91SAM9G45_BASE_RTC);
++	at91_sysirq_mask_rtt(AT91SAM9G45_BASE_RTT);
  
--	DPRINTK((KERN_DEBUG "selected %dx%d fb-font %s\n",
--			fbfont->width, fbfont->height, fbfont->name));
-+	pr_info("STI selected %dx%d framebuffer font %s for sticon\n",
-+			fbfont->width, fbfont->height, fbfont->name);
- 			
- 	bpc = ((fbfont->width+7)/8) * fbfont->height; 
- 	size = bpc * 256;
- 	size += sizeof(struct sti_rom_font);
+ 	/* Register GPIO subsystem */
+ 	at91_gpio_init(at91sam9g45_gpio, 5);
+diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
+index b5a8c9d..301e172 100644
+--- a/arch/arm/mach-at91/at91sam9rl.c
++++ b/arch/arm/mach-at91/at91sam9rl.c
+@@ -295,6 +295,7 @@ static void __init at91sam9rl_initialize(void)
+ 	arm_pm_restart = at91sam9_alt_restart;
  
--	nf = kzalloc(size, GFP_KERNEL);
-+	nf = kzalloc(size, STI_LOWMEM);
- 	if (!nf)
- 		return NULL;
+ 	at91_sysirq_mask_rtc(AT91SAM9RL_BASE_RTC);
++	at91_sysirq_mask_rtt(AT91SAM9RL_BASE_RTT);
  
-@@ -637,7 +649,7 @@ static void *sti_bmode_font_raw(struct sti_cooked_font *f)
- 	unsigned char *n, *p, *q;
- 	int size = f->raw->bytes_per_char*256+sizeof(struct sti_rom_font);
- 	
--	n = kzalloc (4*size, GFP_KERNEL);
-+	n = kzalloc(4*size, STI_LOWMEM);
- 	if (!n)
- 		return NULL;
- 	p = n + 3;
-@@ -673,7 +685,7 @@ static struct sti_rom *sti_get_bmode_rom (unsigned long address)
- 	sti_bmode_rom_copy(address + BMODE_LAST_ADDR_OFFS, sizeof(size), &size);
+ 	/* Register GPIO subsystem */
+ 	at91_gpio_init(at91sam9rl_gpio, 4);
+diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
+index 80269bd..26dee3c 100644
+--- a/arch/arm/mach-at91/generic.h
++++ b/arch/arm/mach-at91/generic.h
+@@ -35,6 +35,7 @@ extern int  __init at91_aic_of_init(struct device_node *node,
+ extern int  __init at91_aic5_of_init(struct device_node *node,
+ 				    struct device_node *parent);
+ extern void __init at91_sysirq_mask_rtc(u32 rtc_base);
++extern void __init at91_sysirq_mask_rtt(u32 rtt_base);
  
- 	size = (size+3) / 4;
--	raw = kmalloc(size, GFP_KERNEL);
-+	raw = kmalloc(size, STI_LOWMEM);
- 	if (raw) {
- 		sti_bmode_rom_copy(address, size, raw);
- 		memmove (&raw->res004, &raw->type[0], 0x3c);
-@@ -707,7 +719,7 @@ static struct sti_rom *sti_get_wmode_rom(unsigned long address)
- 	/* read the ROM size directly from the struct in ROM */ 
- 	size = gsc_readl(address + offsetof(struct sti_rom,last_addr));
  
--	raw = kmalloc(size, GFP_KERNEL);
-+	raw = kmalloc(size, STI_LOWMEM);
- 	if (raw)
- 		sti_rom_copy(address, size, raw);
+  /* Timer */
+diff --git a/arch/arm/mach-at91/sysirq_mask.c b/arch/arm/mach-at91/sysirq_mask.c
+index ee3e22c..2ba694f 100644
+--- a/arch/arm/mach-at91/sysirq_mask.c
++++ b/arch/arm/mach-at91/sysirq_mask.c
+@@ -21,6 +21,7 @@
+  */
  
-@@ -743,6 +755,10 @@ static int sti_read_rom(int wordmode, struct sti_struct *sti,
+ #include <linux/io.h>
++#include <mach/at91_rtt.h>
  
- 	address = (unsigned long) STI_PTR(raw);
+ #include "generic.h"
  
-+	pr_info("STI ROM supports 32 %sbit firmware functions.\n",
-+		raw->alt_code_type == ALT_CODE_TYPE_PA_RISC_64
-+		? "and 64 " : "");
-+
- 	sti->font_unpmv = address + (raw->font_unpmv & 0x03ffffff);
- 	sti->block_move = address + (raw->block_move & 0x03ffffff);
- 	sti->init_graph = address + (raw->init_graph & 0x03ffffff);
-@@ -901,7 +917,8 @@ test_rom:
- 	sti_dump_globcfg(sti->glob_cfg, sti->sti_mem_request);
- 	sti_dump_outptr(sti);
- 	
--	printk(KERN_INFO "    graphics card name: %s\n", sti->outptr.dev_name );
-+	pr_info("    graphics card name: %s\n",
-+		sti->sti_data->inq_outptr.dev_name);
+@@ -45,3 +46,26 @@ void __init at91_sysirq_mask_rtc(u32 rtc_base)
  
- 	sti_roms[num_sti_roms] = sti;
- 	num_sti_roms++;
-@@ -1073,6 +1090,29 @@ struct sti_struct * sti_get_rom(unsigned int index)
+ 	iounmap(base);
  }
- EXPORT_SYMBOL(sti_get_rom);
- 
 +
-+int sti_call(const struct sti_struct *sti, unsigned long func,
-+		const void *flags, void *inptr, void *outptr,
-+		struct sti_glob_cfg *glob_cfg)
++void __init at91_sysirq_mask_rtt(u32 rtt_base)
 +{
-+	unsigned long _flags = STI_PTR(flags);
-+	unsigned long _inptr = STI_PTR(inptr);
-+	unsigned long _outptr = STI_PTR(outptr);
-+	unsigned long _glob_cfg = STI_PTR(glob_cfg);
-+	int ret;
++	void __iomem *base;
++	void __iomem *reg;
++	u32 mode;
 +
-+#ifdef CONFIG_64BIT
-+	/* Check for overflow when using 32bit STI on 64bit kernel. */
-+	if (WARN_ONCE(_flags>>32 || _inptr>>32 || _outptr>>32 || _glob_cfg>>32,
-+			"Out of 32bit-range pointers!"))
-+		return -1;
-+#endif
++	base = ioremap(rtt_base, 16);
++	if (!base)
++		return;
 +
-+	ret = pdc_sti_call(func, _flags, _inptr, _outptr, _glob_cfg);
++	reg = base + AT91_RTT_MR;
 +
-+	return ret;
++	mode = readl_relaxed(reg);
++	if (mode & (AT91_RTT_ALMIEN | AT91_RTT_RTTINCIEN)) {
++		pr_info("AT91: Disabling rtt irq\n");
++		mode &= ~(AT91_RTT_ALMIEN | AT91_RTT_RTTINCIEN);
++		writel_relaxed(mode, reg);
++		(void)readl_relaxed(reg);			/* flush */
++	}
++
++	iounmap(base);
 +}
-+
- MODULE_AUTHOR("Philipp Rumpf, Helge Deller, Thomas Bogendoerfer");
- MODULE_DESCRIPTION("Core STI driver for HP's NGLE series graphics cards in HP PARISC machines");
- MODULE_LICENSE("GPL v2");
-diff --git a/drivers/video/sticore.h b/drivers/video/sticore.h
-index addf7b6..af16195 100644
---- a/drivers/video/sticore.h
-+++ b/drivers/video/sticore.h
-@@ -18,6 +18,9 @@
- #define STI_FONT_HPROMAN8 1
- #define STI_FONT_KANA8 2
- 
-+#define ALT_CODE_TYPE_UNKNOWN 0x00	/* alt code type values */
-+#define ALT_CODE_TYPE_PA_RISC_64 0x01
-+
- /* The latency of the STI functions cannot really be reduced by setting
-  * this to 0;  STI doesn't seem to be designed to allow calling a different
-  * function (or the same function with different arguments) after a
-@@ -40,14 +43,6 @@
- 
- #define STI_PTR(p)	( virt_to_phys(p) )
- #define PTR_STI(p)	( phys_to_virt((unsigned long)p) )
--#define STI_CALL(func, flags, inptr, outptr, glob_cfg)	\
--       ({						\
--               pdc_sti_call( func, STI_PTR(flags),	\
--				   STI_PTR(inptr),	\
--				   STI_PTR(outptr),	\
--				   STI_PTR(glob_cfg));	\
--       })
--
- 
- #define sti_onscreen_x(sti) (sti->glob_cfg->onscreen_x)
- #define sti_onscreen_y(sti) (sti->glob_cfg->onscreen_y)
-@@ -56,6 +51,12 @@
- #define sti_font_x(sti) (PTR_STI(sti->font)->width)
- #define sti_font_y(sti) (PTR_STI(sti->font)->height)
- 
-+#ifdef CONFIG_64BIT
-+#define STI_LOWMEM	(GFP_KERNEL | GFP_DMA)
-+#else
-+#define STI_LOWMEM	(GFP_KERNEL)
-+#endif
-+
- 
- /* STI function configuration structs */
- 
-@@ -306,6 +307,34 @@ struct sti_blkmv_outptr {
- };
- 
- 
-+/* sti_all_data is an internal struct which needs to be allocated in
-+ * low memory (< 4GB) if STI is used with 32bit STI on a 64bit kernel */
-+
-+struct sti_all_data {
-+	struct sti_glob_cfg glob_cfg;
-+	struct sti_glob_cfg_ext glob_cfg_ext;
-+
-+	struct sti_conf_inptr		inq_inptr;
-+	struct sti_conf_outptr		inq_outptr; /* configuration */
-+	struct sti_conf_outptr_ext	inq_outptr_ext;
-+
-+	struct sti_init_inptr_ext	init_inptr_ext;
-+	struct sti_init_inptr		init_inptr;
-+	struct sti_init_outptr		init_outptr;
-+
-+	struct sti_blkmv_inptr		blkmv_inptr;
-+	struct sti_blkmv_outptr		blkmv_outptr;
-+
-+	struct sti_font_inptr		font_inptr;
-+	struct sti_font_outptr		font_outptr;
-+
-+	/* leave as last entries */
-+	unsigned long save_addr[1024 / sizeof(unsigned long)];
-+	   /* min 256 bytes which is STI default, max sti->sti_mem_request */
-+	unsigned long sti_mem_addr[256 / sizeof(unsigned long)];
-+	/* do not add something below here ! */
-+};
-+
- /* internal generic STI struct */
- 
- struct sti_struct {
-@@ -330,11 +359,9 @@ struct sti_struct {
- 	region_t regions[STI_REGION_MAX];
- 	unsigned long regions_phys[STI_REGION_MAX];
- 
--	struct sti_glob_cfg *glob_cfg;
--	struct sti_cooked_font *font;	/* ptr to selected font (cooked) */
-+	struct sti_glob_cfg *glob_cfg;	/* points into sti_all_data */
- 
--	struct sti_conf_outptr outptr; /* configuration */
--	struct sti_conf_outptr_ext outptr_ext;
-+	struct sti_cooked_font *font;	/* ptr to selected font (cooked) */
- 
- 	struct pci_dev *pd;
- 
-@@ -343,6 +370,9 @@ struct sti_struct {
- 
- 	/* pointer to the fb_info where this STI device is used */
- 	struct fb_info *info;
-+
-+	/* pointer to all internal data */
-+	struct sti_all_data *sti_data;
- };
- 
- 
-@@ -350,6 +380,14 @@ struct sti_struct {
- 
- struct sti_struct *sti_get_rom(unsigned int index); /* 0: default sti */
- 
-+
-+/* sticore main function to call STI firmware */
-+
-+int sti_call(const struct sti_struct *sti, unsigned long func,
-+		const void *flags, void *inptr, void *outptr,
-+		struct sti_glob_cfg *glob_cfg);
-+
-+
- /* functions to call the STI ROM directly */
- 
- void sti_putc(struct sti_struct *sti, int c, int y, int x);
-diff --git a/drivers/video/stifb.c b/drivers/video/stifb.c
-index 876648e..019a1fe 100644
---- a/drivers/video/stifb.c
-+++ b/drivers/video/stifb.c
-@@ -1101,6 +1101,7 @@ static int __init stifb_init_fb(struct sti_struct *sti, int bpp_pref)
- 	var = &info->var;
- 
- 	fb->sti = sti;
-+	dev_name = sti->sti_data->inq_outptr.dev_name;
- 	/* store upper 32bits of the graphics id */
- 	fb->id = fb->sti->graphics_id[0];
- 
-@@ -1114,11 +1115,11 @@ static int __init stifb_init_fb(struct sti_struct *sti, int bpp_pref)
- 		  Since this driver only supports standard mode, we check
- 		  if the device name contains the string "DX" and tell the
- 		  user how to reconfigure the card. */
--		if (strstr(sti->outptr.dev_name, "DX")) {
-+		if (strstr(dev_name, "DX")) {
- 		   printk(KERN_WARNING
- "WARNING: stifb framebuffer driver does not support '%s' in double-buffer mode.\n"
- "WARNING: Please disable the double-buffer mode in IPL menu (the PARISC-BIOS).\n",
--			sti->outptr.dev_name);
-+			dev_name);
- 		   goto out_err0;
- 		}
- 		/* fall though */
-@@ -1130,7 +1131,7 @@ static int __init stifb_init_fb(struct sti_struct *sti, int bpp_pref)
- 		break;
- 	default:
- 		printk(KERN_WARNING "stifb: '%s' (id: 0x%08x) not supported.\n",
--			sti->outptr.dev_name, fb->id);
-+			dev_name, fb->id);
- 		goto out_err0;
- 	}
- 	
-@@ -1154,7 +1155,6 @@ static int __init stifb_init_fb(struct sti_struct *sti, int bpp_pref)
- 		fb->id = S9000_ID_A1659A;
- 		break;
- 	case S9000_ID_TIMBER:	/* HP9000/710 Any (may be a grayscale device) */
--		dev_name = fb->sti->outptr.dev_name;
- 		if (strstr(dev_name, "GRAYSCALE") || 
- 		    strstr(dev_name, "Grayscale") ||
- 		    strstr(dev_name, "grayscale"))
-@@ -1290,7 +1290,7 @@ static int __init stifb_init_fb(struct sti_struct *sti, int bpp_pref)
- 		var->xres, 
- 		var->yres,
- 		var->bits_per_pixel,
--		sti->outptr.dev_name,
-+		dev_name,
- 		fb->id, 
- 		fix->mmio_start);
- 
 -- 
 1.8.3.2
 
