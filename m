@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758411Ab3LFUvg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 15:51:36 -0500
-Received: from mail.ispras.ru ([83.149.199.45]:58202 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751294Ab3LFUve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 15:51:34 -0500
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Wolfgang Grandegger <wg@grandegger.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: [PATCH] can: ems_usb: fix a leak in ems_usb_start_xmit()
-Date: Sat,  7 Dec 2013 00:51:22 +0400
-Message-Id: <1386363082-15144-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.3.2
+	id S1758553Ab3LFUwu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 15:52:50 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:48841 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752661Ab3LFUws (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 15:52:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <1386350983-13281-1-git-send-email-wens@csie.org>
+References: <1386350983-13281-1-git-send-email-wens@csie.org>
+From: Michal Suchanek <hramrach@gmail.com>
+Date: Fri, 6 Dec 2013 21:52:06 +0100
+Message-ID: <CAOMqctQLnky=K+uhJNVPTGq+MJVNFoG1OW5Zxo7P2MvrRf_Cug@mail.gmail.com>
+Subject: Re: [linux-sunxi] [PATCH 00/10] net: stmmac: Add sun7i GMAC glue layer
+To: linux-sunxi <linux-sunxi@googlegroups.com>
+Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>, netdev@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chen-Yu Tsai <wens@csie.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is spare code with obvious misprint in ems_usb_start_xmit():
-usb_free_urb() should be used to deallocate urb instead of usb_unanchor_urb().
+On 6 December 2013 18:29, Chen-Yu Tsai <wens@csie.org> wrote:
+> Hi,
+>
+> This patch series adds Allwinner sun7i support to stmmac.
+> The Allwinner sun7i SoC A20 integrates an early version of
+> dwmac IP from Synopsys. On top of that is a hardware glue
+> layer. This layer needs to be configured before the dwmac
+> can be used.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+...
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/net/can/usb/ems_usb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> Comments?
+>
+> Thanks,
+>
+> wens
+>
+>
+> Chen-Yu Tsai (10):
+>   net: stmmac: Enable stmmac main clock when probing hardware
+>   net: stmmac: Honor DT parameter to force DMA store and forward mode
+>   net: stmmac: Use platform data tied with compatible strings
+>   net: stmmac: sunxi platfrom extensions for GMAC in Allwinner A20 SoC's
+>   ARM: dts: sun7i: Add GMAC controller node to sun7i DTSI
+>   ARM: dts: sun7i: Add pin muxing options for the GMAC
+>   ARM: dts: sun7i: cubietruck: Enable the GMAC
+>   ARM: dts: sun7i: cubieboard2: Enable GMAC instead of EMAC
+>   ARM: dts: sun7i: olinuxino-micro: Enable GMAC instead of EMAC
+>   ARM: dts: sun7i: Add ethernet alias for GMAC
 
-diff --git a/drivers/net/can/usb/ems_usb.c b/drivers/net/can/usb/ems_usb.c
-index 5f9a7ad9b964..beae1ec255f4 100644
---- a/drivers/net/can/usb/ems_usb.c
-+++ b/drivers/net/can/usb/ems_usb.c
-@@ -798,7 +798,7 @@ static netdev_tx_t ems_usb_start_xmit(struct sk_buff *skb, struct net_device *ne
- 	 * allowed (MAX_TX_URBS).
- 	 */
- 	if (!context) {
--		usb_unanchor_urb(urb);
-+		usb_free_urb(urb);
- 		usb_free_coherent(dev->udev, size, buf, urb->transfer_dma);
- 
- 		netdev_warn(netdev, "couldn't find free context\n");
--- 
-1.8.3.2
+Tested-By: Michal Suchanek <hramrach@gmail.com>
 
+Works for me with RGMII and MII phy on top of 3.13rc3.
+
+Thanks
+
+Michal
