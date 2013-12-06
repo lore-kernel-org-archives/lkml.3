@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760211Ab3LFXrz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:47:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48436 "EHLO
+	id S1760182Ab3LFXry (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:47:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48438 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161376Ab3LFXMi (ORCPT
+	with ESMTP id S1161377Ab3LFXMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 18:12:38 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 046/152] ALSA: hda - Enable SPDIF for Acer TravelMate 6293
-Date: Fri,  6 Dec 2013 15:09:30 -0800
-Message-Id: <1386371476-2477-47-git-send-email-kamal@canonical.com>
+Cc: benh@kernel.crashing.org, ben@decadent.org.uk,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 033/152] powerpc/vio: use strcpy in modalias_show
+Date: Fri,  6 Dec 2013 15:09:17 -0800
+Message-Id: <1386371476-2477-34-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -26,54 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Prarit Bhargava <prarit@redhat.com>
 
-commit 24eff328f65c8ef352c90b6adb7c2f39eb94205d upstream.
+commit 411cabf79e684171669ad29a0628c400b4431e95 upstream.
 
-BIOS on Acer TravelMate 6293 doesn't set up the SPDIF output pin
-correctly as default, so enable it via a fixup entry.
+Commit e82b89a6f19bae73fb064d1b3dd91fcefbb478f4 used strcat instead of
+strcpy which can result in an overflow of newlines on the buffer.
 
-Reported-and-tested-by: Hagen Heiduck <heiduck.suse@fmail.postpro.net>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Prarit Bhargava
+Cc: benh@kernel.crashing.org
+Cc: ben@decadent.org.uk
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/powerpc/kernel/vio.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index fe2138d..500c00a 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -5687,6 +5687,7 @@ static const struct hda_verb alc268_beep_init_verbs[] = {
- enum {
- 	ALC268_FIXUP_INV_DMIC,
- 	ALC268_FIXUP_HP_EAPD,
-+	ALC268_FIXUP_SPDIF,
- };
+diff --git a/arch/powerpc/kernel/vio.c b/arch/powerpc/kernel/vio.c
+index 2d845d8..56d2e72 100644
+--- a/arch/powerpc/kernel/vio.c
++++ b/arch/powerpc/kernel/vio.c
+@@ -1530,12 +1530,12 @@ static ssize_t modalias_show(struct device *dev, struct device_attribute *attr,
  
- static const struct alc_fixup alc268_fixups[] = {
-@@ -5701,6 +5702,13 @@ static const struct alc_fixup alc268_fixups[] = {
- 			{}
- 		}
- 	},
-+	[ALC268_FIXUP_SPDIF] = {
-+		.type = HDA_FIXUP_PINS,
-+		.v.pins = (const struct hda_pintbl[]) {
-+			{ 0x1e, 0x014b1180 }, /* enable SPDIF out */
-+			{}
-+		}
-+	},
- };
+ 	dn = dev->of_node;
+ 	if (!dn) {
+-		strcat(buf, "\n");
++		strcpy(buf, "\n");
+ 		return strlen(buf);
+ 	}
+ 	cp = of_get_property(dn, "compatible", NULL);
+ 	if (!cp) {
+-		strcat(buf, "\n");
++		strcpy(buf, "\n");
+ 		return strlen(buf);
+ 	}
  
- static const struct alc_model_fixup alc268_fixup_models[] = {
-@@ -5710,6 +5718,7 @@ static const struct alc_model_fixup alc268_fixup_models[] = {
- };
- 
- static const struct snd_pci_quirk alc268_fixup_tbl[] = {
-+	SND_PCI_QUIRK(0x1025, 0x0139, "Acer TravelMate 6293", ALC268_FIXUP_SPDIF),
- 	SND_PCI_QUIRK(0x1025, 0x015b, "Acer AOA 150 (ZG5)", ALC268_FIXUP_INV_DMIC),
- 	/* below is codec SSID since multiple Toshiba laptops have the
- 	 * same PCI SSID 1179:ff00
 -- 
 1.8.3.2
 
