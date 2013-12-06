@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192Ab3LFBMe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 20:12:34 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:50277 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750970Ab3LFBMd convert rfc822-to-8bit (ORCPT
+	id S1751763Ab3LFBUI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 20:20:08 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:6900 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970Ab3LFBUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 20:12:33 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] SFI: fix compilation warnings
-Date: Fri, 06 Dec 2013 02:25:33 +0100
-Message-ID: <1419818.3DzaCCe02K@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E8802494B32@SHSMSX101.ccr.corp.intel.com>
-References: <1386264397-27319-1-git-send-email-andriy.shevchenko@linux.intel.com> <4771886.zcelg2hCiB@vostro.rjw.lan> <1AE640813FDE7649BE1B193DEA596E8802494B32@SHSMSX101.ccr.corp.intel.com>
+	Thu, 5 Dec 2013 20:20:03 -0500
+Message-ID: <52A1260B.2050007@huawei.com>
+Date: Fri, 6 Dec 2013 09:19:07 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, qiuxishi <qiuxishi@huawei.com>
+Subject: Re: [PATCH] mm: do_mincore() cleanup
+References: <52A03EE4.6030609@huawei.com> <1386254370-ui1ehq60-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1386254370-ui1ehq60-mutt-n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.216]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 06, 2013 01:08:45 AM Zheng, Lv wrote:
-> > From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
-> > Sent: Friday, December 06, 2013 6:37 AM
-> > 
-> > On Thursday, December 05, 2013 07:26:37 PM Andy Shevchenko wrote:
-> > > When build kernel with make W=1 we get the following compiler error.
-> > >
-> > > In file included from drivers/sfi/sfi_acpi.c:66:0:
-> > > include/linux/sfi_acpi.h: In function ‘acpi_sfi_table_parse’:
-> > > include/linux/sfi_acpi.h:72:2: error: implicit declaration of function ‘acpi_table_parse’ [-Werror=implicit-function-declaration]
-> > >   if (!acpi_table_parse(signature, handler))
-> > >   ^
-> > >   cc1: some warnings being treated as errors
-> > >
-> > > The patch changes acpi/acpi.h inclusion to linux/acpi.h.
-> > >
-> > > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > 
-> > OK
-> > 
-> > Lv, I'm dropping your patch cleaning up the inclusions, please sort that thing
-> > out entirely for the next cycle.
+On 2013/12/5 22:39, Naoya Horiguchi wrote:
+
+> On Thu, Dec 05, 2013 at 04:52:52PM +0800, Jianguo Wu wrote:
+>> Two cleanups:
+>> 1. remove redundant codes for hugetlb pages.
+>> 2. end = pmd_addr_end(addr, end) restricts [addr, end) within PMD_SIZE,
+>>    this may increase do_mincore() calls, remove it.
+>>
+>> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
 > 
-> No, I think Andy's patch is wrong.
+> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-His patch may be wrong, but the warning in his changelog surely is real. :-)
+Hi Naoya, thanks for your review!
 
-> This warning is existing before merging my fixes.
+Jianguo Wu
+
 > 
-> Either we fix this warning or leave it as is.
+> Thanks!
 > 
-> To fix it, you need to add 1 line in sfi_acpi.h rather than change the line.
-> Let me post a fix for this.
+> Naoya
+> 
+>> ---
+>>  mm/mincore.c |    7 -------
+>>  1 files changed, 0 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/mm/mincore.c b/mm/mincore.c
+>> index da2be56..1016233 100644
+>> --- a/mm/mincore.c
+>> +++ b/mm/mincore.c
+>> @@ -225,13 +225,6 @@ static long do_mincore(unsigned long addr, unsigned long pages, unsigned char *v
+>>  
+>>  	end = min(vma->vm_end, addr + (pages << PAGE_SHIFT));
+>>  
+>> -	if (is_vm_hugetlb_page(vma)) {
+>> -		mincore_hugetlb_page_range(vma, addr, end, vec);
+>> -		return (end - addr) >> PAGE_SHIFT;
+>> -	}
+>> -
+>> -	end = pmd_addr_end(addr, end);
+>> -
+>>  	if (is_vm_hugetlb_page(vma))
+>>  		mincore_hugetlb_page_range(vma, addr, end, vec);
+>>  	else
+>> -- 
+>> 1.7.1
+>>
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>
+> 
+> .
+> 
 
-Please do.  And I'm putting all ACPI header cleanups on hold until all warnings
-of this kind have been fixed by them.  Otherwise doing those cleanups makes a
-little sense in my opinion.
 
-Thanks,
-Rafael
 
