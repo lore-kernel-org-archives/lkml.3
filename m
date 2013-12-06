@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161778Ab3LFNDe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:03:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44393 "EHLO
+	id S1160996Ab3LFND0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:03:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44376 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161753Ab3LFND2 (ORCPT
+	with ESMTP id S1161698Ab3LFNDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:03:28 -0500
+	Fri, 6 Dec 2013 08:03:22 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 177/272] [media] stb0899_drv: Don't use dynamic static allocation
-Date: Fri,  6 Dec 2013 12:57:46 +0000
-Message-Id: <1386334761-25517-178-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 173/272] [media] tuner-xc2028: Don't use dynamic static allocation
+Date: Fri,  6 Dec 2013 12:57:42 +0000
+Message-Id: <1386334761-25517-174-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -29,65 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit ba4746423488aafa435739c32bfe0758f3dd5d77 upstream.
+commit 56ac033725ec93a45170caf3979eb2b1211a59a8 upstream.
 
 Dynamic static allocation is evil, as Kernel stack is too low, and
 compilation complains about it on some archs:
-	drivers/media/dvb-frontends/stb0899_drv.c:540:1: warning: 'stb0899_write_regs' uses dynamic stack allocation [enabled by default]
-Instead, let's enforce a limit for the buffer. Considering that I2C
-transfers are generally limited, and that devices used on USB has a
-max data length of 64 bytes for	the control URBs.
-So, it seem safe to use 64 bytes as the hard limit for all those devices.
- On most cases, the limit is a way lower than that, but	this limit
-is small enough to not affect the Kernel stack, and it is a no brain
-limit, as using smaller ones would require to either carefully each
-driver or to take a look on each datasheet.
+	drivers/media/tuners/tuner-xc2028.c:651:1: warning: 'load_firmware' uses dynamic stack allocation [enabled by default]
+Instead, let's enforce a limit for the buffer.
+In the specific case of this driver, the maximum limit is 80, used only
+on tm6000 driver. This limit is due to the size of the USB control URBs.
+Ok, it would be theoretically possible to use a bigger size on PCI
+devices, but the firmware load time is already good enough. Anyway,
+if some usage requires more, it is just a matter of also increasing
+the buffer size at load_firmware().
 
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/dvb-frontends/stb0899_drv.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/media/tuners/tuner-xc2028.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/media/dvb-frontends/stb0899_drv.c b/drivers/media/dvb-frontends/stb0899_drv.c
-index 3dd5714..07cd5ea 100644
---- a/drivers/media/dvb-frontends/stb0899_drv.c
-+++ b/drivers/media/dvb-frontends/stb0899_drv.c
-@@ -32,6 +32,9 @@
- #include "stb0899_priv.h"
- #include "stb0899_reg.h"
+diff --git a/drivers/media/tuners/tuner-xc2028.c b/drivers/media/tuners/tuner-xc2028.c
+index 878d2c4..9771cd8 100644
+--- a/drivers/media/tuners/tuner-xc2028.c
++++ b/drivers/media/tuners/tuner-xc2028.c
+@@ -24,6 +24,9 @@
+ #include <linux/dvb/frontend.h>
+ #include "dvb_frontend.h"
  
 +/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
++#define MAX_XFER_SIZE  80
 +
- static unsigned int verbose = 0;//1;
- module_param(verbose, int, 0644);
- 
-@@ -499,7 +502,7 @@ err:
- int stb0899_write_regs(struct stb0899_state *state, unsigned int reg, u8 *data, u32 count)
+ /* Registers (Write-only) */
+ #define XREG_INIT         0x00
+ #define XREG_RF_FREQ      0x02
+@@ -547,7 +550,10 @@ static int load_firmware(struct dvb_frontend *fe, unsigned int type,
  {
- 	int ret;
--	u8 buf[2 + count];
-+	u8 buf[MAX_XFER_SIZE];
- 	struct i2c_msg i2c_msg = {
- 		.addr	= state->config->demod_address,
- 		.flags	= 0,
-@@ -507,6 +510,13 @@ int stb0899_write_regs(struct stb0899_state *state, unsigned int reg, u8 *data,
- 		.len	= 2 + count
- 	};
- 
-+	if (2 + count > sizeof(buf)) {
-+		printk(KERN_WARNING
-+		       "%s: i2c wr reg=%04x: len=%d is too big!\n",
-+		       KBUILD_MODNAME, reg, count);
-+		return -EINVAL;
-+	}
+ 	struct xc2028_data *priv = fe->tuner_priv;
+ 	int                pos, rc;
+-	unsigned char      *p, *endp, buf[priv->ctrl.max_len];
++	unsigned char      *p, *endp, buf[MAX_XFER_SIZE];
 +
- 	buf[0] = reg >> 8;
- 	buf[1] = reg & 0xff;
- 	memcpy(&buf[2], data, count);
++	if (priv->ctrl.max_len > sizeof(buf))
++		priv->ctrl.max_len = sizeof(buf);
+ 
+ 	tuner_dbg("%s called\n", __func__);
+ 
 -- 
 1.8.3.2
 
