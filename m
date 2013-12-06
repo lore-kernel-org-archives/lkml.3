@@ -1,40 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab3LFAfx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 19:35:53 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:49414 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab3LFAfv (ORCPT
+	id S1756240Ab3LFAhu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 19:37:50 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:56872 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755777Ab3LFAhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 19:35:51 -0500
+	Thu, 5 Dec 2013 19:37:47 -0500
+Subject: [PATCH v2 0/2] Remove ksets from sysfs eagerly
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Veaceslav Falico <vfalico@redhat.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Neil Horman <nhorman@tuxdriver.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zdenek Kabelac <zkabelac@redhat.com>
+Date: Thu, 05 Dec 2013 17:37:43 -0700
+Message-ID: <20131206003508.28684.1337.stgit@bhelgaas-glaptop.roam.corp.google.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Date: Thu, 5 Dec 2013 16:35:50 -0800
-Message-ID: <CAGXu5jLKkgYg5UWJc8xBGN5NgDh68Q3YRxO--zmDL86BWPH78A@mail.gmail.com>
-Subject: XFS security fix never sent to -stable?
-From: Kees Cook <keescook@google.com>
-To: Dwight Engen <dwight.engen@oracle.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Brian Foster <bfoster@redhat.com>,
-        Dave Chinner <dchinner@redhat.com>, Gao feng <gaofeng@cn.fujitsu.com>,
-        Ben Myers <bpm@sgi.com>, Greg KH <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This removes ksets from sysfs immediately in kset_unregister() to help
+prevent module unload/reload problems.  It also adds more variability
+to the CONFIG_DEBUG_KOBJECT_RELEASE option by delaying release functions
+for a somewhat random time, to change the order in which they can be
+called.
 
-It looks like 8c567a7fab6e086a0284eee2db82348521e7120c ("xfs: add
-capability check to free eofblocks ioctl") is a security fix that was
-never sent to -stable? From what I can see, it was introduced in 3.8
-by 8ca149de80478441352a8622ea15fae7de703ced ("xfs: add
-XFS_IOC_FREE_EOFBLOCKS ioctl").
+---
 
-I don't see this in the 3.8.y tree. Should it be added there and newer?
+Bjorn Helgaas (2):
+      kobject: delay kobject release for random time
+      kobject: remove kset from sysfs immediately in kset_unregister()
 
-Thanks,
 
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+ Documentation/kobject.txt |    5 ++++-
+ lib/kobject.c             |   11 ++++++++---
+ 2 files changed, 12 insertions(+), 4 deletions(-)
