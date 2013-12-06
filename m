@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161558Ab3LFXbp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:31:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48878 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932622Ab3LFXTw (ORCPT
+	id S1161643Ab3LFXb5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:31:57 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:56036 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1161029Ab3LFXbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:19:52 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 083/152] IB/ipath: Convert ipath_user_sdma_pin_pages() to use get_user_pages_fast()
-Date: Fri,  6 Dec 2013 15:10:07 -0800
-Message-Id: <1386371476-2477-84-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
-References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Fri, 6 Dec 2013 18:31:55 -0500
+Message-ID: <52A25E66.6040403@free-electrons.com>
+Date: Sat, 07 Dec 2013 00:31:50 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Organization: Free Electrons
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: brian@crystalfontz.com, jimwall@q.com, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: dts: mxs: add #io-channel-cells to mx28 lradc
+References: <1386361231-20427-1-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1386361231-20427-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.14 -stable review patch.  If anyone has any objections, please let me know.
+Commit message should have been:
 
-------------------
+Adding #io-channel-cells property to lradc allows us to use the lradc as
+an iio provider.
 
-From: Jan Kara <jack@suse.cz>
+On 06/12/2013 21:20, Alexandre Belloni wrote:
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>  arch/arm/boot/dts/imx28.dtsi | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/arch/arm/boot/dts/imx28.dtsi b/arch/arm/boot/dts/imx28.dtsi
+> index cda19c8b0a47..92d9f9e33bf1 100644
+> --- a/arch/arm/boot/dts/imx28.dtsi
+> +++ b/arch/arm/boot/dts/imx28.dtsi
+> @@ -945,6 +945,7 @@
+>  						20 21 22 23 24 25>;
+>  				status = "disabled";
+>  				clocks = <&clks 41>;
+> +				#io-channel-cells = <1>;
+>  			};
+>  
+>  			spdif: spdif@80054000 {
 
-commit 4adcf7fb6783e354aab38824d803fa8c4f8e8a27 upstream.
 
-ipath_user_sdma_queue_pkts() gets called with mmap_sem held for
-writing.  Except for get_user_pages() deep down in
-ipath_user_sdma_pin_pages() we don't seem to need mmap_sem at all.
-
-Even more interestingly the function ipath_user_sdma_queue_pkts() (and
-also ipath_user_sdma_coalesce() called somewhat later) call
-copy_from_user() which can hit a page fault and we deadlock on trying
-to get mmap_sem when handling that fault.  So just make
-ipath_user_sdma_pin_pages() use get_user_pages_fast() and leave
-mmap_sem locking for mm.
-
-This deadlock has actually been observed in the wild when the node
-is under memory pressure.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-
-[ Merged in fix for call to get_user_pages_fast from Tetsuo Handa
-  <penguin-kernel@I-love.SAKURA.ne.jp>.  - Roland ]
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/infiniband/hw/ipath/ipath_user_sdma.c | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
-
-diff --git a/drivers/infiniband/hw/ipath/ipath_user_sdma.c b/drivers/infiniband/hw/ipath/ipath_user_sdma.c
-index f5cb13b..cc04b7b 100644
---- a/drivers/infiniband/hw/ipath/ipath_user_sdma.c
-+++ b/drivers/infiniband/hw/ipath/ipath_user_sdma.c
-@@ -280,9 +280,7 @@ static int ipath_user_sdma_pin_pages(const struct ipath_devdata *dd,
- 	int j;
- 	int ret;
- 
--	ret = get_user_pages(current, current->mm, addr,
--			     npages, 0, 1, pages, NULL);
--
-+	ret = get_user_pages_fast(addr, npages, 0, pages);
- 	if (ret != npages) {
- 		int i;
- 
-@@ -811,10 +809,7 @@ int ipath_user_sdma_writev(struct ipath_devdata *dd,
- 	while (dim) {
- 		const int mxp = 8;
- 
--		down_write(&current->mm->mmap_sem);
- 		ret = ipath_user_sdma_queue_pkts(dd, pq, &list, iov, dim, mxp);
--		up_write(&current->mm->mmap_sem);
--
- 		if (ret <= 0)
- 			goto done_unlock;
- 		else {
 -- 
-1.8.3.2
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
