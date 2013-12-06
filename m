@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757148Ab3LFJnd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 04:43:33 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:55218 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656Ab3LFJn2 (ORCPT
+	id S1757314Ab3LFJrl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 04:47:41 -0500
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:37470
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752891Ab3LFJrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 04:43:28 -0500
-Date: Fri, 6 Dec 2013 10:43:21 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
-        Wang YanQing <udknight@gmail.com>, linux-arch@vger.kernel.org
-Subject: Re: [RFC PATCH v3 13/19] smp, s390: prepare for killing
- generic_smp_call_function_single_interrupt()
-Message-ID: <20131206094321.GC4524@osiris>
-References: <1386173591-28514-1-git-send-email-liuj97@gmail.com>
- <1386173591-28514-14-git-send-email-liuj97@gmail.com>
+	Fri, 6 Dec 2013 04:47:37 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6h1082kzz1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+From: Nicolin Chen <b42378@freescale.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>
+CC: <alsa-devel@alsa-project.org>, <tiwai@suse.de>, <perex@perex.cz>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/3] Enhance imx-wm8962 machine driver
+Date: Fri, 6 Dec 2013 17:47:41 +0800
+Message-ID: <cover.1386322845.git.b42378@freescale.com>
+X-Mailer: git-send-email 1.8.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386173591-28514-14-git-send-email-liuj97@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120609-5024-0000-0000-0000080F622A
+Content-Type: text/plain
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 12:13:04AM +0800, Jiang Liu wrote:
-> Signed-off-by: Jiang Liu <liuj97@gmail.com>
-> ---
->  arch/s390/kernel/smp.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
+Although there's no direct relationship between any of these three patches,
+I recommend to apply them in order so as to circumvent merging conflicts.
 
-I assume you will take care and make sure it gets merged?
-Besides that:
+Nicolin Chen (3):
+  ASoC: fsl: imx-wm8962: Don't update bias_level in machine driver
+  ASoC: fsl: imx-wm8962: Grant hw_params/free() permission to control
+    FLL
+  ASoC: fsl: imx-wm8962: Add headphone and microphone jack plugin/out
+    detection
 
-Acked-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+ .../devicetree/bindings/sound/imx-audio-wm8962.txt |   8 +
+ Documentation/devicetree/bindings/sound/wm8962.txt |   8 +
+ sound/soc/fsl/imx-wm8962.c                         | 361 ++++++++++++++++++---
+ 3 files changed, 326 insertions(+), 51 deletions(-)
+
+-- 
+1.8.4
+
 
