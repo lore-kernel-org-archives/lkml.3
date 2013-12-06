@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758066Ab3LFNB6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:01:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44062 "EHLO
+	id S1162822Ab3LFNwE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:52:04 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44073 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758046Ab3LFNBy (ORCPT
+	with ESMTP id S1758053Ab3LFNB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:01:54 -0500
+	Fri, 6 Dec 2013 08:01:57 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bart Van Assche <bvanassche@acm.org>,
-        Roland Dreier <roland@purestorage.com>,
+Cc: Brian Norris <computersforpeace@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 106/272] IB/srp: Report receive errors correctly
-Date: Fri,  6 Dec 2013 12:56:35 +0000
-Message-Id: <1386334761-25517-107-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 109/272] mtd: nand: hack ONFI for non-power-of-2 dimensions
+Date: Fri,  6 Dec 2013 12:56:38 +0000
+Message-Id: <1386334761-25517-110-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,61 +27,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Brian Norris <computersforpeace@gmail.com>
 
-commit cd4e38542a5c2cab94e5410fb17c1cc004a60792 upstream.
+commit 4355b70cf48363c50a9de450b01178c83aba8f6a upstream.
 
-The IB spec does not guarantee that the opcode is available in error
-completions.  Hence do not rely on it.  See also commit 948d1e889e5b
-("IB/srp: Introduce srp_handle_qp_err()").
+Some bright specification writers decided to write this in the ONFI spec
+(from ONFI 3.0, Section 3.1):
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-[ luis: backported to 3.11: adjusted context ]
+  "The number of blocks and number of pages per block is not required to
+  be a power of two. In the case where one of these values is not a
+  power of two, the corresponding address shall be rounded to an
+  integral number of bits such that it addresses a range up to the
+  subsequent power of two value. The host shall not access upper
+  addresses in a range that is shown as not supported."
+
+This breaks every assumption MTD makes about NAND block/chip-size
+dimensions -- they *must* be a power of two!
+
+And of course, an enterprising manufacturer has made use of this lovely
+freedom. Exhibit A: Micron MT29F32G08CBADAWP
+
+  "- Plane size: 2 planes x 1064 blocks per plane
+   - Device size: 32Gb: 2128 blockss [sic]"
+
+This quickly hits a BUG() in nand_base.c, since the extra dimensions
+overflow so we think it's a second chip (on my single-chip setup):
+
+    ONFI param page 0 valid
+    ONFI flash detected
+    NAND device: Manufacturer ID: 0x2c, Chip ID: 0x44 (Micron MT29F32G08CBADAWP), 4256MiB, page size: 8192, OOB size: 744
+    ------------[ cut here ]------------
+    kernel BUG at drivers/mtd/nand/nand_base.c:203!
+    Internal error: Oops - BUG: 0 [#1] SMP ARM
+    [... trim ...]
+    [<c02cf3e4>] (nand_select_chip+0x18/0x2c) from [<c02d25c0>] (nand_do_read_ops+0x90/0x424)
+    [<c02d25c0>] (nand_do_read_ops+0x90/0x424) from [<c02d2dd8>] (nand_read+0x54/0x78)
+    [<c02d2dd8>] (nand_read+0x54/0x78) from [<c02ad2c8>] (mtd_read+0x84/0xbc)
+    [<c02ad2c8>] (mtd_read+0x84/0xbc) from [<c02d4b28>] (scan_read.clone.4+0x4c/0x64)
+    [<c02d4b28>] (scan_read.clone.4+0x4c/0x64) from [<c02d4c88>] (search_bbt+0x148/0x290)
+    [<c02d4c88>] (search_bbt+0x148/0x290) from [<c02d4ea4>] (nand_scan_bbt+0xd4/0x5c0)
+    [... trim ...]
+    ---[ end trace 0c9363860d865ff2 ]---
+
+So to fix this, just truncate these dimensions down to the greatest
+power-of-2 dimension that is less than or equal to the specified
+dimension.
+
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/ulp/srp/ib_srp.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ drivers/mtd/nand/nand_base.c | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/infiniband/ulp/srp/ib_srp.c b/drivers/infiniband/ulp/srp/ib_srp.c
-index f93baf8..df7a19c 100644
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -1302,14 +1302,13 @@ static void srp_handle_recv(struct srp_target_port *target, struct ib_wc *wc)
- 			     PFX "Recv failed with error code %d\n", res);
- }
- 
--static void srp_handle_qp_err(enum ib_wc_status wc_status,
--			      enum ib_wc_opcode wc_opcode,
-+static void srp_handle_qp_err(enum ib_wc_status wc_status, bool send_err,
- 			      struct srp_target_port *target)
- {
- 	if (target->connected && !target->qp_in_error) {
- 		shost_printk(KERN_ERR, target->scsi_host,
- 			     PFX "failed %s status %d\n",
--			     wc_opcode & IB_WC_RECV ? "receive" : "send",
-+			     send_err ? "send" : "receive",
- 			     wc_status);
- 	}
- 	target->qp_in_error = true;
-@@ -1325,7 +1324,7 @@ static void srp_recv_completion(struct ib_cq *cq, void *target_ptr)
- 		if (likely(wc.status == IB_WC_SUCCESS)) {
- 			srp_handle_recv(target, &wc);
- 		} else {
--			srp_handle_qp_err(wc.status, wc.opcode, target);
-+			srp_handle_qp_err(wc.status, false, target);
- 		}
- 	}
- }
-@@ -1341,7 +1340,7 @@ static void srp_send_completion(struct ib_cq *cq, void *target_ptr)
- 			iu = (struct srp_iu *) (uintptr_t) wc.wr_id;
- 			list_add(&iu->list, &target->free_tx);
- 		} else {
--			srp_handle_qp_err(wc.status, wc.opcode, target);
-+			srp_handle_qp_err(wc.status, true, target);
- 		}
- 	}
- }
+diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+index fb8c4de..633db88 100644
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -2904,10 +2904,21 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
+ 	sanitize_string(p->model, sizeof(p->model));
+ 	if (!mtd->name)
+ 		mtd->name = p->model;
++
+ 	mtd->writesize = le32_to_cpu(p->byte_per_page);
+-	mtd->erasesize = le32_to_cpu(p->pages_per_block) * mtd->writesize;
++
++	/*
++	 * pages_per_block and blocks_per_lun may not be a power-of-2 size
++	 * (don't ask me who thought of this...). MTD assumes that these
++	 * dimensions will be power-of-2, so just truncate the remaining area.
++	 */
++	mtd->erasesize = 1 << (fls(le32_to_cpu(p->pages_per_block)) - 1);
++	mtd->erasesize *= mtd->writesize;
++
+ 	mtd->oobsize = le16_to_cpu(p->spare_bytes_per_page);
+-	chip->chipsize = le32_to_cpu(p->blocks_per_lun);
++
++	/* See erasesize comment */
++	chip->chipsize = 1 << (fls(le32_to_cpu(p->blocks_per_lun)) - 1);
+ 	chip->chipsize *= (uint64_t)mtd->erasesize * p->lun_count;
+ 	*busw = 0;
+ 	if (le16_to_cpu(p->features) & 1)
 -- 
 1.8.3.2
 
