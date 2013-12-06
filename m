@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758212Ab3LFNCc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:02:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44177 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758190Ab3LFNC0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758192Ab3LFNC0 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 6 Dec 2013 08:02:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44164 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758160Ab3LFNCW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 08:02:22 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 130/272] mwifiex: correct packet length for packets from SDIO interface
-Date: Fri,  6 Dec 2013 12:56:59 +0000
-Message-Id: <1386334761-25517-131-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 128/272] PM / runtime: Use pm_runtime_put_sync() in __device_release_driver()
+Date: Fri,  6 Dec 2013 12:56:57 +0000
+Message-Id: <1386334761-25517-129-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,37 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avinash Patil <patila@marvell.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit d03b4aa77e1187b77dfe37d14a923547f00baa66 upstream.
+commit baab52ded242c35a2290e1fa82e0cc147d0d8c1a upstream.
 
-While receiving a packet on SDIO interface, we allocate skb with
-size multiple of SDIO block size. We need to resize this skb
-after RX using packet length from RX header.
+Commit fa180eb448fa (PM / Runtime: Idle devices asynchronously after
+probe|release) modified __device_release_driver() to call
+pm_runtime_put(dev) instead of pm_runtime_put_sync(dev) before
+detaching the driver from the device.  However, that was a mistake,
+because pm_runtime_put(dev) causes rpm_idle() to be queued up and
+the driver may be gone already when that function is executed.
+That breaks the assumptions the drivers have the right to make
+about the core's behavior on the basis of the existing documentation
+and actually causes problems to happen, so revert that part of
+commit fa180eb448fa and restore the previous behavior of
+__device_release_driver().
 
-Signed-off-by: Avinash Patil <patila@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Fixes: fa180eb448fa (PM / Runtime: Idle devices asynchronously after probe|release)
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Acked-by: Kevin Hilman <khilman@linaro.org>
+Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/mwifiex/sdio.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/base/dd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/mwifiex/sdio.c b/drivers/net/wireless/mwifiex/sdio.c
-index 09185c9..d4bf8c3 100644
---- a/drivers/net/wireless/mwifiex/sdio.c
-+++ b/drivers/net/wireless/mwifiex/sdio.c
-@@ -1032,7 +1032,10 @@ static int mwifiex_decode_rx_packet(struct mwifiex_adapter *adapter,
- 				    struct sk_buff *skb, u32 upld_typ)
- {
- 	u8 *cmd_buf;
-+	__le16 *curr_ptr = (__le16 *)skb->data;
-+	u16 pkt_len = le16_to_cpu(*curr_ptr);
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index 35fa368..0605176 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -499,7 +499,7 @@ static void __device_release_driver(struct device *dev)
+ 						     BUS_NOTIFY_UNBIND_DRIVER,
+ 						     dev);
  
-+	skb_trim(skb, pkt_len);
- 	skb_pull(skb, INTF_HEADER_LEN);
+-		pm_runtime_put(dev);
++		pm_runtime_put_sync(dev);
  
- 	switch (upld_typ) {
+ 		if (dev->bus && dev->bus->remove)
+ 			dev->bus->remove(dev);
 -- 
 1.8.3.2
 
