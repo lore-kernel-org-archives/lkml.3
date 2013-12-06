@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758927Ab3LFViM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:38:12 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:42821 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754730Ab3LFViI (ORCPT
+	id S1758837Ab3LFViA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:38:00 -0500
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:6770 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754730Ab3LFVh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:38:08 -0500
-Date: Fri, 06 Dec 2013 16:38:06 -0500 (EST)
-Message-Id: <20131206.163806.1555069105347405484.davem@davemloft.net>
-To: joe@perches.com
-Cc: mareklindner@neomailbox.ch, sw@simonwunderlich.de, antonio@meshcoding.com,
-        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] batadv: Slight optimization of batadv_compare_eth
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1386364621.31845.32.camel@joe-AO722>
-References: <1386317890.31845.26.camel@joe-AO722>
-	<20131206.153944.1382127535160341376.davem@davemloft.net>
-	<1386364621.31845.32.camel@joe-AO722>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 6 Dec 2013 16:37:59 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkYOAMBColJXQBP1/2dsb2JhbABZJ4Jggjx4E7ZIAgKBIhd0gmYcIxiBAjeIBgHAeo4sZB2EHQOJQI5TAZITgzYvgSw
+Date: Fri, 6 Dec 2013 21:38:45 +0800
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: npiggin@gmail.com
+Subject: [PATCH] RAM block device support module name update in Kconfig
+Message-Id: <20131206213845.c2fc58a65acd990b97794414@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 06 Dec 2013 13:38:08 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Fri, 06 Dec 2013 13:17:01 -0800
+RAM block device support module name changed to brd.ko 
+some years ago with an "rd" alias to match previous module implementation.
+This patch updates its Kconfig definition.
 
-> On Fri, 2013-12-06 at 15:39 -0500, David Miller wrote:
->> If so, make a function for that in linux/etherdevice.h and invoke it
->> in such places.  You can name it something like
->> "ether_addr_equal_unaligned()" or similar.
-> 
-> I'll resubmit if/after you apply the
-> ether_addr_equal/compare_ether_addr removal.
-
-Done.
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/block/Kconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
+index 86b9f37..9ffa90c 100644
+--- a/drivers/block/Kconfig
++++ b/drivers/block/Kconfig
+@@ -368,7 +368,8 @@ config BLK_DEV_RAM
+ 	  For details, read <file:Documentation/blockdev/ramdisk.txt>.
+ 
+ 	  To compile this driver as a module, choose M here: the
+-	  module will be called rd.
++	  module will be called brd. An alias "rd" has been defined
++	  for historical reasons.
+ 
+ 	  Most normal users won't need the RAM disk functionality, and can
+ 	  thus say N here.
