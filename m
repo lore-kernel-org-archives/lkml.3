@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759899Ab3LFXht (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:37:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48750 "EHLO
+	id S1162309Ab3LFXST (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:18:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48741 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162332Ab3LFXSU (ORCPT
+	with ESMTP id S1162243Ab3LFXSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:18:20 -0500
+	Fri, 6 Dec 2013 18:18:16 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 130/152] rtlwifi: rtl8192cu: Fix more pointer arithmetic errors
-Date: Fri,  6 Dec 2013 15:10:54 -0800
-Message-Id: <1386371476-2477-131-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 117/152] ASoC: blackfin: Fix missing break
+Date: Fri,  6 Dec 2013 15:10:41 -0800
+Message-Id: <1386371476-2477-118-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -28,77 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit eafbdde9c5629bea58df07275c5917eb42afbbe7 upstream.
+commit afed4dbe3a043dbd833a53b6b4951e155708afd2 upstream.
 
-This driver uses a number of macros to get and set various fields in the
-RX and TX descriptors. To work correctly, a u8 pointer to the descriptor
-must be used; however, in some cases a descriptor structure pointer is used
-instead. In addition, a duplicated statement is removed.
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Reported-by: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Fixes: 4b2ffc205cb9 ('ASoC: Blackfin I2S: add 8-bit sample support')
+Reported-by: David Binderman
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/mac.c | 6 +++---
- drivers/net/wireless/rtlwifi/rtl8192cu/trx.c | 6 +++---
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ sound/soc/blackfin/bf5xx-i2s.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c b/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
-index 32ff959..aa5528c 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
-@@ -762,7 +762,7 @@ static long _rtl92c_signal_scale_mapping(struct ieee80211_hw *hw,
- 
- static void _rtl92c_query_rxphystatus(struct ieee80211_hw *hw,
- 				      struct rtl_stats *pstats,
--				      struct rx_desc_92c *pdesc,
-+				      struct rx_desc_92c *p_desc,
- 				      struct rx_fwinfo_92c *p_drvinfo,
- 				      bool packet_match_bssid,
- 				      bool packet_toself,
-@@ -777,11 +777,11 @@ static void _rtl92c_query_rxphystatus(struct ieee80211_hw *hw,
- 	u32 rssi, total_rssi = 0;
- 	bool in_powersavemode = false;
- 	bool is_cck_rate;
-+	u8 *pdesc = (u8 *)p_desc;
- 
--	is_cck_rate = RX_HAL_IS_CCK_RATE(pdesc);
-+	is_cck_rate = RX_HAL_IS_CCK_RATE(p_desc);
- 	pstats->packet_matchbssid = packet_match_bssid;
- 	pstats->packet_toself = packet_toself;
--	pstats->is_cck = is_cck_rate;
- 	pstats->packet_beacon = packet_beacon;
- 	pstats->is_cck = is_cck_rate;
- 	pstats->RX_SIGQ[0] = -1;
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
-index 6075b34..265862d 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
-@@ -303,10 +303,10 @@ out:
- bool rtl92cu_rx_query_desc(struct ieee80211_hw *hw,
- 			   struct rtl_stats *stats,
- 			   struct ieee80211_rx_status *rx_status,
--			   u8 *p_desc, struct sk_buff *skb)
-+			   u8 *pdesc, struct sk_buff *skb)
- {
- 	struct rx_fwinfo_92c *p_drvinfo;
--	struct rx_desc_92c *pdesc = (struct rx_desc_92c *)p_desc;
-+	struct rx_desc_92c *p_desc = (struct rx_desc_92c *)pdesc;
- 	u32 phystatus = GET_RX_DESC_PHY_STATUS(pdesc);
- 
- 	stats->length = (u16) GET_RX_DESC_PKT_LEN(pdesc);
-@@ -345,7 +345,7 @@ bool rtl92cu_rx_query_desc(struct ieee80211_hw *hw,
- 	if (phystatus) {
- 		p_drvinfo = (struct rx_fwinfo_92c *)(skb->data +
- 						     stats->rx_bufshift);
--		rtl92c_translate_rx_signal_stuff(hw, skb, stats, pdesc,
-+		rtl92c_translate_rx_signal_stuff(hw, skb, stats, p_desc,
- 						 p_drvinfo);
- 	}
- 	/*rx_status->qual = stats->signal; */
+diff --git a/sound/soc/blackfin/bf5xx-i2s.c b/sound/soc/blackfin/bf5xx-i2s.c
+index 168d88b..822bb97 100644
+--- a/sound/soc/blackfin/bf5xx-i2s.c
++++ b/sound/soc/blackfin/bf5xx-i2s.c
+@@ -111,6 +111,7 @@ static int bf5xx_i2s_hw_params(struct snd_pcm_substream *substream,
+ 		bf5xx_i2s->tcr2 |= 7;
+ 		bf5xx_i2s->rcr2 |= 7;
+ 		sport_handle->wdsize = 1;
++		break;
+ 	case SNDRV_PCM_FORMAT_S16_LE:
+ 		bf5xx_i2s->tcr2 |= 15;
+ 		bf5xx_i2s->rcr2 |= 15;
 -- 
 1.8.3.2
 
