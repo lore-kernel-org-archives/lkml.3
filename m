@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162473Ab3LFXVX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:21:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:49090 "EHLO
+	id S1423092Ab3LFXVH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:21:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:49060 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423063Ab3LFXVI (ORCPT
+	with ESMTP id S1423063Ab3LFXU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:21:08 -0500
+	Fri, 6 Dec 2013 18:20:58 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
+Cc: Pang Xunlei <pang.xunlei@zte.com.cn>, Zhang Yi <zhang.yi20@zte.com.cn>,
+        Lu Zhongjun <lu.zhongjun@zte.com.cn>,
+        Brian Norris <computersforpeace@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 061/152] perf/ftrace: Fix paranoid level for enabling function tracer
-Date: Fri,  6 Dec 2013 15:09:45 -0800
-Message-Id: <1386371476-2477-62-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 069/152] mtd: map: fixed bug in 64-bit systems
+Date: Fri,  6 Dec 2013 15:09:53 -0800
+Message-Id: <1386371476-2477-70-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -29,48 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Wang Haitao <wang.haitao1@zte.com.cn>
 
-commit 12ae030d54ef250706da5642fc7697cc60ad0df7 upstream.
+commit a4d62babf988fe5dfde24437fa135ef147bc7aa0 upstream.
 
-The current default perf paranoid level is "1" which has
-"perf_paranoid_kernel()" return false, and giving any operations that
-use it, access to normal users. Unfortunately, this includes function
-tracing and normal users should not be allowed to enable function
-tracing by default.
+Hardware:
+	CPU: XLP832,the 64-bit OS
+	NOR Flash:S29GL128S 128M
+Software:
+	Kernel:2.6.32.41
+	Filesystem:JFFS2
+When writing files, errors appear:
+	Write len 182  but return retlen 180
+	Write of 182 bytes at 0x072c815c failed. returned -5, retlen 180
+	Write len 186  but return retlen 184
+	Write of 186 bytes at 0x072caff4 failed. returned -5, retlen 184
+These errors exist only in 64-bit systems,not in 32-bit systems. After analysis, we
+found that the left shift operation is wrong in map_word_load_partial. For instance:
+	unsigned char buf[3] ={0x9e,0x3a,0xea};
+	map_bankwidth(map) is 4;
+	for (i=0; i < 3; i++) {
+		int bitpos;
+		bitpos = (map_bankwidth(map)-1-i)*8;
+		orig.x[0] &= ~(0xff << bitpos);
+		orig.x[0] |= buf[i] << bitpos;
+	}
 
-The proper level is defined at "-1" (full perf access), which
-"perf_paranoid_tracepoint_raw()" will only give access to. Use that
-check instead for enabling function tracing.
+The value of orig.x[0] is expected to be 0x9e3aeaff, but in this situation(64-bit
+System) we'll get the wrong value of 0xffffffff9e3aeaff due to the 64-bit sign
+extension:
+buf[i] is defined as "unsigned char" and the left-shift operation will convert it
+to the type of "signed int", so when left-shift buf[i] by 24 bits, the final result
+will get the wrong value: 0xffffffff9e3aeaff.
 
-Reported-by: Dave Jones <davej@redhat.com>
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-CVE: CVE-2013-2930
-Fixes: ced39002f5ea ("ftrace, perf: Add support to use function tracepoint in perf")
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+If the left-shift bits are less than 24, then sign extension will not occur. Whereas
+the bankwidth of the nor flash we used is 4, therefore this BUG emerges.
+
+Signed-off-by: Pang Xunlei <pang.xunlei@zte.com.cn>
+Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
+Signed-off-by: Lu Zhongjun <lu.zhongjun@zte.com.cn>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/trace/trace_event_perf.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/mtd/map.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index 84b1e04..8354dc8 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -26,7 +26,7 @@ static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
- {
- 	/* The ftrace function trace is allowed only for root. */
- 	if (ftrace_event_is_function(tp_event) &&
--	    perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-+	    perf_paranoid_tracepoint_raw() && !capable(CAP_SYS_ADMIN))
- 		return -EPERM;
+diff --git a/include/linux/mtd/map.h b/include/linux/mtd/map.h
+index f6eb433..d4f5f16 100644
+--- a/include/linux/mtd/map.h
++++ b/include/linux/mtd/map.h
+@@ -362,7 +362,7 @@ static inline map_word map_word_load_partial(struct map_info *map, map_word orig
+ 			bitpos = (map_bankwidth(map)-1-i)*8;
+ #endif
+ 			orig.x[0] &= ~(0xff << bitpos);
+-			orig.x[0] |= buf[i-start] << bitpos;
++			orig.x[0] |= (unsigned long)buf[i-start] << bitpos;
+ 		}
+ 	}
+ 	return orig;
+@@ -381,7 +381,7 @@ static inline map_word map_word_ff(struct map_info *map)
  
- 	/* No tracing, just counting, so no obvious leak */
+ 	if (map_bankwidth(map) < MAP_FF_LIMIT) {
+ 		int bw = 8 * map_bankwidth(map);
+-		r.x[0] = (1 << bw) - 1;
++		r.x[0] = (1UL << bw) - 1;
+ 	} else {
+ 		for (i=0; i<map_words(map); i++)
+ 			r.x[i] = ~0UL;
 -- 
 1.8.3.2
 
