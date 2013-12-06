@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751262Ab3LFGEx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 01:04:53 -0500
-Received: from mail-db9lp0249.outbound.messaging.microsoft.com ([213.199.154.249]:29399
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750752Ab3LFGEt convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 01:04:49 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zz98dI9371I936eI542I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h1de097hz2fh95h109h839h944hd24hf0ah119dh1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h2336h906i1155h)
-From: Jagannadha Sutradharudu Teki 
-	<jagannadha.sutradharudu-teki@xilinx.com>
-To: Joe Perches <joe@perches.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Whitcroft <apw@canonical.com>
-Subject: RE: [PATCH] checkpatch: Do not hardcode perl path
-Thread-Topic: [PATCH] checkpatch: Do not hardcode perl path
-Thread-Index: AQHO8fNvyVeQ47REv0atuo+aVjq0eZpGrTLw
-Date: Fri, 6 Dec 2013 06:04:37 +0000
-References: <b26e8934-caba-4385-bd32-8f48e2e99826@VA3EHSMHS026.ehs.local>
- <1386273109.10003.12.camel@joe-AO722>
-In-Reply-To: <1386273109.10003.12.camel@joe-AO722>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.98.41]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751415Ab3LFGFx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 01:05:53 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:34643 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297Ab3LFGFw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 01:05:52 -0500
+Message-ID: <52A16932.8020909@gmail.com>
+Date: Fri, 06 Dec 2013 08:05:38 +0200
+From: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-X-RCIS-Action: ALLOW
-Message-ID: <1c130cef-3be7-408c-867b-5a3de863a831@DB9EHSMHS016.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Ivaylo DImitrov <ivo.g.dimitrov.75@gmail.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "omar.ramirez@copitl.com" <omar.ramirez@copitl.com>, pali.rohar@gmail.com,
+        pavel@ucw.cz, linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Ivaylo Dimitrov <freemangordon@abv.bg>
+Subject: Re: [PATCH] Staging: TIDSPBRIDGE: Remove UUID helper
+References: <1385917660-2676-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+In-Reply-To: <1385917660-2676-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Joe Perches [mailto:joe@perches.com]
-> Sent: Friday, December 06, 2013 1:22 AM
-> To: Jagannadha Sutradharudu Teki
-> Cc: linux-kernel@vger.kernel.org; Andy Whitcroft; Jagannadha Sutradharudu
-> Teki
-> Subject: Re: [PATCH] checkpatch: Do not hardcode perl path
+Hi Greg,
+
+On 01.12.2013 19:07, Ivaylo DImitrov wrote:
+> From: Ivaylo Dimitrov <freemangordon@abv.bg>
 >
-> On Thu, 2013-12-05 at 16:53 +0530, Jagannadha Sutradharudu Teki wrote:
-> > checkpatch.pl requires perl v5.10.0 to run but it doesn't require to
-> > place in /usr/bin/perl Use env to ensure that the interpreter used is
-> > the first one on environment's $PATH on system with several versions
-> > of perl installed.
+> Custom uuid helper function is needed only in rmgr/dbdcd.c and doesn't
+> need to be exported. It can also be made way simpler by using sscanf.
 >
-> I don't have an opinion on this patch.
+> Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
+> ---
+>   drivers/staging/tidspbridge/Makefile               |    2 +-
+>   drivers/staging/tidspbridge/gen/uuidutil.c         |   85 --------------------
+>   .../tidspbridge/include/dspbridge/uuidutil.h       |   18 ----
+>   drivers/staging/tidspbridge/rmgr/dbdcd.c           |   42 +++++++++-
+>   4 files changed, 39 insertions(+), 108 deletions(-)
+>   delete mode 100644 drivers/staging/tidspbridge/gen/uuidutil.c
+>
 
-fyi: I have some notes here - this change will took the perl bin(if user explicitly use perl instead of from /usr/bin/perl) from bashrc instead of taking /usr/bin/perl all the time.
+I guess the initial mail somehow didn't make it through your spam filter:
+https://lkml.org/lkml/2013/12/1/70
 
-Jagan.
-
-
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
-
+Regards,
+Ivo
