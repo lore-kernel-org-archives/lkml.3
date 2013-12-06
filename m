@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161534Ab3LFNBg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:01:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43947 "EHLO
+	id S1753859Ab3LFN6I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:58:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43973 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161497Ab3LFNB3 (ORCPT
+	with ESMTP id S1161519Ab3LFNBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:01:29 -0500
+	Fri, 6 Dec 2013 08:01:34 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        John Stultz <john.stultz@linaro.org>,
+Cc: Gwendal Grignou <gwendal@google.com>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 085/272] alarmtimer: return EINVAL instead of ENOTSUPP if rtcdev doesn't exist
-Date: Fri,  6 Dec 2013 12:56:14 +0000
-Message-Id: <1386334761-25517-86-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 092/272] libata: Fix display of sata speed
+Date: Fri,  6 Dec 2013 12:56:21 +0000
+Message-Id: <1386334761-25517-93-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -30,62 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Gwendal Grignou <gwendal@google.com>
 
-commit 98d6f4dd84a134d942827584a3c5f67ffd8ec35f upstream.
+commit 3e85c3ecbc520751324a191d23bb94873ed01b10 upstream.
 
-Fedora Ruby maintainer reported latest Ruby doesn't work on Fedora Rawhide
-on ARM. (http://bugs.ruby-lang.org/issues/9008)
+6.0 Gbps link speed was not decoded properly:
+speed was reported at 3.0 Gbps only.
 
-Because of, commit 1c6b39ad3f (alarmtimers: Return -ENOTSUPP if no
-RTC device is present) intruduced to return ENOTSUPP when
-clock_get{time,res} can't find a RTC device. However this is incorrect.
+Tested: On a machine where libata reports 6.0 Gbps in
+        /var/log/messages:
+    ata1: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
 
-First, ENOTSUPP isn't exported to userland (ENOTSUP or EOPNOTSUP are the
-closest userland equivlents).
+    Before:
+    	cat /sys/class/ata_link/link1/sata_spd
+    	3.0 Gbps
+    After:
+    	cat /sys/class/ata_link/link1/sata_spd
+    	6.0 Gbps
 
-Second, Posix and Linux man pages agree that clock_gettime and
-clock_getres should return EINVAL if clk_id argument is invalid.
-While the arugment that the clockid is valid, but just not supported
-on this hardware could be made, this is just a technicality that
-doesn't help userspace applicaitons, and only complicates error
-handling.
-
-Thus, this patch changes the code to use EINVAL.
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Reported-by: Vit Ondruch <v.ondruch@tiscali.cz>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-[jstultz: Tweaks to commit message to include full rational]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Gwendal Grignou <gwendal@google.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/time/alarmtimer.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/ata/libata-transport.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
-index eec50fc..88c9c65 100644
---- a/kernel/time/alarmtimer.c
-+++ b/kernel/time/alarmtimer.c
-@@ -490,7 +490,7 @@ static int alarm_clock_getres(const clockid_t which_clock, struct timespec *tp)
- 	clockid_t baseid = alarm_bases[clock2alarm(which_clock)].base_clockid;
+diff --git a/drivers/ata/libata-transport.c b/drivers/ata/libata-transport.c
+index 077a856..733caa7 100644
+--- a/drivers/ata/libata-transport.c
++++ b/drivers/ata/libata-transport.c
+@@ -320,25 +320,25 @@ int ata_tport_add(struct device *parent,
+ /*
+  * ATA link attributes
+  */
++static int noop(int x) { return x; }
  
- 	if (!alarmtimer_get_rtcdev())
--		return -ENOTSUPP;
-+		return -EINVAL;
- 
- 	return hrtimer_get_res(baseid, tp);
+-
+-#define ata_link_show_linkspeed(field)					\
++#define ata_link_show_linkspeed(field, format)			        \
+ static ssize_t								\
+ show_ata_link_##field(struct device *dev,				\
+ 		      struct device_attribute *attr, char *buf)		\
+ {									\
+ 	struct ata_link *link = transport_class_to_link(dev);		\
+ 									\
+-	return sprintf(buf,"%s\n", sata_spd_string(fls(link->field)));	\
++	return sprintf(buf, "%s\n", sata_spd_string(format(link->field))); \
  }
-@@ -507,7 +507,7 @@ static int alarm_clock_get(clockid_t which_clock, struct timespec *tp)
- 	struct alarm_base *base = &alarm_bases[clock2alarm(which_clock)];
  
- 	if (!alarmtimer_get_rtcdev())
--		return -ENOTSUPP;
-+		return -EINVAL;
+-#define ata_link_linkspeed_attr(field)					\
+-	ata_link_show_linkspeed(field)					\
++#define ata_link_linkspeed_attr(field, format)				\
++	ata_link_show_linkspeed(field, format)				\
+ static DEVICE_ATTR(field, S_IRUGO, show_ata_link_##field, NULL)
  
- 	*tp = ktime_to_timespec(base->gettime());
- 	return 0;
+-ata_link_linkspeed_attr(hw_sata_spd_limit);
+-ata_link_linkspeed_attr(sata_spd_limit);
+-ata_link_linkspeed_attr(sata_spd);
++ata_link_linkspeed_attr(hw_sata_spd_limit, fls);
++ata_link_linkspeed_attr(sata_spd_limit, fls);
++ata_link_linkspeed_attr(sata_spd, noop);
+ 
+ 
+ static DECLARE_TRANSPORT_CLASS(ata_link_class,
 -- 
 1.8.3.2
 
