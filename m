@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759551Ab3LFXSp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:18:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48781 "EHLO
+	id S1759578Ab3LFXSy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:18:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48792 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758904Ab3LFXSk (ORCPT
+	with ESMTP id S1752412Ab3LFXSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:18:40 -0500
+	Fri, 6 Dec 2013 18:18:51 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jerome Glisse <jglisse@redhat.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
+Cc: Nishanth Menon <nm@ti.com>, Tony Lindgren <tony@atomide.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 132/152] radeon: workaround pinning failure on low ram gpu
-Date: Fri,  6 Dec 2013 15:10:56 -0800
-Message-Id: <1386371476-2477-133-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 127/152] ARM: OMAP2+: omap_device: maintain sane runtime pm status around suspend/resume
+Date: Fri,  6 Dec 2013 15:10:51 -0800
+Message-Id: <1386371476-2477-128-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -28,68 +27,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: Nishanth Menon <nm@ti.com>
 
-commit 97b6ff6be9da7675aab339334fda996d6c5077d9 upstream.
+commit 3522bf7bfa248b99eafa2f4872190699a808c7d9 upstream.
 
-GPU with low amount of ram can fails at pinning new framebuffer before
-unpinning old one. On such failure, retry with unpinning old one before
-pinning new one allowing to work around the issue. This is somewhat
-ugly but only affect those old GPU we care about.
+OMAP device hooks around suspend|resume_noirq ensures that hwmod
+devices are forced to idle using omap_device_idle/enable as part of
+the last stage of suspend activity.
 
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+For a device such as i2c who uses autosuspend, it is possible to enter
+the suspend path with dev->power.runtime_status = RPM_ACTIVE.
+
+As part of the suspend flow, the generic runtime logic would increment
+it's dev->power.disable_depth to 1. This should prevent further
+pm_runtime_get_sync from succeeding once the runtime_status has been
+set to RPM_SUSPENDED.
+
+Now, as part of the suspend_noirq handler in omap_device, we force the
+following: if the device status is !suspended, we force the device
+to idle using omap_device_idle (clocks are cut etc..). This ensures
+that from a hardware perspective, the device is "suspended". However,
+runtime_status is left to be active.
+
+*if* an operation is attempted after this point to
+pm_runtime_get_sync, runtime framework depends on runtime_status to
+indicate accurately the device status, and since it sees it to be
+ACTIVE, it assumes the module is functional and returns a non-error
+value. As a result the user will see pm_runtime_get succeed, however a
+register access will crash due to the lack of clocks.
+
+To prevent this from happening, we should ensure that runtime_status
+exactly indicates the device status. As a result of this change
+any further calls to pm_runtime_get* would return -EACCES (since
+disable_depth is 1). On resume, we restore the clocks and runtime
+status exactly as we suspended with. These operations are not expected
+to fail as we update the states after the core runtime framework has
+suspended itself and restore before the core runtime framework has
+resumed.
+
+Reported-by: J Keerthy <j-keerthy@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Acked-by: Rajendra Nayak <rnayak@ti.com>
+Acked-by: Kevin Hilman <khilman@linaro.org>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+[ kamal: backport to 3.8 (keep OMAP_DEVICE_NO_IDLE_ON_SUSPEND handling) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_legacy_crtc.c | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+ arch/arm/mach-omap2/omap_device.c | 19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_legacy_crtc.c b/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
-index 6857cb4..ebd36ac 100644
---- a/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
-+++ b/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
-@@ -422,6 +422,7 @@ int radeon_crtc_do_set_base(struct drm_crtc *crtc,
- 	/* Pin framebuffer & get tilling informations */
- 	obj = radeon_fb->obj;
- 	rbo = gem_to_radeon_bo(obj);
-+retry:
- 	r = radeon_bo_reserve(rbo, false);
- 	if (unlikely(r != 0))
- 		return r;
-@@ -430,6 +431,33 @@ int radeon_crtc_do_set_base(struct drm_crtc *crtc,
- 				     &base);
- 	if (unlikely(r != 0)) {
- 		radeon_bo_unreserve(rbo);
-+
-+		/* On old GPU like RN50 with little vram pining can fails because
-+		 * current fb is taking all space needed. So instead of unpining
-+		 * the old buffer after pining the new one, first unpin old one
-+		 * and then retry pining new one.
-+		 *
-+		 * As only master can set mode only master can pin and it is
-+		 * unlikely the master client will race with itself especialy
-+		 * on those old gpu with single crtc.
-+		 *
-+		 * We don't shutdown the display controller because new buffer
-+		 * will end up in same spot.
-+		 */
-+		if (!atomic && fb && fb != crtc->fb) {
-+			struct radeon_bo *old_rbo;
-+			unsigned long nsize, osize;
-+
-+			old_rbo = gem_to_radeon_bo(to_radeon_framebuffer(fb)->obj);
-+			osize = radeon_bo_size(old_rbo);
-+			nsize = radeon_bo_size(rbo);
-+			if (nsize <= osize && !radeon_bo_reserve(old_rbo, false)) {
-+				radeon_bo_unpin(old_rbo);
-+				radeon_bo_unreserve(old_rbo);
-+				fb = NULL;
-+				goto retry;
+diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+index e065daa..3550708 100644
+--- a/arch/arm/mach-omap2/omap_device.c
++++ b/arch/arm/mach-omap2/omap_device.c
+@@ -836,8 +836,10 @@ static int _od_suspend_noirq(struct device *dev)
+ 
+ 	if (!ret && !pm_runtime_status_suspended(dev)) {
+ 		if (pm_generic_runtime_suspend(dev) == 0) {
+-			if (!(od->flags & OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
++			if (!(od->flags & OMAP_DEVICE_NO_IDLE_ON_SUSPEND)) {
++				pm_runtime_set_suspended(dev);
+ 				omap_device_idle(pdev);
 +			}
-+		}
- 		return -EINVAL;
+ 			od->flags |= OMAP_DEVICE_SUSPENDED;
+ 		}
  	}
- 	radeon_bo_get_tiling_flags(rbo, &tiling_flags, NULL);
+@@ -850,11 +852,20 @@ static int _od_resume_noirq(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct omap_device *od = to_omap_device(pdev);
+ 
+-	if ((od->flags & OMAP_DEVICE_SUSPENDED) &&
+-	    !pm_runtime_status_suspended(dev)) {
++	if (od->flags & OMAP_DEVICE_SUSPENDED) {
+ 		od->flags &= ~OMAP_DEVICE_SUSPENDED;
+-		if (!(od->flags & OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
++		if (!(od->flags & OMAP_DEVICE_NO_IDLE_ON_SUSPEND)) {
+ 			omap_device_enable(pdev);
++			/*
++			 * XXX: we run before core runtime pm has resumed itself. At
++			 * this point in time, we just restore the runtime pm state and
++			 * considering symmetric operations in resume, we donot expect
++			 * to fail. If we failed, something changed in core runtime_pm
++			 * framework OR some device driver messed things up, hence, WARN
++			 */
++			WARN(pm_runtime_set_active(dev),
++			     "Could not set %s runtime state active\n", dev_name(dev));
++		}
+ 		pm_generic_runtime_resume(dev);
+ 	}
+ 
 -- 
 1.8.3.2
 
