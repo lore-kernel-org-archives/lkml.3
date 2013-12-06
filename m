@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760278Ab3LFXsA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:48:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48421 "EHLO
+	id S1760263Ab3LFXr6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:47:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48422 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161369Ab3LFXMi (ORCPT
+	with ESMTP id S1161370Ab3LFXMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 18:12:38 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 044/152] drm/radeon: don't share PPLLs on DCE4.1
-Date: Fri,  6 Dec 2013 15:09:28 -0800
-Message-Id: <1386371476-2477-45-git-send-email-kamal@canonical.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 041/152] ext4: avoid bh leak in retry path of ext4_expand_extra_isize_ea()
+Date: Fri,  6 Dec 2013 15:09:25 -0800
+Message-Id: <1386371476-2477-42-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -27,34 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 70471860ff9f335c60c004d42ebd48945bfa5403 upstream.
+commit dcb9917ba041866686fe152850364826c4622a36 upstream.
 
-Sharing PPLLs seems to cause problems on some boards.
-
-Bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=45334
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/atombios_crtc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/xattr.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/radeon/atombios_crtc.c b/drivers/gpu/drm/radeon/atombios_crtc.c
-index 6d6fdb3..ef32bf6 100644
---- a/drivers/gpu/drm/radeon/atombios_crtc.c
-+++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -1683,7 +1683,7 @@ static int radeon_atom_pick_pll(struct drm_crtc *crtc)
- 				if (pll != ATOM_PPLL_INVALID)
- 					return pll;
- 			}
--		} else {
-+		} else if (!ASIC_IS_DCE41(rdev)) { /* Don't share PLLs on DCE4.1 chips */
- 			/* use the same PPLL for all monitors with the same clock */
- 			pll = radeon_get_shared_nondp_ppll(crtc);
- 			if (pll != ATOM_PPLL_INVALID)
+diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
+index f88c442..44f19f3 100644
+--- a/fs/ext4/xattr.c
++++ b/fs/ext4/xattr.c
+@@ -1358,6 +1358,7 @@ retry:
+ 					new_extra_isize = s_min_extra_isize;
+ 					kfree(is); is = NULL;
+ 					kfree(bs); bs = NULL;
++					brelse(bh);
+ 					goto retry;
+ 				}
+ 				error = -1;
 -- 
 1.8.3.2
 
