@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232Ab3LFEt5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 23:49:57 -0500
-Received: from mail-we0-f176.google.com ([74.125.82.176]:36229 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab3LFEty (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 23:49:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131205183735.5f9c8bae@gandalf.local.home>
-References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
-	<87fvq9cwlk.fsf@tassilo.jf.intel.com>
-	<CAMEtUuzweYxqwoaYH+J5a2uRM+PFcBH+Pb8Z_ALPUMp+QFz1tQ@mail.gmail.com>
-	<CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com>
-	<20131205104113.GB20283@gmail.com>
-	<20131205084657.09b6a2ce@gandalf.local.home>
-	<CAMEtUuyp0q9YSMq7OchEeWLz9oPYd3qQ+0SDV5Pt8F10KLbFpg@mail.gmail.com>
-	<20131205183735.5f9c8bae@gandalf.local.home>
-Date: Thu, 5 Dec 2013 20:49:53 -0800
-Message-ID: <CAMEtUuzkGNbh_ZOd5SbWEdNMz3NEpDZzzAKP=Ov10DKD5hVaKQ@mail.gmail.com>
-Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1750865Ab3LFFLA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 00:11:00 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:47611 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750735Ab3LFFK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 00:10:59 -0500
+From: Andrey Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrey Vagin <avagin@openvz.org>, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH] block: fix memory leaks on unplugging block device
+Date: Fri,  6 Dec 2013 09:06:41 +0400
+Message-Id: <1386306401-17405-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 5, 2013 at 3:37 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Thu, 5 Dec 2013 14:36:58 -0800
-> Alexei Starovoitov <ast@plumgrid.com> wrote:
->
->> On Thu, Dec 5, 2013 at 5:46 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> >
->> > I know that it would be great to have the bpf filter run before
->> > recording of the tracepoint, but as that becomes quite awkward for a
->> > user interface, because it requires intimate knowledge of the kernel
->> > source, this speed up on the filter itself may be worth while to have
->> > it happen after the recording of the buffer. When it happens after the
->> > record, then the bpf has direct access to the event entry and its
->> > fields as described by the trace event format files.
->>
->> I don't understand that 'awkward' part yet. What do you mean by 'knowledge of
->> the kernel'? By accessing pt_regs structure? Something else ?
->> Can we try fixing the interface first before compromising on performance?
->
-> Let me ask you this. If you do not have the source of the kernel on
-> hand, can you use BPF to filter the sched_switch tracepoint on prev pid?
->
-> The current filter interface allows you to filter with just what the
-> running kernel provides. No need for debug info from the vmlinux or
-> anything else.
+All objects, which are allocated in blk_mq_register_disk, must be
+released in blk_mq_unregister_disk.
 
-Understood and agreed. For the users that are satisfied with amount of info
-that single trace_event provides (like sched_switch) there is probably
-little reason to do complex filtering. Either they're fine with all
-the events or will
-just filter based on pid only.
+I use a KVM virtual machine and virtio disk to reproduce this issue.
 
-> I'm fine if it becomes a requirement to have a vmlinux built with
-> DEBUG_INFO to use BPF and have a tool like perf to translate the
-> filters. But it that must not replace what the current filters do now.
-> That is, it can be an add on, but not a replacement.
+kmemleak: 18 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
+$ cat /sys/kernel/debug/kmemleak | head -n 30
+unreferenced object 0xffff8800b6636150 (size 8):
+  comm "kworker/0:2", pid 65, jiffies 4294809903 (age 86.358s)
+  hex dump (first 8 bytes):
+    76 69 72 74 69 6f 34 00                          virtio4.
+  backtrace:
+    [<ffffffff8165d41e>] kmemleak_alloc+0x4e/0xb0
+    [<ffffffff8118cfc5>] __kmalloc_track_caller+0xf5/0x260
+    [<ffffffff81155b11>] kstrdup+0x31/0x60
+    [<ffffffff812242be>] sysfs_new_dirent+0x2e/0x140
+    [<ffffffff81224678>] create_dir+0x38/0xe0
+    [<ffffffff812249e3>] sysfs_create_dir_ns+0x73/0xc0
+    [<ffffffff8130dfa9>] kobject_add_internal+0xc9/0x340
+    [<ffffffff8130e535>] kobject_add+0x65/0xb0
+    [<ffffffff813f34f8>] device_add+0x128/0x660
+    [<ffffffff813f3a4a>] device_register+0x1a/0x20
+    [<ffffffff813ae6f8>] register_virtio_device+0x98/0xe0
+    [<ffffffff813b0cce>] virtio_pci_probe+0x12e/0x1c0
+    [<ffffffff81340675>] local_pci_probe+0x45/0xa0
+    [<ffffffff81341a51>] pci_device_probe+0x121/0x130
+    [<ffffffff813f67f7>] driver_probe_device+0x87/0x390
+    [<ffffffff813f6b3b>] __device_attach+0x3b/0x40
+unreferenced object 0xffff8800b65aa1d8 (size 144):
 
-Of course. tracing filters via bpf is an additional tool for kernel debugging.
-bpf by itself has use cases beyond tracing.
+Fixes: 320ae51feed5 (blk-mq: new multi-queue block IO queueing mechanism)
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+---
+ block/blk-mq-sysfs.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/block/blk-mq-sysfs.c b/block/blk-mq-sysfs.c
+index ba6cf8e..b91ce75 100644
+--- a/block/blk-mq-sysfs.c
++++ b/block/blk-mq-sysfs.c
+@@ -335,9 +335,22 @@ static struct kobj_type blk_mq_hw_ktype = {
+ void blk_mq_unregister_disk(struct gendisk *disk)
+ {
+ 	struct request_queue *q = disk->queue;
++	struct blk_mq_hw_ctx *hctx;
++	struct blk_mq_ctx *ctx;
++	int i, j;
++
++	queue_for_each_hw_ctx(q, hctx, i) {
++		hctx_for_each_ctx(hctx, ctx, j) {
++			kobject_del(&ctx->kobj);
++			kobject_put(&ctx->kobj);
++		}
++		kobject_del(&hctx->kobj);
++		kobject_put(&hctx->kobj);
++	}
+ 
+ 	kobject_uevent(&q->mq_kobj, KOBJ_REMOVE);
+ 	kobject_del(&q->mq_kobj);
++	kobject_put(&q->mq_kobj);
+ 
+ 	kobject_put(&disk_to_dev(disk)->kobj);
+ }
+-- 
+1.8.3.1
+
