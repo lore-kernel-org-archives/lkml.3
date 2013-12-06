@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162128Ab3LFWUe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:20:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60820 "EHLO
+	id S1422634Ab3LFWUa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:20:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60812 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759247Ab3LFVxY (ORCPT
+	with ESMTP id S1759244Ab3LFVxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 16:53:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>, Dan Williams <dcbw@redhat.com>,
+        Veaceslav Falico <vfalico@redhat.com>, Jay Vosburgh <fubar@us.ibm.com>,
+        Andy Gospodarek <andy@greyhouse.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 08/58] usbnet: fix status interrupt urb handling
-Date: Fri,  6 Dec 2013 13:51:39 -0800
-Message-Id: <20131206214845.677694986@linuxfoundation.org>
+Subject: [PATCH 3.10 07/58] bonding: dont permit to use ARP monitoring in 802.3ad mode
+Date: Fri,  6 Dec 2013 13:51:38 -0800
+Message-Id: <20131206214845.586827880@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -27,37 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Veaceslav Falico <vfalico@redhat.com>
 
-[ Upstream commit 52f48d0d9aaa621ffa5e08d79da99a3f8c93b848 ]
+[ Upstream commit ec9f1d15db8185f63a2c3143dc1e90ba18541b08 ]
 
-Since commit 7b0c5f21f348a66de495868b8df0284e8dfd6bbf
-"sierra_net: keep status interrupt URB active", sierra_net triggers
-status interrupt polling before the net_device is opened (in order to
-properly receive the sync message response).
+Currently the ARP monitoring is not supported with 802.3ad, and it's
+prohibited to use it via the module params.
 
-To be able to receive further interrupts, the interrupt urb needs to be
-re-submitted, so this patch removes the bogus check for netif_running().
+However we still can set it afterwards via sysfs, cause we only check for
+*LB modes there.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Tested-by: Dan Williams <dcbw@redhat.com>
+To fix this - add a check for 802.3ad mode in bonding_store_arp_interval.
+
+Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+CC: Jay Vosburgh <fubar@us.ibm.com>
+CC: Andy Gospodarek <andy@greyhouse.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/usb/usbnet.c |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/net/bonding/bond_sysfs.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -206,9 +206,6 @@ static void intr_complete (struct urb *u
- 		break;
+--- a/drivers/net/bonding/bond_sysfs.c
++++ b/drivers/net/bonding/bond_sysfs.c
+@@ -537,8 +537,9 @@ static ssize_t bonding_store_arp_interva
+ 		goto out;
  	}
- 
--	if (!netif_running (dev->net))
--		return;
--
- 	status = usb_submit_urb (urb, GFP_ATOMIC);
- 	if (status != 0)
- 		netif_err(dev, timer, dev->net,
+ 	if (bond->params.mode == BOND_MODE_ALB ||
+-	    bond->params.mode == BOND_MODE_TLB) {
+-		pr_info("%s: ARP monitoring cannot be used with ALB/TLB. Only MII monitoring is supported on %s.\n",
++	    bond->params.mode == BOND_MODE_TLB ||
++	    bond->params.mode == BOND_MODE_8023AD) {
++		pr_info("%s: ARP monitoring cannot be used with ALB/TLB/802.3ad. Only MII monitoring is supported on %s.\n",
+ 			bond->dev->name, bond->dev->name);
+ 		ret = -EINVAL;
+ 		goto out;
 
 
