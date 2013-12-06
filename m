@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161996Ab3LFNEk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:04:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44636 "EHLO
+	id S1162012Ab3LFNEo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:04:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44652 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161855Ab3LFNEg (ORCPT
+	with ESMTP id S1161855Ab3LFNEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:04:36 -0500
+	Fri, 6 Dec 2013 08:04:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vinod Koul <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>,
+Cc: Weston Andros Adamson <dros@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 226/272] ALSA: compress: fix drain calls blocking other compress functions
-Date: Fri,  6 Dec 2013 12:58:35 +0000
-Message-Id: <1386334761-25517-227-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 230/272] NFSv4: don't reprocess cached open CLAIM_PREVIOUS
+Date: Fri,  6 Dec 2013 12:58:39 +0000
+Message-Id: <1386334761-25517-231-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,148 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vinod Koul <vinod.koul@intel.com>
+From: Weston Andros Adamson <dros@netapp.com>
 
-commit 917f4b5cba78980a527098a910d94139d3e82c8d upstream.
+commit d2bfda2e7aa036f90ccea610a657064b1e267913 upstream.
 
-The drain and drain_notify callback were blocked by low level driver untill the
-draining was complete. Due to this being invoked with big fat mutex held, others
-ops like reading timestamp, calling pause, drop were blocked.
+Cached opens have already been handled by _nfs4_opendata_reclaim_to_nfs4_state
+and can safely skip being reprocessed, but must still call update_open_stateid
+to make sure that all active fmodes are recovered.
 
-So to fix this we add a new snd_compr_drain_notify() API. This would be required
-to be invoked by low level driver when drain or partial drain has been completed
-by the DSP. Thus we make the drain and partial_drain callback as non blocking
-and driver returns immediately after notifying DSP.
-The waiting is done while relasing the lock so that other ops can go ahead.
-
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Weston Andros Adamson <dros@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/sound/compress_driver.h | 12 ++++++++++++
- sound/core/compress_offload.c   | 41 ++++++++++++++++++++++++++++++++++++++---
- 2 files changed, 50 insertions(+), 3 deletions(-)
+ fs/nfs/nfs4proc.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/include/sound/compress_driver.h b/include/sound/compress_driver.h
-index 9031a26..175ab32 100644
---- a/include/sound/compress_driver.h
-+++ b/include/sound/compress_driver.h
-@@ -48,6 +48,8 @@ struct snd_compr_ops;
-  *	the ring buffer
-  * @total_bytes_transferred: cumulative bytes transferred by offload DSP
-  * @sleep: poll sleep
-+ * @wait: drain wait queue
-+ * @drain_wake: condition for drain wake
-  */
- struct snd_compr_runtime {
- 	snd_pcm_state_t state;
-@@ -59,6 +61,8 @@ struct snd_compr_runtime {
- 	u64 total_bytes_available;
- 	u64 total_bytes_transferred;
- 	wait_queue_head_t sleep;
-+	wait_queue_head_t wait;
-+	unsigned int drain_wake;
- 	void *private_data;
- };
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 9960a5b..1761b67 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -1230,10 +1230,13 @@ _nfs4_opendata_reclaim_to_nfs4_state(struct nfs4_opendata *data)
+ 	struct nfs4_state *state = data->state;
+ 	int ret;
  
-@@ -171,4 +175,12 @@ static inline void snd_compr_fragment_elapsed(struct snd_compr_stream *stream)
- 	wake_up(&stream->runtime->sleep);
- }
- 
-+static inline void snd_compr_drain_notify(struct snd_compr_stream *stream)
-+{
-+	snd_BUG_ON(!stream);
-+
-+	stream->runtime->drain_wake = 1;
-+	wake_up(&stream->runtime->wait);
-+}
-+
- #endif
-diff --git a/sound/core/compress_offload.c b/sound/core/compress_offload.c
-index 5863ba6..68d3ffca 100644
---- a/sound/core/compress_offload.c
-+++ b/sound/core/compress_offload.c
-@@ -123,6 +123,7 @@ static int snd_compr_open(struct inode *inode, struct file *f)
+-	/* allow cached opens (!rpc_done && !rpc_status) */
+-	if (!data->rpc_done && data->rpc_status) {
+-		ret = data->rpc_status;
+-		goto err;
++	if (!data->rpc_done) {
++		if (data->rpc_status) {
++			ret = data->rpc_status;
++			goto err;
++		}
++		/* cached opens have already been processed */
++		goto update;
  	}
- 	runtime->state = SNDRV_PCM_STATE_OPEN;
- 	init_waitqueue_head(&runtime->sleep);
-+	init_waitqueue_head(&runtime->wait);
- 	data->stream.runtime = runtime;
- 	f->private_data = (void *)data;
- 	mutex_lock(&compr->lock);
-@@ -670,12 +671,34 @@ static int snd_compr_stop(struct snd_compr_stream *stream)
- 	if (!retval) {
- 		stream->runtime->state = SNDRV_PCM_STATE_SETUP;
- 		wake_up(&stream->runtime->sleep);
-+		snd_compr_drain_notify(stream);
- 		stream->runtime->total_bytes_available = 0;
- 		stream->runtime->total_bytes_transferred = 0;
- 	}
- 	return retval;
- }
  
-+static int snd_compress_wait_for_drain(struct snd_compr_stream *stream)
-+{
-+	/*
-+	 * We are called with lock held. So drop the lock while we wait for
-+	 * drain complete notfication from the driver
-+	 *
-+	 * It is expected that driver will notify the drain completion and then
-+	 * stream will be moved to SETUP state, even if draining resulted in an
-+	 * error. We can trigger next track after this.
-+	 */
-+	stream->runtime->state = SNDRV_PCM_STATE_DRAINING;
-+	mutex_unlock(&stream->device->lock);
-+
-+	wait_event(stream->runtime->wait, stream->runtime->drain_wake);
-+
-+	wake_up(&stream->runtime->sleep);
-+	mutex_lock(&stream->device->lock);
-+
-+	return 0;
-+}
-+
- static int snd_compr_drain(struct snd_compr_stream *stream)
- {
- 	int retval;
-@@ -683,11 +706,17 @@ static int snd_compr_drain(struct snd_compr_stream *stream)
- 	if (stream->runtime->state == SNDRV_PCM_STATE_PREPARED ||
- 			stream->runtime->state == SNDRV_PCM_STATE_SETUP)
- 		return -EPERM;
-+
-+	stream->runtime->drain_wake = 0;
- 	retval = stream->ops->trigger(stream, SND_COMPR_TRIGGER_DRAIN);
--	if (!retval) {
--		stream->runtime->state = SNDRV_PCM_STATE_DRAINING;
-+	if (retval) {
-+		pr_err("SND_COMPR_TRIGGER_DRAIN failed %d\n", retval);
- 		wake_up(&stream->runtime->sleep);
-+		return retval;
- 	}
-+
-+	retval = snd_compress_wait_for_drain(stream);
-+	stream->runtime->state = SNDRV_PCM_STATE_SETUP;
- 	return retval;
- }
+ 	ret = nfs_refresh_inode(inode, &data->f_attr);
+@@ -1244,6 +1247,7 @@ _nfs4_opendata_reclaim_to_nfs4_state(struct nfs4_opendata *data)
  
-@@ -723,10 +752,16 @@ static int snd_compr_partial_drain(struct snd_compr_stream *stream)
- 	if (stream->next_track == false)
- 		return -EPERM;
- 
-+	stream->runtime->drain_wake = 0;
- 	retval = stream->ops->trigger(stream, SND_COMPR_TRIGGER_PARTIAL_DRAIN);
-+	if (retval) {
-+		pr_err("Partial drain returned failure\n");
-+		wake_up(&stream->runtime->sleep);
-+		return retval;
-+	}
- 
- 	stream->next_track = false;
--	return retval;
-+	return snd_compress_wait_for_drain(stream);
- }
- 
- static long snd_compr_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
+ 	if (data->o_res.delegation_type != 0)
+ 		nfs4_opendata_check_deleg(data, state);
++update:
+ 	update_open_stateid(state, &data->o_res.stateid, NULL,
+ 			    data->o_arg.fmode);
+ 	atomic_inc(&state->count);
 -- 
 1.8.3.2
 
