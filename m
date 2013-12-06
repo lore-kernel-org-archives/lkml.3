@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468Ab3LFIS0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 03:18:26 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:34033
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753663Ab3LFISV (ORCPT
+	id S1754341Ab3LFIY5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 03:24:57 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:58118 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab3LFIYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 03:18:21 -0500
-X-IronPort-AV: E=Sophos;i="4.93,839,1378850400"; 
-   d="scan'208";a="39593222"
-Date: Fri, 6 Dec 2013 09:18:17 +0100
-From: Martin Quinson <martin.quinson@loria.fr>
-To: Christoph Lameter <cl@linux.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        rostedt@goodmis.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, Andreas Gruenbacher <agruen@linbit.com>
-Subject: Re: quilt 0.60 does not include CCed email without name
-Message-ID: <20131206081816.GQ9578@alphonse.loria.fr>
-References: <20131203233232.928771708@linux.com>
- <20131203233250.717784556@linux.com>
- <1386115809.2166.126.camel@dabdike.int.hansenpartnership.com>
- <alpine.DEB.2.02.1312051244540.26098@gentwo.org>
- <00000142c48e1f2a-fd398f0b-8726-4cec-a939-2c3a823bff39-000000@email.amazonses.com>
+	Fri, 6 Dec 2013 03:24:54 -0500
+Message-ID: <52A189D2.3030500@free.fr>
+Date: Fri, 06 Dec 2013 09:24:50 +0100
+From: Duncan Sands <duncan.sands@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <00000142c48e1f2a-fd398f0b-8726-4cec-a939-2c3a823bff39-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: learc83 <learc83@gmail.com>
+CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Usb: atm: usbatm: fixed a pointer variable format issue
+References: <1386302363-10975-1-git-send-email-learc83@gmail.com>
+In-Reply-To: <1386302363-10975-1-git-send-email-learc83@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 08:58:37PM +0000, Christoph Lameter wrote:
-> > > You say this in the commit, but the linux-parisc list isn't cc'd on the
-> > > email ...
-> >
-> > Weird my testoutput before the patchset was sent out shows that it
-> > was included then :
-> 
-> Ok while the test output was done with quilt 0.50 the patch was actually
-> send with quilt 0.60 from another system. quilt 0.60 skips all Cc:s that
-> do not have a full name.
-> 
-> So Helge was included since it had a name
-> 
-> > Cc: Helge Deller <deller@gmx.de>
-> 
-> but
-> 
-> > Cc: linux-parisc@vger.kernel.org
-> 
-> did not because no name was available.
-> 
-> Martin?
+On 06/12/13 04:59, learc83 wrote:
+> Fixed a pointer variable format issue.
 
-I'm sorry, I never use the quilt mail command myself. After a quick
-investiguation of the git history, this bug seems to be caused by:
-http://git.savannah.gnu.org/cgit/quilt.git/commit/?id=02f15444278eb3a854acae0192124153e0c6d9d4
+This is obviously OK.
 
-I think that the last lines should be changed as follows (and same for
-the one before):
-- -e 's/^\('"$*"'\):\(.*<.*@.*>\)/Recipient-Cc:\2/Ip' \
-+ -e 's/^\('"$*"'\):\(.*@.*\)/Recipient-Cc:\2/Ip' \
+Ciao, Duncan.
 
-I'm CCing Andreas so that he can comment, and if nobody complains I'll
-commit it to our git.
+>
+> Signed-off-by: Seth Archer Brown <learc83@gmail.com>
+> ---
+>   drivers/usb/atm/usbatm.c |    8 ++++----
+>   1 file changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/usb/atm/usbatm.c b/drivers/usb/atm/usbatm.c
+> index 25a7bfc..dada014 100644
+> --- a/drivers/usb/atm/usbatm.c
+> +++ b/drivers/usb/atm/usbatm.c
+> @@ -170,9 +170,9 @@ struct usbatm_control {
+>   static void usbatm_atm_dev_close(struct atm_dev *atm_dev);
+>   static int usbatm_atm_open(struct atm_vcc *vcc);
+>   static void usbatm_atm_close(struct atm_vcc *vcc);
+> -static int usbatm_atm_ioctl(struct atm_dev *atm_dev, unsigned int cmd, void __user * arg);
+> +static int usbatm_atm_ioctl(struct atm_dev *atm_dev, unsigned int cmd, void __user *arg);
+>   static int usbatm_atm_send(struct atm_vcc *vcc, struct sk_buff *skb);
+> -static int usbatm_atm_proc_read(struct atm_dev *atm_dev, loff_t * pos, char *page);
+> +static int usbatm_atm_proc_read(struct atm_dev *atm_dev, loff_t *pos, char *page);
+>
+>   static struct atmdev_ops usbatm_atm_devops = {
+>   	.dev_close	= usbatm_atm_dev_close,
+> @@ -739,7 +739,7 @@ static void usbatm_atm_dev_close(struct atm_dev *atm_dev)
+>   	usbatm_put_instance(instance);	/* taken in usbatm_atm_init */
+>   }
+>
+> -static int usbatm_atm_proc_read(struct atm_dev *atm_dev, loff_t * pos, char *page)
+> +static int usbatm_atm_proc_read(struct atm_dev *atm_dev, loff_t *pos, char *page)
+>   {
+>   	struct usbatm_data *instance = atm_dev->dev_data;
+>   	int left = *pos;
+> @@ -895,7 +895,7 @@ static void usbatm_atm_close(struct atm_vcc *vcc)
+>   }
+>
+>   static int usbatm_atm_ioctl(struct atm_dev *atm_dev, unsigned int cmd,
+> -			  void __user * arg)
+> +			  void __user *arg)
+>   {
+>   	struct usbatm_data *instance = atm_dev->dev_data;
+>
+>
 
-Many thanks for the detailed bug report,
-Mt.
-
--- 
-Simplicity does not precede complexity, but follows it.
-   -- "Epigrams in Programming", by Alan J. Perlis of Yale University.
