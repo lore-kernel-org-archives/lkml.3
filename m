@@ -1,98 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162726Ab3LFXvm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:51:42 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:53818 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161351Ab3LFXvi (ORCPT
+	id S1161348Ab3LFXMh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:12:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48321 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758967Ab3LFXMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:51:38 -0500
-From: James Hogan <james.hogan@imgtec.com>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Tim Kryger <tim.kryger@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] serial: 8250_dw: Improve unwritable LCR workaround
-Date: Fri, 06 Dec 2013 23:51:25 +0000
-Message-ID: <5548535.pYirbknue4@radagast>
-Organization: Imagination Technologies
-User-Agent: KMail/4.10.5 (Linux/3.12.3+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <4548523.McqEijQYrs@radagast>
-References: <1380647888-32473-1-git-send-email-tim.kryger@linaro.org> <20131126183559.GA18570@localhost> <4548523.McqEijQYrs@radagast>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart2356815.7zO10Rhlyr"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+	Fri, 6 Dec 2013 18:12:33 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 009/152] NFSv4: Fix a use-after-free situation in _nfs4_proc_getlk()
+Date: Fri,  6 Dec 2013 15:08:53 -0800
+Message-Id: <1386371476-2477-10-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
+References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.8.13.14 -stable review patch.  If anyone has any objections, please let me know.
 
---nextPart2356815.7zO10Rhlyr
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+------------------
 
-On Friday 06 December 2013 23:29:02 James Hogan wrote:
-> So it looks like the LCR does always change immediately for me in this case
-> (obviously it hasn't hit the BUSY case), but not all the bits can be
-> written. In particular bit 5 and bit 7 at the least. If I do this (sorry
-> for whitespace munging):
-> 
-> diff --git a/drivers/tty/serial/8250/8250_dw.c
-> b/drivers/tty/serial/8250/8250_dw.c
-> index 4658e3e..722d448 100644
-> --- a/drivers/tty/serial/8250/8250_dw.c
-> +++ b/drivers/tty/serial/8250/8250_dw.c
-> @@ -96,7 +96,7 @@ static void dw8250_serial_out(struct uart_port *p, int
-> offset, int value)
->  	if (offset == UART_LCR) {
->  		int tries = 1000;
->  		while (tries--) {
-> -			if (value == p->serial_in(p, UART_LCR))
-> +			if (value & ~0xa0 == p->serial_in(p, UART_LCR) & ~0xa0)
->  				return;
->  			dw8250_force_idle(p);
->  			writeb(value, p->membase + (UART_LCR << p->regshift));
-> @@ -132,7 +132,7 @@ static void dw8250_serial_out32(struct uart_port *p, int
-> offset, int value)
->  	if (offset == UART_LCR) {
->  		int tries = 1000;
->  		while (tries--) {
-> -			if (value == p->serial_in(p, UART_LCR))
-> +			if (value & ~0xa0 == p->serial_in(p, UART_LCR) & ~0xa0)
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-My appologies, that should have had some more brackets (I should have retested 
-after cleaning up my debugging). I.e.
-+			if ((value & ~0xa0) == (p->serial_in(p, UART_LCR) & ~0xa0))
+commit a6f951ddbdfb7bd87d31a44f61abe202ed6ce57f upstream.
 
-Cheers
-James
---nextPart2356815.7zO10Rhlyr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
+In nfs4_proc_getlk(), when some error causes a retry of the call to
+_nfs4_proc_getlk(), we can end up with Oopses of the form
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000134
+ IP: [<ffffffff8165270e>] _raw_spin_lock+0xe/0x30
+<snip>
+ Call Trace:
+  [<ffffffff812f287d>] _atomic_dec_and_lock+0x4d/0x70
+  [<ffffffffa053c4f2>] nfs4_put_lock_state+0x32/0xb0 [nfsv4]
+  [<ffffffffa053c585>] nfs4_fl_release_lock+0x15/0x20 [nfsv4]
+  [<ffffffffa0522c06>] _nfs4_proc_getlk.isra.40+0x146/0x170 [nfsv4]
+  [<ffffffffa052ad99>] nfs4_proc_lock+0x399/0x5a0 [nfsv4]
 
-iQIcBAABAgAGBQJSomMGAAoJEKHZs+irPybfyP8P/RVAD9zcYl7GNQ+m4KaaAvr7
-vtJTXfWZmDAag4C/kexA3M402zKuhpMyH0aUxwH40glPN8JexdC6C8DCmZFwNS1e
-DStQwyXm+DolXu8V/Cwm4naQ/YE1mmas/2CavS9fF3eAMk1JhBP8L+0GZFH/My44
-zDsf5oeJeBmIfTg1znUgHQBNm07ATr2WUGah3xqnjDCvuG1k4p86H2xWpgab4MUw
-bkwQJyJ/sLoyatpFPqHTDe9F+T9iFOCF7S0KARbiiRkVxTeSFXVRVaOJI9fHqg9C
-bLbUcCl4FlE+0J3+bm3/i530bGFYcOizm0N7DI6U1Sl3cTAhpcu3XBWmaxPQnJPZ
-mDevhXwv6IdMfLXBIDk2vC4ADw8tSzAocpg52eMvxwuVmTDFt77PvezWz3eRgX2U
-JG2X/K9QbDUSI257I+3TE76+FfpPCsjX/+f7yKSwI+jBLM6s6FDfMUDwjgvQlBjX
-scLtIwcM+tfOsD4OPoYoJO6MxCj8/GeN47EUh/V3lMWq0+ZXkWVDcTyNIc8JKL6t
-JHkS4zslaYW7ZGu4dln7+9hbfLUIDq5W2b2V0TXh7snZC6PSQgRE83Ps2TGD+GpX
-k6RPY9Q1b8x1BE6A339+5ga5G0WDxzNTMz1+NPsHwDzzI8w9dKlyoxfUiUgNHozR
-54UQQt4YhZoFsIWOmHKo
-=KWH/
------END PGP SIGNATURE-----
+The problem is that we don't clear the request->fl_ops after the first
+try and so when we retry, nfs4_set_lock_state() exits early without
+setting the lock stateid.
+Regression introduced by commit 70cc6487a4e08b8698c0e2ec935fb48d10490162
+(locks: make ->lock release private data before returning in GETLK case)
 
---nextPart2356815.7zO10Rhlyr--
+Reported-by: Weston Andros Adamson <dros@netapp.com>
+Reported-by: Jorge Mora <mora@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ fs/nfs/nfs4proc.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index ad967bf..ecc6f12 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -4326,6 +4326,7 @@ static int _nfs4_proc_getlk(struct nfs4_state *state, int cmd, struct file_lock
+ 			status = 0;
+ 	}
+ 	request->fl_ops->fl_release_private(request);
++	request->fl_ops = NULL;
+ out:
+ 	return status;
+ }
+-- 
+1.8.3.2
 
